@@ -1,0 +1,126 @@
+import { Request, Response, NextFunction } from 'express';
+import { AuthService } from './auth.service';
+import { success } from '../../utils/response';
+
+const authService = new AuthService();
+
+export class AuthController {
+  async register(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await authService.register(req.body);
+      success(res, result, 'Account created successfully', 201);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async login(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await authService.login(req.body);
+      success(res, result, 'Login successful');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async refresh(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await authService.refresh(req.body);
+      success(res, result, 'Token refreshed');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async logout(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (req.user) {
+        await authService.logout(req.user.id);
+      }
+      success(res, {}, 'Logged out successfully');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async verifyOtp(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await authService.verifyOtp(req.body);
+      success(res, result, 'Email verified successfully');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async resendOtp(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await authService.resendOtp(req.body);
+      success(res, result, result.message);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async forgotPassword(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await authService.forgotPassword(req.body);
+      success(res, result, result.message);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async resetPassword(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await authService.resetPassword(req.body);
+      success(res, result, result.message);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async forgotPasswordByPhone(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await authService.forgotPasswordByPhone(req.body);
+      success(res, result, result.message);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async verifyResetOtp(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await authService.verifyResetOtp(req.body);
+      success(res, result, 'OTP verified');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async completeOnboarding(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await authService.completeOnboarding(req.user!.id);
+      success(res, result, result.message);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async deactivateAccount(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await authService.deactivateAccount(req.user!.id);
+      success(res, result, result.message);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async deleteAccount(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await authService.deleteAccount(req.user!.id);
+      success(res, result, result.message);
+    } catch (err) {
+      next(err);
+    }
+  }
+}

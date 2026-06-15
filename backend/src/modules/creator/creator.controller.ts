@@ -1,0 +1,158 @@
+import { Request, Response, NextFunction } from 'express';
+import { CreatorService } from './creator.service';
+import { success } from '../../utils/response';
+
+const creatorService = new CreatorService();
+
+export class CreatorController {
+  async listCreators(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const page = parseInt(String(req.query.page ?? '1'), 10);
+      const limit = parseInt(String(req.query.limit ?? '10'), 10);
+      const search = req.query.search as string | undefined;
+      const location = req.query.location as string | undefined;
+      const categoriesRaw = req.query.categories as string | undefined;
+      const platformsRaw = req.query.platforms as string | undefined;
+      const categories = categoriesRaw ? categoriesRaw.split(',').filter(Boolean) : undefined;
+      const platforms = platformsRaw ? platformsRaw.split(',').filter(Boolean) : undefined;
+      const priceMin = req.query.priceMin ? parseFloat(String(req.query.priceMin)) : undefined;
+      const priceMax = req.query.priceMax ? parseFloat(String(req.query.priceMax)) : undefined;
+      const result = await creatorService.listCreators({ page, limit, search, categories, location, platforms, priceMin, priceMax });
+      success(res, result, 'Creators retrieved');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async getCreatorPublicProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const profile = await creatorService.getCreatorPublicProfile(req.params.id);
+      success(res, profile, 'Creator profile retrieved');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async getCreatorFilterOptions(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const options = await creatorService.getFilterOptions();
+      success(res, options, 'Filter options retrieved');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async getProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const profile = await creatorService.getProfile(req.user!.id);
+      success(res, profile, 'Profile retrieved successfully');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async updateProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const profile = await creatorService.updateProfile(req.user!.id, req.body);
+      success(res, profile, 'Profile updated successfully');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async addPortfolioLink(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const profile = await creatorService.addPortfolioLink(req.user!.id, req.body);
+      success(res, profile, 'Portfolio link added', 201);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async removePortfolioLink(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const profile = await creatorService.removePortfolioLink(req.user!.id, req.params.id);
+      success(res, profile, 'Portfolio link removed');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async updateSocialLinks(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const profile = await creatorService.updateSocialLinks(req.user!.id, req.body);
+      success(res, profile, 'Social links updated');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async getSocialAccounts(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const accounts = await creatorService.getSocialAccounts(req.user!.id);
+      success(res, accounts, 'Social accounts retrieved');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async addSocialAccount(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const account = await creatorService.addSocialAccount(req.user!.id, req.body);
+      success(res, account, 'Social account added', 201);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async updateSocialAccount(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const account = await creatorService.updateSocialAccount(req.user!.id, req.params.id, req.body);
+      success(res, account, 'Social account updated');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async deleteSocialAccount(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      await creatorService.deleteSocialAccount(req.user!.id, req.params.id);
+      success(res, null, 'Social account removed');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async getEarnings(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const summary = await creatorService.getEarningsSummary(req.user!.id);
+      success(res, summary, 'Earnings retrieved');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async updatePaymentMethods(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const profile = await creatorService.updatePaymentMethods(req.user!.id, req.body);
+      success(res, { paymentMethods: profile.paymentMethods }, 'Payment methods updated');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async updateCampaignPrefs(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const profile = await creatorService.updateCampaignPrefs(req.user!.id, req.body);
+      success(res, {
+        categories:    profile.categories,
+        prefPlatforms: profile.prefPlatforms,
+        prefLocations: profile.prefLocations,
+        prefBudgetMin: profile.prefBudgetMin,
+        prefBudgetMax: profile.prefBudgetMax,
+      }, 'Campaign preferences updated');
+    } catch (err) {
+      next(err);
+    }
+  }
+}

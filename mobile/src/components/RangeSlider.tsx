@@ -1,0 +1,135 @@
+import { useEffect, useRef, useState } from 'react';
+import { PanResponder, StyleSheet, Text, View } from 'react-native';
+import { useAppColors } from '@/context/ThemeContext';
+
+const PRICE_MAX = 1000;
+const PRICE_STEP = 10;
+const MIN_PRICE_GAP = 80;
+const THUMB_R = 13;
+
+function valToPx(val: number, tw: number) { return (val / PRICE_MAX) * tw; }
+function pxToVal(px: number, tw: number) {
+  if (tw === 0) return 0;
+  return Math.round(Math.max(0, Math.min(px / tw, 1)) * PRICE_MAX / PRICE_STEP) * PRICE_STEP;
+}
+
+type Props = {
+  minVal: number;
+  maxVal: number;
+  onMinChange: (v: number) => void;
+  onMaxChange: (v: number) => void;
+};
+
+export function RangeSlider({ minVal, maxVal, onMinChange, onMaxChange }: Props) {
+  const C = useAppColors();
+  const [dispMin, setDispMin] = useState(minVal);
+  const [dispMax, setDispMax] = useState(maxVal);
+  const [trackW, setTrackW] = useState(0);
+
+  const dispMinRef = useRef(minVal);
+  const dispMaxRef = useRef(maxVal);
+  const trackWRef  = useRef(0);
+  const startMinPx = useRef(0);
+  const startMaxPx = useRef(0);
+  const dragMin    = useRef(false);
+  const dragMax    = useRef(false);
+
+  dispMinRef.current = dispMin;
+  dispMaxRef.current = dispMax;
+  trackWRef.current  = trackW;
+
+  useEffect(() => { if (!dragMin.current) setDispMin(minVal); }, [minVal]);
+  useEffect(() => { if (!dragMax.current) setDispMax(maxVal); }, [maxVal]);
+
+  const minPan = useRef(PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder:  () => true,
+    onPanResponderGrant: () => {
+      dragMin.current = true;
+      startMinPx.current = valToPx(dispMinRef.current, trackWRef.current);
+    },
+    onPanResponderMove: (_, g) => {
+      const tw = trackWRef.current;
+      const maxAllowed = valToPx(dispMaxRef.current, tw) - valToPx(MIN_PRICE_GAP, tw);
+      const clamped = Math.max(0, Math.min(startMinPx.current + g.dx, maxAllowed));
+      setDispMin(pxToVal(clamped, tw));
+    },
+    onPanResponderRelease: ()   => { dragMin.current = false; onMinChange(dispMinRef.current); },
+    onPanResponderTerminate: () => { dragMin.current = false; onMinChange(dispMinRef.current); },
+  })).current;
+
+  const maxPan = useRef(PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder:  () => true,
+    onPanResponderGrant: () => {
+      dragMax.current = true;
+      startMaxPx.current = valToPx(dispMaxRef.current, trackWRef.current);
+    },
+    onPanResponderMove: (_, g) => {
+      const tw = trackWRef.current;
+      const minAllowed = valToPx(dispMinRef.current, tw) + valToPx(MIN_PRICE_GAP, tw);
+      const clamped = Math.max(minAllowed, Math.min(startMaxPx.current + g.dx, tw));
+      setDispMax(pxToVal(clamped, tw));
+    },
+    onPanResponderRelease: ()   => { dragMax.current = false; onMaxChange(dispMaxRef.current); },
+    onPanResponderTerminate: () => { dragMax.current = false; onMaxChange(dispMaxRef.current); },
+  })).current;
+
+  const minPct = dispMin / PRICE_MAX;
+  const maxPct = dispMax / PRICE_MAX;
+
+  return (
+    <View style={styles.wrap}>
+      <View style={[styles.tags, { backgroundColor: C.background }]}>
+        <View style={styles.tag}>
+          <Text style={[styles.tagLbl, { color: C.textSecondary }]}>Min</Text>
+          <Text style={[styles.tagVal, { color: C.brinjal1 }]}>${dispMin}</Text>
+        </View>
+        <View style={[styles.tagDivider, { backgroundColor: C.border }]} />
+        <View style={styles.tag}>
+          <Text style={[styles.tagLbl, { color: C.textSecondary }]}>Max</Text>
+          <Text style={[styles.tagVal, { color: C.brinjal1 }]}>{dispMax >= PRICE_MAX ? '$1,000+' : `$${dispMax}`}</Text>
+        </View>
+      </View>
+
+      <View
+        style={styles.trackContainer}
+        onLayout={(e) => setTrackW(e.nativeEvent.layout.width - THUMB_R * 2)}>
+        <View style={[styles.track, { left: THUMB_R, right: THUMB_R, backgroundColor: C.border }]} />
+        {trackW > 0 && (
+          <>
+            <View style={[styles.fill, { left: THUMB_R + minPct * trackW, width: (maxPct - minPct) * trackW, backgroundColor: C.brinjal1 }]} />
+            <View style={[styles.thumb, { left: minPct * trackW, backgroundColor: C.surface, borderColor: C.brinjal1 }]} {...minPan.panHandlers}>
+              <View style={[styles.thumbCore, { backgroundColor: C.brinjal1 }]} />
+            </View>
+            <View style={[styles.thumb, { left: maxPct * trackW, backgroundColor: C.surface, borderColor: C.brinjal1 }]} {...maxPan.panHandlers}>
+              <View style={[styles.thumbCore, { backgroundColor: C.brinjal1 }]} />
+            </View>
+          </>
+        )}
+      </View>
+
+      <View style={styles.ticks}>
+        <Text style={[styles.tick, { color: C.textSecondary }]}>$0</Text>
+        <Text style={[styles.tick, { color: C.textSecondary }]}>$500</Text>
+        <Text style={[styles.tick, { color: C.textSecondary }]}>$1,000+</Text>
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  wrap: { gap: 12 },
+  tags: { flexDirection: 'row', alignItems: 'center', borderRadius: 14, padding: 14, gap: 12 },
+  tag: { flex: 1, alignItems: 'center', gap: 2 },
+  tagLbl: { fontSize: 10, fontWeight: '600', textTransform: 'uppercase' },
+  tagVal: { fontSize: 20, fontWeight: '800' },
+  tagDivider: { width: 1, height: 32 },
+  trackContainer: { height: THUMB_R * 2 + 8, position: 'relative', justifyContent: 'center', marginHorizontal: 4 },
+  track: { position: 'absolute', height: 4, borderRadius: 2, top: THUMB_R + 2 },
+  fill: { position: 'absolute', height: 4, borderRadius: 2, top: THUMB_R + 2 },
+  thumb: { position: 'absolute', width: THUMB_R * 2, height: THUMB_R * 2, borderRadius: THUMB_R, borderWidth: 2.5, justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
+  thumbCore: { width: 6, height: 6, borderRadius: 3 },
+  ticks: { flexDirection: 'row', justifyContent: 'space-between' },
+  tick: { fontSize: 10, fontWeight: '500' },
+});

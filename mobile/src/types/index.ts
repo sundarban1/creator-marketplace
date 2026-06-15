@@ -1,0 +1,88 @@
+export type UserRole = 'CREATOR' | 'BUSINESS' | 'CLIENT';
+
+export type User = {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  avatar?: string;
+  isFirstLogin?: boolean;
+};
+
+export type Campaign = {
+  id: string;
+  title: string;
+  brand: string;
+  platform: 'Instagram' | 'TikTok' | 'YouTube' | 'Twitter / X' | 'LinkedIn';
+  platformIcon: string;
+  budget: string;
+  budgetRaw: number;
+  category: string;
+  minFollowers: string;
+  deadline: string;
+  contentType: string;
+  description: string;
+  deliverables: string;
+  paymentType: string;
+  proposals: number;
+  isNew: boolean;
+  isFeatured: boolean;
+  status?: 'active' | 'draft' | 'closed';
+  location?: string;
+  createdAt: string;
+};
+
+export type Proposal = {
+  id: string;
+  campaignId: string;
+  campaignTitle: string;
+  brand: string;
+  status: 'pending' | 'accepted' | 'rejected';
+  submittedAt: string;
+  coverLetter: string;
+  proposedRate: string;
+};
+
+export type Conversation = {
+  id: string;
+  participantId: string;
+  participantName: string;
+  participantAvatar?: string;
+  participantRole: 'CREATOR' | 'BUSINESS';
+  lastMessage: string;
+  lastMessageTime: string;
+  unreadCount: number;
+  campaignTitle?: string;
+  isOnline: boolean;
+};
+
+export type Message = {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  text: string;
+  timestamp: string;
+  status: 'sent' | 'delivered' | 'read';
+  attachmentUrl?: string;
+};
+
+export type AppNotification = {
+  id: string;
+  type:
+    | 'proposal_received'
+    | 'proposal_accepted'
+    | 'proposal_rejected'
+    | 'new_message'
+    | 'campaign_deadline'
+    | 'campaign_closed'
+    | 'new_campaign'
+    | 'payment_released';
+  title: string;
+  body: string;
+  timestamp: string;
+  isRead: boolean;
+  actionRoute?: string;
+  actionParams?: object;
+  actorName?: string;
+  actorAvatar?: string;
+};

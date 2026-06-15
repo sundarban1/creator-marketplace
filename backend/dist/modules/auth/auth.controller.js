@@ -1,0 +1,84 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.AuthController = void 0;
+const auth_service_1 = require("./auth.service");
+const response_1 = require("../../utils/response");
+const authService = new auth_service_1.AuthService();
+class AuthController {
+    async register(req, res, next) {
+        try {
+            const result = await authService.register(req.body);
+            (0, response_1.success)(res, result, 'Account created successfully', 201);
+        }
+        catch (err) {
+            next(err);
+        }
+    }
+    async login(req, res, next) {
+        try {
+            const result = await authService.login(req.body);
+            (0, response_1.success)(res, result, 'Login successful');
+        }
+        catch (err) {
+            next(err);
+        }
+    }
+    async refresh(req, res, next) {
+        try {
+            const result = await authService.refresh(req.body);
+            (0, response_1.success)(res, result, 'Token refreshed');
+        }
+        catch (err) {
+            next(err);
+        }
+    }
+    async logout(req, res, next) {
+        try {
+            if (req.user) {
+                await authService.logout(req.user.id);
+            }
+            (0, response_1.success)(res, {}, 'Logged out successfully');
+        }
+        catch (err) {
+            next(err);
+        }
+    }
+    async verifyOtp(req, res, next) {
+        try {
+            const result = await authService.verifyOtp(req.body);
+            (0, response_1.success)(res, result, 'Email verified successfully');
+        }
+        catch (err) {
+            next(err);
+        }
+    }
+    async resendOtp(req, res, next) {
+        try {
+            const result = await authService.resendOtp(req.body);
+            (0, response_1.success)(res, result, result.message);
+        }
+        catch (err) {
+            next(err);
+        }
+    }
+    async forgotPassword(req, res, next) {
+        try {
+            const result = await authService.forgotPassword(req.body);
+            (0, response_1.success)(res, result, result.message);
+        }
+        catch (err) {
+            next(err);
+        }
+    }
+    async resetPassword(req, res, next) {
+        try {
+            const result = await authService.resetPassword(req.body);
+            (0, response_1.success)(res, result, result.message);
+        }
+        catch (err) {
+            next(err);
+        }
+    }
+}
+exports.AuthController = AuthController;
+//# sourceMappingURL=auth.controller.js.map

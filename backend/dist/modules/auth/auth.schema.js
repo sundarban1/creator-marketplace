@@ -1,0 +1,53 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.resendOtpSchema = exports.verifyOtpSchema = exports.resetPasswordSchema = exports.forgotPasswordSchema = exports.refreshTokenSchema = exports.loginSchema = exports.registerSchema = void 0;
+const zod_1 = require("zod");
+exports.registerSchema = zod_1.z.object({
+    email: zod_1.z.string().email('Invalid email address'),
+    phone: zod_1.z.string().min(7, 'Phone number is too short').max(15, 'Phone number is too long').regex(/^\+?[\d\s\-().]+$/, 'Invalid phone number'),
+    password: zod_1.z
+        .string()
+        .min(8, 'Password must be at least 8 characters')
+        .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+        .regex(/[0-9]/, 'Password must contain at least one number'),
+    role: zod_1.z.enum(['CREATOR', 'BUSINESS'], {
+        errorMap: () => ({ message: 'Role must be CREATOR or BUSINESS' }),
+    }),
+    fullName: zod_1.z.string().min(2, 'Full name must be at least 2 characters').optional(),
+    businessName: zod_1.z.string().min(2, 'Business name must be at least 2 characters').optional(),
+}).refine((data) => {
+    if (data.role === 'CREATOR' && !data.fullName)
+        return false;
+    if (data.role === 'BUSINESS' && !data.businessName)
+        return false;
+    return true;
+}, {
+    message: 'fullName is required for CREATOR role, businessName is required for BUSINESS role',
+    path: ['fullName'],
+});
+exports.loginSchema = zod_1.z.object({
+    email: zod_1.z.string().email('Invalid email address'),
+    password: zod_1.z.string().min(1, 'Password is required'),
+});
+exports.refreshTokenSchema = zod_1.z.object({
+    refreshToken: zod_1.z.string().min(1, 'Refresh token is required'),
+});
+exports.forgotPasswordSchema = zod_1.z.object({
+    email: zod_1.z.string().email('Invalid email address'),
+});
+exports.resetPasswordSchema = zod_1.z.object({
+    token: zod_1.z.string().min(1, 'Reset token is required'),
+    newPassword: zod_1.z
+        .string()
+        .min(8, 'Password must be at least 8 characters')
+        .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+        .regex(/[0-9]/, 'Password must contain at least one number'),
+});
+exports.verifyOtpSchema = zod_1.z.object({
+    email: zod_1.z.string().email('Invalid email address'),
+    code: zod_1.z.string().length(6, 'Code must be 6 digits').regex(/^\d{6}$/, 'Code must be numeric'),
+});
+exports.resendOtpSchema = zod_1.z.object({
+    email: zod_1.z.string().email('Invalid email address'),
+});
+//# sourceMappingURL=auth.schema.js.map

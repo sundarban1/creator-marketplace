@@ -1,0 +1,230 @@
+import { CampaignStatus, Prisma } from '@prisma/client';
+import prisma from '../../prisma';
+
+export class CampaignRepository {
+  async create(data: {
+    businessId: string;
+    title: string;
+    description: string;
+    category: string;
+    platform: string;
+    minFollowers: number;
+    contentType: string;
+    deliverables: string;
+    deadline: Date;
+    location?: string;
+    budgetMin: number;
+    budgetMax: number;
+    paymentType: string;
+    creatorsNeeded?: number;
+    isFeatured?: boolean;
+  }) {
+    return prisma.campaign.create({
+      data,
+      include: {
+        business: { select: { businessName: true, logoUrl: true } },
+        _count: { select: { applications: true } },
+      },
+    });
+  }
+
+  async findMany(filters: {
+    category?: string;
+    platform?: string;
+    minBudget?: number;
+    maxBudget?: number;
+    status?: CampaignStatus;
+    isFeatured?: boolean;
+    page: number;
+    limit: number;
+  }) {
+    const where: Prisma.CampaignWhereInput = {};
+
+    if (filters.category) {
+      where.category = { contains: filters.category, mode: 'insensitive' };
+    }
+    if (filters.platform) {
+      where.platform = { contains: filters.platform, mode: 'insensitive' };
+    }
+    if (filters.minBudget !== undefined) {
+      where.budgetMax = { gte: filters.minBudget };
+    }
+    if (filters.maxBudget !== undefined) {
+      where.budgetMin = { ...((where.budgetMin as object) || {}), lte: filters.maxBudget };
+    }
+    if (filters.status) {
+      where.status = filters.status;
+    } else {
+      where.status = 'ACTIVE'; // default to active for public listing
+    }
+
+    if (filters.isFeatured !== undefined) {
+      where.isFeatured = filters.isFeatured;
+    }
+
+    const skip = (filters.page - 1) * filters.limit;
+
+    const [campaigns, total] = await Promise.all([
+      prisma.campaign.findMany({
+        where,
+        skip,
+        take: filters.limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          business: { select: { businessName: true, logoUrl: true } },
+          _count: { select: { applications: true } },
+        },
+      }),
+      prisma.campaign.count({ where }),
+    ]);
+
+    return { campaigns, total };
+  }
+
+  async findById(id: string) {
+    return prisma.campaign.findUnique({
+      where: { id },
+      include: {
+        business: {
+          select: { businessName: true, logoUrl: true, website: true, description: true },
+        },
+        _count: { select: { applications: true } },
+      },
+    });
+  }
+
+  async findByBusinessId(businessId: string, page: number, limit: number) {
+    const skip = (page - 1) * limit;
+    const [campaigns, total] = await Promise.all([
+      prisma.campaign.findMany({
+        where: { businessId },
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: { _count: { select: { applications: true } } },
+      }),
+      prisma.campaign.count({ where: { businessId } }),
+    ]);
+
+    return { campaigns, total };
+  }
+
+  async update(id: string, data: Partial<{
+    title: string;
+    description: string;
+    category: string;
+    platform: string;
+    minFollowers: number;
+    contentType: string;
+    deliverables: string;
+    deadline: Date;
+    location: string | null;
+    budgetMin: number;
+    budgetMax: number;
+    paymentType: string;
+    status: CampaignStatus;
+    isFeatured: boolean;
+  }>) {
+    return prisma.campaign.update({
+      where: { id },
+      data,
+    });
+  }
+
+  async delete(id: string) {
+    return prisma.campaign.delete({ where: { id } });
+  }
+
+  async findApplication(campaignId: string, creatorId: string) {
+    return prisma.application.findUnique({
+      where: { campaignId_creatorId: { campaignId, creatorId } },
+    });
+  }
+
+  async createApplication(data: {
+    campaignId: string;
+    creatorId: string;
+    coverLetter: string;
+    proposedRate: number;
+    timeline: string;
+    socialHandles: Record<string, string>;
+    portfolioUrl?: string;
+  }) {
+    return prisma.application.create({
+      data,
+      include: {
+        campaign: { select: { title: true } },
+        creator: { select: { fullName: true } },
+      },
+    });
+  }
+
+  async findApplicationsByCampaign(campaignId: string, page: number, limit: number) {
+    const skip = (page - 1) * limit;
+    const [applications, total] = await Promise.all([
+      prisma.application.findMany({
+        where: { campaignId },
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          creator: {
+            select: {
+              fullName: true,
+              avatarUrl: true,
+              location: true,
+              categories: true,
+              socialLinks: true,
+            },
+          },
+        },
+      }),
+      prisma.application.count({ where: { campaignId } }),
+    ]);
+
+    return { applications, total };
+  }
+
+  async findApplicationById(id: string) {
+    return prisma.application.findUnique({
+      where: { id },
+      include: { campaign: true },
+    });
+  }
+
+  async updateApplicationStatus(id: string, status: 'ACCEPTED' | 'REJECTED') {
+    return prisma.application.update({
+      where: { id },
+      data: { status },
+    });
+  }
+
+  async findApplicationsByCreator(creatorId: string, page: number, limit: number) {
+    const skip = (page - 1) * limit;
+    const [applications, total] = await Promise.all([
+      prisma.application.findMany({
+        where: { creatorId },
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          campaign: {
+            select: {
+              title: true,
+              category: true,
+              platform: true,
+              budgetMin: true,
+              budgetMax: true,
+              deadline: true,
+              status: true,
+              business: { select: { businessName: true, logoUrl: true } },
+            },
+          },
+        },
+      }),
+      prisma.application.count({ where: { creatorId } }),
+    ]);
+
+    return { applications, total };
+  }
+}

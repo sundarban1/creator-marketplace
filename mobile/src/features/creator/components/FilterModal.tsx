@@ -1,0 +1,474 @@
+import { useRef, useState } from 'react';
+import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { RangeSlider } from '@/components/RangeSlider';
+import { useAppColors } from '@/context/ThemeContext';
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+export type LocationEntry = { label: string; lat: number | null; lng: number | null };
+export type LocationFilter = LocationEntry[];
+
+const PLACES_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY ?? '';
+const MAX_LOCS = 3;
+
+type Prediction = {
+  place_id: string;
+  structured_formatting: { main_text: string; secondary_text: string };
+};
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const MONTHS = [
+  'January','February','March','April','May','June',
+  'July','August','September','October','November','December',
+];
+const DAY_SHORT = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function getDaysInMonth(y: number, m: number) { return new Date(y, m + 1, 0).getDate(); }
+function getFirstWeekday(y: number, m: number) { return new Date(y, m, 1).getDay(); }
+function dayStart(d: Date) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+function sameDay(a: Date, b: Date) {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+}
+function isBetween(d: Date, from: Date, to: Date) {
+  return d.getTime() > from.getTime() && d.getTime() < to.getTime();
+}
+function fmtDate(d: Date | null) {
+  if (!d) return '—';
+  return `${d.getDate()} ${MONTHS[d.getMonth()].slice(0, 3)} ${d.getFullYear()}`;
+}
+
+// ─── Props ────────────────────────────────────────────────────────────────────
+
+type Props = {
+  visible: boolean;
+  tempPriceMin: number;
+  tempPriceMax: number;
+  tempLocation: LocationFilter;
+  tempDateFrom: Date | null;
+  tempDateTo: Date | null;
+  setTempPriceMin: (v: number) => void;
+  setTempPriceMax: (v: number) => void;
+  setTempLocation: (v: LocationFilter) => void;
+  setTempDateFrom: (v: Date | null) => void;
+  setTempDateTo: (v: Date | null) => void;
+  onApply: () => void;
+  onReset: () => void;
+  onClose: () => void;
+};
+
+// ─── LocationSearchPicker ─────────────────────────────────────────────────────
+
+function LocationSearchPicker({
+  selected,
+  onSelect,
+}: {
+  selected: LocationFilter;
+  onSelect: (v: LocationFilter) => void;
+}) {
+  const C = useAppColors();
+  const [query, setQuery] = useState('');
+  const [predictions, setPredictions] = useState<Prediction[]>([]);
+  const [searching, setSearching] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const remoteSelected = selected.some((l) => l.label === 'Remote');
+  const nonRemote = selected.filter((l) => l.label !== 'Remote');
+  const atMax = selected.length >= MAX_LOCS;
+
+  function toggleRemote() {
+    if (remoteSelected) {
+      onSelect(selected.filter((l) => l.label !== 'Remote'));
+    } else if (!atMax) {
+      onSelect([...selected, { label: 'Remote', lat: null, lng: null }]);
+    }
+  }
+
+  function remove(label: string) {
+    onSelect(selected.filter((l) => l.label !== label));
+  }
+
+  function handleSearchChange(text: string) {
+    setQuery(text);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (!text.trim()) { setPredictions([]); return; }
+    debounceRef.current = setTimeout(() => fetchPredictions(text), 350);
+  }
+
+  async function fetchPredictions(text: string) {
+    if (!PLACES_KEY) return;
+    setSearching(true);
+    try {
+      const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(text)}&key=${PLACES_KEY}&language=en&types=(cities)`;
+      const res = await fetch(url);
+      const data = (await res.json()) as { predictions: Prediction[]; status: string };
+      setPredictions(data.status === 'OK' ? data.predictions : []);
+    } catch {
+      setPredictions([]);
+    } finally {
+      setSearching(false);
+    }
+  }
+
+  async function handleSelectPrediction(pred: Prediction) {
+    const label = pred.structured_formatting.main_text;
+    if (selected.some((l) => l.label === label)) return;
+    setQuery('');
+    setPredictions([]);
+    try {
+      const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${pred.place_id}&fields=geometry&key=${PLACES_KEY}`;
+      const res = await fetch(url);
+      const data = (await res.json()) as {
+        result: { geometry: { location: { lat: number; lng: number } } };
+        status: string;
+      };
+      if (data.status === 'OK') {
+        const { lat, lng } = data.result.geometry.location;
+        onSelect([...selected, { label, lat, lng }]);
+      } else {
+        onSelect([...selected, { label, lat: null, lng: null }]);
+      }
+    } catch {
+      onSelect([...selected, { label, lat: null, lng: null }]);
+    }
+  }
+
+  return (
+    <View style={ls.container}>
+      {/* Remote — separate standalone chip */}
+      <Pressable
+        style={[ls.remoteChip, { borderColor: remoteSelected ? C.brinjal1 : C.border, backgroundColor: remoteSelected ? C.primaryLight : C.background }, !remoteSelected && atMax && { opacity: 0.35 }]}
+        onPress={toggleRemote}
+        disabled={!remoteSelected && atMax}>
+        <Text style={ls.remoteEmoji}>🌐</Text>
+        <Text style={[ls.remoteText, { color: remoteSelected ? C.brinjal1 : C.text, fontWeight: remoteSelected ? '700' : '500' }]}>
+          Remote
+        </Text>
+        {remoteSelected && <Text style={[ls.removeX, { color: C.brinjal1 }]}>✕</Text>}
+      </Pressable>
+
+      {/* Selected place chips */}
+      {nonRemote.length > 0 && (
+        <View style={ls.selectedChips}>
+          {nonRemote.map((loc) => (
+            <View key={loc.label} style={[ls.selectedChip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
+              <Text style={[ls.selectedChipText, { color: C.brinjal1 }]}>📍 {loc.label}</Text>
+              <Pressable onPress={() => remove(loc.label)} hitSlop={8}>
+                <Text style={[ls.removeX, { color: C.brinjal1 }]}>✕</Text>
+              </Pressable>
+            </View>
+          ))}
+        </View>
+      )}
+
+      {/* Search input — hidden when limit reached */}
+      {!atMax && (
+        <>
+          <View style={[ls.searchRow, { backgroundColor: C.background, borderColor: C.border }]}>
+            <Text style={ls.searchIcon}>🔍</Text>
+            <TextInput
+              style={[ls.searchInput, { color: C.text }]}
+              value={query}
+              onChangeText={handleSearchChange}
+              placeholder="Search city…"
+              placeholderTextColor={C.textSecondary}
+              returnKeyType="search"
+            />
+            {searching
+              ? <ActivityIndicator size="small" color={C.brinjal1} />
+              : query.length > 0
+              ? <Pressable onPress={() => { setQuery(''); setPredictions([]); }} hitSlop={8}>
+                  <Text style={{ color: C.textSecondary, fontSize: 15 }}>✕</Text>
+                </Pressable>
+              : null}
+          </View>
+
+          {predictions.length > 0 && (
+            <View style={[ls.dropdown, { backgroundColor: C.surface, borderColor: C.border }]}>
+              {predictions.slice(0, 5).map((pred, idx) => (
+                <Pressable
+                  key={pred.place_id}
+                  style={[ls.dropRow, { borderBottomColor: idx < Math.min(predictions.length, 5) - 1 ? C.border : 'transparent' }]}
+                  onPress={() => handleSelectPrediction(pred)}>
+                  <Text style={ls.dropPin}>📍</Text>
+                  <View style={ls.dropTexts}>
+                    <Text style={[ls.dropMain, { color: C.text }]}>{pred.structured_formatting.main_text}</Text>
+                    <Text style={[ls.dropSec, { color: C.textSecondary }]} numberOfLines={1}>{pred.structured_formatting.secondary_text}</Text>
+                  </View>
+                </Pressable>
+              ))}
+            </View>
+          )}
+        </>
+      )}
+    </View>
+  );
+}
+
+const ls = StyleSheet.create({
+  container:       { gap: 10 },
+  remoteChip:      { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 22, borderWidth: 1.5 },
+  remoteEmoji:     { fontSize: 14 },
+  remoteText:      { fontSize: 13 },
+  removeX:         { fontSize: 12, fontWeight: '700' },
+  selectedChips:   { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  selectedChip:    { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1.5 },
+  selectedChipText:{ fontSize: 13, fontWeight: '600' },
+  searchRow:       { flexDirection: 'row', alignItems: 'center', borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 12, height: 44, gap: 8 },
+  searchIcon:      { fontSize: 15 },
+  searchInput:     { flex: 1, fontSize: 14 },
+  dropdown:        { borderRadius: 12, borderWidth: 1.5, overflow: 'hidden' },
+  dropRow:         { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, gap: 10, borderBottomWidth: 1 },
+  dropPin:         { fontSize: 16 },
+  dropTexts:       { flex: 1 },
+  dropMain:        { fontSize: 14, fontWeight: '600' },
+  dropSec:         { fontSize: 11, marginTop: 1 },
+});
+
+// ─── DateRangePicker ──────────────────────────────────────────────────────────
+
+function DateRangePicker({
+  dateFrom, dateTo, onFromChange, onToChange,
+}: {
+  dateFrom: Date | null; dateTo: Date | null;
+  onFromChange: (d: Date | null) => void; onToChange: (d: Date | null) => void;
+}) {
+  const C = useAppColors();
+  const today = dayStart(new Date());
+  const [calYear, setCalYear] = useState(today.getFullYear());
+  const [calMonth, setCalMonth] = useState(today.getMonth());
+
+  function prevMonth() {
+    if (calMonth === 0) { setCalYear((y) => y - 1); setCalMonth(11); }
+    else setCalMonth((m) => m - 1);
+  }
+  function nextMonth() {
+    if (calMonth === 11) { setCalYear((y) => y + 1); setCalMonth(0); }
+    else setCalMonth((m) => m + 1);
+  }
+
+  function applyPreset(daysBack: number) {
+    const from = new Date(today);
+    from.setDate(today.getDate() - daysBack);
+    onFromChange(dayStart(from));
+    onToChange(new Date(today));
+  }
+
+  function handleDayTap(day: number) {
+    const tapped = dayStart(new Date(calYear, calMonth, day));
+    if (!dateFrom || (dateFrom && dateTo)) {
+      onFromChange(tapped);
+      onToChange(null);
+    } else {
+      if (sameDay(tapped, dateFrom)) onFromChange(null);
+      else if (tapped < dateFrom) { onFromChange(tapped); onToChange(null); }
+      else onToChange(tapped);
+    }
+  }
+
+  function dayStatus(day: number): 'from' | 'to' | 'range' | 'today' | 'none' {
+    const d = dayStart(new Date(calYear, calMonth, day));
+    if (dateFrom && sameDay(d, dateFrom)) return 'from';
+    if (dateTo   && sameDay(d, dateTo))   return 'to';
+    if (dateFrom && dateTo && isBetween(d, dateFrom, dateTo)) return 'range';
+    if (sameDay(d, today)) return 'today';
+    return 'none';
+  }
+
+  const daysInMonth  = getDaysInMonth(calYear, calMonth);
+  const firstWeekday = getFirstWeekday(calYear, calMonth);
+  const cells: (number | null)[] = [];
+  for (let i = 0; i < firstWeekday; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+  while (cells.length % 7 !== 0) cells.push(null);
+
+  const PRESETS = [
+    { label: 'Today',      days: 0 },
+    { label: 'Past week',  days: 7 },
+    { label: 'Past month', days: 30 },
+  ];
+
+  function isPresetActive(days: number) {
+    if (!dateFrom || !dateTo) return false;
+    const expectedFrom = dayStart(new Date(today));
+    if (days > 0) expectedFrom.setDate(today.getDate() - days);
+    return sameDay(expectedFrom, dateFrom) && sameDay(today, dateTo);
+  }
+
+  const hint = !dateFrom ? 'Tap a date to set start' : !dateTo ? 'Tap another date to set end' : '';
+
+  return (
+    <View style={dp.container}>
+      <View style={dp.presets}>
+        {PRESETS.map((p) => (
+          <Pressable
+            key={p.label}
+            style={[dp.preset, { borderColor: C.border, backgroundColor: C.background }, isPresetActive(p.days) && { borderColor: C.brinjal1, backgroundColor: C.primaryLight }]}
+            onPress={() => applyPreset(p.days)}>
+            <Text style={[dp.presetTxt, { color: isPresetActive(p.days) ? C.brinjal1 : C.textSecondary }, isPresetActive(p.days) && { fontWeight: '700' }]}>
+              {p.label}
+            </Text>
+          </Pressable>
+        ))}
+        {!!dateFrom && (
+          <Pressable style={dp.clearBtn} onPress={() => { onFromChange(null); onToChange(null); }}>
+            <Text style={[dp.clearTxt, { color: C.error }]}>Clear ✕</Text>
+          </Pressable>
+        )}
+      </View>
+
+      <View style={[dp.rangeRow, { backgroundColor: C.background }]}>
+        <View style={dp.rangeItem}>
+          <Text style={[dp.rangeLbl, { color: C.textSecondary }]}>From</Text>
+          <Text style={[dp.rangeDate, { color: dateFrom ? C.text : C.border }]}>{fmtDate(dateFrom)}</Text>
+        </View>
+        <Text style={[dp.rangeArrow, { color: C.textSecondary }]}>→</Text>
+        <View style={dp.rangeItem}>
+          <Text style={[dp.rangeLbl, { color: C.textSecondary }]}>To</Text>
+          <Text style={[dp.rangeDate, { color: dateTo ? C.text : C.border }]}>{fmtDate(dateTo)}</Text>
+        </View>
+      </View>
+
+      <View style={[dp.cal, { backgroundColor: C.background }]}>
+        <View style={dp.monthNav}>
+          <Pressable style={dp.navBtn} onPress={prevMonth}>
+            <Text style={[dp.navBtnTxt, { color: C.brinjal1 }]}>‹</Text>
+          </Pressable>
+          <Text style={[dp.monthTitle, { color: C.text }]}>{MONTHS[calMonth]} {calYear}</Text>
+          <Pressable style={dp.navBtn} onPress={nextMonth}>
+            <Text style={[dp.navBtnTxt, { color: C.brinjal1 }]}>›</Text>
+          </Pressable>
+        </View>
+
+        <View style={dp.dayRow}>
+          {DAY_SHORT.map((d) => (
+            <Text key={d} style={[dp.dayHdr, { color: C.textSecondary }]}>{d}</Text>
+          ))}
+        </View>
+
+        <View style={dp.grid}>
+          {cells.map((day, idx) => {
+            if (!day) return <View key={`e${idx}`} style={dp.cell} />;
+            const st = dayStatus(day);
+            const isEnd = st === 'from' || st === 'to';
+            return (
+              <Pressable
+                key={`d${day}`}
+                style={[dp.cell, (st === 'range' || isEnd) && { backgroundColor: C.primaryLight }]}
+                onPress={() => handleDayTap(day)}>
+                <View style={[dp.dayCircle, isEnd && { backgroundColor: C.brinjal1 }, st === 'today' && { borderWidth: 1.5, borderColor: C.brinjal1 }]}>
+                  <Text style={[dp.dayNum, { color: isEnd ? '#fff' : st === 'today' ? C.brinjal1 : C.text }, isEnd && { fontWeight: '700' }, st === 'today' && { fontWeight: '700' }]}>
+                    {day}
+                  </Text>
+                </View>
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
+
+      {hint ? <Text style={[dp.hint, { color: C.textSecondary }]}>{hint}</Text> : null}
+    </View>
+  );
+}
+
+// ─── FilterModal ──────────────────────────────────────────────────────────────
+
+export function FilterModal({
+  visible,
+  tempPriceMin, tempPriceMax,
+  tempLocation,
+  tempDateFrom, tempDateTo,
+  setTempPriceMin, setTempPriceMax,
+  setTempLocation,
+  setTempDateFrom, setTempDateTo,
+  onApply, onReset, onClose,
+}: Props) {
+  const C = useAppColors();
+
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <Pressable style={styles.backdrop} onPress={onClose} />
+      <View style={[styles.sheet, { backgroundColor: C.surface }]}>
+        <View style={[styles.handle, { backgroundColor: C.border }]} />
+
+        <View style={[styles.header, { borderBottomColor: C.border }]}>
+          <Text style={[styles.title, { color: C.text }]}>Filters</Text>
+          <Pressable onPress={onReset}>
+            <Text style={[styles.reset, { color: C.brinjal1 }]}>Reset all</Text>
+          </Pressable>
+        </View>
+
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.body}>
+
+          <Text style={[styles.section, { color: C.textSecondary }]}>Price Range</Text>
+          <RangeSlider minVal={tempPriceMin} maxVal={tempPriceMax} onMinChange={setTempPriceMin} onMaxChange={setTempPriceMax} />
+
+          <View style={styles.sectionRow}>
+            <Text style={[styles.section, { color: C.textSecondary, marginBottom: 0 }]}>Location</Text>
+            <Text style={[styles.sectionHint, { color: C.textSecondary }]}>{tempLocation.length}/{MAX_LOCS} allowed</Text>
+          </View>
+          <LocationSearchPicker selected={tempLocation} onSelect={setTempLocation} />
+
+          <Text style={[styles.section, { color: C.textSecondary }]}>Deadline Range</Text>
+          <DateRangePicker dateFrom={tempDateFrom} dateTo={tempDateTo} onFromChange={setTempDateFrom} onToChange={setTempDateTo} />
+
+        </ScrollView>
+
+        <View style={[styles.footer, { borderTopColor: C.border }]}>
+          <Pressable
+            style={({ pressed }) => [styles.applyBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }, pressed && { opacity: 0.88 }]}
+            onPress={onApply}>
+            <Text style={styles.applyTxt}>Apply Filters</Text>
+          </Pressable>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const dp = StyleSheet.create({
+  container:  { gap: 14 },
+  presets:    { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  preset:     { paddingHorizontal: 13, paddingVertical: 7, borderRadius: 20, borderWidth: 1.5 },
+  presetTxt:  { fontSize: 12, fontWeight: '500' },
+  clearBtn:   { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, backgroundColor: '#FEE2E2', borderWidth: 1.5, borderColor: '#FCA5A5' },
+  clearTxt:   { fontSize: 12, fontWeight: '600' },
+  rangeRow:   { flexDirection: 'row', alignItems: 'center', borderRadius: 14, padding: 14, gap: 8 },
+  rangeItem:  { flex: 1, gap: 3 },
+  rangeLbl:   { fontSize: 10, fontWeight: '700', textTransform: 'uppercase' },
+  rangeDate:  { fontSize: 14, fontWeight: '700' },
+  rangeArrow: { fontSize: 18 },
+  cal:        { borderRadius: 16, padding: 12, gap: 8 },
+  monthNav:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  navBtn:     { width: 36, height: 36, justifyContent: 'center', alignItems: 'center' },
+  navBtnTxt:  { fontSize: 24, lineHeight: 28 },
+  monthTitle: { fontSize: 15, fontWeight: '700' },
+  dayRow:     { flexDirection: 'row' },
+  dayHdr:     { flex: 1, textAlign: 'center', fontSize: 11, fontWeight: '600' },
+  grid:       { flexDirection: 'row', flexWrap: 'wrap' },
+  cell:       { width: '14.285%', aspectRatio: 1, justifyContent: 'center', alignItems: 'center' },
+  dayCircle:  { width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
+  dayNum:     { fontSize: 13, fontWeight: '500' },
+  hint:       { fontSize: 12, textAlign: 'center', fontStyle: 'italic' },
+});
+
+const styles = StyleSheet.create({
+  backdrop: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)' },
+  sheet:    { position: 'absolute', left: 0, right: 0, bottom: 0, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '92%', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 20, shadowOffset: { width: 0, height: -4 }, elevation: 20 },
+  handle:   { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginTop: 12, marginBottom: 4 },
+  header:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1 },
+  title:    { fontSize: 17, fontWeight: '800' },
+  reset:    { fontSize: 14, fontWeight: '600' },
+  body:     { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16, gap: 24 },
+  section:    { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: -8 },
+  sectionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: -8 },
+  sectionHint:{ fontSize: 11, fontWeight: '600' },
+  footer:   { padding: 20, borderTopWidth: 1 },
+  applyBtn: { borderRadius: 14, height: 52, justifyContent: 'center', alignItems: 'center', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
+  applyTxt: { color: '#fff', fontSize: 16, fontWeight: '700' },
+});

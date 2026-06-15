@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc *)",
+      "Bash(npx expo *)",
+      "Bash(kill %1)",
+      "Bash(pkill -f \"expo start\")",
+      "Bash(xargs ls -la)"
+    ]
+  }
+}
