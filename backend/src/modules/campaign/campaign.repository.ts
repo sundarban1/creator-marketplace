@@ -135,6 +135,16 @@ export class CampaignRepository {
     return prisma.campaign.delete({ where: { id } });
   }
 
+  async getDistinctCategories(): Promise<string[]> {
+    const rows = await prisma.campaign.findMany({
+      where: { status: 'ACTIVE' },
+      select: { category: true },
+      distinct: ['category'],
+      orderBy: { category: 'asc' },
+    });
+    return rows.map((r) => r.category);
+  }
+
   async findApplication(campaignId: string, creatorId: string) {
     return prisma.application.findUnique({
       where: { campaignId_creatorId: { campaignId, creatorId } },

@@ -49,6 +49,8 @@ export type Conversation = {
   participantName: string;
   participantAvatar?: string;
   participantRole: 'CREATOR' | 'BUSINESS';
+  status: 'PENDING' | 'ACCEPTED' | 'DECLINED';
+  requestMessage?: string | null;
   lastMessage: string;
   lastMessageTime: string;
   unreadCount: number;

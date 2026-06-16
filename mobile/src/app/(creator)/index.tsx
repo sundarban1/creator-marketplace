@@ -24,6 +24,7 @@ export default function HomeScreen() {
   const C = useAppColors();
 
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [apiCategories, setApiCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [fetchError, setFetchError] = useState('');
@@ -48,8 +49,12 @@ export default function HomeScreen() {
     if (showLoader) setLoading(true);
     setFetchError('');
     try {
-      const { campaigns: data } = await campaignService.list({ limit: 50 });
+      const [{ campaigns: data }, cats] = await Promise.all([
+        campaignService.list({ limit: 50 }),
+        campaignService.getCategories().catch(() => [] as string[]),
+      ]);
       setCampaigns(data);
+      setApiCategories(cats);
     } catch (e) {
       setFetchError(e instanceof Error ? e.message : 'Failed to load campaigns');
     } finally {
@@ -103,13 +108,7 @@ export default function HomeScreen() {
     setTempDateTo(null);
   }
 
-  // Derive categories dynamically from loaded campaigns (categories + platforms)
-  const categorySet = new Set<string>(['All']);
-  for (const c of campaigns) {
-    if (c.category) categorySet.add(c.category);
-    if (c.platform) categorySet.add(c.platform);
-  }
-  const visibleCategories = Array.from(categorySet).map((label) => ({
+  const visibleCategories = ['All', ...apiCategories].map((label) => ({
     label,
     ...(CATEGORY_META[label] ?? DEFAULT_META),
   }));

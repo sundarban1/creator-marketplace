@@ -1,11 +1,13 @@
 import { router, Tabs } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '@/context/AuthContext';
 import { DrawerContext } from '@/context/DrawerContext';
 import { BusinessDrawerMenu } from '@/features/business/components/BusinessDrawerMenu';
 import { COLORS } from '@/utilities/constants';
+import { chatService } from '@/services/chat';
+import { messagingEvents } from '@/lib/messagingEvents';
 
 function CreateTabButton() {
   return (
@@ -22,6 +24,21 @@ function CreateTabButton() {
 export default function BusinessLayout() {
   const { user, logout } = useAuth();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [badgeCount, setBadgeCount] = useState(0);
+  const pollRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    function fetchBadge() {
+      chatService.getBadgeCount().then((r) => setBadgeCount(r.count)).catch(() => null);
+    }
+    fetchBadge();
+    pollRef.current = setInterval(fetchBadge, 30000);
+    const unsub = messagingEvents.subscribe(fetchBadge);
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+      unsub();
+    };
+  }, []);
 
   return (
     <DrawerContext.Provider value={{ openDrawer: () => setDrawerOpen(true) }}>
@@ -92,9 +109,11 @@ export default function BusinessLayout() {
                 tintColor={color}
                 size={22}
               />
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>2</Text>
-              </View>
+              {badgeCount > 0 && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>{badgeCount > 99 ? '99+' : badgeCount}</Text>
+                </View>
+              )}
             </View>
           ),
         }}

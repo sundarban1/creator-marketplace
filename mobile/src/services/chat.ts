@@ -1,34 +1,33 @@
-import { request }                                from '@/lib/api';
-import type { ApiConversation, ApiMessage }       from '@/lib/api';
-import type { Conversation, Message }             from '@/types';
+import { request }                          from '@/lib/api';
+import type { ApiConversation, ApiMessage } from '@/lib/api';
+import type { Conversation, Message }       from '@/types';
 
 // ── Transformers ────────────────────────────────────────────────────────────────
 
 function toConversation(api: ApiConversation, currentUserRole: 'CREATOR' | 'BUSINESS'): Conversation {
-  const lastMsg   = api.messages[0];
+  const lastMsg   = api.messages?.[0];
   const isCreator = currentUserRole === 'CREATOR';
 
-  // From a creator's perspective the "participant" is the business, and vice-versa
-  const participantId     = isCreator ? api.businessId : api.creatorId;
   const participantName   = isCreator
     ? (api.business?.businessName ?? 'Business')
-    : (api.creator?.fullName ?? 'Creator');
+    : (api.creator?.fullName      ?? 'Creator');
   const participantAvatar = isCreator
-    ? (api.business?.logoUrl ?? undefined)
+    ? (api.business?.logoUrl  ?? undefined)
     : (api.creator?.avatarUrl ?? undefined);
-  const participantRole: 'CREATOR' | 'BUSINESS' = isCreator ? 'BUSINESS' : 'CREATOR';
 
   return {
     id:              api.id,
-    participantId,
+    participantId:   isCreator ? api.businessId : api.creatorId,
     participantName,
     participantAvatar,
-    participantRole,
-    lastMessage:     lastMsg?.content ?? '',
-    lastMessageTime: lastMsg?.createdAt ?? api.createdAt,
-    unreadCount:     0,    // not tracked by backend; default to 0
+    participantRole: isCreator ? 'BUSINESS' : 'CREATOR',
+    status:          api.status ?? 'ACCEPTED',
+    requestMessage:  api.requestMessage,
+    lastMessage:     lastMsg?.content ?? api.requestMessage ?? '',
+    lastMessageTime: api.lastMessageAt ?? lastMsg?.createdAt ?? api.createdAt,
+    unreadCount:     0,
     campaignTitle:   api.campaign?.title,
-    isOnline:        false, // real-time presence not implemented
+    isOnline:        false,
   };
 }
 
@@ -37,56 +36,75 @@ function toMessage(api: ApiMessage): Message {
     id:             api.id,
     conversationId: api.conversationId,
     senderId:       api.senderId,
-    text:           api.content,       // backend: content  → mobile: text
-    timestamp:      api.createdAt,     // backend: createdAt → mobile: timestamp
-    status:         'sent',            // backend doesn't track delivery/read
+    text:           api.content,
+    timestamp:      api.createdAt,
+    status:         'sent',
   };
 }
 
 // ── Service ─────────────────────────────────────────────────────────────────────
 
 export const chatService = {
-  async getConversations(currentUserRole: 'CREATOR' | 'BUSINESS'): Promise<Conversation[]> {
-    const res = await request<ApiConversation[]>('GET', '/api/messaging/conversations');
-    const sorted = [...res.data].sort(
-      (a, b) => {
-        const at = a.messages[0]?.createdAt ?? a.createdAt;
-        const bt = b.messages[0]?.createdAt ?? b.createdAt;
-        return new Date(bt).getTime() - new Date(at).getTime();
-      }
+  async getConversations(
+    currentUserRole: 'CREATOR' | 'BUSINESS',
+    status?: 'PENDING' | 'ACCEPTED' | 'DECLINED',
+  ): Promise<Conversation[]> {
+    const res = await request<ApiConversation[]>(
+      'GET', '/api/messaging/conversations',
+      undefined,
+      status ? { status } : undefined,
     );
-    return sorted.map((c) => toConversation(c, currentUserRole));
+    return res.data.map((c) => toConversation(c, currentUserRole));
+  },
+
+  async sendMessageRequest(
+    otherUserId: string,
+    requestMessage?: string,
+    campaignId?: string,
+  ): Promise<Conversation> {
+    const res = await request<ApiConversation>(
+      'POST', '/api/messaging/conversations',
+      { otherUserId, requestMessage, campaignId },
+    );
+    return toConversation(res.data, 'BUSINESS');
+  },
+
+  async checkConversation(
+    creatorProfileId: string,
+  ): Promise<{ id: string; status: 'PENDING' | 'ACCEPTED' | 'DECLINED' } | null> {
+    const res = await request<{ id: string; status: 'PENDING' | 'ACCEPTED' | 'DECLINED' } | null>(
+      'GET', `/api/messaging/conversations/check/${creatorProfileId}`,
+    );
+    return res.data;
+  },
+
+  async respondToRequest(conversationId: string, action: 'accept' | 'decline'): Promise<void> {
+    await request('POST', `/api/messaging/conversations/${conversationId}/${action}`);
   },
 
   async getMessages(conversationId: string): Promise<Message[]> {
     const res = await request<ApiMessage[]>(
-      'GET', `/api/messaging/conversations/${conversationId}/messages`
+      'GET', `/api/messaging/conversations/${conversationId}/messages`,
     );
     return res.data.map(toMessage);
   },
 
-  async sendMessage(conversationId: string, text: string, _senderId: string): Promise<Message> {
+  async sendMessage(conversationId: string, text: string): Promise<Message> {
     const res = await request<ApiMessage>(
-      'POST',
-      `/api/messaging/conversations/${conversationId}/messages`,
-      { content: text }    // backend expects "content", not "text"
+      'POST', `/api/messaging/conversations/${conversationId}/messages`,
+      { content: text },
     );
     return toMessage(res.data);
   },
 
-  async startConversation(creatorId: string, businessId: string, campaignId?: string): Promise<Conversation> {
-    const res = await request<ApiConversation>(
-      'POST',
-      '/api/messaging/conversations',
-      { creatorId, businessId, campaignId }
-    );
-    // derive currentUserRole from which id matches the auth user
-    const role: 'CREATOR' | 'BUSINESS' = res.data.creatorId === creatorId ? 'CREATOR' : 'BUSINESS';
-    return toConversation(res.data, role);
+  async markSeen(conversationId: string): Promise<void> {
+    await request('PUT', `/api/messaging/conversations/${conversationId}/seen`);
   },
 
-  // Kept for backward compat with UI that reads a single conversation synchronously
-  getConversationSync(conversations: Conversation[], id: string): Conversation | undefined {
-    return conversations.find((c) => c.id === id);
+  async getBadgeCount(): Promise<{ count: number; pendingRequests: number; unread: number }> {
+    const res = await request<{ count: number; pendingRequests: number; unread: number }>(
+      'GET', '/api/messaging/badge-count',
+    );
+    return res.data;
   },
 };

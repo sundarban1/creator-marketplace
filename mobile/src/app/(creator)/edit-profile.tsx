@@ -17,12 +17,6 @@ import { useAuth } from '@/context/AuthContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { creatorService } from '@/services/creator';
 
-const CAT_OPTIONS = [
-  'Food', 'Travel', 'Fashion', 'Lifestyle', 'Beauty',
-  'Fitness', 'Tech', 'Gaming', 'Education', 'Wellness',
-  'Music', 'Photography', 'Sports', 'Film & TV',
-];
-
 const PLACES_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY ?? '';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -198,7 +192,6 @@ export default function EditProfileScreen() {
   const [location, setLocation] = useState('');
   const [locationLat, setLocationLat] = useState<number | null>(null);
   const [locationLng, setLocationLng] = useState<number | null>(null);
-  const [categories, setCategories] = useState<string[]>([]);
   const [locationModalOpen, setLocationModalOpen] = useState(false);
 
   useEffect(() => {
@@ -210,21 +203,10 @@ export default function EditProfileScreen() {
         setLocation(profile.location ?? '');
         setLocationLat(profile.locationLat ?? null);
         setLocationLng(profile.locationLng ?? null);
-        setCategories(profile.categories ?? []);
       })
       .catch(() => Alert.alert('Error', 'Could not load profile. Please try again.'))
       .finally(() => setLoading(false));
   }, []);
-
-  const MAX_CATEGORIES = 5;
-
-  function toggleCategory(cat: string) {
-    setCategories((prev) => {
-      if (prev.includes(cat)) return prev.filter((c) => c !== cat);
-      if (prev.length >= MAX_CATEGORIES) return prev;
-      return [...prev, cat];
-    });
-  }
 
   function handleLocationSelect(address: string, lat: number, lng: number) {
     setLocation(address);
@@ -243,7 +225,6 @@ export default function EditProfileScreen() {
       const payload: Parameters<typeof creatorService.updateProfile>[0] = {
         fullName: fullName.trim(),
         bio: bio.trim() || undefined,
-        categories,
       };
       if (location.trim()) {
         payload.location = location.trim();
@@ -339,36 +320,6 @@ export default function EditProfileScreen() {
 
         </View>
 
-        <View style={styles.catHeader}>
-          <Text style={[styles.sectionHeader, { color: C.textSecondary, marginTop: 0, marginHorizontal: 0 }]}>CONTENT CATEGORIES</Text>
-          <Text style={[styles.catCount, { color: categories.length >= MAX_CATEGORIES ? C.brinjal1 : C.textSecondary }]}>
-            {categories.length}/{MAX_CATEGORIES}
-          </Text>
-        </View>
-        <View style={[styles.card, { backgroundColor: C.surface }]}>
-          <View style={[styles.chipGroup, { padding: 12 }]}>
-            {CAT_OPTIONS.map((cat) => {
-              const active = categories.includes(cat);
-              const disabled = !active && categories.length >= MAX_CATEGORIES;
-              return (
-                <Pressable
-                  key={cat}
-                  onPress={() => toggleCategory(cat)}
-                  disabled={disabled}
-                  style={[
-                    styles.chip,
-                    { borderColor: active ? C.brinjal1 : C.border, backgroundColor: active ? C.primaryLight : C.surface },
-                    disabled && { opacity: 0.35 },
-                  ]}>
-                  <Text style={[styles.chipText, { color: active ? C.brinjal1 : C.text, fontWeight: active ? '700' : '500' }]}>
-                    {cat}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </View>
-
         <Pressable
           style={[styles.saveBtn, { backgroundColor: saving ? C.border : C.brinjal1 }]}
           onPress={handleSave}
@@ -409,11 +360,6 @@ const styles = StyleSheet.create({
   locationBtnTxt: { flex: 1, fontSize: 14, lineHeight: 20 },
   locationArrow:  { fontSize: 20, color: '#9CA3AF' },
   clearLocation:  { fontSize: 12, fontWeight: '600', marginTop: 2 },
-  catHeader:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 20, marginBottom: 6, marginHorizontal: 20 },
-  catCount:   { fontSize: 12, fontWeight: '700' },
-  chipGroup:  { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip:       { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1.5 },
-  chipText:   { fontSize: 13 },
   saveBtn:    { marginHorizontal: 16, marginTop: 20, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
   saveBtnText:{ fontSize: 15, fontWeight: '700', color: '#fff' },
 });

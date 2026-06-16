@@ -153,6 +153,32 @@ export default function CreatorProfileScreen() {
         </View>
 
         <View style={styles.section}>
+          <View style={styles.sectionRow}>
+            <Text style={[styles.sectionTitle, { color: C.text }]}>Content Categories</Text>
+            <Pressable onPress={() => router.push('/(creator)/edit-categories')}>
+              <Text style={[styles.editLink, { color: C.brinjal1 }]}>Edit</Text>
+            </Pressable>
+          </View>
+          {profile?.categories && profile.categories.length > 0 ? (
+            <View style={styles.catWrap}>
+              {profile.categories.map((cat) => (
+                <View key={cat} style={[styles.catChip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
+                  <Text style={[styles.catChipTxt, { color: C.brinjal1 }]}>{cat}</Text>
+                </View>
+              ))}
+            </View>
+          ) : (
+            <Pressable
+              style={[styles.emptyCard, { backgroundColor: C.surface, borderColor: C.border }]}
+              onPress={() => router.push('/(creator)/edit-categories')}>
+              <Text style={[styles.emptyText, { color: C.textSecondary }]}>
+                No categories selected. Tap to add.
+              </Text>
+            </Pressable>
+          )}
+        </View>
+
+        <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: C.text }]}>Proposal History</Text>
           <View style={[styles.proposalBars, { backgroundColor: C.surface }]}>
             {PROPOSAL_STATS.slice(0, 3).map((s) => (
@@ -208,7 +234,12 @@ const styles = StyleSheet.create({
   statValue: { fontSize: 24, fontWeight: '800' },
   statLabel: { fontSize: 11, fontWeight: '600' },
   section: { marginHorizontal: 20, marginBottom: 20 },
+  sectionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
   sectionTitle: { fontSize: 15, fontWeight: '700', marginBottom: 12 },
+  editLink: { fontSize: 13, fontWeight: '700' },
+  catWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  catChip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1.5 },
+  catChipTxt: { fontSize: 13, fontWeight: '600' },
   socialsGap: { gap: 10 },
   socialCard: { flexDirection: 'row', alignItems: 'center', borderRadius: 14, padding: 14, gap: 12, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
   socialIcon: { width: 44, height: 44, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },

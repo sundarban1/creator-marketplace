@@ -157,6 +157,7 @@ router.post(
  *               $ref: '#/components/schemas/PaginatedResponse'
  */
 router.get('/', validate(campaignListQuerySchema, 'query'), ctrl.list.bind(ctrl));
+router.get('/categories', ctrl.getCategories.bind(ctrl));
 
 /**
  * @swagger

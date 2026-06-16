@@ -14,6 +14,15 @@ export class CampaignController {
     }
   }
 
+  async getCategories(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const categories = await campaignService.getCategories();
+      success(res, categories, 'Categories retrieved successfully');
+    } catch (err) {
+      next(err);
+    }
+  }
+
   async list(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { campaigns, total, page, limit } = await campaignService.list(req.query as any);

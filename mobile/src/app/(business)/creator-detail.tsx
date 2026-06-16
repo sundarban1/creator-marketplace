@@ -3,15 +3,18 @@ import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Linking,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
 import { creatorService, type ApiCreatorPublicProfile } from '@/services/creator';
+import { chatService } from '@/services/chat';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -66,18 +69,53 @@ export default function CreatorDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const C = useAppColors();
 
-  const [profile, setProfile] = useState<ApiCreatorPublicProfile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [profile, setProfile]     = useState<ApiCreatorPublicProfile | null>(null);
+  const [loading, setLoading]     = useState(true);
+  const [error, setError]         = useState('');
+
+  // Message request state
+  const [convId, setConvId]       = useState<string | null>(null);
+  const [convStatus, setConvStatus] = useState<'PENDING' | 'ACCEPTED' | 'DECLINED' | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [requestMsg, setRequestMsg] = useState('');
+  const [sending, setSending]     = useState(false);
 
   useEffect(() => {
     if (!id) return;
     setLoading(true);
-    creatorService.getCreatorPublicProfile(id)
-      .then(setProfile)
+    Promise.all([
+      creatorService.getCreatorPublicProfile(id),
+      chatService.checkConversation(id),
+    ])
+      .then(([prof, conv]) => {
+        setProfile(prof);
+        if (conv) { setConvId(conv.id); setConvStatus(conv.status); }
+      })
       .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load creator'))
       .finally(() => setLoading(false));
   }, [id]);
+
+  async function handleSendRequest() {
+    if (!profile) return;
+    setSending(true);
+    try {
+      const conv = await chatService.sendMessageRequest(profile.userId, requestMsg.trim() || undefined);
+      setConvId(conv.id);
+      setConvStatus('PENDING');
+      setShowModal(false);
+      setRequestMsg('');
+    } finally {
+      setSending(false);
+    }
+  }
+
+  function openChat() {
+    if (!convId || !profile) return;
+    router.push({
+      pathname: '/(business)/messages/[id]',
+      params: { id: convId, name: profile.fullName, status: convStatus ?? 'ACCEPTED' },
+    });
+  }
 
   if (loading) {
     return (
@@ -284,6 +322,53 @@ export default function CreatorDetailScreen() {
         )}
 
       </ScrollView>
+
+      {/* Sticky message button */}
+      <View style={[msgBtn.bar, { backgroundColor: C.surface, borderTopColor: C.border }]}>
+        {convStatus === 'ACCEPTED' ? (
+          <Pressable style={[msgBtn.btn, { backgroundColor: C.brinjal1 }]} onPress={openChat}>
+            <Text style={msgBtn.txt}>💬  Open Chat</Text>
+          </Pressable>
+        ) : convStatus === 'PENDING' ? (
+          <View style={[msgBtn.btn, { backgroundColor: C.border }]}>
+            <Text style={[msgBtn.txt, { color: '#fff' }]}>⏳  Request Sent</Text>
+          </View>
+        ) : (
+          <Pressable style={[msgBtn.btn, { backgroundColor: C.brinjal1 }]} onPress={() => setShowModal(true)}>
+            <Text style={msgBtn.txt}>✉️  Send Message</Text>
+          </Pressable>
+        )}
+      </View>
+
+      {/* Request message modal */}
+      <Modal visible={showModal} transparent animationType="slide" onRequestClose={() => setShowModal(false)}>
+        <View style={rm.overlay}>
+          <Pressable style={rm.scrim} onPress={() => setShowModal(false)} />
+          <View style={[rm.sheet, { backgroundColor: C.surface }]}>
+            <View style={[rm.handle, { backgroundColor: C.border }]} />
+            <Text style={[rm.title, { color: C.text }]}>Send Message Request</Text>
+            <Text style={[rm.subtitle, { color: C.textSecondary }]}>
+              Write an optional message to introduce yourself. {profile?.fullName} will see this when deciding to accept.
+            </Text>
+            <TextInput
+              style={[rm.input, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
+              value={requestMsg}
+              onChangeText={setRequestMsg}
+              placeholder={`Hi ${profile?.fullName?.split(' ')[0] ?? 'there'}, I'd love to collaborate…`}
+              placeholderTextColor={C.textSecondary}
+              multiline
+              maxLength={500}
+            />
+            <Text style={[rm.counter, { color: C.textSecondary }]}>{requestMsg.length}/500</Text>
+            <Pressable
+              style={[rm.sendBtn, { backgroundColor: sending ? C.border : C.brinjal1 }]}
+              onPress={handleSendRequest}
+              disabled={sending}>
+              <Text style={rm.sendTxt}>{sending ? 'Sending…' : 'Send Request'}</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -299,7 +384,7 @@ const s = StyleSheet.create({
   backArrow: { fontSize: 32, lineHeight: 36, fontWeight: '300' },
   topTitle:  { flex: 1, fontSize: 17, fontWeight: '800', textAlign: 'center' },
 
-  scroll: { paddingBottom: 48, gap: 12 },
+  scroll: { paddingBottom: 16, gap: 12 },
 
   // Hero
   hero:         { flexDirection: 'row', alignItems: 'center', gap: 16, paddingHorizontal: 20, paddingVertical: 24, marginHorizontal: 20, borderRadius: 20, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 3 },
@@ -358,4 +443,25 @@ const s = StyleSheet.create({
   errorHint:  { fontSize: 13, textAlign: 'center', lineHeight: 20 },
   retryBtn:   { borderRadius: 20, borderWidth: 1.5, paddingHorizontal: 20, paddingVertical: 10, marginTop: 4 },
   retryText:  { fontSize: 14, fontWeight: '700' },
+});
+
+// Message button bar
+const msgBtn = StyleSheet.create({
+  bar: { paddingHorizontal: 20, paddingVertical: 14, borderTopWidth: 1 },
+  btn: { borderRadius: 14, height: 52, justifyContent: 'center', alignItems: 'center' },
+  txt: { color: '#fff', fontSize: 16, fontWeight: '700' },
+});
+
+// Request modal
+const rm = StyleSheet.create({
+  overlay: { flex: 1, justifyContent: 'flex-end' },
+  scrim:   { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.45)' },
+  sheet:   { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 40, gap: 14 },
+  handle:  { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginBottom: 4 },
+  title:   { fontSize: 18, fontWeight: '800' },
+  subtitle:{ fontSize: 13, lineHeight: 20 },
+  input:   { borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, minHeight: 100, textAlignVertical: 'top' },
+  counter: { fontSize: 11, textAlign: 'right', marginTop: -6 },
+  sendBtn: { borderRadius: 14, height: 52, justifyContent: 'center', alignItems: 'center' },
+  sendTxt: { color: '#fff', fontSize: 16, fontWeight: '700' },
 });

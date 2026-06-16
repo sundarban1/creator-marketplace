@@ -48,6 +48,10 @@ export class CampaignService {
     return { campaigns, total, page, limit: validatedLimit };
   }
 
+  async getCategories(): Promise<string[]> {
+    return this.repo.getDistinctCategories();
+  }
+
   async getById(id: string) {
     const campaign = await this.repo.findById(id);
     if (!campaign) {

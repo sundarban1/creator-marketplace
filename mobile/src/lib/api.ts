@@ -70,15 +70,18 @@ export interface ApiCampaign {
 
 // ── Messaging shapes ───────────────────────────────────────────────────────────
 export interface ApiConversation {
-  id:        string;
-  creatorId: string;
-  businessId: string;
-  campaignId?: string | null;
-  createdAt: string;
-  creator?:   { fullName: string; avatarUrl: string | null };
-  business?:  { businessName: string; logoUrl: string | null };
-  campaign?:  { title: string } | null;
-  messages:   ApiMessage[];
+  id:             string;
+  creatorId:      string;
+  businessId:     string;
+  campaignId?:    string | null;
+  status:         'PENDING' | 'ACCEPTED' | 'DECLINED';
+  requestMessage?: string | null;
+  lastMessageAt?:  string | null;
+  createdAt:      string;
+  creator?:       { fullName: string; avatarUrl: string | null };
+  business?:      { businessName: string; logoUrl: string | null };
+  campaign?:      { title: string } | null;
+  messages:       ApiMessage[];
 }
 
 export interface ApiMessage {

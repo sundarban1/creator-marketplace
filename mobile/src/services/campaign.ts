@@ -101,6 +101,11 @@ export const campaignService = {
     };
   },
 
+  async getCategories(): Promise<string[]> {
+    const res = await request<string[]>('GET', '/api/campaigns/categories');
+    return res.data;
+  },
+
   async getById(id: string): Promise<Campaign> {
     const res = await request<ApiCampaign>('GET', `/api/campaigns/${id}`);
     return toCampaign(res.data);

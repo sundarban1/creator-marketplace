@@ -22,6 +22,12 @@ enum CampaignStatus {
   CLOSED
 }
 
+enum ConversationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
 enum ApplicationStatus {
   PENDING
   ACCEPTED
@@ -166,11 +172,16 @@ model Application {
 }
 
 model Conversation {
-  id         String   @id @default(cuid())
-  creatorId  String
-  businessId String
-  campaignId String?
-  createdAt  DateTime @default(now())
+  id             String             @id @default(cuid())
+  creatorId      String
+  businessId     String
+  campaignId     String?
+  status         ConversationStatus @default(PENDING)
+  requestMessage String?
+  lastMessageAt  DateTime?
+  businessSeenAt DateTime?
+  creatorSeenAt  DateTime?
+  createdAt      DateTime           @default(now())
 
   creator  CreatorProfile  @relation("CreatorConversations", fields: [creatorId], references: [id], onDelete: Cascade)
   business BusinessProfile @relation("BusinessConversations", fields: [businessId], references: [id], onDelete: Cascade)

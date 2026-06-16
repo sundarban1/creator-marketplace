@@ -1,16 +1,33 @@
 import { Tabs } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { useState } from 'react';
-import { Platform, StyleSheet, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '@/context/AuthContext';
 import { DrawerContext } from '@/context/DrawerContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { DrawerMenu } from '@/features/creator/components/DrawerMenu';
+import { chatService } from '@/services/chat';
+import { messagingEvents } from '@/lib/messagingEvents';
 
 export default function CreatorLayout() {
   const { user, logout } = useAuth();
   const C = useAppColors();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [badgeCount, setBadgeCount] = useState(0);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    function fetchBadge() {
+      chatService.getBadgeCount().then((r) => setBadgeCount(r.count)).catch(() => null);
+    }
+    fetchBadge();
+    pollRef.current = setInterval(fetchBadge, 30000);
+    const unsub = messagingEvents.subscribe(fetchBadge);
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+      unsub();
+    };
+  }, []);
 
   return (
     <DrawerContext.Provider value={{ openDrawer: () => setDrawerOpen(true) }}>
@@ -54,11 +71,18 @@ export default function CreatorLayout() {
             options={{
               title: 'Messages',
               tabBarIcon: ({ color }) => (
-                <SymbolView
-                  name={{ ios: 'message.fill', android: 'chat', web: 'chat' }}
-                  tintColor={color}
-                  size={22}
-                />
+                <View>
+                  <SymbolView
+                    name={{ ios: 'message.fill', android: 'chat', web: 'chat' }}
+                    tintColor={color}
+                    size={22}
+                  />
+                  {badgeCount > 0 && (
+                    <View style={styles.badge}>
+                      <Text style={styles.badgeText}>{badgeCount > 99 ? '99+' : badgeCount}</Text>
+                    </View>
+                  )}
+                </View>
               ),
             }}
           />
@@ -78,6 +102,8 @@ export default function CreatorLayout() {
           <Tabs.Screen name="profile" options={{ href: null, title: 'Profile' }} />
           <Tabs.Screen name="settings" options={{ href: null, title: 'Settings' }} />
           <Tabs.Screen name="edit-profile" options={{ href: null, title: 'Edit Profile' }} />
+          <Tabs.Screen name="featured-campaigns" options={{ href: null }} />
+          <Tabs.Screen name="edit-categories" options={{ href: null }} />
         </Tabs>
 
         <DrawerMenu
@@ -107,4 +133,17 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: Platform.OS === 'ios' ? 0 : 4,
   },
+  badge: {
+    position: 'absolute',
+    top: -4,
+    right: -8,
+    backgroundColor: '#EF4444',
+    borderRadius: 8,
+    minWidth: 16,
+    height: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 3,
+  },
+  badgeText: { fontSize: 9, fontWeight: '800', color: '#fff' },
 });

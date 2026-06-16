@@ -82,6 +82,7 @@ export class CreatorRepository {
       where: { id },
       select: {
         id: true,
+        userId: true,
         fullName: true,
         username: true,
         bio: true,
