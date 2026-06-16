@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
 import {
   Alert,
@@ -576,8 +577,8 @@ export default function CreateCampaignScreen() {
 
       {/* Header */}
       <View style={[s.header, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
-        <Pressable onPress={handleBack} style={s.backBtn}>
-          <Text style={[s.backIcon, { color: C.text }]}>{step > 1 ? '‹' : '✕'}</Text>
+        <Pressable onPress={handleBack} style={[s.backBtn, { backgroundColor: C.primaryLight }]}>
+          <Ionicons name={step > 1 ? 'chevron-back' : 'close'} size={22} color={C.brinjal1} />
         </Pressable>
         <View style={s.headerCenter}>
           <Text style={[s.headerTitle, { color: C.text }]}>Create Campaign</Text>
@@ -904,8 +905,7 @@ const s = StyleSheet.create({
   flex:      { flex: 1 },
 
   header:       { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1 },
-  backBtn:      { width: 40, height: 40, justifyContent: 'center', alignItems: 'flex-start' },
-  backIcon:     { fontSize: 28, lineHeight: 32, fontWeight: '300' },
+  backBtn:      { width: 38, height: 38, borderRadius: 19, justifyContent: 'center', alignItems: 'center' },
   headerCenter: { flex: 1, alignItems: 'center' },
   headerTitle:  { fontSize: 16, fontWeight: '800' },
   headerSub:    { fontSize: 11, marginTop: 1 },

@@ -1,8 +1,10 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { BackButton } from '@/components/BackButton';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Image,
   Linking,
   Pressable,
@@ -14,9 +16,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { EmptyState } from '@/components/EmptyState';
 import { useAppColors } from '@/context/ThemeContext';
-import { useFavoriteBusinesses } from '@/hooks/useFavoriteBusinesses';
+import { useAuth } from '@/context/AuthContext';
 import { businessService, type BusinessDetail, type BusinessActiveCampaign } from '@/services/business';
 import { campaignService } from '@/services/campaign';
+import { request } from '@/lib/api';
 
 const PLATFORM_EMOJI: Record<string, string> = {
   Instagram: '📸', YouTube: '▶️', TikTok: '🎵',
@@ -129,11 +132,12 @@ function CampaignCard({ campaign, isApplied }: { campaign: BusinessActiveCampaig
 export default function BusinessDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const C = useAppColors();
-  const { isFavorited, toggle } = useFavoriteBusinesses();
+  const { user } = useAuth();
   const [business, setBusiness] = useState<BusinessDetail | null>(null);
   const [appliedCampaignIds, setAppliedCampaignIds] = useState<Set<string>>(new Set());
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState('');
+  const [messagingBusy, setMessagingBusy] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -152,11 +156,7 @@ export default function BusinessDetailScreen() {
 
   const NavBar = ({ title }: { title?: string }) => (
     <View style={[styles.navBar, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
-      <Pressable
-        onPress={() => router.canGoBack() ? router.back() : router.push('/(creator)/explore-businesses' as never)}
-        style={styles.navBackBtn}>
-        <Ionicons name="chevron-back" size={26} color={C.brinjal1} />
-      </Pressable>
+      <BackButton fallback="/(creator)/explore-businesses" />
       {title ? <Text style={[styles.navTitle, { color: C.text }]} numberOfLines={1}>{title}</Text> : <View style={{ flex: 1 }} />}
       <View style={{ width: 40 }} />
     </View>
@@ -180,26 +180,41 @@ export default function BusinessDetailScreen() {
     );
   }
 
-  const favorited = isFavorited(business.id);
   const joinedYear = new Date(business.createdAt).getFullYear();
+
+  async function handleMessage() {
+    if (!business.allowDirectMessages) return;
+    setMessagingBusy(true);
+    try {
+      const res = await request<{ id: string }>('POST', '/api/messaging/conversations', {
+        otherUserId: business.userId,
+        requestMessage: `Hi ${business.businessName}, I'd love to collaborate with you!`,
+      });
+      router.push({ pathname: '/(creator)/messages/[id]', params: { id: res.data.id } } as never);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Could not start conversation';
+      Alert.alert('Error', msg);
+    } finally {
+      setMessagingBusy(false);
+    }
+  }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
       {/* Floating nav bar */}
       <View style={[styles.navBar, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
-        <Pressable
-          onPress={() => router.canGoBack() ? router.back() : router.push('/(creator)/explore-businesses' as never)}
-          style={styles.navBackBtn}>
-          <Ionicons name="chevron-back" size={26} color={C.brinjal1} />
-        </Pressable>
+        <BackButton fallback="/(creator)/explore-businesses" />
         <Text style={[styles.navTitle, { color: C.text }]} numberOfLines={1}>{business.businessName}</Text>
-        <Pressable style={styles.navFavBtn} onPress={() => toggle(business.id)}>
-          <Ionicons
-            name={favorited ? 'heart' : 'heart-outline'}
-            size={22}
-            color={favorited ? '#EF4444' : C.textSecondary}
-          />
-        </Pressable>
+        <View style={styles.navActions}>
+          {business.allowDirectMessages && (
+            <Pressable
+              style={[styles.navActionBtn, { backgroundColor: C.primaryLight, opacity: messagingBusy ? 0.5 : 1 }]}
+              onPress={handleMessage}
+              disabled={messagingBusy}>
+              <Ionicons name="chatbubble-outline" size={18} color={C.brinjal1} />
+            </Pressable>
+          )}
+        </View>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 60 }}>
@@ -256,8 +271,8 @@ export default function BusinessDetailScreen() {
             </View>
           ) : null}
 
-          {/* Website */}
-          {business.website ? (
+          {/* Website — hidden when business has hideContactDetails on */}
+          {business.website && !business.hideContactDetails ? (
             <Pressable
               style={[styles.websiteCard, { backgroundColor: C.surface, borderColor: C.border }]}
               onPress={() => Linking.openURL(business.website!)}>
@@ -333,9 +348,9 @@ const styles = StyleSheet.create({
   container:             { flex: 1 },
   center:                { flex: 1, alignItems: 'center', justifyContent: 'center' },
   navBar:                { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 8, borderBottomWidth: 1 },
-  navBackBtn:            { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
   navTitle:              { flex: 1, fontSize: 15, fontWeight: '700', textAlign: 'center', marginHorizontal: 4 },
-  navFavBtn:             { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
+  navActions:            { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  navActionBtn:          { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
 
   hero:                  { paddingHorizontal: 20, paddingTop: 28, paddingBottom: 32 },
   heroInner:             { flexDirection: 'row', alignItems: 'flex-start', gap: 16 },

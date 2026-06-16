@@ -1,5 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
+import { BackButton } from '@/components/BackButton';
 import {
   ActivityIndicator,
   Linking,
@@ -82,14 +83,21 @@ export default function CreatorDetailScreen() {
 
   useEffect(() => {
     if (!id) return;
+    // Reset all per-creator state before loading the new creator
+    setProfile(null);
+    setError('');
+    setConvId(null);
+    setConvStatus(null);
+    setShowModal(false);
+    setRequestMsg('');
     setLoading(true);
-    Promise.all([
-      creatorService.getCreatorPublicProfile(id),
-      chatService.checkConversation(id),
-    ])
-      .then(([prof, conv]) => {
+
+    creatorService.getCreatorPublicProfile(id)
+      .then((prof) => {
         setProfile(prof);
-        if (conv) { setConvId(conv.id); setConvStatus(conv.status); }
+        return chatService.checkConversation(id).then((conv) => {
+          if (conv) { setConvId(conv.id); setConvStatus(conv.status); }
+        }).catch(() => {});
       })
       .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load creator'))
       .finally(() => setLoading(false));
@@ -113,7 +121,7 @@ export default function CreatorDetailScreen() {
     if (!convId || !profile) return;
     router.push({
       pathname: '/(business)/messages/[id]',
-      params: { id: convId, name: profile.fullName, status: convStatus ?? 'ACCEPTED' },
+      params: { id: convId, name: profile.fullName ?? profile.username ?? 'Creator', status: convStatus ?? 'ACCEPTED' },
     });
   }
 
@@ -121,9 +129,7 @@ export default function CreatorDetailScreen() {
     return (
       <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
         <View style={s.topBar}>
-          <Pressable onPress={() => router.back()} style={s.backBtn}>
-            <Text style={[s.backArrow, { color: C.text }]}>‹</Text>
-          </Pressable>
+          <BackButton fallback="/(business)/explore-creators" />
         </View>
         <View style={s.centered}>
           <ActivityIndicator size="large" color={C.brinjal1} />
@@ -136,9 +142,7 @@ export default function CreatorDetailScreen() {
     return (
       <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
         <View style={s.topBar}>
-          <Pressable onPress={() => router.back()} style={s.backBtn}>
-            <Text style={[s.backArrow, { color: C.text }]}>‹</Text>
-          </Pressable>
+          <BackButton fallback="/(business)/explore-creators" />
         </View>
         <View style={s.centered}>
           <Text style={s.errorEmoji}>😕</Text>
@@ -179,9 +183,7 @@ export default function CreatorDetailScreen() {
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
       {/* Top bar */}
       <View style={s.topBar}>
-        <Pressable onPress={() => router.back()} style={s.backBtn}>
-          <Text style={[s.backArrow, { color: C.text }]}>‹</Text>
-        </Pressable>
+        <BackButton fallback="/(business)/explore-creators" />
         <Text style={[s.topTitle, { color: C.text }]}>Creator Profile</Text>
         <View style={{ width: 40 }} />
       </View>
@@ -380,8 +382,6 @@ const s = StyleSheet.create({
   centered:  { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, padding: 32 },
 
   topBar:    { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12 },
-  backBtn:   { width: 40, padding: 4 },
-  backArrow: { fontSize: 32, lineHeight: 36, fontWeight: '300' },
   topTitle:  { flex: 1, fontSize: 17, fontWeight: '800', textAlign: 'center' },
 
   scroll: { paddingBottom: 16, gap: 12 },

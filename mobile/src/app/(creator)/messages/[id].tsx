@@ -1,5 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { messagingEvents } from '@/lib/messagingEvents';
+import { BackButton } from '@/components/BackButton';
 import { useEffect, useRef, useState } from 'react';
 import {
   FlatList, KeyboardAvoidingView, Platform, Pressable,
@@ -55,15 +56,22 @@ export default function CreatorChatRoomScreen() {
   }
 
   useEffect(() => {
+    if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+    setMessages([]);
+
+    const convStatus = (initStatus as 'PENDING' | 'ACCEPTED' | 'DECLINED') ?? 'ACCEPTED';
+    setStatus(convStatus);
+
     chatService.getMessages(id).then((msgs) => {
       setMessages(msgs);
       setTimeout(() => listRef.current?.scrollToEnd({ animated: false }), 50);
     });
-    if (status === 'ACCEPTED') {
+
+    if (convStatus === 'ACCEPTED') {
       chatService.markSeen(id).then(() => messagingEvents.refresh()).catch(() => null);
       startPolling();
     }
-    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+    return () => { if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; } };
   }, [id]);
 
   async function handleRespond(action: 'accept' | 'decline') {
@@ -102,9 +110,7 @@ export default function CreatorChatRoomScreen() {
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
       {/* Header */}
       <View style={[s.header, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
-        <Pressable onPress={() => router.back()} style={s.backBtn}>
-          <Text style={[s.backTxt, { color: C.brinjal1 }]}>‹</Text>
-        </Pressable>
+        <BackButton fallback="/(creator)/messages" />
         <View style={s.headerInfo}>
           <Text style={[s.headerName, { color: C.text }]}>{name ?? 'Chat'}</Text>
           {status === 'PENDING' && (
@@ -190,8 +196,6 @@ const s = StyleSheet.create({
   flex:      { flex: 1 },
 
   header:     { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, gap: 12 },
-  backBtn:    { padding: 4 },
-  backTxt:    { fontSize: 28, lineHeight: 30 },
   headerInfo: { flex: 1, gap: 2 },
   headerName: { fontSize: 16, fontWeight: '700' },
   headerSub:  { fontSize: 12 },

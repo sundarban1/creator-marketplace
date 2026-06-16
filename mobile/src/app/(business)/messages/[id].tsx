@@ -1,5 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { messagingEvents } from '@/lib/messagingEvents';
+import { BackButton } from '@/components/BackButton';
 import { useEffect, useRef, useState } from 'react';
 import {
   FlatList, KeyboardAvoidingView, Platform, Pressable,
@@ -31,35 +32,46 @@ function MessageBubble({ msg, isSent }: { msg: Message; isSent: boolean }) {
 }
 
 export default function BusinessChatRoomScreen() {
-  const { id, name, status: initStatus } = useLocalSearchParams<{ id: string; name?: string; status?: string }>();
+  const { id, name, status: urlStatus } = useLocalSearchParams<{ id: string; name?: string; status?: string }>();
   const { user } = useAuth();
   const { t }    = useLanguage();
   const C        = useAppColors();
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [status, setStatus]     = useState<'PENDING' | 'ACCEPTED' | 'DECLINED'>(
-    (initStatus as any) ?? 'ACCEPTED',
+    (urlStatus as 'PENDING' | 'ACCEPTED' | 'DECLINED') ?? 'ACCEPTED',
   );
   const [text, setText]     = useState('');
   const [sending, setSending] = useState(false);
-  const listRef   = useRef<FlatList>(null);
-  const isSending = useRef(false);
-  const pollRef   = useRef<ReturnType<typeof setInterval> | null>(null);
+  const listRef    = useRef<FlatList>(null);
+  const isSending  = useRef(false);
+  const pollRef    = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Reset everything when conversation changes (id is unique per conv via getId in layout)
   useEffect(() => {
+    if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+    setMessages([]);
+    setText('');
+
+    const convStatus = (urlStatus as 'PENDING' | 'ACCEPTED' | 'DECLINED') ?? 'ACCEPTED';
+    setStatus(convStatus);
+
+    if (!id) return;
+
     chatService.getMessages(id).then((msgs) => {
       setMessages(msgs);
       setTimeout(() => listRef.current?.scrollToEnd({ animated: false }), 50);
     });
 
-    if (status === 'ACCEPTED') {
+    if (convStatus === 'ACCEPTED') {
       chatService.markSeen(id).then(() => messagingEvents.refresh()).catch(() => null);
       pollRef.current = setInterval(async () => {
         const msgs = await chatService.getMessages(id).catch(() => null);
         if (msgs) setMessages(msgs);
       }, 4000);
     }
-    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+
+    return () => { if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; } };
   }, [id]);
 
   async function handleSend() {
@@ -84,12 +96,10 @@ export default function BusinessChatRoomScreen() {
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
       {/* Header */}
       <View style={[s.header, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
-        <Pressable onPress={() => router.back()} style={s.backBtn}>
-          <Text style={[s.backTxt, { color: C.brinjal1 }]}>‹</Text>
-        </Pressable>
+        <BackButton fallback="/(business)/messages" />
         <View style={s.headerInfo}>
-          <Text style={[s.headerName, { color: C.text }]}>{name ?? 'Chat'}</Text>
-          {isPending && <Text style={[s.headerSub, { color: '#F59E0B' }]}>Request sent — waiting for acceptance</Text>}
+          <Text style={[s.headerName, { color: C.text }]} numberOfLines={1}>{name ?? 'Chat'}</Text>
+          {isPending  && <Text style={[s.headerSub, { color: '#F59E0B' }]}>Request sent — waiting for acceptance</Text>}
           {isDeclined && <Text style={[s.headerSub, { color: '#EF4444' }]}>Request declined</Text>}
         </View>
       </View>
@@ -98,7 +108,7 @@ export default function BusinessChatRoomScreen() {
       {isPending && (
         <View style={[s.pendingBanner, { backgroundColor: '#FEF3C7' }]}>
           <Text style={[s.pendingTxt, { color: '#92400E' }]}>
-            ⏳  Your message request is waiting for the creator to accept.
+            ⏳  Your message request is waiting for {name ?? 'the creator'} to accept.
           </Text>
         </View>
       )}
@@ -153,8 +163,6 @@ const s = StyleSheet.create({
   flex:      { flex: 1 },
 
   header:     { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, gap: 12 },
-  backBtn:    { padding: 4 },
-  backTxt:    { fontSize: 28, lineHeight: 30 },
   headerInfo: { flex: 1, gap: 2 },
   headerName: { fontSize: 16, fontWeight: '700' },
   headerSub:  { fontSize: 12 },
@@ -171,9 +179,9 @@ const s = StyleSheet.create({
   bubbleTime: { fontSize: 11, paddingHorizontal: 4 },
   empty:      { textAlign: 'center', marginTop: 40, fontSize: 14 },
 
-  inputBar:       { flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: 16, paddingVertical: 12, borderTopWidth: 1, gap: 10 },
-  input:          { flex: 1, minHeight: 40, maxHeight: 120, borderWidth: 1.5, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 10, fontSize: 15 },
-  sendBtn:        { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
-  sendBtnDisabled:{ opacity: 0.4 },
-  sendTxt:        { color: '#fff', fontSize: 18, fontWeight: '700' },
+  inputBar:        { flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: 16, paddingVertical: 12, borderTopWidth: 1, gap: 10 },
+  input:           { flex: 1, minHeight: 40, maxHeight: 120, borderWidth: 1.5, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 10, fontSize: 15 },
+  sendBtn:         { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
+  sendBtnDisabled: { opacity: 0.4 },
+  sendTxt:         { color: '#fff', fontSize: 18, fontWeight: '700' },
 });

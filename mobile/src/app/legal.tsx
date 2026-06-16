@@ -1,5 +1,6 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { BackButton } from '@/components/BackButton';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -50,9 +51,7 @@ export default function LegalScreen() {
 
       {/* Header */}
       <View style={[styles.header, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
-        <Pressable style={styles.backBtn} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={22} color={C.brinjal1} />
-        </Pressable>
+        <BackButton />
         <View style={styles.headerCenter}>
           <Ionicons name={meta.icon} size={18} color={C.brinjal1} />
           <Text style={[styles.headerTitle, { color: C.text }]}>{meta.title}</Text>
@@ -128,7 +127,6 @@ const styles = StyleSheet.create({
   centered:{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 14, paddingHorizontal: 32 },
 
   header:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1 },
-  backBtn:      { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
   headerCenter: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   headerTitle:  { fontSize: 17, fontWeight: '700' },
 

@@ -2,6 +2,8 @@ import { AppError } from '../../middleware/error';
 import { BusinessRepository } from '../business/business.repository';
 import { CreatorRepository } from '../creator/creator.repository';
 import { CampaignRepository } from './campaign.repository';
+import { FavoriteRepository } from '../creator/favorite.repository';
+import { notificationService } from '../notifications/notification.service';
 import type {
   CreateCampaignInput,
   UpdateCampaignInput,
@@ -10,14 +12,16 @@ import type {
 } from './campaign.schema';
 
 export class CampaignService {
-  private repo: CampaignRepository;
+  private repo:         CampaignRepository;
   private businessRepo: BusinessRepository;
-  private creatorRepo: CreatorRepository;
+  private creatorRepo:  CreatorRepository;
+  private favoriteRepo: FavoriteRepository;
 
   constructor() {
-    this.repo = new CampaignRepository();
+    this.repo         = new CampaignRepository();
     this.businessRepo = new BusinessRepository();
-    this.creatorRepo = new CreatorRepository();
+    this.creatorRepo  = new CreatorRepository();
+    this.favoriteRepo = new FavoriteRepository();
   }
 
   async create(userId: string, input: CreateCampaignInput) {
@@ -31,6 +35,20 @@ export class CampaignService {
       ...input,
       deadline: new Date(input.deadline),
     });
+
+    // Notify creators who have favorited this business
+    this.favoriteRepo.getCreatorUserIdsForBusiness(business.id).then((userIds) => {
+      if (userIds.length === 0) return;
+      const notifications = userIds.map((uid) => ({
+        userId:  uid,
+        type:    'new_campaign',
+        title:   `${business.businessName} posted a new campaign`,
+        body:    `${campaign.title} — ${campaign.category}`,
+        refId:   campaign.id,
+        refType: 'campaign',
+      }));
+      return notificationService.createMany(notifications);
+    }).catch(() => {});
 
     return campaign;
   }
@@ -163,6 +181,15 @@ export class CampaignService {
       Math.min(limit, 50)
     );
 
+    return { applications, total, page, limit };
+  }
+
+  async getBusinessApplications(userId: string, page: number, limit: number) {
+    const business = await this.businessRepo.findByUserId(userId);
+    if (!business) throw new AppError('Business profile not found', 404);
+    const { applications, total } = await this.repo.findApplicationsByBusinessId(
+      business.id, page, Math.min(limit, 100)
+    );
     return { applications, total, page, limit };
   }
 

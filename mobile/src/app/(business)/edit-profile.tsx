@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { BackButton } from '@/components/BackButton';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -89,13 +89,9 @@ export default function EditBusinessProfileScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
       {/* Top bar */}
       <View style={[styles.topBar, { backgroundColor: C.background, borderBottomColor: C.border }]}>
-        <Pressable
-          onPress={() => router.back()}
-          style={[styles.backBtn, { backgroundColor: C.surface, borderColor: C.border }]}>
-          <Ionicons name="chevron-back" size={20} color={C.brinjal1} />
-        </Pressable>
+        <BackButton fallback="/(business)/profile" />
         <Text style={[styles.topTitle, { color: C.text }]}>Edit Business Profile</Text>
-        <View style={{ width: 36 }} />
+        <View style={{ width: 38 }} />
       </View>
 
       <ScrollView
@@ -217,8 +213,6 @@ const styles = StyleSheet.create({
   container:     { flex: 1 },
   center:        { flex: 1, justifyContent: 'center', alignItems: 'center' },
   topBar:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1 },
-  backBtn:       { width: 36, height: 36, borderRadius: 18, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center' },
-  backArrow:     { fontSize: 26, lineHeight: 30 },
   topTitle:      { fontSize: 16, fontWeight: '700' },
   content:       { paddingBottom: 24 },
   sectionHeader: { fontSize: 11, fontWeight: '700', letterSpacing: 0.8, marginTop: 20, marginBottom: 6, marginHorizontal: 20 },

@@ -32,6 +32,7 @@ export interface ApiEarningsSummary {
 
 export interface ApiCreatorPublicProfile {
   id: string;
+  userId: string;
   fullName: string | null;
   username: string | null;
   bio: string | null;

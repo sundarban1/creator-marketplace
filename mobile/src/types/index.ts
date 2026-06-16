@@ -80,13 +80,15 @@ export type AppNotification = {
     | 'campaign_deadline'
     | 'campaign_closed'
     | 'new_campaign'
-    | 'payment_released';
+    | 'payment_released'
+    | 'message_request_accepted'
+    | 'business_favorited';
   title: string;
   body: string;
   timestamp: string;
   isRead: boolean;
-  actionRoute?: string;
-  actionParams?: object;
+  refId?: string | null;
+  refType?: string | null;
   actorName?: string;
   actorAvatar?: string;
 };

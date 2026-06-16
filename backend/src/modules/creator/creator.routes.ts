@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { CreatorController } from './creator.controller';
 import { BusinessController } from '../business/business.controller';
+import { FavoriteController } from './favorite.controller';
 import { authenticate, authorize } from '../../middleware/auth';
 import { validate } from '../../middleware/validate';
 import {
@@ -16,6 +17,7 @@ import {
 const router = Router();
 const ctrl = new CreatorController();
 const businessCtrl = new BusinessController();
+const favoriteCtrl = new FavoriteController();
 
 // All creator routes require authentication and CREATOR role
 router.use(authenticate, authorize('CREATOR'));
@@ -233,7 +235,9 @@ router.put('/payment-methods',             validate(updatePaymentMethodsSchema),
 router.put('/campaign-preferences',        validate(updateCampaignPrefsSchema),   ctrl.updateCampaignPrefs.bind(ctrl));
 
 // Explore businesses (creator browsing businesses)
-router.get('/businesses',    businessCtrl.listBusinesses.bind(businessCtrl));
-router.get('/businesses/:id', businessCtrl.getBusinessPublic.bind(businessCtrl));
+router.get('/businesses',                                 businessCtrl.listBusinesses.bind(businessCtrl));
+router.get('/businesses/favorites',                       favoriteCtrl.listFavorites.bind(favoriteCtrl));
+router.post('/businesses/:businessId/favorite',           favoriteCtrl.toggle.bind(favoriteCtrl));
+router.get('/businesses/:id',                             businessCtrl.getBusinessPublic.bind(businessCtrl));
 
 export default router;

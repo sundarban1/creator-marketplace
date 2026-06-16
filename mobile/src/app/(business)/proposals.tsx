@@ -1,108 +1,89 @@
-import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { router } from 'expo-router';
+import {
+  ActivityIndicator,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { COLORS } from '@/utilities/constants';
+import { useAppColors } from '@/context/ThemeContext';
+import { campaignService } from '@/services/campaign';
 
-const MOCK_PROPOSALS = [
-  {
-    id: '1',
-    creatorName: 'Sarah Johnson',
-    creatorHandle: '@sarahjcreates',
-    followers: '28.4K',
-    platform: 'Instagram',
-    campaignTitle: 'Winter Menu Promotion',
-    proposedRate: 'NZ$200',
-    status: 'pending',
-    submittedAt: '2 hours ago',
-    avatar: 'SJ',
-    avatarBg: '#EDE9FE',
-    avatarColor: COLORS.brinjal1,
-  },
-  {
-    id: '2',
-    creatorName: 'Mike Chen',
-    creatorHandle: '@mikechen.tv',
-    followers: '52.1K',
-    platform: 'TikTok',
-    campaignTitle: 'New Collection Launch',
-    proposedRate: 'NZ$380',
-    status: 'pending',
-    submittedAt: '5 hours ago',
-    avatar: 'MC',
-    avatarBg: '#DCFCE7',
-    avatarColor: COLORS.active,
-  },
-  {
-    id: '3',
-    creatorName: 'Priya Patel',
-    creatorHandle: '@priyalifestyle',
-    followers: '14.9K',
-    platform: 'Instagram',
-    campaignTitle: 'Winter Menu Promotion',
-    proposedRate: 'NZ$175',
-    status: 'pending',
-    submittedAt: '1 day ago',
-    avatar: 'PP',
-    avatarBg: '#FEE2E2',
-    avatarColor: COLORS.error,
-  },
-  {
-    id: '4',
-    creatorName: 'James Liu',
-    creatorHandle: '@jamesliu_nz',
-    followers: '63.2K',
-    platform: 'TikTok',
-    campaignTitle: 'New Collection Launch',
-    proposedRate: 'NZ$450',
-    status: 'accepted',
-    submittedAt: '2 days ago',
-    avatar: 'JL',
-    avatarBg: '#FFF7ED',
-    avatarColor: COLORS.draft,
-  },
-  {
-    id: '5',
-    creatorName: 'Emma Wilson',
-    creatorHandle: '@emmawilson',
-    followers: '9.8K',
-    platform: 'Instagram',
-    campaignTitle: 'Skincare Product Review',
-    proposedRate: 'NZ$120',
-    status: 'rejected',
-    submittedAt: '3 days ago',
-    avatar: 'EW',
-    avatarBg: '#F3F4F6',
-    avatarColor: COLORS.textSecondary,
-  },
-];
-
-const FILTERS = ['All', 'Pending', 'Accepted', 'Rejected'];
-
-const STATUS_STYLE = {
-  pending:  { bg: '#FFF7ED', color: COLORS.draft,  label: 'Pending' },
-  accepted: { bg: '#EEF9F3', color: COLORS.active, label: 'Accepted' },
-  rejected: { bg: '#F4F4F4', color: COLORS.closed, label: 'Rejected' },
+type Proposal = {
+  id: string;
+  status: 'pending' | 'accepted' | 'rejected';
+  proposedRate: string;
+  createdAt: string;
+  campaign: { id: string; title: string; platform: string };
+  creator: { fullName: string; avatarUrl: string | null; location: string | null };
 };
 
-export default function ProposalsScreen() {
-  const [activeFilter, setActiveFilter] = useState('All');
+const FILTERS = ['All', 'Pending', 'Accepted', 'Rejected'] as const;
 
-  const shown = MOCK_PROPOSALS.filter(
-    (p) => activeFilter === 'All' || p.status === activeFilter.toLowerCase(),
+const STATUS_CFG = {
+  pending:  { bg: '#FFF7ED', color: '#D97706', label: 'Pending' },
+  accepted: { bg: '#EEF9F3', color: '#16A34A', label: 'Accepted' },
+  rejected: { bg: '#F3F4F6', color: '#6B7280', label: 'Rejected' },
+} as const;
+
+function initials(name: string) {
+  return name.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+}
+
+function timeAgo(iso: string) {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return `${days}d ago`;
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+export default function ProposalsScreen() {
+  const C = useAppColors();
+  const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [activeFilter, setActiveFilter] = useState<typeof FILTERS[number]>('All');
+
+  async function loadProposals(showRefresh = false) {
+    if (showRefresh) setRefreshing(true);
+    else setLoading(true);
+    try {
+      const { proposals: data } = await campaignService.getBusinessProposals({ limit: 100 });
+      setProposals(data);
+    } catch {
+      // silently fail — empty state handles it
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }
+
+  useEffect(() => { loadProposals(); }, []);
+
+  const onRefresh = useCallback(() => loadProposals(true), []);
+
+  const shown = proposals.filter(
+    (p) => activeFilter === 'All' || p.status === activeFilter.toLowerCase()
   );
 
-  const pendingCount = MOCK_PROPOSALS.filter((p) => p.status === 'pending').length;
+  const pendingCount = proposals.filter((p) => p.status === 'pending').length;
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <View>
-          <Text style={styles.pageTitle}>Proposals</Text>
-          {pendingCount > 0 && (
-            <Text style={styles.pendingHint}>{pendingCount} pending review</Text>
-          )}
-        </View>
+        <Text style={[styles.pageTitle, { color: C.text }]}>Proposals</Text>
+        {pendingCount > 0 && (
+          <Text style={[styles.pendingHint, { color: '#D97706' }]}>{pendingCount} pending review</Text>
+        )}
       </View>
 
       {/* Filter chips */}
@@ -110,9 +91,17 @@ export default function ProposalsScreen() {
         {FILTERS.map((f) => (
           <Pressable
             key={f}
-            style={[styles.filterChip, activeFilter === f && styles.filterChipActive]}
+            style={[
+              styles.filterChip,
+              { borderColor: C.border, backgroundColor: C.surface },
+              activeFilter === f && { backgroundColor: C.brinjal1, borderColor: C.brinjal1 },
+            ]}
             onPress={() => setActiveFilter(f)}>
-            <Text style={[styles.filterChipText, activeFilter === f && styles.filterChipTextActive]}>
+            <Text style={[
+              styles.filterChipText,
+              { color: C.textSecondary },
+              activeFilter === f && { color: '#fff', fontWeight: '700' },
+            ]}>
               {f}
             </Text>
           </Pressable>
@@ -120,110 +109,111 @@ export default function ProposalsScreen() {
       </View>
 
       {/* List */}
-      <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
-        {shown.map((p) => {
-          const st = STATUS_STYLE[p.status] ?? STATUS_STYLE.pending;
-          return (
-            <Pressable
-              key={p.id}
-              style={({ pressed }) => [styles.card, pressed && { opacity: 0.92 }]}>
-              {/* Avatar */}
-              <View style={[styles.avatar, { backgroundColor: p.avatarBg }]}>
-                <Text style={[styles.avatarText, { color: p.avatarColor }]}>{p.avatar}</Text>
-              </View>
-
-              {/* Info */}
-              <View style={styles.body}>
-                <View style={styles.topRow}>
-                  <Text style={styles.creatorName}>{p.creatorName}</Text>
-                  <View style={[styles.badge, { backgroundColor: st.bg }]}>
-                    <Text style={[styles.badgeText, { color: st.color }]}>{st.label}</Text>
+      {loading ? (
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={C.brinjal1} />
+        </View>
+      ) : (
+        <ScrollView
+          contentContainerStyle={[styles.list, shown.length === 0 && styles.listEmpty]}
+          showsVerticalScrollIndicator={false}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brinjal1} />}>
+          {shown.length === 0 ? (
+            <View style={styles.empty}>
+              <Text style={styles.emptyIcon}>📭</Text>
+              <Text style={[styles.emptyTitle, { color: C.text }]}>
+                {activeFilter === 'All' ? 'No proposals yet' : `No ${activeFilter.toLowerCase()} proposals`}
+              </Text>
+              <Text style={[styles.emptySub, { color: C.textSecondary }]}>
+                {activeFilter === 'All'
+                  ? 'Proposals will appear here when creators apply to your campaigns.'
+                  : 'Try a different filter.'}
+              </Text>
+            </View>
+          ) : (
+            shown.map((p) => {
+              const st = STATUS_CFG[p.status];
+              const abbr = initials(p.creator.fullName);
+              return (
+                <Pressable
+                  key={p.id}
+                  style={({ pressed }) => [styles.card, { backgroundColor: C.surface }, pressed && { opacity: 0.92 }]}
+                  onPress={() => router.push({ pathname: '/campaign-detail', params: { campaignId: p.campaign.id } })}>
+                  <View style={[styles.avatar, { backgroundColor: C.primaryLight }]}>
+                    <Text style={[styles.avatarText, { color: C.brinjal1 }]}>{abbr}</Text>
                   </View>
-                </View>
-                <Text style={styles.handle}>{p.creatorHandle} · {p.followers} followers</Text>
-                <Text style={styles.campaign} numberOfLines={1}>📋 {p.campaignTitle}</Text>
-                <View style={styles.bottomRow}>
-                  <Text style={styles.rate}>{p.proposedRate}</Text>
-                  <Text style={styles.platform}>{p.platform}</Text>
-                  <Text style={styles.time}>{p.submittedAt}</Text>
-                </View>
-              </View>
-            </Pressable>
-          );
-        })}
 
-        {shown.length === 0 && (
-          <View style={styles.empty}>
-            <Text style={styles.emptyIcon}>📭</Text>
-            <Text style={styles.emptyText}>No proposals here</Text>
-          </View>
-        )}
-      </ScrollView>
+                  <View style={styles.body}>
+                    <View style={styles.topRow}>
+                      <Text style={[styles.creatorName, { color: C.text }]}>{p.creator.fullName}</Text>
+                      <View style={[styles.badge, { backgroundColor: st.bg }]}>
+                        <Text style={[styles.badgeText, { color: st.color }]}>{st.label}</Text>
+                      </View>
+                    </View>
+
+                    {p.creator.location ? (
+                      <Text style={[styles.sub, { color: C.textSecondary }]}>📍 {p.creator.location}</Text>
+                    ) : null}
+
+                    <Text style={[styles.campaign, { color: C.textSecondary }]} numberOfLines={1}>
+                      📋 {p.campaign.title}
+                    </Text>
+
+                    <View style={styles.bottomRow}>
+                      <Text style={[styles.rate, { color: C.brinjal1 }]}>{p.proposedRate}</Text>
+                      <View style={[styles.platformPill, { backgroundColor: C.primaryLight }]}>
+                        <Text style={[styles.platformText, { color: C.brinjal1 }]}>{p.campaign.platform}</Text>
+                      </View>
+                      <Text style={[styles.time, { color: C.textSecondary }]}>{timeAgo(p.createdAt)}</Text>
+                    </View>
+                  </View>
+                </Pressable>
+              );
+            })
+          )}
+        </ScrollView>
+      )}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 12,
-  },
-  pageTitle: { fontSize: 22, fontWeight: '800', color: COLORS.text },
-  pendingHint: { fontSize: 12, color: COLORS.draft, fontWeight: '500', marginTop: 2 },
-  filterRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: 20,
-    gap: 8,
-    paddingBottom: 16,
-  },
-  filterChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: COLORS.border,
-    backgroundColor: COLORS.surface,
-  },
-  filterChipActive: { backgroundColor: COLORS.brinjal1, borderColor: COLORS.brinjal1 },
-  filterChipText: { fontSize: 12, fontWeight: '500', color: COLORS.textSecondary },
-  filterChipTextActive: { color: '#fff', fontWeight: '700' },
+  container: { flex: 1 },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+
+  header: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 4 },
+  pageTitle: { fontSize: 22, fontWeight: '800' },
+  pendingHint: { fontSize: 12, fontWeight: '500', marginTop: 2, marginBottom: 8 },
+
+  filterRow: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 20, gap: 8, paddingVertical: 12 },
+  filterChip: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 20, borderWidth: 1.5 },
+  filterChipText: { fontSize: 12, fontWeight: '500' },
+
   list: { paddingHorizontal: 20, gap: 12, paddingBottom: 40 },
+  listEmpty: { flexGrow: 1 },
+
+  empty: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 8, paddingHorizontal: 32, paddingTop: 60 },
+  emptyIcon: { fontSize: 48, marginBottom: 4 },
+  emptyTitle: { fontSize: 17, fontWeight: '700', textAlign: 'center' },
+  emptySub: { fontSize: 13, textAlign: 'center', lineHeight: 20 },
+
   card: {
-    flexDirection: 'row',
-    backgroundColor: COLORS.surface,
-    borderRadius: 16,
-    padding: 14,
-    gap: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
+    flexDirection: 'row', borderRadius: 16, padding: 14, gap: 12,
+    shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 }, elevation: 3,
   },
-  avatar: {
-    width: 48, height: 48, borderRadius: 24,
-    justifyContent: 'center', alignItems: 'center', flexShrink: 0,
-  },
+  avatar: { width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   avatarText: { fontSize: 15, fontWeight: '800' },
   body: { flex: 1, gap: 3 },
   topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  creatorName: { fontSize: 14, fontWeight: '700', color: COLORS.text },
+  creatorName: { fontSize: 14, fontWeight: '700' },
   badge: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
   badgeText: { fontSize: 11, fontWeight: '700' },
-  handle: { fontSize: 12, color: COLORS.textSecondary },
-  campaign: { fontSize: 12, color: COLORS.textSecondary },
-  bottomRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 2 },
-  rate: { fontSize: 13, fontWeight: '700', color: COLORS.brinjal1 },
-  platform: {
-    fontSize: 11, color: COLORS.brinjal1, fontWeight: '600',
-    backgroundColor: COLORS.primaryLight, borderRadius: 6,
-    paddingHorizontal: 7, paddingVertical: 2,
-  },
-  time: { fontSize: 11, color: COLORS.textSecondary, marginLeft: 'auto' },
-  empty: { alignItems: 'center', paddingTop: 60, gap: 12 },
-  emptyIcon: { fontSize: 48 },
-  emptyText: { fontSize: 15, color: COLORS.textSecondary, fontWeight: '500' },
+  sub: { fontSize: 12 },
+  campaign: { fontSize: 12 },
+  bottomRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2 },
+  rate: { fontSize: 13, fontWeight: '700' },
+  platformPill: { borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 },
+  platformText: { fontSize: 11, fontWeight: '600' },
+  time: { fontSize: 11, marginLeft: 'auto' },
 });

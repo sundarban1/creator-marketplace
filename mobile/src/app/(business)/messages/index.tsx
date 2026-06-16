@@ -1,7 +1,7 @@
 import { router, useFocusEffect } from 'expo-router';
 import { messagingEvents } from '@/lib/messagingEvents';
 import { useEffect, useRef, useState } from 'react';
-import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
 import { useAppColors } from '@/context/ThemeContext';
@@ -65,17 +65,16 @@ export default function BusinessChatListScreen() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading]             = useState(true);
   const [refreshing, setRefreshing]       = useState(false);
+  const [query, setQuery]                 = useState('');
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   async function load(silent = false) {
     if (!silent) setLoading(true);
     try {
-      // Load all non-declined conversations for business
-      const [accepted, pending] = await Promise.all([
-        chatService.getConversations('BUSINESS', 'ACCEPTED'),
-        chatService.getConversations('BUSINESS', 'PENDING'),
-      ]);
-      setConversations([...accepted, ...pending]);
+      const all = await chatService.getConversations('BUSINESS');
+      setConversations(
+        all.sort((a, b) => new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime()),
+      );
     } finally {
       if (!silent) setLoading(false);
       setRefreshing(false);
@@ -92,21 +91,57 @@ export default function BusinessChatListScreen() {
     messagingEvents.refresh();
   });
 
+  const filtered = query.trim()
+    ? conversations.filter((c) =>
+        c.participantName.toLowerCase().includes(query.toLowerCase()),
+      )
+    : conversations;
+
+  const isSearching = query.trim().length > 0;
+
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
       <View style={s.header}>
         <Text style={[s.heading, { color: C.text }]}>Messages</Text>
       </View>
 
+      {/* Search bar */}
+      <View style={[s.searchWrap, { backgroundColor: C.surface, borderColor: C.border }]}>
+        <Text style={[s.searchIcon, { color: C.textSecondary }]}>🔍</Text>
+        <TextInput
+          style={[s.searchInput, { color: C.text }]}
+          value={query}
+          onChangeText={setQuery}
+          placeholder="Search by name…"
+          placeholderTextColor={C.textSecondary}
+          returnKeyType="search"
+          clearButtonMode="while-editing"
+          autoCorrect={false}
+          autoCapitalize="none"
+        />
+        {isSearching && (
+          <Pressable onPress={() => setQuery('')} hitSlop={10}>
+            <Text style={[s.clearBtn, { color: C.textSecondary }]}>✕</Text>
+          </Pressable>
+        )}
+      </View>
+
       <FlatList
-        data={loading ? [] : conversations}
+        data={loading ? [] : filtered}
         keyExtractor={(c) => c.id}
         renderItem={({ item }) => <ConversationRow conv={item} />}
         contentContainerStyle={s.list}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} />}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
         ListEmptyComponent={
-          loading ? null : (
+          loading ? null : isSearching ? (
+            <View style={s.empty}>
+              <Text style={s.emptyEmoji}>🔍</Text>
+              <Text style={[s.emptyTitle, { color: C.text }]}>No results for "{query}"</Text>
+              <Text style={[s.emptyHint, { color: C.textSecondary }]}>Try a different name.</Text>
+            </View>
+          ) : (
             <View style={s.empty}>
               <Text style={s.emptyEmoji}>💬</Text>
               <Text style={[s.emptyTitle, { color: C.text }]}>No conversations yet</Text>
@@ -126,6 +161,11 @@ const s = StyleSheet.create({
   header:    { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 8 },
   heading:   { fontSize: 22, fontWeight: '800' },
   list:      { paddingBottom: 32 },
+
+  searchWrap:  { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginBottom: 8, borderRadius: 12, borderWidth: 1, paddingHorizontal: 12, height: 44, gap: 8 },
+  searchIcon:  { fontSize: 15 },
+  searchInput: { flex: 1, fontSize: 15, paddingVertical: 0 },
+  clearBtn:    { fontSize: 14, fontWeight: '600', paddingHorizontal: 2 },
 
   row:     { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, gap: 14, borderBottomWidth: 1 },
   content: { flex: 1, gap: 3 },

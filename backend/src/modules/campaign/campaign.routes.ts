@@ -222,6 +222,13 @@ router.get(
   ctrl.getMyApplications.bind(ctrl)
 );
 
+router.get(
+  '/applications/business',
+  authenticate,
+  authorize('BUSINESS'),
+  ctrl.getBusinessApplications.bind(ctrl)
+);
+
 /**
  * @swagger
  * /api/campaigns/{id}:

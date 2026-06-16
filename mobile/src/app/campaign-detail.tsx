@@ -1,6 +1,7 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useRef, useState } from 'react';
+import { BackButton } from '@/components/BackButton';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Animated,
@@ -390,13 +391,21 @@ export default function CampaignDetailScreen() {
       .finally(() => setLoading(false));
   }, [campaignId]);
 
+  // Re-check applied status silently when returning from submit-proposal
+  useFocusEffect(
+    useCallback(() => {
+      if (isBusiness || !campaignId) return;
+      campaignService.getMyApplications()
+        .then((apps) => setHasApplied(apps.some((a) => a.campaignId === campaignId)))
+        .catch(() => {});
+    }, [campaignId, isBusiness])
+  );
+
   if (loading) {
     return (
       <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
         <View style={[s.header, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
-          <Pressable style={s.backBtn} onPress={() => router.back()}>
-            <Text style={[s.backIcon, { color: C.brinjal1 }]}>‹</Text>
-          </Pressable>
+          <BackButton />
           <Text style={[s.headerTitle, { color: C.text }]}>Campaign Details</Text>
           <View style={{ width: 40 }} />
         </View>
@@ -428,9 +437,7 @@ export default function CampaignDetailScreen() {
 
       {/* Header */}
       <View style={[s.header, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
-        <Pressable style={s.backBtn} onPress={() => router.back()}>
-          <Text style={[s.backIcon, { color: C.brinjal1 }]}>‹</Text>
-        </Pressable>
+        <BackButton />
         <Text style={[s.headerTitle, { color: C.text }]}>Campaign Details</Text>
         <View style={{ width: 40 }} />
       </View>
@@ -790,8 +797,6 @@ const s = StyleSheet.create({
   goBackBtnTxt: { color: '#fff', fontWeight: '700', fontSize: 14 },
 
   header:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1 },
-  backBtn:     { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
-  backIcon:    { fontSize: 28, lineHeight: 34 },
   headerTitle: { fontSize: 17, fontWeight: '700' },
 
   scroll: { paddingBottom: 20 },

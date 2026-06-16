@@ -26,8 +26,12 @@ export type BusinessActiveCampaign = {
 };
 
 export type BusinessDetail = BusinessListItem & {
-  createdAt: string;
-  campaigns: BusinessActiveCampaign[];
+  createdAt:           string;
+  userId:              string;
+  campaigns:           BusinessActiveCampaign[];
+  showPublicProfile:   boolean;
+  hideContactDetails:  boolean;
+  allowDirectMessages: boolean;
 };
 
 export const businessService = {
@@ -60,5 +64,20 @@ export const businessService = {
   async getBusinessById(id: string) {
     const res = await request<BusinessDetail>('GET', `/api/creator/businesses/${id}`);
     return res.data;
+  },
+
+  async getMyProfile(): Promise<{ showPublicProfile: boolean; hideContactDetails: boolean; allowDirectMessages: boolean }> {
+    const res = await request<{ showPublicProfile: boolean; hideContactDetails: boolean; allowDirectMessages: boolean }>(
+      'GET', '/api/business/profile'
+    );
+    return {
+      showPublicProfile:   res.data.showPublicProfile   ?? true,
+      hideContactDetails:  res.data.hideContactDetails  ?? false,
+      allowDirectMessages: res.data.allowDirectMessages ?? true,
+    };
+  },
+
+  async updatePrivacy(data: { showPublicProfile?: boolean; hideContactDetails?: boolean; allowDirectMessages?: boolean }): Promise<void> {
+    await request('PUT', '/api/business/profile', data);
   },
 };

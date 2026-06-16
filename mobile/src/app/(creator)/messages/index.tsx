@@ -91,7 +91,7 @@ function ChatRow({ conv }: { conv: Conversation }) {
   return (
     <Pressable
       style={({ pressed }) => [s.chatRow, { backgroundColor: pressed ? C.background : C.surface, borderBottomColor: C.border }]}
-      onPress={() => router.push({ pathname: '/(creator)/messages/[id]', params: { id: conv.id, name: conv.participantName } })}>
+      onPress={() => router.push({ pathname: '/(creator)/messages/[id]', params: { id: conv.id, name: conv.participantName, status: conv.status } })}>
       <Avatar name={conv.participantName} C={C} />
       <View style={s.chatContent}>
         <View style={s.chatTop}>

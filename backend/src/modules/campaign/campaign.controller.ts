@@ -121,6 +121,19 @@ export class CampaignController {
     }
   }
 
+  async getBusinessApplications(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 50;
+      const { applications, total } = await campaignService.getBusinessApplications(
+        req.user!.id, page, limit
+      );
+      paginated(res, applications, total, page, limit);
+    } catch (err) {
+      next(err);
+    }
+  }
+
   async getMyApplications(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const page = parseInt(req.query.page as string) || 1;

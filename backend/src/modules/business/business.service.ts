@@ -40,7 +40,7 @@ export class BusinessService {
 
   async getBusinessPublic(id: string) {
     const business = await this.repo.findPublicById(id);
-    if (!business) throw new AppError('Business not found', 404);
+    if (!business || !business.showPublicProfile) throw new AppError('Business not found', 404);
     return business;
   }
 }

@@ -10,7 +10,7 @@ export class BusinessRepository {
     page:       number;
     limit:      number;
   }) {
-    const where: Prisma.BusinessProfileWhereInput = {};
+    const where: Prisma.BusinessProfileWhereInput = { showPublicProfile: true };
 
     if (params.search) {
       where.businessName = { contains: params.search, mode: 'insensitive' };
@@ -55,14 +55,18 @@ export class BusinessRepository {
     return prisma.businessProfile.findUnique({
       where: { id },
       select: {
-        id:           true,
-        businessName: true,
-        description:  true,
-        logoUrl:      true,
-        website:      true,
-        categories:   true,
-        isVerified:   true,
-        createdAt:    true,
+        id:                   true,
+        businessName:         true,
+        description:          true,
+        logoUrl:              true,
+        website:              true,
+        categories:           true,
+        isVerified:           true,
+        createdAt:            true,
+        showPublicProfile:    true,
+        hideContactDetails:   true,
+        allowDirectMessages:  true,
+        userId:               true,
         campaigns: {
           where:   { status: 'ACTIVE' },
           orderBy: { createdAt: 'desc' },
@@ -110,6 +114,9 @@ export class BusinessRepository {
       website: string | null;
       categories: string[];
       panNo: string | null;
+      showPublicProfile: boolean;
+      hideContactDetails: boolean;
+      allowDirectMessages: boolean;
     }>
   ) {
     return prisma.businessProfile.update({

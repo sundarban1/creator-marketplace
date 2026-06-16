@@ -1,5 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { BackButton } from '@/components/BackButton';
 import { creatorService } from '@/services/creator';
 import { API_BASE, request } from '@/lib/api';
 import { RangeSlider } from '@/components/RangeSlider';
@@ -1926,9 +1927,7 @@ export default function CreatorSettingsScreen() {
 
         {/* Top bar */}
         <View style={[styles.topBar, { backgroundColor: C.background, borderBottomColor: C.border }]}>
-          <Pressable style={[styles.backBtn, { backgroundColor: C.surface, borderColor: C.border }]} onPress={handleBack}>
-            <Text style={[styles.backArrow, { color: C.brinjal1 }]}>‹</Text>
-          </Pressable>
+          <BackButton onPress={handleBack} />
           <Text style={[styles.topTitle, { color: C.text }]}>{topTitle}</Text>
           <View style={{ width: 36 }} />
         </View>
@@ -2048,11 +2047,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16, paddingVertical: 10,
     borderBottomWidth: 1,
   },
-  backBtn: {
-    width: 36, height: 36, borderRadius: 18,
-    borderWidth: 1.5, justifyContent: 'center', alignItems: 'center',
-  },
-  backArrow: { fontSize: 26, lineHeight: 30 },
   topTitle: { fontSize: 16, fontWeight: '700' },
 
   sectionHeader: {

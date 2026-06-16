@@ -3,6 +3,7 @@ import { AppError } from '../../middleware/error';
 import { CreatorRepository } from '../creator/creator.repository';
 import { BusinessRepository } from '../business/business.repository';
 import { MessagingRepository } from './messaging.repository';
+import { notificationService } from '../notifications/notification.service';
 import type { StartConversationInput, SendMessageInput } from './messaging.schema';
 
 export class MessagingService {
@@ -62,18 +63,32 @@ export class MessagingService {
   // ── Start / find conversation ──────────────────────────────────────────────
 
   async startConversation(userId: string, role: Role, input: StartConversationInput) {
-    if (role !== 'BUSINESS') throw new AppError('Only businesses can send message requests', 403);
+    if (role === 'BUSINESS') {
+      const business     = await this.resolveBusiness(userId);
+      const otherCreator = await this.creatorRepo.findByUserId(input.otherUserId);
+      if (!otherCreator) throw new AppError('Creator not found', 404);
+      return this.repo.findOrCreateConversation(
+        otherCreator.id,
+        business.id,
+        input.campaignId,
+        input.requestMessage,
+      );
+    }
 
-    const business     = await this.resolveBusiness(userId);
-    const otherCreator = await this.creatorRepo.findByUserId(input.otherUserId);
-    if (!otherCreator) throw new AppError('Creator not found', 404);
+    if (role === 'CREATOR') {
+      const creator      = await this.resolveCreator(userId);
+      const otherBusiness = await this.businessRepo.findByUserId(input.otherUserId);
+      if (!otherBusiness) throw new AppError('Business not found', 404);
+      if (!otherBusiness.allowDirectMessages) throw new AppError('This business does not accept direct messages', 403);
+      return this.repo.findOrCreateConversation(
+        creator.id,
+        otherBusiness.id,
+        input.campaignId,
+        input.requestMessage,
+      );
+    }
 
-    return this.repo.findOrCreateConversation(
-      otherCreator.id,
-      business.id,
-      input.campaignId,
-      input.requestMessage,
-    );
+    throw new AppError('Unauthorized', 403);
   }
 
   // Check if a conversation exists between business (current user) and a creator
@@ -95,6 +110,21 @@ export class MessagingService {
 
     const newStatus: ConversationStatus = action === 'accept' ? 'ACCEPTED' : 'DECLINED';
     await this.repo.updateStatus(conversationId, newStatus);
+
+    if (action === 'accept') {
+      const business = await this.businessRepo.findById(conversation.businessId);
+      if (business) {
+        notificationService.create({
+          userId:  business.userId,
+          type:    'message_request_accepted',
+          title:   `${creator.fullName} accepted your message request`,
+          body:    'You can now start chatting.',
+          refId:   creator.id,
+          refType: 'creator_profile',
+        }).catch(() => {});
+      }
+    }
+
     return { status: newStatus };
   }
 

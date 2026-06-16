@@ -10,14 +10,16 @@ import { notificationService } from '@/services/notifications';
 import type { AppNotification } from '@/types';
 
 const TYPE_ICON: Record<AppNotification['type'], string> = {
-  proposal_accepted: '✅',
-  proposal_rejected: '❌',
-  proposal_received: '📩',
-  new_message: '💬',
-  campaign_deadline: '⏰',
-  campaign_closed: '🔒',
-  new_campaign: '🎯',
-  payment_released: '💸',
+  proposal_accepted:       '✅',
+  proposal_rejected:       '❌',
+  proposal_received:       '📩',
+  new_message:             '💬',
+  campaign_deadline:       '⏰',
+  campaign_closed:         '🔒',
+  new_campaign:            '🎯',
+  payment_released:        '💸',
+  message_request_accepted:'💬',
+  business_favorited:      '❤️',
 };
 
 function getGroup(timestamp: string): 'Today' | 'This Week' | 'Earlier' {
@@ -44,7 +46,7 @@ function NotificationItem({ item, onPress }: { item: AppNotification; onPress: (
       onPress={() => onPress(item.id)}>
       {!item.isRead && <View style={[styles.accentBar, { backgroundColor: C.brinjal1 }]} />}
       <View style={[styles.iconWrap, { backgroundColor: C.background }]}>
-        <Text style={styles.icon}>{TYPE_ICON[item.type]}</Text>
+        <Text style={styles.icon}>{TYPE_ICON[item.type] ?? '🔔'}</Text>
       </View>
       <View style={styles.itemContent}>
         <Text style={[styles.itemTitle, { color: C.text }]}>{item.title}</Text>
@@ -63,7 +65,10 @@ export default function NotificationsScreen() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    notificationService.getNotifications().then((data) => { setNotifications(data); setLoading(false); });
+    notificationService.getNotifications()
+      .then((data) => setNotifications(data))
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
   async function handleMarkAll() {
@@ -77,9 +82,22 @@ export default function NotificationsScreen() {
     const n = notifications.find((n) => n.id === id);
     if (!n) return;
     const isCreator = user?.role === 'CREATOR';
-    if (n.type === 'new_message') {
+
+    if (n.type === 'message_request_accepted' || n.type === 'business_favorited') {
+      // Business receives these — tap opens the creator's profile
+      if (n.refId) {
+        router.push({ pathname: '/(business)/creator-detail', params: { id: n.refId } });
+      }
+    } else if (n.type === 'new_campaign') {
+      // Creator receives this — tap opens the specific campaign
+      if (n.refId) {
+        router.push({ pathname: '/campaign-detail', params: { id: n.refId } });
+      } else if (isCreator) {
+        router.push('/(creator)/');
+      }
+    } else if (n.type === 'new_message') {
       router.push(isCreator ? '/(creator)/messages/' : '/(business)/messages/');
-    } else if (['proposal_accepted', 'proposal_rejected', 'new_campaign', 'campaign_deadline', 'campaign_closed', 'payment_released'].includes(n.type)) {
+    } else if (['proposal_accepted', 'proposal_rejected', 'campaign_deadline', 'campaign_closed', 'payment_released'].includes(n.type)) {
       if (isCreator) router.push('/(creator)/proposals');
     } else if (n.type === 'proposal_received') {
       if (!isCreator) router.push('/(business)/');

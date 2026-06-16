@@ -201,6 +201,28 @@ export class CampaignRepository {
     return { applications, total };
   }
 
+  async findApplicationsByBusinessId(businessId: string, page: number, limit: number) {
+    const skip = (page - 1) * limit;
+    const [applications, total] = await Promise.all([
+      prisma.application.findMany({
+        where: { campaign: { businessId } },
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          creator: {
+            select: { fullName: true, avatarUrl: true, location: true },
+          },
+          campaign: {
+            select: { id: true, title: true, platform: true },
+          },
+        },
+      }),
+      prisma.application.count({ where: { campaign: { businessId } } }),
+    ]);
+    return { applications, total };
+  }
+
   async findApplicationById(id: string) {
     return prisma.application.findUnique({
       where: { id },

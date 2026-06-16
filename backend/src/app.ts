@@ -17,10 +17,11 @@ import businessRoutes from './modules/business/business.routes';
 import campaignRoutes from './modules/campaign/campaign.routes';
 import messagingRoutes from './modules/messaging/messaging.routes';
 import adminRoutes from './modules/admin/admin.routes';
-import helpRoutes    from './modules/help/help.routes';
-import faqRoutes     from './modules/faq/faq.routes';
-import supportRoutes from './modules/support/support.routes';
-import legalRoutes   from './modules/legal/legal.routes';
+import helpRoutes         from './modules/help/help.routes';
+import faqRoutes          from './modules/faq/faq.routes';
+import supportRoutes      from './modules/support/support.routes';
+import legalRoutes        from './modules/legal/legal.routes';
+import notificationRoutes from './modules/notifications/notification.routes';
 
 const app = express();
 
@@ -123,10 +124,11 @@ app.use('/api/business', businessRoutes);
 app.use('/api/campaigns', campaignRoutes);
 app.use('/api/messaging', messagingRoutes);
 app.use('/api/admin', adminRoutes);
-app.use('/api/help',    helpRoutes);
-app.use('/api/faq',     faqRoutes);
-app.use('/api/support', supportRoutes);
-app.use('/api/legal',   legalRoutes);
+app.use('/api/help',          helpRoutes);
+app.use('/api/faq',           faqRoutes);
+app.use('/api/support',       supportRoutes);
+app.use('/api/legal',         legalRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // ── 404 & Error handlers ──────────────────────────────────────────────────────
 app.use(notFoundHandler);

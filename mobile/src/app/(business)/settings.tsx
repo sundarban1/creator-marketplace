@@ -1,5 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { createContext, useContext, useRef, useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   Alert,
   Animated,
@@ -15,6 +16,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/components/Toast';
 import { useAppColors, useIsDark } from '@/context/ThemeContext';
+import { businessService } from '@/services/business';
+import { authService } from '@/services/auth';
 import { COLORS } from '@/utilities/constants';
 
 type ColorsType = typeof COLORS;
@@ -95,12 +98,12 @@ function HintCard({ children }: { children: React.ReactNode }) {
   return <View style={[styles.hintCard, { backgroundColor: C.primaryLight }]}>{children}</View>;
 }
 
-type SwitchRowProps = { label: string; icon?: string; sub?: string; value: boolean; onChange: () => void; isLast?: boolean };
-function SwitchRow({ label, icon, sub, value, onChange, isLast = false }: SwitchRowProps) {
+type SwitchRowProps = { label: string; icon?: string; iconNode?: ReactNode; sub?: string; value: boolean; onChange: () => void; isLast?: boolean };
+function SwitchRow({ label, icon, iconNode, sub, value, onChange, isLast = false }: SwitchRowProps) {
   const C = useContext(ColorCtx);
   return (
     <View style={[styles.row, !isLast && { borderBottomWidth: 1, borderBottomColor: C.border }]}>
-      {icon ? <Text style={styles.rowIcon}>{icon}</Text> : null}
+      {iconNode ? <View style={styles.rowIconNode}>{iconNode}</View> : icon ? <Text style={styles.rowIcon}>{icon}</Text> : null}
       <View style={{ flex: 1 }}>
         <Text style={[styles.rowLabel, { color: C.text }]}>{label}</Text>
         {sub ? <Text style={[styles.rowSub, { color: C.textSecondary }]}>{sub}</Text> : null}
@@ -116,13 +119,16 @@ function SwitchRow({ label, icon, sub, value, onChange, isLast = false }: Switch
   );
 }
 
-type NavRowProps = { icon?: string; label: string; value?: string; badge?: string; onPress: () => void; danger?: boolean; isLast?: boolean };
-function NavRow({ icon, label, value, badge, onPress, danger = false, isLast = false }: NavRowProps) {
+type NavRowProps = { icon?: string; label: string; sub?: string; value?: string; badge?: string; onPress: () => void; danger?: boolean; isLast?: boolean };
+function NavRow({ icon, label, sub, value, badge, onPress, danger = false, isLast = false }: NavRowProps) {
   const C = useContext(ColorCtx);
   return (
     <Pressable style={[styles.row, !isLast && { borderBottomWidth: 1, borderBottomColor: C.border }]} onPress={onPress}>
       {icon ? <Text style={styles.rowIcon}>{icon}</Text> : null}
-      <Text style={[styles.rowLabel, { color: danger ? C.error : C.text }]}>{label}</Text>
+      <View style={{ flex: 1 }}>
+        <Text style={[styles.rowLabel, { color: danger ? C.error : C.text }]}>{label}</Text>
+        {sub ? <Text style={[styles.rowSub, { color: C.textSecondary }]}>{sub}</Text> : null}
+      </View>
       <View style={styles.navRight}>
         {value ? <Text style={[styles.navValue, { color: C.textSecondary }]}>{value}</Text> : null}
         {badge ? (
@@ -223,6 +229,14 @@ export default function BusinessSettingsScreen() {
   const [hideContactDetails, setHideContactDetails] = useState(false);
   const [allowDirectMessages, setAllowDirectMessages] = useState(true);
 
+  useEffect(() => {
+    businessService.getMyProfile().then((p) => {
+      setShowProfilePublic(p.showPublicProfile);
+      setHideContactDetails(p.hideContactDetails);
+      setAllowDirectMessages(p.allowDirectMessages);
+    }).catch(() => {});
+  }, []);
+
   // ── Support forms ──
   const [supportTopic, setSupportTopic] = useState('');
   const [supportMsg, setSupportMsg] = useState('');
@@ -271,6 +285,28 @@ export default function BusinessSettingsScreen() {
       { text: 'Cancel', style: 'cancel' },
       { text: 'Logout All', style: 'destructive', onPress: logout },
     ]);
+  }
+
+  function handleDeactivateAccount() {
+    Alert.alert(
+      'Deactivate Account',
+      'Your account will be temporarily disabled. Your campaigns will be paused and your profile will be hidden from creators. You can reactivate anytime by logging back in.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Deactivate',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await authService.deactivateAccount();
+              await logout();
+            } catch {
+              toast.error('Failed to deactivate. Please try again.');
+            }
+          },
+        },
+      ],
+    );
   }
 
   function handleDeleteAccount() {
@@ -701,13 +737,13 @@ export default function BusinessSettingsScreen() {
 
         <SectionHeader title="Actions" />
         <Card>
-          <NavRow icon="🔑" label="Change Password" onPress={() => setSubPage('change-password')} />
           <NavRow icon="📱" label="Logout All Devices" onPress={handleLogoutAll} />
-          <NavRow icon="🗑️" label="Delete Account" onPress={handleDeleteAccount} danger isLast />
+          <NavRow icon="⏸️" label="Deactivate Account" sub="Temporarily disable your account" onPress={handleDeactivateAccount} danger />
+          <NavRow icon="🗑️" label="Delete Account" sub="Permanently remove all your data" onPress={handleDeleteAccount} danger isLast />
         </Card>
 
         <HintCard>
-          <Text style={[styles.hintText, { color: C.brinjal1 }]}>Deleting your account permanently removes all campaigns, proposals, and payment history.</Text>
+          <Text style={[styles.hintText, { color: C.brinjal1 }]}>Deactivating pauses your account — you can return anytime by logging back in. Deletion is permanent.</Text>
         </HintCard>
       </>
     );
@@ -1018,6 +1054,14 @@ export default function BusinessSettingsScreen() {
 
   // ── Section: Privacy Settings ─────────────────────────────────
 
+  async function savePrivacy(patch: { showPublicProfile?: boolean; hideContactDetails?: boolean; allowDirectMessages?: boolean }) {
+    try {
+      await businessService.updatePrivacy(patch);
+    } catch {
+      toast.error('Failed to save. Please try again.');
+    }
+  }
+
   function renderPrivacy() {
     return (
       <>
@@ -1026,9 +1070,40 @@ export default function BusinessSettingsScreen() {
         </HintCard>
         <SectionHeader title="Visibility" />
         <Card>
-          <SwitchRow icon="👁" label="Show Business Profile Publicly" sub="Creators can find and view your profile" value={showProfilePublic} onChange={() => setShowProfilePublic((v) => !v)} />
-          <SwitchRow icon="📞" label="Hide Contact Details" sub="Keep email and phone private" value={hideContactDetails} onChange={() => setHideContactDetails((v) => !v)} />
-          <SwitchRow icon="💬" label="Allow Creators to Message Directly" sub="Creators can initiate conversations" value={allowDirectMessages} onChange={() => setAllowDirectMessages((v) => !v)} isLast />
+          <SwitchRow
+            iconNode={<Ionicons name="eye-outline" size={20} color={C.brinjal1} />}
+            label="Show Business Profile Publicly"
+            sub="Creators can find and view your profile"
+            value={showProfilePublic}
+            onChange={() => {
+              const next = !showProfilePublic;
+              setShowProfilePublic(next);
+              savePrivacy({ showPublicProfile: next });
+            }}
+          />
+          <SwitchRow
+            iconNode={<Ionicons name="lock-closed-outline" size={20} color={C.brinjal1} />}
+            label="Hide Contact Details"
+            sub="Keep website and contact info private"
+            value={hideContactDetails}
+            onChange={() => {
+              const next = !hideContactDetails;
+              setHideContactDetails(next);
+              savePrivacy({ hideContactDetails: next });
+            }}
+          />
+          <SwitchRow
+            iconNode={<Ionicons name="chatbubble-outline" size={20} color={C.brinjal1} />}
+            label="Allow Creators to Message Directly"
+            sub="Creators can initiate conversations from your profile"
+            value={allowDirectMessages}
+            onChange={() => {
+              const next = !allowDirectMessages;
+              setAllowDirectMessages(next);
+              savePrivacy({ allowDirectMessages: next });
+            }}
+            isLast
+          />
         </Card>
         <Text style={[styles.saveHint, { color: C.textSecondary }]}>Changes are saved automatically.</Text>
       </>
@@ -1210,6 +1285,7 @@ const styles = StyleSheet.create({
 
   row: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 13, gap: 12 },
   rowIcon: { fontSize: 18, width: 24, textAlign: 'center' },
+  rowIconNode: { width: 24, alignItems: 'center' },
   rowLabel: { flex: 1, fontSize: 15, fontWeight: '500' },
   rowSub: { fontSize: 12, marginTop: 1 },
   navRight: { flexDirection: 'row', alignItems: 'center', gap: 6 },

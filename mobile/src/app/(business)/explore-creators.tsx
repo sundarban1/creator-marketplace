@@ -1,5 +1,6 @@
 import { router } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { BackButton } from '@/components/BackButton';
 import {
   ActivityIndicator,
   FlatList,
@@ -371,50 +372,78 @@ function CreatorCard({ creator }: { creator: ApiCreatorListItem }) {
   const C = useAppColors();
   const meta = getCategoryMeta(creator.categories);
   const initials = (creator.fullName ?? 'C').split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2);
-  const totalFollowers = creator.socialAccounts.reduce((sum, s) => sum + s.followers, 0);
-  const topPlatform = creator.socialAccounts[0];
   const hasBudget = creator.prefBudgetMin > 0 || creator.prefBudgetMax > 0;
 
   return (
     <Pressable
-      style={({ pressed }) => [s.card, { backgroundColor: C.surface }, pressed && { opacity: 0.88 }]}
+      style={({ pressed }) => [s.card, { backgroundColor: C.surface, borderColor: C.border }, pressed && { opacity: 0.9 }]}
       onPress={() => router.push({ pathname: '/(business)/creator-detail', params: { id: creator.id } })}>
-      <View style={[s.avatar, { backgroundColor: meta.bg }]}>
-        <Text style={s.avatarText}>{creator.avatarUrl ? meta.emoji : initials}</Text>
-      </View>
-      <View style={s.body}>
-        <View style={s.titleRow}>
-          <Text style={[s.name, { color: C.text }]} numberOfLines={1}>{creator.fullName ?? 'Creator'}</Text>
-          {creator.isVerified && <Text style={s.verified}>✓</Text>}
+
+      {/* Header row: avatar · name/location · chevron */}
+      <View style={s.cardHeader}>
+        <View style={[s.avatar, { backgroundColor: meta.bg }]}>
+          <Text style={s.avatarText}>{meta.emoji || initials}</Text>
         </View>
-        {creator.bio ? (
-          <Text style={[s.bio, { color: C.textSecondary }]} numberOfLines={2}>{creator.bio}</Text>
-        ) : null}
-        <View style={s.metaRow}>
-          {creator.location ? (
-            <Text style={[s.metaText, { color: C.textSecondary }]}>📍 {creator.location}</Text>
-          ) : null}
-          {totalFollowers > 0 ? (
-            <Text style={[s.metaText, { color: C.textSecondary }]}>
-              {topPlatform ? getPlatformEmoji(topPlatform.platform) : '📱'} {formatFollowers(totalFollowers)}
-            </Text>
-          ) : null}
-          {hasBudget ? (
-            <Text style={[s.metaText, { color: C.textSecondary }]}>
-              💰 ${creator.prefBudgetMin}–${creator.prefBudgetMax}
-            </Text>
-          ) : null}
-        </View>
-        {creator.categories.length > 0 ? (
-          <View style={s.catRow}>
-            {creator.categories.slice(0, 3).map((cat) => (
-              <View key={cat} style={[s.catBadge, { backgroundColor: C.primaryLight }]}>
-                <Text style={[s.catBadgeText, { color: C.brinjal1 }]}>{cat}</Text>
+        <View style={s.cardMeta}>
+          <View style={s.nameRow}>
+            <Text style={[s.name, { color: C.text }]} numberOfLines={1}>{creator.fullName ?? 'Creator'}</Text>
+            {creator.isVerified && (
+              <View style={s.verifiedBadge}>
+                <Text style={s.verifiedText}>✓</Text>
               </View>
-            ))}
+            )}
           </View>
-        ) : null}
+          {creator.location ? (
+            <Text style={[s.location, { color: C.textSecondary }]} numberOfLines={1}>📍 {creator.location}</Text>
+          ) : null}
+        </View>
+        <Text style={[s.cardChevron, { color: C.textSecondary }]}>›</Text>
       </View>
+
+      {/* Bio */}
+      {creator.bio ? (
+        <Text style={[s.bio, { color: C.textSecondary }]} numberOfLines={2}>{creator.bio}</Text>
+      ) : null}
+
+      {/* Platform / budget stat pills */}
+      {(creator.socialAccounts.length > 0 || hasBudget) ? (
+        <View style={s.statsRow}>
+          {creator.socialAccounts.slice(0, 2).map((acc) => (
+            <View key={acc.platform} style={[s.statPill, { backgroundColor: C.primaryLight }]}>
+              <Text style={s.statEmoji}>{getPlatformEmoji(acc.platform)}</Text>
+              <Text style={[s.statVal, { color: C.brinjal1 }]}>{formatFollowers(acc.followers)}</Text>
+            </View>
+          ))}
+          {hasBudget && (
+            <View style={[s.statPill, { backgroundColor: '#E8F5E9' }]}>
+              <Text style={s.statEmoji}>💰</Text>
+              <Text style={[s.statVal, { color: '#16A34A' }]}>
+                ${creator.prefBudgetMin}–${creator.prefBudgetMax}
+              </Text>
+            </View>
+          )}
+        </View>
+      ) : null}
+
+      {/* Category chips with per-category colours */}
+      {creator.categories.length > 0 ? (
+        <View style={s.catRow}>
+          {creator.categories.slice(0, 4).map((cat) => {
+            const m = CATEGORY_META[cat];
+            return (
+              <View key={cat} style={[s.catChip, { backgroundColor: m?.bg ?? C.primaryLight }]}>
+                {m ? <Text style={s.catEmoji}>{m.emoji}</Text> : null}
+                <Text style={[s.catLabel, { color: C.text }]}>{cat}</Text>
+              </View>
+            );
+          })}
+          {creator.categories.length > 4 ? (
+            <View style={[s.catChip, { backgroundColor: C.background, borderWidth: 1, borderColor: C.border }]}>
+              <Text style={[s.catLabel, { color: C.textSecondary }]}>+{creator.categories.length - 4}</Text>
+            </View>
+          ) : null}
+        </View>
+      ) : null}
     </Pressable>
   );
 }
@@ -540,9 +569,7 @@ export default function ExploreCreatorsScreen() {
 
       {/* Header */}
       <View style={s.header}>
-        <Pressable onPress={() => router.back()} style={s.backBtn}>
-          <Text style={[s.backArrow, { color: C.text }]}>‹</Text>
-        </Pressable>
+        <BackButton fallback="/(business)/" />
         <Text style={[s.headerTitle, { color: C.text }]}>Explore Creators</Text>
         <View style={{ width: 40 }} />
       </View>
@@ -675,8 +702,6 @@ const s = StyleSheet.create({
   container: { flex: 1 },
 
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 8 },
-  backBtn: { padding: 4, width: 40 },
-  backArrow: { fontSize: 32, lineHeight: 36, fontWeight: '300' },
   headerTitle: { flex: 1, fontSize: 18, fontWeight: '800', textAlign: 'center' },
 
   // Matches creator home search card
@@ -704,21 +729,28 @@ const s = StyleSheet.create({
   emptyHint: { fontSize: 13, textAlign: 'center', lineHeight: 20 },
   clearBtn: { borderRadius: 20, borderWidth: 1.5, paddingHorizontal: 16, paddingVertical: 8, marginTop: 4 },
 
-  list: { paddingHorizontal: 20, paddingBottom: 40, gap: 12 },
+  list: { paddingHorizontal: 20, paddingBottom: 40, gap: 14 },
 
-  card: { flexDirection: 'row', borderRadius: 16, padding: 14, gap: 14, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 3 },
-  avatar: { width: 56, height: 56, borderRadius: 28, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
-  avatarText: { fontSize: 20, fontWeight: '700' },
-  body: { flex: 1, gap: 4 },
-  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  name: { fontSize: 15, fontWeight: '700', flex: 1 },
-  verified: { fontSize: 13, color: '#4CAF50' },
-  bio: { fontSize: 12, lineHeight: 17 },
-  metaRow: { flexDirection: 'row', gap: 10, flexWrap: 'wrap' },
-  metaText: { fontSize: 11 },
-  catRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap', marginTop: 2 },
-  catBadge: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
-  catBadgeText: { fontSize: 10, fontWeight: '600' },
+  card: { borderRadius: 18, padding: 16, gap: 12, borderWidth: 1, shadowColor: '#000', shadowOpacity: 0.09, shadowRadius: 14, shadowOffset: { width: 0, height: 4 }, elevation: 5 },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  avatar: { width: 64, height: 64, borderRadius: 32, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  avatarText: { fontSize: 24 },
+  cardMeta: { flex: 1, gap: 3 },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  name: { fontSize: 16, fontWeight: '800', flex: 1 },
+  verifiedBadge: { width: 18, height: 18, borderRadius: 9, backgroundColor: '#22C55E', justifyContent: 'center', alignItems: 'center' },
+  verifiedText: { fontSize: 9, fontWeight: '800', color: '#fff' },
+  location: { fontSize: 12 },
+  cardChevron: { fontSize: 24 },
+  bio: { fontSize: 13, lineHeight: 19 },
+  statsRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
+  statPill: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10 },
+  statEmoji: { fontSize: 12 },
+  statVal: { fontSize: 12, fontWeight: '700' },
+  catRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
+  catChip: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 8 },
+  catEmoji: { fontSize: 11 },
+  catLabel: { fontSize: 11, fontWeight: '600' },
 
   footerText: { textAlign: 'center', fontSize: 13, paddingVertical: 20 },
 });

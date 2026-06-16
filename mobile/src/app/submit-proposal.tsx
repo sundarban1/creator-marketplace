@@ -1,5 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
+import { BackButton } from '@/components/BackButton';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -81,11 +82,7 @@ export default function SubmitProposalScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
       <View style={[styles.header, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
-        <Pressable
-          onPress={() => (router.canGoBack() ? router.back() : router.replace('/(creator)' as never))}
-          style={[styles.closeBtn, { backgroundColor: C.background }]}>
-          <Text style={[styles.closeText, { color: C.textSecondary }]}>✕</Text>
-        </Pressable>
+        <BackButton fallback="/(creator)/" />
         <Text style={[styles.headerTitle, { color: C.text }]}>{t('proposal.title')}</Text>
         <View style={{ width: 40 }} />
       </View>
@@ -187,8 +184,6 @@ const styles = StyleSheet.create({
   container:       { flex: 1 },
   flex:            { flex: 1 },
   header:          { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1 },
-  closeBtn:        { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
-  closeText:       { fontSize: 16, fontWeight: '600' },
   headerTitle:     { fontSize: 16, fontWeight: '700' },
   scroll:          { padding: 20, gap: 16, paddingBottom: 48 },
   campaignBadge:   { borderRadius: 14, padding: 16, gap: 4, borderLeftWidth: 4 },

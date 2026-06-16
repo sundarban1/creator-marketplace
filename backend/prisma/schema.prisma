@@ -53,6 +53,7 @@ model User {
   otpVerifications OtpVerification[]
   supportRequests  SupportRequest[]
   issueReports     IssueReport[]
+  notifications    Notification[]
 
   @@map("users")
 }
@@ -80,10 +81,11 @@ model CreatorProfile {
   prefBudgetMin  Float     @default(0)
   prefBudgetMax  Float     @default(500)
 
-  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  applications   Application[]
-  conversations  Conversation[] @relation("CreatorConversations")
-  socialAccounts SocialAccount[]
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  applications       Application[]
+  conversations      Conversation[]     @relation("CreatorConversations")
+  socialAccounts     SocialAccount[]
+  favoriteBusinesses FavoriteBusiness[]
 
   @@map("creator_profiles")
 }
@@ -111,14 +113,18 @@ model BusinessProfile {
   logoUrl      String?
   website      String?
   categories   String[]
-  panNo        String?
-  isVerified   Boolean  @default(false)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  panNo               String?
+  isVerified          Boolean  @default(false)
+  showPublicProfile   Boolean  @default(true)
+  hideContactDetails  Boolean  @default(false)
+  allowDirectMessages Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
-  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   campaigns     Campaign[]
-  conversations Conversation[] @relation("BusinessConversations")
+  conversations Conversation[]     @relation("BusinessConversations")
+  favoritedBy   FavoriteBusiness[]
 
   @@map("business_profiles")
 }
@@ -283,4 +289,33 @@ model OtpVerification {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("otp_verifications")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  title     String
+  body      String
+  isRead    Boolean  @default(false)
+  refId     String?
+  refType   String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model FavoriteBusiness {
+  id         String   @id @default(cuid())
+  creatorId  String
+  businessId String
+  createdAt  DateTime @default(now())
+
+  creator  CreatorProfile  @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  business BusinessProfile @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([creatorId, businessId])
+  @@map("favorite_businesses")
 }

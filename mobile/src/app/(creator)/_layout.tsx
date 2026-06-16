@@ -8,6 +8,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { DrawerMenu } from '@/features/creator/components/DrawerMenu';
 import { chatService } from '@/services/chat';
 import { messagingEvents } from '@/lib/messagingEvents';
+import { notificationService } from '@/services/notifications';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
@@ -51,8 +52,10 @@ export default function CreatorLayout() {
   const { user, logout } = useAuth();
   const C = useAppColors();
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [badgeCount, setBadgeCount] = useState(0);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [badgeCount, setBadgeCount]   = useState(0);
+  const [notifBadge, setNotifBadge]   = useState(0);
+  const pollRef      = useRef<ReturnType<typeof setInterval> | null>(null);
+  const notifPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     function fetchBadge() {
@@ -65,6 +68,15 @@ export default function CreatorLayout() {
       if (pollRef.current) clearInterval(pollRef.current);
       unsub();
     };
+  }, []);
+
+  useEffect(() => {
+    function fetchNotifBadge() {
+      notificationService.getBadge().then((r) => setNotifBadge(r.count)).catch(() => null);
+    }
+    fetchNotifBadge();
+    notifPollRef.current = setInterval(fetchNotifBadge, 30000);
+    return () => { if (notifPollRef.current) clearInterval(notifPollRef.current); };
   }, []);
 
   return (
@@ -112,7 +124,7 @@ export default function CreatorLayout() {
             options={{
               title: 'Activity',
               tabBarIcon: ({ color, focused }) => (
-                <TabIcon name="notifications-outline" nameActive="notifications" size={23} color={color} focused={focused} />
+                <TabIcon name="notifications-outline" nameActive="notifications" size={23} color={color} focused={focused} badge={notifBadge} />
               ),
             }}
           />

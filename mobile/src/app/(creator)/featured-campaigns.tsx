@@ -1,5 +1,5 @@
-import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
+import { BackButton } from '@/components/BackButton';
 import {
   ActivityIndicator,
   FlatList,
@@ -61,11 +61,9 @@ export default function FeaturedCampaignsScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
       {/* Header */}
       <View style={[styles.header, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
-        <Pressable style={styles.backBtn} onPress={() => router.back()}>
-          <Text style={[styles.backIcon, { color: C.text }]}>←</Text>
-        </Pressable>
+        <BackButton fallback="/(creator)/" />
         <Text style={[styles.headerTitle, { color: C.text }]}>⭐ Featured Campaigns</Text>
-        <View style={styles.backBtn} />
+        <View style={{ width: 38 }} />
       </View>
 
       {loading ? (
@@ -123,8 +121,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16, paddingVertical: 14,
     borderBottomWidth: 1,
   },
-  backBtn: { width: 36, height: 36, justifyContent: 'center' },
-  backIcon: { fontSize: 22 },
   headerTitle: { fontSize: 17, fontWeight: '700' },
   list: { padding: 16, paddingBottom: 40 },
   separator: { height: 12 },

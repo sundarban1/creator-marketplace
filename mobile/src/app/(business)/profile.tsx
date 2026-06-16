@@ -1,5 +1,6 @@
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { BackButton } from '@/components/BackButton';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -57,9 +58,7 @@ export default function BusinessProfileScreen() {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
         <View style={[styles.navBar, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
-          <Pressable onPress={() => router.canGoBack() ? router.back() : router.push('/(business)/' as never)} style={styles.navBackBtn}>
-            <Ionicons name="chevron-back" size={26} color={C.brinjal1} />
-          </Pressable>
+          <BackButton fallback="/(business)/" />
           <Text style={[styles.navTitle, { color: C.text }]}>Profile</Text>
           <View style={{ width: 44 }} />
         </View>
@@ -75,9 +74,7 @@ export default function BusinessProfileScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
       {/* Nav bar */}
       <View style={[styles.navBar, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
-        <Pressable onPress={() => router.canGoBack() ? router.back() : router.push('/(business)/' as never)} style={styles.navBackBtn}>
-          <Ionicons name="chevron-back" size={26} color={C.brinjal1} />
-        </Pressable>
+        <BackButton fallback="/(business)/" />
         <Text style={[styles.navTitle, { color: C.text }]} numberOfLines={1}>{name}</Text>
         <Pressable style={[styles.editNavBtn, { backgroundColor: C.primaryLight }]} onPress={() => router.push('/(business)/edit-profile' as never)}>
           <Text style={[styles.editNavText, { color: C.brinjal1 }]}>Edit</Text>
@@ -235,7 +232,6 @@ const styles = StyleSheet.create({
   container:        { flex: 1 },
   center:           { flex: 1, alignItems: 'center', justifyContent: 'center' },
   navBar:           { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 8, borderBottomWidth: 1 },
-  navBackBtn:       { width: 44, height: 40, justifyContent: 'center', alignItems: 'center' },
   navTitle:         { flex: 1, fontSize: 15, fontWeight: '700', textAlign: 'center' },
   editNavBtn:       { borderRadius: 10, paddingHorizontal: 14, paddingVertical: 7 },
   editNavText:      { fontSize: 13, fontWeight: '700' },

@@ -1,5 +1,6 @@
 import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { BackButton } from '@/components/BackButton';
 import { useCallback, useState } from 'react';
 import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -34,13 +35,6 @@ export default function CreatorProfileScreen() {
     }, [])
   );
 
-  const PROPOSAL_STATS = [
-    { label: 'Accepted', value: 14, color: C.active },
-    { label: 'Pending', value: 4, color: C.draft },
-    { label: 'Rejected', value: 5, color: C.error },
-    { label: 'Total', value: 23, color: C.brinjal1 },
-  ];
-
   const socialAccounts = profile?.socialLinks
     ? Object.entries(profile.socialLinks)
         .filter(([, url]) => !!url)
@@ -58,9 +52,7 @@ export default function CreatorProfileScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
       <View style={[styles.topBar, { backgroundColor: C.background }]}>
-        <Pressable style={styles.backBtn} onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={26} color={C.text} />
-        </Pressable>
+        <BackButton fallback="/(creator)/" />
         <Text style={[styles.topTitle, { color: C.text }]}>My Profile</Text>
         <Pressable style={styles.logoutBtn} onPress={logout}>
           <Text style={[styles.logoutText, { color: C.error }]}>Logout</Text>
@@ -111,18 +103,6 @@ export default function CreatorProfileScreen() {
             onPress={() => router.push('/(creator)/edit-profile')}>
             <Text style={[styles.editProfileText, { color: C.text }]}>Edit Profile</Text>
           </Pressable>
-        </View>
-
-        <View style={[styles.statsCard, { backgroundColor: C.surface }]}>
-          <Text style={[styles.statsTitle, { color: C.text }]}>Proposals</Text>
-          <View style={styles.statsRow}>
-            {PROPOSAL_STATS.map((s) => (
-              <View key={s.label} style={styles.statItem}>
-                <Text style={[styles.statValue, { color: s.color }]}>{s.value}</Text>
-                <Text style={[styles.statLabel, { color: C.textSecondary }]}>{s.label}</Text>
-              </View>
-            ))}
-          </View>
         </View>
 
         <View style={styles.section}>
@@ -182,25 +162,6 @@ export default function CreatorProfileScreen() {
           )}
         </View>
 
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: C.text }]}>Proposal History</Text>
-          <View style={[styles.proposalBars, { backgroundColor: C.surface }]}>
-            {PROPOSAL_STATS.slice(0, 3).map((s) => (
-              <View key={s.label} style={styles.barRow}>
-                <Text style={[styles.barLabel, { color: C.textSecondary }]}>{s.label}</Text>
-                <View style={[styles.barTrack, { backgroundColor: C.border }]}>
-                  <View
-                    style={[
-                      styles.barFill,
-                      { width: `${Math.round((s.value / 23) * 100)}%`, backgroundColor: s.color },
-                    ]}
-                  />
-                </View>
-                <Text style={[styles.barCount, { color: s.color }]}>{s.value}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
 
       </ScrollView>
     </SafeAreaView>
@@ -211,7 +172,6 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContent: { paddingBottom: 48 },
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 10 },
-  backBtn: { padding: 4, width: 36 },
   topTitle: { fontSize: 16, fontWeight: '700' },
   logoutBtn: { padding: 4 },
   logoutText: { fontSize: 13, fontWeight: '600' },
@@ -230,12 +190,6 @@ const styles = StyleSheet.create({
   location: { fontSize: 13 },
   editProfileBtn: { marginTop: 8, borderWidth: 1.5, borderRadius: 10, paddingHorizontal: 28, paddingVertical: 8 },
   editProfileText: { fontSize: 13, fontWeight: '700' },
-  statsCard: { borderRadius: 16, marginHorizontal: 20, marginBottom: 20, padding: 16, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 3 },
-  statsTitle: { fontSize: 14, fontWeight: '700', marginBottom: 14 },
-  statsRow: { flexDirection: 'row', justifyContent: 'space-around' },
-  statItem: { alignItems: 'center', gap: 4 },
-  statValue: { fontSize: 24, fontWeight: '800' },
-  statLabel: { fontSize: 11, fontWeight: '600' },
   section: { marginHorizontal: 20, marginBottom: 20 },
   sectionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
   sectionTitle: { fontSize: 15, fontWeight: '700', marginBottom: 12 },
@@ -252,10 +206,4 @@ const styles = StyleSheet.create({
   socialHandle: { fontSize: 12 },
   emptyCard: { borderRadius: 14, borderWidth: 1.5, borderStyle: 'dashed', padding: 16, alignItems: 'center' },
   emptyText: { fontSize: 13, textAlign: 'center', lineHeight: 19 },
-  proposalBars: { borderRadius: 14, padding: 16, gap: 14, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
-  barRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  barLabel: { width: 58, fontSize: 12, fontWeight: '600' },
-  barTrack: { flex: 1, height: 8, borderRadius: 4, overflow: 'hidden' },
-  barFill: { height: '100%', borderRadius: 4 },
-  barCount: { width: 24, fontSize: 13, fontWeight: '700', textAlign: 'right' },
 });

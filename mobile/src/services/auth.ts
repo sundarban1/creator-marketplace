@@ -93,6 +93,10 @@ export const authService = {
     return storage.getJSON<User>(USER_KEY);
   },
 
+  async deactivateAccount(): Promise<void> {
+    await request('PATCH', '/api/auth/deactivate');
+  },
+
   async logout(): Promise<void> {
     try {
       const controller = new AbortController();

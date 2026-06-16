@@ -1,5 +1,6 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
+import { BackButton } from '@/components/BackButton';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -53,9 +54,7 @@ export default function PresenceGoalScreen() {
 
       {/* Header */}
       <View style={[styles.header, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn}>
-          <Text style={[styles.backArrow, { color: C.brinjal1 }]}>‹</Text>
-        </Pressable>
+        <BackButton fallback="/(business)/" />
         <Text style={[styles.headerTitle, { color: C.text }]}>Presence & Goal</Text>
         <View style={{ width: 36 }} />
       </View>
@@ -153,8 +152,6 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderBottomWidth: 1,
   },
-  backBtn: { padding: 4, width: 36 },
-  backArrow: { fontSize: 28, lineHeight: 30 },
   headerTitle: { fontSize: 17, fontWeight: '700' },
   scrollContent: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 48 },
   sectionHint: { fontSize: 13, lineHeight: 19, marginBottom: 20 },

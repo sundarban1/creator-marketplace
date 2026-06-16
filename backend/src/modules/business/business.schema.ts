@@ -7,6 +7,9 @@ export const updateBusinessProfileSchema = z.object({
   website: z.string().url('Invalid website URL').optional().nullable(),
   categories: z.array(z.string()).optional(),
   panNo: z.string().optional().nullable(),
+  showPublicProfile:   z.boolean().optional(),
+  hideContactDetails:  z.boolean().optional(),
+  allowDirectMessages: z.boolean().optional(),
 });
 
 export type UpdateBusinessProfileInput = z.infer<typeof updateBusinessProfileSchema>;

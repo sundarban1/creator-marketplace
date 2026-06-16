@@ -1,5 +1,6 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
+import { BackButton } from '@/components/BackButton';
 import {
   ActivityIndicator,
   Pressable,
@@ -79,11 +80,7 @@ export default function EditCategoriesScreen() {
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
       <View style={[s.topBar, { backgroundColor: C.background, borderBottomColor: C.border }]}>
-        <Pressable
-          style={[s.backBtn, { backgroundColor: C.surface, borderColor: C.border }]}
-          onPress={() => router.back()}>
-          <Text style={[s.backArrow, { color: C.brinjal1 }]}>‹</Text>
-        </Pressable>
+        <BackButton fallback="/(creator)/profile" />
         <Text style={[s.topTitle, { color: C.text }]}>Content Categories</Text>
         <Pressable
           style={[s.saveBtn, { backgroundColor: saving ? C.border : C.brinjal1 }]}
@@ -138,8 +135,6 @@ const s = StyleSheet.create({
   container: { flex: 1 },
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center' },
   topBar:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1 },
-  backBtn:   { width: 36, height: 36, borderRadius: 18, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center' },
-  backArrow: { fontSize: 26, lineHeight: 30 },
   topTitle:  { fontSize: 16, fontWeight: '700' },
   saveBtn:   { borderRadius: 10, paddingHorizontal: 16, paddingVertical: 8, minWidth: 56, alignItems: 'center' },
   saveBtnTxt:{ color: '#fff', fontSize: 14, fontWeight: '700' },

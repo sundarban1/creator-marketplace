@@ -1,83 +1,102 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { router } from 'expo-router';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Modal,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { COLORS } from '@/utilities/constants';
+import { useAppColors } from '@/context/ThemeContext';
+import { campaignService } from '@/services/campaign';
+import { CATEGORY_META, DEFAULT_META, cardBg } from '@/features/creator/data/filterOptions';
+import type { Campaign } from '@/types';
 
-const ALL_CAMPAIGNS = [
-  {
-    id: '1', title: 'Winter Menu Promotion', platform: 'Instagram Reel',
-    budget: 'NZ$150 – NZ$250', status: 'active', proposals: 12,
-    inProgress: 2, emoji: '🍽️', cardBg: '#F2E6DC',
-  },
-  {
-    id: '2', title: 'New Collection Launch', platform: 'TikTok Video',
-    budget: 'NZ$300 – NZ$500', status: 'active', proposals: 8,
-    inProgress: 1, emoji: '👗', cardBg: '#F2DCF0',
-  },
-  {
-    id: '3', title: 'Skincare Product Review', platform: 'Instagram Post',
-    budget: 'NZ$100 – NZ$150', status: 'draft', proposals: 0,
-    inProgress: 0, emoji: '✨', cardBg: '#DCF2E6',
-  },
-  {
-    id: '4', title: 'Summer Brand Awareness', platform: 'YouTube Short',
-    budget: 'NZ$500 – NZ$800', status: 'closed', proposals: 21,
-    inProgress: 0, emoji: '☀️', cardBg: '#FFF7ED',
-  },
-];
-
-// Proposals keyed by campaign id
-const PROPOSALS_BY_CAMPAIGN = {
-  '1': [
-    { id: 'p1', name: 'Sarah Johnson', handle: '@sarahjcreates', followers: '28.4K', rate: 'NZ$200', status: 'pending',     avatar: 'SJ', avatarBg: '#EDE9FE', avatarColor: COLORS.brinjal1 },
-    { id: 'p2', name: 'Priya Patel',   handle: '@priyalifestyle', followers: '14.9K', rate: 'NZ$175', status: 'pending',     avatar: 'PP', avatarBg: '#FEE2E2', avatarColor: COLORS.error },
-    { id: 'p3', name: 'Tom Baker',     handle: '@tombakes',       followers: '31.2K', rate: 'NZ$220', status: 'pending',     avatar: 'TB', avatarBg: '#EEF9F3', avatarColor: COLORS.active },
-  ],
-  '2': [
-    { id: 'p4', name: 'Mike Chen',     handle: '@mikechen.tv',    followers: '52.1K', rate: 'NZ$380', status: 'pending',    avatar: 'MC', avatarBg: '#DCFCE7', avatarColor: COLORS.active },
-    { id: 'p5', name: 'James Liu',     handle: '@jamesliu_nz',    followers: '63.2K', rate: 'NZ$450', status: 'accepted',    avatar: 'JL', avatarBg: '#FFF7ED', avatarColor: COLORS.draft },
-  ],
-  '3': [],
-  '4': [
-    { id: 'p6', name: 'Emma Wilson',   handle: '@emmawilson',     followers: '9.8K',  rate: 'NZ$120', status: 'rejected',    avatar: 'EW', avatarBg: '#F3F4F6', avatarColor: COLORS.textSecondary },
-    { id: 'p7', name: 'Lena Park',     handle: '@lenapark',       followers: '45.0K', rate: 'NZ$550', status: 'accepted',    avatar: 'LP', avatarBg: '#EDE9FE', avatarColor: COLORS.brinjal1 },
-    { id: 'p8', name: 'Chris Ray',     handle: '@chrisray',       followers: '22.5K', rate: 'NZ$480', status: 'accepted',    avatar: 'CR', avatarBg: '#DCFCE7', avatarColor: COLORS.active },
-  ],
+type Application = {
+  id: string;
+  status: 'pending' | 'accepted' | 'rejected';
+  proposedRate: string;
+  createdAt: string;
+  creator: { fullName: string; avatarUrl: string | null; location: string | null };
 };
 
-const FILTERS = ['All', 'Active', 'Draft', 'Closed'];
+const FILTERS = ['All', 'Active', 'Draft', 'Closed'] as const;
 
-const CAMPAIGN_STATUS = {
-  active: { bg: '#EEF9F3', color: COLORS.active,        label: 'Active' },
-  draft:  { bg: '#F4F4F4', color: COLORS.closed,        label: 'Draft' },
-  closed: { bg: '#FEF3C7', color: COLORS.draft,         label: 'Closed' },
-};
+const STATUS_CFG = {
+  active: { bg: '#EEF9F3', color: '#16A34A', label: 'Active' },
+  draft:  { bg: '#F4F4F4', color: '#6B7280', label: 'Draft' },
+  closed: { bg: '#FEF3C7', color: '#D97706', label: 'Closed' },
+} as const;
 
-const PROPOSAL_STATUS = {
-  pending:  { bg: '#FFF7ED', color: COLORS.draft,  label: 'Pending' },
-  accepted: { bg: '#EEF9F3', color: COLORS.active, label: 'Accepted' },
-  rejected: { bg: '#F4F4F4', color: COLORS.closed, label: 'Rejected' },
-};
+const PROPOSAL_STATUS_CFG = {
+  pending:  { bg: '#FFF7ED', color: '#D97706', label: 'Pending' },
+  accepted: { bg: '#EEF9F3', color: '#16A34A', label: 'Accepted' },
+  rejected: { bg: '#F3F4F6', color: '#6B7280', label: 'Rejected' },
+} as const;
+
+function initials(name: string) {
+  return name.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+}
 
 export default function CampaignsScreen() {
-  const [activeFilter, setActiveFilter] = useState('All');
-  const [selectedCampaign, setSelectedCampaign] = useState(null);
+  const C = useAppColors();
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [activeFilter, setActiveFilter] = useState<typeof FILTERS[number]>('All');
 
-  const shown = ALL_CAMPAIGNS.filter(
-    (c) => activeFilter === 'All' || c.status === activeFilter.toLowerCase(),
+  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [appsLoading, setAppsLoading] = useState(false);
+
+  async function loadCampaigns(showRefresh = false) {
+    if (showRefresh) setRefreshing(true);
+    else setLoading(true);
+    try {
+      const { campaigns: data } = await campaignService.listMy({ limit: 50 });
+      setCampaigns(data);
+    } catch {
+      // silently fail — empty state handles it
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }
+
+  useEffect(() => { loadCampaigns(); }, []);
+
+  const onRefresh = useCallback(() => loadCampaigns(true), []);
+
+  async function openProposals(c: Campaign) {
+    setSelectedCampaign(c);
+    setApplications([]);
+    setAppsLoading(true);
+    try {
+      const data = await campaignService.getApplications(c.id);
+      setApplications(data);
+    } catch {
+      setApplications([]);
+    } finally {
+      setAppsLoading(false);
+    }
+  }
+
+  const shown = campaigns.filter((c) =>
+    activeFilter === 'All' || c.status === activeFilter.toLowerCase()
   );
 
-  const modalProposals = selectedCampaign
-    ? (PROPOSALS_BY_CAMPAIGN[selectedCampaign.id] ?? [])
-    : [];
-
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.pageTitle}>Campaigns</Text>
-        <Pressable style={styles.newBtn} onPress={() => router.push('/create-campaign')}>
+        <Text style={[styles.pageTitle, { color: C.text }]}>Campaigns</Text>
+        <Pressable
+          style={[styles.newBtn, { backgroundColor: C.brinjal1 }]}
+          onPress={() => router.push('/create-campaign')}>
           <Text style={styles.newBtnText}>+ New</Text>
         </Pressable>
       </View>
@@ -87,9 +106,17 @@ export default function CampaignsScreen() {
         {FILTERS.map((f) => (
           <Pressable
             key={f}
-            style={[styles.filterChip, activeFilter === f && styles.filterChipActive]}
+            style={[
+              styles.filterChip,
+              { borderColor: C.border, backgroundColor: C.surface },
+              activeFilter === f && { backgroundColor: C.brinjal1, borderColor: C.brinjal1 },
+            ]}
             onPress={() => setActiveFilter(f)}>
-            <Text style={[styles.filterChipText, activeFilter === f && styles.filterChipTextActive]}>
+            <Text style={[
+              styles.filterChipText,
+              { color: C.textSecondary },
+              activeFilter === f && { color: '#fff', fontWeight: '700' },
+            ]}>
               {f}
             </Text>
           </Pressable>
@@ -97,111 +124,142 @@ export default function CampaignsScreen() {
       </View>
 
       {/* Campaign list */}
-      <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
-        {shown.map((c) => {
-          const st = CAMPAIGN_STATUS[c.status] ?? CAMPAIGN_STATUS.draft;
-          const hasProposals = c.proposals > 0;
-          return (
-            <View key={c.id} style={styles.card}>
-              {/* Main row — tapping edits the campaign */}
-              <Pressable
-                style={({ pressed }) => [styles.cardMain, pressed && { opacity: 0.88 }]}
-                onPress={() =>
-                  router.push({ pathname: '/create-campaign', params: { editId: c.id } })
-                }>
-                <View style={[styles.thumb, { backgroundColor: c.cardBg }]}>
-                  <Text style={styles.thumbEmoji}>{c.emoji}</Text>
-                </View>
-                <View style={styles.body}>
-                  <View style={styles.titleRow}>
-                    <Text style={styles.title} numberOfLines={1}>{c.title}</Text>
-                    <View style={[styles.badge, { backgroundColor: st.bg }]}>
-                      <Text style={[styles.badgeText, { color: st.color }]}>{st.label}</Text>
-                    </View>
-                  </View>
-                  <Text style={styles.meta}>{c.platform} · {c.budget}</Text>
-                  {c.status !== 'draft' ? (
-                    <View style={styles.statsRow}>
-                      <Text style={styles.stat}>👥 {c.proposals} Proposals</Text>
-                      <Text style={styles.stat}>▶ {c.inProgress} In Progress</Text>
-                    </View>
-                  ) : (
-                    <Text style={styles.draftNote}>Draft — tap to edit & publish</Text>
-                  )}
-                </View>
-                <Text style={styles.chevron}>›</Text>
-              </Pressable>
-
-              {/* View proposals link */}
-              {hasProposals && (
-                <>
-                  <View style={styles.footerDivider} />
-                  <Pressable
-                    style={({ pressed }) => [styles.viewProposalsRow, pressed && { opacity: 0.7 }]}
-                    onPress={() => setSelectedCampaign(c)}>
-                    <Text style={styles.viewProposalsText}>View proposals</Text>
-                    <Text style={styles.viewProposalsArrow}>→</Text>
-                  </Pressable>
-                </>
+      {loading ? (
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={C.brinjal1} />
+        </View>
+      ) : (
+        <ScrollView
+          contentContainerStyle={[styles.list, shown.length === 0 && styles.listEmpty]}
+          showsVerticalScrollIndicator={false}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brinjal1} />}>
+          {shown.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyIcon}>📋</Text>
+              <Text style={[styles.emptyTitle, { color: C.text }]}>
+                {activeFilter === 'All' ? 'No campaigns yet' : `No ${activeFilter.toLowerCase()} campaigns`}
+              </Text>
+              <Text style={[styles.emptySub, { color: C.textSecondary }]}>
+                {activeFilter === 'All' ? 'Create your first campaign to find creators.' : 'Try a different filter.'}
+              </Text>
+              {activeFilter === 'All' && (
+                <Pressable
+                  style={[styles.emptyBtn, { backgroundColor: C.brinjal1 }]}
+                  onPress={() => router.push('/create-campaign')}>
+                  <Text style={styles.emptyBtnText}>Create Campaign</Text>
+                </Pressable>
               )}
             </View>
-          );
-        })}
-      </ScrollView>
+          ) : (
+            shown.map((c) => {
+              const st = STATUS_CFG[c.status ?? 'draft'];
+              const meta = CATEGORY_META[c.category] ?? DEFAULT_META;
+              const bg = cardBg(c.category);
+              return (
+                <View key={c.id} style={[styles.card, { backgroundColor: C.surface }]}>
+                  <Pressable
+                    style={({ pressed }) => [styles.cardMain, pressed && { opacity: 0.88 }]}
+                    onPress={() => router.push({ pathname: '/campaign-detail', params: { campaignId: c.id } })}>
+                    <View style={[styles.thumb, { backgroundColor: bg }]}>
+                      <Text style={styles.thumbEmoji}>{meta.emoji}</Text>
+                    </View>
+                    <View style={styles.body}>
+                      <View style={styles.titleRow}>
+                        <Text style={[styles.title, { color: C.text }]} numberOfLines={1}>{c.title}</Text>
+                        <View style={[styles.badge, { backgroundColor: st.bg }]}>
+                          <Text style={[styles.badgeText, { color: st.color }]}>{st.label}</Text>
+                        </View>
+                      </View>
+                      <Text style={[styles.meta, { color: C.textSecondary }]}>
+                        {c.platform} · {c.budget}
+                      </Text>
+                      {(c.status === 'draft') ? (
+                        <Text style={[styles.draftNote, { color: C.textSecondary }]}>
+                          Draft — tap to view & edit
+                        </Text>
+                      ) : (
+                        <Text style={[styles.stat, { color: C.textSecondary }]}>
+                          👥 {c.proposals} {c.proposals === 1 ? 'Proposal' : 'Proposals'}
+                        </Text>
+                      )}
+                    </View>
+                    <Text style={[styles.chevron, { color: C.border }]}>›</Text>
+                  </Pressable>
 
-      {/* ── Proposals bottom sheet ── */}
+                  {c.proposals > 0 && (
+                    <>
+                      <View style={[styles.footerDivider, { backgroundColor: C.border }]} />
+                      <Pressable
+                        style={({ pressed }) => [styles.viewProposalsRow, pressed && { opacity: 0.7 }]}
+                        onPress={() => openProposals(c)}>
+                        <Text style={[styles.viewProposalsText, { color: C.brinjal1 }]}>
+                          View proposals
+                        </Text>
+                        <Text style={[styles.viewProposalsArrow, { color: C.brinjal1 }]}>→</Text>
+                      </Pressable>
+                    </>
+                  )}
+                </View>
+              );
+            })
+          )}
+        </ScrollView>
+      )}
+
+      {/* Proposals bottom sheet */}
       <Modal
         visible={!!selectedCampaign}
         transparent
         animationType="slide"
         onRequestClose={() => setSelectedCampaign(null)}>
         <Pressable style={styles.modalBackdrop} onPress={() => setSelectedCampaign(null)} />
-        <View style={styles.modalSheet}>
-          <View style={styles.modalHandle} />
+        <View style={[styles.modalSheet, { backgroundColor: C.surface }]}>
+          <View style={[styles.modalHandle, { backgroundColor: C.border }]} />
 
-          {/* Modal header */}
-          <View style={styles.modalHeader}>
+          <View style={[styles.modalHeader, { borderBottomColor: C.border }]}>
             <View style={styles.modalHeaderText}>
-              <Text style={styles.modalTitle}>Proposals</Text>
-              <Text style={styles.modalSubtitle} numberOfLines={1}>
+              <Text style={[styles.modalTitle, { color: C.text }]}>Proposals</Text>
+              <Text style={[styles.modalSubtitle, { color: C.textSecondary }]} numberOfLines={1}>
                 {selectedCampaign?.title}
               </Text>
             </View>
-            <Pressable style={styles.modalClose} onPress={() => setSelectedCampaign(null)}>
-              <Text style={styles.modalCloseText}>✕</Text>
+            <Pressable
+              style={[styles.modalClose, { backgroundColor: C.background }]}
+              onPress={() => setSelectedCampaign(null)}>
+              <Text style={[styles.modalCloseText, { color: C.textSecondary }]}>✕</Text>
             </Pressable>
           </View>
 
-          {/* Proposal list */}
-          <ScrollView
-            contentContainerStyle={styles.modalList}
-            showsVerticalScrollIndicator={false}>
-            {modalProposals.length === 0 ? (
+          <ScrollView contentContainerStyle={styles.modalList} showsVerticalScrollIndicator={false}>
+            {appsLoading ? (
+              <View style={styles.center}>
+                <ActivityIndicator size="small" color={C.brinjal1} />
+              </View>
+            ) : applications.length === 0 ? (
               <View style={styles.modalEmpty}>
                 <Text style={styles.modalEmptyIcon}>📭</Text>
-                <Text style={styles.modalEmptyText}>No proposals yet</Text>
+                <Text style={[styles.modalEmptyText, { color: C.textSecondary }]}>No proposals yet</Text>
               </View>
             ) : (
-              modalProposals.map((p) => {
-                const ps = PROPOSAL_STATUS[p.status] ?? PROPOSAL_STATUS.pending;
+              applications.map((a) => {
+                const ps = PROPOSAL_STATUS_CFG[a.status];
+                const abbr = initials(a.creator.fullName);
                 return (
-                  <View key={p.id} style={styles.proposalCard}>
-                    <View style={[styles.proposalAvatar, { backgroundColor: p.avatarBg }]}>
-                      <Text style={[styles.proposalAvatarText, { color: p.avatarColor }]}>
-                        {p.avatar}
-                      </Text>
+                  <View key={a.id} style={[styles.proposalCard, { backgroundColor: C.background, borderColor: C.border }]}>
+                    <View style={[styles.proposalAvatar, { backgroundColor: C.primaryLight }]}>
+                      <Text style={[styles.proposalAvatarText, { color: C.brinjal1 }]}>{abbr}</Text>
                     </View>
                     <View style={styles.proposalBody}>
                       <View style={styles.proposalTopRow}>
-                        <Text style={styles.proposalName}>{p.name}</Text>
+                        <Text style={[styles.proposalName, { color: C.text }]}>{a.creator.fullName}</Text>
                         <View style={[styles.proposalBadge, { backgroundColor: ps.bg }]}>
-                          <Text style={[styles.proposalBadgeText, { color: ps.color }]}>
-                            {ps.label}
-                          </Text>
+                          <Text style={[styles.proposalBadgeText, { color: ps.color }]}>{ps.label}</Text>
                         </View>
                       </View>
-                      <Text style={styles.proposalHandle}>{p.handle} · {p.followers} followers</Text>
-                      <Text style={styles.proposalRate}>{p.rate}</Text>
+                      {a.creator.location ? (
+                        <Text style={[styles.proposalSub, { color: C.textSecondary }]}>📍 {a.creator.location}</Text>
+                      ) : null}
+                      <Text style={[styles.proposalRate, { color: C.brinjal1 }]}>{a.proposedRate}</Text>
                     </View>
                   </View>
                 );
@@ -215,119 +273,90 @@ export default function CampaignsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+  container: { flex: 1 },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 60 },
+
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12,
   },
-  pageTitle: { fontSize: 22, fontWeight: '800', color: COLORS.text },
-  newBtn: {
-    backgroundColor: COLORS.brinjal1, borderRadius: 10,
-    paddingHorizontal: 14, paddingVertical: 8,
-  },
+  pageTitle: { fontSize: 22, fontWeight: '800' },
+  newBtn: { borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8 },
   newBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
 
   filterRow: { flexDirection: 'row', paddingHorizontal: 20, gap: 8, paddingBottom: 16 },
-  filterChip: {
-    paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20,
-    borderWidth: 1.5, borderColor: COLORS.border, backgroundColor: COLORS.surface,
-  },
-  filterChipActive: { backgroundColor: COLORS.brinjal1, borderColor: COLORS.brinjal1 },
-  filterChipText: { fontSize: 12, fontWeight: '500', color: COLORS.textSecondary },
-  filterChipTextActive: { color: '#fff', fontWeight: '700' },
+  filterChip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 1.5 },
+  filterChipText: { fontSize: 12, fontWeight: '500' },
 
   list: { paddingHorizontal: 20, gap: 12, paddingBottom: 40 },
+  listEmpty: { flexGrow: 1 },
 
-  /* Card */
+  emptyState: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 8, paddingHorizontal: 32 },
+  emptyIcon: { fontSize: 48, marginBottom: 4 },
+  emptyTitle: { fontSize: 17, fontWeight: '700', textAlign: 'center' },
+  emptySub: { fontSize: 13, textAlign: 'center', lineHeight: 20 },
+  emptyBtn: { marginTop: 12, borderRadius: 12, paddingHorizontal: 24, paddingVertical: 12 },
+  emptyBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
+
   card: {
-    backgroundColor: COLORS.surface, borderRadius: 16,
+    borderRadius: 16,
     shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 }, elevation: 3,
-    overflow: 'hidden',
+    shadowOffset: { width: 0, height: 2 }, elevation: 3, overflow: 'hidden',
   },
-  cardMain: {
-    flexDirection: 'row', alignItems: 'center',
-    padding: 12, gap: 12,
-  },
-  thumb: {
-    width: 72, height: 72, borderRadius: 12,
-    justifyContent: 'center', alignItems: 'center', flexShrink: 0,
-  },
+  cardMain: { flexDirection: 'row', alignItems: 'center', padding: 12, gap: 12 },
+  thumb: { width: 72, height: 72, borderRadius: 12, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   thumbEmoji: { fontSize: 28 },
   body: { flex: 1, gap: 4 },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
-  title: { fontSize: 14, fontWeight: '700', color: COLORS.text, flex: 1 },
+  title: { fontSize: 14, fontWeight: '700', flex: 1 },
   badge: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
   badgeText: { fontSize: 11, fontWeight: '700' },
-  meta: { fontSize: 12, color: COLORS.textSecondary },
-  statsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 2 },
-  stat: { fontSize: 11, color: COLORS.textSecondary },
-  draftNote: { fontSize: 11, color: COLORS.textSecondary, fontStyle: 'italic', marginTop: 2 },
-  chevron: { fontSize: 22, color: COLORS.border, flexShrink: 0 },
+  meta: { fontSize: 12 },
+  stat: { fontSize: 11, marginTop: 2 },
+  draftNote: { fontSize: 11, fontStyle: 'italic', marginTop: 2 },
+  chevron: { fontSize: 22, flexShrink: 0 },
 
-  /* View proposals footer */
-  footerDivider: { height: 1, backgroundColor: COLORS.border, marginHorizontal: 12 },
+  footerDivider: { height: 1, marginHorizontal: 12 },
   viewProposalsRow: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end',
     gap: 4, paddingHorizontal: 14, paddingVertical: 9,
   },
-  viewProposalsText: { fontSize: 12, fontWeight: '700', color: COLORS.brinjal1 },
-  viewProposalsArrow: { fontSize: 13, color: COLORS.brinjal1 },
+  viewProposalsText: { fontSize: 12, fontWeight: '700' },
+  viewProposalsArrow: { fontSize: 13 },
 
-  /* Modal */
-  modalBackdrop: {
-    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-  },
+  modalBackdrop: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)' },
   modalSheet: {
     position: 'absolute', left: 0, right: 0, bottom: 0,
-    backgroundColor: COLORS.surface,
-    borderTopLeftRadius: 24, borderTopRightRadius: 24,
-    maxHeight: '75%',
+    borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '75%',
     shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 20,
     shadowOffset: { width: 0, height: -4 }, elevation: 20,
   },
-  modalHandle: {
-    width: 40, height: 4, borderRadius: 2,
-    backgroundColor: COLORS.border, alignSelf: 'center',
-    marginTop: 12, marginBottom: 4,
-  },
+  modalHandle: { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginTop: 12, marginBottom: 4 },
   modalHeader: {
     flexDirection: 'row', alignItems: 'flex-start',
-    paddingHorizontal: 20, paddingVertical: 14,
-    borderBottomWidth: 1, borderBottomColor: COLORS.border,
+    paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1,
   },
   modalHeaderText: { flex: 1 },
-  modalTitle: { fontSize: 17, fontWeight: '800', color: COLORS.text },
-  modalSubtitle: { fontSize: 13, color: COLORS.textSecondary, marginTop: 2 },
-  modalClose: {
-    width: 28, height: 28, borderRadius: 14,
-    backgroundColor: COLORS.background,
-    justifyContent: 'center', alignItems: 'center',
-  },
-  modalCloseText: { fontSize: 12, color: COLORS.textSecondary, fontWeight: '700' },
+  modalTitle: { fontSize: 17, fontWeight: '800' },
+  modalSubtitle: { fontSize: 13, marginTop: 2 },
+  modalClose: { width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
+  modalCloseText: { fontSize: 12, fontWeight: '700' },
   modalList: { padding: 16, gap: 12, paddingBottom: 40 },
   modalEmpty: { alignItems: 'center', paddingTop: 40, gap: 10 },
   modalEmptyIcon: { fontSize: 40 },
-  modalEmptyText: { fontSize: 14, color: COLORS.textSecondary },
+  modalEmptyText: { fontSize: 14 },
 
-  /* Proposal row inside modal */
   proposalCard: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: COLORS.background, borderRadius: 14,
-    padding: 12, gap: 12,
-    borderWidth: 1, borderColor: COLORS.border,
+    borderRadius: 14, padding: 12, gap: 12, borderWidth: 1,
   },
-  proposalAvatar: {
-    width: 44, height: 44, borderRadius: 22,
-    justifyContent: 'center', alignItems: 'center', flexShrink: 0,
-  },
+  proposalAvatar: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   proposalAvatarText: { fontSize: 14, fontWeight: '800' },
   proposalBody: { flex: 1, gap: 3 },
   proposalTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  proposalName: { fontSize: 14, fontWeight: '700', color: COLORS.text },
+  proposalName: { fontSize: 14, fontWeight: '700' },
   proposalBadge: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
   proposalBadgeText: { fontSize: 11, fontWeight: '700' },
-  proposalHandle: { fontSize: 12, color: COLORS.textSecondary },
-  proposalRate: { fontSize: 13, fontWeight: '700', color: COLORS.brinjal1, marginTop: 2 },
+  proposalSub: { fontSize: 12 },
+  proposalRate: { fontSize: 13, fontWeight: '700', marginTop: 2 },
 });

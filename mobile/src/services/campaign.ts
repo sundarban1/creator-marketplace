@@ -175,6 +175,58 @@ export const campaignService = {
     });
   },
 
+  async getBusinessProposals(params?: { page?: number; limit?: number }): Promise<{
+    proposals: Array<{
+      id: string;
+      status: 'pending' | 'accepted' | 'rejected';
+      proposedRate: string;
+      createdAt: string;
+      campaign: { id: string; title: string; platform: string };
+      creator: { fullName: string; avatarUrl: string | null; location: string | null };
+    }>;
+    total: number;
+  }> {
+    const res = await request<Array<{
+      id: string; status: string; proposedRate: number; createdAt: string;
+      campaign: { id: string; title: string; platform: string };
+      creator: { fullName: string; avatarUrl: string | null; location: string | null };
+    }>>('GET', '/api/campaigns/applications/business', undefined, {
+      page: params?.page ?? 1,
+      limit: params?.limit ?? 50,
+    });
+    return {
+      proposals: res.data.map((a) => ({
+        id: a.id,
+        status: a.status.toLowerCase() as 'pending' | 'accepted' | 'rejected',
+        proposedRate: `$${a.proposedRate.toLocaleString()}`,
+        createdAt: a.createdAt,
+        campaign: a.campaign,
+        creator: a.creator,
+      })),
+      total: res.pagination?.total ?? res.data.length,
+    };
+  },
+
+  async getApplications(campaignId: string): Promise<Array<{
+    id: string;
+    status: 'pending' | 'accepted' | 'rejected';
+    proposedRate: string;
+    createdAt: string;
+    creator: { fullName: string; avatarUrl: string | null; location: string | null };
+  }>> {
+    const res = await request<Array<{
+      id: string; status: string; proposedRate: number; createdAt: string;
+      creator: { fullName: string; avatarUrl: string | null; location: string | null };
+    }>>('GET', `/api/campaigns/${campaignId}/applications`);
+    return res.data.map((a) => ({
+      id: a.id,
+      status: a.status.toLowerCase() as 'pending' | 'accepted' | 'rejected',
+      proposedRate: `$${a.proposedRate.toLocaleString()}`,
+      createdAt: a.createdAt,
+      creator: a.creator,
+    }));
+  },
+
   async getMyApplications(): Promise<Array<{
     id:            string;
     campaignId:    string;
