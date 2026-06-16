@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/components/Toast';
 import { useAppColors, useIsDark } from '@/context/ThemeContext';
 import { COLORS } from '@/utilities/constants';
 
@@ -162,6 +163,7 @@ export default function BusinessSettingsScreen() {
   const { isDark, toggleDark } = useIsDark();
   const { section } = useLocalSearchParams<{ section?: string }>();
   const C: ColorsType = useAppColors();
+  const toast = useToast();
 
   const [subPage, setSubPage] = useState<string | null>(null);
 
@@ -227,19 +229,7 @@ export default function BusinessSettingsScreen() {
   const [reportType, setReportType] = useState('');
   const [reportDesc, setReportDesc] = useState('');
 
-  // ── Toast ──
-  const toastAnim = useRef(new Animated.Value(0)).current;
-  const [toastMsg, setToastMsg] = useState('');
-
-  function showToast(msg: string) {
-    setToastMsg(msg);
-    toastAnim.setValue(0);
-    Animated.sequence([
-      Animated.timing(toastAnim, { toValue: 1, duration: 200, useNativeDriver: true }),
-      Animated.delay(2200),
-      Animated.timing(toastAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
-    ]).start(() => setToastMsg(''));
-  }
+  function showToast(msg: string) { toast.success(msg); }
 
   // ── Helpers ──
 
@@ -1184,12 +1174,6 @@ export default function BusinessSettingsScreen() {
           <View style={{ height: 48 }} />
         </ScrollView>
 
-        {/* Toast */}
-        {toastMsg ? (
-          <Animated.View style={[styles.toast, { opacity: toastAnim, backgroundColor: C.active }]}>
-            <Text style={styles.toastText}>✓  {toastMsg}</Text>
-          </Animated.View>
-        ) : null}
 
       </SafeAreaView>
     </ColorCtx.Provider>

@@ -42,7 +42,7 @@ export const NEPAL_LOCATIONS = [
   'Butwal', 'Biratnagar', 'Remote',
 ];
 
-export const FILTER_TABS = ['New', 'Recommended', 'Trending', 'Ending Soon'];
+export const FILTER_TABS = ['All', 'New', 'Recommended', 'Trending', 'Ending Soon'];
 
 export const PRICE_OPTIONS = [
   { key: 'any',      label: 'Any' },

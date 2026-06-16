@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useContext, useEffect, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -31,7 +32,7 @@ export default function HomeScreen() {
 
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
-  const [activeFilterTab, setActiveFilterTab] = useState(-1); // -1 = no tab filter
+  const [activeFilterTab, setActiveFilterTab] = useState(0); // 0 = All
   const [showBanner, setShowBanner] = useState(true);
   const [priceMin, setPriceMin] = useState(0);
   const [priceMax, setPriceMax] = useState(SLIDER_MAX);
@@ -174,10 +175,10 @@ export default function HomeScreen() {
       );
 
     let matchTab = true;
-    if (activeFilterTab === 0) matchTab = c.isNew;
-    else if (activeFilterTab === 1) matchTab = !c.isFeatured;
-    else if (activeFilterTab === 2) matchTab = c.proposals >= 3;
-    else if (activeFilterTab === 3) {
+    if (activeFilterTab === 1) matchTab = c.isNew;
+    else if (activeFilterTab === 2) matchTab = !c.isFeatured;
+    else if (activeFilterTab === 3) matchTab = c.proposals >= 3;
+    else if (activeFilterTab === 4) {
       const deadline = c.deadline ? new Date(c.deadline) : null;
       if (deadline && !isNaN(deadline.getTime())) {
         const daysLeft = (deadline.getTime() - Date.now()) / (1000 * 60 * 60 * 24);
@@ -202,9 +203,7 @@ export default function HomeScreen() {
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <Pressable style={styles.menuBtn} onPress={openDrawer}>
-              <View style={[styles.menuLine, { backgroundColor: C.text }]} />
-              <View style={[styles.menuLine, { width: 18, backgroundColor: C.text }]} />
-              <View style={[styles.menuLine, { backgroundColor: C.text }]} />
+              <Ionicons name="menu" size={26} color={C.text} />
             </Pressable>
             <View>
               <Text style={[styles.greeting, { color: C.textSecondary }]}>Hello, 👋</Text>
@@ -222,7 +221,7 @@ export default function HomeScreen() {
                 <Image source={{ uri: user.avatar }} style={styles.avatarImage} />
               ) : (
                 <View style={[styles.avatarFallback, { backgroundColor: '#E8EAF6' }]}>
-                  <Text style={styles.avatarEmoji}>🧑</Text>
+                  <Ionicons name="person" size={24} color="#5C6BC0" />
                 </View>
               )}
             </Pressable>
@@ -231,7 +230,7 @@ export default function HomeScreen() {
 
         {/* ── Search ── */}
         <View style={[styles.searchCard, { backgroundColor: C.surface }]}>
-          <Text style={styles.searchIcon}>🔍</Text>
+          <Ionicons name="search" size={17} color={C.textSecondary} style={styles.searchIcon} />
           <TextInput
             style={[styles.searchInput, { color: C.text }]}
             placeholder={t('creator.browse.searchPlaceholder')}
@@ -242,14 +241,24 @@ export default function HomeScreen() {
           <Pressable
             style={[styles.filterBtn, { backgroundColor: C.primaryLight }, isFilterActive && { backgroundColor: C.brinjal1 }]}
             onPress={openFilter}>
-            <View style={styles.filterLines}>
-              <View style={[styles.filterLine, { width: 16, backgroundColor: isFilterActive ? '#fff' : C.brinjal1 }]} />
-              <View style={[styles.filterLine, { width: 12, backgroundColor: isFilterActive ? '#fff' : C.brinjal1 }]} />
-              <View style={[styles.filterLine, { width: 8, backgroundColor: isFilterActive ? '#fff' : C.brinjal1 }]} />
-            </View>
+            <Ionicons name="options" size={18} color={isFilterActive ? '#fff' : C.brinjal1} />
             {isFilterActive && <View style={[styles.filterActiveDot, { borderColor: C.surface }]} />}
           </Pressable>
         </View>
+
+        {/* ── Explore Brands compact strip ── */}
+        <Pressable
+          style={[styles.exploreStrip, { backgroundColor: C.primaryLight }]}
+          onPress={() => router.push('/(creator)/explore-businesses' as never)}>
+          <View style={[styles.exploreIconBox, { backgroundColor: C.brinjal1 }]}>
+            <Ionicons name="business" size={18} color="#fff" />
+          </View>
+          <View style={styles.exploreTexts}>
+            <Text style={[styles.exploreTitle, { color: C.text }]}>Explore Brands</Text>
+            <Text style={[styles.exploreSub, { color: C.textSecondary }]}>Find businesses hiring creators</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={22} color={C.brinjal1} />
+        </Pressable>
 
         {/* ── Error ── */}
         {fetchError ? (
@@ -292,7 +301,7 @@ export default function HomeScreen() {
             {featured.length > 0 && (
               <>
                 <View style={styles.sectionHeader}>
-                  <Text style={[styles.sectionTitle, { color: C.text }]}>⭐ Featured Campaigns</Text>
+                  <Text style={[styles.sectionTitle, { color: C.text }]}>Featured Campaigns</Text>
                   <Pressable onPress={() => router.push('/(creator)/featured-campaigns')}>
                     <Text style={[styles.seeAll, { color: C.brinjal1 }]}>See All</Text>
                   </Pressable>
@@ -308,7 +317,7 @@ export default function HomeScreen() {
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 <View style={styles.filterTabsRow}>
                   {FILTER_TABS.map((label, i) => (
-                    <Pressable key={label} style={styles.filterTab} onPress={() => setActiveFilterTab(activeFilterTab === i ? -1 : i)}>
+                    <Pressable key={label} style={styles.filterTab} onPress={() => setActiveFilterTab(activeFilterTab === i && i !== 0 ? 0 : i)}>
                       <Text style={[styles.filterTabText, { color: activeFilterTab === i ? C.brinjal1 : C.textSecondary }, activeFilterTab === i && { fontWeight: '700' }]}>
                         {label}
                       </Text>
@@ -323,7 +332,7 @@ export default function HomeScreen() {
             <View style={styles.listWrap}>
               {filteredList.length === 0 ? (
                 <View style={styles.emptyWrap}>
-                  <Text style={styles.emptyEmoji}>🔍</Text>
+                  <Ionicons name="search" size={40} color={C.textSecondary} />
                   <Text style={[styles.emptyTitle, { color: C.text }]}>No campaigns found</Text>
                   <Text style={[styles.emptyHint, { color: C.textSecondary }]}>
                     {campaigns.length === 0
@@ -339,7 +348,7 @@ export default function HomeScreen() {
             {/* ── Complete profile banner ── */}
             {showBanner && (
               <View style={[styles.banner, { backgroundColor: C.surface, borderLeftColor: C.brinjal1 }]}>
-                <Text style={styles.bannerEmoji}>💼</Text>
+                <Ionicons name="briefcase" size={28} color={C.brinjal1} style={{ flexShrink: 0 }} />
                 <View style={styles.bannerText}>
                   <Text style={[styles.bannerTitle, { color: C.text }]}>Complete your profile</Text>
                   <Text style={[styles.bannerSub, { color: C.textSecondary }]}>
@@ -347,7 +356,7 @@ export default function HomeScreen() {
                   </Text>
                 </View>
                 <Pressable style={styles.bannerClose} onPress={() => setShowBanner(false)}>
-                  <Text style={[styles.bannerCloseText, { color: C.textSecondary }]}>✕</Text>
+                  <Ionicons name="close" size={16} color={C.textSecondary} />
                 </Pressable>
               </View>
             )}
@@ -383,8 +392,7 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 16 },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  menuBtn: { gap: 5, padding: 4 },
-  menuLine: { width: 22, height: 2, borderRadius: 1 },
+  menuBtn: { padding: 4 },
   greeting: { fontSize: 12, marginBottom: 2 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   brandName: { fontSize: 18, fontWeight: '800', maxWidth: 160 },
@@ -393,14 +401,11 @@ const styles = StyleSheet.create({
   avatarCircle: { width: 42, height: 42, borderRadius: 21, overflow: 'hidden', borderWidth: 2, shadowOpacity: 0.35, shadowRadius: 6, shadowOffset: { width: 0, height: 3 }, elevation: 5 },
   avatarImage: { width: 42, height: 42 },
   avatarFallback: { width: 42, height: 42, justifyContent: 'center', alignItems: 'center' },
-  avatarEmoji: { fontSize: 28, lineHeight: 34, textAlign: 'center' },
 
   searchCard: { flexDirection: 'row', alignItems: 'center', borderRadius: 14, marginHorizontal: 20, marginBottom: 24, paddingHorizontal: 14, height: 50, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 3 },
-  searchIcon: { fontSize: 16, marginRight: 8 },
+  searchIcon: { marginRight: 8 },
   searchInput: { flex: 1, fontSize: 14 },
   filterBtn: { width: 34, height: 34, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
-  filterLines: { gap: 4, alignItems: 'flex-end' },
-  filterLine: { height: 2, borderRadius: 1 },
   filterActiveDot: { position: 'absolute', top: 4, right: 4, width: 7, height: 7, borderRadius: 4, backgroundColor: '#EF4444', borderWidth: 1.5 },
 
   errorCard: { marginHorizontal: 20, marginBottom: 16, borderRadius: 10, padding: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
@@ -430,15 +435,18 @@ const styles = StyleSheet.create({
   listWrap: { paddingHorizontal: 20, gap: 12 },
 
   emptyWrap: { alignItems: 'center', paddingVertical: 48, gap: 10 },
-  emptyEmoji: { fontSize: 40 },
   emptyTitle: { fontSize: 17, fontWeight: '700' },
   emptyHint: { fontSize: 13, textAlign: 'center', lineHeight: 20, paddingHorizontal: 24 },
 
+  exploreStrip:   { flexDirection: 'row', alignItems: 'center', borderRadius: 14, marginHorizontal: 20, marginBottom: 20, paddingHorizontal: 14, paddingVertical: 12, gap: 12 },
+  exploreIconBox: { width: 38, height: 38, borderRadius: 11, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  exploreTexts:   { flex: 1 },
+  exploreTitle:   { fontSize: 14, fontWeight: '700' },
+  exploreSub:     { fontSize: 12, marginTop: 1 },
+
   banner: { flexDirection: 'row', alignItems: 'center', borderRadius: 16, marginHorizontal: 20, marginTop: 20, padding: 14, gap: 10, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 3, borderLeftWidth: 4 },
-  bannerEmoji: { fontSize: 32, flexShrink: 0 },
   bannerText: { flex: 1, gap: 2 },
   bannerTitle: { fontSize: 13, fontWeight: '700' },
   bannerSub: { fontSize: 11, lineHeight: 16 },
   bannerClose: { position: 'absolute', top: 8, right: 8, padding: 4 },
-  bannerCloseText: { fontSize: 11 },
 });

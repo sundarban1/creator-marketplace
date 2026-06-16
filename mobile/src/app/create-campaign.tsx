@@ -22,6 +22,8 @@ import { campaignService } from '@/services/campaign';
 const PLATFORMS = ['Instagram', 'TikTok', 'YouTube', 'Twitter / X', 'LinkedIn'] as const;
 const CATEGORIES = ['Fashion', 'Health & Fitness', 'Food & Drink', 'Gaming', 'Education', 'Travel', 'Tech', 'Beauty'];
 const FOLLOWER_RANGES = ['< 1K', '1K–10K', '10K–50K', '50K–100K', '100K–500K', '500K+'];
+
+const GOOGLE_PLACES_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY ?? '';
 const CONTENT_TYPES = ['Reel / Short Video', 'Story', 'Static Post', 'Blog Article', 'Podcast Mention'];
 const PAYMENT_TYPES = ['Fixed Fee', 'Commission', 'Product Exchange', 'Hybrid', 'Negotiable'];
 
@@ -43,6 +45,7 @@ type FormData = {
   description: string;
   category: string;
   platform: string;
+  location: string;
   creatorsNeeded: number;
   minFollowers: string;
   contentType: string;
@@ -53,6 +56,8 @@ type FormData = {
   paymentType: string;
   isFeatured: boolean;
 };
+
+type PlacePrediction = { place_id: string; description: string };
 
 type FormErrors = Partial<Record<keyof FormData, string>>;
 
@@ -295,6 +300,78 @@ const ddp = StyleSheet.create({
   selectedText: { fontSize: 13, fontWeight: '700' },
 });
 
+// ─── Google Places Input ──────────────────────────────────────────────────────
+
+function PlacesInput({
+  value, onChange, colors, error,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  colors: ReturnType<typeof useAppColors>;
+  error?: string;
+}) {
+  const C = colors;
+  const [suggestions, setSuggestions] = useState<PlacePrediction[]>([]);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function handleChange(text: string) {
+    onChange(text);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (!text.trim() || !GOOGLE_PLACES_KEY) { setSuggestions([]); return; }
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(text)}&key=${GOOGLE_PLACES_KEY}&language=en&types=geocode`;
+        const res = await fetch(url);
+        const json = await res.json();
+        setSuggestions(json.status === 'OK' ? json.predictions : []);
+      } catch { setSuggestions([]); }
+    }, 350);
+  }
+
+  function selectPlace(place: PlacePrediction) {
+    onChange(place.description);
+    setSuggestions([]);
+  }
+
+  useEffect(() => () => { if (debounceRef.current) clearTimeout(debounceRef.current); }, []);
+
+  return (
+    <View style={pl.wrap}>
+      <TextInput
+        value={value}
+        onChangeText={handleChange}
+        placeholder="e.g. Kathmandu, New York or Remote"
+        placeholderTextColor={C.textSecondary}
+        style={[pl.input, { backgroundColor: C.background, borderColor: error ? ERROR_RED : C.border, color: C.text }]}
+      />
+      {error && <Text style={[pl.errorTxt]}>{error}</Text>}
+      {suggestions.length > 0 && (
+        <View style={[pl.dropdown, { backgroundColor: C.surface, borderColor: C.border }]}>
+          {suggestions.map((place, i) => (
+            <Pressable
+              key={place.place_id}
+              style={[pl.item, i < suggestions.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}
+              onPress={() => selectPlace(place)}>
+              <Text style={pl.pin}>📍</Text>
+              <Text style={[pl.itemText, { color: C.text }]} numberOfLines={2}>{place.description}</Text>
+            </Pressable>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+}
+
+const pl = StyleSheet.create({
+  wrap:     { zIndex: 99 },
+  input:    { borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14, height: 48, fontSize: 15 },
+  errorTxt: { fontSize: 12, color: ERROR_RED, marginTop: 4 },
+  dropdown: { borderRadius: 12, borderWidth: 1.5, marginTop: 6, overflow: 'hidden', elevation: 10, zIndex: 100 },
+  item:     { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, gap: 10 },
+  pin:      { fontSize: 14 },
+  itemText: { fontSize: 13, flex: 1 },
+});
+
 // ─── Field Label ──────────────────────────────────────────────────────────────
 
 function FieldLabel({ label, hint, color, hintColor }: {
@@ -384,6 +461,7 @@ export default function CreateCampaignScreen() {
     description: '',
     category: '',
     platform: '',
+    location: '',
     creatorsNeeded: 1,
     minFollowers: '',
     contentType: '',
@@ -459,6 +537,7 @@ export default function CreateCampaignScreen() {
         description:    form.description.trim(),
         category:       form.category,
         platform:       form.platform,
+        location:       form.location.trim() || undefined,
         minFollowers:   FOLLOWER_MIN_MAP[form.minFollowers] ?? 0,
         contentType:    form.contentType,
         deliverables:   form.deliverables.trim(),
@@ -480,8 +559,9 @@ export default function CreateCampaignScreen() {
 
   const reviewItems: { label: string; value: string; emoji: string }[] = [
     { emoji: '📣', label: 'Title',            value: form.title },
-    { emoji: '📱', label: 'Platform',         value: form.platform },
     { emoji: '🏷️', label: 'Category',         value: form.category },
+    { emoji: '📱', label: 'Platform',         value: form.platform },
+    { emoji: '📍', label: 'Location',         value: form.location || 'Remote' },
     { emoji: '👥', label: 'Min. Followers',   value: form.minFollowers },
     { emoji: '🎬', label: 'Content Type',     value: form.contentType },
     { emoji: '🧑‍🎨', label: 'Creators Needed', value: `${form.creatorsNeeded} creator${form.creatorsNeeded !== 1 ? 's' : ''}` },
@@ -561,27 +641,37 @@ export default function CreateCampaignScreen() {
               </View>
 
               <View style={[s.stepCard, { backgroundColor: C.surface }]}>
-                <Text style={[s.cardTitle, { color: C.text }]}>🏷️ Category & Platform</Text>
-                <View style={s.field}>
-                  <FieldLabel label="Category" hint="Required" color={C.text} hintColor={C.brinjal1} />
-                  <ChipGroup
-                    options={CATEGORIES}
-                    value={form.category}
-                    onChange={(v) => update('category', v)}
-                    colors={C}
-                    error={errors.category}
-                  />
-                </View>
-                <View style={s.field}>
-                  <FieldLabel label="Platform" hint="Required" color={C.text} hintColor={C.brinjal1} />
-                  <ChipGroup
-                    options={PLATFORMS}
-                    value={form.platform}
-                    onChange={(v) => update('platform', v)}
-                    colors={C}
-                    error={errors.platform}
-                  />
-                </View>
+                <Text style={[s.cardTitle, { color: C.text }]}>🏷️ Category</Text>
+                <Text style={[s.cardSub, { color: C.textSecondary }]}>What niche does this campaign belong to?</Text>
+                <ChipGroup
+                  options={CATEGORIES}
+                  value={form.category}
+                  onChange={(v) => update('category', v)}
+                  colors={C}
+                  error={errors.category}
+                />
+              </View>
+
+              <View style={[s.stepCard, { backgroundColor: C.surface }]}>
+                <Text style={[s.cardTitle, { color: C.text }]}>📱 Platform</Text>
+                <Text style={[s.cardSub, { color: C.textSecondary }]}>Which social platform will creators post on?</Text>
+                <ChipGroup
+                  options={PLATFORMS}
+                  value={form.platform}
+                  onChange={(v) => update('platform', v)}
+                  colors={C}
+                  error={errors.platform}
+                />
+              </View>
+
+              <View style={[s.stepCard, { backgroundColor: C.surface, zIndex: 10 }]}>
+                <Text style={[s.cardTitle, { color: C.text }]}>📍 Location</Text>
+                <Text style={[s.cardSub, { color: C.textSecondary }]}>Where should the creator be based, or type "Remote".</Text>
+                <PlacesInput
+                  value={form.location}
+                  onChange={(v) => update('location', v)}
+                  colors={C}
+                />
               </View>
 
               <View style={[s.stepCard, { backgroundColor: C.surface }]}>

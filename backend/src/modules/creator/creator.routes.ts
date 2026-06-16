@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { CreatorController } from './creator.controller';
+import { BusinessController } from '../business/business.controller';
 import { authenticate, authorize } from '../../middleware/auth';
 import { validate } from '../../middleware/validate';
 import {
@@ -14,6 +15,7 @@ import {
 
 const router = Router();
 const ctrl = new CreatorController();
+const businessCtrl = new BusinessController();
 
 // All creator routes require authentication and CREATOR role
 router.use(authenticate, authorize('CREATOR'));
@@ -229,5 +231,9 @@ router.delete('/social-accounts/:id',      ctrl.deleteSocialAccount.bind(ctrl));
 router.get('/earnings',                    ctrl.getEarnings.bind(ctrl));
 router.put('/payment-methods',             validate(updatePaymentMethodsSchema),  ctrl.updatePaymentMethods.bind(ctrl));
 router.put('/campaign-preferences',        validate(updateCampaignPrefsSchema),   ctrl.updateCampaignPrefs.bind(ctrl));
+
+// Explore businesses (creator browsing businesses)
+router.get('/businesses',    businessCtrl.listBusinesses.bind(businessCtrl));
+router.get('/businesses/:id', businessCtrl.getBusinessPublic.bind(businessCtrl));
 
 export default router;

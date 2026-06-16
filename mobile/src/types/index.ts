@@ -17,8 +17,10 @@ export type Campaign = {
   platformIcon: string;
   budget: string;
   budgetRaw: number;
+  budgetMax?: number;
   category: string;
   minFollowers: string;
+  minFollowersRaw: number;
   deadline: string;
   contentType: string;
   description: string;

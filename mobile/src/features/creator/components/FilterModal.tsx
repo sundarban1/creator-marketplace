@@ -61,7 +61,7 @@ type Props = {
 
 // ─── LocationSearchPicker ─────────────────────────────────────────────────────
 
-function LocationSearchPicker({
+export function LocationSearchPicker({
   selected,
   onSelect,
 }: {

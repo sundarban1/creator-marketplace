@@ -7,6 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 import { LanguageProvider } from '@/context/LanguageContext';
 import { AppThemeProvider, useIsDark } from '@/context/ThemeContext';
 import { SplashScreen } from '@/components/SplashScreen';
+import { ToastProvider } from '@/components/Toast';
 
 // Handles auth-based redirects for both login AND logout
 function RootNavigator() {
@@ -16,10 +17,11 @@ function RootNavigator() {
 
   useEffect(() => {
     if (isLoading) return;
-    const inAuthGroup = segments[0] === '(auth)';
+    const inAuthGroup  = segments[0] === '(auth)';
     const inOnboarding = segments[0] === 'onboarding' || segments[0] === 'business-onboarding';
+    const isPublic     = segments[0] === 'legal';
 
-    if (!user && !inAuthGroup) {
+    if (!user && !inAuthGroup && !isPublic) {
       router.replace('/login');
     } else if (user && inAuthGroup) {
       if (user.isFirstLogin === true) {
@@ -40,6 +42,7 @@ function RootNavigator() {
       <Stack.Screen name="business-onboarding" />
       <Stack.Screen name="(creator)" />
       <Stack.Screen name="(business)" />
+      <Stack.Screen name="legal" options={{ presentation: 'card' }} />
       <Stack.Screen name="campaign-detail" options={{ presentation: 'card' }} />
       <Stack.Screen name="submit-proposal" options={{ presentation: 'modal' }} />
       <Stack.Screen name="create-campaign" options={{ presentation: 'modal' }} />
@@ -63,10 +66,12 @@ function RootLayoutInner() {
 export default function RootLayout() {
   return (
     <AppThemeProvider>
-      <View style={{ flex: 1 }}>
-        <RootLayoutInner />
-        <SplashScreen />
-      </View>
+      <ToastProvider>
+        <View style={{ flex: 1 }}>
+          <RootLayoutInner />
+          <SplashScreen />
+        </View>
+      </ToastProvider>
     </AppThemeProvider>
   );
 }

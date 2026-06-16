@@ -1,7 +1,8 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { EmptyState } from '@/components/EmptyState';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
@@ -109,7 +110,9 @@ export default function NotificationsScreen() {
         )}
       </View>
       {loading ? (
-        <Text style={[styles.empty, { color: C.textSecondary }]}>{t('common.loading')}</Text>
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={C.brinjal1} />
+        </View>
       ) : (
         <FlatList
           data={grouped}
@@ -120,9 +123,15 @@ export default function NotificationsScreen() {
               {g.items.map((n) => <NotificationItem key={n.id} item={n} onPress={handlePress} />)}
             </View>
           )}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={[styles.list, grouped.length === 0 && styles.listEmpty]}
           showsVerticalScrollIndicator={false}
-          ListEmptyComponent={<Text style={[styles.empty, { color: C.textSecondary }]}>{t('notifications.allCaughtUp')}</Text>}
+          ListEmptyComponent={
+            <EmptyState
+              emoji="🔔"
+              title="All caught up!"
+              subtitle="You have no notifications right now. We'll let you know when something new happens."
+            />
+          }
         />
       )}
     </SafeAreaView>
@@ -136,7 +145,9 @@ const styles = StyleSheet.create({
   subheading: { fontSize: 13, marginTop: 2 },
   markAllBtn: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 8, borderWidth: 1 },
   markAllText: { fontSize: 12, fontWeight: '600' },
-  list: { paddingBottom: 32 },
+  center:   { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  list:     { paddingBottom: 32 },
+  listEmpty:{ flexGrow: 1 },
   groupLabel: { fontSize: 12, fontWeight: '700', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
   item: { flexDirection: 'row', paddingVertical: 14, paddingHorizontal: 20, borderBottomWidth: 1, gap: 12 },
   accentBar: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, borderRadius: 2 },

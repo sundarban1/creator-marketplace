@@ -226,6 +226,7 @@ export class CampaignRepository {
         include: {
           campaign: {
             select: {
+              id: true,
               title: true,
               category: true,
               platform: true,

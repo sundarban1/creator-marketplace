@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -79,11 +80,12 @@ export default function BusinessHomeScreen() {
     completed: campaigns.filter((c) => c.status === 'closed').length,
   };
 
-  const STATS_CARDS = [
-    { icon: '📊', iconBg: '#EEF2FF', value: String(stats.active),    label: 'Active\nCampaigns' },
-    { icon: '📋', iconBg: '#F0FDF4', value: String(stats.proposals),  label: 'Total\nProposals' },
-    { icon: '📁', iconBg: '#FDF4FF', value: String(stats.total),      label: 'All\nCampaigns' },
-    { icon: '✅', iconBg: '#FFF7ED', value: String(stats.completed),  label: 'Completed' },
+    type StatCard = { iconName: keyof typeof Ionicons.glyphMap; iconBg: string; iconColor: string; value: string; label: string };
+  const STATS_CARDS: StatCard[] = [
+    { iconName: 'megaphone',      iconBg: '#EEF2FF', iconColor: '#4F46E5', value: String(stats.active),    label: 'Active\nCampaigns' },
+    { iconName: 'people',         iconBg: '#F0FDF4', iconColor: '#059669', value: String(stats.proposals),  label: 'Total\nProposals' },
+    { iconName: 'folder',         iconBg: '#FDF4FF', iconColor: '#7C3AED', value: String(stats.total),      label: 'All\nCampaigns' },
+    { iconName: 'checkmark-done', iconBg: '#FFF7ED', iconColor: '#D97706', value: String(stats.completed),  label: 'Completed' },
   ];
 
   const recent = campaigns.slice(0, 5);
@@ -99,9 +101,7 @@ export default function BusinessHomeScreen() {
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <Pressable style={styles.menuBtn} onPress={openDrawer}>
-              <View style={[styles.menuLine, { backgroundColor: C.text }]} />
-              <View style={[styles.menuLine, { width: 18, backgroundColor: C.text }]} />
-              <View style={[styles.menuLine, { backgroundColor: C.text }]} />
+              <Ionicons name="menu" size={26} color={C.text} />
             </Pressable>
             <View>
               <Text style={[styles.greeting, { color: C.textSecondary }]}>{getGreeting()}, 👋</Text>
@@ -115,20 +115,20 @@ export default function BusinessHomeScreen() {
           </View>
           <View style={styles.headerRight}>
             <Pressable style={styles.bellWrap} onPress={() => router.push('/(business)/notifications')}>
-              <Text style={styles.bellIcon}>🔔</Text>
+              <Ionicons name="notifications" size={22} color={C.text} />
             </Pressable>
-            <View style={[styles.avatarCircle, { backgroundColor: C.brinjal1 }]}>
+            <Pressable style={[styles.avatarCircle, { backgroundColor: C.brinjal1 }]} onPress={() => router.push('/(business)/profile')}>
               <Text style={styles.avatarText}>
                 {(user?.name ?? 'B').split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2)}
               </Text>
-            </View>
+            </Pressable>
           </View>
         </View>
 
         {/* ── Create Campaign card ── */}
         <View style={[styles.createCard, { backgroundColor: C.primaryLight }]}>
           <View style={[styles.createIconWrap, { backgroundColor: C.brinjal1 }]}>
-            <Text style={styles.createIconEmoji}>📣</Text>
+            <Ionicons name="megaphone" size={22} color="#fff" />
           </View>
           <View style={styles.createText}>
             <Text style={[styles.createTitle, { color: C.text }]}>Create a Campaign</Text>
@@ -167,7 +167,7 @@ export default function BusinessHomeScreen() {
               {STATS_CARDS.map((s, i) => (
                 <View key={s.label} style={[styles.statItem, i < STATS_CARDS.length - 1 && { borderRightWidth: 1, borderRightColor: C.border }]}>
                   <View style={[styles.statIconBox, { backgroundColor: s.iconBg }]}>
-                    <Text style={styles.statIcon}>{s.icon}</Text>
+                    <Ionicons name={s.iconName} size={15} color={s.iconColor} />
                   </View>
                   <Text style={[styles.statValue, { color: C.text }]}>{s.value}</Text>
                   <Text style={[styles.statLabel, { color: C.textSecondary }]}>{s.label}</Text>
@@ -176,20 +176,11 @@ export default function BusinessHomeScreen() {
             </View>
 
             {/* ── Find creators banner ── */}
-            <View style={[styles.findBanner, { backgroundColor: C.primaryLight }]}>
-              <View style={styles.findIllustration}>
-                <Text style={styles.findEmoji1}>🧑‍🎨</Text>
-                <Text style={styles.findEmoji2}>❤️</Text>
-                <Text style={styles.findEmoji3}>🤳</Text>
-              </View>
-              <View style={styles.findContent}>
-                <Text style={[styles.findTitle, { color: C.text }]}>Find the right creators{'\n'}for your brand</Text>
-                <Text style={[styles.findSub, { color: C.textSecondary }]}>Get quality content that connects with your audience.</Text>
-                <Pressable style={[styles.findBtn, { backgroundColor: C.brinjal1 }]} onPress={() => router.push('/(business)/explore-creators')}>
-                  <Text style={styles.findBtnText}>Explore Creators</Text>
-                </Pressable>
-              </View>
-            </View>
+            <Pressable style={[styles.findBanner, { backgroundColor: C.primaryLight }]} onPress={() => router.push('/(business)/explore-creators')}>
+              <Text style={styles.findEmoji}>🧑‍🎨</Text>
+              <Text style={[styles.findTitle, { color: C.text }]}>Explore Creators</Text>
+              <Ionicons name="chevron-forward" size={18} color={C.brinjal1} style={{ marginLeft: 'auto' }} />
+            </Pressable>
 
             {/* ── Recent Campaigns ── */}
             <View style={styles.sectionHeader}>
@@ -201,7 +192,7 @@ export default function BusinessHomeScreen() {
 
             {recent.length === 0 ? (
               <View style={styles.emptyWrap}>
-                <Text style={styles.emptyEmoji}>📋</Text>
+                <Ionicons name="document-text" size={48} color={C.textSecondary} />
                 <Text style={[styles.emptyTitle, { color: C.text }]}>No campaigns yet</Text>
                 <Text style={[styles.emptyHint, { color: C.textSecondary }]}>Create your first campaign to start working with creators.</Text>
                 <Pressable style={[styles.emptyBtn, { backgroundColor: C.brinjal1 }]} onPress={() => router.push('/create-campaign')}>
@@ -217,7 +208,7 @@ export default function BusinessHomeScreen() {
                     <Pressable
                       key={c.id}
                       style={({ pressed }) => [styles.campaignCard, { backgroundColor: C.surface }, pressed && { opacity: 0.9 }]}
-                      onPress={() => router.push({ pathname: '/campaign-detail', params: { id: c.id } })}>
+                      onPress={() => router.push({ pathname: '/campaign-detail', params: { campaignId: c.id } })}>
                       <View style={[styles.thumb, { backgroundColor: meta.cardBg }]}>
                         <Text style={styles.thumbEmoji}>{meta.emoji}</Text>
                       </View>
@@ -231,13 +222,13 @@ export default function BusinessHomeScreen() {
                         <Text style={[styles.campaignMeta, { color: C.textSecondary }]}>{c.platform} · {c.budget}</Text>
                         <View style={styles.campaignStats}>
                           <View style={styles.campaignStat}>
-                            <Text style={styles.campaignStatIcon}>👥</Text>
+                            <Ionicons name="people" size={12} color={C.textSecondary} />
                             <Text style={[styles.campaignStatVal, { color: C.text }]}>{c.proposals}</Text>
                             <Text style={[styles.campaignStatLabel, { color: C.textSecondary }]}>Proposals</Text>
                           </View>
                         </View>
                       </View>
-                      <Text style={[styles.chevron, { color: C.border }]}>›</Text>
+                      <Ionicons name="chevron-forward" size={20} color={C.border} />
                     </Pressable>
                   );
                 })}
@@ -257,8 +248,7 @@ const styles = StyleSheet.create({
 
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 16 },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
-  menuBtn: { gap: 5, padding: 4 },
-  menuLine: { width: 22, height: 2, borderRadius: 1 },
+  menuBtn: { padding: 4 },
   greeting: { fontSize: 12, marginBottom: 2 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   brandName: { fontSize: 18, fontWeight: '800', maxWidth: 180 },
@@ -266,13 +256,11 @@ const styles = StyleSheet.create({
   rolePillText: { fontSize: 11, fontWeight: '700' },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   bellWrap: { padding: 4 },
-  bellIcon: { fontSize: 22 },
   avatarCircle: { width: 42, height: 42, borderRadius: 21, justifyContent: 'center', alignItems: 'center' },
   avatarText: { fontSize: 13, fontWeight: '700', color: '#fff' },
 
   createCard: { flexDirection: 'row', alignItems: 'center', borderRadius: 16, marginHorizontal: 20, marginBottom: 28, padding: 16, gap: 12 },
   createIconWrap: { width: 48, height: 48, borderRadius: 14, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
-  createIconEmoji: { fontSize: 22 },
   createText: { flex: 1 },
   createTitle: { fontSize: 14, fontWeight: '700', marginBottom: 3 },
   createSub: { fontSize: 11, lineHeight: 16 },
@@ -293,20 +281,12 @@ const styles = StyleSheet.create({
   statsRow: { flexDirection: 'row', borderRadius: 16, marginHorizontal: 20, marginBottom: 24, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 3, overflow: 'hidden' },
   statItem: { flex: 1, alignItems: 'center', paddingVertical: 16, paddingHorizontal: 4 },
   statIconBox: { width: 32, height: 32, borderRadius: 9, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
-  statIcon: { fontSize: 15 },
   statValue: { fontSize: 20, fontWeight: '800', marginBottom: 2 },
   statLabel: { fontSize: 10, textAlign: 'center', lineHeight: 13 },
 
-  findBanner: { flexDirection: 'row', borderRadius: 16, marginHorizontal: 20, marginBottom: 28, padding: 20, overflow: 'hidden', alignItems: 'center', gap: 16 },
-  findIllustration: { width: 80, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  findEmoji1: { fontSize: 34, position: 'absolute', left: 0, top: -16 },
-  findEmoji2: { fontSize: 18, position: 'absolute', right: 0, top: -24 },
-  findEmoji3: { fontSize: 34, position: 'absolute', right: -4, bottom: -16 },
-  findContent: { flex: 1 },
-  findTitle: { fontSize: 15, fontWeight: '800', lineHeight: 21, marginBottom: 6 },
-  findSub: { fontSize: 12, lineHeight: 17, marginBottom: 14 },
-  findBtn: { borderRadius: 10, paddingHorizontal: 16, paddingVertical: 9, alignSelf: 'flex-start' },
-  findBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
+  findBanner: { flexDirection: 'row', alignItems: 'center', borderRadius: 14, marginHorizontal: 20, marginBottom: 24, paddingHorizontal: 16, paddingVertical: 13, gap: 10 },
+  findEmoji: { fontSize: 18 },
+  findTitle: { fontSize: 14, fontWeight: '700' },
 
   campaignList: { paddingHorizontal: 20, gap: 12 },
   campaignCard: { flexDirection: 'row', alignItems: 'center', borderRadius: 16, padding: 12, gap: 12, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 3 },
@@ -320,13 +300,10 @@ const styles = StyleSheet.create({
   campaignMeta: { fontSize: 12 },
   campaignStats: { flexDirection: 'row', gap: 8, marginTop: 4 },
   campaignStat: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  campaignStatIcon: { fontSize: 10 },
   campaignStatVal: { fontSize: 11, fontWeight: '700' },
   campaignStatLabel: { fontSize: 11 },
-  chevron: { fontSize: 22, fontWeight: '300', flexShrink: 0 },
 
   emptyWrap: { alignItems: 'center', paddingVertical: 48, gap: 10, paddingHorizontal: 32 },
-  emptyEmoji: { fontSize: 48 },
   emptyTitle: { fontSize: 18, fontWeight: '700' },
   emptyHint: { fontSize: 13, textAlign: 'center', lineHeight: 20 },
   emptyBtn: { borderRadius: 12, paddingHorizontal: 24, paddingVertical: 12, marginTop: 8 },

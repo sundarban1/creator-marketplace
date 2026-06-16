@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
@@ -28,9 +29,11 @@ export function CampaignListItem({ campaign }: { campaign: Campaign }) {
         <Text style={[styles.listTitle, { color: C.text }]} numberOfLines={2}>{campaign.title}</Text>
         <Text style={[styles.listBudget, { color: C.brinjal1 }]}>{campaign.budget}</Text>
         <View style={styles.listMetaRow}>
-          <Text style={[styles.listMeta, { color: C.textSecondary }]}>👥 {campaign.minFollowers}</Text>
+          <Ionicons name="people" size={11} color={C.textSecondary} />
+          <Text style={[styles.listMeta, { color: C.textSecondary }]}>{campaign.minFollowers}</Text>
           <Text style={[styles.listMetaDot, { color: C.border }]}>·</Text>
-          <Text style={[styles.listMeta, { color: C.textSecondary }]}>📍 {campaign.location}</Text>
+          <Ionicons name="location" size={11} color={C.textSecondary} />
+          <Text style={[styles.listMeta, { color: C.textSecondary }]}>{campaign.location}</Text>
         </View>
       </View>
       <View style={styles.applyWrap}>

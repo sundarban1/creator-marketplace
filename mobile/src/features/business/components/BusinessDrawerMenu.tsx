@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -6,18 +7,24 @@ import { useAppColors } from '@/context/ThemeContext';
 
 const DRAWER_W = 280;
 
-const NAV_GROUPS = [
+type NavItem = {
+  iconName: keyof typeof Ionicons.glyphMap;
+  label: string;
+  route: string;
+};
+
+const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   {
     label: 'ACCOUNT & SECURITY',
     items: [
-      { icon: '✅', label: 'Verification',          route: '/(business)/settings?section=verification' },
-      { icon: '💳', label: 'Payment',               route: '/(business)/settings?section=payment' },
-      { icon: '🎯', label: 'Campaign Preferences',  route: '/(business)/settings?section=campaigns' },
-      { icon: '🔒', label: 'Privacy',               route: '/(business)/settings?section=privacy' },
-      { icon: '🛡️', label: 'Account & Security',   route: '/(business)/settings?section=account' },
-      { icon: '🌐', label: 'Presence & Goal',        route: '/(business)/presence-goal' },
-      { icon: '❓', label: 'Support',               route: '/(business)/settings?section=support' },
-      { icon: '📱', label: 'App',                   route: '/(business)/settings?section=app' },
+      { iconName: 'checkmark-circle', label: 'Verification',         route: '/(business)/settings?section=verification' },
+      { iconName: 'card',             label: 'Payment',              route: '/(business)/settings?section=payment' },
+      { iconName: 'bookmark',         label: 'Campaign Preferences', route: '/(business)/settings?section=campaigns' },
+      { iconName: 'shield',           label: 'Privacy',              route: '/(business)/settings?section=privacy' },
+      { iconName: 'lock-closed',      label: 'Account & Security',   route: '/(business)/settings?section=account' },
+      { iconName: 'globe',            label: 'Presence & Goal',      route: '/(business)/presence-goal' },
+      { iconName: 'help-circle',      label: 'Support',              route: '/(business)/settings?section=support' },
+      { iconName: 'phone-portrait',   label: 'App',                  route: '/(business)/settings?section=app' },
     ],
   },
 ];
@@ -71,12 +78,6 @@ export function BusinessDrawerMenu({ visible, user, onClose, onLogout }: Props) 
       <Animated.View style={[styles.panel, { backgroundColor: C.surface, transform: [{ translateX: slideAnim }] }]}>
         {/* Header */}
         <View style={[styles.header, { paddingTop: insets.top + 20 }]}>
-          <View style={styles.logoRow}>
-            <View style={styles.logoBox}>
-              <Text style={[styles.logoText, { color: C.brinjal1 }]}>CM</Text>
-            </View>
-            <Text style={styles.appName}>CreatorMarket</Text>
-          </View>
           <View style={styles.userRow}>
             <View style={styles.avatarCircle}>
               <Text style={styles.avatarInitial}>{initial}</Text>
@@ -98,7 +99,7 @@ export function BusinessDrawerMenu({ visible, user, onClose, onLogout }: Props) 
                 <Text style={[styles.groupLabel, { color: C.textSecondary }]}>{group.label}</Text>
               </View>
               <View style={[styles.navGroup, { backgroundColor: C.surface, borderColor: C.border }]}>
-                {group.items.map(({ icon, label, route }, idx) => (
+                {group.items.map(({ iconName, label, route }, idx) => (
                   <Pressable
                     key={label}
                     style={[
@@ -106,11 +107,11 @@ export function BusinessDrawerMenu({ visible, user, onClose, onLogout }: Props) 
                       idx < group.items.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border },
                     ]}
                     onPress={() => navigate(route)}>
-                    <View style={styles.navIconWrap}>
-                      <Text style={styles.navIcon}>{icon}</Text>
+                    <View style={[styles.navIconWrap, { backgroundColor: C.background }]}>
+                      <Ionicons name={iconName} size={18} color={C.brinjal1} />
                     </View>
                     <Text style={[styles.navLabel, { color: C.text }]}>{label}</Text>
-                    <Text style={[styles.navArrow, { color: C.textSecondary }]}>›</Text>
+                    <Ionicons name="chevron-forward" size={18} color={C.textSecondary} />
                   </Pressable>
                 ))}
               </View>
@@ -122,7 +123,7 @@ export function BusinessDrawerMenu({ visible, user, onClose, onLogout }: Props) 
         <Pressable
           style={[styles.logout, { borderTopColor: C.border, paddingBottom: insets.bottom + 12 }]}
           onPress={onLogout}>
-          <Text style={styles.logoutIcon}>🚪</Text>
+          <Ionicons name="log-out" size={20} color={C.error} />
           <Text style={[styles.logoutText, { color: C.error }]}>Logout</Text>
         </Pressable>
       </Animated.View>
@@ -131,17 +132,13 @@ export function BusinessDrawerMenu({ visible, user, onClose, onLogout }: Props) 
 }
 
 const styles = StyleSheet.create({
-  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.45)' },
+  backdrop: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.45)' },
   panel: {
     position: 'absolute', top: 0, bottom: 0, left: 0, width: DRAWER_W,
     shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 20,
     shadowOffset: { width: 6, height: 0 }, elevation: 20, flexDirection: 'column',
   },
   header: { backgroundColor: '#4F46E5', paddingHorizontal: 20, paddingBottom: 24 },
-  logoRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 20 },
-  logoBox: { width: 36, height: 36, borderRadius: 10, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center' },
-  logoText: { fontSize: 12, fontWeight: '900' },
-  appName: { fontSize: 17, fontWeight: '800', color: '#fff' },
   userRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   avatarCircle: {
     width: 44, height: 44, borderRadius: 22,
@@ -158,11 +155,8 @@ const styles = StyleSheet.create({
   groupLabel: { fontSize: 10, fontWeight: '800', letterSpacing: 1 },
   navGroup: { marginHorizontal: 12, marginVertical: 2, borderRadius: 12, borderWidth: 1, overflow: 'hidden' },
   navItem: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 13 },
-  navIconWrap: { width: 24, alignItems: 'center' },
-  navIcon: { fontSize: 17, width: 24, textAlign: 'center' },
+  navIconWrap: { width: 32, height: 32, borderRadius: 9, justifyContent: 'center', alignItems: 'center' },
   navLabel: { flex: 1, fontSize: 14, fontWeight: '600' },
-  navArrow: { fontSize: 18 },
-  logout: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 20, paddingTop: 16, borderTopWidth: 1 },
-  logoutIcon: { fontSize: 18, width: 24, textAlign: 'center' },
+  logout: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingTop: 16, borderTopWidth: 1 },
   logoutText: { fontSize: 15, fontWeight: '700' },
 });

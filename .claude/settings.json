@@ -116,7 +116,10 @@
       "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('total:', d['data']['total'], '| creators:', len\\(d['data']['creators']\\)\\)\")",
       "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\)['data']; print\\('name:', d['fullName'], '| bio len:', len\\(d['bio'] or ''\\), '| categories:', d['categories'][:3], '| portfolio links:', len\\(d['portfolioLinks']\\), '| social accounts:', len\\(d['socialAccounts']\\)\\)\")",
       "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\)['data']; print\\('total:', d['total'], '| names:', [c['fullName'] for c in d['creators']]\\)\")",
-      "Bash(python3 -c \"import sys,json; deps=json.load\\(sys.stdin\\).get\\('dependencies',{}\\); [print\\(k,v\\) for k,v in deps.items\\(\\) if 'date' in k.lower\\(\\) or 'picker' in k.lower\\(\\) or 'calendar' in k.lower\\(\\) or 'modal' in k.lower\\(\\)]\")"
+      "Bash(python3 -c \"import sys,json; deps=json.load\\(sys.stdin\\).get\\('dependencies',{}\\); [print\\(k,v\\) for k,v in deps.items\\(\\) if 'date' in k.lower\\(\\) or 'picker' in k.lower\\(\\) or 'calendar' in k.lower\\(\\) or 'modal' in k.lower\\(\\)]\")",
+      "Bash(grep -n \"const { user, logout }\" /Users/sundarban/Documents/projects/marketplace/mobile/src/app/\\\\\\(creator\\\\\\)/settings.tsx)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/api/creator/businesses)",
+      "Bash(node -e \"require\\('@expo/vector-icons'\\)\")"
     ],
     "additionalDirectories": [
       "/Users/sundarban/Documents/projects/marketplace/content",

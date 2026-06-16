@@ -1,4 +1,5 @@
 import { router, useFocusEffect } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useState } from 'react';
 import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -58,7 +59,7 @@ export default function CreatorProfileScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
       <View style={[styles.topBar, { backgroundColor: C.background }]}>
         <Pressable style={styles.backBtn} onPress={() => router.back()}>
-          <Text style={[styles.backArrow, { color: C.text }]}>‹</Text>
+          <Ionicons name="chevron-back" size={26} color={C.text} />
         </Pressable>
         <Text style={[styles.topTitle, { color: C.text }]}>My Profile</Text>
         <Pressable style={styles.logoutBtn} onPress={logout}>
@@ -87,7 +88,7 @@ export default function CreatorProfileScreen() {
           <Pressable
             style={[styles.editAvatarBtn, { backgroundColor: C.brinjal1, borderColor: C.surface }]}
             onPress={() => router.push('/(creator)/edit-profile')}>
-            <Text style={styles.editAvatarIcon}>✎</Text>
+            <Ionicons name="create" size={13} color="#fff" />
           </Pressable>
         </View>
 
@@ -100,7 +101,10 @@ export default function CreatorProfileScreen() {
             <Text style={[styles.bio, { color: C.text }]}>{displayBio}</Text>
           ) : null}
           {profile?.location ? (
-            <Text style={[styles.location, { color: C.textSecondary }]}>📍 {profile.location}</Text>
+            <View style={styles.locationRow}>
+              <Ionicons name="location" size={13} color={C.textSecondary} />
+              <Text style={[styles.location, { color: C.textSecondary }]}>{profile.location}</Text>
+            </View>
           ) : null}
           <Pressable
             style={[styles.editProfileBtn, { borderColor: C.border }]}
@@ -137,7 +141,7 @@ export default function CreatorProfileScreen() {
                     <Text style={[styles.socialPlatform, { color: C.text }]}>{s.platform}</Text>
                     <Text style={[styles.socialHandle, { color: C.textSecondary }]}>{s.handle}</Text>
                   </View>
-                  <Text style={[styles.chevron, { color: C.textSecondary }]}>›</Text>
+                  <Ionicons name="chevron-forward" size={18} color={C.textSecondary} />
                 </Pressable>
               ))}
             </View>
@@ -208,7 +212,6 @@ const styles = StyleSheet.create({
   scrollContent: { paddingBottom: 48 },
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 10 },
   backBtn: { padding: 4, width: 36 },
-  backArrow: { fontSize: 28, lineHeight: 30, marginTop: -2 },
   topTitle: { fontSize: 16, fontWeight: '700' },
   logoutBtn: { padding: 4 },
   logoutText: { fontSize: 13, fontWeight: '600' },
@@ -219,12 +222,12 @@ const styles = StyleSheet.create({
   avatarFallback: { justifyContent: 'center', alignItems: 'center' },
   avatarFallbackText: { color: '#fff', fontSize: 36, fontWeight: '800' },
   editAvatarBtn: { position: 'absolute', bottom: 0, right: 0, width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center', borderWidth: 2 },
-  editAvatarIcon: { color: '#fff', fontSize: 13, fontWeight: '700' },
   infoSection: { alignItems: 'center', paddingHorizontal: 24, gap: 6, marginBottom: 20 },
   name: { fontSize: 20, fontWeight: '800' },
   handle: { fontSize: 13, fontWeight: '500' },
   bio: { fontSize: 14, textAlign: 'center', lineHeight: 21, marginTop: 4 },
-  location: { fontSize: 13, marginTop: 2 },
+  locationRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  location: { fontSize: 13 },
   editProfileBtn: { marginTop: 8, borderWidth: 1.5, borderRadius: 10, paddingHorizontal: 28, paddingVertical: 8 },
   editProfileText: { fontSize: 13, fontWeight: '700' },
   statsCard: { borderRadius: 16, marginHorizontal: 20, marginBottom: 20, padding: 16, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 3 },
@@ -247,7 +250,6 @@ const styles = StyleSheet.create({
   socialInfo: { flex: 1, gap: 2 },
   socialPlatform: { fontSize: 14, fontWeight: '700' },
   socialHandle: { fontSize: 12 },
-  chevron: { fontSize: 18, marginLeft: 4 },
   emptyCard: { borderRadius: 14, borderWidth: 1.5, borderStyle: 'dashed', padding: 16, alignItems: 'center' },
   emptyText: { fontSize: 13, textAlign: 'center', lineHeight: 19 },
   proposalBars: { borderRadius: 14, padding: 16, gap: 14, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 2 },

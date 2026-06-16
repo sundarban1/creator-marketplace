@@ -26,4 +26,21 @@ export class BusinessService {
     const updated = await this.repo.update(userId, input);
     return updated;
   }
+
+  async listBusinesses(params: {
+    search?:    string;
+    category?:  string;
+    platform?:  string;
+    locations?: string[];
+    page:       number;
+    limit:      number;
+  }) {
+    return this.repo.findMany(params);
+  }
+
+  async getBusinessPublic(id: string) {
+    const business = await this.repo.findPublicById(id);
+    if (!business) throw new AppError('Business not found', 404);
+    return business;
+  }
 }

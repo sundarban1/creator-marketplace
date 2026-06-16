@@ -2,7 +2,6 @@ import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -11,6 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
+import { useToast } from '@/components/Toast';
 import { creatorService } from '@/services/creator';
 
 const CAT_OPTIONS = [
@@ -25,6 +25,7 @@ const MAX = 5;
 
 export default function EditCategoriesScreen() {
   const C = useAppColors();
+  const toast = useToast();
   const [categories, setCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -33,25 +34,33 @@ export default function EditCategoriesScreen() {
     creatorService
       .getProfile()
       .then((p) => setCategories(p.categories ?? []))
-      .catch(() => Alert.alert('Error', 'Could not load profile.'))
+      .catch(() => toast.error('Could not load your profile. Please try again.'))
       .finally(() => setLoading(false));
   }, []);
 
   function toggle(cat: string) {
     setCategories((prev) => {
       if (prev.includes(cat)) return prev.filter((c) => c !== cat);
-      if (prev.length >= MAX) return prev;
+      if (prev.length >= MAX) {
+        toast.warning(`You can select up to ${MAX} categories.`);
+        return prev;
+      }
       return [...prev, cat];
     });
   }
 
   async function handleSave() {
+    if (categories.length === 0) {
+      toast.warning('Please select at least one category.');
+      return;
+    }
     setSaving(true);
     try {
       await creatorService.updateProfile({ categories });
+      toast.success('Categories saved!');
       router.back();
     } catch (err) {
-      Alert.alert('Error', err instanceof Error ? err.message : 'Failed to save.');
+      toast.error(err instanceof Error ? err.message : 'Failed to save. Please try again.');
     } finally {
       setSaving(false);
     }

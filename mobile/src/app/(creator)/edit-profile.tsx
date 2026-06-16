@@ -1,8 +1,8 @@
 import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   Modal,
   Pressable,
@@ -15,6 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
 import { useAppColors } from '@/context/ThemeContext';
+import { useToast } from '@/components/Toast';
 import { creatorService } from '@/services/creator';
 
 const PLACES_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY ?? '';
@@ -116,7 +117,7 @@ function LocationSearchModal({
         </View>
 
         <View style={[lsm.inputRow, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
-          <Text style={lsm.searchEmoji}>🔍</Text>
+          <Ionicons name="search" size={16} color="#9CA3AF" style={{ marginRight: 8 }} />
           <TextInput
             style={[lsm.input, { color: C.text }]}
             value={query}
@@ -138,7 +139,7 @@ function LocationSearchModal({
             <Pressable
               style={[lsm.row, { borderBottomColor: C.border }]}
               onPress={() => handleSelectPrediction(item)}>
-              <Text style={lsm.pin}>📍</Text>
+              <Ionicons name="location" size={18} color="#9CA3AF" />
               <View style={lsm.rowText}>
                 <Text style={[lsm.mainTxt, { color: C.text }]}>{item.structured_formatting.main_text}</Text>
                 <Text style={[lsm.secTxt, { color: C.textSecondary }]} numberOfLines={1}>
@@ -184,6 +185,7 @@ const lsm = StyleSheet.create({
 export default function EditProfileScreen() {
   const { updateUser } = useAuth();
   const C = useAppColors();
+  const toast = useToast();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -204,7 +206,7 @@ export default function EditProfileScreen() {
         setLocationLat(profile.locationLat ?? null);
         setLocationLng(profile.locationLng ?? null);
       })
-      .catch(() => Alert.alert('Error', 'Could not load profile. Please try again.'))
+      .catch(() => toast.error('Could not load profile. Please try again.'))
       .finally(() => setLoading(false));
   }, []);
 
@@ -217,7 +219,7 @@ export default function EditProfileScreen() {
 
   async function handleSave() {
     if (!fullName.trim() || fullName.trim().length < 2) {
-      Alert.alert('Validation', 'Full name must be at least 2 characters.');
+      toast.warning('Full name must be at least 2 characters.');
       return;
     }
     setSaving(true);
@@ -233,9 +235,10 @@ export default function EditProfileScreen() {
       }
       const profile = await creatorService.updateProfile(payload);
       updateUser({ name: profile.fullName, avatar: profile.avatarUrl ?? undefined });
+      toast.success('Profile saved successfully!');
       router.back();
     } catch (err: unknown) {
-      Alert.alert('Error', err instanceof Error ? err.message : 'Failed to save profile.');
+      toast.error(err instanceof Error ? err.message : 'Failed to save profile. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -257,7 +260,7 @@ export default function EditProfileScreen() {
         <Pressable
           onPress={() => router.back()}
           style={[styles.backBtn, { backgroundColor: C.surface, borderColor: C.border }]}>
-          <Text style={[styles.backArrow, { color: C.brinjal1 }]}>‹</Text>
+          <Ionicons name="chevron-back" size={20} color={C.brinjal1} />
         </Pressable>
         <Text style={[styles.topTitle, { color: C.text }]}>Edit Profile</Text>
         <View style={{ width: 36 }} />

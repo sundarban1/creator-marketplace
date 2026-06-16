@@ -48,8 +48,10 @@ export function toCampaign(api: ApiCampaign): Campaign {
     platformIcon: PLATFORM_ICONS[api.platform] ?? '📱',
     budget:       formatBudget(api.budgetMin, api.budgetMax),
     budgetRaw:    api.budgetMin,
+    budgetMax:    api.budgetMax,
     category:     api.category,
-    minFollowers: formatFollowers(api.minFollowers),
+    minFollowers:    formatFollowers(api.minFollowers),
+    minFollowersRaw: api.minFollowers,
     deadline:     api.deadline,
     contentType:  api.contentType,
     proposals:    api._count?.applications ?? 0,
@@ -59,6 +61,12 @@ export function toCampaign(api: ApiCampaign): Campaign {
     location:     api.location ?? undefined,
     createdAt:    api.createdAt,
   };
+}
+
+function toApiStatus(s: Campaign['status']): 'ACTIVE' | 'PAUSED' | 'CLOSED' {
+  if (s === 'active') return 'ACTIVE';
+  if (s === 'closed') return 'CLOSED';
+  return 'PAUSED';
 }
 
 // ── Service ─────────────────────────────────────────────────────────────────────
@@ -143,6 +151,28 @@ export const campaignService = {
   }): Promise<Campaign> {
     const res = await request<ApiCampaign>('POST', '/api/campaigns', data);
     return toCampaign(res.data);
+  },
+
+  async update(id: string, data: {
+    title?: string;
+    description?: string;
+    category?: string;
+    platform?: string;
+    minFollowers?: number;
+    contentType?: string;
+    deliverables?: string;
+    paymentType?: string;
+    status?: Campaign['status'];
+    budgetMin?: number;
+    budgetMax?: number;
+    deadline?: string;
+    location?: string | null;
+    isFeatured?: boolean;
+  }): Promise<void> {
+    await request('PUT', `/api/campaigns/${id}`, {
+      ...data,
+      status: data.status !== undefined ? toApiStatus(data.status) : undefined,
+    });
   },
 
   async getMyApplications(): Promise<Array<{

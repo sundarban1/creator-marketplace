@@ -19,6 +19,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors, useIsDark } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/components/Toast';
 import { COLORS } from '@/utilities/constants';
 
 type ColorsType = typeof COLORS;
@@ -369,6 +370,7 @@ export default function CreatorSettingsScreen() {
   const { isDark, toggleDark } = useIsDark();
   const { section } = useLocalSearchParams<{ section?: string }>();
   const C: ColorsType = useAppColors();
+  const toast = useToast();
 
   const [subPage, setSubPage] = useState<string | null>(null);
 
@@ -446,8 +448,6 @@ export default function CreatorSettingsScreen() {
   const [reportDesc, setReportDesc] = useState('');
 
   // Toast
-  const toastAnim = useRef(new Animated.Value(0)).current;
-  const [toastMsg, setToastMsg] = useState('');
 
   // Load profile from API on mount
   useEffect(() => {
@@ -521,14 +521,9 @@ export default function CreatorSettingsScreen() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [subPage]);
 
-  function showToast(msg: string) {
-    setToastMsg(msg);
-    toastAnim.setValue(0);
-    Animated.sequence([
-      Animated.timing(toastAnim, { toValue: 1, duration: 200, useNativeDriver: true }),
-      Animated.delay(2200),
-      Animated.timing(toastAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
-    ]).start(() => setToastMsg(''));
+  function showToast(msg: string, isError = false) {
+    if (isError) toast.error(msg);
+    else toast.success(msg);
   }
 
   // ── Helpers ──────────────────────────────────────────────────
@@ -659,7 +654,7 @@ export default function CreatorSettingsScreen() {
           await creatorService.deleteSocialAccount(acct.id);
           setSocialAccounts((prev) => prev.filter((a) => a.id !== acct.id));
           showToast('Social account removed');
-        } catch { showToast('Failed to remove. Try again.'); }
+        } catch { showToast('Failed to remove. Try again.', true); }
       }},
     ]);
   }
@@ -729,7 +724,7 @@ export default function CreatorSettingsScreen() {
             const updated = await creatorService.removePortfolioLink(item.id);
             setPortfolio(updated.portfolioLinks);
             showToast('Past work removed');
-          } catch { showToast('Failed to remove. Try again.'); }
+          } catch { showToast('Failed to remove. Try again.', true); }
         }},
       ],
     );
@@ -798,7 +793,7 @@ export default function CreatorSettingsScreen() {
       showToast('Message sent. We\'ll respond within 24 hours.');
       setSubPage(null);
     } catch {
-      showToast('Failed to send. Please try again.');
+      showToast('Failed to send. Please try again.', true);
     } finally {
       setSupportSubmitting(false);
     }
@@ -813,7 +808,7 @@ export default function CreatorSettingsScreen() {
       showToast('Issue reported. Thank you!');
       setSubPage(null);
     } catch {
-      showToast('Failed to submit. Please try again.');
+      showToast('Failed to submit. Please try again.', true);
     } finally {
       setReportSubmitting(false);
     }
@@ -1704,13 +1699,15 @@ export default function CreatorSettingsScreen() {
           </Text>
         </View>
         <Card>
-          <PrefLocationPicker
-            locations={prefLocations}
-            onChange={(locs) => {
-              setPrefLocations(locs);
-              debounceSaveCampaignPrefs({ prefLocations: locs });
-            }}
-          />
+          <View style={styles.chipSection}>
+            <PrefLocationPicker
+              locations={prefLocations}
+              onChange={(locs) => {
+                setPrefLocations(locs);
+                debounceSaveCampaignPrefs({ prefLocations: locs });
+              }}
+            />
+          </View>
         </Card>
         <Text style={[styles.saveHint, { color: C.textSecondary }]}>Changes are saved automatically.</Text>
       </>
@@ -1965,12 +1962,6 @@ export default function CreatorSettingsScreen() {
           <View style={{ height: 48 }} />
         </ScrollView>
 
-        {/* Toast */}
-        {toastMsg ? (
-          <Animated.View style={[styles.toast, { opacity: toastAnim, backgroundColor: C.active }]}>
-            <Text style={styles.toastText}>✓  {toastMsg}</Text>
-          </Animated.View>
-        ) : null}
 
         {/* ── Deactivate Account Modal ──────────────────────────── */}
         <Modal visible={showDeactivateModal} transparent animationType="fade" onRequestClose={() => setShowDeactivateModal(false)}>
