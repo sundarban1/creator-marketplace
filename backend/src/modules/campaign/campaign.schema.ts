@@ -39,14 +39,16 @@ export const updateCampaignSchema = z.object({
 });
 
 export const campaignListQuerySchema = z.object({
-  category:   z.string().optional(),
-  platform:   z.string().optional(),
-  minBudget:  z.string().optional().transform((v) => (v ? parseFloat(v) : undefined)),
-  maxBudget:  z.string().optional().transform((v) => (v ? parseFloat(v) : undefined)),
-  status:     z.enum(['ACTIVE', 'PAUSED', 'CLOSED']).optional(),
-  isFeatured: z.string().optional().transform((v) => v === 'true' ? true : v === 'false' ? false : undefined),
-  page:       z.string().optional().transform((v) => (v ? parseInt(v) : 1)),
-  limit:      z.string().optional().transform((v) => (v ? parseInt(v) : 10)),
+  category:     z.string().optional(),
+  platform:     z.string().optional(),
+  minBudget:    z.string().optional().transform((v) => (v ? parseFloat(v) : undefined)),
+  maxBudget:    z.string().optional().transform((v) => (v ? parseFloat(v) : undefined)),
+  status:       z.enum(['ACTIVE', 'PAUSED', 'CLOSED']).optional(),
+  isFeatured:   z.string().optional().transform((v) => v === 'true' ? true : v === 'false' ? false : undefined),
+  deadlineFrom: z.string().optional().transform((v) => (v ? new Date(v) : undefined)),
+  deadlineTo:   z.string().optional().transform((v) => (v ? new Date(v) : undefined)),
+  page:         z.string().optional().transform((v) => (v ? parseInt(v) : 1)),
+  limit:        z.string().optional().transform((v) => (v ? parseInt(v) : 10)),
 });
 
 export const applyToCampaignSchema = z.object({

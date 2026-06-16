@@ -76,22 +76,26 @@ export const campaignService = {
   },
 
   async list(params?: {
-    category?:   string;
-    platform?:   string;
-    minBudget?:  number;
-    maxBudget?:  number;
-    isFeatured?: boolean;
-    page?:       number;
-    limit?:      number;
+    category?:    string;
+    platform?:    string;
+    minBudget?:   number;
+    maxBudget?:   number;
+    isFeatured?:  boolean;
+    dateFrom?:    Date;
+    dateTo?:      Date;
+    page?:        number;
+    limit?:       number;
   }): Promise<{ campaigns: Campaign[]; total: number; page: number; totalPages: number }> {
     const res = await request<ApiCampaign[]>('GET', '/api/campaigns', undefined, {
-      category:   params?.category,
-      platform:   params?.platform,
-      minBudget:  params?.minBudget,
-      maxBudget:  params?.maxBudget,
-      isFeatured: params?.isFeatured !== undefined ? String(params.isFeatured) : undefined,
-      page:       params?.page  ?? 1,
-      limit:      params?.limit ?? 20,
+      category:     params?.category,
+      platform:     params?.platform,
+      minBudget:    params?.minBudget,
+      maxBudget:    params?.maxBudget,
+      isFeatured:   params?.isFeatured !== undefined ? String(params.isFeatured) : undefined,
+      deadlineFrom: params?.dateFrom?.toISOString(),
+      deadlineTo:   params?.dateTo?.toISOString(),
+      page:         params?.page  ?? 1,
+      limit:        params?.limit ?? 50,
     });
     return {
       campaigns:  res.data.map(toCampaign),

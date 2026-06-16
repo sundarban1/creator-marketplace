@@ -35,6 +35,8 @@ export class CampaignRepository {
     maxBudget?: number;
     status?: CampaignStatus;
     isFeatured?: boolean;
+    deadlineFrom?: Date;
+    deadlineTo?: Date;
     page: number;
     limit: number;
   }) {
@@ -57,9 +59,13 @@ export class CampaignRepository {
     } else {
       where.status = 'ACTIVE'; // default to active for public listing
     }
-
     if (filters.isFeatured !== undefined) {
       where.isFeatured = filters.isFeatured;
+    }
+    if (filters.deadlineFrom !== undefined || filters.deadlineTo !== undefined) {
+      where.deadline = {};
+      if (filters.deadlineFrom) (where.deadline as Prisma.DateTimeFilter).gte = filters.deadlineFrom;
+      if (filters.deadlineTo) (where.deadline as Prisma.DateTimeFilter).lte = filters.deadlineTo;
     }
 
     const skip = (filters.page - 1) * filters.limit;

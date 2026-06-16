@@ -237,6 +237,7 @@ function DateRangePicker({
 }) {
   const C = useAppColors();
   const today = dayStart(new Date());
+  const [activePicker, setActivePicker] = useState<'from' | 'to' | null>(null);
   const [calYear, setCalYear] = useState(today.getFullYear());
   const [calMonth, setCalMonth] = useState(today.getMonth());
 
@@ -249,22 +250,24 @@ function DateRangePicker({
     else setCalMonth((m) => m + 1);
   }
 
-  function applyPreset(daysBack: number) {
-    const from = new Date(today);
-    from.setDate(today.getDate() - daysBack);
-    onFromChange(dayStart(from));
-    onToChange(new Date(today));
+  function togglePicker(field: 'from' | 'to') {
+    setActivePicker((prev) => (prev === field ? null : field));
   }
 
   function handleDayTap(day: number) {
     const tapped = dayStart(new Date(calYear, calMonth, day));
-    if (!dateFrom || (dateFrom && dateTo)) {
+    if (activePicker === 'from') {
       onFromChange(tapped);
-      onToChange(null);
-    } else {
-      if (sameDay(tapped, dateFrom)) onFromChange(null);
-      else if (tapped < dateFrom) { onFromChange(tapped); onToChange(null); }
-      else onToChange(tapped);
+      if (dateTo && tapped > dateTo) onToChange(null);
+      setActivePicker(null);
+    } else if (activePicker === 'to') {
+      if (dateFrom && tapped < dateFrom) {
+        onFromChange(tapped);
+        onToChange(null);
+      } else {
+        onToChange(tapped);
+      }
+      setActivePicker(null);
     }
   }
 
@@ -286,90 +289,121 @@ function DateRangePicker({
 
   const PRESETS = [
     { label: 'Today',      days: 0 },
-    { label: 'Past week',  days: 7 },
-    { label: 'Past month', days: 30 },
+    { label: 'Last week',  days: 7 },
+    { label: 'Last month', days: 30 },
   ];
+
+  function applyPreset(days: number) {
+    const from = new Date(today);
+    if (days > 0) from.setDate(today.getDate() - days);
+    onFromChange(dayStart(from));
+    onToChange(new Date(today));
+    setActivePicker(null);
+  }
 
   function isPresetActive(days: number) {
     if (!dateFrom || !dateTo) return false;
-    const expectedFrom = dayStart(new Date(today));
+    const expectedFrom = new Date(today);
     if (days > 0) expectedFrom.setDate(today.getDate() - days);
-    return sameDay(expectedFrom, dateFrom) && sameDay(today, dateTo);
+    return sameDay(dayStart(expectedFrom), dateFrom) && sameDay(today, dateTo);
   }
-
-  const hint = !dateFrom ? 'Tap a date to set start' : !dateTo ? 'Tap another date to set end' : '';
 
   return (
     <View style={dp.container}>
+
+      {/* Quick presets */}
       <View style={dp.presets}>
-        {PRESETS.map((p) => (
+        {PRESETS.map((p) => {
+          const active = isPresetActive(p.days);
+          return (
+            <Pressable
+              key={p.label}
+              style={[dp.preset, { borderColor: active ? C.brinjal1 : C.border, backgroundColor: active ? C.primaryLight : C.background }]}
+              onPress={() => applyPreset(p.days)}>
+              <Text style={[dp.presetTxt, { color: active ? C.brinjal1 : C.textSecondary, fontWeight: active ? '700' : '500' }]}>
+                {p.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
+      {/* From / To inputs with calendar icon */}
+      <View style={dp.inputsRow}>
+        {(['from', 'to'] as const).map((field) => {
+          const date   = field === 'from' ? dateFrom : dateTo;
+          const active = activePicker === field;
+          return (
+            <View key={field} style={dp.inputGroup}>
+              <Text style={[dp.inputLabel, { color: C.textSecondary }]}>
+                {field === 'from' ? 'From' : 'To'}
+              </Text>
+              <View style={[dp.inputBox, { borderColor: active ? C.brinjal1 : date ? C.brinjal1 + '60' : C.border, backgroundColor: C.background }]}>
+                <Text style={[dp.inputValue, { color: date ? C.text : C.textSecondary }]} numberOfLines={1}>
+                  {date ? fmtDate(date) : 'DD MMM YYYY'}
+                </Text>
+                <Pressable onPress={() => togglePicker(field)} hitSlop={8}>
+                  <Text style={[dp.calIcon, { color: active ? C.brinjal1 : C.textSecondary }]}>📅</Text>
+                </Pressable>
+              </View>
+            </View>
+          );
+        })}
+
+        {(dateFrom || dateTo) && (
           <Pressable
-            key={p.label}
-            style={[dp.preset, { borderColor: C.border, backgroundColor: C.background }, isPresetActive(p.days) && { borderColor: C.brinjal1, backgroundColor: C.primaryLight }]}
-            onPress={() => applyPreset(p.days)}>
-            <Text style={[dp.presetTxt, { color: isPresetActive(p.days) ? C.brinjal1 : C.textSecondary }, isPresetActive(p.days) && { fontWeight: '700' }]}>
-              {p.label}
-            </Text>
-          </Pressable>
-        ))}
-        {!!dateFrom && (
-          <Pressable style={dp.clearBtn} onPress={() => { onFromChange(null); onToChange(null); }}>
-            <Text style={[dp.clearTxt, { color: C.error }]}>Clear ✕</Text>
+            style={dp.clearBtn}
+            onPress={() => { onFromChange(null); onToChange(null); setActivePicker(null); }}>
+            <Text style={[dp.clearTxt, { color: C.error }]}>✕</Text>
           </Pressable>
         )}
       </View>
 
-      <View style={[dp.rangeRow, { backgroundColor: C.background }]}>
-        <View style={dp.rangeItem}>
-          <Text style={[dp.rangeLbl, { color: C.textSecondary }]}>From</Text>
-          <Text style={[dp.rangeDate, { color: dateFrom ? C.text : C.border }]}>{fmtDate(dateFrom)}</Text>
-        </View>
-        <Text style={[dp.rangeArrow, { color: C.textSecondary }]}>→</Text>
-        <View style={dp.rangeItem}>
-          <Text style={[dp.rangeLbl, { color: C.textSecondary }]}>To</Text>
-          <Text style={[dp.rangeDate, { color: dateTo ? C.text : C.border }]}>{fmtDate(dateTo)}</Text>
-        </View>
-      </View>
+      {/* Calendar — only shown when a picker is active */}
+      {activePicker && (
+        <View style={[dp.cal, { backgroundColor: C.background, borderColor: C.border }]}>
+          <Text style={[dp.calTitle, { color: C.brinjal1 }]}>
+            {activePicker === 'from' ? 'Select start date' : 'Select end date'}
+          </Text>
 
-      <View style={[dp.cal, { backgroundColor: C.background }]}>
-        <View style={dp.monthNav}>
-          <Pressable style={dp.navBtn} onPress={prevMonth}>
-            <Text style={[dp.navBtnTxt, { color: C.brinjal1 }]}>‹</Text>
-          </Pressable>
-          <Text style={[dp.monthTitle, { color: C.text }]}>{MONTHS[calMonth]} {calYear}</Text>
-          <Pressable style={dp.navBtn} onPress={nextMonth}>
-            <Text style={[dp.navBtnTxt, { color: C.brinjal1 }]}>›</Text>
-          </Pressable>
-        </View>
+          <View style={dp.monthNav}>
+            <Pressable style={dp.navBtn} onPress={prevMonth}>
+              <Text style={[dp.navBtnTxt, { color: C.brinjal1 }]}>‹</Text>
+            </Pressable>
+            <Text style={[dp.monthTitle, { color: C.text }]}>{MONTHS[calMonth]} {calYear}</Text>
+            <Pressable style={dp.navBtn} onPress={nextMonth}>
+              <Text style={[dp.navBtnTxt, { color: C.brinjal1 }]}>›</Text>
+            </Pressable>
+          </View>
 
-        <View style={dp.dayRow}>
-          {DAY_SHORT.map((d) => (
-            <Text key={d} style={[dp.dayHdr, { color: C.textSecondary }]}>{d}</Text>
-          ))}
-        </View>
+          <View style={dp.dayRow}>
+            {DAY_SHORT.map((d) => (
+              <Text key={d} style={[dp.dayHdr, { color: C.textSecondary }]}>{d}</Text>
+            ))}
+          </View>
 
-        <View style={dp.grid}>
-          {cells.map((day, idx) => {
-            if (!day) return <View key={`e${idx}`} style={dp.cell} />;
-            const st = dayStatus(day);
-            const isEnd = st === 'from' || st === 'to';
-            return (
-              <Pressable
-                key={`d${day}`}
-                style={[dp.cell, (st === 'range' || isEnd) && { backgroundColor: C.primaryLight }]}
-                onPress={() => handleDayTap(day)}>
-                <View style={[dp.dayCircle, isEnd && { backgroundColor: C.brinjal1 }, st === 'today' && { borderWidth: 1.5, borderColor: C.brinjal1 }]}>
-                  <Text style={[dp.dayNum, { color: isEnd ? '#fff' : st === 'today' ? C.brinjal1 : C.text }, isEnd && { fontWeight: '700' }, st === 'today' && { fontWeight: '700' }]}>
-                    {day}
-                  </Text>
-                </View>
-              </Pressable>
-            );
-          })}
+          <View style={dp.grid}>
+            {cells.map((day, idx) => {
+              if (!day) return <View key={`e${idx}`} style={dp.cell} />;
+              const st = dayStatus(day);
+              const isEnd = st === 'from' || st === 'to';
+              return (
+                <Pressable
+                  key={`d${day}`}
+                  style={[dp.cell, (st === 'range' || isEnd) && { backgroundColor: C.primaryLight }]}
+                  onPress={() => handleDayTap(day)}>
+                  <View style={[dp.dayCircle, isEnd && { backgroundColor: C.brinjal1 }, st === 'today' && { borderWidth: 1.5, borderColor: C.brinjal1 }]}>
+                    <Text style={[dp.dayNum, { color: isEnd ? '#fff' : st === 'today' ? C.brinjal1 : C.text }, (isEnd || st === 'today') && { fontWeight: '700' }]}>
+                      {day}
+                    </Text>
+                  </View>
+                </Pressable>
+              );
+            })}
+          </View>
         </View>
-      </View>
+      )}
 
-      {hint ? <Text style={[dp.hint, { color: C.textSecondary }]}>{hint}</Text> : null}
     </View>
   );
 }
@@ -387,7 +421,6 @@ export function FilterModal({
   onApply, onReset, onClose,
 }: Props) {
   const C = useAppColors();
-
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose} />
@@ -432,29 +465,33 @@ export function FilterModal({
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const dp = StyleSheet.create({
-  container:  { gap: 14 },
-  presets:    { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  preset:     { paddingHorizontal: 13, paddingVertical: 7, borderRadius: 20, borderWidth: 1.5 },
-  presetTxt:  { fontSize: 12, fontWeight: '500' },
-  clearBtn:   { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, backgroundColor: '#FEE2E2', borderWidth: 1.5, borderColor: '#FCA5A5' },
-  clearTxt:   { fontSize: 12, fontWeight: '600' },
-  rangeRow:   { flexDirection: 'row', alignItems: 'center', borderRadius: 14, padding: 14, gap: 8 },
-  rangeItem:  { flex: 1, gap: 3 },
-  rangeLbl:   { fontSize: 10, fontWeight: '700', textTransform: 'uppercase' },
-  rangeDate:  { fontSize: 14, fontWeight: '700' },
-  rangeArrow: { fontSize: 18 },
-  cal:        { borderRadius: 16, padding: 12, gap: 8 },
-  monthNav:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  navBtn:     { width: 36, height: 36, justifyContent: 'center', alignItems: 'center' },
-  navBtnTxt:  { fontSize: 24, lineHeight: 28 },
-  monthTitle: { fontSize: 15, fontWeight: '700' },
-  dayRow:     { flexDirection: 'row' },
-  dayHdr:     { flex: 1, textAlign: 'center', fontSize: 11, fontWeight: '600' },
-  grid:       { flexDirection: 'row', flexWrap: 'wrap' },
-  cell:       { width: '14.285%', aspectRatio: 1, justifyContent: 'center', alignItems: 'center' },
-  dayCircle:  { width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
-  dayNum:     { fontSize: 13, fontWeight: '500' },
-  hint:       { fontSize: 12, textAlign: 'center', fontStyle: 'italic' },
+  container:   { gap: 12 },
+  // Quick presets
+  presets:     { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  preset:      { paddingHorizontal: 13, paddingVertical: 7, borderRadius: 20, borderWidth: 1.5 },
+  presetTxt:   { fontSize: 12 },
+  // From / To input row
+  inputsRow:   { flexDirection: 'row', alignItems: 'flex-end', gap: 8 },
+  inputGroup:  { flex: 1, gap: 4 },
+  inputLabel:  { fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.6, marginLeft: 2 },
+  inputBox:    { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 9, gap: 6 },
+  inputValue:  { flex: 1, fontSize: 13, fontWeight: '600' },
+  calIcon:     { fontSize: 16 },
+  clearBtn:    { width: 32, height: 40, justifyContent: 'center', alignItems: 'center', borderRadius: 8 },
+  clearTxt:    { fontSize: 16, fontWeight: '700' },
+  // Inline calendar
+  cal:         { borderRadius: 14, borderWidth: 1, padding: 12, gap: 8, marginTop: 2 },
+  calTitle:    { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.6, textAlign: 'center' },
+  monthNav:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  navBtn:      { width: 36, height: 36, justifyContent: 'center', alignItems: 'center' },
+  navBtnTxt:   { fontSize: 24, lineHeight: 28 },
+  monthTitle:  { fontSize: 15, fontWeight: '700' },
+  dayRow:      { flexDirection: 'row' },
+  dayHdr:      { flex: 1, textAlign: 'center', fontSize: 11, fontWeight: '600' },
+  grid:        { flexDirection: 'row', flexWrap: 'wrap' },
+  cell:        { width: '14.285%', aspectRatio: 1, justifyContent: 'center', alignItems: 'center' },
+  dayCircle:   { width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
+  dayNum:      { fontSize: 13, fontWeight: '500' },
 });
 
 const styles = StyleSheet.create({

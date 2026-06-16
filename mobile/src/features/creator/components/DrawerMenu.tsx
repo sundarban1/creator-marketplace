@@ -10,6 +10,7 @@ const ACCOUNT_ITEMS = [
   { icon: '📱', label: 'Social Accounts',      route: '/(creator)/settings?section=social' },
   { icon: '🎯', label: 'Campaign Preferences', route: '/(creator)/settings?section=campaigns' },
   { icon: '💰', label: 'Earnings & Payments',  route: '/(creator)/settings?section=earnings' },
+  { icon: '🎨', label: 'Past Work',            route: '/(creator)/settings?section=past-work' },
   { icon: '🔒', label: 'Security',             route: '/(creator)/settings?section=security' },
   { icon: '❓', label: 'Support',              route: '/(creator)/settings?section=support' },
   { icon: '📋', label: 'Legal',               route: '/(creator)/settings?section=legal' },

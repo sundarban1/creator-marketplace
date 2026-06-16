@@ -4,6 +4,7 @@ import { creatorService } from '@/services/creator';
 import { API_BASE, request } from '@/lib/api';
 import { RangeSlider } from '@/components/RangeSlider';
 import {
+  ActivityIndicator,
   Alert,
   Animated,
   Modal,
@@ -74,7 +75,14 @@ const CAT_OPTIONS = [
   'Film & TV', 'Mindfulness', 'Food & Drink', 'Entertainment',
 ];
 const PLATFORM_OPTIONS = ['Instagram', 'TikTok', 'YouTube', 'Facebook'];
-const LOCATION_OPTIONS = ['Kathmandu', 'Pokhara', 'Lalitpur', 'Bhaktapur', 'Butwal', 'Biratnagar', 'Remote'];
+
+const PLACES_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY ?? '';
+const MAX_PREF_LOCS = 3;
+
+type PlacePrediction = {
+  place_id: string;
+  structured_formatting: { main_text: string; secondary_text: string };
+};
 
 const PAYMENT_METHODS = [
   { id: 'esewa',   icon: '💚', label: 'eSewa',   color: '#60BB46' },
@@ -92,6 +100,7 @@ const SECTION_TITLES: Record<string, string> = {
   social: 'Social Accounts',
   campaigns: 'Campaign Preferences',
   earnings: 'Earnings & Payments',
+  'past-work': 'Past Work',
   security: 'Security',
   support: 'Support',
   legal: 'Legal',
@@ -193,6 +202,165 @@ function ChipGroup({ options, selected, onToggle }: ChipGroupProps) {
     </View>
   );
 }
+
+// ── PrefLocationPicker ────────────────────────────────────────
+
+function PrefLocationPicker({
+  locations,
+  onChange,
+}: {
+  locations: string[];
+  onChange: (locs: string[]) => void;
+}) {
+  const C = useAppColors();
+  const [query, setQuery] = useState('');
+  const [predictions, setPredictions] = useState<PlacePrediction[]>([]);
+  const [searching, setSearching] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const remoteSelected = locations.includes('Remote');
+  const nonRemote = locations.filter((l) => l !== 'Remote');
+  const atMax = locations.length >= MAX_PREF_LOCS;
+
+  function toggleRemote() {
+    if (remoteSelected) {
+      onChange(locations.filter((l) => l !== 'Remote'));
+    } else if (!atMax) {
+      onChange([...locations, 'Remote']);
+    }
+  }
+
+  function remove(label: string) {
+    onChange(locations.filter((l) => l !== label));
+  }
+
+  function handleSearchChange(text: string) {
+    setQuery(text);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (!text.trim()) { setPredictions([]); return; }
+    debounceRef.current = setTimeout(() => fetchPredictions(text), 350);
+  }
+
+  async function fetchPredictions(text: string) {
+    if (!PLACES_KEY) return;
+    setSearching(true);
+    try {
+      const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(text)}&key=${PLACES_KEY}&language=en&types=(cities)`;
+      const res = await fetch(url);
+      const data = (await res.json()) as { predictions: PlacePrediction[]; status: string };
+      setPredictions(data.status === 'OK' ? data.predictions : []);
+    } catch {
+      setPredictions([]);
+    } finally {
+      setSearching(false);
+    }
+  }
+
+  function handleSelectPrediction(pred: PlacePrediction) {
+    const label = pred.structured_formatting.main_text;
+    if (locations.includes(label)) return;
+    setQuery('');
+    setPredictions([]);
+    onChange([...locations, label]);
+  }
+
+  return (
+    <View style={pl.container}>
+      {/* Remote — standalone toggle chip */}
+      <Pressable
+        style={[
+          pl.remoteChip,
+          { borderColor: remoteSelected ? C.brinjal1 : C.border, backgroundColor: remoteSelected ? C.primaryLight : C.surface },
+          !remoteSelected && atMax && { opacity: 0.35 },
+        ]}
+        onPress={toggleRemote}
+        disabled={!remoteSelected && atMax}>
+        <Text style={pl.remoteEmoji}>🌐</Text>
+        <Text style={[pl.remoteText, { color: remoteSelected ? C.brinjal1 : C.text, fontWeight: remoteSelected ? '700' : '500' }]}>
+          Remote
+        </Text>
+        {remoteSelected && <Text style={[pl.removeX, { color: C.brinjal1 }]}>✕</Text>}
+      </Pressable>
+
+      {/* Selected city chips */}
+      {nonRemote.length > 0 && (
+        <View style={pl.selectedRow}>
+          {nonRemote.map((loc) => (
+            <View key={loc} style={[pl.selectedChip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
+              <Text style={[pl.selectedText, { color: C.brinjal1 }]}>📍 {loc}</Text>
+              <Pressable onPress={() => remove(loc)} hitSlop={8}>
+                <Text style={[pl.removeX, { color: C.brinjal1 }]}>✕</Text>
+              </Pressable>
+            </View>
+          ))}
+        </View>
+      )}
+
+      {/* Search input — hidden when 3 locations reached */}
+      {!atMax && (
+        <>
+          <View style={[pl.searchRow, { borderColor: C.border, backgroundColor: C.background }]}>
+            <Text style={pl.searchIcon}>🔍</Text>
+            <TextInput
+              style={[pl.searchInput, { color: C.text }]}
+              value={query}
+              onChangeText={handleSearchChange}
+              placeholder="Search city…"
+              placeholderTextColor={C.textSecondary}
+              returnKeyType="search"
+            />
+            {searching
+              ? <ActivityIndicator size="small" color={C.brinjal1} />
+              : query.length > 0
+              ? <Pressable onPress={() => { setQuery(''); setPredictions([]); }} hitSlop={8}>
+                  <Text style={{ color: C.textSecondary, fontSize: 15 }}>✕</Text>
+                </Pressable>
+              : null}
+          </View>
+
+          {predictions.length > 0 && (
+            <View style={[pl.dropdown, { backgroundColor: C.surface, borderColor: C.border }]}>
+              {predictions.slice(0, 5).map((pred, idx) => (
+                <Pressable
+                  key={pred.place_id}
+                  style={[pl.dropRow, { borderBottomColor: idx < Math.min(predictions.length, 5) - 1 ? C.border : 'transparent' }]}
+                  onPress={() => handleSelectPrediction(pred)}>
+                  <Text style={pl.dropPin}>📍</Text>
+                  <View style={pl.dropTexts}>
+                    <Text style={[pl.dropMain, { color: C.text }]}>{pred.structured_formatting.main_text}</Text>
+                    <Text style={[pl.dropSec, { color: C.textSecondary }]} numberOfLines={1}>
+                      {pred.structured_formatting.secondary_text}
+                    </Text>
+                  </View>
+                </Pressable>
+              ))}
+            </View>
+          )}
+        </>
+      )}
+    </View>
+  );
+}
+
+const pl = StyleSheet.create({
+  container:    { gap: 10 },
+  remoteChip:   { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 22, borderWidth: 1.5 },
+  remoteEmoji:  { fontSize: 14 },
+  remoteText:   { fontSize: 13 },
+  removeX:      { fontSize: 12, fontWeight: '700' },
+  selectedRow:  { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  selectedChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1.5 },
+  selectedText: { fontSize: 13, fontWeight: '600' },
+  searchRow:    { flexDirection: 'row', alignItems: 'center', borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 12, height: 44, gap: 8 },
+  searchIcon:   { fontSize: 15 },
+  searchInput:  { flex: 1, fontSize: 14 },
+  dropdown:     { borderRadius: 12, borderWidth: 1, overflow: 'hidden' },
+  dropRow:      { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 12, gap: 10, borderBottomWidth: 1 },
+  dropPin:      { fontSize: 16 },
+  dropTexts:    { flex: 1 },
+  dropMain:     { fontSize: 14, fontWeight: '600' },
+  dropSec:      { fontSize: 12, marginTop: 1 },
+});
 
 // ── Main screen ───────────────────────────────────────────────
 
@@ -392,15 +560,6 @@ export default function CreatorSettingsScreen() {
     });
   }
 
-  function toggleLocation(val: string) {
-    setPrefLocations((prev) => {
-      const next = prev.includes(val)
-        ? prev.filter((x) => x !== val)
-        : prev.length < 3 ? [...prev, val] : prev;
-      if (next !== prev) debounceSaveCampaignPrefs({ prefLocations: next });
-      return next;
-    });
-  }
 
   function handlePriceChange(min: number, max: number) {
     setPrefPriceMin(min);
@@ -1288,8 +1447,15 @@ export default function CreatorSettingsScreen() {
           <Text style={[styles.addSocialBtnText, { color: C.brinjal1 }]}>＋  Add Social Account</Text>
         </Pressable>
 
-        {/* ── Past Work ──────────────────────────────────────────── */}
+      </>
+    );
+  }
 
+  // ── Section: Past Work ────────────────────────────────────────
+
+  function renderPastWork() {
+    return (
+      <>
         {/* Portfolio bottom-sheet modal */}
         <Modal visible={showPortfolioSheet} transparent animationType="none" onRequestClose={resetPortfolioSheet}>
           <Pressable style={styles.sheetBackdrop} onPress={resetPortfolioSheet} />
@@ -1533,29 +1699,18 @@ export default function CreatorSettingsScreen() {
         <SectionHeader title="Preferred Locations" />
         <View style={[styles.hintCard, { backgroundColor: C.primaryLight }]}>
           <Text style={[styles.hintText, { color: C.brinjal1 }]}>
-            {prefLocations.length}/3 selected{prefLocations.length >= 3 ? ' · Max reached' : ''}
+            Select up to 3 locations. Remote means you're open to work from anywhere.
+            {prefLocations.length >= 3 ? ' · Max reached' : ''}
           </Text>
         </View>
         <Card>
-          <View style={styles.chipSection}>
-            <View style={styles.chipGroup}>
-              {LOCATION_OPTIONS.map((opt) => {
-                const active = prefLocations.includes(opt);
-                const disabled = !active && prefLocations.length >= 3;
-                return (
-                  <Pressable
-                    key={opt}
-                    style={[
-                      styles.chip,
-                      { borderColor: active ? C.brinjal1 : C.border, backgroundColor: active ? C.primaryLight : C.surface, opacity: disabled ? 0.4 : 1 },
-                    ]}
-                    onPress={() => toggleLocation(opt)}>
-                    <Text style={[styles.chipText, { color: active ? C.brinjal1 : C.text, fontWeight: active ? '700' : '500' }]}>{opt}</Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </View>
+          <PrefLocationPicker
+            locations={prefLocations}
+            onChange={(locs) => {
+              setPrefLocations(locs);
+              debounceSaveCampaignPrefs({ prefLocations: locs });
+            }}
+          />
         </Card>
         <Text style={[styles.saveHint, { color: C.textSecondary }]}>Changes are saved automatically.</Text>
       </>
@@ -1799,12 +1954,13 @@ export default function CreatorSettingsScreen() {
 
           {/* Sections (no sub-page) */}
           {!subPage && !section && renderMainSettings()}
-          {!subPage && section === 'social'    && renderSocialAccounts()}
-          {!subPage && section === 'campaigns' && renderCampaignPreferences()}
-          {!subPage && section === 'earnings'  && renderEarnings()}
-          {!subPage && section === 'security'  && renderSecurity()}
-          {!subPage && section === 'support'   && renderSupport()}
-          {!subPage && section === 'legal'     && renderLegal()}
+          {!subPage && section === 'social'     && renderSocialAccounts()}
+          {!subPage && section === 'campaigns'  && renderCampaignPreferences()}
+          {!subPage && section === 'earnings'   && renderEarnings()}
+          {!subPage && section === 'past-work'  && renderPastWork()}
+          {!subPage && section === 'security'   && renderSecurity()}
+          {!subPage && section === 'support'    && renderSupport()}
+          {!subPage && section === 'legal'      && renderLegal()}
 
           <View style={{ height: 48 }} />
         </ScrollView>

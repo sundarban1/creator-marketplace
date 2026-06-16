@@ -45,12 +45,36 @@ export default function HomeScreen() {
   const [tempDateFrom, setTempDateFrom] = useState<Date | null>(null);
   const [tempDateTo, setTempDateTo] = useState<Date | null>(null);
 
-  async function fetchCampaigns(showLoader = true) {
+  async function fetchCampaigns(
+    overrides: {
+      category?: string;
+      priceMin?: number;
+      priceMax?: number;
+      dateFrom?: Date | null;
+      dateTo?: Date | null;
+      showLoader?: boolean;
+    } = {},
+  ) {
+    const showLoader = overrides.showLoader !== false;
     if (showLoader) setLoading(true);
     setFetchError('');
+
+    const cat   = overrides.category  !== undefined ? overrides.category  : activeCategory;
+    const pMin  = overrides.priceMin  !== undefined ? overrides.priceMin  : priceMin;
+    const pMax  = overrides.priceMax  !== undefined ? overrides.priceMax  : priceMax;
+    const df    = overrides.dateFrom  !== undefined ? overrides.dateFrom  : dateFrom;
+    const dt    = overrides.dateTo    !== undefined ? overrides.dateTo    : dateTo;
+
     try {
       const [{ campaigns: data }, cats] = await Promise.all([
-        campaignService.list({ limit: 50 }),
+        campaignService.list({
+          category:  cat !== 'All' ? cat : undefined,
+          minBudget: pMin > 0 ? pMin : undefined,
+          maxBudget: pMax < SLIDER_MAX ? pMax : undefined,
+          dateFrom:  df ?? undefined,
+          dateTo:    dt ?? undefined,
+          limit: 50,
+        }),
         campaignService.getCategories().catch(() => [] as string[]),
       ]);
       setCampaigns(data);
@@ -67,8 +91,8 @@ export default function HomeScreen() {
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    void fetchCampaigns(false);
-  }, []);
+    void fetchCampaigns({ showLoader: false });
+  }, [activeCategory, priceMin, priceMax, dateFrom, dateTo]);
 
   const isFilterActive = priceMin > 0 || priceMax < SLIDER_MAX || locationFilter.length > 0 || !!dateFrom;
 
@@ -89,6 +113,14 @@ export default function HomeScreen() {
     setDateTo(tempDateTo);
     setFilterOpen(false);
 
+    // Re-fetch with the new committed values (don't wait for state to flush)
+    void fetchCampaigns({
+      priceMin: tempPriceMin,
+      priceMax: tempPriceMax,
+      dateFrom: tempDateFrom,
+      dateTo:   tempDateTo,
+    });
+
     // Persist first non-Remote location's lat/lng to creator profile
     const geoLoc = tempLocation.find((l) => l.label !== 'Remote' && l.lat !== null);
     if (geoLoc && geoLoc.lat !== null && geoLoc.lng !== null) {
@@ -96,7 +128,7 @@ export default function HomeScreen() {
         location: geoLoc.label,
         locationLat: geoLoc.lat,
         locationLng: geoLoc.lng,
-      }).catch(() => {}); // fire-and-forget, don't block UI
+      }).catch(() => {});
     }
   }
 
@@ -108,6 +140,16 @@ export default function HomeScreen() {
     setTempDateTo(null);
   }
 
+  function resetAllFilters() {
+    setPriceMin(0);
+    setPriceMax(SLIDER_MAX);
+    setLocationFilter([]);
+    setDateFrom(null);
+    setDateTo(null);
+    setActiveCategory('All');
+    void fetchCampaigns({ category: 'All', priceMin: 0, priceMax: SLIDER_MAX, dateFrom: null, dateTo: null });
+  }
+
   const visibleCategories = ['All', ...apiCategories].map((label) => ({
     label,
     ...(CATEGORY_META[label] ?? DEFAULT_META),
@@ -115,19 +157,13 @@ export default function HomeScreen() {
 
   const featured = campaigns.filter((c) => c.isFeatured);
 
+  // Category, budget, and deadline are filtered server-side.
+  // Client-side: search text, location, and quick-tab filters.
   const filteredList = campaigns.filter((c) => {
     const matchSearch =
       !search ||
       c.title.toLowerCase().includes(search.toLowerCase()) ||
       c.brand.toLowerCase().includes(search.toLowerCase());
-
-    const matchCat =
-      activeCategory === 'All' ||
-      c.category === activeCategory ||
-      c.platform === activeCategory;
-
-    // priceMax >= SLIDER_MAX means "no upper limit" (slider shows $1,000+)
-    const matchPrice = c.budgetRaw >= priceMin && (priceMax >= SLIDER_MAX || c.budgetRaw <= priceMax);
 
     const matchLocation =
       locationFilter.length === 0 ||
@@ -136,15 +172,6 @@ export default function HomeScreen() {
           ? c.location === 'Remote'
           : c.location?.toLowerCase().includes(l.label.toLowerCase()),
       );
-
-    let matchDate = true;
-    if (dateFrom || dateTo) {
-      const deadline = c.deadline ? new Date(c.deadline) : null;
-      if (deadline && !isNaN(deadline.getTime())) {
-        if (dateFrom && deadline < dateFrom) matchDate = false;
-        if (dateTo && deadline > dateTo) matchDate = false;
-      }
-    }
 
     let matchTab = true;
     if (activeFilterTab === 0) matchTab = c.isNew;
@@ -160,7 +187,7 @@ export default function HomeScreen() {
       }
     }
 
-    return matchSearch && matchCat && matchPrice && matchLocation && matchDate && matchTab;
+    return matchSearch && matchLocation && matchTab;
   });
 
   return (
@@ -240,7 +267,10 @@ export default function HomeScreen() {
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoriesRow}>
           {visibleCategories.map((cat) => (
-            <Pressable key={cat.label} style={styles.catItem} onPress={() => setActiveCategory(cat.label)}>
+            <Pressable key={cat.label} style={styles.catItem} onPress={() => {
+              setActiveCategory(cat.label);
+              void fetchCampaigns({ category: cat.label });
+            }}>
               <View style={[styles.catIcon, { backgroundColor: cat.bg }, activeCategory === cat.label && { borderWidth: 2, borderColor: C.brinjal1 }]}>
                 <Text style={styles.catEmoji}>{cat.emoji}</Text>
               </View>
