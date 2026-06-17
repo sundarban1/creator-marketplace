@@ -157,6 +157,19 @@ export class CampaignService {
       socialHandles: input.socialHandles as Record<string, string>,
     });
 
+    // Notify the business about the new proposal
+    this.businessRepo.findById(campaign.businessId).then((business) => {
+      if (!business) return;
+      return notificationService.create({
+        userId:  business.userId,
+        type:    'proposal_received',
+        title:   `${creator.fullName ?? 'A creator'} submitted a proposal`,
+        body:    `${creator.fullName ?? 'A creator'} has submitted a proposal for "${campaign.title}"`,
+        refId:   campaign.id,
+        refType: 'campaign',
+      });
+    }).catch(() => {});
+
     return application;
   }
 
@@ -231,6 +244,44 @@ export class CampaignService {
     }
 
     const updated = await this.repo.updateApplicationStatus(appId, status);
+
+    // Notify creator about their proposal decision
+    if (application.creator) {
+      const type  = status === 'ACCEPTED' ? 'proposal_accepted' : 'proposal_rejected';
+      const title = status === 'ACCEPTED'
+        ? `Your proposal was accepted!`
+        : `Proposal update for "${campaign.title}"`;
+      const body  = status === 'ACCEPTED'
+        ? `Congratulations! ${business.businessName} accepted your proposal for "${campaign.title}".`
+        : `${business.businessName} has reviewed your proposal for "${campaign.title}".`;
+
+      notificationService.create({
+        userId:  application.creator.userId,
+        type,
+        title,
+        body,
+        refId:   campaign.id,
+        refType: 'campaign',
+      }).catch(() => {});
+    }
+
+    // When accepted, notify all other pending applicants that the campaign is now closed
+    if (status === 'ACCEPTED') {
+      this.repo.findPendingApplicationsByCampaign(campaignId, appId).then((others) => {
+        if (others.length === 0) return;
+        return notificationService.createMany(
+          others.map((a) => ({
+            userId:  a.creator.userId,
+            type:    'campaign_closed',
+            title:   `"${campaign.title}" is no longer accepting proposals`,
+            body:    `${business.businessName} has selected a creator for this campaign. Thank you for applying!`,
+            refId:   campaign.id,
+            refType: 'campaign',
+          })),
+        );
+      }).catch(() => {});
+    }
+
     return updated;
   }
 

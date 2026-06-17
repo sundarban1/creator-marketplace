@@ -1,5 +1,5 @@
 import { router, useFocusEffect } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { BackButton } from '@/components/BackButton';
 import { useCallback, useState } from 'react';
 import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -8,11 +8,16 @@ import { useAuth } from '@/context/AuthContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { creatorService, type ApiCreatorProfile } from '@/services/creator';
 
-const PLATFORM_MAP: Record<string, { platform: string; color: string; icon: string }> = {
-  instagram: { platform: 'Instagram', color: '#E1306C', icon: '📸' },
-  tiktok:    { platform: 'TikTok',    color: '#010101', icon: '🎵' },
-  youtube:   { platform: 'YouTube',   color: '#FF0000', icon: '▶️' },
-  facebook:  { platform: 'Facebook',  color: '#1877F2', icon: '💬' },
+const PLATFORM_MAP: Record<string, { platform: string; color: string; iconName: string }> = {
+  instagram: { platform: 'Instagram', color: '#E1306C', iconName: 'instagram' },
+  tiktok:    { platform: 'TikTok',    color: '#010101', iconName: 'tiktok' },
+  youtube:   { platform: 'YouTube',   color: '#FF0000', iconName: 'youtube' },
+  facebook:  { platform: 'Facebook',  color: '#1877F2', iconName: 'facebook' },
+  twitter:   { platform: 'X / Twitter', color: '#1DA1F2', iconName: 'twitter' },
+  linkedin:  { platform: 'LinkedIn',  color: '#0A66C2', iconName: 'linkedin' },
+  pinterest: { platform: 'Pinterest', color: '#E60023', iconName: 'pinterest' },
+  snapchat:  { platform: 'Snapchat',  color: '#FFFC00', iconName: 'snapchat' },
+  twitch:    { platform: 'Twitch',    color: '#9146FF', iconName: 'twitch' },
 };
 
 function extractHandle(url: string): string {
@@ -39,7 +44,7 @@ export default function CreatorProfileScreen() {
     ? Object.entries(profile.socialLinks)
         .filter(([, url]) => !!url)
         .map(([key, url]) => ({
-          ...(PLATFORM_MAP[key] ?? { platform: key, color: '#666666', icon: '🔗' }),
+          ...(PLATFORM_MAP[key] ?? { platform: key, color: '#666666', iconName: 'link' }),
           handle: extractHandle(url!),
           url: url!,
         }))
@@ -115,7 +120,7 @@ export default function CreatorProfileScreen() {
                   style={[styles.socialCard, { backgroundColor: C.surface }]}
                   onPress={() => router.push('/(creator)/settings?section=social' as never)}>
                   <View style={[styles.socialIcon, { backgroundColor: s.color + '18' }]}>
-                    <Text style={styles.socialEmoji}>{s.icon}</Text>
+                    <FontAwesome5 name={s.iconName} size={20} color={s.color} />
                   </View>
                   <View style={styles.socialInfo}>
                     <Text style={[styles.socialPlatform, { color: C.text }]}>{s.platform}</Text>

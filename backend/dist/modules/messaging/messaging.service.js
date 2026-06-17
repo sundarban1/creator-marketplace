@@ -1,14 +1,11 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MessagingService = void 0;
 const error_1 = require("../../middleware/error");
 const creator_repository_1 = require("../creator/creator.repository");
 const business_repository_1 = require("../business/business.repository");
 const messaging_repository_1 = require("./messaging.repository");
-const prisma_1 = __importDefault(require("../../prisma"));
+const notification_service_1 = require("../notifications/notification.service");
 class MessagingService {
     repo;
     creatorRepo;
@@ -18,104 +15,139 @@ class MessagingService {
         this.creatorRepo = new creator_repository_1.CreatorRepository();
         this.businessRepo = new business_repository_1.BusinessRepository();
     }
-    async listConversations(userId, role) {
-        if (role === 'CREATOR') {
-            const creator = await this.creatorRepo.findByUserId(userId);
-            if (!creator) {
-                throw new error_1.AppError('Creator profile not found', 404);
-            }
-            return this.repo.findConversationsByCreator(creator.id);
-        }
-        if (role === 'BUSINESS') {
-            const business = await this.businessRepo.findByUserId(userId);
-            if (!business) {
-                throw new error_1.AppError('Business profile not found', 404);
-            }
-            return this.repo.findConversationsByBusiness(business.id);
-        }
-        // ADMIN: return all (simplified)
-        return prisma_1.default.conversation.findMany({
-            orderBy: { createdAt: 'desc' },
-            include: {
-                creator: { select: { fullName: true } },
-                business: { select: { businessName: true } },
-            },
-        });
+    // ── Profile resolution ─────────────────────────────────────────────────────
+    async resolveCreator(userId) {
+        const creator = await this.creatorRepo.findByUserId(userId);
+        if (!creator)
+            throw new error_1.AppError('Creator profile not found', 404);
+        return creator;
     }
-    async startConversation(userId, role, input) {
-        let creatorId;
-        let businessId;
+    async resolveBusiness(userId) {
+        const business = await this.businessRepo.findByUserId(userId);
+        if (!business)
+            throw new error_1.AppError('Business profile not found', 404);
+        return business;
+    }
+    async verifyConversationAccess(conversation, userId, role) {
+        if (role === 'ADMIN')
+            return;
         if (role === 'CREATOR') {
-            // Current user is a creator, other user must be a business
-            const creator = await this.creatorRepo.findByUserId(userId);
-            if (!creator) {
-                throw new error_1.AppError('Creator profile not found', 404);
-            }
-            const otherBusiness = await this.businessRepo.findByUserId(input.otherUserId);
-            if (!otherBusiness) {
-                throw new error_1.AppError('Business user not found', 404);
-            }
-            creatorId = creator.id;
-            businessId = otherBusiness.id;
+            const creator = await this.resolveCreator(userId);
+            if (creator.id !== conversation.creatorId)
+                throw new error_1.AppError('Access denied', 403);
         }
         else if (role === 'BUSINESS') {
-            // Current user is a business, other user must be a creator
-            const business = await this.businessRepo.findByUserId(userId);
-            if (!business) {
-                throw new error_1.AppError('Business profile not found', 404);
-            }
-            const otherCreator = await this.creatorRepo.findByUserId(input.otherUserId);
-            if (!otherCreator) {
-                throw new error_1.AppError('Creator user not found', 404);
-            }
-            creatorId = otherCreator.id;
-            businessId = business.id;
+            const business = await this.resolveBusiness(userId);
+            if (business.id !== conversation.businessId)
+                throw new error_1.AppError('Access denied', 403);
         }
-        else {
-            throw new error_1.AppError('Admin cannot start conversations', 403);
-        }
-        const conversation = await this.repo.findOrCreateConversation(creatorId, businessId, input.campaignId);
-        return conversation;
     }
+    // ── Conversation list ──────────────────────────────────────────────────────
+    async listConversations(userId, role, status) {
+        if (role === 'CREATOR') {
+            const creator = await this.resolveCreator(userId);
+            return this.repo.findConversationsByCreator(creator.id, status);
+        }
+        if (role === 'BUSINESS') {
+            const business = await this.resolveBusiness(userId);
+            return this.repo.findConversationsByBusiness(business.id, status);
+        }
+        return [];
+    }
+    // ── Start / find conversation ──────────────────────────────────────────────
+    async startConversation(userId, role, input) {
+        if (role === 'BUSINESS') {
+            const business = await this.resolveBusiness(userId);
+            const otherCreator = await this.creatorRepo.findByUserId(input.otherUserId);
+            if (!otherCreator)
+                throw new error_1.AppError('Creator not found', 404);
+            return this.repo.findOrCreateConversation(otherCreator.id, business.id, input.campaignId, input.requestMessage);
+        }
+        if (role === 'CREATOR') {
+            const creator = await this.resolveCreator(userId);
+            const otherBusiness = await this.businessRepo.findByUserId(input.otherUserId);
+            if (!otherBusiness)
+                throw new error_1.AppError('Business not found', 404);
+            if (!otherBusiness.allowDirectMessages)
+                throw new error_1.AppError('This business does not accept direct messages', 403);
+            return this.repo.findOrCreateConversation(creator.id, otherBusiness.id, input.campaignId, input.requestMessage);
+        }
+        throw new error_1.AppError('Unauthorized', 403);
+    }
+    // Check if a conversation exists between business (current user) and a creator
+    async checkConversation(userId, creatorProfileId) {
+        const business = await this.resolveBusiness(userId);
+        return this.repo.findConversationBetween(creatorProfileId, business.id);
+    }
+    // ── Request accept / decline ───────────────────────────────────────────────
+    async respondToRequest(conversationId, userId, action) {
+        const conversation = await this.repo.findConversationById(conversationId);
+        if (!conversation)
+            throw new error_1.AppError('Conversation not found', 404);
+        if (conversation.status !== 'PENDING')
+            throw new error_1.AppError('Request is not pending', 400);
+        // Only the creator can respond
+        const creator = await this.resolveCreator(userId);
+        if (creator.id !== conversation.creatorId)
+            throw new error_1.AppError('Access denied', 403);
+        const newStatus = action === 'accept' ? 'ACCEPTED' : 'DECLINED';
+        await this.repo.updateStatus(conversationId, newStatus);
+        if (action === 'accept') {
+            const business = await this.businessRepo.findById(conversation.businessId);
+            if (business) {
+                notification_service_1.notificationService.create({
+                    userId: business.userId,
+                    type: 'message_request_accepted',
+                    title: `${creator.fullName} accepted your message request`,
+                    body: 'You can now start chatting.',
+                    refId: creator.id,
+                    refType: 'creator_profile',
+                }).catch(() => { });
+            }
+        }
+        return { status: newStatus };
+    }
+    // ── Messages ───────────────────────────────────────────────────────────────
     async getMessages(conversationId, userId, role, page, limit) {
         const conversation = await this.repo.findConversationById(conversationId);
-        if (!conversation) {
+        if (!conversation)
             throw new error_1.AppError('Conversation not found', 404);
-        }
-        // Verify user has access to this conversation
         await this.verifyConversationAccess(conversation, userId, role);
         const { messages, total } = await this.repo.findMessages(conversationId, page, Math.min(limit, 100));
         return { messages, total, page, limit };
     }
     async sendMessage(conversationId, userId, role, input) {
         const conversation = await this.repo.findConversationById(conversationId);
-        if (!conversation) {
+        if (!conversation)
             throw new error_1.AppError('Conversation not found', 404);
-        }
-        // Verify user has access
         await this.verifyConversationAccess(conversation, userId, role);
-        const message = await this.repo.createMessage({
-            conversationId,
-            senderId: userId,
-            content: input.content,
-        });
-        return message;
+        if (conversation.status === 'PENDING') {
+            throw new error_1.AppError('Cannot send messages until the request is accepted', 403);
+        }
+        if (conversation.status === 'DECLINED') {
+            throw new error_1.AppError('This conversation request was declined', 403);
+        }
+        return this.repo.createMessage({ conversationId, senderId: userId, content: input.content });
     }
-    async verifyConversationAccess(conversation, userId, role) {
-        if (role === 'ADMIN')
-            return; // admins can access all
+    // ── Seen / badge ───────────────────────────────────────────────────────────
+    async markSeen(conversationId, userId, role) {
+        const conversation = await this.repo.findConversationById(conversationId);
+        if (!conversation)
+            throw new error_1.AppError('Conversation not found', 404);
+        await this.verifyConversationAccess(conversation, userId, role);
+        const field = role === 'BUSINESS' ? 'businessSeenAt' : 'creatorSeenAt';
+        await this.repo.updateSeenAt(conversationId, field);
+    }
+    async getBadgeCount(userId, role) {
         if (role === 'CREATOR') {
-            const creator = await this.creatorRepo.findByUserId(userId);
-            if (!creator || creator.id !== conversation.creatorId) {
-                throw new error_1.AppError('You do not have access to this conversation', 403);
-            }
+            const creator = await this.resolveCreator(userId);
+            return this.repo.getBadgeCount(creator.id, 'CREATOR');
         }
-        else if (role === 'BUSINESS') {
-            const business = await this.businessRepo.findByUserId(userId);
-            if (!business || business.id !== conversation.businessId) {
-                throw new error_1.AppError('You do not have access to this conversation', 403);
-            }
+        if (role === 'BUSINESS') {
+            const business = await this.resolveBusiness(userId);
+            return this.repo.getBadgeCount(business.id, 'BUSINESS');
         }
+        return { count: 0, pendingRequests: 0, unread: 0 };
     }
 }
 exports.MessagingService = MessagingService;

@@ -145,6 +145,7 @@ router.post('/', auth_1.authenticate, (0, auth_1.authorize)('BUSINESS'), (0, val
  *               $ref: '#/components/schemas/PaginatedResponse'
  */
 router.get('/', (0, validate_1.validate)(campaign_schema_1.campaignListQuerySchema, 'query'), ctrl.list.bind(ctrl));
+router.get('/categories', ctrl.getCategories.bind(ctrl));
 /**
  * @swagger
  * /api/campaigns/my:
@@ -201,6 +202,7 @@ router.get('/my', auth_1.authenticate, (0, auth_1.authorize)('BUSINESS'), ctrl.g
  *               $ref: '#/components/schemas/PaginatedResponse'
  */
 router.get('/applications/my', auth_1.authenticate, (0, auth_1.authorize)('CREATOR'), ctrl.getMyApplications.bind(ctrl));
+router.get('/applications/business', auth_1.authenticate, (0, auth_1.authorize)('BUSINESS'), ctrl.getBusinessApplications.bind(ctrl));
 /**
  * @swagger
  * /api/campaigns/{id}:

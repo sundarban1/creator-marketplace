@@ -40,7 +40,7 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
   return (
     <Pressable
       style={[styles.card, { backgroundColor: C.surface, shadowColor: C.brinjal1 }]}
-      onPress={() => router.push({ pathname: '/campaign-detail', params: { id: proposal.campaignId } })}>
+      onPress={() => router.push({ pathname: '/campaign-detail', params: { campaignId: proposal.campaignId } } as never)}>
       {/* Status stripe */}
       <View style={[styles.stripe, { backgroundColor: proposal.status === 'accepted' ? C.active : proposal.status === 'rejected' ? C.error : C.draft }]} />
 
@@ -112,11 +112,6 @@ export default function ProposalsScreen() {
       <View style={styles.header}>
         <View>
           <Text style={[styles.heading, { color: C.text }]}>{t('creator.proposals.heading')}</Text>
-          {proposals.length > 0 && (
-            <Text style={[styles.subheading, { color: C.textSecondary }]}>
-              {proposals.length} total · {pending} pending · {accepted} accepted
-            </Text>
-          )}
         </View>
       </View>
 

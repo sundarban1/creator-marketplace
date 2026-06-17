@@ -1,13 +1,15 @@
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
 import { useDrawer } from '@/context/DrawerContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { COLORS } from '@/utilities/constants';
 import { campaignService } from '@/services/campaign';
+import { notificationService } from '@/services/notifications';
 import type { Campaign } from '@/types';
 
 const CATEGORY_META: Record<string, { emoji: string; cardBg: string }> = {
@@ -50,6 +52,20 @@ export default function BusinessHomeScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [fetchError, setFetchError] = useState('');
+  const [notifBadge, setNotifBadge] = useState(0);
+  const notifPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    notificationService.getBadge().then((r) => setNotifBadge(r.count)).catch(() => {});
+    notifPollRef.current = setInterval(() => {
+      notificationService.getBadge().then((r) => setNotifBadge(r.count)).catch(() => {});
+    }, 30000);
+    return () => { if (notifPollRef.current) clearInterval(notifPollRef.current); };
+  }, []);
+
+  useFocusEffect(useCallback(() => {
+    notificationService.getBadge().then((r) => setNotifBadge(r.count)).catch(() => {});
+  }, []));
 
   async function fetchCampaigns(showLoader = true) {
     if (showLoader) setLoading(true);
@@ -115,7 +131,12 @@ export default function BusinessHomeScreen() {
           </View>
           <View style={styles.headerRight}>
             <Pressable style={styles.bellWrap} onPress={() => router.push('/(business)/notifications')}>
-              <Ionicons name="notifications" size={22} color={C.text} />
+              <Ionicons name={notifBadge > 0 ? 'notifications' : 'notifications-outline'} size={22} color={C.text} />
+              {notifBadge > 0 && (
+                <View style={styles.bellBadge}>
+                  <Text style={styles.bellBadgeText}>{notifBadge > 99 ? '99+' : notifBadge}</Text>
+                </View>
+              )}
             </Pressable>
             <Pressable style={[styles.avatarCircle, { backgroundColor: C.brinjal1 }]} onPress={() => router.push('/(business)/profile')}>
               <Text style={styles.avatarText}>
@@ -255,7 +276,9 @@ const styles = StyleSheet.create({
   rolePill: { flexDirection: 'row', alignItems: 'center', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 3 },
   rolePillText: { fontSize: 11, fontWeight: '700' },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  bellWrap: { padding: 4 },
+  bellWrap: { padding: 4, position: 'relative' },
+  bellBadge: { position: 'absolute', top: 0, right: 0, backgroundColor: '#EF4444', borderRadius: 8, minWidth: 16, height: 16, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 3 },
+  bellBadgeText: { fontSize: 9, fontWeight: '800', color: '#fff' },
   avatarCircle: { width: 42, height: 42, borderRadius: 21, justifyContent: 'center', alignItems: 'center' },
   avatarText: { fontSize: 13, fontWeight: '700', color: '#fff' },
 

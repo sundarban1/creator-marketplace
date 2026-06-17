@@ -21,6 +21,9 @@ export declare class BusinessService {
         logoUrl: string | null;
         website: string | null;
         panNo: string | null;
+        showPublicProfile: boolean;
+        hideContactDetails: boolean;
+        allowDirectMessages: boolean;
     }>;
     updateProfile(userId: string, input: UpdateBusinessProfileInput): Promise<{
         id: string;
@@ -34,6 +37,63 @@ export declare class BusinessService {
         logoUrl: string | null;
         website: string | null;
         panNo: string | null;
+        showPublicProfile: boolean;
+        hideContactDetails: boolean;
+        allowDirectMessages: boolean;
+    }>;
+    listBusinesses(params: {
+        search?: string;
+        category?: string;
+        platform?: string;
+        locations?: string[];
+        page: number;
+        limit: number;
+    }): Promise<{
+        businesses: {
+            id: string;
+            categories: string[];
+            isVerified: boolean;
+            _count: {
+                campaigns: number;
+            };
+            businessName: string;
+            description: string | null;
+            logoUrl: string | null;
+            website: string | null;
+        }[];
+        total: number;
+    }>;
+    getBusinessPublic(id: string): Promise<{
+        id: string;
+        createdAt: Date;
+        userId: string;
+        categories: string[];
+        isVerified: boolean;
+        _count: {
+            campaigns: number;
+        };
+        businessName: string;
+        description: string | null;
+        logoUrl: string | null;
+        website: string | null;
+        showPublicProfile: boolean;
+        hideContactDetails: boolean;
+        allowDirectMessages: boolean;
+        campaigns: {
+            id: string;
+            location: string | null;
+            _count: {
+                applications: number;
+            };
+            platform: string;
+            title: string;
+            category: string;
+            contentType: string;
+            deadline: Date;
+            budgetMin: number;
+            budgetMax: number;
+            isFeatured: boolean;
+        }[];
     }>;
 }
 //# sourceMappingURL=business.service.d.ts.map

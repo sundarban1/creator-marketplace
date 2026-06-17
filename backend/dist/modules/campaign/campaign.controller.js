@@ -14,6 +14,15 @@ class CampaignController {
             next(err);
         }
     }
+    async getCategories(req, res, next) {
+        try {
+            const categories = await campaignService.getCategories();
+            (0, response_1.success)(res, categories, 'Categories retrieved successfully');
+        }
+        catch (err) {
+            next(err);
+        }
+    }
     async list(req, res, next) {
         try {
             const { campaigns, total, page, limit } = await campaignService.list(req.query);
@@ -94,6 +103,17 @@ class CampaignController {
         try {
             const application = await campaignService.rejectApplication(req.params.id, req.params.appId, req.user.id);
             (0, response_1.success)(res, application, 'Application rejected');
+        }
+        catch (err) {
+            next(err);
+        }
+    }
+    async getBusinessApplications(req, res, next) {
+        try {
+            const page = parseInt(req.query.page) || 1;
+            const limit = parseInt(req.query.limit) || 50;
+            const { applications, total } = await campaignService.getBusinessApplications(req.user.id, page, limit);
+            (0, response_1.paginated)(res, applications, total, page, limit);
         }
         catch (err) {
             next(err);

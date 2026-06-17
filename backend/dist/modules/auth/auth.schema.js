@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.resendOtpSchema = exports.verifyOtpSchema = exports.resetPasswordSchema = exports.forgotPasswordSchema = exports.refreshTokenSchema = exports.loginSchema = exports.registerSchema = void 0;
+exports.verifyResetOtpSchema = exports.forgotPasswordByPhoneSchema = exports.resendOtpSchema = exports.verifyOtpSchema = exports.resetPasswordSchema = exports.forgotPasswordSchema = exports.refreshTokenSchema = exports.loginSchema = exports.registerSchema = void 0;
 const zod_1 = require("zod");
 exports.registerSchema = zod_1.z.object({
     email: zod_1.z.string().email('Invalid email address'),
@@ -49,5 +49,12 @@ exports.verifyOtpSchema = zod_1.z.object({
 });
 exports.resendOtpSchema = zod_1.z.object({
     email: zod_1.z.string().email('Invalid email address'),
+});
+exports.forgotPasswordByPhoneSchema = zod_1.z.object({
+    phone: zod_1.z.string().min(7).max(15).regex(/^\+?[\d\s\-().]+$/, 'Invalid phone number'),
+});
+exports.verifyResetOtpSchema = zod_1.z.object({
+    phone: zod_1.z.string().min(7).max(15).regex(/^\+?[\d\s\-().]+$/, 'Invalid phone number'),
+    code: zod_1.z.string().length(6, 'Code must be 6 digits').regex(/^\d{6}$/, 'Code must be numeric'),
 });
 //# sourceMappingURL=auth.schema.js.map

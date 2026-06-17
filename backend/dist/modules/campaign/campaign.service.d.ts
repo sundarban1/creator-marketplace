@@ -3,8 +3,12 @@ export declare class CampaignService {
     private repo;
     private businessRepo;
     private creatorRepo;
+    private favoriteRepo;
     constructor();
     create(userId: string, input: CreateCampaignInput): Promise<{
+        _count: {
+            applications: number;
+        };
         business: {
             businessName: string;
             logoUrl: string | null;
@@ -16,9 +20,10 @@ export declare class CampaignService {
         updatedAt: Date;
         location: string | null;
         description: string;
+        platform: string;
+        businessId: string;
         title: string;
         category: string;
-        platform: string;
         minFollowers: number;
         contentType: string;
         deliverables: string;
@@ -26,7 +31,8 @@ export declare class CampaignService {
         budgetMin: number;
         budgetMax: number;
         paymentType: string;
-        businessId: string;
+        creatorsNeeded: number;
+        isFeatured: boolean;
     }>;
     list(query: CampaignListQuery): Promise<{
         campaigns: ({
@@ -44,9 +50,10 @@ export declare class CampaignService {
             updatedAt: Date;
             location: string | null;
             description: string;
+            platform: string;
+            businessId: string;
             title: string;
             category: string;
-            platform: string;
             minFollowers: number;
             contentType: string;
             deliverables: string;
@@ -54,12 +61,14 @@ export declare class CampaignService {
             budgetMin: number;
             budgetMax: number;
             paymentType: string;
-            businessId: string;
+            creatorsNeeded: number;
+            isFeatured: boolean;
         })[];
         total: number;
         page: number;
         limit: number;
     }>;
+    getCategories(): Promise<string[]>;
     getById(id: string): Promise<{
         _count: {
             applications: number;
@@ -77,9 +86,10 @@ export declare class CampaignService {
         updatedAt: Date;
         location: string | null;
         description: string;
+        platform: string;
+        businessId: string;
         title: string;
         category: string;
-        platform: string;
         minFollowers: number;
         contentType: string;
         deliverables: string;
@@ -87,7 +97,8 @@ export declare class CampaignService {
         budgetMin: number;
         budgetMax: number;
         paymentType: string;
-        businessId: string;
+        creatorsNeeded: number;
+        isFeatured: boolean;
     }>;
     update(id: string, userId: string, input: UpdateCampaignInput): Promise<{
         status: import(".prisma/client").$Enums.CampaignStatus;
@@ -96,9 +107,10 @@ export declare class CampaignService {
         updatedAt: Date;
         location: string | null;
         description: string;
+        platform: string;
+        businessId: string;
         title: string;
         category: string;
-        platform: string;
         minFollowers: number;
         contentType: string;
         deliverables: string;
@@ -106,7 +118,8 @@ export declare class CampaignService {
         budgetMin: number;
         budgetMax: number;
         paymentType: string;
-        businessId: string;
+        creatorsNeeded: number;
+        isFeatured: boolean;
     }>;
     delete(id: string, userId: string): Promise<{
         message: string;
@@ -123,9 +136,10 @@ export declare class CampaignService {
             updatedAt: Date;
             location: string | null;
             description: string;
+            platform: string;
+            businessId: string;
             title: string;
             category: string;
-            platform: string;
             minFollowers: number;
             contentType: string;
             deliverables: string;
@@ -133,7 +147,8 @@ export declare class CampaignService {
             budgetMin: number;
             budgetMax: number;
             paymentType: string;
-            businessId: string;
+            creatorsNeeded: number;
+            isFeatured: boolean;
         })[];
         total: number;
         page: number;
@@ -151,10 +166,10 @@ export declare class CampaignService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        campaignId: string;
         creatorId: string;
-        coverLetter: string;
         proposedRate: number;
+        campaignId: string;
+        coverLetter: string;
         timeline: string;
         socialHandles: import("@prisma/client/runtime/library").JsonValue;
         portfolioUrl: string | null;
@@ -173,10 +188,40 @@ export declare class CampaignService {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            campaignId: string;
             creatorId: string;
-            coverLetter: string;
             proposedRate: number;
+            campaignId: string;
+            coverLetter: string;
+            timeline: string;
+            socialHandles: import("@prisma/client/runtime/library").JsonValue;
+            portfolioUrl: string | null;
+        })[];
+        total: number;
+        page: number;
+        limit: number;
+    }>;
+    getBusinessApplications(userId: string, page: number, limit: number): Promise<{
+        applications: ({
+            campaign: {
+                id: string;
+                platform: string;
+                title: string;
+            };
+            creator: {
+                id: string;
+                fullName: string;
+                location: string | null;
+                avatarUrl: string | null;
+            };
+        } & {
+            status: import(".prisma/client").$Enums.ApplicationStatus;
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            creatorId: string;
+            proposedRate: number;
+            campaignId: string;
+            coverLetter: string;
             timeline: string;
             socialHandles: import("@prisma/client/runtime/library").JsonValue;
             portfolioUrl: string | null;
@@ -190,10 +235,10 @@ export declare class CampaignService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        campaignId: string;
         creatorId: string;
-        coverLetter: string;
         proposedRate: number;
+        campaignId: string;
+        coverLetter: string;
         timeline: string;
         socialHandles: import("@prisma/client/runtime/library").JsonValue;
         portfolioUrl: string | null;
@@ -203,10 +248,10 @@ export declare class CampaignService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        campaignId: string;
         creatorId: string;
-        coverLetter: string;
         proposedRate: number;
+        campaignId: string;
+        coverLetter: string;
         timeline: string;
         socialHandles: import("@prisma/client/runtime/library").JsonValue;
         portfolioUrl: string | null;
@@ -216,9 +261,10 @@ export declare class CampaignService {
         applications: ({
             campaign: {
                 status: import(".prisma/client").$Enums.CampaignStatus;
+                id: string;
+                platform: string;
                 title: string;
                 category: string;
-                platform: string;
                 deadline: Date;
                 budgetMin: number;
                 budgetMax: number;
@@ -232,10 +278,10 @@ export declare class CampaignService {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            campaignId: string;
             creatorId: string;
-            coverLetter: string;
             proposedRate: number;
+            campaignId: string;
+            coverLetter: string;
             timeline: string;
             socialHandles: import("@prisma/client/runtime/library").JsonValue;
             portfolioUrl: string | null;

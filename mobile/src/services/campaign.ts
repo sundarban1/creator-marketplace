@@ -180,16 +180,17 @@ export const campaignService = {
       id: string;
       status: 'pending' | 'accepted' | 'rejected';
       proposedRate: string;
+      coverLetter: string;
       createdAt: string;
       campaign: { id: string; title: string; platform: string };
-      creator: { fullName: string; avatarUrl: string | null; location: string | null };
+      creator: { id: string; fullName: string; avatarUrl: string | null; location: string | null };
     }>;
     total: number;
   }> {
     const res = await request<Array<{
-      id: string; status: string; proposedRate: number; createdAt: string;
+      id: string; status: string; proposedRate: number; coverLetter: string; createdAt: string;
       campaign: { id: string; title: string; platform: string };
-      creator: { fullName: string; avatarUrl: string | null; location: string | null };
+      creator: { id: string; fullName: string; avatarUrl: string | null; location: string | null };
     }>>('GET', '/api/campaigns/applications/business', undefined, {
       page: params?.page ?? 1,
       limit: params?.limit ?? 50,
@@ -199,12 +200,21 @@ export const campaignService = {
         id: a.id,
         status: a.status.toLowerCase() as 'pending' | 'accepted' | 'rejected',
         proposedRate: `$${a.proposedRate.toLocaleString()}`,
+        coverLetter: a.coverLetter ?? '',
         createdAt: a.createdAt,
         campaign: a.campaign,
         creator: a.creator,
       })),
       total: res.pagination?.total ?? res.data.length,
     };
+  },
+
+  async acceptProposal(campaignId: string, appId: string): Promise<void> {
+    await request('POST', `/api/campaigns/${campaignId}/applications/${appId}/accept`);
+  },
+
+  async rejectProposal(campaignId: string, appId: string): Promise<void> {
+    await request('POST', `/api/campaigns/${campaignId}/applications/${appId}/reject`);
   },
 
   async getApplications(campaignId: string): Promise<Array<{

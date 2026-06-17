@@ -2,11 +2,13 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const business_controller_1 = require("./business.controller");
+const creator_controller_1 = require("../creator/creator.controller");
 const auth_1 = require("../../middleware/auth");
 const validate_1 = require("../../middleware/validate");
 const business_schema_1 = require("./business.schema");
 const router = (0, express_1.Router)();
 const ctrl = new business_controller_1.BusinessController();
+const creatorCtrl = new creator_controller_1.CreatorController();
 // All business routes require authentication and BUSINESS role
 router.use(auth_1.authenticate, (0, auth_1.authorize)('BUSINESS'));
 /**
@@ -35,6 +37,9 @@ router.use(auth_1.authenticate, (0, auth_1.authorize)('BUSINESS'));
  *       403:
  *         description: Not authorized (wrong role)
  */
+router.get('/creators/filter-options', creatorCtrl.getCreatorFilterOptions.bind(creatorCtrl));
+router.get('/creators/:id', creatorCtrl.getCreatorPublicProfile.bind(creatorCtrl));
+router.get('/creators', creatorCtrl.listCreators.bind(creatorCtrl));
 router.get('/profile', ctrl.getProfile.bind(ctrl));
 /**
  * @swagger

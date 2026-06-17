@@ -1,5 +1,6 @@
+import { ConversationStatus } from '@prisma/client';
 export declare class MessagingRepository {
-    findOrCreateConversation(creatorId: string, businessId: string, campaignId?: string): Promise<{
+    findOrCreateConversation(creatorId: string, businessId: string, campaignId?: string, requestMessage?: string): Promise<{
         campaign: {
             title: string;
         } | null;
@@ -12,13 +13,18 @@ export declare class MessagingRepository {
             avatarUrl: string | null;
         };
     } & {
+        status: import(".prisma/client").$Enums.ConversationStatus;
         id: string;
         createdAt: Date;
+        creatorId: string;
         businessId: string;
         campaignId: string | null;
-        creatorId: string;
+        requestMessage: string | null;
+        lastMessageAt: Date | null;
+        businessSeenAt: Date | null;
+        creatorSeenAt: Date | null;
     }>;
-    findConversationsByCreator(creatorId: string): Promise<({
+    findConversationsByCreator(creatorId: string, status?: ConversationStatus): Promise<({
         campaign: {
             title: string;
         } | null;
@@ -29,18 +35,23 @@ export declare class MessagingRepository {
         messages: {
             id: string;
             createdAt: Date;
+            content: string;
             conversationId: string;
             senderId: string;
-            content: string;
         }[];
     } & {
+        status: import(".prisma/client").$Enums.ConversationStatus;
         id: string;
         createdAt: Date;
+        creatorId: string;
         businessId: string;
         campaignId: string | null;
-        creatorId: string;
+        requestMessage: string | null;
+        lastMessageAt: Date | null;
+        businessSeenAt: Date | null;
+        creatorSeenAt: Date | null;
     })[]>;
-    findConversationsByBusiness(businessId: string): Promise<({
+    findConversationsByBusiness(businessId: string, status?: ConversationStatus): Promise<({
         campaign: {
             title: string;
         } | null;
@@ -51,16 +62,21 @@ export declare class MessagingRepository {
         messages: {
             id: string;
             createdAt: Date;
+            content: string;
             conversationId: string;
             senderId: string;
-            content: string;
         }[];
     } & {
+        status: import(".prisma/client").$Enums.ConversationStatus;
         id: string;
         createdAt: Date;
+        creatorId: string;
         businessId: string;
         campaignId: string | null;
-        creatorId: string;
+        requestMessage: string | null;
+        lastMessageAt: Date | null;
+        businessSeenAt: Date | null;
+        creatorSeenAt: Date | null;
     })[]>;
     findConversationById(id: string): Promise<({
         campaign: {
@@ -75,12 +91,45 @@ export declare class MessagingRepository {
             avatarUrl: string | null;
         };
     } & {
+        status: import(".prisma/client").$Enums.ConversationStatus;
         id: string;
         createdAt: Date;
+        creatorId: string;
         businessId: string;
         campaignId: string | null;
-        creatorId: string;
+        requestMessage: string | null;
+        lastMessageAt: Date | null;
+        businessSeenAt: Date | null;
+        creatorSeenAt: Date | null;
     }) | null>;
+    findConversationBetween(creatorId: string, businessId: string): Promise<{
+        status: import(".prisma/client").$Enums.ConversationStatus;
+        id: string;
+    } | null>;
+    updateStatus(id: string, status: ConversationStatus): Promise<{
+        status: import(".prisma/client").$Enums.ConversationStatus;
+        id: string;
+        createdAt: Date;
+        creatorId: string;
+        businessId: string;
+        campaignId: string | null;
+        requestMessage: string | null;
+        lastMessageAt: Date | null;
+        businessSeenAt: Date | null;
+        creatorSeenAt: Date | null;
+    }>;
+    updateSeenAt(id: string, field: 'businessSeenAt' | 'creatorSeenAt'): Promise<{
+        status: import(".prisma/client").$Enums.ConversationStatus;
+        id: string;
+        createdAt: Date;
+        creatorId: string;
+        businessId: string;
+        campaignId: string | null;
+        requestMessage: string | null;
+        lastMessageAt: Date | null;
+        businessSeenAt: Date | null;
+        creatorSeenAt: Date | null;
+    }>;
     findMessages(conversationId: string, page: number, limit: number): Promise<{
         messages: ({
             sender: {
@@ -91,9 +140,9 @@ export declare class MessagingRepository {
         } & {
             id: string;
             createdAt: Date;
+            content: string;
             conversationId: string;
             senderId: string;
-            content: string;
         })[];
         total: number;
     }>;
@@ -110,9 +159,14 @@ export declare class MessagingRepository {
     } & {
         id: string;
         createdAt: Date;
+        content: string;
         conversationId: string;
         senderId: string;
-        content: string;
+    }>;
+    getBadgeCount(profileId: string, role: 'CREATOR' | 'BUSINESS'): Promise<{
+        count: number;
+        pendingRequests: number;
+        unread: number;
     }>;
 }
 //# sourceMappingURL=messaging.repository.d.ts.map

@@ -79,6 +79,51 @@ class AuthController {
             next(err);
         }
     }
+    async forgotPasswordByPhone(req, res, next) {
+        try {
+            const result = await authService.forgotPasswordByPhone(req.body);
+            (0, response_1.success)(res, result, result.message);
+        }
+        catch (err) {
+            next(err);
+        }
+    }
+    async verifyResetOtp(req, res, next) {
+        try {
+            const result = await authService.verifyResetOtp(req.body);
+            (0, response_1.success)(res, result, 'OTP verified');
+        }
+        catch (err) {
+            next(err);
+        }
+    }
+    async completeOnboarding(req, res, next) {
+        try {
+            const result = await authService.completeOnboarding(req.user.id);
+            (0, response_1.success)(res, result, result.message);
+        }
+        catch (err) {
+            next(err);
+        }
+    }
+    async deactivateAccount(req, res, next) {
+        try {
+            const result = await authService.deactivateAccount(req.user.id);
+            (0, response_1.success)(res, result, result.message);
+        }
+        catch (err) {
+            next(err);
+        }
+    }
+    async deleteAccount(req, res, next) {
+        try {
+            const result = await authService.deleteAccount(req.user.id);
+            (0, response_1.success)(res, result, result.message);
+        }
+        catch (err) {
+            next(err);
+        }
+    }
 }
 exports.AuthController = AuthController;
 //# sourceMappingURL=auth.controller.js.map

@@ -23,6 +23,15 @@ class BusinessService {
         const updated = await this.repo.update(userId, input);
         return updated;
     }
+    async listBusinesses(params) {
+        return this.repo.findMany(params);
+    }
+    async getBusinessPublic(id) {
+        const business = await this.repo.findPublicById(id);
+        if (!business || !business.showPublicProfile)
+            throw new error_1.AppError('Business not found', 404);
+        return business;
+    }
 }
 exports.BusinessService = BusinessService;
 //# sourceMappingURL=business.service.js.map

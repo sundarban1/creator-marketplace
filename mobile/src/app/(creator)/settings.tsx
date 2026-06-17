@@ -1,4 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
+import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { BackButton } from '@/components/BackButton';
 import { creatorService } from '@/services/creator';
@@ -28,35 +29,40 @@ const ColorCtx = createContext<ColorsType>(COLORS);
 
 // ── Static config ─────────────────────────────────────────────
 
-const ALL_SOCIAL_PLATFORMS: { id: string; label: string; icon: string; color: string; followersLabel: string }[] = [
-  { id: 'instagram', label: 'Instagram',  icon: '📸', color: '#E1306C', followersLabel: 'Followers' },
-  { id: 'tiktok',    label: 'TikTok',     icon: '🎵', color: '#010101', followersLabel: 'Followers' },
-  { id: 'youtube',   label: 'YouTube',    icon: '▶️', color: '#FF0000', followersLabel: 'Subscribers' },
-  { id: 'facebook',  label: 'Facebook',   icon: '💬', color: '#1877F2', followersLabel: 'Followers' },
-  { id: 'twitter',   label: 'X (Twitter)', icon: '🐦', color: '#1DA1F2', followersLabel: 'Followers' },
-  { id: 'linkedin',  label: 'LinkedIn',   icon: '💼', color: '#0A66C2', followersLabel: 'Connections' },
-  { id: 'pinterest', label: 'Pinterest',  icon: '📌', color: '#E60023', followersLabel: 'Followers' },
-  { id: 'snapchat',  label: 'Snapchat',   icon: '👻', color: '#FFFC00', followersLabel: 'Friends' },
-  { id: 'twitch',    label: 'Twitch',     icon: '🎮', color: '#9146FF', followersLabel: 'Followers' },
+const ALL_SOCIAL_PLATFORMS: { id: string; label: string; iconName: string; color: string; followersLabel: string }[] = [
+  { id: 'instagram', label: 'Instagram',  iconName: 'instagram', color: '#E1306C', followersLabel: 'Followers' },
+  { id: 'tiktok',    label: 'TikTok',     iconName: 'tiktok',    color: '#010101', followersLabel: 'Followers' },
+  { id: 'youtube',   label: 'YouTube',    iconName: 'youtube',   color: '#FF0000', followersLabel: 'Subscribers' },
+  { id: 'facebook',  label: 'Facebook',   iconName: 'facebook',  color: '#1877F2', followersLabel: 'Followers' },
+  { id: 'twitter',   label: 'X (Twitter)', iconName: 'twitter',  color: '#1DA1F2', followersLabel: 'Followers' },
+  { id: 'linkedin',  label: 'LinkedIn',   iconName: 'linkedin',  color: '#0A66C2', followersLabel: 'Connections' },
+  { id: 'pinterest', label: 'Pinterest',  iconName: 'pinterest', color: '#E60023', followersLabel: 'Followers' },
+  { id: 'snapchat',  label: 'Snapchat',   iconName: 'snapchat',  color: '#FFFC00', followersLabel: 'Friends' },
+  { id: 'twitch',    label: 'Twitch',     iconName: 'twitch',    color: '#9146FF', followersLabel: 'Followers' },
 ];
 
 const PLATFORM_CONFIG: Record<string, { icon: string; label: string; color: string; followersLabel: string }> =
   Object.fromEntries(ALL_SOCIAL_PLATFORMS.map((p) => [p.id, p]));
 
-const PORTFOLIO_TYPES: { id: string; label: string; icon: string; color: string; urlHint: string }[] = [
-  { id: 'instagram', label: 'Instagram',  icon: '📸', color: '#E1306C', urlHint: 'https://instagram.com/p/...' },
-  { id: 'tiktok',    label: 'TikTok',     icon: '🎵', color: '#010101', urlHint: 'https://tiktok.com/@user/video/...' },
-  { id: 'youtube',   label: 'YouTube',    icon: '▶️', color: '#FF0000', urlHint: 'https://youtube.com/watch?v=...' },
-  { id: 'facebook',  label: 'Facebook',   icon: '💬', color: '#1877F2', urlHint: 'https://facebook.com/...' },
-  { id: 'twitter',   label: 'X / Twitter', icon: '🐦', color: '#1DA1F2', urlHint: 'https://x.com/user/status/...' },
-  { id: 'blog',      label: 'Blog Post',  icon: '📝', color: '#F59E0B', urlHint: 'https://yourblog.com/post-title' },
-  { id: 'website',   label: 'Website',    icon: '🌐', color: '#6366F1', urlHint: 'https://yourwebsite.com' },
-  { id: 'photo',     label: 'Photography', icon: '📷', color: '#10B981', urlHint: 'https://...' },
-  { id: 'video',     label: 'Other Video', icon: '🎬', color: '#EF4444', urlHint: 'https://...' },
+const PORTFOLIO_TYPES: { id: string; label: string; iconName: string; iconLib: 'fa5' | 'ion'; color: string; urlHint: string }[] = [
+  { id: 'instagram', label: 'Instagram',   iconName: 'instagram',         iconLib: 'fa5', color: '#E1306C', urlHint: 'https://instagram.com/p/...' },
+  { id: 'tiktok',    label: 'TikTok',      iconName: 'tiktok',            iconLib: 'fa5', color: '#010101', urlHint: 'https://tiktok.com/@user/video/...' },
+  { id: 'youtube',   label: 'YouTube',     iconName: 'youtube',           iconLib: 'fa5', color: '#FF0000', urlHint: 'https://youtube.com/watch?v=...' },
+  { id: 'facebook',  label: 'Facebook',    iconName: 'facebook',          iconLib: 'fa5', color: '#1877F2', urlHint: 'https://facebook.com/...' },
+  { id: 'twitter',   label: 'X / Twitter', iconName: 'twitter',           iconLib: 'fa5', color: '#1DA1F2', urlHint: 'https://x.com/user/status/...' },
+  { id: 'blog',      label: 'Blog Post',   iconName: 'newspaper-outline', iconLib: 'ion', color: '#F59E0B', urlHint: 'https://yourblog.com/post-title' },
+  { id: 'website',   label: 'Website',     iconName: 'globe-outline',     iconLib: 'ion', color: '#6366F1', urlHint: 'https://yourwebsite.com' },
+  { id: 'photo',     label: 'Photography', iconName: 'camera-outline',    iconLib: 'ion', color: '#10B981', urlHint: 'https://...' },
+  { id: 'video',     label: 'Other Video', iconName: 'videocam-outline',  iconLib: 'ion', color: '#EF4444', urlHint: 'https://...' },
 ];
 
 const PORTFOLIO_CONFIG: Record<string, typeof PORTFOLIO_TYPES[0]> =
   Object.fromEntries(PORTFOLIO_TYPES.map((p) => [p.id, p]));
+
+function PlatformIcon({ iconName, iconLib, size, color, style }: { iconName: string; iconLib?: 'fa5' | 'ion'; size: number; color: string; style?: any }) {
+  if (iconLib === 'ion') return <Ionicons name={iconName as any} size={size} color={color} style={style} />;
+  return <FontAwesome5 name={iconName as any} size={size} color={color} style={style} />;
+}
 
 const PLATFORM_URL_PREFIX: Record<string, string> = {
   instagram: 'https://instagram.com/',
@@ -1222,7 +1228,7 @@ export default function CreatorSettingsScreen() {
               <View style={styles.sheetHeaderInner}>
                 {selectedPlatform && (
                   <View style={styles.sheetPlatformIcon}>
-                    <Text style={{ fontSize: 28 }}>{selectedPlatform.icon}</Text>
+                    <FontAwesome5 name={selectedPlatform.iconName as any} size={28} color="#fff" />
                   </View>
                 )}
                 <View style={{ flex: 1 }}>
@@ -1277,7 +1283,7 @@ export default function CreatorSettingsScreen() {
                               }));
                               setSocialFormErrors((e) => ({ ...e, platform: '' }));
                             }}>
-                            <Text style={[styles.platformGridEmoji, alreadyAdded && { opacity: 0.35 }]}>{p.icon}</Text>
+                            <FontAwesome5 name={p.iconName as any} size={24} color={isSelected ? p.color : '#888'} style={alreadyAdded ? { opacity: 0.35 } : undefined} />
                             <Text style={[
                               styles.platformGridLabel,
                               { color: isSelected ? p.color : C.text },
@@ -1309,7 +1315,7 @@ export default function CreatorSettingsScreen() {
                         { borderColor: socialFormErrors.profileUrl ? C.error : selectedPlatform ? selectedPlatform.color + '60' : C.border, backgroundColor: C.background },
                       ]}>
                         {selectedPlatform && (
-                          <Text style={[styles.sheetInputPrefix, { color: selectedPlatform.color }]}>{selectedPlatform.icon} </Text>
+                          <FontAwesome5 name={selectedPlatform.iconName as any} size={14} color={selectedPlatform.color} style={styles.sheetInputPrefix} />
                         )}
                         <TextInput
                           style={[styles.sheetInput, { color: C.text }]}
@@ -1404,12 +1410,12 @@ export default function CreatorSettingsScreen() {
         {socialAccounts.length > 0 && (
           <Card>
             {socialAccounts.map((acct, idx) => {
-              const cfg = PLATFORM_CONFIG[acct.platform] ?? { icon: '🔗', label: acct.platform, color: '#6366f1', followersLabel: 'Followers' };
+              const cfg = PLATFORM_CONFIG[acct.platform] ?? { iconName: 'link', iconLib: 'fa5' as const, label: acct.platform, color: '#6366f1', followersLabel: 'Followers' };
               const isLast = idx === socialAccounts.length - 1;
               return (
                 <View key={acct.id} style={[styles.row, styles.socialRow, !isLast && { borderBottomWidth: 1, borderBottomColor: C.border }]}>
                   <View style={[styles.socialIconWrap, { backgroundColor: cfg.color + '18' }]}>
-                    <Text style={styles.socialEmoji}>{cfg.icon}</Text>
+                    <PlatformIcon iconName={cfg.iconName} iconLib={cfg.iconLib} size={20} color={cfg.color} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.socialPlatformName, { color: C.text }]}>{cfg.label}</Text>
@@ -1467,7 +1473,7 @@ export default function CreatorSettingsScreen() {
               <View style={styles.sheetHeaderInner}>
                 {portfolioForm.type && PORTFOLIO_CONFIG[portfolioForm.type] && (
                   <View style={styles.sheetPlatformIcon}>
-                    <Text style={{ fontSize: 28 }}>{PORTFOLIO_CONFIG[portfolioForm.type].icon}</Text>
+                    <PlatformIcon iconName={PORTFOLIO_CONFIG[portfolioForm.type].iconName} iconLib={PORTFOLIO_CONFIG[portfolioForm.type].iconLib} size={28} color="#fff" />
                   </View>
                 )}
                 <View style={{ flex: 1 }}>
@@ -1510,7 +1516,7 @@ export default function CreatorSettingsScreen() {
                               setPortfolioForm((f) => ({ ...f, type: p.id }));
                               setPortfolioFormErrors((e) => ({ ...e, type: '' }));
                             }}>
-                            <Text style={styles.platformGridEmoji}>{p.icon}</Text>
+                            <PlatformIcon iconName={p.iconName} iconLib={p.iconLib} size={24} color={isSelected ? p.color : '#888'} />
                             <Text style={[styles.platformGridLabel, { color: isSelected ? p.color : C.text }]}>{p.label}</Text>
                             {isSelected && <View style={[styles.platformGridSelectedDot, { backgroundColor: p.color }]} />}
                           </Pressable>
@@ -1530,9 +1536,7 @@ export default function CreatorSettingsScreen() {
                         { borderColor: portfolioFormErrors.url ? C.error : (portfolioForm.type && PORTFOLIO_CONFIG[portfolioForm.type] ? PORTFOLIO_CONFIG[portfolioForm.type].color + '60' : C.border), backgroundColor: C.background },
                       ]}>
                         {portfolioForm.type && PORTFOLIO_CONFIG[portfolioForm.type] && (
-                          <Text style={[styles.sheetInputPrefix, { color: PORTFOLIO_CONFIG[portfolioForm.type].color }]}>
-                            {PORTFOLIO_CONFIG[portfolioForm.type].icon}{' '}
-                          </Text>
+                          <PlatformIcon iconName={PORTFOLIO_CONFIG[portfolioForm.type].iconName} iconLib={PORTFOLIO_CONFIG[portfolioForm.type].iconLib} size={14} color={PORTFOLIO_CONFIG[portfolioForm.type].color} style={styles.sheetInputPrefix} />
                         )}
                         <TextInput
                           style={[styles.sheetInput, { color: C.text }]}
@@ -1602,7 +1606,7 @@ export default function CreatorSettingsScreen() {
               return (
                 <View key={item.id} style={[styles.row, styles.socialRow, !isLast && { borderBottomWidth: 1, borderBottomColor: C.border }]}>
                   <View style={[styles.socialIconWrap, { backgroundColor: cfg.color + '18' }]}>
-                    <Text style={styles.socialEmoji}>{cfg.icon}</Text>
+                    <PlatformIcon iconName={cfg.iconName} iconLib={cfg.iconLib} size={20} color={cfg.color} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.socialPlatformName, { color: C.text }]}>{cfg.label}</Text>

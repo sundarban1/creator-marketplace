@@ -32,7 +32,7 @@ export default function HomeScreen() {
 
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
-  const [activeFilterTab, setActiveFilterTab] = useState(0); // 0 = All
+  const [activeFilterTab, setActiveFilterTab] = useState(-1); // -1 = show all
   const [showBanner, setShowBanner] = useState(true);
   const [priceMin, setPriceMin] = useState(0);
   const [priceMax, setPriceMax] = useState(SLIDER_MAX);
@@ -148,6 +148,7 @@ export default function HomeScreen() {
     setDateFrom(null);
     setDateTo(null);
     setActiveCategory('All');
+    setActiveFilterTab(-1);
     void fetchCampaigns({ category: 'All', priceMin: 0, priceMax: SLIDER_MAX, dateFrom: null, dateTo: null });
   }
 
@@ -175,10 +176,10 @@ export default function HomeScreen() {
       );
 
     let matchTab = true;
-    if (activeFilterTab === 1) matchTab = c.isNew;
-    else if (activeFilterTab === 2) matchTab = !c.isFeatured;
-    else if (activeFilterTab === 3) matchTab = c.proposals >= 3;
-    else if (activeFilterTab === 4) {
+    if (activeFilterTab === 0) matchTab = c.isNew;                // New
+    else if (activeFilterTab === 1) matchTab = !c.isFeatured;     // Recommended
+    else if (activeFilterTab === 2) matchTab = c.proposals >= 3;  // Trending
+    else if (activeFilterTab === 3) {                             // Ending Soon
       const deadline = c.deadline ? new Date(c.deadline) : null;
       if (deadline && !isNaN(deadline.getTime())) {
         const daysLeft = (deadline.getTime() - Date.now()) / (1000 * 60 * 60 * 24);
@@ -215,6 +216,7 @@ export default function HomeScreen() {
               </View>
             </View>
           </View>
+
           <View style={styles.headerRight}>
             <Pressable style={[styles.avatarCircle, { borderColor: C.brinjal1, shadowColor: C.brinjal1 }]} onPress={() => router.push('/(creator)/profile')}>
               {user?.avatar ? (
@@ -255,7 +257,7 @@ export default function HomeScreen() {
           </View>
           <View style={styles.exploreTexts}>
             <Text style={[styles.exploreTitle, { color: C.text }]}>Explore Brands</Text>
-            <Text style={[styles.exploreSub, { color: C.textSecondary }]}>Find businesses hiring creators</Text>
+            <Text style={[styles.exploreSub, { color: C.textSecondary }]}>Find businesses hiring creators · <Text style={{ color: C.brinjal1, fontWeight: '700' }}>Earn money</Text></Text>
           </View>
           <Ionicons name="chevron-forward" size={22} color={C.brinjal1} />
         </Pressable>
@@ -298,18 +300,24 @@ export default function HomeScreen() {
           </View>
         ) : (
           <>
-            {featured.length > 0 && (
-              <>
-                <View style={styles.sectionHeader}>
-                  <Text style={[styles.sectionTitle, { color: C.text }]}>Featured Campaigns</Text>
-                  <Pressable onPress={() => router.push('/(creator)/featured-campaigns')}>
-                    <Text style={[styles.seeAll, { color: C.brinjal1 }]}>See All</Text>
-                  </Pressable>
-                </View>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.featuredRow}>
-                  {featured.map((c) => <FeaturedCard key={c.id} campaign={c} />)}
-                </ScrollView>
-              </>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: C.text }]}>Featured Campaigns</Text>
+              {featured.length > 0 && (
+                <Pressable onPress={() => router.push('/(creator)/featured-campaigns')}>
+                  <Text style={[styles.seeAll, { color: C.brinjal1 }]}>See All</Text>
+                </Pressable>
+              )}
+            </View>
+            {featured.length > 0 ? (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.featuredRow}>
+                {featured.map((c) => <FeaturedCard key={c.id} campaign={c} />)}
+              </ScrollView>
+            ) : (
+              <View style={[styles.featuredEmpty, { backgroundColor: C.surface, borderColor: C.border }]}>
+                <Ionicons name="star-outline" size={32} color={C.textSecondary} />
+                <Text style={[styles.featuredEmptyTitle, { color: C.text }]}>No featured campaigns right now</Text>
+                <Text style={[styles.featuredEmptySub, { color: C.textSecondary }]}>Check back soon — new opportunities are added regularly.</Text>
+              </View>
             )}
 
             {/* ── Tab filter ── */}
@@ -317,7 +325,7 @@ export default function HomeScreen() {
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 <View style={styles.filterTabsRow}>
                   {FILTER_TABS.map((label, i) => (
-                    <Pressable key={label} style={styles.filterTab} onPress={() => setActiveFilterTab(activeFilterTab === i && i !== 0 ? 0 : i)}>
+                    <Pressable key={label} style={styles.filterTab} onPress={() => setActiveFilterTab(activeFilterTab === i ? -1 : i)}>
                       <Text style={[styles.filterTabText, { color: activeFilterTab === i ? C.brinjal1 : C.textSecondary }, activeFilterTab === i && { fontWeight: '700' }]}>
                         {label}
                       </Text>
@@ -426,6 +434,9 @@ const styles = StyleSheet.create({
   loadingText: { fontSize: 14 },
 
   featuredRow: { paddingHorizontal: 20, gap: 14, marginBottom: 28 },
+  featuredEmpty: { marginHorizontal: 20, marginBottom: 28, borderRadius: 16, borderWidth: 1.5, borderStyle: 'dashed', padding: 24, alignItems: 'center', gap: 8 },
+  featuredEmptyTitle: { fontSize: 14, fontWeight: '700', textAlign: 'center' },
+  featuredEmptySub: { fontSize: 12, textAlign: 'center', lineHeight: 18 },
   filterTabsWrap: { borderBottomWidth: 1, marginBottom: 16 },
   filterTabsRow: { flexDirection: 'row', paddingHorizontal: 20 },
   filterTab: { paddingVertical: 12, marginRight: 24, position: 'relative' },

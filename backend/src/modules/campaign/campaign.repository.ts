@@ -211,7 +211,7 @@ export class CampaignRepository {
         orderBy: { createdAt: 'desc' },
         include: {
           creator: {
-            select: { fullName: true, avatarUrl: true, location: true },
+            select: { id: true, fullName: true, avatarUrl: true, location: true },
           },
           campaign: {
             select: { id: true, title: true, platform: true },
@@ -226,7 +226,10 @@ export class CampaignRepository {
   async findApplicationById(id: string) {
     return prisma.application.findUnique({
       where: { id },
-      include: { campaign: true },
+      include: {
+        campaign: true,
+        creator: { select: { userId: true, fullName: true } },
+      },
     });
   }
 
@@ -234,6 +237,13 @@ export class CampaignRepository {
     return prisma.application.update({
       where: { id },
       data: { status },
+    });
+  }
+
+  async findPendingApplicationsByCampaign(campaignId: string, excludeAppId: string) {
+    return prisma.application.findMany({
+      where: { campaignId, id: { not: excludeAppId }, status: 'PENDING' },
+      include: { creator: { select: { userId: true } } },
     });
   }
 

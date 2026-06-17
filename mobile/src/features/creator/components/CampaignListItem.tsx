@@ -1,14 +1,24 @@
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { cardBg } from '@/features/creator/data/filterOptions';
 import type { Campaign } from '@/types';
 
+const PLATFORM_ICON: Record<string, { name: string; color: string }> = {
+  Instagram:    { name: 'instagram', color: '#E1306C' },
+  TikTok:       { name: 'tiktok',    color: '#010101' },
+  YouTube:      { name: 'youtube',   color: '#FF0000' },
+  'Twitter / X': { name: 'twitter',  color: '#1DA1F2' },
+  LinkedIn:     { name: 'linkedin',  color: '#0A66C2' },
+  Facebook:     { name: 'facebook',  color: '#1877F2' },
+};
+
 export function CampaignListItem({ campaign }: { campaign: Campaign }) {
   const { t } = useLanguage();
   const C = useAppColors();
+  const platformIcon = PLATFORM_ICON[campaign.platform];
 
   function goToDetail() {
     router.push({ pathname: '/campaign-detail', params: { campaignId: campaign.id } });
@@ -16,8 +26,12 @@ export function CampaignListItem({ campaign }: { campaign: Campaign }) {
 
   return (
     <View style={[styles.listCard, { backgroundColor: C.surface }]}>
-      <View style={[styles.listThumb, { backgroundColor: cardBg(campaign.category) }]}>
-        <Text style={styles.listThumbIcon}>{campaign.platformIcon}</Text>
+      <View style={[styles.listThumb, { backgroundColor: platformIcon ? platformIcon.color + '18' : cardBg(campaign.category) }]}>
+        {platformIcon ? (
+          <FontAwesome5 name={platformIcon.name as any} size={30} color={platformIcon.color} />
+        ) : (
+          <Text style={styles.listThumbIcon}>{campaign.platformIcon}</Text>
+        )}
       </View>
       <View style={styles.listInfo}>
         <View style={styles.listBrandRow}>
@@ -29,11 +43,8 @@ export function CampaignListItem({ campaign }: { campaign: Campaign }) {
         <Text style={[styles.listTitle, { color: C.text }]} numberOfLines={2}>{campaign.title}</Text>
         <Text style={[styles.listBudget, { color: C.brinjal1 }]}>{campaign.budget}</Text>
         <View style={styles.listMetaRow}>
-          <Ionicons name="people" size={11} color={C.textSecondary} />
-          <Text style={[styles.listMeta, { color: C.textSecondary }]}>{campaign.minFollowers}</Text>
-          <Text style={[styles.listMetaDot, { color: C.border }]}>·</Text>
           <Ionicons name="location" size={11} color={C.textSecondary} />
-          <Text style={[styles.listMeta, { color: C.textSecondary }]}>{campaign.location}</Text>
+          <Text style={[styles.listMeta, { color: C.textSecondary }]}>{campaign.location ?? 'Remote'}</Text>
         </View>
       </View>
       <View style={styles.applyWrap}>
@@ -71,7 +82,6 @@ const styles = StyleSheet.create({
   listBudget: { fontSize: 13, fontWeight: '700' },
   listMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   listMeta: { fontSize: 11 },
-  listMetaDot: { fontSize: 11 },
   applyWrap: { flexShrink: 0, justifyContent: 'center' },
   applyBtn: {
     width: 76,

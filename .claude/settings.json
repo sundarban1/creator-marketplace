@@ -119,12 +119,36 @@
       "Bash(python3 -c \"import sys,json; deps=json.load\\(sys.stdin\\).get\\('dependencies',{}\\); [print\\(k,v\\) for k,v in deps.items\\(\\) if 'date' in k.lower\\(\\) or 'picker' in k.lower\\(\\) or 'calendar' in k.lower\\(\\) or 'modal' in k.lower\\(\\)]\")",
       "Bash(grep -n \"const { user, logout }\" /Users/sundarban/Documents/projects/marketplace/mobile/src/app/\\\\\\(creator\\\\\\)/settings.tsx)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/api/creator/businesses)",
-      "Bash(node -e \"require\\('@expo/vector-icons'\\)\")"
+      "Bash(node -e \"require\\('@expo/vector-icons'\\)\")",
+      "Bash(curl -s -X POST http://localhost:3000/api/creator/businesses/test123/favorite -H \"Authorization: Bearer invalid\")",
+      "Bash(curl -s \"http://localhost:3000/api/creator/businesses\" -H \"Authorization: Bearer invalid\")",
+      "Bash(curl -s -X POST \"http://localhost:3000/api/creator/businesses/abc123/favorite\" -H \"Authorization: Bearer invalid\" -H \"Content-Type: application/json\")",
+      "Bash(curl -s -X POST http://localhost:3000/api/creator/businesses/cltest123/favorite -H 'Content-Type: application/json')",
+      "Bash(curl -s \"http://localhost:3000/api/creator/WRONGPATH\")",
+      "Bash(xxd \"/Users/sundarban/Documents/projects/marketplace/mobile/src/hooks/useFavoriteBusinesses.ts\")",
+      "Bash(npx --prefix /Users/sundarban/Documents/projects/marketplace/mobile expo start --clear)",
+      "Bash(rm -rf /Users/sundarban/Documents/projects/marketplace/mobile/.metro 2>/dev/null *)",
+      "Bash(echo \"Backend PID: $!\")",
+      "Bash(pg_ctl -D /usr/local/var/postgresql@14 start)",
+      "Bash(pg_ctl -D /opt/homebrew/var/postgresql@14 start)",
+      "Bash(pg_ctl status *)",
+      "Bash(find /Applications /usr/local /opt -name \"pg_ctl\" 2>/dev/null | head -3)",
+      "Read(//Applications/**)",
+      "Bash(find /opt/homebrew /usr/local -name \"postgres\" -type f 2>/dev/null | head -5)",
+      "Read(//opt/homebrew/**)",
+      "Bash(echo \"Expo started in background with PID $!\")",
+      "Bash(curl -s http://localhost:8081/status)",
+      "Bash(git -C /Users/sundarban/Documents/projects/marketplace diff --name-only)",
+      "Bash(git -C /Users/sundarban/Documents/projects/marketplace status --short)",
+      "Bash(git -C /Users/sundarban/Documents/projects/marketplace restore mobile/src/hooks/useFavoriteBusinesses.ts)",
+      "Bash(git -C /Users/sundarban/Documents/projects/marketplace diff HEAD -- mobile/src/app/\\\\\\(creator\\\\\\)/index.tsx)",
+      "Bash(docker cp *)"
     ],
     "additionalDirectories": [
       "/Users/sundarban/Documents/projects/marketplace/content",
       "/Users/sundarban/Library/Developer/Xcode/DerivedData/content-enadgiggvkcxmvaqbjglstmrnmmq",
-      "/Users/sundarban/Library/Developer/Xcode/DerivedData/ModuleCache.noindex"
+      "/Users/sundarban/Library/Developer/Xcode/DerivedData/ModuleCache.noindex",
+      "/tmp"
     ]
   }
 }

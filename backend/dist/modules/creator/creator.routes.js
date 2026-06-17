@@ -2,11 +2,15 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const creator_controller_1 = require("./creator.controller");
+const business_controller_1 = require("../business/business.controller");
+const favorite_controller_1 = require("./favorite.controller");
 const auth_1 = require("../../middleware/auth");
 const validate_1 = require("../../middleware/validate");
 const creator_schema_1 = require("./creator.schema");
 const router = (0, express_1.Router)();
 const ctrl = new creator_controller_1.CreatorController();
+const businessCtrl = new business_controller_1.BusinessController();
+const favoriteCtrl = new favorite_controller_1.FavoriteController();
 // All creator routes require authentication and CREATOR role
 router.use(auth_1.authenticate, (0, auth_1.authorize)('CREATOR'));
 /**
@@ -207,5 +211,17 @@ router.delete('/portfolio/:id', ctrl.removePortfolioLink.bind(ctrl));
  *                   $ref: '#/components/schemas/CreatorProfile'
  */
 router.put('/social-links', (0, validate_1.validate)(creator_schema_1.updateSocialLinksSchema), ctrl.updateSocialLinks.bind(ctrl));
+router.get('/social-accounts', ctrl.getSocialAccounts.bind(ctrl));
+router.post('/social-accounts', (0, validate_1.validate)(creator_schema_1.addSocialAccountSchema), ctrl.addSocialAccount.bind(ctrl));
+router.put('/social-accounts/:id', (0, validate_1.validate)(creator_schema_1.updateSocialAccountSchema), ctrl.updateSocialAccount.bind(ctrl));
+router.delete('/social-accounts/:id', ctrl.deleteSocialAccount.bind(ctrl));
+router.get('/earnings', ctrl.getEarnings.bind(ctrl));
+router.put('/payment-methods', (0, validate_1.validate)(creator_schema_1.updatePaymentMethodsSchema), ctrl.updatePaymentMethods.bind(ctrl));
+router.put('/campaign-preferences', (0, validate_1.validate)(creator_schema_1.updateCampaignPrefsSchema), ctrl.updateCampaignPrefs.bind(ctrl));
+// Explore businesses (creator browsing businesses)
+router.get('/businesses', businessCtrl.listBusinesses.bind(businessCtrl));
+router.get('/businesses/favorites', favoriteCtrl.listFavorites.bind(favoriteCtrl));
+router.post('/businesses/:businessId/favorite', favoriteCtrl.toggle.bind(favoriteCtrl));
+router.get('/businesses/:id', businessCtrl.getBusinessPublic.bind(businessCtrl));
 exports.default = router;
 //# sourceMappingURL=creator.routes.js.map

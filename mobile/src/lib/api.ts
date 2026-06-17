@@ -173,7 +173,15 @@ export async function request<T>(
     body:    body != null ? JSON.stringify(body) : undefined,
   });
 
+  // ── Retry on 529 / 503 (server temporarily overloaded) ───────────────────
+  const RETRYABLE = new Set([503, 529]);
+  let attempt = 0;
   let res = await fetch(url.toString(), fetchOpts());
+  while (RETRYABLE.has(res.status) && attempt < 3) {
+    await new Promise((r) => setTimeout(r, 500 * 2 ** attempt));
+    attempt++;
+    res = await fetch(url.toString(), fetchOpts());
+  }
 
   // ── Token refresh on 401 ───────────────────────────────────────────────────
   if (res.status === 401 && storage.get(REFRESH_TOKEN_KEY)) {

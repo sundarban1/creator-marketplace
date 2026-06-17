@@ -6,6 +6,9 @@ export declare const updateBusinessProfileSchema: z.ZodObject<{
     website: z.ZodNullable<z.ZodOptional<z.ZodString>>;
     categories: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
     panNo: z.ZodNullable<z.ZodOptional<z.ZodString>>;
+    showPublicProfile: z.ZodOptional<z.ZodBoolean>;
+    hideContactDetails: z.ZodOptional<z.ZodBoolean>;
+    allowDirectMessages: z.ZodOptional<z.ZodBoolean>;
 }, "strip", z.ZodTypeAny, {
     categories?: string[] | undefined;
     businessName?: string | undefined;
@@ -13,6 +16,9 @@ export declare const updateBusinessProfileSchema: z.ZodObject<{
     logoUrl?: string | null | undefined;
     website?: string | null | undefined;
     panNo?: string | null | undefined;
+    showPublicProfile?: boolean | undefined;
+    hideContactDetails?: boolean | undefined;
+    allowDirectMessages?: boolean | undefined;
 }, {
     categories?: string[] | undefined;
     businessName?: string | undefined;
@@ -20,6 +26,9 @@ export declare const updateBusinessProfileSchema: z.ZodObject<{
     logoUrl?: string | null | undefined;
     website?: string | null | undefined;
     panNo?: string | null | undefined;
+    showPublicProfile?: boolean | undefined;
+    hideContactDetails?: boolean | undefined;
+    allowDirectMessages?: boolean | undefined;
 }>;
 export type UpdateBusinessProfileInput = z.infer<typeof updateBusinessProfileSchema>;
 //# sourceMappingURL=business.schema.d.ts.map

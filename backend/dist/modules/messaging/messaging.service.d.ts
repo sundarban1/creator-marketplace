@@ -1,11 +1,14 @@
-import { Role } from '@prisma/client';
+import { ConversationStatus, Role } from '@prisma/client';
 import type { StartConversationInput, SendMessageInput } from './messaging.schema';
 export declare class MessagingService {
     private repo;
     private creatorRepo;
     private businessRepo;
     constructor();
-    listConversations(userId: string, role: Role): Promise<({
+    private resolveCreator;
+    private resolveBusiness;
+    private verifyConversationAccess;
+    listConversations(userId: string, role: Role, status?: ConversationStatus): Promise<({
         campaign: {
             title: string;
         } | null;
@@ -16,16 +19,21 @@ export declare class MessagingService {
         messages: {
             id: string;
             createdAt: Date;
+            content: string;
             conversationId: string;
             senderId: string;
-            content: string;
         }[];
     } & {
+        status: import(".prisma/client").$Enums.ConversationStatus;
         id: string;
         createdAt: Date;
+        creatorId: string;
         businessId: string;
         campaignId: string | null;
-        creatorId: string;
+        requestMessage: string | null;
+        lastMessageAt: Date | null;
+        businessSeenAt: Date | null;
+        creatorSeenAt: Date | null;
     })[] | ({
         campaign: {
             title: string;
@@ -37,29 +45,21 @@ export declare class MessagingService {
         messages: {
             id: string;
             createdAt: Date;
+            content: string;
             conversationId: string;
             senderId: string;
-            content: string;
         }[];
     } & {
+        status: import(".prisma/client").$Enums.ConversationStatus;
         id: string;
         createdAt: Date;
+        creatorId: string;
         businessId: string;
         campaignId: string | null;
-        creatorId: string;
-    })[] | ({
-        business: {
-            businessName: string;
-        };
-        creator: {
-            fullName: string;
-        };
-    } & {
-        id: string;
-        createdAt: Date;
-        businessId: string;
-        campaignId: string | null;
-        creatorId: string;
+        requestMessage: string | null;
+        lastMessageAt: Date | null;
+        businessSeenAt: Date | null;
+        creatorSeenAt: Date | null;
     })[]>;
     startConversation(userId: string, role: Role, input: StartConversationInput): Promise<{
         campaign: {
@@ -74,11 +74,23 @@ export declare class MessagingService {
             avatarUrl: string | null;
         };
     } & {
+        status: import(".prisma/client").$Enums.ConversationStatus;
         id: string;
         createdAt: Date;
+        creatorId: string;
         businessId: string;
         campaignId: string | null;
-        creatorId: string;
+        requestMessage: string | null;
+        lastMessageAt: Date | null;
+        businessSeenAt: Date | null;
+        creatorSeenAt: Date | null;
+    }>;
+    checkConversation(userId: string, creatorProfileId: string): Promise<{
+        status: import(".prisma/client").$Enums.ConversationStatus;
+        id: string;
+    } | null>;
+    respondToRequest(conversationId: string, userId: string, action: 'accept' | 'decline'): Promise<{
+        status: "ACCEPTED" | "DECLINED";
     }>;
     getMessages(conversationId: string, userId: string, role: Role, page: number, limit: number): Promise<{
         messages: ({
@@ -90,9 +102,9 @@ export declare class MessagingService {
         } & {
             id: string;
             createdAt: Date;
+            content: string;
             conversationId: string;
             senderId: string;
-            content: string;
         })[];
         total: number;
         page: number;
@@ -107,10 +119,15 @@ export declare class MessagingService {
     } & {
         id: string;
         createdAt: Date;
+        content: string;
         conversationId: string;
         senderId: string;
-        content: string;
     }>;
-    private verifyConversationAccess;
+    markSeen(conversationId: string, userId: string, role: Role): Promise<void>;
+    getBadgeCount(userId: string, role: Role): Promise<{
+        count: number;
+        pendingRequests: number;
+        unread: number;
+    }>;
 }
 //# sourceMappingURL=messaging.service.d.ts.map

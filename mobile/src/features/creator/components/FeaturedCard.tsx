@@ -46,8 +46,7 @@ export function FeaturedCard({ campaign }: { campaign: Campaign }) {
           </View>
         </View>
         <View style={styles.featMetaRow}>
-          <Text style={[styles.featMeta, { color: C.textSecondary }]}>👥 {campaign.minFollowers}</Text>
-          <Text style={[styles.featMeta, { color: C.textSecondary }]}>📍 {campaign.location}</Text>
+          <Text style={[styles.featMeta, { color: C.textSecondary }]}>📍 {campaign.location ?? 'Remote'}</Text>
         </View>
         <View style={styles.featActions}>
           <Pressable style={[styles.viewBtn, { backgroundColor: C.brinjal1 }]} onPress={goToDetail}>

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 export declare const createCampaignSchema: z.ZodEffects<z.ZodObject<{
     title: z.ZodString;
-    description: z.ZodString;
+    description: z.ZodDefault<z.ZodString>;
     category: z.ZodString;
     platform: z.ZodString;
     minFollowers: z.ZodDefault<z.ZodNumber>;
@@ -12,11 +12,13 @@ export declare const createCampaignSchema: z.ZodEffects<z.ZodObject<{
     budgetMin: z.ZodNumber;
     budgetMax: z.ZodNumber;
     paymentType: z.ZodString;
+    creatorsNeeded: z.ZodDefault<z.ZodNumber>;
+    isFeatured: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
 }, "strip", z.ZodTypeAny, {
     description: string;
+    platform: string;
     title: string;
     category: string;
-    platform: string;
     minFollowers: number;
     contentType: string;
     deliverables: string;
@@ -24,12 +26,13 @@ export declare const createCampaignSchema: z.ZodEffects<z.ZodObject<{
     budgetMin: number;
     budgetMax: number;
     paymentType: string;
+    creatorsNeeded: number;
+    isFeatured: boolean;
     location?: string | undefined;
 }, {
-    description: string;
+    platform: string;
     title: string;
     category: string;
-    platform: string;
     contentType: string;
     deliverables: string;
     deadline: string;
@@ -37,12 +40,15 @@ export declare const createCampaignSchema: z.ZodEffects<z.ZodObject<{
     budgetMax: number;
     paymentType: string;
     location?: string | undefined;
+    description?: string | undefined;
     minFollowers?: number | undefined;
+    creatorsNeeded?: number | undefined;
+    isFeatured?: boolean | undefined;
 }>, {
     description: string;
+    platform: string;
     title: string;
     category: string;
-    platform: string;
     minFollowers: number;
     contentType: string;
     deliverables: string;
@@ -50,12 +56,13 @@ export declare const createCampaignSchema: z.ZodEffects<z.ZodObject<{
     budgetMin: number;
     budgetMax: number;
     paymentType: string;
+    creatorsNeeded: number;
+    isFeatured: boolean;
     location?: string | undefined;
 }, {
-    description: string;
+    platform: string;
     title: string;
     category: string;
-    platform: string;
     contentType: string;
     deliverables: string;
     deadline: string;
@@ -63,7 +70,10 @@ export declare const createCampaignSchema: z.ZodEffects<z.ZodObject<{
     budgetMax: number;
     paymentType: string;
     location?: string | undefined;
+    description?: string | undefined;
     minFollowers?: number | undefined;
+    creatorsNeeded?: number | undefined;
+    isFeatured?: boolean | undefined;
 }>;
 export declare const updateCampaignSchema: z.ZodObject<{
     title: z.ZodOptional<z.ZodString>;
@@ -78,14 +88,16 @@ export declare const updateCampaignSchema: z.ZodObject<{
     budgetMin: z.ZodOptional<z.ZodNumber>;
     budgetMax: z.ZodOptional<z.ZodNumber>;
     paymentType: z.ZodOptional<z.ZodString>;
+    creatorsNeeded: z.ZodOptional<z.ZodNumber>;
     status: z.ZodOptional<z.ZodEnum<["ACTIVE", "PAUSED", "CLOSED"]>>;
+    isFeatured: z.ZodOptional<z.ZodBoolean>;
 }, "strip", z.ZodTypeAny, {
     status?: "ACTIVE" | "PAUSED" | "CLOSED" | undefined;
     location?: string | null | undefined;
     description?: string | undefined;
+    platform?: string | undefined;
     title?: string | undefined;
     category?: string | undefined;
-    platform?: string | undefined;
     minFollowers?: number | undefined;
     contentType?: string | undefined;
     deliverables?: string | undefined;
@@ -93,13 +105,15 @@ export declare const updateCampaignSchema: z.ZodObject<{
     budgetMin?: number | undefined;
     budgetMax?: number | undefined;
     paymentType?: string | undefined;
+    creatorsNeeded?: number | undefined;
+    isFeatured?: boolean | undefined;
 }, {
     status?: "ACTIVE" | "PAUSED" | "CLOSED" | undefined;
     location?: string | null | undefined;
     description?: string | undefined;
+    platform?: string | undefined;
     title?: string | undefined;
     category?: string | undefined;
-    platform?: string | undefined;
     minFollowers?: number | undefined;
     contentType?: string | undefined;
     deliverables?: string | undefined;
@@ -107,6 +121,8 @@ export declare const updateCampaignSchema: z.ZodObject<{
     budgetMin?: number | undefined;
     budgetMax?: number | undefined;
     paymentType?: string | undefined;
+    creatorsNeeded?: number | undefined;
+    isFeatured?: boolean | undefined;
 }>;
 export declare const campaignListQuerySchema: z.ZodObject<{
     category: z.ZodOptional<z.ZodString>;
@@ -114,24 +130,33 @@ export declare const campaignListQuerySchema: z.ZodObject<{
     minBudget: z.ZodEffects<z.ZodOptional<z.ZodString>, number | undefined, string | undefined>;
     maxBudget: z.ZodEffects<z.ZodOptional<z.ZodString>, number | undefined, string | undefined>;
     status: z.ZodOptional<z.ZodEnum<["ACTIVE", "PAUSED", "CLOSED"]>>;
+    isFeatured: z.ZodEffects<z.ZodOptional<z.ZodString>, boolean | undefined, string | undefined>;
+    deadlineFrom: z.ZodEffects<z.ZodOptional<z.ZodString>, Date | undefined, string | undefined>;
+    deadlineTo: z.ZodEffects<z.ZodOptional<z.ZodString>, Date | undefined, string | undefined>;
     page: z.ZodEffects<z.ZodOptional<z.ZodString>, number, string | undefined>;
     limit: z.ZodEffects<z.ZodOptional<z.ZodString>, number, string | undefined>;
 }, "strip", z.ZodTypeAny, {
     page: number;
     limit: number;
     status?: "ACTIVE" | "PAUSED" | "CLOSED" | undefined;
-    category?: string | undefined;
     platform?: string | undefined;
+    category?: string | undefined;
+    isFeatured?: boolean | undefined;
     minBudget?: number | undefined;
     maxBudget?: number | undefined;
+    deadlineFrom?: Date | undefined;
+    deadlineTo?: Date | undefined;
 }, {
     status?: "ACTIVE" | "PAUSED" | "CLOSED" | undefined;
-    category?: string | undefined;
     platform?: string | undefined;
-    minBudget?: string | undefined;
-    maxBudget?: string | undefined;
     page?: string | undefined;
     limit?: string | undefined;
+    category?: string | undefined;
+    isFeatured?: string | undefined;
+    minBudget?: string | undefined;
+    maxBudget?: string | undefined;
+    deadlineFrom?: string | undefined;
+    deadlineTo?: string | undefined;
 }>;
 export declare const applyToCampaignSchema: z.ZodObject<{
     coverLetter: z.ZodString;
@@ -140,14 +165,14 @@ export declare const applyToCampaignSchema: z.ZodObject<{
     socialHandles: z.ZodDefault<z.ZodRecord<z.ZodString, z.ZodString>>;
     portfolioUrl: z.ZodOptional<z.ZodString>;
 }, "strip", z.ZodTypeAny, {
-    coverLetter: string;
     proposedRate: number;
+    coverLetter: string;
     timeline: string;
     socialHandles: Record<string, string>;
     portfolioUrl?: string | undefined;
 }, {
-    coverLetter: string;
     proposedRate: number;
+    coverLetter: string;
     timeline: string;
     socialHandles?: Record<string, string> | undefined;
     portfolioUrl?: string | undefined;

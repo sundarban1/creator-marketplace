@@ -1,10 +1,9 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { BackButton } from '@/components/BackButton';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Image,
   Linking,
   Pressable,
@@ -19,11 +18,16 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import { businessService, type BusinessDetail, type BusinessActiveCampaign } from '@/services/business';
 import { campaignService } from '@/services/campaign';
-import { request } from '@/lib/api';
+import { useFavoriteBusinesses } from '@/hooks/useFavoriteBusinesses';
+import { useToast } from '@/components/Toast';
 
-const PLATFORM_EMOJI: Record<string, string> = {
-  Instagram: '📸', YouTube: '▶️', TikTok: '🎵',
-  Facebook: '👤', Twitter: '🐦', LinkedIn: '💼',
+const PLATFORM_ICON: Record<string, { iconName: string; color: string }> = {
+  Instagram: { iconName: 'instagram', color: '#E1306C' },
+  TikTok:    { iconName: 'tiktok',    color: '#010101' },
+  YouTube:   { iconName: 'youtube',   color: '#FF0000' },
+  Facebook:  { iconName: 'facebook',  color: '#1877F2' },
+  Twitter:   { iconName: 'twitter',   color: '#1DA1F2' },
+  LinkedIn:  { iconName: 'linkedin',  color: '#0A66C2' },
 };
 
 const CATEGORY_BG: Record<string, string> = {
@@ -61,7 +65,7 @@ function BusinessAvatar({ name, logoUrl, size = 88 }: { name: string; logoUrl: s
 
 function CampaignCard({ campaign, isApplied }: { campaign: BusinessActiveCampaign; isApplied: boolean }) {
   const C = useAppColors();
-  const emoji = PLATFORM_EMOJI[campaign.platform] ?? '📱';
+  const platformIcon = PLATFORM_ICON[campaign.platform] ?? { iconName: 'mobile-alt', color: '#888' };
   const catBg = CATEGORY_BG[campaign.category] ?? '#F2F0DC';
   const deadline = daysLeft(campaign.deadline);
 
@@ -76,7 +80,7 @@ function CampaignCard({ campaign, isApplied }: { campaign: BusinessActiveCampaig
 
       {/* Category thumbnail */}
       <View style={[styles.campaignThumb, { backgroundColor: catBg }]}>
-        <Text style={styles.campaignThumbEmoji}>{emoji}</Text>
+        <FontAwesome5 name={platformIcon.iconName as any} size={32} color={platformIcon.color} />
         {campaign.isFeatured && (
           <View style={styles.featuredDot}>
             <Text style={styles.featuredDotText}>⭐</Text>
@@ -133,11 +137,12 @@ export default function BusinessDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const C = useAppColors();
   const { user } = useAuth();
+  const toast = useToast();
+  const { favoriteIds, toggle } = useFavoriteBusinesses();
   const [business, setBusiness] = useState<BusinessDetail | null>(null);
   const [appliedCampaignIds, setAppliedCampaignIds] = useState<Set<string>>(new Set());
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState('');
-  const [messagingBusy, setMessagingBusy] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -182,20 +187,14 @@ export default function BusinessDetailScreen() {
 
   const joinedYear = new Date(business.createdAt).getFullYear();
 
-  async function handleMessage() {
-    if (!business.allowDirectMessages) return;
-    setMessagingBusy(true);
+  const isFavorited = id ? favoriteIds.has(id) : false;
+
+  async function handleToggleFavorite() {
+    if (!id) return;
     try {
-      const res = await request<{ id: string }>('POST', '/api/messaging/conversations', {
-        otherUserId: business.userId,
-        requestMessage: `Hi ${business.businessName}, I'd love to collaborate with you!`,
-      });
-      router.push({ pathname: '/(creator)/messages/[id]', params: { id: res.data.id } } as never);
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Could not start conversation';
-      Alert.alert('Error', msg);
-    } finally {
-      setMessagingBusy(false);
+      await toggle(id);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not update. Please try again.');
     }
   }
 
@@ -205,16 +204,13 @@ export default function BusinessDetailScreen() {
       <View style={[styles.navBar, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
         <BackButton fallback="/(creator)/explore-businesses" />
         <Text style={[styles.navTitle, { color: C.text }]} numberOfLines={1}>{business.businessName}</Text>
-        <View style={styles.navActions}>
-          {business.allowDirectMessages && (
-            <Pressable
-              style={[styles.navActionBtn, { backgroundColor: C.primaryLight, opacity: messagingBusy ? 0.5 : 1 }]}
-              onPress={handleMessage}
-              disabled={messagingBusy}>
-              <Ionicons name="chatbubble-outline" size={18} color={C.brinjal1} />
-            </Pressable>
-          )}
-        </View>
+        <Pressable style={styles.navActionBtn} onPress={handleToggleFavorite} hitSlop={10}>
+          <Ionicons
+            name={isFavorited ? 'heart' : 'heart-outline'}
+            size={22}
+            color={isFavorited ? '#EF4444' : C.textSecondary}
+          />
+        </Pressable>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 60 }}>
@@ -349,7 +345,6 @@ const styles = StyleSheet.create({
   center:                { flex: 1, alignItems: 'center', justifyContent: 'center' },
   navBar:                { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 8, borderBottomWidth: 1 },
   navTitle:              { flex: 1, fontSize: 15, fontWeight: '700', textAlign: 'center', marginHorizontal: 4 },
-  navActions:            { flexDirection: 'row', alignItems: 'center', gap: 6 },
   navActionBtn:          { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
 
   hero:                  { paddingHorizontal: 20, paddingTop: 28, paddingBottom: 32 },

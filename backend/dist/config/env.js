@@ -24,6 +24,12 @@ const envSchema = zod_1.z.object({
     SMTP_PORT: zod_1.z.string().optional(),
     SMTP_USER: zod_1.z.string().optional(),
     SMTP_PASS: zod_1.z.string().optional(),
+    // Gmail SMTP (preferred)
+    EMAIL_HOST: zod_1.z.string().optional(),
+    EMAIL_PORT: zod_1.z.string().optional(),
+    EMAIL_SECURE: zod_1.z.string().optional(),
+    EMAIL_USERNAME: zod_1.z.string().optional(),
+    EMAIL_PASSWORD: zod_1.z.string().optional(),
     FRONTEND_URL: zod_1.z.string().default('http://localhost:3000'),
 });
 const parsed = envSchema.safeParse(process.env);

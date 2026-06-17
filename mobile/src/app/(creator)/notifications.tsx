@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -9,18 +10,30 @@ import { useAppColors } from '@/context/ThemeContext';
 import { notificationService } from '@/services/notifications';
 import type { AppNotification } from '@/types';
 
-const TYPE_ICON: Record<AppNotification['type'], string> = {
-  proposal_accepted:       '✅',
-  proposal_rejected:       '❌',
-  proposal_received:       '📩',
-  new_message:             '💬',
-  campaign_deadline:       '⏰',
-  campaign_closed:         '🔒',
-  new_campaign:            '🎯',
-  payment_released:        '💸',
-  message_request_accepted:'💬',
-  business_favorited:      '❤️',
+type IoniconName = keyof typeof Ionicons.glyphMap;
+
+type TypeConfig = {
+  icon: IoniconName;
+  iconColor: string;
+  iconBg: string;
+  accentColor: string;
+  label: string;
 };
+
+const TYPE_CONFIG: Record<AppNotification['type'], TypeConfig> = {
+  proposal_received:        { icon: 'document-text',        iconColor: '#6366F1', iconBg: '#EEF2FF', accentColor: '#6366F1', label: 'New Proposal'  },
+  proposal_accepted:        { icon: 'checkmark-circle',     iconColor: '#10B981', iconBg: '#ECFDF5', accentColor: '#10B981', label: 'Accepted'      },
+  proposal_rejected:        { icon: 'close-circle',         iconColor: '#EF4444', iconBg: '#FEF2F2', accentColor: '#EF4444', label: 'Rejected'      },
+  new_message:              { icon: 'chatbubble',           iconColor: '#3B82F6', iconBg: '#EFF6FF', accentColor: '#3B82F6', label: 'Message'       },
+  campaign_deadline:        { icon: 'time',                 iconColor: '#F59E0B', iconBg: '#FFFBEB', accentColor: '#F59E0B', label: 'Deadline'      },
+  campaign_closed:          { icon: 'lock-closed',          iconColor: '#6B7280', iconBg: '#F3F4F6', accentColor: '#6B7280', label: 'Closed'        },
+  new_campaign:             { icon: 'megaphone',            iconColor: '#8B5CF6', iconBg: '#F5F3FF', accentColor: '#8B5CF6', label: 'New Campaign'  },
+  payment_released:         { icon: 'cash',                 iconColor: '#10B981', iconBg: '#ECFDF5', accentColor: '#10B981', label: 'Payment'       },
+  message_request_accepted: { icon: 'chatbubble-ellipses', iconColor: '#3B82F6', iconBg: '#EFF6FF', accentColor: '#3B82F6', label: 'Connected'     },
+  business_favorited:       { icon: 'heart',               iconColor: '#EF4444', iconBg: '#FFF1F2', accentColor: '#EF4444', label: 'Favorited'     },
+};
+
+const FALLBACK: TypeConfig = { icon: 'notifications', iconColor: '#6B7280', iconBg: '#F3F4F6', accentColor: '#6B7280', label: 'Notification' };
 
 function getGroup(timestamp: string): 'Today' | 'This Week' | 'Earlier' {
   const diffDays = (Date.now() - new Date(timestamp).getTime()) / (1000 * 60 * 60 * 24);
@@ -32,6 +45,7 @@ function getGroup(timestamp: string): 'Today' | 'This Week' | 'Earlier' {
 function timeAgo(timestamp: string): string {
   const diff = Date.now() - new Date(timestamp).getTime();
   const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
   if (mins < 60) return `${mins}m ago`;
   const hrs = Math.floor(mins / 60);
   if (hrs < 24) return `${hrs}h ago`;
@@ -40,18 +54,47 @@ function timeAgo(timestamp: string): string {
 
 function NotificationItem({ item, onPress }: { item: AppNotification; onPress: (id: string) => void }) {
   const C = useAppColors();
+  const cfg = TYPE_CONFIG[item.type] ?? FALLBACK;
+
   return (
     <Pressable
-      style={[styles.item, { backgroundColor: item.isRead ? C.surface : C.primaryLight, borderBottomColor: C.border }]}
+      style={[
+        styles.item,
+        { backgroundColor: item.isRead ? C.surface : C.primaryLight, borderBottomColor: C.border },
+      ]}
       onPress={() => onPress(item.id)}>
-      {!item.isRead && <View style={[styles.accentBar, { backgroundColor: C.brinjal1 }]} />}
-      <View style={[styles.iconWrap, { backgroundColor: C.background }]}>
-        <Text style={styles.icon}>{TYPE_ICON[item.type] ?? '🔔'}</Text>
+
+      {/* Type-coloured left accent bar */}
+      {!item.isRead && (
+        <View style={[styles.accentBar, { backgroundColor: cfg.accentColor }]} />
+      )}
+
+      {/* Type icon in a coloured circle */}
+      <View style={[styles.iconWrap, { backgroundColor: cfg.iconBg }]}>
+        <Ionicons name={cfg.icon} size={20} color={cfg.iconColor} />
       </View>
+
+      {/* Content */}
       <View style={styles.itemContent}>
-        <Text style={[styles.itemTitle, { color: C.text }]}>{item.title}</Text>
-        <Text style={[styles.itemBody, { color: C.textSecondary }]} numberOfLines={2}>{item.body}</Text>
-        <Text style={[styles.itemTime, { color: C.closed }]}>{timeAgo(item.timestamp)}</Text>
+        <View style={styles.titleRow}>
+          <Text style={[styles.itemTitle, { color: C.text }]} numberOfLines={1}>
+            {item.title}
+          </Text>
+          {!item.isRead && (
+            <View style={[styles.unreadDot, { backgroundColor: cfg.accentColor }]} />
+          )}
+        </View>
+
+        {/* Type label chip */}
+        <View style={[styles.labelChip, { backgroundColor: cfg.iconBg }]}>
+          <Text style={[styles.labelChipText, { color: cfg.iconColor }]}>{cfg.label}</Text>
+        </View>
+
+        <Text style={[styles.itemBody, { color: C.textSecondary }]} numberOfLines={2}>
+          {item.body}
+        </Text>
+
+        <Text style={[styles.itemTime, { color: C.textSecondary }]}>{timeAgo(item.timestamp)}</Text>
       </View>
     </Pressable>
   );
@@ -84,12 +127,10 @@ export default function NotificationsScreen() {
     const isCreator = user?.role === 'CREATOR';
 
     if (n.type === 'message_request_accepted' || n.type === 'business_favorited') {
-      // Business receives these — tap opens the creator's profile
       if (n.refId) {
         router.push({ pathname: '/(business)/creator-detail', params: { id: n.refId } });
       }
     } else if (n.type === 'new_campaign') {
-      // Creator receives this — tap opens the specific campaign
       if (n.refId) {
         router.push({ pathname: '/campaign-detail', params: { id: n.refId } });
       } else if (isCreator) {
@@ -100,7 +141,7 @@ export default function NotificationsScreen() {
     } else if (['proposal_accepted', 'proposal_rejected', 'campaign_deadline', 'campaign_closed', 'payment_released'].includes(n.type)) {
       if (isCreator) router.push('/(creator)/proposals');
     } else if (n.type === 'proposal_received') {
-      if (!isCreator) router.push('/(business)/');
+      if (!isCreator) router.push('/(business)/proposals');
     }
   }
 
@@ -127,6 +168,7 @@ export default function NotificationsScreen() {
           </Pressable>
         )}
       </View>
+
       {loading ? (
         <View style={styles.center}>
           <ActivityIndicator size="large" color={C.brinjal1} />
@@ -138,7 +180,9 @@ export default function NotificationsScreen() {
           renderItem={({ item: g }) => (
             <View>
               <Text style={[styles.groupLabel, { color: C.textSecondary }]}>{g.group}</Text>
-              {g.items.map((n) => <NotificationItem key={n.id} item={n} onPress={handlePress} />)}
+              {g.items.map((n) => (
+                <NotificationItem key={n.id} item={n} onPress={handlePress} />
+              ))}
             </View>
           )}
           contentContainerStyle={[styles.list, grouped.length === 0 && styles.listEmpty]}
@@ -157,23 +201,31 @@ export default function NotificationsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 8 },
-  heading: { fontSize: 22, fontWeight: '700' },
+  container:  { flex: 1 },
+  header:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 8 },
+  heading:    { fontSize: 22, fontWeight: '700' },
   subheading: { fontSize: 13, marginTop: 2 },
   markAllBtn: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 8, borderWidth: 1 },
-  markAllText: { fontSize: 12, fontWeight: '600' },
-  center:   { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  list:     { paddingBottom: 32 },
-  listEmpty:{ flexGrow: 1 },
-  groupLabel: { fontSize: 12, fontWeight: '700', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
-  item: { flexDirection: 'row', paddingVertical: 14, paddingHorizontal: 20, borderBottomWidth: 1, gap: 12 },
-  accentBar: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, borderRadius: 2 },
-  iconWrap: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
-  icon: { fontSize: 18 },
-  itemContent: { flex: 1, gap: 3 },
-  itemTitle: { fontSize: 14, fontWeight: '600' },
-  itemBody: { fontSize: 13, lineHeight: 18 },
-  itemTime: { fontSize: 11 },
-  empty: { textAlign: 'center', marginTop: 40, fontSize: 14 },
+  markAllText:{ fontSize: 12, fontWeight: '600' },
+  center:     { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  list:       { paddingBottom: 32 },
+  listEmpty:  { flexGrow: 1 },
+
+  groupLabel: { fontSize: 11, fontWeight: '700', paddingHorizontal: 20, paddingTop: 18, paddingBottom: 6, textTransform: 'uppercase', letterSpacing: 0.8 },
+
+  item:       { flexDirection: 'row', paddingVertical: 14, paddingHorizontal: 20, borderBottomWidth: 1, gap: 12, alignItems: 'flex-start' },
+  accentBar:  { position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, borderRadius: 2 },
+
+  iconWrap:   { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', flexShrink: 0, marginTop: 2 },
+
+  itemContent:{ flex: 1, gap: 4 },
+  titleRow:   { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  itemTitle:  { fontSize: 14, fontWeight: '700', flex: 1 },
+  unreadDot:  { width: 7, height: 7, borderRadius: 4, flexShrink: 0 },
+
+  labelChip:     { alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 },
+  labelChipText: { fontSize: 10, fontWeight: '700', letterSpacing: 0.3 },
+
+  itemBody:   { fontSize: 13, lineHeight: 18 },
+  itemTime:   { fontSize: 11, opacity: 0.6 },
 });

@@ -14,7 +14,12 @@ export declare class CampaignRepository {
         budgetMin: number;
         budgetMax: number;
         paymentType: string;
+        creatorsNeeded?: number;
+        isFeatured?: boolean;
     }): Promise<{
+        _count: {
+            applications: number;
+        };
         business: {
             businessName: string;
             logoUrl: string | null;
@@ -26,9 +31,10 @@ export declare class CampaignRepository {
         updatedAt: Date;
         location: string | null;
         description: string;
+        platform: string;
+        businessId: string;
         title: string;
         category: string;
-        platform: string;
         minFollowers: number;
         contentType: string;
         deliverables: string;
@@ -36,7 +42,8 @@ export declare class CampaignRepository {
         budgetMin: number;
         budgetMax: number;
         paymentType: string;
-        businessId: string;
+        creatorsNeeded: number;
+        isFeatured: boolean;
     }>;
     findMany(filters: {
         category?: string;
@@ -44,6 +51,9 @@ export declare class CampaignRepository {
         minBudget?: number;
         maxBudget?: number;
         status?: CampaignStatus;
+        isFeatured?: boolean;
+        deadlineFrom?: Date;
+        deadlineTo?: Date;
         page: number;
         limit: number;
     }): Promise<{
@@ -62,9 +72,10 @@ export declare class CampaignRepository {
             updatedAt: Date;
             location: string | null;
             description: string;
+            platform: string;
+            businessId: string;
             title: string;
             category: string;
-            platform: string;
             minFollowers: number;
             contentType: string;
             deliverables: string;
@@ -72,7 +83,8 @@ export declare class CampaignRepository {
             budgetMin: number;
             budgetMax: number;
             paymentType: string;
-            businessId: string;
+            creatorsNeeded: number;
+            isFeatured: boolean;
         })[];
         total: number;
     }>;
@@ -93,9 +105,10 @@ export declare class CampaignRepository {
         updatedAt: Date;
         location: string | null;
         description: string;
+        platform: string;
+        businessId: string;
         title: string;
         category: string;
-        platform: string;
         minFollowers: number;
         contentType: string;
         deliverables: string;
@@ -103,7 +116,8 @@ export declare class CampaignRepository {
         budgetMin: number;
         budgetMax: number;
         paymentType: string;
-        businessId: string;
+        creatorsNeeded: number;
+        isFeatured: boolean;
     }) | null>;
     findByBusinessId(businessId: string, page: number, limit: number): Promise<{
         campaigns: ({
@@ -117,9 +131,10 @@ export declare class CampaignRepository {
             updatedAt: Date;
             location: string | null;
             description: string;
+            platform: string;
+            businessId: string;
             title: string;
             category: string;
-            platform: string;
             minFollowers: number;
             contentType: string;
             deliverables: string;
@@ -127,7 +142,8 @@ export declare class CampaignRepository {
             budgetMin: number;
             budgetMax: number;
             paymentType: string;
-            businessId: string;
+            creatorsNeeded: number;
+            isFeatured: boolean;
         })[];
         total: number;
     }>;
@@ -145,6 +161,7 @@ export declare class CampaignRepository {
         budgetMax: number;
         paymentType: string;
         status: CampaignStatus;
+        isFeatured: boolean;
     }>): Promise<{
         status: import(".prisma/client").$Enums.CampaignStatus;
         id: string;
@@ -152,9 +169,10 @@ export declare class CampaignRepository {
         updatedAt: Date;
         location: string | null;
         description: string;
+        platform: string;
+        businessId: string;
         title: string;
         category: string;
-        platform: string;
         minFollowers: number;
         contentType: string;
         deliverables: string;
@@ -162,7 +180,8 @@ export declare class CampaignRepository {
         budgetMin: number;
         budgetMax: number;
         paymentType: string;
-        businessId: string;
+        creatorsNeeded: number;
+        isFeatured: boolean;
     }>;
     delete(id: string): Promise<{
         status: import(".prisma/client").$Enums.CampaignStatus;
@@ -171,9 +190,10 @@ export declare class CampaignRepository {
         updatedAt: Date;
         location: string | null;
         description: string;
+        platform: string;
+        businessId: string;
         title: string;
         category: string;
-        platform: string;
         minFollowers: number;
         contentType: string;
         deliverables: string;
@@ -181,17 +201,19 @@ export declare class CampaignRepository {
         budgetMin: number;
         budgetMax: number;
         paymentType: string;
-        businessId: string;
+        creatorsNeeded: number;
+        isFeatured: boolean;
     }>;
+    getDistinctCategories(): Promise<string[]>;
     findApplication(campaignId: string, creatorId: string): Promise<{
         status: import(".prisma/client").$Enums.ApplicationStatus;
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        campaignId: string;
         creatorId: string;
-        coverLetter: string;
         proposedRate: number;
+        campaignId: string;
+        coverLetter: string;
         timeline: string;
         socialHandles: Prisma.JsonValue;
         portfolioUrl: string | null;
@@ -216,10 +238,10 @@ export declare class CampaignRepository {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        campaignId: string;
         creatorId: string;
-        coverLetter: string;
         proposedRate: number;
+        campaignId: string;
+        coverLetter: string;
         timeline: string;
         socialHandles: Prisma.JsonValue;
         portfolioUrl: string | null;
@@ -238,10 +260,38 @@ export declare class CampaignRepository {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            campaignId: string;
             creatorId: string;
-            coverLetter: string;
             proposedRate: number;
+            campaignId: string;
+            coverLetter: string;
+            timeline: string;
+            socialHandles: Prisma.JsonValue;
+            portfolioUrl: string | null;
+        })[];
+        total: number;
+    }>;
+    findApplicationsByBusinessId(businessId: string, page: number, limit: number): Promise<{
+        applications: ({
+            campaign: {
+                id: string;
+                platform: string;
+                title: string;
+            };
+            creator: {
+                id: string;
+                fullName: string;
+                location: string | null;
+                avatarUrl: string | null;
+            };
+        } & {
+            status: import(".prisma/client").$Enums.ApplicationStatus;
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            creatorId: string;
+            proposedRate: number;
+            campaignId: string;
+            coverLetter: string;
             timeline: string;
             socialHandles: Prisma.JsonValue;
             portfolioUrl: string | null;
@@ -256,9 +306,10 @@ export declare class CampaignRepository {
             updatedAt: Date;
             location: string | null;
             description: string;
+            platform: string;
+            businessId: string;
             title: string;
             category: string;
-            platform: string;
             minFollowers: number;
             contentType: string;
             deliverables: string;
@@ -266,17 +317,22 @@ export declare class CampaignRepository {
             budgetMin: number;
             budgetMax: number;
             paymentType: string;
-            businessId: string;
+            creatorsNeeded: number;
+            isFeatured: boolean;
+        };
+        creator: {
+            userId: string;
+            fullName: string;
         };
     } & {
         status: import(".prisma/client").$Enums.ApplicationStatus;
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        campaignId: string;
         creatorId: string;
-        coverLetter: string;
         proposedRate: number;
+        campaignId: string;
+        coverLetter: string;
         timeline: string;
         socialHandles: Prisma.JsonValue;
         portfolioUrl: string | null;
@@ -286,21 +342,39 @@ export declare class CampaignRepository {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        campaignId: string;
         creatorId: string;
-        coverLetter: string;
         proposedRate: number;
+        campaignId: string;
+        coverLetter: string;
         timeline: string;
         socialHandles: Prisma.JsonValue;
         portfolioUrl: string | null;
     }>;
+    findPendingApplicationsByCampaign(campaignId: string, excludeAppId: string): Promise<({
+        creator: {
+            userId: string;
+        };
+    } & {
+        status: import(".prisma/client").$Enums.ApplicationStatus;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        creatorId: string;
+        proposedRate: number;
+        campaignId: string;
+        coverLetter: string;
+        timeline: string;
+        socialHandles: Prisma.JsonValue;
+        portfolioUrl: string | null;
+    })[]>;
     findApplicationsByCreator(creatorId: string, page: number, limit: number): Promise<{
         applications: ({
             campaign: {
                 status: import(".prisma/client").$Enums.CampaignStatus;
+                id: string;
+                platform: string;
                 title: string;
                 category: string;
-                platform: string;
                 deadline: Date;
                 budgetMin: number;
                 budgetMax: number;
@@ -314,10 +388,10 @@ export declare class CampaignRepository {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            campaignId: string;
             creatorId: string;
-            coverLetter: string;
             proposedRate: number;
+            campaignId: string;
+            coverLetter: string;
             timeline: string;
             socialHandles: Prisma.JsonValue;
             portfolioUrl: string | null;

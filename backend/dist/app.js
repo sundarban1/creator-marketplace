@@ -20,6 +20,11 @@ const business_routes_1 = __importDefault(require("./modules/business/business.r
 const campaign_routes_1 = __importDefault(require("./modules/campaign/campaign.routes"));
 const messaging_routes_1 = __importDefault(require("./modules/messaging/messaging.routes"));
 const admin_routes_1 = __importDefault(require("./modules/admin/admin.routes"));
+const help_routes_1 = __importDefault(require("./modules/help/help.routes"));
+const faq_routes_1 = __importDefault(require("./modules/faq/faq.routes"));
+const support_routes_1 = __importDefault(require("./modules/support/support.routes"));
+const legal_routes_1 = __importDefault(require("./modules/legal/legal.routes"));
+const notification_routes_1 = __importDefault(require("./modules/notifications/notification.routes"));
 const app = (0, express_1.default)();
 // ── Security & parsing middleware ────────────────────────────────────────────
 app.use((0, helmet_1.default)());
@@ -111,6 +116,11 @@ app.use('/api/business', business_routes_1.default);
 app.use('/api/campaigns', campaign_routes_1.default);
 app.use('/api/messaging', messaging_routes_1.default);
 app.use('/api/admin', admin_routes_1.default);
+app.use('/api/help', help_routes_1.default);
+app.use('/api/faq', faq_routes_1.default);
+app.use('/api/support', support_routes_1.default);
+app.use('/api/legal', legal_routes_1.default);
+app.use('/api/notifications', notification_routes_1.default);
 // ── 404 & Error handlers ──────────────────────────────────────────────────────
 app.use(error_1.notFoundHandler);
 app.use(error_1.errorHandler);

@@ -11,5 +11,10 @@ export declare const env: {
     SMTP_PORT?: string | undefined;
     SMTP_USER?: string | undefined;
     SMTP_PASS?: string | undefined;
+    EMAIL_HOST?: string | undefined;
+    EMAIL_PORT?: string | undefined;
+    EMAIL_SECURE?: string | undefined;
+    EMAIL_USERNAME?: string | undefined;
+    EMAIL_PASSWORD?: string | undefined;
 };
 //# sourceMappingURL=env.d.ts.map

@@ -291,5 +291,70 @@ router.post('/forgot-password', (0, validate_1.validate)(auth_schema_1.forgotPas
 router.post('/reset-password', (0, validate_1.validate)(auth_schema_1.resetPasswordSchema), ctrl.resetPassword.bind(ctrl));
 router.post('/verify-otp', (0, validate_1.validate)(auth_schema_1.verifyOtpSchema), ctrl.verifyOtp.bind(ctrl));
 router.post('/resend-otp', (0, validate_1.validate)(auth_schema_1.resendOtpSchema), ctrl.resendOtp.bind(ctrl));
+/**
+ * @swagger
+ * /api/auth/complete-onboarding:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Mark onboarding as complete for the logged-in user
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Onboarding marked complete
+ *       401:
+ *         description: Not authenticated
+ */
+router.post('/complete-onboarding', auth_1.authenticate, ctrl.completeOnboarding.bind(ctrl));
+router.patch('/deactivate', auth_1.authenticate, ctrl.deactivateAccount.bind(ctrl));
+router.delete('/account', auth_1.authenticate, ctrl.deleteAccount.bind(ctrl));
+/**
+ * @swagger
+ * /api/auth/forgot-password-phone:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Request password reset via phone OTP
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [phone]
+ *             properties:
+ *               phone:
+ *                 type: string
+ *                 example: "+9779841234567"
+ *     responses:
+ *       200:
+ *         description: OTP sent (always 200 to avoid phone enumeration)
+ */
+router.post('/forgot-password-phone', (0, validate_1.validate)(auth_schema_1.forgotPasswordByPhoneSchema), ctrl.forgotPasswordByPhone.bind(ctrl));
+/**
+ * @swagger
+ * /api/auth/verify-reset-otp:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Verify the phone OTP and receive a password reset token
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [phone, code]
+ *             properties:
+ *               phone:
+ *                 type: string
+ *               code:
+ *                 type: string
+ *                 example: "123456"
+ *     responses:
+ *       200:
+ *         description: OTP verified — resetToken returned
+ *       400:
+ *         description: Invalid or expired code
+ */
+router.post('/verify-reset-otp', (0, validate_1.validate)(auth_schema_1.verifyResetOtpSchema), ctrl.verifyResetOtp.bind(ctrl));
 exports.default = router;
 //# sourceMappingURL=auth.routes.js.map

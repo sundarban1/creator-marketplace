@@ -9,7 +9,10 @@ class CampaignRepository {
     async create(data) {
         return prisma_1.default.campaign.create({
             data,
-            include: { business: { select: { businessName: true, logoUrl: true } } },
+            include: {
+                business: { select: { businessName: true, logoUrl: true } },
+                _count: { select: { applications: true } },
+            },
         });
     }
     async findMany(filters) {
@@ -31,6 +34,16 @@ class CampaignRepository {
         }
         else {
             where.status = 'ACTIVE'; // default to active for public listing
+        }
+        if (filters.isFeatured !== undefined) {
+            where.isFeatured = filters.isFeatured;
+        }
+        if (filters.deadlineFrom !== undefined || filters.deadlineTo !== undefined) {
+            where.deadline = {};
+            if (filters.deadlineFrom)
+                where.deadline.gte = filters.deadlineFrom;
+            if (filters.deadlineTo)
+                where.deadline.lte = filters.deadlineTo;
         }
         const skip = (filters.page - 1) * filters.limit;
         const [campaigns, total] = await Promise.all([
@@ -82,6 +95,15 @@ class CampaignRepository {
     async delete(id) {
         return prisma_1.default.campaign.delete({ where: { id } });
     }
+    async getDistinctCategories() {
+        const rows = await prisma_1.default.campaign.findMany({
+            where: { status: 'ACTIVE' },
+            select: { category: true },
+            distinct: ['category'],
+            orderBy: { category: 'asc' },
+        });
+        return rows.map((r) => r.category);
+    }
     async findApplication(campaignId, creatorId) {
         return prisma_1.default.application.findUnique({
             where: { campaignId_creatorId: { campaignId, creatorId } },
@@ -120,16 +142,46 @@ class CampaignRepository {
         ]);
         return { applications, total };
     }
+    async findApplicationsByBusinessId(businessId, page, limit) {
+        const skip = (page - 1) * limit;
+        const [applications, total] = await Promise.all([
+            prisma_1.default.application.findMany({
+                where: { campaign: { businessId } },
+                skip,
+                take: limit,
+                orderBy: { createdAt: 'desc' },
+                include: {
+                    creator: {
+                        select: { id: true, fullName: true, avatarUrl: true, location: true },
+                    },
+                    campaign: {
+                        select: { id: true, title: true, platform: true },
+                    },
+                },
+            }),
+            prisma_1.default.application.count({ where: { campaign: { businessId } } }),
+        ]);
+        return { applications, total };
+    }
     async findApplicationById(id) {
         return prisma_1.default.application.findUnique({
             where: { id },
-            include: { campaign: true },
+            include: {
+                campaign: true,
+                creator: { select: { userId: true, fullName: true } },
+            },
         });
     }
     async updateApplicationStatus(id, status) {
         return prisma_1.default.application.update({
             where: { id },
             data: { status },
+        });
+    }
+    async findPendingApplicationsByCampaign(campaignId, excludeAppId) {
+        return prisma_1.default.application.findMany({
+            where: { campaignId, id: { not: excludeAppId }, status: 'PENDING' },
+            include: { creator: { select: { userId: true } } },
         });
     }
     async findApplicationsByCreator(creatorId, page, limit) {
@@ -143,6 +195,7 @@ class CampaignRepository {
                 include: {
                     campaign: {
                         select: {
+                            id: true,
                             title: true,
                             category: true,
                             platform: true,

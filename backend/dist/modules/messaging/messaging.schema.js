@@ -5,6 +5,7 @@ const zod_1 = require("zod");
 exports.startConversationSchema = zod_1.z.object({
     otherUserId: zod_1.z.string().min(1, 'Other user ID is required'),
     campaignId: zod_1.z.string().optional(),
+    requestMessage: zod_1.z.string().max(500).optional(),
 });
 exports.sendMessageSchema = zod_1.z.object({
     content: zod_1.z.string().min(1, 'Message content is required').max(5000, 'Message too long'),

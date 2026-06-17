@@ -1,4 +1,4 @@
-import type { RegisterInput, LoginInput, RefreshTokenInput, ForgotPasswordInput, ResetPasswordInput, VerifyOtpInput, ResendOtpInput } from './auth.schema';
+import type { RegisterInput, LoginInput, RefreshTokenInput, ForgotPasswordInput, ResetPasswordInput, VerifyOtpInput, ResendOtpInput, ForgotPasswordByPhoneInput, VerifyResetOtpInput } from './auth.schema';
 export declare class AuthService {
     private repo;
     constructor();
@@ -7,10 +7,17 @@ export declare class AuthService {
     }>;
     verifyOtp(input: VerifyOtpInput): Promise<{
         user: {
-            name: string;
-            avatar: string | null;
+            id: string;
+            email: string;
+            phone: string;
+            role: import(".prisma/client").$Enums.Role;
+            isEmailVerified: boolean;
+            isOnboarded: boolean;
+            createdAt: Date;
+            updatedAt: Date;
             creatorProfile: {
                 id: string;
+                username: string | null;
                 fullName: string;
                 avatarUrl: string | null;
             } | null;
@@ -19,13 +26,8 @@ export declare class AuthService {
                 businessName: string;
                 logoUrl: string | null;
             } | null;
-            email: string;
-            id: string;
-            phone: string;
-            role: import(".prisma/client").$Enums.Role;
-            isEmailVerified: boolean;
-            createdAt: Date;
-            updatedAt: Date;
+            name: string;
+            avatar: string | null;
         };
         accessToken: string;
         refreshToken: string;
@@ -35,10 +37,17 @@ export declare class AuthService {
     }>;
     login(input: LoginInput): Promise<{
         user: {
-            name: string;
-            avatar: string | null;
+            id: string;
+            email: string;
+            phone: string;
+            role: import(".prisma/client").$Enums.Role;
+            isEmailVerified: boolean;
+            isOnboarded: boolean;
+            createdAt: Date;
+            updatedAt: Date;
             creatorProfile: {
                 id: string;
+                username: string | null;
                 fullName: string;
                 avatarUrl: string | null;
             } | null;
@@ -47,22 +56,33 @@ export declare class AuthService {
                 businessName: string;
                 logoUrl: string | null;
             } | null;
-            email: string;
-            id: string;
-            phone: string;
-            role: import(".prisma/client").$Enums.Role;
-            isEmailVerified: boolean;
-            createdAt: Date;
-            updatedAt: Date;
+            name: string;
+            avatar: string | null;
         };
         accessToken: string;
         refreshToken: string;
+        reactivated: boolean;
+    }>;
+    completeOnboarding(userId: string): Promise<{
+        message: string;
     }>;
     refresh(input: RefreshTokenInput): Promise<{
         accessToken: string;
     }>;
     logout(userId: string): Promise<{
         message: string;
+    }>;
+    deactivateAccount(userId: string): Promise<{
+        message: string;
+    }>;
+    deleteAccount(userId: string): Promise<{
+        message: string;
+    }>;
+    forgotPasswordByPhone(input: ForgotPasswordByPhoneInput): Promise<{
+        message: string;
+    }>;
+    verifyResetOtp(input: VerifyResetOtpInput): Promise<{
+        resetToken: string;
     }>;
     forgotPassword(input: ForgotPasswordInput): Promise<{
         message: string;

@@ -4,6 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.swaggerSpec = void 0;
+const path_1 = __importDefault(require("path"));
 const swagger_jsdoc_1 = __importDefault(require("swagger-jsdoc"));
 const env_1 = require("./env");
 const options = {
@@ -194,7 +195,11 @@ const options = {
             { name: 'Messaging', description: 'Conversations and messages' },
         ],
     },
-    apis: ['./src/modules/**/*.routes.ts', './src/app.ts'],
+    // __dirname is .../src/config in dev (tsx) and .../dist/config when built.
+    // swagger-jsdoc globs need to point to whichever copy actually exists.
+    apis: __dirname.includes('/dist/')
+        ? [path_1.default.resolve(__dirname, '../modules/**/*.routes.js'), path_1.default.resolve(__dirname, '../app.js')]
+        : [path_1.default.resolve(__dirname, '../modules/**/*.routes.ts'), path_1.default.resolve(__dirname, '../app.ts')],
 };
 exports.swaggerSpec = (0, swagger_jsdoc_1.default)(options);
 //# sourceMappingURL=swagger.js.map
