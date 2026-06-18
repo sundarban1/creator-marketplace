@@ -1,5 +1,6 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text } from 'react-native';
 import { useAppColors } from '@/context/ThemeContext';
+import { F } from '@/utilities/constants';
 
 type ButtonProps = {
   label: string;
@@ -38,5 +39,5 @@ const styles = StyleSheet.create({
   secondary: { borderWidth: 1.5 },
   ghost: { backgroundColor: 'transparent' },
   dimmed: { opacity: 0.6 },
-  label: { fontSize: 16, fontWeight: '600', color: '#fff' },
+  label: { fontSize: 16, fontWeight: '600', color: '#fff', fontFamily: F.semibold },
 });

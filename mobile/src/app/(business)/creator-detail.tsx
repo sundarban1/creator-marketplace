@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { BackButton } from '@/components/BackButton';
+import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import {
   ActivityIndicator,
   Linking,
@@ -16,14 +17,32 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
 import { creatorService, type ApiCreatorPublicProfile } from '@/services/creator';
 import { chatService } from '@/services/chat';
+import { F } from '@/utilities/constants';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const PLATFORM_EMOJI: Record<string, string> = {
-  instagram: '📸', youtube: '▶️', tiktok: '🎵',
-  twitter: '🐦', facebook: '📘', linkedin: '💼',
-  snapchat: '👻', pinterest: '📌',
+type PlatformInfo = { iconName: string; color: string; label: string; brand: boolean };
+
+const PLATFORM_MAP: Record<string, PlatformInfo> = {
+  instagram: { iconName: 'instagram',   color: '#E1306C', label: 'Instagram',   brand: true },
+  tiktok:    { iconName: 'tiktok',      color: '#010101', label: 'TikTok',      brand: true },
+  youtube:   { iconName: 'youtube',     color: '#FF0000', label: 'YouTube',     brand: true },
+  facebook:  { iconName: 'facebook',    color: '#1877F2', label: 'Facebook',    brand: true },
+  twitter:   { iconName: 'twitter',     color: '#1DA1F2', label: 'X / Twitter', brand: true },
+  linkedin:  { iconName: 'linkedin',    color: '#0A66C2', label: 'LinkedIn',    brand: true },
+  pinterest: { iconName: 'pinterest',   color: '#E60023', label: 'Pinterest',   brand: true },
+  snapchat:  { iconName: 'snapchat',    color: '#FFFC00', label: 'Snapchat',    brand: true },
+  twitch:    { iconName: 'twitch',      color: '#9146FF', label: 'Twitch',      brand: true },
 };
+
+function getPlatformInfo(platform: string): PlatformInfo {
+  return PLATFORM_MAP[platform.toLowerCase()] ?? {
+    iconName: 'globe',
+    color: '#6366F1',
+    label: platform.charAt(0).toUpperCase() + platform.slice(1).toLowerCase(),
+    brand: false,
+  };
+}
 
 const CATEGORY_META: Record<string, { emoji: string; bg: string }> = {
   Fashion:    { emoji: '👗', bg: '#F2DCF0' },
@@ -41,9 +60,6 @@ const CATEGORY_META: Record<string, { emoji: string; bg: string }> = {
   Wellness:   { emoji: '🧘', bg: '#DCF2EE' },
   Adventure:  { emoji: '🏕️', bg: '#E8EFD4' },
 };
-
-function getPlatformEmoji(p: string) { return PLATFORM_EMOJI[p.toLowerCase()] ?? '📱'; }
-function normalizePlatform(p: string) { return p.charAt(0).toUpperCase() + p.slice(1).toLowerCase(); }
 
 function formatFollowers(n: number) {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
@@ -247,23 +263,24 @@ export default function CreatorDetailScreen() {
             <View style={s.socialList}>
               {mergedPlatforms.map((p) => {
                 const canOpen = !!p.profileUrl;
+                const info = getPlatformInfo(p.platform);
                 return (
                   <Pressable
                     key={p.key}
                     style={[s.socialRow, { borderColor: C.border }]}
                     onPress={() => canOpen ? Linking.openURL(p.profileUrl!).catch(() => {}) : null}>
-                    <View style={[s.socialIconWrap, { backgroundColor: C.primaryLight }]}>
-                      <Text style={s.socialEmoji}>{getPlatformEmoji(p.platform)}</Text>
+                    <View style={[s.socialIconWrap, { backgroundColor: info.color }]}>
+                      <FontAwesome5 name={info.iconName} size={18} color="#fff" />
                     </View>
                     <View style={s.socialInfo}>
-                      <Text style={[s.socialPlatform, { color: C.text }]}>{normalizePlatform(p.platform)}</Text>
+                      <Text style={[s.socialPlatform, { color: C.text }]}>{info.label}</Text>
                       {p.followers !== null ? (
                         <Text style={[s.socialSub, { color: C.textSecondary }]}>{formatFollowers(p.followers)} followers</Text>
                       ) : p.handle ? (
                         <Text style={[s.socialSub, { color: C.textSecondary }]}>{p.handle}</Text>
                       ) : null}
                     </View>
-                    {canOpen && <Text style={[s.socialLink, { color: C.brinjal1 }]}>↗</Text>}
+                    {canOpen && <Ionicons name="open-outline" size={16} color={C.brinjal1} />}
                   </Pressable>
                 );
               })}
@@ -292,12 +309,15 @@ export default function CreatorDetailScreen() {
           <View style={[s.section, { backgroundColor: C.surface }]}>
             <SectionTitle label="Preferred Platforms" color={C.textSecondary} />
             <View style={s.chips}>
-              {profile.prefPlatforms.map((p) => (
-                <View key={p} style={[s.platChip, { backgroundColor: C.background, borderColor: C.border }]}>
-                  <Text style={s.catEmoji}>{getPlatformEmoji(p)}</Text>
-                  <Text style={[s.catChipText, { color: C.text }]}>{normalizePlatform(p)}</Text>
-                </View>
-              ))}
+              {profile.prefPlatforms.map((p) => {
+                const info = getPlatformInfo(p);
+                return (
+                  <View key={p} style={[s.platChip, { backgroundColor: C.background, borderColor: C.border }]}>
+                    <FontAwesome5 name={info.iconName} size={14} color={info.color} />
+                    <Text style={[s.catChipText, { color: C.text }]}>{info.label}</Text>
+                  </View>
+                );
+              })}
             </View>
           </View>
         )}
@@ -382,74 +402,73 @@ const s = StyleSheet.create({
   centered:  { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, padding: 32 },
 
   topBar:    { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12 },
-  topTitle:  { flex: 1, fontSize: 17, fontWeight: '800', textAlign: 'center' },
+  topTitle:  { flex: 1, fontSize: 17, fontWeight: '800', textAlign: 'center', fontFamily: F.extrabold },
 
   scroll: { paddingBottom: 16, gap: 12 },
 
   // Hero
   hero:         { flexDirection: 'row', alignItems: 'center', gap: 16, paddingHorizontal: 20, paddingVertical: 24, marginHorizontal: 20, borderRadius: 20, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 3 },
   avatarCircle: { width: 72, height: 72, borderRadius: 36, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
-  avatarText:   { fontSize: 26, fontWeight: '800' },
+  avatarText:   { fontSize: 26, fontWeight: '800', fontFamily: F.extrabold },
   heroInfo:     { flex: 1, gap: 4 },
   nameRow:      { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
-  heroName:     { fontSize: 20, fontWeight: '800' },
+  heroName:     { fontSize: 20, fontWeight: '800', fontFamily: F.extrabold },
   verifiedBadge:{ borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3 },
-  verifiedText: { fontSize: 11, fontWeight: '700', color: '#2E7D32' },
-  username:     { fontSize: 13 },
-  location:     { fontSize: 13 },
+  verifiedText: { fontSize: 11, fontWeight: '700', color: '#2E7D32', fontFamily: F.bold },
+  username:     { fontSize: 13, fontFamily: F.regular },
+  location:     { fontSize: 13, fontFamily: F.regular },
 
   // Sections
   section:      { marginHorizontal: 20, borderRadius: 16, padding: 16, gap: 12, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, shadowOffset: { width: 0, height: 1 }, elevation: 2 },
-  sectionTitle: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8 },
+  sectionTitle: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8, fontFamily: F.bold },
 
   // Bio
-  bioText: { fontSize: 14, lineHeight: 22 },
+  bioText: { fontSize: 14, lineHeight: 22, fontFamily: F.regular },
 
   // Chips
   chips:       { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   catChip:     { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20 },
   catEmoji:    { fontSize: 14 },
-  catChipText: { fontSize: 13, fontWeight: '600' },
+  catChipText: { fontSize: 13, fontWeight: '600', fontFamily: F.semibold },
   platChip:    { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1.5 },
 
   // Social accounts
   socialList:      { gap: 10 },
   socialRow:       { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, borderBottomWidth: 1 },
   socialIconWrap:  { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
-  socialEmoji:     { fontSize: 18 },
   socialInfo:      { flex: 1 },
-  socialPlatform:  { fontSize: 14, fontWeight: '700' },
-  socialSub:       { fontSize: 12, marginTop: 1 },
-  socialLink:      { fontSize: 18, fontWeight: '600' },
+  socialPlatform:  { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
+  socialSub:       { fontSize: 12, marginTop: 1, fontFamily: F.regular },
+  socialLink:      { fontSize: 18, fontWeight: '600', fontFamily: F.semibold },
 
   // Budget
   budgetCard:  { flexDirection: 'row', alignItems: 'center', borderRadius: 12, padding: 14, gap: 12 },
   budgetEmoji: { fontSize: 24 },
   budgetInfo:  { flex: 1 },
-  budgetLabel: { fontSize: 11, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.6 },
-  budgetValue: { fontSize: 20, fontWeight: '800', marginTop: 2 },
+  budgetLabel: { fontSize: 11, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.6, fontFamily: F.semibold },
+  budgetValue: { fontSize: 20, fontWeight: '800', marginTop: 2, fontFamily: F.extrabold },
 
   // Portfolio
   portfolioList:    { gap: 10 },
   portfolioRow:     { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, borderBottomWidth: 1 },
   portfolioIconWrap:{ width: 36, height: 36, borderRadius: 10, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   portfolioIcon:    { fontSize: 16 },
-  portfolioLabel:   { flex: 1, fontSize: 14, fontWeight: '600' },
-  portfolioArrow:   { fontSize: 18, fontWeight: '600' },
+  portfolioLabel:   { flex: 1, fontSize: 14, fontWeight: '600', fontFamily: F.semibold },
+  portfolioArrow:   { fontSize: 18, fontWeight: '600', fontFamily: F.semibold },
 
   // Error state
   errorEmoji: { fontSize: 48 },
-  errorTitle: { fontSize: 18, fontWeight: '700' },
-  errorHint:  { fontSize: 13, textAlign: 'center', lineHeight: 20 },
+  errorTitle: { fontSize: 18, fontWeight: '700', fontFamily: F.bold },
+  errorHint:  { fontSize: 13, textAlign: 'center', lineHeight: 20, fontFamily: F.regular },
   retryBtn:   { borderRadius: 20, borderWidth: 1.5, paddingHorizontal: 20, paddingVertical: 10, marginTop: 4 },
-  retryText:  { fontSize: 14, fontWeight: '700' },
+  retryText:  { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
 });
 
 // Message button bar
 const msgBtn = StyleSheet.create({
   bar: { paddingHorizontal: 20, paddingVertical: 14, borderTopWidth: 1 },
   btn: { borderRadius: 14, height: 52, justifyContent: 'center', alignItems: 'center' },
-  txt: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  txt: { color: '#fff', fontSize: 16, fontWeight: '700', fontFamily: F.bold },
 });
 
 // Request modal
@@ -458,10 +477,10 @@ const rm = StyleSheet.create({
   scrim:   { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.45)' },
   sheet:   { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 40, gap: 14 },
   handle:  { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginBottom: 4 },
-  title:   { fontSize: 18, fontWeight: '800' },
-  subtitle:{ fontSize: 13, lineHeight: 20 },
-  input:   { borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, minHeight: 100, textAlignVertical: 'top' },
-  counter: { fontSize: 11, textAlign: 'right', marginTop: -6 },
+  title:   { fontSize: 18, fontWeight: '800', fontFamily: F.extrabold },
+  subtitle:{ fontSize: 13, lineHeight: 20, fontFamily: F.regular },
+  input:   { borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, minHeight: 100, textAlignVertical: 'top', fontFamily: F.regular },
+  counter: { fontSize: 11, textAlign: 'right', marginTop: -6, fontFamily: F.regular },
   sendBtn: { borderRadius: 14, height: 52, justifyContent: 'center', alignItems: 'center' },
-  sendTxt: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  sendTxt: { color: '#fff', fontSize: 16, fontWeight: '700', fontFamily: F.bold },
 });

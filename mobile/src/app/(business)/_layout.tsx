@@ -9,7 +9,7 @@ import { BusinessDrawerMenu } from '@/features/business/components/BusinessDrawe
 import { COLORS } from '@/utilities/constants';
 import { chatService } from '@/services/chat';
 import { messagingEvents } from '@/lib/messagingEvents';
-import { notificationService } from '@/services/notifications';
+import { useNotificationBadge } from '@/context/NotificationContext';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
@@ -63,10 +63,9 @@ function CreateTabButton() {
 export default function BusinessLayout() {
   const { user, logout } = useAuth();
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [badgeCount, setBadgeCount]   = useState(0);
-  const [notifBadge, setNotifBadge]   = useState(0);
-  const pollRef      = useRef<number | null>(null);
-  const notifPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [badgeCount, setBadgeCount] = useState(0);
+  const { badgeCount: notifBadge } = useNotificationBadge();
+  const pollRef = useRef<number | null>(null);
 
   useEffect(() => {
     function fetchBadge() {
@@ -79,15 +78,6 @@ export default function BusinessLayout() {
       if (pollRef.current) clearInterval(pollRef.current);
       unsub();
     };
-  }, []);
-
-  useEffect(() => {
-    function fetchNotifBadge() {
-      notificationService.getBadge().then((r) => setNotifBadge(r.count)).catch(() => null);
-    }
-    fetchNotifBadge();
-    notifPollRef.current = setInterval(fetchNotifBadge, 30000);
-    return () => { if (notifPollRef.current) clearInterval(notifPollRef.current); };
   }, []);
 
   return (
@@ -139,6 +129,12 @@ export default function BusinessLayout() {
       />
       <Tabs.Screen
         name="messages"
+        listeners={({ navigation }) => ({
+          tabPress: (e) => {
+            e.preventDefault();
+            navigation.navigate('messages', { screen: 'index' });
+          },
+        })}
         options={{
           title: 'Messages',
           tabBarIcon: ({ color, focused }) => (

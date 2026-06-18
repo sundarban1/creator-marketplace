@@ -10,6 +10,7 @@ export declare class BusinessService {
             isEmailVerified: boolean;
         };
     } & {
+        description: string | null;
         id: string;
         createdAt: Date;
         updatedAt: Date;
@@ -17,7 +18,6 @@ export declare class BusinessService {
         categories: string[];
         isVerified: boolean;
         businessName: string;
-        description: string | null;
         logoUrl: string | null;
         website: string | null;
         panNo: string | null;
@@ -26,6 +26,7 @@ export declare class BusinessService {
         allowDirectMessages: boolean;
     }>;
     updateProfile(userId: string, input: UpdateBusinessProfileInput): Promise<{
+        description: string | null;
         id: string;
         createdAt: Date;
         updatedAt: Date;
@@ -33,7 +34,6 @@ export declare class BusinessService {
         categories: string[];
         isVerified: boolean;
         businessName: string;
-        description: string | null;
         logoUrl: string | null;
         website: string | null;
         panNo: string | null;
@@ -50,6 +50,7 @@ export declare class BusinessService {
         limit: number;
     }): Promise<{
         businesses: {
+            description: string | null;
             id: string;
             categories: string[];
             isVerified: boolean;
@@ -57,13 +58,13 @@ export declare class BusinessService {
                 campaigns: number;
             };
             businessName: string;
-            description: string | null;
             logoUrl: string | null;
             website: string | null;
         }[];
         total: number;
     }>;
     getBusinessPublic(id: string): Promise<{
+        description: string | null;
         id: string;
         createdAt: Date;
         userId: string;
@@ -73,7 +74,6 @@ export declare class BusinessService {
             campaigns: number;
         };
         businessName: string;
-        description: string | null;
         logoUrl: string | null;
         website: string | null;
         showPublicProfile: boolean;

@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from 'react';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { F } from '@/utilities/constants';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -129,7 +130,7 @@ const styles = StyleSheet.create({
   inner:   { flexDirection: 'row', alignItems: 'flex-start', padding: 14, gap: 10 },
   icon:    { fontSize: 17, marginTop: 1 },
   texts:   { flex: 1 },
-  title:   { fontSize: 13, fontWeight: '700', marginBottom: 2 },
-  message: { fontSize: 13, lineHeight: 18 },
-  dismiss: { fontSize: 12, fontWeight: '700', opacity: 0.6, paddingTop: 2 },
+  title:   { fontSize: 13, fontWeight: '700', marginBottom: 2, fontFamily: F.bold },
+  message: { fontSize: 13, lineHeight: 18, fontFamily: F.regular },
+  dismiss: { fontSize: 12, fontWeight: '700', opacity: 0.6, paddingTop: 2, fontFamily: F.bold },
 });

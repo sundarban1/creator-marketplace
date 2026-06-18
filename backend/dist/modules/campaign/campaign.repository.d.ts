@@ -26,11 +26,11 @@ export declare class CampaignRepository {
         };
     } & {
         status: import(".prisma/client").$Enums.CampaignStatus;
+        description: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
         location: string | null;
-        description: string;
         platform: string;
         businessId: string;
         title: string;
@@ -67,11 +67,11 @@ export declare class CampaignRepository {
             };
         } & {
             status: import(".prisma/client").$Enums.CampaignStatus;
+            description: string;
             id: string;
             createdAt: Date;
             updatedAt: Date;
             location: string | null;
-            description: string;
             platform: string;
             businessId: string;
             title: string;
@@ -93,18 +93,18 @@ export declare class CampaignRepository {
             applications: number;
         };
         business: {
-            businessName: string;
             description: string | null;
+            businessName: string;
             logoUrl: string | null;
             website: string | null;
         };
     } & {
         status: import(".prisma/client").$Enums.CampaignStatus;
+        description: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
         location: string | null;
-        description: string;
         platform: string;
         businessId: string;
         title: string;
@@ -126,11 +126,11 @@ export declare class CampaignRepository {
             };
         } & {
             status: import(".prisma/client").$Enums.CampaignStatus;
+            description: string;
             id: string;
             createdAt: Date;
             updatedAt: Date;
             location: string | null;
-            description: string;
             platform: string;
             businessId: string;
             title: string;
@@ -164,11 +164,11 @@ export declare class CampaignRepository {
         isFeatured: boolean;
     }>): Promise<{
         status: import(".prisma/client").$Enums.CampaignStatus;
+        description: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
         location: string | null;
-        description: string;
         platform: string;
         businessId: string;
         title: string;
@@ -185,11 +185,11 @@ export declare class CampaignRepository {
     }>;
     delete(id: string): Promise<{
         status: import(".prisma/client").$Enums.CampaignStatus;
+        description: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
         location: string | null;
-        description: string;
         platform: string;
         businessId: string;
         title: string;
@@ -301,11 +301,11 @@ export declare class CampaignRepository {
     findApplicationById(id: string): Promise<({
         campaign: {
             status: import(".prisma/client").$Enums.CampaignStatus;
+            description: string;
             id: string;
             createdAt: Date;
             updatedAt: Date;
             location: string | null;
-            description: string;
             platform: string;
             businessId: string;
             title: string;

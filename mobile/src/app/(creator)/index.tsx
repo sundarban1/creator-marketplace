@@ -1,6 +1,7 @@
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { useCallback, useContext, useEffect, useState } from 'react';
+import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
@@ -14,6 +15,8 @@ import type { LocationFilter } from '@/features/creator/components/FilterModal';
 import { CATEGORY_META, DEFAULT_META, FILTER_TABS } from '@/features/creator/data/filterOptions';
 import { campaignService } from '@/services/campaign';
 import { creatorService } from '@/services/creator';
+import { getSocket } from '@/lib/socket';
+import { F } from '@/utilities/constants';
 import type { Campaign } from '@/types';
 
 const SLIDER_MAX = 1000;
@@ -21,7 +24,7 @@ const SLIDER_MAX = 1000;
 export default function HomeScreen() {
   const { user } = useAuth();
   const { openDrawer } = useContext(DrawerContext);
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const C = useAppColors();
 
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
@@ -89,6 +92,19 @@ export default function HomeScreen() {
   }
 
   useEffect(() => { void fetchCampaigns(); }, []);
+
+  // Keep a stable ref to the latest fetch so the socket handler never captures stale state
+  const fetchRef = useRef(fetchCampaigns);
+  useEffect(() => { fetchRef.current = fetchCampaigns; });
+
+  // Subscribe to real-time campaign updates while this screen is focused
+  useFocusEffect(useCallback(() => {
+    const socket = getSocket();
+    if (!socket) return;
+    const handler = () => { void fetchRef.current({ showLoader: false }); };
+    socket.on('campaign:new', handler);
+    return () => { socket.off('campaign:new', handler); };
+  }, []));
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -200,66 +216,68 @@ export default function HomeScreen() {
         contentContainerStyle={styles.scrollContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brinjal1} />}>
 
-        {/* ── Header ── */}
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <Pressable style={styles.menuBtn} onPress={openDrawer}>
-              <Ionicons name="menu" size={26} color={C.text} />
-            </Pressable>
-            <View>
-              <Text style={[styles.greeting, { color: C.textSecondary }]}>Hello, 👋</Text>
-              <View style={styles.nameRow}>
-                <Text style={[styles.brandName, { color: C.text }]} numberOfLines={1}>{user?.name ?? 'Creator'}</Text>
-                <View style={[styles.rolePill, { backgroundColor: C.primaryLight }]}>
-                  <Text style={[styles.rolePillText, { color: C.brinjal1 }]}>Creator</Text>
+        {/* ── Gradient header ── */}
+        <LinearGradient colors={['#F97316', '#EF4444', '#EC4899']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.gradientHeader}>
+          <View style={styles.header}>
+            <View style={styles.headerLeft}>
+              <Pressable style={styles.menuBtn} onPress={openDrawer}>
+                <Ionicons name="menu" size={26} color="#fff" />
+              </Pressable>
+              <View>
+                <Text style={[styles.greeting, { color: 'rgba(255,255,255,0.8)', fontFamily: F.medium }]}>{language === 'ne' ? 'नमस्ते 🙏' : 'Hello 👋'}</Text>
+                <View style={styles.nameRow}>
+                  <Text style={[styles.brandName, { color: '#fff' }]} numberOfLines={1}>{user?.name ?? 'Creator'}</Text>
+                  <View style={[styles.rolePill, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
+                    <Text style={[styles.rolePillText, { color: '#fff' }]}>Creator</Text>
+                  </View>
                 </View>
               </View>
             </View>
+
+            <View style={styles.headerRight}>
+              <Pressable style={[styles.avatarCircle, { borderColor: 'rgba(255,255,255,0.6)', borderWidth: 2.5 }]} onPress={() => router.push('/(creator)/profile')}>
+                {user?.avatar ? (
+                  <Image source={{ uri: user.avatar }} style={styles.avatarImage} />
+                ) : (
+                  <View style={[styles.avatarFallback, { backgroundColor: 'rgba(255,255,255,0.25)' }]}>
+                    <Ionicons name="person" size={24} color="#fff" />
+                  </View>
+                )}
+              </Pressable>
+            </View>
           </View>
 
-          <View style={styles.headerRight}>
-            <Pressable style={[styles.avatarCircle, { borderColor: C.brinjal1, shadowColor: C.brinjal1 }]} onPress={() => router.push('/(creator)/profile')}>
-              {user?.avatar ? (
-                <Image source={{ uri: user.avatar }} style={styles.avatarImage} />
-              ) : (
-                <View style={[styles.avatarFallback, { backgroundColor: '#E8EAF6' }]}>
-                  <Ionicons name="person" size={24} color="#5C6BC0" />
-                </View>
-              )}
+          {/* ── Search ── */}
+          <View style={[styles.searchCard, { backgroundColor: 'rgba(255,255,255,0.18)' }]}>
+            <Ionicons name="search" size={17} color="rgba(255,255,255,0.8)" style={styles.searchIcon} />
+            <TextInput
+              style={[styles.searchInput, { color: '#fff' }]}
+              placeholder={t('creator.browse.searchPlaceholder')}
+              placeholderTextColor="rgba(255,255,255,0.6)"
+              value={search}
+              onChangeText={setSearch}
+            />
+            <Pressable
+              style={[styles.filterBtn, { backgroundColor: isFilterActive ? '#fff' : 'rgba(255,255,255,0.2)' }]}
+              onPress={openFilter}>
+              <Ionicons name="options" size={18} color={isFilterActive ? '#F97316' : '#fff'} />
+              {isFilterActive && <View style={[styles.filterActiveDot, { borderColor: 'transparent' }]} />}
             </Pressable>
           </View>
-        </View>
-
-        {/* ── Search ── */}
-        <View style={[styles.searchCard, { backgroundColor: C.surface }]}>
-          <Ionicons name="search" size={17} color={C.textSecondary} style={styles.searchIcon} />
-          <TextInput
-            style={[styles.searchInput, { color: C.text }]}
-            placeholder={t('creator.browse.searchPlaceholder')}
-            placeholderTextColor={C.textSecondary}
-            value={search}
-            onChangeText={setSearch}
-          />
-          <Pressable
-            style={[styles.filterBtn, { backgroundColor: C.primaryLight }, isFilterActive && { backgroundColor: C.brinjal1 }]}
-            onPress={openFilter}>
-            <Ionicons name="options" size={18} color={isFilterActive ? '#fff' : C.brinjal1} />
-            {isFilterActive && <View style={[styles.filterActiveDot, { borderColor: C.surface }]} />}
-          </Pressable>
-        </View>
+        </LinearGradient>
 
         {/* ── Explore Brands compact strip ── */}
         <Pressable
-          style={[styles.exploreStrip, { backgroundColor: C.primaryLight }]}
+          style={[styles.exploreStrip, { backgroundColor: '#F0FDF4', borderWidth: 1, borderColor: '#BBF7D0' }]}
           onPress={() => router.push('/(creator)/explore-businesses' as never)}>
-          <View style={[styles.exploreIconBox, { backgroundColor: C.brinjal1 }]}>
+          <View style={[styles.exploreIconBox, { backgroundColor: '#059669' }]}>
             <Ionicons name="business" size={18} color="#fff" />
           </View>
           <View style={styles.exploreTexts}>
-            <Text style={[styles.exploreTitle, { color: C.text }]}>Explore Brands</Text>
-            <Text style={[styles.exploreSub, { color: C.textSecondary }]}>Find businesses hiring creators · <Text style={{ color: C.brinjal1, fontWeight: '700' }}>Earn money</Text></Text>
+            <Text style={[styles.exploreTitle, { color: '#065F46' }]}>Explore Brands</Text>
+            <Text style={[styles.exploreSub, { color: '#059669' }]}>Find businesses hiring creators · <Text style={{ color: '#047857', fontWeight: '700' }}>Earn money</Text></Text>
           </View>
-          <Ionicons name="chevron-forward" size={22} color={C.brinjal1} />
+          <Ionicons name="chevron-forward" size={22} color="#059669" />
         </Pressable>
 
         {/* ── Error ── */}
@@ -282,10 +300,26 @@ export default function HomeScreen() {
               setActiveCategory(cat.label);
               void fetchCampaigns({ category: cat.label });
             }}>
-              <View style={[styles.catIcon, { backgroundColor: cat.bg }, activeCategory === cat.label && { borderWidth: 2, borderColor: C.brinjal1 }]}>
+              <View style={[
+                styles.catIcon,
+                { backgroundColor: cat.bg },
+                activeCategory === cat.label && {
+                  borderWidth: 2,
+                  borderColor: C.brinjal1,
+                  shadowColor: '#000',
+                  shadowOpacity: 0.15,
+                  shadowRadius: 6,
+                  shadowOffset: { width: 0, height: 3 },
+                  elevation: 5,
+                },
+              ]}>
                 <Text style={styles.catEmoji}>{cat.emoji}</Text>
               </View>
-              <Text style={[styles.catLabel, { color: activeCategory === cat.label ? C.brinjal1 : C.textSecondary }, activeCategory === cat.label && { fontWeight: '700' }]}>
+              <Text style={[
+                styles.catLabel,
+                { color: activeCategory === cat.label ? C.brinjal1 : C.textSecondary },
+                activeCategory === cat.label && { fontFamily: F.semibold },
+              ]}>
                 {cat.label}
               </Text>
             </Pressable>
@@ -397,67 +431,68 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   scrollContent: { paddingBottom: 40 },
 
+  gradientHeader: { paddingBottom: 24, borderBottomLeftRadius: 28, borderBottomRightRadius: 28, overflow: 'hidden' },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 16 },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   menuBtn: { padding: 4 },
-  greeting: { fontSize: 12, marginBottom: 2 },
+  greeting: { fontSize: 13, marginBottom: 2, fontFamily: F.regular },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  brandName: { fontSize: 18, fontWeight: '800', maxWidth: 160 },
+  brandName: { fontSize: 19, fontFamily: F.extrabold, maxWidth: 160 },
   rolePill: { flexDirection: 'row', alignItems: 'center', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 3 },
-  rolePillText: { fontSize: 11, fontWeight: '700' },
-  avatarCircle: { width: 42, height: 42, borderRadius: 21, overflow: 'hidden', borderWidth: 2, shadowOpacity: 0.35, shadowRadius: 6, shadowOffset: { width: 0, height: 3 }, elevation: 5 },
+  rolePillText: { fontSize: 11, fontFamily: F.bold },
+  avatarCircle: { width: 42, height: 42, borderRadius: 21, overflow: 'hidden', shadowOpacity: 0.35, shadowRadius: 6, shadowOffset: { width: 0, height: 3 }, elevation: 5 },
   avatarImage: { width: 42, height: 42 },
   avatarFallback: { width: 42, height: 42, justifyContent: 'center', alignItems: 'center' },
 
-  searchCard: { flexDirection: 'row', alignItems: 'center', borderRadius: 14, marginHorizontal: 20, marginBottom: 24, paddingHorizontal: 14, height: 50, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 3 },
+  searchCard: { flexDirection: 'row', alignItems: 'center', borderRadius: 14, marginHorizontal: 20, marginBottom: 0, paddingHorizontal: 14, height: 50, borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)' },
   searchIcon: { marginRight: 8 },
-  searchInput: { flex: 1, fontSize: 14 },
+  searchInput: { flex: 1, fontSize: 14, fontFamily: F.regular },
   filterBtn: { width: 34, height: 34, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
   filterActiveDot: { position: 'absolute', top: 4, right: 4, width: 7, height: 7, borderRadius: 4, backgroundColor: '#EF4444', borderWidth: 1.5 },
 
   errorCard: { marginHorizontal: 20, marginBottom: 16, borderRadius: 10, padding: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  errorText: { color: '#DC2626', fontSize: 13, flex: 1 },
-  retryText: { fontSize: 13, fontWeight: '700', marginLeft: 12 },
+  errorText: { color: '#DC2626', fontSize: 13, flex: 1, fontFamily: F.medium },
+  retryText: { fontSize: 13, fontWeight: '700', marginLeft: 12, fontFamily: F.bold },
 
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginBottom: 14 },
-  sectionTitle: { fontSize: 17, fontWeight: '700' },
-  seeAll: { fontSize: 13, fontWeight: '700' },
+  sectionTitle: { fontSize: 17, fontFamily: F.bold },
+  seeAll: { fontSize: 13, fontFamily: F.semibold },
 
   categoriesRow: { paddingHorizontal: 20, gap: 14, marginBottom: 28 },
   catItem: { alignItems: 'center', gap: 8 },
-  catIcon: { width: 58, height: 58, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
+  catIcon: { width: 60, height: 60, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
   catEmoji: { fontSize: 26 },
-  catLabel: { fontSize: 11, fontWeight: '500', textAlign: 'center' },
+  catLabel: { fontSize: 11, fontFamily: F.medium, textAlign: 'center' },
 
   loadingWrap: { paddingVertical: 60, alignItems: 'center', gap: 14 },
-  loadingText: { fontSize: 14 },
+  loadingText: { fontSize: 14, fontFamily: F.regular },
 
   featuredRow: { paddingHorizontal: 20, gap: 14, marginBottom: 28 },
-  featuredEmpty: { marginHorizontal: 20, marginBottom: 28, borderRadius: 16, borderWidth: 1.5, borderStyle: 'dashed', padding: 24, alignItems: 'center', gap: 8 },
-  featuredEmptyTitle: { fontSize: 14, fontWeight: '700', textAlign: 'center' },
-  featuredEmptySub: { fontSize: 12, textAlign: 'center', lineHeight: 18 },
+  featuredEmpty: { marginHorizontal: 20, marginBottom: 28, borderRadius: 18, borderWidth: 1.5, borderStyle: 'dashed', padding: 24, alignItems: 'center', gap: 8 },
+  featuredEmptyTitle: { fontSize: 14, fontFamily: F.bold, textAlign: 'center' },
+  featuredEmptySub: { fontSize: 12, fontFamily: F.regular, textAlign: 'center', lineHeight: 18 },
   filterTabsWrap: { borderBottomWidth: 1, marginBottom: 16 },
   filterTabsRow: { flexDirection: 'row', paddingHorizontal: 20 },
   filterTab: { paddingVertical: 12, marginRight: 24, position: 'relative' },
-  filterTabText: { fontSize: 14, fontWeight: '500' },
+  filterTabText: { fontSize: 14, fontFamily: F.medium },
   filterTabUnderline: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 2.5, borderRadius: 2 },
 
   listWrap: { paddingHorizontal: 20, gap: 12 },
 
   emptyWrap: { alignItems: 'center', paddingVertical: 48, gap: 10 },
-  emptyTitle: { fontSize: 17, fontWeight: '700' },
-  emptyHint: { fontSize: 13, textAlign: 'center', lineHeight: 20, paddingHorizontal: 24 },
+  emptyTitle: { fontSize: 17, fontFamily: F.bold },
+  emptyHint: { fontSize: 13, fontFamily: F.regular, textAlign: 'center', lineHeight: 20, paddingHorizontal: 24 },
 
-  exploreStrip:   { flexDirection: 'row', alignItems: 'center', borderRadius: 14, marginHorizontal: 20, marginBottom: 20, paddingHorizontal: 14, paddingVertical: 12, gap: 12 },
-  exploreIconBox: { width: 38, height: 38, borderRadius: 11, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  exploreStrip:   { flexDirection: 'row', alignItems: 'center', borderRadius: 16, marginHorizontal: 20, marginTop: 16, marginBottom: 20, paddingHorizontal: 14, paddingVertical: 13, gap: 12 },
+  exploreIconBox: { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   exploreTexts:   { flex: 1 },
-  exploreTitle:   { fontSize: 14, fontWeight: '700' },
-  exploreSub:     { fontSize: 12, marginTop: 1 },
+  exploreTitle:   { fontSize: 14, fontFamily: F.bold },
+  exploreSub:     { fontSize: 12, fontFamily: F.regular, marginTop: 1 },
 
-  banner: { flexDirection: 'row', alignItems: 'center', borderRadius: 16, marginHorizontal: 20, marginTop: 20, padding: 14, gap: 10, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 3, borderLeftWidth: 4 },
+  banner: { flexDirection: 'row', alignItems: 'center', borderRadius: 18, marginHorizontal: 20, marginTop: 20, padding: 16, gap: 12, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 10, shadowOffset: { width: 0, height: 2 }, elevation: 3, borderLeftWidth: 4 },
   bannerText: { flex: 1, gap: 2 },
-  bannerTitle: { fontSize: 13, fontWeight: '700' },
-  bannerSub: { fontSize: 11, lineHeight: 16 },
+  bannerTitle: { fontSize: 13, fontFamily: F.bold },
+  bannerSub: { fontSize: 11, fontFamily: F.regular, lineHeight: 16 },
   bannerClose: { position: 'absolute', top: 8, right: 8, padding: 4 },
 });

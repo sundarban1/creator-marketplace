@@ -14,6 +14,7 @@ import { CampaignListItem } from '@/features/creator/components/CampaignListItem
 import { useAppColors } from '@/context/ThemeContext';
 import { campaignService } from '@/services/campaign';
 import type { Campaign } from '@/types';
+import { F } from '@/utilities/constants';
 
 const PAGE_SIZE = 6;
 
@@ -121,21 +122,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16, paddingVertical: 14,
     borderBottomWidth: 1,
   },
-  headerTitle: { fontSize: 17, fontWeight: '700' },
+  headerTitle: { fontSize: 17, fontWeight: '700', fontFamily: F.bold },
   list: { padding: 16, paddingBottom: 40 },
   separator: { height: 12 },
   loadingWrap: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 14 },
-  loadingText: { fontSize: 14 },
+  loadingText: { fontSize: 14, fontFamily: F.regular },
   errorWrap: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12 },
-  errorText: { color: '#DC2626', fontSize: 14 },
-  retryText: { fontSize: 14, fontWeight: '700' },
+  errorText: { color: '#DC2626', fontSize: 14, fontFamily: F.regular },
+  retryText: { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
   emptyWrap: { paddingTop: 80, alignItems: 'center', gap: 10 },
   emptyEmoji: { fontSize: 48 },
-  emptyTitle: { fontSize: 16, fontWeight: '700' },
+  emptyTitle: { fontSize: 16, fontWeight: '700', fontFamily: F.bold },
   loadMoreBtn: {
     marginTop: 20, marginHorizontal: 20, height: 46,
     borderRadius: 12, justifyContent: 'center', alignItems: 'center',
   },
-  loadMoreText: { fontSize: 14, fontWeight: '700' },
-  endText: { textAlign: 'center', fontSize: 12, marginTop: 20, marginBottom: 8 },
+  loadMoreText: { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
+  endText: { textAlign: 'center', fontSize: 12, marginTop: 20, marginBottom: 8, fontFamily: F.regular },
 });

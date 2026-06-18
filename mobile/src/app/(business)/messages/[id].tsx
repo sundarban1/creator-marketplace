@@ -11,6 +11,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { chatService } from '@/services/chat';
+import { F } from '@/utilities/constants';
 import type { Message } from '@/types';
 
 function formatTime(ts: string) {
@@ -67,7 +68,13 @@ export default function BusinessChatRoomScreen() {
       chatService.markSeen(id).then(() => messagingEvents.refresh()).catch(() => null);
       pollRef.current = setInterval(async () => {
         const msgs = await chatService.getMessages(id).catch(() => null);
-        if (msgs) setMessages(msgs);
+        if (!msgs) return;
+        setMessages((prev) => {
+          if (msgs.length > prev.length) {
+            chatService.markSeen(id).then(() => messagingEvents.refresh()).catch(() => null);
+          }
+          return msgs;
+        });
       }, 4000);
     }
 
@@ -164,24 +171,24 @@ const s = StyleSheet.create({
 
   header:     { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, gap: 12 },
   headerInfo: { flex: 1, gap: 2 },
-  headerName: { fontSize: 16, fontWeight: '700' },
-  headerSub:  { fontSize: 12 },
+  headerName: { fontSize: 16, fontWeight: '700', fontFamily: F.bold },
+  headerSub:  { fontSize: 12, fontFamily: F.regular },
 
   pendingBanner: { paddingHorizontal: 16, paddingVertical: 10 },
-  pendingTxt:    { fontSize: 13, fontWeight: '500', lineHeight: 18 },
+  pendingTxt:    { fontSize: 13, fontWeight: '500', lineHeight: 18, fontFamily: F.medium },
 
   msgList:     { padding: 16, gap: 10, flexGrow: 1 },
   bubbleWrap:  { maxWidth: '75%', gap: 3 },
   bubbleWrapSent:     { alignSelf: 'flex-end',   alignItems: 'flex-end' },
   bubbleWrapReceived: { alignSelf: 'flex-start', alignItems: 'flex-start' },
   bubble:     { borderRadius: 18, paddingHorizontal: 14, paddingVertical: 10 },
-  bubbleTxt:  { fontSize: 15, lineHeight: 21 },
-  bubbleTime: { fontSize: 11, paddingHorizontal: 4 },
-  empty:      { textAlign: 'center', marginTop: 40, fontSize: 14 },
+  bubbleTxt:  { fontSize: 15, lineHeight: 21, fontFamily: F.regular },
+  bubbleTime: { fontSize: 11, paddingHorizontal: 4, fontFamily: F.regular },
+  empty:      { textAlign: 'center', marginTop: 40, fontSize: 14, fontFamily: F.regular },
 
   inputBar:        { flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: 16, paddingVertical: 12, borderTopWidth: 1, gap: 10 },
-  input:           { flex: 1, minHeight: 40, maxHeight: 120, borderWidth: 1.5, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 10, fontSize: 15 },
+  input:           { flex: 1, minHeight: 40, maxHeight: 120, borderWidth: 1.5, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 10, fontSize: 15, fontFamily: F.regular },
   sendBtn:         { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
   sendBtnDisabled: { opacity: 0.4 },
-  sendTxt:         { color: '#fff', fontSize: 18, fontWeight: '700' },
+  sendTxt:         { color: '#fff', fontSize: 18, fontWeight: '700', fontFamily: F.bold },
 });

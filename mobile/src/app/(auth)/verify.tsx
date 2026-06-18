@@ -4,6 +4,7 @@ import { Animated, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
 import { authService } from '@/services/auth';
+import { F } from '@/utilities/constants';
 
 const OTP_LENGTH = 6;
 const RESEND_SECONDS = 30;
@@ -279,9 +280,9 @@ const styles = StyleSheet.create({
   heroContent: { alignItems: 'center', paddingHorizontal: 24, gap: 10 },
   emailIconWrap: { width: 68, height: 68, borderRadius: 34, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
   emailIcon: { fontSize: 30 },
-  heroTitle: { fontSize: 22, fontWeight: '800', color: '#fff', textAlign: 'center' },
-  heroSub: { fontSize: 14, color: 'rgba(255,255,255,0.78)', textAlign: 'center', lineHeight: 22 },
-  heroEmail: { fontWeight: '700', color: '#fff' },
+  heroTitle: { fontSize: 22, fontWeight: '800', color: '#fff', textAlign: 'center', fontFamily: F.extrabold },
+  heroSub: { fontSize: 14, color: 'rgba(255,255,255,0.78)', textAlign: 'center', lineHeight: 22, fontFamily: F.regular },
+  heroEmail: { fontWeight: '700', color: '#fff', fontFamily: F.bold },
 
   card: { flex: 1, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, paddingTop: 36, alignItems: 'center' },
 
@@ -294,10 +295,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 22,
     fontWeight: '800',
+    fontFamily: F.extrabold,
   },
 
   errorBanner: { width: '100%', borderWidth: 1, borderRadius: 10, padding: 12, marginBottom: 14 },
-  errorText: { fontSize: 13, fontWeight: '600', textAlign: 'center' },
+  errorText: { fontSize: 13, fontWeight: '600', textAlign: 'center', fontFamily: F.semibold },
 
   verifyBtn: {
     width: '100%',
@@ -311,7 +313,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   verifyBtnDisabled: { opacity: 0.45 },
-  verifyBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  verifyBtnText: { color: '#fff', fontSize: 16, fontWeight: '700', fontFamily: F.bold },
   loadingRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   spinner: {
     width: 18,
@@ -323,11 +325,11 @@ const styles = StyleSheet.create({
   },
 
   resendRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
-  resendLabel: { fontSize: 14 },
-  resendTimer: { fontSize: 14, fontWeight: '600' },
-  resendLink: { fontSize: 14, fontWeight: '700' },
+  resendLabel: { fontSize: 14, fontFamily: F.regular },
+  resendTimer: { fontSize: 14, fontWeight: '600', fontFamily: F.semibold },
+  resendLink: { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
 
-  hint: { fontSize: 12, textAlign: 'center', opacity: 0.7 },
+  hint: { fontSize: 12, textAlign: 'center', opacity: 0.7, fontFamily: F.regular },
 
   successContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 },
   successContent: { alignItems: 'center', gap: 16 },
@@ -343,7 +345,7 @@ const styles = StyleSheet.create({
     elevation: 8,
     marginBottom: 8,
   },
-  checkMark: { fontSize: 48, color: '#fff', fontWeight: '700', lineHeight: 56 },
-  successTitle: { fontSize: 26, fontWeight: '800' },
-  successSub: { fontSize: 15, textAlign: 'center', lineHeight: 24 },
+  checkMark: { fontSize: 48, color: '#fff', fontWeight: '700', lineHeight: 56, fontFamily: F.bold },
+  successTitle: { fontSize: 26, fontWeight: '800', fontFamily: F.extrabold },
+  successSub: { fontSize: 15, textAlign: 'center', lineHeight: 24, fontFamily: F.regular },
 });

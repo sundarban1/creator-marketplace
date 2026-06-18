@@ -1,15 +1,15 @@
 import { router } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
 import { useDrawer } from '@/context/DrawerContext';
 import { useAppColors } from '@/context/ThemeContext';
-import { COLORS } from '@/utilities/constants';
+import { COLORS, F } from '@/utilities/constants';
 import { campaignService } from '@/services/campaign';
-import { notificationService } from '@/services/notifications';
+import { useNotificationBadge } from '@/context/NotificationContext';
 import type { Campaign } from '@/types';
 
 const CATEGORY_META: Record<string, { emoji: string; cardBg: string }> = {
@@ -30,9 +30,9 @@ function getCategoryMeta(category: string) {
 }
 
 const STATUS_STYLE = {
-  active: { bg: '#EEF9F3', color: COLORS.active,  label: 'Active' },
-  draft:  { bg: '#F4F4F4', color: COLORS.closed,  label: 'Paused' },
-  closed: { bg: '#FEF3C7', color: COLORS.draft,   label: 'Closed' },
+  active: { bg: '#DCFCE7', color: '#16A34A',  label: '🟢 Active' },
+  draft:  { bg: '#F1F5F9', color: '#64748B',  label: '⏸ Paused' },
+  closed: { bg: '#FEF9C3', color: '#CA8A04',  label: '🏁 Closed' },
 };
 
 function getGreeting() {
@@ -48,24 +48,11 @@ export default function BusinessHomeScreen() {
   const C = useAppColors();
   const name = user?.name?.split(' ')[0] ?? 'there';
 
+  const { badgeCount: notifBadge } = useNotificationBadge();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [fetchError, setFetchError] = useState('');
-  const [notifBadge, setNotifBadge] = useState(0);
-  const notifPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  useEffect(() => {
-    notificationService.getBadge().then((r) => setNotifBadge(r.count)).catch(() => {});
-    notifPollRef.current = setInterval(() => {
-      notificationService.getBadge().then((r) => setNotifBadge(r.count)).catch(() => {});
-    }, 30000);
-    return () => { if (notifPollRef.current) clearInterval(notifPollRef.current); };
-  }, []);
-
-  useFocusEffect(useCallback(() => {
-    notificationService.getBadge().then((r) => setNotifBadge(r.count)).catch(() => {});
-  }, []));
 
   async function fetchCampaigns(showLoader = true) {
     if (showLoader) setLoading(true);
@@ -113,54 +100,56 @@ export default function BusinessHomeScreen() {
         contentContainerStyle={styles.scroll}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brinjal1} />}>
 
-        {/* ── Header ── */}
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <Pressable style={styles.menuBtn} onPress={openDrawer}>
-              <Ionicons name="menu" size={26} color={C.text} />
-            </Pressable>
-            <View>
-              <Text style={[styles.greeting, { color: C.textSecondary }]}>{getGreeting()}, 👋</Text>
-              <View style={styles.nameRow}>
-                <Text style={[styles.brandName, { color: C.text }]} numberOfLines={1}>{user?.name ?? 'Business'}</Text>
-                <View style={[styles.rolePill, { backgroundColor: C.primaryLight }]}>
-                  <Text style={[styles.rolePillText, { color: C.brinjal1 }]}>Business</Text>
+        {/* ── Gradient header ── */}
+        <LinearGradient colors={['#4F46E5', '#7C3AED', '#9333EA']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.gradientHeader}>
+          <View style={styles.header}>
+            <View style={styles.headerLeft}>
+              <Pressable style={styles.menuBtn} onPress={openDrawer}>
+                <Ionicons name="menu" size={26} color="#fff" />
+              </Pressable>
+              <View>
+                <Text style={[styles.greeting, { color: 'rgba(255,255,255,0.75)', fontFamily: F.medium }]}>नमस्ते 🙏</Text>
+                <View style={styles.nameRow}>
+                  <Text style={[styles.brandName, { color: '#fff' }]} numberOfLines={1}>{user?.name ?? 'Business'}</Text>
+                  <View style={[styles.rolePill, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
+                    <Text style={[styles.rolePillText, { color: '#fff' }]}>Business</Text>
+                  </View>
                 </View>
               </View>
             </View>
+            <View style={styles.headerRight}>
+              <Pressable style={[styles.bellWrap, { backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20, padding: 8 }]} onPress={() => router.push('/(business)/notifications')}>
+                <Ionicons name={notifBadge > 0 ? 'notifications' : 'notifications-outline'} size={22} color="#fff" />
+                {notifBadge > 0 && (
+                  <View style={styles.bellBadge}>
+                    <Text style={styles.bellBadgeText}>{notifBadge > 99 ? '99+' : notifBadge}</Text>
+                  </View>
+                )}
+              </Pressable>
+              <Pressable style={[styles.avatarCircle, { backgroundColor: 'rgba(255,255,255,0.22)', borderWidth: 2, borderColor: 'rgba(255,255,255,0.5)' }]} onPress={() => router.push('/(business)/profile')}>
+                <Text style={[styles.avatarText, { color: '#fff' }]}>
+                  {(user?.name ?? 'B').split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2)}
+                </Text>
+              </Pressable>
+            </View>
           </View>
-          <View style={styles.headerRight}>
-            <Pressable style={styles.bellWrap} onPress={() => router.push('/(business)/notifications')}>
-              <Ionicons name={notifBadge > 0 ? 'notifications' : 'notifications-outline'} size={22} color={C.text} />
-              {notifBadge > 0 && (
-                <View style={styles.bellBadge}>
-                  <Text style={styles.bellBadgeText}>{notifBadge > 99 ? '99+' : notifBadge}</Text>
-                </View>
-              )}
-            </Pressable>
-            <Pressable style={[styles.avatarCircle, { backgroundColor: C.brinjal1 }]} onPress={() => router.push('/(business)/profile')}>
-              <Text style={styles.avatarText}>
-                {(user?.name ?? 'B').split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2)}
-              </Text>
-            </Pressable>
-          </View>
-        </View>
 
-        {/* ── Create Campaign card ── */}
-        <View style={[styles.createCard, { backgroundColor: C.primaryLight }]}>
-          <View style={[styles.createIconWrap, { backgroundColor: C.brinjal1 }]}>
-            <Ionicons name="megaphone" size={22} color="#fff" />
+          {/* ── Create Campaign card ── */}
+          <View style={styles.createCard}>
+            <View style={styles.createIconWrap}>
+              <Ionicons name="megaphone" size={22} color="#F97316" />
+            </View>
+            <View style={styles.createText}>
+              <Text style={[styles.createTitle, { color: '#fff' }]}>Create a Campaign</Text>
+              <Text style={[styles.createSub, { color: 'rgba(255,255,255,0.75)' }]}>Post a promotion or collaboration opportunity.</Text>
+            </View>
+            <Pressable
+              style={styles.createBtn}
+              onPress={() => router.push('/create-campaign')}>
+              <Text style={styles.createBtnText}>+ New</Text>
+            </Pressable>
           </View>
-          <View style={styles.createText}>
-            <Text style={[styles.createTitle, { color: C.text }]}>Create a Campaign</Text>
-            <Text style={[styles.createSub, { color: C.textSecondary }]}>Post a promotion or collaboration opportunity.</Text>
-          </View>
-          <Pressable
-            style={[styles.createBtn, { backgroundColor: C.brinjal1 }]}
-            onPress={() => router.push('/create-campaign')}>
-            <Text style={styles.createBtnText}>+ New</Text>
-          </Pressable>
-        </View>
+        </LinearGradient>
 
         {/* ── Error ── */}
         {fetchError ? (
@@ -197,10 +186,13 @@ export default function BusinessHomeScreen() {
             </View>
 
             {/* ── Find creators banner ── */}
-            <Pressable style={[styles.findBanner, { backgroundColor: C.primaryLight }]} onPress={() => router.push('/(business)/explore-creators')}>
+            <Pressable style={styles.findBanner} onPress={() => router.push('/(business)/explore-creators')}>
               <Text style={styles.findEmoji}>🧑‍🎨</Text>
-              <Text style={[styles.findTitle, { color: C.text }]}>Explore Creators</Text>
-              <Ionicons name="chevron-forward" size={18} color={C.brinjal1} style={{ marginLeft: 'auto' }} />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.findTitle, { color: '#059669' }]}>Explore Creators</Text>
+                <Text style={[styles.findSub, { color: '#059669' }]}>for your next campaign</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#059669" />
             </Pressable>
 
             {/* ── Recent Campaigns ── */}
@@ -228,7 +220,7 @@ export default function BusinessHomeScreen() {
                   return (
                     <Pressable
                       key={c.id}
-                      style={({ pressed }) => [styles.campaignCard, { backgroundColor: C.surface }, pressed && { opacity: 0.9 }]}
+                      style={({ pressed }) => [styles.campaignCard, { backgroundColor: C.surface, borderLeftWidth: 4, borderLeftColor: st.color }, pressed && { opacity: 0.9 }]}
                       onPress={() => router.push({ pathname: '/campaign-detail', params: { campaignId: c.id } })}>
                       <View style={[styles.thumb, { backgroundColor: meta.cardBg }]}>
                         <Text style={styles.thumbEmoji}>{meta.emoji}</Text>
@@ -267,68 +259,70 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { paddingBottom: 40 },
 
+  gradientHeader: { paddingBottom: 28, borderBottomLeftRadius: 28, borderBottomRightRadius: 28, overflow: 'hidden' },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 16 },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
   menuBtn: { padding: 4 },
-  greeting: { fontSize: 12, marginBottom: 2 },
+  greeting: { fontSize: 13, marginBottom: 2, fontFamily: F.regular },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  brandName: { fontSize: 18, fontWeight: '800', maxWidth: 180 },
+  brandName: { fontSize: 19, fontFamily: F.extrabold, maxWidth: 180 },
   rolePill: { flexDirection: 'row', alignItems: 'center', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 3 },
-  rolePillText: { fontSize: 11, fontWeight: '700' },
+  rolePillText: { fontSize: 11, fontFamily: F.bold },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  bellWrap: { padding: 4, position: 'relative' },
-  bellBadge: { position: 'absolute', top: 0, right: 0, backgroundColor: '#EF4444', borderRadius: 8, minWidth: 16, height: 16, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 3 },
-  bellBadgeText: { fontSize: 9, fontWeight: '800', color: '#fff' },
+  bellWrap: { position: 'relative' },
+  bellBadge: { position: 'absolute', top: 2, right: 2, backgroundColor: '#F97316', borderRadius: 8, minWidth: 16, height: 16, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 3 },
+  bellBadgeText: { fontSize: 9, fontWeight: '800', color: '#fff', fontFamily: F.extrabold },
   avatarCircle: { width: 42, height: 42, borderRadius: 21, justifyContent: 'center', alignItems: 'center' },
-  avatarText: { fontSize: 13, fontWeight: '700', color: '#fff' },
+  avatarText: { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
 
-  createCard: { flexDirection: 'row', alignItems: 'center', borderRadius: 16, marginHorizontal: 20, marginBottom: 28, padding: 16, gap: 12 },
-  createIconWrap: { width: 48, height: 48, borderRadius: 14, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  createCard: { flexDirection: 'row', alignItems: 'center', borderRadius: 18, marginHorizontal: 20, padding: 16, gap: 12, backgroundColor: 'rgba(255,255,255,0.15)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)' },
+  createIconWrap: { width: 48, height: 48, borderRadius: 14, justifyContent: 'center', alignItems: 'center', flexShrink: 0, backgroundColor: 'rgba(255,255,255,0.2)' },
   createText: { flex: 1 },
-  createTitle: { fontSize: 14, fontWeight: '700', marginBottom: 3 },
-  createSub: { fontSize: 11, lineHeight: 16 },
-  createBtn: { borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9, flexShrink: 0 },
-  createBtnText: { color: '#fff', fontSize: 12, fontWeight: '700' },
+  createTitle: { fontSize: 14, fontWeight: '700', marginBottom: 3, fontFamily: F.bold },
+  createSub: { fontSize: 11, lineHeight: 16, fontFamily: F.regular },
+  createBtn: { borderRadius: 10, paddingHorizontal: 14, paddingVertical: 9, flexShrink: 0, backgroundColor: '#F97316' },
+  createBtnText: { color: '#fff', fontSize: 12, fontWeight: '700', fontFamily: F.bold },
 
-  errorCard: { backgroundColor: '#FEE2E2', marginHorizontal: 20, marginBottom: 16, borderRadius: 10, padding: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  errorText: { color: '#DC2626', fontSize: 13, flex: 1 },
-  retryText: { fontSize: 13, fontWeight: '700', marginLeft: 12 },
+  errorCard: { backgroundColor: '#FEE2E2', marginHorizontal: 20, marginBottom: 16, borderRadius: 12, padding: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderLeftWidth: 4, borderLeftColor: '#EF4444' },
+  errorText: { color: '#DC2626', fontSize: 13, flex: 1, fontFamily: F.medium },
+  retryText: { fontSize: 13, fontWeight: '700', marginLeft: 12, fontFamily: F.bold },
 
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginBottom: 14 },
-  sectionTitle: { fontSize: 17, fontWeight: '800' },
-  viewAll: { fontSize: 13, fontWeight: '600' },
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginBottom: 14, marginTop: 8 },
+  sectionTitle: { fontSize: 17, fontWeight: '800', fontFamily: F.extrabold },
+  viewAll: { fontSize: 13, fontWeight: '600', fontFamily: F.semibold },
 
   loadingWrap: { paddingVertical: 60, alignItems: 'center', gap: 14 },
-  loadingText: { fontSize: 14 },
+  loadingText: { fontSize: 14, fontFamily: F.regular },
 
-  statsRow: { flexDirection: 'row', borderRadius: 16, marginHorizontal: 20, marginBottom: 24, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 3, overflow: 'hidden' },
-  statItem: { flex: 1, alignItems: 'center', paddingVertical: 16, paddingHorizontal: 4 },
-  statIconBox: { width: 32, height: 32, borderRadius: 9, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
-  statValue: { fontSize: 20, fontWeight: '800', marginBottom: 2 },
-  statLabel: { fontSize: 10, textAlign: 'center', lineHeight: 13 },
+  statsRow: { flexDirection: 'row', borderRadius: 20, marginHorizontal: 20, marginBottom: 20, shadowColor: '#4F46E5', shadowOpacity: 0.12, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 4, overflow: 'hidden' },
+  statItem: { flex: 1, alignItems: 'center', paddingVertical: 18, paddingHorizontal: 4 },
+  statIconBox: { width: 36, height: 36, borderRadius: 11, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
+  statValue: { fontSize: 22, fontWeight: '800', marginBottom: 2, fontFamily: F.extrabold },
+  statLabel: { fontSize: 10, textAlign: 'center', lineHeight: 13, fontFamily: F.medium },
 
-  findBanner: { flexDirection: 'row', alignItems: 'center', borderRadius: 14, marginHorizontal: 20, marginBottom: 24, paddingHorizontal: 16, paddingVertical: 13, gap: 10 },
-  findEmoji: { fontSize: 18 },
-  findTitle: { fontSize: 14, fontWeight: '700' },
+  findBanner: { flexDirection: 'row', alignItems: 'center', borderRadius: 16, marginHorizontal: 20, marginBottom: 20, paddingHorizontal: 16, paddingVertical: 14, gap: 10, backgroundColor: '#F0FDF4', borderWidth: 1, borderColor: '#BBF7D0' },
+  findEmoji: { fontSize: 22 },
+  findTitle: { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
+  findSub:   { fontSize: 11, fontFamily: F.regular, marginTop: 1 },
 
   campaignList: { paddingHorizontal: 20, gap: 12 },
-  campaignCard: { flexDirection: 'row', alignItems: 'center', borderRadius: 16, padding: 12, gap: 12, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 3 },
-  thumb: { width: 72, height: 72, borderRadius: 12, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  campaignCard: { flexDirection: 'row', alignItems: 'center', borderRadius: 18, padding: 14, gap: 12, shadowColor: '#000', shadowOpacity: 0.07, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 4, overflow: 'hidden' },
+  thumb: { width: 72, height: 72, borderRadius: 14, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   thumbEmoji: { fontSize: 28 },
-  campaignBody: { flex: 1, gap: 4 },
+  campaignBody: { flex: 1, gap: 5 },
   campaignTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
-  campaignTitle: { fontSize: 14, fontWeight: '700', flex: 1 },
-  statusBadge: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
-  statusText: { fontSize: 11, fontWeight: '700' },
-  campaignMeta: { fontSize: 12 },
-  campaignStats: { flexDirection: 'row', gap: 8, marginTop: 4 },
+  campaignTitle: { fontSize: 14, fontWeight: '700', flex: 1, fontFamily: F.bold },
+  statusBadge: { borderRadius: 10, paddingHorizontal: 9, paddingVertical: 4 },
+  statusText: { fontSize: 11, fontWeight: '700', fontFamily: F.bold },
+  campaignMeta: { fontSize: 12, fontFamily: F.regular },
+  campaignStats: { flexDirection: 'row', gap: 8, marginTop: 2 },
   campaignStat: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  campaignStatVal: { fontSize: 11, fontWeight: '700' },
-  campaignStatLabel: { fontSize: 11 },
+  campaignStatVal: { fontSize: 11, fontWeight: '700', fontFamily: F.bold },
+  campaignStatLabel: { fontSize: 11, fontFamily: F.regular },
 
   emptyWrap: { alignItems: 'center', paddingVertical: 48, gap: 10, paddingHorizontal: 32 },
-  emptyTitle: { fontSize: 18, fontWeight: '700' },
-  emptyHint: { fontSize: 13, textAlign: 'center', lineHeight: 20 },
-  emptyBtn: { borderRadius: 12, paddingHorizontal: 24, paddingVertical: 12, marginTop: 8 },
-  emptyBtnText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  emptyTitle: { fontSize: 18, fontWeight: '700', fontFamily: F.bold },
+  emptyHint: { fontSize: 13, textAlign: 'center', lineHeight: 20, fontFamily: F.regular },
+  emptyBtn: { borderRadius: 14, paddingHorizontal: 28, paddingVertical: 13, marginTop: 8 },
+  emptyBtnText: { color: '#fff', fontSize: 14, fontWeight: '700', fontFamily: F.bold },
 });

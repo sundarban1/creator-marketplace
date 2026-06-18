@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { BackButton } from '@/components/BackButton';
 import { useEffect, useState } from 'react';
 import {
@@ -14,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
 import { useToast } from '@/components/Toast';
 import { profileService } from '@/services/profile';
+import { F } from '@/utilities/constants';
 
 const BUSINESS_CATEGORIES = [
   'Food & Beverage', 'Fashion & Apparel', 'Beauty & Cosmetics', 'Health & Fitness',
@@ -87,12 +89,14 @@ export default function EditBusinessProfileScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
-      {/* Top bar */}
-      <View style={[styles.topBar, { backgroundColor: C.background, borderBottomColor: C.border }]}>
-        <BackButton fallback="/(business)/profile" />
-        <Text style={[styles.topTitle, { color: C.text }]}>Edit Business Profile</Text>
-        <View style={{ width: 38 }} />
-      </View>
+      <LinearGradient colors={['#4F46E5', '#7C3AED', '#9333EA']} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientTopBar}>
+        {/* Top bar */}
+        <View style={styles.topBar}>
+          <BackButton fallback="/(business)/profile" />
+          <Text style={[styles.topTitle, { color: '#fff' }]}>Edit Business Profile</Text>
+          <View style={{ width: 38 }} />
+        </View>
+      </LinearGradient>
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -212,21 +216,22 @@ export default function EditBusinessProfileScreen() {
 const styles = StyleSheet.create({
   container:     { flex: 1 },
   center:        { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  topBar:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1 },
-  topTitle:      { fontSize: 16, fontWeight: '700' },
+  gradientTopBar: { overflow: 'hidden', borderBottomLeftRadius: 20, borderBottomRightRadius: 20 },
+  topBar:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
+  topTitle:      { fontSize: 16, fontWeight: '700', fontFamily: F.bold },
   content:       { paddingBottom: 24 },
-  sectionHeader: { fontSize: 11, fontWeight: '700', letterSpacing: 0.8, marginTop: 20, marginBottom: 6, marginHorizontal: 20 },
+  sectionHeader: { fontSize: 11, fontWeight: '700', letterSpacing: 0.8, marginTop: 20, marginBottom: 6, marginHorizontal: 20, fontFamily: F.bold },
   card:          { marginHorizontal: 16, borderRadius: 14, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2, overflow: 'hidden' },
   field:         { padding: 16, gap: 8 },
   divider:       { height: 1 },
-  label:         { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
-  subHint:       { fontSize: 12, lineHeight: 18 },
-  input:         { borderRadius: 10, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14 },
-  textarea:      { borderRadius: 10, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, minHeight: 100 },
-  charCount:     { fontSize: 11, textAlign: 'right' },
+  label:         { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: F.bold },
+  subHint:       { fontSize: 12, lineHeight: 18, fontFamily: F.regular },
+  input:         { borderRadius: 10, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, fontFamily: F.regular },
+  textarea:      { borderRadius: 10, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, minHeight: 100, fontFamily: F.regular },
+  charCount:     { fontSize: 11, textAlign: 'right', fontFamily: F.regular },
   chipGrid:      { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
   chip:          { borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8 },
-  chipText:      { fontSize: 13, fontWeight: '600' },
+  chipText:      { fontSize: 13, fontWeight: '600', fontFamily: F.semibold },
   saveBtn:       { marginHorizontal: 16, marginTop: 20, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
-  saveBtnText:   { fontSize: 15, fontWeight: '700', color: '#fff' },
+  saveBtnText:   { fontSize: 15, fontWeight: '700', color: '#fff', fontFamily: F.bold },
 });

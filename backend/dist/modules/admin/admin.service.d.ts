@@ -87,6 +87,7 @@ export declare class AdminService {
                 campaigns: number;
             };
         } & {
+            description: string | null;
             id: string;
             createdAt: Date;
             updatedAt: Date;
@@ -94,7 +95,6 @@ export declare class AdminService {
             categories: string[];
             isVerified: boolean;
             businessName: string;
-            description: string | null;
             logoUrl: string | null;
             website: string | null;
             panNo: string | null;
@@ -115,11 +115,11 @@ export declare class AdminService {
             };
         } & {
             status: import(".prisma/client").$Enums.CampaignStatus;
+            description: string;
             id: string;
             createdAt: Date;
             updatedAt: Date;
             location: string | null;
-            description: string;
             platform: string;
             businessId: string;
             title: string;

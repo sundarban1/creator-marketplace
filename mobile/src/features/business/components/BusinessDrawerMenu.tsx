@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Animated, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
+import { F } from '@/utilities/constants';
 
 const DRAWER_W = 280;
 
@@ -146,17 +147,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center', alignItems: 'center',
     borderWidth: 2, borderColor: 'rgba(255,255,255,0.5)',
   },
-  avatarInitial: { fontSize: 18, fontWeight: '800', color: '#fff' },
-  userName: { fontSize: 15, fontWeight: '700', color: '#fff', marginBottom: 4 },
+  avatarInitial: { fontSize: 18, fontWeight: '800', color: '#fff', fontFamily: F.extrabold },
+  userName: { fontSize: 15, fontWeight: '700', color: '#fff', marginBottom: 4, fontFamily: F.bold },
   rolePill: { alignSelf: 'flex-start', backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 2 },
-  rolePillText: { fontSize: 11, fontWeight: '600', color: 'rgba(255,255,255,0.9)' },
+  rolePillText: { fontSize: 11, fontWeight: '600', color: 'rgba(255,255,255,0.9)', fontFamily: F.semibold },
   scroll: { flex: 1 },
   groupSeparator: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 4 },
-  groupLabel: { fontSize: 10, fontWeight: '800', letterSpacing: 1 },
+  groupLabel: { fontSize: 10, fontWeight: '800', letterSpacing: 1, fontFamily: F.extrabold },
   navGroup: { marginHorizontal: 12, marginVertical: 2, borderRadius: 12, borderWidth: 1, overflow: 'hidden' },
   navItem: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 13 },
   navIconWrap: { width: 32, height: 32, borderRadius: 9, justifyContent: 'center', alignItems: 'center' },
-  navLabel: { flex: 1, fontSize: 14, fontWeight: '600' },
+  navLabel: { flex: 1, fontSize: 14, fontWeight: '600', fontFamily: F.semibold },
   logout: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingTop: 16, borderTopWidth: 1 },
-  logoutText: { fontSize: 15, fontWeight: '700' },
+  logoutText: { fontSize: 15, fontWeight: '700', fontFamily: F.bold },
 });

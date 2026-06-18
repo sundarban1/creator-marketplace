@@ -10,9 +10,9 @@ export declare const updateBusinessProfileSchema: z.ZodObject<{
     hideContactDetails: z.ZodOptional<z.ZodBoolean>;
     allowDirectMessages: z.ZodOptional<z.ZodBoolean>;
 }, "strip", z.ZodTypeAny, {
+    description?: string | undefined;
     categories?: string[] | undefined;
     businessName?: string | undefined;
-    description?: string | undefined;
     logoUrl?: string | null | undefined;
     website?: string | null | undefined;
     panNo?: string | null | undefined;
@@ -20,9 +20,9 @@ export declare const updateBusinessProfileSchema: z.ZodObject<{
     hideContactDetails?: boolean | undefined;
     allowDirectMessages?: boolean | undefined;
 }, {
+    description?: string | undefined;
     categories?: string[] | undefined;
     businessName?: string | undefined;
-    description?: string | undefined;
     logoUrl?: string | null | undefined;
     website?: string | null | undefined;
     panNo?: string | null | undefined;

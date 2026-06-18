@@ -9,7 +9,8 @@ router.use(authenticate);
 
 router.get('/',              ctrl.list.bind(ctrl));
 router.get('/badge',         ctrl.badge.bind(ctrl));
-router.patch('/read-all',    ctrl.markAllRead.bind(ctrl));
-router.patch('/:id/read',    ctrl.markRead.bind(ctrl));
+router.patch('/read-all',          ctrl.markAllRead.bind(ctrl));
+router.patch('/read-by-ref/:refId', ctrl.markReadByRef.bind(ctrl));
+router.patch('/:id/read',          ctrl.markRead.bind(ctrl));
 
 export default router;

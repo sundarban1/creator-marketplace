@@ -1,4 +1,5 @@
 import { NotificationRepository } from './notification.repository';
+import { emitToUser } from '../../socket';
 
 const repo = new NotificationRepository();
 
@@ -15,6 +16,10 @@ export const notificationService = {
     await repo.markAllRead(userId);
   },
 
+  async markReadByRef(userId: string, refId: string) {
+    await repo.markReadByRef(userId, refId);
+  },
+
   async getBadge(userId: string) {
     const count = await repo.getUnreadCount(userId);
     return { count };
@@ -28,7 +33,9 @@ export const notificationService = {
     refId?: string;
     refType?: string;
   }) {
-    return repo.create(data);
+    const notification = await repo.create(data);
+    emitToUser(data.userId, 'notification:new', notification);
+    return notification;
   },
 
   async createMany(
@@ -42,6 +49,13 @@ export const notificationService = {
     }>,
   ) {
     if (data.length === 0) return;
-    return repo.createMany(data);
+    const result = await repo.createMany(data);
+    // Emit to each unique user
+    const byUser = new Map<string, typeof data[0]>();
+    for (const d of data) byUser.set(d.userId, d);
+    for (const userId of byUser.keys()) {
+      emitToUser(userId, 'notification:new', { userId });
+    }
+    return result;
   },
 };

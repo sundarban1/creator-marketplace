@@ -1,5 +1,6 @@
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { BackButton } from '@/components/BackButton';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -22,6 +23,7 @@ import { LocationSearchPicker, type LocationFilter } from '@/features/creator/co
 import { businessService, type BusinessListItem } from '@/services/business';
 import { useFavoriteBusinesses } from '@/hooks/useFavoriteBusinesses';
 import { useToast } from '@/components/Toast';
+import { F } from '@/utilities/constants';
 
 type DisplayBusiness = BusinessListItem & { isFavorited: boolean };
 
@@ -149,19 +151,19 @@ const fm = StyleSheet.create({
   sheet:           { position: 'absolute', left: 0, right: 0, bottom: 0, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '80%', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 20, shadowOffset: { width: 0, height: -4 }, elevation: 20 },
   handle:          { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginTop: 12, marginBottom: 4 },
   header:          { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1 },
-  title:           { fontSize: 17, fontWeight: '800' },
-  reset:           { fontSize: 14, fontWeight: '600' },
+  title:           { fontSize: 17, fontWeight: '800', fontFamily: F.extrabold },
+  reset:           { fontSize: 14, fontWeight: '600', fontFamily: F.semibold },
   body:            { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16, gap: 20 },
-  section:         { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: -4 },
+  section:         { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: -4, fontFamily: F.bold },
   sectionRow:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: -4 },
-  sectionHint:     { fontSize: 11, fontWeight: '600' },
+  sectionHint:     { fontSize: 11, fontWeight: '600', fontFamily: F.semibold },
   chipGrid:        { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   filterChip:      { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1.5, borderRadius: 22, paddingHorizontal: 14, paddingVertical: 9 },
   filterChipEmoji: { fontSize: 14 },
-  filterChipText:  { fontSize: 13 },
+  filterChipText:  { fontSize: 13, fontFamily: F.medium },
   footer:          { padding: 20, borderTopWidth: 1 },
   applyBtn:        { borderRadius: 14, height: 52, justifyContent: 'center', alignItems: 'center', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
-  applyTxt:        { color: '#fff', fontSize: 16, fontWeight: '700' },
+  applyTxt:        { color: '#fff', fontSize: 16, fontWeight: '700', fontFamily: F.bold },
 });
 
 // ─── Business Avatar ──────────────────────────────────────────────────────────
@@ -376,19 +378,20 @@ export default function ExploreBusinessesScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
-
-      {/* ── Header ── */}
-      <View style={[styles.header, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
-        <BackButton fallback="/(creator)/" />
-        <View style={styles.headerCenter}>
-          <Text style={[styles.heading, { color: C.text }]}>Explore Brands</Text>
-          {!loading && businesses.length > 0 && (
-            <View style={[styles.countBadge, { backgroundColor: 'rgba(79,70,229,0.15)' }]}>
-              <Text style={[styles.countTxt, { color: C.brinjal1 }]}>{businesses.length} brands</Text>
-            </View>
-          )}
+      <LinearGradient colors={['#F97316', '#EF4444', '#EC4899']} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientHeader}>
+        {/* ── Header ── */}
+        <View style={styles.header}>
+          <BackButton fallback="/(creator)/" />
+          <View style={styles.headerCenter}>
+            <Text style={[styles.heading, { color: '#fff' }]}>Explore Brands</Text>
+            {!loading && businesses.length > 0 && (
+              <View style={[styles.countBadge, { backgroundColor: 'rgba(255,255,255,0.25)' }]}>
+                <Text style={[styles.countTxt, { color: '#fff' }]}>{businesses.length} brands</Text>
+              </View>
+            )}
+          </View>
         </View>
-      </View>
+      </LinearGradient>
 
       {/* ── Search + filter ── */}
       <View style={styles.searchRow}>
@@ -504,29 +507,30 @@ export default function ExploreBusinessesScreen() {
 
 const styles = StyleSheet.create({
   container:      { flex: 1 },
+  gradientHeader: { paddingBottom: 4, borderBottomLeftRadius: 24, borderBottomRightRadius: 24, overflow: 'hidden' },
 
   // Header
-  header:         { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 10, paddingBottom: 14, gap: 12, borderBottomWidth: StyleSheet.hairlineWidth },
+  header:         { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 10, paddingBottom: 14, gap: 12 },
   headerCenter:   { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
-  heading:        { fontSize: 22, fontWeight: '800', letterSpacing: -0.4 },
+  heading:        { fontSize: 22, fontWeight: '800', letterSpacing: -0.4, fontFamily: F.extrabold },
   countBadge:     { borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
-  countTxt:       { fontSize: 12, fontWeight: '700' },
+  countTxt:       { fontSize: 12, fontWeight: '700', fontFamily: F.bold },
 
   // Search row
   searchRow:      { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 12 },
   searchBox:      { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 9, borderRadius: 16, borderWidth: 1.5, paddingHorizontal: 14, height: 50 },
-  searchInput:    { flex: 1, fontSize: 15 },
+  searchInput:    { flex: 1, fontSize: 15, fontFamily: F.regular },
   filterBtn:      { width: 50, height: 50, borderRadius: 16, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center' },
   filterDot:      { position: 'absolute', top: 8, right: 8, width: 8, height: 8, borderRadius: 4, backgroundColor: '#EF4444' },
 
   // Active filter pills
   activePills:    { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', paddingHorizontal: 16, paddingBottom: 8, gap: 8 },
   activePill:     { flexDirection: 'row', borderWidth: 1.5, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5 },
-  activePillText: { fontSize: 12, fontWeight: '600' },
-  clearAllText:   { fontSize: 12, fontWeight: '700' },
+  activePillText: { fontSize: 12, fontWeight: '600', fontFamily: F.semibold },
+  clearAllText:   { fontSize: 12, fontWeight: '700', fontFamily: F.bold },
 
   center:         { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
-  loadingText:    { fontSize: 14 },
+  loadingText:    { fontSize: 14, fontFamily: F.regular },
   list:           { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 48, gap: 12 },
   listEmpty:      { flexGrow: 1 },
 
@@ -537,19 +541,19 @@ const styles = StyleSheet.create({
   avatarRing:     { borderRadius: 30, borderWidth: 2, padding: 2 },
   cardInfo:       { flex: 1, gap: 5, paddingTop: 2 },
   nameRow:        { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  bizName:        { fontSize: 16, fontWeight: '800', flexShrink: 1, letterSpacing: -0.3 },
-  desc:           { fontSize: 13, lineHeight: 19 },
+  bizName:        { fontSize: 16, fontWeight: '800', flexShrink: 1, letterSpacing: -0.3, fontFamily: F.extrabold },
+  desc:           { fontSize: 13, lineHeight: 19, fontFamily: F.regular },
 
   chips:          { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   chip:           { borderRadius: 8, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 4 },
-  chipTxt:        { fontSize: 11, fontWeight: '700' },
+  chipTxt:        { fontSize: 11, fontWeight: '700', fontFamily: F.bold },
 
   // Card footer inside cardBody
   cardFooter:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 10, borderTopWidth: StyleSheet.hairlineWidth },
   campaignBadge:  { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 4 },
-  campaignBadgeTxt: { fontSize: 12, fontWeight: '700' },
+  campaignBadgeTxt: { fontSize: 12, fontWeight: '700', fontFamily: F.bold },
   viewHint:       { flexDirection: 'row', alignItems: 'center', gap: 2 },
-  viewHintTxt:    { fontSize: 12, fontWeight: '600' },
+  viewHintTxt:    { fontSize: 12, fontWeight: '600', fontFamily: F.semibold },
 
   // Heart button — absolutely positioned, sibling of cardBody
   heartBtn:       { position: 'absolute', top: 14, right: 14 },

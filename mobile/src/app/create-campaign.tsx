@@ -1,5 +1,6 @@
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useRef, useState } from 'react';
 import {
   Alert,
@@ -17,6 +18,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
 import { campaignService } from '@/services/campaign';
+import { F } from '@/utilities/constants';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -109,8 +111,8 @@ function ChipGroup({
 const cg = StyleSheet.create({
   wrap:     { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip:     { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 20, borderWidth: 1.5 },
-  chipText: { fontSize: 13 },
-  error:    { fontSize: 12, color: ERROR_RED },
+  chipText: { fontSize: 13, fontFamily: F.medium },
+  error:    { fontSize: 12, color: ERROR_RED, fontFamily: F.regular },
 });
 
 // ─── Calendar Grid ────────────────────────────────────────────────────────────
@@ -203,13 +205,13 @@ const cal = StyleSheet.create({
   monthNav:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   navBtn:    { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
   navTxt:    { fontSize: 28, lineHeight: 32 },
-  monthTitle:{ fontSize: 15, fontWeight: '700' },
+  monthTitle:{ fontSize: 15, fontWeight: '700', fontFamily: F.bold },
   dayRow:    { flexDirection: 'row' },
-  dayHdr:    { flex: 1, textAlign: 'center', fontSize: 11, fontWeight: '600' },
+  dayHdr:    { flex: 1, textAlign: 'center', fontSize: 11, fontWeight: '600', fontFamily: F.semibold },
   grid:      { flexDirection: 'row', flexWrap: 'wrap' },
   cell:      { width: '14.285%', aspectRatio: 1, justifyContent: 'center', alignItems: 'center' },
   dayCircle: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
-  dayNum:    { fontSize: 13, fontWeight: '500' },
+  dayNum:    { fontSize: 13, fontWeight: '500', fontFamily: F.medium },
 });
 
 // ─── Deadline Picker ──────────────────────────────────────────────────────────
@@ -285,20 +287,20 @@ function DeadlinePicker({ value, onChange, error, colors }: {
 
 const ddp = StyleSheet.create({
   trigger:      { flexDirection: 'row', alignItems: 'center', borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14, height: 48, gap: 8 },
-  triggerText:  { flex: 1, fontSize: 15 },
-  clearIcon:    { fontSize: 14, fontWeight: '600' },
+  triggerText:  { flex: 1, fontSize: 15, fontFamily: F.regular },
+  clearIcon:    { fontSize: 14, fontWeight: '600', fontFamily: F.semibold },
   calIcon:      { fontSize: 16 },
-  error:        { fontSize: 12, color: ERROR_RED },
+  error:        { fontSize: 12, color: ERROR_RED, fontFamily: F.regular },
 
   modalWrap:    { flex: 1, justifyContent: 'flex-end' },
   scrim:        { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.45)' },
   sheet:        { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 40, gap: 16 },
   sheetHandle:  { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginBottom: 4 },
   sheetHeader:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  sheetTitle:   { fontSize: 16, fontWeight: '800' },
-  doneBtn:      { fontSize: 15, fontWeight: '700' },
+  sheetTitle:   { fontSize: 16, fontWeight: '800', fontFamily: F.extrabold },
+  doneBtn:      { fontSize: 15, fontWeight: '700', fontFamily: F.bold },
   selectedBadge:{ borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 },
-  selectedText: { fontSize: 13, fontWeight: '700' },
+  selectedText: { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
 });
 
 // ─── Google Places Input ──────────────────────────────────────────────────────
@@ -365,12 +367,12 @@ function PlacesInput({
 
 const pl = StyleSheet.create({
   wrap:     { zIndex: 99 },
-  input:    { borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14, height: 48, fontSize: 15 },
-  errorTxt: { fontSize: 12, color: ERROR_RED, marginTop: 4 },
+  input:    { borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14, height: 48, fontSize: 15, fontFamily: F.regular },
+  errorTxt: { fontSize: 12, color: ERROR_RED, marginTop: 4, fontFamily: F.regular },
   dropdown: { borderRadius: 12, borderWidth: 1.5, marginTop: 6, overflow: 'hidden', elevation: 10, zIndex: 100 },
   item:     { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, gap: 10 },
   pin:      { fontSize: 14 },
-  itemText: { fontSize: 13, flex: 1 },
+  itemText: { fontSize: 13, flex: 1, fontFamily: F.regular },
 });
 
 // ─── Field Label ──────────────────────────────────────────────────────────────
@@ -387,8 +389,8 @@ function FieldLabel({ label, hint, color, hintColor }: {
 }
 const fl = StyleSheet.create({
   row:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  label: { fontSize: 13, fontWeight: '600' },
-  hint:  { fontSize: 11, fontWeight: '500' },
+  label: { fontSize: 13, fontWeight: '600', fontFamily: F.semibold },
+  hint:  { fontSize: 11, fontWeight: '500', fontFamily: F.medium },
 });
 
 // ─── Stepper ──────────────────────────────────────────────────────────────────
@@ -426,10 +428,10 @@ function Stepper({ value, onChange, min = 1, max = 50, colors }: {
 const st = StyleSheet.create({
   wrap:   { flexDirection: 'row', alignItems: 'center', borderRadius: 14, borderWidth: 1.5, overflow: 'hidden' },
   btn:    { width: 52, height: 52, justifyContent: 'center', alignItems: 'center' },
-  btnTxt: { fontSize: 24, fontWeight: '300', lineHeight: 28 },
+  btnTxt: { fontSize: 24, fontWeight: '300', lineHeight: 28, fontFamily: F.regular },
   center: { flex: 1, alignItems: 'center' },
-  value:  { fontSize: 24, fontWeight: '800' },
-  unit:   { fontSize: 11, fontWeight: '500', marginTop: 1 },
+  value:  { fontSize: 24, fontWeight: '800', fontFamily: F.extrabold },
+  unit:   { fontSize: 11, fontWeight: '500', marginTop: 1, fontFamily: F.medium },
 });
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
@@ -576,18 +578,18 @@ export default function CreateCampaignScreen() {
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
 
       {/* Header */}
-      <View style={[s.header, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
-        <Pressable onPress={handleBack} style={[s.backBtn, { backgroundColor: C.primaryLight }]}>
-          <Ionicons name={step > 1 ? 'chevron-back' : 'close'} size={22} color={C.brinjal1} />
+      <LinearGradient colors={['#4F46E5', '#7C3AED', '#9333EA']} start={{x:0,y:0}} end={{x:1,y:1}} style={s.gradientHeader}>
+        <Pressable onPress={handleBack} style={[s.backBtn, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
+          <Ionicons name={step > 1 ? 'chevron-back' : 'close'} size={22} color="#fff" />
         </Pressable>
         <View style={s.headerCenter}>
-          <Text style={[s.headerTitle, { color: C.text }]}>Create Campaign</Text>
-          <Text style={[s.headerSub, { color: C.textSecondary }]}>{STEP_LABELS[step - 1]}</Text>
+          <Text style={[s.headerTitle, { color: '#fff' }]}>Create Campaign</Text>
+          <Text style={[s.headerSub, { color: 'rgba(255,255,255,0.75)' }]}>{STEP_LABELS[step - 1]}</Text>
         </View>
-        <View style={[s.stepPill, { backgroundColor: C.primaryLight }]}>
-          <Text style={[s.stepPillText, { color: C.brinjal1 }]}>{step}/{TOTAL_STEPS}</Text>
+        <View style={[s.stepPill, { backgroundColor: 'rgba(255,255,255,0.25)' }]}>
+          <Text style={[s.stepPillText, { color: '#fff' }]}>{step}/{TOTAL_STEPS}</Text>
         </View>
-      </View>
+      </LinearGradient>
 
       {/* Progress bar */}
       <View style={[s.progressTrack, { backgroundColor: C.border }]}>
@@ -904,13 +906,13 @@ const s = StyleSheet.create({
   container: { flex: 1 },
   flex:      { flex: 1 },
 
-  header:       { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1 },
+  gradientHeader: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14 },
   backBtn:      { width: 38, height: 38, borderRadius: 19, justifyContent: 'center', alignItems: 'center' },
   headerCenter: { flex: 1, alignItems: 'center' },
-  headerTitle:  { fontSize: 16, fontWeight: '800' },
-  headerSub:    { fontSize: 11, marginTop: 1 },
+  headerTitle:  { fontSize: 16, fontWeight: '800', fontFamily: F.extrabold },
+  headerSub:    { fontSize: 11, marginTop: 1, fontFamily: F.regular },
   stepPill:     { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
-  stepPillText: { fontSize: 12, fontWeight: '700' },
+  stepPillText: { fontSize: 12, fontWeight: '700', fontFamily: F.bold },
 
   progressTrack: { height: 3 },
   progressFill:  { height: 3 },
@@ -922,50 +924,50 @@ const s = StyleSheet.create({
   stepContent: { gap: 16 },
 
   stepCard:  { borderRadius: 16, padding: 18, gap: 14, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
-  cardTitle: { fontSize: 15, fontWeight: '800' },
-  cardSub:   { fontSize: 12, lineHeight: 18, marginTop: -6 },
+  cardTitle: { fontSize: 15, fontWeight: '800', fontFamily: F.extrabold },
+  cardSub:   { fontSize: 12, lineHeight: 18, marginTop: -6, fontFamily: F.regular },
 
   field:     { gap: 8 },
-  input:     { borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14, height: 48, fontSize: 15 },
-  textarea:  { borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, minHeight: 90, textAlignVertical: 'top' },
-  errorText: { fontSize: 12, color: ERROR_RED },
+  input:     { borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14, height: 48, fontSize: 15, fontFamily: F.regular },
+  textarea:  { borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, minHeight: 90, textAlignVertical: 'top', fontFamily: F.regular },
+  errorText: { fontSize: 12, color: ERROR_RED, fontFamily: F.regular },
 
   budgetRow:     { flexDirection: 'row', alignItems: 'flex-start', gap: 0 },
   budgetField:   { flex: 1, gap: 8 },
   budgetDivider: { width: 1, height: 48, marginHorizontal: 12, marginTop: 26 },
   currencyInput: { flexDirection: 'row', alignItems: 'center', borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 12, height: 48, gap: 4 },
-  currencySymbol:{ fontSize: 16, fontWeight: '600' },
-  currencyText:  { flex: 1, fontSize: 15 },
+  currencySymbol:{ fontSize: 16, fontWeight: '600', fontFamily: F.semibold },
+  currencyText:  { flex: 1, fontSize: 15, fontFamily: F.regular },
   budgetPreview: { borderRadius: 10, padding: 12, gap: 4 },
-  budgetPreviewText: { fontSize: 13, fontWeight: '700' },
-  budgetPreviewSub:  { fontSize: 11, fontWeight: '500' },
+  budgetPreviewText: { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
+  budgetPreviewSub:  { fontSize: 11, fontWeight: '500', fontFamily: F.medium },
 
   featuredToggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderRadius: 16, padding: 16, borderWidth: 1.5 },
   featuredLeft:   { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
   featuredEmoji:  { fontSize: 24 },
   featuredInfo:   { flex: 1, gap: 3 },
-  featuredLabel:  { fontSize: 14, fontWeight: '700' },
-  featuredSub:    { fontSize: 12, lineHeight: 17 },
+  featuredLabel:  { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
+  featuredSub:    { fontSize: 12, lineHeight: 17, fontFamily: F.regular },
   toggle:         { width: 44, height: 26, borderRadius: 13, position: 'relative' },
   toggleThumb:    { position: 'absolute', top: 3, width: 20, height: 20, borderRadius: 10, backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 3, shadowOffset: { width: 0, height: 1 }, elevation: 3 },
 
   reviewHeader:      { flexDirection: 'row', alignItems: 'center', gap: 14, borderRadius: 16, padding: 16 },
   reviewHeaderEmoji: { fontSize: 32 },
   reviewHeaderText:  { flex: 1, gap: 3 },
-  reviewHeaderTitle: { fontSize: 16, fontWeight: '800' },
-  reviewHeaderSub:   { fontSize: 12, lineHeight: 18 },
+  reviewHeaderTitle: { fontSize: 16, fontWeight: '800', fontFamily: F.extrabold },
+  reviewHeaderSub:   { fontSize: 12, lineHeight: 18, fontFamily: F.regular },
 
   reviewRow:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, gap: 12 },
   reviewLabelWrap: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   reviewEmoji:     { fontSize: 15, width: 22 },
-  reviewLabel:     { fontSize: 13 },
-  reviewValue:     { fontSize: 13, fontWeight: '700', flex: 1, textAlign: 'right' },
-  reviewBlock:     { fontSize: 13, lineHeight: 20 },
+  reviewLabel:     { fontSize: 13, fontFamily: F.regular },
+  reviewValue:     { fontSize: 13, fontWeight: '700', flex: 1, textAlign: 'right', fontFamily: F.bold },
+  reviewBlock:     { fontSize: 13, lineHeight: 20, fontFamily: F.regular },
 
   actions:        { marginTop: 24 },
   primaryBtn:     { borderRadius: 14, height: 54, justifyContent: 'center', alignItems: 'center', shadowColor: '#6C3DE0', shadowOpacity: 0.3, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
-  primaryBtnText: { color: '#fff', fontSize: 16, fontWeight: '800' },
+  primaryBtnText: { color: '#fff', fontSize: 16, fontWeight: '800', fontFamily: F.extrabold },
 
   toast:     { position: 'absolute', bottom: 40, left: 20, right: 20, borderRadius: 14, paddingHorizontal: 18, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 10 },
-  toastText: { color: '#fff', fontSize: 14, fontWeight: '700', flex: 1 },
+  toastText: { color: '#fff', fontSize: 14, fontWeight: '700', flex: 1, fontFamily: F.bold },
 });

@@ -3,21 +3,23 @@ import { useColorScheme } from 'react-native';
 import { COLORS } from '@/utilities/constants';
 
 export const DARK_COLORS: typeof COLORS = {
-  brinjal1: '#4F46E5',
-  brinjal2: '#3730A3',
-  primaryLight: '#1E1B4B',
-  background: '#0D0D13',
-  surface: '#18181F',
-  border: '#2A2A3A',
-  borderDark: '#363648',
-  text: '#F1F5F9',
-  textSecondary: '#9CA3AF',
-  active: '#22C55E',
-  draft: '#F59E0B',
-  closed: '#6B7280',
-  error: '#F87171',
-  badgeFeatured: '#312E81',
-  badgeNew: '#064E3B',
+  brinjal1:    '#6366F1',
+  brinjal2:    '#4338CA',
+  primaryLight:'#1E1B4B',
+  accent:      '#FB923C',
+  accentLight: '#431407',
+  background:  '#0A0A12',
+  surface:     '#14141E',
+  border:      '#252535',
+  borderDark:  '#333348',
+  text:        '#F1F5F9',
+  textSecondary:'#94A3B8',
+  active:      '#34D399',
+  draft:       '#FBBF24',
+  closed:      '#6B7280',
+  error:       '#F87171',
+  badgeFeatured:'#312E81',
+  badgeNew:    '#064E3B',
 };
 
 type AppThemeContextType = {

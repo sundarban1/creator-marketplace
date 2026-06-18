@@ -4,6 +4,7 @@ import { Animated, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleS
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
 import { authService } from '@/services/auth';
+import { F } from '@/utilities/constants';
 
 function getPasswordError(pwd: string): string | undefined {
   if (pwd.length < 8) return 'Password must be at least 8 characters.';
@@ -203,30 +204,30 @@ const styles = StyleSheet.create({
   heroContent: { alignItems: 'center', paddingHorizontal: 24, gap: 10, paddingTop: 52 },
   iconWrap: { width: 68, height: 68, borderRadius: 34, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
   icon: { fontSize: 30 },
-  heroTitle: { fontSize: 22, fontWeight: '800', color: '#fff', textAlign: 'center' },
-  heroSub: { fontSize: 14, color: 'rgba(255,255,255,0.78)', textAlign: 'center', lineHeight: 22 },
+  heroTitle: { fontSize: 22, fontWeight: '800', color: '#fff', textAlign: 'center', fontFamily: F.extrabold },
+  heroSub: { fontSize: 14, color: 'rgba(255,255,255,0.78)', textAlign: 'center', lineHeight: 22, fontFamily: F.regular },
 
   card: { flex: 1, borderTopLeftRadius: 28, borderTopRightRadius: 28 },
   cardContent: { padding: 28, paddingBottom: 40 },
   errorBanner: { borderRadius: 10, borderWidth: 1, padding: 12, marginBottom: 16 },
-  errorBannerText: { fontSize: 13, fontWeight: '600' },
+  errorBannerText: { fontSize: 13, fontWeight: '600', fontFamily: F.semibold },
   form: { gap: 16, marginBottom: 24 },
   fieldGroup: { gap: 6 },
-  label: { fontSize: 13, fontWeight: '700' },
-  fieldError: { fontSize: 12, fontWeight: '500' },
+  label: { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
+  fieldError: { fontSize: 12, fontWeight: '500', fontFamily: F.medium },
   pwdRow: { flexDirection: 'row', alignItems: 'center', borderRadius: 14, borderWidth: 1.5, paddingHorizontal: 14 },
-  pwdInput: { flex: 1, fontSize: 15, paddingVertical: 14 },
+  pwdInput: { flex: 1, fontSize: 15, paddingVertical: 14, fontFamily: F.regular },
   eyeBtn: { padding: 6 },
   eyeIcon: { fontSize: 18 },
   btn: { borderRadius: 14, paddingVertical: 15, alignItems: 'center', shadowOpacity: 0.25, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 5, marginBottom: 24 },
   btnDisabled: { opacity: 0.45, shadowOpacity: 0, elevation: 0 },
-  btnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  btnText: { color: '#fff', fontSize: 16, fontWeight: '700', fontFamily: F.bold },
   loadingRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   spinner: { width: 18, height: 18, borderRadius: 9, borderWidth: 2.5, borderColor: 'rgba(255,255,255,0.35)' },
   rules: { gap: 8 },
   ruleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  ruleIcon: { fontSize: 14, fontWeight: '700', width: 16 },
-  ruleText: { fontSize: 13 },
+  ruleIcon: { fontSize: 14, fontWeight: '700', width: 16, fontFamily: F.bold },
+  ruleText: { fontSize: 13, fontFamily: F.regular },
 
   toast: {
     position: 'absolute',
@@ -243,5 +244,5 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 8,
   },
-  toastText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  toastText: { color: '#fff', fontSize: 14, fontWeight: '700', fontFamily: F.bold },
 });

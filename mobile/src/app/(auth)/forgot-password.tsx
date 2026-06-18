@@ -4,6 +4,7 @@ import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
 import { authService } from '@/services/auth';
+import { F } from '@/utilities/constants';
 
 export default function ForgotPasswordScreen() {
   const C = useAppColors();
@@ -106,19 +107,19 @@ const styles = StyleSheet.create({
   heroContent: { alignItems: 'center', paddingHorizontal: 24, gap: 10 },
   iconWrap: { width: 68, height: 68, borderRadius: 34, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
   icon: { fontSize: 30 },
-  heroTitle: { fontSize: 22, fontWeight: '800', color: '#fff', textAlign: 'center' },
-  heroSub: { fontSize: 14, color: 'rgba(255,255,255,0.78)', textAlign: 'center', lineHeight: 22 },
+  heroTitle: { fontSize: 22, fontWeight: '800', color: '#fff', textAlign: 'center', fontFamily: F.extrabold },
+  heroSub: { fontSize: 14, color: 'rgba(255,255,255,0.78)', textAlign: 'center', lineHeight: 22, fontFamily: F.regular },
   card: { flex: 1, borderTopLeftRadius: 28, borderTopRightRadius: 28 },
   cardContent: { padding: 28, paddingBottom: 40 },
-  label: { fontSize: 14, fontWeight: '700', marginBottom: 8 },
-  input: { borderRadius: 14, borderWidth: 1.5, paddingHorizontal: 16, paddingVertical: 14, fontSize: 16, marginBottom: 6 },
-  errorText: { fontSize: 12, fontWeight: '500', marginBottom: 4 },
-  hint: { fontSize: 12, marginBottom: 24, lineHeight: 18 },
+  label: { fontSize: 14, fontWeight: '700', marginBottom: 8, fontFamily: F.bold },
+  input: { borderRadius: 14, borderWidth: 1.5, paddingHorizontal: 16, paddingVertical: 14, fontSize: 16, marginBottom: 6, fontFamily: F.regular },
+  errorText: { fontSize: 12, fontWeight: '500', marginBottom: 4, fontFamily: F.medium },
+  hint: { fontSize: 12, marginBottom: 24, lineHeight: 18, fontFamily: F.regular },
   btn: { borderRadius: 14, paddingVertical: 15, alignItems: 'center', shadowOpacity: 0.25, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 5, marginBottom: 16 },
   btnDisabled: { opacity: 0.45, shadowOpacity: 0, elevation: 0 },
-  btnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  btnText: { color: '#fff', fontSize: 16, fontWeight: '700', fontFamily: F.bold },
   loadingRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   spinner: { width: 18, height: 18, borderRadius: 9, borderWidth: 2.5, borderColor: 'rgba(255,255,255,0.35)' },
   backToLogin: { alignItems: 'center', paddingVertical: 8 },
-  backToLoginText: { fontSize: 14 },
+  backToLoginText: { fontSize: 14, fontFamily: F.regular },
 });

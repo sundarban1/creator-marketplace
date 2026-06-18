@@ -4,6 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 require("./config/env"); // load and validate env first
+const http_1 = require("http");
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const helmet_1 = __importDefault(require("helmet"));
@@ -13,6 +14,7 @@ const env_1 = require("./config/env");
 const swagger_1 = require("./config/swagger");
 const error_1 = require("./middleware/error");
 const prisma_1 = __importDefault(require("./prisma"));
+const socket_1 = require("./socket");
 // Route imports
 const auth_routes_1 = __importDefault(require("./modules/auth/auth.routes"));
 const creator_routes_1 = __importDefault(require("./modules/creator/creator.routes"));
@@ -130,7 +132,9 @@ async function bootstrap() {
     try {
         await prisma_1.default.$connect();
         console.log('✅ Database connected');
-        app.listen(PORT, () => {
+        const httpServer = (0, http_1.createServer)(app);
+        (0, socket_1.initSocket)(httpServer);
+        httpServer.listen(PORT, () => {
             console.log(`🚀 Server running on http://localhost:${PORT}`);
             console.log(`📚 API Docs available at http://localhost:${PORT}/api/docs`);
             console.log(`🌍 Environment: ${env_1.env.NODE_ENV}`);

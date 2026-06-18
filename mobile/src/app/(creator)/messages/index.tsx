@@ -1,11 +1,13 @@
 import { router, useFocusEffect } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { messagingEvents } from '@/lib/messagingEvents';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { chatService } from '@/services/chat';
+import { F } from '@/utilities/constants';
 import type { Conversation } from '@/types';
 
 function Avatar({ name, size = 44, C }: { name: string; size?: number; C: ReturnType<typeof useAppColors> }) {
@@ -144,37 +146,46 @@ export default function CreatorMessagesScreen() {
   useEffect(() => {
     load();
     pollRef.current = setInterval(() => load(true), 15000);
-    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+    // Reload conversations whenever a markSeen fires from the chat screen
+    const unsub = messagingEvents.subscribe(() => void load(true));
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+      unsub();
+    };
   }, []);
 
-  useFocusEffect(() => {
+  // On focus: propagate badge refresh to layout AND reload rows so unreadCount clears
+  useFocusEffect(useCallback(() => {
     messagingEvents.refresh();
-  });
+    void load(true);
+  }, []));
 
   const tabCount = requests.length;
 
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
-      {/* Header */}
-      <View style={s.header}>
-        <Text style={[s.heading, { color: C.text }]}>Messages</Text>
-      </View>
+      <LinearGradient colors={['#0EA5E9', '#6366F1']} start={{x:0,y:0}} end={{x:1,y:1}} style={s.gradientHeader}>
+        {/* Header */}
+        <View style={s.header}>
+          <Text style={[s.heading, { color: '#fff' }]}>Messages</Text>
+        </View>
 
-      {/* Tabs */}
-      <View style={[s.tabs, { borderBottomColor: C.border }]}>
-        {(['requests', 'chats'] as Tab[]).map((t) => (
-          <Pressable key={t} style={[s.tab, tab === t && { borderBottomColor: C.brinjal1, borderBottomWidth: 2 }]} onPress={() => setTab(t)}>
-            <Text style={[s.tabTxt, { color: tab === t ? C.brinjal1 : C.textSecondary, fontWeight: tab === t ? '700' : '500' }]}>
-              {t === 'requests' ? 'Requests' : 'Messages'}
-            </Text>
-            {t === 'requests' && tabCount > 0 && (
-              <View style={[s.tabBadge, { backgroundColor: C.brinjal1 }]}>
-                <Text style={s.tabBadgeTxt}>{tabCount}</Text>
-              </View>
-            )}
-          </Pressable>
-        ))}
-      </View>
+        {/* Tabs */}
+        <View style={[s.tabs, { borderBottomColor: 'rgba(255,255,255,0.3)' }]}>
+          {(['requests', 'chats'] as Tab[]).map((t) => (
+            <Pressable key={t} style={[s.tab, tab === t && { borderBottomColor: '#fff', borderBottomWidth: 2 }]} onPress={() => setTab(t)}>
+              <Text style={[s.tabTxt, { color: tab === t ? '#fff' : 'rgba(255,255,255,0.65)', fontWeight: tab === t ? '700' : '500' }]}>
+                {t === 'requests' ? 'Requests' : 'Messages'}
+              </Text>
+              {t === 'requests' && tabCount > 0 && (
+                <View style={[s.tabBadge, { backgroundColor: '#F97316' }]}>
+                  <Text style={s.tabBadgeTxt}>{tabCount}</Text>
+                </View>
+              )}
+            </Pressable>
+          ))}
+        </View>
+      </LinearGradient>
 
       {/* Content */}
       {tab === 'requests' ? (
@@ -219,48 +230,49 @@ export default function CreatorMessagesScreen() {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1 },
-  header:    { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 6 },
-  heading:   { fontSize: 22, fontWeight: '800' },
+  container:    { flex: 1 },
+  gradientHeader: { paddingBottom: 0, borderBottomLeftRadius: 24, borderBottomRightRadius: 24, overflow: 'hidden' },
+  header:       { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 6 },
+  heading:      { fontSize: 22, fontWeight: '800', fontFamily: F.extrabold },
 
   tabs:      { flexDirection: 'row', borderBottomWidth: 1 },
   tab:       { flex: 1, alignItems: 'center', paddingVertical: 12, flexDirection: 'row', justifyContent: 'center', gap: 6 },
-  tabTxt:    { fontSize: 14 },
+  tabTxt:    { fontSize: 14, fontFamily: F.medium },
   tabBadge:  { borderRadius: 10, minWidth: 18, height: 18, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 5 },
-  tabBadgeTxt: { color: '#fff', fontSize: 10, fontWeight: '800' },
+  tabBadgeTxt: { color: '#fff', fontSize: 10, fontWeight: '800', fontFamily: F.extrabold },
 
   // Requests
   requestList: { padding: 16, gap: 12, paddingBottom: 40 },
   requestCard: { borderRadius: 16, borderWidth: 1, padding: 16, gap: 12 },
   requestTop:  { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
   requestInfo: { flex: 1, gap: 3 },
-  requestName: { fontSize: 15, fontWeight: '700' },
-  requestCampaign: { fontSize: 12, fontWeight: '600' },
-  requestTime: { fontSize: 11 },
+  requestName: { fontSize: 15, fontWeight: '700', fontFamily: F.bold },
+  requestCampaign: { fontSize: 12, fontWeight: '600', fontFamily: F.semibold },
+  requestTime: { fontSize: 11, fontFamily: F.regular },
   requestMsgBox:   { borderRadius: 10, padding: 12 },
-  requestMsg:      { fontSize: 14, lineHeight: 20 },
-  requestMsgEmpty: { fontSize: 13, fontStyle: 'italic' },
+  requestMsg:      { fontSize: 14, lineHeight: 20, fontFamily: F.regular },
+  requestMsgEmpty: { fontSize: 13, fontStyle: 'italic', fontFamily: F.regular },
   requestActions:  { flexDirection: 'row', gap: 10 },
   declineBtn: { flex: 1, borderRadius: 10, borderWidth: 1.5, height: 42, justifyContent: 'center', alignItems: 'center' },
-  declineTxt: { fontSize: 14, fontWeight: '600' },
+  declineTxt: { fontSize: 14, fontWeight: '600', fontFamily: F.semibold },
   acceptBtn:  { flex: 2, borderRadius: 10, height: 42, justifyContent: 'center', alignItems: 'center' },
-  acceptTxt:  { fontSize: 14, fontWeight: '700', color: '#fff' },
+  acceptTxt:  { fontSize: 14, fontWeight: '700', color: '#fff', fontFamily: F.bold },
 
   // Chats
   chatList:    { paddingBottom: 40 },
   chatRow:     { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, gap: 14, borderBottomWidth: 1 },
   chatContent: { flex: 1, gap: 3 },
   chatTop:     { flexDirection: 'row', justifyContent: 'space-between' },
-  chatName:    { fontSize: 15, fontWeight: '600' },
-  chatTime:    { fontSize: 11 },
-  chatCampaign:{ fontSize: 11, fontWeight: '500' },
-  chatLast:    { fontSize: 13 },
+  chatName:    { fontSize: 15, fontWeight: '600', fontFamily: F.semibold },
+  chatTime:    { fontSize: 11, fontFamily: F.regular },
+  chatCampaign:{ fontSize: 11, fontWeight: '500', fontFamily: F.medium },
+  chatLast:    { fontSize: 13, fontFamily: F.regular },
   badge:       { borderRadius: 12, minWidth: 22, height: 22, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 6 },
-  badgeTxt:    { color: '#fff', fontSize: 11, fontWeight: '700' },
+  badgeTxt:    { color: '#fff', fontSize: 11, fontWeight: '700', fontFamily: F.bold },
 
   // Empty
   empty:      { alignItems: 'center', paddingTop: 60, paddingHorizontal: 40, gap: 10 },
   emptyEmoji: { fontSize: 48 },
-  emptyTitle: { fontSize: 16, fontWeight: '700' },
-  emptyHint:  { fontSize: 13, textAlign: 'center', lineHeight: 20 },
+  emptyTitle: { fontSize: 16, fontWeight: '700', fontFamily: F.bold },
+  emptyHint:  { fontSize: 13, textAlign: 'center', lineHeight: 20, fontFamily: F.regular },
 });

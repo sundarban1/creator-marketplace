@@ -17,6 +17,10 @@ export const notificationService = {
     await request('PATCH', '/api/notifications/read-all');
   },
 
+  async markReadByRef(refId: string): Promise<void> {
+    await request('PATCH', `/api/notifications/read-by-ref/${refId}`);
+  },
+
   async getBadge(): Promise<{ count: number }> {
     const res = await request<{ count: number }>('GET', '/api/notifications/badge');
     return res.data;

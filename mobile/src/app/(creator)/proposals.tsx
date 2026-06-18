@@ -1,4 +1,5 @@
 import { router, useFocusEffect } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -6,6 +7,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { campaignService } from '@/services/campaign';
+import { F } from '@/utilities/constants';
 
 type Proposal = {
   id: string;
@@ -108,12 +110,14 @@ export default function ProposalsScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View>
-          <Text style={[styles.heading, { color: C.text }]}>{t('creator.proposals.heading')}</Text>
+      <LinearGradient colors={['#F59E0B', '#F97316', '#EF4444']} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientHeader}>
+        {/* Header */}
+        <View style={styles.header}>
+          <View>
+            <Text style={[styles.heading, { color: '#fff' }]}>{t('creator.proposals.heading')}</Text>
+          </View>
         </View>
-      </View>
+      </LinearGradient>
 
       {/* Stats row */}
       {proposals.length > 0 && (
@@ -168,32 +172,33 @@ export default function ProposalsScreen() {
 
 const styles = StyleSheet.create({
   container:  { flex: 1 },
+  gradientHeader: { paddingBottom: 4, borderBottomLeftRadius: 24, borderBottomRightRadius: 24, overflow: 'hidden' },
   header:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingHorizontal: 20, paddingTop: 14, paddingBottom: 12 },
-  heading:    { fontSize: 22, fontWeight: '800' },
-  subheading: { fontSize: 13, marginTop: 3 },
-  statsRow:   { flexDirection: 'row', paddingHorizontal: 16, gap: 8, marginBottom: 12 },
+  heading:    { fontSize: 22, fontWeight: '800', fontFamily: F.extrabold },
+  subheading: { fontSize: 13, marginTop: 3, fontFamily: F.regular },
+  statsRow:   { flexDirection: 'row', paddingHorizontal: 16, gap: 8, marginTop: 16, marginBottom: 12 },
   statCard:   { flex: 1, borderRadius: 12, padding: 10, alignItems: 'center', gap: 3, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, elevation: 2 },
-  statVal:    { fontSize: 20, fontWeight: '800' },
-  statLabel:  { fontSize: 10, fontWeight: '600', textTransform: 'uppercase' },
-  list:       { paddingHorizontal: 16, paddingBottom: 40, gap: 12 },
+  statVal:    { fontSize: 20, fontWeight: '800', fontFamily: F.extrabold },
+  statLabel:  { fontSize: 10, fontWeight: '600', textTransform: 'uppercase', fontFamily: F.semibold },
+  list:       { paddingHorizontal: 16, paddingBottom: 80, gap: 12 },
   listEmpty:  { flexGrow: 1 },
   center:     { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
-  loadingText:{ fontSize: 14 },
+  loadingText:{ fontSize: 14, fontFamily: F.regular },
   card:       { borderRadius: 16, flexDirection: 'row', overflow: 'hidden', shadowOpacity: 0.06, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
   stripe:     { width: 4 },
   cardBody:   { flex: 1, padding: 14, gap: 10 },
   cardTop:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 },
   brandInfo:  { flex: 1 },
-  brand:      { fontSize: 15, fontWeight: '700', marginBottom: 2 },
-  campaign:   { fontSize: 13 },
+  brand:      { fontSize: 15, fontWeight: '700', marginBottom: 2, fontFamily: F.bold },
+  campaign:   { fontSize: 13, fontFamily: F.regular },
   badge:      { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
   badgeIcon:  { fontSize: 11 },
-  badgeText:  { fontSize: 11, fontWeight: '700' },
+  badgeText:  { fontSize: 11, fontWeight: '700', fontFamily: F.bold },
   divider:    { height: 1 },
   cardMeta:   { flexDirection: 'row', alignItems: 'center' },
   metaItem:   { flex: 1, gap: 2 },
-  metaLabel:  { fontSize: 10, fontWeight: '600', textTransform: 'uppercase' },
-  metaValue:  { fontSize: 13, fontWeight: '700' },
+  metaLabel:  { fontSize: 10, fontWeight: '600', textTransform: 'uppercase', fontFamily: F.semibold },
+  metaValue:  { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
   metaDivider:{ width: 1, height: 32, marginHorizontal: 12 },
   metaArrow:  { paddingLeft: 4 },
   arrow:      { fontSize: 22 },

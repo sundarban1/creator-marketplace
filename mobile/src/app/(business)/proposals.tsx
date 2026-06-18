@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { router } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import {
   ActivityIndicator,
   Alert,
@@ -14,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppColors } from '@/context/ThemeContext';
 import { campaignService } from '@/services/campaign';
+import { F } from '@/utilities/constants';
 
 type Proposal = {
   id: string;
@@ -236,10 +238,12 @@ export default function ProposalsScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={[styles.pageTitle, { color: C.text }]}>Proposals</Text>
-      </View>
+      <LinearGradient colors={['#4F46E5', '#7C3AED', '#9333EA']} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientHeader}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={[styles.pageTitle, { color: '#fff' }]}>Proposals</Text>
+        </View>
+      </LinearGradient>
 
       {/* Stat filter cards */}
       <View style={styles.statsRow}>
@@ -333,29 +337,30 @@ export default function ProposalsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  gradientHeader: { paddingBottom: 4, borderBottomLeftRadius: 24, borderBottomRightRadius: 24, overflow: 'hidden' },
 
   header:    { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8 },
-  pageTitle: { fontSize: 22, fontWeight: '800' },
+  pageTitle: { fontSize: 22, fontWeight: '800', fontFamily: F.extrabold },
 
-  statsRow:  { flexDirection: 'row', paddingHorizontal: 16, gap: 8, marginBottom: 8 },
+  statsRow:  { flexDirection: 'row', paddingHorizontal: 16, gap: 8, marginTop: 16, marginBottom: 8 },
   statCard:  { flex: 1, borderRadius: 12, padding: 10, alignItems: 'center', gap: 2, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, elevation: 2 },
-  statVal:   { fontSize: 20, fontWeight: '800' },
-  statLabel: { fontSize: 10, fontWeight: '600', textTransform: 'uppercase' },
+  statVal:   { fontSize: 20, fontWeight: '800', fontFamily: F.extrabold },
+  statLabel: { fontSize: 10, fontWeight: '600', textTransform: 'uppercase', fontFamily: F.semibold },
 
   list:      { paddingBottom: 40 },
   listEmpty: { flexGrow: 1 },
 
   sectionHeader:     { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 },
   sectionHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
-  sectionTitle:      { fontSize: 15, fontWeight: '700', flex: 1 },
+  sectionTitle:      { fontSize: 15, fontWeight: '700', flex: 1, fontFamily: F.bold },
   platformPill:      { borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 },
-  platformText:      { fontSize: 10, fontWeight: '700' },
+  platformText:      { fontSize: 10, fontWeight: '700', fontFamily: F.bold },
   sectionMeta:       { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  sectionCount:      { fontSize: 12 },
+  sectionCount:      { fontSize: 12, fontFamily: F.regular },
   pendingDot:        { backgroundColor: '#FFF7ED', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 2 },
-  pendingDotText:    { fontSize: 11, fontWeight: '700', color: '#D97706' },
+  pendingDotText:    { fontSize: 11, fontWeight: '700', color: '#D97706', fontFamily: F.bold },
   acceptedDot:       { backgroundColor: '#ECFDF5', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 2 },
-  acceptedDotText:   { fontSize: 11, fontWeight: '700', color: '#16A34A' },
+  acceptedDotText:   { fontSize: 11, fontWeight: '700', color: '#16A34A', fontFamily: F.bold },
   sectionSep:        { height: 8 },
 
   cardWrap: { paddingHorizontal: 16, marginBottom: 8 },
@@ -366,24 +371,24 @@ const styles = StyleSheet.create({
   },
   cardHeader:  { flexDirection: 'row', alignItems: 'center', gap: 10 },
   avatar:      { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
-  avatarText:  { fontSize: 14, fontWeight: '800' },
+  avatarText:  { fontSize: 14, fontWeight: '800', fontFamily: F.extrabold },
   creatorInfo: { flex: 1, gap: 2 },
-  creatorName: { fontSize: 14, fontWeight: '700' },
+  creatorName: { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
   locationRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  locationText:{ fontSize: 11 },
+  locationText:{ fontSize: 11, fontFamily: F.regular },
   statusBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
-  statusText:  { fontSize: 11, fontWeight: '700' },
-  coverLetter: { fontSize: 12, lineHeight: 17, fontStyle: 'italic' },
+  statusText:  { fontSize: 11, fontWeight: '700', fontFamily: F.bold },
+  coverLetter: { fontSize: 12, lineHeight: 17, fontStyle: 'italic', fontFamily: F.regular },
   metaRow:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   rateWrap:    { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  rate:        { fontSize: 13, fontWeight: '700' },
-  time:        { fontSize: 11 },
+  rate:        { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
+  time:        { fontSize: 11, fontFamily: F.regular },
   actions:     { flexDirection: 'row', gap: 10, marginTop: 2 },
   actionBtn:   { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: 10, borderRadius: 10 },
   rejectBtn:   { borderWidth: 1.5 },
-  actionBtnText: { fontSize: 13, fontWeight: '700' },
+  actionBtnText: { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
 
   empty:      { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 10, paddingHorizontal: 32, paddingTop: 60 },
-  emptyTitle: { fontSize: 17, fontWeight: '700', textAlign: 'center' },
-  emptySub:   { fontSize: 13, textAlign: 'center', lineHeight: 20 },
+  emptyTitle: { fontSize: 17, fontWeight: '700', textAlign: 'center', fontFamily: F.bold },
+  emptySub:   { fontSize: 13, textAlign: 'center', lineHeight: 20, fontFamily: F.regular },
 });

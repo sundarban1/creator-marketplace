@@ -15,11 +15,11 @@ export declare class CampaignService {
         };
     } & {
         status: import(".prisma/client").$Enums.CampaignStatus;
+        description: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
         location: string | null;
-        description: string;
         platform: string;
         businessId: string;
         title: string;
@@ -45,11 +45,11 @@ export declare class CampaignService {
             };
         } & {
             status: import(".prisma/client").$Enums.CampaignStatus;
+            description: string;
             id: string;
             createdAt: Date;
             updatedAt: Date;
             location: string | null;
-            description: string;
             platform: string;
             businessId: string;
             title: string;
@@ -74,18 +74,18 @@ export declare class CampaignService {
             applications: number;
         };
         business: {
-            businessName: string;
             description: string | null;
+            businessName: string;
             logoUrl: string | null;
             website: string | null;
         };
     } & {
         status: import(".prisma/client").$Enums.CampaignStatus;
+        description: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
         location: string | null;
-        description: string;
         platform: string;
         businessId: string;
         title: string;
@@ -102,11 +102,11 @@ export declare class CampaignService {
     }>;
     update(id: string, userId: string, input: UpdateCampaignInput): Promise<{
         status: import(".prisma/client").$Enums.CampaignStatus;
+        description: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
         location: string | null;
-        description: string;
         platform: string;
         businessId: string;
         title: string;
@@ -131,11 +131,11 @@ export declare class CampaignService {
             };
         } & {
             status: import(".prisma/client").$Enums.CampaignStatus;
+            description: string;
             id: string;
             createdAt: Date;
             updatedAt: Date;
             location: string | null;
-            description: string;
             platform: string;
             businessId: string;
             title: string;

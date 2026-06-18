@@ -1,11 +1,13 @@
 import { router, useFocusEffect } from 'expo-router';
 import { messagingEvents } from '@/lib/messagingEvents';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useRef, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { chatService } from '@/services/chat';
+import { F } from '@/utilities/constants';
 import type { Conversation } from '@/types';
 
 function Avatar({ name, size = 44, C }: { name: string; size?: number; C: ReturnType<typeof useAppColors> }) {
@@ -101,30 +103,32 @@ export default function BusinessChatListScreen() {
 
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
-      <View style={s.header}>
-        <Text style={[s.heading, { color: C.text }]}>Messages</Text>
-      </View>
+      <LinearGradient colors={['#4F46E5', '#7C3AED', '#9333EA']} start={{x:0,y:0}} end={{x:1,y:1}} style={s.gradientHeader}>
+        <View style={s.header}>
+          <Text style={[s.heading, { color: '#fff' }]}>Messages</Text>
+        </View>
 
-      {/* Search bar */}
-      <View style={[s.searchWrap, { backgroundColor: C.surface, borderColor: C.border }]}>
-        <Text style={[s.searchIcon, { color: C.textSecondary }]}>🔍</Text>
-        <TextInput
-          style={[s.searchInput, { color: C.text }]}
-          value={query}
-          onChangeText={setQuery}
-          placeholder="Search by name…"
-          placeholderTextColor={C.textSecondary}
-          returnKeyType="search"
-          clearButtonMode="while-editing"
-          autoCorrect={false}
-          autoCapitalize="none"
-        />
-        {isSearching && (
-          <Pressable onPress={() => setQuery('')} hitSlop={10}>
-            <Text style={[s.clearBtn, { color: C.textSecondary }]}>✕</Text>
-          </Pressable>
-        )}
-      </View>
+        {/* Search bar */}
+        <View style={[s.searchWrap, { backgroundColor: 'rgba(255,255,255,0.18)', borderColor: 'rgba(255,255,255,0.3)' }]}>
+          <Text style={[s.searchIcon, { color: 'rgba(255,255,255,0.8)' }]}>🔍</Text>
+          <TextInput
+            style={[s.searchInput, { color: '#fff' }]}
+            value={query}
+            onChangeText={setQuery}
+            placeholder="Search by name…"
+            placeholderTextColor="rgba(255,255,255,0.6)"
+            returnKeyType="search"
+            clearButtonMode="while-editing"
+            autoCorrect={false}
+            autoCapitalize="none"
+          />
+          {isSearching && (
+            <Pressable onPress={() => setQuery('')} hitSlop={10}>
+              <Text style={[s.clearBtn, { color: 'rgba(255,255,255,0.8)' }]}>✕</Text>
+            </Pressable>
+          )}
+        </View>
+      </LinearGradient>
 
       <FlatList
         data={loading ? [] : filtered}
@@ -158,28 +162,29 @@ export default function BusinessChatListScreen() {
 
 const s = StyleSheet.create({
   container: { flex: 1 },
+  gradientHeader: { paddingBottom: 16, borderBottomLeftRadius: 24, borderBottomRightRadius: 24, overflow: 'hidden' },
   header:    { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 8 },
-  heading:   { fontSize: 22, fontWeight: '800' },
+  heading:   { fontSize: 22, fontWeight: '800', fontFamily: F.extrabold },
   list:      { paddingBottom: 32 },
 
-  searchWrap:  { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginBottom: 8, borderRadius: 12, borderWidth: 1, paddingHorizontal: 12, height: 44, gap: 8 },
+  searchWrap:  { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginBottom: 0, borderRadius: 12, borderWidth: 1, paddingHorizontal: 12, height: 44, gap: 8 },
   searchIcon:  { fontSize: 15 },
-  searchInput: { flex: 1, fontSize: 15, paddingVertical: 0 },
-  clearBtn:    { fontSize: 14, fontWeight: '600', paddingHorizontal: 2 },
+  searchInput: { flex: 1, fontSize: 15, paddingVertical: 0, fontFamily: F.regular },
+  clearBtn:    { fontSize: 14, fontWeight: '600', paddingHorizontal: 2, fontFamily: F.semibold },
 
   row:     { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, gap: 14, borderBottomWidth: 1 },
   content: { flex: 1, gap: 3 },
   rowTop:  { flexDirection: 'row', justifyContent: 'space-between' },
-  name:    { fontSize: 15, fontWeight: '600' },
-  time:    { fontSize: 11 },
-  campaign:{ fontSize: 11, fontWeight: '500' },
+  name:    { fontSize: 15, fontWeight: '600', fontFamily: F.semibold },
+  time:    { fontSize: 11, fontFamily: F.regular },
+  campaign:{ fontSize: 11, fontWeight: '500', fontFamily: F.medium },
   rowBottom:   { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  lastMsg:     { fontSize: 13 },
+  lastMsg:     { fontSize: 13, fontFamily: F.regular },
   statusPill:  { borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3 },
-  statusTxt:   { fontSize: 11, fontWeight: '700' },
+  statusTxt:   { fontSize: 11, fontWeight: '700', fontFamily: F.bold },
 
   empty:      { alignItems: 'center', paddingTop: 60, paddingHorizontal: 40, gap: 10 },
   emptyEmoji: { fontSize: 48 },
-  emptyTitle: { fontSize: 16, fontWeight: '700' },
-  emptyHint:  { fontSize: 13, textAlign: 'center', lineHeight: 20 },
+  emptyTitle: { fontSize: 16, fontWeight: '700', fontFamily: F.bold },
+  emptyHint:  { fontSize: 13, textAlign: 'center', lineHeight: 20, fontFamily: F.regular },
 });

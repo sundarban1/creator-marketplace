@@ -11,6 +11,8 @@ import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { chatService } from '@/services/chat';
+import { notificationService } from '@/services/notifications';
+import { F } from '@/utilities/constants';
 import type { Message } from '@/types';
 
 function formatTime(ts: string) {
@@ -51,7 +53,16 @@ export default function CreatorChatRoomScreen() {
   function startPolling() {
     pollRef.current = setInterval(async () => {
       const msgs = await chatService.getMessages(id).catch(() => null);
-      if (msgs) setMessages(msgs);
+      if (!msgs) return;
+      setMessages((prev) => {
+        if (msgs.length > prev.length) {
+          chatService.markSeen(id).then(() => {
+              messagingEvents.refresh();
+              notificationService.markReadByRef(id).catch(() => null);
+            }).catch(() => null);
+        }
+        return msgs;
+      });
     }, 4000);
   }
 
@@ -68,7 +79,10 @@ export default function CreatorChatRoomScreen() {
     });
 
     if (convStatus === 'ACCEPTED') {
-      chatService.markSeen(id).then(() => messagingEvents.refresh()).catch(() => null);
+      chatService.markSeen(id).then(() => {
+              messagingEvents.refresh();
+              notificationService.markReadByRef(id).catch(() => null);
+            }).catch(() => null);
       startPolling();
     }
     return () => { if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; } };
@@ -80,7 +94,10 @@ export default function CreatorChatRoomScreen() {
       await chatService.respondToRequest(id, action);
       setStatus(action === 'accept' ? 'ACCEPTED' : 'DECLINED');
       if (action === 'accept') {
-        chatService.markSeen(id).then(() => messagingEvents.refresh()).catch(() => null);
+        chatService.markSeen(id).then(() => {
+              messagingEvents.refresh();
+              notificationService.markReadByRef(id).catch(() => null);
+            }).catch(() => null);
         startPolling();
       } else {
         messagingEvents.refresh();
@@ -197,29 +214,29 @@ const s = StyleSheet.create({
 
   header:     { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, gap: 12 },
   headerInfo: { flex: 1, gap: 2 },
-  headerName: { fontSize: 16, fontWeight: '700' },
-  headerSub:  { fontSize: 12 },
+  headerName: { fontSize: 16, fontWeight: '700', fontFamily: F.bold },
+  headerSub:  { fontSize: 12, fontFamily: F.regular },
 
   requestBar:        { paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, gap: 10 },
-  requestBarTxt:     { fontSize: 13, fontWeight: '500' },
+  requestBarTxt:     { fontSize: 13, fontWeight: '500', fontFamily: F.medium },
   requestBarActions: { flexDirection: 'row', gap: 10 },
   declineBtn: { flex: 1, borderRadius: 10, borderWidth: 1.5, height: 40, justifyContent: 'center', alignItems: 'center' },
-  declineTxt: { fontSize: 13, fontWeight: '600' },
+  declineTxt: { fontSize: 13, fontWeight: '600', fontFamily: F.semibold },
   acceptBtn:  { flex: 2, borderRadius: 10, height: 40, justifyContent: 'center', alignItems: 'center' },
-  acceptTxt:  { fontSize: 13, fontWeight: '700', color: '#fff' },
+  acceptTxt:  { fontSize: 13, fontWeight: '700', color: '#fff', fontFamily: F.bold },
 
   msgList:     { padding: 16, gap: 10, flexGrow: 1 },
   bubbleWrap:  { maxWidth: '75%', gap: 3 },
   bubbleWrapSent:     { alignSelf: 'flex-end',   alignItems: 'flex-end' },
   bubbleWrapReceived: { alignSelf: 'flex-start', alignItems: 'flex-start' },
   bubble:     { borderRadius: 18, paddingHorizontal: 14, paddingVertical: 10 },
-  bubbleTxt:  { fontSize: 15, lineHeight: 21 },
-  bubbleTime: { fontSize: 11, paddingHorizontal: 4 },
-  empty:      { textAlign: 'center', marginTop: 40, fontSize: 14 },
+  bubbleTxt:  { fontSize: 15, lineHeight: 21, fontFamily: F.regular },
+  bubbleTime: { fontSize: 11, paddingHorizontal: 4, fontFamily: F.regular },
+  empty:      { textAlign: 'center', marginTop: 40, fontSize: 14, fontFamily: F.regular },
 
   inputBar:       { flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: 16, paddingVertical: 12, borderTopWidth: 1, gap: 10 },
-  input:          { flex: 1, minHeight: 40, maxHeight: 120, borderWidth: 1.5, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 10, fontSize: 15 },
+  input:          { flex: 1, minHeight: 40, maxHeight: 120, borderWidth: 1.5, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 10, fontSize: 15, fontFamily: F.regular },
   sendBtn:        { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
   sendBtnDisabled:{ opacity: 0.4 },
-  sendTxt:        { color: '#fff', fontSize: 18, fontWeight: '700' },
+  sendTxt:        { color: '#fff', fontSize: 18, fontWeight: '700', fontFamily: F.bold },
 });

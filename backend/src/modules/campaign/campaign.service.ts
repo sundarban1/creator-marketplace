@@ -4,6 +4,7 @@ import { CreatorRepository } from '../creator/creator.repository';
 import { CampaignRepository } from './campaign.repository';
 import { FavoriteRepository } from '../creator/favorite.repository';
 import { notificationService } from '../notifications/notification.service';
+import { emitToRole } from '../../socket';
 import type {
   CreateCampaignInput,
   UpdateCampaignInput,
@@ -35,6 +36,11 @@ export class CampaignService {
       ...input,
       deadline: new Date(input.deadline),
     });
+
+    // Broadcast new active campaign to all connected creators in real time
+    if (campaign.status === 'ACTIVE') {
+      emitToRole('CREATOR', 'campaign:new', campaign);
+    }
 
     // Notify creators who have favorited this business
     this.favoriteRepo.getCreatorUserIdsForBusiness(business.id).then((userIds) => {

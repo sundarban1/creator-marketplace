@@ -1,4 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
 import { BackButton } from '@/components/BackButton';
 import {
@@ -18,6 +19,7 @@ import { useToast } from '@/components/Toast';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { campaignService } from '@/services/campaign';
+import { F } from '@/utilities/constants';
 
 function isValidUrl(v: string) {
   try { new URL(v); return true; } catch { return false; }
@@ -81,11 +83,11 @@ export default function SubmitProposalScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
-      <View style={[styles.header, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
+      <LinearGradient colors={['#F97316', '#EF4444', '#EC4899']} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientHeader}>
         <BackButton fallback="/(creator)/" />
-        <Text style={[styles.headerTitle, { color: C.text }]}>{t('proposal.title')}</Text>
+        <Text style={[styles.headerTitle, { color: '#fff' }]}>{t('proposal.title')}</Text>
         <View style={{ width: 40 }} />
-      </View>
+      </LinearGradient>
 
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
@@ -183,24 +185,24 @@ export default function SubmitProposalScreen() {
 const styles = StyleSheet.create({
   container:       { flex: 1 },
   flex:            { flex: 1 },
-  header:          { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1 },
-  headerTitle:     { fontSize: 16, fontWeight: '700' },
+  gradientHeader:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
+  headerTitle:     { fontSize: 16, fontWeight: '700', fontFamily: F.bold },
   scroll:          { padding: 20, gap: 16, paddingBottom: 48 },
   campaignBadge:   { borderRadius: 14, padding: 16, gap: 4, borderLeftWidth: 4 },
-  badgeLabel:      { fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8 },
-  campaignTitle:   { fontSize: 16, fontWeight: '700' },
-  campaignBrand:   { fontSize: 13 },
+  badgeLabel:      { fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8, fontFamily: F.bold },
+  campaignTitle:   { fontSize: 16, fontWeight: '700', fontFamily: F.bold },
+  campaignBrand:   { fontSize: 13, fontFamily: F.regular },
   tipCard:         { flexDirection: 'row', borderRadius: 12, borderWidth: 1, padding: 12, gap: 10, alignItems: 'flex-start' },
   tipEmoji:        { fontSize: 16, marginTop: 1 },
-  tipText:         { flex: 1, fontSize: 12, lineHeight: 18 },
+  tipText:         { flex: 1, fontSize: 12, lineHeight: 18, fontFamily: F.regular },
   form:            { gap: 18 },
   fieldGroup:      { gap: 6 },
-  fieldLabel:      { fontSize: 13, fontWeight: '600' },
+  fieldLabel:      { fontSize: 13, fontWeight: '600', fontFamily: F.semibold },
   textareaWrap:    { borderWidth: 1.5, borderRadius: 12, overflow: 'hidden' },
-  textarea:        { paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, minHeight: 130 },
+  textarea:        { paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, minHeight: 130, fontFamily: F.regular },
   fieldMeta:       { flexDirection: 'row', justifyContent: 'flex-end' },
-  fieldError:      { fontSize: 12, fontWeight: '500', flex: 1 },
-  charHint:        { fontSize: 11 },
+  fieldError:      { fontSize: 12, fontWeight: '500', flex: 1, fontFamily: F.medium },
+  charHint:        { fontSize: 11, fontFamily: F.regular },
   errorSummary:    { borderWidth: 1, borderRadius: 10, padding: 12 },
-  errorSummaryText:{ fontSize: 13, fontWeight: '500', textAlign: 'center' },
+  errorSummaryText:{ fontSize: 13, fontWeight: '500', textAlign: 'center', fontFamily: F.medium },
 });

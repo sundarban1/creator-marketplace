@@ -4,6 +4,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { CATEGORY_META, DEFAULT_META, cardBg } from '@/features/creator/data/filterOptions';
 import type { Campaign } from '@/types';
+import { F } from '@/utilities/constants';
 
 const CARD_W = 200;
 const CARD_IMG_H = 136;
@@ -70,7 +71,7 @@ const styles = StyleSheet.create({
   featImg: { width: CARD_W, height: CARD_IMG_H, justifyContent: 'center', alignItems: 'center', position: 'relative' },
   featImgIcon: { fontSize: 42, opacity: 0.7 },
   badge: { position: 'absolute', top: 10, left: 10, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
-  badgeText: { fontSize: 9, fontWeight: '800', color: '#fff', letterSpacing: 0.5 },
+  badgeText: { fontSize: 9, fontWeight: '800', color: '#fff', letterSpacing: 0.5, fontFamily: F.extrabold },
   newTag: { position: 'absolute', top: 10, right: 10, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
   brandPill: {
     position: 'absolute', bottom: 10, left: 10,
@@ -80,19 +81,19 @@ const styles = StyleSheet.create({
     maxWidth: CARD_W - 20,
   },
   brandAvatar: { width: 20, height: 20, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
-  brandAvatarText: { fontSize: 9, fontWeight: '800', color: '#fff' },
-  brandPillName: { fontSize: 11, fontWeight: '600', flexShrink: 1 },
+  brandAvatarText: { fontSize: 9, fontWeight: '800', color: '#fff', fontFamily: F.extrabold },
+  brandPillName: { fontSize: 11, fontWeight: '600', flexShrink: 1, fontFamily: F.semibold },
   featBody: { padding: 12, gap: 8 },
-  featTitle: { fontSize: 14, fontWeight: '700', lineHeight: 19 },
+  featTitle: { fontSize: 14, fontWeight: '700', lineHeight: 19, fontFamily: F.bold },
   featPriceRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  featBudget: { fontSize: 14, fontWeight: '700' },
+  featBudget: { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
   platformTag: { borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 },
-  platformTagText: { fontSize: 10, fontWeight: '600' },
+  platformTagText: { fontSize: 10, fontWeight: '600', fontFamily: F.semibold },
   featMetaRow: { gap: 4 },
-  featMeta: { fontSize: 11 },
+  featMeta: { fontSize: 11, fontFamily: F.regular },
   featActions: { flexDirection: 'row', gap: 8, marginTop: 2 },
   viewBtn: { flex: 1, height: 36, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
-  viewBtnText: { color: '#fff', fontWeight: '700', fontSize: 12 },
+  viewBtnText: { color: '#fff', fontWeight: '700', fontSize: 12, fontFamily: F.bold },
   bookmarkBtn: { width: 36, height: 36, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
   bookmarkIcon: { fontSize: 14 },
 });

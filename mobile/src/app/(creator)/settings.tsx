@@ -1,5 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { BackButton } from '@/components/BackButton';
 import { creatorService } from '@/services/creator';
@@ -22,7 +23,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors, useIsDark } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/components/Toast';
-import { COLORS } from '@/utilities/constants';
+import { COLORS, F } from '@/utilities/constants';
 
 type ColorsType = typeof COLORS;
 const ColorCtx = createContext<ColorsType>(COLORS);
@@ -1928,13 +1929,14 @@ export default function CreatorSettingsScreen() {
   return (
     <ColorCtx.Provider value={C}>
       <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
-
-        {/* Top bar */}
-        <View style={[styles.topBar, { backgroundColor: C.background, borderBottomColor: C.border }]}>
-          <BackButton onPress={handleBack} />
-          <Text style={[styles.topTitle, { color: C.text }]}>{topTitle}</Text>
-          <View style={{ width: 36 }} />
-        </View>
+        <LinearGradient colors={['#F97316', '#EF4444', '#EC4899']} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientTopBar}>
+          {/* Top bar */}
+          <View style={styles.topBar}>
+            <BackButton onPress={handleBack} />
+            <Text style={[styles.topTitle, { color: '#fff' }]}>{topTitle}</Text>
+            <View style={{ width: 36 }} />
+          </View>
+        </LinearGradient>
 
         <ScrollView
           style={styles.scroll}
@@ -2045,17 +2047,17 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { flex: 1 },
   scrollContent: { paddingBottom: 24 },
+  gradientTopBar: { overflow: 'hidden', borderBottomLeftRadius: 20, borderBottomRightRadius: 20 },
 
   topBar: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingVertical: 10,
-    borderBottomWidth: 1,
+    paddingHorizontal: 16, paddingVertical: 12,
   },
-  topTitle: { fontSize: 16, fontWeight: '700' },
+  topTitle: { fontSize: 16, fontWeight: '700', fontFamily: F.bold },
 
   sectionHeader: {
     fontSize: 11, fontWeight: '700',
-    letterSpacing: 0.8, marginTop: 20, marginBottom: 6, marginHorizontal: 20,
+    letterSpacing: 0.8, marginTop: 20, marginBottom: 6, marginHorizontal: 20, fontFamily: F.bold,
   },
   card: {
     marginHorizontal: 16, borderRadius: 14,
@@ -2063,31 +2065,31 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 }, elevation: 2, overflow: 'hidden',
   },
   hintCard: { marginHorizontal: 16, borderRadius: 10, padding: 12, marginTop: 8, marginBottom: 4 },
-  hintText: { fontSize: 13, lineHeight: 18 },
-  saveHint: { textAlign: 'center', fontSize: 12, marginTop: 8, marginHorizontal: 16 },
-  subLabel: { fontSize: 11, fontWeight: '700', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 },
+  hintText: { fontSize: 13, lineHeight: 18, fontFamily: F.regular },
+  saveHint: { textAlign: 'center', fontSize: 12, marginTop: 8, marginHorizontal: 16, fontFamily: F.regular },
+  subLabel: { fontSize: 11, fontWeight: '700', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: F.bold },
   subDivider: { height: 1, marginTop: 4 },
 
   row: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 13, gap: 12 },
   rowIcon: { fontSize: 18, width: 24, textAlign: 'center' },
-  rowLabel: { flex: 1, fontSize: 15, fontWeight: '500' },
+  rowLabel: { flex: 1, fontSize: 15, fontWeight: '500', fontFamily: F.medium },
   navRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   navArrow: { fontSize: 18 },
-  navValue: { fontSize: 14 },
+  navValue: { fontSize: 14, fontFamily: F.regular },
 
   chipSection: { paddingHorizontal: 12, paddingTop: 8, paddingBottom: 12 },
   sliderSection: { paddingHorizontal: 16, paddingVertical: 16 },
   chipGroup: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1.5 },
-  chipText: { fontSize: 13 },
+  chipText: { fontSize: 13, fontFamily: F.medium },
 
   accountCard: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, paddingBottom: 12 },
   accountAvatar: { width: 50, height: 50, borderRadius: 25, justifyContent: 'center', alignItems: 'center' },
-  accountAvatarText: { fontSize: 20, fontWeight: '800', color: '#fff' },
-  accountName: { fontSize: 16, fontWeight: '700' },
-  accountEmail: { fontSize: 13, marginTop: 2 },
+  accountAvatarText: { fontSize: 20, fontWeight: '800', color: '#fff', fontFamily: F.extrabold },
+  accountName: { fontSize: 16, fontWeight: '700', fontFamily: F.bold },
+  accountEmail: { fontSize: 13, marginTop: 2, fontFamily: F.regular },
   editBtn: { borderRadius: 8, paddingHorizontal: 14, paddingVertical: 6 },
-  editBtnText: { fontSize: 13, fontWeight: '700' },
+  editBtnText: { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
 
   // Language (improved)
   langCard: {
@@ -2098,29 +2100,29 @@ const styles = StyleSheet.create({
   },
   langFlag: { fontSize: 32 },
   langNameRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 2 },
-  langName: { fontSize: 15, fontWeight: '700' },
-  langNative: { fontSize: 13 },
-  langDesc: { fontSize: 12 },
+  langName: { fontSize: 15, fontWeight: '700', fontFamily: F.bold },
+  langNative: { fontSize: 13, fontFamily: F.regular },
+  langDesc: { fontSize: 12, fontFamily: F.regular },
   activeLangCheck: { width: 24, height: 24, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
-  activeLangCheckText: { color: '#fff', fontSize: 13, fontWeight: '800' },
+  activeLangCheckText: { color: '#fff', fontSize: 13, fontWeight: '800', fontFamily: F.extrabold },
   inactiveLangCircle: { width: 24, height: 24, borderRadius: 12, borderWidth: 2 },
   soonBadge: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
-  badgeText: { fontSize: 11, fontWeight: '700' },
+  badgeText: { fontSize: 11, fontWeight: '700', fontFamily: F.bold },
 
-  versionText: { fontSize: 14, fontWeight: '500' },
+  versionText: { fontSize: 14, fontWeight: '500', fontFamily: F.medium },
 
   socialRow: { alignItems: 'center' },
   socialIconWrap: { width: 42, height: 42, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
   socialEmoji: { fontSize: 20 },
-  socialPlatformName: { fontSize: 14, fontWeight: '700' },
-  socialMeta: { fontSize: 12, marginTop: 1 },
-  socialUrl: { fontSize: 11, marginTop: 1 },
-  socialNotConnected: { fontSize: 12, marginTop: 2 },
+  socialPlatformName: { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
+  socialMeta: { fontSize: 12, marginTop: 1, fontFamily: F.regular },
+  socialUrl: { fontSize: 11, marginTop: 1, fontFamily: F.regular },
+  socialNotConnected: { fontSize: 12, marginTop: 2, fontFamily: F.regular },
   socialActions: { flexDirection: 'row', gap: 6 },
   socialEditBtn: { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 },
-  socialEditBtnText: { fontSize: 12, fontWeight: '700' },
+  socialEditBtnText: { fontSize: 12, fontWeight: '700', fontFamily: F.bold },
   socialDisconnectBtn: { width: 28, height: 28, borderRadius: 8, backgroundColor: '#FEE2E2', justifyContent: 'center', alignItems: 'center' },
-  socialDisconnectText: { fontSize: 12, fontWeight: '700' },
+  socialDisconnectText: { fontSize: 12, fontWeight: '700', fontFamily: F.bold },
 
   // ── Social sheet modal ──────────────────────────────────────────────────────
   sheetBackdrop: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)' },
@@ -2134,13 +2136,13 @@ const styles = StyleSheet.create({
   sheetHeader: { borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 20, paddingTop: 20, paddingBottom: 18 },
   sheetHeaderInner: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   sheetPlatformIcon: { width: 52, height: 52, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' },
-  sheetTitle: { fontSize: 20, fontWeight: '800', color: '#fff' },
-  sheetSubtitle: { fontSize: 12, color: 'rgba(255,255,255,0.75)', marginTop: 3 },
+  sheetTitle: { fontSize: 20, fontWeight: '800', color: '#fff', fontFamily: F.extrabold },
+  sheetSubtitle: { fontSize: 12, color: 'rgba(255,255,255,0.75)', marginTop: 3, fontFamily: F.regular },
   sheetBody: { padding: 20, paddingBottom: 36 },
   sheetSection: { marginBottom: 20 },
-  sheetLabel: { fontSize: 12, fontWeight: '700', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 8 },
-  sheetFieldError: { fontSize: 12, fontWeight: '500', marginTop: 5 },
-  sheetFieldHint: { fontSize: 11, marginTop: 5 },
+  sheetLabel: { fontSize: 12, fontWeight: '700', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 8, fontFamily: F.bold },
+  sheetFieldError: { fontSize: 12, fontWeight: '500', marginTop: 5, fontFamily: F.medium },
+  sheetFieldHint: { fontSize: 11, marginTop: 5, fontFamily: F.regular },
 
   // Platform grid
   platformGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
@@ -2150,104 +2152,104 @@ const styles = StyleSheet.create({
   },
   platformGridItemDisabled: { opacity: 0.5 },
   platformGridEmoji: { fontSize: 24 },
-  platformGridLabel: { fontSize: 11, fontWeight: '700', textAlign: 'center' },
+  platformGridLabel: { fontSize: 11, fontWeight: '700', textAlign: 'center', fontFamily: F.bold },
   platformGridAddedBadge: { position: 'absolute', top: 4, right: 4, width: 16, height: 16, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
-  platformGridAddedText: { fontSize: 9, fontWeight: '800' },
+  platformGridAddedText: { fontSize: 9, fontWeight: '800', fontFamily: F.extrabold },
   platformGridSelectedDot: { position: 'absolute', bottom: 6, width: 6, height: 6, borderRadius: 3 },
 
   // Inputs inside sheet
   sheetInputWrap: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 14, minHeight: 50 },
   sheetInputPrefix: { fontSize: 18, marginRight: 6 },
-  sheetInput: { flex: 1, fontSize: 15, paddingVertical: 12 },
+  sheetInput: { flex: 1, fontSize: 15, paddingVertical: 12, fontFamily: F.regular },
   sheetCountBadge: { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, marginLeft: 8 },
-  sheetCountBadgeText: { fontSize: 13, fontWeight: '800' },
+  sheetCountBadgeText: { fontSize: 13, fontWeight: '800', fontFamily: F.extrabold },
 
   // Sheet action buttons
   sheetActions: { gap: 10, marginTop: 6 },
   sheetSaveBtn: { borderRadius: 14, paddingVertical: 15, alignItems: 'center' },
   sheetSaveBtnRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   sheetSpinner: { width: 16, height: 16, borderRadius: 8, borderWidth: 2, borderColor: 'rgba(255,255,255,0.4)', borderTopColor: '#fff' },
-  sheetSaveBtnText: { color: '#fff', fontSize: 15, fontWeight: '800' },
+  sheetSaveBtnText: { color: '#fff', fontSize: 15, fontWeight: '800', fontFamily: F.extrabold },
   sheetCancelBtn: { borderRadius: 14, paddingVertical: 13, alignItems: 'center', borderWidth: 1.5 },
-  sheetCancelBtnText: { fontSize: 14, fontWeight: '600' },
+  sheetCancelBtnText: { fontSize: 14, fontWeight: '600', fontFamily: F.semibold },
 
   // Add social button (dashed)
   addSocialBtn: { marginHorizontal: 16, marginTop: 10, borderRadius: 14, borderWidth: 1.5, borderStyle: 'dashed', paddingVertical: 15, alignItems: 'center' },
-  addSocialBtnText: { fontSize: 14, fontWeight: '700', letterSpacing: 0.3 },
+  addSocialBtnText: { fontSize: 14, fontWeight: '700', letterSpacing: 0.3, fontFamily: F.bold },
 
   // Empty state
   socialEmptyState: { marginHorizontal: 16, marginBottom: 8, borderRadius: 16, borderWidth: 1, padding: 28, alignItems: 'center', gap: 6 },
   socialEmptyIcon: { fontSize: 36, marginBottom: 4 },
-  socialEmptyTitle: { fontSize: 15, fontWeight: '700' },
-  socialEmptySubtitle: { fontSize: 13, textAlign: 'center', lineHeight: 20 },
+  socialEmptyTitle: { fontSize: 15, fontWeight: '700', fontFamily: F.bold },
+  socialEmptySubtitle: { fontSize: 13, textAlign: 'center', lineHeight: 20, fontFamily: F.regular },
 
   // Follower badge on account cards
   socialMetaRow: { flexDirection: 'row', marginTop: 3, marginBottom: 2 },
   socialFollowerBadge: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2 },
-  socialFollowerBadgeText: { fontSize: 11, fontWeight: '700' },
+  socialFollowerBadgeText: { fontSize: 11, fontWeight: '700', fontFamily: F.bold },
 
   // Form section title (kept for other uses)
-  formSectionTitle: { fontSize: 15, fontWeight: '800', marginBottom: 16 },
+  formSectionTitle: { fontSize: 15, fontWeight: '800', marginBottom: 16, fontFamily: F.extrabold },
   connectBtn: { borderRadius: 8, paddingHorizontal: 12, paddingVertical: 5 },
-  connectBtnText: { fontSize: 12, fontWeight: '700', color: '#fff' },
+  connectBtnText: { fontSize: 12, fontWeight: '700', color: '#fff', fontFamily: F.bold },
 
   inlineForm: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 14, gap: 12 },
   formField: { gap: 4 },
-  formFieldLabel: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
-  formInput: { borderRadius: 10, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14 },
-  formTextarea: { borderRadius: 10, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, minHeight: 120 },
-  fieldError: { fontSize: 12, fontWeight: '500' },
+  formFieldLabel: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: F.bold },
+  formInput: { borderRadius: 10, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, fontFamily: F.regular },
+  formTextarea: { borderRadius: 10, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, minHeight: 120, fontFamily: F.regular },
+  fieldError: { fontSize: 12, fontWeight: '500', fontFamily: F.medium },
   formActions: { flexDirection: 'row', gap: 8 },
   saveBtn: { borderRadius: 10, paddingVertical: 11, alignItems: 'center' },
-  saveBtnText: { fontSize: 14, fontWeight: '700', color: '#fff' },
+  saveBtnText: { fontSize: 14, fontWeight: '700', color: '#fff', fontFamily: F.bold },
   cancelBtn: { borderRadius: 10, paddingVertical: 11, alignItems: 'center' },
-  cancelBtnText: { fontSize: 14, fontWeight: '600' },
+  cancelBtnText: { fontSize: 14, fontWeight: '600', fontFamily: F.semibold },
 
   pwRow: { flexDirection: 'row', alignItems: 'center', borderRadius: 10, borderWidth: 1.5, paddingHorizontal: 12 },
-  pwInput: { flex: 1, fontSize: 14, paddingVertical: 11 },
+  pwInput: { flex: 1, fontSize: 14, paddingVertical: 11, fontFamily: F.regular },
   eyeBtn: { padding: 6 },
   eyeIcon: { fontSize: 18 },
 
-  portfolioType: { fontSize: 14, fontWeight: '600' },
-  portfolioUrl: { fontSize: 12, marginTop: 2 },
+  portfolioType: { fontSize: 14, fontWeight: '600', fontFamily: F.semibold },
+  portfolioUrl: { fontSize: 12, marginTop: 2, fontFamily: F.regular },
   portfolioActions: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  portfolioActionText: { fontSize: 13, fontWeight: '600' },
+  portfolioActionText: { fontSize: 13, fontWeight: '600', fontFamily: F.semibold },
   portfolioSep: { fontSize: 13 },
   addPortfolioBtn: { flexDirection: 'row', justifyContent: 'center', paddingVertical: 14 },
-  addPortfolioBtnText: { fontSize: 14, fontWeight: '700' },
+  addPortfolioBtnText: { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
 
   earningsRow: { flexDirection: 'row', justifyContent: 'space-around', paddingVertical: 16, paddingHorizontal: 16 },
   earningsStat: { alignItems: 'center', gap: 4 },
-  earningsValue: { fontSize: 22, fontWeight: '800' },
-  earningsLabel: { fontSize: 11, fontWeight: '600', textAlign: 'center' },
+  earningsValue: { fontSize: 22, fontWeight: '800', fontFamily: F.extrabold },
+  earningsLabel: { fontSize: 11, fontWeight: '600', textAlign: 'center', fontFamily: F.semibold },
   earningsSkeletonValue: { width: 52, height: 26, borderRadius: 6, marginBottom: 2 },
 
   paymentIcon: { width: 38, height: 38, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
   paymentEmoji: { fontSize: 20 },
   checkboxOuter: { width: 22, height: 22, borderRadius: 6, borderWidth: 2, justifyContent: 'center', alignItems: 'center' },
-  checkboxTick: { color: '#fff', fontSize: 12, fontWeight: '800' },
+  checkboxTick: { color: '#fff', fontSize: 12, fontWeight: '800', fontFamily: F.extrabold },
 
   verifiedBadge: { backgroundColor: '#DCFCE7', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
 
   // FAQ / legal
   faqCard: { borderRadius: 12, padding: 14, gap: 6, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
-  faqQ: { fontSize: 14, fontWeight: '700', lineHeight: 20 },
-  faqA: { fontSize: 13, lineHeight: 19 },
+  faqQ: { fontSize: 14, fontWeight: '700', lineHeight: 20, fontFamily: F.bold },
+  faqA: { fontSize: 13, lineHeight: 19, fontFamily: F.regular },
   helpSkeletonQ: { height: 14, borderRadius: 7, marginBottom: 8, width: '80%' },
   helpSkeletonA: { height: 11, borderRadius: 5, marginBottom: 4, width: '100%' },
   helpEmpty: { margin: 20, borderRadius: 16, borderWidth: 1, padding: 32, alignItems: 'center', gap: 8 },
   helpEmptyIcon: { fontSize: 36 },
-  helpEmptyTitle: { fontSize: 15, fontWeight: '700', textAlign: 'center' },
-  helpEmptySubtitle: { fontSize: 13, textAlign: 'center', lineHeight: 19 },
-  legalDate: { fontSize: 12, marginTop: 12, marginBottom: 4 },
+  helpEmptyTitle: { fontSize: 15, fontWeight: '700', textAlign: 'center', fontFamily: F.bold },
+  helpEmptySubtitle: { fontSize: 13, textAlign: 'center', lineHeight: 19, fontFamily: F.regular },
+  legalDate: { fontSize: 12, marginTop: 12, marginBottom: 4, fontFamily: F.regular },
   legalSection: { paddingVertical: 14, borderBottomWidth: 1, gap: 6 },
-  legalTitle: { fontSize: 14, fontWeight: '700' },
-  legalBody: { fontSize: 13, lineHeight: 20 },
+  legalTitle: { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
+  legalBody: { fontSize: 13, lineHeight: 20, fontFamily: F.regular },
   guideCard: { borderRadius: 14, padding: 16, gap: 8, marginBottom: 10, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
   guideHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   guideIcon: { fontSize: 22 },
-  guideTitle: { fontSize: 15, fontWeight: '700' },
-  guideBody: { fontSize: 13, lineHeight: 20 },
+  guideTitle: { fontSize: 15, fontWeight: '700', fontFamily: F.bold },
+  guideBody: { fontSize: 13, lineHeight: 20, fontFamily: F.regular },
 
   // Toast
   toast: {
@@ -2257,7 +2259,7 @@ const styles = StyleSheet.create({
     shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 }, elevation: 8,
   },
-  toastText: { color: '#fff', fontSize: 14, fontWeight: '600', flex: 1 },
+  toastText: { color: '#fff', fontSize: 14, fontWeight: '600', flex: 1, fontFamily: F.semibold },
 
   // Confirmation modals
   confirmOverlay: {
@@ -2274,23 +2276,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center', alignItems: 'center', marginBottom: 16,
   },
   confirmIcon: { fontSize: 26 },
-  confirmTitle: { fontSize: 20, fontWeight: '800', marginBottom: 10 },
-  confirmBody: { fontSize: 14, lineHeight: 22, marginBottom: 24 },
+  confirmTitle: { fontSize: 20, fontWeight: '800', marginBottom: 10, fontFamily: F.extrabold },
+  confirmBody: { fontSize: 14, lineHeight: 22, marginBottom: 24, fontFamily: F.regular },
   confirmActions: { flexDirection: 'row', gap: 10 },
   confirmCancelBtn: {
     flex: 1, borderWidth: 1.5, borderRadius: 12,
     paddingVertical: 13, alignItems: 'center',
   },
-  confirmCancelText: { fontSize: 14, fontWeight: '600' },
+  confirmCancelText: { fontSize: 14, fontWeight: '600', fontFamily: F.semibold },
   confirmActionBtn: {
     flex: 1, borderRadius: 12,
     paddingVertical: 13, alignItems: 'center',
   },
-  confirmActionText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  confirmActionText: { color: '#fff', fontSize: 14, fontWeight: '700', fontFamily: F.bold },
   dangerBanner: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
     borderWidth: 1, borderRadius: 10, padding: 10, marginBottom: 20,
   },
   dangerBannerIcon: { fontSize: 16 },
-  dangerBannerText: { fontSize: 12, fontWeight: '700', flex: 1, lineHeight: 18 },
+  dangerBannerText: { fontSize: 12, fontWeight: '700', flex: 1, lineHeight: 18, fontFamily: F.bold },
 });

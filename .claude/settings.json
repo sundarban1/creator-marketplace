@@ -142,7 +142,16 @@
       "Bash(git -C /Users/sundarban/Documents/projects/marketplace status --short)",
       "Bash(git -C /Users/sundarban/Documents/projects/marketplace restore mobile/src/hooks/useFavoriteBusinesses.ts)",
       "Bash(git -C /Users/sundarban/Documents/projects/marketplace diff HEAD -- mobile/src/app/\\\\\\(creator\\\\\\)/index.tsx)",
-      "Bash(docker cp *)"
+      "Bash(docker cp *)",
+      "Skill(run)",
+      "Skill(run:*)",
+      "Bash(curl -s http://localhost:8081)",
+      "Bash(grep -v \"_layout\\\\|index\\\\.tsx$\\\\|explore\\\\.tsx$\\\\|notifications\\\\.tsx$\\\\|create\\\\.tsx$\\\\|SplashScreen\\\\|RangeSlider\\\\|AppLogo\")",
+      "Bash(sed -i '' 's/SafeAreaView style={\\\\[styles\\\\.container, { backgroundColor: '\\\\''#4F46E5'\\\\'' }\\\\]}/SafeAreaView style={[styles.container, { backgroundColor: C.background }]}/g' '/Users/sundarban/Documents/projects/marketplace/mobile/src/app/\\(business\\)/index.tsx' '/Users/sundarban/Documents/projects/marketplace/mobile/src/app/\\(business\\)/campaigns.tsx' '/Users/sundarban/Documents/projects/marketplace/mobile/src/app/\\(business\\)/edit-profile.tsx' '/Users/sundarban/Documents/projects/marketplace/mobile/src/app/\\(business\\)/explore-creators.tsx' '/Users/sundarban/Documents/projects/marketplace/mobile/src/app/\\(business\\)/proposals.tsx')",
+      "Bash(sed -i '' 's/SafeAreaView style={\\\\[s\\\\.container, { backgroundColor: '\\\\''#4F46E5'\\\\'' }\\\\]}/SafeAreaView style={[s.container, { backgroundColor: C.background }]}/g' '/Users/sundarban/Documents/projects/marketplace/mobile/src/app/\\(business\\)/messages/index.tsx' '/Users/sundarban/Documents/projects/marketplace/mobile/src/app/\\(business\\)/explore-creators.tsx')",
+      "Bash(sed -i '' 's/{ backgroundColor: '\\\\''#4F46E5'\\\\'' }/{ backgroundColor: C.background }/g' '/Users/sundarban/Documents/projects/marketplace/mobile/src/app/\\(business\\)/settings.tsx' '/Users/sundarban/Documents/projects/marketplace/mobile/src/app/\\(business\\)/presence-goal.tsx' /Users/sundarban/Documents/projects/marketplace/mobile/src/app/create-campaign.tsx)",
+      "Bash(sed -i '' 's/{ backgroundColor: '\\\\''#8B5CF6'\\\\'' }/{ backgroundColor: C.background }/g' /Users/sundarban/Documents/projects/marketplace/mobile/src/app/campaign-detail.tsx)",
+      "Bash(sed -i '' 's/{ backgroundColor: '\\\\''#F97316'\\\\'' }/{ backgroundColor: C.background }/g' /Users/sundarban/Documents/projects/marketplace/mobile/src/app/submit-proposal.tsx)"
     ],
     "additionalDirectories": [
       "/Users/sundarban/Documents/projects/marketplace/content",

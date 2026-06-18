@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { RangeSlider } from '@/components/RangeSlider';
 import { useAppColors } from '@/context/ThemeContext';
+import { F } from '@/utilities/constants';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -211,20 +212,20 @@ const ls = StyleSheet.create({
   container:       { gap: 10 },
   remoteChip:      { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 22, borderWidth: 1.5 },
   remoteEmoji:     { fontSize: 14 },
-  remoteText:      { fontSize: 13 },
-  removeX:         { fontSize: 12, fontWeight: '700' },
+  remoteText:      { fontSize: 13, fontFamily: F.regular },
+  removeX:         { fontSize: 12, fontWeight: '700', fontFamily: F.bold },
   selectedChips:   { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   selectedChip:    { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1.5 },
-  selectedChipText:{ fontSize: 13, fontWeight: '600' },
+  selectedChipText:{ fontSize: 13, fontWeight: '600', fontFamily: F.semibold },
   searchRow:       { flexDirection: 'row', alignItems: 'center', borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 12, height: 44, gap: 8 },
   searchIcon:      { fontSize: 15 },
-  searchInput:     { flex: 1, fontSize: 14 },
+  searchInput:     { flex: 1, fontSize: 14, fontFamily: F.regular },
   dropdown:        { borderRadius: 12, borderWidth: 1.5, overflow: 'hidden' },
   dropRow:         { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, gap: 10, borderBottomWidth: 1 },
   dropPin:         { fontSize: 16 },
   dropTexts:       { flex: 1 },
-  dropMain:        { fontSize: 14, fontWeight: '600' },
-  dropSec:         { fontSize: 11, marginTop: 1 },
+  dropMain:        { fontSize: 14, fontWeight: '600', fontFamily: F.semibold },
+  dropSec:         { fontSize: 11, marginTop: 1, fontFamily: F.regular },
 });
 
 // ─── DateRangePicker ──────────────────────────────────────────────────────────
@@ -469,29 +470,29 @@ const dp = StyleSheet.create({
   // Quick presets
   presets:     { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   preset:      { paddingHorizontal: 13, paddingVertical: 7, borderRadius: 20, borderWidth: 1.5 },
-  presetTxt:   { fontSize: 12 },
+  presetTxt:   { fontSize: 12, fontFamily: F.regular },
   // From / To input row
   inputsRow:   { flexDirection: 'row', alignItems: 'flex-end', gap: 8 },
   inputGroup:  { flex: 1, gap: 4 },
-  inputLabel:  { fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.6, marginLeft: 2 },
+  inputLabel:  { fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.6, marginLeft: 2, fontFamily: F.bold },
   inputBox:    { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 9, gap: 6 },
-  inputValue:  { flex: 1, fontSize: 13, fontWeight: '600' },
+  inputValue:  { flex: 1, fontSize: 13, fontWeight: '600', fontFamily: F.semibold },
   calIcon:     { fontSize: 16 },
   clearBtn:    { width: 32, height: 40, justifyContent: 'center', alignItems: 'center', borderRadius: 8 },
-  clearTxt:    { fontSize: 16, fontWeight: '700' },
+  clearTxt:    { fontSize: 16, fontWeight: '700', fontFamily: F.bold },
   // Inline calendar
   cal:         { borderRadius: 14, borderWidth: 1, padding: 12, gap: 8, marginTop: 2 },
-  calTitle:    { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.6, textAlign: 'center' },
+  calTitle:    { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.6, textAlign: 'center', fontFamily: F.bold },
   monthNav:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   navBtn:      { width: 36, height: 36, justifyContent: 'center', alignItems: 'center' },
   navBtnTxt:   { fontSize: 24, lineHeight: 28 },
-  monthTitle:  { fontSize: 15, fontWeight: '700' },
+  monthTitle:  { fontSize: 15, fontWeight: '700', fontFamily: F.bold },
   dayRow:      { flexDirection: 'row' },
-  dayHdr:      { flex: 1, textAlign: 'center', fontSize: 11, fontWeight: '600' },
+  dayHdr:      { flex: 1, textAlign: 'center', fontSize: 11, fontWeight: '600', fontFamily: F.semibold },
   grid:        { flexDirection: 'row', flexWrap: 'wrap' },
   cell:        { width: '14.285%', aspectRatio: 1, justifyContent: 'center', alignItems: 'center' },
   dayCircle:   { width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
-  dayNum:      { fontSize: 13, fontWeight: '500' },
+  dayNum:      { fontSize: 13, fontWeight: '500', fontFamily: F.medium },
 });
 
 const styles = StyleSheet.create({
@@ -499,13 +500,13 @@ const styles = StyleSheet.create({
   sheet:    { position: 'absolute', left: 0, right: 0, bottom: 0, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '92%', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 20, shadowOffset: { width: 0, height: -4 }, elevation: 20 },
   handle:   { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginTop: 12, marginBottom: 4 },
   header:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1 },
-  title:    { fontSize: 17, fontWeight: '800' },
-  reset:    { fontSize: 14, fontWeight: '600' },
+  title:    { fontSize: 17, fontWeight: '800', fontFamily: F.extrabold },
+  reset:    { fontSize: 14, fontWeight: '600', fontFamily: F.semibold },
   body:     { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16, gap: 24 },
-  section:    { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: -8 },
+  section:    { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: -8, fontFamily: F.bold },
   sectionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: -8 },
-  sectionHint:{ fontSize: 11, fontWeight: '600' },
+  sectionHint:{ fontSize: 11, fontWeight: '600', fontFamily: F.semibold },
   footer:   { padding: 20, borderTopWidth: 1 },
   applyBtn: { borderRadius: 14, height: 52, justifyContent: 'center', alignItems: 'center', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
-  applyTxt: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  applyTxt: { color: '#fff', fontSize: 16, fontWeight: '700', fontFamily: F.bold },
 });

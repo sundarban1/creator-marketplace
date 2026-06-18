@@ -1,13 +1,17 @@
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useState } from 'react';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { EmptyState } from '@/components/EmptyState';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
+import { useNotificationBadge } from '@/context/NotificationContext';
 import { notificationService } from '@/services/notifications';
+import { getSocket } from '@/lib/socket';
+import { F } from '@/utilities/constants';
 import type { AppNotification } from '@/types';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
@@ -104,24 +108,43 @@ export default function NotificationsScreen() {
   const { user } = useAuth();
   const { t } = useLanguage();
   const C = useAppColors();
+  const { clearBadge, decrementBadge } = useNotificationBadge();
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  function loadNotifications(showLoader = true) {
+    if (showLoader) setLoading(true);
     notificationService.getNotifications()
       .then((data) => setNotifications(data))
       .catch(() => {})
       .finally(() => setLoading(false));
+  }
+
+  // Reload every time the screen gains focus so new notifications always appear
+  useFocusEffect(useCallback(() => {
+    loadNotifications();
+  }, []));
+
+  // Also listen for real-time socket events to prepend new notifications instantly
+  useEffect(() => {
+    const socket = getSocket();
+    if (!socket) return;
+    const handler = () => loadNotifications(false);
+    socket.on('notification:new', handler);
+    return () => { socket.off('notification:new', handler); };
   }, []);
 
   async function handleMarkAll() {
     await notificationService.markAllRead();
     setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    clearBadge(); // zero out the bell badge
   }
 
   async function handlePress(id: string) {
+    const wasUnread = !notifications.find((n) => n.id === id)?.isRead;
     await notificationService.markAsRead(id);
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
+    if (wasUnread) decrementBadge();
     const n = notifications.find((n) => n.id === id);
     if (!n) return;
     const isCreator = user?.role === 'CREATOR';
@@ -153,21 +176,23 @@ export default function NotificationsScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
-      <View style={styles.header}>
-        <View>
-          <Text style={[styles.heading, { color: C.text }]}>{t('notifications.heading')}</Text>
+      <LinearGradient colors={['#059669', '#0D9488', '#0891B2']} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientHeader}>
+        <View style={styles.header}>
+          <View>
+            <Text style={[styles.heading, { color: '#fff' }]}>{t('notifications.heading')}</Text>
+            {unreadCount > 0 && (
+              <Text style={[styles.subheading, { color: 'rgba(255,255,255,0.8)' }]}>
+                {t('notifications.unread', { count: unreadCount })}
+              </Text>
+            )}
+          </View>
           {unreadCount > 0 && (
-            <Text style={[styles.subheading, { color: C.textSecondary }]}>
-              {t('notifications.unread', { count: unreadCount })}
-            </Text>
+            <Pressable onPress={handleMarkAll} style={[styles.markAllBtn, { borderColor: 'rgba(255,255,255,0.7)' }]}>
+              <Text style={[styles.markAllText, { color: '#fff' }]}>{t('notifications.markAllRead')}</Text>
+            </Pressable>
           )}
         </View>
-        {unreadCount > 0 && (
-          <Pressable onPress={handleMarkAll} style={[styles.markAllBtn, { borderColor: C.brinjal1 }]}>
-            <Text style={[styles.markAllText, { color: C.brinjal1 }]}>{t('notifications.markAllRead')}</Text>
-          </Pressable>
-        )}
-      </View>
+      </LinearGradient>
 
       {loading ? (
         <View style={styles.center}>
@@ -202,16 +227,17 @@ export default function NotificationsScreen() {
 
 const styles = StyleSheet.create({
   container:  { flex: 1 },
-  header:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 8 },
-  heading:    { fontSize: 22, fontWeight: '700' },
-  subheading: { fontSize: 13, marginTop: 2 },
+  gradientHeader: { paddingBottom: 4, borderBottomLeftRadius: 24, borderBottomRightRadius: 24, overflow: 'hidden' },
+  header:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 12 },
+  heading:    { fontSize: 22, fontWeight: '700', fontFamily: F.extrabold },
+  subheading: { fontSize: 13, marginTop: 2, fontFamily: F.regular },
   markAllBtn: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 8, borderWidth: 1 },
-  markAllText:{ fontSize: 12, fontWeight: '600' },
+  markAllText:{ fontSize: 12, fontWeight: '600', fontFamily: F.semibold },
   center:     { flex: 1, alignItems: 'center', justifyContent: 'center' },
   list:       { paddingBottom: 32 },
   listEmpty:  { flexGrow: 1 },
 
-  groupLabel: { fontSize: 11, fontWeight: '700', paddingHorizontal: 20, paddingTop: 18, paddingBottom: 6, textTransform: 'uppercase', letterSpacing: 0.8 },
+  groupLabel: { fontSize: 11, fontWeight: '700', paddingHorizontal: 20, paddingTop: 18, paddingBottom: 6, textTransform: 'uppercase', letterSpacing: 0.8, fontFamily: F.bold },
 
   item:       { flexDirection: 'row', paddingVertical: 14, paddingHorizontal: 20, borderBottomWidth: 1, gap: 12, alignItems: 'flex-start' },
   accentBar:  { position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, borderRadius: 2 },
@@ -220,12 +246,12 @@ const styles = StyleSheet.create({
 
   itemContent:{ flex: 1, gap: 4 },
   titleRow:   { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  itemTitle:  { fontSize: 14, fontWeight: '700', flex: 1 },
+  itemTitle:  { fontSize: 14, fontWeight: '700', flex: 1, fontFamily: F.bold },
   unreadDot:  { width: 7, height: 7, borderRadius: 4, flexShrink: 0 },
 
   labelChip:     { alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 },
-  labelChipText: { fontSize: 10, fontWeight: '700', letterSpacing: 0.3 },
+  labelChipText: { fontSize: 10, fontWeight: '700', letterSpacing: 0.3, fontFamily: F.bold },
 
-  itemBody:   { fontSize: 13, lineHeight: 18 },
-  itemTime:   { fontSize: 11, opacity: 0.6 },
+  itemBody:   { fontSize: 13, lineHeight: 18, fontFamily: F.regular },
+  itemTime:   { fontSize: 11, opacity: 0.6, fontFamily: F.regular },
 });

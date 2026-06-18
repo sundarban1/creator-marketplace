@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { router } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import {
   ActivityIndicator,
   Modal,
@@ -15,6 +16,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { campaignService } from '@/services/campaign';
 import { CATEGORY_META, DEFAULT_META, cardBg } from '@/features/creator/data/filterOptions';
 import type { Campaign } from '@/types';
+import { F } from '@/utilities/constants';
 
 type Application = {
   id: string;
@@ -91,15 +93,17 @@ export default function CampaignsScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={[styles.pageTitle, { color: C.text }]}>Campaigns</Text>
-        <Pressable
-          style={[styles.newBtn, { backgroundColor: C.brinjal1 }]}
-          onPress={() => router.push('/create-campaign')}>
-          <Text style={styles.newBtnText}>+ New</Text>
-        </Pressable>
-      </View>
+      <LinearGradient colors={['#4F46E5', '#7C3AED', '#9333EA']} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientHeader}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={[styles.pageTitle, { color: '#fff' }]}>Campaigns</Text>
+          <Pressable
+            style={[styles.newBtn, { backgroundColor: 'rgba(255,255,255,0.25)' }]}
+            onPress={() => router.push('/create-campaign')}>
+            <Text style={[styles.newBtnText, { color: '#fff' }]}>+ New</Text>
+          </Pressable>
+        </View>
+      </LinearGradient>
 
       {/* Filter chips */}
       <View style={styles.filterRow}>
@@ -275,28 +279,29 @@ export default function CampaignsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 60 },
+  gradientHeader: { paddingBottom: 4, borderBottomLeftRadius: 24, borderBottomRightRadius: 24, overflow: 'hidden' },
 
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12,
   },
-  pageTitle: { fontSize: 22, fontWeight: '800' },
+  pageTitle: { fontSize: 22, fontWeight: '800', fontFamily: F.extrabold },
   newBtn: { borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8 },
-  newBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+  newBtnText: { color: '#fff', fontWeight: '700', fontSize: 13, fontFamily: F.bold },
 
   filterRow: { flexDirection: 'row', paddingHorizontal: 20, gap: 8, paddingBottom: 16 },
   filterChip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 1.5 },
-  filterChipText: { fontSize: 12, fontWeight: '500' },
+  filterChipText: { fontSize: 12, fontWeight: '500', fontFamily: F.medium },
 
   list: { paddingHorizontal: 20, gap: 12, paddingBottom: 40 },
   listEmpty: { flexGrow: 1 },
 
   emptyState: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 8, paddingHorizontal: 32 },
   emptyIcon: { fontSize: 48, marginBottom: 4 },
-  emptyTitle: { fontSize: 17, fontWeight: '700', textAlign: 'center' },
-  emptySub: { fontSize: 13, textAlign: 'center', lineHeight: 20 },
+  emptyTitle: { fontSize: 17, fontWeight: '700', textAlign: 'center', fontFamily: F.bold },
+  emptySub: { fontSize: 13, textAlign: 'center', lineHeight: 20, fontFamily: F.regular },
   emptyBtn: { marginTop: 12, borderRadius: 12, paddingHorizontal: 24, paddingVertical: 12 },
-  emptyBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
+  emptyBtnText: { color: '#fff', fontWeight: '700', fontSize: 14, fontFamily: F.bold },
 
   card: {
     borderRadius: 16,
@@ -308,12 +313,12 @@ const styles = StyleSheet.create({
   thumbEmoji: { fontSize: 28 },
   body: { flex: 1, gap: 4 },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
-  title: { fontSize: 14, fontWeight: '700', flex: 1 },
+  title: { fontSize: 14, fontWeight: '700', flex: 1, fontFamily: F.bold },
   badge: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
-  badgeText: { fontSize: 11, fontWeight: '700' },
-  meta: { fontSize: 12 },
-  stat: { fontSize: 11, marginTop: 2 },
-  draftNote: { fontSize: 11, fontStyle: 'italic', marginTop: 2 },
+  badgeText: { fontSize: 11, fontWeight: '700', fontFamily: F.bold },
+  meta: { fontSize: 12, fontFamily: F.regular },
+  stat: { fontSize: 11, marginTop: 2, fontFamily: F.regular },
+  draftNote: { fontSize: 11, fontStyle: 'italic', marginTop: 2, fontFamily: F.regular },
   chevron: { fontSize: 22, flexShrink: 0 },
 
   footerDivider: { height: 1, marginHorizontal: 12 },
@@ -321,7 +326,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end',
     gap: 4, paddingHorizontal: 14, paddingVertical: 9,
   },
-  viewProposalsText: { fontSize: 12, fontWeight: '700' },
+  viewProposalsText: { fontSize: 12, fontWeight: '700', fontFamily: F.bold },
   viewProposalsArrow: { fontSize: 13 },
 
   modalBackdrop: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)' },
@@ -337,26 +342,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1,
   },
   modalHeaderText: { flex: 1 },
-  modalTitle: { fontSize: 17, fontWeight: '800' },
-  modalSubtitle: { fontSize: 13, marginTop: 2 },
+  modalTitle: { fontSize: 17, fontWeight: '800', fontFamily: F.extrabold },
+  modalSubtitle: { fontSize: 13, marginTop: 2, fontFamily: F.regular },
   modalClose: { width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
-  modalCloseText: { fontSize: 12, fontWeight: '700' },
+  modalCloseText: { fontSize: 12, fontWeight: '700', fontFamily: F.bold },
   modalList: { padding: 16, gap: 12, paddingBottom: 40 },
   modalEmpty: { alignItems: 'center', paddingTop: 40, gap: 10 },
   modalEmptyIcon: { fontSize: 40 },
-  modalEmptyText: { fontSize: 14 },
+  modalEmptyText: { fontSize: 14, fontFamily: F.regular },
 
   proposalCard: {
     flexDirection: 'row', alignItems: 'center',
     borderRadius: 14, padding: 12, gap: 12, borderWidth: 1,
   },
   proposalAvatar: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
-  proposalAvatarText: { fontSize: 14, fontWeight: '800' },
+  proposalAvatarText: { fontSize: 14, fontWeight: '800', fontFamily: F.extrabold },
   proposalBody: { flex: 1, gap: 3 },
   proposalTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  proposalName: { fontSize: 14, fontWeight: '700' },
+  proposalName: { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
   proposalBadge: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
-  proposalBadgeText: { fontSize: 11, fontWeight: '700' },
-  proposalSub: { fontSize: 12 },
-  proposalRate: { fontSize: 13, fontWeight: '700', marginTop: 2 },
+  proposalBadgeText: { fontSize: 11, fontWeight: '700', fontFamily: F.bold },
+  proposalSub: { fontSize: 12, fontFamily: F.regular },
+  proposalRate: { fontSize: 13, fontWeight: '700', marginTop: 2, fontFamily: F.bold },
 });

@@ -1,4 +1,5 @@
 import './config/env'; // load and validate env first
+import { createServer } from 'http';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -9,6 +10,7 @@ import { env } from './config/env';
 import { swaggerSpec } from './config/swagger';
 import { errorHandler, notFoundHandler } from './middleware/error';
 import prisma from './prisma';
+import { initSocket } from './socket';
 
 // Route imports
 import authRoutes from './modules/auth/auth.routes';
@@ -142,7 +144,10 @@ async function bootstrap() {
     await prisma.$connect();
     console.log('✅ Database connected');
 
-    app.listen(PORT, () => {
+    const httpServer = createServer(app);
+    initSocket(httpServer);
+
+    httpServer.listen(PORT, () => {
       console.log(`🚀 Server running on http://localhost:${PORT}`);
       console.log(`📚 API Docs available at http://localhost:${PORT}/api/docs`);
       console.log(`🌍 Environment: ${env.NODE_ENV}`);

@@ -113,6 +113,7 @@ export declare class AuthRepository {
         businessName: string;
     }): Promise<{
         businessProfile: {
+            description: string | null;
             id: string;
             createdAt: Date;
             updatedAt: Date;
@@ -120,7 +121,6 @@ export declare class AuthRepository {
             categories: string[];
             isVerified: boolean;
             businessName: string;
-            description: string | null;
             logoUrl: string | null;
             website: string | null;
             panNo: string | null;

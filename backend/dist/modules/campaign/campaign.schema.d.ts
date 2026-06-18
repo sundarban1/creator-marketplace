@@ -39,8 +39,8 @@ export declare const createCampaignSchema: z.ZodEffects<z.ZodObject<{
     budgetMin: number;
     budgetMax: number;
     paymentType: string;
-    location?: string | undefined;
     description?: string | undefined;
+    location?: string | undefined;
     minFollowers?: number | undefined;
     creatorsNeeded?: number | undefined;
     isFeatured?: boolean | undefined;
@@ -69,8 +69,8 @@ export declare const createCampaignSchema: z.ZodEffects<z.ZodObject<{
     budgetMin: number;
     budgetMax: number;
     paymentType: string;
-    location?: string | undefined;
     description?: string | undefined;
+    location?: string | undefined;
     minFollowers?: number | undefined;
     creatorsNeeded?: number | undefined;
     isFeatured?: boolean | undefined;
@@ -93,8 +93,8 @@ export declare const updateCampaignSchema: z.ZodObject<{
     isFeatured: z.ZodOptional<z.ZodBoolean>;
 }, "strip", z.ZodTypeAny, {
     status?: "ACTIVE" | "PAUSED" | "CLOSED" | undefined;
-    location?: string | null | undefined;
     description?: string | undefined;
+    location?: string | null | undefined;
     platform?: string | undefined;
     title?: string | undefined;
     category?: string | undefined;
@@ -109,8 +109,8 @@ export declare const updateCampaignSchema: z.ZodObject<{
     isFeatured?: boolean | undefined;
 }, {
     status?: "ACTIVE" | "PAUSED" | "CLOSED" | undefined;
-    location?: string | null | undefined;
     description?: string | undefined;
+    location?: string | null | undefined;
     platform?: string | undefined;
     title?: string | undefined;
     category?: string | undefined;

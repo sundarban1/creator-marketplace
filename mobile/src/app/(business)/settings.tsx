@@ -1,5 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   Alert,
@@ -18,7 +19,7 @@ import { useToast } from '@/components/Toast';
 import { useAppColors, useIsDark } from '@/context/ThemeContext';
 import { businessService } from '@/services/business';
 import { authService } from '@/services/auth';
-import { COLORS } from '@/utilities/constants';
+import { COLORS, F } from '@/utilities/constants';
 
 type ColorsType = typeof COLORS;
 const ColorCtx = createContext<ColorsType>(COLORS);
@@ -1210,15 +1211,16 @@ export default function BusinessSettingsScreen() {
   return (
     <ColorCtx.Provider value={C}>
       <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
-
-        {/* Top bar */}
-        <View style={[styles.topBar, { backgroundColor: C.background, borderBottomColor: C.border }]}>
-          <Pressable style={[styles.backBtn, { backgroundColor: C.surface, borderColor: C.border }]} onPress={handleBack}>
-            <Text style={[styles.backArrow, { color: C.brinjal1 }]}>‹</Text>
-          </Pressable>
-          <Text style={[styles.topTitle, { color: C.text }]}>{topTitle}</Text>
-          <View style={{ width: 36 }} />
-        </View>
+        <LinearGradient colors={['#4F46E5', '#7C3AED', '#9333EA']} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientTopBar}>
+          {/* Top bar */}
+          <View style={styles.topBar}>
+            <Pressable style={[styles.backBtn, { backgroundColor: 'rgba(255,255,255,0.2)', borderColor: 'rgba(255,255,255,0.4)' }]} onPress={handleBack}>
+              <Text style={[styles.backArrow, { color: '#fff' }]}>‹</Text>
+            </Pressable>
+            <Text style={[styles.topTitle, { color: '#fff' }]}>{topTitle}</Text>
+            <View style={{ width: 36 }} />
+          </View>
+        </LinearGradient>
 
         <ScrollView
           style={styles.scroll}
@@ -1261,18 +1263,19 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { flex: 1 },
   scrollContent: { paddingBottom: 24 },
+  gradientTopBar: { overflow: 'hidden', borderBottomLeftRadius: 20, borderBottomRightRadius: 20 },
 
   topBar: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1,
+    paddingHorizontal: 16, paddingVertical: 12,
   },
   backBtn: { width: 36, height: 36, borderRadius: 18, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center' },
   backArrow: { fontSize: 26, lineHeight: 30 },
-  topTitle: { fontSize: 16, fontWeight: '700' },
+  topTitle: { fontSize: 16, fontWeight: '700', fontFamily: F.bold },
 
   sectionHeader: {
     fontSize: 11, fontWeight: '700', letterSpacing: 0.8,
-    marginTop: 20, marginBottom: 6, marginHorizontal: 20,
+    marginTop: 20, marginBottom: 6, marginHorizontal: 20, fontFamily: F.bold,
   },
   card: {
     marginHorizontal: 16, borderRadius: 14,
@@ -1280,72 +1283,72 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 }, elevation: 2, overflow: 'hidden',
   },
   hintCard: { marginHorizontal: 16, borderRadius: 10, padding: 12, marginTop: 8, marginBottom: 4 },
-  hintText: { fontSize: 13, lineHeight: 18 },
-  saveHint: { textAlign: 'center', fontSize: 12, marginTop: 8, marginHorizontal: 16 },
+  hintText: { fontSize: 13, lineHeight: 18, fontFamily: F.regular },
+  saveHint: { textAlign: 'center', fontSize: 12, marginTop: 8, marginHorizontal: 16, fontFamily: F.regular },
 
   row: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 13, gap: 12 },
   rowIcon: { fontSize: 18, width: 24, textAlign: 'center' },
   rowIconNode: { width: 24, alignItems: 'center' },
-  rowLabel: { flex: 1, fontSize: 15, fontWeight: '500' },
-  rowSub: { fontSize: 12, marginTop: 1 },
+  rowLabel: { flex: 1, fontSize: 15, fontWeight: '500', fontFamily: F.medium },
+  rowSub: { fontSize: 12, marginTop: 1, fontFamily: F.regular },
   navRight: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   navArrow: { fontSize: 18 },
-  navValue: { fontSize: 14 },
+  navValue: { fontSize: 14, fontFamily: F.regular },
 
   chipSection: { paddingHorizontal: 12, paddingTop: 8, paddingBottom: 12 },
   chipGroup: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1.5 },
-  chipText: { fontSize: 13 },
+  chipText: { fontSize: 13, fontFamily: F.medium },
 
   logoPicker: { borderRadius: 12, borderWidth: 1.5, borderStyle: 'dashed', height: 100, justifyContent: 'center', alignItems: 'center', gap: 4 },
   logoPickerEmoji: { fontSize: 28 },
-  logoPickerText: { fontSize: 13, fontWeight: '700' },
-  logoPickerSub: { fontSize: 11 },
+  logoPickerText: { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
+  logoPickerSub: { fontSize: 11, fontFamily: F.regular },
   labelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  optionalTag: { fontSize: 12 },
+  optionalTag: { fontSize: 12, fontFamily: F.regular },
 
   socialInputRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 10, paddingHorizontal: 12, height: 46, gap: 8 },
   socialInputIcon: { fontSize: 16 },
-  socialInput: { flex: 1, fontSize: 14 },
+  socialInput: { flex: 1, fontSize: 14, fontFamily: F.regular },
 
   actionGroup: { marginHorizontal: 16, marginTop: 20, gap: 10 },
   primaryBtn: { borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
-  primaryBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  primaryBtnText: { color: '#fff', fontSize: 15, fontWeight: '700', fontFamily: F.bold },
   secondaryBtn: { borderRadius: 12, paddingVertical: 13, alignItems: 'center', borderWidth: 1.5 },
-  secondaryBtnText: { fontSize: 15, fontWeight: '700' },
+  secondaryBtnText: { fontSize: 15, fontWeight: '700', fontFamily: F.bold },
 
   inlineForm: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 16, gap: 14 },
   formField: { gap: 5 },
-  formFieldLabel: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
-  formInput: { borderRadius: 10, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 11, fontSize: 14 },
-  formTextarea: { borderRadius: 10, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 11, fontSize: 14, minHeight: 110 },
-  fieldError: { fontSize: 12, fontWeight: '500' },
+  formFieldLabel: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: F.bold },
+  formInput: { borderRadius: 10, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 11, fontSize: 14, fontFamily: F.regular },
+  formTextarea: { borderRadius: 10, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 11, fontSize: 14, minHeight: 110, fontFamily: F.regular },
+  fieldError: { fontSize: 12, fontWeight: '500', fontFamily: F.medium },
   pwRow: { flexDirection: 'row', alignItems: 'center', borderRadius: 10, borderWidth: 1.5, paddingHorizontal: 12 },
-  pwInput: { flex: 1, fontSize: 14, paddingVertical: 11 },
+  pwInput: { flex: 1, fontSize: 14, paddingVertical: 11, fontFamily: F.regular },
   eyeBtn: { padding: 6 },
 
   paymentIcon: { width: 38, height: 38, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
   paymentEmoji: { fontSize: 20 },
   checkboxOuter: { width: 22, height: 22, borderRadius: 6, borderWidth: 2, justifyContent: 'center', alignItems: 'center' },
-  checkboxTick: { color: '#fff', fontSize: 12, fontWeight: '800' },
+  checkboxTick: { color: '#fff', fontSize: 12, fontWeight: '800', fontFamily: F.extrabold },
   radioOuter: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, justifyContent: 'center', alignItems: 'center' },
   radioInner: { width: 11, height: 11, borderRadius: 6 },
 
   txRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 13, gap: 12 },
-  txDesc: { fontSize: 14, fontWeight: '600' },
-  txDate: { fontSize: 12, marginTop: 2 },
-  txAmount: { fontSize: 14, fontWeight: '700' },
+  txDesc: { fontSize: 14, fontWeight: '600', fontFamily: F.semibold },
+  txDate: { fontSize: 12, marginTop: 2, fontFamily: F.regular },
+  txAmount: { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
 
   accountCard: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, paddingBottom: 12 },
   accountAvatar: { width: 50, height: 50, borderRadius: 25, justifyContent: 'center', alignItems: 'center' },
-  accountAvatarText: { fontSize: 20, fontWeight: '800', color: '#fff' },
-  accountName: { fontSize: 16, fontWeight: '700' },
-  accountEmail: { fontSize: 13, marginTop: 2 },
+  accountAvatarText: { fontSize: 20, fontWeight: '800', color: '#fff', fontFamily: F.extrabold },
+  accountName: { fontSize: 16, fontWeight: '700', fontFamily: F.bold },
+  accountEmail: { fontSize: 13, marginTop: 2, fontFamily: F.regular },
   editBtn: { borderRadius: 8, paddingHorizontal: 14, paddingVertical: 6 },
-  editBtnText: { fontSize: 13, fontWeight: '700' },
+  editBtnText: { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
 
   soonBadge: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
-  badgeText: { fontSize: 11, fontWeight: '700' },
+  badgeText: { fontSize: 11, fontWeight: '700', fontFamily: F.bold },
   verifiedBadge: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
   statusBadge: { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
   uploadBtn: { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
@@ -1353,31 +1356,31 @@ const styles = StyleSheet.create({
   creatorCard: { marginHorizontal: 16, marginBottom: 12, borderRadius: 14, padding: 14, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
   creatorCardTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   creatorAvatar: { width: 46, height: 46, borderRadius: 23, justifyContent: 'center', alignItems: 'center' },
-  creatorAvatarText: { fontSize: 16, fontWeight: '800' },
-  creatorName: { fontSize: 14, fontWeight: '700' },
-  creatorMeta: { fontSize: 12, marginTop: 2 },
+  creatorAvatarText: { fontSize: 16, fontWeight: '800', fontFamily: F.extrabold },
+  creatorName: { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
+  creatorMeta: { fontSize: 12, marginTop: 2, fontFamily: F.regular },
   categoryPill: { alignSelf: 'flex-start', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2, marginTop: 4 },
-  categoryPillText: { fontSize: 11, fontWeight: '600' },
+  categoryPillText: { fontSize: 11, fontWeight: '600', fontFamily: F.semibold },
   removeBtn: { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 },
-  removeBtnText: { fontSize: 12, fontWeight: '700' },
+  removeBtnText: { fontSize: 12, fontWeight: '700', fontFamily: F.bold },
   noteBubble: { marginTop: 10, borderRadius: 8, padding: 10 },
-  noteText: { fontSize: 13 },
+  noteText: { fontSize: 13, fontFamily: F.regular },
   addNoteBtn: { paddingTop: 10 },
-  addNoteText: { fontSize: 13, fontWeight: '600' },
+  addNoteText: { fontSize: 13, fontWeight: '600', fontFamily: F.semibold },
   noteEditRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10, borderRadius: 8, padding: 8 },
-  noteInput: { flex: 1, fontSize: 13, borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 },
+  noteInput: { flex: 1, fontSize: 13, borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, fontFamily: F.regular },
   noteSaveBtn: { borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
-  noteSaveBtnText: { color: '#fff', fontSize: 12, fontWeight: '700' },
+  noteSaveBtnText: { color: '#fff', fontSize: 12, fontWeight: '700', fontFamily: F.bold },
   noteCancelText: { fontSize: 16, paddingHorizontal: 4 },
 
   emptyState: { alignItems: 'center', paddingTop: 60, gap: 10 },
   emptyIcon: { fontSize: 48 },
-  emptyText: { fontSize: 16, fontWeight: '600' },
-  emptySubText: { fontSize: 13 },
+  emptyText: { fontSize: 16, fontWeight: '600', fontFamily: F.semibold },
+  emptySubText: { fontSize: 13, fontFamily: F.regular },
 
   faqCard: { borderRadius: 12, padding: 14, gap: 6, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
-  faqQ: { fontSize: 14, fontWeight: '700', lineHeight: 20 },
-  faqA: { fontSize: 13, lineHeight: 19 },
+  faqQ: { fontSize: 14, fontWeight: '700', lineHeight: 20, fontFamily: F.bold },
+  faqA: { fontSize: 13, lineHeight: 19, fontFamily: F.regular },
 
   toast: {
     position: 'absolute', bottom: 32, left: 32, right: 32,
@@ -1386,5 +1389,5 @@ const styles = StyleSheet.create({
     shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 }, elevation: 8,
   },
-  toastText: { color: '#fff', fontSize: 14, fontWeight: '600', flex: 1 },
+  toastText: { color: '#fff', fontSize: 14, fontWeight: '600', flex: 1, fontFamily: F.semibold },
 });

@@ -29,4 +29,11 @@ export class NotificationController {
       res.json({ success: true });
     } catch (err) { next(err); }
   }
+
+  async markReadByRef(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      await notificationService.markReadByRef(req.user!.id, req.params.refId);
+      res.json({ success: true });
+    } catch (err) { next(err); }
+  }
 }

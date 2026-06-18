@@ -2,10 +2,19 @@ import { DarkTheme, DefaultTheme, ThemeProvider, useRouter, useSegments } from '
 import { Stack } from 'expo-router';
 import { useEffect } from 'react';
 import { View } from 'react-native';
+import {
+  useFonts,
+  Poppins_400Regular,
+  Poppins_500Medium,
+  Poppins_600SemiBold,
+  Poppins_700Bold,
+  Poppins_800ExtraBold,
+} from '@expo-google-fonts/poppins';
 import { AuthProvider } from '@/context/AuthContext';
 import { useAuth } from '@/context/AuthContext';
 import { LanguageProvider } from '@/context/LanguageContext';
 import { AppThemeProvider, useIsDark } from '@/context/ThemeContext';
+import { NotificationProvider } from '@/context/NotificationContext';
 import { SplashScreen } from '@/components/SplashScreen';
 import { ToastProvider } from '@/components/Toast';
 
@@ -55,15 +64,27 @@ function RootLayoutInner() {
   return (
     <LanguageProvider>
       <AuthProvider>
-        <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
-          <RootNavigator />
-        </ThemeProvider>
+        <NotificationProvider>
+          <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
+            <RootNavigator />
+          </ThemeProvider>
+        </NotificationProvider>
       </AuthProvider>
     </LanguageProvider>
   );
 }
 
 export default function RootLayout() {
+  const [fontsLoaded] = useFonts({
+    'Poppins-Regular':   Poppins_400Regular,
+    'Poppins-Medium':    Poppins_500Medium,
+    'Poppins-SemiBold':  Poppins_600SemiBold,
+    'Poppins-Bold':      Poppins_700Bold,
+    'Poppins-ExtraBold': Poppins_800ExtraBold,
+  });
+
+  if (!fontsLoaded) return null;
+
   return (
     <AppThemeProvider>
       <ToastProvider>

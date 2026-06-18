@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { BackButton } from '@/components/BackButton';
 import {
@@ -17,6 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { RangeSlider } from '@/components/RangeSlider';
 import { useAppColors } from '@/context/ThemeContext';
 import { creatorService, type ApiCreatorListItem } from '@/services/creator';
+import { F } from '@/utilities/constants';
 
 const PAGE_SIZE = 10;
 const SLIDER_MAX = 1000;
@@ -222,20 +224,20 @@ const lp = StyleSheet.create({
   wrap:        { gap: 10 },
   remoteChip:  { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 22, borderWidth: 1.5 },
   globeEmoji:  { fontSize: 14 },
-  remoteText:  { fontSize: 13 },
-  removeX:     { fontSize: 12, fontWeight: '700' },
+  remoteText:  { fontSize: 13, fontFamily: F.regular },
+  removeX:     { fontSize: 12, fontWeight: '700', fontFamily: F.bold },
   chips:       { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   locChip:     { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1.5 },
-  locChipText: { fontSize: 13, fontWeight: '600' },
+  locChipText: { fontSize: 13, fontWeight: '600', fontFamily: F.semibold },
   searchRow:   { flexDirection: 'row', alignItems: 'center', borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 12, height: 44, gap: 8 },
   searchIcon:  { fontSize: 15 },
-  searchInput: { flex: 1, fontSize: 14 },
+  searchInput: { flex: 1, fontSize: 14, fontFamily: F.regular },
   dropdown:    { borderRadius: 12, borderWidth: 1.5, overflow: 'hidden' },
   dropRow:     { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, gap: 10, borderBottomWidth: 1 },
   dropPin:     { fontSize: 16 },
   dropTexts:   { flex: 1 },
-  dropMain:    { fontSize: 14, fontWeight: '600' },
-  dropSec:     { fontSize: 11, marginTop: 1 },
+  dropMain:    { fontSize: 14, fontWeight: '600', fontFamily: F.semibold },
+  dropSec:     { fontSize: 11, marginTop: 1, fontFamily: F.regular },
 });
 
 // ─── Filter Modal ─────────────────────────────────────────────────────────────
@@ -351,19 +353,19 @@ const fm = StyleSheet.create({
   sheet:       { position: 'absolute', left: 0, right: 0, bottom: 0, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '92%', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 20, shadowOffset: { width: 0, height: -4 }, elevation: 20 },
   handle:      { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginTop: 12, marginBottom: 4 },
   header:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1 },
-  title:       { fontSize: 17, fontWeight: '800' },
-  reset:       { fontSize: 14, fontWeight: '600' },
+  title:       { fontSize: 17, fontWeight: '800', fontFamily: F.extrabold },
+  reset:       { fontSize: 14, fontWeight: '600', fontFamily: F.semibold },
   body:        { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16, gap: 16 },
   sectionRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  sectionLabel:{ fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8 },
-  sectionHint: { fontSize: 11, fontWeight: '600' },
+  sectionLabel:{ fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8, fontFamily: F.bold },
+  sectionHint: { fontSize: 11, fontWeight: '600', fontFamily: F.semibold },
   chips:       { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip:        { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 13, paddingVertical: 8, borderRadius: 20, borderWidth: 1.5 },
   chipEmoji:   { fontSize: 13 },
-  chipText:    { fontSize: 13 },
+  chipText:    { fontSize: 13, fontFamily: F.medium },
   footer:      { padding: 20, borderTopWidth: 1 },
   applyBtn:    { borderRadius: 14, height: 52, justifyContent: 'center', alignItems: 'center' },
-  applyTxt:    { color: '#fff', fontSize: 16, fontWeight: '700' },
+  applyTxt:    { color: '#fff', fontSize: 16, fontWeight: '700', fontFamily: F.bold },
 });
 
 // ─── Creator Card ─────────────────────────────────────────────────────────────
@@ -566,37 +568,38 @@ export default function ExploreCreatorsScreen() {
 
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
+      <LinearGradient colors={['#4F46E5', '#7C3AED', '#9333EA']} start={{x:0,y:0}} end={{x:1,y:1}} style={s.gradientHeader}>
+        {/* Header */}
+        <View style={s.header}>
+          <BackButton fallback="/(business)/" />
+          <Text style={[s.headerTitle, { color: '#fff' }]}>Explore Creators</Text>
+          <View style={{ width: 40 }} />
+        </View>
 
-      {/* Header */}
-      <View style={s.header}>
-        <BackButton fallback="/(business)/" />
-        <Text style={[s.headerTitle, { color: C.text }]}>Explore Creators</Text>
-        <View style={{ width: 40 }} />
-      </View>
-
-      {/* Search bar — same design as creator home */}
-      <View style={[s.searchCard, { backgroundColor: C.surface }]}>
+        {/* Search bar */}
+        <View style={[s.searchCard, { backgroundColor: 'rgba(255,255,255,0.18)', borderColor: 'rgba(255,255,255,0.3)', borderWidth: 1 }]}>
         <Text style={s.searchIcon}>🔍</Text>
         <TextInput
-          style={[s.searchInput, { color: C.text }]}
+          style={[s.searchInput, { color: '#fff' }]}
           placeholder="Search creators…"
-          placeholderTextColor={C.textSecondary}
+          placeholderTextColor="rgba(255,255,255,0.6)"
           value={search}
           onChangeText={setSearch}
           returnKeyType="search"
           autoCorrect={false}
         />
         <Pressable
-          style={[s.filterBtn, { backgroundColor: filterActive ? C.brinjal1 : C.primaryLight }]}
+          style={[s.filterBtn, { backgroundColor: filterActive ? '#F97316' : 'rgba(255,255,255,0.2)' }]}
           onPress={openFilter}>
           <View style={s.filterLines}>
-            <View style={[s.filterLine, { width: 16, backgroundColor: filterActive ? '#fff' : C.brinjal1 }]} />
-            <View style={[s.filterLine, { width: 12, backgroundColor: filterActive ? '#fff' : C.brinjal1 }]} />
-            <View style={[s.filterLine, { width: 8, backgroundColor: filterActive ? '#fff' : C.brinjal1 }]} />
+            <View style={[s.filterLine, { width: 16, backgroundColor: '#fff' }]} />
+            <View style={[s.filterLine, { width: 12, backgroundColor: '#fff' }]} />
+            <View style={[s.filterLine, { width: 8, backgroundColor: '#fff' }]} />
           </View>
-          {filterActive && <View style={[s.filterDot, { borderColor: C.surface }]} />}
+          {filterActive && <View style={[s.filterDot, { borderColor: 'rgba(255,255,255,0.5)' }]} />}
         </Pressable>
       </View>
+      </LinearGradient>
 
       {/* Active filter chips */}
       {filterActive && (
@@ -700,14 +703,14 @@ export default function ExploreCreatorsScreen() {
 
 const s = StyleSheet.create({
   container: { flex: 1 },
+  gradientHeader: { paddingBottom: 16, borderBottomLeftRadius: 24, borderBottomRightRadius: 24, overflow: 'hidden' },
 
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 8 },
-  headerTitle: { flex: 1, fontSize: 18, fontWeight: '800', textAlign: 'center' },
+  headerTitle: { flex: 1, fontSize: 18, fontWeight: '800', textAlign: 'center', fontFamily: F.extrabold },
 
-  // Matches creator home search card
-  searchCard: { flexDirection: 'row', alignItems: 'center', borderRadius: 14, marginHorizontal: 20, marginBottom: 12, paddingHorizontal: 14, height: 50, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 3 },
+  searchCard: { flexDirection: 'row', alignItems: 'center', borderRadius: 14, marginHorizontal: 20, marginBottom: 0, paddingHorizontal: 14, height: 50 },
   searchIcon: { fontSize: 16, marginRight: 8 },
-  searchInput: { flex: 1, fontSize: 14 },
+  searchInput: { flex: 1, fontSize: 14, fontFamily: F.regular },
   filterBtn: { width: 34, height: 34, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
   filterLines: { gap: 4, alignItems: 'flex-end' },
   filterLine: { height: 2, borderRadius: 1 },
@@ -715,18 +718,18 @@ const s = StyleSheet.create({
 
   chipRow: { paddingHorizontal: 20, paddingBottom: 8, gap: 6, flexDirection: 'row', alignItems: 'center' },
   chip: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 16, borderWidth: 1.5 },
-  chipText: { fontSize: 12, fontWeight: '600' },
+  chipText: { fontSize: 12, fontWeight: '600', fontFamily: F.semibold },
 
   countRow: { paddingHorizontal: 20, marginBottom: 6 },
-  countText: { fontSize: 12 },
+  countText: { fontSize: 12, fontFamily: F.regular },
 
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, paddingHorizontal: 32 },
-  loadingText: { fontSize: 14 },
-  errorText: { color: '#DC2626', fontSize: 14 },
-  linkText: { fontSize: 14, fontWeight: '700' },
+  loadingText: { fontSize: 14, fontFamily: F.regular },
+  errorText: { color: '#DC2626', fontSize: 14, fontFamily: F.regular },
+  linkText: { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
   emptyEmoji: { fontSize: 48 },
-  emptyTitle: { fontSize: 18, fontWeight: '700' },
-  emptyHint: { fontSize: 13, textAlign: 'center', lineHeight: 20 },
+  emptyTitle: { fontSize: 18, fontWeight: '700', fontFamily: F.bold },
+  emptyHint: { fontSize: 13, textAlign: 'center', lineHeight: 20, fontFamily: F.regular },
   clearBtn: { borderRadius: 20, borderWidth: 1.5, paddingHorizontal: 16, paddingVertical: 8, marginTop: 4 },
 
   list: { paddingHorizontal: 20, paddingBottom: 40, gap: 14 },
@@ -737,20 +740,20 @@ const s = StyleSheet.create({
   avatarText: { fontSize: 24 },
   cardMeta: { flex: 1, gap: 3 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  name: { fontSize: 16, fontWeight: '800', flex: 1 },
+  name: { fontSize: 16, fontWeight: '800', flex: 1, fontFamily: F.extrabold },
   verifiedBadge: { width: 18, height: 18, borderRadius: 9, backgroundColor: '#22C55E', justifyContent: 'center', alignItems: 'center' },
-  verifiedText: { fontSize: 9, fontWeight: '800', color: '#fff' },
-  location: { fontSize: 12 },
+  verifiedText: { fontSize: 9, fontWeight: '800', color: '#fff', fontFamily: F.extrabold },
+  location: { fontSize: 12, fontFamily: F.regular },
   cardChevron: { fontSize: 24 },
-  bio: { fontSize: 13, lineHeight: 19 },
+  bio: { fontSize: 13, lineHeight: 19, fontFamily: F.regular },
   statsRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
   statPill: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10 },
   statEmoji: { fontSize: 12 },
-  statVal: { fontSize: 12, fontWeight: '700' },
+  statVal: { fontSize: 12, fontWeight: '700', fontFamily: F.bold },
   catRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
   catChip: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 8 },
   catEmoji: { fontSize: 11 },
-  catLabel: { fontSize: 11, fontWeight: '600' },
+  catLabel: { fontSize: 11, fontWeight: '600', fontFamily: F.semibold },
 
-  footerText: { textAlign: 'center', fontSize: 13, paddingVertical: 20 },
+  footerText: { textAlign: 'center', fontSize: 13, paddingVertical: 20, fontFamily: F.regular },
 });

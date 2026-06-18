@@ -8,6 +8,7 @@ export declare class BusinessRepository {
         limit: number;
     }): Promise<{
         businesses: {
+            description: string | null;
             id: string;
             categories: string[];
             isVerified: boolean;
@@ -15,13 +16,13 @@ export declare class BusinessRepository {
                 campaigns: number;
             };
             businessName: string;
-            description: string | null;
             logoUrl: string | null;
             website: string | null;
         }[];
         total: number;
     }>;
     findPublicById(id: string): Promise<{
+        description: string | null;
         id: string;
         createdAt: Date;
         userId: string;
@@ -31,7 +32,6 @@ export declare class BusinessRepository {
             campaigns: number;
         };
         businessName: string;
-        description: string | null;
         logoUrl: string | null;
         website: string | null;
         showPublicProfile: boolean;
@@ -61,6 +61,7 @@ export declare class BusinessRepository {
             isEmailVerified: boolean;
         };
     } & {
+        description: string | null;
         id: string;
         createdAt: Date;
         updatedAt: Date;
@@ -68,7 +69,6 @@ export declare class BusinessRepository {
         categories: string[];
         isVerified: boolean;
         businessName: string;
-        description: string | null;
         logoUrl: string | null;
         website: string | null;
         panNo: string | null;
@@ -77,6 +77,7 @@ export declare class BusinessRepository {
         allowDirectMessages: boolean;
     }) | null>;
     findById(id: string): Promise<{
+        description: string | null;
         id: string;
         createdAt: Date;
         updatedAt: Date;
@@ -84,7 +85,6 @@ export declare class BusinessRepository {
         categories: string[];
         isVerified: boolean;
         businessName: string;
-        description: string | null;
         logoUrl: string | null;
         website: string | null;
         panNo: string | null;
@@ -103,6 +103,7 @@ export declare class BusinessRepository {
         hideContactDetails: boolean;
         allowDirectMessages: boolean;
     }>): Promise<{
+        description: string | null;
         id: string;
         createdAt: Date;
         updatedAt: Date;
@@ -110,7 +111,6 @@ export declare class BusinessRepository {
         categories: string[];
         isVerified: boolean;
         businessName: string;
-        description: string | null;
         logoUrl: string | null;
         website: string | null;
         panNo: string | null;

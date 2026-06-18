@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
 import { BackButton } from '@/components/BackButton';
 import {
@@ -13,6 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
+import { F } from '@/utilities/constants';
 
 const SOCIAL_FIELDS = [
   { id: 'website',   icon: '🌐', label: 'Website',   placeholder: 'https://yourbusiness.com' },
@@ -51,13 +53,14 @@ export default function PresenceGoalScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
-
-      {/* Header */}
-      <View style={[styles.header, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
-        <BackButton fallback="/(business)/" />
-        <Text style={[styles.headerTitle, { color: C.text }]}>Presence & Goal</Text>
-        <View style={{ width: 36 }} />
-      </View>
+      <LinearGradient colors={['#4F46E5', '#7C3AED', '#9333EA']} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientHeader}>
+        {/* Header */}
+        <View style={styles.header}>
+          <BackButton fallback="/(business)/" />
+          <Text style={[styles.headerTitle, { color: '#fff' }]}>Presence & Goal</Text>
+          <View style={{ width: 36 }} />
+        </View>
+      </LinearGradient>
 
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
@@ -144,35 +147,35 @@ export default function PresenceGoalScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   flex: { flex: 1 },
+  gradientHeader: { overflow: 'hidden', borderBottomLeftRadius: 20, borderBottomRightRadius: 20 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 14,
-    borderBottomWidth: 1,
   },
-  headerTitle: { fontSize: 17, fontWeight: '700' },
+  headerTitle: { fontSize: 17, fontWeight: '700', fontFamily: F.bold },
   scrollContent: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 48 },
-  sectionHint: { fontSize: 13, lineHeight: 19, marginBottom: 20 },
+  sectionHint: { fontSize: 13, lineHeight: 19, marginBottom: 20, fontFamily: F.regular },
   fieldGroup: { marginBottom: 24 },
   labelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
-  fieldLabel: { fontSize: 14, fontWeight: '700' },
-  optionalTag: { fontSize: 12, fontWeight: '500' },
-  fieldSub: { fontSize: 12, marginTop: -6, marginBottom: 10 },
+  fieldLabel: { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
+  optionalTag: { fontSize: 12, fontWeight: '500', fontFamily: F.medium },
+  fieldSub: { fontSize: 12, marginTop: -6, marginBottom: 10, fontFamily: F.regular },
   socialList: { gap: 10 },
   socialRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 14, height: 50, gap: 10 },
   socialIcon: { fontSize: 18 },
-  socialInput: { flex: 1, fontSize: 14 },
+  socialInput: { flex: 1, fontSize: 14, fontFamily: F.regular },
   serviceList: { gap: 10 },
   serviceCard: { flexDirection: 'row', alignItems: 'center', gap: 14, borderRadius: 14, borderWidth: 1.5, padding: 14 },
   serviceIconWrap: { width: 46, height: 46, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
   serviceEmoji: { fontSize: 22 },
   serviceInfo: { flex: 1, gap: 3 },
-  serviceLabel: { fontSize: 15, fontWeight: '700' },
-  serviceDesc: { fontSize: 12 },
+  serviceLabel: { fontSize: 15, fontWeight: '700', fontFamily: F.bold },
+  serviceDesc: { fontSize: 12, fontFamily: F.regular },
   serviceCheck: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, justifyContent: 'center', alignItems: 'center' },
-  serviceCheckMark: { color: '#fff', fontSize: 12, fontWeight: '800' },
+  serviceCheckMark: { color: '#fff', fontSize: 12, fontWeight: '800', fontFamily: F.extrabold },
   saveBtn: { borderRadius: 14, paddingVertical: 15, alignItems: 'center', shadowOpacity: 0.25, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 5 },
-  saveBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  saveBtnText: { color: '#fff', fontSize: 16, fontWeight: '700', fontFamily: F.bold },
 });

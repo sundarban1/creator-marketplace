@@ -1,5 +1,6 @@
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { BackButton } from '@/components/BackButton';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -18,6 +19,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { useToast } from '@/components/Toast';
 import { creatorService } from '@/services/creator';
+import { F } from '@/utilities/constants';
 
 const PLACES_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY ?? '';
 
@@ -257,11 +259,13 @@ export default function EditProfileScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
-      <View style={[styles.topBar, { backgroundColor: C.background, borderBottomColor: C.border }]}>
-        <BackButton fallback="/(creator)/profile" />
-        <Text style={[styles.topTitle, { color: C.text }]}>Edit Profile</Text>
-        <View style={{ width: 38 }} />
-      </View>
+      <LinearGradient colors={['#F97316', '#EF4444', '#EC4899']} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientTopBar}>
+        <View style={styles.topBar}>
+          <BackButton fallback="/(creator)/profile" />
+          <Text style={[styles.topTitle, { color: '#fff' }]}>Edit Profile</Text>
+          <View style={{ width: 38 }} />
+        </View>
+      </LinearGradient>
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -343,21 +347,22 @@ export default function EditProfileScreen() {
 const styles = StyleSheet.create({
   container:  { flex: 1 },
   center:     { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  topBar:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1 },
-  topTitle:   { fontSize: 16, fontWeight: '700' },
+  gradientTopBar: { overflow: 'hidden', borderBottomLeftRadius: 20, borderBottomRightRadius: 20 },
+  topBar:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
+  topTitle:   { fontSize: 16, fontWeight: '700', fontFamily: F.bold },
   content:    { paddingBottom: 24 },
-  sectionHeader: { fontSize: 11, fontWeight: '700', letterSpacing: 0.8, marginTop: 20, marginBottom: 6, marginHorizontal: 20 },
+  sectionHeader: { fontSize: 11, fontWeight: '700', letterSpacing: 0.8, marginTop: 20, marginBottom: 6, marginHorizontal: 20, fontFamily: F.bold },
   card:       { marginHorizontal: 16, borderRadius: 14, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2, overflow: 'hidden' },
   field:      { padding: 16, gap: 6 },
   divider:    { height: 1 },
-  label:      { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
-  input:      { borderRadius: 10, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14 },
-  textarea:   { borderRadius: 10, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, minHeight: 100 },
-  charCount:  { fontSize: 11, textAlign: 'right' },
+  label:      { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: F.bold },
+  input:      { borderRadius: 10, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, fontFamily: F.regular },
+  textarea:   { borderRadius: 10, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, minHeight: 100, fontFamily: F.regular },
+  charCount:  { fontSize: 11, textAlign: 'right', fontFamily: F.regular },
   locationBtn:    { flexDirection: 'row', alignItems: 'center', borderRadius: 10, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 12, gap: 8 },
-  locationBtnTxt: { flex: 1, fontSize: 14, lineHeight: 20 },
+  locationBtnTxt: { flex: 1, fontSize: 14, lineHeight: 20, fontFamily: F.regular },
   locationArrow:  { fontSize: 20, color: '#9CA3AF' },
-  clearLocation:  { fontSize: 12, fontWeight: '600', marginTop: 2 },
+  clearLocation:  { fontSize: 12, fontWeight: '600', marginTop: 2, fontFamily: F.semibold },
   saveBtn:    { marginHorizontal: 16, marginTop: 20, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
-  saveBtnText:{ fontSize: 15, fontWeight: '700', color: '#fff' },
+  saveBtnText:{ fontSize: 15, fontWeight: '700', color: '#fff', fontFamily: F.bold },
 });

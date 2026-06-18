@@ -210,11 +210,11 @@ export const campaignService = {
   },
 
   async acceptProposal(campaignId: string, appId: string): Promise<void> {
-    await request('POST', `/api/campaigns/${campaignId}/applications/${appId}/accept`);
+    await request('PUT', `/api/campaigns/${campaignId}/applications/${appId}/accept`);
   },
 
   async rejectProposal(campaignId: string, appId: string): Promise<void> {
-    await request('POST', `/api/campaigns/${campaignId}/applications/${appId}/reject`);
+    await request('PUT', `/api/campaigns/${campaignId}/applications/${appId}/reject`);
   },
 
   async getApplications(campaignId: string): Promise<Array<{
