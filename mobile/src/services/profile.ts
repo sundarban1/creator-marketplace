@@ -7,6 +7,8 @@ export type BusinessProfile = {
   logoUrl:      string | null;
   website:      string | null;
   categories:   string[];
+  panNo:        string | null;
+  location:     string | null;
   isVerified:   boolean;
   createdAt:    string;
   user: { email: string };
@@ -34,6 +36,7 @@ export const profileService = {
     logoUrl?:      string;
     website?:      string;
     panNo?:        string;
+    location?:     string | null;
     categories?:   string[];
   }): Promise<void> {
     await request('PUT', '/api/business/profile', data);

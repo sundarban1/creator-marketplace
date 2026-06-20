@@ -13,12 +13,14 @@ export type Campaign = {
   id: string;
   title: string;
   brand: string;
-  platform: 'Instagram' | 'TikTok' | 'YouTube' | 'Twitter / X' | 'LinkedIn';
+  platform: string;
   platformIcon: string;
   budget: string;
   budgetRaw: number;
   budgetMax?: number;
+  template?: string;
   category: string;
+  goals: string[];
   minFollowers: string;
   minFollowersRaw: number;
   deadline: string;

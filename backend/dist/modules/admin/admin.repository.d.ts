@@ -24,14 +24,14 @@ export declare class AdminRepository {
         users: {
             email: string;
             creatorProfile: {
+                isVerified: boolean;
                 fullName: string;
                 avatarUrl: string | null;
-                isVerified: boolean;
             } | null;
             businessProfile: {
-                isVerified: boolean;
                 businessName: string;
                 logoUrl: string | null;
+                isVerified: boolean;
             } | null;
             id: string;
             role: import(".prisma/client").$Enums.Role;
@@ -55,22 +55,22 @@ export declare class AdminRepository {
             createdAt: Date;
             updatedAt: Date;
             userId: string;
-            username: string | null;
+            categories: string[];
+            isVerified: boolean;
             fullName: string;
             bio: string | null;
             location: string | null;
-            locationLat: number | null;
-            locationLng: number | null;
             avatarUrl: string | null;
-            categories: string[];
             socialLinks: import("@prisma/client/runtime/library").JsonValue;
             portfolioLinks: import("@prisma/client/runtime/library").JsonValue;
-            isVerified: boolean;
+            username: string | null;
             paymentMethods: string[];
             prefPlatforms: string[];
             prefLocations: string[];
             prefBudgetMin: number;
             prefBudgetMax: number;
+            locationLat: number | null;
+            locationLng: number | null;
         })[];
         total: number;
     }>;
@@ -90,15 +90,15 @@ export declare class AdminRepository {
             createdAt: Date;
             updatedAt: Date;
             userId: string;
-            categories: string[];
-            isVerified: boolean;
             businessName: string;
             logoUrl: string | null;
             website: string | null;
+            categories: string[];
             panNo: string | null;
-            showPublicProfile: boolean;
-            hideContactDetails: boolean;
+            isVerified: boolean;
             allowDirectMessages: boolean;
+            hideContactDetails: boolean;
+            showPublicProfile: boolean;
         })[];
         total: number;
     }>;
@@ -121,7 +121,9 @@ export declare class AdminRepository {
             platform: string;
             businessId: string;
             title: string;
+            template: string | null;
             category: string;
+            goals: import("@prisma/client/runtime/library").JsonValue;
             minFollowers: number;
             contentType: string;
             deliverables: string;
@@ -129,8 +131,8 @@ export declare class AdminRepository {
             budgetMin: number;
             budgetMax: number;
             paymentType: string;
-            creatorsNeeded: number;
             isFeatured: boolean;
+            creatorsNeeded: number;
         })[];
         total: number;
     }>;
@@ -151,11 +153,11 @@ export declare class AdminRepository {
         password: string;
         role: import(".prisma/client").$Enums.Role;
         isEmailVerified: boolean;
-        isOnboarded: boolean;
-        isActive: boolean;
         refreshToken: string | null;
         createdAt: Date;
         updatedAt: Date;
+        isOnboarded: boolean;
+        isActive: boolean;
     }>;
 }
 //# sourceMappingURL=admin.repository.d.ts.map

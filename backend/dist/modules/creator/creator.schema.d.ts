@@ -9,23 +9,23 @@ export declare const updateCreatorProfileSchema: z.ZodObject<{
     avatarUrl: z.ZodOptional<z.ZodString>;
     categories: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
 }, "strip", z.ZodTypeAny, {
-    username?: string | undefined;
+    categories?: string[] | undefined;
     fullName?: string | undefined;
     bio?: string | undefined;
     location?: string | undefined;
+    avatarUrl?: string | undefined;
+    username?: string | undefined;
     locationLat?: number | undefined;
     locationLng?: number | undefined;
-    avatarUrl?: string | undefined;
-    categories?: string[] | undefined;
 }, {
-    username?: string | undefined;
+    categories?: string[] | undefined;
     fullName?: string | undefined;
     bio?: string | undefined;
     location?: string | undefined;
+    avatarUrl?: string | undefined;
+    username?: string | undefined;
     locationLat?: number | undefined;
     locationLng?: number | undefined;
-    avatarUrl?: string | undefined;
-    categories?: string[] | undefined;
 }>;
 export declare const addPortfolioLinkSchema: z.ZodObject<{
     label: z.ZodString;

@@ -34,6 +34,12 @@ class NotificationRepository {
     async getUnreadCount(userId) {
         return prisma_1.default.notification.count({ where: { userId, isRead: false } });
     }
+    async markReadByRef(userId, refId) {
+        return prisma_1.default.notification.updateMany({
+            where: { userId, refId, isRead: false },
+            data: { isRead: true },
+        });
+    }
 }
 exports.NotificationRepository = NotificationRepository;
 //# sourceMappingURL=notification.repository.js.map

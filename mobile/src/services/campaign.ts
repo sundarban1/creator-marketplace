@@ -12,8 +12,9 @@ const PLATFORM_ICONS: Record<string, string> = {
   LinkedIn:     '💼',
 };
 
-function formatBudget(min: number, max: number): string {
-  const fmt = (n: number) => `$${n.toLocaleString()}`;
+function formatBudget(min: number, max: number, paymentType?: string): string {
+  if (paymentType === 'Product Exchange' || (min === 0 && max === 0)) return 'Free Product Exchange';
+  const fmt = (n: number) => `Rs. ${n.toLocaleString()}`;
   return min === max ? fmt(min) : `${fmt(min)} – ${fmt(max)}`;
 }
 
@@ -46,10 +47,12 @@ export function toCampaign(api: ApiCampaign): Campaign {
     brand:        api.business.businessName,
     platform:     api.platform as Campaign['platform'],
     platformIcon: PLATFORM_ICONS[api.platform] ?? '📱',
-    budget:       formatBudget(api.budgetMin, api.budgetMax),
+    budget:       formatBudget(api.budgetMin, api.budgetMax, api.paymentType),
     budgetRaw:    api.budgetMin,
     budgetMax:    api.budgetMax,
+    template:     api.template ?? undefined,
     category:     api.category,
+    goals:        Array.isArray(api.goals) ? api.goals : [],
     minFollowers:    formatFollowers(api.minFollowers),
     minFollowersRaw: api.minFollowers,
     deadline:     api.deadline,
@@ -136,7 +139,9 @@ export const campaignService = {
   async create(data: {
     title: string;
     description: string;
+    template?: string;
     category: string;
+    goals?: string[];
     platform: string;
     minFollowers: number;
     contentType: string;

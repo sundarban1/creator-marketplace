@@ -4,18 +4,31 @@ import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Seeding database...\n');
+  console.log('🗑️  Clearing existing data...\n');
+
+  // Delete in dependency order
+  await prisma.notification.deleteMany();
+  await prisma.message.deleteMany();
+  await prisma.conversation.deleteMany();
+  await prisma.application.deleteMany();
+  await prisma.campaign.deleteMany();
+  await prisma.favoriteBusiness.deleteMany();
+  await prisma.creatorProfile.deleteMany();
+  await prisma.businessProfile.deleteMany();
+  await prisma.otpVerification.deleteMany();
+  await prisma.user.deleteMany();
+
+  console.log('✅ Database cleared\n');
+  console.log('🌱 Seeding with fresh data...\n');
 
   const adminPw   = await bcrypt.hash('Admin@123456', 12);
   const creatorPw = await bcrypt.hash('Creator@123', 12);
   const bizPw     = await bcrypt.hash('Business@123', 12);
 
-  // ── Admin users ─────────────────────────────────────────────────────────────
-  const admin = await prisma.user.upsert({
-    where:  { email: 'admin@creatorhub.com' },
-    update: {},
-    create: {
-      email: 'admin@creatorhub.com',
+  // ── Admins ───────────────────────────────────────────────────────────────────
+  const admin = await prisma.user.create({
+    data: {
+      email: 'admin@creatormarket.com.np',
       phone: '+9779800000001',
       password: adminPw,
       role: Role.ADMIN,
@@ -25,187 +38,310 @@ async function main() {
   });
   console.log(`✅ Admin:       ${admin.email}  /  Admin@123456`);
 
-  const moderator = await prisma.user.upsert({
-    where:  { email: 'moderator@creatorhub.com' },
-    update: {},
-    create: {
-      email: 'moderator@creatorhub.com',
-      phone: '+9779800000002',
-      password: adminPw,
-      role: Role.ADMIN,
-      isEmailVerified: true,
-      isOnboarded: true,
-    },
-  });
-  console.log(`✅ Moderator:   ${moderator.email}  /  Admin@123456`);
-
   // ── Creators ─────────────────────────────────────────────────────────────────
-  const sarah = await prisma.user.upsert({
-    where:  { email: 'sarah@example.com' },
-    update: {},
-    create: {
-      email: 'sarah@example.com',
-      phone: '+9779800000003',
+  const aarav = await prisma.user.create({
+    data: {
+      email: 'aarav@example.com',
+      phone: '+9779811111101',
       password: creatorPw,
       role: Role.CREATOR,
       isEmailVerified: true,
       isOnboarded: true,
       creatorProfile: {
         create: {
-          fullName: 'Sarah Johnson',
-          bio: 'Lifestyle and fashion creator with 5 years of experience. Passionate about sustainable fashion.',
-          location: 'New York, USA',
+          fullName: 'Aarav Sharma',
+          bio: 'Food and lifestyle creator based in Kathmandu. I share authentic reviews of local restaurants, cafes, and street food. 80K+ followers across platforms.',
+          location: 'Kathmandu, Nepal',
+          categories: ['Food', 'Lifestyle'],
+          socialLinks: {
+            instagram: '@aaraveatskth',
+            tiktok: '@aaravktm',
+            youtube: 'Aarav Eats',
+            facebook: 'Aarav Sharma',
+          },
+          portfolioLinks: [
+            { id: '1', label: 'Restaurant Reel', url: 'https://instagram.com/reel/sample1' },
+            { id: '2', label: 'Cafe Review', url: 'https://youtube.com/watch?v=sample2' },
+          ],
+          isVerified: true,
+        },
+      },
+    },
+  });
+  console.log(`✅ Creator:     ${aarav.email}`);
+
+  const srijana = await prisma.user.create({
+    data: {
+      email: 'srijana@example.com',
+      phone: '+9779811111102',
+      password: creatorPw,
+      role: Role.CREATOR,
+      isEmailVerified: true,
+      isOnboarded: true,
+      creatorProfile: {
+        create: {
+          fullName: 'Srijana Tamang',
+          bio: 'Fashion and lifestyle creator from Pokhara. I create aesthetic content around fashion, beauty, and Nepali culture. 45K Instagram followers.',
+          location: 'Pokhara, Nepal',
           categories: ['Fashion', 'Lifestyle', 'Beauty'],
           socialLinks: {
-            instagram: '@sarahcreates',
-            tiktok: '@sarahj.creates',
-            youtube: 'Sarah Creates',
-            facebook: 'Sarah Johnson',
+            instagram: '@srijanastyle',
+            tiktok: '@srijanatamang',
           },
           portfolioLinks: [
-            { id: '1', label: 'Instagram Reel', url: 'https://instagram.com/reel/abc123' },
-            { id: '2', label: 'YouTube Video', url: 'https://youtube.com/watch?v=xyz789' },
+            { id: '1', label: 'Outfit Reel', url: 'https://instagram.com/reel/sample3' },
           ],
           isVerified: true,
         },
       },
     },
   });
-  console.log(`✅ Creator:     ${sarah.email}`);
+  console.log(`✅ Creator:     ${srijana.email}`);
 
-  const james = await prisma.user.upsert({
-    where:  { email: 'james@example.com' },
-    update: {},
-    create: {
-      email: 'james@example.com',
-      phone: '+9779800000004',
+  const bikash = await prisma.user.create({
+    data: {
+      email: 'bikash@example.com',
+      phone: '+9779811111103',
       password: creatorPw,
       role: Role.CREATOR,
       isEmailVerified: true,
       isOnboarded: true,
       creatorProfile: {
         create: {
-          fullName: 'James Chen',
-          bio: 'Tech reviewer and gaming content creator. Unboxing videos and honest reviews.',
-          location: 'San Francisco, USA',
+          fullName: 'Bikash Thapa',
+          bio: 'Travel vlogger exploring hidden gems of Nepal. Trekking, adventure sports, and cultural experiences. 120K YouTube subscribers.',
+          location: 'Kathmandu, Nepal',
+          categories: ['Travel', 'Adventure', 'Lifestyle'],
+          socialLinks: {
+            youtube: 'Bikash Explores Nepal',
+            instagram: '@bikashexplores',
+            tiktok: '@bikashtravel',
+          },
+          portfolioLinks: [
+            { id: '1', label: 'Annapurna Vlog', url: 'https://youtube.com/watch?v=sample4' },
+            { id: '2', label: 'Pokhara Reel', url: 'https://instagram.com/reel/sample5' },
+          ],
+          isVerified: true,
+        },
+      },
+    },
+  });
+  console.log(`✅ Creator:     ${bikash.email}`);
+
+  const nisha = await prisma.user.create({
+    data: {
+      email: 'nisha@example.com',
+      phone: '+9779811111104',
+      password: creatorPw,
+      role: Role.CREATOR,
+      isEmailVerified: true,
+      isOnboarded: true,
+      creatorProfile: {
+        create: {
+          fullName: 'Nisha Rai',
+          bio: 'Fitness and wellness creator sharing workout routines, healthy recipes, and mindful living tips. Certified personal trainer. 30K followers.',
+          location: 'Kathmandu, Nepal',
+          categories: ['Fitness', 'Wellness', 'Food'],
+          socialLinks: {
+            instagram: '@nishafitsnepal',
+            tiktok: '@nisharai.fit',
+          },
+          portfolioLinks: [],
+          isVerified: false,
+        },
+      },
+    },
+  });
+  console.log(`✅ Creator:     ${nisha.email}`);
+
+  const rohan = await prisma.user.create({
+    data: {
+      email: 'rohan@example.com',
+      phone: '+9779811111105',
+      password: creatorPw,
+      role: Role.CREATOR,
+      isEmailVerified: true,
+      isOnboarded: true,
+      creatorProfile: {
+        create: {
+          fullName: 'Rohan Gurung',
+          bio: 'Tech reviewer covering smartphones, gadgets, and apps for the Nepali market. Honest, detailed, and beginner-friendly reviews. 55K YouTube subscribers.',
+          location: 'Kathmandu, Nepal',
           categories: ['Technology', 'Gaming'],
           socialLinks: {
-            youtube: 'James Tech Reviews',
-            tiktok: '@jamestech',
+            youtube: 'Rohan Tech Nepal',
+            instagram: '@rohantech.np',
+            tiktok: '@rohantechktm',
           },
           portfolioLinks: [
-            { id: '1', label: 'Tech Review', url: 'https://youtube.com/watch?v=tech123' },
+            { id: '1', label: 'Phone Review', url: 'https://youtube.com/watch?v=sample6' },
           ],
-          isVerified: false,
-        },
-      },
-    },
-  });
-  console.log(`✅ Creator:     ${james.email}`);
-
-  const priya = await prisma.user.upsert({
-    where:  { email: 'priya@example.com' },
-    update: {},
-    create: {
-      email: 'priya@example.com',
-      phone: '+9779800000005',
-      password: creatorPw,
-      role: Role.CREATOR,
-      isEmailVerified: true,
-      isOnboarded: true,
-      creatorProfile: {
-        create: {
-          fullName: 'Priya Sharma',
-          bio: 'Food and travel blogger sharing authentic recipes and travel stories.',
-          location: 'Mumbai, India',
-          categories: ['Food', 'Travel', 'Wellness'],
-          socialLinks: { instagram: '@priyacooks', youtube: 'Priya Eats' },
-          portfolioLinks: [],
           isVerified: true,
         },
       },
     },
   });
-  console.log(`✅ Creator:     ${priya.email}`);
+  console.log(`✅ Creator:     ${rohan.email}`);
 
   // ── Businesses ────────────────────────────────────────────────────────────────
-  const stylecoUser = await prisma.user.upsert({
-    where:  { email: 'hello@styleco.com' },
-    update: {},
-    create: {
-      email: 'hello@styleco.com',
-      phone: '+9779800000006',
+  const momoHouseUser = await prisma.user.create({
+    data: {
+      email: 'hello@momohouse.com.np',
+      phone: '+9779822221101',
       password: bizPw,
       role: Role.BUSINESS,
       isEmailVerified: true,
       isOnboarded: true,
       businessProfile: {
         create: {
-          businessName: 'StyleCo Brand',
-          description: 'Modern fashion brand for young professionals. Sustainable, stylish, and affordable.',
-          website: 'https://styleco.com',
-          categories: ['Fashion', 'Lifestyle'],
+          businessName: 'Momo House Kathmandu',
+          description: 'Kathmandu\'s most-loved momo restaurant since 2010. Serving authentic Nepali and Tibetan dumplings with 12 varieties. Multiple branches across Kathmandu valley.',
+          website: 'https://momohouse.com.np',
+          categories: ['Food', 'Restaurant'],
           isVerified: true,
         },
       },
     },
     include: { businessProfile: true },
   });
-  console.log(`✅ Business:    ${stylecoUser.email}`);
+  console.log(`✅ Business:    ${momoHouseUser.email}`);
 
-  const gymgearUser = await prisma.user.upsert({
-    where:  { email: 'contact@gymgear.com' },
-    update: {},
-    create: {
-      email: 'contact@gymgear.com',
-      phone: '+9779800000007',
+  const himalayaBrewUser = await prisma.user.create({
+    data: {
+      email: 'info@himalayabrew.com.np',
+      phone: '+9779822221102',
       password: bizPw,
       role: Role.BUSINESS,
       isEmailVerified: true,
       isOnboarded: true,
       businessProfile: {
         create: {
-          businessName: 'GymGear Co',
-          description: 'Premium fitness equipment and activewear for serious athletes.',
-          website: 'https://gymgear.com',
-          categories: ['Fitness', 'Sports'],
+          businessName: 'Himalaya Brew Cafe',
+          description: 'Specialty coffee cafe in Thamel, Kathmandu. Sourcing beans directly from Nepali highland farms. Cozy ambiance with mountain views.',
+          website: 'https://himalayabrew.com.np',
+          categories: ['Cafe', 'Coffee'],
           isVerified: true,
         },
       },
     },
     include: { businessProfile: true },
   });
-  console.log(`✅ Business:    ${gymgearUser.email}`);
+  console.log(`✅ Business:    ${himalayaBrewUser.email}`);
 
-  const greenCafeUser = await prisma.user.upsert({
-    where:  { email: 'info@greencafe.com' },
-    update: {},
-    create: {
-      email: 'info@greencafe.com',
-      phone: '+9779800000008',
+  const dhakaThreadsUser = await prisma.user.create({
+    data: {
+      email: 'brand@dhakathreads.com.np',
+      phone: '+9779822221103',
       password: bizPw,
       role: Role.BUSINESS,
-      isEmailVerified: false,
+      isEmailVerified: true,
+      isOnboarded: true,
       businessProfile: {
         create: {
-          businessName: 'Green Cafe',
-          description: 'Organic cafe chain promoting healthy eating and sustainable living.',
-          website: 'https://greencafe.com',
-          categories: ['Food', 'Wellness'],
-          isVerified: false,
+          businessName: 'Dhaka Threads',
+          description: 'Contemporary Nepali clothing brand blending traditional Dhaka weave with modern fashion. Sustainable, handcrafted, and proudly made in Nepal.',
+          website: 'https://dhakathreads.com.np',
+          categories: ['Fashion', 'Clothing'],
+          isVerified: true,
         },
       },
     },
     include: { businessProfile: true },
   });
-  console.log(`✅ Business:    ${greenCafeUser.email}`);
+  console.log(`✅ Business:    ${dhakaThreadsUser.email}`);
 
-  const technovaUser = await prisma.user.upsert({
-    where:  { email: 'hello@technova.com.np' },
-    update: {},
-    create: {
+  const newariKitchenUser = await prisma.user.create({
+    data: {
+      email: 'hello@newari.kitchen',
+      phone: '+9779822221104',
+      password: bizPw,
+      role: Role.BUSINESS,
+      isEmailVerified: true,
+      isOnboarded: true,
+      businessProfile: {
+        create: {
+          businessName: 'Newari Kitchen',
+          description: 'Authentic Newari cuisine restaurant in Bhaktapur. Traditional recipes passed down through generations. Known for Yomari, Chatamari, and Samay Baji sets.',
+          website: 'https://newari.kitchen',
+          categories: ['Food', 'Restaurant'],
+          isVerified: true,
+        },
+      },
+    },
+    include: { businessProfile: true },
+  });
+  console.log(`✅ Business:    ${newariKitchenUser.email}`);
+
+  const pokharaParadiseUser = await prisma.user.create({
+    data: {
+      email: 'stay@pokharaparadise.com.np',
+      phone: '+9779822221105',
+      password: bizPw,
+      role: Role.BUSINESS,
+      isEmailVerified: true,
+      isOnboarded: true,
+      businessProfile: {
+        create: {
+          businessName: 'Pokhara Paradise Hotel',
+          description: 'Luxury lakeside hotel in Pokhara with panoramic Annapurna views. Infinity pool, spa, and award-winning restaurant. Perfect for honeymoons and corporate retreats.',
+          website: 'https://pokharaparadise.com.np',
+          categories: ['Hotel', 'Hospitality'],
+          isVerified: true,
+        },
+      },
+    },
+    include: { businessProfile: true },
+  });
+  console.log(`✅ Business:    ${pokharaParadiseUser.email}`);
+
+  const himalayanGlowUser = await prisma.user.create({
+    data: {
+      email: 'hello@himalayanglow.com.np',
+      phone: '+9779822221106',
+      password: bizPw,
+      role: Role.BUSINESS,
+      isEmailVerified: true,
+      isOnboarded: true,
+      businessProfile: {
+        create: {
+          businessName: 'Himalayan Glow',
+          description: 'Natural skincare brand using Himalayan herbs and ingredients. Turmeric glow serum, saffron moisturizer, and yak butter lip balm. Cruelty-free and dermatologist tested.',
+          website: 'https://himalayanglow.com.np',
+          categories: ['Beauty', 'Skincare'],
+          isVerified: true,
+        },
+      },
+    },
+    include: { businessProfile: true },
+  });
+  console.log(`✅ Business:    ${himalayanGlowUser.email}`);
+
+  const ktmMusicFestUser = await prisma.user.create({
+    data: {
+      email: 'events@ktmmusicfest.com.np',
+      phone: '+9779822221107',
+      password: bizPw,
+      role: Role.BUSINESS,
+      isEmailVerified: true,
+      isOnboarded: true,
+      businessProfile: {
+        create: {
+          businessName: 'KTM Music Fest',
+          description: 'Nepal\'s biggest independent music festival bringing together 50+ artists across rock, hip-hop, jazz, and folk genres. Annual event held at Tundikhel, Kathmandu.',
+          website: 'https://ktmmusicfest.com.np',
+          categories: ['Events', 'Entertainment'],
+          isVerified: true,
+        },
+      },
+    },
+    include: { businessProfile: true },
+  });
+  console.log(`✅ Business:    ${ktmMusicFestUser.email}`);
+
+  const technovaUser = await prisma.user.create({
+    data: {
       email: 'hello@technova.com.np',
-      phone: '+9779800000009',
+      phone: '+9779822221108',
       password: bizPw,
       role: Role.BUSINESS,
       isEmailVerified: true,
@@ -213,7 +349,7 @@ async function main() {
       businessProfile: {
         create: {
           businessName: 'TechNova Nepal',
-          description: 'Nepal\'s leading consumer electronics retailer. Laptops, smartphones, and smart home devices.',
+          description: 'Nepal\'s leading consumer electronics retailer with 20+ stores nationwide. Laptops, smartphones, smart home devices, and accessories at competitive prices.',
           website: 'https://technova.com.np',
           categories: ['Technology', 'Electronics'],
           isVerified: true,
@@ -224,420 +360,367 @@ async function main() {
   });
   console.log(`✅ Business:    ${technovaUser.email}`);
 
-  const glowupUser = await prisma.user.upsert({
-    where:  { email: 'brand@glowupbeauty.com' },
-    update: {},
-    create: {
-      email: 'brand@glowupbeauty.com',
-      phone: '+9779800000010',
-      password: bizPw,
-      role: Role.BUSINESS,
-      isEmailVerified: true,
-      isOnboarded: true,
-      businessProfile: {
-        create: {
-          businessName: 'GlowUp Beauty',
-          description: 'Premium skincare and beauty brand made for South Asian skin tones. Cruelty-free and dermatologist tested.',
-          website: 'https://glowupbeauty.com',
-          categories: ['Beauty', 'Skincare'],
-          isVerified: true,
-        },
-      },
-    },
-    include: { businessProfile: true },
-  });
-  console.log(`✅ Business:    ${glowupUser.email}`);
-
-  const exploreNepalUser = await prisma.user.upsert({
-    where:  { email: 'partner@explorenepal.travel' },
-    update: {},
-    create: {
-      email: 'partner@explorenepal.travel',
-      phone: '+9779800000011',
-      password: bizPw,
-      role: Role.BUSINESS,
-      isEmailVerified: true,
-      isOnboarded: true,
-      businessProfile: {
-        create: {
-          businessName: 'Explore Nepal Tourism',
-          description: 'Award-winning travel agency offering trekking, tours, and cultural experiences across Nepal.',
-          website: 'https://explorenepal.travel',
-          categories: ['Travel', 'Adventure'],
-          isVerified: true,
-        },
-      },
-    },
-    include: { businessProfile: true },
-  });
-  console.log(`✅ Business:    ${exploreNepalUser.email}`);
-
   // ── Campaigns ─────────────────────────────────────────────────────────────────
-  if (stylecoUser.businessProfile) {
-    const bizId = stylecoUser.businessProfile.id;
+  console.log('\n🎯 Creating campaigns...\n');
 
-    await prisma.campaign.upsert({
-      where:  { id: 'seed-camp-1' },
-      update: { isFeatured: true },
-      create: {
-        id: 'seed-camp-1',
-        businessId: bizId,
-        title: 'Summer Fashion Collection 2026',
-        description: 'Showcase our new summer collection through authentic lifestyle content. We want creators who embody our brand values of elegance, sustainability and modern minimalism.',
-        category: 'Fashion',
-        platform: 'Instagram',
-        minFollowers: 10000,
-        contentType: 'Reels + Stories',
-        deliverables: '2 Reels + 5 Stories with brand hashtag and link in bio',
-        deadline: new Date('2026-08-30'),
-        location: 'Remote',
-        budgetMin: 500,
-        budgetMax: 1500,
-        paymentType: 'Fixed',
-        status: CampaignStatus.ACTIVE,
-        isFeatured: true,
+  const oneWeek  = (n = 1) => new Date(Date.now() + n * 7 * 24 * 60 * 60 * 1000);
+
+  if (momoHouseUser.businessProfile) {
+    const bizId = momoHouseUser.businessProfile.id;
+
+    await prisma.campaign.create({
+      data: {
+        businessId:    bizId,
+        template:      'Food',
+        title:         'Momo House — Authentic Taste, Real Stories',
+        description:   "We're looking for passionate food creators to visit Momo House Kathmandu and share their authentic dining experience. Enjoy our 12 varieties of dumplings and create content that inspires your audience to visit us.\n\nCampaign Goals: More Customers, Social Media Content\nLocation: Kathmandu",
+        category:      'Food',
+        goals:         ['More Customers', 'Social Media Content'],
+        platform:      'Instagram',
+        minFollowers:  5000,
+        contentType:   'More Customers',
+        deliverables:  '2 Reel, 3 Story, 2 Photo Post, 1 Mention in Caption, 1 Tag Business',
+        deadline:      oneWeek(3),
+        location:      'Kathmandu, Nepal',
+        budgetMin:     5000,
+        budgetMax:     15000,
+        paymentType:   'Fixed Fee',
+        creatorsNeeded: 3,
+        status:        CampaignStatus.ACTIVE,
+        isFeatured:    true,
       },
     });
 
-    await prisma.campaign.upsert({
-      where:  { id: 'seed-camp-2' },
-      update: {},
-      create: {
-        id: 'seed-camp-2',
-        businessId: bizId,
-        title: 'Winter Accessories Launch',
-        description: 'Introduce our winter accessories line to a style-conscious audience.',
-        category: 'Fashion',
-        platform: 'TikTok',
-        minFollowers: 5000,
-        contentType: 'Short Video',
-        deliverables: '3 TikTok videos featuring the accessories',
-        deadline: new Date('2026-11-15'),
-        location: 'Remote',
-        budgetMin: 300,
-        budgetMax: 800,
-        paymentType: 'Fixed',
-        status: CampaignStatus.ACTIVE,
-        isFeatured: false,
-      },
-    });
-  }
-
-  if (gymgearUser.businessProfile) {
-    await prisma.campaign.upsert({
-      where:  { id: 'seed-camp-3' },
-      update: { isFeatured: true },
-      create: {
-        id: 'seed-camp-3',
-        businessId: gymgearUser.businessProfile.id,
-        title: '30-Day Fitness Challenge',
-        description: 'Document a 30-day fitness challenge using GymGear equipment. We will provide all gear and a professional photographer for milestone shoots.',
-        category: 'Fitness',
-        platform: 'YouTube',
-        minFollowers: 20000,
-        contentType: 'Video Series',
-        deliverables: '4 YouTube videos documenting the fitness journey',
-        deadline: new Date('2026-09-01'),
-        location: 'Remote',
-        budgetMin: 1000,
-        budgetMax: 3000,
-        paymentType: 'Fixed',
-        status: CampaignStatus.ACTIVE,
-        isFeatured: true,
-      },
-    });
-
-    await prisma.campaign.upsert({
-      where:  { id: 'seed-camp-5' },
-      update: { isFeatured: true },
-      create: {
-        id: 'seed-camp-5',
-        businessId: gymgearUser.businessProfile.id,
-        title: 'Home Workout Series — GymGear Pro',
-        description: 'Promote our new home workout equipment line. Show your audience how to get a full-body workout from their living room.',
-        category: 'Fitness',
-        platform: 'TikTok',
-        minFollowers: 8000,
-        contentType: 'Short Video',
-        deliverables: '5 TikTok videos + 3 Instagram Reels',
-        deadline: new Date('2026-10-01'),
-        location: 'Remote',
-        budgetMin: 400,
-        budgetMax: 900,
-        paymentType: 'Fixed',
-        status: CampaignStatus.ACTIVE,
-        isFeatured: true,
+    await prisma.campaign.create({
+      data: {
+        businessId:    bizId,
+        template:      'Food',
+        title:         'Momo House New Branch — Lalitpur Grand Opening',
+        description:   "We're opening our 4th branch in Lalitpur and want creators to help spread the word! Visit us on opening day, experience our full menu, and share your genuine experience with your audience.\n\nCampaign Goals: Brand Awareness, Event Promotion\nLocation: Lalitpur",
+        category:      'Food',
+        goals:         ['Brand Awareness', 'Event Promotion'],
+        platform:      'TikTok',
+        minFollowers:  3000,
+        contentType:   'Brand Awareness',
+        deliverables:  '2 Reel, 5 Story, 1 Event Coverage Video, 1 Tag Business',
+        deadline:      oneWeek(2),
+        location:      'Lalitpur, Nepal',
+        budgetMin:     5000,
+        budgetMax:     15000,
+        paymentType:   'Fixed Fee',
+        creatorsNeeded: 5,
+        status:        CampaignStatus.ACTIVE,
+        isFeatured:    false,
       },
     });
   }
 
-  if (greenCafeUser.businessProfile) {
-    await prisma.campaign.upsert({
-      where:  { id: 'seed-camp-4' },
-      update: {},
-      create: {
-        id: 'seed-camp-4',
-        businessId: greenCafeUser.businessProfile.id,
-        title: 'Healthy Eating Campaign',
-        description: 'Promote our organic menu to food enthusiasts.',
-        category: 'Food',
-        platform: 'Instagram',
-        minFollowers: 3000,
-        contentType: 'Posts + Stories',
-        deliverables: '3 feed posts + 5 stories featuring menu items',
-        deadline: new Date('2026-07-31'),
-        location: 'Kathmandu',
-        budgetMin: 150,
-        budgetMax: 400,
-        paymentType: 'Fixed',
-        status: CampaignStatus.ACTIVE,
-        isFeatured: false,
+  if (himalayaBrewUser.businessProfile) {
+    const bizId = himalayaBrewUser.businessProfile.id;
+
+    await prisma.campaign.create({
+      data: {
+        businessId:    bizId,
+        template:      'Food & Drink',
+        title:         'Himalaya Brew — Where Coffee Meets the Mountains',
+        description:   "We're inviting lifestyle and food creators to experience our cafe's single-origin Nepali coffee, cozy ambiance, and Himalayan-inspired menu. Create beautiful content that brings our brand to life on social media.\n\nCampaign Goals: Brand Awareness, Social Media Content\nLocation: Kathmandu",
+        category:      'Food & Drink',
+        goals:         ['Brand Awareness', 'Social Media Content'],
+        platform:      'Instagram',
+        minFollowers:  4000,
+        contentType:   'Brand Awareness',
+        deliverables:  '2 Reel, 2 Story, 3 Photo Post, 1 Carousel Post, 1 Mention in Caption',
+        deadline:      oneWeek(4),
+        location:      'Thamel, Kathmandu',
+        budgetMin:     5000,
+        budgetMax:     15000,
+        paymentType:   'Fixed Fee',
+        creatorsNeeded: 2,
+        status:        CampaignStatus.ACTIVE,
+        isFeatured:    true,
       },
     });
 
-    await prisma.campaign.upsert({
-      where:  { id: 'seed-camp-6' },
-      update: { isFeatured: true },
-      create: {
-        id: 'seed-camp-6',
-        businessId: greenCafeUser.businessProfile.id,
-        title: 'Green Cafe Grand Opening — Pokhara',
-        description: 'We are opening our second branch in Pokhara! We want food creators to document the grand opening event and showcase our signature dishes to a local audience.',
-        category: 'Food',
-        platform: 'Instagram',
-        minFollowers: 5000,
-        contentType: 'Reels + Stories',
-        deliverables: '1 event Reel + 8 Stories + 2 feed posts',
-        deadline: new Date('2026-07-20'),
-        location: 'Pokhara',
-        budgetMin: 300,
-        budgetMax: 700,
-        paymentType: 'Fixed',
-        status: CampaignStatus.ACTIVE,
-        isFeatured: true,
-      },
-    });
-  }
-
-  // ── Additional non-featured campaigns (appear in Recommended row) ─────────────
-  if (stylecoUser.businessProfile) {
-    await prisma.campaign.upsert({
-      where:  { id: 'seed-camp-13' },
-      update: {},
-      create: {
-        id: 'seed-camp-13',
-        businessId: stylecoUser.businessProfile.id,
-        title: 'Back-to-School Lookbook 2026',
-        description: 'Show your audience how to put together stylish back-to-school outfits using our new collection. Creative, fun, and targeted at Gen Z.',
-        category: 'Fashion',
-        platform: 'TikTok',
-        minFollowers: 3000,
-        contentType: 'Short Video',
-        deliverables: '2 TikTok outfit videos + 3 Instagram Stories',
-        deadline: new Date('2026-08-10'),
-        location: 'Remote',
-        budgetMin: 200,
-        budgetMax: 450,
-        paymentType: 'Fixed',
-        status: CampaignStatus.ACTIVE,
-        isFeatured: false,
+    await prisma.campaign.create({
+      data: {
+        businessId:    bizId,
+        template:      'Food & Drink',
+        title:         'Himalaya Brew — Free Coffee for a Google Review',
+        description:   "Love coffee? Visit Himalaya Brew Cafe in Thamel, enjoy a complimentary drink, and share your honest experience on Google and Instagram.\n\nCampaign Goals: More Customers, User Generated Content",
+        category:      'Food & Drink',
+        goals:         ['More Customers', 'User Generated Content'],
+        platform:      'Instagram',
+        minFollowers:  1000,
+        contentType:   'More Customers',
+        deliverables:  '1 Story, 1 Photo Post, 1 Google Review, 1 Tag Business',
+        deadline:      oneWeek(6),
+        location:      'Thamel, Kathmandu',
+        budgetMin:     0,
+        budgetMax:     0,
+        paymentType:   'Product Exchange',
+        creatorsNeeded: 10,
+        status:        CampaignStatus.ACTIVE,
+        isFeatured:    false,
       },
     });
   }
 
-  if (gymgearUser.businessProfile) {
-    await prisma.campaign.upsert({
-      where:  { id: 'seed-camp-14' },
-      update: {},
-      create: {
-        id: 'seed-camp-14',
-        businessId: gymgearUser.businessProfile.id,
-        title: 'Morning Workout Routine Challenge',
-        description: 'Show your morning workout routine using GymGear resistance bands. Tag three friends to try the challenge.',
-        category: 'Fitness',
-        platform: 'Instagram',
-        minFollowers: 2000,
-        contentType: 'Reels + Stories',
-        deliverables: '1 Reel + 5 Stories + challenge tag',
-        deadline: new Date('2026-07-25'),
-        location: 'Remote',
-        budgetMin: 120,
-        budgetMax: 300,
-        paymentType: 'Product Exchange',
-        status: CampaignStatus.ACTIVE,
-        isFeatured: false,
+  if (dhakaThreadsUser.businessProfile) {
+    const bizId = dhakaThreadsUser.businessProfile.id;
+
+    await prisma.campaign.create({
+      data: {
+        businessId:    bizId,
+        template:      'Fashion',
+        title:         'Dhaka Threads — Wear Nepal, Share Nepal',
+        description:   "We're looking for fashion creators to model and promote our latest Dashain collection — traditional Dhaka weave reimagined for modern wardrobes. Showcase our pieces in your signature style and help us reach fashion-forward audiences across Nepal.\n\nCampaign Goals: Brand Awareness, Product Launch, Social Media Content",
+        category:      'Fashion',
+        goals:         ['Brand Awareness', 'Product Launch', 'Social Media Content'],
+        platform:      'Instagram',
+        minFollowers:  8000,
+        contentType:   'Brand Awareness',
+        deliverables:  '2 Reel, 3 Story, 2 Photo Post, 1 Carousel Post, 1 Mention in Caption, 1 Tag Business',
+        deadline:      oneWeek(5),
+        location:      'Remote',
+        budgetMin:     15000,
+        budgetMax:     50000,
+        paymentType:   'Fixed Fee',
+        creatorsNeeded: 4,
+        status:        CampaignStatus.ACTIVE,
+        isFeatured:    true,
+      },
+    });
+
+    await prisma.campaign.create({
+      data: {
+        businessId:    bizId,
+        template:      'Fashion',
+        title:         'Dhaka Threads — Student Style Challenge',
+        description:   "Show us how you style our Dhaka tote bag and kurta for campus life! We're partnering with student creators to reach college audiences across Nepal.\n\nCampaign Goals: More Customers, User Generated Content",
+        category:      'Fashion',
+        goals:         ['More Customers', 'User Generated Content'],
+        platform:      'TikTok',
+        minFollowers:  2000,
+        contentType:   'More Customers',
+        deliverables:  '1 Reel, 2 Story, 1 Photo Post, 1 Tag Business',
+        deadline:      oneWeek(3),
+        location:      'Remote',
+        budgetMin:     5000,
+        budgetMax:     15000,
+        paymentType:   'Fixed Fee',
+        creatorsNeeded: 8,
+        status:        CampaignStatus.ACTIVE,
+        isFeatured:    false,
       },
     });
   }
 
-  if (greenCafeUser.businessProfile) {
-    await prisma.campaign.upsert({
-      where:  { id: 'seed-camp-15' },
-      update: {},
-      create: {
-        id: 'seed-camp-15',
-        businessId: greenCafeUser.businessProfile.id,
-        title: 'Matcha Latte Art Competition',
-        description: 'We are hosting a latte art competition at our Kathmandu branch. Document the event and share it with your foodie audience.',
-        category: 'Food',
-        platform: 'Instagram',
-        minFollowers: 1500,
-        contentType: 'Posts + Stories',
-        deliverables: '2 feed posts + 6 stories',
-        deadline: new Date('2026-07-18'),
-        location: 'Kathmandu',
-        budgetMin: 80,
-        budgetMax: 200,
-        paymentType: 'Product Exchange',
-        status: CampaignStatus.ACTIVE,
-        isFeatured: false,
+  if (newariKitchenUser.businessProfile) {
+    const bizId = newariKitchenUser.businessProfile.id;
+
+    await prisma.campaign.create({
+      data: {
+        businessId:    bizId,
+        template:      'Food',
+        title:         'Newari Kitchen — A Feast of Tradition',
+        description:   "Experience the rich flavors of authentic Newari cuisine at our Bhaktapur restaurant. We're looking for food creators to document the full Samay Baji experience and share it with their audience.\n\nCampaign Goals: Brand Awareness, More Customers\nLocation: Bhaktapur",
+        category:      'Food',
+        goals:         ['Brand Awareness', 'More Customers'],
+        platform:      'Instagram',
+        minFollowers:  3000,
+        contentType:   'Brand Awareness',
+        deliverables:  '2 Reel, 3 Story, 1 Photo Post, 1 Visit Store, 1 Tag Business, 1 Google Review',
+        deadline:      oneWeek(4),
+        location:      'Bhaktapur, Nepal',
+        budgetMin:     5000,
+        budgetMax:     15000,
+        paymentType:   'Fixed Fee',
+        creatorsNeeded: 3,
+        status:        CampaignStatus.ACTIVE,
+        isFeatured:    false,
+      },
+    });
+  }
+
+  if (pokharaParadiseUser.businessProfile) {
+    const bizId = pokharaParadiseUser.businessProfile.id;
+
+    await prisma.campaign.create({
+      data: {
+        businessId:    bizId,
+        template:      'Travel',
+        title:         'Pokhara Paradise — Luxury Stay & Annapurna Views',
+        description:   "We're partnering with travel creators for a complimentary 2-night stay at our lakeside hotel. Capture your journey, showcase our infinity pool and mountain views, and inspire your audience to book their perfect Pokhara getaway.\n\nCampaign Goals: Brand Awareness, More Customers\nLocation: Pokhara",
+        category:      'Travel',
+        goals:         ['Brand Awareness', 'More Customers'],
+        platform:      'Instagram',
+        minFollowers:  15000,
+        contentType:   'Brand Awareness',
+        deliverables:  '2 Reel, 5 Story, 3 Photo Post, 1 Carousel Post, 1 Mention in Caption',
+        deadline:      oneWeek(6),
+        location:      'Pokhara, Nepal',
+        budgetMin:     15000,
+        budgetMax:     50000,
+        paymentType:   'Fixed Fee',
+        creatorsNeeded: 2,
+        status:        CampaignStatus.ACTIVE,
+        isFeatured:    true,
+      },
+    });
+
+    await prisma.campaign.create({
+      data: {
+        businessId:    bizId,
+        template:      'Travel',
+        title:         'Pokhara Paradise — Weekend Couples Retreat',
+        description:   "Promote our romantic weekend package for couples — sunset paragliding, candlelit dinner, and spa session. Looking for lifestyle creators who capture love and travel.\n\nCampaign Goals: Brand Awareness, Social Media Content",
+        category:      'Travel',
+        goals:         ['Brand Awareness', 'Social Media Content'],
+        platform:      'TikTok',
+        minFollowers:  8000,
+        contentType:   'Brand Awareness',
+        deliverables:  '2 Reel, 4 Story, 2 Photo Post, 1 Visit Store',
+        deadline:      oneWeek(5),
+        location:      'Pokhara, Nepal',
+        budgetMin:     15000,
+        budgetMax:     50000,
+        paymentType:   'Fixed Fee',
+        creatorsNeeded: 2,
+        status:        CampaignStatus.ACTIVE,
+        isFeatured:    false,
+      },
+    });
+  }
+
+  if (himalayanGlowUser.businessProfile) {
+    const bizId = himalayanGlowUser.businessProfile.id;
+
+    await prisma.campaign.create({
+      data: {
+        businessId:    bizId,
+        template:      'Beauty',
+        title:         'Himalayan Glow — 30-Day Turmeric Serum Challenge',
+        description:   "Document your skin transformation using our Himalayan Turmeric Glow Serum for 30 days. We want authentic before/after content that resonates with South Asian skin tones.\n\nCampaign Goals: Product Launch, User Generated Content, Brand Awareness",
+        category:      'Beauty',
+        goals:         ['Product Launch', 'User Generated Content', 'Brand Awareness'],
+        platform:      'Instagram',
+        minFollowers:  6000,
+        contentType:   'Product Launch',
+        deliverables:  '2 Reel, 4 Story, 2 Photo Post, 1 Product Review Video, 1 Mention in Caption',
+        deadline:      oneWeek(8),
+        location:      'Remote',
+        budgetMin:     15000,
+        budgetMax:     50000,
+        paymentType:   'Fixed Fee',
+        creatorsNeeded: 5,
+        status:        CampaignStatus.ACTIVE,
+        isFeatured:    true,
+      },
+    });
+
+    await prisma.campaign.create({
+      data: {
+        businessId:    bizId,
+        template:      'Beauty',
+        title:         'Himalayan Glow — Yak Butter Lip Balm Launch',
+        description:   "Our new Yak Butter Lip Balm is here — 100% natural, deeply nourishing, and perfect for Nepal's dry climate. We're gifting the product in exchange for honest reviews.\n\nCampaign Goals: Product Launch, Social Media Content",
+        category:      'Beauty',
+        goals:         ['Product Launch', 'Social Media Content'],
+        platform:      'TikTok',
+        minFollowers:  2000,
+        contentType:   'Product Launch',
+        deliverables:  '1 Reel, 2 Story, 1 Product Review Video, 1 Tag Business',
+        deadline:      oneWeek(4),
+        location:      'Remote',
+        budgetMin:     0,
+        budgetMax:     0,
+        paymentType:   'Product Exchange',
+        creatorsNeeded: 15,
+        status:        CampaignStatus.ACTIVE,
+        isFeatured:    false,
+      },
+    });
+  }
+
+  if (ktmMusicFestUser.businessProfile) {
+    const bizId = ktmMusicFestUser.businessProfile.id;
+
+    await prisma.campaign.create({
+      data: {
+        businessId:    bizId,
+        template:      'Entertainment',
+        title:         'KTM Music Fest 2026 — Coverage Creators Wanted',
+        description:   "Nepal's biggest music festival is back! We're looking for creators to cover KTM Music Fest 2026 — capture performances, backstage moments, crowd energy, and the festival vibe. Complimentary VIP passes provided.\n\nCampaign Goals: Event Promotion, Brand Awareness, Social Media Content",
+        category:      'Entertainment',
+        goals:         ['Event Promotion', 'Brand Awareness', 'Social Media Content'],
+        platform:      'Instagram',
+        minFollowers:  10000,
+        contentType:   'Event Promotion',
+        deliverables:  '3 Reel, 8 Story, 2 Photo Post, 1 Event Coverage Video, 1 Carousel Post',
+        deadline:      oneWeek(3),
+        location:      'Tundikhel, Kathmandu',
+        budgetMin:     15000,
+        budgetMax:     50000,
+        paymentType:   'Fixed Fee',
+        creatorsNeeded: 6,
+        status:        CampaignStatus.ACTIVE,
+        isFeatured:    true,
+      },
+    });
+
+    await prisma.campaign.create({
+      data: {
+        businessId:    bizId,
+        template:      'Entertainment',
+        title:         'KTM Music Fest — Pre-Event Hype Campaign',
+        description:   "Help us build hype for KTM Music Fest 2026! Share the lineup, create countdown content, and get your audience excited. Free entry tickets for selected creators.\n\nCampaign Goals: Event Promotion, More Customers",
+        category:      'Entertainment',
+        goals:         ['Event Promotion', 'More Customers'],
+        platform:      'TikTok',
+        minFollowers:  5000,
+        contentType:   'Event Promotion',
+        deliverables:  '2 Reel, 5 Story, 1 Mention in Caption, 1 Tag Business',
+        deadline:      oneWeek(2),
+        location:      'Remote',
+        budgetMin:     5000,
+        budgetMax:     15000,
+        paymentType:   'Fixed Fee',
+        creatorsNeeded: 10,
+        status:        CampaignStatus.ACTIVE,
+        isFeatured:    false,
       },
     });
   }
 
   if (technovaUser.businessProfile) {
-    await prisma.campaign.upsert({
-      where:  { id: 'seed-camp-7' },
-      update: { isFeatured: true },
-      create: {
-        id: 'seed-camp-7',
-        businessId: technovaUser.businessProfile.id,
-        title: 'Latest Smartphone Unboxing & Review',
-        description: 'We are launching the TechNova X12 Pro — Nepal\'s most powerful mid-range smartphone. We need tech creators to do an honest unboxing and in-depth review reaching Nepal\'s youth audience.',
-        category: 'Technology',
-        platform: 'YouTube',
-        minFollowers: 15000,
-        contentType: 'Review Video',
-        deliverables: '1 full unboxing + review video (10–15 min) + 1 Instagram Reel highlight',
-        deadline: new Date('2026-09-15'),
-        location: 'Kathmandu',
-        budgetMin: 600,
-        budgetMax: 1200,
-        paymentType: 'Fixed',
-        status: CampaignStatus.ACTIVE,
-        isFeatured: true,
-      },
-    });
+    const bizId = technovaUser.businessProfile.id;
 
-    await prisma.campaign.upsert({
-      where:  { id: 'seed-camp-8-tech' },
-      update: {},
-      create: {
-        id: 'seed-camp-8-tech',
-        businessId: technovaUser.businessProfile.id,
-        title: 'Smart Home Setup — TechNova Hub',
-        description: 'Showcase how to set up a smart home using our TechNova Hub ecosystem. Target audience: young professionals moving into new apartments.',
-        category: 'Technology',
-        platform: 'TikTok',
-        minFollowers: 5000,
-        contentType: 'Short Video',
-        deliverables: '3 TikTok videos (setup, tips, lifestyle)',
-        deadline: new Date('2026-11-01'),
-        location: 'Remote',
-        budgetMin: 250,
-        budgetMax: 500,
-        paymentType: 'Fixed',
-        status: CampaignStatus.ACTIVE,
-        isFeatured: false,
+    await prisma.campaign.create({
+      data: {
+        businessId:    bizId,
+        template:      'Tech',
+        title:         'TechNova X15 Pro — Honest Unboxing & Review',
+        description:   "We're launching TechNova X15 Pro — Nepal's most powerful mid-range smartphone at Rs. 45,000. We need tech creators to do an honest unboxing and in-depth review for Nepal's youth audience.\n\nCampaign Goals: Product Launch, Brand Awareness\nLocation: Kathmandu",
+        category:      'Tech',
+        goals:         ['Product Launch', 'Brand Awareness'],
+        platform:      'YouTube',
+        minFollowers:  10000,
+        contentType:   'Product Launch',
+        deliverables:  '1 Reel, 2 Story, 1 Product Review Video, 1 Mention in Caption',
+        deadline:      oneWeek(4),
+        location:      'Kathmandu, Nepal',
+        budgetMin:     15000,
+        budgetMax:     50000,
+        paymentType:   'Fixed Fee',
+        creatorsNeeded: 3,
+        status:        CampaignStatus.ACTIVE,
+        isFeatured:    true,
       },
     });
   }
 
-  if (glowupUser.businessProfile) {
-    await prisma.campaign.upsert({
-      where:  { id: 'seed-camp-9' },
-      update: { isFeatured: true },
-      create: {
-        id: 'seed-camp-9',
-        businessId: glowupUser.businessProfile.id,
-        title: 'Glow Serum 30-Day Skin Transformation',
-        description: 'Document your skin journey using our new Vitamin C + Niacinamide serum for 30 days. We want authentic before/after content that resonates with South Asian audiences.',
-        category: 'Beauty',
-        platform: 'Instagram',
-        minFollowers: 8000,
-        contentType: 'Reels + Stories',
-        deliverables: 'Daily stories (30 days) + 3 feed posts + 1 transformation Reel',
-        deadline: new Date('2026-10-15'),
-        location: 'Remote',
-        budgetMin: 700,
-        budgetMax: 1500,
-        paymentType: 'Fixed',
-        status: CampaignStatus.ACTIVE,
-        isFeatured: true,
-      },
-    });
-
-    await prisma.campaign.upsert({
-      where:  { id: 'seed-camp-10' },
-      update: { isFeatured: true },
-      create: {
-        id: 'seed-camp-10',
-        businessId: glowupUser.businessProfile.id,
-        title: 'Everyday Makeup Look — GlowUp Collection',
-        description: 'Create a casual everyday makeup tutorial using our new GlowUp matte lipstick and highlighter collection. Fun, vibrant, and beginner-friendly.',
-        category: 'Beauty',
-        platform: 'TikTok',
-        minFollowers: 4000,
-        contentType: 'Tutorial Video',
-        deliverables: '2 TikTok tutorials + 1 Instagram Reel',
-        deadline: new Date('2026-08-20'),
-        location: 'Remote',
-        budgetMin: 350,
-        budgetMax: 750,
-        paymentType: 'Fixed',
-        status: CampaignStatus.ACTIVE,
-        isFeatured: true,
-      },
-    });
-  }
-
-  if (exploreNepalUser.businessProfile) {
-    await prisma.campaign.upsert({
-      where:  { id: 'seed-camp-11' },
-      update: { isFeatured: true },
-      create: {
-        id: 'seed-camp-11',
-        businessId: exploreNepalUser.businessProfile.id,
-        title: 'Hidden Gems of Nepal — Travel Series',
-        description: 'Join our guided trek to Mustang, Upper Dolpo, or the Annapurna Circuit. Document the experience for your audience and inspire a new generation of Nepal travelers.',
-        category: 'Travel',
-        platform: 'TikTok',
-        minFollowers: 10000,
-        contentType: 'Travel Vlog',
-        deliverables: '5 TikTok travel vlogs + 10 Instagram Stories + 1 YouTube short',
-        deadline: new Date('2026-12-01'),
-        location: 'Kathmandu',
-        budgetMin: 800,
-        budgetMax: 2000,
-        paymentType: 'Hybrid',
-        status: CampaignStatus.ACTIVE,
-        isFeatured: true,
-      },
-    });
-
-    await prisma.campaign.upsert({
-      where:  { id: 'seed-camp-12' },
-      update: { isFeatured: true },
-      create: {
-        id: 'seed-camp-12',
-        businessId: exploreNepalUser.businessProfile.id,
-        title: 'Pokhara Lakeside Weekend Getaway',
-        description: 'Promote our new Pokhara weekend package — paragliding, kayaking, and lakeside dining. Looking for lifestyle creators who love adventure.',
-        category: 'Travel',
-        platform: 'Instagram',
-        minFollowers: 6000,
-        contentType: 'Reels + Posts',
-        deliverables: '2 Reels + 4 feed posts + 8 Stories',
-        deadline: new Date('2026-09-30'),
-        location: 'Pokhara',
-        budgetMin: 500,
-        budgetMax: 1000,
-        paymentType: 'Hybrid',
-        status: CampaignStatus.ACTIVE,
-        isFeatured: true,
-      },
-    });
-  }
+  const campaignCount = await prisma.campaign.count();
+  console.log(`✅ Campaigns:   ${campaignCount} campaigns created`);
 
   // ── Help Center Articles ────────────────────────────────────────────────────
   const helpArticles = [
@@ -661,7 +744,7 @@ async function main() {
     { id: 'seed-faq-1', question: 'What is CreatorMarket?', answer: 'CreatorMarket is a platform connecting content creators with local businesses for paid collaborations, sponsored content, and brand campaigns.', category: 'General', order: 1 },
     { id: 'seed-faq-2', question: 'Is CreatorMarket free to use?', answer: 'Yes — creating a creator account and browsing campaigns is completely free. A 10% service fee applies only on successfully completed campaigns.', category: 'General', order: 2 },
     { id: 'seed-faq-3', question: 'How do I improve my campaign acceptance rate?', answer: 'Complete your profile, link all your social accounts, add past work samples, and write personalized proposals that directly address each campaign\'s goals.', category: 'General', order: 3 },
-    { id: 'seed-faq-4', question: 'What types of content can I create?', answer: 'Instagram posts/reels/stories, TikTok videos, YouTube reviews and vlogs, Facebook content, blog posts, and photography — depending on what the business requests.', category: 'Campaigns', order: 1 },
+    { id: 'seed-faq-4', question: 'What types of content can I create?', answer: 'Instagram Reels/Stories/Posts, TikTok videos, YouTube reviews and vlogs, Facebook content, and photography — depending on what the business requests.', category: 'Campaigns', order: 1 },
     { id: 'seed-faq-5', question: 'Can businesses see my profile before contacting me?', answer: 'Yes. Your public profile shows your bio, social stats, categories, and past work samples. Make sure it accurately represents your content style.', category: 'Campaigns', order: 2 },
     { id: 'seed-faq-6', question: 'What happens if a business does not pay?', answer: 'We hold campaign budgets in escrow before any work begins. If a dispute arises, our team mediates and ensures fair resolution based on agreed deliverables.', category: 'Payments', order: 1 },
     { id: 'seed-faq-7', question: 'How long does it take to receive payment?', answer: 'Payments are processed within 5 business days after the business confirms content delivery. Funds go to your linked eSewa, Khalti, or FonePay account.', category: 'Payments', order: 2 },
@@ -677,42 +760,37 @@ async function main() {
   const privacySections = [
     { id: 'seed-legal-pp-1', type: 'PRIVACY_POLICY', title: '1. Information We Collect', body: 'We collect information you provide directly, such as your name, email address, social media handles, follower counts, and payment details. We also collect usage data including campaign interactions, device information, and log data when you use our services.', order: 1 },
     { id: 'seed-legal-pp-2', type: 'PRIVACY_POLICY', title: '2. How We Use Your Information', body: 'Your information is used to match you with relevant campaigns, process payments, send notifications, improve our platform, and comply with legal obligations. We do not use your data to train AI models without explicit consent.', order: 2 },
-    { id: 'seed-legal-pp-3', type: 'PRIVACY_POLICY', title: '3. Information Sharing', body: 'We share your profile information with businesses when you apply for their campaigns. We do not sell your personal data to third parties. We may share data with service providers who help us operate the platform under strict confidentiality agreements.', order: 3 },
+    { id: 'seed-legal-pp-3', type: 'PRIVACY_POLICY', title: '3. Information Sharing', body: 'We share your profile information with businesses when you apply for their campaigns. We do not sell your personal data to third parties.', order: 3 },
     { id: 'seed-legal-pp-4', type: 'PRIVACY_POLICY', title: '4. Data Security', body: 'We use industry-standard encryption and security practices to protect your data. However, no method of transmission over the internet is 100% secure. We encourage you to use a strong, unique password.', order: 4 },
-    { id: 'seed-legal-pp-5', type: 'PRIVACY_POLICY', title: '5. Data Retention', body: 'We retain your data for as long as your account is active or as needed to provide services. You may request deletion of your account and associated data at any time through Settings → Account → Delete Account.', order: 5 },
-    { id: 'seed-legal-pp-6', type: 'PRIVACY_POLICY', title: '6. Your Rights', body: 'You have the right to access, correct, or delete your personal data. You may also object to or restrict certain processing. To exercise these rights, contact us at privacy@creatormarket.com.', order: 6 },
-    { id: 'seed-legal-pp-7', type: 'PRIVACY_POLICY', title: '7. Contact Us', body: 'If you have questions about this policy, contact us at privacy@creatormarket.com or write to CreatorMarket Pvt. Ltd., Kathmandu, Nepal.', order: 7 },
+    { id: 'seed-legal-pp-5', type: 'PRIVACY_POLICY', title: '5. Your Rights', body: 'You have the right to access, correct, or delete your personal data. To exercise these rights, contact us at privacy@creatormarket.com.np.', order: 5 },
   ];
   const termsSections = [
-    { id: 'seed-legal-tc-1', type: 'TERMS', title: '1. Acceptance of Terms', body: 'By using CreatorMarket you agree to these Terms. If you do not agree, please do not use the platform. We may update these Terms from time to time; continued use after changes constitutes acceptance.', order: 1 },
-    { id: 'seed-legal-tc-2', type: 'TERMS', title: '2. Creator Eligibility', body: 'You must be at least 18 years old to use this platform. By registering, you confirm that the information you provide is accurate and that you have the right to create content for the campaigns you apply to.', order: 2 },
-    { id: 'seed-legal-tc-3', type: 'TERMS', title: '3. Campaign Participation', body: 'When you apply for a campaign and are accepted, you agree to deliver the content as described by the deadline specified. Failure to deliver may result in payment disputes or account suspension.', order: 3 },
-    { id: 'seed-legal-tc-4', type: 'TERMS', title: '4. Content Ownership', body: 'You retain ownership of the content you create. By participating in a campaign, you grant the business a license to use the content as outlined in the campaign brief. Ensure you have rights to all elements in your content.', order: 4 },
-    { id: 'seed-legal-tc-5', type: 'TERMS', title: '5. Payments & Fees', body: 'Campaign payments are processed through our escrow system. CreatorMarket charges a 10% platform fee on each completed campaign. Payments are released within 5 business days of confirmed delivery.', order: 5 },
-    { id: 'seed-legal-tc-6', type: 'TERMS', title: '6. Prohibited Conduct', body: 'You may not create fake accounts, manipulate engagement metrics, post misleading or harmful content, or engage in any activity that violates applicable laws or our Community Guidelines.', order: 6 },
-    { id: 'seed-legal-tc-7', type: 'TERMS', title: '7. Termination', body: 'We may suspend or terminate your account for violations of these Terms. You may delete your account at any time. Termination does not affect obligations from completed campaigns.', order: 7 },
-    { id: 'seed-legal-tc-8', type: 'TERMS', title: '8. Governing Law', body: 'These Terms are governed by the laws of Nepal. Any disputes shall be resolved through arbitration in Kathmandu, Nepal, except where prohibited by local law.', order: 8 },
+    { id: 'seed-legal-tc-1', type: 'TERMS', title: '1. Acceptance of Terms', body: 'By using CreatorMarket you agree to these Terms. If you do not agree, please do not use the platform.', order: 1 },
+    { id: 'seed-legal-tc-2', type: 'TERMS', title: '2. Creator Eligibility', body: 'You must be at least 18 years old to use this platform. By registering, you confirm that the information you provide is accurate.', order: 2 },
+    { id: 'seed-legal-tc-3', type: 'TERMS', title: '3. Campaign Participation', body: 'When you apply for a campaign and are accepted, you agree to deliver the content as described by the deadline specified.', order: 3 },
+    { id: 'seed-legal-tc-4', type: 'TERMS', title: '4. Payments & Fees', body: 'Campaign payments are processed through our escrow system. CreatorMarket charges a 10% platform fee on each completed campaign.', order: 4 },
+    { id: 'seed-legal-tc-5', type: 'TERMS', title: '5. Governing Law', body: 'These Terms are governed by the laws of Nepal. Any disputes shall be resolved through arbitration in Kathmandu, Nepal.', order: 5 },
   ];
   const guidelineSections = [
-    { id: 'seed-legal-cg-1', type: 'GUIDELINES', icon: '✅', title: 'Be Authentic', body: 'Only promote products or services you genuinely believe in. Disclose all sponsored relationships clearly as required by advertising standards. Fake reviews or misleading endorsements are not allowed.', order: 1 },
-    { id: 'seed-legal-cg-2', type: 'GUIDELINES', icon: '🤝', title: 'Respect Everyone', body: 'Treat businesses, fellow creators, and platform staff with respect. Harassment, discrimination, or hate speech based on race, gender, religion, nationality, or any other characteristic will result in immediate account suspension.', order: 2 },
-    { id: 'seed-legal-cg-3', type: 'GUIDELINES', icon: '⭐', title: 'Maintain Quality', body: "Deliver content that meets the brief's requirements. Low-quality or irrelevant submissions damage everyone's experience. We encourage you to put your genuine creative skill into every collaboration.", order: 3 },
-    { id: 'seed-legal-cg-4', type: 'GUIDELINES', icon: '💡', title: 'Be Transparent', body: 'Clearly communicate with businesses. If you face challenges meeting a deadline, reach out early. Ghosting a campaign will negatively impact your creator score and may result in account restrictions.', order: 4 },
-    { id: 'seed-legal-cg-5', type: 'GUIDELINES', icon: '🚫', title: 'Prohibited Content', body: 'Do not create or submit content that contains: explicit adult material, violent or graphic imagery, misinformation, political propaganda, content targeting minors inappropriately, or any material that violates applicable laws.', order: 5 },
-    { id: 'seed-legal-cg-6', type: 'GUIDELINES', icon: '⚖️', title: 'Enforcement', body: 'Violations are reviewed by our trust and safety team. Consequences range from content removal to account suspension depending on severity. Serious violations are reported to relevant authorities.', order: 6 },
+    { id: 'seed-legal-cg-1', type: 'GUIDELINES', icon: '✅', title: 'Be Authentic', body: 'Only promote products or services you genuinely believe in. Disclose all sponsored relationships clearly.', order: 1 },
+    { id: 'seed-legal-cg-2', type: 'GUIDELINES', icon: '🤝', title: 'Respect Everyone', body: 'Treat businesses, fellow creators, and platform staff with respect. Harassment or hate speech will result in immediate account suspension.', order: 2 },
+    { id: 'seed-legal-cg-3', type: 'GUIDELINES', icon: '⭐', title: 'Maintain Quality', body: "Deliver content that meets the brief's requirements. Low-quality submissions damage everyone's experience.", order: 3 },
+    { id: 'seed-legal-cg-4', type: 'GUIDELINES', icon: '🚫', title: 'Prohibited Content', body: 'Do not create content with explicit material, misinformation, or anything that violates applicable laws.', order: 4 },
   ];
-  for (const s of [...privacySections, ...termsSections, ...guidelineSections]) {
-    await prisma.legalSection.upsert({ where: { id: s.id }, update: {}, create: { ...s, published: true } });
+  for (const sec of [...privacySections, ...termsSections, ...guidelineSections]) {
+    await prisma.legalSection.upsert({ where: { id: sec.id }, update: {}, create: { ...sec, published: true } });
   }
   console.log(`✅ Legal:       ${privacySections.length + termsSections.length + guidelineSections.length} sections seeded`);
 
   console.log('\n🎉 Seeding complete!\n');
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log('Admin Panel Login:');
-  console.log('  URL:      http://localhost:5173');
-  console.log('  Email:    admin@creatorhub.com');
-  console.log('  Password: Admin@123456');
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('  Admin:    admin@creatormarket.com.np  /  Admin@123456');
+  console.log('  Creator:  aarav@example.com           /  Creator@123');
+  console.log('  Creator:  srijana@example.com         /  Creator@123');
+  console.log('  Creator:  bikash@example.com          /  Creator@123');
+  console.log('  Business: hello@momohouse.com.np      /  Business@123');
+  console.log('  Business: brand@dhakathreads.com.np   /  Business@123');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 }
 
 main()

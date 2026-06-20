@@ -11,24 +11,24 @@ export declare const updateBusinessProfileSchema: z.ZodObject<{
     allowDirectMessages: z.ZodOptional<z.ZodBoolean>;
 }, "strip", z.ZodTypeAny, {
     description?: string | undefined;
-    categories?: string[] | undefined;
     businessName?: string | undefined;
     logoUrl?: string | null | undefined;
     website?: string | null | undefined;
+    categories?: string[] | undefined;
     panNo?: string | null | undefined;
-    showPublicProfile?: boolean | undefined;
-    hideContactDetails?: boolean | undefined;
     allowDirectMessages?: boolean | undefined;
+    hideContactDetails?: boolean | undefined;
+    showPublicProfile?: boolean | undefined;
 }, {
     description?: string | undefined;
-    categories?: string[] | undefined;
     businessName?: string | undefined;
     logoUrl?: string | null | undefined;
     website?: string | null | undefined;
+    categories?: string[] | undefined;
     panNo?: string | null | undefined;
-    showPublicProfile?: boolean | undefined;
-    hideContactDetails?: boolean | undefined;
     allowDirectMessages?: boolean | undefined;
+    hideContactDetails?: boolean | undefined;
+    showPublicProfile?: boolean | undefined;
 }>;
 export type UpdateBusinessProfileInput = z.infer<typeof updateBusinessProfileSchema>;
 //# sourceMappingURL=business.schema.d.ts.map

@@ -51,7 +51,9 @@ export interface ApiCampaign {
   id:           string;
   title:        string;
   description:  string;
+  template?:    string | null;
   category:     string;
+  goals:        string[];
   platform:     string;
   minFollowers: number;
   contentType:  string;

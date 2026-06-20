@@ -114,6 +114,7 @@ export class BusinessRepository {
       website: string | null;
       categories: string[];
       panNo: string | null;
+      location: string | null;
       showPublicProfile: boolean;
       hideContactDetails: boolean;
       allowDirectMessages: boolean;

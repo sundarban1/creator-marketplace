@@ -1,9 +1,10 @@
 import { router } from 'expo-router';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { cardBg } from '@/features/creator/data/filterOptions';
+import { getTemplateImage } from '@/features/creator/data/templateImages';
 import type { Campaign } from '@/types';
 import { F } from '@/utilities/constants';
 
@@ -20,6 +21,7 @@ export function CampaignListItem({ campaign }: { campaign: Campaign }) {
   const { t } = useLanguage();
   const C = useAppColors();
   const platformIcon = PLATFORM_ICON[campaign.platform];
+  const thumbImage = getTemplateImage(campaign.template, campaign.category);
 
   function goToDetail() {
     router.push({ pathname: '/campaign-detail', params: { campaignId: campaign.id } });
@@ -27,9 +29,17 @@ export function CampaignListItem({ campaign }: { campaign: Campaign }) {
 
   return (
     <View style={[styles.listCard, { backgroundColor: C.surface }]}>
-      <View style={[styles.listThumb, { backgroundColor: platformIcon ? platformIcon.color + '18' : cardBg(campaign.category) }]}>
-        {platformIcon ? (
-          <FontAwesome5 name={platformIcon.name as any} size={30} color={platformIcon.color} />
+      <View style={[
+        styles.listThumb,
+        {
+          backgroundColor: thumbImage ? 'transparent' : (platformIcon ? platformIcon.color + '18' : cardBg(campaign.category)),
+          overflow: 'hidden',
+        },
+      ]}>
+        {thumbImage ? (
+          <Image source={{ uri: thumbImage }} style={styles.thumbImg} resizeMode="cover" />
+        ) : platformIcon ? (
+          <FontAwesome5 name={platformIcon.name as never} size={30} color={platformIcon.color} />
         ) : (
           <Text style={styles.listThumbIcon}>{campaign.platformIcon}</Text>
         )}
@@ -72,18 +82,19 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     elevation: 3,
   },
-  listThumb: { width: 68, height: 68, borderRadius: 12, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  listThumb:     { width: 68, height: 68, borderRadius: 12, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  thumbImg:      { width: 68, height: 68 },
   listThumbIcon: { fontSize: 28 },
-  listInfo: { flex: 1, gap: 4 },
-  listBrandRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  listInfo:      { flex: 1, gap: 4 },
+  listBrandRow:  { flexDirection: 'row', alignItems: 'center', gap: 4 },
   listBrandName: { fontSize: 12, fontWeight: '600', fontFamily: F.semibold },
   verifiedBadge: { width: 14, height: 14, borderRadius: 7, justifyContent: 'center', alignItems: 'center' },
-  verifiedIcon: { fontSize: 8, color: '#fff', fontWeight: '700', fontFamily: F.bold },
-  listTitle: { fontSize: 14, fontWeight: '700', lineHeight: 19, fontFamily: F.bold },
-  listBudget: { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
-  listMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  listMeta: { fontSize: 11, fontFamily: F.regular },
-  applyWrap: { flexShrink: 0, justifyContent: 'center' },
+  verifiedIcon:  { fontSize: 8, color: '#fff', fontWeight: '700', fontFamily: F.bold },
+  listTitle:     { fontSize: 14, fontWeight: '700', lineHeight: 19, fontFamily: F.bold },
+  listBudget:    { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
+  listMetaRow:   { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  listMeta:      { fontSize: 11, fontFamily: F.regular },
+  applyWrap:     { flexShrink: 0, justifyContent: 'center' },
   applyBtn: {
     width: 76,
     borderRadius: 10,

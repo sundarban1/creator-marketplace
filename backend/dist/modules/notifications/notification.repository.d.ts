@@ -39,5 +39,6 @@ export declare class NotificationRepository {
     markRead(id: string, userId: string): Promise<import(".prisma/client").Prisma.BatchPayload>;
     markAllRead(userId: string): Promise<import(".prisma/client").Prisma.BatchPayload>;
     getUnreadCount(userId: string): Promise<number>;
+    markReadByRef(userId: string, refId: string): Promise<import(".prisma/client").Prisma.BatchPayload>;
 }
 //# sourceMappingURL=notification.repository.d.ts.map

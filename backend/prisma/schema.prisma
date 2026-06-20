@@ -83,6 +83,7 @@ model BusinessProfile {
   website             String?
   categories          String[]
   panNo               String?
+  location            String?
   isVerified          Boolean            @default(false)
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
@@ -102,7 +103,9 @@ model Campaign {
   businessId     String
   title          String
   description    String
+  template       String?
   category       String
+  goals          Json            @default("[]")
   platform       String
   minFollowers   Int             @default(0)
   contentType    String

@@ -23,7 +23,9 @@ export declare class CampaignService {
         platform: string;
         businessId: string;
         title: string;
+        template: string | null;
         category: string;
+        goals: import("@prisma/client/runtime/library").JsonValue;
         minFollowers: number;
         contentType: string;
         deliverables: string;
@@ -31,8 +33,8 @@ export declare class CampaignService {
         budgetMin: number;
         budgetMax: number;
         paymentType: string;
-        creatorsNeeded: number;
         isFeatured: boolean;
+        creatorsNeeded: number;
     }>;
     list(query: CampaignListQuery): Promise<{
         campaigns: ({
@@ -53,7 +55,9 @@ export declare class CampaignService {
             platform: string;
             businessId: string;
             title: string;
+            template: string | null;
             category: string;
+            goals: import("@prisma/client/runtime/library").JsonValue;
             minFollowers: number;
             contentType: string;
             deliverables: string;
@@ -61,8 +65,8 @@ export declare class CampaignService {
             budgetMin: number;
             budgetMax: number;
             paymentType: string;
-            creatorsNeeded: number;
             isFeatured: boolean;
+            creatorsNeeded: number;
         })[];
         total: number;
         page: number;
@@ -89,7 +93,9 @@ export declare class CampaignService {
         platform: string;
         businessId: string;
         title: string;
+        template: string | null;
         category: string;
+        goals: import("@prisma/client/runtime/library").JsonValue;
         minFollowers: number;
         contentType: string;
         deliverables: string;
@@ -97,8 +103,8 @@ export declare class CampaignService {
         budgetMin: number;
         budgetMax: number;
         paymentType: string;
-        creatorsNeeded: number;
         isFeatured: boolean;
+        creatorsNeeded: number;
     }>;
     update(id: string, userId: string, input: UpdateCampaignInput): Promise<{
         status: import(".prisma/client").$Enums.CampaignStatus;
@@ -110,7 +116,9 @@ export declare class CampaignService {
         platform: string;
         businessId: string;
         title: string;
+        template: string | null;
         category: string;
+        goals: import("@prisma/client/runtime/library").JsonValue;
         minFollowers: number;
         contentType: string;
         deliverables: string;
@@ -118,8 +126,8 @@ export declare class CampaignService {
         budgetMin: number;
         budgetMax: number;
         paymentType: string;
-        creatorsNeeded: number;
         isFeatured: boolean;
+        creatorsNeeded: number;
     }>;
     delete(id: string, userId: string): Promise<{
         message: string;
@@ -139,7 +147,9 @@ export declare class CampaignService {
             platform: string;
             businessId: string;
             title: string;
+            template: string | null;
             category: string;
+            goals: import("@prisma/client/runtime/library").JsonValue;
             minFollowers: number;
             contentType: string;
             deliverables: string;
@@ -147,8 +157,8 @@ export declare class CampaignService {
             budgetMin: number;
             budgetMax: number;
             paymentType: string;
-            creatorsNeeded: number;
             isFeatured: boolean;
+            creatorsNeeded: number;
         })[];
         total: number;
         page: number;
@@ -177,10 +187,10 @@ export declare class CampaignService {
     getCampaignApplications(campaignId: string, userId: string, page: number, limit: number): Promise<{
         applications: ({
             creator: {
+                categories: string[];
                 fullName: string;
                 location: string | null;
                 avatarUrl: string | null;
-                categories: string[];
                 socialLinks: import("@prisma/client/runtime/library").JsonValue;
             };
         } & {

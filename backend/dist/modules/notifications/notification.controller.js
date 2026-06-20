@@ -39,6 +39,15 @@ class NotificationController {
             next(err);
         }
     }
+    async markReadByRef(req, res, next) {
+        try {
+            await notification_service_1.notificationService.markReadByRef(req.user.id, req.params.refId);
+            res.json({ success: true });
+        }
+        catch (err) {
+            next(err);
+        }
+    }
 }
 exports.NotificationController = NotificationController;
 //# sourceMappingURL=notification.controller.js.map

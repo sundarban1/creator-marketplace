@@ -11,29 +11,29 @@ export declare const registerSchema: z.ZodEffects<z.ZodObject<{
     phone: string;
     password: string;
     role: "CREATOR" | "BUSINESS";
-    fullName?: string | undefined;
     businessName?: string | undefined;
+    fullName?: string | undefined;
 }, {
     email: string;
     phone: string;
     password: string;
     role: "CREATOR" | "BUSINESS";
-    fullName?: string | undefined;
     businessName?: string | undefined;
+    fullName?: string | undefined;
 }>, {
     email: string;
     phone: string;
     password: string;
     role: "CREATOR" | "BUSINESS";
-    fullName?: string | undefined;
     businessName?: string | undefined;
+    fullName?: string | undefined;
 }, {
     email: string;
     phone: string;
     password: string;
     role: "CREATOR" | "BUSINESS";
-    fullName?: string | undefined;
     businessName?: string | undefined;
+    fullName?: string | undefined;
 }>;
 export declare const loginSchema: z.ZodObject<{
     email: z.ZodString;

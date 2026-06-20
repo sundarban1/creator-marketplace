@@ -4,5 +4,6 @@ export declare class NotificationController {
     badge(req: Request, res: Response, next: NextFunction): Promise<void>;
     markRead(req: Request, res: Response, next: NextFunction): Promise<void>;
     markAllRead(req: Request, res: Response, next: NextFunction): Promise<void>;
+    markReadByRef(req: Request, res: Response, next: NextFunction): Promise<void>;
 }
 //# sourceMappingURL=notification.controller.d.ts.map

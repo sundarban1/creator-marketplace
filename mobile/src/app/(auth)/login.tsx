@@ -46,10 +46,9 @@ function HeroBackground() {
 // ── Platform tags floating above card ────────────────────────────────────────
 
 const PLATFORMS = [
-  { name: 'Instagram', icon: 'camera',          color: '#E1306C' },
-  { name: 'TikTok',    icon: 'musical-notes',   color: '#000000' },
-  { name: 'YouTube',   icon: 'logo-youtube',     color: '#FF0000' },
-  { name: 'LinkedIn',  icon: 'briefcase',        color: '#0A66C2' },
+  { name: 'Instagram', icon: 'camera',        color: '#E1306C' },
+  { name: 'TikTok',    icon: 'musical-notes', color: '#000000' },
+  { name: 'YouTube',   icon: 'logo-youtube',  color: '#FF0000' },
 ] as const;
 
 function PlatformTags() {

@@ -489,16 +489,40 @@ export default function CampaignDetailScreen() {
           </View>
         </View>
 
+        {/* Template badge + Goals */}
+        {(campaign.template || campaign.goals.length > 0) && (
+          <View style={[s.card, { backgroundColor: C.surface }]}>
+            {campaign.template && (
+              <View style={s.templateRow}>
+                <View style={[s.templateBadge, { backgroundColor: C.primaryLight }]}>
+                  <Text style={[s.templateTxt, { color: C.brinjal1 }]}>{campaign.template}</Text>
+                </View>
+              </View>
+            )}
+            {campaign.goals.length > 0 && (
+              <>
+                <Text style={[s.sectionLabel, { color: C.textSecondary }]}>Campaign Goals</Text>
+                <View style={s.goalChips}>
+                  {campaign.goals.map((g) => (
+                    <View key={g} style={[s.goalChip, { backgroundColor: C.primaryLight }]}>
+                      <Text style={[s.goalChipTxt, { color: C.brinjal1 }]}>{g}</Text>
+                    </View>
+                  ))}
+                </View>
+              </>
+            )}
+          </View>
+        )}
+
         {/* Details grid */}
         <View style={[s.card, { backgroundColor: C.surface }]}>
           <Text style={[s.sectionLabel, { color: C.textSecondary }]}>Campaign Details</Text>
           <View style={s.detailsGrid}>
-            <DetailRow icon="📅" label="Deadline"      value={formatDeadline(campaign.deadline)} C={C} />
-            <DetailRow icon="👥" label="Min Followers" value={campaign.minFollowers} C={C} />
-            <DetailRow icon="🎬" label="Content Type"  value={campaign.contentType} C={C} />
-            <DetailRow icon="💳" label="Payment"       value={campaign.paymentType} C={C} />
-            <DetailRow icon="📍" label="Location"      value={campaign.location ?? 'Remote'} C={C} />
-            <DetailRow icon="📊" label="Status"        value={campaign.status ? campaign.status.charAt(0).toUpperCase() + campaign.status.slice(1) : 'Active'} C={C} />
+            <DetailRow icon="📅" label="Deadline"  value={formatDeadline(campaign.deadline)} C={C} />
+            <DetailRow icon="💳" label="Budget"    value={campaign.budget} C={C} />
+            <DetailRow icon="💰" label="Payment"   value={campaign.paymentType} C={C} />
+            <DetailRow icon="📍" label="Location"  value={campaign.location ?? 'Remote'} C={C} />
+            <DetailRow icon="📊" label="Status"    value={campaign.status ? campaign.status.charAt(0).toUpperCase() + campaign.status.slice(1) : 'Active'} C={C} />
           </View>
         </View>
 
@@ -512,7 +536,7 @@ export default function CampaignDetailScreen() {
         {campaign.deliverables ? (
           <View style={[s.card, { backgroundColor: C.surface }]}>
             <Text style={[s.sectionLabel, { color: C.textSecondary }]}>Deliverables</Text>
-            {campaign.deliverables.split('+').map((d, i) => (
+            {campaign.deliverables.split(/,\s*|\s*\+\s*/).filter(Boolean).map((d, i) => (
               <ReqItem key={i} text={d.trim()} C={C} />
             ))}
           </View>
@@ -828,6 +852,12 @@ const s = StyleSheet.create({
 
   card:        { marginHorizontal: 16, marginTop: 12, borderRadius: 16, padding: 16, gap: 12, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
   sectionLabel:{ fontSize: 13, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4, fontFamily: F.bold },
+  templateRow: { flexDirection: 'row' },
+  templateBadge:{ borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
+  templateTxt: { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
+  goalChips:   { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  goalChip:    { borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 },
+  goalChipTxt: { fontSize: 12, fontWeight: '600', fontFamily: F.semibold },
   detailsGrid: { gap: 10 },
   detailRow:   { flexDirection: 'row', alignItems: 'center', gap: 12 },
   detailIcon:  { width: 36, height: 36, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },

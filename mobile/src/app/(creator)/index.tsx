@@ -12,7 +12,7 @@ import { CampaignListItem } from '@/features/creator/components/CampaignListItem
 import { FeaturedCard } from '@/features/creator/components/FeaturedCard';
 import { FilterModal } from '@/features/creator/components/FilterModal';
 import type { LocationFilter } from '@/features/creator/components/FilterModal';
-import { CATEGORY_META, DEFAULT_META, FILTER_TABS } from '@/features/creator/data/filterOptions';
+import { CATEGORY_META, DEFAULT_META, FILTER_TABS, displayCategory } from '@/features/creator/data/filterOptions';
 import { campaignService } from '@/services/campaign';
 import { creatorService } from '@/services/creator';
 import { getSocket } from '@/lib/socket';
@@ -70,19 +70,15 @@ export default function HomeScreen() {
     const dt    = overrides.dateTo    !== undefined ? overrides.dateTo    : dateTo;
 
     try {
-      const [{ campaigns: data }, cats] = await Promise.all([
-        campaignService.list({
-          category:  cat !== 'All' ? cat : undefined,
-          minBudget: pMin > 0 ? pMin : undefined,
-          maxBudget: pMax < SLIDER_MAX ? pMax : undefined,
-          dateFrom:  df ?? undefined,
-          dateTo:    dt ?? undefined,
-          limit: 50,
-        }),
-        campaignService.getCategories().catch(() => [] as string[]),
-      ]);
+      const { campaigns: data } = await campaignService.list({
+        category:  cat !== 'All' ? cat : undefined,
+        minBudget: pMin > 0 ? pMin : undefined,
+        maxBudget: pMax < SLIDER_MAX ? pMax : undefined,
+        dateFrom:  df ?? undefined,
+        dateTo:    dt ?? undefined,
+        limit: 50,
+      });
       setCampaigns(data);
-      setApiCategories(cats);
     } catch (e) {
       setFetchError(e instanceof Error ? e.message : 'Failed to load campaigns');
     } finally {
@@ -91,7 +87,12 @@ export default function HomeScreen() {
     }
   }
 
-  useEffect(() => { void fetchCampaigns(); }, []);
+  useEffect(() => {
+    void fetchCampaigns();
+    campaignService.getCategories()
+      .then((cats) => { if (cats.length > 0) setApiCategories(cats); })
+      .catch(() => {});
+  }, []);
 
   // Keep a stable ref to the latest fetch so the socket handler never captures stale state
   const fetchRef = useRef(fetchCampaigns);
@@ -168,10 +169,13 @@ export default function HomeScreen() {
     void fetchCampaigns({ category: 'All', priceMin: 0, priceMax: SLIDER_MAX, dateFrom: null, dateTo: null });
   }
 
-  const visibleCategories = ['All', ...apiCategories].map((label) => ({
-    label,
-    ...(CATEGORY_META[label] ?? DEFAULT_META),
-  }));
+  const visibleCategories = [
+    { label: 'All', ...(CATEGORY_META['All'] ?? DEFAULT_META) },
+    ...apiCategories.map((label) => ({
+      label,
+      ...(CATEGORY_META[label] ?? DEFAULT_META),
+    })),
+  ];
 
   const featured = campaigns.filter((c) => c.isFeatured);
 
@@ -217,7 +221,7 @@ export default function HomeScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brinjal1} />}>
 
         {/* ── Gradient header ── */}
-        <LinearGradient colors={['#F97316', '#EF4444', '#EC4899']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.gradientHeader}>
+        <LinearGradient colors={['#0EA5E9', '#38BDF8', '#7DD3FC']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.gradientHeader}>
           <View style={styles.header}>
             <View style={styles.headerLeft}>
               <Pressable style={styles.menuBtn} onPress={openDrawer}>
@@ -260,7 +264,7 @@ export default function HomeScreen() {
             <Pressable
               style={[styles.filterBtn, { backgroundColor: isFilterActive ? '#fff' : 'rgba(255,255,255,0.2)' }]}
               onPress={openFilter}>
-              <Ionicons name="options" size={18} color={isFilterActive ? '#F97316' : '#fff'} />
+              <Ionicons name="options" size={18} color={isFilterActive ? '#0EA5E9' : '#fff'} />
               {isFilterActive && <View style={[styles.filterActiveDot, { borderColor: 'transparent' }]} />}
             </Pressable>
           </View>
@@ -295,35 +299,37 @@ export default function HomeScreen() {
           <Text style={[styles.sectionTitle, { color: C.text }]}>Categories</Text>
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoriesRow}>
-          {visibleCategories.map((cat) => (
-            <Pressable key={cat.label} style={styles.catItem} onPress={() => {
-              setActiveCategory(cat.label);
-              void fetchCampaigns({ category: cat.label });
-            }}>
-              <View style={[
-                styles.catIcon,
-                { backgroundColor: cat.bg },
-                activeCategory === cat.label && {
-                  borderWidth: 2,
-                  borderColor: C.brinjal1,
-                  shadowColor: '#000',
-                  shadowOpacity: 0.15,
-                  shadowRadius: 6,
-                  shadowOffset: { width: 0, height: 3 },
-                  elevation: 5,
-                },
-              ]}>
+          {visibleCategories.map((cat) => {
+            const isAll    = cat.label === 'All';
+            const isActive = activeCategory === cat.label;
+            return (
+              <Pressable
+                key={cat.label}
+                style={[
+                  styles.catCard,
+                  { backgroundColor: isActive ? C.brinjal1 : isAll ? 'transparent' : cat.bg },
+                ]}
+                onPress={() => {
+                  setActiveCategory(cat.label);
+                  void fetchCampaigns({ category: cat.label });
+                }}>
+                {/* Gradient only when "All" is NOT selected */}
+                {isAll && !isActive && (
+                  <LinearGradient
+                    colors={['#7C3AED', '#EC4899', '#F97316']}
+                    start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                    style={StyleSheet.absoluteFillObject}
+                  />
+                )}
                 <Text style={styles.catEmoji}>{cat.emoji}</Text>
-              </View>
-              <Text style={[
-                styles.catLabel,
-                { color: activeCategory === cat.label ? C.brinjal1 : C.textSecondary },
-                activeCategory === cat.label && { fontFamily: F.semibold },
-              ]}>
-                {cat.label}
-              </Text>
-            </Pressable>
-          ))}
+                <Text
+                  style={[styles.catLabel, { color: isActive || isAll ? '#fff' : C.text }]}
+                  numberOfLines={2}>
+                  {displayCategory(cat.label)}
+                </Text>
+              </Pressable>
+            );
+          })}
         </ScrollView>
 
         {/* ── Featured / Loading ── */}
@@ -459,16 +465,21 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 17, fontFamily: F.bold },
   seeAll: { fontSize: 13, fontFamily: F.semibold },
 
-  categoriesRow: { paddingHorizontal: 20, gap: 14, marginBottom: 28 },
-  catItem: { alignItems: 'center', gap: 8 },
-  catIcon: { width: 60, height: 60, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
-  catEmoji: { fontSize: 26 },
-  catLabel: { fontSize: 11, fontFamily: F.medium, textAlign: 'center' },
+  categoriesRow: { paddingHorizontal: 20, gap: 10, marginBottom: 24 },
+  catCard: {
+    width: 78, height: 96, borderRadius: 18, overflow: 'hidden',
+    alignItems: 'center', justifyContent: 'center', gap: 7,
+    paddingHorizontal: 6,
+    shadowColor: '#000', shadowOpacity: 0.07, shadowRadius: 10,
+    shadowOffset: { width: 0, height: 3 }, elevation: 3,
+  },
+  catEmoji:  { fontSize: 34 },
+  catLabel:  { fontSize: 10, fontWeight: '700', fontFamily: F.bold, lineHeight: 13, textAlign: 'center' },
 
   loadingWrap: { paddingVertical: 60, alignItems: 'center', gap: 14 },
   loadingText: { fontSize: 14, fontFamily: F.regular },
 
-  featuredRow: { paddingHorizontal: 20, gap: 14, marginBottom: 28 },
+  featuredRow: { paddingHorizontal: 20, gap: 16, marginBottom: 28 },
   featuredEmpty: { marginHorizontal: 20, marginBottom: 28, borderRadius: 18, borderWidth: 1.5, borderStyle: 'dashed', padding: 24, alignItems: 'center', gap: 8 },
   featuredEmptyTitle: { fontSize: 14, fontFamily: F.bold, textAlign: 'center' },
   featuredEmptySub: { fontSize: 12, fontFamily: F.regular, textAlign: 'center', lineHeight: 18 },

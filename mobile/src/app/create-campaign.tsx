@@ -3,8 +3,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useRef, useState } from 'react';
 import {
-  Alert,
   Animated,
+  Image,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -18,51 +18,157 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
 import { campaignService } from '@/services/campaign';
+import { profileService } from '@/services/profile';
+import { CATEGORY_META, CREATOR_CATEGORIES, DEFAULT_META } from '@/features/creator/data/filterOptions';
 import { F } from '@/utilities/constants';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const PLATFORMS = ['Instagram', 'TikTok', 'YouTube', 'Twitter / X', 'LinkedIn'] as const;
-const CATEGORIES = ['Fashion', 'Health & Fitness', 'Food & Drink', 'Gaming', 'Education', 'Travel', 'Tech', 'Beauty'];
-const FOLLOWER_RANGES = ['< 1K', '1K–10K', '10K–50K', '50K–100K', '100K–500K', '500K+'];
+// Categories are fetched from API on mount (same list as creator onboarding)
+// Static fallback in case API is slow
+const CATEGORY_FALLBACK = CREATOR_CATEGORIES.map((c) => ({
+  label: c.label,
+  emoji: c.emoji,
+}));
 
-const GOOGLE_PLACES_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY ?? '';
-const CONTENT_TYPES = ['Reel / Short Video', 'Story', 'Static Post', 'Blog Article', 'Podcast Mention'];
-const PAYMENT_TYPES = ['Fixed Fee', 'Commission', 'Product Exchange', 'Hybrid', 'Negotiable'];
+const GOALS = [
+  'Brand Awareness',
+  'More Customers',
+  'Product Launch',
+  'Event Promotion',
+  'Social Media Content',
+  'User Generated Content',
+];
 
-const FOLLOWER_MIN_MAP: Record<string, number> = {
-  '< 1K': 0, '1K–10K': 1000, '10K–50K': 10000, '50K–100K': 50000,
-  '100K–500K': 100000, '500K+': 500000,
+const BUDGETS = [
+  'Under Rs. 5,000',
+  'Rs. 5,000 – 15,000',
+  'Rs. 15,000 – 50,000',
+  'Rs. 50,000+',
+  'Free Product Exchange',
+];
+
+const CREATOR_TYPES = [
+  'Food Creator',
+  'Travel Creator',
+  'Lifestyle Creator',
+  'Fashion Creator',
+  'Tech Creator',
+  'Fitness Creator',
+  'Student Creator',
+  'Any Creator',
+];
+
+const PLATFORMS = ['Instagram', 'TikTok', 'YouTube', 'Twitter / X', 'LinkedIn', 'Facebook'] as const;
+
+const BUDGET_MAP: Record<string, { min: number; max: number; payment: string }> = {
+  'Under Rs. 5,000':        { min: 0,     max: 5000,   payment: 'Fixed Fee' },
+  'Rs. 5,000 – 15,000':     { min: 5000,  max: 15000,  payment: 'Fixed Fee' },
+  'Rs. 15,000 – 50,000':    { min: 15000, max: 50000,  payment: 'Fixed Fee' },
+  'Rs. 50,000+':            { min: 50000, max: 999999, payment: 'Fixed Fee' },
+  'Free Product Exchange':  { min: 0,     max: 0,      payment: 'Product Exchange' },
 };
 
-const TOTAL_STEPS = 4;
-const ERROR_RED = '#EF4444';
+const TEMPLATE_CONTENT: Record<string, { title: string; desc: string }> = {
+  'Food':           { title: 'Authentic Food Experience – Creator Collaboration', desc: "We're looking for food creators to showcase our restaurant, dishes, or food products with genuine taste reactions and stunning visuals. Help us inspire food lovers to discover us." },
+  'Travel':         { title: 'Nepal Adventure – Travel Creator Campaign', desc: "We're partnering with travel creators to showcase our destination, property, or travel experience. Create compelling journey content that inspires audiences to explore." },
+  'Fashion':        { title: 'Style Collaboration – Fashion Creator Campaign', desc: "We're looking for fashion creators to model and showcase our latest collection. Feature our pieces in your signature style and help us reach fashion-forward audiences." },
+  'Beauty':         { title: 'Glow Up – Beauty Creator Campaign', desc: "We're inviting beauty creators to feature our products or services, document transformation experiences, and share before/after content that inspires their audience." },
+  'Fitness':        { title: 'Fitness Collab – Gym & Wellness Campaign', desc: "We're looking for fitness creators to showcase our gym, equipment, or fitness products. Create motivational content that inspires audiences to start their fitness journey." },
+  'Gaming':         { title: 'Gaming Review – Creator Collaboration', desc: "We're partnering with gaming creators for a review, gameplay showcase, or sponsored content about our game or gaming product. Share your genuine experience with your audience." },
+  'Tech':           { title: 'Honest Tech Review – Creator Collab', desc: "We're partnering with tech creators for an unboxing, feature demo, and honest review of our latest product. Share your genuine take on performance and value." },
+  'Education':      { title: 'Learn & Grow – Education Creator Campaign', desc: "We're partnering with creators to promote our courses or programs. Highlight benefits and student success stories to help us reach learners ready to upskill." },
+  'Lifestyle':      { title: 'Lifestyle Integration – Creator Partnership', desc: "We're looking for lifestyle creators to naturally integrate our brand into their daily content. Show how our product or service fits seamlessly into a modern lifestyle." },
+  'Home & Living':  { title: 'Home Transformation – Creator Campaign', desc: "We're inviting home & living creators to feature our products in real home settings. Create inspiring content that shows how our products elevate everyday living." },
+  'Wellness':       { title: 'Wellness Journey – Creator Collaboration', desc: "We're partnering with wellness creators to showcase our products, services, or programs. Help us reach health-conscious audiences looking to improve their wellbeing." },
+  'Music':          { title: 'Music & Entertainment – Creator Campaign', desc: "We're looking for music creators to promote our event, brand, or product. Create engaging audio-visual content that connects with music lovers and builds excitement." },
+  'Art & Design':   { title: 'Creative Collab – Art & Design Campaign', desc: "We're partnering with creative and design creators to showcase our brand with artistic flair. Create visually stunning content that highlights our aesthetic and values." },
+  'Pets':           { title: 'Pet-Friendly Creator Campaign', desc: "We're looking for pet creators to feature our pet products or services. Show your furry friends enjoying what we offer and help us reach dedicated pet owners." },
+  'Parenting':      { title: 'Parenting Creator Campaign', desc: "We're partnering with parenting creators to showcase our family-friendly products. Share authentic family moments that resonate with parents and caregivers." },
+  'Automotive':     { title: 'Auto Creator Campaign', desc: "We're looking for automotive creators for a test drive, feature review, or showroom visit. Create engaging content that showcases performance, style, and value." },
+  'Finance':        { title: 'Financial Education – Creator Campaign', desc: "We're partnering with finance creators to educate audiences about our financial products or services. Help us build trust and reach people ready to make smart money moves." },
+  'Sustainability': { title: 'Eco-Conscious Creator Campaign', desc: "We're partnering with sustainability creators to promote our eco-friendly products or initiatives. Help us inspire audiences to make conscious choices for the planet." },
+  'Photography':    { title: 'Photography Showcase – Creator Campaign', desc: "We're looking for photography creators to capture and showcase our products, spaces, or experiences. Create stunning visual content that tells our brand's story." },
+  'Sports':         { title: 'Sports & Fitness – Creator Campaign', desc: "We're looking for sports creators to showcase our products, equipment, or services in action. Create high-energy content that motivates your athletic audience." },
+  'Film & TV':      { title: 'Entertainment Creator Campaign', desc: "We're partnering with film and entertainment creators for a review, reaction, or sponsored content about our production, platform, or entertainment product." },
+  'Mindfulness':    { title: 'Mindfulness & Wellness – Creator Campaign', desc: "We're partnering with mindfulness creators to promote our wellness products or programs. Help us reach audiences looking to reduce stress and improve mental wellbeing." },
+  'Food & Drink':   { title: 'Food & Beverage Creator Campaign', desc: "We're looking for food and drink creators to showcase our café, restaurant, or beverage products. Create aesthetic content with genuine taste reactions that inspire followers." },
+  'Entertainment':  { title: 'Event & Entertainment – Creator Campaign', desc: "We're hosting an event or launching entertainment content and need creators to build hype and coverage. Create compelling content that drives awareness and excitement." },
+};
 
+const DELIVERABLE_TYPES: { key: string; label: string }[] = [
+  { key: 'REEL',                  label: 'Reel' },
+  { key: 'STORY',                 label: 'Story' },
+  { key: 'PHOTO_POST',            label: 'Photo Post' },
+  { key: 'CAROUSEL_POST',         label: 'Carousel Post' },
+  { key: 'VISIT_STORE',           label: 'Visit Store' },
+  { key: 'PRODUCT_REVIEW_VIDEO',  label: 'Product Review Video' },
+  { key: 'EVENT_COVERAGE_VIDEO',  label: 'Event Coverage Video' },
+  { key: 'MENTION_IN_CAPTION',    label: 'Mention in Caption' },
+  { key: 'TAG_BUSINESS',          label: 'Tag Business' },
+  { key: 'GOOGLE_REVIEW',         label: 'Google Review' },
+];
+
+const DEFAULT_DELIVERABLES: Record<string, number> = Object.fromEntries(
+  DELIVERABLE_TYPES.map((d) => [d.key, 0])
+);
+
+type TemplatePreset = { deliverables: Record<string, number>; goals: string[]; budget: string };
+const p = (overrides: Partial<Record<string, number>>, goals: string[], budget: string): TemplatePreset =>
+  ({ deliverables: { ...DEFAULT_DELIVERABLES, ...overrides }, goals, budget });
+
+const TEMPLATE_PRESETS: Record<string, TemplatePreset> = {
+  'Food':           p({ REEL: 1, STORY: 3, VISIT_STORE: 1 },                ['More Customers', 'Brand Awareness'],       'Rs. 5,000 – 15,000'),
+  'Travel':         p({ REEL: 1, PHOTO_POST: 5, STORY: 3, VISIT_STORE: 1 }, ['Brand Awareness', 'More Customers'],       'Rs. 15,000 – 50,000'),
+  'Fashion':        p({ REEL: 1, PHOTO_POST: 1, STORY: 1 },                 ['Brand Awareness', 'Social Media Content'], 'Rs. 5,000 – 15,000'),
+  'Beauty':         p({ REEL: 1, STORY: 2, VISIT_STORE: 1 },                ['More Customers', 'Brand Awareness'],       'Rs. 5,000 – 15,000'),
+  'Fitness':        p({ REEL: 1, STORY: 1, VISIT_STORE: 1 },                ['More Customers', 'Brand Awareness'],       'Under Rs. 5,000'),
+  'Gaming':         p({ REEL: 1, PRODUCT_REVIEW_VIDEO: 1, STORY: 1 },       ['Brand Awareness', 'Social Media Content'], 'Rs. 5,000 – 15,000'),
+  'Tech':           p({ PRODUCT_REVIEW_VIDEO: 1, PHOTO_POST: 1, STORY: 1 }, ['Product Launch', 'Brand Awareness'],       'Rs. 5,000 – 15,000'),
+  'Education':      p({ REEL: 1, STORY: 2, CAROUSEL_POST: 1 },              ['More Customers', 'Brand Awareness'],       'Rs. 5,000 – 15,000'),
+  'Lifestyle':      p({ REEL: 1, PHOTO_POST: 2, STORY: 3 },                 ['Brand Awareness', 'Social Media Content'], 'Rs. 5,000 – 15,000'),
+  'Home & Living':  p({ REEL: 1, PHOTO_POST: 3, STORY: 1 },                 ['Brand Awareness', 'Social Media Content'], 'Rs. 5,000 – 15,000'),
+  'Wellness':       p({ REEL: 1, STORY: 2, VISIT_STORE: 1 },                ['More Customers', 'Brand Awareness'],       'Rs. 5,000 – 15,000'),
+  'Music':          p({ REEL: 1, STORY: 2, EVENT_COVERAGE_VIDEO: 1 },       ['Brand Awareness', 'Event Promotion'],      'Rs. 5,000 – 15,000'),
+  'Art & Design':   p({ REEL: 1, PHOTO_POST: 3, STORY: 1 },                 ['Brand Awareness', 'Social Media Content'], 'Rs. 5,000 – 15,000'),
+  'Pets':           p({ REEL: 1, PHOTO_POST: 1, STORY: 2 },                 ['Brand Awareness', 'Social Media Content'], 'Under Rs. 5,000'),
+  'Parenting':      p({ REEL: 1, PHOTO_POST: 1, STORY: 2 },                 ['Brand Awareness', 'Social Media Content'], 'Rs. 5,000 – 15,000'),
+  'Automotive':     p({ REEL: 1, PHOTO_POST: 3, PRODUCT_REVIEW_VIDEO: 1 },  ['Brand Awareness', 'More Customers'],       'Rs. 15,000 – 50,000'),
+  'Finance':        p({ REEL: 1, STORY: 2, CAROUSEL_POST: 1 },              ['Brand Awareness', 'Social Media Content'], 'Rs. 5,000 – 15,000'),
+  'Sustainability': p({ REEL: 1, PHOTO_POST: 2, STORY: 1 },                 ['Brand Awareness', 'Social Media Content'], 'Rs. 5,000 – 15,000'),
+  'Photography':    p({ PHOTO_POST: 5, REEL: 1, STORY: 2 },                 ['Brand Awareness', 'Social Media Content'], 'Rs. 5,000 – 15,000'),
+  'Sports':         p({ REEL: 1, STORY: 1, VISIT_STORE: 1 },                ['More Customers', 'Brand Awareness'],       'Under Rs. 5,000'),
+  'Film & TV':      p({ REEL: 1, STORY: 2, EVENT_COVERAGE_VIDEO: 1 },       ['Brand Awareness', 'Event Promotion'],      'Rs. 5,000 – 15,000'),
+  'Mindfulness':    p({ REEL: 1, STORY: 3, PHOTO_POST: 1 },                 ['Brand Awareness', 'Social Media Content'], 'Rs. 5,000 – 15,000'),
+  'Food & Drink':   p({ REEL: 1, STORY: 3, PHOTO_POST: 1 },                 ['Brand Awareness', 'More Customers'],       'Rs. 5,000 – 15,000'),
+  'Entertainment':  p({ REEL: 2, STORY: 2, EVENT_COVERAGE_VIDEO: 1 },       ['Event Promotion', 'Brand Awareness'],      'Rs. 5,000 – 15,000'),
+};
+
+const GOOGLE_PLACES_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY ?? '';
+const ERROR_RED = '#EF4444';
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-const DAY_SHORT = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+const DAY_SHORT = ['Su','Mo','Tu','We','Th','Fr','Sa'];
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type FormData = {
-  title: string;
-  description: string;
-  category: string;
+  template: string;
+  goals: string[];
+  budget: string;
+  creatorType: string[];
   platform: string;
   location: string;
   creatorsNeeded: number;
-  minFollowers: string;
-  contentType: string;
-  deliverables: string;
+  deliverables: Record<string, number>;
+  title: string;
+  description: string;
   deadline: Date | null;
-  budgetMin: string;
-  budgetMax: string;
-  paymentType: string;
   isFeatured: boolean;
 };
 
+type SetupErrors = Partial<Record<'template' | 'goals' | 'budget', string>>;
+type ReviewErrors = Partial<Record<'title' | 'deadline' | 'platform', string>>;
 type PlacePrediction = { place_id: string; description: string };
-
-type FormErrors = Partial<Record<keyof FormData, string>>;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -72,11 +178,273 @@ function dayStart(d: Date) { return new Date(d.getFullYear(), d.getMonth(), d.ge
 function sameDay(a: Date, b: Date) {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
-function fmtDate(d: Date) {
-  return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+function fmtDate(d: Date) { return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`; }
+
+// ─── DropdownPicker ───────────────────────────────────────────────────────────
+
+function DropdownPicker({
+  value, onChange, options, placeholder, colors, error, imageFor,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  options: readonly { label: string; emoji: string }[];
+  placeholder: string;
+  colors: ReturnType<typeof useAppColors>;
+  error?: string;
+  imageFor?: (label: string) => string | undefined;
+}) {
+  const C = colors;
+  const [open, setOpen] = useState(false);
+  const selected = options.find((o) => o.label === value);
+  const selectedImg = selected && imageFor ? imageFor(selected.label) : undefined;
+
+  return (
+    <>
+      <Pressable
+        style={[dp.trigger, { backgroundColor: C.background, borderColor: error ? ERROR_RED : value ? C.brinjal1 : C.border }]}
+        onPress={() => setOpen(true)}>
+        {selectedImg ? (
+          <Image source={{ uri: selectedImg }} style={dp.triggerThumb} resizeMode="cover" />
+        ) : selected ? (
+          <Text style={dp.triggerEmoji}>{selected.emoji}</Text>
+        ) : (
+          <Ionicons name="grid-outline" size={16} color={C.textSecondary} />
+        )}
+        <Text style={[dp.triggerText, { color: value ? C.text : C.textSecondary }]} numberOfLines={1}>
+          {value || placeholder}
+        </Text>
+        <Ionicons name="chevron-down" size={16} color={C.textSecondary} />
+      </Pressable>
+      {error && <Text style={dp.error}>{error}</Text>}
+
+      <Modal visible={open} transparent animationType="slide" onRequestClose={() => setOpen(false)}>
+        <View style={dp.modalWrap}>
+          <Pressable style={dp.scrim} onPress={() => setOpen(false)} />
+          <View style={[dp.sheet, { backgroundColor: C.surface }]}>
+            <View style={[dp.handle, { backgroundColor: C.border }]} />
+            <View style={dp.sheetHeader}>
+              <Text style={[dp.sheetTitle, { color: C.text, marginBottom: 0 }]}>{placeholder}</Text>
+              <Pressable onPress={() => setOpen(false)} hitSlop={8}>
+                <Ionicons name="close" size={22} color={C.textSecondary} />
+              </Pressable>
+            </View>
+            <ScrollView showsVerticalScrollIndicator={false} style={{ marginTop: 12 }}>
+              {options.map((opt) => {
+                const sel = opt.label === value;
+                const img = imageFor ? imageFor(opt.label) : undefined;
+                return (
+                  <Pressable
+                    key={opt.label}
+                    style={[dp.item, { backgroundColor: sel ? C.primaryLight : 'transparent' }]}
+                    onPress={() => { onChange(opt.label); setOpen(false); }}>
+                    <View style={[dp.itemThumbWrap, { backgroundColor: C.border, overflow: 'hidden' }]}>
+                      {img ? (
+                        <Image source={{ uri: img }} style={dp.itemThumb} resizeMode="cover" />
+                      ) : (
+                        <Text style={dp.itemEmoji}>{opt.emoji}</Text>
+                      )}
+                    </View>
+                    <Text style={[dp.itemLabel, { color: sel ? C.brinjal1 : C.text, fontFamily: sel ? F.semibold : F.regular }]}>{opt.label}</Text>
+                    {sel && <Ionicons name="checkmark" size={18} color={C.brinjal1} />}
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+    </>
+  );
 }
 
-// ─── Chip Group ───────────────────────────────────────────────────────────────
+const dp = StyleSheet.create({
+  trigger:      { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14, height: 50 },
+  triggerThumb: { width: 30, height: 30, borderRadius: 8 },
+  triggerEmoji: { fontSize: 18 },
+  triggerText:  { flex: 1, fontSize: 14, fontFamily: F.medium },
+  error:        { fontSize: 12, color: ERROR_RED, fontFamily: F.regular, marginTop: 4 },
+  modalWrap:  { flex: 1, justifyContent: 'flex-end' },
+  scrim:      { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.45)' },
+  sheet:      { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 40, maxHeight: '70%' },
+  handle:     { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginBottom: 16 },
+  sheetHeader:{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 0 },
+  sheetTitle: { fontSize: 16, fontWeight: '800', fontFamily: F.extrabold, marginBottom: 12 },
+  item:         { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 12, marginBottom: 4 },
+  itemThumbWrap:{ width: 44, height: 44, borderRadius: 10, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  itemThumb:    { width: 44, height: 44 },
+  itemEmoji:    { fontSize: 20 },
+  itemLabel:    { flex: 1, fontSize: 14 },
+});
+
+// ─── MultiCheckboxDropdown ────────────────────────────────────────────────────
+
+function MultiCheckboxDropdown({
+  values, onChange, options, placeholder, colors, error,
+}: {
+  values: string[];
+  onChange: (v: string[]) => void;
+  options: string[];
+  placeholder: string;
+  colors: ReturnType<typeof useAppColors>;
+  error?: string;
+}) {
+  const C = colors;
+  const [open, setOpen] = useState(false);
+
+  function toggle(opt: string) {
+    if (values.includes(opt)) onChange(values.filter((v) => v !== opt));
+    else onChange([...values, opt]);
+  }
+
+  const label = values.length === 0 ? placeholder : values.length === 1 ? values[0] : `${values[0]} +${values.length - 1} more`;
+
+  return (
+    <>
+      <Pressable
+        style={[dp.trigger, { backgroundColor: C.background, borderColor: error ? ERROR_RED : values.length > 0 ? C.brinjal1 : C.border }]}
+        onPress={() => setOpen(true)}>
+        <Ionicons name="flag-outline" size={16} color={values.length > 0 ? C.brinjal1 : C.textSecondary} />
+        <Text style={[dp.triggerText, { color: values.length > 0 ? C.text : C.textSecondary }]} numberOfLines={1}>{label}</Text>
+        {values.length > 0 && (
+          <View style={[mc.badge, { backgroundColor: C.brinjal1 }]}>
+            <Text style={mc.badgeText}>{values.length}</Text>
+          </View>
+        )}
+        <Ionicons name="chevron-down" size={16} color={C.textSecondary} />
+      </Pressable>
+      {error && <Text style={dp.error}>{error}</Text>}
+
+      <Modal visible={open} transparent animationType="slide" onRequestClose={() => setOpen(false)}>
+        <View style={dp.modalWrap}>
+          <Pressable style={dp.scrim} onPress={() => setOpen(false)} />
+          <View style={[dp.sheet, { backgroundColor: C.surface }]}>
+            <View style={[dp.handle, { backgroundColor: C.border }]} />
+            <View style={mc.sheetHeader}>
+              <Text style={[dp.sheetTitle, { color: C.text, marginBottom: 0 }]}>{placeholder}</Text>
+              <Pressable onPress={() => setOpen(false)}>
+                <Text style={[mc.done, { color: C.brinjal1 }]}>Done</Text>
+              </Pressable>
+            </View>
+            <ScrollView showsVerticalScrollIndicator={false} style={{ marginTop: 12 }}>
+              {options.map((opt) => {
+                const checked = values.includes(opt);
+                return (
+                  <Pressable
+                    key={opt}
+                    style={[mc.row, { backgroundColor: checked ? C.primaryLight : 'transparent' }]}
+                    onPress={() => toggle(opt)}>
+                    <View style={[mc.checkbox, { borderColor: checked ? C.brinjal1 : C.border, backgroundColor: checked ? C.brinjal1 : 'transparent' }]}>
+                      {checked && <Ionicons name="checkmark" size={13} color="#fff" />}
+                    </View>
+                    <Text style={[mc.rowLabel, { color: checked ? C.brinjal1 : C.text, fontFamily: checked ? F.semibold : F.regular }]}>{opt}</Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+    </>
+  );
+}
+
+const mc = StyleSheet.create({
+  badge:      { width: 20, height: 20, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
+  badgeText:  { fontSize: 11, color: '#fff', fontWeight: '700', fontFamily: F.bold },
+  sheetHeader:{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  done:       { fontSize: 15, fontWeight: '700', fontFamily: F.bold },
+  row:        { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 13, paddingHorizontal: 12, borderRadius: 12, marginBottom: 4 },
+  checkbox:   { width: 22, height: 22, borderRadius: 6, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center' },
+  rowLabel:   { flex: 1, fontSize: 14 },
+});
+
+// ─── RadioGroup ───────────────────────────────────────────────────────────────
+
+function RadioGroup({
+  value, onChange, options, colors, error,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  options: string[];
+  colors: ReturnType<typeof useAppColors>;
+  error?: string;
+}) {
+  const C = colors;
+  return (
+    <View style={{ gap: 6 }}>
+      {options.map((opt) => {
+        const sel = value === opt;
+        return (
+          <Pressable
+            key={opt}
+            style={[rg.row, { backgroundColor: sel ? C.primaryLight : C.background, borderColor: sel ? C.brinjal1 : C.border }]}
+            onPress={() => onChange(opt)}>
+            <View style={[rg.outer, { borderColor: sel ? C.brinjal1 : C.border }]}>
+              {sel && <View style={[rg.inner, { backgroundColor: C.brinjal1 }]} />}
+            </View>
+            <Text style={[rg.label, { color: sel ? C.brinjal1 : C.text, fontFamily: sel ? F.semibold : F.regular }]}>{opt}</Text>
+          </Pressable>
+        );
+      })}
+      {error && <Text style={rg.error}>{error}</Text>}
+    </View>
+  );
+}
+
+const rg = StyleSheet.create({
+  row:   { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 13, paddingHorizontal: 14, borderRadius: 12, borderWidth: 1.5 },
+  outer: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, justifyContent: 'center', alignItems: 'center' },
+  inner: { width: 10, height: 10, borderRadius: 5 },
+  label: { flex: 1, fontSize: 14 },
+  error: { fontSize: 12, color: ERROR_RED, fontFamily: F.regular },
+});
+
+// ─── ChipMultiGroup ───────────────────────────────────────────────────────────
+
+function ChipMultiGroup({
+  values, onChange, options, colors, error,
+}: {
+  values: string[];
+  onChange: (v: string[]) => void;
+  options: string[];
+  colors: ReturnType<typeof useAppColors>;
+  error?: string;
+}) {
+  const C = colors;
+  function toggle(opt: string) {
+    if (opt === 'Any Creator') { onChange(['Any Creator']); return; }
+    const next = values.filter((v) => v !== 'Any Creator');
+    if (next.includes(opt)) onChange(next.filter((v) => v !== opt));
+    else onChange([...next, opt]);
+  }
+  return (
+    <View style={{ gap: 6 }}>
+      <View style={cg.wrap}>
+        {options.map((opt) => {
+          const sel = values.includes(opt);
+          return (
+            <Pressable
+              key={opt}
+              style={[cg.chip, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? C.primaryLight : C.surface }]}
+              onPress={() => toggle(opt)}>
+              <Text style={[cg.chipText, { color: sel ? C.brinjal1 : C.textSecondary, fontWeight: sel ? '700' : '500' }]}>{opt}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
+      {error && <Text style={cg.error}>{error}</Text>}
+    </View>
+  );
+}
+
+const cg = StyleSheet.create({
+  wrap:     { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  chip:     { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 20, borderWidth: 1.5 },
+  chipText: { fontSize: 13, fontFamily: F.medium },
+  error:    { fontSize: 12, color: ERROR_RED, fontFamily: F.regular },
+});
+
+// ─── ChipGroup (single select) ────────────────────────────────────────────────
 
 function ChipGroup({
   options, value, onChange, colors, error,
@@ -108,14 +476,72 @@ function ChipGroup({
   );
 }
 
-const cg = StyleSheet.create({
-  wrap:     { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip:     { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 20, borderWidth: 1.5 },
-  chipText: { fontSize: 13, fontFamily: F.medium },
-  error:    { fontSize: 12, color: ERROR_RED, fontFamily: F.regular },
+// ─── PlacesInput ──────────────────────────────────────────────────────────────
+
+function PlacesInput({ value, onChange, colors, error }: {
+  value: string;
+  onChange: (v: string) => void;
+  colors: ReturnType<typeof useAppColors>;
+  error?: string;
+}) {
+  const C = colors;
+  const [suggestions, setSuggestions] = useState<PlacePrediction[]>([]);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function handleChange(text: string) {
+    onChange(text);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (!text.trim() || !GOOGLE_PLACES_KEY) { setSuggestions([]); return; }
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(text)}&key=${GOOGLE_PLACES_KEY}&language=en&types=geocode`;
+        const res = await fetch(url);
+        const json = await res.json();
+        setSuggestions(json.status === 'OK' ? json.predictions : []);
+      } catch { setSuggestions([]); }
+    }, 350);
+  }
+
+  useEffect(() => () => { if (debounceRef.current) clearTimeout(debounceRef.current); }, []);
+
+  return (
+    <View style={pl.wrap}>
+      <TextInput
+        value={value}
+        onChangeText={handleChange}
+        placeholder="e.g. Kathmandu, Pokhara or Remote"
+        placeholderTextColor={C.textSecondary}
+        style={[pl.input, { backgroundColor: C.background, borderColor: error ? ERROR_RED : C.border, color: C.text }]}
+      />
+      {error && <Text style={pl.errorTxt}>{error}</Text>}
+      {suggestions.length > 0 && (
+        <View style={[pl.dropdown, { backgroundColor: C.surface, borderColor: C.border }]}>
+          {suggestions.map((place, i) => (
+            <Pressable
+              key={place.place_id}
+              style={[pl.item, i < suggestions.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}
+              onPress={() => { onChange(place.description); setSuggestions([]); }}>
+              <Text style={pl.pin}>📍</Text>
+              <Text style={[pl.itemText, { color: C.text }]} numberOfLines={2}>{place.description}</Text>
+            </Pressable>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+}
+
+const pl = StyleSheet.create({
+  wrap:     { zIndex: 99 },
+  input:    { borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14, height: 50, fontSize: 15, fontFamily: F.regular },
+  errorTxt: { fontSize: 12, color: ERROR_RED, marginTop: 4, fontFamily: F.regular },
+  dropdown: { borderRadius: 12, borderWidth: 1.5, marginTop: 6, overflow: 'hidden', elevation: 10, zIndex: 100 },
+  item:     { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, gap: 10 },
+  pin:      { fontSize: 14 },
+  itemText: { fontSize: 13, flex: 1, fontFamily: F.regular },
 });
 
-// ─── Calendar Grid ────────────────────────────────────────────────────────────
+// ─── CalendarGrid ─────────────────────────────────────────────────────────────
 
 function CalendarGrid({ value, onChange, colors }: {
   value: Date | null;
@@ -127,15 +553,6 @@ function CalendarGrid({ value, onChange, colors }: {
   const [calYear, setCalYear] = useState(value ? value.getFullYear() : today.getFullYear());
   const [calMonth, setCalMonth] = useState(value ? value.getMonth() : today.getMonth());
 
-  function prevMonth() {
-    if (calMonth === 0) { setCalYear((y) => y - 1); setCalMonth(11); }
-    else setCalMonth((m) => m - 1);
-  }
-  function nextMonth() {
-    if (calMonth === 11) { setCalYear((y) => y + 1); setCalMonth(0); }
-    else setCalMonth((m) => m + 1);
-  }
-
   const daysInMonth = getDaysInMonth(calYear, calMonth);
   const firstWeekday = getFirstWeekday(calYear, calMonth);
   const cells: (number | null)[] = [];
@@ -143,31 +560,28 @@ function CalendarGrid({ value, onChange, colors }: {
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
   while (cells.length % 7 !== 0) cells.push(null);
 
-  function isPast(day: number) {
-    return dayStart(new Date(calYear, calMonth, day)) < today;
-  }
+  function isPast(day: number) { return dayStart(new Date(calYear, calMonth, day)) < today; }
 
   return (
     <View style={{ gap: 10 }}>
-      {/* Month nav */}
       <View style={cal.monthNav}>
-        <Pressable style={cal.navBtn} onPress={prevMonth}>
+        <Pressable style={cal.navBtn} onPress={() => {
+          if (calMonth === 0) { setCalYear((y) => y - 1); setCalMonth(11); }
+          else setCalMonth((m) => m - 1);
+        }}>
           <Text style={[cal.navTxt, { color: C.brinjal1 }]}>‹</Text>
         </Pressable>
         <Text style={[cal.monthTitle, { color: C.text }]}>{MONTHS[calMonth]} {calYear}</Text>
-        <Pressable style={cal.navBtn} onPress={nextMonth}>
+        <Pressable style={cal.navBtn} onPress={() => {
+          if (calMonth === 11) { setCalYear((y) => y + 1); setCalMonth(0); }
+          else setCalMonth((m) => m + 1);
+        }}>
           <Text style={[cal.navTxt, { color: C.brinjal1 }]}>›</Text>
         </Pressable>
       </View>
-
-      {/* Day headers */}
       <View style={cal.dayRow}>
-        {DAY_SHORT.map((d) => (
-          <Text key={d} style={[cal.dayHdr, { color: C.textSecondary }]}>{d}</Text>
-        ))}
+        {DAY_SHORT.map((d) => <Text key={d} style={[cal.dayHdr, { color: C.textSecondary }]}>{d}</Text>)}
       </View>
-
-      {/* Grid */}
       <View style={cal.grid}>
         {cells.map((day, idx) => {
           if (!day) return <View key={`e${idx}`} style={cal.cell} />;
@@ -175,21 +589,10 @@ function CalendarGrid({ value, onChange, colors }: {
           const sel = value ? sameDay(value, dayStart(new Date(calYear, calMonth, day))) : false;
           const isToday = sameDay(dayStart(new Date(calYear, calMonth, day)), today);
           return (
-            <Pressable
-              key={`d${day}`}
-              style={cal.cell}
-              disabled={past}
+            <Pressable key={`d${day}`} style={cal.cell} disabled={past}
               onPress={() => onChange(dayStart(new Date(calYear, calMonth, day)))}>
-              <View style={[
-                cal.dayCircle,
-                sel && { backgroundColor: C.brinjal1 },
-                isToday && !sel && { borderWidth: 1.5, borderColor: C.brinjal1 },
-              ]}>
-                <Text style={[
-                  cal.dayNum,
-                  { color: past ? C.border : sel ? '#fff' : isToday ? C.brinjal1 : C.text },
-                  sel && { fontWeight: '700' },
-                ]}>
+              <View style={[cal.dayCircle, sel && { backgroundColor: C.brinjal1 }, isToday && !sel && { borderWidth: 1.5, borderColor: C.brinjal1 }]}>
+                <Text style={[cal.dayNum, { color: past ? C.border : sel ? '#fff' : isToday ? C.brinjal1 : C.text }, sel && { fontWeight: '700' }]}>
                   {day}
                 </Text>
               </View>
@@ -214,7 +617,7 @@ const cal = StyleSheet.create({
   dayNum:    { fontSize: 13, fontWeight: '500', fontFamily: F.medium },
 });
 
-// ─── Deadline Picker ──────────────────────────────────────────────────────────
+// ─── DeadlinePicker ───────────────────────────────────────────────────────────
 
 function DeadlinePicker({ value, onChange, error, colors }: {
   value: Date | null;
@@ -224,60 +627,43 @@ function DeadlinePicker({ value, onChange, error, colors }: {
 }) {
   const C = colors;
   const [open, setOpen] = useState(false);
-
   return (
     <>
-      {/* Trigger — looks like a text input */}
       <Pressable
-        style={[
-          ddp.trigger,
-          { backgroundColor: C.background, borderColor: error ? ERROR_RED : C.border },
-        ]}
+        style={[pl.input, { flexDirection: 'row', alignItems: 'center', borderColor: error ? ERROR_RED : value ? C.brinjal1 : C.border, backgroundColor: C.background, height: 50 }]}
         onPress={() => setOpen(true)}>
-        <Text style={[ddp.triggerText, { color: value ? C.text : C.textSecondary }]}>
+        <Text style={[{ flex: 1, fontSize: 15, fontFamily: F.regular, color: value ? C.text : C.textSecondary }]}>
           {value ? fmtDate(value) : 'Tap to select a date'}
         </Text>
         {value ? (
-          <Pressable
-            hitSlop={10}
-            onPress={(e) => { e.stopPropagation(); onChange(null); }}>
-            <Text style={[ddp.clearIcon, { color: C.textSecondary }]}>✕</Text>
+          <Pressable hitSlop={10} onPress={(e) => { e.stopPropagation(); onChange(null); }}>
+            <Ionicons name="close-circle" size={18} color={C.textSecondary} />
           </Pressable>
         ) : (
-          <Text style={ddp.calIcon}>📅</Text>
+          <Ionicons name="calendar-outline" size={18} color={C.textSecondary} />
         )}
       </Pressable>
-      {error && <Text style={ddp.error}>{error}</Text>}
+      {error && <Text style={pl.errorTxt}>{error}</Text>}
 
-      {/* Bottom-sheet calendar modal */}
-      <Modal
-        visible={open}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setOpen(false)}>
-        <View style={ddp.modalWrap}>
-          {/* Scrim — tap to dismiss */}
-          <Pressable style={ddp.scrim} onPress={() => setOpen(false)} />
-
-          {/* Sheet */}
-          <View style={[ddp.sheet, { backgroundColor: C.surface }]}>
-            <View style={[ddp.sheetHandle, { backgroundColor: C.border }]} />
-            <View style={ddp.sheetHeader}>
-              <Text style={[ddp.sheetTitle, { color: C.text }]}>Application Deadline</Text>
+      <Modal visible={open} transparent animationType="slide" onRequestClose={() => setOpen(false)}>
+        <View style={dp.modalWrap}>
+          <Pressable style={dp.scrim} onPress={() => setOpen(false)} />
+          <View style={[dp.sheet, { backgroundColor: C.surface }]}>
+            <View style={[dp.handle, { backgroundColor: C.border }]} />
+            <View style={mc.sheetHeader}>
+              <Text style={[dp.sheetTitle, { color: C.text, marginBottom: 0 }]}>Application Deadline</Text>
               <Pressable onPress={() => setOpen(false)}>
-                <Text style={[ddp.doneBtn, { color: C.brinjal1 }]}>Done</Text>
+                <Text style={[mc.done, { color: C.brinjal1 }]}>Done</Text>
               </Pressable>
             </View>
             {value && (
-              <View style={[ddp.selectedBadge, { backgroundColor: C.primaryLight }]}>
-                <Text style={[ddp.selectedText, { color: C.brinjal1 }]}>Selected: {fmtDate(value)}</Text>
+              <View style={[{ borderRadius: 10, padding: 10, marginTop: 12, backgroundColor: C.primaryLight }]}>
+                <Text style={[{ fontSize: 13, fontWeight: '700', fontFamily: F.bold, color: C.brinjal1 }]}>Selected: {fmtDate(value)}</Text>
               </View>
             )}
-            <CalendarGrid
-              value={value}
-              onChange={(d) => { onChange(d); setOpen(false); }}
-              colors={C}
-            />
+            <View style={{ marginTop: 16 }}>
+              <CalendarGrid value={value} onChange={(d) => { onChange(d); setOpen(false); }} colors={C} />
+            </View>
           </View>
         </View>
       </Modal>
@@ -285,140 +671,24 @@ function DeadlinePicker({ value, onChange, error, colors }: {
   );
 }
 
-const ddp = StyleSheet.create({
-  trigger:      { flexDirection: 'row', alignItems: 'center', borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14, height: 48, gap: 8 },
-  triggerText:  { flex: 1, fontSize: 15, fontFamily: F.regular },
-  clearIcon:    { fontSize: 14, fontWeight: '600', fontFamily: F.semibold },
-  calIcon:      { fontSize: 16 },
-  error:        { fontSize: 12, color: ERROR_RED, fontFamily: F.regular },
-
-  modalWrap:    { flex: 1, justifyContent: 'flex-end' },
-  scrim:        { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.45)' },
-  sheet:        { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 40, gap: 16 },
-  sheetHandle:  { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginBottom: 4 },
-  sheetHeader:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  sheetTitle:   { fontSize: 16, fontWeight: '800', fontFamily: F.extrabold },
-  doneBtn:      { fontSize: 15, fontWeight: '700', fontFamily: F.bold },
-  selectedBadge:{ borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 },
-  selectedText: { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
-});
-
-// ─── Google Places Input ──────────────────────────────────────────────────────
-
-function PlacesInput({
-  value, onChange, colors, error,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  colors: ReturnType<typeof useAppColors>;
-  error?: string;
-}) {
-  const C = colors;
-  const [suggestions, setSuggestions] = useState<PlacePrediction[]>([]);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  function handleChange(text: string) {
-    onChange(text);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (!text.trim() || !GOOGLE_PLACES_KEY) { setSuggestions([]); return; }
-    debounceRef.current = setTimeout(async () => {
-      try {
-        const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(text)}&key=${GOOGLE_PLACES_KEY}&language=en&types=geocode`;
-        const res = await fetch(url);
-        const json = await res.json();
-        setSuggestions(json.status === 'OK' ? json.predictions : []);
-      } catch { setSuggestions([]); }
-    }, 350);
-  }
-
-  function selectPlace(place: PlacePrediction) {
-    onChange(place.description);
-    setSuggestions([]);
-  }
-
-  useEffect(() => () => { if (debounceRef.current) clearTimeout(debounceRef.current); }, []);
-
-  return (
-    <View style={pl.wrap}>
-      <TextInput
-        value={value}
-        onChangeText={handleChange}
-        placeholder="e.g. Kathmandu, New York or Remote"
-        placeholderTextColor={C.textSecondary}
-        style={[pl.input, { backgroundColor: C.background, borderColor: error ? ERROR_RED : C.border, color: C.text }]}
-      />
-      {error && <Text style={[pl.errorTxt]}>{error}</Text>}
-      {suggestions.length > 0 && (
-        <View style={[pl.dropdown, { backgroundColor: C.surface, borderColor: C.border }]}>
-          {suggestions.map((place, i) => (
-            <Pressable
-              key={place.place_id}
-              style={[pl.item, i < suggestions.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}
-              onPress={() => selectPlace(place)}>
-              <Text style={pl.pin}>📍</Text>
-              <Text style={[pl.itemText, { color: C.text }]} numberOfLines={2}>{place.description}</Text>
-            </Pressable>
-          ))}
-        </View>
-      )}
-    </View>
-  );
-}
-
-const pl = StyleSheet.create({
-  wrap:     { zIndex: 99 },
-  input:    { borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14, height: 48, fontSize: 15, fontFamily: F.regular },
-  errorTxt: { fontSize: 12, color: ERROR_RED, marginTop: 4, fontFamily: F.regular },
-  dropdown: { borderRadius: 12, borderWidth: 1.5, marginTop: 6, overflow: 'hidden', elevation: 10, zIndex: 100 },
-  item:     { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, gap: 10 },
-  pin:      { fontSize: 14 },
-  itemText: { fontSize: 13, flex: 1, fontFamily: F.regular },
-});
-
-// ─── Field Label ──────────────────────────────────────────────────────────────
-
-function FieldLabel({ label, hint, color, hintColor }: {
-  label: string; hint?: string; color: string; hintColor: string;
-}) {
-  return (
-    <View style={fl.row}>
-      <Text style={[fl.label, { color }]}>{label}</Text>
-      {hint && <Text style={[fl.hint, { color: hintColor }]}>{hint}</Text>}
-    </View>
-  );
-}
-const fl = StyleSheet.create({
-  row:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  label: { fontSize: 13, fontWeight: '600', fontFamily: F.semibold },
-  hint:  { fontSize: 11, fontWeight: '500', fontFamily: F.medium },
-});
-
-// ─── Stepper ──────────────────────────────────────────────────────────────────
+// ─── Stepper ─────────────────────────────────────────────────────────────────
 
 function Stepper({ value, onChange, min = 1, max = 50, colors }: {
-  value: number;
-  onChange: (v: number) => void;
-  min?: number;
-  max?: number;
-  colors: ReturnType<typeof useAppColors>;
+  value: number; onChange: (v: number) => void; min?: number; max?: number; colors: ReturnType<typeof useAppColors>;
 }) {
   const C = colors;
   return (
     <View style={[st.wrap, { backgroundColor: C.surface, borderColor: C.border }]}>
-      <Pressable
-        style={[st.btn, { backgroundColor: value <= min ? C.background : C.primaryLight }]}
-        onPress={() => onChange(Math.max(min, value - 1))}
-        disabled={value <= min}>
+      <Pressable style={[st.btn, { backgroundColor: value <= min ? C.background : C.primaryLight }]}
+        onPress={() => onChange(Math.max(min, value - 1))} disabled={value <= min}>
         <Text style={[st.btnTxt, { color: value <= min ? C.border : C.brinjal1 }]}>−</Text>
       </Pressable>
       <View style={st.center}>
         <Text style={[st.value, { color: C.brinjal1 }]}>{value}</Text>
         <Text style={[st.unit, { color: C.textSecondary }]}>creator{value !== 1 ? 's' : ''}</Text>
       </View>
-      <Pressable
-        style={[st.btn, { backgroundColor: value >= max ? C.background : C.primaryLight }]}
-        onPress={() => onChange(Math.min(max, value + 1))}
-        disabled={value >= max}>
+      <Pressable style={[st.btn, { backgroundColor: value >= max ? C.background : C.primaryLight }]}
+        onPress={() => onChange(Math.min(max, value + 1))} disabled={value >= max}>
         <Text style={[st.btnTxt, { color: value >= max ? C.border : C.brinjal1 }]}>+</Text>
       </Pressable>
     </View>
@@ -434,16 +704,72 @@ const st = StyleSheet.create({
   unit:   { fontSize: 11, fontWeight: '500', marginTop: 1, fontFamily: F.medium },
 });
 
+// ─── SectionCard ──────────────────────────────────────────────────────────────
+
+function SectionCard({ title, sub, children, colors }: {
+  title: string; sub?: string; children: React.ReactNode; colors: ReturnType<typeof useAppColors>;
+}) {
+  const C = colors;
+  return (
+    <View style={[sc.card, { backgroundColor: C.surface }]}>
+      <Text style={[sc.title, { color: C.text }]}>{title}</Text>
+      {sub && <Text style={[sc.sub, { color: C.textSecondary }]}>{sub}</Text>}
+      {children}
+    </View>
+  );
+}
+
+const sc = StyleSheet.create({
+  card:  { borderRadius: 16, padding: 18, gap: 14, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
+  title: { fontSize: 15, fontWeight: '800', fontFamily: F.extrabold },
+  sub:   { fontSize: 12, lineHeight: 18, marginTop: -6, fontFamily: F.regular },
+});
+
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function CreateCampaignScreen() {
   const C = useAppColors();
-  const [step, setStep] = useState(1);
+  const [phase, setPhase] = useState<'setup' | 'review'>('setup');
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<FormErrors>({});
+  const [setupErrors, setSetupErrors] = useState<SetupErrors>({});
+  const [reviewErrors, setReviewErrors] = useState<ReviewErrors>({});
   const scrollRef = useRef<ScrollView>(null);
+  const [categoryOptions, setCategoryOptions] = useState(CATEGORY_FALLBACK);
 
-  // ── Toast ──
+  useEffect(() => {
+    campaignService.getCategories().then((cats) => {
+      if (cats.length > 0) {
+        setCategoryOptions(
+          cats.map((label) => ({
+            label,
+            emoji: (CATEGORY_META[label] ?? DEFAULT_META).emoji,
+          }))
+        );
+      }
+    }).catch(() => { /* keep fallback */ });
+
+    profileService.getBusinessProfile().then((profile) => {
+      if (profile.location) {
+        setForm((prev) => ({ ...prev, location: profile.location! }));
+      }
+    }).catch(() => { /* location stays empty */ });
+  }, []);
+
+  const [form, setForm] = useState<FormData>({
+    template: '',
+    goals: [],
+    budget: '',
+    creatorType: [],
+    platform: 'Instagram',
+    location: '',
+    creatorsNeeded: 1,
+    deliverables: { ...DEFAULT_DELIVERABLES },
+    title: '',
+    description: '',
+    deadline: dayStart(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)),
+    isFeatured: false,
+  });
+
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const toastOpacity = useRef(new Animated.Value(0)).current;
 
@@ -456,98 +782,64 @@ export default function CreateCampaignScreen() {
     ]).start(() => setToast(null));
   }
 
-  // Clear stale toast on unmount
   useEffect(() => () => { toastOpacity.stopAnimation(); }, []);
-
-  const [form, setForm] = useState<FormData>({
-    title: '',
-    description: '',
-    category: '',
-    platform: '',
-    location: '',
-    creatorsNeeded: 1,
-    minFollowers: '',
-    contentType: '',
-    deliverables: '',
-    deadline: null,
-    budgetMin: '',
-    budgetMax: '',
-    paymentType: '',
-    isFeatured: false,
-  });
-
-  const STEP_LABELS = ['Campaign Details', 'Requirements', 'Budget & Payment', 'Review & Publish'];
 
   function update<K extends keyof FormData>(key: K, value: FormData[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
-    if (errors[key]) setErrors((prev) => { const next = { ...prev }; delete next[key]; return next; });
   }
 
-  function getStepErrors(): FormErrors {
-    const errs: FormErrors = {};
-    if (step === 1) {
-      if (!form.title.trim()) errs.title = 'Campaign title is required.';
-      if (form.description.trim().length > 0 && form.description.trim().length < 10) {
-        errs.description = 'Description must be at least 10 characters.';
-      }
-      if (!form.category) errs.category = 'Please select a category.';
-      if (!form.platform) errs.platform = 'Please select a platform.';
-    }
-    if (step === 2) {
-      if (!form.minFollowers) errs.minFollowers = 'Please select a minimum follower count.';
-      if (!form.contentType) errs.contentType = 'Please select a content type.';
-      if (!form.deliverables.trim()) errs.deliverables = 'Please describe the deliverables.';
-      if (!form.deadline) errs.deadline = 'Please select an application deadline.';
-    }
-    if (step === 3) {
-      if (!form.budgetMin.trim()) errs.budgetMin = 'Minimum budget is required.';
-      if (!form.budgetMax.trim()) {
-        errs.budgetMax = 'Maximum budget is required.';
-      } else if (form.budgetMin.trim() && parseFloat(form.budgetMax) < parseFloat(form.budgetMin)) {
-        errs.budgetMax = 'Must be ≥ minimum budget.';
-      }
-      if (!form.paymentType) errs.paymentType = 'Please select a payment type.';
-    }
-    return errs;
-  }
+  function handleGenerate() {
+    const errs: SetupErrors = {};
+    if (!form.template)          errs.template = 'Please select a campaign template.';
+    if (form.goals.length === 0) errs.goals    = 'Please select at least one goal.';
+    if (!form.budget)            errs.budget   = 'Please select a budget range.';
 
-  function handleNext() {
-    const errs = getStepErrors();
-    if (Object.keys(errs).length > 0) {
-      setErrors(errs);
-      return;
-    }
-    setErrors({});
-    setStep((s) => s + 1);
-    scrollRef.current?.scrollTo({ y: 0, animated: true });
-  }
+    if (Object.keys(errs).length > 0) { setSetupErrors(errs); return; }
+    setSetupErrors({});
 
-  function handleBack() {
-    if (step > 1) {
-      setErrors({});
-      setStep((s) => s - 1);
-      scrollRef.current?.scrollTo({ y: 0, animated: true });
-    } else {
-      router.canGoBack() ? router.back() : router.replace('/(business)/');
+    const content = TEMPLATE_CONTENT[form.template] ?? { title: '', desc: '' };
+    let desc = content.desc;
+    if (desc) {
+      desc += `\n\nCampaign Goals: ${form.goals.join(', ')}`;
+      if (form.location) desc += `\nLocation: ${form.location}`;
     }
+
+    setForm((prev) => ({ ...prev, title: content.title, description: desc }));
+    setPhase('review');
+    scrollRef.current?.scrollTo({ y: 0, animated: false });
   }
 
   async function handlePublish() {
+    const errs: ReviewErrors = {};
+    if (!form.title.trim()) errs.title    = 'Campaign title is required.';
+    if (!form.platform)     errs.platform = 'Please select a platform.';
+    if (!form.deadline)     errs.deadline = 'Please select an application deadline.';
+    if (Object.keys(errs).length > 0) { setReviewErrors(errs); return; }
+    setReviewErrors({});
+
+    const budget = BUDGET_MAP[form.budget] ?? { min: 0, max: 0, payment: 'Negotiable' };
     setLoading(true);
     try {
       await campaignService.create({
         title:          form.title.trim(),
         description:    form.description.trim(),
-        category:       form.category,
+        template:       form.template,
+        category:       form.template,
+        goals:          form.goals,
         platform:       form.platform,
         location:       form.location.trim() || undefined,
-        minFollowers:   FOLLOWER_MIN_MAP[form.minFollowers] ?? 0,
-        contentType:    form.contentType,
-        deliverables:   form.deliverables.trim(),
+        minFollowers:   0,
+        contentType:    form.goals[0] ?? '',
+        deliverables:   (() => {
+          const parts = DELIVERABLE_TYPES
+            .filter((d) => (form.deliverables[d.key] ?? 0) > 0)
+            .map((d) => `${form.deliverables[d.key]} ${d.label}`);
+          return parts.length > 0 ? parts.join(', ') : form.goals.join(', ');
+        })(),
         deadline:       form.deadline!.toISOString(),
-        budgetMin:      parseFloat(form.budgetMin) || 0,
-        budgetMax:      parseFloat(form.budgetMax) || 0,
-        paymentType:    form.paymentType,
+        budgetMin:      budget.min,
+        budgetMax:      budget.max,
+        paymentType:    budget.payment,
         creatorsNeeded: form.creatorsNeeded,
         isFeatured:     form.isFeatured,
       });
@@ -560,47 +852,30 @@ export default function CreateCampaignScreen() {
     }
   }
 
-  const reviewItems: { label: string; value: string; emoji: string }[] = [
-    { emoji: '📣', label: 'Title',            value: form.title },
-    { emoji: '🏷️', label: 'Category',         value: form.category },
-    { emoji: '📱', label: 'Platform',         value: form.platform },
-    { emoji: '📍', label: 'Location',         value: form.location || 'Remote' },
-    { emoji: '👥', label: 'Min. Followers',   value: form.minFollowers },
-    { emoji: '🎬', label: 'Content Type',     value: form.contentType },
-    { emoji: '🧑‍🎨', label: 'Creators Needed', value: `${form.creatorsNeeded} creator${form.creatorsNeeded !== 1 ? 's' : ''}` },
-    { emoji: '📅', label: 'Deadline',         value: form.deadline ? fmtDate(form.deadline) : '—' },
-    { emoji: '💰', label: 'Budget Range',     value: form.budgetMin && form.budgetMax ? `$${form.budgetMin} – $${form.budgetMax}` : '—' },
-    { emoji: '💳', label: 'Payment Type',     value: form.paymentType },
-    { emoji: '⭐', label: 'Featured',         value: form.isFeatured ? 'Yes' : 'No' },
-  ];
+  const selectedTemplate = categoryOptions.find((t) => t.label === form.template);
 
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
 
       {/* Header */}
-      <LinearGradient colors={['#4F46E5', '#7C3AED', '#9333EA']} start={{x:0,y:0}} end={{x:1,y:1}} style={s.gradientHeader}>
-        <Pressable onPress={handleBack} style={[s.backBtn, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
-          <Ionicons name={step > 1 ? 'chevron-back' : 'close'} size={22} color="#fff" />
+      <LinearGradient colors={['#4F46E5', '#7C3AED', '#9333EA']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.header}>
+        <Pressable
+          onPress={() => phase === 'review' ? setPhase('setup') : (router.canGoBack() ? router.back() : router.replace('/(business)/'))}
+          style={[s.backBtn, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
+          <Ionicons name={phase === 'review' ? 'chevron-back' : 'close'} size={22} color="#fff" />
         </Pressable>
         <View style={s.headerCenter}>
-          <Text style={[s.headerTitle, { color: '#fff' }]}>Create Campaign</Text>
-          <Text style={[s.headerSub, { color: 'rgba(255,255,255,0.75)' }]}>{STEP_LABELS[step - 1]}</Text>
+          <Text style={s.headerTitle}>Create Campaign</Text>
+          <Text style={s.headerSub}>{phase === 'setup' ? 'Set up your campaign' : 'Review & publish'}</Text>
         </View>
-        <View style={[s.stepPill, { backgroundColor: 'rgba(255,255,255,0.25)' }]}>
-          <Text style={[s.stepPillText, { color: '#fff' }]}>{step}/{TOTAL_STEPS}</Text>
+        <View style={[s.phasePill, { backgroundColor: 'rgba(255,255,255,0.25)' }]}>
+          <Text style={s.phasePillText}>{phase === 'setup' ? '1/2' : '2/2'}</Text>
         </View>
       </LinearGradient>
 
-      {/* Progress bar */}
+      {/* Progress */}
       <View style={[s.progressTrack, { backgroundColor: C.border }]}>
-        <View style={[s.progressFill, { width: `${(step / TOTAL_STEPS) * 100}%` as any, backgroundColor: C.brinjal1 }]} />
-      </View>
-
-      {/* Step dots */}
-      <View style={s.stepDots}>
-        {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
-          <View key={i} style={[s.dot, i + 1 <= step ? { backgroundColor: C.brinjal1 } : { backgroundColor: C.border }]} />
-        ))}
+        <View style={[s.progressFill, { width: phase === 'setup' ? '50%' : '100%', backgroundColor: C.brinjal1 }]} />
       </View>
 
       <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -610,288 +885,245 @@ export default function CreateCampaignScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
 
-          {/* ── Step 1: Details ── */}
-          {step === 1 && (
-            <View style={s.stepContent}>
-              <View style={[s.stepCard, { backgroundColor: C.surface }]}>
-                <Text style={[s.cardTitle, { color: C.text }]}>📋 Basic Info</Text>
+          {/* ── Phase 1: Setup ── */}
+          {phase === 'setup' && (
+            <View style={s.content}>
 
-                <View style={s.field}>
-                  <FieldLabel label="Campaign Title" hint="Required" color={C.text} hintColor={C.brinjal1} />
-                  <TextInput
-                    style={[s.input, { backgroundColor: C.background, borderColor: errors.title ? ERROR_RED : C.border, color: C.text }]}
-                    value={form.title}
-                    onChangeText={(v) => update('title', v)}
-                    placeholder="e.g. Summer Fashion Collection 2026"
-                    placeholderTextColor={C.textSecondary}
-                  />
-                  {errors.title && <Text style={s.errorText}>{errors.title}</Text>}
-                </View>
-
-                <View style={s.field}>
-                  <FieldLabel label="Description" hint="Optional" color={C.text} hintColor={C.textSecondary} />
-                  <TextInput
-                    style={[s.textarea, { backgroundColor: C.background, borderColor: errors.description ? ERROR_RED : C.border, color: C.text }]}
-                    value={form.description}
-                    onChangeText={(v) => update('description', v)}
-                    placeholder="Describe your brand story and what kind of content you're looking for…"
-                    placeholderTextColor={C.textSecondary}
-                    multiline
-                    numberOfLines={4}
-                  />
-                  {errors.description && <Text style={s.errorText}>{errors.description}</Text>}
-                </View>
-              </View>
-
-              <View style={[s.stepCard, { backgroundColor: C.surface }]}>
-                <Text style={[s.cardTitle, { color: C.text }]}>🏷️ Category</Text>
-                <Text style={[s.cardSub, { color: C.textSecondary }]}>What niche does this campaign belong to?</Text>
-                <ChipGroup
-                  options={CATEGORIES}
-                  value={form.category}
-                  onChange={(v) => update('category', v)}
+              {/* Template */}
+              <SectionCard title="📂 Campaign Category" sub="Choose the category that best matches your campaign." colors={C}>
+                <DropdownPicker
+                  value={form.template}
+                  onChange={(v) => {
+                    const preset = TEMPLATE_PRESETS[v];
+                    setForm((prev) => ({
+                      ...prev,
+                      template: v,
+                      ...(preset ? {
+                        goals:        preset.goals,
+                        budget:       preset.budget,
+                        deliverables: preset.deliverables,
+                      } : {}),
+                    }));
+                    if (setupErrors.template) setSetupErrors((e) => ({ ...e, template: undefined }));
+                    if (setupErrors.goals)    setSetupErrors((e) => ({ ...e, goals: undefined }));
+                    if (setupErrors.budget)   setSetupErrors((e) => ({ ...e, budget: undefined }));
+                  }}
+                  options={categoryOptions}
+                  placeholder="Select a category…"
                   colors={C}
-                  error={errors.category}
+                  error={setupErrors.template}
                 />
+              </SectionCard>
+
+              {/* Goals */}
+              <SectionCard title="🎯 Campaign Goals" sub="Select what you want to achieve with this campaign." colors={C}>
+                <MultiCheckboxDropdown
+                  values={form.goals}
+                  onChange={(v) => {
+                    update('goals', v);
+                    if (setupErrors.goals) setSetupErrors((e) => ({ ...e, goals: undefined }));
+                  }}
+                  options={GOALS}
+                  placeholder="Select campaign goals…"
+                  colors={C}
+                  error={setupErrors.goals}
+                />
+              </SectionCard>
+
+              {/* Budget */}
+              <SectionCard title="💰 Budget" sub="How much are you willing to invest per creator?" colors={C}>
+                <RadioGroup
+                  value={form.budget}
+                  onChange={(v) => {
+                    update('budget', v);
+                    if (setupErrors.budget) setSetupErrors((e) => ({ ...e, budget: undefined }));
+                  }}
+                  options={BUDGETS}
+                  colors={C}
+                  error={setupErrors.budget}
+                />
+              </SectionCard>
+
+              {/* Location */}
+              <SectionCard title="📍 Location" sub='Where should creators be based? Type "Remote" for online.' colors={C}>
+                <PlacesInput value={form.location} onChange={(v) => update('location', v)} colors={C} />
+              </SectionCard>
+
+              {/* Generate button */}
+              <Pressable
+                style={({ pressed }) => [s.generateBtn, { backgroundColor: C.brinjal1, opacity: pressed ? 0.88 : 1 }]}
+                onPress={handleGenerate}>
+                <Ionicons name="sparkles" size={20} color="#fff" />
+                <Text style={s.generateBtnText}>Generate Campaign</Text>
+              </Pressable>
+            </View>
+          )}
+
+          {/* ── Phase 2: Review ── */}
+          {phase === 'review' && (
+            <View style={s.content}>
+
+              {/* Generated notice */}
+              <View style={[s.generatedBanner, { backgroundColor: C.primaryLight }]}>
+                <Ionicons name="sparkles" size={20} color={C.brinjal1} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[s.generatedTitle, { color: C.brinjal1 }]}>Campaign Generated</Text>
+                  <Text style={[s.generatedSub, { color: C.brinjal1 }]}>Review and edit before publishing. All fields are editable.</Text>
+                </View>
               </View>
 
-              <View style={[s.stepCard, { backgroundColor: C.surface }]}>
-                <Text style={[s.cardTitle, { color: C.text }]}>📱 Platform</Text>
-                <Text style={[s.cardSub, { color: C.textSecondary }]}>Which social platform will creators post on?</Text>
+              {/* Editable title */}
+              <SectionCard title="📣 Campaign Title" colors={C}>
+                <TextInput
+                  style={[s.input, { backgroundColor: C.background, borderColor: reviewErrors.title ? ERROR_RED : C.border, color: C.text }]}
+                  value={form.title}
+                  onChangeText={(v) => {
+                    update('title', v);
+                    if (reviewErrors.title) setReviewErrors((e) => ({ ...e, title: undefined }));
+                  }}
+                  placeholder="Campaign title…"
+                  placeholderTextColor={C.textSecondary}
+                />
+                {reviewErrors.title && <Text style={s.errorText}>{reviewErrors.title}</Text>}
+              </SectionCard>
+
+              {/* Editable description */}
+              <SectionCard title="📝 Description" colors={C}>
+                <TextInput
+                  style={[s.textarea, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
+                  value={form.description}
+                  onChangeText={(v) => update('description', v)}
+                  placeholder="Describe your campaign…"
+                  placeholderTextColor={C.textSecondary}
+                  multiline
+                  numberOfLines={6}
+                />
+              </SectionCard>
+
+              {/* Platform */}
+              <SectionCard title="📱 Platform" sub="Where should creators post their content?" colors={C}>
                 <ChipGroup
                   options={PLATFORMS}
                   value={form.platform}
-                  onChange={(v) => update('platform', v)}
+                  onChange={(v) => {
+                    update('platform', v);
+                    if (reviewErrors.platform) setReviewErrors((e) => ({ ...e, platform: undefined }));
+                  }}
                   colors={C}
-                  error={errors.platform}
+                  error={reviewErrors.platform}
                 />
-              </View>
+              </SectionCard>
 
-              <View style={[s.stepCard, { backgroundColor: C.surface, zIndex: 10 }]}>
-                <Text style={[s.cardTitle, { color: C.text }]}>📍 Location</Text>
-                <Text style={[s.cardSub, { color: C.textSecondary }]}>Where should the creator be based, or type "Remote".</Text>
-                <PlacesInput
-                  value={form.location}
-                  onChange={(v) => update('location', v)}
-                  colors={C}
-                />
-              </View>
-
-              <View style={[s.stepCard, { backgroundColor: C.surface }]}>
-                <Text style={[s.cardTitle, { color: C.text }]}>🧑‍🎨 Creators Required</Text>
-                <Text style={[s.cardSub, { color: C.textSecondary }]}>How many content creators do you need for this campaign?</Text>
-                <Stepper value={form.creatorsNeeded} onChange={(v) => update('creatorsNeeded', v)} colors={C} />
-              </View>
-            </View>
-          )}
-
-          {/* ── Step 2: Requirements ── */}
-          {step === 2 && (
-            <View style={s.stepContent}>
-              <View style={[s.stepCard, { backgroundColor: C.surface }]}>
-                <Text style={[s.cardTitle, { color: C.text }]}>👥 Creator Requirements</Text>
-                <View style={s.field}>
-                  <FieldLabel label="Minimum Followers" hint="Required" color={C.text} hintColor={C.brinjal1} />
-                  <ChipGroup
-                    options={FOLLOWER_RANGES}
-                    value={form.minFollowers}
-                    onChange={(v) => update('minFollowers', v)}
-                    colors={C}
-                    error={errors.minFollowers}
-                  />
+              {/* Deliverables */}
+              <SectionCard title="📦 Deliverables" sub="Set quantity to 0 to exclude." colors={C}>
+                <View style={{ gap: 2 }}>
+                  {DELIVERABLE_TYPES.map((item, i) => {
+                    const count = form.deliverables[item.key] ?? 0;
+                    const active = count > 0;
+                    return (
+                      <View
+                        key={item.key}
+                        style={[
+                          dlv.row,
+                          { borderBottomColor: C.border },
+                          i === DELIVERABLE_TYPES.length - 1 && { borderBottomWidth: 0 },
+                        ]}>
+                        <View style={[dlv.bullet, { backgroundColor: active ? C.brinjal1 : C.border }]} />
+                        <Text style={[dlv.label, { color: active ? C.text : C.textSecondary, fontFamily: active ? F.semibold : F.regular }]}>
+                          {item.label}
+                        </Text>
+                        <View style={[dlv.counter, { borderColor: active ? C.brinjal1 : C.border, backgroundColor: C.background }]}>
+                          <Pressable
+                            style={dlv.counterBtn}
+                            onPress={() => update('deliverables', { ...form.deliverables, [item.key]: Math.max(0, count - 1) })}>
+                            <Text style={[dlv.counterBtnTxt, { color: count <= 0 ? C.border : C.brinjal1 }]}>−</Text>
+                          </Pressable>
+                          <Text style={[dlv.counterVal, { color: active ? C.brinjal1 : C.textSecondary }]}>{count}</Text>
+                          <Pressable
+                            style={dlv.counterBtn}
+                            onPress={() => update('deliverables', { ...form.deliverables, [item.key]: Math.min(10, count + 1) })}>
+                            <Text style={[dlv.counterBtnTxt, { color: C.brinjal1 }]}>+</Text>
+                          </Pressable>
+                        </View>
+                      </View>
+                    );
+                  })}
                 </View>
-                <View style={s.field}>
-                  <FieldLabel label="Content Type" hint="Required" color={C.text} hintColor={C.brinjal1} />
-                  <ChipGroup
-                    options={CONTENT_TYPES}
-                    value={form.contentType}
-                    onChange={(v) => update('contentType', v)}
-                    colors={C}
-                    error={errors.contentType}
-                  />
-                </View>
-              </View>
+              </SectionCard>
 
-              <View style={[s.stepCard, { backgroundColor: C.surface }]}>
-                <Text style={[s.cardTitle, { color: C.text }]}>📦 Deliverables</Text>
-                <Text style={[s.cardSub, { color: C.textSecondary }]}>Describe exactly what content the creator must deliver.</Text>
-                <TextInput
-                  style={[s.textarea, { backgroundColor: C.background, borderColor: errors.deliverables ? ERROR_RED : C.border, color: C.text }]}
-                  value={form.deliverables}
-                  onChangeText={(v) => update('deliverables', v)}
-                  placeholder="e.g. 2 Instagram Reels (30–60 sec) + 5 Stories with brand mention and link in bio"
-                  placeholderTextColor={C.textSecondary}
-                  multiline
-                  numberOfLines={3}
-                />
-                {errors.deliverables && <Text style={s.errorText}>{errors.deliverables}</Text>}
-              </View>
-
-              <View style={[s.stepCard, { backgroundColor: C.surface }]}>
-                <Text style={[s.cardTitle, { color: C.text }]}>📅 Application Deadline</Text>
-                <Text style={[s.cardSub, { color: C.textSecondary }]}>Last date creators can apply to this campaign.</Text>
+              {/* Deadline */}
+              <SectionCard title="📅 Application Deadline" sub="Last date creators can apply." colors={C}>
                 <DeadlinePicker
                   value={form.deadline}
-                  onChange={(d) => update('deadline', d)}
-                  error={errors.deadline}
+                  onChange={(d) => {
+                    update('deadline', d);
+                    if (reviewErrors.deadline) setReviewErrors((e) => ({ ...e, deadline: undefined }));
+                  }}
+                  error={reviewErrors.deadline}
                   colors={C}
                 />
-              </View>
-            </View>
-          )}
+              </SectionCard>
 
-          {/* ── Step 3: Budget & Payment ── */}
-          {step === 3 && (
-            <View style={s.stepContent}>
-              <View style={[s.stepCard, { backgroundColor: C.surface }]}>
-                <Text style={[s.cardTitle, { color: C.text }]}>💰 Campaign Budget</Text>
-                <Text style={[s.cardSub, { color: C.textSecondary }]}>Budget range per creator (USD).</Text>
+              {/* Creators Needed */}
+              <SectionCard title="👥 Creators Needed" sub="How many creators do you need for this campaign?" colors={C}>
+                <Stepper value={form.creatorsNeeded} onChange={(v) => update('creatorsNeeded', v)} colors={C} />
+              </SectionCard>
 
-                <View style={s.budgetRow}>
-                  <View style={s.budgetField}>
-                    <FieldLabel label="Minimum ($)" hint="Required" color={C.text} hintColor={C.brinjal1} />
-                    <View style={[s.currencyInput, { backgroundColor: C.background, borderColor: errors.budgetMin ? ERROR_RED : C.border }]}>
-                      <Text style={[s.currencySymbol, { color: C.textSecondary }]}>$</Text>
-                      <TextInput
-                        style={[s.currencyText, { color: C.text }]}
-                        value={form.budgetMin}
-                        onChangeText={(v) => update('budgetMin', v.replace(/[^0-9.]/g, ''))}
-                        placeholder="100"
-                        placeholderTextColor={C.textSecondary}
-                        keyboardType="numeric"
-                      />
-                    </View>
-                    {errors.budgetMin && <Text style={s.errorText}>{errors.budgetMin}</Text>}
+              {/* Summary */}
+              <SectionCard title="📋 Summary" colors={C}>
+                {[
+                  { label: 'Category', value: selectedTemplate ? `${selectedTemplate.emoji} ${form.template}` : '—' },
+                  { label: 'Goals',    value: form.goals.join(', ') || '—' },
+                  { label: 'Budget',   value: form.budget || '—' },
+                  { label: 'Location', value: form.location || 'Remote' },
+                ].map(({ label, value }, i, arr) => (
+                  <View key={label} style={[s.summaryRow, i < arr.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}>
+                    <Text style={[s.summaryLabel, { color: C.textSecondary }]}>{label}</Text>
+                    <Text style={[s.summaryValue, { color: C.text }]} numberOfLines={2}>{value}</Text>
                   </View>
+                ))}
+              </SectionCard>
 
-                  <View style={[s.budgetDivider, { backgroundColor: C.border }]} />
-
-                  <View style={s.budgetField}>
-                    <FieldLabel label="Maximum ($)" hint="Required" color={C.text} hintColor={C.brinjal1} />
-                    <View style={[s.currencyInput, { backgroundColor: C.background, borderColor: errors.budgetMax ? ERROR_RED : C.border }]}>
-                      <Text style={[s.currencySymbol, { color: C.textSecondary }]}>$</Text>
-                      <TextInput
-                        style={[s.currencyText, { color: C.text }]}
-                        value={form.budgetMax}
-                        onChangeText={(v) => update('budgetMax', v.replace(/[^0-9.]/g, ''))}
-                        placeholder="500"
-                        placeholderTextColor={C.textSecondary}
-                        keyboardType="numeric"
-                      />
-                    </View>
-                    {errors.budgetMax && <Text style={s.errorText}>{errors.budgetMax}</Text>}
-                  </View>
-                </View>
-
-                {form.budgetMin && form.budgetMax && !errors.budgetMin && !errors.budgetMax && (
-                  <View style={[s.budgetPreview, { backgroundColor: C.primaryLight }]}>
-                    <Text style={[s.budgetPreviewText, { color: C.brinjal1 }]}>
-                      ${form.budgetMin} – ${form.budgetMax} per creator
-                    </Text>
-                    {form.creatorsNeeded > 1 && (
-                      <Text style={[s.budgetPreviewSub, { color: C.brinjal1 }]}>
-                        Total est. ${(parseFloat(form.budgetMin) * form.creatorsNeeded).toFixed(0)} – ${(parseFloat(form.budgetMax) * form.creatorsNeeded).toFixed(0)} for {form.creatorsNeeded} creators
-                      </Text>
-                    )}
-                  </View>
-                )}
-              </View>
-
-              <View style={[s.stepCard, { backgroundColor: C.surface }]}>
-                <Text style={[s.cardTitle, { color: C.text }]}>💳 Payment Type</Text>
-                <Text style={[s.cardSub, { color: C.textSecondary }]}>How will you compensate creators?</Text>
-                <ChipGroup
-                  options={PAYMENT_TYPES}
-                  value={form.paymentType}
-                  onChange={(v) => update('paymentType', v)}
-                  colors={C}
-                  error={errors.paymentType}
-                />
-              </View>
-
+              {/* Featured toggle */}
               <Pressable
                 style={[s.featuredToggle, { backgroundColor: form.isFeatured ? '#FFF8E8' : C.surface, borderColor: form.isFeatured ? '#F59E0B' : C.border }]}
                 onPress={() => update('isFeatured', !form.isFeatured)}>
                 <View style={s.featuredLeft}>
                   <Text style={s.featuredEmoji}>⭐</Text>
-                  <View style={s.featuredInfo}>
+                  <View style={{ flex: 1, gap: 3 }}>
                     <Text style={[s.featuredLabel, { color: C.text }]}>Feature this Campaign</Text>
-                    <Text style={[s.featuredSub, { color: C.textSecondary }]}>Appears in the highlighted row on creator home</Text>
+                    <Text style={[s.featuredSub, { color: C.textSecondary }]}>Appears highlighted on creator home</Text>
                   </View>
                 </View>
                 <View style={[s.toggle, { backgroundColor: form.isFeatured ? '#F59E0B' : C.border }]}>
                   <View style={[s.toggleThumb, { left: form.isFeatured ? 20 : 2 }]} />
                 </View>
               </Pressable>
+
+              {/* Actions */}
+              <View style={s.reviewActions}>
+                <Pressable
+                  style={[s.editBtn, { borderColor: C.brinjal1 }]}
+                  onPress={() => setPhase('setup')}>
+                  <Ionicons name="chevron-back" size={16} color={C.brinjal1} />
+                  <Text style={[s.editBtnText, { color: C.brinjal1 }]}>Edit Inputs</Text>
+                </Pressable>
+                <Pressable
+                  style={[s.publishBtn, { backgroundColor: loading ? C.border : C.brinjal1 }]}
+                  onPress={handlePublish}
+                  disabled={loading}>
+                  <Text style={s.publishBtnText}>{loading ? 'Publishing…' : '🚀 Publish Campaign'}</Text>
+                </Pressable>
+              </View>
             </View>
           )}
-
-          {/* ── Step 4: Review ── */}
-          {step === 4 && (
-            <View style={s.stepContent}>
-              <View style={[s.reviewHeader, { backgroundColor: C.primaryLight }]}>
-                <Text style={s.reviewHeaderEmoji}>🚀</Text>
-                <View style={s.reviewHeaderText}>
-                  <Text style={[s.reviewHeaderTitle, { color: C.brinjal1 }]}>Almost there!</Text>
-                  <Text style={[s.reviewHeaderSub, { color: C.brinjal1 }]}>Review your campaign details before publishing.</Text>
-                </View>
-              </View>
-
-              <View style={[s.stepCard, { backgroundColor: C.surface }]}>
-                {reviewItems.map(({ emoji, label, value }, i) => (
-                  <View key={label} style={[s.reviewRow, i < reviewItems.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}>
-                    <View style={s.reviewLabelWrap}>
-                      <Text style={s.reviewEmoji}>{emoji}</Text>
-                      <Text style={[s.reviewLabel, { color: C.textSecondary }]}>{label}</Text>
-                    </View>
-                    <Text style={[s.reviewValue, { color: C.text }]} numberOfLines={2}>{value || '—'}</Text>
-                  </View>
-                ))}
-              </View>
-
-              {form.deliverables ? (
-                <View style={[s.stepCard, { backgroundColor: C.surface }]}>
-                  <Text style={[s.cardTitle, { color: C.text }]}>📦 Deliverables</Text>
-                  <Text style={[s.reviewBlock, { color: C.text }]}>{form.deliverables}</Text>
-                </View>
-              ) : null}
-
-              {form.description ? (
-                <View style={[s.stepCard, { backgroundColor: C.surface }]}>
-                  <Text style={[s.cardTitle, { color: C.text }]}>📝 Description</Text>
-                  <Text style={[s.reviewBlock, { color: C.text }]}>{form.description}</Text>
-                </View>
-              ) : null}
-            </View>
-          )}
-
-          {/* Actions */}
-          <View style={s.actions}>
-            {step < TOTAL_STEPS ? (
-              <Pressable
-                style={({ pressed }) => [s.primaryBtn, { backgroundColor: C.brinjal1 }, pressed && { opacity: 0.88 }]}
-                onPress={handleNext}>
-                <Text style={s.primaryBtnText}>Continue →</Text>
-              </Pressable>
-            ) : (
-              <Pressable
-                style={({ pressed }) => [s.primaryBtn, { backgroundColor: loading ? C.border : C.brinjal1 }, pressed && !loading && { opacity: 0.88 }]}
-                onPress={handlePublish}
-                disabled={loading}>
-                <Text style={s.primaryBtnText}>{loading ? 'Publishing…' : '🚀 Publish Campaign'}</Text>
-              </Pressable>
-            )}
-          </View>
         </ScrollView>
       </KeyboardAvoidingView>
 
       {/* Toast */}
       {toast && (
         <Animated.View
-          style={[
-            s.toast,
-            { opacity: toastOpacity, backgroundColor: toast.type === 'success' ? '#22C55E' : '#EF4444' },
-          ]}
+          style={[s.toast, { opacity: toastOpacity, backgroundColor: toast.type === 'success' ? '#22C55E' : '#EF4444' }]}
           pointerEvents="none">
           <Text style={s.toastText}>{toast.type === 'success' ? '✓  ' : '✕  '}{toast.message}</Text>
         </Animated.View>
@@ -906,68 +1138,59 @@ const s = StyleSheet.create({
   container: { flex: 1 },
   flex:      { flex: 1 },
 
-  gradientHeader: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14 },
+  header:       { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14 },
   backBtn:      { width: 38, height: 38, borderRadius: 19, justifyContent: 'center', alignItems: 'center' },
   headerCenter: { flex: 1, alignItems: 'center' },
-  headerTitle:  { fontSize: 16, fontWeight: '800', fontFamily: F.extrabold },
-  headerSub:    { fontSize: 11, marginTop: 1, fontFamily: F.regular },
-  stepPill:     { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
-  stepPillText: { fontSize: 12, fontWeight: '700', fontFamily: F.bold },
+  headerTitle:  { fontSize: 16, fontWeight: '800', fontFamily: F.extrabold, color: '#fff' },
+  headerSub:    { fontSize: 11, marginTop: 1, fontFamily: F.regular, color: 'rgba(255,255,255,0.75)' },
+  phasePill:    { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
+  phasePillText:{ fontSize: 12, fontWeight: '700', fontFamily: F.bold, color: '#fff' },
 
-  progressTrack: { height: 3 },
-  progressFill:  { height: 3 },
+  progressTrack:{ height: 3 },
+  progressFill: { height: 3 },
 
-  stepDots: { flexDirection: 'row', justifyContent: 'center', gap: 6, paddingVertical: 10 },
-  dot:      { width: 7, height: 7, borderRadius: 3.5 },
+  scroll:   { padding: 20, paddingBottom: 48 },
+  content:  { gap: 16 },
 
-  scroll:      { padding: 20, paddingBottom: 48 },
-  stepContent: { gap: 16 },
-
-  stepCard:  { borderRadius: 16, padding: 18, gap: 14, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
-  cardTitle: { fontSize: 15, fontWeight: '800', fontFamily: F.extrabold },
-  cardSub:   { fontSize: 12, lineHeight: 18, marginTop: -6, fontFamily: F.regular },
-
-  field:     { gap: 8 },
-  input:     { borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14, height: 48, fontSize: 15, fontFamily: F.regular },
-  textarea:  { borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, minHeight: 90, textAlignVertical: 'top', fontFamily: F.regular },
+  input:     { borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14, height: 50, fontSize: 15, fontFamily: F.regular },
+  textarea:  { borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, minHeight: 120, textAlignVertical: 'top', fontFamily: F.regular },
   errorText: { fontSize: 12, color: ERROR_RED, fontFamily: F.regular },
 
-  budgetRow:     { flexDirection: 'row', alignItems: 'flex-start', gap: 0 },
-  budgetField:   { flex: 1, gap: 8 },
-  budgetDivider: { width: 1, height: 48, marginHorizontal: 12, marginTop: 26 },
-  currencyInput: { flexDirection: 'row', alignItems: 'center', borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 12, height: 48, gap: 4 },
-  currencySymbol:{ fontSize: 16, fontWeight: '600', fontFamily: F.semibold },
-  currencyText:  { flex: 1, fontSize: 15, fontFamily: F.regular },
-  budgetPreview: { borderRadius: 10, padding: 12, gap: 4 },
-  budgetPreviewText: { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
-  budgetPreviewSub:  { fontSize: 11, fontWeight: '500', fontFamily: F.medium },
+  generateBtn:     { borderRadius: 14, height: 56, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 10, marginTop: 8, shadowColor: '#6C3DE0', shadowOpacity: 0.3, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
+  generateBtnText: { color: '#fff', fontSize: 16, fontWeight: '800', fontFamily: F.extrabold },
+
+  generatedBanner:  { flexDirection: 'row', alignItems: 'flex-start', gap: 12, borderRadius: 14, padding: 14 },
+  generatedTitle:   { fontSize: 14, fontWeight: '700', fontFamily: F.bold, marginBottom: 2 },
+  generatedSub:     { fontSize: 12, lineHeight: 17, fontFamily: F.regular },
+
+  summaryRow:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingVertical: 10, gap: 12 },
+  summaryLabel: { fontSize: 13, fontFamily: F.regular, width: 72 },
+  summaryValue: { flex: 1, fontSize: 13, fontWeight: '600', fontFamily: F.semibold, textAlign: 'right' },
 
   featuredToggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderRadius: 16, padding: 16, borderWidth: 1.5 },
   featuredLeft:   { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
   featuredEmoji:  { fontSize: 24 },
-  featuredInfo:   { flex: 1, gap: 3 },
   featuredLabel:  { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
   featuredSub:    { fontSize: 12, lineHeight: 17, fontFamily: F.regular },
   toggle:         { width: 44, height: 26, borderRadius: 13, position: 'relative' },
   toggleThumb:    { position: 'absolute', top: 3, width: 20, height: 20, borderRadius: 10, backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 3, shadowOffset: { width: 0, height: 1 }, elevation: 3 },
 
-  reviewHeader:      { flexDirection: 'row', alignItems: 'center', gap: 14, borderRadius: 16, padding: 16 },
-  reviewHeaderEmoji: { fontSize: 32 },
-  reviewHeaderText:  { flex: 1, gap: 3 },
-  reviewHeaderTitle: { fontSize: 16, fontWeight: '800', fontFamily: F.extrabold },
-  reviewHeaderSub:   { fontSize: 12, lineHeight: 18, fontFamily: F.regular },
-
-  reviewRow:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, gap: 12 },
-  reviewLabelWrap: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  reviewEmoji:     { fontSize: 15, width: 22 },
-  reviewLabel:     { fontSize: 13, fontFamily: F.regular },
-  reviewValue:     { fontSize: 13, fontWeight: '700', flex: 1, textAlign: 'right', fontFamily: F.bold },
-  reviewBlock:     { fontSize: 13, lineHeight: 20, fontFamily: F.regular },
-
-  actions:        { marginTop: 24 },
-  primaryBtn:     { borderRadius: 14, height: 54, justifyContent: 'center', alignItems: 'center', shadowColor: '#6C3DE0', shadowOpacity: 0.3, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
-  primaryBtnText: { color: '#fff', fontSize: 16, fontWeight: '800', fontFamily: F.extrabold },
+  reviewActions: { flexDirection: 'row', gap: 12, marginTop: 8 },
+  editBtn:       { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, borderRadius: 14, height: 52, borderWidth: 1.5 },
+  editBtnText:   { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
+  publishBtn:    { flex: 2, borderRadius: 14, height: 52, justifyContent: 'center', alignItems: 'center', shadowColor: '#6C3DE0', shadowOpacity: 0.3, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
+  publishBtnText:{ color: '#fff', fontSize: 15, fontWeight: '800', fontFamily: F.extrabold },
 
   toast:     { position: 'absolute', bottom: 40, left: 20, right: 20, borderRadius: 14, paddingHorizontal: 18, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 10 },
   toastText: { color: '#fff', fontSize: 14, fontWeight: '700', flex: 1, fontFamily: F.bold },
+});
+
+const dlv = StyleSheet.create({
+  row:        { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, borderBottomWidth: 1 },
+  bullet:     { width: 7, height: 7, borderRadius: 3.5, flexShrink: 0 },
+  label:      { flex: 1, fontSize: 14 },
+  counter:    { flexDirection: 'row', alignItems: 'center', borderRadius: 10, borderWidth: 1.5, overflow: 'hidden' },
+  counterBtn: { width: 34, height: 34, justifyContent: 'center', alignItems: 'center' },
+  counterBtnTxt: { fontSize: 20, lineHeight: 24, fontWeight: '300' },
+  counterVal: { width: 28, textAlign: 'center', fontSize: 14, fontWeight: '700', fontFamily: F.bold },
 });

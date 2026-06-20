@@ -3,9 +3,9 @@ export declare class AuthRepository {
     findUserByEmail(email: string): Promise<({
         creatorProfile: {
             id: string;
-            username: string | null;
             fullName: string;
             avatarUrl: string | null;
+            username: string | null;
         } | null;
         businessProfile: {
             id: string;
@@ -19,18 +19,18 @@ export declare class AuthRepository {
         password: string;
         role: import(".prisma/client").$Enums.Role;
         isEmailVerified: boolean;
-        isOnboarded: boolean;
-        isActive: boolean;
         refreshToken: string | null;
         createdAt: Date;
         updatedAt: Date;
+        isOnboarded: boolean;
+        isActive: boolean;
     }) | null>;
     findUserById(id: string): Promise<({
         creatorProfile: {
             id: string;
-            username: string | null;
             fullName: string;
             avatarUrl: string | null;
+            username: string | null;
         } | null;
         businessProfile: {
             id: string;
@@ -44,11 +44,11 @@ export declare class AuthRepository {
         password: string;
         role: import(".prisma/client").$Enums.Role;
         isEmailVerified: boolean;
-        isOnboarded: boolean;
-        isActive: boolean;
         refreshToken: string | null;
         createdAt: Date;
         updatedAt: Date;
+        isOnboarded: boolean;
+        isActive: boolean;
     }) | null>;
     findUserByPhone(phone: string): Promise<{
         email: string;
@@ -57,11 +57,11 @@ export declare class AuthRepository {
         password: string;
         role: import(".prisma/client").$Enums.Role;
         isEmailVerified: boolean;
-        isOnboarded: boolean;
-        isActive: boolean;
         refreshToken: string | null;
         createdAt: Date;
         updatedAt: Date;
+        isOnboarded: boolean;
+        isActive: boolean;
     } | null>;
     createUserWithCreatorProfile(data: {
         email: string;
@@ -75,22 +75,22 @@ export declare class AuthRepository {
             createdAt: Date;
             updatedAt: Date;
             userId: string;
-            username: string | null;
+            categories: string[];
+            isVerified: boolean;
             fullName: string;
             bio: string | null;
             location: string | null;
-            locationLat: number | null;
-            locationLng: number | null;
             avatarUrl: string | null;
-            categories: string[];
             socialLinks: import("@prisma/client/runtime/library").JsonValue;
             portfolioLinks: import("@prisma/client/runtime/library").JsonValue;
-            isVerified: boolean;
+            username: string | null;
             paymentMethods: string[];
             prefPlatforms: string[];
             prefLocations: string[];
             prefBudgetMin: number;
             prefBudgetMax: number;
+            locationLat: number | null;
+            locationLng: number | null;
         } | null;
     } & {
         email: string;
@@ -99,11 +99,11 @@ export declare class AuthRepository {
         password: string;
         role: import(".prisma/client").$Enums.Role;
         isEmailVerified: boolean;
-        isOnboarded: boolean;
-        isActive: boolean;
         refreshToken: string | null;
         createdAt: Date;
         updatedAt: Date;
+        isOnboarded: boolean;
+        isActive: boolean;
     }>;
     createUserWithBusinessProfile(data: {
         email: string;
@@ -118,15 +118,15 @@ export declare class AuthRepository {
             createdAt: Date;
             updatedAt: Date;
             userId: string;
-            categories: string[];
-            isVerified: boolean;
             businessName: string;
             logoUrl: string | null;
             website: string | null;
+            categories: string[];
             panNo: string | null;
-            showPublicProfile: boolean;
-            hideContactDetails: boolean;
+            isVerified: boolean;
             allowDirectMessages: boolean;
+            hideContactDetails: boolean;
+            showPublicProfile: boolean;
         } | null;
     } & {
         email: string;
@@ -135,11 +135,11 @@ export declare class AuthRepository {
         password: string;
         role: import(".prisma/client").$Enums.Role;
         isEmailVerified: boolean;
-        isOnboarded: boolean;
-        isActive: boolean;
         refreshToken: string | null;
         createdAt: Date;
         updatedAt: Date;
+        isOnboarded: boolean;
+        isActive: boolean;
     }>;
     updateRefreshToken(userId: string, refreshToken: string | null): Promise<{
         email: string;
@@ -148,11 +148,11 @@ export declare class AuthRepository {
         password: string;
         role: import(".prisma/client").$Enums.Role;
         isEmailVerified: boolean;
-        isOnboarded: boolean;
-        isActive: boolean;
         refreshToken: string | null;
         createdAt: Date;
         updatedAt: Date;
+        isOnboarded: boolean;
+        isActive: boolean;
     }>;
     updatePassword(userId: string, hashedPassword: string): Promise<{
         email: string;
@@ -161,18 +161,18 @@ export declare class AuthRepository {
         password: string;
         role: import(".prisma/client").$Enums.Role;
         isEmailVerified: boolean;
-        isOnboarded: boolean;
-        isActive: boolean;
         refreshToken: string | null;
         createdAt: Date;
         updatedAt: Date;
+        isOnboarded: boolean;
+        isActive: boolean;
     }>;
     verifyEmail(userId: string): Promise<{
         creatorProfile: {
             id: string;
-            username: string | null;
             fullName: string;
             avatarUrl: string | null;
+            username: string | null;
         } | null;
         businessProfile: {
             id: string;
@@ -186,11 +186,11 @@ export declare class AuthRepository {
         password: string;
         role: import(".prisma/client").$Enums.Role;
         isEmailVerified: boolean;
-        isOnboarded: boolean;
-        isActive: boolean;
         refreshToken: string | null;
         createdAt: Date;
         updatedAt: Date;
+        isOnboarded: boolean;
+        isActive: boolean;
     }>;
     setOnboarded(userId: string): Promise<{
         email: string;
@@ -199,11 +199,11 @@ export declare class AuthRepository {
         password: string;
         role: import(".prisma/client").$Enums.Role;
         isEmailVerified: boolean;
-        isOnboarded: boolean;
-        isActive: boolean;
         refreshToken: string | null;
         createdAt: Date;
         updatedAt: Date;
+        isOnboarded: boolean;
+        isActive: boolean;
     }>;
     deactivateAccount(userId: string): Promise<{
         email: string;
@@ -212,18 +212,18 @@ export declare class AuthRepository {
         password: string;
         role: import(".prisma/client").$Enums.Role;
         isEmailVerified: boolean;
-        isOnboarded: boolean;
-        isActive: boolean;
         refreshToken: string | null;
         createdAt: Date;
         updatedAt: Date;
+        isOnboarded: boolean;
+        isActive: boolean;
     }>;
     reactivateAccount(userId: string): Promise<{
         creatorProfile: {
             id: string;
-            username: string | null;
             fullName: string;
             avatarUrl: string | null;
+            username: string | null;
         } | null;
         businessProfile: {
             id: string;
@@ -237,11 +237,11 @@ export declare class AuthRepository {
         password: string;
         role: import(".prisma/client").$Enums.Role;
         isEmailVerified: boolean;
-        isOnboarded: boolean;
-        isActive: boolean;
         refreshToken: string | null;
         createdAt: Date;
         updatedAt: Date;
+        isOnboarded: boolean;
+        isActive: boolean;
     }>;
     deleteAccount(userId: string): Promise<{
         email: string;
@@ -250,11 +250,11 @@ export declare class AuthRepository {
         password: string;
         role: import(".prisma/client").$Enums.Role;
         isEmailVerified: boolean;
-        isOnboarded: boolean;
-        isActive: boolean;
         refreshToken: string | null;
         createdAt: Date;
         updatedAt: Date;
+        isOnboarded: boolean;
+        isActive: boolean;
     }>;
     saveOtp(userId: string, code: string, expiresAt: Date): Promise<{
         code: string;

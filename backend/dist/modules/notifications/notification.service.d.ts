@@ -12,6 +12,7 @@ export declare const notificationService: {
     }[]>;
     markRead(id: string, userId: string): Promise<void>;
     markAllRead(userId: string): Promise<void>;
+    markReadByRef(userId: string, refId: string): Promise<void>;
     getBadge(userId: string): Promise<{
         count: number;
     }>;

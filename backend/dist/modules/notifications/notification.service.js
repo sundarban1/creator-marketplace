@@ -14,6 +14,9 @@ exports.notificationService = {
     async markAllRead(userId) {
         await repo.markAllRead(userId);
     },
+    async markReadByRef(userId, refId) {
+        await repo.markReadByRef(userId, refId);
+    },
     async getBadge(userId) {
         const count = await repo.getUnreadCount(userId);
         return { count };

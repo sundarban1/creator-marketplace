@@ -18,6 +18,13 @@ import { authService } from '@/services/auth';
 import { profileService } from '@/services/profile';
 import { F } from '@/utilities/constants';
 
+const GOOGLE_PLACES_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY ?? '';
+type PlacePrediction = { place_id: string; description: string };
+
+const DEFAULT_DESCRIPTION =
+  "We're a local business passionate about delivering quality products and services to our community. We partner with creators who share our values and help us connect with the right audience through authentic, engaging content.";
+
+
 const BUSINESS_CATEGORIES = [
   { emoji: '🍔', label: 'Food & Beverage' },
   { emoji: '👗', label: 'Fashion & Apparel' },
@@ -50,7 +57,10 @@ export default function BusinessOnboardingScreen() {
 
   // Step 1
   const [panNo, setPanNo] = useState('');
-  const [description, setDescription] = useState('');
+  const [location, setLocation] = useState('');
+  const [locationSuggestions, setLocationSuggestions] = useState<PlacePrediction[]>([]);
+  const locationDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [description, setDescription] = useState(DEFAULT_DESCRIPTION);
   const [step1Loading, setStep1Loading] = useState(false);
   const [step1Error, setStep1Error] = useState('');
 
@@ -82,12 +92,29 @@ export default function BusinessOnboardingScreen() {
     });
   }
 
+  function handleLocationChange(text: string) {
+    setLocation(text);
+    if (locationDebounce.current) clearTimeout(locationDebounce.current);
+    if (!text.trim() || !GOOGLE_PLACES_KEY) { setLocationSuggestions([]); return; }
+    locationDebounce.current = setTimeout(async () => {
+      try {
+        const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(text)}&key=${GOOGLE_PLACES_KEY}&language=en&types=geocode`;
+        const res = await fetch(url);
+        const json = await res.json();
+        setLocationSuggestions(json.status === 'OK' ? json.predictions : []);
+      } catch { setLocationSuggestions([]); }
+    }, 350);
+  }
+
   async function handleStep1Continue() {
     setStep1Loading(true);
     setStep1Error('');
     try {
-      // Save description + panNo even if empty (both optional)
-      await profileService.updateBusinessProfile({ description: description.trim() || undefined, panNo: panNo.trim() || undefined });
+      await profileService.updateBusinessProfile({
+        description: description.trim() || undefined,
+        panNo: panNo.trim() || undefined,
+        location: location.trim() || null,
+      });
       setStep(2);
     } catch (e: any) {
       setStep1Error(e.message ?? 'Failed to save. Please try again.');
@@ -200,6 +227,39 @@ export default function BusinessOnboardingScreen() {
               />
               <Text style={[styles.inputHint, { color: C.textSecondary }]}>
                 Your PAN helps verify your business with creators.
+              </Text>
+            </View>
+
+            {/* Business Location */}
+            <View style={[styles.fieldGroup, { zIndex: 10 }]}>
+              <View style={styles.labelRow}>
+                <Text style={[styles.fieldLabel, { color: C.text }]}>Business Location</Text>
+                <Text style={[styles.optionalTag, { color: C.textSecondary }]}>Optional</Text>
+              </View>
+              <View>
+                <TextInput
+                  style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text }]}
+                  value={location}
+                  onChangeText={handleLocationChange}
+                  placeholder="e.g. Kathmandu, Thamel"
+                  placeholderTextColor={C.textSecondary}
+                />
+                {locationSuggestions.length > 0 && (
+                  <View style={[styles.suggestBox, { backgroundColor: C.surface, borderColor: C.border }]}>
+                    {locationSuggestions.map((place, i) => (
+                      <Pressable
+                        key={place.place_id}
+                        style={[styles.suggestItem, i < locationSuggestions.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}
+                        onPress={() => { setLocation(place.description); setLocationSuggestions([]); }}>
+                        <Text style={styles.suggestPin}>📍</Text>
+                        <Text style={[styles.suggestText, { color: C.text }]} numberOfLines={2}>{place.description}</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                )}
+              </View>
+              <Text style={[styles.inputHint, { color: C.textSecondary }]}>
+                Creators will use this as a default location for your campaigns.
               </Text>
             </View>
 
@@ -345,6 +405,10 @@ const styles = StyleSheet.create({
   input: { borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 13, fontSize: 15, fontFamily: F.regular },
   textarea: { minHeight: 120, paddingTop: 13, textAlignVertical: 'top' },
   inputHint: { fontSize: 11, marginTop: 5, fontFamily: F.regular },
+  suggestBox: { borderRadius: 12, borderWidth: 1.5, marginTop: 6, overflow: 'hidden', elevation: 10 },
+  suggestItem: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, gap: 10 },
+  suggestPin: { fontSize: 14 },
+  suggestText: { fontSize: 13, flex: 1, fontFamily: F.regular },
   charRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 },
   charCount: { fontSize: 11, alignSelf: 'flex-end', fontFamily: F.regular },
   countBadge: { borderRadius: 10, paddingHorizontal: 10, paddingVertical: 3 },

@@ -4,7 +4,9 @@ export declare class CampaignRepository {
         businessId: string;
         title: string;
         description: string;
+        template?: string;
         category: string;
+        goals?: string[];
         platform: string;
         minFollowers: number;
         contentType: string;
@@ -34,7 +36,9 @@ export declare class CampaignRepository {
         platform: string;
         businessId: string;
         title: string;
+        template: string | null;
         category: string;
+        goals: Prisma.JsonValue;
         minFollowers: number;
         contentType: string;
         deliverables: string;
@@ -42,8 +46,8 @@ export declare class CampaignRepository {
         budgetMin: number;
         budgetMax: number;
         paymentType: string;
-        creatorsNeeded: number;
         isFeatured: boolean;
+        creatorsNeeded: number;
     }>;
     findMany(filters: {
         category?: string;
@@ -75,7 +79,9 @@ export declare class CampaignRepository {
             platform: string;
             businessId: string;
             title: string;
+            template: string | null;
             category: string;
+            goals: Prisma.JsonValue;
             minFollowers: number;
             contentType: string;
             deliverables: string;
@@ -83,8 +89,8 @@ export declare class CampaignRepository {
             budgetMin: number;
             budgetMax: number;
             paymentType: string;
-            creatorsNeeded: number;
             isFeatured: boolean;
+            creatorsNeeded: number;
         })[];
         total: number;
     }>;
@@ -108,7 +114,9 @@ export declare class CampaignRepository {
         platform: string;
         businessId: string;
         title: string;
+        template: string | null;
         category: string;
+        goals: Prisma.JsonValue;
         minFollowers: number;
         contentType: string;
         deliverables: string;
@@ -116,8 +124,8 @@ export declare class CampaignRepository {
         budgetMin: number;
         budgetMax: number;
         paymentType: string;
-        creatorsNeeded: number;
         isFeatured: boolean;
+        creatorsNeeded: number;
     }) | null>;
     findByBusinessId(businessId: string, page: number, limit: number): Promise<{
         campaigns: ({
@@ -134,7 +142,9 @@ export declare class CampaignRepository {
             platform: string;
             businessId: string;
             title: string;
+            template: string | null;
             category: string;
+            goals: Prisma.JsonValue;
             minFollowers: number;
             contentType: string;
             deliverables: string;
@@ -142,15 +152,17 @@ export declare class CampaignRepository {
             budgetMin: number;
             budgetMax: number;
             paymentType: string;
-            creatorsNeeded: number;
             isFeatured: boolean;
+            creatorsNeeded: number;
         })[];
         total: number;
     }>;
     update(id: string, data: Partial<{
         title: string;
         description: string;
+        template: string;
         category: string;
+        goals: string[];
         platform: string;
         minFollowers: number;
         contentType: string;
@@ -172,7 +184,9 @@ export declare class CampaignRepository {
         platform: string;
         businessId: string;
         title: string;
+        template: string | null;
         category: string;
+        goals: Prisma.JsonValue;
         minFollowers: number;
         contentType: string;
         deliverables: string;
@@ -180,8 +194,8 @@ export declare class CampaignRepository {
         budgetMin: number;
         budgetMax: number;
         paymentType: string;
-        creatorsNeeded: number;
         isFeatured: boolean;
+        creatorsNeeded: number;
     }>;
     delete(id: string): Promise<{
         status: import(".prisma/client").$Enums.CampaignStatus;
@@ -193,7 +207,9 @@ export declare class CampaignRepository {
         platform: string;
         businessId: string;
         title: string;
+        template: string | null;
         category: string;
+        goals: Prisma.JsonValue;
         minFollowers: number;
         contentType: string;
         deliverables: string;
@@ -201,8 +217,8 @@ export declare class CampaignRepository {
         budgetMin: number;
         budgetMax: number;
         paymentType: string;
-        creatorsNeeded: number;
         isFeatured: boolean;
+        creatorsNeeded: number;
     }>;
     getDistinctCategories(): Promise<string[]>;
     findApplication(campaignId: string, creatorId: string): Promise<{
@@ -249,10 +265,10 @@ export declare class CampaignRepository {
     findApplicationsByCampaign(campaignId: string, page: number, limit: number): Promise<{
         applications: ({
             creator: {
+                categories: string[];
                 fullName: string;
                 location: string | null;
                 avatarUrl: string | null;
-                categories: string[];
                 socialLinks: Prisma.JsonValue;
             };
         } & {
@@ -309,7 +325,9 @@ export declare class CampaignRepository {
             platform: string;
             businessId: string;
             title: string;
+            template: string | null;
             category: string;
+            goals: Prisma.JsonValue;
             minFollowers: number;
             contentType: string;
             deliverables: string;
@@ -317,8 +335,8 @@ export declare class CampaignRepository {
             budgetMin: number;
             budgetMax: number;
             paymentType: string;
-            creatorsNeeded: number;
             isFeatured: boolean;
+            creatorsNeeded: number;
         };
         creator: {
             userId: string;

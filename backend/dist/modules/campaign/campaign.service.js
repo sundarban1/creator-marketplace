@@ -7,6 +7,7 @@ const creator_repository_1 = require("../creator/creator.repository");
 const campaign_repository_1 = require("./campaign.repository");
 const favorite_repository_1 = require("../creator/favorite.repository");
 const notification_service_1 = require("../notifications/notification.service");
+const socket_1 = require("../../socket");
 class CampaignService {
     repo;
     businessRepo;
@@ -28,6 +29,10 @@ class CampaignService {
             ...input,
             deadline: new Date(input.deadline),
         });
+        // Broadcast new active campaign to all connected creators in real time
+        if (campaign.status === 'ACTIVE') {
+            (0, socket_1.emitToRole)('CREATOR', 'campaign:new', campaign);
+        }
         // Notify creators who have favorited this business
         this.favoriteRepo.getCreatorUserIdsForBusiness(business.id).then((userIds) => {
             if (userIds.length === 0)

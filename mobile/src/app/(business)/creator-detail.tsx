@@ -368,7 +368,12 @@ export default function CreatorDetailScreen() {
           <Pressable style={rm.scrim} onPress={() => setShowModal(false)} />
           <View style={[rm.sheet, { backgroundColor: C.surface }]}>
             <View style={[rm.handle, { backgroundColor: C.border }]} />
-            <Text style={[rm.title, { color: C.text }]}>Send Message Request</Text>
+            <View style={rm.titleRow}>
+              <Text style={[rm.title, { color: C.text }]}>Send Message Request</Text>
+              <Pressable style={[rm.closeBtn, { backgroundColor: C.background }]} onPress={() => setShowModal(false)} hitSlop={8}>
+                <Ionicons name="close" size={18} color={C.textSecondary} />
+              </Pressable>
+            </View>
             <Text style={[rm.subtitle, { color: C.textSecondary }]}>
               Write an optional message to introduce yourself. {profile?.fullName} will see this when deciding to accept.
             </Text>
@@ -476,8 +481,10 @@ const rm = StyleSheet.create({
   overlay: { flex: 1, justifyContent: 'flex-end' },
   scrim:   { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.45)' },
   sheet:   { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 40, gap: 14 },
-  handle:  { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginBottom: 4 },
-  title:   { fontSize: 18, fontWeight: '800', fontFamily: F.extrabold },
+  handle:   { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginBottom: 4 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  title:    { fontSize: 18, fontWeight: '800', fontFamily: F.extrabold, flex: 1 },
+  closeBtn: { width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
   subtitle:{ fontSize: 13, lineHeight: 20, fontFamily: F.regular },
   input:   { borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, minHeight: 100, textAlignVertical: 'top', fontFamily: F.regular },
   counter: { fontSize: 11, textAlign: 'right', marginTop: -6, fontFamily: F.regular },

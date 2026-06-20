@@ -6,34 +6,10 @@ import { useAuth } from '@/context/AuthContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { authService } from '@/services/auth';
 import { profileService } from '@/services/profile';
+import { CREATOR_CATEGORIES } from '@/features/creator/data/filterOptions';
 import { F } from '@/utilities/constants';
 
-const CATEGORIES = [
-  { emoji: '🍔', label: 'Food' },
-  { emoji: '✈️', label: 'Travel' },
-  { emoji: '👗', label: 'Fashion' },
-  { emoji: '💄', label: 'Beauty' },
-  { emoji: '💪', label: 'Fitness' },
-  { emoji: '🎮', label: 'Gaming' },
-  { emoji: '📱', label: 'Tech' },
-  { emoji: '📚', label: 'Education' },
-  { emoji: '🌟', label: 'Lifestyle' },
-  { emoji: '🏠', label: 'Home & Living' },
-  { emoji: '🌿', label: 'Wellness' },
-  { emoji: '🎵', label: 'Music' },
-  { emoji: '🎨', label: 'Art & Design' },
-  { emoji: '🐾', label: 'Pets' },
-  { emoji: '🧸', label: 'Parenting' },
-  { emoji: '🚗', label: 'Automotive' },
-  { emoji: '💰', label: 'Finance' },
-  { emoji: '🌍', label: 'Sustainability' },
-  { emoji: '📷', label: 'Photography' },
-  { emoji: '🏋️', label: 'Sports' },
-  { emoji: '🎬', label: 'Film & TV' },
-  { emoji: '🧘', label: 'Mindfulness' },
-  { emoji: '🍷', label: 'Food & Drink' },
-  { emoji: '🎪', label: 'Entertainment' },
-];
+const CATEGORIES = CREATOR_CATEGORIES;
 
 const TOTAL_STEPS = 2;
 

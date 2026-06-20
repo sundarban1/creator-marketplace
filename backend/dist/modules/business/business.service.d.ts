@@ -15,15 +15,15 @@ export declare class BusinessService {
         createdAt: Date;
         updatedAt: Date;
         userId: string;
-        categories: string[];
-        isVerified: boolean;
         businessName: string;
         logoUrl: string | null;
         website: string | null;
+        categories: string[];
         panNo: string | null;
-        showPublicProfile: boolean;
-        hideContactDetails: boolean;
+        isVerified: boolean;
         allowDirectMessages: boolean;
+        hideContactDetails: boolean;
+        showPublicProfile: boolean;
     }>;
     updateProfile(userId: string, input: UpdateBusinessProfileInput): Promise<{
         description: string | null;
@@ -31,15 +31,15 @@ export declare class BusinessService {
         createdAt: Date;
         updatedAt: Date;
         userId: string;
-        categories: string[];
-        isVerified: boolean;
         businessName: string;
         logoUrl: string | null;
         website: string | null;
+        categories: string[];
         panNo: string | null;
-        showPublicProfile: boolean;
-        hideContactDetails: boolean;
+        isVerified: boolean;
         allowDirectMessages: boolean;
+        hideContactDetails: boolean;
+        showPublicProfile: boolean;
     }>;
     listBusinesses(params: {
         search?: string;
@@ -52,14 +52,14 @@ export declare class BusinessService {
         businesses: {
             description: string | null;
             id: string;
+            businessName: string;
+            logoUrl: string | null;
+            website: string | null;
             categories: string[];
             isVerified: boolean;
             _count: {
                 campaigns: number;
             };
-            businessName: string;
-            logoUrl: string | null;
-            website: string | null;
         }[];
         total: number;
     }>;
@@ -68,23 +68,20 @@ export declare class BusinessService {
         id: string;
         createdAt: Date;
         userId: string;
-        categories: string[];
-        isVerified: boolean;
-        _count: {
-            campaigns: number;
-        };
         businessName: string;
         logoUrl: string | null;
         website: string | null;
-        showPublicProfile: boolean;
-        hideContactDetails: boolean;
+        categories: string[];
+        isVerified: boolean;
         allowDirectMessages: boolean;
+        hideContactDetails: boolean;
+        showPublicProfile: boolean;
         campaigns: {
             id: string;
-            location: string | null;
             _count: {
                 applications: number;
             };
+            location: string | null;
             platform: string;
             title: string;
             category: string;
@@ -94,6 +91,9 @@ export declare class BusinessService {
             budgetMax: number;
             isFeatured: boolean;
         }[];
+        _count: {
+            campaigns: number;
+        };
     }>;
 }
 //# sourceMappingURL=business.service.d.ts.map

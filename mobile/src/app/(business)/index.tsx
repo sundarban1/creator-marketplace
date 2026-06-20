@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useEffect, useState } from 'react';
@@ -10,6 +10,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { COLORS, F } from '@/utilities/constants';
 import { campaignService } from '@/services/campaign';
 import { useNotificationBadge } from '@/context/NotificationContext';
+import { notificationService } from '@/services/notifications';
 import type { Campaign } from '@/types';
 
 const CATEGORY_META: Record<string, { emoji: string; cardBg: string }> = {
@@ -48,7 +49,7 @@ export default function BusinessHomeScreen() {
   const C = useAppColors();
   const name = user?.name?.split(' ')[0] ?? 'there';
 
-  const { badgeCount: notifBadge } = useNotificationBadge();
+  const { badgeCount: notifBadge, setBadgeCount } = useNotificationBadge();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -69,6 +70,12 @@ export default function BusinessHomeScreen() {
   }
 
   useEffect(() => { void fetchCampaigns(); }, []);
+
+  // Refresh badge count from server every time this screen comes into focus
+  // so socket-missed notifications (favorites, accepted requests) always appear
+  useFocusEffect(useCallback(() => {
+    notificationService.getBadge().then((r) => setBadgeCount(r.count)).catch(() => {});
+  }, []));
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);

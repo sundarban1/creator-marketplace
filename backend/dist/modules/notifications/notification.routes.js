@@ -9,6 +9,7 @@ router.use(auth_1.authenticate);
 router.get('/', ctrl.list.bind(ctrl));
 router.get('/badge', ctrl.badge.bind(ctrl));
 router.patch('/read-all', ctrl.markAllRead.bind(ctrl));
+router.patch('/read-by-ref/:refId', ctrl.markReadByRef.bind(ctrl));
 router.patch('/:id/read', ctrl.markRead.bind(ctrl));
 exports.default = router;
 //# sourceMappingURL=notification.routes.js.map
