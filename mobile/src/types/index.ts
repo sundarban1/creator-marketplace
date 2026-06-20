@@ -84,7 +84,9 @@ export type AppNotification = {
     | 'new_campaign'
     | 'payment_released'
     | 'message_request_accepted'
-    | 'business_favorited';
+    | 'business_favorited'
+    | 'creator_saved'
+    | 'campaign_invitation';
   title: string;
   body: string;
   timestamp: string;

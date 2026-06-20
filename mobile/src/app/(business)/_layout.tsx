@@ -150,6 +150,7 @@ export default function BusinessLayout() {
       <Tabs.Screen name="explore-creators" options={{ href: null }} />
       <Tabs.Screen name="creator-detail" options={{ href: null }} />
       <Tabs.Screen name="edit-profile" options={{ href: null }} />
+      <Tabs.Screen name="saved-creators" options={{ href: null }} />
     </Tabs>
 
     <BusinessDrawerMenu

@@ -35,6 +35,8 @@ const TYPE_CONFIG: Record<AppNotification['type'], TypeConfig> = {
   payment_released:         { icon: 'cash',                 iconColor: '#10B981', iconBg: '#ECFDF5', accentColor: '#10B981', label: 'Payment'       },
   message_request_accepted: { icon: 'chatbubble-ellipses', iconColor: '#3B82F6', iconBg: '#EFF6FF', accentColor: '#3B82F6', label: 'Connected'     },
   business_favorited:       { icon: 'heart',               iconColor: '#EF4444', iconBg: '#FFF1F2', accentColor: '#EF4444', label: 'Favorited'     },
+  creator_saved:            { icon: 'bookmark',            iconColor: '#7C3AED', iconBg: '#F5F3FF', accentColor: '#7C3AED', label: 'Saved'         },
+  campaign_invitation:      { icon: 'mail',                iconColor: '#0891B2', iconBg: '#E0F2FE', accentColor: '#0891B2', label: 'Invited'       },
 };
 
 const FALLBACK: TypeConfig = { icon: 'notifications', iconColor: '#6B7280', iconBg: '#F3F4F6', accentColor: '#6B7280', label: 'Notification' };
@@ -149,7 +151,13 @@ export default function NotificationsScreen() {
     if (!n) return;
     const isCreator = user?.role === 'CREATOR';
 
-    if (n.type === 'message_request_accepted' || n.type === 'business_favorited') {
+    if (n.type === 'campaign_invitation') {
+      if (n.refId) {
+        router.push({ pathname: '/campaign-detail', params: { campaignId: n.refId } });
+      }
+    } else if (n.type === 'creator_saved') {
+      // just acknowledge — no deep link needed
+    } else if (n.type === 'message_request_accepted' || n.type === 'business_favorited') {
       if (n.refId) {
         router.push({ pathname: '/(business)/creator-detail', params: { id: n.refId } });
       }

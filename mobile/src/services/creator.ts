@@ -68,6 +68,20 @@ export interface ApiCreatorListResponse {
   limit: number;
 }
 
+export interface SavedCreatorItem {
+  id: string;
+  createdAt: string;
+  creator: {
+    id: string;
+    fullName: string | null;
+    avatarUrl: string | null;
+    location: string | null;
+    categories: string[];
+    isVerified: boolean;
+    socialAccounts: { platform: string; followers: number }[];
+  };
+}
+
 export const creatorService = {
   async listCreators(params?: {
     page?: number;
@@ -154,6 +168,28 @@ export const creatorService = {
 
   async deleteSocialAccount(id: string): Promise<void> {
     await request('DELETE', `/api/creator/social-accounts/${id}`);
+  },
+
+  // ── Business: save/unsave creators ─────────────────────────────────────────
+
+  async toggleSaveCreator(creatorId: string): Promise<{ isSaved: boolean }> {
+    const res = await request<{ isSaved: boolean }>('POST', `/api/business/creators/${creatorId}/save`);
+    return res.data;
+  },
+
+  async getSavedCreators(): Promise<SavedCreatorItem[]> {
+    const res = await request<SavedCreatorItem[]>('GET', '/api/business/creators/saved');
+    return res.data;
+  },
+
+  async getSavedCreatorIds(): Promise<string[]> {
+    const res = await request<{ ids: string[] }>('GET', '/api/business/creators/saved-ids');
+    return res.data.ids;
+  },
+
+  async inviteCreators(campaignId: string, creatorIds: string[], message?: string): Promise<{ invited: number }> {
+    const res = await request<{ invited: number }>('POST', `/api/business/campaigns/${campaignId}/invite`, { creatorIds, message });
+    return res.data;
   },
 
   async getEarnings(): Promise<ApiEarningsSummary> {

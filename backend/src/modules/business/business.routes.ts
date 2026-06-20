@@ -1,103 +1,32 @@
 import { Router } from 'express';
 import { BusinessController } from './business.controller';
 import { CreatorController } from '../creator/creator.controller';
+import { SavedCreatorController } from './saved-creator.controller';
 import { authenticate, authorize } from '../../middleware/auth';
 import { validate } from '../../middleware/validate';
 import { updateBusinessProfileSchema } from './business.schema';
 
-const router = Router();
-const ctrl = new BusinessController();
+const router      = Router();
+const ctrl        = new BusinessController();
 const creatorCtrl = new CreatorController();
+const savedCtrl   = new SavedCreatorController();
 
 // All business routes require authentication and BUSINESS role
 router.use(authenticate, authorize('BUSINESS'));
 
-/**
- * @swagger
- * /api/business/profile:
- *   get:
- *     tags: [Business]
- *     summary: Get current business profile
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Business profile retrieved
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 data:
- *                   $ref: '#/components/schemas/BusinessProfile'
- *       401:
- *         description: Not authenticated
- *       403:
- *         description: Not authorized (wrong role)
- */
+// Creator discovery & saving
 router.get('/creators/filter-options', creatorCtrl.getCreatorFilterOptions.bind(creatorCtrl));
-router.get('/creators/:id', creatorCtrl.getCreatorPublicProfile.bind(creatorCtrl));
-router.get('/creators', creatorCtrl.listCreators.bind(creatorCtrl));
-router.get('/profile', ctrl.getProfile.bind(ctrl));
+router.get('/creators/saved',          savedCtrl.listSaved.bind(savedCtrl));
+router.get('/creators/saved-ids',      savedCtrl.getSavedIds.bind(savedCtrl));
+router.get('/creators/:id',            creatorCtrl.getCreatorPublicProfile.bind(creatorCtrl));
+router.get('/creators',                creatorCtrl.listCreators.bind(creatorCtrl));
+router.post('/creators/:id/save',      savedCtrl.toggle.bind(savedCtrl));
 
-/**
- * @swagger
- * /api/business/profile:
- *   put:
- *     tags: [Business]
- *     summary: Update business profile
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               businessName:
- *                 type: string
- *                 example: Acme Corp
- *               description:
- *                 type: string
- *                 maxLength: 1000
- *                 example: We make innovative software products
- *               logoUrl:
- *                 type: string
- *                 format: uri
- *                 nullable: true
- *                 example: https://example.com/logo.png
- *               website:
- *                 type: string
- *                 format: uri
- *                 nullable: true
- *                 example: https://acme.com
- *               categories:
- *                 type: array
- *                 items:
- *                   type: string
- *                 example: ["Technology", "SaaS"]
- *               panNo:
- *                 type: string
- *                 nullable: true
- *                 example: ABCDE1234F
- *     responses:
- *       200:
- *         description: Profile updated
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 data:
- *                   $ref: '#/components/schemas/BusinessProfile'
- */
+// Campaign invitations
+router.post('/campaigns/:campaignId/invite', savedCtrl.inviteCreators.bind(savedCtrl));
+
+// Profile
+router.get('/profile', ctrl.getProfile.bind(ctrl));
 router.put('/profile', validate(updateBusinessProfileSchema), ctrl.updateProfile.bind(ctrl));
 
 export default router;

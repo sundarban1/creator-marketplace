@@ -99,7 +99,6 @@ export default function CreatorDetailScreen() {
 
   useEffect(() => {
     if (!id) return;
-    // Reset all per-creator state before loading the new creator
     setProfile(null);
     setError('');
     setConvId(null);
@@ -345,7 +344,7 @@ export default function CreatorDetailScreen() {
 
       </ScrollView>
 
-      {/* Sticky message button */}
+      {/* Sticky action bar */}
       <View style={[msgBtn.bar, { backgroundColor: C.surface, borderTopColor: C.border }]}>
         {convStatus === 'ACCEPTED' ? (
           <Pressable style={[msgBtn.btn, { backgroundColor: C.brinjal1 }]} onPress={openChat}>

@@ -1,4 +1,5 @@
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { BackButton } from '@/components/BackButton';
@@ -370,7 +371,11 @@ const fm = StyleSheet.create({
 
 // ─── Creator Card ─────────────────────────────────────────────────────────────
 
-function CreatorCard({ creator }: { creator: ApiCreatorListItem }) {
+function CreatorCard({ creator, isSaved, onToggleSave }: {
+  creator: ApiCreatorListItem;
+  isSaved: boolean;
+  onToggleSave: () => void;
+}) {
   const C = useAppColors();
   const meta = getCategoryMeta(creator.categories);
   const initials = (creator.fullName ?? 'C').split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2);
@@ -381,7 +386,7 @@ function CreatorCard({ creator }: { creator: ApiCreatorListItem }) {
       style={({ pressed }) => [s.card, { backgroundColor: C.surface, borderColor: C.border }, pressed && { opacity: 0.9 }]}
       onPress={() => router.push({ pathname: '/(business)/creator-detail', params: { id: creator.id } })}>
 
-      {/* Header row: avatar · name/location · chevron */}
+      {/* Header row: avatar · name/location · bookmark */}
       <View style={s.cardHeader}>
         <View style={[s.avatar, { backgroundColor: meta.bg }]}>
           <Text style={s.avatarText}>{meta.emoji || initials}</Text>
@@ -399,7 +404,12 @@ function CreatorCard({ creator }: { creator: ApiCreatorListItem }) {
             <Text style={[s.location, { color: C.textSecondary }]} numberOfLines={1}>📍 {creator.location}</Text>
           ) : null}
         </View>
-        <Text style={[s.cardChevron, { color: C.textSecondary }]}>›</Text>
+        <Pressable
+          style={[s.saveBtn, { backgroundColor: isSaved ? C.primaryLight : C.background, borderColor: isSaved ? C.brinjal1 : C.border }]}
+          onPress={onToggleSave}
+          hitSlop={8}>
+          <Ionicons name={isSaved ? 'bookmark' : 'bookmark-outline'} size={18} color={isSaved ? C.brinjal1 : C.textSecondary} />
+        </Pressable>
       </View>
 
       {/* Bio */}
@@ -474,6 +484,32 @@ export default function ExploreCreatorsScreen() {
   const [availablePlatforms, setAvailablePlatforms] = useState<string[]>([]);
 
   const filterActive = isFilterActive(activeFilter);
+
+  const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
+
+  useFocusEffect(useCallback(() => {
+    creatorService.getSavedCreatorIds()
+      .then((ids) => setSavedIds(new Set(ids)))
+      .catch(() => {});
+  }, []));
+
+  async function handleToggleSave(creatorId: string) {
+    const wasSaved = savedIds.has(creatorId);
+    setSavedIds((prev) => {
+      const next = new Set(prev);
+      wasSaved ? next.delete(creatorId) : next.add(creatorId);
+      return next;
+    });
+    try {
+      await creatorService.toggleSaveCreator(creatorId);
+    } catch {
+      setSavedIds((prev) => {
+        const next = new Set(prev);
+        wasSaved ? next.add(creatorId) : next.delete(creatorId);
+        return next;
+      });
+    }
+  }
 
   // Debounce search
   useEffect(() => {
@@ -672,7 +708,13 @@ export default function ExploreCreatorsScreen() {
           contentContainerStyle={s.list}
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brinjal1} />}
-          renderItem={({ item }) => <CreatorCard creator={item} />}
+          renderItem={({ item }) => (
+            <CreatorCard
+              creator={item}
+              isSaved={savedIds.has(item.id)}
+              onToggleSave={() => handleToggleSave(item.id)}
+            />
+          )}
           onEndReached={loadMore}
           onEndReachedThreshold={0.3}
           ListFooterComponent={
@@ -740,11 +782,11 @@ const s = StyleSheet.create({
   avatarText: { fontSize: 24 },
   cardMeta: { flex: 1, gap: 3 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  name: { fontSize: 16, fontWeight: '800', flex: 1, fontFamily: F.extrabold },
+  name: { fontSize: 16, fontWeight: '800', flexShrink: 1, fontFamily: F.extrabold },
   verifiedBadge: { width: 18, height: 18, borderRadius: 9, backgroundColor: '#22C55E', justifyContent: 'center', alignItems: 'center' },
   verifiedText: { fontSize: 9, fontWeight: '800', color: '#fff', fontFamily: F.extrabold },
   location: { fontSize: 12, fontFamily: F.regular },
-  cardChevron: { fontSize: 24 },
+  saveBtn: { width: 36, height: 36, borderRadius: 10, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   bio: { fontSize: 13, lineHeight: 19, fontFamily: F.regular },
   statsRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
   statPill: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10 },

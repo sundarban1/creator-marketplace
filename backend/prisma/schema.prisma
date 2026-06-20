@@ -51,11 +51,13 @@ model CreatorProfile {
   prefBudgetMax      Float              @default(500)
   locationLat        Float?
   locationLng        Float?
-  applications       Application[]
-  conversations      Conversation[]     @relation("CreatorConversations")
-  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  favoriteBusinesses FavoriteBusiness[]
-  socialAccounts     SocialAccount[]
+  applications         Application[]
+  conversations        Conversation[]       @relation("CreatorConversations")
+  user                 User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  favoriteBusinesses   FavoriteBusiness[]
+  socialAccounts       SocialAccount[]
+  savedBy              SavedCreator[]
+  receivedInvitations  CampaignInvitation[]
 
   @@map("creator_profiles")
 }
@@ -75,8 +77,8 @@ model SocialAccount {
 }
 
 model BusinessProfile {
-  id                  String             @id @default(cuid())
-  userId              String             @unique
+  id                  String               @id @default(cuid())
+  userId              String               @unique
   businessName        String
   description         String?
   logoUrl             String?
@@ -84,16 +86,18 @@ model BusinessProfile {
   categories          String[]
   panNo               String?
   location            String?
-  isVerified          Boolean            @default(false)
-  createdAt           DateTime           @default(now())
-  updatedAt           DateTime           @updatedAt
-  allowDirectMessages Boolean            @default(true)
-  hideContactDetails  Boolean            @default(false)
-  showPublicProfile   Boolean            @default(true)
-  user                User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  isVerified          Boolean              @default(false)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  allowDirectMessages Boolean              @default(true)
+  hideContactDetails  Boolean              @default(false)
+  showPublicProfile   Boolean              @default(true)
+  user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   campaigns           Campaign[]
-  conversations       Conversation[]     @relation("BusinessConversations")
+  conversations       Conversation[]       @relation("BusinessConversations")
   favoritedBy         FavoriteBusiness[]
+  savedCreators       SavedCreator[]
+  sentInvitations     CampaignInvitation[]
 
   @@map("business_profiles")
 }
@@ -121,8 +125,9 @@ model Campaign {
   isFeatured     Boolean         @default(false)
   creatorsNeeded Int             @default(1)
   applications   Application[]
-  business       BusinessProfile @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  business       BusinessProfile    @relation(fields: [businessId], references: [id], onDelete: Cascade)
   conversations  Conversation[]
+  invitations    CampaignInvitation[]
 
   @@map("campaigns")
 }
@@ -280,6 +285,33 @@ model FavoriteBusiness {
 
   @@unique([creatorId, businessId])
   @@map("favorite_businesses")
+}
+
+model SavedCreator {
+  id         String          @id @default(cuid())
+  businessId String
+  creatorId  String
+  createdAt  DateTime        @default(now())
+  business   BusinessProfile @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  creator    CreatorProfile  @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, creatorId])
+  @@map("saved_creators")
+}
+
+model CampaignInvitation {
+  id         String          @id @default(cuid())
+  campaignId String
+  creatorId  String
+  businessId String
+  message    String?
+  createdAt  DateTime        @default(now())
+  campaign   Campaign        @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  creator    CreatorProfile  @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  business   BusinessProfile @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, creatorId])
+  @@map("campaign_invitations")
 }
 
 enum Role {
