@@ -42,15 +42,15 @@ const ALL_SOCIAL_PLATFORMS: { id: string; label: string; iconName: string; color
   { id: 'twitch',    label: 'Twitch',     iconName: 'twitch',    color: '#9146FF', followersLabel: 'Followers' },
 ];
 
-const PLATFORM_CONFIG: Record<string, { icon: string; label: string; color: string; followersLabel: string }> =
+const PLATFORM_CONFIG: Record<string, { id: string; label: string; iconName: string; color: string; followersLabel: string }> =
   Object.fromEntries(ALL_SOCIAL_PLATFORMS.map((p) => [p.id, p]));
 
 const PORTFOLIO_TYPES: { id: string; label: string; iconName: string; iconLib: 'fa5' | 'ion'; color: string; urlHint: string }[] = [
-  { id: 'instagram', label: 'Instagram',   iconName: 'instagram',         iconLib: 'fa5', color: '#E1306C', urlHint: 'https://instagram.com/p/...' },
-  { id: 'tiktok',    label: 'TikTok',      iconName: 'tiktok',            iconLib: 'fa5', color: '#010101', urlHint: 'https://tiktok.com/@user/video/...' },
-  { id: 'youtube',   label: 'YouTube',     iconName: 'youtube',           iconLib: 'fa5', color: '#FF0000', urlHint: 'https://youtube.com/watch?v=...' },
-  { id: 'facebook',  label: 'Facebook',    iconName: 'facebook',          iconLib: 'fa5', color: '#1877F2', urlHint: 'https://facebook.com/...' },
-  { id: 'twitter',   label: 'X / Twitter', iconName: 'twitter',           iconLib: 'fa5', color: '#1DA1F2', urlHint: 'https://x.com/user/status/...' },
+  { id: 'instagram', label: 'Instagram',   iconName: 'logo-instagram',    iconLib: 'ion', color: '#E1306C', urlHint: 'https://instagram.com/p/...' },
+  { id: 'tiktok',    label: 'TikTok',      iconName: 'logo-tiktok',       iconLib: 'ion', color: '#010101', urlHint: 'https://tiktok.com/@user/video/...' },
+  { id: 'youtube',   label: 'YouTube',     iconName: 'logo-youtube',      iconLib: 'ion', color: '#FF0000', urlHint: 'https://youtube.com/watch?v=...' },
+  { id: 'facebook',  label: 'Facebook',    iconName: 'logo-facebook',     iconLib: 'ion', color: '#1877F2', urlHint: 'https://facebook.com/...' },
+  { id: 'twitter',   label: 'X / Twitter', iconName: 'logo-twitter',      iconLib: 'ion', color: '#1DA1F2', urlHint: 'https://x.com/user/status/...' },
   { id: 'blog',      label: 'Blog Post',   iconName: 'newspaper-outline', iconLib: 'ion', color: '#F59E0B', urlHint: 'https://yourblog.com/post-title' },
   { id: 'website',   label: 'Website',     iconName: 'globe-outline',     iconLib: 'ion', color: '#6366F1', urlHint: 'https://yourwebsite.com' },
   { id: 'photo',     label: 'Photography', iconName: 'camera-outline',    iconLib: 'ion', color: '#10B981', urlHint: 'https://...' },
@@ -174,12 +174,17 @@ function SwitchRow({ label, icon, value, onChange, isLast = false }: SwitchRowPr
   );
 }
 
-type NavRowProps = { icon?: string; label: string; value?: string; onPress: () => void; danger?: boolean; isLast?: boolean };
-function NavRow({ icon, label, value, onPress, danger = false, isLast = false }: NavRowProps) {
+type NavRowProps = { icon?: string; ionIcon?: keyof typeof Ionicons.glyphMap; ionIconColor?: string; label: string; value?: string; onPress: () => void; danger?: boolean; isLast?: boolean };
+function NavRow({ icon, ionIcon, ionIconColor, label, value, onPress, danger = false, isLast = false }: NavRowProps) {
   const C = useContext(ColorCtx);
+  const iColor = ionIconColor ?? C.brinjal1;
   return (
     <Pressable style={[styles.row, !isLast && { borderBottomWidth: 1, borderBottomColor: C.border }]} onPress={onPress}>
-      {icon ? <Text style={styles.rowIcon}>{icon}</Text> : null}
+      {ionIcon ? (
+        <View style={[styles.navIonIconWrap, { backgroundColor: iColor + '18' }]}>
+          <Ionicons name={ionIcon} size={18} color={iColor} />
+        </View>
+      ) : icon ? <Text style={styles.rowIcon}>{icon}</Text> : null}
       <Text style={[styles.rowLabel, { color: danger ? C.error : C.text }]}>{label}</Text>
       <View style={styles.navRight}>
         {value ? <Text style={[styles.navValue, { color: C.textSecondary }]}>{value}</Text> : null}
@@ -406,8 +411,8 @@ export default function CreatorSettingsScreen() {
   const [prefCats, setPrefCats] = useState<string[]>([]);
   const [prefPlatforms, setPrefPlatforms] = useState<string[]>([]);
   const [prefLocations, setPrefLocations] = useState<string[]>([]);
-  const [prefPriceMin, setPrefPriceMin] = useState(0);
-  const [prefPriceMax, setPrefPriceMax] = useState(500);
+  const [prefPriceMin, setPrefPriceMin] = useState(500);
+  const [prefPriceMax, setPrefPriceMax] = useState(100000);
   const prefSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Earnings / payment
@@ -441,6 +446,16 @@ export default function CreatorSettingsScreen() {
 
   // Language
   const [selectedLang, setSelectedLang] = useState('English');
+
+  // Accordion (support / legal sub-pages)
+  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+  function toggleExpand(id: string) {
+    setExpandedItems((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
 
   // Change password
   const [newPw, setNewPw] = useState('');
@@ -506,6 +521,8 @@ export default function CreatorSettingsScreen() {
       .finally(() => setFaqLoading(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [subPage]);
+
+  useEffect(() => { setExpandedItems(new Set()); }, [subPage]);
 
   useEffect(() => {
     const slugToType: Record<string, string> = {
@@ -898,17 +915,15 @@ export default function CreatorSettingsScreen() {
   function renderHelpCenter() {
     if (helpLoading) {
       return (
-        <>
+        <View style={{ marginHorizontal: 16, gap: 8, marginTop: 8 }}>
           {[1, 2, 3, 4].map((n) => (
-            <View key={n} style={{ marginTop: 12, marginHorizontal: 16 }}>
-              <View style={[styles.faqCard, { backgroundColor: C.surface }]}>
-                <View style={[styles.helpSkeletonQ, { backgroundColor: C.border }]} />
-                <View style={[styles.helpSkeletonA, { backgroundColor: C.border }]} />
-                <View style={[styles.helpSkeletonA, { backgroundColor: C.border, width: '60%' }]} />
+            <View key={n} style={[styles.accordionCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+              <View style={styles.accordionHeader}>
+                <View style={[styles.helpSkeletonQ, { backgroundColor: C.border, flex: 1 }]} />
               </View>
             </View>
           ))}
-        </>
+        </View>
       );
     }
 
@@ -922,7 +937,6 @@ export default function CreatorSettingsScreen() {
       );
     }
 
-    // Group by category
     const grouped: Record<string, typeof helpArticles> = {};
     for (const a of helpArticles) {
       (grouped[a.category] ??= []).push(a);
@@ -936,14 +950,23 @@ export default function CreatorSettingsScreen() {
         {Object.entries(grouped).map(([cat, items]) => (
           <View key={cat}>
             <SectionHeader title={cat} />
-            {items.map((item) => (
-              <View key={item.id} style={{ marginBottom: 10, marginHorizontal: 16 }}>
-                <View style={[styles.faqCard, { backgroundColor: C.surface }]}>
-                  <Text style={[styles.faqQ, { color: C.text }]}>{item.question}</Text>
-                  <Text style={[styles.faqA, { color: C.textSecondary }]}>{item.answer}</Text>
-                </View>
-              </View>
-            ))}
+            <View style={{ marginHorizontal: 16, gap: 8 }}>
+              {items.map((item) => {
+                const open = expandedItems.has(item.id);
+                return (
+                  <Pressable
+                    key={item.id}
+                    style={[styles.accordionCard, { backgroundColor: C.surface, borderColor: open ? C.brinjal1 : C.border }]}
+                    onPress={() => toggleExpand(item.id)}>
+                    <View style={styles.accordionHeader}>
+                      <Text style={[styles.accordionTitle, { color: C.text }]}>{item.question}</Text>
+                      <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={16} color={C.textSecondary} />
+                    </View>
+                    {open && <Text style={[styles.accordionBody, { color: C.textSecondary }]}>{item.answer}</Text>}
+                  </Pressable>
+                );
+              })}
+            </View>
           </View>
         ))}
       </>
@@ -1054,17 +1077,15 @@ export default function CreatorSettingsScreen() {
   function renderFAQs() {
     if (faqLoading) {
       return (
-        <>
+        <View style={{ marginHorizontal: 16, gap: 8, marginTop: 8 }}>
           {[1, 2, 3, 4, 5].map((n) => (
-            <View key={n} style={{ marginTop: 10, marginHorizontal: 16 }}>
-              <View style={[styles.faqCard, { backgroundColor: C.surface }]}>
-                <View style={[styles.helpSkeletonQ, { backgroundColor: C.border }]} />
-                <View style={[styles.helpSkeletonA, { backgroundColor: C.border }]} />
-                <View style={[styles.helpSkeletonA, { backgroundColor: C.border, width: '70%' }]} />
+            <View key={n} style={[styles.accordionCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+              <View style={styles.accordionHeader}>
+                <View style={[styles.helpSkeletonQ, { backgroundColor: C.border, flex: 1 }]} />
               </View>
             </View>
           ))}
-        </>
+        </View>
       );
     }
 
@@ -1086,14 +1107,23 @@ export default function CreatorSettingsScreen() {
         {Object.entries(grouped).map(([cat, items]) => (
           <View key={cat}>
             <SectionHeader title={cat} />
-            {items.map((item) => (
-              <View key={item.id} style={{ marginBottom: 10, marginHorizontal: 16 }}>
-                <View style={[styles.faqCard, { backgroundColor: C.surface }]}>
-                  <Text style={[styles.faqQ, { color: C.text }]}>{item.question}</Text>
-                  <Text style={[styles.faqA, { color: C.textSecondary }]}>{item.answer}</Text>
-                </View>
-              </View>
-            ))}
+            <View style={{ marginHorizontal: 16, gap: 8 }}>
+              {items.map((item) => {
+                const open = expandedItems.has(item.id);
+                return (
+                  <Pressable
+                    key={item.id}
+                    style={[styles.accordionCard, { backgroundColor: C.surface, borderColor: open ? C.brinjal1 : C.border }]}
+                    onPress={() => toggleExpand(item.id)}>
+                    <View style={styles.accordionHeader}>
+                      <Text style={[styles.accordionTitle, { color: C.text }]}>{item.question}</Text>
+                      <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={16} color={C.textSecondary} />
+                    </View>
+                    {open && <Text style={[styles.accordionBody, { color: C.textSecondary }]}>{item.answer}</Text>}
+                  </Pressable>
+                );
+              })}
+            </View>
           </View>
         ))}
       </>
@@ -1107,12 +1137,12 @@ export default function CreatorSettingsScreen() {
     const lastUpdated = legalLastUpdated['privacy-policy'];
     if (legalLoading && !sections) {
       return (
-        <View style={{ marginHorizontal: 16, gap: 16 }}>
+        <View style={{ marginHorizontal: 16, gap: 8 }}>
           {[1,2,3,4].map((i) => (
-            <View key={i} style={[styles.legalSection, { borderBottomColor: C.border }]}>
-              <View style={[styles.helpSkeletonQ, { backgroundColor: C.border }]} />
-              <View style={[styles.helpSkeletonA, { backgroundColor: C.border }]} />
-              <View style={[styles.helpSkeletonA, { backgroundColor: C.border, width: '70%' }]} />
+            <View key={i} style={[styles.accordionCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+              <View style={styles.accordionHeader}>
+                <View style={[styles.helpSkeletonQ, { backgroundColor: C.border, flex: 1 }]} />
+              </View>
             </View>
           ))}
         </View>
@@ -1125,12 +1155,23 @@ export default function CreatorSettingsScreen() {
             Last updated: {new Date(lastUpdated).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
           </Text>
         )}
-        {(sections ?? []).map((s) => (
-          <View key={s.id} style={[styles.legalSection, { borderBottomColor: C.border }]}>
-            <Text style={[styles.legalTitle, { color: C.text }]}>{s.title}</Text>
-            <Text style={[styles.legalBody, { color: C.textSecondary }]}>{s.body}</Text>
-          </View>
-        ))}
+        <View style={{ gap: 8 }}>
+          {(sections ?? []).map((s) => {
+            const open = expandedItems.has(s.id);
+            return (
+              <Pressable
+                key={s.id}
+                style={[styles.accordionCard, { backgroundColor: C.surface, borderColor: open ? C.brinjal1 : C.border }]}
+                onPress={() => toggleExpand(s.id)}>
+                <View style={styles.accordionHeader}>
+                  <Text style={[styles.accordionTitle, { color: C.text }]}>{s.title}</Text>
+                  <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={16} color={C.textSecondary} />
+                </View>
+                {open && <Text style={[styles.accordionBody, { color: C.textSecondary }]}>{s.body}</Text>}
+              </Pressable>
+            );
+          })}
+        </View>
       </View>
     );
   }
@@ -1142,12 +1183,12 @@ export default function CreatorSettingsScreen() {
     const lastUpdated = legalLastUpdated['terms'];
     if (legalLoading && !sections) {
       return (
-        <View style={{ marginHorizontal: 16, gap: 16 }}>
+        <View style={{ marginHorizontal: 16, gap: 8 }}>
           {[1,2,3,4].map((i) => (
-            <View key={i} style={[styles.legalSection, { borderBottomColor: C.border }]}>
-              <View style={[styles.helpSkeletonQ, { backgroundColor: C.border }]} />
-              <View style={[styles.helpSkeletonA, { backgroundColor: C.border }]} />
-              <View style={[styles.helpSkeletonA, { backgroundColor: C.border, width: '70%' }]} />
+            <View key={i} style={[styles.accordionCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+              <View style={styles.accordionHeader}>
+                <View style={[styles.helpSkeletonQ, { backgroundColor: C.border, flex: 1 }]} />
+              </View>
             </View>
           ))}
         </View>
@@ -1160,12 +1201,23 @@ export default function CreatorSettingsScreen() {
             Last updated: {new Date(lastUpdated).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
           </Text>
         )}
-        {(sections ?? []).map((s) => (
-          <View key={s.id} style={[styles.legalSection, { borderBottomColor: C.border }]}>
-            <Text style={[styles.legalTitle, { color: C.text }]}>{s.title}</Text>
-            <Text style={[styles.legalBody, { color: C.textSecondary }]}>{s.body}</Text>
-          </View>
-        ))}
+        <View style={{ gap: 8 }}>
+          {(sections ?? []).map((s) => {
+            const open = expandedItems.has(s.id);
+            return (
+              <Pressable
+                key={s.id}
+                style={[styles.accordionCard, { backgroundColor: C.surface, borderColor: open ? C.brinjal1 : C.border }]}
+                onPress={() => toggleExpand(s.id)}>
+                <View style={styles.accordionHeader}>
+                  <Text style={[styles.accordionTitle, { color: C.text }]}>{s.title}</Text>
+                  <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={16} color={C.textSecondary} />
+                </View>
+                {open && <Text style={[styles.accordionBody, { color: C.textSecondary }]}>{s.body}</Text>}
+              </Pressable>
+            );
+          })}
+        </View>
       </View>
     );
   }
@@ -1176,27 +1228,35 @@ export default function CreatorSettingsScreen() {
     const sections = legalSections['guidelines'];
     if (legalLoading && !sections) {
       return (
-        <View style={{ marginHorizontal: 16, gap: 12 }}>
+        <View style={{ marginHorizontal: 16, gap: 8 }}>
           {[1,2,3].map((i) => (
-            <View key={i} style={[styles.guideCard, { backgroundColor: C.surface }]}>
-              <View style={[styles.helpSkeletonQ, { backgroundColor: C.border }]} />
-              <View style={[styles.helpSkeletonA, { backgroundColor: C.border }]} />
+            <View key={i} style={[styles.accordionCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+              <View style={styles.accordionHeader}>
+                <View style={[styles.helpSkeletonQ, { backgroundColor: C.border, flex: 1 }]} />
+              </View>
             </View>
           ))}
         </View>
       );
     }
     return (
-      <View style={{ marginHorizontal: 16 }}>
-        {(sections ?? []).map((s) => (
-          <View key={s.id} style={[styles.guideCard, { backgroundColor: C.surface }]}>
-            <View style={styles.guideHeader}>
-              {s.icon ? <Text style={styles.guideIcon}>{s.icon}</Text> : null}
-              <Text style={[styles.guideTitle, { color: C.text }]}>{s.title}</Text>
-            </View>
-            <Text style={[styles.guideBody, { color: C.textSecondary }]}>{s.body}</Text>
-          </View>
-        ))}
+      <View style={{ marginHorizontal: 16, gap: 8 }}>
+        {(sections ?? []).map((s) => {
+          const open = expandedItems.has(s.id);
+          return (
+            <Pressable
+              key={s.id}
+              style={[styles.accordionCard, { backgroundColor: C.surface, borderColor: open ? C.brinjal1 : C.border }]}
+              onPress={() => toggleExpand(s.id)}>
+              <View style={styles.accordionHeader}>
+                {s.icon ? <Text style={styles.accordionIcon}>{s.icon}</Text> : null}
+                <Text style={[styles.accordionTitle, { color: C.text }]}>{s.title}</Text>
+                <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={16} color={C.textSecondary} />
+              </View>
+              {open && <Text style={[styles.accordionBody, { color: C.textSecondary }]}>{s.body}</Text>}
+            </Pressable>
+          );
+        })}
       </View>
     );
   }
@@ -1411,12 +1471,12 @@ export default function CreatorSettingsScreen() {
         {socialAccounts.length > 0 && (
           <Card>
             {socialAccounts.map((acct, idx) => {
-              const cfg = PLATFORM_CONFIG[acct.platform] ?? { iconName: 'link', iconLib: 'fa5' as const, label: acct.platform, color: '#6366f1', followersLabel: 'Followers' };
+              const cfg = PLATFORM_CONFIG[acct.platform] ?? { id: acct.platform, iconName: 'link', label: acct.platform, color: '#6366f1', followersLabel: 'Followers' };
               const isLast = idx === socialAccounts.length - 1;
               return (
                 <View key={acct.id} style={[styles.row, styles.socialRow, !isLast && { borderBottomWidth: 1, borderBottomColor: C.border }]}>
                   <View style={[styles.socialIconWrap, { backgroundColor: cfg.color + '18' }]}>
-                    <PlatformIcon iconName={cfg.iconName} iconLib={cfg.iconLib} size={20} color={cfg.color} />
+                    <PlatformIcon iconName={cfg.iconName} size={20} color={cfg.color} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.socialPlatformName, { color: C.text }]}>{cfg.label}</Text>
@@ -1675,9 +1735,9 @@ export default function CreatorSettingsScreen() {
           </View>
         </Card>
 
-        <SectionHeader title="Price Range" />
+        <SectionHeader title="Price Range (Rs)" />
         <View style={[styles.hintCard, { backgroundColor: C.primaryLight }]}>
-          <Text style={[styles.hintText, { color: C.brinjal1 }]}>Only show campaigns within your preferred budget range.</Text>
+          <Text style={[styles.hintText, { color: C.brinjal1 }]}>Only show campaigns within your preferred budget range (Rs 500 – Rs 1L).</Text>
         </View>
         <Card>
           <View style={styles.sliderSection}>
@@ -1686,6 +1746,10 @@ export default function CreatorSettingsScreen() {
               maxVal={prefPriceMax}
               onMinChange={(v) => handlePriceChange(v, prefPriceMax)}
               onMaxChange={(v) => handlePriceChange(prefPriceMin, v)}
+              max={100000}
+              step={500}
+              minGap={5000}
+              currency="Rs"
             />
           </View>
         </Card>
@@ -1739,8 +1803,8 @@ export default function CreatorSettingsScreen() {
           ) : (
             <View style={styles.earningsRow}>
               {[
-                { label: 'Total Earned',  value: `$${(earningsSummary?.totalEarned     ?? 0).toFixed(0)}`, color: C.brinjal1 },
-                { label: 'Pending',       value: `$${(earningsSummary?.pendingEarnings ?? 0).toFixed(0)}`, color: C.draft    },
+                { label: 'Total Earned',  value: `Rs ${(earningsSummary?.totalEarned     ?? 0).toFixed(0)}`, color: C.brinjal1 },
+                { label: 'Pending',       value: `Rs ${(earningsSummary?.pendingEarnings ?? 0).toFixed(0)}`, color: C.draft    },
                 { label: 'Campaigns',     value: String(earningsSummary?.totalApplications ?? 0),           color: C.active   },
               ].map((stat) => (
                 <View key={stat.label} style={styles.earningsStat}>
@@ -1822,10 +1886,10 @@ export default function CreatorSettingsScreen() {
       <>
         <SectionHeader title="Get Help" />
         <Card>
-          <NavRow icon="❓" label="Help Center" onPress={() => setSubPage('help-center')} />
-          <NavRow icon="💌" label="Contact Support" onPress={() => setSubPage('contact-support')} />
-          <NavRow icon="🚨" label="Report Issue" onPress={() => setSubPage('report-issue')} />
-          <NavRow icon="📖" label="FAQs" onPress={() => setSubPage('faqs')} isLast />
+          <NavRow ionIcon="help-circle-outline"        ionIconColor="#0891B2" label="Help Center"      onPress={() => setSubPage('help-center')} />
+          <NavRow ionIcon="chatbubble-ellipses-outline" ionIconColor="#7C3AED" label="Contact Support" onPress={() => setSubPage('contact-support')} />
+          <NavRow ionIcon="warning-outline"            ionIconColor="#EF4444" label="Report Issue"    onPress={() => setSubPage('report-issue')} />
+          <NavRow ionIcon="reader-outline"             ionIconColor="#F59E0B" label="FAQs"            onPress={() => setSubPage('faqs')} isLast />
         </Card>
         <View style={[styles.hintCard, { backgroundColor: C.primaryLight }]}>
           <Text style={[styles.hintText, { color: C.brinjal1 }]}>Average response time: under 24 hours on business days.</Text>
@@ -1841,9 +1905,9 @@ export default function CreatorSettingsScreen() {
       <>
         <SectionHeader title="Legal Documents" />
         <Card>
-          <NavRow icon="🔒" label="Privacy Policy" onPress={() => setSubPage('privacy-policy')} />
-          <NavRow icon="📄" label="Terms & Conditions" onPress={() => setSubPage('terms')} />
-          <NavRow icon="📋" label="Community Guidelines" onPress={() => setSubPage('guidelines')} isLast />
+          <NavRow ionIcon="shield-checkmark-outline" ionIconColor="#3B82F6" label="Privacy Policy"       onPress={() => setSubPage('privacy-policy')} />
+          <NavRow ionIcon="document-text-outline"    ionIconColor="#6366F1" label="Terms & Conditions"   onPress={() => setSubPage('terms')} />
+          <NavRow ionIcon="people-outline"           ionIconColor="#16A34A" label="Community Guidelines" onPress={() => setSubPage('guidelines')} isLast />
         </Card>
       </>
     );
@@ -1866,7 +1930,7 @@ export default function CreatorSettingsScreen() {
               <Text style={[styles.accountEmail, { color: C.textSecondary }]}>{user?.email ?? 'creator@example.com'}</Text>
             </View>
           </View>
-          <NavRow icon="✏️" label="Edit Profile" onPress={() => router.push('/(creator)/edit-profile')} />
+          <NavRow ionIcon="create-outline" ionIconColor={C.brinjal1} label="Edit Profile" onPress={() => router.push('/(creator)/edit-profile')} />
           <NavRow icon="⏸️" label="Deactivate Account" onPress={handleDeactivateAccount} />
           <NavRow icon="🗑️" label="Delete Account" onPress={handleDeleteAccount} danger isLast />
         </Card>
@@ -2076,6 +2140,13 @@ const styles = StyleSheet.create({
   navRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   navArrow: { fontSize: 18 },
   navValue: { fontSize: 14, fontFamily: F.regular },
+  navIonIconWrap: { width: 34, height: 34, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
+
+  accordionCard: { borderRadius: 12, borderWidth: 1.5, overflow: 'hidden', backgroundColor: 'transparent' },
+  accordionHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14 },
+  accordionTitle: { flex: 1, fontSize: 14, fontWeight: '700', lineHeight: 20, fontFamily: F.bold },
+  accordionBody: { fontSize: 13, lineHeight: 20, paddingHorizontal: 14, paddingBottom: 14, fontFamily: F.regular },
+  accordionIcon: { fontSize: 20 },
 
   chipSection: { paddingHorizontal: 12, paddingTop: 8, paddingBottom: 12 },
   sliderSection: { paddingHorizontal: 16, paddingVertical: 16 },

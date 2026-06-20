@@ -12,17 +12,18 @@ type NavItem = {
   iconName: keyof typeof Ionicons.glyphMap;
   label: string;
   route: string;
+  color: string;
 };
 
 const ACCOUNT_ITEMS: NavItem[] = [
-  { iconName: 'phone-portrait',  label: 'Social Accounts',      route: '/(creator)/settings?section=social' },
-  { iconName: 'bookmark',        label: 'Campaign Preferences', route: '/(creator)/settings?section=campaigns' },
-  { iconName: 'cash',            label: 'Earnings & Payments',  route: '/(creator)/settings?section=earnings' },
-  { iconName: 'color-palette',   label: 'Past Work',            route: '/(creator)/settings?section=past-work' },
-  { iconName: 'lock-closed',     label: 'Security',             route: '/(creator)/settings?section=security' },
-  { iconName: 'help-circle',     label: 'Support',              route: '/(creator)/settings?section=support' },
-  { iconName: 'document',        label: 'Legal',                route: '/(creator)/settings?section=legal' },
-  { iconName: 'settings',        label: 'Settings',             route: '/(creator)/settings' },
+  { iconName: 'share-social-outline',    label: 'Social Accounts',      route: '/(creator)/settings?section=social',    color: '#E1306C' },
+  { iconName: 'options-outline',         label: 'Campaign Preferences', route: '/(creator)/settings?section=campaigns', color: '#7C3AED' },
+  { iconName: 'wallet-outline',          label: 'Earnings & Payments',  route: '/(creator)/settings?section=earnings',  color: '#16A34A' },
+  { iconName: 'images-outline',          label: 'Past Work',            route: '/(creator)/settings?section=past-work', color: '#F59E0B' },
+  { iconName: 'shield-checkmark-outline', label: 'Security',            route: '/(creator)/settings?section=security',  color: '#3B82F6' },
+  { iconName: 'help-buoy-outline',       label: 'Support',              route: '/(creator)/settings?section=support',   color: '#0891B2' },
+  { iconName: 'scale-outline',           label: 'Legal',                route: '/(creator)/settings?section=legal',     color: '#6366F1' },
+  { iconName: 'settings-outline',        label: 'Settings',             route: '/(creator)/settings',                  color: '#6B7280' },
 ];
 
 type Props = {
@@ -75,9 +76,7 @@ export function DrawerMenu({ visible, user, onClose, onLogout }: Props) {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.userName} numberOfLines={1}>{user?.name ?? 'Creator'}</Text>
-              <View style={styles.rolePill}>
-                <Text style={styles.rolePillText}>Creator</Text>
-              </View>
+              <Text style={styles.userEmail} numberOfLines={1}>{user?.email ?? ''}</Text>
             </View>
           </View>
         </View>
@@ -88,16 +87,16 @@ export function DrawerMenu({ visible, user, onClose, onLogout }: Props) {
             <Text style={[styles.groupLabel, { color: C.textSecondary }]}>MY ACCOUNT</Text>
           </View>
           <View style={[styles.navGroup, { backgroundColor: C.surface, borderColor: C.border }]}>
-            {ACCOUNT_ITEMS.map(({ iconName, label, route }, idx) => (
+            {ACCOUNT_ITEMS.map(({ iconName, label, route, color }, idx) => (
               <Pressable
                 key={label}
                 style={[styles.navItem, idx < ACCOUNT_ITEMS.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}
                 onPress={() => { onClose(); router.push(route as Parameters<typeof router.push>[0]); }}>
-                <View style={[styles.navIconWrap, { backgroundColor: C.background }]}>
-                  <Ionicons name={iconName} size={18} color={C.brinjal1} />
+                <View style={[styles.navIconWrap, { backgroundColor: color + '18' }]}>
+                  <Ionicons name={iconName} size={18} color={color} />
                 </View>
                 <Text style={[styles.navLabel, { color: C.text }]}>{label}</Text>
-                <Ionicons name="chevron-forward" size={18} color={C.textSecondary} />
+                <Ionicons name="chevron-forward" size={16} color={C.border} />
               </Pressable>
             ))}
           </View>
@@ -131,9 +130,8 @@ const styles = StyleSheet.create({
     borderWidth: 2, borderColor: 'rgba(255,255,255,0.5)',
   },
   avatarInitial: { fontSize: 18, fontWeight: '800', color: '#fff', fontFamily: F.extrabold },
-  userName: { fontSize: 15, fontWeight: '700', color: '#fff', marginBottom: 4, fontFamily: F.bold },
-  rolePill: { alignSelf: 'flex-start', backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 2 },
-  rolePillText: { fontSize: 11, fontWeight: '600', color: 'rgba(255,255,255,0.9)', fontFamily: F.semibold },
+  userName: { fontSize: 15, fontWeight: '700', color: '#fff', marginBottom: 2, fontFamily: F.bold },
+  userEmail: { fontSize: 11, color: 'rgba(255,255,255,0.7)', fontFamily: F.regular },
   scroll: { flex: 1 },
   navGroup: { marginHorizontal: 12, marginVertical: 4, borderRadius: 12, borderWidth: 1, overflow: 'hidden' },
   navItem: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 14 },

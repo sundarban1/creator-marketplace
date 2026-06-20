@@ -2,15 +2,24 @@ import { useEffect, useRef, useState } from 'react';
 import { PanResponder, StyleSheet, Text, View } from 'react-native';
 import { useAppColors } from '@/context/ThemeContext';
 
-const PRICE_MAX = 1000;
-const PRICE_STEP = 10;
-const MIN_PRICE_GAP = 80;
+const DEFAULT_MAX  = 1000;
+const DEFAULT_STEP = 10;
+const DEFAULT_GAP  = 80;
 const THUMB_R = 13;
 
-function valToPx(val: number, tw: number) { return (val / PRICE_MAX) * tw; }
-function pxToVal(px: number, tw: number) {
+function valToPx(val: number, tw: number, max: number) { return (val / max) * tw; }
+function pxToVal(px: number, tw: number, max: number, step: number) {
   if (tw === 0) return 0;
-  return Math.round(Math.max(0, Math.min(px / tw, 1)) * PRICE_MAX / PRICE_STEP) * PRICE_STEP;
+  return Math.round(Math.max(0, Math.min(px / tw, 1)) * max / step) * step;
+}
+
+function fmtVal(v: number, currency: string, max: number): string {
+  if (currency === 'Rs') {
+    if (v >= 100000) return `Rs ${(v / 100000).toFixed(1)}L`;
+    if (v >= 1000)   return `Rs ${(v / 1000).toFixed(0)}K`;
+    return `Rs ${v}`;
+  }
+  return v >= max ? `${currency}${max.toLocaleString()}+` : `${currency}${v}`;
 }
 
 type Props = {
@@ -18,13 +27,20 @@ type Props = {
   maxVal: number;
   onMinChange: (v: number) => void;
   onMaxChange: (v: number) => void;
+  max?: number;
+  step?: number;
+  minGap?: number;
+  currency?: string;
 };
 
-export function RangeSlider({ minVal, maxVal, onMinChange, onMaxChange }: Props) {
+export function RangeSlider({
+  minVal, maxVal, onMinChange, onMaxChange,
+  max = DEFAULT_MAX, step = DEFAULT_STEP, minGap = DEFAULT_GAP, currency = '$',
+}: Props) {
   const C = useAppColors();
   const [dispMin, setDispMin] = useState(minVal);
   const [dispMax, setDispMax] = useState(maxVal);
-  const [trackW, setTrackW] = useState(0);
+  const [trackW, setTrackW]   = useState(0);
 
   const dispMinRef = useRef(minVal);
   const dispMaxRef = useRef(maxVal);
@@ -46,13 +62,13 @@ export function RangeSlider({ minVal, maxVal, onMinChange, onMaxChange }: Props)
     onMoveShouldSetPanResponder:  () => true,
     onPanResponderGrant: () => {
       dragMin.current = true;
-      startMinPx.current = valToPx(dispMinRef.current, trackWRef.current);
+      startMinPx.current = valToPx(dispMinRef.current, trackWRef.current, max);
     },
     onPanResponderMove: (_, g) => {
       const tw = trackWRef.current;
-      const maxAllowed = valToPx(dispMaxRef.current, tw) - valToPx(MIN_PRICE_GAP, tw);
+      const maxAllowed = valToPx(dispMaxRef.current, tw, max) - valToPx(minGap, tw, max);
       const clamped = Math.max(0, Math.min(startMinPx.current + g.dx, maxAllowed));
-      setDispMin(pxToVal(clamped, tw));
+      setDispMin(pxToVal(clamped, tw, max, step));
     },
     onPanResponderRelease: ()   => { dragMin.current = false; onMinChange(dispMinRef.current); },
     onPanResponderTerminate: () => { dragMin.current = false; onMinChange(dispMinRef.current); },
@@ -63,32 +79,40 @@ export function RangeSlider({ minVal, maxVal, onMinChange, onMaxChange }: Props)
     onMoveShouldSetPanResponder:  () => true,
     onPanResponderGrant: () => {
       dragMax.current = true;
-      startMaxPx.current = valToPx(dispMaxRef.current, trackWRef.current);
+      startMaxPx.current = valToPx(dispMaxRef.current, trackWRef.current, max);
     },
     onPanResponderMove: (_, g) => {
       const tw = trackWRef.current;
-      const minAllowed = valToPx(dispMinRef.current, tw) + valToPx(MIN_PRICE_GAP, tw);
+      const minAllowed = valToPx(dispMinRef.current, tw, max) + valToPx(minGap, tw, max);
       const clamped = Math.max(minAllowed, Math.min(startMaxPx.current + g.dx, tw));
-      setDispMax(pxToVal(clamped, tw));
+      setDispMax(pxToVal(clamped, tw, max, step));
     },
     onPanResponderRelease: ()   => { dragMax.current = false; onMaxChange(dispMaxRef.current); },
     onPanResponderTerminate: () => { dragMax.current = false; onMaxChange(dispMaxRef.current); },
   })).current;
 
-  const minPct = dispMin / PRICE_MAX;
-  const maxPct = dispMax / PRICE_MAX;
+  const minPct = dispMin / max;
+  const maxPct = dispMax / max;
+
+  const midLabel = currency === 'Rs' ? `Rs ${(max / 2 / 1000).toFixed(0)}K` : `${currency}${Math.round(max / 2).toLocaleString()}`;
+  const maxLabel = currency === 'Rs'
+    ? (max >= 100000 ? `Rs ${(max / 100000).toFixed(1)}L` : `Rs ${(max / 1000).toFixed(0)}K`)
+    : `${currency}${max.toLocaleString()}+`;
+  const minLabel = currency === 'Rs' ? `Rs ${step}` : `${currency}0`;
 
   return (
     <View style={styles.wrap}>
       <View style={[styles.tags, { backgroundColor: C.background }]}>
         <View style={styles.tag}>
           <Text style={[styles.tagLbl, { color: C.textSecondary }]}>Min</Text>
-          <Text style={[styles.tagVal, { color: C.brinjal1 }]}>${dispMin}</Text>
+          <Text style={[styles.tagVal, { color: C.brinjal1 }]}>{fmtVal(dispMin, currency, max)}</Text>
         </View>
         <View style={[styles.tagDivider, { backgroundColor: C.border }]} />
         <View style={styles.tag}>
           <Text style={[styles.tagLbl, { color: C.textSecondary }]}>Max</Text>
-          <Text style={[styles.tagVal, { color: C.brinjal1 }]}>{dispMax >= PRICE_MAX ? '$1,000+' : `$${dispMax}`}</Text>
+          <Text style={[styles.tagVal, { color: C.brinjal1 }]}>
+            {dispMax >= max ? maxLabel : fmtVal(dispMax, currency, max)}
+          </Text>
         </View>
       </View>
 
@@ -110,9 +134,9 @@ export function RangeSlider({ minVal, maxVal, onMinChange, onMaxChange }: Props)
       </View>
 
       <View style={styles.ticks}>
-        <Text style={[styles.tick, { color: C.textSecondary }]}>$0</Text>
-        <Text style={[styles.tick, { color: C.textSecondary }]}>$500</Text>
-        <Text style={[styles.tick, { color: C.textSecondary }]}>$1,000+</Text>
+        <Text style={[styles.tick, { color: C.textSecondary }]}>{minLabel}</Text>
+        <Text style={[styles.tick, { color: C.textSecondary }]}>{midLabel}</Text>
+        <Text style={[styles.tick, { color: C.textSecondary }]}>{maxLabel}</Text>
       </View>
     </View>
   );
