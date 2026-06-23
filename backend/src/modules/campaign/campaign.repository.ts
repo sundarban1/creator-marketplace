@@ -146,13 +146,23 @@ export class CampaignRepository {
   }
 
   async getDistinctCategories(): Promise<string[]> {
-    return [
-      'Food', 'Travel', 'Fashion', 'Beauty', 'Fitness', 'Gaming', 'Tech',
-      'Education', 'Lifestyle', 'Home & Living', 'Wellness', 'Music',
-      'Art & Design', 'Pets', 'Parenting', 'Automotive', 'Finance',
-      'Sustainability', 'Photography', 'Sports', 'Film & TV', 'Mindfulness',
-      'Food & Drink', 'Entertainment',
-    ];
+    const rows = await prisma.campaign.findMany({
+      where: { status: 'ACTIVE' },
+      select: { category: true },
+      distinct: ['category'],
+      orderBy: { category: 'asc' },
+    });
+    return rows.map((r) => r.category).filter(Boolean);
+  }
+
+  async getDistinctPlatforms(): Promise<string[]> {
+    const rows = await prisma.campaign.findMany({
+      where: { status: 'ACTIVE' },
+      select: { platform: true },
+      distinct: ['platform'],
+      orderBy: { platform: 'asc' },
+    });
+    return rows.map((r) => r.platform).filter(Boolean);
   }
 
   async findApplication(campaignId: string, creatorId: string) {

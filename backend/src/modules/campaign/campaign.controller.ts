@@ -23,6 +23,15 @@ export class CampaignController {
     }
   }
 
+  async getPlatforms(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const platforms = await campaignService.getPlatforms();
+      success(res, platforms, 'Platforms retrieved successfully');
+    } catch (err) {
+      next(err);
+    }
+  }
+
   async list(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { campaigns, total, page, limit } = await campaignService.list(req.query as any);

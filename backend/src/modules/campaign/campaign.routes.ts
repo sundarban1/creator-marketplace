@@ -158,6 +158,7 @@ router.post(
  */
 router.get('/', validate(campaignListQuerySchema, 'query'), ctrl.list.bind(ctrl));
 router.get('/categories', ctrl.getCategories.bind(ctrl));
+router.get('/platforms', ctrl.getPlatforms.bind(ctrl));
 
 /**
  * @swagger

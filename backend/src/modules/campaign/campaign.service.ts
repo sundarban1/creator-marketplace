@@ -76,6 +76,10 @@ export class CampaignService {
     return this.repo.getDistinctCategories();
   }
 
+  async getPlatforms(): Promise<string[]> {
+    return this.repo.getDistinctPlatforms();
+  }
+
   async getById(id: string) {
     const campaign = await this.repo.findById(id);
     if (!campaign) {
