@@ -390,6 +390,12 @@ export default function ExploreBusinessesScreen() {
               </View>
             )}
           </View>
+          <Pressable
+            style={styles.favLink}
+            onPress={() => router.push('/(creator)/favorite-businesses' as Parameters<typeof router.push>[0])}>
+            <Ionicons name="heart" size={16} color="#fff" />
+            <Text style={styles.favLinkText}>Favorites</Text>
+          </Pressable>
         </View>
       </LinearGradient>
 
@@ -515,6 +521,8 @@ const styles = StyleSheet.create({
   heading:        { fontSize: 22, fontWeight: '800', letterSpacing: -0.4, fontFamily: F.extrabold },
   countBadge:     { borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
   countTxt:       { fontSize: 12, fontWeight: '700', fontFamily: F.bold },
+  favLink:        { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 6 },
+  favLinkText:    { fontSize: 12, fontWeight: '700', color: '#fff', fontFamily: F.bold },
 
   // Search row
   searchRow:      { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 12 },

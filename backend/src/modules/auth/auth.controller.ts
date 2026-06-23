@@ -123,4 +123,22 @@ export class AuthController {
       next(err);
     }
   }
+
+  async requestPhoneOtp(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await authService.requestPhoneOtp(req.user!.id, req.body);
+      success(res, result, result.message);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async verifyPhoneOtp(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await authService.verifyPhoneOtp(req.user!.id, req.body);
+      success(res, result, result.message);
+    } catch (err) {
+      next(err);
+    }
+  }
 }

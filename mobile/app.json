@@ -42,7 +42,14 @@
           "locationWhenInUsePermission": "Allow Creator Market to access your location to find nearby campaigns."
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Creator Market to access your photos to update your profile picture.",
+          "cameraPermission": "Allow Creator Market to use your camera to take a profile photo."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

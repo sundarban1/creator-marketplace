@@ -24,17 +24,28 @@ const BUSINESS_CATEGORIES = [
   'Healthcare', 'Art & Design', 'Photography', 'Media & Film', 'Sustainability',
 ];
 
+function generateBusinessDescription(name: string, cats: string[]): string {
+  if (cats.length === 0) return '';
+  const catStr = cats.length === 1
+    ? cats[0]
+    : cats.slice(0, -1).join(', ') + ' and ' + cats[cats.length - 1];
+  const catLower = catStr.toLowerCase();
+  const brandName = name.trim() || 'We';
+  return `${brandName} is a ${catStr} brand passionate about delivering quality products and experiences that make a real difference for our customers.\n\nWe love partnering with creators who share our values and help us connect with the right audience through authentic, engaging content. If you create content around ${catLower}, we would love to collaborate with you!`;
+}
+
 export default function EditBusinessProfileScreen() {
   const C = useAppColors();
   const toast = useToast();
 
-  const [loading, setLoading]           = useState(true);
-  const [saving, setSaving]             = useState(false);
-  const [businessName, setBusinessName] = useState('');
-  const [description, setDescription]  = useState('');
-  const [website, setWebsite]           = useState('');
-  const [logoUrl, setLogoUrl]           = useState('');
-  const [categories, setCategories]     = useState<string[]>([]);
+  const [loading, setLoading]                   = useState(true);
+  const [saving, setSaving]                     = useState(false);
+  const [businessName, setBusinessName]         = useState('');
+  const [description, setDescription]           = useState('');
+  const [descriptionManuallyEdited, setDescriptionManuallyEdited] = useState(false);
+  const [website, setWebsite]                   = useState('');
+  const [logoUrl, setLogoUrl]                   = useState('');
+  const [categories, setCategories]             = useState<string[]>([]);
 
   useEffect(() => {
     profileService
@@ -51,9 +62,18 @@ export default function EditBusinessProfileScreen() {
   }, []);
 
   function toggleCategory(cat: string) {
-    setCategories((prev) =>
-      prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat],
-    );
+    setCategories((prev) => {
+      const next = prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat];
+      if (!descriptionManuallyEdited && !description.trim()) {
+        setDescription(generateBusinessDescription(businessName, next));
+      }
+      return next;
+    });
+  }
+
+  function handleRegenerateDescription() {
+    setDescription(generateBusinessDescription(businessName, categories));
+    setDescriptionManuallyEdited(false);
   }
 
   async function handleSave() {
@@ -121,12 +141,19 @@ export default function EditBusinessProfileScreen() {
           <View style={[styles.divider, { backgroundColor: C.border }]} />
 
           <View style={styles.field}>
-            <Text style={[styles.label, { color: C.textSecondary }]}>DESCRIPTION</Text>
+            <View style={styles.labelRow}>
+              <Text style={[styles.label, { color: C.textSecondary }]}>DESCRIPTION</Text>
+              {categories.length > 0 && (
+                <Pressable onPress={handleRegenerateDescription} style={[styles.regenerateBtn, { backgroundColor: C.primaryLight }]}>
+                  <Text style={[styles.regenerateBtnText, { color: C.brinjal1 }]}>✨ Regenerate</Text>
+                </Pressable>
+              )}
+            </View>
             <TextInput
               style={[styles.textarea, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
               value={description}
-              onChangeText={(t) => setDescription(t.slice(0, 600))}
-              placeholder="Tell creators about your business…"
+              onChangeText={(t) => { setDescription(t.slice(0, 600)); setDescriptionManuallyEdited(true); }}
+              placeholder="Select categories above to auto-generate a description…"
               placeholderTextColor={C.textSecondary}
               multiline
               numberOfLines={4}
@@ -225,6 +252,9 @@ const styles = StyleSheet.create({
   field:         { padding: 16, gap: 8 },
   divider:       { height: 1 },
   label:         { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: F.bold },
+  labelRow:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  regenerateBtn: { borderRadius: 10, paddingHorizontal: 10, paddingVertical: 4 },
+  regenerateBtnText: { fontSize: 11, fontWeight: '600', fontFamily: F.semibold },
   subHint:       { fontSize: 12, lineHeight: 18, fontFamily: F.regular },
   input:         { borderRadius: 10, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, fontFamily: F.regular },
   textarea:      { borderRadius: 10, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, minHeight: 100, fontFamily: F.regular },

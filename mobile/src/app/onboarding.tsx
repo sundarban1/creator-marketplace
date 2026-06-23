@@ -10,41 +10,92 @@ import { CREATOR_CATEGORIES } from '@/features/creator/data/filterOptions';
 import { F } from '@/utilities/constants';
 
 const CATEGORIES = CREATOR_CATEGORIES;
-
 const TOTAL_STEPS = 2;
+const GENDER_OPTIONS = ['Male', 'Female', 'Non-binary', 'Prefer not to say'];
+const GOOGLE_PLACES_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY ?? '';
+type PlacePrediction = { place_id: string; description: string };
+
+function generateCreatorBio(categories: string[]): string {
+  if (categories.length === 0) return '';
+  const catStr = categories.length === 1
+    ? categories[0]
+    : categories.slice(0, -1).join(', ') + ' and ' + categories[categories.length - 1];
+  return `I'm a ${catStr} content creator passionate about sharing authentic stories and engaging experiences. I love collaborating with brands that align with my values to create content that truly connects with audiences and drives meaningful results.`;
+}
+
+function generateUsernameSuggestions(name: string): string[] {
+  const clean = name.toLowerCase().replace(/[^a-z0-9 ]/gi, '').trim();
+  const parts = clean.split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return [];
+  const out: string[] = [];
+  if (parts.length >= 2) {
+    out.push(`${parts[0]}_${parts[1]}`.slice(0, 20));
+    out.push(`${parts[0]}${parts[1]}`.slice(0, 20));
+    out.push(`${parts[0]}${parts[1][0]}`.slice(0, 20));
+    out.push(`${parts[0][0]}${parts[1]}`.slice(0, 20));
+  } else {
+    out.push(parts[0].slice(0, 20));
+    out.push(`the_${parts[0]}`.slice(0, 20));
+    out.push(`${parts[0]}_official`.slice(0, 20));
+  }
+  return [...new Set(out.filter(s => s.length >= 3 && /^[a-zA-Z0-9_]+$/.test(s)))].slice(0, 4);
+}
 
 export default function OnboardingScreen() {
   const { updateUser } = useAuth();
   const C = useAppColors();
   const [step, setStep] = useState(1);
 
-  // Step 1
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  // Step 1 — profile basics
+  const [fullName,  setFullName]  = useState('');
+  const [username,  setUsername]  = useState('');
+  const [phone,     setPhone]     = useState('');
+  const [gender,    setGender]    = useState('');
+  const [location,            setLocation]            = useState('');
+  const [locationSuggestions, setLocationSuggestions] = useState<PlacePrediction[]>([]);
+  const locationDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [usernameSuggestions, setUsernameSuggestions] = useState<string[]>([]);
   const [step1Submitted, setStep1Submitted] = useState(false);
-  const [step1Loading, setStep1Loading] = useState(false);
-  const [step1Error, setStep1Error] = useState('');
+  const [step1Loading,   setStep1Loading]   = useState(false);
+  const [step1Error,     setStep1Error]     = useState('');
 
-  // Step 2
-  const [username, setUsername] = useState('');
-  const [bio, setBio] = useState('');
-  const [city, setCity] = useState('');
+  // Step 2 — categories
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [step2Submitted, setStep2Submitted] = useState(false);
-  const [step2Loading, setStep2Loading] = useState(false);
-  const [step2Error, setStep2Error] = useState('');
+  const [step2Loading,   setStep2Loading]   = useState(false);
+  const [step2Error,     setStep2Error]     = useState('');
 
-  const scaleAnim  = useRef(new Animated.Value(0)).current;
+  const scaleAnim   = useRef(new Animated.Value(0)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
   const [finished, setFinished] = useState(false);
 
   useEffect(() => {
     if (!finished) return;
     Animated.parallel([
-      Animated.spring(scaleAnim,  { toValue: 1, useNativeDriver: true, tension: 60, friction: 7 }),
+      Animated.spring(scaleAnim,   { toValue: 1, useNativeDriver: true, tension: 60, friction: 7 }),
       Animated.timing(opacityAnim, { toValue: 1, duration: 300, useNativeDriver: true }),
     ]).start();
     const id = setTimeout(goHome, 3000);
     return () => clearTimeout(id);
   }, [finished]);
+
+  // ── Step 1 validation ──
+  const fullNameError = step1Submitted && !fullName.trim() ? 'Full name is required' : undefined;
+  const usernameError = step1Submitted
+    ? !username.trim()                          ? 'Username is required'
+    : username.trim().length < 3               ? 'Must be at least 3 characters'
+    : !/^[a-zA-Z0-9_]+$/.test(username.trim()) ? 'Only letters, numbers, and underscores'
+    : undefined
+    : undefined;
+  const genderError   = step1Submitted && !gender ? 'Please select your gender' : undefined;
+  const locationError = step1Submitted && !location.trim() ? 'Location is required' : undefined;
+
+  const step1Valid =
+    fullName.trim().length > 0 &&
+    username.trim().length >= 3 &&
+    /^[a-zA-Z0-9_]+$/.test(username.trim()) &&
+    !!gender &&
+    location.trim().length > 0;
 
   function toggleCategory(label: string) {
     setSelectedCategories((prev) => {
@@ -54,31 +105,35 @@ export default function OnboardingScreen() {
     });
   }
 
-  // ── Inline validation ──
-  const usernameError = step2Submitted
-    ? !username.trim() ? 'Username is required'
-    : username.trim().length < 3 ? 'Must be at least 3 characters'
-    : !/^[a-zA-Z0-9_]+$/.test(username.trim()) ? 'Only letters, numbers, and underscores'
-    : undefined
-    : undefined;
-
-  const bioError   = step2Submitted && !bio.trim() ? 'Bio is required' : undefined;
-  const cityError  = step2Submitted && !city.trim() ? 'City is required' : undefined;
-
-  const step2Valid =
-    username.trim().length >= 3 &&
-    /^[a-zA-Z0-9_]+$/.test(username.trim()) &&
-    bio.trim().length > 0 &&
-    city.trim().length > 0;
+  function handleLocationChange(text: string) {
+    setLocation(text);
+    setStep1Error('');
+    if (locationDebounce.current) clearTimeout(locationDebounce.current);
+    if (!text.trim() || !GOOGLE_PLACES_KEY) { setLocationSuggestions([]); return; }
+    locationDebounce.current = setTimeout(async () => {
+      try {
+        const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(text)}&key=${GOOGLE_PLACES_KEY}&language=en&types=geocode`;
+        const res = await fetch(url);
+        const json = await res.json();
+        setLocationSuggestions(json.status === 'OK' ? json.predictions : []);
+      } catch { setLocationSuggestions([]); }
+    }, 350);
+  }
 
   async function handleStep1Continue() {
     setStep1Submitted(true);
-    if (selectedCategories.length === 0) return;
-
+    if (!step1Valid) return;
     setStep1Loading(true);
     setStep1Error('');
     try {
-      await profileService.updateCreatorProfile({ categories: selectedCategories });
+      await profileService.updateCreatorProfile({
+        fullName: fullName.trim(),
+        username: username.trim(),
+        phone:    phone.trim() || undefined,
+        gender:   gender || undefined,
+        location: location.trim(),
+      });
+      updateUser({ name: fullName.trim() });
       setStep(2);
     } catch (e: any) {
       setStep1Error(e.message ?? 'Failed to save. Please try again.');
@@ -89,16 +144,12 @@ export default function OnboardingScreen() {
 
   async function handleStep2Finish() {
     setStep2Submitted(true);
-    if (!step2Valid) return;
-
+    if (selectedCategories.length === 0) return;
     setStep2Loading(true);
     setStep2Error('');
     try {
-      await profileService.updateCreatorProfile({
-        username: username.trim(),
-        bio:      bio.trim(),
-        location: city.trim(),
-      });
+      const bio = generateCreatorBio(selectedCategories);
+      await profileService.updateCreatorProfile({ categories: selectedCategories, bio });
       await authService.completeOnboarding();
       updateUser({ isFirstLogin: false });
       setFinished(true);
@@ -134,8 +185,8 @@ export default function OnboardingScreen() {
   }
 
   const STEP_CONFIG = [
+    { title: 'About you',           subtitle: 'Fill in your details so brands can discover you.' },
     { title: 'What do you create?', subtitle: 'Choose 1 to 5 categories. You can update this anytime.' },
-    { title: 'About you', subtitle: 'Fill in your details so brands can discover you.' },
   ];
   const { title, subtitle } = STEP_CONFIG[step - 1];
 
@@ -168,8 +219,163 @@ export default function OnboardingScreen() {
 
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
 
-        {/* ────────── Step 1: Categories ────────── */}
+        {/* ────────── Step 1: Profile basics ────────── */}
         {step === 1 && (
+          <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+
+            {step1Error ? (
+              <View style={[styles.errorBanner, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}>
+                <Text style={[styles.errorBannerText, { color: C.error }]}>{step1Error}</Text>
+              </View>
+            ) : null}
+
+            <View style={styles.form}>
+
+              {/* Full Name */}
+              <View style={styles.formGroup}>
+                <Text style={[styles.formLabel, { color: C.text }]}>Full Name <Text style={{ color: C.error }}>*</Text></Text>
+                <TextInput
+                  style={[styles.formInput, { backgroundColor: C.surface, borderColor: fullNameError ? C.error : C.border, color: C.text }]}
+                  value={fullName}
+                  onChangeText={(t) => {
+                    setStep1Error('');
+                    setFullName(t);
+                    setUsernameSuggestions(generateUsernameSuggestions(t));
+                  }}
+                  placeholder="e.g. Aarav Sharma"
+                  placeholderTextColor={C.textSecondary}
+                  autoCapitalize="words"
+                />
+                {fullNameError && <Text style={[styles.fieldError, { color: C.error }]}>{fullNameError}</Text>}
+              </View>
+
+              {/* Username */}
+              <View style={styles.formGroup}>
+                <Text style={[styles.formLabel, { color: C.text }]}>Username <Text style={{ color: C.error }}>*</Text></Text>
+                <View style={[styles.usernameRow, { backgroundColor: C.surface, borderColor: usernameError ? C.error : C.border }]}>
+                  <Text style={[styles.atSign, { color: C.brinjal1 }]}>@</Text>
+                  <TextInput
+                    style={[styles.usernameInput, { color: C.text }]}
+                    value={username}
+                    onChangeText={(t) => {
+                      setStep1Error('');
+                      setUsername(t.replace(/[^a-zA-Z0-9_]/g, '').slice(0, 20));
+                    }}
+                    placeholder="yourhandle"
+                    placeholderTextColor={C.textSecondary}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                  <Text style={[styles.usernameLimit, { color: C.textSecondary }]}>{username.length}/20</Text>
+                </View>
+                {usernameError && <Text style={[styles.fieldError, { color: C.error }]}>{usernameError}</Text>}
+                {!usernameError && <Text style={[styles.fieldHint, { color: C.textSecondary }]}>Letters, numbers, underscores only. Must be unique.</Text>}
+                {usernameSuggestions.length > 0 && (
+                  <View>
+                    <Text style={[styles.suggestionLabel, { color: C.textSecondary }]}>Suggestions:</Text>
+                    <View style={styles.suggestionRow}>
+                      {usernameSuggestions.map((s) => (
+                        <Pressable
+                          key={s}
+                          style={[styles.suggestionChip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}
+                          onPress={() => setUsername(s)}>
+                          <Text style={[styles.suggestionChipText, { color: C.brinjal1 }]}>@{s}</Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                  </View>
+                )}
+              </View>
+
+              {/* Phone */}
+              <View style={styles.formGroup}>
+                <View style={styles.labelRow}>
+                  <Text style={[styles.formLabel, { color: C.text }]}>Phone Number</Text>
+                  <Text style={[styles.optionalTag, { color: C.textSecondary }]}>Optional</Text>
+                </View>
+                <TextInput
+                  style={[styles.formInput, { backgroundColor: C.surface, borderColor: C.border, color: C.text }]}
+                  value={phone}
+                  onChangeText={setPhone}
+                  placeholder="+977 98XXXXXXXX"
+                  placeholderTextColor={C.textSecondary}
+                  keyboardType="phone-pad"
+                />
+              </View>
+
+              {/* Gender */}
+              <View style={styles.formGroup}>
+                <Text style={[styles.formLabel, { color: C.text }]}>Gender <Text style={{ color: C.error }}>*</Text></Text>
+                <View style={styles.genderRow}>
+                  {GENDER_OPTIONS.map((g) => {
+                    const selected = gender === g;
+                    return (
+                      <Pressable
+                        key={g}
+                        style={[styles.genderChip, { borderColor: selected ? C.brinjal1 : genderError ? C.error : C.border, backgroundColor: selected ? C.primaryLight : C.surface }]}
+                        onPress={() => { setGender(selected ? '' : g); setStep1Error(''); }}>
+                        <Text style={[styles.genderChipText, { color: selected ? C.brinjal1 : C.text, fontFamily: selected ? F.bold : F.regular }]}>
+                          {g}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+                {genderError && <Text style={[styles.fieldError, { color: C.error }]}>{genderError}</Text>}
+              </View>
+
+              {/* Location */}
+              <View style={[styles.formGroup, { zIndex: 10 }]}>
+                <Text style={[styles.formLabel, { color: C.text }]}>Location <Text style={{ color: C.error }}>*</Text></Text>
+                <View>
+                  <TextInput
+                    style={[styles.formInput, { backgroundColor: C.surface, borderColor: locationError ? C.error : C.border, color: C.text }]}
+                    value={location}
+                    onChangeText={handleLocationChange}
+                    placeholder="e.g. Kathmandu, Thamel"
+                    placeholderTextColor={C.textSecondary}
+                    autoCapitalize="words"
+                  />
+                  {locationSuggestions.length > 0 && (
+                    <View style={[styles.suggestBox, { backgroundColor: C.surface, borderColor: C.border }]}>
+                      {locationSuggestions.map((place, i) => (
+                        <Pressable
+                          key={place.place_id}
+                          style={[styles.suggestItem, i < locationSuggestions.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}
+                          onPress={() => { setLocation(place.description); setLocationSuggestions([]); }}>
+                          <Text style={styles.suggestPin}>📍</Text>
+                          <Text style={[styles.suggestText, { color: C.text }]} numberOfLines={2}>{place.description}</Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                  )}
+                </View>
+                {locationError && <Text style={[styles.fieldError, { color: C.error }]}>{locationError}</Text>}
+              </View>
+
+            </View>
+
+            <Pressable
+              style={[styles.primaryBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 },
+                (!step1Valid || step1Loading) && styles.primaryBtnDisabled]}
+              onPress={handleStep1Continue}
+              disabled={step1Loading}>
+              {step1Loading ? (
+                <View style={styles.loadingRow}>
+                  <View style={[styles.spinner, { borderTopColor: '#fff' }]} />
+                  <Text style={styles.primaryBtnText}>Saving…</Text>
+                </View>
+              ) : (
+                <Text style={styles.primaryBtnText}>Continue</Text>
+              )}
+            </Pressable>
+            <Text style={[styles.finishNote, { color: C.textSecondary }]}>Fields marked * are required.</Text>
+
+          </ScrollView>
+        )}
+
+        {/* ────────── Step 2: Categories ────────── */}
+        {step === 2 && (
           <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
 
             <View style={styles.selectionBadgeRow}>
@@ -183,7 +389,7 @@ export default function OnboardingScreen() {
               )}
             </View>
 
-            {step1Submitted && selectedCategories.length === 0 && (
+            {step2Submitted && selectedCategories.length === 0 && (
               <View style={[styles.errorBanner, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}>
                 <Text style={[styles.errorBannerText, { color: C.error }]}>
                   Please select at least 1 category to continue.
@@ -191,9 +397,9 @@ export default function OnboardingScreen() {
               </View>
             )}
 
-            {step1Error ? (
+            {step2Error ? (
               <View style={[styles.errorBanner, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}>
-                <Text style={[styles.errorBannerText, { color: C.error }]}>{step1Error}</Text>
+                <Text style={[styles.errorBannerText, { color: C.error }]}>{step2Error}</Text>
               </View>
             ) : null}
 
@@ -222,94 +428,8 @@ export default function OnboardingScreen() {
             </View>
 
             <Pressable
-              style={[styles.primaryBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 },
-                (selectedCategories.length === 0 || step1Loading) && styles.primaryBtnDisabled]}
-              onPress={handleStep1Continue}
-              disabled={step1Loading}>
-              {step1Loading ? (
-                <View style={styles.loadingRow}>
-                  <View style={[styles.spinner, { borderTopColor: '#fff' }]} />
-                  <Text style={styles.primaryBtnText}>Saving…</Text>
-                </View>
-              ) : (
-                <Text style={styles.primaryBtnText}>Continue</Text>
-              )}
-            </Pressable>
-
-          </ScrollView>
-        )}
-
-        {/* ────────── Step 2: About you ────────── */}
-        {step === 2 && (
-          <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-
-            {step2Error ? (
-              <View style={[styles.errorBanner, { backgroundColor: '#FEF2F2', borderColor: '#FECACA', marginBottom: 16 }]}>
-                <Text style={[styles.errorBannerText, { color: C.error }]}>{step2Error}</Text>
-              </View>
-            ) : null}
-
-            <View style={styles.form}>
-
-              <View style={styles.formGroup}>
-                <Text style={[styles.formLabel, { color: C.text }]}>Username <Text style={{ color: C.error }}>*</Text></Text>
-                <View style={[styles.usernameRow, { backgroundColor: C.surface, borderColor: usernameError ? C.error : C.border }]}>
-                  <Text style={[styles.atSign, { color: C.brinjal1 }]}>@</Text>
-                  <TextInput
-                    style={[styles.usernameInput, { color: C.text }]}
-                    value={username}
-                    onChangeText={(t) => {
-                      setStep2Error('');
-                      setUsername(t.replace(/[^a-zA-Z0-9_]/g, '').slice(0, 20));
-                    }}
-                    placeholder="yourhandle"
-                    placeholderTextColor={C.textSecondary}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                  />
-                  <Text style={[styles.usernameLimit, { color: C.textSecondary }]}>{username.length}/20</Text>
-                </View>
-                {usernameError && <Text style={[styles.fieldError, { color: C.error }]}>{usernameError}</Text>}
-              </View>
-
-              <View style={styles.formGroup}>
-                <Text style={[styles.formLabel, { color: C.text }]}>Bio <Text style={{ color: C.error }}>*</Text></Text>
-                <TextInput
-                  style={[styles.formInput, styles.formTextarea, { backgroundColor: C.surface, borderColor: bioError ? C.error : C.border, color: C.text }]}
-                  value={bio}
-                  onChangeText={(t) => setBio(t.slice(0, 250))}
-                  placeholder="Tell brands what you create and what makes you unique..."
-                  placeholderTextColor={C.textSecondary}
-                  multiline
-                  numberOfLines={4}
-                  textAlignVertical="top"
-                />
-                <View style={styles.charCountRow}>
-                  {bioError && <Text style={[styles.fieldError, { color: C.error }]}>{bioError}</Text>}
-                  <Text style={[styles.charCount, { color: bio.length >= 250 ? C.error : C.textSecondary }]}>
-                    {bio.length} / 250
-                  </Text>
-                </View>
-              </View>
-
-              <View style={styles.formGroup}>
-                <Text style={[styles.formLabel, { color: C.text }]}>City <Text style={{ color: C.error }}>*</Text></Text>
-                <TextInput
-                  style={[styles.formInput, { backgroundColor: C.surface, borderColor: cityError ? C.error : C.border, color: C.text }]}
-                  value={city}
-                  onChangeText={setCity}
-                  placeholder="e.g. Kathmandu"
-                  placeholderTextColor={C.textSecondary}
-                  autoCapitalize="words"
-                />
-                {cityError && <Text style={[styles.fieldError, { color: C.error }]}>{cityError}</Text>}
-              </View>
-
-            </View>
-
-            <Pressable
-              style={[styles.primaryBtn, styles.primaryBtnFinish, { backgroundColor: C.active, shadowColor: C.active },
-                (step2Loading) && styles.primaryBtnDisabled]}
+              style={[styles.primaryBtn, { backgroundColor: C.active, shadowColor: C.active },
+                (selectedCategories.length === 0 || step2Loading) && styles.primaryBtnDisabled]}
               onPress={handleStep2Finish}
               disabled={step2Loading}>
               {step2Loading ? (
@@ -318,10 +438,9 @@ export default function OnboardingScreen() {
                   <Text style={styles.primaryBtnText}>Saving…</Text>
                 </View>
               ) : (
-                <Text style={styles.primaryBtnText}>Finish Setup  →</Text>
+                <Text style={styles.primaryBtnText}>Complete Setup →</Text>
               )}
             </Pressable>
-            <Text style={[styles.finishNote, { color: C.textSecondary }]}>All fields marked * are required.</Text>
 
           </ScrollView>
         )}
@@ -344,8 +463,37 @@ const styles = StyleSheet.create({
   stepTitle: { fontSize: 24, fontWeight: '800', fontFamily: F.extrabold },
   stepSubtitle: { fontSize: 14, lineHeight: 20, marginTop: 4, fontFamily: F.regular },
   scrollContent: { paddingHorizontal: 20, paddingBottom: 48 },
-  errorBanner: { borderRadius: 10, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 8 },
+  errorBanner: { borderRadius: 10, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 12 },
   errorBannerText: { fontSize: 13, fontWeight: '600', fontFamily: F.semibold },
+
+  form: { gap: 16, marginBottom: 28 },
+  formGroup: { gap: 6 },
+  labelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  formLabel: { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
+  optionalTag: { fontSize: 12, fontWeight: '500', fontFamily: F.medium },
+  formInput: { borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 13, fontSize: 15, fontFamily: F.regular },
+  fieldError: { fontSize: 12, fontWeight: '500', fontFamily: F.medium },
+  fieldHint: { fontSize: 11, fontFamily: F.regular },
+
+  usernameRow: { flexDirection: 'row', alignItems: 'center', borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14 },
+  atSign: { fontSize: 16, fontWeight: '700', marginRight: 2, fontFamily: F.bold },
+  usernameInput: { flex: 1, fontSize: 15, paddingVertical: 13, fontFamily: F.regular },
+  usernameLimit: { fontSize: 11, fontFamily: F.regular },
+
+  suggestBox:  { borderRadius: 12, borderWidth: 1.5, marginTop: 6, overflow: 'hidden', elevation: 10, zIndex: 20 },
+  suggestItem: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, gap: 10 },
+  suggestPin:  { fontSize: 14 },
+  suggestText: { fontSize: 13, flex: 1, fontFamily: F.regular },
+
+  genderRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  genderChip: { borderRadius: 20, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 9 },
+  genderChipText: { fontSize: 13 },
+
+  suggestionLabel: { fontSize: 11, fontFamily: F.medium, marginTop: 8, marginBottom: 6 },
+  suggestionRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  suggestionChip: { borderRadius: 16, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 6 },
+  suggestionChipText: { fontSize: 13, fontFamily: F.semibold },
+
   selectionBadgeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
   selectionBadge: { alignSelf: 'flex-start', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 5 },
   selectionText: { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
@@ -356,25 +504,14 @@ const styles = StyleSheet.create({
   categoryEmoji: { fontSize: 16 },
   categoryLabel: { fontSize: 13, fontWeight: '500', fontFamily: F.medium },
   categoryCheck: { fontSize: 11, fontWeight: '800', fontFamily: F.extrabold },
-  form: { gap: 16, marginBottom: 28 },
-  formGroup: { gap: 6 },
-  formLabel: { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
-  formInput: { borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 13, fontSize: 15, fontFamily: F.regular },
-  formTextarea: { minHeight: 110, paddingTop: 12 },
-  charCountRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  charCount: { alignSelf: 'flex-end', fontSize: 11, fontFamily: F.regular },
-  usernameRow: { flexDirection: 'row', alignItems: 'center', borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14 },
-  atSign: { fontSize: 16, fontWeight: '700', marginRight: 2, fontFamily: F.bold },
-  usernameInput: { flex: 1, fontSize: 15, paddingVertical: 13, fontFamily: F.regular },
-  usernameLimit: { fontSize: 11, fontFamily: F.regular },
-  fieldError: { fontSize: 12, fontWeight: '500', fontFamily: F.medium },
+
   loadingRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   spinner: { width: 16, height: 16, borderRadius: 8, borderWidth: 2, borderColor: 'rgba(255,255,255,0.35)' },
   primaryBtn: { borderRadius: 14, paddingVertical: 15, alignItems: 'center', shadowOpacity: 0.25, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 5, marginBottom: 12 },
-  primaryBtnFinish: {},
   primaryBtnDisabled: { opacity: 0.45, shadowOpacity: 0, elevation: 0 },
   primaryBtnText: { color: '#fff', fontSize: 16, fontWeight: '700', fontFamily: F.bold },
   finishNote: { textAlign: 'center', fontSize: 12, marginTop: 4, fontFamily: F.regular },
+
   successContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 },
   successContent: { alignItems: 'center', gap: 16 },
   checkCircle: { width: 110, height: 110, borderRadius: 55, justifyContent: 'center', alignItems: 'center', shadowOpacity: 0.35, shadowRadius: 20, shadowOffset: { width: 0, height: 8 }, elevation: 10, marginBottom: 8 },

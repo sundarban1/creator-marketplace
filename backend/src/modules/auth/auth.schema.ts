@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const registerSchema = z.object({
   email: z.string().email('Invalid email address'),
-  phone: z.string().min(7, 'Phone number is too short').max(15, 'Phone number is too long').regex(/^\+?[\d\s\-().]+$/, 'Invalid phone number'),
+  phone: z.string().min(7, 'Phone number is too short').max(15, 'Phone number is too long').regex(/^\+?[\d\s\-().]+$/, 'Invalid phone number').optional(),
   password: z
     .string()
     .min(8, 'Password must be at least 8 characters')
@@ -13,17 +13,7 @@ export const registerSchema = z.object({
   }),
   fullName: z.string().min(2, 'Full name must be at least 2 characters').optional(),
   businessName: z.string().min(2, 'Business name must be at least 2 characters').optional(),
-}).refine(
-  (data) => {
-    if (data.role === 'CREATOR' && !data.fullName) return false;
-    if (data.role === 'BUSINESS' && !data.businessName) return false;
-    return true;
-  },
-  {
-    message: 'fullName is required for CREATOR role, businessName is required for BUSINESS role',
-    path: ['fullName'],
-  }
-);
+});
 
 export const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -65,6 +55,15 @@ export const verifyResetOtpSchema = z.object({
   code:  z.string().length(6, 'Code must be 6 digits').regex(/^\d{6}$/, 'Code must be numeric'),
 });
 
+export const requestPhoneOtpSchema = z.object({
+  phone: z.string().min(7).max(15).regex(/^\+?[\d\s\-().]+$/, 'Invalid phone number'),
+});
+
+export const verifyPhoneOtpSchema = z.object({
+  phone: z.string().min(7).max(15).regex(/^\+?[\d\s\-().]+$/, 'Invalid phone number'),
+  code:  z.string().length(6, 'Code must be 6 digits').regex(/^\d{6}$/, 'Code must be numeric'),
+});
+
 export type RegisterInput              = z.infer<typeof registerSchema>;
 export type LoginInput                 = z.infer<typeof loginSchema>;
 export type RefreshTokenInput          = z.infer<typeof refreshTokenSchema>;
@@ -74,3 +73,5 @@ export type VerifyOtpInput             = z.infer<typeof verifyOtpSchema>;
 export type ResendOtpInput             = z.infer<typeof resendOtpSchema>;
 export type ForgotPasswordByPhoneInput = z.infer<typeof forgotPasswordByPhoneSchema>;
 export type VerifyResetOtpInput        = z.infer<typeof verifyResetOtpSchema>;
+export type RequestPhoneOtpInput       = z.infer<typeof requestPhoneOtpSchema>;
+export type VerifyPhoneOtpInput        = z.infer<typeof verifyPhoneOtpSchema>;

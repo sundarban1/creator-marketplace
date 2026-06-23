@@ -9,8 +9,15 @@ exports.updateBusinessProfileSchema = zod_1.z.object({
     website: zod_1.z.string().url('Invalid website URL').optional().nullable(),
     categories: zod_1.z.array(zod_1.z.string()).optional(),
     panNo: zod_1.z.string().optional().nullable(),
+    location: zod_1.z.string().optional().nullable(),
     showPublicProfile: zod_1.z.boolean().optional(),
     hideContactDetails: zod_1.z.boolean().optional(),
     allowDirectMessages: zod_1.z.boolean().optional(),
+    socialLinks: zod_1.z.object({
+        facebook: zod_1.z.string().optional(),
+        instagram: zod_1.z.string().optional(),
+        tiktok: zod_1.z.string().optional(),
+        linkedin: zod_1.z.string().optional(),
+    }).optional(),
 });
 //# sourceMappingURL=business.schema.js.map

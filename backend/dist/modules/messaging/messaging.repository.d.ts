@@ -5,11 +5,11 @@ export declare class MessagingRepository {
             title: string;
         } | null;
         business: {
-            businessName: string;
+            businessName: string | null;
             logoUrl: string | null;
         };
         creator: {
-            fullName: string;
+            fullName: string | null;
             avatarUrl: string | null;
         };
     } & {
@@ -29,7 +29,7 @@ export declare class MessagingRepository {
             title: string;
         } | null;
         business: {
-            businessName: string;
+            businessName: string | null;
             logoUrl: string | null;
         };
         messages: {
@@ -56,7 +56,7 @@ export declare class MessagingRepository {
             title: string;
         } | null;
         creator: {
-            fullName: string;
+            fullName: string | null;
             avatarUrl: string | null;
         };
         messages: {
@@ -83,11 +83,11 @@ export declare class MessagingRepository {
             title: string;
         } | null;
         business: {
-            businessName: string;
+            businessName: string | null;
             logoUrl: string | null;
         };
         creator: {
-            fullName: string;
+            fullName: string | null;
             avatarUrl: string | null;
         };
     } & {

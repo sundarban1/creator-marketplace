@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { campaignService } from '@/services/campaign';
 import { creatorService, type SavedCreatorItem } from '@/services/creator';
 import { CATEGORY_META, DEFAULT_META, cardBg } from '@/features/creator/data/filterOptions';
@@ -48,6 +49,7 @@ function initials(name: string) {
 
 export default function CampaignsScreen() {
   const C = useAppColors();
+  const { t } = useLanguage();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -142,11 +144,11 @@ export default function CampaignsScreen() {
       <LinearGradient colors={['#4F46E5', '#7C3AED', '#9333EA']} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientHeader}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={[styles.pageTitle, { color: '#fff' }]}>Campaigns</Text>
+          <Text style={[styles.pageTitle, { color: '#fff' }]}>{t('campaigns.title')}</Text>
           <Pressable
             style={[styles.newBtn, { backgroundColor: 'rgba(255,255,255,0.25)' }]}
             onPress={() => router.push('/create-campaign')}>
-            <Text style={[styles.newBtnText, { color: '#fff' }]}>+ New</Text>
+            <Text style={[styles.newBtnText, { color: '#fff' }]}>{t('business.newBtn')}</Text>
           </Pressable>
         </View>
       </LinearGradient>
@@ -187,16 +189,16 @@ export default function CampaignsScreen() {
             <View style={styles.emptyState}>
               <Text style={styles.emptyIcon}>📋</Text>
               <Text style={[styles.emptyTitle, { color: C.text }]}>
-                {activeFilter === 'All' ? 'No campaigns yet' : `No ${activeFilter.toLowerCase()} campaigns`}
+                {activeFilter === 'All' ? t('campaigns.noCampaigns') : `${t('campaigns.' + activeFilter.toLowerCase())} campaigns`}
               </Text>
               <Text style={[styles.emptySub, { color: C.textSecondary }]}>
-                {activeFilter === 'All' ? 'Create your first campaign to find creators.' : 'Try a different filter.'}
+                {activeFilter === 'All' ? t('campaigns.createFirst') : t('explore.adjustFilters')}
               </Text>
               {activeFilter === 'All' && (
                 <Pressable
                   style={[styles.emptyBtn, { backgroundColor: C.brinjal1 }]}
                   onPress={() => router.push('/create-campaign')}>
-                  <Text style={styles.emptyBtnText}>Create Campaign</Text>
+                  <Text style={styles.emptyBtnText}>{t('campaign.title')}</Text>
                 </Pressable>
               )}
             </View>
@@ -229,7 +231,7 @@ export default function CampaignsScreen() {
                         </Text>
                       ) : (
                         <Text style={[styles.stat, { color: C.textSecondary }]}>
-                          👥 {c.proposals} {c.proposals === 1 ? 'Proposal' : 'Proposals'}
+                          👥 {c.proposals === 1 ? t('campaigns.proposals', { count: c.proposals }) : t('campaigns.proposalsPlural', { count: c.proposals })}
                         </Text>
                       )}
                     </View>
@@ -245,7 +247,7 @@ export default function CampaignsScreen() {
                           <Pressable
                             style={({ pressed }) => [styles.footerBtn, pressed && { opacity: 0.7 }]}
                             onPress={() => openProposals(c)}>
-                            <Text style={[styles.footerBtnText, { color: C.brinjal1 }]}>View proposals →</Text>
+                            <Text style={[styles.footerBtnText, { color: C.brinjal1 }]}>{t('campaigns.viewProposals')} →</Text>
                           </Pressable>
                         )}
                         {c.status === 'active' && (
@@ -253,7 +255,7 @@ export default function CampaignsScreen() {
                             style={({ pressed }) => [styles.inviteBtn, { backgroundColor: C.primaryLight }, pressed && { opacity: 0.7 }]}
                             onPress={() => openInvite(c)}>
                             <Ionicons name="person-add-outline" size={13} color={C.brinjal1} />
-                            <Text style={[styles.inviteBtnText, { color: C.brinjal1 }]}>Invite</Text>
+                            <Text style={[styles.inviteBtnText, { color: C.brinjal1 }]}>{t('campaigns.invite')}</Text>
                           </Pressable>
                         )}
                       </View>
@@ -442,7 +444,7 @@ const styles = StyleSheet.create({
   newBtn: { borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8 },
   newBtnText: { color: '#fff', fontWeight: '700', fontSize: 13, fontFamily: F.bold },
 
-  filterRow: { flexDirection: 'row', paddingHorizontal: 20, gap: 8, paddingBottom: 16 },
+  filterRow: { flexDirection: 'row', paddingHorizontal: 20, gap: 8, paddingTop: 14, paddingBottom: 16 },
   filterChip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 1.5 },
   filterChipText: { fontSize: 12, fontWeight: '500', fontFamily: F.medium },
 
@@ -478,7 +480,7 @@ const styles = StyleSheet.create({
   footerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 9 },
   footerBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   footerBtnText: { fontSize: 12, fontWeight: '700', fontFamily: F.bold },
-  inviteBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 },
+  inviteBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, marginLeft: 'auto' },
   inviteBtnText: { fontSize: 12, fontWeight: '700', fontFamily: F.bold },
 
   modalBackdrop: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)' },

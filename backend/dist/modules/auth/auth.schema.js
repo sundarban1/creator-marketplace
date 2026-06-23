@@ -1,10 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.verifyResetOtpSchema = exports.forgotPasswordByPhoneSchema = exports.resendOtpSchema = exports.verifyOtpSchema = exports.resetPasswordSchema = exports.forgotPasswordSchema = exports.refreshTokenSchema = exports.loginSchema = exports.registerSchema = void 0;
+exports.verifyPhoneOtpSchema = exports.requestPhoneOtpSchema = exports.verifyResetOtpSchema = exports.forgotPasswordByPhoneSchema = exports.resendOtpSchema = exports.verifyOtpSchema = exports.resetPasswordSchema = exports.forgotPasswordSchema = exports.refreshTokenSchema = exports.loginSchema = exports.registerSchema = void 0;
 const zod_1 = require("zod");
 exports.registerSchema = zod_1.z.object({
     email: zod_1.z.string().email('Invalid email address'),
-    phone: zod_1.z.string().min(7, 'Phone number is too short').max(15, 'Phone number is too long').regex(/^\+?[\d\s\-().]+$/, 'Invalid phone number'),
+    phone: zod_1.z.string().min(7, 'Phone number is too short').max(15, 'Phone number is too long').regex(/^\+?[\d\s\-().]+$/, 'Invalid phone number').optional(),
     password: zod_1.z
         .string()
         .min(8, 'Password must be at least 8 characters')
@@ -15,15 +15,6 @@ exports.registerSchema = zod_1.z.object({
     }),
     fullName: zod_1.z.string().min(2, 'Full name must be at least 2 characters').optional(),
     businessName: zod_1.z.string().min(2, 'Business name must be at least 2 characters').optional(),
-}).refine((data) => {
-    if (data.role === 'CREATOR' && !data.fullName)
-        return false;
-    if (data.role === 'BUSINESS' && !data.businessName)
-        return false;
-    return true;
-}, {
-    message: 'fullName is required for CREATOR role, businessName is required for BUSINESS role',
-    path: ['fullName'],
 });
 exports.loginSchema = zod_1.z.object({
     email: zod_1.z.string().email('Invalid email address'),
@@ -54,6 +45,13 @@ exports.forgotPasswordByPhoneSchema = zod_1.z.object({
     phone: zod_1.z.string().min(7).max(15).regex(/^\+?[\d\s\-().]+$/, 'Invalid phone number'),
 });
 exports.verifyResetOtpSchema = zod_1.z.object({
+    phone: zod_1.z.string().min(7).max(15).regex(/^\+?[\d\s\-().]+$/, 'Invalid phone number'),
+    code: zod_1.z.string().length(6, 'Code must be 6 digits').regex(/^\d{6}$/, 'Code must be numeric'),
+});
+exports.requestPhoneOtpSchema = zod_1.z.object({
+    phone: zod_1.z.string().min(7).max(15).regex(/^\+?[\d\s\-().]+$/, 'Invalid phone number'),
+});
+exports.verifyPhoneOtpSchema = zod_1.z.object({
     phone: zod_1.z.string().min(7).max(15).regex(/^\+?[\d\s\-().]+$/, 'Invalid phone number'),
     code: zod_1.z.string().length(6, 'Code must be 6 digits').regex(/^\d{6}$/, 'Code must be numeric'),
 });

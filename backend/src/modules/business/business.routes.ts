@@ -5,6 +5,7 @@ import { SavedCreatorController } from './saved-creator.controller';
 import { authenticate, authorize } from '../../middleware/auth';
 import { validate } from '../../middleware/validate';
 import { updateBusinessProfileSchema } from './business.schema';
+import { uploadImage } from '../../middleware/upload';
 
 const router      = Router();
 const ctrl        = new BusinessController();
@@ -28,5 +29,6 @@ router.post('/campaigns/:campaignId/invite', savedCtrl.inviteCreators.bind(saved
 // Profile
 router.get('/profile', ctrl.getProfile.bind(ctrl));
 router.put('/profile', validate(updateBusinessProfileSchema), ctrl.updateProfile.bind(ctrl));
+router.post('/logo', uploadImage.single('logo'), ctrl.uploadLogo.bind(ctrl));
 
 export default router;

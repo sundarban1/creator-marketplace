@@ -33,7 +33,7 @@ export const authService = {
 
   async register(payload: {
     email:         string;
-    phone:         string;
+    phone?:        string;
     password:      string;
     role:          'CREATOR' | 'BUSINESS';
     fullName?:     string;
@@ -91,6 +91,22 @@ export const authService = {
   async getStoredUser(): Promise<User | null> {
     await storage.hydrate([ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, USER_KEY]);
     return storage.getJSON<User>(USER_KEY);
+  },
+
+  async sendWelcomeEmail(email: string): Promise<void> {
+    try {
+      await request('POST', '/api/auth/send-welcome-email', { email });
+    } catch {
+      // best-effort — don't block the verification flow
+    }
+  },
+
+  async requestPhoneOtp(phone: string): Promise<void> {
+    await request('POST', '/api/auth/request-phone-otp', { phone });
+  },
+
+  async verifyPhoneOtp(phone: string, code: string): Promise<void> {
+    await request('POST', '/api/auth/verify-phone-otp', { phone, code });
   },
 
   async deactivateAccount(): Promise<void> {

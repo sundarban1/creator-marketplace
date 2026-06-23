@@ -35,7 +35,7 @@ export default function HomeScreen() {
 
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
-  const [activeFilterTab, setActiveFilterTab] = useState(-1); // -1 = show all
+  const [activeFilterTab, setActiveFilterTab] = useState(0); // 0 = New
   const [showBanner, setShowBanner] = useState(true);
   const [priceMin, setPriceMin] = useState(0);
   const [priceMax, setPriceMax] = useState(SLIDER_MAX);

@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { BusinessService } from './business.service';
 import { success } from '../../utils/response';
+import { uploadImage as uploadToCloudinary } from '../../utils/cloudinary';
+import { AppError } from '../../middleware/error';
 
 const businessService = new BusinessService();
 
@@ -47,6 +49,21 @@ export class BusinessController {
     try {
       const business = await businessService.getBusinessPublic(req.params.id);
       success(res, business, 'Business retrieved successfully');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async uploadLogo(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.file) throw new AppError('No image file provided', 400);
+      const logoUrl = await uploadToCloudinary(
+        req.file.buffer,
+        'businesses/logos',
+        `business_${req.user!.id}`,
+      );
+      const profile = await businessService.updateProfile(req.user!.id, { logoUrl });
+      success(res, { logoUrl: profile.logoUrl }, 'Logo updated');
     } catch (err) {
       next(err);
     }

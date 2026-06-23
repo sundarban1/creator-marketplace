@@ -53,6 +53,19 @@ class FavoriteController {
             next(err);
         }
     }
+    async listFavoriteBusinesses(req, res, next) {
+        try {
+            const creator = await creatorRepo.findByUserId(req.user.id);
+            if (!creator)
+                throw new error_1.AppError('Creator profile not found', 404);
+            const rows = await favoriteRepo.getFavoriteBusinesses(creator.id);
+            const businesses = rows.map((r) => r.business);
+            res.json({ success: true, data: businesses });
+        }
+        catch (err) {
+            next(err);
+        }
+    }
 }
 exports.FavoriteController = FavoriteController;
 //# sourceMappingURL=favorite.controller.js.map

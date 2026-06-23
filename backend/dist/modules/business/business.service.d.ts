@@ -15,11 +15,12 @@ export declare class BusinessService {
         createdAt: Date;
         updatedAt: Date;
         userId: string;
-        businessName: string;
+        businessName: string | null;
         logoUrl: string | null;
         website: string | null;
         categories: string[];
         panNo: string | null;
+        location: string | null;
         isVerified: boolean;
         allowDirectMessages: boolean;
         hideContactDetails: boolean;
@@ -31,11 +32,12 @@ export declare class BusinessService {
         createdAt: Date;
         updatedAt: Date;
         userId: string;
-        businessName: string;
+        businessName: string | null;
         logoUrl: string | null;
         website: string | null;
         categories: string[];
         panNo: string | null;
+        location: string | null;
         isVerified: boolean;
         allowDirectMessages: boolean;
         hideContactDetails: boolean;
@@ -52,7 +54,7 @@ export declare class BusinessService {
         businesses: {
             description: string | null;
             id: string;
-            businessName: string;
+            businessName: string | null;
             logoUrl: string | null;
             website: string | null;
             categories: string[];
@@ -68,7 +70,7 @@ export declare class BusinessService {
         id: string;
         createdAt: Date;
         userId: string;
-        businessName: string;
+        businessName: string | null;
         logoUrl: string | null;
         website: string | null;
         categories: string[];
@@ -78,10 +80,10 @@ export declare class BusinessService {
         showPublicProfile: boolean;
         campaigns: {
             id: string;
+            location: string | null;
             _count: {
                 applications: number;
             };
-            location: string | null;
             platform: string;
             title: string;
             category: string;

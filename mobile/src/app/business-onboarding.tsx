@@ -21,10 +21,6 @@ import { F } from '@/utilities/constants';
 const GOOGLE_PLACES_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY ?? '';
 type PlacePrediction = { place_id: string; description: string };
 
-const DEFAULT_DESCRIPTION =
-  "We're a local business passionate about delivering quality products and services to our community. We partner with creators who share our values and help us connect with the right audience through authentic, engaging content.";
-
-
 const BUSINESS_CATEGORIES = [
   { emoji: '🍔', label: 'Food & Beverage' },
   { emoji: '👗', label: 'Fashion & Apparel' },
@@ -56,13 +52,14 @@ export default function BusinessOnboardingScreen() {
   const [step, setStep] = useState(1);
 
   // Step 1
+  const [businessName, setBusinessName] = useState('');
   const [panNo, setPanNo] = useState('');
   const [location, setLocation] = useState('');
   const [locationSuggestions, setLocationSuggestions] = useState<PlacePrediction[]>([]);
   const locationDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [description, setDescription] = useState(DEFAULT_DESCRIPTION);
   const [step1Loading, setStep1Loading] = useState(false);
   const [step1Error, setStep1Error] = useState('');
+  const [step1Submitted, setStep1Submitted] = useState(false);
 
   // Step 2
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -107,14 +104,17 @@ export default function BusinessOnboardingScreen() {
   }
 
   async function handleStep1Continue() {
+    setStep1Submitted(true);
+    if (!businessName.trim()) return;
     setStep1Loading(true);
     setStep1Error('');
     try {
       await profileService.updateBusinessProfile({
-        description: description.trim() || undefined,
+        businessName: businessName.trim(),
         panNo: panNo.trim() || undefined,
         location: location.trim() || null,
       });
+      updateUser({ name: businessName.trim() });
       setStep(2);
     } catch (e: any) {
       setStep1Error(e.message ?? 'Failed to save. Please try again.');
@@ -126,7 +126,6 @@ export default function BusinessOnboardingScreen() {
   async function handleFinish() {
     setCategorySubmitted(true);
     if (selectedCategories.length === 0) return;
-
     setStep2Loading(true);
     setStep2Error('');
     try {
@@ -165,9 +164,11 @@ export default function BusinessOnboardingScreen() {
     );
   }
 
+  const businessNameError = step1Submitted && !businessName.trim() ? 'Business name is required' : undefined;
+
   const STEP_CONFIG = [
-    { title: 'Tell us about your business', subtitle: 'Help creators understand who you are. You can update this anytime.', skippable: false },
-    { title: 'What industry are you in?', subtitle: 'Select at least 1 and up to 3 categories that describe your business.', skippable: false },
+    { title: 'Tell us about your business', subtitle: 'Basic details that appear on your public profile.' },
+    { title: 'What industry are you in?', subtitle: 'Select at least 1 and up to 3 categories that describe your business.' },
   ];
   const { title, subtitle } = STEP_CONFIG[step - 1];
 
@@ -209,6 +210,28 @@ export default function BusinessOnboardingScreen() {
                 <Text style={[styles.errorBannerText, { color: C.error }]}>{step1Error}</Text>
               </View>
             ) : null}
+
+            {/* Business Name */}
+            <View style={styles.fieldGroup}>
+              <Text style={[styles.fieldLabel, { color: C.text, marginBottom: 8 }]}>
+                Business Name <Text style={{ color: C.error }}>*</Text>
+              </Text>
+              <TextInput
+                style={[styles.input, { backgroundColor: C.surface, borderColor: businessNameError ? C.error : C.border, color: C.text }]}
+                value={businessName}
+                onChangeText={(t) => { setStep1Error(''); setBusinessName(t); }}
+                placeholder="e.g. Himalayan Trekking Co."
+                placeholderTextColor={C.textSecondary}
+                autoCapitalize="words"
+              />
+              {businessNameError ? (
+                <Text style={[styles.fieldError, { color: C.error }]}>{businessNameError}</Text>
+              ) : (
+                <Text style={[styles.inputHint, { color: C.textSecondary }]}>
+                  This will appear on your public profile and campaign listings.
+                </Text>
+              )}
+            </View>
 
             {/* PAN No */}
             <View style={styles.fieldGroup}>
@@ -261,30 +284,6 @@ export default function BusinessOnboardingScreen() {
               <Text style={[styles.inputHint, { color: C.textSecondary }]}>
                 Creators will use this as a default location for your campaigns.
               </Text>
-            </View>
-
-            {/* Description */}
-            <View style={styles.fieldGroup}>
-              <View style={styles.labelRow}>
-                <Text style={[styles.fieldLabel, { color: C.text }]}>Business Description</Text>
-                <Text style={[styles.optionalTag, { color: C.textSecondary }]}>Optional</Text>
-              </View>
-              <TextInput
-                style={[styles.input, styles.textarea, { backgroundColor: C.surface, borderColor: C.border, color: C.text }]}
-                value={description}
-                onChangeText={(t) => setDescription(t.slice(0, 500))}
-                placeholder="Describe your business — what you sell, your values, and the kind of creators you want to work with..."
-                placeholderTextColor={C.textSecondary}
-                multiline
-                numberOfLines={5}
-                textAlignVertical="top"
-              />
-              <View style={styles.charRow}>
-                <View />
-                <Text style={[styles.charCount, { color: description.length > 480 ? C.draft : C.textSecondary }]}>
-                  {description.length} / 500
-                </Text>
-              </View>
             </View>
 
             <Pressable

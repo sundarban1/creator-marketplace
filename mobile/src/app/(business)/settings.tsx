@@ -19,6 +19,7 @@ import { useToast } from '@/components/Toast';
 import { useAppColors, useIsDark } from '@/context/ThemeContext';
 import { businessService } from '@/services/business';
 import { authService } from '@/services/auth';
+import { profileService, type SocialLinks } from '@/services/profile';
 import { COLORS, F } from '@/utilities/constants';
 
 type ColorsType = typeof COLORS;
@@ -120,12 +121,17 @@ function SwitchRow({ label, icon, iconNode, sub, value, onChange, isLast = false
   );
 }
 
-type NavRowProps = { icon?: string; label: string; sub?: string; value?: string; badge?: string; onPress: () => void; danger?: boolean; isLast?: boolean };
-function NavRow({ icon, label, sub, value, badge, onPress, danger = false, isLast = false }: NavRowProps) {
+type NavRowProps = { icon?: string; ionIcon?: keyof typeof Ionicons.glyphMap; ionIconColor?: string; label: string; sub?: string; value?: string; badge?: string; onPress: () => void; danger?: boolean; isLast?: boolean };
+function NavRow({ icon, ionIcon, ionIconColor, label, sub, value, badge, onPress, danger = false, isLast = false }: NavRowProps) {
   const C = useContext(ColorCtx);
+  const iColor = ionIconColor ?? C.brinjal1;
   return (
     <Pressable style={[styles.row, !isLast && { borderBottomWidth: 1, borderBottomColor: C.border }]} onPress={onPress}>
-      {icon ? <Text style={styles.rowIcon}>{icon}</Text> : null}
+      {ionIcon ? (
+        <View style={[styles.navIonIconWrap, { backgroundColor: iColor + '18' }]}>
+          <Ionicons name={ionIcon} size={18} color={iColor} />
+        </View>
+      ) : icon ? <Text style={styles.rowIcon}>{icon}</Text> : null}
       <View style={{ flex: 1 }}>
         <Text style={[styles.rowLabel, { color: danger ? C.error : C.text }]}>{label}</Text>
         {sub ? <Text style={[styles.rowSub, { color: C.textSecondary }]}>{sub}</Text> : null}
@@ -174,18 +180,26 @@ export default function BusinessSettingsScreen() {
 
   const [subPage, setSubPage] = useState<string | null>(null);
 
+  // ── Accordion (support sub-pages) ──
+  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+  function toggleExpand(id: string) {
+    setExpandedItems((prev) => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
+  }
+  useEffect(() => { setExpandedItems(new Set()); }, [subPage]);
+
   // ── Section 1: Business Profile ──
   const [bizName, setBizName] = useState(user?.name ?? '');
   const [bizCategory, setBizCategory] = useState<string[]>([]);
   const [bizDescription, setBizDescription] = useState('');
   const [website, setWebsite] = useState('');
-  const [facebook, setFacebook] = useState('');
-  const [instagram, setInstagram] = useState('');
-  const [tiktok, setTiktok] = useState('');
   const [location, setLocation] = useState('');
   const [contactName, setContactName] = useState('');
   const [contactEmail, setContactEmail] = useState(user?.email ?? '');
   const [contactPhone, setContactPhone] = useState('');
+
+  // ── Social Links (Online Presence) ──
+  const [socialLinks, setSocialLinks] = useState<SocialLinks>({});
+  const [socialSaving, setSocialSaving] = useState(false);
 
   // ── Section 2: Account ──
   const [newPw, setNewPw] = useState('');
@@ -193,6 +207,15 @@ export default function BusinessSettingsScreen() {
   const [pwSubmitted, setPwSubmitted] = useState(false);
   const [showNewPw, setShowNewPw] = useState(false);
   const [showConfirmPw, setShowConfirmPw] = useState(false);
+
+  // ── Phone verification ──
+  type PhoneVerifyStage = 'idle' | 'enter-phone' | 'enter-otp' | 'verified';
+  const [phoneStage,     setPhoneStage]     = useState<PhoneVerifyStage>('idle');
+  const [phoneInput,     setPhoneInput]     = useState('');
+  const [phoneOtp,       setPhoneOtp]       = useState('');
+  const [phoneLoading,   setPhoneLoading]   = useState(false);
+  const [phoneError,     setPhoneError]     = useState('');
+  const [verifiedPhone,  setVerifiedPhone]  = useState('');
 
   // ── Section 3: Notifications ──
   const [notifApplications, setNotifApplications] = useState(true);
@@ -236,6 +259,9 @@ export default function BusinessSettingsScreen() {
       setHideContactDetails(p.hideContactDetails);
       setAllowDirectMessages(p.allowDirectMessages);
     }).catch(() => {});
+    profileService.getBusinessProfile().then((p) => {
+      setSocialLinks(p.socialLinks ?? {});
+    }).catch(() => {});
   }, []);
 
   // ── Support forms ──
@@ -261,11 +287,23 @@ export default function BusinessSettingsScreen() {
   }
 
   function togglePayment(arr: string[], setArr: (v: string[]) => void, id: string) {
-    setArr((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
+    setArr(arr.includes(id) ? arr.filter((x) => x !== id) : [...arr, id]);
   }
 
   function handleSaveProfile() {
     showToast('Business profile saved!');
+  }
+
+  async function handleSaveSocialLinks() {
+    setSocialSaving(true);
+    try {
+      await profileService.updateBusinessProfile({ socialLinks });
+      showToast('Online presence saved!');
+    } catch {
+      toast.error('Failed to save. Please try again.');
+    } finally {
+      setSocialSaving(false);
+    }
   }
 
   function handleSavePayment() {
@@ -315,6 +353,54 @@ export default function BusinessSettingsScreen() {
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete Account', style: 'destructive', onPress: logout },
     ]);
+  }
+
+  function isValidNepaliPhone(phone: string): boolean {
+    const stripped = phone.replace(/^\+?977/, '').replace(/[\s\-()]/g, '');
+    return /^(97|98)\d{8}$/.test(stripped);
+  }
+
+  function normalisePhone(phone: string): string {
+    const stripped = phone.replace(/[\s\-()]/g, '');
+    if (stripped.startsWith('+977')) return stripped;
+    if (stripped.startsWith('977')) return `+${stripped}`;
+    return `+977${stripped}`;
+  }
+
+  async function handleSendPhoneOtp() {
+    setPhoneError('');
+    if (!isValidNepaliPhone(phoneInput)) {
+      setPhoneError('Enter a valid Nepali mobile number (starts with 97 or 98, 10 digits)');
+      return;
+    }
+    setPhoneLoading(true);
+    try {
+      await authService.requestPhoneOtp(normalisePhone(phoneInput));
+      setPhoneStage('enter-otp');
+      setPhoneOtp('');
+    } catch (e: any) {
+      setPhoneError(e.message ?? 'Failed to send OTP. Please try again.');
+    } finally {
+      setPhoneLoading(false);
+    }
+  }
+
+  async function handleVerifyPhoneOtp() {
+    setPhoneError('');
+    if (phoneOtp.length !== 6) {
+      setPhoneError('Enter the 6-digit code sent to your phone');
+      return;
+    }
+    setPhoneLoading(true);
+    try {
+      await authService.verifyPhoneOtp(normalisePhone(phoneInput), phoneOtp);
+      setVerifiedPhone(normalisePhone(phoneInput));
+      setPhoneStage('verified');
+    } catch (e: any) {
+      setPhoneError(e.message ?? 'Incorrect code. Please try again.');
+    } finally {
+      setPhoneLoading(false);
+    }
   }
 
   function removeCreator(id: string) {
@@ -430,14 +516,24 @@ export default function BusinessSettingsScreen() {
         <HintCard>
           <Text style={[styles.hintText, { color: C.brinjal1 }]}>Find answers to common questions about running campaigns on CreatorMarket.</Text>
         </HintCard>
-        {HELP_FAQS.map((item, i) => (
-          <View key={i} style={{ marginTop: 12, marginHorizontal: 16 }}>
-            <View style={[styles.faqCard, { backgroundColor: C.surface }]}>
-              <Text style={[styles.faqQ, { color: C.text }]}>{item.q}</Text>
-              <Text style={[styles.faqA, { color: C.textSecondary }]}>{item.a}</Text>
-            </View>
-          </View>
-        ))}
+        <View style={{ marginHorizontal: 16, gap: 8, marginTop: 8 }}>
+          {HELP_FAQS.map((item, i) => {
+            const id = String(i);
+            const open = expandedItems.has(id);
+            return (
+              <Pressable
+                key={i}
+                style={[styles.accordionCard, { backgroundColor: C.surface, borderColor: open ? C.brinjal1 : C.border }]}
+                onPress={() => toggleExpand(id)}>
+                <View style={styles.accordionHeader}>
+                  <Text style={[styles.accordionTitle, { color: C.text }]}>{item.q}</Text>
+                  <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={16} color={C.textSecondary} />
+                </View>
+                {open && <Text style={[styles.accordionBody, { color: C.textSecondary }]}>{item.a}</Text>}
+              </Pressable>
+            );
+          })}
+        </View>
       </>
     );
   }
@@ -548,16 +644,24 @@ export default function BusinessSettingsScreen() {
 
   function renderFAQs() {
     return (
-      <>
-        {FAQS.map((item, i) => (
-          <View key={i} style={{ marginTop: 10, marginHorizontal: 16 }}>
-            <View style={[styles.faqCard, { backgroundColor: C.surface }]}>
-              <Text style={[styles.faqQ, { color: C.text }]}>{item.q}</Text>
-              <Text style={[styles.faqA, { color: C.textSecondary }]}>{item.a}</Text>
-            </View>
-          </View>
-        ))}
-      </>
+      <View style={{ marginHorizontal: 16, gap: 8, marginTop: 8 }}>
+        {FAQS.map((item, i) => {
+          const id = `faq-${i}`;
+          const open = expandedItems.has(id);
+          return (
+            <Pressable
+              key={i}
+              style={[styles.accordionCard, { backgroundColor: C.surface, borderColor: open ? C.brinjal1 : C.border }]}
+              onPress={() => toggleExpand(id)}>
+              <View style={styles.accordionHeader}>
+                <Text style={[styles.accordionTitle, { color: C.text }]}>{item.q}</Text>
+                <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={16} color={C.textSecondary} />
+              </View>
+              {open && <Text style={[styles.accordionBody, { color: C.textSecondary }]}>{item.a}</Text>}
+            </Pressable>
+          );
+        })}
+      </View>
     );
   }
 
@@ -628,39 +732,42 @@ export default function BusinessSettingsScreen() {
         <SectionHeader title="Online Presence" />
         <Card>
           <View style={styles.inlineForm}>
-            {[
-              { label: 'Website', icon: '🌐', value: website, set: setWebsite, placeholder: 'https://yourbusiness.com', keyboard: 'url' as const },
-              { label: 'Facebook Page', icon: '💬', value: facebook, set: setFacebook, placeholder: 'https://facebook.com/yourpage', keyboard: 'url' as const },
-              { label: 'Instagram', icon: '📸', value: instagram, set: setInstagram, placeholder: '@yourhandle', keyboard: 'default' as const },
-              { label: 'TikTok', icon: '🎵', value: tiktok, set: setTiktok, placeholder: '@yourhandle', keyboard: 'default' as const },
-            ].map((f) => (
-              <View key={f.label} style={styles.formField}>
+            {([
+              { key: 'facebook',  label: 'Facebook',  icon: 'logo-facebook'  as const, color: '#1877F2', placeholder: 'https://facebook.com/yourpage' },
+              { key: 'instagram', label: 'Instagram', icon: 'logo-instagram' as const, color: '#E1306C', placeholder: 'https://instagram.com/yourhandle' },
+              { key: 'tiktok',    label: 'TikTok',    icon: 'musical-notes'  as const, color: '#010101', placeholder: 'https://tiktok.com/@yourhandle' },
+              { key: 'linkedin',  label: 'LinkedIn',  icon: 'logo-linkedin'  as const, color: '#0A66C2', placeholder: 'https://linkedin.com/company/yourname' },
+            ] as { key: keyof SocialLinks; label: string; icon: React.ComponentProps<typeof Ionicons>['name']; color: string; placeholder: string }[]).map((f) => (
+              <View key={f.key} style={styles.formField}>
                 <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>{f.label}</Text>
                 <View style={[styles.socialInputRow, { backgroundColor: C.background, borderColor: C.border }]}>
-                  <Text style={styles.socialInputIcon}>{f.icon}</Text>
+                  <View style={[styles.socialIconCircle, { backgroundColor: f.color + '18' }]}>
+                    <Ionicons name={f.icon} size={18} color={f.color} />
+                  </View>
                   <TextInput
                     style={[styles.socialInput, { color: C.text }]}
-                    value={f.value}
-                    onChangeText={f.set}
+                    value={socialLinks[f.key] ?? ''}
+                    onChangeText={(v) => setSocialLinks((prev) => ({ ...prev, [f.key]: v }))}
                     placeholder={f.placeholder}
                     placeholderTextColor={C.textSecondary}
                     autoCapitalize="none"
                     autoCorrect={false}
-                    keyboardType={f.keyboard}
+                    keyboardType="url"
                   />
+                  {!!socialLinks[f.key] && (
+                    <Pressable onPress={() => setSocialLinks((prev) => { const n = { ...prev }; delete n[f.key]; return n; })} hitSlop={8}>
+                      <Ionicons name="close-circle" size={18} color={C.textSecondary} />
+                    </Pressable>
+                  )}
                 </View>
               </View>
             ))}
-            <View style={styles.formField}>
-              <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>Location</Text>
-              <TextInput
-                style={[styles.formInput, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
-                value={location}
-                onChangeText={setLocation}
-                placeholder="City, Country"
-                placeholderTextColor={C.textSecondary}
-              />
-            </View>
+            <Pressable
+              style={[styles.primaryBtn, { backgroundColor: C.brinjal1, opacity: socialSaving ? 0.65 : 1 }]}
+              onPress={handleSaveSocialLinks}
+              disabled={socialSaving}>
+              <Text style={styles.primaryBtnText}>{socialSaving ? 'Saving…' : 'Save Online Presence'}</Text>
+            </Pressable>
           </View>
         </Card>
 
@@ -719,6 +826,117 @@ export default function BusinessSettingsScreen() {
               <Text style={[styles.badgeText, { color: C.active }]}>✓ Verified</Text>
             </View>
           </View>
+          {/* Phone verification */}
+          {phoneStage === 'idle' && (
+            <Pressable
+              style={[styles.row, { borderBottomWidth: 1, borderBottomColor: C.border }]}
+              onPress={() => { setPhoneStage('enter-phone'); setPhoneInput(''); setPhoneError(''); }}
+            >
+              <Text style={styles.rowIcon}>📱</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowLabel, { color: C.text }]}>Phone Number</Text>
+                <Text style={[styles.rowSub, { color: C.textSecondary }]}>Add & verify your phone number</Text>
+              </View>
+              <View style={[styles.soonBadge, { backgroundColor: C.primaryLight }]}>
+                <Text style={[styles.badgeText, { color: C.brinjal1 }]}>Add</Text>
+              </View>
+            </Pressable>
+          )}
+          {phoneStage === 'verified' && (
+            <View style={[styles.row, { borderBottomWidth: 1, borderBottomColor: C.border }]}>
+              <Text style={styles.rowIcon}>📱</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowLabel, { color: C.text }]}>Phone Number</Text>
+                <Text style={[styles.rowSub, { color: C.textSecondary }]}>{verifiedPhone}</Text>
+              </View>
+              <View style={[styles.verifiedBadge, { backgroundColor: '#DCFCE7' }]}>
+                <Text style={[styles.badgeText, { color: C.active }]}>✓ Verified</Text>
+              </View>
+            </View>
+          )}
+          {phoneStage === 'enter-phone' && (
+            <View style={[{ borderBottomWidth: 1, borderBottomColor: C.border, paddingHorizontal: 16, paddingVertical: 14, gap: 10 }]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Text style={styles.rowIcon}>📱</Text>
+                <Text style={[styles.rowLabel, { color: C.text }]}>Verify Phone Number</Text>
+              </View>
+              <View style={[styles.phoneInputRow]}>
+                <View style={[styles.phonePrefix, { backgroundColor: C.background, borderColor: C.border }]}>
+                  <Text style={[{ fontSize: 14, fontFamily: F.medium, color: C.text }]}>+977</Text>
+                </View>
+                <TextInput
+                  style={[styles.phoneField, { color: C.text, borderColor: phoneError ? C.error : C.border, backgroundColor: C.background }]}
+                  placeholder="98XXXXXXXX"
+                  placeholderTextColor={C.textSecondary}
+                  keyboardType="phone-pad"
+                  maxLength={10}
+                  value={phoneInput}
+                  onChangeText={(v) => { setPhoneInput(v.replace(/[^0-9]/g, '')); setPhoneError(''); }}
+                />
+              </View>
+              {!!phoneError && <Text style={[styles.phoneError, { color: C.error }]}>{phoneError}</Text>}
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <Pressable
+                  style={[styles.phoneActionBtn, { backgroundColor: C.brinjal1, opacity: phoneLoading ? 0.7 : 1 }]}
+                  onPress={handleSendPhoneOtp}
+                  disabled={phoneLoading}
+                >
+                  <Text style={[styles.phoneActionBtnText, { color: '#fff' }]}>{phoneLoading ? 'Sending…' : 'Send Code'}</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.phoneActionBtn, { backgroundColor: C.background, borderWidth: 1, borderColor: C.border }]}
+                  onPress={() => { setPhoneStage('idle'); setPhoneError(''); }}
+                  disabled={phoneLoading}
+                >
+                  <Text style={[styles.phoneActionBtnText, { color: C.textSecondary }]}>Cancel</Text>
+                </Pressable>
+              </View>
+            </View>
+          )}
+          {phoneStage === 'enter-otp' && (
+            <View style={[{ borderBottomWidth: 1, borderBottomColor: C.border, paddingHorizontal: 16, paddingVertical: 14, gap: 10 }]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Text style={styles.rowIcon}>📱</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.rowLabel, { color: C.text }]}>Enter Verification Code</Text>
+                  <Text style={[styles.rowSub, { color: C.textSecondary }]}>Sent to +977 {phoneInput}</Text>
+                </View>
+                <Pressable
+                  onPress={() => { setPhoneStage('idle'); setPhoneOtp(''); setPhoneError(''); setPhoneInput(''); }}
+                  disabled={phoneLoading}
+                  hitSlop={8}
+                  style={[styles.otpCloseBtn, { backgroundColor: C.background, borderColor: C.border }]}>
+                  <Ionicons name="close" size={16} color={C.textSecondary} />
+                </Pressable>
+              </View>
+              <TextInput
+                style={[styles.formInput, { color: C.text, borderColor: phoneError ? C.error : C.border, backgroundColor: C.background, letterSpacing: 8, textAlign: 'center', fontSize: 20 }]}
+                placeholder="------"
+                placeholderTextColor={C.textSecondary}
+                keyboardType="number-pad"
+                maxLength={6}
+                value={phoneOtp}
+                onChangeText={(v) => { setPhoneOtp(v.replace(/[^0-9]/g, '')); setPhoneError(''); }}
+              />
+              {!!phoneError && <Text style={[styles.phoneError, { color: C.error }]}>{phoneError}</Text>}
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <Pressable
+                  style={[styles.phoneActionBtn, { backgroundColor: C.brinjal1, opacity: phoneLoading ? 0.7 : 1 }]}
+                  onPress={handleVerifyPhoneOtp}
+                  disabled={phoneLoading}
+                >
+                  <Text style={[styles.phoneActionBtnText, { color: '#fff' }]}>{phoneLoading ? 'Verifying…' : 'Verify'}</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.phoneActionBtn, { backgroundColor: C.background, borderWidth: 1, borderColor: C.border }]}
+                  onPress={() => { setPhoneStage('enter-phone'); setPhoneOtp(''); setPhoneError(''); }}
+                  disabled={phoneLoading}
+                >
+                  <Text style={[styles.phoneActionBtnText, { color: C.textSecondary }]}>Resend</Text>
+                </Pressable>
+              </View>
+            </View>
+          )}
           <NavRow icon="🔑" label="Change Password" onPress={() => setSubPage('change-password')} />
           <View style={[styles.row, { borderTopWidth: 0, borderBottomWidth: 1, borderBottomColor: C.border }]}>
             <Text style={styles.rowIcon}>📱</Text>
@@ -1118,10 +1336,10 @@ export default function BusinessSettingsScreen() {
       <>
         <SectionHeader title="Get Help" />
         <Card>
-          <NavRow icon="❓" label="Help Center"       onPress={() => setSubPage('help-center')} />
-          <NavRow icon="💌" label="Contact Support"   onPress={() => setSubPage('contact-support')} />
-          <NavRow icon="🚨" label="Report Issue"      onPress={() => setSubPage('report-issue')} />
-          <NavRow icon="📖" label="FAQs"              onPress={() => setSubPage('faqs')} isLast />
+          <NavRow ionIcon="help-circle-outline"         ionIconColor="#0891B2" label="Help Center"     onPress={() => setSubPage('help-center')} />
+          <NavRow ionIcon="chatbubble-ellipses-outline" ionIconColor="#7C3AED" label="Contact Support" onPress={() => setSubPage('contact-support')} />
+          <NavRow ionIcon="warning-outline"             ionIconColor="#EF4444" label="Report Issue"    onPress={() => setSubPage('report-issue')} />
+          <NavRow ionIcon="reader-outline"              ionIconColor="#F59E0B" label="FAQs"            onPress={() => setSubPage('faqs')} isLast />
         </Card>
         <HintCard>
           <Text style={[styles.hintText, { color: C.brinjal1 }]}>Average response time: under 24 hours on business days.</Text>
@@ -1307,8 +1525,8 @@ const styles = StyleSheet.create({
   labelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   optionalTag: { fontSize: 12, fontFamily: F.regular },
 
-  socialInputRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 10, paddingHorizontal: 12, height: 46, gap: 8 },
-  socialInputIcon: { fontSize: 16 },
+  socialInputRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 10, paddingHorizontal: 10, height: 48, gap: 8 },
+  socialIconCircle: { width: 30, height: 30, borderRadius: 8, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   socialInput: { flex: 1, fontSize: 14, fontFamily: F.regular },
 
   actionGroup: { marginHorizontal: 16, marginTop: 20, gap: 10 },
@@ -1382,6 +1600,12 @@ const styles = StyleSheet.create({
   faqQ: { fontSize: 14, fontWeight: '700', lineHeight: 20, fontFamily: F.bold },
   faqA: { fontSize: 13, lineHeight: 19, fontFamily: F.regular },
 
+  accordionCard: { borderRadius: 12, borderWidth: 1.5, overflow: 'hidden', backgroundColor: 'transparent' },
+  accordionHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14 },
+  accordionTitle: { flex: 1, fontSize: 14, fontWeight: '700', lineHeight: 20, fontFamily: F.bold },
+  accordionBody: { fontSize: 13, lineHeight: 20, paddingHorizontal: 14, paddingBottom: 14, fontFamily: F.regular },
+  navIonIconWrap: { width: 34, height: 34, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
+
   toast: {
     position: 'absolute', bottom: 32, left: 32, right: 32,
     borderRadius: 12, paddingVertical: 12, paddingHorizontal: 18,
@@ -1390,4 +1614,13 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 }, elevation: 8,
   },
   toastText: { color: '#fff', fontSize: 14, fontWeight: '600', flex: 1, fontFamily: F.semibold },
+
+  otpCloseBtn: { width: 30, height: 30, borderRadius: 15, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+
+  phoneInputRow: { flexDirection: 'row', gap: 8 },
+  phonePrefix: { borderWidth: 1.5, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 11, justifyContent: 'center', alignItems: 'center' },
+  phoneField: { flex: 1, borderWidth: 1.5, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 11, fontSize: 14, fontFamily: F.regular },
+  phoneError: { fontSize: 12, fontFamily: F.regular, marginTop: -4 },
+  phoneActionBtn: { flex: 1, borderRadius: 10, paddingVertical: 11, alignItems: 'center', justifyContent: 'center' },
+  phoneActionBtnText: { fontSize: 14, fontWeight: '600', fontFamily: F.semibold },
 });

@@ -35,4 +35,25 @@ export class FavoriteRepository {
     });
     return rows.map((r) => r.creator.userId);
   }
+
+  async getFavoriteBusinesses(creatorId: string) {
+    return prisma.favoriteBusiness.findMany({
+      where: { creatorId },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        business: {
+          select: {
+            id:           true,
+            businessName: true,
+            description:  true,
+            logoUrl:      true,
+            website:      true,
+            categories:   true,
+            isVerified:   true,
+            _count:       { select: { campaigns: true } },
+          },
+        },
+      },
+    });
+  }
 }

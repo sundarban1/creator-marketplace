@@ -3,6 +3,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.CreatorController = void 0;
 const creator_service_1 = require("./creator.service");
 const response_1 = require("../../utils/response");
+const cloudinary_1 = require("../../utils/cloudinary");
+const error_1 = require("../../middleware/error");
 const creatorService = new creator_service_1.CreatorService();
 class CreatorController {
     async listCreators(req, res, next) {
@@ -151,6 +153,18 @@ class CreatorController {
                 prefBudgetMin: profile.prefBudgetMin,
                 prefBudgetMax: profile.prefBudgetMax,
             }, 'Campaign preferences updated');
+        }
+        catch (err) {
+            next(err);
+        }
+    }
+    async uploadAvatar(req, res, next) {
+        try {
+            if (!req.file)
+                throw new error_1.AppError('No image file provided', 400);
+            const avatarUrl = await (0, cloudinary_1.uploadImage)(req.file.buffer, 'creators/avatars', `creator_${req.user.id}`);
+            const profile = await creatorService.updateProfile(req.user.id, { avatarUrl });
+            (0, response_1.success)(res, { avatarUrl: profile.avatarUrl }, 'Avatar updated');
         }
         catch (err) {
             next(err);

@@ -21,18 +21,18 @@ export class AuthRepository {
 
   async createUserWithCreatorProfile(data: {
     email: string;
-    phone: string;
+    phone?: string;
     password: string;
     role: Role;
-    fullName: string;
+    fullName?: string;
   }) {
     return prisma.user.create({
       data: {
         email: data.email,
-        phone: data.phone,
+        phone: data.phone ?? null,
         password: data.password,
         role: data.role,
-        creatorProfile: { create: { fullName: data.fullName } },
+        creatorProfile: { create: { fullName: data.fullName ?? null } },
       },
       include: { creatorProfile: true },
     });
@@ -40,18 +40,18 @@ export class AuthRepository {
 
   async createUserWithBusinessProfile(data: {
     email: string;
-    phone: string;
+    phone?: string;
     password: string;
     role: Role;
-    businessName: string;
+    businessName?: string;
   }) {
     return prisma.user.create({
       data: {
         email: data.email,
-        phone: data.phone,
+        phone: data.phone ?? null,
         password: data.password,
         role: data.role,
-        businessProfile: { create: { businessName: data.businessName } },
+        businessProfile: { create: { businessName: data.businessName ?? null } },
       },
       include: { businessProfile: true },
     });
@@ -115,5 +115,9 @@ export class AuthRepository {
 
   async deleteOtpsByUserId(userId: string) {
     return prisma.otpVerification.deleteMany({ where: { userId } });
+  }
+
+  async updateUserPhone(userId: string, phone: string) {
+    return prisma.user.update({ where: { id: userId }, data: { phone } });
   }
 }

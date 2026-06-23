@@ -96,13 +96,13 @@ class CampaignRepository {
         return prisma_1.default.campaign.delete({ where: { id } });
     }
     async getDistinctCategories() {
-        const rows = await prisma_1.default.campaign.findMany({
-            where: { status: 'ACTIVE' },
-            select: { category: true },
-            distinct: ['category'],
-            orderBy: { category: 'asc' },
-        });
-        return rows.map((r) => r.category);
+        return [
+            'Food', 'Travel', 'Fashion', 'Beauty', 'Fitness', 'Gaming', 'Tech',
+            'Education', 'Lifestyle', 'Home & Living', 'Wellness', 'Music',
+            'Art & Design', 'Pets', 'Parenting', 'Automotive', 'Finance',
+            'Sustainability', 'Photography', 'Sports', 'Film & TV', 'Mindfulness',
+            'Food & Drink', 'Entertainment',
+        ];
     }
     async findApplication(campaignId, creatorId) {
         return prisma_1.default.application.findUnique({

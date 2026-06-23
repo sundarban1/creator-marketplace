@@ -10,18 +10,18 @@ export declare const updateCreatorProfileSchema: z.ZodObject<{
     categories: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
 }, "strip", z.ZodTypeAny, {
     categories?: string[] | undefined;
+    location?: string | undefined;
     fullName?: string | undefined;
     bio?: string | undefined;
-    location?: string | undefined;
     avatarUrl?: string | undefined;
     username?: string | undefined;
     locationLat?: number | undefined;
     locationLng?: number | undefined;
 }, {
     categories?: string[] | undefined;
+    location?: string | undefined;
     fullName?: string | undefined;
     bio?: string | undefined;
-    location?: string | undefined;
     avatarUrl?: string | undefined;
     username?: string | undefined;
     locationLat?: number | undefined;

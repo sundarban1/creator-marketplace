@@ -6,6 +6,7 @@ import { BackButton } from '@/components/BackButton';
 import {
   ActivityIndicator,
   FlatList,
+  Image,
   Modal,
   Pressable,
   RefreshControl,
@@ -18,6 +19,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RangeSlider } from '@/components/RangeSlider';
 import { useAppColors } from '@/context/ThemeContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { creatorService, type ApiCreatorListItem } from '@/services/creator';
 import { F } from '@/utilities/constants';
 
@@ -33,10 +35,17 @@ type Prediction = { place_id: string; structured_formatting: { main_text: string
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const PLATFORM_EMOJI: Record<string, string> = {
-  instagram: '📸', youtube: '▶️', tiktok: '🎵',
-  twitter: '🐦', facebook: '📘', linkedin: '💼',
-  snapchat: '👻', pinterest: '📌',
+type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
+
+const PLATFORM_ICON: Record<string, { icon: IoniconName; color: string }> = {
+  instagram: { icon: 'logo-instagram', color: '#E1306C' },
+  youtube:   { icon: 'logo-youtube',   color: '#FF0000' },
+  twitter:   { icon: 'logo-twitter',   color: '#1DA1F2' },
+  facebook:  { icon: 'logo-facebook',  color: '#1877F2' },
+  linkedin:  { icon: 'logo-linkedin',  color: '#0A66C2' },
+  snapchat:  { icon: 'logo-snapchat',  color: '#FFBF00' },
+  pinterest: { icon: 'logo-pinterest', color: '#E60023' },
+  tiktok:    { icon: 'musical-notes',  color: '#010101' },
 };
 
 const CATEGORY_META: Record<string, { emoji: string; bg: string }> = {
@@ -56,7 +65,7 @@ const CATEGORY_META: Record<string, { emoji: string; bg: string }> = {
   Adventure:   { emoji: '🏕️', bg: '#E8EFD4' },
 };
 
-function getPlatformEmoji(p: string) { return PLATFORM_EMOJI[p.toLowerCase()] ?? '📱'; }
+function getPlatformMeta(p: string) { return PLATFORM_ICON[p.toLowerCase()] ?? { icon: 'phone-portrait-outline' as IoniconName, color: '#6B7280' }; }
 function normalizePlatform(p: string) { return p.charAt(0).toUpperCase() + p.slice(1).toLowerCase(); }
 function getCategoryMeta(cats: string[]) {
   for (const c of cats) { if (CATEGORY_META[c]) return CATEGORY_META[c]; }
@@ -257,6 +266,7 @@ function ExploreFilterModal({
   onClose: () => void;
 }) {
   const C = useAppColors();
+  const { t } = useLanguage();
 
   function set<K extends keyof FilterState>(key: K, val: FilterState[K]) {
     setTemp({ ...temp, [key]: val });
@@ -268,9 +278,9 @@ function ExploreFilterModal({
       <View style={[fm.sheet, { backgroundColor: C.surface }]}>
         <View style={[fm.handle, { backgroundColor: C.border }]} />
         <View style={[fm.header, { borderBottomColor: C.border }]}>
-          <Text style={[fm.title, { color: C.text }]}>Filter Creators</Text>
+          <Text style={[fm.title, { color: C.text }]}>{t('explore.filterCreators')}</Text>
           <Pressable onPress={onReset}>
-            <Text style={[fm.reset, { color: C.brinjal1 }]}>Reset all</Text>
+            <Text style={[fm.reset, { color: C.brinjal1 }]}>{t('explore.resetAll')}</Text>
           </Pressable>
         </View>
 
@@ -278,13 +288,13 @@ function ExploreFilterModal({
 
           {/* Location */}
           <View style={fm.sectionRow}>
-            <Text style={[fm.sectionLabel, { color: C.textSecondary }]}>Location</Text>
-            <Text style={[fm.sectionHint, { color: C.textSecondary }]}>{temp.locations.length}/{MAX_LOCS} allowed</Text>
+            <Text style={[fm.sectionLabel, { color: C.textSecondary }]}>{t('explore.location')}</Text>
+            <Text style={[fm.sectionHint, { color: C.textSecondary }]}>{t('explore.locationsAllowed', { count: temp.locations.length, max: MAX_LOCS })}</Text>
           </View>
           <LocationPicker selected={temp.locations} onChange={(v) => set('locations', v)} />
 
           {/* Price Range */}
-          <Text style={[fm.sectionLabel, { color: C.textSecondary }]}>Price Range</Text>
+          <Text style={[fm.sectionLabel, { color: C.textSecondary }]}>{t('explore.priceRange')}</Text>
           <RangeSlider
             minVal={temp.priceMin}
             maxVal={temp.priceMax}
@@ -295,7 +305,7 @@ function ExploreFilterModal({
           {/* Platform */}
           {availablePlatforms.length > 0 && (
             <>
-              <Text style={[fm.sectionLabel, { color: C.textSecondary }]}>Platform</Text>
+              <Text style={[fm.sectionLabel, { color: C.textSecondary }]}>{t('explore.platform')}</Text>
               <View style={fm.chips}>
                 {availablePlatforms.map((p) => {
                   const sel = temp.platforms.includes(p);
@@ -304,7 +314,7 @@ function ExploreFilterModal({
                       key={p}
                       onPress={() => set('platforms', toggle(temp.platforms, p))}
                       style={[fm.chip, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? C.primaryLight : C.background }]}>
-                      <Text style={fm.chipEmoji}>{getPlatformEmoji(p)}</Text>
+                      <Ionicons name={getPlatformMeta(p).icon} size={14} color={sel ? C.brinjal1 : getPlatformMeta(p).color} />
                       <Text style={[fm.chipText, { color: sel ? C.brinjal1 : C.text, fontWeight: sel ? '700' : '500' }]}>{normalizePlatform(p)}</Text>
                     </Pressable>
                   );
@@ -316,7 +326,7 @@ function ExploreFilterModal({
           {/* Category */}
           {availableCategories.length > 0 && (
             <>
-              <Text style={[fm.sectionLabel, { color: C.textSecondary }]}>Category</Text>
+              <Text style={[fm.sectionLabel, { color: C.textSecondary }]}>{t('explore.category')}</Text>
               <View style={fm.chips}>
                 {availableCategories.map((cat) => {
                   const meta = CATEGORY_META[cat];
@@ -341,7 +351,7 @@ function ExploreFilterModal({
           <Pressable
             style={({ pressed }) => [fm.applyBtn, { backgroundColor: C.brinjal1 }, pressed && { opacity: 0.88 }]}
             onPress={onApply}>
-            <Text style={fm.applyTxt}>Apply Filters</Text>
+            <Text style={fm.applyTxt}>{t('explore.applyFilters')}</Text>
           </Pressable>
         </View>
       </View>
@@ -369,6 +379,28 @@ const fm = StyleSheet.create({
   applyTxt:    { color: '#fff', fontSize: 16, fontWeight: '700', fontFamily: F.bold },
 });
 
+// ─── Creator Avatar ───────────────────────────────────────────────────────────
+
+function CreatorAvatar({ avatarUrl, bg }: { avatarUrl: string | null; bg: string }) {
+  const [failed, setFailed] = useState(false);
+  if (avatarUrl && !failed) {
+    return (
+      <Image
+        source={{ uri: avatarUrl }}
+        style={s.avatar}
+        onError={() => setFailed(true)}
+      />
+    );
+  }
+  return (
+    <View style={[s.avatar, s.avatarPlaceholder, { backgroundColor: bg }]}>
+      <View style={s.avatarIconWrap}>
+        <Ionicons name="person" size={30} color="rgba(91,33,182,0.55)" />
+      </View>
+    </View>
+  );
+}
+
 // ─── Creator Card ─────────────────────────────────────────────────────────────
 
 function CreatorCard({ creator, isSaved, onToggleSave }: {
@@ -378,32 +410,48 @@ function CreatorCard({ creator, isSaved, onToggleSave }: {
 }) {
   const C = useAppColors();
   const meta = getCategoryMeta(creator.categories);
-  const initials = (creator.fullName ?? 'C').split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2);
   const hasBudget = creator.prefBudgetMin > 0 || creator.prefBudgetMax > 0;
+  const topPlatforms = creator.socialAccounts.slice(0, 3);
 
   return (
     <Pressable
-      style={({ pressed }) => [s.card, { backgroundColor: C.surface, borderColor: C.border }, pressed && { opacity: 0.9 }]}
+      style={({ pressed }) => [s.card, { backgroundColor: C.surface, borderColor: C.border }, pressed && { opacity: 0.92 }]}
       onPress={() => router.push({ pathname: '/(business)/creator-detail', params: { id: creator.id } })}>
 
-      {/* Header row: avatar · name/location · bookmark */}
+      {/* Header row */}
       <View style={s.cardHeader}>
-        <View style={[s.avatar, { backgroundColor: meta.bg }]}>
-          <Text style={s.avatarText}>{meta.emoji || initials}</Text>
-        </View>
+        <CreatorAvatar avatarUrl={creator.avatarUrl} bg={meta.bg} />
+
         <View style={s.cardMeta}>
           <View style={s.nameRow}>
             <Text style={[s.name, { color: C.text }]} numberOfLines={1}>{creator.fullName ?? 'Creator'}</Text>
             {creator.isVerified && (
-              <View style={s.verifiedBadge}>
-                <Text style={s.verifiedText}>✓</Text>
-              </View>
+              <Ionicons name="checkmark-circle" size={16} color="#22C55E" />
             )}
           </View>
           {creator.location ? (
-            <Text style={[s.location, { color: C.textSecondary }]} numberOfLines={1}>📍 {creator.location}</Text>
+            <View style={s.locationRow}>
+              <Ionicons name="location-outline" size={12} color={C.textSecondary} />
+              <Text style={[s.location, { color: C.textSecondary }]} numberOfLines={1}>{creator.location}</Text>
+            </View>
+          ) : null}
+
+          {/* Platform icons row */}
+          {topPlatforms.length > 0 ? (
+            <View style={s.platformRow}>
+              {topPlatforms.map((acc) => {
+                const pm = getPlatformMeta(acc.platform);
+                return (
+                  <View key={acc.platform} style={[s.platformPill, { backgroundColor: pm.color + '18' }]}>
+                    <Ionicons name={pm.icon} size={12} color={pm.color} />
+                    <Text style={[s.platformCount, { color: pm.color }]}>{formatFollowers(acc.followers)}</Text>
+                  </View>
+                );
+              })}
+            </View>
           ) : null}
         </View>
+
         <Pressable
           style={[s.saveBtn, { backgroundColor: isSaved ? C.primaryLight : C.background, borderColor: isSaved ? C.brinjal1 : C.border }]}
           onPress={onToggleSave}
@@ -417,30 +465,10 @@ function CreatorCard({ creator, isSaved, onToggleSave }: {
         <Text style={[s.bio, { color: C.textSecondary }]} numberOfLines={2}>{creator.bio}</Text>
       ) : null}
 
-      {/* Platform / budget stat pills */}
-      {(creator.socialAccounts.length > 0 || hasBudget) ? (
-        <View style={s.statsRow}>
-          {creator.socialAccounts.slice(0, 2).map((acc) => (
-            <View key={acc.platform} style={[s.statPill, { backgroundColor: C.primaryLight }]}>
-              <Text style={s.statEmoji}>{getPlatformEmoji(acc.platform)}</Text>
-              <Text style={[s.statVal, { color: C.brinjal1 }]}>{formatFollowers(acc.followers)}</Text>
-            </View>
-          ))}
-          {hasBudget && (
-            <View style={[s.statPill, { backgroundColor: '#E8F5E9' }]}>
-              <Text style={s.statEmoji}>💰</Text>
-              <Text style={[s.statVal, { color: '#16A34A' }]}>
-                ${creator.prefBudgetMin}–${creator.prefBudgetMax}
-              </Text>
-            </View>
-          )}
-        </View>
-      ) : null}
-
-      {/* Category chips with per-category colours */}
-      {creator.categories.length > 0 ? (
+      {/* Bottom row: categories + budget */}
+      <View style={s.cardFooter}>
         <View style={s.catRow}>
-          {creator.categories.slice(0, 4).map((cat) => {
+          {creator.categories.slice(0, 3).map((cat) => {
             const m = CATEGORY_META[cat];
             return (
               <View key={cat} style={[s.catChip, { backgroundColor: m?.bg ?? C.primaryLight }]}>
@@ -449,13 +477,19 @@ function CreatorCard({ creator, isSaved, onToggleSave }: {
               </View>
             );
           })}
-          {creator.categories.length > 4 ? (
+          {creator.categories.length > 3 ? (
             <View style={[s.catChip, { backgroundColor: C.background, borderWidth: 1, borderColor: C.border }]}>
-              <Text style={[s.catLabel, { color: C.textSecondary }]}>+{creator.categories.length - 4}</Text>
+              <Text style={[s.catLabel, { color: C.textSecondary }]}>+{creator.categories.length - 3}</Text>
             </View>
           ) : null}
         </View>
-      ) : null}
+        {hasBudget ? (
+          <View style={s.budgetPill}>
+            <Ionicons name="cash-outline" size={11} color="#16A34A" />
+            <Text style={s.budgetText}>${creator.prefBudgetMin}–{creator.prefBudgetMax}</Text>
+          </View>
+        ) : null}
+      </View>
     </Pressable>
   );
 }
@@ -464,6 +498,7 @@ function CreatorCard({ creator, isSaved, onToggleSave }: {
 
 export default function ExploreCreatorsScreen() {
   const C = useAppColors();
+  const { t } = useLanguage();
 
   const [creators, setCreators] = useState<ApiCreatorListItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -608,8 +643,13 @@ export default function ExploreCreatorsScreen() {
         {/* Header */}
         <View style={s.header}>
           <BackButton fallback="/(business)/" />
-          <Text style={[s.headerTitle, { color: '#fff' }]}>Explore Creators</Text>
-          <View style={{ width: 40 }} />
+          <Text style={[s.headerTitle, { color: '#fff' }]}>{t('explore.exploreCreators')}</Text>
+          <Pressable
+            style={s.savedLink}
+            onPress={() => router.push('/(business)/saved-creators' as Parameters<typeof router.push>[0])}>
+            <Ionicons name="bookmark" size={14} color="#fff" />
+            <Text style={s.savedLinkText}>{t('explore.saved')}</Text>
+          </Pressable>
         </View>
 
         {/* Search bar */}
@@ -617,7 +657,7 @@ export default function ExploreCreatorsScreen() {
         <Text style={s.searchIcon}>🔍</Text>
         <TextInput
           style={[s.searchInput, { color: '#fff' }]}
-          placeholder="Search creators…"
+          placeholder={t('explore.searchCreators')}
           placeholderTextColor="rgba(255,255,255,0.6)"
           value={search}
           onChangeText={setSearch}
@@ -652,7 +692,8 @@ export default function ExploreCreatorsScreen() {
           )}
           {activeFilter.platforms.map((p) => (
             <Pressable key={p} onPress={() => removeActiveFilter('platforms', p)} style={[s.chip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
-              <Text style={[s.chipText, { color: C.brinjal1 }]}>{getPlatformEmoji(p)} {normalizePlatform(p)} ✕</Text>
+              <Ionicons name={getPlatformMeta(p).icon} size={12} color={C.brinjal1} />
+              <Text style={[s.chipText, { color: C.brinjal1 }]}>{normalizePlatform(p)} ✕</Text>
             </Pressable>
           ))}
           {activeFilter.categories.map((cat) => (
@@ -661,17 +702,20 @@ export default function ExploreCreatorsScreen() {
             </Pressable>
           ))}
           <Pressable onPress={() => setActiveFilter(DEFAULT_FILTER)} style={[s.chip, { backgroundColor: C.background, borderColor: C.border }]}>
-            <Text style={[s.chipText, { color: C.textSecondary }]}>Clear all</Text>
+            <Text style={[s.chipText, { color: C.textSecondary }]}>{t('common.clearAll')}</Text>
           </Pressable>
         </ScrollView>
       )}
 
       {/* Result count */}
-      {!loading && (
+      {!loading && creators.length > 0 && (
         <View style={s.countRow}>
-          <Text style={[s.countText, { color: C.textSecondary }]}>
-            {total} creator{total !== 1 ? 's' : ''} found
-          </Text>
+          <View style={[s.countPill, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
+            <Ionicons name="people" size={13} color={C.brinjal1} />
+            <Text style={[s.countText, { color: C.brinjal1 }]}>
+              {total !== 1 ? t('explore.creatorsFoundPlural', { count: total }) : t('explore.creatorsFound', { count: total })}
+            </Text>
+          </View>
         </View>
       )}
 
@@ -679,25 +723,25 @@ export default function ExploreCreatorsScreen() {
       {loading ? (
         <View style={s.centered}>
           <ActivityIndicator size="large" color={C.brinjal1} />
-          <Text style={[s.loadingText, { color: C.textSecondary }]}>Finding creators…</Text>
+          <Text style={[s.loadingText, { color: C.textSecondary }]}>{t('explore.findingCreators')}</Text>
         </View>
       ) : error ? (
         <View style={s.centered}>
           <Text style={s.errorText}>{error}</Text>
           <Pressable onPress={() => fetchCreators(1, true, activeFilter, searchDebounced)}>
-            <Text style={[s.linkText, { color: C.brinjal1 }]}>Retry</Text>
+            <Text style={[s.linkText, { color: C.brinjal1 }]}>{t('common.retry')}</Text>
           </Pressable>
         </View>
       ) : creators.length === 0 ? (
         <View style={s.centered}>
           <Text style={s.emptyEmoji}>🧑‍🎨</Text>
-          <Text style={[s.emptyTitle, { color: C.text }]}>No creators found</Text>
+          <Text style={[s.emptyTitle, { color: C.text }]}>{t('explore.noCreators')}</Text>
           <Text style={[s.emptyHint, { color: C.textSecondary }]}>
-            {filterActive || search ? 'Try adjusting your filters.' : 'No creators have joined yet.'}
+            {filterActive || search ? t('explore.adjustFilters') : t('explore.noCreatorsYet')}
           </Text>
           {(filterActive || search) && (
             <Pressable onPress={() => { setSearch(''); setActiveFilter(DEFAULT_FILTER); }} style={[s.clearBtn, { borderColor: C.brinjal1 }]}>
-              <Text style={[s.linkText, { color: C.brinjal1 }]}>Clear filters</Text>
+              <Text style={[s.linkText, { color: C.brinjal1 }]}>{t('explore.clearFilters')}</Text>
             </Pressable>
           )}
         </View>
@@ -721,7 +765,16 @@ export default function ExploreCreatorsScreen() {
             loadingMore ? (
               <ActivityIndicator color={C.brinjal1} style={{ paddingVertical: 20 }} />
             ) : !hasMore && creators.length > 0 ? (
-              <Text style={[s.footerText, { color: C.textSecondary }]}>Showing all {total} creator{total !== 1 ? 's' : ''}</Text>
+              <View style={s.footerWrap}>
+                <View style={[s.footerLine, { backgroundColor: C.border }]} />
+                <View style={[s.footerPill, { backgroundColor: C.surface, borderColor: C.border }]}>
+                  <Ionicons name="checkmark-done" size={13} color={C.brinjal1} />
+                  <Text style={[s.footerText, { color: C.textSecondary }]}>
+                    {total !== 1 ? t('explore.showingAllPlural', { count: total }) : t('explore.showingAll', { count: total })}
+                  </Text>
+                </View>
+                <View style={[s.footerLine, { backgroundColor: C.border }]} />
+              </View>
             ) : null
           }
         />
@@ -749,6 +802,8 @@ const s = StyleSheet.create({
 
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 8 },
   headerTitle: { flex: 1, fontSize: 18, fontWeight: '800', textAlign: 'center', fontFamily: F.extrabold },
+  savedLink: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 6 },
+  savedLinkText: { fontSize: 12, fontWeight: '700', color: '#fff', fontFamily: F.bold },
 
   searchCard: { flexDirection: 'row', alignItems: 'center', borderRadius: 14, marginHorizontal: 20, marginBottom: 0, paddingHorizontal: 14, height: 50 },
   searchIcon: { fontSize: 16, marginRight: 8 },
@@ -762,8 +817,9 @@ const s = StyleSheet.create({
   chip: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 16, borderWidth: 1.5 },
   chipText: { fontSize: 12, fontWeight: '600', fontFamily: F.semibold },
 
-  countRow: { paddingHorizontal: 20, marginBottom: 6 },
-  countText: { fontSize: 12, fontFamily: F.regular },
+  countRow: { paddingHorizontal: 20, marginTop: 10, marginBottom: 8, alignItems: 'flex-end' },
+  countPill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 1.5 },
+  countText: { fontSize: 12, fontWeight: '700', fontFamily: F.bold },
 
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, paddingHorizontal: 32 },
   loadingText: { fontSize: 14, fontFamily: F.regular },
@@ -776,26 +832,31 @@ const s = StyleSheet.create({
 
   list: { paddingHorizontal: 20, paddingBottom: 40, gap: 14 },
 
-  card: { borderRadius: 18, padding: 16, gap: 12, borderWidth: 1, shadowColor: '#000', shadowOpacity: 0.09, shadowRadius: 14, shadowOffset: { width: 0, height: 4 }, elevation: 5 },
-  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  avatar: { width: 64, height: 64, borderRadius: 32, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
-  avatarText: { fontSize: 24 },
-  cardMeta: { flex: 1, gap: 3 },
-  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  name: { fontSize: 16, fontWeight: '800', flexShrink: 1, fontFamily: F.extrabold },
-  verifiedBadge: { width: 18, height: 18, borderRadius: 9, backgroundColor: '#22C55E', justifyContent: 'center', alignItems: 'center' },
-  verifiedText: { fontSize: 9, fontWeight: '800', color: '#fff', fontFamily: F.extrabold },
+  card: { borderRadius: 18, padding: 16, gap: 11, borderWidth: 1, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 14, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
+  cardHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  avatar: { width: 68, height: 68, borderRadius: 34, flexShrink: 0 },
+  avatarPlaceholder: { justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
+  avatarIconWrap: { alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' },
+  cardMeta: { flex: 1, gap: 4 },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  name: { fontSize: 15, fontWeight: '800', flexShrink: 1, fontFamily: F.extrabold },
+  locationRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   location: { fontSize: 12, fontFamily: F.regular },
+  platformRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap', marginTop: 2 },
+  platformPill: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
+  platformCount: { fontSize: 11, fontWeight: '700', fontFamily: F.bold },
   saveBtn: { width: 36, height: 36, borderRadius: 10, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   bio: { fontSize: 13, lineHeight: 19, fontFamily: F.regular },
-  statsRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
-  statPill: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10 },
-  statEmoji: { fontSize: 12 },
-  statVal: { fontSize: 12, fontWeight: '700', fontFamily: F.bold },
-  catRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
+  cardFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  catRow: { flexDirection: 'row', gap: 5, flexWrap: 'wrap', flex: 1 },
   catChip: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 8 },
   catEmoji: { fontSize: 11 },
   catLabel: { fontSize: 11, fontWeight: '600', fontFamily: F.semibold },
+  budgetPill: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 8, backgroundColor: '#DCFCE7', flexShrink: 0 },
+  budgetText: { fontSize: 11, fontWeight: '700', color: '#16A34A', fontFamily: F.bold },
 
-  footerText: { textAlign: 'center', fontSize: 13, paddingVertical: 20, fontFamily: F.regular },
+  footerWrap: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 20, marginTop: 8, marginBottom: 36, gap: 10 },
+  footerLine: { flex: 1, height: 1 },
+  footerPill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1 },
+  footerText: { fontSize: 12, fontFamily: F.regular },
 });

@@ -3,19 +3,19 @@ export declare class AuthRepository {
     findUserByEmail(email: string): Promise<({
         creatorProfile: {
             id: string;
-            fullName: string;
+            fullName: string | null;
             avatarUrl: string | null;
             username: string | null;
         } | null;
         businessProfile: {
             id: string;
-            businessName: string;
+            businessName: string | null;
             logoUrl: string | null;
         } | null;
     } & {
         email: string;
         id: string;
-        phone: string;
+        phone: string | null;
         password: string;
         role: import(".prisma/client").$Enums.Role;
         isEmailVerified: boolean;
@@ -28,19 +28,19 @@ export declare class AuthRepository {
     findUserById(id: string): Promise<({
         creatorProfile: {
             id: string;
-            fullName: string;
+            fullName: string | null;
             avatarUrl: string | null;
             username: string | null;
         } | null;
         businessProfile: {
             id: string;
-            businessName: string;
+            businessName: string | null;
             logoUrl: string | null;
         } | null;
     } & {
         email: string;
         id: string;
-        phone: string;
+        phone: string | null;
         password: string;
         role: import(".prisma/client").$Enums.Role;
         isEmailVerified: boolean;
@@ -53,7 +53,7 @@ export declare class AuthRepository {
     findUserByPhone(phone: string): Promise<{
         email: string;
         id: string;
-        phone: string;
+        phone: string | null;
         password: string;
         role: import(".prisma/client").$Enums.Role;
         isEmailVerified: boolean;
@@ -65,10 +65,10 @@ export declare class AuthRepository {
     } | null>;
     createUserWithCreatorProfile(data: {
         email: string;
-        phone: string;
+        phone?: string;
         password: string;
         role: Role;
-        fullName: string;
+        fullName?: string;
     }): Promise<{
         creatorProfile: {
             id: string;
@@ -76,10 +76,10 @@ export declare class AuthRepository {
             updatedAt: Date;
             userId: string;
             categories: string[];
-            isVerified: boolean;
-            fullName: string;
-            bio: string | null;
             location: string | null;
+            isVerified: boolean;
+            fullName: string | null;
+            bio: string | null;
             avatarUrl: string | null;
             socialLinks: import("@prisma/client/runtime/library").JsonValue;
             portfolioLinks: import("@prisma/client/runtime/library").JsonValue;
@@ -95,7 +95,7 @@ export declare class AuthRepository {
     } & {
         email: string;
         id: string;
-        phone: string;
+        phone: string | null;
         password: string;
         role: import(".prisma/client").$Enums.Role;
         isEmailVerified: boolean;
@@ -107,10 +107,10 @@ export declare class AuthRepository {
     }>;
     createUserWithBusinessProfile(data: {
         email: string;
-        phone: string;
+        phone?: string;
         password: string;
         role: Role;
-        businessName: string;
+        businessName?: string;
     }): Promise<{
         businessProfile: {
             description: string | null;
@@ -118,11 +118,12 @@ export declare class AuthRepository {
             createdAt: Date;
             updatedAt: Date;
             userId: string;
-            businessName: string;
+            businessName: string | null;
             logoUrl: string | null;
             website: string | null;
             categories: string[];
             panNo: string | null;
+            location: string | null;
             isVerified: boolean;
             allowDirectMessages: boolean;
             hideContactDetails: boolean;
@@ -131,7 +132,7 @@ export declare class AuthRepository {
     } & {
         email: string;
         id: string;
-        phone: string;
+        phone: string | null;
         password: string;
         role: import(".prisma/client").$Enums.Role;
         isEmailVerified: boolean;
@@ -144,7 +145,7 @@ export declare class AuthRepository {
     updateRefreshToken(userId: string, refreshToken: string | null): Promise<{
         email: string;
         id: string;
-        phone: string;
+        phone: string | null;
         password: string;
         role: import(".prisma/client").$Enums.Role;
         isEmailVerified: boolean;
@@ -157,7 +158,7 @@ export declare class AuthRepository {
     updatePassword(userId: string, hashedPassword: string): Promise<{
         email: string;
         id: string;
-        phone: string;
+        phone: string | null;
         password: string;
         role: import(".prisma/client").$Enums.Role;
         isEmailVerified: boolean;
@@ -170,19 +171,19 @@ export declare class AuthRepository {
     verifyEmail(userId: string): Promise<{
         creatorProfile: {
             id: string;
-            fullName: string;
+            fullName: string | null;
             avatarUrl: string | null;
             username: string | null;
         } | null;
         businessProfile: {
             id: string;
-            businessName: string;
+            businessName: string | null;
             logoUrl: string | null;
         } | null;
     } & {
         email: string;
         id: string;
-        phone: string;
+        phone: string | null;
         password: string;
         role: import(".prisma/client").$Enums.Role;
         isEmailVerified: boolean;
@@ -195,7 +196,7 @@ export declare class AuthRepository {
     setOnboarded(userId: string): Promise<{
         email: string;
         id: string;
-        phone: string;
+        phone: string | null;
         password: string;
         role: import(".prisma/client").$Enums.Role;
         isEmailVerified: boolean;
@@ -208,7 +209,7 @@ export declare class AuthRepository {
     deactivateAccount(userId: string): Promise<{
         email: string;
         id: string;
-        phone: string;
+        phone: string | null;
         password: string;
         role: import(".prisma/client").$Enums.Role;
         isEmailVerified: boolean;
@@ -221,19 +222,19 @@ export declare class AuthRepository {
     reactivateAccount(userId: string): Promise<{
         creatorProfile: {
             id: string;
-            fullName: string;
+            fullName: string | null;
             avatarUrl: string | null;
             username: string | null;
         } | null;
         businessProfile: {
             id: string;
-            businessName: string;
+            businessName: string | null;
             logoUrl: string | null;
         } | null;
     } & {
         email: string;
         id: string;
-        phone: string;
+        phone: string | null;
         password: string;
         role: import(".prisma/client").$Enums.Role;
         isEmailVerified: boolean;
@@ -246,7 +247,7 @@ export declare class AuthRepository {
     deleteAccount(userId: string): Promise<{
         email: string;
         id: string;
-        phone: string;
+        phone: string | null;
         password: string;
         role: import(".prisma/client").$Enums.Role;
         isEmailVerified: boolean;
@@ -271,5 +272,18 @@ export declare class AuthRepository {
         expiresAt: Date;
     } | null>;
     deleteOtpsByUserId(userId: string): Promise<import(".prisma/client").Prisma.BatchPayload>;
+    updateUserPhone(userId: string, phone: string): Promise<{
+        email: string;
+        id: string;
+        phone: string | null;
+        password: string;
+        role: import(".prisma/client").$Enums.Role;
+        isEmailVerified: boolean;
+        refreshToken: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        isOnboarded: boolean;
+        isActive: boolean;
+    }>;
 }
 //# sourceMappingURL=auth.repository.d.ts.map

@@ -204,7 +204,7 @@ export const campaignService = {
       proposals: res.data.map((a) => ({
         id: a.id,
         status: a.status.toLowerCase() as 'pending' | 'accepted' | 'rejected',
-        proposedRate: `$${a.proposedRate.toLocaleString()}`,
+        proposedRate: `Rs. ${a.proposedRate.toLocaleString()}`,
         coverLetter: a.coverLetter ?? '',
         createdAt: a.createdAt,
         campaign: a.campaign,

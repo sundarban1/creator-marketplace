@@ -16,8 +16,8 @@ import { legalService, type LegalDocument, type LegalSlug } from '@/services/leg
 import { F } from '@/utilities/constants';
 
 const META: Record<LegalSlug, { title: string; icon: keyof typeof Ionicons.glyphMap }> = {
-  'terms':          { title: 'Terms of Service',  icon: 'document-text-outline' },
-  'privacy-policy': { title: 'Privacy Policy',    icon: 'shield-checkmark-outline' },
+  'terms':          { title: 'Terms of Service', icon: 'document-text-outline' },
+  'privacy-policy': { title: 'Privacy Policy',   icon: 'shield-checkmark-outline' },
 };
 
 function formatDate(iso: string | null): string {
@@ -33,19 +33,32 @@ export default function LegalScreen() {
   const slug = (type as LegalSlug) ?? 'terms';
   const meta = META[slug] ?? META['terms'];
 
-  const [doc, setDoc]       = useState<LegalDocument | null>(null);
+  const [doc,     setDoc]     = useState<LegalDocument | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError]   = useState('');
+  const [error,   setError]   = useState('');
 
-  useEffect(() => {
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+
+  function toggleSection(id: string) {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
+
+  function loadDoc() {
     setLoading(true);
     setError('');
+    setExpandedIds(new Set());
     legalService
       .getDocument(slug)
       .then(setDoc)
       .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load'))
       .finally(() => setLoading(false));
-  }, [slug]);
+  }
+
+  useEffect(() => { loadDoc(); }, [slug]);
 
   return (
     <SafeAreaView style={[styles.root, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
@@ -69,9 +82,7 @@ export default function LegalScreen() {
         <View style={styles.centered}>
           <Ionicons name="cloud-offline-outline" size={48} color={C.textSecondary} />
           <Text style={[styles.errorText, { color: C.textSecondary }]}>{error}</Text>
-          <Pressable
-            style={[styles.retryBtn, { backgroundColor: C.brinjal1 }]}
-            onPress={() => { setLoading(true); legalService.getDocument(slug).then(setDoc).catch((e) => setError(e instanceof Error ? e.message : 'Failed to load')).finally(() => setLoading(false)); }}>
+          <Pressable style={[styles.retryBtn, { backgroundColor: C.brinjal1 }]} onPress={loadDoc}>
             <Text style={styles.retryBtnText}>Try Again</Text>
           </Pressable>
         </View>
@@ -95,23 +106,34 @@ export default function LegalScreen() {
             </View>
           )}
 
-          {/* Sections */}
-          {doc.sections.map((section, i) => (
-            <View key={section.id} style={[styles.section, { backgroundColor: C.surface, borderColor: C.border }]}>
-              <View style={[styles.sectionHeader, { borderBottomColor: C.border }]}>
-                <View style={[styles.sectionIndex, { backgroundColor: `${C.brinjal1}18` }]}>
-                  <Text style={[styles.sectionIndexText, { color: C.brinjal1 }]}>{i + 1}</Text>
+          {/* Accordion sections */}
+          <View style={styles.sections}>
+            {doc.sections.map((section, i) => {
+              const open = expandedIds.has(section.id);
+              return (
+                <View key={section.id} style={[styles.accordionCard, { backgroundColor: C.surface, borderColor: open ? C.brinjal1 : C.border }]}>
+                  <Pressable style={styles.accordionHeader} onPress={() => toggleSection(section.id)}>
+                    <View style={[styles.indexBadge, { backgroundColor: `${C.brinjal1}18` }]}>
+                      <Text style={[styles.indexText, { color: C.brinjal1 }]}>{i + 1}</Text>
+                    </View>
+                    {section.icon ? <Text style={styles.sectionEmoji}>{section.icon}</Text> : null}
+                    <Text style={[styles.accordionTitle, { color: C.text }]}>{section.title}</Text>
+                    <Ionicons
+                      name={open ? 'chevron-up' : 'chevron-down'}
+                      size={16}
+                      color={C.textSecondary}
+                    />
+                  </Pressable>
+                  {open && (
+                    <Text style={[styles.accordionBody, { color: C.textSecondary, borderTopColor: C.border }]}>
+                      {section.body}
+                    </Text>
+                  )}
                 </View>
-                {section.icon ? (
-                  <Text style={styles.sectionIconEmoji}>{section.icon}</Text>
-                ) : null}
-                <Text style={[styles.sectionTitle, { color: C.text }]}>{section.title}</Text>
-              </View>
-              <Text style={[styles.sectionBody, { color: C.textSecondary }]}>{section.body}</Text>
-            </View>
-          ))}
+              );
+            })}
+          </View>
 
-          {/* Footer */}
           <View style={styles.footer}>
             <Text style={[styles.footerText, { color: C.textSecondary }]}>
               © 2026 CreatorMarket · All rights reserved
@@ -135,19 +157,20 @@ const styles = StyleSheet.create({
   retryBtn:     { borderRadius: 12, paddingHorizontal: 24, paddingVertical: 10, marginTop: 4 },
   retryBtnText: { color: '#fff', fontWeight: '700', fontSize: 14, fontFamily: F.bold },
 
-  scroll: { padding: 16, gap: 12, paddingBottom: 40 },
+  scroll:   { padding: 16, paddingBottom: 40 },
+  sections: { gap: 10 },
 
-  updatedRow: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, borderWidth: 1, marginBottom: 4 },
-  updatedText:{ fontSize: 12, fontWeight: '500', fontFamily: F.medium },
+  updatedRow:  { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, borderWidth: 1, marginBottom: 12 },
+  updatedText: { fontSize: 12, fontWeight: '500', fontFamily: F.medium },
 
-  section:       { borderRadius: 16, overflow: 'hidden', borderWidth: 1 },
-  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14, borderBottomWidth: 1 },
-  sectionIndex:  { width: 26, height: 26, borderRadius: 8, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
-  sectionIndexText: { fontSize: 12, fontWeight: '800', fontFamily: F.extrabold },
-  sectionIconEmoji: { fontSize: 18 },
-  sectionTitle:  { fontSize: 15, fontWeight: '700', flex: 1, fontFamily: F.bold },
-  sectionBody:   { fontSize: 14, lineHeight: 22, padding: 14, paddingTop: 12, fontFamily: F.regular },
+  accordionCard:   { borderRadius: 14, borderWidth: 1.5, overflow: 'hidden' },
+  accordionHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14 },
+  indexBadge:      { width: 26, height: 26, borderRadius: 8, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  indexText:       { fontSize: 12, fontWeight: '800', fontFamily: F.extrabold },
+  sectionEmoji:    { fontSize: 18 },
+  accordionTitle:  { flex: 1, fontSize: 14, fontWeight: '700', fontFamily: F.bold },
+  accordionBody:   { fontSize: 14, lineHeight: 22, paddingHorizontal: 14, paddingBottom: 14, paddingTop: 12, borderTopWidth: 1, fontFamily: F.regular },
 
-  footer:     { alignItems: 'center', paddingTop: 8 },
+  footer:     { alignItems: 'center', paddingTop: 20 },
   footerText: { fontSize: 11, fontFamily: F.regular },
 });

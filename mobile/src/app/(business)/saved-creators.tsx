@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { creatorService, type SavedCreatorItem } from '@/services/creator';
 import { F } from '@/utilities/constants';
 
@@ -81,6 +82,7 @@ function CreatorCard({ item, onRemove }: { item: SavedCreatorItem; onRemove: () 
 
 export default function SavedCreatorsScreen() {
   const C = useAppColors();
+  const { t } = useLanguage();
   const [items, setItems]     = useState<SavedCreatorItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -115,7 +117,7 @@ export default function SavedCreatorsScreen() {
             <Ionicons name="arrow-back" size={22} color="#fff" />
           </Pressable>
           <View>
-            <Text style={s.heading}>Saved Creators</Text>
+            <Text style={s.heading}>{t('savedCreators.title')}</Text>
             {items.length > 0 && (
               <Text style={s.subheading}>{items.length} creator{items.length !== 1 ? 's' : ''} saved</Text>
             )}
@@ -140,14 +142,14 @@ export default function SavedCreatorsScreen() {
           ListEmptyComponent={
             <View style={s.empty}>
               <Text style={s.emptyEmoji}>🔖</Text>
-              <Text style={[s.emptyTitle, { color: C.text }]}>No saved creators yet</Text>
+              <Text style={[s.emptyTitle, { color: C.text }]}>{t('savedCreators.empty')}</Text>
               <Text style={[s.emptyHint, { color: C.textSecondary }]}>
-                Visit a creator's profile and tap the bookmark icon to save them here.
+                {t('savedCreators.emptySub')}
               </Text>
               <Pressable
                 style={[s.emptyBtn, { backgroundColor: C.brinjal1 }]}
                 onPress={() => router.push('/(business)/explore-creators')}>
-                <Text style={s.emptyBtnText}>Browse Creators</Text>
+                <Text style={s.emptyBtnText}>{t('savedCreators.browseCTA')}</Text>
               </Pressable>
             </View>
           }

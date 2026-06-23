@@ -14,15 +14,17 @@ class BusinessRepository {
         if (params.category) {
             where.categories = { has: params.category };
         }
-        const campaignWhere = { status: 'ACTIVE' };
-        if (params.platform)
-            campaignWhere.platform = params.platform;
-        if (params.locations && params.locations.length > 0) {
-            campaignWhere.OR = params.locations.map((loc) => ({
-                location: { contains: loc, mode: 'insensitive' },
-            }));
+        if (params.platform || (params.locations && params.locations.length > 0)) {
+            const campaignWhere = { status: 'ACTIVE' };
+            if (params.platform)
+                campaignWhere.platform = params.platform;
+            if (params.locations && params.locations.length > 0) {
+                campaignWhere.OR = params.locations.map((loc) => ({
+                    location: { contains: loc, mode: 'insensitive' },
+                }));
+            }
+            where.campaigns = { some: campaignWhere };
         }
-        where.campaigns = { some: campaignWhere };
         const skip = (params.page - 1) * params.limit;
         const [businesses, total] = await Promise.all([
             prisma_1.default.businessProfile.findMany({

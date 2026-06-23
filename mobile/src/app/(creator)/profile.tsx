@@ -1,34 +1,36 @@
 import { router, useFocusEffect } from 'expo-router';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { BackButton } from '@/components/BackButton';
 import { useCallback, useState } from 'react';
-import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator, Alert, Image, Linking,
+  Pressable, ScrollView, StyleSheet, Text, View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
 import { useAppColors } from '@/context/ThemeContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { creatorService, type ApiCreatorProfile } from '@/services/creator';
 import { F } from '@/utilities/constants';
+import { pickAndUpload } from '@/utilities/uploadImage';
 
 const PLATFORM_MAP: Record<string, { platform: string; color: string; iconName: string }> = {
   instagram: { platform: 'Instagram', color: '#E1306C', iconName: 'instagram' },
-  tiktok:    { platform: 'TikTok',    color: '#010101', iconName: 'tiktok' },
-  youtube:   { platform: 'YouTube',   color: '#FF0000', iconName: 'youtube' },
-  facebook:  { platform: 'Facebook',  color: '#1877F2', iconName: 'facebook' },
+  tiktok:    { platform: 'TikTok',    color: '#010101', iconName: 'tiktok'    },
+  youtube:   { platform: 'YouTube',   color: '#FF0000', iconName: 'youtube'   },
+  facebook:  { platform: 'Facebook',  color: '#1877F2', iconName: 'facebook'  },
   twitter:   { platform: 'X / Twitter', color: '#1DA1F2', iconName: 'twitter' },
-  linkedin:  { platform: 'LinkedIn',  color: '#0A66C2', iconName: 'linkedin' },
+  linkedin:  { platform: 'LinkedIn',  color: '#0A66C2', iconName: 'linkedin'  },
   pinterest: { platform: 'Pinterest', color: '#E60023', iconName: 'pinterest' },
-  snapchat:  { platform: 'Snapchat',  color: '#FFFC00', iconName: 'snapchat' },
-  twitch:    { platform: 'Twitch',    color: '#9146FF', iconName: 'twitch' },
+  snapchat:  { platform: 'Snapchat',  color: '#FFFC00', iconName: 'snapchat'  },
+  twitch:    { platform: 'Twitch',    color: '#9146FF', iconName: 'twitch'    },
 };
 
 function extractHandle(url: string): string {
   try {
     const path = new URL(url).pathname.replace(/^\/|\/$/g, '');
     return path ? `@${path}` : url;
-  } catch {
-    return url;
-  }
+  } catch { return url; }
 }
 
 function fmtFollowers(n: number): string {
@@ -37,7 +39,7 @@ function fmtFollowers(n: number): string {
   return n.toString();
 }
 
-function detectPlatform(url: string): { iconName: string; color: string; platform: string } {
+function detectPlatform(url: string) {
   const low = url.toLowerCase();
   if (low.includes('instagram.com')) return PLATFORM_MAP.instagram;
   if (low.includes('tiktok.com'))    return PLATFORM_MAP.tiktok;
@@ -46,7 +48,7 @@ function detectPlatform(url: string): { iconName: string; color: string; platfor
   if (low.includes('twitter.com') || low.includes('x.com')) return PLATFORM_MAP.twitter;
   if (low.includes('linkedin.com')) return PLATFORM_MAP.linkedin;
   if (low.includes('pinterest.com')) return PLATFORM_MAP.pinterest;
-  if (low.includes('twitch.tv')) return PLATFORM_MAP.twitch;
+  if (low.includes('twitch.tv'))    return PLATFORM_MAP.twitch;
   return { iconName: 'link', color: '#6366F1', platform: 'Link' };
 }
 
@@ -55,283 +57,374 @@ function shortenUrl(url: string): string {
 }
 
 export default function CreatorProfileScreen() {
-  const { user, logout } = useAuth();
+  const { user, updateUser, logout } = useAuth();
   const C = useAppColors();
-  const [profile, setProfile] = useState<ApiCreatorProfile | null>(null);
+  const { t } = useLanguage();
+  const [profile, setProfile]           = useState<ApiCreatorProfile | null>(null);
+  const [avatarUploading, setUploading] = useState(false);
 
-  useFocusEffect(
-    useCallback(() => {
-      creatorService.getProfile().then(setProfile).catch(() => {});
-    }, [])
-  );
+  useFocusEffect(useCallback(() => {
+    creatorService.getProfile().then(setProfile).catch(() => {});
+  }, []));
+
+  async function handleAvatarPress() {
+    setUploading(true);
+    try {
+      const url = await pickAndUpload('creator-avatar');
+      if (url) {
+        setProfile((p) => p ? { ...p, avatarUrl: url } : p);
+        updateUser({ avatar: url });
+      }
+    } catch {
+      Alert.alert(t('profile.uploadFailed'), t('profile.uploadFailedSub'));
+    } finally {
+      setUploading(false);
+    }
+  }
 
   const displayName   = profile?.fullName ?? user?.name ?? 'Creator';
   const displayAvatar = profile?.avatarUrl ?? user?.avatar;
   const displayBio    = profile?.bio ?? null;
 
-  // Prefer richly typed socialAccounts (with followers); fall back to socialLinks map
   const richAccounts = profile?.socialAccounts?.length
     ? profile.socialAccounts.map((acc) => ({
         ...(PLATFORM_MAP[acc.platform] ?? { platform: acc.platform, color: '#666666', iconName: 'link' }),
-        handle:    extractHandle(acc.profileUrl),
-        url:       acc.profileUrl,
+        handle: extractHandle(acc.profileUrl),
+        url:    acc.profileUrl,
         followers: acc.followers,
       }))
     : Object.entries(profile?.socialLinks ?? {})
         .filter(([, url]) => !!url)
         .map(([key, url]) => ({
           ...(PLATFORM_MAP[key] ?? { platform: key, color: '#666666', iconName: 'link' }),
-          handle:    extractHandle(url!),
-          url:       url!,
-          followers: 0,
+          handle: extractHandle(url!), url: url!, followers: 0,
         }));
 
   const portfolioLinks = profile?.portfolioLinks ?? [];
+  const totalFollowers = richAccounts.reduce((s, a) => s + a.followers, 0);
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
-      <LinearGradient colors={['#F97316', '#EF4444', '#EC4899']} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.coverGradient}>
-        <View style={styles.topBar}>
-          <BackButton fallback="/(creator)/" />
-          <Text style={[styles.topTitle, { color: '#fff' }]}>My Profile</Text>
-          <Pressable style={styles.logoutBtn} onPress={logout}>
-            <Text style={[styles.logoutText, { color: 'rgba(255,255,255,0.9)' }]}>Logout</Text>
-          </Pressable>
-        </View>
-      </LinearGradient>
+    <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 60 }}>
 
-      {/* Avatar outside ScrollView — straddles gradient bottom without clipping or topBar overlap */}
-      <View style={styles.avatarWrap}>
-        {displayAvatar ? (
-          <Image source={{ uri: displayAvatar }} style={[styles.avatar, { borderColor: C.surface }]} />
-        ) : (
-          <View style={[styles.avatar, styles.avatarFallback, { borderColor: C.surface, backgroundColor: C.brinjal1 }]}>
-            <Text style={styles.avatarFallbackText}>{displayName[0].toUpperCase()}</Text>
-          </View>
-        )}
-        <Pressable
-          style={[styles.editAvatarBtn, { backgroundColor: C.brinjal1, borderColor: C.surface }]}
-          onPress={() => router.push('/(creator)/edit-profile')}>
-          <Ionicons name="create" size={13} color="#fff" />
-        </Pressable>
-      </View>
+        {/* ── Hero Cover ── */}
+        <LinearGradient
+          colors={['#7C3AED', '#EC4899', '#F97316']}
+          start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+          style={s.cover}>
+          {/* Decorative bubbles */}
+          <View style={[s.bubble, s.bubble1]} />
+          <View style={[s.bubble, s.bubble2]} />
+          <View style={[s.bubble, s.bubble3]} />
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-
-        {/* ── Name / Bio ── */}
-        <View style={styles.infoSection}>
-          <Text style={[styles.name, { color: C.text }]}>{displayName}</Text>
-          <Text style={[styles.handle, { color: C.textSecondary }]}>
-            @{displayName.toLowerCase().replace(/\s+/g, '')}{'  ·  '}Creator
-          </Text>
-          {displayBio ? <Text style={[styles.bio, { color: C.text }]}>{displayBio}</Text> : null}
-          {profile?.location ? (
-            <View style={styles.locationRow}>
-              <Ionicons name="location" size={13} color={C.textSecondary} />
-              <Text style={[styles.location, { color: C.textSecondary }]}>{profile.location}</Text>
-            </View>
-          ) : null}
-          <Pressable
-            style={[styles.editProfileBtn, { borderColor: C.border }]}
-            onPress={() => router.push('/(creator)/edit-profile')}>
-            <Ionicons name="create-outline" size={14} color={C.text} />
-            <Text style={[styles.editProfileText, { color: C.text }]}>Edit Profile</Text>
-          </Pressable>
-        </View>
-
-        {/* ── Social Accounts ── */}
-        <View style={styles.section}>
-          <View style={styles.sectionRow}>
-            <Text style={[styles.sectionTitle, { color: C.text }]}>Social Accounts</Text>
-            <Pressable onPress={() => router.push('/(creator)/settings?section=social' as never)}>
-              <Text style={[styles.actionLink, { color: C.brinjal1 }]}>
-                {richAccounts.length > 0 ? 'Manage' : '+ Add'}
-              </Text>
+          {/* Top bar */}
+          <View style={s.topBar}>
+            <Pressable style={s.topIconBtn} onPress={() => router.back()}>
+              <Ionicons name="chevron-back" size={22} color="#fff" />
+            </Pressable>
+            <Text style={s.topTitle}>{t('profile.myProfile')}</Text>
+            <Pressable style={s.topIconBtn} onPress={logout}>
+              <Ionicons name="log-out-outline" size={20} color="#fff" />
             </Pressable>
           </View>
+        </LinearGradient>
 
-          {richAccounts.length > 0 ? (
-            <View style={styles.cardsGap}>
-              {richAccounts.map((acc) => (
-                <Pressable
-                  key={acc.platform}
-                  style={[styles.socialCard, { backgroundColor: C.surface }]}
-                  onPress={() => Linking.openURL(acc.url).catch(() => {})}>
-                  <View style={[styles.platformIconWrap, { backgroundColor: acc.color + '18' }]}>
-                    <FontAwesome5 name={acc.iconName} size={20} color={acc.color} />
-                  </View>
-                  <View style={styles.socialInfo}>
-                    <Text style={[styles.socialPlatform, { color: C.text }]}>{acc.platform}</Text>
-                    <Text style={[styles.socialHandle, { color: C.textSecondary }]}>{acc.handle}</Text>
-                  </View>
-                  {acc.followers > 0 && (
-                    <View style={[styles.followerBadge, { backgroundColor: acc.color + '15' }]}>
-                      <Text style={[styles.followerCount, { color: acc.color }]}>{fmtFollowers(acc.followers)}</Text>
-                      <Text style={[styles.followerLabel, { color: acc.color }]}>followers</Text>
-                    </View>
-                  )}
-                  <Ionicons name="open-outline" size={15} color={C.textSecondary} />
-                </Pressable>
-              ))}
-            </View>
-          ) : (
-            <Pressable
-              style={[styles.emptyCard, { backgroundColor: C.surface, borderColor: C.border }]}
-              onPress={() => router.push('/(creator)/settings?section=social' as never)}>
-              <Ionicons name="share-social-outline" size={28} color={C.textSecondary} />
-              <Text style={[styles.emptyTitle, { color: C.text }]}>No social accounts yet</Text>
-              <Text style={[styles.emptyHint, { color: C.textSecondary }]}>Link your Instagram, TikTok, YouTube and more</Text>
-              <View style={[styles.emptyAddBtn, { backgroundColor: C.brinjal1 }]}>
-                <Text style={styles.emptyAddBtnText}>+ Add Social Account</Text>
+        {/* ── Avatar card (overlaps cover) ── */}
+        <View style={[s.profileCard, { backgroundColor: C.surface }]}>
+          {/* Avatar */}
+          <View style={s.avatarArea}>
+            <Pressable onPress={handleAvatarPress} disabled={avatarUploading} style={s.avatarPressable}>
+              {displayAvatar ? (
+                <Image source={{ uri: displayAvatar }} style={s.avatar} />
+              ) : (
+                <LinearGradient colors={['#7C3AED', '#EC4899']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.avatar}>
+                  <Text style={s.avatarInitial}>{displayName[0].toUpperCase()}</Text>
+                </LinearGradient>
+              )}
+              <View style={[s.cameraBadge, { backgroundColor: C.brinjal1 }]}>
+                {avatarUploading
+                  ? <ActivityIndicator size="small" color="#fff" />
+                  : <Ionicons name="camera" size={13} color="#fff" />}
               </View>
             </Pressable>
-          )}
+          </View>
+
+          {/* Identity */}
+          <Text style={[s.name, { color: C.text }]}>{displayName}</Text>
+          {profile?.location ? (
+            <View style={s.locationRow}>
+              <Ionicons name="location-sharp" size={13} color={C.brinjal1} />
+              <Text style={[s.location, { color: C.textSecondary }]}>{profile.location}</Text>
+            </View>
+          ) : null}
+          {displayBio ? (
+            <Text style={[s.bio, { color: C.textSecondary }]}>{displayBio}</Text>
+          ) : null}
+
+          {/* Edit profile button */}
+          <Pressable
+            style={[s.editBtn, { borderColor: C.brinjal1 }]}
+            onPress={() => router.push('/(creator)/edit-profile')}>
+            <Ionicons name="create-outline" size={15} color={C.brinjal1} />
+            <Text style={[s.editBtnText, { color: C.brinjal1 }]}>{t('profile.editProfile')}</Text>
+          </Pressable>
+
+          {/* Stats strip */}
+          <View style={[s.statsStrip, { borderTopColor: C.border }]}>
+            <View style={s.statItem}>
+              <Text style={[s.statValue, { color: C.text }]}>{richAccounts.length}</Text>
+              <Text style={[s.statLabel, { color: C.textSecondary }]}>{t('profile.platforms')}</Text>
+            </View>
+            <View style={[s.statDivider, { backgroundColor: C.border }]} />
+            <View style={s.statItem}>
+              <Text style={[s.statValue, { color: C.text }]}>
+                {totalFollowers > 0 ? fmtFollowers(totalFollowers) : '—'}
+              </Text>
+              <Text style={[s.statLabel, { color: C.textSecondary }]}>{t('profile.followers')}</Text>
+            </View>
+            <View style={[s.statDivider, { backgroundColor: C.border }]} />
+            <View style={s.statItem}>
+              <Text style={[s.statValue, { color: C.text }]}>
+                {profile?.categories?.length ?? 0}
+              </Text>
+              <Text style={[s.statLabel, { color: C.textSecondary }]}>{t('profile.categories')}</Text>
+            </View>
+          </View>
         </View>
 
-        {/* ── Content Categories ── */}
-        <View style={styles.section}>
-          <View style={styles.sectionRow}>
-            <Text style={[styles.sectionTitle, { color: C.text }]}>Content Categories</Text>
-            <Pressable onPress={() => router.push('/(creator)/edit-categories')}>
-              <Text style={[styles.actionLink, { color: C.brinjal1 }]}>Edit</Text>
-            </Pressable>
-          </View>
-          {profile?.categories && profile.categories.length > 0 ? (
-            <View style={styles.catWrap}>
+        {/* ── Categories ── */}
+        <SectionCard
+          title="Content Categories"
+          action={{ label: profile?.categories?.length ? 'Edit' : '+ Add', onPress: () => router.push('/(creator)/edit-categories') }}
+          C={C}>
+          {profile?.categories?.length ? (
+            <View style={s.chipWrap}>
               {profile.categories.map((cat) => (
-                <View key={cat} style={[styles.catChip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
-                  <Text style={[styles.catChipTxt, { color: C.brinjal1 }]}>{cat}</Text>
+                <View key={cat} style={[s.chip, { backgroundColor: C.primaryLight }]}>
+                  <Text style={[s.chipText, { color: C.brinjal1 }]}>{cat}</Text>
                 </View>
               ))}
             </View>
           ) : (
-            <Pressable
-              style={[styles.emptyCard, { backgroundColor: C.surface, borderColor: C.border }]}
-              onPress={() => router.push('/(creator)/edit-categories')}>
-              <Text style={[styles.emptyHint, { color: C.textSecondary }]}>No categories selected. Tap to add.</Text>
-            </Pressable>
+            <EmptyState
+              icon="grid-outline"
+              title="No categories yet"
+              hint="Add your content niches to attract matching brands"
+              cta="Add Categories"
+              onPress={() => router.push('/(creator)/edit-categories')}
+              C={C} />
           )}
-        </View>
+        </SectionCard>
+
+        {/* ── Social Accounts ── */}
+        <SectionCard
+          title={t('profile.socialAccounts')}
+          action={{ label: richAccounts.length > 0 ? 'Manage' : '+ Add', onPress: () => router.push('/(creator)/settings?section=social' as never) }}
+          C={C}>
+          {richAccounts.length > 0 ? (
+            <View style={s.cardList}>
+              {richAccounts.map((acc) => (
+                <Pressable
+                  key={acc.platform}
+                  style={[s.socialRow, { backgroundColor: C.background, borderColor: C.border }]}
+                  onPress={() => Linking.openURL(acc.url).catch(() => {})}>
+                  <View style={[s.platformBubble, { backgroundColor: acc.color + '18' }]}>
+                    <FontAwesome5 name={acc.iconName} size={18} color={acc.color} />
+                  </View>
+                  <View style={s.socialMeta}>
+                    <Text style={[s.socialName, { color: C.text }]}>{acc.platform}</Text>
+                    <Text style={[s.socialHandle, { color: C.textSecondary }]}>{acc.handle}</Text>
+                  </View>
+                  {acc.followers > 0 && (
+                    <View style={[s.followerPill, { backgroundColor: acc.color + '14' }]}>
+                      <Text style={[s.followerNum, { color: acc.color }]}>{fmtFollowers(acc.followers)}</Text>
+                      <Text style={[s.followerLbl, { color: acc.color + 'CC' }]}>followers</Text>
+                    </View>
+                  )}
+                  <Ionicons name="chevron-forward" size={16} color={C.border} />
+                </Pressable>
+              ))}
+            </View>
+          ) : (
+            <EmptyState
+              icon="share-social-outline"
+              title="No social accounts linked"
+              hint="Connect Instagram, TikTok, YouTube and more to showcase your reach"
+              cta="+ Link Account"
+              onPress={() => router.push('/(creator)/settings?section=social' as never)}
+              C={C} />
+          )}
+        </SectionCard>
 
         {/* ── Past Work ── */}
-        <View style={styles.section}>
-          <View style={styles.sectionRow}>
-            <Text style={[styles.sectionTitle, { color: C.text }]}>Past Work</Text>
-            <Pressable onPress={() => router.push('/(creator)/settings?section=past-work' as never)}>
-              <Text style={[styles.actionLink, { color: C.brinjal1 }]}>+ Add</Text>
-            </Pressable>
-          </View>
-
+        <SectionCard
+          title={t('profile.pastWork')}
+          action={{ label: '+ Add', onPress: () => router.push('/(creator)/settings?section=past-work' as never) }}
+          C={C}>
           {portfolioLinks.length > 0 ? (
-            <View style={styles.cardsGap}>
+            <View style={s.cardList}>
               {portfolioLinks.map((item) => {
                 const plat = detectPlatform(item.url);
                 return (
                   <Pressable
                     key={item.id}
-                    style={[styles.portfolioCard, { backgroundColor: C.surface }]}
+                    style={[s.socialRow, { backgroundColor: C.background, borderColor: C.border }]}
                     onPress={() => Linking.openURL(item.url).catch(() => {})}>
-                    <View style={[styles.platformIconWrap, { backgroundColor: plat.color + '18' }]}>
-                      <FontAwesome5 name={plat.iconName} size={18} color={plat.color} />
+                    <View style={[s.platformBubble, { backgroundColor: plat.color + '18' }]}>
+                      <FontAwesome5 name={plat.iconName} size={16} color={plat.color} />
                     </View>
-                    <View style={styles.portfolioInfo}>
-                      <Text style={[styles.portfolioLabel, { color: C.text }]} numberOfLines={1}>{item.label}</Text>
-                      <Text style={[styles.portfolioUrl, { color: C.textSecondary }]} numberOfLines={1}>{shortenUrl(item.url)}</Text>
+                    <View style={s.socialMeta}>
+                      <Text style={[s.socialName, { color: C.text }]} numberOfLines={1}>{item.label}</Text>
+                      <Text style={[s.socialHandle, { color: C.textSecondary }]} numberOfLines={1}>{shortenUrl(item.url)}</Text>
                     </View>
-                    <Ionicons name="open-outline" size={18} color={C.textSecondary} />
+                    <Ionicons name="open-outline" size={16} color={C.textSecondary} />
                   </Pressable>
                 );
               })}
-
-              {/* Add more button below existing items */}
               <Pressable
-                style={[styles.addMoreBtn, { borderColor: C.brinjal1 + '66', backgroundColor: C.primaryLight }]}
+                style={[s.addMoreRow, { borderColor: C.brinjal1 + '55' }]}
                 onPress={() => router.push('/(creator)/settings?section=past-work' as never)}>
-                <Ionicons name="add-circle-outline" size={18} color={C.brinjal1} />
-                <Text style={[styles.addMoreText, { color: C.brinjal1 }]}>Add another work sample</Text>
+                <Ionicons name="add-circle-outline" size={16} color={C.brinjal1} />
+                <Text style={[s.addMoreText, { color: C.brinjal1 }]}>Add another sample</Text>
               </Pressable>
             </View>
           ) : (
-            <Pressable
-              style={[styles.emptyCard, { backgroundColor: C.surface, borderColor: C.border }]}
-              onPress={() => router.push('/(creator)/settings?section=past-work' as never)}>
-              <Ionicons name="briefcase-outline" size={28} color={C.textSecondary} />
-              <Text style={[styles.emptyTitle, { color: C.text }]}>No past work yet</Text>
-              <Text style={[styles.emptyHint, { color: C.textSecondary }]}>
-                Share links to campaigns, posts, videos, or any content you've created for brands
-              </Text>
-              <View style={[styles.emptyAddBtn, { backgroundColor: C.brinjal1 }]}>
-                <Ionicons name="add" size={16} color="#fff" />
-                <Text style={styles.emptyAddBtnText}>Add Past Work</Text>
-              </View>
-            </Pressable>
+            <EmptyState
+              icon="briefcase-outline"
+              title="No past work yet"
+              hint="Share links to posts, campaigns, or videos you've created for brands"
+              cta="+ Add Work Sample"
+              onPress={() => router.push('/(creator)/settings?section=past-work' as never)}
+              C={C} />
           )}
-        </View>
+        </SectionCard>
 
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  container:          { flex: 1 },
-  scrollContent:      { paddingBottom: 56 },
-  coverGradient:      { paddingBottom: 56, overflow: 'hidden' },
-  topBar:             { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 10 },
-  topTitle:           { fontSize: 16, fontWeight: '700', fontFamily: F.bold },
-  logoutBtn:          { padding: 4 },
-  logoutText:         { fontSize: 13, fontWeight: '600', fontFamily: F.semibold },
+// ── Shared sub-components ─────────────────────────────────────────────────────
 
-  avatarWrap:         { alignSelf: 'center', marginTop: -46, marginBottom: 10, zIndex: 1 },
-  avatar:             { width: 92, height: 92, borderRadius: 46, borderWidth: 3 },
-  avatarFallback:     { justifyContent: 'center', alignItems: 'center' },
-  avatarFallbackText: { color: '#fff', fontSize: 36, fontWeight: '800', fontFamily: F.extrabold },
-  editAvatarBtn:      { position: 'absolute', bottom: 0, right: 0, width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center', borderWidth: 2 },
+function SectionCard({
+  title, action, children, C,
+}: {
+  title: string;
+  action: { label: string; onPress: () => void };
+  children: React.ReactNode;
+  C: ReturnType<typeof useAppColors>;
+}) {
+  return (
+    <View style={[s.sectionCard, { backgroundColor: C.surface }]}>
+      <View style={s.sectionHeader}>
+        <Text style={[s.sectionTitle, { color: C.text }]}>{title}</Text>
+        <Pressable onPress={action.onPress} hitSlop={8}>
+          <Text style={[s.sectionAction, { color: C.brinjal1 }]}>{action.label}</Text>
+        </Pressable>
+      </View>
+      {children}
+    </View>
+  );
+}
 
-  infoSection:        { alignItems: 'center', paddingHorizontal: 24, gap: 6, marginBottom: 24 },
-  name:               { fontSize: 20, fontWeight: '800', fontFamily: F.extrabold },
-  handle:             { fontSize: 13, fontWeight: '500', fontFamily: F.medium },
-  bio:                { fontSize: 14, textAlign: 'center', lineHeight: 21, marginTop: 4, fontFamily: F.regular },
-  locationRow:        { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  location:           { fontSize: 13, fontFamily: F.regular },
-  editProfileBtn:     { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8, borderWidth: 1.5, borderRadius: 10, paddingHorizontal: 20, paddingVertical: 8 },
-  editProfileText:    { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
+function EmptyState({
+  icon, title, hint, cta, onPress, C,
+}: {
+  icon: string; title: string; hint: string; cta: string;
+  onPress: () => void;
+  C: ReturnType<typeof useAppColors>;
+}) {
+  return (
+    <View style={[s.emptyWrap, { borderColor: C.border }]}>
+      <Ionicons name={icon as never} size={32} color={C.border} />
+      <Text style={[s.emptyTitle, { color: C.text }]}>{title}</Text>
+      <Text style={[s.emptyHint, { color: C.textSecondary }]}>{hint}</Text>
+      <Pressable style={[s.emptyCta, { backgroundColor: C.brinjal1 }]} onPress={onPress}>
+        <Text style={s.emptyCtaText}>{cta}</Text>
+      </Pressable>
+    </View>
+  );
+}
 
-  section:            { marginHorizontal: 20, marginBottom: 24 },
-  sectionRow:         { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
-  sectionTitle:       { fontSize: 16, fontWeight: '700', fontFamily: F.bold },
-  actionLink:         { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
+// ── Styles ────────────────────────────────────────────────────────────────────
 
-  cardsGap:           { gap: 10 },
+const s = StyleSheet.create({
+  container: { flex: 1 },
 
-  // Social cards
-  socialCard:         { flexDirection: 'row', alignItems: 'center', borderRadius: 16, padding: 14, gap: 12, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
-  platformIconWrap:   { width: 44, height: 44, borderRadius: 12, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
-  socialInfo:         { flex: 1, gap: 2 },
-  socialPlatform:     { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
-  socialHandle:       { fontSize: 12, fontFamily: F.regular },
-  followerBadge:      { alignItems: 'center', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 },
-  followerCount:      { fontSize: 13, fontWeight: '800', fontFamily: F.extrabold },
-  followerLabel:      { fontSize: 9, fontWeight: '600', textTransform: 'uppercase', fontFamily: F.semibold },
+  // Cover
+  cover:    { height: 180, overflow: 'hidden' },
+  bubble:   { position: 'absolute', borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.08)' },
+  bubble1:  { width: 160, height: 160, top: -50, right: -30 },
+  bubble2:  { width: 100, height: 100, bottom: -20, left: 30 },
+  bubble3:  { width: 60,  height: 60,  top: 20,   left: -20  },
+  topBar:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 10 },
+  topTitle: { fontSize: 17, fontWeight: '700', color: '#fff', fontFamily: F.bold },
+  topIconBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center' },
 
-  // Categories
-  catWrap:            { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  catChip:            { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1.5 },
-  catChipTxt:         { fontSize: 13, fontWeight: '600', fontFamily: F.semibold },
+  // Profile card (floats over cover)
+  profileCard: { marginHorizontal: 16, marginTop: -60, borderRadius: 24, padding: 20, alignItems: 'center', gap: 6,
+                 shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 20, shadowOffset: { width: 0, height: 8 }, elevation: 8 },
 
-  // Portfolio / past work
-  portfolioCard:      { flexDirection: 'row', alignItems: 'center', borderRadius: 16, padding: 14, gap: 12, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
-  portfolioInfo:      { flex: 1, gap: 3 },
-  portfolioLabel:     { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
-  portfolioUrl:       { fontSize: 12, fontFamily: F.regular },
+  // Avatar
+  avatarArea:     { marginTop: -50, marginBottom: 6, alignItems: 'center', alignSelf: 'center' },
+  avatarPressable:{ position: 'relative', alignItems: 'center', justifyContent: 'center' },
+  avatar:         { width: 96, height: 96, borderRadius: 48, justifyContent: 'center', alignItems: 'center',
+                    borderWidth: 4, borderColor: '#fff', overflow: 'hidden' },
+  avatarInitial:  { fontSize: 38, fontWeight: '800', color: '#fff', fontFamily: F.extrabold, textAlign: 'center', lineHeight: 96 },
+  cameraBadge:    { position: 'absolute', bottom: 2, right: 2, width: 28, height: 28, borderRadius: 14,
+                    justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#fff' },
 
-  addMoreBtn:         { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12, borderWidth: 1.5, borderStyle: 'dashed', paddingVertical: 12 },
-  addMoreText:        { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
+  // Identity
+  name:        { fontSize: 22, fontWeight: '800', fontFamily: F.extrabold, textAlign: 'center' },
+  locationRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  location:    { fontSize: 13, fontFamily: F.regular },
+  bio:         { fontSize: 13, textAlign: 'center', lineHeight: 20, paddingHorizontal: 8, fontFamily: F.regular },
 
-  // Empty states
-  emptyCard:          { borderRadius: 16, borderWidth: 1.5, borderStyle: 'dashed', padding: 24, alignItems: 'center', gap: 8 },
-  emptyTitle:         { fontSize: 15, fontWeight: '700', fontFamily: F.bold },
-  emptyHint:          { fontSize: 13, textAlign: 'center', lineHeight: 19, fontFamily: F.regular },
-  emptyAddBtn:        { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 10, paddingHorizontal: 20, paddingVertical: 10, marginTop: 4 },
-  emptyAddBtnText:    { fontSize: 13, fontWeight: '700', color: '#fff', fontFamily: F.bold },
+  editBtn:     { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6,
+                 borderWidth: 1.5, borderRadius: 20, paddingHorizontal: 20, paddingVertical: 8 },
+  editBtnText: { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
+
+  // Stats strip
+  statsStrip:   { flexDirection: 'row', alignItems: 'center', width: '100%', marginTop: 16,
+                  paddingTop: 16, borderTopWidth: 1 },
+  statItem:     { flex: 1, alignItems: 'center', gap: 2 },
+  statValue:    { fontSize: 18, fontWeight: '800', fontFamily: F.extrabold },
+  statLabel:    { fontSize: 11, fontWeight: '500', fontFamily: F.medium },
+  statDivider:  { width: 1, height: 32 },
+
+  // Section cards
+  sectionCard:   { marginHorizontal: 16, marginTop: 12, borderRadius: 20, padding: 18,
+                   shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
+  sectionTitle:  { fontSize: 15, fontWeight: '700', fontFamily: F.bold },
+  sectionAction: { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
+
+  // Category chips
+  chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  chip:     { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20 },
+  chipText: { fontSize: 13, fontWeight: '600', fontFamily: F.semibold },
+
+  // Social / portfolio rows
+  cardList:      { gap: 10 },
+  socialRow:     { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 14, padding: 12, borderWidth: 1 },
+  platformBubble:{ width: 42, height: 42, borderRadius: 12, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  socialMeta:    { flex: 1, gap: 2 },
+  socialName:    { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
+  socialHandle:  { fontSize: 12, fontFamily: F.regular },
+  followerPill:  { alignItems: 'center', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, marginRight: 4 },
+  followerNum:   { fontSize: 13, fontWeight: '800', fontFamily: F.extrabold },
+  followerLbl:   { fontSize: 9, fontWeight: '600', textTransform: 'uppercase', fontFamily: F.semibold },
+
+  // Add more
+  addMoreRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+                 borderRadius: 12, borderWidth: 1.5, borderStyle: 'dashed', paddingVertical: 11 },
+  addMoreText: { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
+
+  // Empty state
+  emptyWrap:    { alignItems: 'center', gap: 8, paddingVertical: 20, paddingHorizontal: 12,
+                  borderWidth: 1.5, borderRadius: 16, borderStyle: 'dashed' },
+  emptyTitle:   { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
+  emptyHint:    { fontSize: 12, textAlign: 'center', lineHeight: 18, fontFamily: F.regular },
+  emptyCta:     { borderRadius: 12, paddingHorizontal: 20, paddingVertical: 9, marginTop: 4 },
+  emptyCtaText: { fontSize: 13, fontWeight: '700', color: '#fff', fontFamily: F.bold },
 });

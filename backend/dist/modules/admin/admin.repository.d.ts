@@ -10,10 +10,10 @@ export declare class AdminRepository {
         recentUsers: {
             email: string;
             creatorProfile: {
-                fullName: string;
+                fullName: string | null;
             } | null;
             businessProfile: {
-                businessName: string;
+                businessName: string | null;
             } | null;
             id: string;
             role: import(".prisma/client").$Enums.Role;
@@ -25,11 +25,11 @@ export declare class AdminRepository {
             email: string;
             creatorProfile: {
                 isVerified: boolean;
-                fullName: string;
+                fullName: string | null;
                 avatarUrl: string | null;
             } | null;
             businessProfile: {
-                businessName: string;
+                businessName: string | null;
                 logoUrl: string | null;
                 isVerified: boolean;
             } | null;
@@ -56,10 +56,10 @@ export declare class AdminRepository {
             updatedAt: Date;
             userId: string;
             categories: string[];
-            isVerified: boolean;
-            fullName: string;
-            bio: string | null;
             location: string | null;
+            isVerified: boolean;
+            fullName: string | null;
+            bio: string | null;
             avatarUrl: string | null;
             socialLinks: import("@prisma/client/runtime/library").JsonValue;
             portfolioLinks: import("@prisma/client/runtime/library").JsonValue;
@@ -90,11 +90,12 @@ export declare class AdminRepository {
             createdAt: Date;
             updatedAt: Date;
             userId: string;
-            businessName: string;
+            businessName: string | null;
             logoUrl: string | null;
             website: string | null;
             categories: string[];
             panNo: string | null;
+            location: string | null;
             isVerified: boolean;
             allowDirectMessages: boolean;
             hideContactDetails: boolean;
@@ -108,7 +109,7 @@ export declare class AdminRepository {
                 applications: number;
             };
             business: {
-                businessName: string;
+                businessName: string | null;
                 logoUrl: string | null;
             };
         } & {
@@ -149,7 +150,7 @@ export declare class AdminRepository {
     deleteUser(userId: string): Promise<{
         email: string;
         id: string;
-        phone: string;
+        phone: string | null;
         password: string;
         role: import(".prisma/client").$Enums.Role;
         isEmailVerified: boolean;

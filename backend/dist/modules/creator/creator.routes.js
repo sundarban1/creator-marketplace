@@ -6,6 +6,7 @@ const business_controller_1 = require("../business/business.controller");
 const favorite_controller_1 = require("./favorite.controller");
 const auth_1 = require("../../middleware/auth");
 const validate_1 = require("../../middleware/validate");
+const upload_1 = require("../../middleware/upload");
 const creator_schema_1 = require("./creator.schema");
 const router = (0, express_1.Router)();
 const ctrl = new creator_controller_1.CreatorController();
@@ -89,6 +90,7 @@ router.get('/profile', ctrl.getProfile.bind(ctrl));
  *                   $ref: '#/components/schemas/CreatorProfile'
  */
 router.put('/profile', (0, validate_1.validate)(creator_schema_1.updateCreatorProfileSchema), ctrl.updateProfile.bind(ctrl));
+router.post('/avatar', upload_1.uploadImage.single('avatar'), ctrl.uploadAvatar.bind(ctrl));
 /**
  * @swagger
  * /api/creator/portfolio:
@@ -221,6 +223,7 @@ router.put('/campaign-preferences', (0, validate_1.validate)(creator_schema_1.up
 // Explore businesses (creator browsing businesses)
 router.get('/businesses', businessCtrl.listBusinesses.bind(businessCtrl));
 router.get('/businesses/favorites', favoriteCtrl.listFavorites.bind(favoriteCtrl));
+router.get('/businesses/favorites/list', favoriteCtrl.listFavoriteBusinesses.bind(favoriteCtrl));
 router.post('/businesses/:businessId/favorite', favoriteCtrl.toggle.bind(favoriteCtrl));
 router.get('/businesses/:id', businessCtrl.getBusinessPublic.bind(businessCtrl));
 exports.default = router;

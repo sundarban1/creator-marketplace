@@ -80,4 +80,9 @@ export const businessService = {
   async updatePrivacy(data: { showPublicProfile?: boolean; hideContactDetails?: boolean; allowDirectMessages?: boolean }): Promise<void> {
     await request('PUT', '/api/business/profile', data);
   },
+
+  async getFavoriteBusinesses(): Promise<BusinessListItem[]> {
+    const res = await request<BusinessListItem[]>('GET', '/api/creator/businesses/favorites/list');
+    return res.data;
+  },
 };

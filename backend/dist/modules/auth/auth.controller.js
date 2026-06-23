@@ -124,6 +124,24 @@ class AuthController {
             next(err);
         }
     }
+    async requestPhoneOtp(req, res, next) {
+        try {
+            const result = await authService.requestPhoneOtp(req.user.id, req.body);
+            (0, response_1.success)(res, result, result.message);
+        }
+        catch (err) {
+            next(err);
+        }
+    }
+    async verifyPhoneOtp(req, res, next) {
+        try {
+            const result = await authService.verifyPhoneOtp(req.user.id, req.body);
+            (0, response_1.success)(res, result, result.message);
+        }
+        catch (err) {
+            next(err);
+        }
+    }
 }
 exports.AuthController = AuthController;
 //# sourceMappingURL=auth.controller.js.map

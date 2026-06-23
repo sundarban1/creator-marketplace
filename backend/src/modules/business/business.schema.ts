@@ -11,6 +11,12 @@ export const updateBusinessProfileSchema = z.object({
   showPublicProfile:   z.boolean().optional(),
   hideContactDetails:  z.boolean().optional(),
   allowDirectMessages: z.boolean().optional(),
+  socialLinks: z.object({
+    facebook:  z.string().optional(),
+    instagram: z.string().optional(),
+    tiktok:    z.string().optional(),
+    linkedin:  z.string().optional(),
+  }).optional(),
 });
 
 export type UpdateBusinessProfileInput = z.infer<typeof updateBusinessProfileSchema>;

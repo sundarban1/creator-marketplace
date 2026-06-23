@@ -23,10 +23,10 @@ class AuthRepository {
         return prisma_1.default.user.create({
             data: {
                 email: data.email,
-                phone: data.phone,
+                phone: data.phone ?? null,
                 password: data.password,
                 role: data.role,
-                creatorProfile: { create: { fullName: data.fullName } },
+                creatorProfile: { create: { fullName: data.fullName ?? null } },
             },
             include: { creatorProfile: true },
         });
@@ -35,10 +35,10 @@ class AuthRepository {
         return prisma_1.default.user.create({
             data: {
                 email: data.email,
-                phone: data.phone,
+                phone: data.phone ?? null,
                 password: data.password,
                 role: data.role,
-                businessProfile: { create: { businessName: data.businessName } },
+                businessProfile: { create: { businessName: data.businessName ?? null } },
             },
             include: { businessProfile: true },
         });
@@ -92,6 +92,9 @@ class AuthRepository {
     }
     async deleteOtpsByUserId(userId) {
         return prisma_1.default.otpVerification.deleteMany({ where: { userId } });
+    }
+    async updateUserPhone(userId, phone) {
+        return prisma_1.default.user.update({ where: { id: userId }, data: { phone } });
     }
 }
 exports.AuthRepository = AuthRepository;

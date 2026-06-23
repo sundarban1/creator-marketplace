@@ -46,4 +46,14 @@ export class FavoriteController {
       res.json({ success: true, data: { ids } });
     } catch (err) { next(err); }
   }
+
+  async listFavoriteBusinesses(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const creator = await creatorRepo.findByUserId(req.user!.id);
+      if (!creator) throw new AppError('Creator profile not found', 404);
+      const rows = await favoriteRepo.getFavoriteBusinesses(creator.id);
+      const businesses = rows.map((r) => r.business);
+      res.json({ success: true, data: businesses });
+    } catch (err) { next(err); }
+  }
 }

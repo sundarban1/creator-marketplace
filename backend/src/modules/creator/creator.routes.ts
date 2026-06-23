@@ -4,6 +4,7 @@ import { BusinessController } from '../business/business.controller';
 import { FavoriteController } from './favorite.controller';
 import { authenticate, authorize } from '../../middleware/auth';
 import { validate } from '../../middleware/validate';
+import { uploadImage } from '../../middleware/upload';
 import {
   updateCreatorProfileSchema,
   addPortfolioLinkSchema,
@@ -99,6 +100,7 @@ router.get('/profile', ctrl.getProfile.bind(ctrl));
  *                   $ref: '#/components/schemas/CreatorProfile'
  */
 router.put('/profile', validate(updateCreatorProfileSchema), ctrl.updateProfile.bind(ctrl));
+router.post('/avatar', uploadImage.single('avatar'), ctrl.uploadAvatar.bind(ctrl));
 
 /**
  * @swagger
@@ -237,6 +239,7 @@ router.put('/campaign-preferences',        validate(updateCampaignPrefsSchema), 
 // Explore businesses (creator browsing businesses)
 router.get('/businesses',                                 businessCtrl.listBusinesses.bind(businessCtrl));
 router.get('/businesses/favorites',                       favoriteCtrl.listFavorites.bind(favoriteCtrl));
+router.get('/businesses/favorites/list',                  favoriteCtrl.listFavoriteBusinesses.bind(favoriteCtrl));
 router.post('/businesses/:businessId/favorite',           favoriteCtrl.toggle.bind(favoriteCtrl));
 router.get('/businesses/:id',                             businessCtrl.getBusinessPublic.bind(businessCtrl));
 

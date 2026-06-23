@@ -566,7 +566,7 @@ export default function CampaignDetailScreen() {
         ) : (
           <Pressable
             style={({ pressed }) => [s.applyBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }, pressed && { opacity: 0.88 }]}
-            onPress={() => campaign && router.push({ pathname: '/submit-proposal', params: { campaignId: campaign.id, campaignTitle: campaign.title, brand: campaign.brand } })}>
+            onPress={() => campaign && router.push({ pathname: '/submit-proposal', params: { campaignId: campaign.id, campaignTitle: campaign.title, brand: campaign.brand, budget: campaign.budget, category: campaign.category } })}>
             <Text style={s.applyBtnTxt}>Submit Proposal</Text>
           </Pressable>
         )}

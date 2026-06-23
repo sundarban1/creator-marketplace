@@ -1,37 +1,23 @@
 import { z } from 'zod';
-export declare const registerSchema: z.ZodEffects<z.ZodObject<{
+export declare const registerSchema: z.ZodObject<{
     email: z.ZodString;
-    phone: z.ZodString;
+    phone: z.ZodOptional<z.ZodString>;
     password: z.ZodString;
     role: z.ZodEnum<["CREATOR", "BUSINESS"]>;
     fullName: z.ZodOptional<z.ZodString>;
     businessName: z.ZodOptional<z.ZodString>;
 }, "strip", z.ZodTypeAny, {
     email: string;
-    phone: string;
     password: string;
     role: "CREATOR" | "BUSINESS";
+    phone?: string | undefined;
     businessName?: string | undefined;
     fullName?: string | undefined;
 }, {
     email: string;
-    phone: string;
     password: string;
     role: "CREATOR" | "BUSINESS";
-    businessName?: string | undefined;
-    fullName?: string | undefined;
-}>, {
-    email: string;
-    phone: string;
-    password: string;
-    role: "CREATOR" | "BUSINESS";
-    businessName?: string | undefined;
-    fullName?: string | undefined;
-}, {
-    email: string;
-    phone: string;
-    password: string;
-    role: "CREATOR" | "BUSINESS";
+    phone?: string | undefined;
     businessName?: string | undefined;
     fullName?: string | undefined;
 }>;
@@ -103,6 +89,23 @@ export declare const verifyResetOtpSchema: z.ZodObject<{
     code: string;
     phone: string;
 }>;
+export declare const requestPhoneOtpSchema: z.ZodObject<{
+    phone: z.ZodString;
+}, "strip", z.ZodTypeAny, {
+    phone: string;
+}, {
+    phone: string;
+}>;
+export declare const verifyPhoneOtpSchema: z.ZodObject<{
+    phone: z.ZodString;
+    code: z.ZodString;
+}, "strip", z.ZodTypeAny, {
+    code: string;
+    phone: string;
+}, {
+    code: string;
+    phone: string;
+}>;
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RefreshTokenInput = z.infer<typeof refreshTokenSchema>;
@@ -112,4 +115,6 @@ export type VerifyOtpInput = z.infer<typeof verifyOtpSchema>;
 export type ResendOtpInput = z.infer<typeof resendOtpSchema>;
 export type ForgotPasswordByPhoneInput = z.infer<typeof forgotPasswordByPhoneSchema>;
 export type VerifyResetOtpInput = z.infer<typeof verifyResetOtpSchema>;
+export type RequestPhoneOtpInput = z.infer<typeof requestPhoneOtpSchema>;
+export type VerifyPhoneOtpInput = z.infer<typeof verifyPhoneOtpSchema>;
 //# sourceMappingURL=auth.schema.d.ts.map

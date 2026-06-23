@@ -171,7 +171,22 @@
       "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d['data'][:6], indent=2\\)\\); print\\('... total:', len\\(d['data']\\)\\)\")",
       "Bash(docker-compose exec *)",
       "Bash(DATABASE_URL=\"postgresql://postgres:postgres@localhost:5432/creatormarket\" npx prisma db push)",
-      "Bash(PGPASSWORD=postgres psql -h localhost -U postgres -d creatormarket -c \"\\\\d business_profiles\")"
+      "Bash(PGPASSWORD=postgres psql -h localhost -U postgres -d creatormarket -c \"\\\\d business_profiles\")",
+      "Bash(pkill -f \"node dist/app.js\")",
+      "Bash(pkill -f \"tsx.*app.ts\")",
+      "Bash(npm start *)",
+      "Bash(echo \"PID: $!\")",
+      "Bash(psql -U postgres -c \"SELECT 1\")",
+      "Bash(/opt/homebrew/bin/brew services *)",
+      "Bash(docker-compose -f /Users/sundarban/Documents/projects/marketplace/docker-compose.yml ps)",
+      "Read(//Users/sundarban/.docker/run/**)",
+      "Read(//Users/sundarban/Library/Containers/com.docker.docker/Data/**)",
+      "Read(//var/run/**)",
+      "Bash(DOCKER_HOST=unix:///var/run/docker.sock docker compose up -d postgres)",
+      "Bash(DOCKER_HOST=unix:///Users/sundarban/Library/Containers/com.docker.docker/Data/docker.sock docker compose up -d postgres)",
+      "Bash(DOCKER_HOST=unix:///Users/sundarban/.docker/run/docker.sock docker ps)",
+      "Bash(docker context *)",
+      "Bash(curl -s -X POST http://localhost:3000/api/auth/register -H 'Content-Type: application/json' -d '{\"email\":\"testbiz@example.com\",\"password\":\"Test1234\",\"role\":\"BUSINESS\"}')"
     ],
     "additionalDirectories": [
       "/Users/sundarban/Documents/projects/marketplace/content",

@@ -20,6 +20,8 @@ import type {
   ResendOtpInput,
   ForgotPasswordByPhoneInput,
   VerifyResetOtpInput,
+  RequestPhoneOtpInput,
+  VerifyPhoneOtpInput,
 } from './auth.schema';
 
 function generateOtp(): string {
@@ -27,11 +29,11 @@ function generateOtp(): string {
 }
 
 function buildUserResponse(user: {
-  id: string; email: string; phone: string; role: Role;
+  id: string; email: string; phone: string | null; role: Role;
   isEmailVerified: boolean; isOnboarded: boolean;
   createdAt: Date; updatedAt: Date;
-  creatorProfile?: { id: string; username: string | null; fullName: string; avatarUrl: string | null } | null;
-  businessProfile?: { id: string; businessName: string; logoUrl: string | null } | null;
+  creatorProfile?: { id: string; username: string | null; fullName: string | null; avatarUrl: string | null } | null;
+  businessProfile?: { id: string; businessName: string | null; logoUrl: string | null } | null;
 }) {
   const name   = user.creatorProfile?.fullName ?? user.businessProfile?.businessName ?? user.email.split('@')[0];
   const avatar = user.creatorProfile?.avatarUrl ?? user.businessProfile?.logoUrl ?? null;
@@ -53,7 +55,7 @@ export class AuthService {
   async register(input: RegisterInput) {
     const [existingEmail, existingPhone] = await Promise.all([
       this.repo.findUserByEmail(input.email),
-      this.repo.findUserByPhone(input.phone),
+      input.phone ? this.repo.findUserByPhone(input.phone) : Promise.resolve(null),
     ]);
     if (existingEmail) throw new AppError('An account with this email already exists', 409);
     if (existingPhone) throw new AppError('An account with this phone number already exists', 409);
@@ -64,12 +66,12 @@ export class AuthService {
     if (input.role === 'CREATOR') {
       user = await this.repo.createUserWithCreatorProfile({
         email: input.email, phone: input.phone, password: hashedPassword,
-        role: Role.CREATOR, fullName: input.fullName!,
+        role: Role.CREATOR, fullName: input.fullName,
       });
     } else {
       user = await this.repo.createUserWithBusinessProfile({
         email: input.email, phone: input.phone, password: hashedPassword,
-        role: Role.BUSINESS, businessName: input.businessName!,
+        role: Role.BUSINESS, businessName: input.businessName,
       });
     }
 
@@ -225,6 +227,39 @@ export class AuthService {
     const resetToken = signPasswordResetToken({ id: user.id, email: user.email });
     await sendPasswordResetEmail(user.email, resetToken);
     return { message: 'If that email exists, a reset link has been sent' };
+  }
+
+  async requestPhoneOtp(userId: string, input: RequestPhoneOtpInput) {
+    const phone = input.phone.trim();
+    const existing = await this.repo.findUserByPhone(phone);
+    if (existing && existing.id !== userId) {
+      throw new AppError('This phone number is already in use by another account', 409);
+    }
+    const user = await this.repo.findUserById(userId);
+    if (!user) throw new AppError('User not found', 404);
+
+    const code = generateOtp();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+    await this.repo.saveOtp(userId, code, expiresAt);
+
+    // In production: integrate an SMS gateway (e.g. Sparrow SMS for Nepal).
+    // For now, log the OTP to the console.
+    console.log(`\n📱 Phone verification OTP for ${phone}: ${code}\n`);
+
+    return { message: 'Verification code sent to your phone number' };
+  }
+
+  async verifyPhoneOtp(userId: string, input: VerifyPhoneOtpInput) {
+    const user = await this.repo.findUserById(userId);
+    if (!user) throw new AppError('User not found', 404);
+
+    const otp = await this.repo.findValidOtp(userId, input.code);
+    if (!otp) throw new AppError('Invalid or expired verification code', 400);
+
+    await this.repo.deleteOtpsByUserId(userId);
+    await this.repo.updateUserPhone(userId, input.phone.trim());
+
+    return { message: 'Phone number verified successfully' };
   }
 
   async resetPassword(input: ResetPasswordInput) {

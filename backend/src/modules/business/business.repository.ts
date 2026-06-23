@@ -19,14 +19,16 @@ export class BusinessRepository {
       where.categories = { has: params.category };
     }
 
-    const campaignWhere: Prisma.CampaignWhereInput = { status: 'ACTIVE' };
-    if (params.platform) campaignWhere.platform = params.platform;
-    if (params.locations && params.locations.length > 0) {
-      campaignWhere.OR = params.locations.map((loc) => ({
-        location: { contains: loc, mode: 'insensitive' as const },
-      }));
+    if (params.platform || (params.locations && params.locations.length > 0)) {
+      const campaignWhere: Prisma.CampaignWhereInput = { status: 'ACTIVE' };
+      if (params.platform) campaignWhere.platform = params.platform;
+      if (params.locations && params.locations.length > 0) {
+        campaignWhere.OR = params.locations.map((loc) => ({
+          location: { contains: loc, mode: 'insensitive' as const },
+        }));
+      }
+      where.campaigns = { some: campaignWhere };
     }
-    where.campaigns = { some: campaignWhere };
 
     const skip = (params.page - 1) * params.limit;
     const [businesses, total] = await Promise.all([
@@ -118,6 +120,7 @@ export class BusinessRepository {
       showPublicProfile: boolean;
       hideContactDetails: boolean;
       allowDirectMessages: boolean;
+      socialLinks: Record<string, string>;
     }>
   ) {
     return prisma.businessProfile.update({

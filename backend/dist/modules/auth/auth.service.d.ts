@@ -1,4 +1,4 @@
-import type { RegisterInput, LoginInput, RefreshTokenInput, ForgotPasswordInput, ResetPasswordInput, VerifyOtpInput, ResendOtpInput, ForgotPasswordByPhoneInput, VerifyResetOtpInput } from './auth.schema';
+import type { RegisterInput, LoginInput, RefreshTokenInput, ForgotPasswordInput, ResetPasswordInput, VerifyOtpInput, ResendOtpInput, ForgotPasswordByPhoneInput, VerifyResetOtpInput, RequestPhoneOtpInput, VerifyPhoneOtpInput } from './auth.schema';
 export declare class AuthService {
     private repo;
     constructor();
@@ -9,7 +9,7 @@ export declare class AuthService {
         user: {
             id: string;
             email: string;
-            phone: string;
+            phone: string | null;
             role: import(".prisma/client").$Enums.Role;
             isEmailVerified: boolean;
             isOnboarded: boolean;
@@ -18,12 +18,12 @@ export declare class AuthService {
             creatorProfile: {
                 id: string;
                 username: string | null;
-                fullName: string;
+                fullName: string | null;
                 avatarUrl: string | null;
             } | null;
             businessProfile: {
                 id: string;
-                businessName: string;
+                businessName: string | null;
                 logoUrl: string | null;
             } | null;
             name: string;
@@ -39,7 +39,7 @@ export declare class AuthService {
         user: {
             id: string;
             email: string;
-            phone: string;
+            phone: string | null;
             role: import(".prisma/client").$Enums.Role;
             isEmailVerified: boolean;
             isOnboarded: boolean;
@@ -48,12 +48,12 @@ export declare class AuthService {
             creatorProfile: {
                 id: string;
                 username: string | null;
-                fullName: string;
+                fullName: string | null;
                 avatarUrl: string | null;
             } | null;
             businessProfile: {
                 id: string;
-                businessName: string;
+                businessName: string | null;
                 logoUrl: string | null;
             } | null;
             name: string;
@@ -85,6 +85,12 @@ export declare class AuthService {
         resetToken: string;
     }>;
     forgotPassword(input: ForgotPasswordInput): Promise<{
+        message: string;
+    }>;
+    requestPhoneOtp(userId: string, input: RequestPhoneOtpInput): Promise<{
+        message: string;
+    }>;
+    verifyPhoneOtp(userId: string, input: VerifyPhoneOtpInput): Promise<{
         message: string;
     }>;
     resetPassword(input: ResetPasswordInput): Promise<{

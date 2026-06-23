@@ -12,6 +12,8 @@ import {
   resendOtpSchema,
   forgotPasswordByPhoneSchema,
   verifyResetOtpSchema,
+  requestPhoneOtpSchema,
+  verifyPhoneOtpSchema,
 } from './auth.schema';
 
 const router = Router();
@@ -374,6 +376,8 @@ router.post('/forgot-password-phone', validate(forgotPasswordByPhoneSchema), ctr
  *       400:
  *         description: Invalid or expired code
  */
-router.post('/verify-reset-otp', validate(verifyResetOtpSchema), ctrl.verifyResetOtp.bind(ctrl));
+router.post('/verify-reset-otp',    validate(verifyResetOtpSchema),    ctrl.verifyResetOtp.bind(ctrl));
+router.post('/request-phone-otp',   authenticate, validate(requestPhoneOtpSchema), ctrl.requestPhoneOtp.bind(ctrl));
+router.post('/verify-phone-otp',    authenticate, validate(verifyPhoneOtpSchema),  ctrl.verifyPhoneOtp.bind(ctrl));
 
 export default router;

@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { CreatorService } from './creator.service';
 import { success } from '../../utils/response';
+import { uploadImage as uploadToCloudinary } from '../../utils/cloudinary';
+import { AppError } from '../../middleware/error';
 
 const creatorService = new CreatorService();
 
@@ -151,6 +153,21 @@ export class CreatorController {
         prefBudgetMin: profile.prefBudgetMin,
         prefBudgetMax: profile.prefBudgetMax,
       }, 'Campaign preferences updated');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async uploadAvatar(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.file) throw new AppError('No image file provided', 400);
+      const avatarUrl = await uploadToCloudinary(
+        req.file.buffer,
+        'creators/avatars',
+        `creator_${req.user!.id}`,
+      );
+      const profile = await creatorService.updateProfile(req.user!.id, { avatarUrl });
+      success(res, { avatarUrl: profile.avatarUrl }, 'Avatar updated');
     } catch (err) {
       next(err);
     }

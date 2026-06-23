@@ -1662,7 +1662,7 @@ export default function CreatorSettingsScreen() {
         {portfolio.length > 0 && (
           <Card>
             {portfolio.map((item, idx) => {
-              const cfg = PORTFOLIO_CONFIG[item.label] ?? { icon: '🔗', label: item.label || 'Link', color: '#6366F1' };
+              const cfg = PORTFOLIO_CONFIG[item.label] ?? { iconName: 'link-outline', iconLib: 'ion' as const, label: item.label || 'Link', color: '#6366F1' };
               const isLast = idx === portfolio.length - 1;
               return (
                 <View key={item.id} style={[styles.row, styles.socialRow, !isLast && { borderBottomWidth: 1, borderBottomColor: C.border }]}>

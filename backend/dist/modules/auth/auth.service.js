@@ -28,7 +28,7 @@ class AuthService {
     async register(input) {
         const [existingEmail, existingPhone] = await Promise.all([
             this.repo.findUserByEmail(input.email),
-            this.repo.findUserByPhone(input.phone),
+            input.phone ? this.repo.findUserByPhone(input.phone) : Promise.resolve(null),
         ]);
         if (existingEmail)
             throw new error_1.AppError('An account with this email already exists', 409);
@@ -184,6 +184,34 @@ class AuthService {
         const resetToken = (0, jwt_1.signPasswordResetToken)({ id: user.id, email: user.email });
         await (0, email_1.sendPasswordResetEmail)(user.email, resetToken);
         return { message: 'If that email exists, a reset link has been sent' };
+    }
+    async requestPhoneOtp(userId, input) {
+        const phone = input.phone.trim();
+        const existing = await this.repo.findUserByPhone(phone);
+        if (existing && existing.id !== userId) {
+            throw new error_1.AppError('This phone number is already in use by another account', 409);
+        }
+        const user = await this.repo.findUserById(userId);
+        if (!user)
+            throw new error_1.AppError('User not found', 404);
+        const code = generateOtp();
+        const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+        await this.repo.saveOtp(userId, code, expiresAt);
+        // In production: integrate an SMS gateway (e.g. Sparrow SMS for Nepal).
+        // For now, log the OTP to the console.
+        console.log(`\n📱 Phone verification OTP for ${phone}: ${code}\n`);
+        return { message: 'Verification code sent to your phone number' };
+    }
+    async verifyPhoneOtp(userId, input) {
+        const user = await this.repo.findUserById(userId);
+        if (!user)
+            throw new error_1.AppError('User not found', 404);
+        const otp = await this.repo.findValidOtp(userId, input.code);
+        if (!otp)
+            throw new error_1.AppError('Invalid or expired verification code', 400);
+        await this.repo.deleteOtpsByUserId(userId);
+        await this.repo.updateUserPhone(userId, input.phone.trim());
+        return { message: 'Phone number verified successfully' };
     }
     async resetPassword(input) {
         let decoded;

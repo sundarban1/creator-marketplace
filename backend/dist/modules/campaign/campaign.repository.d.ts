@@ -23,7 +23,7 @@ export declare class CampaignRepository {
             applications: number;
         };
         business: {
-            businessName: string;
+            businessName: string | null;
             logoUrl: string | null;
         };
     } & {
@@ -66,7 +66,7 @@ export declare class CampaignRepository {
                 applications: number;
             };
             business: {
-                businessName: string;
+                businessName: string | null;
                 logoUrl: string | null;
             };
         } & {
@@ -100,7 +100,7 @@ export declare class CampaignRepository {
         };
         business: {
             description: string | null;
-            businessName: string;
+            businessName: string | null;
             logoUrl: string | null;
             website: string | null;
         };
@@ -247,7 +247,7 @@ export declare class CampaignRepository {
             title: string;
         };
         creator: {
-            fullName: string;
+            fullName: string | null;
         };
     } & {
         status: import(".prisma/client").$Enums.ApplicationStatus;
@@ -266,8 +266,8 @@ export declare class CampaignRepository {
         applications: ({
             creator: {
                 categories: string[];
-                fullName: string;
                 location: string | null;
+                fullName: string | null;
                 avatarUrl: string | null;
                 socialLinks: Prisma.JsonValue;
             };
@@ -295,8 +295,8 @@ export declare class CampaignRepository {
             };
             creator: {
                 id: string;
-                fullName: string;
                 location: string | null;
+                fullName: string | null;
                 avatarUrl: string | null;
             };
         } & {
@@ -340,7 +340,7 @@ export declare class CampaignRepository {
         };
         creator: {
             userId: string;
-            fullName: string;
+            fullName: string | null;
         };
     } & {
         status: import(".prisma/client").$Enums.ApplicationStatus;
@@ -397,7 +397,7 @@ export declare class CampaignRepository {
                 budgetMin: number;
                 budgetMax: number;
                 business: {
-                    businessName: string;
+                    businessName: string | null;
                     logoUrl: string | null;
                 };
             };

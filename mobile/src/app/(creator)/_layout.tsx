@@ -130,6 +130,7 @@ export default function CreatorLayout() {
           <Tabs.Screen name="featured-campaigns" options={{ href: null }} />
           <Tabs.Screen name="edit-categories" options={{ href: null }} />
           <Tabs.Screen name="business-detail" options={{ href: null }} />
+          <Tabs.Screen name="favorite-businesses" options={{ href: null }} />
         </Tabs>
 
         <DrawerMenu

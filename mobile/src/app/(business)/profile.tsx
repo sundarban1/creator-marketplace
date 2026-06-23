@@ -1,10 +1,12 @@
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BackButton } from '@/components/BackButton';
-import { useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
+  Image,
   Linking,
   Pressable,
   ScrollView,
@@ -15,9 +17,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
 import { useAppColors } from '@/context/ThemeContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { profileService, type BusinessProfile } from '@/services/profile';
 import { campaignService } from '@/services/campaign';
 import { F } from '@/utilities/constants';
+import { pickAndUpload } from '@/utilities/uploadImage';
 
 const CATEGORY_BG: Record<string, string> = {
   Fashion: '#F2DCF0', Beauty: '#DCF2E6', Tech: '#DCE6F2', Food: '#F2E6DC',
@@ -26,35 +30,71 @@ const CATEGORY_BG: Record<string, string> = {
   'Beauty & Cosmetics': '#DCF2E6', 'Health & Fitness': '#DCF2EE',
 };
 
-function BusinessAvatar({ name, logoUrl, size = 88 }: { name: string; logoUrl: string | null; size?: number }) {
+function BusinessAvatar({ name, logoUrl, size = 88, uploading, onPress }: {
+  name: string; logoUrl: string | null; size?: number;
+  uploading?: boolean; onPress?: () => void;
+}) {
   const C = useAppColors();
   const letter = (name?.[0] ?? '?').toUpperCase();
+  const radius = size / 2;
   return (
-    <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: 'rgba(255,255,255,0.25)', alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: 'rgba(255,255,255,0.5)' }}>
-      <Text style={{ fontSize: size * 0.38, fontWeight: '800', color: '#fff' }}>{letter}</Text>
-    </View>
+    <Pressable onPress={onPress} disabled={uploading} style={{ position: 'relative' }}>
+      <View style={{ width: size, height: size, borderRadius: radius, backgroundColor: 'rgba(255,255,255,0.25)', alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: '#fff', overflow: 'hidden' }}>
+        {logoUrl ? (
+          <Image source={{ uri: logoUrl }} style={{ width: size, height: size, borderRadius: radius }} />
+        ) : (
+          <Text style={{ fontSize: size * 0.38, fontWeight: '800', color: '#fff' }}>{letter}</Text>
+        )}
+      </View>
+      {/* Camera badge — matches creator profile */}
+      <View style={[styles.cameraBadge, { backgroundColor: C.brinjal1 }]}>
+        {uploading
+          ? <ActivityIndicator size="small" color="#fff" />
+          : <Ionicons name="camera" size={13} color="#fff" />}
+      </View>
+    </Pressable>
   );
 }
 
 export default function BusinessProfileScreen() {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const C = useAppColors();
-  const [profile, setProfile]             = useState<BusinessProfile | null>(null);
+  const { t } = useLanguage();
+  const [profile, setProfile]               = useState<BusinessProfile | null>(null);
   const [activeCampaigns, setActiveCampaigns] = useState(0);
-  const [loading, setLoading]             = useState(true);
+  const [loading, setLoading]               = useState(true);
+  const [logoUploading, setLogoUploading]   = useState(false);
 
-  useEffect(() => {
-    Promise.all([
-      profileService.getBusinessProfile(),
-      campaignService.listMy().catch(() => ({ campaigns: [] })),
-    ])
-      .then(([prof, { campaigns }]) => {
-        setProfile(prof);
-        setActiveCampaigns(campaigns.filter((c) => c.status === 'active').length);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+  async function handleLogoPress() {
+    setLogoUploading(true);
+    try {
+      const url = await pickAndUpload('business-logo');
+      if (url) {
+        setProfile((p) => p ? { ...p, logoUrl: url } : p);
+        updateUser({ avatar: url });
+      }
+    } catch {
+      Alert.alert(t('profile.uploadFailed'), t('profile.uploadFailedSub'));
+    } finally {
+      setLogoUploading(false);
+    }
+  }
+
+  useFocusEffect(
+    useCallback(() => {
+      setLoading(true);
+      Promise.all([
+        profileService.getBusinessProfile(),
+        campaignService.listMy().catch(() => ({ campaigns: [] })),
+      ])
+        .then(([prof, { campaigns }]) => {
+          setProfile(prof);
+          setActiveCampaigns(campaigns.filter((c) => c.status === 'active').length);
+        })
+        .catch(() => {})
+        .finally(() => setLoading(false));
+    }, []),
+  );
 
   if (loading) {
     return (
@@ -79,7 +119,7 @@ export default function BusinessProfileScreen() {
         <BackButton fallback="/(business)/" />
         <Text style={[styles.navTitle, { color: C.text }]} numberOfLines={1}>{name}</Text>
         <Pressable style={[styles.editNavBtn, { backgroundColor: C.primaryLight }]} onPress={() => router.push('/(business)/edit-profile' as never)}>
-          <Text style={[styles.editNavText, { color: C.brinjal1 }]}>Edit</Text>
+          <Text style={[styles.editNavText, { color: C.brinjal1 }]}>{t('common.edit')}</Text>
         </Pressable>
       </View>
 
@@ -90,7 +130,13 @@ export default function BusinessProfileScreen() {
           <View style={styles.heroBubble1} />
           <View style={styles.heroBubble2} />
           <View style={styles.heroInner}>
-            <BusinessAvatar name={name} logoUrl={profile?.logoUrl ?? null} size={88} />
+            <BusinessAvatar
+              name={name}
+              logoUrl={profile?.logoUrl ?? null}
+              size={88}
+              uploading={logoUploading}
+              onPress={handleLogoPress}
+            />
             <View style={styles.heroMeta}>
               <Text style={styles.heroName} numberOfLines={2}>{name}</Text>
               {profile?.isVerified && (
@@ -101,19 +147,19 @@ export default function BusinessProfileScreen() {
               <View style={styles.heroStats}>
                 <View style={styles.heroStat}>
                   <Text style={styles.heroStatValue}>{activeCampaigns}</Text>
-                  <Text style={styles.heroStatLabel}>Active</Text>
+                  <Text style={styles.heroStatLabel}>{t('profile.active')}</Text>
                 </View>
                 <View style={styles.heroStatDivider} />
                 <View style={styles.heroStat}>
                   <Text style={styles.heroStatValue}>{joinedYear}</Text>
-                  <Text style={styles.heroStatLabel}>Joined</Text>
+                  <Text style={styles.heroStatLabel}>{t('profile.joined')}</Text>
                 </View>
                 {(profile?.categories.length ?? 0) > 0 && (
                   <>
                     <View style={styles.heroStatDivider} />
                     <View style={styles.heroStat}>
                       <Text style={styles.heroStatValue}>{profile!.categories.length}</Text>
-                      <Text style={styles.heroStatLabel}>Sectors</Text>
+                      <Text style={styles.heroStatLabel}>{t('profile.sectors')}</Text>
                     </View>
                   </>
                 )}
@@ -129,8 +175,8 @@ export default function BusinessProfileScreen() {
             onPress={() => router.push('/(business)/edit-profile' as never)}>
             <Ionicons name="create" size={22} color={C.brinjal1} />
             <View style={styles.editCtaText}>
-              <Text style={[styles.editCtaTitle, { color: C.text }]}>Edit Business Profile</Text>
-              <Text style={[styles.editCtaSub, { color: C.textSecondary }]}>Update name, description, website & categories</Text>
+              <Text style={[styles.editCtaTitle, { color: C.text }]}>{t('profile.editBusiness')}</Text>
+              <Text style={[styles.editCtaSub, { color: C.textSecondary }]}>{t('profile.editBusinessSub')}</Text>
             </View>
             <Ionicons name="chevron-forward" size={22} color={C.brinjal1} />
           </Pressable>
@@ -140,7 +186,7 @@ export default function BusinessProfileScreen() {
             <View style={[styles.infoCard, { backgroundColor: C.surface }]}>
               <View style={styles.infoHeader}>
                 <Ionicons name="document-text" size={16} color={C.brinjal1} />
-                <Text style={[styles.infoTitle, { color: C.text }]}>About</Text>
+                <Text style={[styles.infoTitle, { color: C.text }]}>{t('profile.about')}</Text>
               </View>
               <Text style={[styles.aboutText, { color: C.text }]}>{profile.description}</Text>
             </View>
@@ -148,7 +194,7 @@ export default function BusinessProfileScreen() {
             <Pressable
               style={[styles.emptyField, { backgroundColor: C.surface, borderColor: C.border }]}
               onPress={() => router.push('/(business)/edit-profile' as never)}>
-              <Text style={[styles.emptyFieldText, { color: C.textSecondary }]}>+ Add a business description</Text>
+              <Text style={[styles.emptyFieldText, { color: C.textSecondary }]}>{t('profile.addDescription')}</Text>
             </Pressable>
           )}
 
@@ -156,7 +202,7 @@ export default function BusinessProfileScreen() {
           <View style={[styles.infoCard, { backgroundColor: C.surface }]}>
             <View style={styles.infoHeader}>
               <Ionicons name="mail" size={16} color={C.brinjal1} />
-              <Text style={[styles.infoTitle, { color: C.text }]}>Contact</Text>
+              <Text style={[styles.infoTitle, { color: C.text }]}>{t('profile.contact')}</Text>
             </View>
             <Text style={[styles.contactText, { color: C.text }]}>{profile?.user?.email ?? user?.email ?? '—'}</Text>
           </View>
@@ -170,7 +216,7 @@ export default function BusinessProfileScreen() {
                 <Ionicons name="globe" size={20} color={C.brinjal1} />
               </View>
               <View style={styles.websiteTextWrap}>
-                <Text style={[styles.websiteLabel, { color: C.textSecondary }]}>Website</Text>
+                <Text style={[styles.websiteLabel, { color: C.textSecondary }]}>{t('profile.website')}</Text>
                 <Text style={[styles.websiteUrl, { color: C.brinjal1 }]} numberOfLines={1}>
                   {profile.website.replace(/^https?:\/\//, '')}
                 </Text>
@@ -181,7 +227,7 @@ export default function BusinessProfileScreen() {
             <Pressable
               style={[styles.emptyField, { backgroundColor: C.surface, borderColor: C.border }]}
               onPress={() => router.push('/(business)/edit-profile' as never)}>
-              <Text style={[styles.emptyFieldText, { color: C.textSecondary }]}>+ Add website URL</Text>
+              <Text style={[styles.emptyFieldText, { color: C.textSecondary }]}>{t('profile.addWebsite')}</Text>
             </Pressable>
           )}
 
@@ -190,7 +236,7 @@ export default function BusinessProfileScreen() {
             <View style={[styles.infoCard, { backgroundColor: C.surface }]}>
               <View style={styles.infoHeader}>
                 <Ionicons name="pricetag" size={16} color={C.brinjal1} />
-                <Text style={[styles.infoTitle, { color: C.text }]}>Industries</Text>
+                <Text style={[styles.infoTitle, { color: C.text }]}>{t('profile.industries')}</Text>
               </View>
               <View style={styles.categoriesWrap}>
                 {profile!.categories.map((cat) => (
@@ -204,7 +250,7 @@ export default function BusinessProfileScreen() {
             <Pressable
               style={[styles.emptyField, { backgroundColor: C.surface, borderColor: C.border }]}
               onPress={() => router.push('/(business)/edit-profile' as never)}>
-              <Text style={[styles.emptyFieldText, { color: C.textSecondary }]}>+ Add industry categories</Text>
+              <Text style={[styles.emptyFieldText, { color: C.textSecondary }]}>{t('profile.addCategories')}</Text>
             </Pressable>
           )}
 
@@ -213,15 +259,15 @@ export default function BusinessProfileScreen() {
           <View style={styles.quickRow}>
             <Pressable style={[styles.quickBtn, { backgroundColor: C.surface }]} onPress={() => router.push('/create-campaign')}>
               <Ionicons name="megaphone" size={22} color={C.brinjal1} />
-              <Text style={[styles.quickLabel, { color: C.text }]}>New Campaign</Text>
+              <Text style={[styles.quickLabel, { color: C.text }]}>{t('profile.newCampaign')}</Text>
             </Pressable>
             <Pressable style={[styles.quickBtn, { backgroundColor: C.surface }]} onPress={() => router.push('/(business)/campaigns' as never)}>
               <Ionicons name="briefcase" size={22} color={C.brinjal1} />
-              <Text style={[styles.quickLabel, { color: C.text }]}>Campaigns</Text>
+              <Text style={[styles.quickLabel, { color: C.text }]}>{t('campaigns.title')}</Text>
             </Pressable>
             <Pressable style={[styles.quickBtn, { backgroundColor: C.surface }]} onPress={() => router.push('/(business)/settings' as never)}>
               <Ionicons name="settings" size={22} color={C.brinjal1} />
-              <Text style={[styles.quickLabel, { color: C.text }]}>Settings</Text>
+              <Text style={[styles.quickLabel, { color: C.text }]}>{t('settings.title')}</Text>
             </Pressable>
           </View>
         </View>
@@ -237,6 +283,8 @@ const styles = StyleSheet.create({
   navTitle:         { flex: 1, fontSize: 15, fontWeight: '700', textAlign: 'center', fontFamily: F.bold },
   editNavBtn:       { borderRadius: 10, paddingHorizontal: 14, paddingVertical: 7 },
   editNavText:      { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
+
+  cameraBadge:      { position: 'absolute', bottom: 2, right: 2, width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#fff' },
 
   hero:             { paddingHorizontal: 20, paddingTop: 28, paddingBottom: 32, overflow: 'hidden' },
   heroBubble1:      { position: 'absolute', width: 220, height: 220, borderRadius: 110, backgroundColor: 'rgba(255,255,255,0.07)', top: -70, right: -50 },

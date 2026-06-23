@@ -12,20 +12,21 @@ type NavItem = {
   iconName: keyof typeof Ionicons.glyphMap;
   label: string;
   route: string;
+  color: string;
 };
 
 const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   {
     label: 'ACCOUNT & SECURITY',
     items: [
-      { iconName: 'checkmark-circle', label: 'Verification',         route: '/(business)/settings?section=verification' },
-      { iconName: 'card',             label: 'Payment',              route: '/(business)/settings?section=payment' },
-      { iconName: 'bookmark',         label: 'Campaign Preferences', route: '/(business)/settings?section=campaigns' },
-      { iconName: 'shield',           label: 'Privacy',              route: '/(business)/settings?section=privacy' },
-      { iconName: 'lock-closed',      label: 'Account & Security',   route: '/(business)/settings?section=account' },
-      { iconName: 'globe',            label: 'Presence & Goal',      route: '/(business)/presence-goal' },
-      { iconName: 'help-circle',      label: 'Support',              route: '/(business)/settings?section=support' },
-      { iconName: 'phone-portrait',   label: 'App',                  route: '/(business)/settings?section=app' },
+      { iconName: 'checkmark-circle-outline', label: 'Verification',         route: '/(business)/settings?section=verification', color: '#16A34A' },
+      { iconName: 'wallet-outline',           label: 'Payment',              route: '/(business)/settings?section=payment',       color: '#3B82F6' },
+      { iconName: 'megaphone-outline',        label: 'Campaign Preferences', route: '/(business)/settings?section=campaigns',     color: '#7C3AED' },
+      { iconName: 'shield-outline',           label: 'Privacy',              route: '/(business)/settings?section=privacy',       color: '#4F46E5' },
+      { iconName: 'lock-closed-outline',      label: 'Account & Security',   route: '/(business)/settings?section=account',       color: '#6B7280' },
+      { iconName: 'globe-outline',            label: 'Presence & Goal',      route: '/(business)/presence-goal',                  color: '#F59E0B' },
+      { iconName: 'help-buoy-outline',        label: 'Support',              route: '/(business)/settings?section=support',       color: '#0891B2' },
+      { iconName: 'settings-outline',         label: 'App',                  route: '/(business)/settings?section=app',           color: '#EC4899' },
     ],
   },
 ];
@@ -85,9 +86,7 @@ export function BusinessDrawerMenu({ visible, user, onClose, onLogout }: Props) 
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.userName} numberOfLines={1}>{user?.name ?? 'Business'}</Text>
-              <View style={styles.rolePill}>
-                <Text style={styles.rolePillText}>Business</Text>
-              </View>
+              <Text style={styles.userEmail} numberOfLines={1}>{user?.email ?? ''}</Text>
             </View>
           </View>
         </View>
@@ -100,7 +99,7 @@ export function BusinessDrawerMenu({ visible, user, onClose, onLogout }: Props) 
                 <Text style={[styles.groupLabel, { color: C.textSecondary }]}>{group.label}</Text>
               </View>
               <View style={[styles.navGroup, { backgroundColor: C.surface, borderColor: C.border }]}>
-                {group.items.map(({ iconName, label, route }, idx) => (
+                {group.items.map(({ iconName, label, route, color }, idx) => (
                   <Pressable
                     key={label}
                     style={[
@@ -108,11 +107,11 @@ export function BusinessDrawerMenu({ visible, user, onClose, onLogout }: Props) 
                       idx < group.items.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border },
                     ]}
                     onPress={() => navigate(route)}>
-                    <View style={[styles.navIconWrap, { backgroundColor: C.background }]}>
-                      <Ionicons name={iconName} size={18} color={C.brinjal1} />
+                    <View style={[styles.navIconWrap, { backgroundColor: color + '18' }]}>
+                      <Ionicons name={iconName} size={18} color={color} />
                     </View>
                     <Text style={[styles.navLabel, { color: C.text }]}>{label}</Text>
-                    <Ionicons name="chevron-forward" size={18} color={C.textSecondary} />
+                    <Ionicons name="chevron-forward" size={16} color={C.border} />
                   </Pressable>
                 ))}
               </View>
@@ -148,9 +147,8 @@ const styles = StyleSheet.create({
     borderWidth: 2, borderColor: 'rgba(255,255,255,0.5)',
   },
   avatarInitial: { fontSize: 18, fontWeight: '800', color: '#fff', fontFamily: F.extrabold },
-  userName: { fontSize: 15, fontWeight: '700', color: '#fff', marginBottom: 4, fontFamily: F.bold },
-  rolePill: { alignSelf: 'flex-start', backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 2 },
-  rolePillText: { fontSize: 11, fontWeight: '600', color: 'rgba(255,255,255,0.9)', fontFamily: F.semibold },
+  userName: { fontSize: 15, fontWeight: '700', color: '#fff', marginBottom: 2, fontFamily: F.bold },
+  userEmail: { fontSize: 11, color: 'rgba(255,255,255,0.7)', fontFamily: F.regular },
   scroll: { flex: 1 },
   groupSeparator: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 4 },
   groupLabel: { fontSize: 10, fontWeight: '800', letterSpacing: 1, fontFamily: F.extrabold },

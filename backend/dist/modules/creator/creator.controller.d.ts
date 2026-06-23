@@ -15,5 +15,6 @@ export declare class CreatorController {
     getEarnings(req: Request, res: Response, next: NextFunction): Promise<void>;
     updatePaymentMethods(req: Request, res: Response, next: NextFunction): Promise<void>;
     updateCampaignPrefs(req: Request, res: Response, next: NextFunction): Promise<void>;
+    uploadAvatar(req: Request, res: Response, next: NextFunction): Promise<void>;
 }
 //# sourceMappingURL=creator.controller.d.ts.map

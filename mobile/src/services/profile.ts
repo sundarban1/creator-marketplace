@@ -1,5 +1,12 @@
 import { request } from '@/lib/api';
 
+export type SocialLinks = {
+  facebook?:  string;
+  instagram?: string;
+  tiktok?:    string;
+  linkedin?:  string;
+};
+
 export type BusinessProfile = {
   id:           string;
   businessName: string;
@@ -11,6 +18,7 @@ export type BusinessProfile = {
   location:     string | null;
   isVerified:   boolean;
   createdAt:    string;
+  socialLinks:  SocialLinks;
   user: { email: string };
 };
 
@@ -20,24 +28,27 @@ export const profileService = {
     return res.data;
   },
   async updateCreatorProfile(data: {
-    username?:  string;
-    fullName?:  string;
-    bio?:       string;
-    location?:  string;
-    avatarUrl?: string;
+    username?:   string;
+    fullName?:   string;
+    bio?:        string;
+    location?:   string;
+    phone?:      string;
+    gender?:     string;
+    avatarUrl?:  string;
     categories?: string[];
   }): Promise<void> {
     await request('PUT', '/api/creator/profile', data);
   },
 
   async updateBusinessProfile(data: {
-    businessName?: string;
-    description?:  string;
-    logoUrl?:      string;
-    website?:      string;
-    panNo?:        string;
-    location?:     string | null;
-    categories?:   string[];
+    businessName?:  string;
+    description?:   string;
+    logoUrl?:       string;
+    website?:       string;
+    panNo?:         string;
+    location?:      string | null;
+    categories?:    string[];
+    socialLinks?:   SocialLinks;
   }): Promise<void> {
     await request('PUT', '/api/business/profile', data);
   },

@@ -55,6 +55,7 @@ export default function VerifyScreen() {
     setError('');
     try {
       const user = await authService.verifyOtp(email ?? '', fullCode);
+      void authService.sendWelcomeEmail(email ?? '');
       setVerified(true);
       // Show success animation briefly, then send to login
       setTimeout(() => router.replace({ pathname: '/login', params: { verified: '1' } }), 1500);

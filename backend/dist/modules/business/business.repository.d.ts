@@ -10,7 +10,7 @@ export declare class BusinessRepository {
         businesses: {
             description: string | null;
             id: string;
-            businessName: string;
+            businessName: string | null;
             logoUrl: string | null;
             website: string | null;
             categories: string[];
@@ -26,7 +26,7 @@ export declare class BusinessRepository {
         id: string;
         createdAt: Date;
         userId: string;
-        businessName: string;
+        businessName: string | null;
         logoUrl: string | null;
         website: string | null;
         categories: string[];
@@ -36,10 +36,10 @@ export declare class BusinessRepository {
         showPublicProfile: boolean;
         campaigns: {
             id: string;
+            location: string | null;
             _count: {
                 applications: number;
             };
-            location: string | null;
             platform: string;
             title: string;
             category: string;
@@ -66,11 +66,12 @@ export declare class BusinessRepository {
         createdAt: Date;
         updatedAt: Date;
         userId: string;
-        businessName: string;
+        businessName: string | null;
         logoUrl: string | null;
         website: string | null;
         categories: string[];
         panNo: string | null;
+        location: string | null;
         isVerified: boolean;
         allowDirectMessages: boolean;
         hideContactDetails: boolean;
@@ -82,11 +83,12 @@ export declare class BusinessRepository {
         createdAt: Date;
         updatedAt: Date;
         userId: string;
-        businessName: string;
+        businessName: string | null;
         logoUrl: string | null;
         website: string | null;
         categories: string[];
         panNo: string | null;
+        location: string | null;
         isVerified: boolean;
         allowDirectMessages: boolean;
         hideContactDetails: boolean;
@@ -99,20 +101,23 @@ export declare class BusinessRepository {
         website: string | null;
         categories: string[];
         panNo: string | null;
+        location: string | null;
         showPublicProfile: boolean;
         hideContactDetails: boolean;
         allowDirectMessages: boolean;
+        socialLinks: Record<string, string>;
     }>): Promise<{
         description: string | null;
         id: string;
         createdAt: Date;
         updatedAt: Date;
         userId: string;
-        businessName: string;
+        businessName: string | null;
         logoUrl: string | null;
         website: string | null;
         categories: string[];
         panNo: string | null;
+        location: string | null;
         isVerified: boolean;
         allowDirectMessages: boolean;
         hideContactDetails: boolean;

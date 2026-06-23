@@ -13,5 +13,7 @@ export declare class AuthController {
     completeOnboarding(req: Request, res: Response, next: NextFunction): Promise<void>;
     deactivateAccount(req: Request, res: Response, next: NextFunction): Promise<void>;
     deleteAccount(req: Request, res: Response, next: NextFunction): Promise<void>;
+    requestPhoneOtp(req: Request, res: Response, next: NextFunction): Promise<void>;
+    verifyPhoneOtp(req: Request, res: Response, next: NextFunction): Promise<void>;
 }
 //# sourceMappingURL=auth.controller.d.ts.map

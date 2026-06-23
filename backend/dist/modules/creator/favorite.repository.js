@@ -37,6 +37,26 @@ class FavoriteRepository {
         });
         return rows.map((r) => r.creator.userId);
     }
+    async getFavoriteBusinesses(creatorId) {
+        return prisma_1.default.favoriteBusiness.findMany({
+            where: { creatorId },
+            orderBy: { createdAt: 'desc' },
+            include: {
+                business: {
+                    select: {
+                        id: true,
+                        businessName: true,
+                        description: true,
+                        logoUrl: true,
+                        website: true,
+                        categories: true,
+                        isVerified: true,
+                        _count: { select: { campaigns: true } },
+                    },
+                },
+            },
+        });
+    }
 }
 exports.FavoriteRepository = FavoriteRepository;
 //# sourceMappingURL=favorite.repository.js.map

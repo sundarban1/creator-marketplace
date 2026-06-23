@@ -133,6 +133,7 @@ export default function LoginScreen() {
   const [loading,  setLoading]  = useState(false);
   const [error,    setError]    = useState('');
 
+
   const cardSlide   = useRef(new Animated.Value(60)).current;
   const cardOpacity = useRef(new Animated.Value(0)).current;
   const heroScale   = useRef(new Animated.Value(0.92)).current;
@@ -304,15 +305,6 @@ export default function LoginScreen() {
             {/* Footer */}
             <View style={s.footer}>
               <Text style={[s.footerCopy, { color: C.textSecondary }]}>© 2026 CreatorMarket</Text>
-              <View style={s.footerLinks}>
-                <Pressable onPress={() => router.push('/legal?type=terms' as never)}>
-                  <Text style={[s.footerLink, { color: INDIGO }]}>Terms</Text>
-                </Pressable>
-                <View style={[s.footerDot, { backgroundColor: C.border }]} />
-                <Pressable onPress={() => router.push('/legal?type=privacy-policy' as never)}>
-                  <Text style={[s.footerLink, { color: INDIGO }]}>Privacy</Text>
-                </Pressable>
-              </View>
             </View>
           </ScrollView>
         </Animated.View>
@@ -382,9 +374,6 @@ const s = StyleSheet.create({
   signUpBtn:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 16, borderWidth: 1.5, paddingVertical: 15 },
   signUpText: { fontSize: 14, fontFamily: F.regular },
 
-  footer:      { marginTop: 32, alignItems: 'center', gap: 8 },
-  footerCopy:  { fontSize: 11, fontFamily: F.regular },
-  footerLinks: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  footerLink:  { fontSize: 11, fontWeight: '700', fontFamily: F.bold },
-  footerDot:   { width: 3, height: 3, borderRadius: 1.5 },
+  footer:     { marginTop: 32, alignItems: 'center' },
+  footerCopy: { fontSize: 11, fontFamily: F.regular },
 });
