@@ -141,38 +141,39 @@ export default function CampaignsScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
-      <LinearGradient colors={['#4F46E5', '#7C3AED', '#9333EA']} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientHeader}>
-        {/* Header */}
+      <LinearGradient colors={['#1e1b4b', '#4338ca', '#7c3aed']} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientHeader}>
+        <View style={[styles.decCircle1, { backgroundColor: 'rgba(255,255,255,0.08)' }]} />
+        <View style={[styles.decCircle2, { backgroundColor: 'rgba(255,255,255,0.05)' }]} />
         <View style={styles.header}>
-          <Text style={[styles.pageTitle, { color: '#fff' }]}>{t('campaigns.title')}</Text>
+          <View style={styles.headerLeft}>
+            <Text style={[styles.pageTitle, { color: '#fff' }]}>{t('campaigns.title')}</Text>
+            <Text style={[styles.pageSub, { color: 'rgba(255,255,255,0.75)' }]}>Manage and track your campaigns</Text>
+          </View>
           <Pressable
-            style={[styles.newBtn, { backgroundColor: 'rgba(255,255,255,0.25)' }]}
+            style={[styles.newBtn, { backgroundColor: 'rgba(255,255,255,0.22)' }]}
             onPress={() => router.push('/create-campaign')}>
             <Text style={[styles.newBtnText, { color: '#fff' }]}>{t('business.newBtn')}</Text>
           </Pressable>
         </View>
       </LinearGradient>
 
-      {/* Filter chips */}
+      {/* Filter tabs */}
       <View style={styles.filterRow}>
-        {FILTERS.map((f) => (
-          <Pressable
-            key={f}
-            style={[
-              styles.filterChip,
-              { borderColor: C.border, backgroundColor: C.surface },
-              activeFilter === f && { backgroundColor: C.brinjal1, borderColor: C.brinjal1 },
-            ]}
-            onPress={() => setActiveFilter(f)}>
-            <Text style={[
-              styles.filterChipText,
-              { color: C.textSecondary },
-              activeFilter === f && { color: '#fff', fontWeight: '700' },
-            ]}>
-              {f}
-            </Text>
-          </Pressable>
-        ))}
+        {FILTERS.map((f) => {
+          const active = activeFilter === f;
+          const count = f === 'All'
+            ? campaigns.length
+            : campaigns.filter((c) => c.status === f.toLowerCase()).length;
+          return (
+            <Pressable
+              key={f}
+              style={[styles.filterTab, { backgroundColor: active ? C.brinjal1 : C.surface, borderColor: active ? C.brinjal1 : C.border }]}
+              onPress={() => setActiveFilter(f)}>
+              <Text style={[styles.filterTabVal, { color: active ? '#fff' : C.text }]}>{count}</Text>
+              <Text style={[styles.filterTabLabel, { color: active ? 'rgba(255,255,255,0.82)' : C.textSecondary }]}>{f}</Text>
+            </Pressable>
+          );
+        })}
       </View>
 
       {/* Campaign list */}
@@ -209,58 +210,66 @@ export default function CampaignsScreen() {
               const bg = cardBg(c.category);
               return (
                 <View key={c.id} style={[styles.card, { backgroundColor: C.surface }]}>
-                  <Pressable
-                    style={({ pressed }) => [styles.cardMain, pressed && { opacity: 0.88 }]}
-                    onPress={() => router.push({ pathname: '/campaign-detail', params: { campaignId: c.id } })}>
-                    <View style={[styles.thumb, { backgroundColor: bg }]}>
-                      <Text style={styles.thumbEmoji}>{meta.emoji}</Text>
-                    </View>
-                    <View style={styles.body}>
-                      <View style={styles.titleRow}>
+                  <View style={[styles.cardAccent, { backgroundColor: st.color }]} />
+                  <View style={styles.cardContent}>
+                    <Pressable
+                      style={({ pressed }) => [styles.cardMain, pressed && { opacity: 0.88 }]}
+                      onPress={() => router.push({ pathname: '/campaign-detail', params: { campaignId: c.id } })}>
+                      <View style={[styles.thumb, { backgroundColor: bg }]}>
+                        <Text style={styles.thumbEmoji}>{meta.emoji}</Text>
+                      </View>
+                      <View style={styles.body}>
                         <Text style={[styles.title, { color: C.text }]} numberOfLines={1}>{c.title}</Text>
-                        <View style={[styles.badge, { backgroundColor: st.bg }]}>
-                          <Text style={[styles.badgeText, { color: st.color }]}>{st.label}</Text>
+                        <View style={styles.metaRow}>
+                          <Ionicons name="globe-outline" size={12} color={C.textSecondary} />
+                          <Text style={[styles.meta, { color: C.textSecondary }]}>{c.platform}</Text>
+                          <Text style={[styles.metaDot, { color: C.border }]}>·</Text>
+                          <Ionicons name="cash-outline" size={12} color={C.textSecondary} />
+                          <Text style={[styles.meta, { color: C.textSecondary }]}>{c.budget}</Text>
                         </View>
+                        {(c.status === 'draft') ? (
+                          <Text style={[styles.draftNote, { color: C.textSecondary }]}>Tap to view & edit</Text>
+                        ) : (
+                          <View style={styles.statRow}>
+                            <View style={[styles.statPill, { backgroundColor: C.primaryLight }]}>
+                              <Ionicons name="people-outline" size={12} color={C.brinjal1} />
+                              <Text style={[styles.stat, { color: C.brinjal1 }]}>
+                                {c.proposals} proposal{c.proposals !== 1 ? 's' : ''}
+                              </Text>
+                            </View>
+                            <View style={[styles.badge, { backgroundColor: st.bg }]}>
+                              <Text style={[styles.badgeText, { color: st.color }]}>{st.label}</Text>
+                            </View>
+                          </View>
+                        )}
                       </View>
-                      <Text style={[styles.meta, { color: C.textSecondary }]}>
-                        {c.platform} · {c.budget}
-                      </Text>
-                      {(c.status === 'draft') ? (
-                        <Text style={[styles.draftNote, { color: C.textSecondary }]}>
-                          Draft — tap to view & edit
-                        </Text>
-                      ) : (
-                        <Text style={[styles.stat, { color: C.textSecondary }]}>
-                          👥 {c.proposals === 1 ? t('campaigns.proposals', { count: c.proposals }) : t('campaigns.proposalsPlural', { count: c.proposals })}
-                        </Text>
-                      )}
-                    </View>
-                    <Text style={[styles.chevron, { color: C.border }]}>›</Text>
-                  </Pressable>
+                      <Ionicons name="chevron-forward" size={18} color={C.border} />
+                    </Pressable>
 
-                  {/* Footer actions */}
-                  {(c.proposals > 0 || c.status === 'active') && (
-                    <>
-                      <View style={[styles.footerDivider, { backgroundColor: C.border }]} />
-                      <View style={styles.footerRow}>
-                        {c.proposals > 0 && (
-                          <Pressable
-                            style={({ pressed }) => [styles.footerBtn, pressed && { opacity: 0.7 }]}
-                            onPress={() => openProposals(c)}>
-                            <Text style={[styles.footerBtnText, { color: C.brinjal1 }]}>{t('campaigns.viewProposals')} →</Text>
-                          </Pressable>
-                        )}
-                        {c.status === 'active' && (
-                          <Pressable
-                            style={({ pressed }) => [styles.inviteBtn, { backgroundColor: C.primaryLight }, pressed && { opacity: 0.7 }]}
-                            onPress={() => openInvite(c)}>
-                            <Ionicons name="person-add-outline" size={13} color={C.brinjal1} />
-                            <Text style={[styles.inviteBtnText, { color: C.brinjal1 }]}>{t('campaigns.invite')}</Text>
-                          </Pressable>
-                        )}
-                      </View>
-                    </>
-                  )}
+                    {/* Footer actions */}
+                    {(c.proposals > 0 || c.status === 'active') && (
+                      <>
+                        <View style={[styles.footerDivider, { backgroundColor: C.border }]} />
+                        <View style={styles.footerRow}>
+                          {c.proposals > 0 && (
+                            <Pressable
+                              style={({ pressed }) => [styles.footerBtn, pressed && { opacity: 0.7 }]}
+                              onPress={() => openProposals(c)}>
+                              <Text style={[styles.footerBtnText, { color: C.brinjal1 }]}>{t('campaigns.viewProposals')} →</Text>
+                            </Pressable>
+                          )}
+                          {c.status === 'active' && (
+                            <Pressable
+                              style={({ pressed }) => [styles.inviteBtn, { backgroundColor: C.primaryLight }, pressed && { opacity: 0.7 }]}
+                              onPress={() => openInvite(c)}>
+                              <Ionicons name="person-add-outline" size={13} color={C.brinjal1} />
+                              <Text style={[styles.inviteBtnText, { color: C.brinjal1 }]}>{t('campaigns.invite')}</Text>
+                            </Pressable>
+                          )}
+                        </View>
+                      </>
+                    )}
+                  </View>
                 </View>
               );
             })
@@ -434,19 +443,24 @@ export default function CampaignsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 60 },
-  gradientHeader: { paddingBottom: 4, borderBottomLeftRadius: 24, borderBottomRightRadius: 24, overflow: 'hidden' },
+  gradientHeader: { paddingBottom: 16, borderBottomLeftRadius: 28, borderBottomRightRadius: 28, overflow: 'hidden' },
+  decCircle1: { position: 'absolute', width: 200, height: 200, borderRadius: 100, top: -70, right: -40 },
+  decCircle2: { position: 'absolute', width: 120, height: 120, borderRadius: 60, bottom: -35, left: 15 },
 
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12,
+    paddingHorizontal: 20, paddingTop: 16, paddingBottom: 4,
   },
+  headerLeft: { gap: 3 },
   pageTitle: { fontSize: 22, fontWeight: '800', fontFamily: F.extrabold },
-  newBtn: { borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8 },
+  pageSub:   { fontSize: 13, fontFamily: F.regular },
+  newBtn: { borderRadius: 12, paddingHorizontal: 14, paddingVertical: 9 },
   newBtnText: { color: '#fff', fontWeight: '700', fontSize: 13, fontFamily: F.bold },
 
-  filterRow: { flexDirection: 'row', paddingHorizontal: 20, gap: 8, paddingTop: 14, paddingBottom: 16 },
-  filterChip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 1.5 },
-  filterChipText: { fontSize: 12, fontWeight: '500', fontFamily: F.medium },
+  filterRow: { flexDirection: 'row', paddingHorizontal: 20, gap: 10, paddingTop: 16, paddingBottom: 16 },
+  filterTab: { flex: 1, borderRadius: 14, borderWidth: 1.5, paddingVertical: 10, alignItems: 'center', gap: 2, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, elevation: 2 },
+  filterTabVal: { fontSize: 20, fontWeight: '800', fontFamily: F.extrabold },
+  filterTabLabel: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.3, fontFamily: F.bold },
 
   list: { paddingHorizontal: 20, gap: 12, paddingBottom: 40 },
   listEmpty: { flexGrow: 1 },
@@ -459,22 +473,27 @@ const styles = StyleSheet.create({
   emptyBtnText: { color: '#fff', fontWeight: '700', fontSize: 14, fontFamily: F.bold },
 
   card: {
-    borderRadius: 16,
-    shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 }, elevation: 3, overflow: 'hidden',
+    borderRadius: 18,
+    shadowColor: '#4F46E5', shadowOpacity: 0.08, shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 }, elevation: 4, overflow: 'hidden',
+    flexDirection: 'row',
   },
-  cardMain: { flexDirection: 'row', alignItems: 'center', padding: 12, gap: 12 },
-  thumb: { width: 72, height: 72, borderRadius: 12, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
-  thumbEmoji: { fontSize: 28 },
-  body: { flex: 1, gap: 4 },
-  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
-  title: { fontSize: 14, fontWeight: '700', flex: 1, fontFamily: F.bold },
-  badge: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
+  cardAccent: { width: 4 },
+  cardContent: { flex: 1 },
+  cardMain: { flexDirection: 'row', alignItems: 'center', padding: 14, gap: 14 },
+  thumb: { width: 72, height: 72, borderRadius: 16, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  thumbEmoji: { fontSize: 30 },
+  body: { flex: 1, gap: 6 },
+  title: { fontSize: 15, fontWeight: '700', fontFamily: F.bold },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  metaDot: { fontSize: 12 },
+  badge: { borderRadius: 10, paddingHorizontal: 9, paddingVertical: 4 },
   badgeText: { fontSize: 11, fontWeight: '700', fontFamily: F.bold },
   meta: { fontSize: 12, fontFamily: F.regular },
-  stat: { fontSize: 11, marginTop: 2, fontFamily: F.regular },
-  draftNote: { fontSize: 11, fontStyle: 'italic', marginTop: 2, fontFamily: F.regular },
-  chevron: { fontSize: 22, flexShrink: 0 },
+  statRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  statPill: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
+  stat: { fontSize: 12, fontFamily: F.semibold },
+  draftNote: { fontSize: 11, fontStyle: 'italic', fontFamily: F.regular },
 
   footerDivider: { height: 1, marginHorizontal: 12 },
   footerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 9 },

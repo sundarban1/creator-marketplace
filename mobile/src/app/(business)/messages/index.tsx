@@ -1,5 +1,6 @@
 import { router, useFocusEffect } from 'expo-router';
 import { messagingEvents } from '@/lib/messagingEvents';
+import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useRef, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -103,20 +104,25 @@ export default function BusinessChatListScreen() {
 
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
-      <LinearGradient colors={['#4F46E5', '#7C3AED', '#9333EA']} start={{x:0,y:0}} end={{x:1,y:1}} style={s.gradientHeader}>
+      <LinearGradient colors={['#1e1b4b', '#4338ca', '#7c3aed']} start={{x:0,y:0}} end={{x:1,y:1}} style={s.gradientHeader}>
+        <View style={[s.decCircle1, { backgroundColor: 'rgba(255,255,255,0.08)' }]} />
+        <View style={[s.decCircle2, { backgroundColor: 'rgba(255,255,255,0.05)' }]} />
         <View style={s.header}>
           <Text style={[s.heading, { color: '#fff' }]}>Messages</Text>
+          <Text style={[s.headingSub, { color: 'rgba(255,255,255,0.75)' }]}>Your active conversations</Text>
         </View>
+      </LinearGradient>
 
-        {/* Search bar */}
-        <View style={[s.searchWrap, { backgroundColor: 'rgba(255,255,255,0.18)', borderColor: 'rgba(255,255,255,0.3)' }]}>
-          <Text style={[s.searchIcon, { color: 'rgba(255,255,255,0.8)' }]}>🔍</Text>
+      {/* Search bar */}
+      <View style={[s.searchRow, { backgroundColor: C.background }]}>
+        <View style={[s.searchCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+          <Ionicons name="search-outline" size={17} color={C.textSecondary} />
           <TextInput
-            style={[s.searchInput, { color: '#fff' }]}
+            style={[s.searchInput, { color: C.text }]}
             value={query}
             onChangeText={setQuery}
             placeholder="Search by name…"
-            placeholderTextColor="rgba(255,255,255,0.6)"
+            placeholderTextColor={C.textSecondary}
             returnKeyType="search"
             clearButtonMode="while-editing"
             autoCorrect={false}
@@ -124,11 +130,11 @@ export default function BusinessChatListScreen() {
           />
           {isSearching && (
             <Pressable onPress={() => setQuery('')} hitSlop={10}>
-              <Text style={[s.clearBtn, { color: 'rgba(255,255,255,0.8)' }]}>✕</Text>
+              <Ionicons name="close-circle" size={16} color={C.textSecondary} />
             </Pressable>
           )}
         </View>
-      </LinearGradient>
+      </View>
 
       <FlatList
         data={loading ? [] : filtered}
@@ -162,15 +168,17 @@ export default function BusinessChatListScreen() {
 
 const s = StyleSheet.create({
   container: { flex: 1 },
-  gradientHeader: { paddingBottom: 16, borderBottomLeftRadius: 24, borderBottomRightRadius: 24, overflow: 'hidden' },
-  header:    { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 8 },
-  heading:   { fontSize: 22, fontWeight: '800', fontFamily: F.extrabold },
+  gradientHeader: { paddingBottom: 16, borderBottomLeftRadius: 28, borderBottomRightRadius: 28, overflow: 'hidden' },
+  decCircle1: { position: 'absolute', width: 200, height: 200, borderRadius: 100, top: -70, right: -40 },
+  decCircle2: { position: 'absolute', width: 120, height: 120, borderRadius: 60, bottom: -35, left: 15 },
+  header:    { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 4, gap: 3 },
+  heading:   { fontSize: 22, fontWeight: '800', fontFamily: F.extrabold, color: '#fff' },
+  headingSub:{ fontSize: 13, fontFamily: F.regular },
   list:      { paddingBottom: 32 },
 
-  searchWrap:  { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginBottom: 0, borderRadius: 12, borderWidth: 1, paddingHorizontal: 12, height: 44, gap: 8 },
-  searchIcon:  { fontSize: 15 },
+  searchRow:  { paddingHorizontal: 20, paddingVertical: 12 },
+  searchCard: { flexDirection: 'row', alignItems: 'center', borderRadius: 14, borderWidth: 1.5, paddingHorizontal: 14, height: 48, gap: 10 },
   searchInput: { flex: 1, fontSize: 15, paddingVertical: 0, fontFamily: F.regular },
-  clearBtn:    { fontSize: 14, fontWeight: '600', paddingHorizontal: 2, fontFamily: F.semibold },
 
   row:     { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, gap: 14, borderBottomWidth: 1 },
   content: { flex: 1, gap: 3 },

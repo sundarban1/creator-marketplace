@@ -259,17 +259,13 @@ export default function HomeScreen() {
             <View style={styles.headerLeft}>
               <Pressable style={styles.menuBtn} onPress={openDrawer}>
                 <View style={styles.menuBtnInner}>
-                  <Ionicons name="menu" size={22} color="#fff" />
+                  <Ionicons name="menu" size={30} color="#fff" />
                 </View>
               </Pressable>
               <View>
                 <Text style={[styles.greeting, { color: 'rgba(255,255,255,0.7)' }]}>{language === 'ne' ? 'नमस्ते 🙏' : 'Hello 👋'}</Text>
                 <View style={styles.nameRow}>
                   <Text style={[styles.brandName, { color: '#fff' }]} numberOfLines={1}>{user?.name ?? 'Creator'}</Text>
-                </View>
-                <View style={[styles.rolePill, { backgroundColor: 'rgba(255,255,255,0.15)', alignSelf: 'flex-start', marginTop: 4 }]}>
-                  <View style={styles.roleDot} />
-                  <Text style={[styles.rolePillText, { color: 'rgba(255,255,255,0.9)' }]}>Creator</Text>
                 </View>
               </View>
             </View>
@@ -283,47 +279,36 @@ export default function HomeScreen() {
                   <Image source={{ uri: user.avatar }} style={styles.avatarImage} />
                 ) : (
                   <View style={[styles.avatarFallback, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
-                    <Ionicons name="person" size={22} color="#fff" />
+                    <Ionicons name="person" size={30} color="#fff" />
                   </View>
                 )}
               </Pressable>
             </View>
           </View>
 
-          {/* ── Search ── */}
-          <View style={[
-            styles.searchCard,
-            searchFocused
-              ? styles.searchCardFocused
-              : { backgroundColor: 'rgba(255,255,255,0.14)', borderColor: 'rgba(255,255,255,0.22)' },
-          ]}>
-            <Ionicons
-              name="search"
-              size={17}
-              color={searchFocused ? '#4338CA' : 'rgba(255,255,255,0.7)'}
-              style={styles.searchIcon}
-            />
+        </LinearGradient>
+
+        {/* ── Search bar ── */}
+        <View style={styles.searchRow}>
+          <View style={[styles.searchCard, searchFocused ? styles.searchCardFocused : { backgroundColor: C.surface, borderColor: C.border }]}>
+            <Ionicons name="search-outline" size={18} color={searchFocused ? C.brinjal1 : C.textSecondary} style={styles.searchIcon} />
             <TextInput
-              style={[styles.searchInput, { color: searchFocused ? '#1e1b4b' : '#fff' }]}
+              style={[styles.searchInput, { color: C.text }]}
               placeholder={t('creator.browse.searchPlaceholder')}
-              placeholderTextColor={searchFocused ? '#94A3B8' : 'rgba(255,255,255,0.5)'}
+              placeholderTextColor={C.textSecondary}
               value={search}
               onChangeText={setSearch}
               onFocus={() => setSearchFocused(true)}
               onBlur={() => setSearchFocused(false)}
             />
             <Pressable
-              style={[styles.filterBtn, {
-                backgroundColor: isFilterActive
-                  ? '#4338CA'
-                  : searchFocused ? '#EEF2FF' : 'rgba(255,255,255,0.18)',
-              }]}
+              style={[styles.filterBtn, { backgroundColor: isFilterActive ? C.brinjal1 : C.primaryLight }]}
               onPress={openFilter}>
-              <Ionicons name="options" size={18} color={isFilterActive ? '#fff' : searchFocused ? '#4338CA' : '#fff'} />
-              {isFilterActive && <View style={[styles.filterActiveDot, { borderColor: 'transparent' }]} />}
+              <Ionicons name="options-outline" size={18} color={isFilterActive ? '#fff' : C.brinjal1} />
+              {isFilterActive && <View style={styles.filterActiveDot} />}
             </Pressable>
           </View>
-        </LinearGradient>
+        </View>
 
         {/* ── Error ── */}
         {fetchError ? (
@@ -372,20 +357,6 @@ export default function HomeScreen() {
             );
           })}
         </ScrollView>
-
-        {/* ── Explore Brands compact strip ── */}
-        <Pressable
-          style={[styles.exploreStrip, { backgroundColor: '#F0FDF4', borderWidth: 1, borderColor: '#BBF7D0' }]}
-          onPress={() => router.push('/(creator)/explore-businesses' as never)}>
-          <View style={[styles.exploreIconBox, { backgroundColor: '#059669' }]}>
-            <Ionicons name="business" size={18} color="#fff" />
-          </View>
-          <View style={styles.exploreTexts}>
-            <Text style={[styles.exploreTitle, { color: '#065F46' }]}>Explore Brands</Text>
-            <Text style={[styles.exploreSub, { color: '#059669' }]}>Find businesses hiring creators · <Text style={{ color: '#047857', fontWeight: '700' }}>Earn money</Text></Text>
-          </View>
-          <Ionicons name="chevron-forward" size={22} color="#059669" />
-        </Pressable>
 
         {/* ── Platform Filter ── */}
         {apiPlatforms.length > 0 && (
@@ -452,6 +423,24 @@ export default function HomeScreen() {
                 <Text style={[styles.featuredEmptySub, { color: C.textSecondary }]}>Check back soon — new opportunities are added regularly.</Text>
               </View>
             )}
+
+            {/* ── Explore Brands compact strip ── */}
+            <Pressable
+              style={[styles.exploreStrip, { backgroundColor: '#F0FDF4', borderWidth: 1, borderColor: '#BBF7D0' }]}
+              onPress={() => router.push('/(creator)/explore-businesses' as never)}>
+              <View style={[styles.exploreIconBox, { backgroundColor: '#059669' }]}>
+                <Ionicons name="storefront-outline" size={20} color="#fff" />
+              </View>
+              <View style={styles.exploreTexts}>
+                <Text style={[styles.exploreTitle, { color: '#065F46' }]}>Explore Brands</Text>
+                <Text style={[styles.exploreSub, { color: '#059669' }]}>Find businesses hiring creators</Text>
+                <View style={styles.earnBadge}>
+                  <Ionicons name="cash-outline" size={11} color="#fff" />
+                  <Text style={styles.earnText}>Earn Money</Text>
+                </View>
+              </View>
+              <Ionicons name="arrow-forward-circle" size={26} color="#059669" />
+            </Pressable>
 
             {/* ── Tab filter ── */}
             <View style={[styles.filterTabsWrap, { borderBottomColor: C.border }]}>
@@ -530,7 +519,7 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   scrollContent: { paddingBottom: 40 },
 
-  gradientHeader: { paddingBottom: 26, borderBottomLeftRadius: 32, borderBottomRightRadius: 32, overflow: 'hidden' },
+  gradientHeader: { paddingBottom: 14, borderBottomLeftRadius: 32, borderBottomRightRadius: 32, overflow: 'hidden' },
   decCircleLarge: { position: 'absolute', width: 260, height: 260, borderRadius: 130, backgroundColor: 'rgba(255,255,255,0.05)', top: -80, right: -60 },
   decCircleMid:   { position: 'absolute', width: 140, height: 140, borderRadius: 70,  backgroundColor: 'rgba(167,139,250,0.15)', bottom: 10,  left: -30 },
   decCircleSmall: { position: 'absolute', width: 70,  height: 70,  borderRadius: 35,  backgroundColor: 'rgba(255,255,255,0.07)', top: 30,    left: '45%' },
@@ -551,22 +540,21 @@ const styles = StyleSheet.create({
   avatarImage: { width: 44, height: 44 },
   avatarFallback: { width: 44, height: 44, justifyContent: 'center', alignItems: 'center' },
 
-  searchCard: { flexDirection: 'row', alignItems: 'center', borderRadius: 16, marginHorizontal: 20, marginBottom: 0, paddingHorizontal: 14, height: 52, borderWidth: 1 },
+  searchRow: { paddingHorizontal: 20, paddingTop: 14, paddingBottom: 4 },
+  searchCard: { flexDirection: 'row', alignItems: 'center', borderRadius: 16, paddingHorizontal: 14, height: 52, borderWidth: 1.5 },
   searchCardFocused: {
-    backgroundColor: '#fff',
     borderColor: '#4338CA',
-    borderWidth: 1.5,
-    shadowColor: '#1e1b4b',
-    shadowOpacity: 0.28,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 14,
-    transform: [{ scaleX: 1.015 }, { scaleY: 1.015 }],
+    borderWidth: 2,
+    shadowColor: '#4338CA',
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
   },
   searchIcon: { marginRight: 8 },
   searchInput: { flex: 1, fontSize: 14, fontFamily: F.regular },
   filterBtn: { width: 36, height: 36, borderRadius: 11, justifyContent: 'center', alignItems: 'center' },
-  filterActiveDot: { position: 'absolute', top: 4, right: 4, width: 7, height: 7, borderRadius: 4, backgroundColor: '#EF4444', borderWidth: 1.5 },
+  filterActiveDot: { position: 'absolute', top: 4, right: 4, width: 7, height: 7, borderRadius: 4, backgroundColor: '#EF4444' },
 
   errorCard: { marginHorizontal: 20, marginBottom: 16, borderRadius: 10, padding: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   errorText: { color: '#DC2626', fontSize: 13, flex: 1, fontFamily: F.medium },
@@ -589,7 +577,7 @@ const styles = StyleSheet.create({
 
   platformsRow: { paddingHorizontal: 20, gap: 10, marginBottom: 0 },
   platCard: {
-    width: 78, height: 96, borderRadius: 18, overflow: 'hidden',
+    width: 78, height: 78, borderRadius: 18, overflow: 'hidden',
     alignItems: 'center', justifyContent: 'center', gap: 7,
     paddingHorizontal: 6,
     shadowColor: '#000', shadowOpacity: 0.07, shadowRadius: 10,
@@ -616,10 +604,12 @@ const styles = StyleSheet.create({
   emptyTitle: { fontSize: 17, fontFamily: F.bold },
   emptyHint: { fontSize: 13, fontFamily: F.regular, textAlign: 'center', lineHeight: 20, paddingHorizontal: 24 },
 
-  exploreStrip:   { flexDirection: 'row', alignItems: 'center', borderRadius: 16, marginHorizontal: 20, marginTop: 20, marginBottom: 0, paddingHorizontal: 14, paddingVertical: 13, gap: 12 },
-  exploreIconBox: { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
-  exploreTexts:   { flex: 1 },
-  exploreTitle:   { fontSize: 14, fontFamily: F.bold },
+  exploreStrip:   { flexDirection: 'row', alignItems: 'center', borderRadius: 18, marginHorizontal: 20, marginTop: 16, marginBottom: 20, paddingHorizontal: 16, paddingVertical: 14, gap: 14 },
+  exploreIconBox: { width: 44, height: 44, borderRadius: 14, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  exploreTexts:   { flex: 1, gap: 2 },
+  exploreTitle:   { fontSize: 15, fontFamily: F.bold },
+  earnBadge:      { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#059669', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, alignSelf: 'flex-start', marginTop: 4 },
+  earnText:       { fontSize: 11, fontWeight: '700', color: '#fff', fontFamily: F.bold },
   exploreSub:     { fontSize: 12, fontFamily: F.regular, marginTop: 1 },
 
   banner: { flexDirection: 'row', alignItems: 'center', borderRadius: 18, marginHorizontal: 20, marginTop: 20, padding: 16, gap: 12, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 10, shadowOffset: { width: 0, height: 2 }, elevation: 3, borderLeftWidth: 4 },

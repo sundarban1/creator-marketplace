@@ -639,11 +639,16 @@ export default function ExploreCreatorsScreen() {
 
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
-      <LinearGradient colors={['#4F46E5', '#7C3AED', '#9333EA']} start={{x:0,y:0}} end={{x:1,y:1}} style={s.gradientHeader}>
+      <LinearGradient colors={['#1e1b4b', '#4338ca', '#7c3aed']} start={{x:0,y:0}} end={{x:1,y:1}} style={s.gradientHeader}>
+        <View style={[s.decCircle1, { backgroundColor: 'rgba(255,255,255,0.08)' }]} />
+        <View style={[s.decCircle2, { backgroundColor: 'rgba(255,255,255,0.05)' }]} />
         {/* Header */}
         <View style={s.header}>
           <BackButton fallback="/(business)/" />
-          <Text style={[s.headerTitle, { color: '#fff' }]}>{t('explore.exploreCreators')}</Text>
+          <View style={s.headerMiddle}>
+            <Text style={[s.headerTitle, { color: '#fff' }]}>{t('explore.exploreCreators')}</Text>
+            <Text style={s.headerSub}>Find the perfect creator for your campaign</Text>
+          </View>
           <Pressable
             style={s.savedLink}
             onPress={() => router.push('/(business)/saved-creators' as Parameters<typeof router.push>[0])}>
@@ -651,31 +656,34 @@ export default function ExploreCreatorsScreen() {
             <Text style={s.savedLinkText}>{t('explore.saved')}</Text>
           </Pressable>
         </View>
+      </LinearGradient>
 
-        {/* Search bar */}
-        <View style={[s.searchCard, { backgroundColor: 'rgba(255,255,255,0.18)', borderColor: 'rgba(255,255,255,0.3)', borderWidth: 1 }]}>
-        <Text style={s.searchIcon}>🔍</Text>
-        <TextInput
-          style={[s.searchInput, { color: '#fff' }]}
-          placeholder={t('explore.searchCreators')}
-          placeholderTextColor="rgba(255,255,255,0.6)"
-          value={search}
-          onChangeText={setSearch}
-          returnKeyType="search"
-          autoCorrect={false}
-        />
+      {/* Search + filter — outside gradient */}
+      <View style={s.searchRow}>
+        <View style={[s.searchCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+          <Ionicons name="search-outline" size={18} color={C.textSecondary} />
+          <TextInput
+            style={[s.searchInput, { color: C.text }]}
+            placeholder={t('explore.searchCreators')}
+            placeholderTextColor={C.textSecondary}
+            value={search}
+            onChangeText={setSearch}
+            returnKeyType="search"
+            autoCorrect={false}
+          />
+          {search.length > 0 && (
+            <Pressable onPress={() => setSearch('')}>
+              <Ionicons name="close-circle" size={18} color={C.textSecondary} />
+            </Pressable>
+          )}
+        </View>
         <Pressable
-          style={[s.filterBtn, { backgroundColor: filterActive ? '#F97316' : 'rgba(255,255,255,0.2)' }]}
+          style={[s.filterBtn, { backgroundColor: filterActive ? C.brinjal1 : C.surface, borderColor: filterActive ? C.brinjal1 : C.border }]}
           onPress={openFilter}>
-          <View style={s.filterLines}>
-            <View style={[s.filterLine, { width: 16, backgroundColor: '#fff' }]} />
-            <View style={[s.filterLine, { width: 12, backgroundColor: '#fff' }]} />
-            <View style={[s.filterLine, { width: 8, backgroundColor: '#fff' }]} />
-          </View>
-          {filterActive && <View style={[s.filterDot, { borderColor: 'rgba(255,255,255,0.5)' }]} />}
+          <Ionicons name="options-outline" size={20} color={filterActive ? '#fff' : C.brinjal1} />
+          {filterActive && <View style={s.filterDot} />}
         </Pressable>
       </View>
-      </LinearGradient>
 
       {/* Active filter chips */}
       {filterActive && (
@@ -798,20 +806,22 @@ export default function ExploreCreatorsScreen() {
 
 const s = StyleSheet.create({
   container: { flex: 1 },
-  gradientHeader: { paddingBottom: 16, borderBottomLeftRadius: 24, borderBottomRightRadius: 24, overflow: 'hidden' },
+  gradientHeader: { paddingBottom: 16, borderBottomLeftRadius: 28, borderBottomRightRadius: 28, overflow: 'hidden' },
+  decCircle1:    { position: 'absolute', width: 200, height: 200, borderRadius: 100, top: -70, right: -50 },
+  decCircle2:    { position: 'absolute', width: 130, height: 130, borderRadius: 65, bottom: -40, left: 10 },
 
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 8 },
-  headerTitle: { flex: 1, fontSize: 18, fontWeight: '800', textAlign: 'center', fontFamily: F.extrabold },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 4, gap: 12 },
+  headerMiddle: { flex: 1, alignItems: 'center', gap: 2 },
+  headerTitle: { fontSize: 20, fontWeight: '800', textAlign: 'center', fontFamily: F.extrabold, color: '#fff' },
+  headerSub: { fontSize: 12, color: 'rgba(255,255,255,0.75)', fontFamily: F.regular, textAlign: 'center' },
   savedLink: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 6 },
   savedLinkText: { fontSize: 12, fontWeight: '700', color: '#fff', fontFamily: F.bold },
 
-  searchCard: { flexDirection: 'row', alignItems: 'center', borderRadius: 14, marginHorizontal: 20, marginBottom: 0, paddingHorizontal: 14, height: 50 },
-  searchIcon: { fontSize: 16, marginRight: 8 },
+  searchRow:  { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 12 },
+  searchCard: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 9, borderRadius: 16, borderWidth: 1.5, paddingHorizontal: 14, height: 50 },
   searchInput: { flex: 1, fontSize: 14, fontFamily: F.regular },
-  filterBtn: { width: 34, height: 34, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
-  filterLines: { gap: 4, alignItems: 'flex-end' },
-  filterLine: { height: 2, borderRadius: 1 },
-  filterDot: { position: 'absolute', top: 4, right: 4, width: 7, height: 7, borderRadius: 4, backgroundColor: '#EF4444', borderWidth: 1.5 },
+  filterBtn: { width: 50, height: 50, borderRadius: 16, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center' },
+  filterDot: { position: 'absolute', top: 8, right: 8, width: 8, height: 8, borderRadius: 4, backgroundColor: '#EF4444' },
 
   chipRow: { paddingHorizontal: 20, paddingBottom: 8, gap: 6, flexDirection: 'row', alignItems: 'center' },
   chip: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 16, borderWidth: 1.5 },

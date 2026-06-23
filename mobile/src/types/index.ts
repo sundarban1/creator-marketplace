@@ -34,6 +34,12 @@ export type Campaign = {
   status?: 'active' | 'draft' | 'closed';
   location?: string;
   createdAt: string;
+  campaignType?: 'PAID_CAMPAIGN' | 'OPEN_EVENT';
+  eventStatus?:  'OPEN' | 'FULL' | 'CLOSED';
+  capacity?:     number;
+  eventDate?:    string;
+  venue?:        string;
+  benefits?:     string[];
 };
 
 export type Proposal = {

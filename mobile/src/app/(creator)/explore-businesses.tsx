@@ -386,22 +386,20 @@ export default function ExploreBusinessesScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
       <LinearGradient colors={['#F97316', '#EF4444', '#EC4899']} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientHeader}>
+        <View style={[styles.decCircle1, { backgroundColor: 'rgba(255,255,255,0.1)' }]} />
+        <View style={[styles.decCircle2, { backgroundColor: 'rgba(255,255,255,0.07)' }]} />
         {/* ── Header ── */}
         <View style={styles.header}>
           <BackButton fallback="/(creator)/" />
-          <View style={styles.headerCenter}>
+          <View style={styles.headerMiddle}>
             <Text style={[styles.heading, { color: '#fff' }]}>Explore Brands</Text>
-            {!loading && businesses.length > 0 && (
-              <View style={[styles.countBadge, { backgroundColor: 'rgba(255,255,255,0.25)' }]}>
-                <Text style={[styles.countTxt, { color: '#fff' }]}>{businesses.length} brands</Text>
-              </View>
-            )}
+            <Text style={[styles.headingSub, { color: 'rgba(255,255,255,0.82)' }]}>Find businesses hiring creators</Text>
           </View>
           <Pressable
             style={styles.favLink}
             onPress={() => router.push('/(creator)/favorite-businesses' as Parameters<typeof router.push>[0])}>
-            <Ionicons name="heart" size={16} color="#fff" />
-            <Text style={styles.favLinkText}>Favorites</Text>
+            <Ionicons name="heart" size={15} color="#fff" />
+            <Text style={styles.favLinkText}>Saved</Text>
           </Pressable>
         </View>
       </LinearGradient>
@@ -432,6 +430,16 @@ export default function ExploreBusinessesScreen() {
           {isFilterActive && <View style={styles.filterDot} />}
         </Pressable>
       </View>
+
+      {/* Count below search */}
+      {!loading && businesses.length > 0 && (
+        <View style={styles.countRow}>
+          <View style={[styles.countPill, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
+            <Ionicons name="business-outline" size={13} color={C.brinjal1} />
+            <Text style={[styles.countTxt, { color: C.brinjal1 }]}>{businesses.length} brands found</Text>
+          </View>
+        </View>
+      )}
 
       {/* Active filter pills */}
       {isFilterActive && (
@@ -520,15 +528,19 @@ export default function ExploreBusinessesScreen() {
 
 const styles = StyleSheet.create({
   container:      { flex: 1 },
-  gradientHeader: { paddingBottom: 4, borderBottomLeftRadius: 24, borderBottomRightRadius: 24, overflow: 'hidden' },
+  gradientHeader: { paddingBottom: 16, borderBottomLeftRadius: 28, borderBottomRightRadius: 28, overflow: 'hidden' },
+  decCircle1:     { position: 'absolute', width: 180, height: 180, borderRadius: 90, top: -60, right: -40 },
+  decCircle2:     { position: 'absolute', width: 120, height: 120, borderRadius: 60, bottom: -30, left: 20 },
 
   // Header
-  header:         { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 10, paddingBottom: 14, gap: 12 },
-  headerCenter:   { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
-  heading:        { fontSize: 22, fontWeight: '800', letterSpacing: -0.4, fontFamily: F.extrabold },
-  countBadge:     { borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
+  header:         { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4, gap: 12 },
+  headerMiddle:   { flex: 1, alignItems: 'center', gap: 2 },
+  heading:        { fontSize: 20, fontWeight: '800', letterSpacing: -0.3, fontFamily: F.extrabold, color: '#fff' },
+  headingSub:     { fontSize: 12, fontFamily: F.regular },
+  countRow:       { alignItems: 'flex-end', paddingHorizontal: 16, marginBottom: 4 },
+  countPill:      { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 5, borderRadius: 20, borderWidth: 1.5 },
   countTxt:       { fontSize: 12, fontWeight: '700', fontFamily: F.bold },
-  favLink:        { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 6 },
+  favLink:        { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(255,255,255,0.22)', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 6 },
   favLinkText:    { fontSize: 12, fontWeight: '700', color: '#fff', fontFamily: F.bold },
 
   // Search row

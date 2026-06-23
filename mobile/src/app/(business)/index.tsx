@@ -90,12 +90,12 @@ export default function BusinessHomeScreen() {
     completed: campaigns.filter((c) => c.status === 'closed').length,
   };
 
-    type StatCard = { iconName: keyof typeof Ionicons.glyphMap; iconBg: string; iconColor: string; value: string; label: string };
+    type StatCard = { iconName: keyof typeof Ionicons.glyphMap; iconBg: string; iconColor: string; value: string; label: string; onPress: () => void };
   const STATS_CARDS: StatCard[] = [
-    { iconName: 'megaphone',      iconBg: '#EEF2FF', iconColor: '#4F46E5', value: String(stats.active),    label: 'Active\nCampaigns' },
-    { iconName: 'people',         iconBg: '#F0FDF4', iconColor: '#059669', value: String(stats.proposals),  label: 'Total\nProposals' },
-    { iconName: 'folder',         iconBg: '#FDF4FF', iconColor: '#7C3AED', value: String(stats.total),      label: 'All\nCampaigns' },
-    { iconName: 'checkmark-done', iconBg: '#FFF7ED', iconColor: '#D97706', value: String(stats.completed),  label: 'Completed' },
+    { iconName: 'megaphone-outline', iconBg: '#EEF2FF', iconColor: '#4F46E5', value: String(stats.active),    label: 'Active\nCampaigns', onPress: () => router.push('/(business)/campaigns') },
+    { iconName: 'document-text-outline', iconBg: '#F0FDF4', iconColor: '#059669', value: String(stats.proposals), label: 'Total\nProposals', onPress: () => router.push('/(business)/proposals') },
+    { iconName: 'folder-open-outline', iconBg: '#FDF4FF', iconColor: '#7C3AED', value: String(stats.total), label: 'All\nCampaigns', onPress: () => router.push('/(business)/campaigns') },
+    { iconName: 'checkmark-done-circle-outline', iconBg: '#FFF7ED', iconColor: '#D97706', value: String(stats.completed), label: 'Completed', onPress: () => router.push('/(business)/campaigns') },
   ];
 
   const recent = campaigns.slice(0, 5);
@@ -108,32 +108,34 @@ export default function BusinessHomeScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brinjal1} />}>
 
         {/* ── Gradient header ── */}
-        <LinearGradient colors={['#4F46E5', '#7C3AED', '#9333EA']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.gradientHeader}>
+        <LinearGradient colors={['#1e1b4b', '#4338ca', '#7c3aed']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.gradientHeader}>
+          {/* Decorative background circles */}
+          <View style={styles.decCircleLarge} />
+          <View style={styles.decCircleMid} />
+          <View style={styles.decCircleSmall} />
+
           <View style={styles.header}>
             <View style={styles.headerLeft}>
               <Pressable style={styles.menuBtn} onPress={openDrawer}>
-                <Ionicons name="menu" size={26} color="#fff" />
+                <View style={styles.menuBtnInner}>
+                  <Ionicons name="menu" size={22} color="#fff" />
+                </View>
               </Pressable>
               <View>
-                <Text style={[styles.greeting, { color: 'rgba(255,255,255,0.75)', fontFamily: F.medium }]}>नमस्ते 🙏</Text>
-                <View style={styles.nameRow}>
-                  <Text style={[styles.brandName, { color: '#fff' }]} numberOfLines={1}>{user?.name ?? 'Business'}</Text>
-                  <View style={[styles.rolePill, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
-                    <Text style={[styles.rolePillText, { color: '#fff' }]}>Business</Text>
-                  </View>
-                </View>
+                <Text style={[styles.greeting, { color: 'rgba(255,255,255,0.7)' }]}>नमस्ते 🙏</Text>
+                <Text style={[styles.brandName, { color: '#fff' }]} numberOfLines={1}>{user?.name ?? 'Business'}</Text>
               </View>
             </View>
             <View style={styles.headerRight}>
-              <Pressable style={[styles.bellWrap, { backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20, padding: 8 }]} onPress={() => router.push('/(business)/notifications')}>
-                <Ionicons name={notifBadge > 0 ? 'notifications' : 'notifications-outline'} size={22} color="#fff" />
+              <Pressable style={styles.notifBtn} onPress={() => router.push('/(business)/notifications')}>
+                <Ionicons name={notifBadge > 0 ? 'notifications' : 'notifications-outline'} size={20} color="rgba(255,255,255,0.9)" />
                 {notifBadge > 0 && (
                   <View style={styles.bellBadge}>
                     <Text style={styles.bellBadgeText}>{notifBadge > 99 ? '99+' : notifBadge}</Text>
                   </View>
                 )}
               </Pressable>
-              <Pressable style={[styles.avatarCircle, { backgroundColor: 'rgba(255,255,255,0.22)', borderWidth: 2, borderColor: 'rgba(255,255,255,0.5)' }]} onPress={() => router.push('/(business)/profile')}>
+              <Pressable style={[styles.avatarCircle, { backgroundColor: 'rgba(255,255,255,0.2)', borderWidth: 2.5, borderColor: 'rgba(255,255,255,0.5)' }]} onPress={() => router.push('/(business)/profile')}>
                 <Text style={[styles.avatarText, { color: '#fff' }]}>
                   {(user?.name ?? 'B').split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2)}
                 </Text>
@@ -141,22 +143,23 @@ export default function BusinessHomeScreen() {
             </View>
           </View>
 
-          {/* ── Create Campaign card ── */}
-          <View style={styles.createCard}>
-            <View style={styles.createIconWrap}>
-              <Ionicons name="megaphone" size={22} color="#F97316" />
-            </View>
-            <View style={styles.createText}>
-              <Text style={[styles.createTitle, { color: '#fff' }]}>Create a Campaign</Text>
-              <Text style={[styles.createSub, { color: 'rgba(255,255,255,0.75)' }]}>Post a promotion or collaboration opportunity.</Text>
-            </View>
-            <Pressable
-              style={styles.createBtn}
-              onPress={() => router.push('/create-campaign')}>
-              <Text style={styles.createBtnText}>+ New</Text>
-            </Pressable>
-          </View>
         </LinearGradient>
+
+        {/* ── Create Campaign card ── */}
+        <Pressable
+          style={[styles.createCard, { backgroundColor: C.surface }]}
+          onPress={() => router.push('/create-campaign')}>
+          <LinearGradient colors={['#F97316', '#EF4444']} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.createIconWrap}>
+            <Ionicons name="megaphone" size={22} color="#fff" />
+          </LinearGradient>
+          <View style={styles.createText}>
+            <Text style={[styles.createTitle, { color: C.text }]}>Create a Campaign</Text>
+            <Text style={[styles.createSub, { color: C.textSecondary }]}>Post a promotion or collaboration opportunity</Text>
+          </View>
+          <View style={[styles.createArrow, { backgroundColor: C.primaryLight }]}>
+            <Ionicons name="add" size={20} color={C.brinjal1} />
+          </View>
+        </Pressable>
 
         {/* ── Error ── */}
         {fetchError ? (
@@ -182,13 +185,13 @@ export default function BusinessHomeScreen() {
           <>
             <View style={[styles.statsRow, { backgroundColor: C.surface }]}>
               {STATS_CARDS.map((s, i) => (
-                <View key={s.label} style={[styles.statItem, i < STATS_CARDS.length - 1 && { borderRightWidth: 1, borderRightColor: C.border }]}>
+                <Pressable key={s.label} style={({ pressed }) => [styles.statItem, i < STATS_CARDS.length - 1 && { borderRightWidth: 1, borderRightColor: C.border }, pressed && { opacity: 0.75 }]} onPress={s.onPress}>
                   <View style={[styles.statIconBox, { backgroundColor: s.iconBg }]}>
-                    <Ionicons name={s.iconName} size={15} color={s.iconColor} />
+                    <Ionicons name={s.iconName} size={16} color={s.iconColor} />
                   </View>
                   <Text style={[styles.statValue, { color: C.text }]}>{s.value}</Text>
                   <Text style={[styles.statLabel, { color: C.textSecondary }]}>{s.label}</Text>
-                </View>
+                </Pressable>
               ))}
             </View>
 
@@ -266,35 +269,39 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { paddingBottom: 40 },
 
-  gradientHeader: { paddingBottom: 28, borderBottomLeftRadius: 28, borderBottomRightRadius: 28, overflow: 'hidden' },
+  gradientHeader: { paddingBottom: 14, borderBottomLeftRadius: 32, borderBottomRightRadius: 32, overflow: 'hidden' },
+  decCircleLarge: { position: 'absolute', width: 260, height: 260, borderRadius: 130, backgroundColor: 'rgba(255,255,255,0.05)', top: -80, right: -60 },
+  decCircleMid:   { position: 'absolute', width: 140, height: 140, borderRadius: 70,  backgroundColor: 'rgba(167,139,250,0.15)', bottom: 10,  left: -30 },
+  decCircleSmall: { position: 'absolute', width: 70,  height: 70,  borderRadius: 35,  backgroundColor: 'rgba(255,255,255,0.07)', top: 30,    left: '45%' as unknown as number },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 16 },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
-  menuBtn: { padding: 4 },
-  greeting: { fontSize: 13, marginBottom: 2, fontFamily: F.regular },
+  menuBtn: { padding: 0 },
+  menuBtnInner: { width: 38, height: 38, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' },
+  notifBtn: { width: 38, height: 38, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center', position: 'relative' as const },
+  greeting: { fontSize: 12, marginBottom: 3, fontFamily: F.medium },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   brandName: { fontSize: 19, fontFamily: F.extrabold, maxWidth: 180 },
-  rolePill: { flexDirection: 'row', alignItems: 'center', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 3 },
-  rolePillText: { fontSize: 11, fontFamily: F.bold },
+  rolePill: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
+  roleDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#a78bfa' },
+  rolePillText: { fontSize: 11, fontFamily: F.semibold },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  bellWrap: { position: 'relative' },
-  bellBadge: { position: 'absolute', top: 2, right: 2, backgroundColor: '#F97316', borderRadius: 8, minWidth: 16, height: 16, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 3 },
-  bellBadgeText: { fontSize: 9, fontWeight: '800', color: '#fff', fontFamily: F.extrabold },
+  bellBadge: { position: 'absolute', top: 6, right: 6, backgroundColor: '#F97316', borderRadius: 6, minWidth: 14, height: 14, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 2 },
+  bellBadgeText: { fontSize: 8, fontWeight: '800', color: '#fff', fontFamily: F.extrabold },
   avatarCircle: { width: 42, height: 42, borderRadius: 21, justifyContent: 'center', alignItems: 'center' },
   avatarText: { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
 
-  createCard: { flexDirection: 'row', alignItems: 'center', borderRadius: 18, marginHorizontal: 20, padding: 16, gap: 12, backgroundColor: 'rgba(255,255,255,0.15)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)' },
-  createIconWrap: { width: 48, height: 48, borderRadius: 14, justifyContent: 'center', alignItems: 'center', flexShrink: 0, backgroundColor: 'rgba(255,255,255,0.2)' },
-  createText: { flex: 1 },
-  createTitle: { fontSize: 14, fontWeight: '700', marginBottom: 3, fontFamily: F.bold },
-  createSub: { fontSize: 11, lineHeight: 16, fontFamily: F.regular },
-  createBtn: { borderRadius: 10, paddingHorizontal: 14, paddingVertical: 9, flexShrink: 0, backgroundColor: '#F97316' },
-  createBtnText: { color: '#fff', fontSize: 12, fontWeight: '700', fontFamily: F.bold },
+  createCard: { flexDirection: 'row', alignItems: 'center', borderRadius: 18, marginHorizontal: 20, marginTop: 16, marginBottom: 4, padding: 16, gap: 14, shadowColor: '#F97316', shadowOpacity: 0.12, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
+  createIconWrap: { width: 50, height: 50, borderRadius: 14, justifyContent: 'center', alignItems: 'center', flexShrink: 0, overflow: 'hidden' },
+  createText: { flex: 1, gap: 2 },
+  createTitle: { fontSize: 15, fontWeight: '700', fontFamily: F.bold },
+  createSub: { fontSize: 12, lineHeight: 17, fontFamily: F.regular },
+  createArrow: { width: 36, height: 36, borderRadius: 12, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
 
   errorCard: { backgroundColor: '#FEE2E2', marginHorizontal: 20, marginBottom: 16, borderRadius: 12, padding: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderLeftWidth: 4, borderLeftColor: '#EF4444' },
   errorText: { color: '#DC2626', fontSize: 13, flex: 1, fontFamily: F.medium },
   retryText: { fontSize: 13, fontWeight: '700', marginLeft: 12, fontFamily: F.bold },
 
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginBottom: 14, marginTop: 8 },
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginBottom: 14, marginTop: 20 },
   sectionTitle: { fontSize: 17, fontWeight: '800', fontFamily: F.extrabold },
   viewAll: { fontSize: 13, fontWeight: '600', fontFamily: F.semibold },
 

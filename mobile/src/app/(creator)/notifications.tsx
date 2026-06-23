@@ -185,6 +185,8 @@ export default function NotificationsScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
       <LinearGradient colors={['#059669', '#0D9488', '#0891B2']} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientHeader}>
+        <View style={[styles.decCircle1, { backgroundColor: 'rgba(255,255,255,0.1)' }]} />
+        <View style={[styles.decCircle2, { backgroundColor: 'rgba(255,255,255,0.07)' }]} />
         <View style={styles.header}>
           <View>
             <Text style={[styles.heading, { color: '#fff' }]}>{t('notifications.heading')}</Text>
@@ -235,8 +237,10 @@ export default function NotificationsScreen() {
 
 const styles = StyleSheet.create({
   container:  { flex: 1 },
-  gradientHeader: { paddingBottom: 4, borderBottomLeftRadius: 24, borderBottomRightRadius: 24, overflow: 'hidden' },
-  header:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 12 },
+  gradientHeader: { paddingBottom: 16, borderBottomLeftRadius: 28, borderBottomRightRadius: 28, overflow: 'hidden' },
+  decCircle1: { position: 'absolute', width: 180, height: 180, borderRadius: 90, top: -60, right: -30 },
+  decCircle2: { position: 'absolute', width: 110, height: 110, borderRadius: 55, bottom: -30, left: 20 },
+  header:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 4 },
   heading:    { fontSize: 22, fontWeight: '700', fontFamily: F.extrabold },
   subheading: { fontSize: 13, marginTop: 2, fontFamily: F.regular },
   markAllBtn: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 8, borderWidth: 1 },

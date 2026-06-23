@@ -257,9 +257,23 @@ type EditForm = {
   deadline: Date | null;
   location: string;
   isFeatured: boolean;
+  // OPEN_EVENT fields
+  eventDate: Date | null;
+  venue: string;
+  capacity: string;
+  benefits: string[];
 };
 
 type EditErrors = Partial<Record<keyof EditForm, string>>;
+
+const EVENT_BENEFITS = [
+  'Free food & drinks',
+  'Free product / service',
+  'Event access',
+  'Gift hampers',
+  'Networking opportunities',
+  'Future collaboration',
+];
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
@@ -290,11 +304,13 @@ export default function CampaignDetailScreen() {
   // ── Edit modal ──
   const [editOpen, setEditOpen] = useState(false);
   const [calOpen, setCalOpen] = useState(false);
+  const [eventCalOpen, setEventCalOpen] = useState(false);
   const [editForm, setEditForm] = useState<EditForm>({
     title: '', description: '', category: '', platform: '',
     minFollowers: '', contentType: '', deliverables: '', paymentType: '',
     status: 'active', budgetMin: '', budgetMax: '', deadline: null,
     location: '', isFeatured: false,
+    eventDate: null, venue: '', capacity: '20', benefits: [],
   });
   const [editErrors, setEditErrors] = useState<EditErrors>({});
   const [saving, setSaving] = useState(false);
@@ -316,6 +332,10 @@ export default function CampaignDetailScreen() {
       deadline:     campaign.deadline ? new Date(campaign.deadline) : null,
       location:     campaign.location ?? '',
       isFeatured:   campaign.isFeatured,
+      eventDate:    campaign.eventDate ? new Date(campaign.eventDate) : null,
+      venue:        campaign.venue ?? '',
+      capacity:     String(campaign.capacity ?? 20),
+      benefits:     campaign.benefits ?? [],
     });
     setEditErrors({});
     setEditOpen(true);
@@ -326,24 +346,34 @@ export default function CampaignDetailScreen() {
     if (editErrors[key]) setEditErrors((prev) => { const n = { ...prev }; delete n[key]; return n; });
   }
 
+  const isOpenEvent = campaign?.campaignType === 'OPEN_EVENT';
+
   function validateEdit(): EditErrors {
     const errs: EditErrors = {};
-    if (!editForm.title.trim())        errs.title        = 'Title is required.';
-    if (!editForm.category)            errs.category     = 'Please select a category.';
-    if (!editForm.platform)            errs.platform     = 'Please select a platform.';
-    if (!editForm.minFollowers)        errs.minFollowers = 'Please select a follower range.';
-    if (!editForm.contentType)         errs.contentType  = 'Please select a content type.';
-    if (!editForm.deliverables.trim()) errs.deliverables = 'Deliverables are required.';
-    if (!editForm.paymentType)         errs.paymentType  = 'Please select a payment type.';
-    if (!editForm.budgetMin.trim() || isNaN(Number(editForm.budgetMin))) {
-      errs.budgetMin = 'Valid minimum budget is required.';
+    if (!editForm.title.trim()) errs.title = 'Title is required.';
+    if (!editForm.category)     errs.category = 'Please select a category.';
+    if (!editForm.deadline)     errs.deadline = 'Deadline is required.';
+
+    if (isOpenEvent) {
+      if (!editForm.eventDate) errs.eventDate = 'Event date is required.';
+      else if (editForm.deadline && editForm.eventDate <= editForm.deadline)
+        errs.deadline = 'Registration deadline must be before event date.';
+      if (!editForm.venue.trim()) errs.venue = 'Venue is required.';
+    } else {
+      if (!editForm.platform)            errs.platform     = 'Please select a platform.';
+      if (!editForm.minFollowers)        errs.minFollowers = 'Please select a follower range.';
+      if (!editForm.contentType)         errs.contentType  = 'Please select a content type.';
+      if (!editForm.deliverables.trim()) errs.deliverables = 'Deliverables are required.';
+      if (!editForm.paymentType)         errs.paymentType  = 'Please select a payment type.';
+      if (!editForm.budgetMin.trim() || isNaN(Number(editForm.budgetMin))) {
+        errs.budgetMin = 'Valid minimum budget is required.';
+      }
+      if (!editForm.budgetMax.trim() || isNaN(Number(editForm.budgetMax))) {
+        errs.budgetMax = 'Valid maximum budget is required.';
+      } else if (Number(editForm.budgetMax) < Number(editForm.budgetMin)) {
+        errs.budgetMax = 'Must be ≥ minimum budget.';
+      }
     }
-    if (!editForm.budgetMax.trim() || isNaN(Number(editForm.budgetMax))) {
-      errs.budgetMax = 'Valid maximum budget is required.';
-    } else if (Number(editForm.budgetMax) < Number(editForm.budgetMin)) {
-      errs.budgetMax = 'Must be ≥ minimum budget.';
-    }
-    if (!editForm.deadline) errs.deadline = 'Deadline is required.';
     return errs;
   }
 
@@ -352,22 +382,37 @@ export default function CampaignDetailScreen() {
     if (Object.keys(errs).length > 0) { setEditErrors(errs); return; }
     setSaving(true);
     try {
-      await campaignService.update(campaign!.id, {
-        title:        editForm.title.trim(),
-        description:  editForm.description.trim() || undefined,
-        category:     editForm.category,
-        platform:     editForm.platform,
-        minFollowers: FOLLOWER_MIN_MAP[editForm.minFollowers] ?? 0,
-        contentType:  editForm.contentType,
-        deliverables: editForm.deliverables.trim(),
-        paymentType:  editForm.paymentType,
-        status:       editForm.status,
-        budgetMin:    Number(editForm.budgetMin),
-        budgetMax:    Number(editForm.budgetMax),
-        deadline:     editForm.deadline!.toISOString(),
-        location:     editForm.location.trim() || null,
-        isFeatured:   editForm.isFeatured,
-      });
+      if (isOpenEvent) {
+        await campaignService.update(campaign!.id, {
+          title:       editForm.title.trim(),
+          description: editForm.description.trim() || undefined,
+          category:    editForm.category,
+          status:      editForm.status,
+          deadline:    editForm.deadline!.toISOString(),
+          isFeatured:  editForm.isFeatured,
+          venue:       editForm.venue.trim() || null,
+          capacity:    Number(editForm.capacity) || 20,
+          eventDate:   editForm.eventDate?.toISOString(),
+          benefits:    editForm.benefits,
+        });
+      } else {
+        await campaignService.update(campaign!.id, {
+          title:        editForm.title.trim(),
+          description:  editForm.description.trim() || undefined,
+          category:     editForm.category,
+          platform:     editForm.platform,
+          minFollowers: FOLLOWER_MIN_MAP[editForm.minFollowers] ?? 0,
+          contentType:  editForm.contentType,
+          deliverables: editForm.deliverables.trim(),
+          paymentType:  editForm.paymentType,
+          status:       editForm.status,
+          budgetMin:    Number(editForm.budgetMin),
+          budgetMax:    Number(editForm.budgetMax),
+          deadline:     editForm.deadline!.toISOString(),
+          location:     editForm.location.trim() || null,
+          isFeatured:   editForm.isFeatured,
+        });
+      }
       const fresh = await campaignService.getById(campaign!.id);
       setCampaign(fresh);
       setEditOpen(false);
@@ -582,7 +627,7 @@ export default function CampaignDetailScreen() {
 
               {/* Sheet header */}
               <View style={em.sheetHeader}>
-                <Text style={[em.sheetTitle, { color: C.text }]}>Edit Campaign</Text>
+                <Text style={[em.sheetTitle, { color: C.text }]}>{isOpenEvent ? 'Edit Event' : 'Edit Campaign'}</Text>
                 <Pressable onPress={() => setEditOpen(false)}>
                   <Ionicons name="close" size={22} color={C.textSecondary} />
                 </Pressable>
@@ -610,7 +655,7 @@ export default function CampaignDetailScreen() {
                   style={[em.textarea, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
                   value={editForm.description}
                   onChangeText={(v) => updateEdit('description', v)}
-                  placeholder="Describe your campaign…"
+                  placeholder={isOpenEvent ? 'Describe your event…' : 'Describe your campaign…'}
                   placeholderTextColor={C.textSecondary}
                   multiline
                   numberOfLines={3}
@@ -621,95 +666,159 @@ export default function CampaignDetailScreen() {
                 <Text style={[em.sectionHdr, { color: C.textSecondary, marginTop: 24 }]}>Category</Text>
                 <ChipGroup options={CATEGORIES} value={editForm.category} onChange={(v) => updateEdit('category', v)} colors={C} error={editErrors.category} />
 
-                {/* ── Platform ── */}
-                <Text style={[em.sectionHdr, { color: C.textSecondary, marginTop: 24 }]}>Platform</Text>
-                <ChipGroup options={PLATFORMS} value={editForm.platform} onChange={(v) => updateEdit('platform', v)} colors={C} error={editErrors.platform} />
+                {isOpenEvent ? (
+                  <>
+                    {/* ── Open Event fields ── */}
+                    <Text style={[em.sectionHdr, { color: C.textSecondary, marginTop: 24 }]}>Event Details</Text>
 
-                {/* ── Requirements ── */}
-                <Text style={[em.sectionHdr, { color: C.textSecondary, marginTop: 24 }]}>Requirements</Text>
+                    <Text style={[em.label, { color: C.text }]}>Event Date <Text style={{ color: C.brinjal1 }}>*</Text></Text>
+                    <Pressable
+                      style={[em.dateTrigger, { backgroundColor: C.background, borderColor: editErrors.eventDate ? ERROR_RED : C.border }]}
+                      onPress={() => setEventCalOpen(true)}>
+                      <Text style={[em.dateTxt, { color: editForm.eventDate ? C.text : C.textSecondary }]}>
+                        {editForm.eventDate ? fmtDate(editForm.eventDate) : 'Tap to select event date'}
+                      </Text>
+                      <Text style={{ fontSize: 16 }}>📅</Text>
+                    </Pressable>
+                    {editErrors.eventDate ? <Text style={em.errTxt}>{editErrors.eventDate}</Text> : null}
 
-                <Text style={[em.label, { color: C.text }]}>Min Followers <Text style={{ color: C.brinjal1 }}>*</Text></Text>
-                <ChipGroup options={FOLLOWER_RANGES} value={editForm.minFollowers} onChange={(v) => updateEdit('minFollowers', v)} colors={C} error={editErrors.minFollowers} />
+                    <Text style={[em.label, { color: C.text, marginTop: 16 }]}>Registration Deadline <Text style={{ color: C.brinjal1 }}>*</Text></Text>
+                    <Pressable
+                      style={[em.dateTrigger, { backgroundColor: C.background, borderColor: editErrors.deadline ? ERROR_RED : C.border }]}
+                      onPress={() => setCalOpen(true)}>
+                      <Text style={[em.dateTxt, { color: editForm.deadline ? C.text : C.textSecondary }]}>
+                        {editForm.deadline ? fmtDate(editForm.deadline) : 'Tap to select deadline'}
+                      </Text>
+                      <Text style={{ fontSize: 16 }}>📅</Text>
+                    </Pressable>
+                    {editErrors.deadline ? <Text style={em.errTxt}>{editErrors.deadline}</Text> : null}
 
-                <Text style={[em.label, { color: C.text, marginTop: 16 }]}>Content Type <Text style={{ color: C.brinjal1 }}>*</Text></Text>
-                <ChipGroup options={CONTENT_TYPES} value={editForm.contentType} onChange={(v) => updateEdit('contentType', v)} colors={C} error={editErrors.contentType} />
+                    <Text style={[em.label, { color: C.text, marginTop: 16 }]}>Venue <Text style={{ color: C.brinjal1 }}>*</Text></Text>
+                    <PlacesInput
+                      value={editForm.venue}
+                      onChange={(v) => updateEdit('venue', v)}
+                      colors={C}
+                      error={editErrors.venue}
+                    />
 
-                <Text style={[em.label, { color: C.text, marginTop: 16 }]}>Deliverables <Text style={{ color: C.brinjal1 }}>*</Text></Text>
-                <TextInput
-                  style={[em.textarea, { backgroundColor: C.background, borderColor: editErrors.deliverables ? ERROR_RED : C.border, color: C.text }]}
-                  value={editForm.deliverables}
-                  onChangeText={(v) => updateEdit('deliverables', v)}
-                  placeholder="e.g. 2 Reels + 5 Stories with brand mention"
-                  placeholderTextColor={C.textSecondary}
-                  multiline
-                  numberOfLines={3}
-                  textAlignVertical="top"
-                />
-                {editErrors.deliverables ? <Text style={em.errTxt}>{editErrors.deliverables}</Text> : null}
+                    <Text style={[em.label, { color: C.text, marginTop: 16 }]}>Creator Capacity</Text>
+                    <TextInput
+                      style={[em.input, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
+                      value={editForm.capacity}
+                      onChangeText={(v) => updateEdit('capacity', v.replace(/[^0-9]/g, ''))}
+                      placeholder="20"
+                      placeholderTextColor={C.textSecondary}
+                      keyboardType="numeric"
+                    />
 
-                {/* ── Budget & Payment ── */}
-                <Text style={[em.sectionHdr, { color: C.textSecondary, marginTop: 24 }]}>Budget & Payment</Text>
-
-                <Text style={[em.label, { color: C.text }]}>Budget (USD) <Text style={{ color: C.brinjal1 }}>*</Text></Text>
-                <View style={em.budgetRow}>
-                  <View style={{ flex: 1 }}>
-                    <View style={[em.currencyWrap, { backgroundColor: C.background, borderColor: editErrors.budgetMin ? ERROR_RED : C.border }]}>
-                      <Text style={[em.currencySymbol, { color: C.textSecondary }]}>$</Text>
-                      <TextInput
-                        style={[em.currencyInput, { color: C.text }]}
-                        value={editForm.budgetMin}
-                        onChangeText={(v) => updateEdit('budgetMin', v.replace(/[^0-9.]/g, ''))}
-                        placeholder="Min"
-                        placeholderTextColor={C.textSecondary}
-                        keyboardType="numeric"
-                      />
+                    <Text style={[em.sectionHdr, { color: C.textSecondary, marginTop: 24 }]}>Creator Benefits</Text>
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                      {EVENT_BENEFITS.map((b) => {
+                        const checked = editForm.benefits.includes(b);
+                        return (
+                          <Pressable
+                            key={b}
+                            style={[cg.chip, { borderColor: checked ? C.brinjal1 : C.border, backgroundColor: checked ? C.primaryLight : C.background }]}
+                            onPress={() => {
+                              const next = checked ? editForm.benefits.filter((x) => x !== b) : [...editForm.benefits, b];
+                              updateEdit('benefits', next);
+                            }}>
+                            <Text style={[cg.txt, { color: checked ? C.brinjal1 : C.textSecondary, fontWeight: checked ? '700' : '500' }]}>{b}</Text>
+                          </Pressable>
+                        );
+                      })}
                     </View>
-                    {editErrors.budgetMin ? <Text style={em.errTxt}>{editErrors.budgetMin}</Text> : null}
-                  </View>
-                  <Text style={[em.budgetDash, { color: C.textSecondary }]}>–</Text>
-                  <View style={{ flex: 1 }}>
-                    <View style={[em.currencyWrap, { backgroundColor: C.background, borderColor: editErrors.budgetMax ? ERROR_RED : C.border }]}>
-                      <Text style={[em.currencySymbol, { color: C.textSecondary }]}>$</Text>
-                      <TextInput
-                        style={[em.currencyInput, { color: C.text }]}
-                        value={editForm.budgetMax}
-                        onChangeText={(v) => updateEdit('budgetMax', v.replace(/[^0-9.]/g, ''))}
-                        placeholder="Max"
-                        placeholderTextColor={C.textSecondary}
-                        keyboardType="numeric"
-                      />
+                  </>
+                ) : (
+                  <>
+                    {/* ── Paid Campaign fields ── */}
+                    <Text style={[em.sectionHdr, { color: C.textSecondary, marginTop: 24 }]}>Platform</Text>
+                    <ChipGroup options={PLATFORMS} value={editForm.platform} onChange={(v) => updateEdit('platform', v)} colors={C} error={editErrors.platform} />
+
+                    <Text style={[em.sectionHdr, { color: C.textSecondary, marginTop: 24 }]}>Requirements</Text>
+
+                    <Text style={[em.label, { color: C.text }]}>Min Followers <Text style={{ color: C.brinjal1 }}>*</Text></Text>
+                    <ChipGroup options={FOLLOWER_RANGES} value={editForm.minFollowers} onChange={(v) => updateEdit('minFollowers', v)} colors={C} error={editErrors.minFollowers} />
+
+                    <Text style={[em.label, { color: C.text, marginTop: 16 }]}>Content Type <Text style={{ color: C.brinjal1 }}>*</Text></Text>
+                    <ChipGroup options={CONTENT_TYPES} value={editForm.contentType} onChange={(v) => updateEdit('contentType', v)} colors={C} error={editErrors.contentType} />
+
+                    <Text style={[em.label, { color: C.text, marginTop: 16 }]}>Deliverables <Text style={{ color: C.brinjal1 }}>*</Text></Text>
+                    <TextInput
+                      style={[em.textarea, { backgroundColor: C.background, borderColor: editErrors.deliverables ? ERROR_RED : C.border, color: C.text }]}
+                      value={editForm.deliverables}
+                      onChangeText={(v) => updateEdit('deliverables', v)}
+                      placeholder="e.g. 2 Reels + 5 Stories with brand mention"
+                      placeholderTextColor={C.textSecondary}
+                      multiline
+                      numberOfLines={3}
+                      textAlignVertical="top"
+                    />
+                    {editErrors.deliverables ? <Text style={em.errTxt}>{editErrors.deliverables}</Text> : null}
+
+                    <Text style={[em.sectionHdr, { color: C.textSecondary, marginTop: 24 }]}>Budget & Payment</Text>
+
+                    <Text style={[em.label, { color: C.text }]}>Budget (Rs.) <Text style={{ color: C.brinjal1 }}>*</Text></Text>
+                    <View style={em.budgetRow}>
+                      <View style={{ flex: 1 }}>
+                        <View style={[em.currencyWrap, { backgroundColor: C.background, borderColor: editErrors.budgetMin ? ERROR_RED : C.border }]}>
+                          <Text style={[em.currencySymbol, { color: C.textSecondary }]}>Rs.</Text>
+                          <TextInput
+                            style={[em.currencyInput, { color: C.text }]}
+                            value={editForm.budgetMin}
+                            onChangeText={(v) => updateEdit('budgetMin', v.replace(/[^0-9.]/g, ''))}
+                            placeholder="Min"
+                            placeholderTextColor={C.textSecondary}
+                            keyboardType="numeric"
+                          />
+                        </View>
+                        {editErrors.budgetMin ? <Text style={em.errTxt}>{editErrors.budgetMin}</Text> : null}
+                      </View>
+                      <Text style={[em.budgetDash, { color: C.textSecondary }]}>–</Text>
+                      <View style={{ flex: 1 }}>
+                        <View style={[em.currencyWrap, { backgroundColor: C.background, borderColor: editErrors.budgetMax ? ERROR_RED : C.border }]}>
+                          <Text style={[em.currencySymbol, { color: C.textSecondary }]}>Rs.</Text>
+                          <TextInput
+                            style={[em.currencyInput, { color: C.text }]}
+                            value={editForm.budgetMax}
+                            onChangeText={(v) => updateEdit('budgetMax', v.replace(/[^0-9.]/g, ''))}
+                            placeholder="Max"
+                            placeholderTextColor={C.textSecondary}
+                            keyboardType="numeric"
+                          />
+                        </View>
+                        {editErrors.budgetMax ? <Text style={em.errTxt}>{editErrors.budgetMax}</Text> : null}
+                      </View>
                     </View>
-                    {editErrors.budgetMax ? <Text style={em.errTxt}>{editErrors.budgetMax}</Text> : null}
-                  </View>
-                </View>
 
-                <Text style={[em.label, { color: C.text, marginTop: 16 }]}>Payment Type <Text style={{ color: C.brinjal1 }}>*</Text></Text>
-                <ChipGroup options={PAYMENT_TYPES} value={editForm.paymentType} onChange={(v) => updateEdit('paymentType', v)} colors={C} error={editErrors.paymentType} />
+                    <Text style={[em.label, { color: C.text, marginTop: 16 }]}>Payment Type <Text style={{ color: C.brinjal1 }}>*</Text></Text>
+                    <ChipGroup options={PAYMENT_TYPES} value={editForm.paymentType} onChange={(v) => updateEdit('paymentType', v)} colors={C} error={editErrors.paymentType} />
 
-                {/* ── Logistics ── */}
-                <Text style={[em.sectionHdr, { color: C.textSecondary, marginTop: 24 }]}>Logistics</Text>
+                    <Text style={[em.sectionHdr, { color: C.textSecondary, marginTop: 24 }]}>Logistics</Text>
 
-                <Text style={[em.label, { color: C.text }]}>Deadline <Text style={{ color: C.brinjal1 }}>*</Text></Text>
-                <Pressable
-                  style={[em.dateTrigger, { backgroundColor: C.background, borderColor: editErrors.deadline ? ERROR_RED : C.border }]}
-                  onPress={() => setCalOpen(true)}>
-                  <Text style={[em.dateTxt, { color: editForm.deadline ? C.text : C.textSecondary }]}>
-                    {editForm.deadline ? fmtDate(editForm.deadline) : 'Tap to select a date'}
-                  </Text>
-                  <Text style={{ fontSize: 16 }}>📅</Text>
-                </Pressable>
-                {editErrors.deadline ? <Text style={em.errTxt}>{editErrors.deadline}</Text> : null}
+                    <Text style={[em.label, { color: C.text }]}>Application Deadline <Text style={{ color: C.brinjal1 }}>*</Text></Text>
+                    <Pressable
+                      style={[em.dateTrigger, { backgroundColor: C.background, borderColor: editErrors.deadline ? ERROR_RED : C.border }]}
+                      onPress={() => setCalOpen(true)}>
+                      <Text style={[em.dateTxt, { color: editForm.deadline ? C.text : C.textSecondary }]}>
+                        {editForm.deadline ? fmtDate(editForm.deadline) : 'Tap to select a date'}
+                      </Text>
+                      <Text style={{ fontSize: 16 }}>📅</Text>
+                    </Pressable>
+                    {editErrors.deadline ? <Text style={em.errTxt}>{editErrors.deadline}</Text> : null}
 
-                <Text style={[em.label, { color: C.text, marginTop: 16 }]}>
-                  Location <Text style={[em.optional, { color: C.textSecondary }]}>(optional)</Text>
-                </Text>
-                <PlacesInput
-                  value={editForm.location}
-                  onChange={(v) => updateEdit('location', v)}
-                  colors={C}
-                />
+                    <Text style={[em.label, { color: C.text, marginTop: 16 }]}>
+                      Location <Text style={[em.optional, { color: C.textSecondary }]}>(optional)</Text>
+                    </Text>
+                    <PlacesInput
+                      value={editForm.location}
+                      onChange={(v) => updateEdit('location', v)}
+                      colors={C}
+                    />
+                  </>
+                )}
 
-                <Text style={[em.label, { color: C.text, marginTop: 16 }]}>Status</Text>
+                <Text style={[em.label, { color: C.text, marginTop: 24 }]}>Status</Text>
                 <ChipGroup
                   options={STATUS_OPTIONS.map((o) => o.label)}
                   value={STATUS_OPTIONS.find((o) => o.value === editForm.status)?.label ?? 'Active'}
@@ -722,12 +831,12 @@ export default function CampaignDetailScreen() {
 
                 {/* ── Featured ── */}
                 <Pressable
-                  style={[em.featuredToggle, { backgroundColor: editForm.isFeatured ? '#FFF8E8' : C.background, borderColor: editForm.isFeatured ? '#F59E0B' : C.border, marginTop: 24 }]}
+                  style={[em.featuredToggle, { backgroundColor: editForm.isFeatured ? '#FFF8E8' : C.background, borderColor: editForm.isFeatured ? '#F59E0B' : C.border, marginTop: 20 }]}
                   onPress={() => updateEdit('isFeatured', !editForm.isFeatured)}>
                   <View style={em.featuredLeft}>
                     <Text style={{ fontSize: 22 }}>⭐</Text>
                     <View style={{ flex: 1, gap: 2 }}>
-                      <Text style={[em.featuredLabel, { color: C.text }]}>Feature this Campaign</Text>
+                      <Text style={[em.featuredLabel, { color: C.text }]}>Feature this {isOpenEvent ? 'Event' : 'Campaign'}</Text>
                       <Text style={[em.featuredSub, { color: C.textSecondary }]}>Appears highlighted on creator home</Text>
                     </View>
                   </View>
@@ -751,14 +860,14 @@ export default function CampaignDetailScreen() {
         </View>
       </Modal>
 
-      {/* ── Calendar modal ── */}
+      {/* ── Calendar modal (deadline) ── */}
       <Modal visible={calOpen} transparent animationType="slide" onRequestClose={() => setCalOpen(false)}>
         <View style={em.overlay}>
           <Pressable style={em.scrim} onPress={() => setCalOpen(false)} />
           <View style={[em.calSheet, { backgroundColor: C.surface }]}>
             <View style={[em.handle, { backgroundColor: C.border }]} />
             <View style={em.sheetHeader}>
-              <Text style={[em.sheetTitle, { color: C.text }]}>Select Deadline</Text>
+              <Text style={[em.sheetTitle, { color: C.text }]}>{isOpenEvent ? 'Registration Deadline' : 'Select Deadline'}</Text>
               <Pressable onPress={() => setCalOpen(false)}>
                 <Text style={[em.doneBtn, { color: C.brinjal1 }]}>Done</Text>
               </Pressable>
@@ -771,6 +880,37 @@ export default function CampaignDetailScreen() {
             <CalendarGrid
               value={editForm.deadline}
               onChange={(d) => { updateEdit('deadline', d); setCalOpen(false); }}
+              colors={C}
+            />
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── Calendar modal (event date) ── */}
+      <Modal visible={eventCalOpen} transparent animationType="slide" onRequestClose={() => setEventCalOpen(false)}>
+        <View style={em.overlay}>
+          <Pressable style={em.scrim} onPress={() => setEventCalOpen(false)} />
+          <View style={[em.calSheet, { backgroundColor: C.surface }]}>
+            <View style={[em.handle, { backgroundColor: C.border }]} />
+            <View style={em.sheetHeader}>
+              <Text style={[em.sheetTitle, { color: C.text }]}>Event Date</Text>
+              <Pressable onPress={() => setEventCalOpen(false)}>
+                <Text style={[em.doneBtn, { color: C.brinjal1 }]}>Done</Text>
+              </Pressable>
+            </View>
+            {editForm.eventDate && (
+              <View style={[em.selectedBadge, { backgroundColor: C.primaryLight }]}>
+                <Text style={[em.selectedTxt, { color: C.brinjal1 }]}>Selected: {fmtDate(editForm.eventDate)}</Text>
+              </View>
+            )}
+            <CalendarGrid
+              value={editForm.eventDate}
+              onChange={(d) => {
+                const twoDaysBefore = new Date(d.getTime() - 2 * 24 * 60 * 60 * 1000);
+                updateEdit('eventDate', d);
+                updateEdit('deadline', twoDaysBefore);
+                setEventCalOpen(false);
+              }}
               colors={C}
             />
           </View>

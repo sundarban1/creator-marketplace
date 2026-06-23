@@ -111,11 +111,11 @@ export default function ProposalsScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
       <LinearGradient colors={['#F59E0B', '#F97316', '#EF4444']} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientHeader}>
-        {/* Header */}
+        <View style={[styles.decCircle1, { backgroundColor: 'rgba(255,255,255,0.1)' }]} />
+        <View style={[styles.decCircle2, { backgroundColor: 'rgba(255,255,255,0.07)' }]} />
         <View style={styles.header}>
-          <View>
-            <Text style={[styles.heading, { color: '#fff' }]}>{t('creator.proposals.heading')}</Text>
-          </View>
+          <Text style={[styles.heading, { color: '#fff' }]}>{t('creator.proposals.heading')}</Text>
+          <Text style={[styles.subheading, { color: 'rgba(255,255,255,0.8)' }]}>Track your campaign applications</Text>
         </View>
       </LinearGradient>
 
@@ -172,15 +172,17 @@ export default function ProposalsScreen() {
 
 const styles = StyleSheet.create({
   container:  { flex: 1 },
-  gradientHeader: { paddingBottom: 4, borderBottomLeftRadius: 24, borderBottomRightRadius: 24, overflow: 'hidden' },
-  header:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingHorizontal: 20, paddingTop: 14, paddingBottom: 12 },
+  gradientHeader: { paddingBottom: 16, borderBottomLeftRadius: 28, borderBottomRightRadius: 28, overflow: 'hidden' },
+  decCircle1: { position: 'absolute', width: 180, height: 180, borderRadius: 90, top: -60, right: -30 },
+  decCircle2: { position: 'absolute', width: 110, height: 110, borderRadius: 55, bottom: -30, left: 20 },
+  header:     { paddingHorizontal: 20, paddingTop: 14, paddingBottom: 4, gap: 3 },
   heading:    { fontSize: 22, fontWeight: '800', fontFamily: F.extrabold },
-  subheading: { fontSize: 13, marginTop: 3, fontFamily: F.regular },
-  statsRow:   { flexDirection: 'row', paddingHorizontal: 16, gap: 8, marginTop: 16, marginBottom: 12 },
-  statCard:   { flex: 1, borderRadius: 12, padding: 10, alignItems: 'center', gap: 3, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, elevation: 2 },
+  subheading: { fontSize: 13, fontFamily: F.regular },
+  statsRow:   { flexDirection: 'row', paddingHorizontal: 20, gap: 10, marginTop: 16, marginBottom: 12 },
+  statCard:   { flex: 1, borderRadius: 14, padding: 12, alignItems: 'center', gap: 3, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, elevation: 2 },
   statVal:    { fontSize: 20, fontWeight: '800', fontFamily: F.extrabold },
   statLabel:  { fontSize: 10, fontWeight: '600', textTransform: 'uppercase', fontFamily: F.semibold },
-  list:       { paddingHorizontal: 16, paddingBottom: 80, gap: 12 },
+  list:       { paddingHorizontal: 20, paddingBottom: 80, gap: 12 },
   listEmpty:  { flexGrow: 1 },
   center:     { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
   loadingText:{ fontSize: 14, fontFamily: F.regular },

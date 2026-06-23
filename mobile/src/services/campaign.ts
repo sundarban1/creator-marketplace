@@ -63,6 +63,12 @@ export function toCampaign(api: ApiCampaign): Campaign {
     status:       mapStatus(api.status),
     location:     api.location ?? undefined,
     createdAt:    api.createdAt,
+    campaignType: (api as any).campaignType ?? 'PAID_CAMPAIGN',
+    eventStatus:  (api as any).eventStatus,
+    capacity:     (api as any).capacity,
+    eventDate:    (api as any).eventDate,
+    venue:        (api as any).venue ?? undefined,
+    benefits:     Array.isArray((api as any).benefits) ? (api as any).benefits : [],
   };
 }
 
@@ -158,6 +164,11 @@ export const campaignService = {
     paymentType: string;
     creatorsNeeded?: number;
     isFeatured?: boolean;
+    campaignType?: 'PAID_CAMPAIGN' | 'OPEN_EVENT';
+    capacity?:     number;
+    eventDate?:    string;
+    venue?:        string;
+    benefits?:     string[];
   }): Promise<Campaign> {
     const res = await request<ApiCampaign>('POST', '/api/campaigns', data);
     return toCampaign(res.data);
@@ -167,6 +178,7 @@ export const campaignService = {
     title?: string;
     description?: string;
     category?: string;
+    goals?: string[];
     platform?: string;
     minFollowers?: number;
     contentType?: string;
@@ -175,9 +187,16 @@ export const campaignService = {
     status?: Campaign['status'];
     budgetMin?: number;
     budgetMax?: number;
+    creatorsNeeded?: number;
     deadline?: string;
     location?: string | null;
     isFeatured?: boolean;
+    campaignType?: 'PAID_CAMPAIGN' | 'OPEN_EVENT';
+    capacity?: number;
+    eventDate?: string;
+    venue?: string | null;
+    benefits?: string[];
+    eventStatus?: 'OPEN' | 'FULL' | 'CLOSED';
   }): Promise<void> {
     await request('PUT', `/api/campaigns/${id}`, {
       ...data,

@@ -30,7 +30,7 @@ export function CampaignListItem({ campaign }: { campaign: Campaign }) {
       style={({ pressed }) => [styles.listCard, { backgroundColor: C.surface }, pressed && { opacity: 0.88 }]}
       onPress={goToDetail}>
 
-      {/* Thumb — category emoji with platform badge top-left */}
+      {/* Thumb */}
       <View style={styles.thumbWrap}>
         <View style={[styles.listThumb, { backgroundColor: catMeta.bg }]}>
           <Text style={styles.listThumbIcon}>{catMeta.emoji}</Text>
@@ -45,28 +45,29 @@ export function CampaignListItem({ campaign }: { campaign: Campaign }) {
       {/* Info */}
       <View style={styles.listInfo}>
         <View style={styles.listBrandRow}>
-          <Text style={[styles.listBrandName, { color: C.textSecondary }]}>{campaign.brand}</Text>
+          <Text style={[styles.listBrandName, { color: C.textSecondary }]} numberOfLines={1}>{campaign.brand}</Text>
           <View style={[styles.verifiedBadge, { backgroundColor: C.brinjal1 }]}>
             <Text style={styles.verifiedIcon}>✓</Text>
           </View>
         </View>
         <Text style={[styles.listTitle, { color: C.text }]} numberOfLines={2}>{campaign.title}</Text>
-        <Text style={[styles.listBudget, { color: C.brinjal1 }]}>{campaign.budget}</Text>
+        <View style={styles.budgetRow}>
+          <Ionicons name="cash-outline" size={13} color={C.brinjal1} />
+          <Text style={[styles.listBudget, { color: C.brinjal1 }]}>{campaign.budget}</Text>
+        </View>
         <View style={styles.listMetaRow}>
-          <Ionicons name="location" size={11} color={C.textSecondary} />
+          <Ionicons name="location-outline" size={12} color={C.textSecondary} />
           <Text style={[styles.listMeta, { color: C.textSecondary }]} numberOfLines={1}>
             {campaign.location ?? 'Remote'}
           </Text>
         </View>
       </View>
 
-      {/* Apply button — right column, vertically centered */}
-      <View style={styles.applyWrap}>
-        <View style={[styles.applyBtn, { backgroundColor: C.brinjal1 }]}>
-          <Text style={styles.applyBtnText}>Apply</Text>
-          <Ionicons name="arrow-forward" size={11} color="#fff" />
-        </View>
-      </View>
+      {/* Apply button */}
+      <Pressable style={[styles.applyBtn, { backgroundColor: C.brinjal1 }]} onPress={goToDetail}>
+        <Ionicons name="send-outline" size={13} color="#fff" />
+        <Text style={styles.applyBtnText}>Apply</Text>
+      </Pressable>
     </Pressable>
   );
 }
@@ -74,45 +75,46 @@ export function CampaignListItem({ campaign }: { campaign: Campaign }) {
 const styles = StyleSheet.create({
   listCard: {
     flexDirection: 'row',
-    borderRadius: 16,
-    padding: 12,
+    borderRadius: 18,
+    padding: 14,
     gap: 12,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
+    shadowColor: '#4F46E5',
+    shadowOpacity: 0.07,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 4,
   },
   thumbWrap: { flexShrink: 0, position: 'relative' },
   listThumb: {
-    width: 68, height: 68, borderRadius: 12,
+    width: 72, height: 72, borderRadius: 16,
     justifyContent: 'center', alignItems: 'center',
     overflow: 'hidden',
   },
-  listThumbIcon: { fontSize: 30 },
+  listThumbIcon: { fontSize: 32 },
   platBadge: {
     position: 'absolute', top: -5, left: -5,
     width: 24, height: 24, borderRadius: 12,
     justifyContent: 'center', alignItems: 'center',
     borderWidth: 2, borderColor: '#fff',
-    shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 4,
+    shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 4,
     shadowOffset: { width: 0, height: 2 }, elevation: 5,
   },
-  listInfo:     { flex: 1, gap: 3 },
+  listInfo:     { flex: 1, gap: 4 },
   listBrandRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  listBrandName:{ fontSize: 12, fontFamily: F.semibold },
-  verifiedBadge:{ width: 14, height: 14, borderRadius: 7, justifyContent: 'center', alignItems: 'center' },
+  listBrandName:{ fontSize: 12, fontFamily: F.semibold, flex: 1 },
+  verifiedBadge:{ width: 14, height: 14, borderRadius: 7, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   verifiedIcon: { fontSize: 8, color: '#fff', fontFamily: F.bold },
-  listTitle:    { fontSize: 14, lineHeight: 19, fontFamily: F.bold },
+  listTitle:    { fontSize: 14, lineHeight: 20, fontFamily: F.bold },
+  budgetRow:    { flexDirection: 'row', alignItems: 'center', gap: 5 },
   listBudget:   { fontSize: 13, fontFamily: F.bold },
-  listMetaRow:  { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  listMetaRow:  { flexDirection: 'row', alignItems: 'center', gap: 4 },
   listMeta:     { fontSize: 11, fontFamily: F.regular },
 
-  applyWrap: { flexShrink: 0, alignSelf: 'center' },
   applyBtn: {
-    borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12,
-    alignItems: 'center', justifyContent: 'center', gap: 4,
+    flexShrink: 0, alignSelf: 'center',
+    borderRadius: 12, paddingVertical: 10, paddingHorizontal: 12,
+    alignItems: 'center', justifyContent: 'center', gap: 5,
   },
   applyBtnText: { color: '#fff', fontSize: 11, fontFamily: F.bold },
 });

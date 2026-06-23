@@ -146,6 +146,79 @@ const TEMPLATE_PRESETS: Record<string, TemplatePreset> = {
 
 const GOOGLE_PLACES_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY ?? '';
 const ERROR_RED = '#EF4444';
+
+const BENEFITS = [
+  'Free food & drinks',
+  'Free product / service',
+  'Event access',
+  'Gift hampers',
+  'Networking opportunities',
+  'Future collaboration',
+];
+
+const EVENT_CONTENT_TYPES = [
+  'Instagram Reel',
+  'Instagram Story',
+  'TikTok Video',
+  'Photo Post',
+  'Event Coverage Video',
+  'Tag Business',
+];
+
+const EVENT_TEMPLATE_CONTENT: Record<string, { title: string; desc: string }> = {
+  'Food':          { title: 'Exclusive Food Creator Night – Dine, Discover & Create',        desc: "We're inviting food creators to an exclusive creator night at our restaurant. Experience our signature dishes, meet the chef, and create authentic content about your dining journey. Enjoy a curated menu, behind-the-scenes kitchen access, and a memorable evening with fellow creators." },
+  'Travel':        { title: 'Travel Creator Experience – Explore & Document',                 desc: "Join us for an exclusive creator experience at our travel destination or property. Enjoy complimentary access, curated activities, and the freedom to document your authentic journey. Perfect for travel creators who love discovering hidden gems and sharing experiences with their audience." },
+  'Fashion':       { title: 'Fashion Creator Showcase – Style Night',                         desc: "We're hosting an exclusive fashion creator event where you'll get first access to our latest collection, professional styling support, and a curated backdrop for content creation. A perfect opportunity to create stunning fashion content while connecting with like-minded creators." },
+  'Beauty':        { title: 'Beauty Creator Event – Glow, Create & Connect',                 desc: "Join our exclusive beauty creator event for complimentary treatments, product demonstrations, and content creation opportunities. Experience our services firsthand and create authentic beauty content that resonates with your audience." },
+  'Fitness':       { title: 'Fitness Creator Invite – Train, Create & Inspire',              desc: "We're inviting fitness creators for a complimentary workout session, facility tour, and content creation day. Experience our equipment, classes, and community — then share your authentic fitness journey with your audience." },
+  'Gaming':        { title: 'Gaming Creator Night – Play, Review & Create',                  desc: "Join us for an exclusive gaming creator night. Get early access to our latest games, hardware, or gaming setup. Create honest gameplay content, connect with fellow creators, and share your experience with your gaming community." },
+  'Tech':          { title: 'Tech Creator Showcase – Experience & Review',                   desc: "We're hosting an exclusive tech creator event where you'll get hands-on access to our latest products before anyone else. Experience the features, create in-depth content, and share your honest review with your tech-savvy audience." },
+  'Education':     { title: 'Education Creator Event – Learn, Explore & Share',              desc: "Join our exclusive creator experience at our educational institution or platform. Attend a live session, meet our instructors, and get behind-the-scenes access to create content that inspires your audience to learn and grow." },
+  'Lifestyle':     { title: 'Lifestyle Creator Invite – Experience & Create',                desc: "We're inviting lifestyle creators for an exclusive brand experience. Enjoy our products or services in a curated setting designed for content creation. A perfect opportunity to create beautiful, authentic lifestyle content for your audience." },
+  'Home & Living': { title: 'Home Creator Experience – Style, Shoot & Share',               desc: "Join our exclusive home and living creator event. Explore our product collection in a beautifully styled setting, get styling tips from our experts, and create stunning home content that inspires your audience." },
+  'Wellness':      { title: 'Wellness Creator Retreat – Relax, Restore & Create',            desc: "We're inviting wellness creators to experience our services firsthand. Enjoy complimentary treatments, wellness sessions, and a serene environment perfect for creating authentic well-being content for your audience." },
+  'Music':         { title: 'Music Creator Event – Live, Exclusive & Immersive',             desc: "Join us for an exclusive music creator event featuring live performances, backstage access, and unique content creation opportunities. Perfect for music creators who want to share authentic, immersive experiences with their audience." },
+  'Art & Design':  { title: 'Art Creator Experience – Create, Collaborate & Showcase',      desc: "We're hosting an exclusive art and design creator event. Explore our space, meet our artists, and get inspired to create content that celebrates creativity and artistry. A perfect event for creators who appreciate visual storytelling." },
+  'Pets':          { title: 'Pet Creator Day – Fun, Play & Create',                          desc: "Bring your furry friends! We're hosting an exclusive pet creator event at our pet-friendly venue. Experience our products or services with your pets, create adorable content, and connect with fellow pet creators." },
+  'Parenting':     { title: 'Family Creator Event – Fun Day for Parents & Kids',            desc: "We're hosting an exclusive family and parenting creator event. Enjoy family-friendly activities, experience our products or services with your family, and create authentic parenting content that resonates with your audience." },
+  'Automotive':    { title: 'Auto Creator Drive Day – Experience & Review',                  desc: "Join our exclusive automotive creator event for a test drive, facility tour, and behind-the-scenes content creation day. Experience the performance, design, and features of our vehicles — then share your authentic review." },
+  'Finance':       { title: 'Finance Creator Workshop – Learn, Experience & Share',          desc: "We're hosting an exclusive finance creator workshop. Gain insights from our experts, experience our tools or services firsthand, and create educational content that helps your audience make better financial decisions." },
+  'Sustainability':{ title: 'Eco Creator Event – Sustainable, Beautiful & Impactful',        desc: "Join our sustainability creator event. Explore our eco-friendly products, learn about our sustainability initiatives, and create content that inspires your audience to make conscious choices for the planet." },
+  'Photography':   { title: 'Photography Creator Shoot – Exclusive Access & Collaboration', desc: "We're hosting an exclusive photography creator event. Get access to stunning locations, professional equipment, and expert guidance to create breathtaking content while showcasing our brand in an authentic visual style." },
+  'Sports':        { title: 'Sports Creator Day – Play, Train & Create',                    desc: "Join our exclusive sports creator event. Experience our facility, equipment, or sporting experience firsthand. Create high-energy content that motivates your athletic audience and showcases your genuine experience." },
+  'Film & TV':     { title: 'Entertainment Creator Premiere – Exclusive & Immersive',        desc: "We're inviting entertainment creators to an exclusive premiere or behind-the-scenes event. Get early access, interact with the talent, and create exciting content that builds hype and anticipation for your audience." },
+  'Mindfulness':   { title: 'Mindfulness Creator Experience – Find Peace, Create Content',  desc: "Join our exclusive mindfulness creator event. Experience our sessions, products, or retreat setting and create calming, authentic content that helps your audience on their well-being journey." },
+  'Food & Drink':  { title: 'Food & Drink Creator Night – Taste, Experience & Create',      desc: "We're hosting an exclusive food and drink creator evening. Enjoy curated tastings, meet the team behind the flavors, and create beautiful content that makes your audience crave the experience." },
+  'Entertainment': { title: 'Entertainment Creator Event – Live, Exclusive & Unforgettable',desc: "Join us for an exclusive entertainment creator event. Experience the show, go backstage, and create immersive content that captures the energy and excitement for your audience." },
+};
+
+const CATEGORY_BENEFITS: Record<string, string[]> = {
+  'Food':          ['Free food & drinks', 'Event access', 'Gift hampers'],
+  'Travel':        ['Event access', 'Free product / service', 'Networking opportunities', 'Future collaboration'],
+  'Fashion':       ['Free product / service', 'Event access', 'Gift hampers', 'Future collaboration'],
+  'Beauty':        ['Free product / service', 'Event access', 'Gift hampers'],
+  'Fitness':       ['Event access', 'Free product / service', 'Networking opportunities'],
+  'Gaming':        ['Event access', 'Free product / service', 'Networking opportunities', 'Future collaboration'],
+  'Tech':          ['Free product / service', 'Event access', 'Future collaboration'],
+  'Education':     ['Event access', 'Networking opportunities', 'Future collaboration'],
+  'Lifestyle':     ['Free product / service', 'Event access', 'Gift hampers', 'Future collaboration'],
+  'Home & Living': ['Free product / service', 'Event access', 'Gift hampers'],
+  'Wellness':      ['Free product / service', 'Event access', 'Networking opportunities'],
+  'Music':         ['Event access', 'Networking opportunities', 'Future collaboration'],
+  'Art & Design':  ['Event access', 'Networking opportunities', 'Future collaboration'],
+  'Pets':          ['Free product / service', 'Event access', 'Gift hampers'],
+  'Parenting':     ['Free product / service', 'Event access', 'Gift hampers'],
+  'Automotive':    ['Event access', 'Future collaboration'],
+  'Finance':       ['Event access', 'Networking opportunities', 'Future collaboration'],
+  'Sustainability':['Free product / service', 'Event access', 'Networking opportunities', 'Future collaboration'],
+  'Photography':   ['Event access', 'Free product / service', 'Networking opportunities', 'Future collaboration'],
+  'Sports':        ['Free product / service', 'Event access', 'Networking opportunities'],
+  'Film & TV':     ['Event access', 'Networking opportunities', 'Future collaboration'],
+  'Mindfulness':   ['Free product / service', 'Event access', 'Networking opportunities'],
+  'Food & Drink':  ['Free food & drinks', 'Event access', 'Gift hampers'],
+  'Entertainment': ['Event access', 'Networking opportunities', 'Future collaboration'],
+};
+
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const DAY_SHORT = ['Su','Mo','Tu','We','Th','Fr','Sa'];
 
@@ -164,10 +237,18 @@ type FormData = {
   description: string;
   deadline: Date | null;
   isFeatured: boolean;
+  // Open Event fields
+  eventType:    'PAID_CAMPAIGN' | 'OPEN_EVENT';
+  eventDate:    Date | null;
+  venue:        string;
+  capacity:     number;
+  benefits:     string[];
+  eventContent: string[];
 };
 
 type SetupErrors = Partial<Record<'template' | 'goals' | 'budget', string>>;
-type ReviewErrors = Partial<Record<'title' | 'deadline' | 'platform', string>>;
+type ReviewErrors = Partial<Record<'title' | 'deadline' | 'platform' | 'eventDate', string>>;
+type EventErrors = Partial<Record<'template' | 'capacity' | 'venue', string>>;
 type PlacePrediction = { place_id: string; description: string };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -619,11 +700,12 @@ const cal = StyleSheet.create({
 
 // ─── DeadlinePicker ───────────────────────────────────────────────────────────
 
-function DeadlinePicker({ value, onChange, error, colors }: {
+function DeadlinePicker({ value, onChange, error, colors, label }: {
   value: Date | null;
   onChange: (d: Date | null) => void;
   error?: string;
   colors: ReturnType<typeof useAppColors>;
+  label?: string;
 }) {
   const C = colors;
   const [open, setOpen] = useState(false);
@@ -651,7 +733,7 @@ function DeadlinePicker({ value, onChange, error, colors }: {
           <View style={[dp.sheet, { backgroundColor: C.surface }]}>
             <View style={[dp.handle, { backgroundColor: C.border }]} />
             <View style={mc.sheetHeader}>
-              <Text style={[dp.sheetTitle, { color: C.text, marginBottom: 0 }]}>Application Deadline</Text>
+              <Text style={[dp.sheetTitle, { color: C.text, marginBottom: 0 }]}>{label ?? 'Application Deadline'}</Text>
               <Pressable onPress={() => setOpen(false)}>
                 <Text style={[mc.done, { color: C.brinjal1 }]}>Done</Text>
               </Pressable>
@@ -733,6 +815,7 @@ export default function CreateCampaignScreen() {
   const [loading, setLoading] = useState(false);
   const [setupErrors, setSetupErrors] = useState<SetupErrors>({});
   const [reviewErrors, setReviewErrors] = useState<ReviewErrors>({});
+  const [eventErrors, setEventErrors] = useState<EventErrors>({});
   const scrollRef = useRef<ScrollView>(null);
   const [categoryOptions, setCategoryOptions] = useState(CATEGORY_FALLBACK);
   const [platformOptions, setPlatformOptions] = useState<string[]>(PLATFORM_FALLBACK);
@@ -755,7 +838,7 @@ export default function CreateCampaignScreen() {
 
     profileService.getBusinessProfile().then((profile) => {
       if (profile.location) {
-        setForm((prev) => ({ ...prev, location: profile.location! }));
+        setForm((prev) => ({ ...prev, location: profile.location!, venue: profile.location! }));
       }
     }).catch(() => { /* location stays empty */ });
   }, []);
@@ -773,6 +856,13 @@ export default function CreateCampaignScreen() {
     description: '',
     deadline: dayStart(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)),
     isFeatured: false,
+    // Open Event fields
+    eventType:    'PAID_CAMPAIGN',
+    eventDate:    dayStart(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)),
+    venue:        '',
+    capacity:     20,
+    benefits:     [],
+    eventContent: [],
   });
 
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -791,6 +881,35 @@ export default function CreateCampaignScreen() {
 
   function update<K extends keyof FormData>(key: K, value: FormData[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
+  }
+
+  function resetFormForType(newType: 'PAID_CAMPAIGN' | 'OPEN_EVENT') {
+    const eventDate   = dayStart(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
+    const regDeadline = dayStart(new Date(eventDate.getTime() - 2 * 24 * 60 * 60 * 1000));
+    setForm((prev) => ({
+      template:       '',
+      goals:          [],
+      budget:         '',
+      creatorType:    [],
+      platform:       'Instagram',
+      location:       prev.location,
+      creatorsNeeded: 1,
+      deliverables:   { ...DEFAULT_DELIVERABLES },
+      title:          '',
+      description:    '',
+      deadline:       newType === 'OPEN_EVENT' ? regDeadline : dayStart(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)),
+      isFeatured:     false,
+      eventType:      newType,
+      eventDate,
+      venue:          prev.venue,
+      capacity:       20,
+      benefits:       [],
+      eventContent:   [],
+    }));
+    setSetupErrors({});
+    setReviewErrors({});
+    setEventErrors({});
+    setPhase('setup');
   }
 
   function handleGenerate() {
@@ -814,46 +933,124 @@ export default function CreateCampaignScreen() {
     scrollRef.current?.scrollTo({ y: 0, animated: false });
   }
 
-  async function handlePublish() {
-    const errs: ReviewErrors = {};
-    if (!form.title.trim()) errs.title    = 'Campaign title is required.';
-    if (!form.platform)     errs.platform = 'Please select a platform.';
-    if (!form.deadline)     errs.deadline = 'Please select an application deadline.';
-    if (Object.keys(errs).length > 0) { setReviewErrors(errs); return; }
-    setReviewErrors({});
+  function handleContinueEvent() {
+    const errs: EventErrors = {};
+    if (!form.template)        errs.template = 'Please select an event category.';
+    if (!form.venue.trim())    errs.venue    = 'Venue / location is required.';
+    if (form.capacity < 1)     errs.capacity = 'Capacity must be at least 1.';
 
-    const budget = BUDGET_MAP[form.budget] ?? { min: 0, max: 0, payment: 'Negotiable' };
-    setLoading(true);
-    try {
-      await campaignService.create({
-        title:          form.title.trim(),
-        description:    form.description.trim(),
-        template:       form.template,
-        category:       form.template,
-        goals:          form.goals,
-        platform:       form.platform,
-        location:       form.location.trim() || undefined,
-        minFollowers:   0,
-        contentType:    form.goals[0] ?? '',
-        deliverables:   (() => {
-          const parts = DELIVERABLE_TYPES
-            .filter((d) => (form.deliverables[d.key] ?? 0) > 0)
-            .map((d) => `${form.deliverables[d.key]} ${d.label}`);
-          return parts.length > 0 ? parts.join(', ') : form.goals.join(', ');
-        })(),
-        deadline:       form.deadline!.toISOString(),
-        budgetMin:      budget.min,
-        budgetMax:      budget.max,
-        paymentType:    budget.payment,
-        creatorsNeeded: form.creatorsNeeded,
-        isFeatured:     form.isFeatured,
-      });
-      showToast('Campaign published successfully!');
-      setTimeout(() => router.replace('/(business)/'), 500);
-    } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Failed to create campaign.', 'error');
-    } finally {
-      setLoading(false);
+    if (Object.keys(errs).length > 0) { setEventErrors(errs); return; }
+    setEventErrors({});
+
+    const content  = EVENT_TEMPLATE_CONTENT[form.template] ?? { title: '', desc: '' };
+    const autoDesc = content.desc
+      ? content.desc + (form.venue ? `\n\nLocation: ${form.venue}` : '')
+      : '';
+    const suggestedBenefits = CATEGORY_BENEFITS[form.template] ?? ['Event access'];
+    const defaultEventDate  = dayStart(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
+
+    setForm((prev) => {
+      const eventDate = prev.eventDate ?? defaultEventDate;
+      const regDeadline = dayStart(new Date(eventDate.getTime() - 2 * 24 * 60 * 60 * 1000));
+      return {
+        ...prev,
+        title:       content.title,
+        description: autoDesc,
+        benefits:    suggestedBenefits,
+        eventDate,
+        deadline:    regDeadline,
+      };
+    });
+    setPhase('review');
+    scrollRef.current?.scrollTo({ y: 0, animated: false });
+  }
+
+  async function handlePublish() {
+    if (form.eventType === 'PAID_CAMPAIGN') {
+      const errs: ReviewErrors = {};
+      if (!form.title.trim()) errs.title    = 'Campaign title is required.';
+      if (!form.platform)     errs.platform = 'Please select a platform.';
+      if (!form.deadline)     errs.deadline = 'Please select an application deadline.';
+      if (Object.keys(errs).length > 0) { setReviewErrors(errs); return; }
+      setReviewErrors({});
+
+      const budget = BUDGET_MAP[form.budget] ?? { min: 0, max: 0, payment: 'Negotiable' };
+      setLoading(true);
+      try {
+        await campaignService.create({
+          title:          form.title.trim(),
+          description:    form.description.trim(),
+          template:       form.template,
+          category:       form.template,
+          goals:          form.goals,
+          platform:       form.platform,
+          location:       form.location.trim() || undefined,
+          minFollowers:   0,
+          contentType:    form.goals[0] ?? '',
+          deliverables:   (() => {
+            const parts = DELIVERABLE_TYPES
+              .filter((d) => (form.deliverables[d.key] ?? 0) > 0)
+              .map((d) => `${form.deliverables[d.key]} ${d.label}`);
+            return parts.length > 0 ? parts.join(', ') : form.goals.join(', ');
+          })(),
+          deadline:       form.deadline!.toISOString(),
+          budgetMin:      budget.min,
+          budgetMax:      budget.max,
+          paymentType:    budget.payment,
+          creatorsNeeded: form.creatorsNeeded,
+          isFeatured:     form.isFeatured,
+          campaignType:   'PAID_CAMPAIGN',
+        });
+        showToast('Campaign published successfully!');
+        setTimeout(() => router.replace('/(business)/'), 500);
+      } catch (err) {
+        showToast(err instanceof Error ? err.message : 'Failed to create campaign.', 'error');
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      // Open Event publish
+      const errs: ReviewErrors = {};
+      if (!form.title.trim()) errs.title     = 'Event title is required.';
+      if (!form.eventDate)    errs.eventDate = 'Please select an event date.';
+      if (!form.deadline)     errs.deadline  = 'Please select a registration deadline.';
+      else if (form.eventDate && form.deadline >= form.eventDate)
+        errs.deadline = 'Registration deadline must be before the event date.';
+      if (Object.keys(errs).length > 0) { setReviewErrors(errs); return; }
+      setReviewErrors({});
+
+      setLoading(true);
+      try {
+        await campaignService.create({
+          title:          form.title.trim(),
+          description:    form.description.trim(),
+          template:       form.template,
+          category:       form.template,
+          goals:          ['Event Promotion', 'Brand Awareness'],
+          platform:       form.platform || '',
+          location:       form.venue.trim() || undefined,
+          minFollowers:   0,
+          contentType:    form.eventContent.join(', ') || 'Event Coverage',
+          deliverables:   form.benefits.join(', '),
+          deadline:       form.deadline!.toISOString(),
+          budgetMin:      0,
+          budgetMax:      0,
+          paymentType:    'Non-monetary',
+          creatorsNeeded: form.capacity,
+          isFeatured:     form.isFeatured,
+          campaignType:   'OPEN_EVENT',
+          capacity:       form.capacity,
+          eventDate:      form.eventDate?.toISOString(),
+          venue:          form.venue.trim() || undefined,
+          benefits:       form.benefits,
+        });
+        showToast('Event published successfully!');
+        setTimeout(() => router.replace('/(business)/'), 500);
+      } catch (err) {
+        showToast(err instanceof Error ? err.message : 'Failed to create event.', 'error');
+      } finally {
+        setLoading(false);
+      }
     }
   }
 
@@ -894,73 +1091,160 @@ export default function CreateCampaignScreen() {
           {phase === 'setup' && (
             <View style={s.content}>
 
-              {/* Template */}
-              <SectionCard title="📂 Campaign Category" sub="Choose the category that best matches your campaign." colors={C}>
-                <DropdownPicker
-                  value={form.template}
-                  onChange={(v) => {
-                    const preset = TEMPLATE_PRESETS[v];
-                    setForm((prev) => ({
-                      ...prev,
-                      template: v,
-                      ...(preset ? {
-                        goals:        preset.goals,
-                        budget:       preset.budget,
-                        deliverables: preset.deliverables,
-                      } : {}),
-                    }));
-                    if (setupErrors.template) setSetupErrors((e) => ({ ...e, template: undefined }));
-                    if (setupErrors.goals)    setSetupErrors((e) => ({ ...e, goals: undefined }));
-                    if (setupErrors.budget)   setSetupErrors((e) => ({ ...e, budget: undefined }));
-                  }}
-                  options={categoryOptions}
-                  placeholder="Select a category…"
-                  colors={C}
-                  error={setupErrors.template}
-                />
-              </SectionCard>
+              {/* Event Type Selector */}
+              <View style={[s.eventTypeCard, { backgroundColor: C.surface }]}>
+                <Text style={[s.eventTypeCardTitle, { color: C.text }]}>🎯 Event Type</Text>
+                <Text style={[s.eventTypeCardSub, { color: C.textSecondary }]}>Choose how you want to collaborate with creators</Text>
+                <View style={s.eventTypeRow}>
+                  <Pressable
+                    style={[s.eventTypeOption, { borderColor: form.eventType === 'PAID_CAMPAIGN' ? C.brinjal1 : C.border, backgroundColor: form.eventType === 'PAID_CAMPAIGN' ? C.primaryLight : C.background }]}
+                    onPress={() => { if (form.eventType !== 'PAID_CAMPAIGN') resetFormForType('PAID_CAMPAIGN'); }}>
+                    <View style={[s.etRadioOuter, { borderColor: form.eventType === 'PAID_CAMPAIGN' ? C.brinjal1 : C.border }]}>
+                      {form.eventType === 'PAID_CAMPAIGN' && <View style={[s.etRadioInner, { backgroundColor: C.brinjal1 }]} />}
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[s.etOptionLabel, { color: form.eventType === 'PAID_CAMPAIGN' ? C.brinjal1 : C.text }]}>💰 Paid Campaign</Text>
+                      <Text style={[s.etOptionSub, { color: C.textSecondary }]}>Creators are paid for content</Text>
+                    </View>
+                  </Pressable>
+                  <Pressable
+                    style={[s.eventTypeOption, { borderColor: form.eventType === 'OPEN_EVENT' ? C.brinjal1 : C.border, backgroundColor: form.eventType === 'OPEN_EVENT' ? C.primaryLight : C.background }]}
+                    onPress={() => { if (form.eventType !== 'OPEN_EVENT') resetFormForType('OPEN_EVENT'); }}>
+                    <View style={[s.etRadioOuter, { borderColor: form.eventType === 'OPEN_EVENT' ? C.brinjal1 : C.border }]}>
+                      {form.eventType === 'OPEN_EVENT' && <View style={[s.etRadioInner, { backgroundColor: C.brinjal1 }]} />}
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[s.etOptionLabel, { color: form.eventType === 'OPEN_EVENT' ? C.brinjal1 : C.text }]}>🎪 Open Creator Event</Text>
+                      <Text style={[s.etOptionSub, { color: C.textSecondary }]}>Invite creators to attend an event</Text>
+                    </View>
+                  </Pressable>
+                </View>
+              </View>
 
-              {/* Goals */}
-              <SectionCard title="🎯 Campaign Goals" sub="Select what you want to achieve with this campaign." colors={C}>
-                <MultiCheckboxDropdown
-                  values={form.goals}
-                  onChange={(v) => {
-                    update('goals', v);
-                    if (setupErrors.goals) setSetupErrors((e) => ({ ...e, goals: undefined }));
-                  }}
-                  options={GOALS}
-                  placeholder="Select campaign goals…"
-                  colors={C}
-                  error={setupErrors.goals}
-                />
-              </SectionCard>
+              {/* Paid Campaign form */}
+              {form.eventType === 'PAID_CAMPAIGN' && (
+                <>
+                  {/* Template */}
+                  <SectionCard title="📂 Campaign Category" sub="Choose the category that best matches your campaign." colors={C}>
+                    <DropdownPicker
+                      value={form.template}
+                      onChange={(v) => {
+                        const preset = TEMPLATE_PRESETS[v];
+                        setForm((prev) => ({
+                          ...prev,
+                          template: v,
+                          ...(preset ? {
+                            goals:        preset.goals,
+                            budget:       preset.budget,
+                            deliverables: preset.deliverables,
+                          } : {}),
+                        }));
+                        if (setupErrors.template) setSetupErrors((e) => ({ ...e, template: undefined }));
+                        if (setupErrors.goals)    setSetupErrors((e) => ({ ...e, goals: undefined }));
+                        if (setupErrors.budget)   setSetupErrors((e) => ({ ...e, budget: undefined }));
+                      }}
+                      options={categoryOptions}
+                      placeholder="Select a category…"
+                      colors={C}
+                      error={setupErrors.template}
+                    />
+                  </SectionCard>
 
-              {/* Budget */}
-              <SectionCard title="💰 Budget" sub="How much are you willing to invest per creator?" colors={C}>
-                <RadioGroup
-                  value={form.budget}
-                  onChange={(v) => {
-                    update('budget', v);
-                    if (setupErrors.budget) setSetupErrors((e) => ({ ...e, budget: undefined }));
-                  }}
-                  options={BUDGETS}
-                  colors={C}
-                  error={setupErrors.budget}
-                />
-              </SectionCard>
+                  {/* Goals */}
+                  <SectionCard title="🎯 Campaign Goals" sub="Select what you want to achieve with this campaign." colors={C}>
+                    <MultiCheckboxDropdown
+                      values={form.goals}
+                      onChange={(v) => {
+                        update('goals', v);
+                        if (setupErrors.goals) setSetupErrors((e) => ({ ...e, goals: undefined }));
+                      }}
+                      options={GOALS}
+                      placeholder="Select campaign goals…"
+                      colors={C}
+                      error={setupErrors.goals}
+                    />
+                  </SectionCard>
 
-              {/* Location */}
-              <SectionCard title="📍 Location" sub='Where should creators be based? Type "Remote" for online.' colors={C}>
-                <PlacesInput value={form.location} onChange={(v) => update('location', v)} colors={C} />
-              </SectionCard>
+                  {/* Budget */}
+                  <SectionCard title="💰 Budget" sub="How much are you willing to invest per creator?" colors={C}>
+                    <RadioGroup
+                      value={form.budget}
+                      onChange={(v) => {
+                        update('budget', v);
+                        if (setupErrors.budget) setSetupErrors((e) => ({ ...e, budget: undefined }));
+                      }}
+                      options={BUDGETS}
+                      colors={C}
+                      error={setupErrors.budget}
+                    />
+                  </SectionCard>
 
-              {/* Generate button */}
-              <Pressable
-                style={({ pressed }) => [s.generateBtn, { backgroundColor: C.brinjal1, opacity: pressed ? 0.88 : 1 }]}
-                onPress={handleGenerate}>
-                <Ionicons name="sparkles" size={20} color="#fff" />
-                <Text style={s.generateBtnText}>Generate Campaign</Text>
-              </Pressable>
+                  {/* Location */}
+                  <SectionCard title="📍 Location" sub='Where should creators be based? Type "Remote" for online.' colors={C}>
+                    <PlacesInput value={form.location} onChange={(v) => update('location', v)} colors={C} />
+                  </SectionCard>
+
+                  {/* Generate button */}
+                  <Pressable
+                    style={({ pressed }) => [s.generateBtn, { backgroundColor: C.brinjal1, opacity: pressed ? 0.88 : 1 }]}
+                    onPress={handleGenerate}>
+                    <Ionicons name="sparkles" size={20} color="#fff" />
+                    <Text style={s.generateBtnText}>Generate Campaign</Text>
+                  </Pressable>
+                </>
+              )}
+
+              {/* Open Event form */}
+              {form.eventType === 'OPEN_EVENT' && (
+                <>
+                  {/* Category — same template picker as paid campaign */}
+                  <SectionCard title="📂 Event Category" sub="Choose the category that best matches your event." colors={C}>
+                    <DropdownPicker
+                      value={form.template}
+                      onChange={(v) => {
+                        update('template', v);
+                        if (eventErrors.template) setEventErrors((e) => ({ ...e, template: undefined }));
+                      }}
+                      options={categoryOptions}
+                      placeholder="Select a category…"
+                      colors={C}
+                      error={eventErrors.template}
+                    />
+                  </SectionCard>
+
+                  {/* Venue / Location */}
+                  <SectionCard title="📍 Venue / Location" sub="Where is the event taking place? (auto-filled from your business profile)" colors={C}>
+                    <PlacesInput
+                      value={form.venue}
+                      onChange={(v) => { update('venue', v); if (eventErrors.venue) setEventErrors((e) => ({ ...e, venue: undefined })); }}
+                      colors={C}
+                      error={eventErrors.venue}
+                    />
+                  </SectionCard>
+
+                  {/* Capacity */}
+                  <SectionCard title="👥 Creator Capacity" sub="Maximum number of creators who can attend." colors={C}>
+                    <Stepper value={form.capacity} onChange={(v) => update('capacity', v)} min={1} max={500} colors={C} />
+                    {eventErrors.capacity && <Text style={s.errorText}>{eventErrors.capacity}</Text>}
+                  </SectionCard>
+
+                  {/* Continue hint */}
+                  <View style={[s.eventHintBox, { backgroundColor: C.primaryLight }]}>
+                    <Ionicons name="sparkles" size={16} color={C.brinjal1} />
+                    <Text style={[s.eventHintText, { color: C.brinjal1 }]}>
+                      Event title, description, date and creator benefits will be auto-generated on the next page based on your selected category.
+                    </Text>
+                  </View>
+
+                  {/* Continue button */}
+                  <Pressable
+                    style={({ pressed }) => [s.generateBtn, { backgroundColor: C.brinjal1, opacity: pressed ? 0.88 : 1 }]}
+                    onPress={handleContinueEvent}>
+                    <Ionicons name="sparkles" size={20} color="#fff" />
+                    <Text style={s.generateBtnText}>Generate & Continue</Text>
+                  </Pressable>
+                </>
+              )}
             </View>
           )}
 
@@ -968,158 +1252,309 @@ export default function CreateCampaignScreen() {
           {phase === 'review' && (
             <View style={s.content}>
 
-              {/* Generated notice */}
-              <View style={[s.generatedBanner, { backgroundColor: C.primaryLight }]}>
-                <Ionicons name="sparkles" size={20} color={C.brinjal1} />
-                <View style={{ flex: 1 }}>
-                  <Text style={[s.generatedTitle, { color: C.brinjal1 }]}>Campaign Generated</Text>
-                  <Text style={[s.generatedSub, { color: C.brinjal1 }]}>Review and edit before publishing. All fields are editable.</Text>
-                </View>
-              </View>
+              {/* Paid Campaign review */}
+              {form.eventType === 'PAID_CAMPAIGN' && (
+                <>
+                  {/* Generated notice */}
+                  <View style={[s.generatedBanner, { backgroundColor: C.primaryLight }]}>
+                    <Ionicons name="sparkles" size={20} color={C.brinjal1} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={[s.generatedTitle, { color: C.brinjal1 }]}>Campaign Generated</Text>
+                      <Text style={[s.generatedSub, { color: C.brinjal1 }]}>Review and edit before publishing. All fields are editable.</Text>
+                    </View>
+                  </View>
 
-              {/* Editable title */}
-              <SectionCard title="📣 Campaign Title" colors={C}>
-                <TextInput
-                  style={[s.input, { backgroundColor: C.background, borderColor: reviewErrors.title ? ERROR_RED : C.border, color: C.text }]}
-                  value={form.title}
-                  onChangeText={(v) => {
-                    update('title', v);
-                    if (reviewErrors.title) setReviewErrors((e) => ({ ...e, title: undefined }));
-                  }}
-                  placeholder="Campaign title…"
-                  placeholderTextColor={C.textSecondary}
-                />
-                {reviewErrors.title && <Text style={s.errorText}>{reviewErrors.title}</Text>}
-              </SectionCard>
+                  {/* Editable title */}
+                  <SectionCard title="📣 Campaign Title" colors={C}>
+                    <TextInput
+                      style={[s.input, { backgroundColor: C.background, borderColor: reviewErrors.title ? ERROR_RED : C.border, color: C.text }]}
+                      value={form.title}
+                      onChangeText={(v) => {
+                        update('title', v);
+                        if (reviewErrors.title) setReviewErrors((e) => ({ ...e, title: undefined }));
+                      }}
+                      placeholder="Campaign title…"
+                      placeholderTextColor={C.textSecondary}
+                    />
+                    {reviewErrors.title && <Text style={s.errorText}>{reviewErrors.title}</Text>}
+                  </SectionCard>
 
-              {/* Editable description */}
-              <SectionCard title="📝 Description" colors={C}>
-                <TextInput
-                  style={[s.textarea, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
-                  value={form.description}
-                  onChangeText={(v) => update('description', v)}
-                  placeholder="Describe your campaign…"
-                  placeholderTextColor={C.textSecondary}
-                  multiline
-                  numberOfLines={6}
-                />
-              </SectionCard>
+                  {/* Editable description */}
+                  <SectionCard title="📝 Description" colors={C}>
+                    <TextInput
+                      style={[s.textarea, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
+                      value={form.description}
+                      onChangeText={(v) => update('description', v)}
+                      placeholder="Describe your campaign…"
+                      placeholderTextColor={C.textSecondary}
+                      multiline
+                      numberOfLines={6}
+                    />
+                  </SectionCard>
 
-              {/* Platform */}
-              <SectionCard title="📱 Platform" sub="Where should creators post their content?" colors={C}>
-                <ChipGroup
-                  options={platformOptions}
-                  value={form.platform}
-                  onChange={(v) => {
-                    update('platform', v);
-                    if (reviewErrors.platform) setReviewErrors((e) => ({ ...e, platform: undefined }));
-                  }}
-                  colors={C}
-                  error={reviewErrors.platform}
-                />
-              </SectionCard>
+                  {/* Platform */}
+                  <SectionCard title="📱 Platform" sub="Where should creators post their content?" colors={C}>
+                    <ChipGroup
+                      options={platformOptions}
+                      value={form.platform}
+                      onChange={(v) => {
+                        update('platform', v);
+                        if (reviewErrors.platform) setReviewErrors((e) => ({ ...e, platform: undefined }));
+                      }}
+                      colors={C}
+                      error={reviewErrors.platform}
+                    />
+                  </SectionCard>
 
-              {/* Deliverables */}
-              <SectionCard title="📦 Deliverables" sub="Set quantity to 0 to exclude." colors={C}>
-                <View style={{ gap: 2 }}>
-                  {DELIVERABLE_TYPES.map((item, i) => {
-                    const count = form.deliverables[item.key] ?? 0;
-                    const active = count > 0;
-                    return (
-                      <View
-                        key={item.key}
-                        style={[
-                          dlv.row,
-                          { borderBottomColor: C.border },
-                          i === DELIVERABLE_TYPES.length - 1 && { borderBottomWidth: 0 },
-                        ]}>
-                        <View style={[dlv.bullet, { backgroundColor: active ? C.brinjal1 : C.border }]} />
-                        <Text style={[dlv.label, { color: active ? C.text : C.textSecondary, fontFamily: active ? F.semibold : F.regular }]}>
-                          {item.label}
-                        </Text>
-                        <View style={[dlv.counter, { borderColor: active ? C.brinjal1 : C.border, backgroundColor: C.background }]}>
-                          <Pressable
-                            style={dlv.counterBtn}
-                            onPress={() => update('deliverables', { ...form.deliverables, [item.key]: Math.max(0, count - 1) })}>
-                            <Text style={[dlv.counterBtnTxt, { color: count <= 0 ? C.border : C.brinjal1 }]}>−</Text>
-                          </Pressable>
-                          <Text style={[dlv.counterVal, { color: active ? C.brinjal1 : C.textSecondary }]}>{count}</Text>
-                          <Pressable
-                            style={dlv.counterBtn}
-                            onPress={() => update('deliverables', { ...form.deliverables, [item.key]: Math.min(10, count + 1) })}>
-                            <Text style={[dlv.counterBtnTxt, { color: C.brinjal1 }]}>+</Text>
-                          </Pressable>
-                        </View>
+                  {/* Deliverables */}
+                  <SectionCard title="📦 Deliverables" sub="Set quantity to 0 to exclude." colors={C}>
+                    <View style={{ gap: 2 }}>
+                      {DELIVERABLE_TYPES.map((item, i) => {
+                        const count = form.deliverables[item.key] ?? 0;
+                        const active = count > 0;
+                        return (
+                          <View
+                            key={item.key}
+                            style={[
+                              dlv.row,
+                              { borderBottomColor: C.border },
+                              i === DELIVERABLE_TYPES.length - 1 && { borderBottomWidth: 0 },
+                            ]}>
+                            <View style={[dlv.bullet, { backgroundColor: active ? C.brinjal1 : C.border }]} />
+                            <Text style={[dlv.label, { color: active ? C.text : C.textSecondary, fontFamily: active ? F.semibold : F.regular }]}>
+                              {item.label}
+                            </Text>
+                            <View style={[dlv.counter, { borderColor: active ? C.brinjal1 : C.border, backgroundColor: C.background }]}>
+                              <Pressable
+                                style={dlv.counterBtn}
+                                onPress={() => update('deliverables', { ...form.deliverables, [item.key]: Math.max(0, count - 1) })}>
+                                <Text style={[dlv.counterBtnTxt, { color: count <= 0 ? C.border : C.brinjal1 }]}>−</Text>
+                              </Pressable>
+                              <Text style={[dlv.counterVal, { color: active ? C.brinjal1 : C.textSecondary }]}>{count}</Text>
+                              <Pressable
+                                style={dlv.counterBtn}
+                                onPress={() => update('deliverables', { ...form.deliverables, [item.key]: Math.min(10, count + 1) })}>
+                                <Text style={[dlv.counterBtnTxt, { color: C.brinjal1 }]}>+</Text>
+                              </Pressable>
+                            </View>
+                          </View>
+                        );
+                      })}
+                    </View>
+                  </SectionCard>
+
+                  {/* Deadline */}
+                  <SectionCard title="📅 Application Deadline" sub="Last date creators can apply." colors={C}>
+                    <DeadlinePicker
+                      value={form.deadline}
+                      onChange={(d) => {
+                        update('deadline', d);
+                        if (reviewErrors.deadline) setReviewErrors((e) => ({ ...e, deadline: undefined }));
+                      }}
+                      error={reviewErrors.deadline}
+                      colors={C}
+                    />
+                  </SectionCard>
+
+                  {/* Creators Needed */}
+                  <SectionCard title="👥 Creators Needed" sub="How many creators do you need for this campaign?" colors={C}>
+                    <Stepper value={form.creatorsNeeded} onChange={(v) => update('creatorsNeeded', v)} colors={C} />
+                  </SectionCard>
+
+                  {/* Summary */}
+                  <SectionCard title="📋 Summary" colors={C}>
+                    {[
+                      { label: 'Category', value: selectedTemplate ? `${selectedTemplate.emoji} ${form.template}` : '—' },
+                      { label: 'Goals',    value: form.goals.join(', ') || '—' },
+                      { label: 'Budget',   value: form.budget || '—' },
+                      { label: 'Location', value: form.location || 'Remote' },
+                    ].map(({ label, value }, i, arr) => (
+                      <View key={label} style={[s.summaryRow, i < arr.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}>
+                        <Text style={[s.summaryLabel, { color: C.textSecondary }]}>{label}</Text>
+                        <Text style={[s.summaryValue, { color: C.text }]} numberOfLines={2}>{value}</Text>
                       </View>
-                    );
-                  })}
-                </View>
-              </SectionCard>
+                    ))}
+                  </SectionCard>
 
-              {/* Deadline */}
-              <SectionCard title="📅 Application Deadline" sub="Last date creators can apply." colors={C}>
-                <DeadlinePicker
-                  value={form.deadline}
-                  onChange={(d) => {
-                    update('deadline', d);
-                    if (reviewErrors.deadline) setReviewErrors((e) => ({ ...e, deadline: undefined }));
-                  }}
-                  error={reviewErrors.deadline}
-                  colors={C}
-                />
-              </SectionCard>
+                  {/* Featured toggle */}
+                  <Pressable
+                    style={[s.featuredToggle, { backgroundColor: form.isFeatured ? '#FFF8E8' : C.surface, borderColor: form.isFeatured ? '#F59E0B' : C.border }]}
+                    onPress={() => update('isFeatured', !form.isFeatured)}>
+                    <View style={s.featuredLeft}>
+                      <Text style={s.featuredEmoji}>⭐</Text>
+                      <View style={{ flex: 1, gap: 3 }}>
+                        <Text style={[s.featuredLabel, { color: C.text }]}>Feature this Campaign</Text>
+                        <Text style={[s.featuredSub, { color: C.textSecondary }]}>Appears highlighted on creator home</Text>
+                      </View>
+                    </View>
+                    <View style={[s.toggle, { backgroundColor: form.isFeatured ? '#F59E0B' : C.border }]}>
+                      <View style={[s.toggleThumb, { left: form.isFeatured ? 20 : 2 }]} />
+                    </View>
+                  </Pressable>
 
-              {/* Creators Needed */}
-              <SectionCard title="👥 Creators Needed" sub="How many creators do you need for this campaign?" colors={C}>
-                <Stepper value={form.creatorsNeeded} onChange={(v) => update('creatorsNeeded', v)} colors={C} />
-              </SectionCard>
-
-              {/* Summary */}
-              <SectionCard title="📋 Summary" colors={C}>
-                {[
-                  { label: 'Category', value: selectedTemplate ? `${selectedTemplate.emoji} ${form.template}` : '—' },
-                  { label: 'Goals',    value: form.goals.join(', ') || '—' },
-                  { label: 'Budget',   value: form.budget || '—' },
-                  { label: 'Location', value: form.location || 'Remote' },
-                ].map(({ label, value }, i, arr) => (
-                  <View key={label} style={[s.summaryRow, i < arr.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}>
-                    <Text style={[s.summaryLabel, { color: C.textSecondary }]}>{label}</Text>
-                    <Text style={[s.summaryValue, { color: C.text }]} numberOfLines={2}>{value}</Text>
+                  {/* Actions */}
+                  <View style={s.reviewActions}>
+                    <Pressable
+                      style={[s.editBtn, { borderColor: C.brinjal1 }]}
+                      onPress={() => setPhase('setup')}>
+                      <Ionicons name="chevron-back" size={16} color={C.brinjal1} />
+                      <Text style={[s.editBtnText, { color: C.brinjal1 }]}>Edit Inputs</Text>
+                    </Pressable>
+                    <Pressable
+                      style={[s.publishBtn, { backgroundColor: loading ? C.border : C.brinjal1 }]}
+                      onPress={handlePublish}
+                      disabled={loading}>
+                      <Text style={s.publishBtnText}>{loading ? 'Publishing…' : '🚀 Publish Campaign'}</Text>
+                    </Pressable>
                   </View>
-                ))}
-              </SectionCard>
+                </>
+              )}
 
-              {/* Featured toggle */}
-              <Pressable
-                style={[s.featuredToggle, { backgroundColor: form.isFeatured ? '#FFF8E8' : C.surface, borderColor: form.isFeatured ? '#F59E0B' : C.border }]}
-                onPress={() => update('isFeatured', !form.isFeatured)}>
-                <View style={s.featuredLeft}>
-                  <Text style={s.featuredEmoji}>⭐</Text>
-                  <View style={{ flex: 1, gap: 3 }}>
-                    <Text style={[s.featuredLabel, { color: C.text }]}>Feature this Campaign</Text>
-                    <Text style={[s.featuredSub, { color: C.textSecondary }]}>Appears highlighted on creator home</Text>
+              {/* Open Event review */}
+              {form.eventType === 'OPEN_EVENT' && (
+                <>
+                  {/* Auto-generated banner */}
+                  <View style={[s.generatedBanner, { backgroundColor: C.primaryLight }]}>
+                    <Ionicons name="sparkles" size={20} color={C.brinjal1} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={[s.generatedTitle, { color: C.brinjal1 }]}>Event Details Auto-Generated</Text>
+                      <Text style={[s.generatedSub, { color: C.brinjal1 }]}>Review and edit anything before publishing.</Text>
+                    </View>
                   </View>
-                </View>
-                <View style={[s.toggle, { backgroundColor: form.isFeatured ? '#F59E0B' : C.border }]}>
-                  <View style={[s.toggleThumb, { left: form.isFeatured ? 20 : 2 }]} />
-                </View>
-              </Pressable>
 
-              {/* Actions */}
-              <View style={s.reviewActions}>
-                <Pressable
-                  style={[s.editBtn, { borderColor: C.brinjal1 }]}
-                  onPress={() => setPhase('setup')}>
-                  <Ionicons name="chevron-back" size={16} color={C.brinjal1} />
-                  <Text style={[s.editBtnText, { color: C.brinjal1 }]}>Edit Inputs</Text>
-                </Pressable>
-                <Pressable
-                  style={[s.publishBtn, { backgroundColor: loading ? C.border : C.brinjal1 }]}
-                  onPress={handlePublish}
-                  disabled={loading}>
-                  <Text style={s.publishBtnText}>{loading ? 'Publishing…' : '🚀 Publish Campaign'}</Text>
-                </Pressable>
-              </View>
+                  {/* Title */}
+                  <SectionCard title="🎪 Event Title" sub="Edit or personalise the auto-generated title." colors={C}>
+                    <TextInput
+                      style={[s.input, { backgroundColor: C.background, borderColor: reviewErrors.title ? ERROR_RED : C.border, color: C.text }]}
+                      value={form.title}
+                      onChangeText={(v) => { update('title', v); if (reviewErrors.title) setReviewErrors((e) => ({ ...e, title: undefined })); }}
+                      placeholder="Event title…"
+                      placeholderTextColor={C.textSecondary}
+                    />
+                    {reviewErrors.title && <Text style={s.errorText}>{reviewErrors.title}</Text>}
+                  </SectionCard>
+
+                  {/* Description */}
+                  <SectionCard title="📝 Event Description" sub="Edit or personalise the auto-generated description." colors={C}>
+                    <TextInput
+                      style={[s.textarea, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
+                      value={form.description}
+                      onChangeText={(v) => update('description', v)}
+                      placeholder="Event description…"
+                      placeholderTextColor={C.textSecondary}
+                      multiline
+                      numberOfLines={6}
+                    />
+                  </SectionCard>
+
+                  {/* Creator Benefits — auto-selected, editable */}
+                  <SectionCard title="🎁 Creator Benefits" sub="Auto-selected based on your category. Tick or untick as needed." colors={C}>
+                    {BENEFITS.map((benefit) => {
+                      const checked = form.benefits.includes(benefit);
+                      return (
+                        <Pressable
+                          key={benefit}
+                          style={[s.benefitRow, { borderColor: checked ? C.brinjal1 : C.border, backgroundColor: checked ? C.primaryLight : C.background }]}
+                          onPress={() => {
+                            const next = checked
+                              ? form.benefits.filter((b) => b !== benefit)
+                              : [...form.benefits, benefit];
+                            update('benefits', next);
+                          }}>
+                          <View style={[s.benefitCheck, { borderColor: checked ? C.brinjal1 : C.border, backgroundColor: checked ? C.brinjal1 : 'transparent' }]}>
+                            {checked && <Ionicons name="checkmark" size={12} color="#fff" />}
+                          </View>
+                          <Text style={[s.benefitLabel, { color: checked ? C.brinjal1 : C.text }]}>{benefit}</Text>
+                        </Pressable>
+                      );
+                    })}
+                  </SectionCard>
+
+                  {/* Platform (optional) */}
+                  <SectionCard title="📱 Platform (Optional)" sub="Where should creators post event content?" colors={C}>
+                    <ChipGroup
+                      options={['Instagram', 'TikTok', 'YouTube', 'Facebook', 'Not required']}
+                      value={form.platform || 'Not required'}
+                      onChange={(v) => update('platform', v === 'Not required' ? '' : v)}
+                      colors={C}
+                    />
+                  </SectionCard>
+
+                  {/* Event Date */}
+                  <SectionCard title="📅 Event Date" sub="Defaulted to one week from today. Registration deadline auto-updates." colors={C}>
+                    <DeadlinePicker
+                      value={form.eventDate}
+                      onChange={(d) => {
+                        const twoDaysBefore = d ? dayStart(new Date(d.getTime() - 2 * 24 * 60 * 60 * 1000)) : null;
+                        setForm((prev) => ({ ...prev, eventDate: d, deadline: twoDaysBefore }));
+                        if (reviewErrors.eventDate) setReviewErrors((e) => ({ ...e, eventDate: undefined, deadline: undefined }));
+                      }}
+                      error={reviewErrors.eventDate}
+                      colors={C}
+                      label="Event Date"
+                    />
+                  </SectionCard>
+
+                  {/* Registration Deadline — auto-set to eventDate - 2 days */}
+                  <SectionCard title="📅 Registration Deadline" sub="Auto-set to 2 days before event. You can adjust if needed." colors={C}>
+                    <DeadlinePicker
+                      value={form.deadline}
+                      onChange={(d) => {
+                        update('deadline', d);
+                        if (reviewErrors.deadline) setReviewErrors((e) => ({ ...e, deadline: undefined }));
+                      }}
+                      error={reviewErrors.deadline}
+                      colors={C}
+                      label="Registration Deadline"
+                    />
+                  </SectionCard>
+
+                  {/* Event summary */}
+                  <SectionCard title="📋 Event Summary" colors={C}>
+                    {[
+                      { label: 'Category', value: form.template || '—' },
+                      { label: 'Venue',    value: form.venue || 'TBD' },
+                      { label: 'Date',     value: form.eventDate ? fmtDate(form.eventDate) : '—' },
+                      { label: 'Capacity', value: `${form.capacity} creators` },
+                    ].map(({ label, value }, i, arr) => (
+                      <View key={label} style={[s.summaryRow, i < arr.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}>
+                        <Text style={[s.summaryLabel, { color: C.textSecondary }]}>{label}</Text>
+                        <Text style={[s.summaryValue, { color: C.text }]} numberOfLines={2}>{value}</Text>
+                      </View>
+                    ))}
+                  </SectionCard>
+
+                  {/* Featured toggle */}
+                  <Pressable
+                    style={[s.featuredToggle, { backgroundColor: form.isFeatured ? '#FFF8E8' : C.surface, borderColor: form.isFeatured ? '#F59E0B' : C.border }]}
+                    onPress={() => update('isFeatured', !form.isFeatured)}>
+                    <View style={s.featuredLeft}>
+                      <Text style={s.featuredEmoji}>⭐</Text>
+                      <View style={{ flex: 1, gap: 3 }}>
+                        <Text style={[s.featuredLabel, { color: C.text }]}>Feature this Event</Text>
+                        <Text style={[s.featuredSub, { color: C.textSecondary }]}>Appears highlighted on creator home</Text>
+                      </View>
+                    </View>
+                    <View style={[s.toggle, { backgroundColor: form.isFeatured ? '#F59E0B' : C.border }]}>
+                      <View style={[s.toggleThumb, { left: form.isFeatured ? 20 : 2 }]} />
+                    </View>
+                  </Pressable>
+
+                  {/* Actions */}
+                  <View style={s.reviewActions}>
+                    <Pressable style={[s.editBtn, { borderColor: C.brinjal1 }]} onPress={() => setPhase('setup')}>
+                      <Ionicons name="chevron-back" size={16} color={C.brinjal1} />
+                      <Text style={[s.editBtnText, { color: C.brinjal1 }]}>Edit Event</Text>
+                    </Pressable>
+                    <Pressable
+                      style={[s.publishBtn, { backgroundColor: loading ? C.border : C.brinjal1 }]}
+                      onPress={handlePublish}
+                      disabled={loading}>
+                      <Text style={s.publishBtnText}>{loading ? 'Publishing…' : '🎪 Publish Event'}</Text>
+                    </Pressable>
+                  </View>
+                </>
+              )}
             </View>
           )}
         </ScrollView>
@@ -1188,6 +1623,23 @@ const s = StyleSheet.create({
 
   toast:     { position: 'absolute', bottom: 40, left: 20, right: 20, borderRadius: 14, paddingHorizontal: 18, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 10 },
   toastText: { color: '#fff', fontSize: 14, fontWeight: '700', flex: 1, fontFamily: F.bold },
+
+  eventTypeCard:      { borderRadius: 16, padding: 18, gap: 14, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
+  eventTypeCardTitle: { fontSize: 15, fontWeight: '800', fontFamily: F.extrabold },
+  eventTypeCardSub:   { fontSize: 12, lineHeight: 18, marginTop: -6, fontFamily: F.regular },
+  eventTypeRow:       { gap: 10 },
+  eventTypeOption:    { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, paddingHorizontal: 14, borderRadius: 12, borderWidth: 1.5 },
+  etRadioOuter:       { width: 20, height: 20, borderRadius: 10, borderWidth: 2, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  etRadioInner:       { width: 10, height: 10, borderRadius: 5 },
+  etOptionLabel:      { fontSize: 14, fontFamily: F.bold },
+  etOptionSub:        { fontSize: 11, fontFamily: F.regular, marginTop: 2 },
+
+  eventHintBox:  { flexDirection: 'row', alignItems: 'flex-start', gap: 10, borderRadius: 12, padding: 14 },
+  eventHintText: { flex: 1, fontSize: 12, lineHeight: 18, fontFamily: F.regular },
+
+  benefitRow:    { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 12, borderWidth: 1.5, paddingVertical: 13, paddingHorizontal: 14, marginBottom: 8 },
+  benefitCheck:  { width: 22, height: 22, borderRadius: 6, borderWidth: 2, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  benefitLabel:  { flex: 1, fontSize: 14, fontFamily: F.medium },
 });
 
 const dlv = StyleSheet.create({

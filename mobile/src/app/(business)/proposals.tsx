@@ -238,10 +238,12 @@ export default function ProposalsScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
-      <LinearGradient colors={['#4F46E5', '#7C3AED', '#9333EA']} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientHeader}>
-        {/* Header */}
+      <LinearGradient colors={['#1e1b4b', '#4338ca', '#7c3aed']} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientHeader}>
+        <View style={[styles.decCircle1, { backgroundColor: 'rgba(255,255,255,0.08)' }]} />
+        <View style={[styles.decCircle2, { backgroundColor: 'rgba(255,255,255,0.05)' }]} />
         <View style={styles.header}>
           <Text style={[styles.pageTitle, { color: '#fff' }]}>Proposals</Text>
+          <Text style={[styles.pageSub, { color: 'rgba(255,255,255,0.75)' }]}>Review and manage creator applications</Text>
         </View>
       </LinearGradient>
 
@@ -337,20 +339,23 @@ export default function ProposalsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  gradientHeader: { paddingBottom: 4, borderBottomLeftRadius: 24, borderBottomRightRadius: 24, overflow: 'hidden' },
+  gradientHeader: { paddingBottom: 16, borderBottomLeftRadius: 28, borderBottomRightRadius: 28, overflow: 'hidden' },
+  decCircle1: { position: 'absolute', width: 200, height: 200, borderRadius: 100, top: -70, right: -40 },
+  decCircle2: { position: 'absolute', width: 120, height: 120, borderRadius: 60, bottom: -35, left: 15 },
 
-  header:    { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8 },
+  header:    { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 4, gap: 3 },
   pageTitle: { fontSize: 22, fontWeight: '800', fontFamily: F.extrabold },
+  pageSub:   { fontSize: 13, fontFamily: F.regular },
 
-  statsRow:  { flexDirection: 'row', paddingHorizontal: 16, gap: 8, marginTop: 16, marginBottom: 8 },
-  statCard:  { flex: 1, borderRadius: 12, padding: 10, alignItems: 'center', gap: 2, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, elevation: 2 },
+  statsRow:  { flexDirection: 'row', paddingHorizontal: 20, gap: 10, marginTop: 16, marginBottom: 8 },
+  statCard:  { flex: 1, borderRadius: 14, padding: 12, alignItems: 'center', gap: 2, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, elevation: 2 },
   statVal:   { fontSize: 20, fontWeight: '800', fontFamily: F.extrabold },
   statLabel: { fontSize: 10, fontWeight: '600', textTransform: 'uppercase', fontFamily: F.semibold },
 
   list:      { paddingBottom: 40 },
   listEmpty: { flexGrow: 1 },
 
-  sectionHeader:     { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 },
+  sectionHeader:     { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8 },
   sectionHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
   sectionTitle:      { fontSize: 15, fontWeight: '700', flex: 1, fontFamily: F.bold },
   platformPill:      { borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 },
@@ -363,7 +368,7 @@ const styles = StyleSheet.create({
   acceptedDotText:   { fontSize: 11, fontWeight: '700', color: '#16A34A', fontFamily: F.bold },
   sectionSep:        { height: 8 },
 
-  cardWrap: { paddingHorizontal: 16, marginBottom: 8 },
+  cardWrap: { paddingHorizontal: 20, marginBottom: 8 },
   card: {
     borderRadius: 16, padding: 14, gap: 10,
     shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8,

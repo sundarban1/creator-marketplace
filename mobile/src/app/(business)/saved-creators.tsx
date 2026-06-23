@@ -111,12 +111,14 @@ export default function SavedCreatorsScreen() {
 
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
-      <LinearGradient colors={['#4F46E5', '#7C3AED', '#9333EA']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.gradientHeader}>
+      <LinearGradient colors={['#1e1b4b', '#4338ca', '#7c3aed']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.gradientHeader}>
+        <View style={[s.decCircle1, { backgroundColor: 'rgba(255,255,255,0.08)' }]} />
+        <View style={[s.decCircle2, { backgroundColor: 'rgba(255,255,255,0.05)' }]} />
         <View style={s.header}>
           <Pressable style={s.backBtn} onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={22} color="#fff" />
           </Pressable>
-          <View>
+          <View style={{ alignItems: 'center', gap: 2 }}>
             <Text style={s.heading}>{t('savedCreators.title')}</Text>
             {items.length > 0 && (
               <Text style={s.subheading}>{items.length} creator{items.length !== 1 ? 's' : ''} saved</Text>
@@ -161,14 +163,16 @@ export default function SavedCreatorsScreen() {
 
 const s = StyleSheet.create({
   container: { flex: 1 },
-  gradientHeader: { borderBottomLeftRadius: 20, borderBottomRightRadius: 20, overflow: 'hidden' },
-  header:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 10, paddingBottom: 16 },
+  gradientHeader: { paddingBottom: 14, borderBottomLeftRadius: 28, borderBottomRightRadius: 28, overflow: 'hidden' },
+  decCircle1: { position: 'absolute', width: 180, height: 180, borderRadius: 90, top: -60, right: -30 },
+  decCircle2: { position: 'absolute', width: 110, height: 110, borderRadius: 55, bottom: -30, left: 15 },
+  header:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 10, paddingBottom: 0 },
   backBtn:   { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center' },
   heading:   { fontSize: 20, fontWeight: '800', color: '#fff', fontFamily: F.extrabold },
   subheading:{ fontSize: 12, color: 'rgba(255,255,255,0.8)', marginTop: 2, fontFamily: F.regular },
 
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  list:   { padding: 16, gap: 12, paddingBottom: 40 },
+  list:   { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 40, gap: 12 },
   listEmpty: { flexGrow: 1 },
 
   card:     { borderRadius: 16, borderWidth: 1, overflow: 'hidden' },

@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BackButton } from '@/components/BackButton';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -15,14 +15,62 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
 import { useToast } from '@/components/Toast';
 import { profileService } from '@/services/profile';
+import { CREATOR_CATEGORIES } from '@/features/creator/data/filterOptions';
 import { F } from '@/utilities/constants';
 
-const BUSINESS_CATEGORIES = [
-  'Food & Beverage', 'Fashion & Apparel', 'Beauty & Cosmetics', 'Health & Fitness',
-  'Home & Living', 'Technology', 'Education', 'Travel & Tourism', 'Wellness',
-  'Gaming & Entertainment', 'Automotive', 'Finance & Banking', 'E-commerce',
-  'Healthcare', 'Art & Design', 'Photography', 'Media & Film', 'Sustainability',
-];
+const GOOGLE_PLACES_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY ?? '';
+const ALL_CATEGORIES = CREATOR_CATEGORIES.map((c) => c.label);
+
+type PlacePrediction = { place_id: string; description: string };
+
+function PlacesInput({ value, onChange, colors }: {
+  value: string;
+  onChange: (v: string) => void;
+  colors: ReturnType<typeof useAppColors>;
+}) {
+  const C = colors;
+  const [suggestions, setSuggestions] = useState<PlacePrediction[]>([]);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function handleChange(text: string) {
+    onChange(text);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (!text.trim() || !GOOGLE_PLACES_KEY) { setSuggestions([]); return; }
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(text)}&key=${GOOGLE_PLACES_KEY}&language=en&types=geocode`;
+        const res = await fetch(url);
+        const json = await res.json();
+        setSuggestions((json.predictions ?? []).slice(0, 5));
+      } catch { setSuggestions([]); }
+    }, 350);
+  }
+
+  return (
+    <View>
+      <TextInput
+        style={[styles.input, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
+        value={value}
+        onChangeText={handleChange}
+        placeholder="Search for a location…"
+        placeholderTextColor={C.textSecondary}
+        autoCorrect={false}
+      />
+      {suggestions.length > 0 && (
+        <View style={[styles.suggestBox, { backgroundColor: C.surface, borderColor: C.border }]}>
+          {suggestions.map((s, i) => (
+            <Pressable
+              key={s.place_id}
+              style={[styles.suggestItem, i < suggestions.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}
+              onPress={() => { onChange(s.description); setSuggestions([]); }}>
+              <Text style={[styles.suggestText, { color: C.text }]} numberOfLines={2}>{s.description}</Text>
+            </Pressable>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+}
 
 function generateBusinessDescription(name: string, cats: string[]): string {
   if (cats.length === 0) return '';
@@ -44,18 +92,16 @@ export default function EditBusinessProfileScreen() {
   const [description, setDescription]           = useState('');
   const [descriptionManuallyEdited, setDescriptionManuallyEdited] = useState(false);
   const [website, setWebsite]                   = useState('');
-  const [logoUrl, setLogoUrl]                   = useState('');
+  const [location, setLocation]                 = useState('');
   const [categories, setCategories]             = useState<string[]>([]);
-
   useEffect(() => {
-    profileService
-      .getBusinessProfile()
-      .then((p) => {
-        setBusinessName(p.businessName ?? '');
-        setDescription(p.description ?? '');
-        setWebsite(p.website ?? '');
-        setLogoUrl(p.logoUrl ?? '');
-        setCategories(p.categories ?? []);
+    profileService.getBusinessProfile()
+      .then((profile) => {
+        setBusinessName(profile.businessName ?? '');
+        setDescription(profile.description ?? '');
+        setWebsite(profile.website ?? '');
+        setLocation(profile.location ?? '');
+        setCategories(profile.categories ?? []);
       })
       .catch(() => toast.error('Could not load profile.'))
       .finally(() => setLoading(false));
@@ -87,7 +133,7 @@ export default function EditBusinessProfileScreen() {
         businessName: businessName.trim(),
         description:  description.trim() || undefined,
         website:      website.trim() || undefined,
-        logoUrl:      logoUrl.trim() || undefined,
+        location:     location.trim() || null,
         categories,
       });
       toast.success('Profile saved!');
@@ -110,7 +156,6 @@ export default function EditBusinessProfileScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
       <LinearGradient colors={['#4F46E5', '#7C3AED', '#9333EA']} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientTopBar}>
-        {/* Top bar */}
         <View style={styles.topBar}>
           <BackButton fallback="/(business)/profile" />
           <Text style={[styles.topTitle, { color: '#fff' }]}>Edit Business Profile</Text>
@@ -153,7 +198,7 @@ export default function EditBusinessProfileScreen() {
               style={[styles.textarea, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
               value={description}
               onChangeText={(t) => { setDescription(t.slice(0, 600)); setDescriptionManuallyEdited(true); }}
-              placeholder="Select categories above to auto-generate a description…"
+              placeholder="Select categories below to auto-generate a description…"
               placeholderTextColor={C.textSecondary}
               multiline
               numberOfLines={4}
@@ -181,17 +226,8 @@ export default function EditBusinessProfileScreen() {
           <View style={[styles.divider, { backgroundColor: C.border }]} />
 
           <View style={styles.field}>
-            <Text style={[styles.label, { color: C.textSecondary }]}>LOGO URL</Text>
-            <TextInput
-              style={[styles.input, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
-              value={logoUrl}
-              onChangeText={setLogoUrl}
-              placeholder="https://… (image URL)"
-              placeholderTextColor={C.textSecondary}
-              keyboardType="url"
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
+            <Text style={[styles.label, { color: C.textSecondary }]}>LOCATION</Text>
+            <PlacesInput value={location} onChange={setLocation} colors={C} />
           </View>
 
         </View>
@@ -204,7 +240,7 @@ export default function EditBusinessProfileScreen() {
               Select all that apply — creators can filter campaigns by industry.
             </Text>
             <View style={styles.chipGrid}>
-              {BUSINESS_CATEGORIES.map((cat) => {
+              {ALL_CATEGORIES.map((cat) => {
                 const selected = categories.includes(cat);
                 return (
                   <Pressable
@@ -259,6 +295,9 @@ const styles = StyleSheet.create({
   input:         { borderRadius: 10, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, fontFamily: F.regular },
   textarea:      { borderRadius: 10, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, minHeight: 100, fontFamily: F.regular },
   charCount:     { fontSize: 11, textAlign: 'right', fontFamily: F.regular },
+  suggestBox:    { borderRadius: 10, borderWidth: 1.5, marginTop: 4, overflow: 'hidden' },
+  suggestItem:   { paddingHorizontal: 12, paddingVertical: 11 },
+  suggestText:   { fontSize: 13, fontFamily: F.regular },
   chipGrid:      { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
   chip:          { borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8 },
   chipText:      { fontSize: 13, fontWeight: '600', fontFamily: F.semibold },
