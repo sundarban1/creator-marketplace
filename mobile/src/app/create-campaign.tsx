@@ -59,7 +59,7 @@ const CREATOR_TYPES = [
   'Any Creator',
 ];
 
-const PLATFORMS = ['Instagram', 'TikTok', 'YouTube', 'Twitter / X', 'LinkedIn', 'Facebook'] as const;
+const PLATFORM_FALLBACK = ['Instagram', 'TikTok', 'YouTube', 'Facebook'];
 
 const BUDGET_MAP: Record<string, { min: number; max: number; payment: string }> = {
   'Under Rs. 5,000':        { min: 0,     max: 5000,   payment: 'Fixed Fee' },
@@ -735,6 +735,7 @@ export default function CreateCampaignScreen() {
   const [reviewErrors, setReviewErrors] = useState<ReviewErrors>({});
   const scrollRef = useRef<ScrollView>(null);
   const [categoryOptions, setCategoryOptions] = useState(CATEGORY_FALLBACK);
+  const [platformOptions, setPlatformOptions] = useState<string[]>(PLATFORM_FALLBACK);
 
   useEffect(() => {
     campaignService.getCategories().then((cats) => {
@@ -746,6 +747,10 @@ export default function CreateCampaignScreen() {
           }))
         );
       }
+    }).catch(() => { /* keep fallback */ });
+
+    campaignService.getPlatforms().then((plats) => {
+      if (plats.length > 0) setPlatformOptions(plats);
     }).catch(() => { /* keep fallback */ });
 
     profileService.getBusinessProfile().then((profile) => {
@@ -1003,7 +1008,7 @@ export default function CreateCampaignScreen() {
               {/* Platform */}
               <SectionCard title="📱 Platform" sub="Where should creators post their content?" colors={C}>
                 <ChipGroup
-                  options={PLATFORMS}
+                  options={platformOptions}
                   value={form.platform}
                   onChange={(v) => {
                     update('platform', v);

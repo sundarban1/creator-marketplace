@@ -21,6 +21,24 @@ import type { Campaign } from '@/types';
 
 const SLIDER_MAX = 1000;
 
+const PLATFORM_ICONS: Record<string, { icon: string; color: string; onColor?: string }> = {
+  instagram:     { icon: 'logo-instagram', color: '#E1306C' },
+  tiktok:        { icon: 'musical-notes',  color: '#010101' },
+  youtube:       { icon: 'logo-youtube',   color: '#FF0000' },
+  facebook:      { icon: 'logo-facebook',  color: '#1877F2' },
+  twitter:       { icon: 'logo-twitter',   color: '#1DA1F2' },
+  'twitter / x': { icon: 'logo-twitter',   color: '#1DA1F2' },
+  x:             { icon: 'logo-twitter',   color: '#1DA1F2' },
+  linkedin:      { icon: 'logo-linkedin',  color: '#0A66C2' },
+  pinterest:     { icon: 'logo-pinterest', color: '#E60023' },
+  snapchat:      { icon: 'logo-snapchat',  color: '#F5C300', onColor: '#1a1a1a' },
+  whatsapp:      { icon: 'logo-whatsapp',  color: '#25D366' },
+};
+
+function getPlatformMeta(name: string) {
+  return PLATFORM_ICONS[name.toLowerCase()] ?? { icon: 'globe-outline', color: '#6B7280', onColor: undefined };
+}
+
 export default function HomeScreen() {
   const { user } = useAuth();
   const { openDrawer } = useContext(DrawerContext);
@@ -29,6 +47,8 @@ export default function HomeScreen() {
 
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [apiCategories, setApiCategories] = useState<string[]>([]);
+  const [apiPlatforms, setApiPlatforms] = useState<string[]>([]);
+  const [activePlatform, setActivePlatform] = useState('All');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [fetchError, setFetchError] = useState('');
@@ -43,6 +63,7 @@ export default function HomeScreen() {
   const [dateFrom, setDateFrom] = useState<Date | null>(null);
   const [dateTo, setDateTo] = useState<Date | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [searchFocused, setSearchFocused] = useState(false);
   const [tempPriceMin, setTempPriceMin] = useState(0);
   const [tempPriceMax, setTempPriceMax] = useState(SLIDER_MAX);
   const [tempLocation, setTempLocation] = useState<LocationFilter>([]);
@@ -52,6 +73,7 @@ export default function HomeScreen() {
   async function fetchCampaigns(
     overrides: {
       category?: string;
+      platform?: string;
       priceMin?: number;
       priceMax?: number;
       dateFrom?: Date | null;
@@ -64,6 +86,7 @@ export default function HomeScreen() {
     setFetchError('');
 
     const cat   = overrides.category  !== undefined ? overrides.category  : activeCategory;
+    const plat  = overrides.platform  !== undefined ? overrides.platform  : activePlatform;
     const pMin  = overrides.priceMin  !== undefined ? overrides.priceMin  : priceMin;
     const pMax  = overrides.priceMax  !== undefined ? overrides.priceMax  : priceMax;
     const df    = overrides.dateFrom  !== undefined ? overrides.dateFrom  : dateFrom;
@@ -71,7 +94,8 @@ export default function HomeScreen() {
 
     try {
       const { campaigns: data } = await campaignService.list({
-        category:  cat !== 'All' ? cat : undefined,
+        category:  cat  !== 'All' ? cat  : undefined,
+        platform:  plat !== 'All' ? plat : undefined,
         minBudget: pMin > 0 ? pMin : undefined,
         maxBudget: pMax < SLIDER_MAX ? pMax : undefined,
         dateFrom:  df ?? undefined,
@@ -91,6 +115,9 @@ export default function HomeScreen() {
     void fetchCampaigns();
     campaignService.getCategories()
       .then((cats) => { if (cats.length > 0) setApiCategories(cats); })
+      .catch(() => {});
+    campaignService.getPlatforms()
+      .then((plats) => { if (plats.length > 0) setApiPlatforms(plats); })
       .catch(() => {});
   }, []);
 
@@ -165,8 +192,9 @@ export default function HomeScreen() {
     setDateFrom(null);
     setDateTo(null);
     setActiveCategory('All');
+    setActivePlatform('All');
     setActiveFilterTab(-1);
-    void fetchCampaigns({ category: 'All', priceMin: 0, priceMax: SLIDER_MAX, dateFrom: null, dateTo: null });
+    void fetchCampaigns({ category: 'All', platform: 'All', priceMin: 0, priceMax: SLIDER_MAX, dateFrom: null, dateTo: null });
   }
 
   const visibleCategories = [
@@ -221,30 +249,41 @@ export default function HomeScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brinjal1} />}>
 
         {/* ── Gradient header ── */}
-        <LinearGradient colors={['#0EA5E9', '#38BDF8', '#7DD3FC']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.gradientHeader}>
+        <LinearGradient colors={['#1e1b4b', '#4338ca', '#7c3aed']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.gradientHeader}>
+          {/* Decorative background circles */}
+          <View style={styles.decCircleLarge} />
+          <View style={styles.decCircleMid} />
+          <View style={styles.decCircleSmall} />
+
           <View style={styles.header}>
             <View style={styles.headerLeft}>
               <Pressable style={styles.menuBtn} onPress={openDrawer}>
-                <Ionicons name="menu" size={26} color="#fff" />
+                <View style={styles.menuBtnInner}>
+                  <Ionicons name="menu" size={22} color="#fff" />
+                </View>
               </Pressable>
               <View>
-                <Text style={[styles.greeting, { color: 'rgba(255,255,255,0.8)', fontFamily: F.medium }]}>{language === 'ne' ? 'नमस्ते 🙏' : 'Hello 👋'}</Text>
+                <Text style={[styles.greeting, { color: 'rgba(255,255,255,0.7)' }]}>{language === 'ne' ? 'नमस्ते 🙏' : 'Hello 👋'}</Text>
                 <View style={styles.nameRow}>
                   <Text style={[styles.brandName, { color: '#fff' }]} numberOfLines={1}>{user?.name ?? 'Creator'}</Text>
-                  <View style={[styles.rolePill, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
-                    <Text style={[styles.rolePillText, { color: '#fff' }]}>Creator</Text>
-                  </View>
+                </View>
+                <View style={[styles.rolePill, { backgroundColor: 'rgba(255,255,255,0.15)', alignSelf: 'flex-start', marginTop: 4 }]}>
+                  <View style={styles.roleDot} />
+                  <Text style={[styles.rolePillText, { color: 'rgba(255,255,255,0.9)' }]}>Creator</Text>
                 </View>
               </View>
             </View>
 
             <View style={styles.headerRight}>
-              <Pressable style={[styles.avatarCircle, { borderColor: 'rgba(255,255,255,0.6)', borderWidth: 2.5 }]} onPress={() => router.push('/(creator)/profile')}>
+              <Pressable style={styles.notifBtn} onPress={() => router.push('/(creator)/notifications' as never)}>
+                <Ionicons name="notifications-outline" size={20} color="rgba(255,255,255,0.9)" />
+              </Pressable>
+              <Pressable style={[styles.avatarCircle, { borderColor: 'rgba(255,255,255,0.5)', borderWidth: 2.5 }]} onPress={() => router.push('/(creator)/profile')}>
                 {user?.avatar ? (
                   <Image source={{ uri: user.avatar }} style={styles.avatarImage} />
                 ) : (
-                  <View style={[styles.avatarFallback, { backgroundColor: 'rgba(255,255,255,0.25)' }]}>
-                    <Ionicons name="person" size={24} color="#fff" />
+                  <View style={[styles.avatarFallback, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
+                    <Ionicons name="person" size={22} color="#fff" />
                   </View>
                 )}
               </Pressable>
@@ -252,37 +291,39 @@ export default function HomeScreen() {
           </View>
 
           {/* ── Search ── */}
-          <View style={[styles.searchCard, { backgroundColor: 'rgba(255,255,255,0.18)' }]}>
-            <Ionicons name="search" size={17} color="rgba(255,255,255,0.8)" style={styles.searchIcon} />
+          <View style={[
+            styles.searchCard,
+            searchFocused
+              ? styles.searchCardFocused
+              : { backgroundColor: 'rgba(255,255,255,0.14)', borderColor: 'rgba(255,255,255,0.22)' },
+          ]}>
+            <Ionicons
+              name="search"
+              size={17}
+              color={searchFocused ? '#4338CA' : 'rgba(255,255,255,0.7)'}
+              style={styles.searchIcon}
+            />
             <TextInput
-              style={[styles.searchInput, { color: '#fff' }]}
+              style={[styles.searchInput, { color: searchFocused ? '#1e1b4b' : '#fff' }]}
               placeholder={t('creator.browse.searchPlaceholder')}
-              placeholderTextColor="rgba(255,255,255,0.6)"
+              placeholderTextColor={searchFocused ? '#94A3B8' : 'rgba(255,255,255,0.5)'}
               value={search}
               onChangeText={setSearch}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setSearchFocused(false)}
             />
             <Pressable
-              style={[styles.filterBtn, { backgroundColor: isFilterActive ? '#fff' : 'rgba(255,255,255,0.2)' }]}
+              style={[styles.filterBtn, {
+                backgroundColor: isFilterActive
+                  ? '#4338CA'
+                  : searchFocused ? '#EEF2FF' : 'rgba(255,255,255,0.18)',
+              }]}
               onPress={openFilter}>
-              <Ionicons name="options" size={18} color={isFilterActive ? '#0EA5E9' : '#fff'} />
+              <Ionicons name="options" size={18} color={isFilterActive ? '#fff' : searchFocused ? '#4338CA' : '#fff'} />
               {isFilterActive && <View style={[styles.filterActiveDot, { borderColor: 'transparent' }]} />}
             </Pressable>
           </View>
         </LinearGradient>
-
-        {/* ── Explore Brands compact strip ── */}
-        <Pressable
-          style={[styles.exploreStrip, { backgroundColor: '#F0FDF4', borderWidth: 1, borderColor: '#BBF7D0' }]}
-          onPress={() => router.push('/(creator)/explore-businesses' as never)}>
-          <View style={[styles.exploreIconBox, { backgroundColor: '#059669' }]}>
-            <Ionicons name="business" size={18} color="#fff" />
-          </View>
-          <View style={styles.exploreTexts}>
-            <Text style={[styles.exploreTitle, { color: '#065F46' }]}>Explore Brands</Text>
-            <Text style={[styles.exploreSub, { color: '#059669' }]}>Find businesses hiring creators · <Text style={{ color: '#047857', fontWeight: '700' }}>Earn money</Text></Text>
-          </View>
-          <Ionicons name="chevron-forward" size={22} color="#059669" />
-        </Pressable>
 
         {/* ── Error ── */}
         {fetchError ? (
@@ -331,6 +372,58 @@ export default function HomeScreen() {
             );
           })}
         </ScrollView>
+
+        {/* ── Explore Brands compact strip ── */}
+        <Pressable
+          style={[styles.exploreStrip, { backgroundColor: '#F0FDF4', borderWidth: 1, borderColor: '#BBF7D0' }]}
+          onPress={() => router.push('/(creator)/explore-businesses' as never)}>
+          <View style={[styles.exploreIconBox, { backgroundColor: '#059669' }]}>
+            <Ionicons name="business" size={18} color="#fff" />
+          </View>
+          <View style={styles.exploreTexts}>
+            <Text style={[styles.exploreTitle, { color: '#065F46' }]}>Explore Brands</Text>
+            <Text style={[styles.exploreSub, { color: '#059669' }]}>Find businesses hiring creators · <Text style={{ color: '#047857', fontWeight: '700' }}>Earn money</Text></Text>
+          </View>
+          <Ionicons name="chevron-forward" size={22} color="#059669" />
+        </Pressable>
+
+        {/* ── Platform Filter ── */}
+        {apiPlatforms.length > 0 && (
+          <>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: C.text }]}>Platforms</Text>
+            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.platformsRow}>
+              {/* All */}
+              <Pressable
+                style={[styles.platCard, { backgroundColor: 'transparent' }]}
+                onPress={() => { setActivePlatform('All'); void fetchCampaigns({ platform: 'All' }); }}>
+                <LinearGradient
+                  colors={['#E1306C', '#1877F2', '#FF0000']}
+                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                  style={[StyleSheet.absoluteFill, { opacity: activePlatform === 'All' ? 1 : 0.18, borderRadius: 18 }]}
+                />
+                <Ionicons name="apps" size={30} color={activePlatform === 'All' ? '#fff' : C.textSecondary} />
+                <Text style={[styles.platLabel, { color: activePlatform === 'All' ? '#fff' : C.text }]}>All</Text>
+              </Pressable>
+
+              {apiPlatforms.map((p) => {
+                const meta = getPlatformMeta(p);
+                const isActive = activePlatform === p;
+                const fg = meta.onColor ?? '#fff';
+                return (
+                  <Pressable
+                    key={p}
+                    style={[styles.platCard, { backgroundColor: isActive ? meta.color : meta.color + '28' }]}
+                    onPress={() => { setActivePlatform(p); void fetchCampaigns({ platform: p }); }}>
+                    <Ionicons name={meta.icon as any} size={30} color={isActive ? fg : meta.color} />
+                    <Text style={[styles.platLabel, { color: isActive ? fg : C.text }]} numberOfLines={2}>{p}</Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </>
+        )}
 
         {/* ── Featured / Loading ── */}
         {loading ? (
@@ -437,35 +530,53 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   scrollContent: { paddingBottom: 40 },
 
-  gradientHeader: { paddingBottom: 24, borderBottomLeftRadius: 28, borderBottomRightRadius: 28, overflow: 'hidden' },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 16 },
-  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
-  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  menuBtn: { padding: 4 },
-  greeting: { fontSize: 13, marginBottom: 2, fontFamily: F.regular },
-  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  brandName: { fontSize: 19, fontFamily: F.extrabold, maxWidth: 160 },
-  rolePill: { flexDirection: 'row', alignItems: 'center', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 3 },
-  rolePillText: { fontSize: 11, fontFamily: F.bold },
-  avatarCircle: { width: 42, height: 42, borderRadius: 21, overflow: 'hidden', shadowOpacity: 0.35, shadowRadius: 6, shadowOffset: { width: 0, height: 3 }, elevation: 5 },
-  avatarImage: { width: 42, height: 42 },
-  avatarFallback: { width: 42, height: 42, justifyContent: 'center', alignItems: 'center' },
+  gradientHeader: { paddingBottom: 26, borderBottomLeftRadius: 32, borderBottomRightRadius: 32, overflow: 'hidden' },
+  decCircleLarge: { position: 'absolute', width: 260, height: 260, borderRadius: 130, backgroundColor: 'rgba(255,255,255,0.05)', top: -80, right: -60 },
+  decCircleMid:   { position: 'absolute', width: 140, height: 140, borderRadius: 70,  backgroundColor: 'rgba(167,139,250,0.15)', bottom: 10,  left: -30 },
+  decCircleSmall: { position: 'absolute', width: 70,  height: 70,  borderRadius: 35,  backgroundColor: 'rgba(255,255,255,0.07)', top: 30,    left: '45%' },
 
-  searchCard: { flexDirection: 'row', alignItems: 'center', borderRadius: 14, marginHorizontal: 20, marginBottom: 0, paddingHorizontal: 14, height: 50, borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)' },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingHorizontal: 20, paddingTop: 14, paddingBottom: 18 },
+  headerLeft: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, flex: 1 },
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingTop: 2 },
+  menuBtn: { padding: 0 },
+  menuBtnInner: { width: 38, height: 38, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' },
+  notifBtn: { width: 38, height: 38, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' },
+  greeting: { fontSize: 12, marginBottom: 3, fontFamily: F.medium },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  brandName: { fontSize: 22, fontFamily: F.extrabold, maxWidth: 180, letterSpacing: -0.3 },
+  rolePill: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
+  roleDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#a78bfa' },
+  rolePillText: { fontSize: 11, fontFamily: F.semibold },
+  avatarCircle: { width: 44, height: 44, borderRadius: 22, overflow: 'hidden', shadowOpacity: 0.4, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
+  avatarImage: { width: 44, height: 44 },
+  avatarFallback: { width: 44, height: 44, justifyContent: 'center', alignItems: 'center' },
+
+  searchCard: { flexDirection: 'row', alignItems: 'center', borderRadius: 16, marginHorizontal: 20, marginBottom: 0, paddingHorizontal: 14, height: 52, borderWidth: 1 },
+  searchCardFocused: {
+    backgroundColor: '#fff',
+    borderColor: '#4338CA',
+    borderWidth: 1.5,
+    shadowColor: '#1e1b4b',
+    shadowOpacity: 0.28,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 14,
+    transform: [{ scaleX: 1.015 }, { scaleY: 1.015 }],
+  },
   searchIcon: { marginRight: 8 },
   searchInput: { flex: 1, fontSize: 14, fontFamily: F.regular },
-  filterBtn: { width: 34, height: 34, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
+  filterBtn: { width: 36, height: 36, borderRadius: 11, justifyContent: 'center', alignItems: 'center' },
   filterActiveDot: { position: 'absolute', top: 4, right: 4, width: 7, height: 7, borderRadius: 4, backgroundColor: '#EF4444', borderWidth: 1.5 },
 
   errorCard: { marginHorizontal: 20, marginBottom: 16, borderRadius: 10, padding: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   errorText: { color: '#DC2626', fontSize: 13, flex: 1, fontFamily: F.medium },
   retryText: { fontSize: 13, fontWeight: '700', marginLeft: 12, fontFamily: F.bold },
 
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginBottom: 14 },
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginTop: 20, marginBottom: 12 },
   sectionTitle: { fontSize: 17, fontFamily: F.bold },
   seeAll: { fontSize: 13, fontFamily: F.semibold },
 
-  categoriesRow: { paddingHorizontal: 20, gap: 10, marginBottom: 24 },
+  categoriesRow: { paddingHorizontal: 20, gap: 10, marginBottom: 0 },
   catCard: {
     width: 78, height: 96, borderRadius: 18, overflow: 'hidden',
     alignItems: 'center', justifyContent: 'center', gap: 7,
@@ -476,14 +587,24 @@ const styles = StyleSheet.create({
   catEmoji:  { fontSize: 34 },
   catLabel:  { fontSize: 10, fontWeight: '700', fontFamily: F.bold, lineHeight: 13, textAlign: 'center' },
 
+  platformsRow: { paddingHorizontal: 20, gap: 10, marginBottom: 0 },
+  platCard: {
+    width: 78, height: 96, borderRadius: 18, overflow: 'hidden',
+    alignItems: 'center', justifyContent: 'center', gap: 7,
+    paddingHorizontal: 6,
+    shadowColor: '#000', shadowOpacity: 0.07, shadowRadius: 10,
+    shadowOffset: { width: 0, height: 3 }, elevation: 3,
+  },
+  platLabel: { fontSize: 10, fontFamily: F.bold, lineHeight: 13, textAlign: 'center' },
+
   loadingWrap: { paddingVertical: 60, alignItems: 'center', gap: 14 },
   loadingText: { fontSize: 14, fontFamily: F.regular },
 
-  featuredRow: { paddingHorizontal: 20, gap: 16, marginBottom: 28 },
-  featuredEmpty: { marginHorizontal: 20, marginBottom: 28, borderRadius: 18, borderWidth: 1.5, borderStyle: 'dashed', padding: 24, alignItems: 'center', gap: 8 },
+  featuredRow: { paddingHorizontal: 20, gap: 16, marginBottom: 0 },
+  featuredEmpty: { marginHorizontal: 20, marginBottom: 0, borderRadius: 18, borderWidth: 1.5, borderStyle: 'dashed', padding: 24, alignItems: 'center', gap: 8 },
   featuredEmptyTitle: { fontSize: 14, fontFamily: F.bold, textAlign: 'center' },
   featuredEmptySub: { fontSize: 12, fontFamily: F.regular, textAlign: 'center', lineHeight: 18 },
-  filterTabsWrap: { borderBottomWidth: 1, marginBottom: 16 },
+  filterTabsWrap: { borderBottomWidth: 1, marginTop: 20, marginBottom: 16 },
   filterTabsRow: { flexDirection: 'row', paddingHorizontal: 20 },
   filterTab: { paddingVertical: 12, marginRight: 24, position: 'relative' },
   filterTabText: { fontSize: 14, fontFamily: F.medium },
@@ -495,7 +616,7 @@ const styles = StyleSheet.create({
   emptyTitle: { fontSize: 17, fontFamily: F.bold },
   emptyHint: { fontSize: 13, fontFamily: F.regular, textAlign: 'center', lineHeight: 20, paddingHorizontal: 24 },
 
-  exploreStrip:   { flexDirection: 'row', alignItems: 'center', borderRadius: 16, marginHorizontal: 20, marginTop: 16, marginBottom: 20, paddingHorizontal: 14, paddingVertical: 13, gap: 12 },
+  exploreStrip:   { flexDirection: 'row', alignItems: 'center', borderRadius: 16, marginHorizontal: 20, marginTop: 20, marginBottom: 0, paddingHorizontal: 14, paddingVertical: 13, gap: 12 },
   exploreIconBox: { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   exploreTexts:   { flex: 1 },
   exploreTitle:   { fontSize: 14, fontFamily: F.bold },

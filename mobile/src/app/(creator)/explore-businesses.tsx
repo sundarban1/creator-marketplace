@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BackButton } from '@/components/BackButton';
+import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -277,7 +278,7 @@ function BusinessCard({
 export default function ExploreBusinessesScreen() {
   const C      = useAppColors();
   const toast  = useToast();
-  const { favoriteIds, toggle } = useFavoriteBusinesses();
+  const { favoriteIds, toggle, reloadIds } = useFavoriteBusinesses();
 
   const [businesses, setBusinesses] = useState<BusinessListItem[]>([]);
   const [loading, setLoading]       = useState(true);
@@ -324,6 +325,10 @@ export default function ExploreBusinessesScreen() {
 
   useEffect(() => { void fetchBusinesses(); }, []);
 
+  // Re-sync favorite IDs whenever this screen comes back into focus
+  // (handles the case where user removed favorites on the Favorites screen)
+  useFocusEffect(useCallback(() => { reloadIds(); }, []));
+
   function onSearchChange(text: string) {
     setSearch(text);
     if (searchTimer.current) clearTimeout(searchTimer.current);
@@ -362,10 +367,12 @@ export default function ExploreBusinessesScreen() {
   }, [search, category, platform]);
 
   async function handleToggleFavorite(businessId: string) {
+    const wasFavorited = favoriteIds.has(businessId);
     try {
-      await toggle(businessId);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not update. Please try again.');
+      const isFavorited = await toggle(businessId);
+      if (isFavorited) toast.success('Added to favorites');
+    } catch {
+      toast.error(wasFavorited ? 'Could not remove favorite.' : 'Could not add favorite.');
     }
   }
 

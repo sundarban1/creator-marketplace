@@ -2,7 +2,6 @@ import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
-import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { CATEGORY_META, DEFAULT_META, cardBg, displayCategory } from '@/features/creator/data/filterOptions';
 import { getTemplateImage } from '@/features/creator/data/templateImages';
@@ -30,8 +29,8 @@ function formatDeadline(deadline: string): string {
 }
 
 export function FeaturedCard({ campaign }: { campaign: Campaign }) {
-  const { t } = useLanguage();
   const C = useAppColors();
+  const catMeta   = CATEGORY_META[campaign.category] ?? DEFAULT_META;
   const cardImage = getTemplateImage(campaign.template, campaign.category);
   const platMeta  = PLATFORM_META[campaign.platform];
 
@@ -40,17 +39,19 @@ export function FeaturedCard({ campaign }: { campaign: Campaign }) {
   }
 
   return (
-    <View style={styles.featCardWrap}>
+    <Pressable
+      style={({ pressed }) => [styles.featCardWrap, pressed && { opacity: 0.88 }]}
+      onPress={goToDetail}>
       <View style={[styles.featCard, { backgroundColor: C.surface }]}>
 
         {/* ── Image ── */}
-        <View style={[styles.featImg, { backgroundColor: cardBg(campaign.category) }]}>
-          {cardImage ? (
-            <Image source={{ uri: cardImage }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
-          ) : (
-            <Text style={styles.featImgIcon}>
-              {(CATEGORY_META[campaign.category] ?? DEFAULT_META).emoji}
-            </Text>
+        <View style={[styles.featImg, { backgroundColor: catMeta.bg ?? cardBg(campaign.category) }]}>
+          {/* Category emoji always shown as background */}
+          <Text style={styles.featImgIcon}>{catMeta.emoji}</Text>
+
+          {/* Overlay template image when available */}
+          {cardImage && (
+            <Image source={{ uri: cardImage }} style={StyleSheet.absoluteFill} resizeMode="cover" />
           )}
           {cardImage && <View style={styles.imgOverlay} />}
 
@@ -99,9 +100,10 @@ export function FeaturedCard({ campaign }: { campaign: Campaign }) {
             </View>
           </View>
 
-          <Pressable style={[styles.applyBtn, { backgroundColor: C.brinjal1 }]} onPress={goToDetail}>
-            <Text style={styles.applyBtnText}>{t('creator.browse.applyNow')}</Text>
-          </Pressable>
+          {/* View & Apply — static, whole card is the tap target */}
+          <View style={[styles.applyBtn, { backgroundColor: C.brinjal1 }]}>
+            <Text style={styles.applyBtnText}>View & Apply →</Text>
+          </View>
         </View>
       </View>
 
@@ -111,7 +113,7 @@ export function FeaturedCard({ campaign }: { campaign: Campaign }) {
           <FontAwesome5 name={platMeta.icon} size={13} color="#fff" brand />
         </View>
       )}
-    </View>
+    </Pressable>
   );
 }
 
@@ -123,8 +125,8 @@ const styles = StyleSheet.create({
   },
   featCard:    { width: CARD_W, borderRadius: 20, overflow: 'hidden' },
   featImg:     { width: CARD_W, height: CARD_IMG_H, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
-  featImgIcon: { fontSize: 46, opacity: 0.7 },
-  imgOverlay:  { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.18)' },
+  featImgIcon: { fontSize: 52, opacity: 0.75 },
+  imgOverlay:  { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.18)' },
 
   badge:     { position: 'absolute', top: 10, left: 10, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
   badgeText: { fontSize: 9, fontWeight: '800', color: '#fff', letterSpacing: 0.6, fontFamily: F.extrabold },

@@ -29,6 +29,7 @@ const av = StyleSheet.create({ wrap: { justifyContent: 'center', alignItems: 'ce
 
 function BusinessCard({ item, onRemove }: { item: BusinessListItem; onRemove: () => void }) {
   const C = useAppColors();
+  const { t } = useLanguage();
   const name = item.businessName ?? 'Business';
 
   return (
