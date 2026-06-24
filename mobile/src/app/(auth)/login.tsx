@@ -207,26 +207,29 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
         <View style={[s.dividerLine, { backgroundColor: '#EDE9FE' }]} />
       </View>
 
+      <Pressable style={[s.socialBtn, s.socialBtnFull, googleLoading && { opacity: 0.6 }]} onPress={onGooglePress} disabled={googleLoading}>
+        {googleLoading
+          ? <View style={s.spinner} />
+          : <View style={s.googleBadge}><Text style={s.googleG}>G</Text></View>}
+        <Text style={s.socialBtnText}>{googleLoading ? 'Signing in…' : 'Continue with Google'}</Text>
+      </Pressable>
+      {/* Facebook login — commented out until FB app is configured
       <View style={s.socialRow}>
         <Pressable style={[s.socialBtn, googleLoading && { opacity: 0.6 }]} onPress={onGooglePress} disabled={googleLoading}>
-          {googleLoading
-            ? <View style={s.spinner} />
-            : <View style={s.googleBadge}><Text style={s.googleG}>G</Text></View>}
+          {googleLoading ? <View style={s.spinner} /> : <View style={s.googleBadge}><Text style={s.googleG}>G</Text></View>}
           <Text style={s.socialBtnText}>{googleLoading ? 'Signing in…' : 'Google'}</Text>
         </Pressable>
-
         <Pressable style={[s.socialBtnFb, facebookLoading && { opacity: 0.6 }]} onPress={onFacebookPress} disabled={facebookLoading}>
-          {facebookLoading
-            ? <View style={s.spinner} />
-            : <View style={s.fbBadge}><Text style={s.fbF}>f</Text></View>}
+          {facebookLoading ? <View style={s.spinner} /> : <View style={s.fbBadge}><Text style={s.fbF}>f</Text></View>}
           <Text style={s.socialBtnFbText}>{facebookLoading ? 'Signing in…' : 'Facebook'}</Text>
         </Pressable>
       </View>
+      */}
 
-      {!!(googleError || facebookError) && (
+      {!!googleError && (
         <View style={[s.banner, { backgroundColor: '#FFF1F2', borderColor: '#FECDD3' }]}>
           <Ionicons name="alert-circle" size={15} color="#EF4444" />
-          <Text style={[s.bannerText, { color: '#EF4444' }]}>{googleError || facebookError}</Text>
+          <Text style={[s.bannerText, { color: '#EF4444' }]}>{googleError}</Text>
         </View>
       )}
     </View>
@@ -353,26 +356,29 @@ function SignupForm({ onGooglePress, googleLoading, googleError, onFacebookPress
         <View style={[s.dividerLine, { backgroundColor: '#EDE9FE' }]} />
       </View>
 
+      <Pressable style={[s.socialBtn, s.socialBtnFull, googleLoading && { opacity: 0.6 }]} onPress={onGooglePress} disabled={googleLoading}>
+        {googleLoading
+          ? <View style={s.spinner} />
+          : <View style={s.googleBadge}><Text style={s.googleG}>G</Text></View>}
+        <Text style={s.socialBtnText}>{googleLoading ? 'Signing in…' : 'Continue with Google'}</Text>
+      </Pressable>
+      {/* Facebook login — commented out until FB app is configured
       <View style={s.socialRow}>
         <Pressable style={[s.socialBtn, googleLoading && { opacity: 0.6 }]} onPress={onGooglePress} disabled={googleLoading}>
-          {googleLoading
-            ? <View style={s.spinner} />
-            : <View style={s.googleBadge}><Text style={s.googleG}>G</Text></View>}
+          {googleLoading ? <View style={s.spinner} /> : <View style={s.googleBadge}><Text style={s.googleG}>G</Text></View>}
           <Text style={s.socialBtnText}>{googleLoading ? 'Signing in…' : 'Google'}</Text>
         </Pressable>
-
         <Pressable style={[s.socialBtnFb, facebookLoading && { opacity: 0.6 }]} onPress={onFacebookPress} disabled={facebookLoading}>
-          {facebookLoading
-            ? <View style={s.spinner} />
-            : <View style={s.fbBadge}><Text style={s.fbF}>f</Text></View>}
+          {facebookLoading ? <View style={s.spinner} /> : <View style={s.fbBadge}><Text style={s.fbF}>f</Text></View>}
           <Text style={s.socialBtnFbText}>{facebookLoading ? 'Signing in…' : 'Facebook'}</Text>
         </Pressable>
       </View>
+      */}
 
-      {!!(googleError || facebookError) && (
+      {!!googleError && (
         <View style={[s.banner, { backgroundColor: '#FFF1F2', borderColor: '#FECDD3' }]}>
           <Ionicons name="alert-circle" size={15} color="#EF4444" />
-          <Text style={[s.bannerText, { color: '#EF4444' }]}>{googleError || facebookError}</Text>
+          <Text style={[s.bannerText, { color: '#EF4444' }]}>{googleError}</Text>
         </View>
       )}
 
@@ -722,6 +728,7 @@ const s = StyleSheet.create({
   // Social row (Google + Facebook side by side)
   socialRow:      { flexDirection: 'row', gap: 12, marginBottom: 12 },
   socialBtn:      { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 50, borderRadius: 14, borderWidth: 1.5, borderColor: '#DDD6FE', backgroundColor: '#FAFAFE' },
+  socialBtnFull:  { flex: 0, marginBottom: 12 },
   socialBtnText:  { fontSize: 14, fontFamily: F.semibold, color: '#374151' },
   socialBtnFb:    { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 50, borderRadius: 14, borderWidth: 1.5, borderColor: '#BFDBFE', backgroundColor: '#EFF6FF' },
   socialBtnFbText:{ fontSize: 14, fontFamily: F.semibold, color: '#1D4ED8' },
