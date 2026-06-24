@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { Role } from '@prisma/client';
 import { AppError } from '../../middleware/error';
 import { hashPassword, comparePassword } from '../../utils/hash';
@@ -22,6 +23,7 @@ import type {
   VerifyResetOtpInput,
   RequestPhoneOtpInput,
   VerifyPhoneOtpInput,
+  GoogleAuthInput,
 } from './auth.schema';
 
 function generateOtp(): string {
@@ -260,6 +262,55 @@ export class AuthService {
     await this.repo.updateUserPhone(userId, input.phone.trim());
 
     return { message: 'Phone number verified successfully' };
+  }
+
+  async googleAuth(input: GoogleAuthInput) {
+    const googleRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+      headers: { Authorization: `Bearer ${input.accessToken}` },
+    });
+    if (!googleRes.ok) throw new AppError('Invalid or expired Google token. Please try again.', 401);
+
+    const gUser = await googleRes.json() as { id: string; email: string; name?: string; picture?: string };
+    if (!gUser.email) throw new AppError('Could not retrieve email from Google.', 400);
+
+    const existing = await this.repo.findUserByEmail(gUser.email);
+
+    if (existing) {
+      if (!existing.isActive) await this.repo.reactivateAccount(existing.id);
+      const user = await this.repo.findUserById(existing.id);
+      const payload = { id: user!.id, email: user!.email, role: user!.role };
+      const accessToken  = signAccessToken(payload);
+      const refreshToken = signRefreshToken(payload);
+      await this.repo.updateRefreshToken(user!.id, refreshToken);
+      return { needsRole: false as const, user: buildUserResponse(user!), accessToken, refreshToken, isNewUser: false };
+    }
+
+    if (!input.role) {
+      return { needsRole: true as const, email: gUser.email, name: gUser.name ?? gUser.email.split('@')[0] };
+    }
+
+    const hashedPassword = await hashPassword(crypto.randomBytes(32).toString('hex'));
+
+    let createdUser;
+    if (input.role === 'CREATOR') {
+      createdUser = await this.repo.createUserWithCreatorProfile({
+        email: gUser.email, password: hashedPassword, role: Role.CREATOR, fullName: gUser.name,
+      });
+    } else {
+      createdUser = await this.repo.createUserWithBusinessProfile({
+        email: gUser.email, password: hashedPassword, role: Role.BUSINESS, businessName: gUser.name,
+      });
+    }
+
+    // Google has already verified the email — mark it verified without OTP
+    const verifiedUser = await this.repo.verifyEmail(createdUser.id);
+
+    const payload = { id: verifiedUser.id, email: verifiedUser.email, role: verifiedUser.role };
+    const accessToken  = signAccessToken(payload);
+    const refreshToken = signRefreshToken(payload);
+    await this.repo.updateRefreshToken(verifiedUser.id, refreshToken);
+
+    return { needsRole: false as const, user: buildUserResponse(verifiedUser), accessToken, refreshToken, isNewUser: true };
   }
 
   async resetPassword(input: ResetPasswordInput) {

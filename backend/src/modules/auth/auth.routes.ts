@@ -14,6 +14,7 @@ import {
   verifyResetOtpSchema,
   requestPhoneOtpSchema,
   verifyPhoneOtpSchema,
+  googleAuthSchema,
 } from './auth.schema';
 
 const router = Router();
@@ -379,5 +380,6 @@ router.post('/forgot-password-phone', validate(forgotPasswordByPhoneSchema), ctr
 router.post('/verify-reset-otp',    validate(verifyResetOtpSchema),    ctrl.verifyResetOtp.bind(ctrl));
 router.post('/request-phone-otp',   authenticate, validate(requestPhoneOtpSchema), ctrl.requestPhoneOtp.bind(ctrl));
 router.post('/verify-phone-otp',    authenticate, validate(verifyPhoneOtpSchema),  ctrl.verifyPhoneOtp.bind(ctrl));
+router.post('/google',              validate(googleAuthSchema),         ctrl.googleAuth.bind(ctrl));
 
 export default router;

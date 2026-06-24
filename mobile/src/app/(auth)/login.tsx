@@ -5,6 +5,7 @@ import { useRef, useState, useEffect } from 'react';
 import {
   Animated,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -13,6 +14,8 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import * as Google from 'expo-auth-session/providers/google';
+import * as WebBrowser from 'expo-web-browser';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
@@ -20,6 +23,8 @@ import { useAppColors } from '@/context/ThemeContext';
 import { authService } from '@/services/auth';
 import type { Lang } from '@/i18n';
 import { F } from '@/utilities/constants';
+
+WebBrowser.maybeCompleteAuthSession();
 
 const LANG_OPTIONS: { lang: Lang; flag: string }[] = [
   { lang: 'en', flag: '🇬🇧' },
@@ -121,7 +126,12 @@ function Field({
 
 // ── Login form ────────────────────────────────────────────────────────────────
 
-function LoginForm({ verified }: { verified?: string }) {
+function LoginForm({ verified, onGooglePress, googleLoading, googleError }: {
+  verified?: string;
+  onGooglePress: () => void;
+  googleLoading: boolean;
+  googleError: string;
+}) {
   const { login } = useAuth();
   const { t }     = useLanguage();
 
@@ -194,18 +204,30 @@ function LoginForm({ verified }: { verified?: string }) {
       </View>
 
       <Pressable
-        style={s.googleBtn}
-        onPress={() => setError('Google sign-in is not available yet.')}>
-        <View style={s.googleBadge}><Text style={s.googleG}>G</Text></View>
-        <Text style={s.googleBtnText}>Continue with Google</Text>
+        style={[s.googleBtn, googleLoading && { opacity: 0.6 }]}
+        onPress={onGooglePress}
+        disabled={googleLoading}>
+        {googleLoading
+          ? <><View style={s.spinner} /><Text style={s.googleBtnText}>Signing in…</Text></>
+          : <><View style={s.googleBadge}><Text style={s.googleG}>G</Text></View><Text style={s.googleBtnText}>Continue with Google</Text></>}
       </Pressable>
+      {!!googleError && (
+        <View style={[s.banner, { backgroundColor: '#FFF1F2', borderColor: '#FECDD3' }]}>
+          <Ionicons name="alert-circle" size={15} color="#EF4444" />
+          <Text style={[s.bannerText, { color: '#EF4444' }]}>{googleError}</Text>
+        </View>
+      )}
     </View>
   );
 }
 
 // ── Create Account form ───────────────────────────────────────────────────────
 
-function SignupForm() {
+function SignupForm({ onGooglePress, googleLoading, googleError }: {
+  onGooglePress: () => void;
+  googleLoading: boolean;
+  googleError: string;
+}) {
   const C = useAppColors();
 
   const [role,      setRole]      = useState<'CREATOR' | 'BUSINESS'>('CREATOR');
@@ -316,10 +338,20 @@ function SignupForm() {
         <View style={[s.dividerLine, { backgroundColor: '#EDE9FE' }]} />
       </View>
 
-      <Pressable style={s.googleBtn} onPress={() => setError('Google sign-in is not available yet.')}>
-        <View style={s.googleBadge}><Text style={s.googleG}>G</Text></View>
-        <Text style={s.googleBtnText}>Continue with Google</Text>
+      <Pressable
+        style={[s.googleBtn, googleLoading && { opacity: 0.6 }]}
+        onPress={onGooglePress}
+        disabled={googleLoading}>
+        {googleLoading
+          ? <><View style={s.spinner} /><Text style={s.googleBtnText}>Signing in…</Text></>
+          : <><View style={s.googleBadge}><Text style={s.googleG}>G</Text></View><Text style={s.googleBtnText}>Continue with Google</Text></>}
       </Pressable>
+      {!!googleError && (
+        <View style={[s.banner, { backgroundColor: '#FFF1F2', borderColor: '#FECDD3' }]}>
+          <Ionicons name="alert-circle" size={15} color="#EF4444" />
+          <Text style={[s.bannerText, { color: '#EF4444' }]}>{googleError}</Text>
+        </View>
+      )}
 
       <Text style={s.terms}>
         By creating an account you agree to our{' '}
@@ -334,11 +366,82 @@ function SignupForm() {
 // ── Screen ────────────────────────────────────────────────────────────────────
 
 export default function LoginScreen() {
-  const { user }                  = useAuth();
+  const { user, reloadUser }      = useAuth();
   const { language, setLanguage } = useLanguage();
   const params                    = useLocalSearchParams<{ tab?: string; verified?: string }>();
   const insets                    = useSafeAreaInsets();
   const [tab, setTab]             = useState<'login' | 'signup'>(params.tab === 'signup' ? 'signup' : 'login');
+
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [googleError,   setGoogleError]   = useState('');
+  const [roleModal,     setRoleModal]     = useState(false);
+  const [pendingToken,  setPendingToken]  = useState('');
+
+  // Fallback to 'unset' prevents the hook crashing with "undefined" — we guard in handleGooglePress
+  const [, googleResponse, googlePromptAsync] = Google.useAuthRequest({
+    clientId:        process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID     ?? 'unset',
+    webClientId:     process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID     ?? 'unset',
+    iosClientId:     process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID     ?? 'unset',
+    androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ?? 'unset',
+  });
+
+  useEffect(() => {
+    if (!googleResponse) return;
+    if (googleResponse.type === 'success' && googleResponse.authentication?.accessToken) {
+      void handleGoogleToken(googleResponse.authentication.accessToken);
+    } else if (googleResponse.type === 'error') {
+      setGoogleError('Google sign-in failed. Please try again.');
+      setGoogleLoading(false);
+    } else if (googleResponse.type === 'dismiss' || googleResponse.type === 'cancel') {
+      setGoogleLoading(false);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [googleResponse]);
+
+  async function handleGoogleToken(accessToken: string, role?: 'CREATOR' | 'BUSINESS') {
+    setGoogleLoading(true);
+    setGoogleError('');
+    try {
+      const result = await authService.googleAuth({ accessToken, role });
+      if (result.needsRole) {
+        setPendingToken(accessToken);
+        setRoleModal(true);
+        setGoogleLoading(false);
+        return;
+      }
+      await reloadUser();
+    } catch (e) {
+      setGoogleError(e instanceof Error ? e.message : 'Google sign-in failed. Please try again.');
+      setGoogleLoading(false);
+    }
+  }
+
+  function handleGooglePress() {
+    const iosId     = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
+    const androidId = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
+    const webId     = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+
+    if (Platform.OS === 'ios' && !iosId) {
+      setGoogleError('iOS Google Sign-In needs EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID. Create an iOS OAuth client in Google Cloud Console (Bundle ID: com.sundarban.content).');
+      return;
+    }
+    if (Platform.OS === 'android' && !androidId) {
+      setGoogleError('Android Google Sign-In needs EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID. Create an Android OAuth client in Google Cloud Console.');
+      return;
+    }
+    if (!webId) {
+      setGoogleError('Add EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID to .env.');
+      return;
+    }
+    setGoogleLoading(true);
+    setGoogleError('');
+    void googlePromptAsync();
+  }
+
+  async function handleRoleSelect(selectedRole: 'CREATOR' | 'BUSINESS') {
+    setRoleModal(false);
+    await handleGoogleToken(pendingToken, selectedRole);
+  }
 
   useEffect(() => {
     if (user) router.replace((user.role === 'CREATOR' ? '/(creator)/' : '/(business)/') as never);
@@ -413,7 +516,9 @@ export default function LoginScreen() {
             </View>
 
             {/* Form */}
-            {tab === 'login' ? <LoginForm verified={params.verified} /> : <SignupForm />}
+            {tab === 'login'
+              ? <LoginForm verified={params.verified} onGooglePress={handleGooglePress} googleLoading={googleLoading} googleError={googleError} />
+              : <SignupForm onGooglePress={handleGooglePress} googleLoading={googleLoading} googleError={googleError} />}
 
             {/* Footer */}
             <View style={s.footer}>
@@ -425,6 +530,35 @@ export default function LoginScreen() {
         </View>
 
       </KeyboardAvoidingView>
+
+      {/* Role selection modal — shown for new Google users */}
+      <Modal visible={roleModal} transparent animationType="slide" onRequestClose={() => setRoleModal(false)}>
+        <View style={s.modalOverlay}>
+          <View style={s.modalSheet}>
+            <View style={s.modalHandle} />
+            <Text style={s.modalTitle}>One quick step ✨</Text>
+            <Text style={s.modalSub}>How will you use CreatorMarket?</Text>
+            <View style={s.roleRow}>
+              {ROLES.map((r) => (
+                <Pressable
+                  key={r.key}
+                  style={s.roleCard}
+                  onPress={() => void handleRoleSelect(r.key)}>
+                  <LinearGradient colors={r.grad} style={s.roleIconBox} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+                    <Ionicons name={r.icon} size={24} color="#fff" />
+                  </LinearGradient>
+                  <Text style={s.roleLabel}>{r.label}</Text>
+                  <Text style={s.roleSub}>{r.sub}</Text>
+                </Pressable>
+              ))}
+            </View>
+            <Pressable style={s.modalCancel} onPress={() => setRoleModal(false)}>
+              <Text style={s.modalCancelText}>Cancel</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
     </View>
   );
 }
@@ -511,6 +645,16 @@ const s = StyleSheet.create({
   googleBadge:   { width: 24, height: 24, borderRadius: 12, backgroundColor: '#4285F4', justifyContent: 'center', alignItems: 'center' },
   googleG:       { color: '#fff', fontSize: 13, fontWeight: '900', fontFamily: F.extrabold },
   googleBtnText: { fontSize: 15, fontFamily: F.semibold, color: '#374151' },
+  spinner:       { width: 18, height: 18, borderRadius: 9, borderWidth: 2, borderColor: '#DDD6FE', borderTopColor: P2 },
+
+  // Role modal
+  modalOverlay:    { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  modalSheet:      { backgroundColor: '#fff', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, paddingBottom: 36, gap: 4 },
+  modalHandle:     { width: 40, height: 4, borderRadius: 2, backgroundColor: '#DDD6FE', alignSelf: 'center', marginBottom: 20 },
+  modalTitle:      { fontSize: 22, fontWeight: '800', fontFamily: F.extrabold, color: P1, textAlign: 'center' },
+  modalSub:        { fontSize: 14, fontFamily: F.regular, color: '#6B7280', textAlign: 'center', marginBottom: 20 },
+  modalCancel:     { marginTop: 16, alignItems: 'center', padding: 12 },
+  modalCancelText: { fontSize: 15, fontFamily: F.semibold, color: '#9CA3AF' },
 
   terms:  { fontSize: 12, color: '#9CA3AF', lineHeight: 18, textAlign: 'center', fontFamily: F.regular, marginBottom: 8 },
 
