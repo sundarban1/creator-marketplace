@@ -1,42 +1,111 @@
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
-  KeyboardAvoidingView, Platform, Pressable, ScrollView,
-  StyleSheet, Text, View,
+  Animated,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { TextInputWithLabel } from '@/components/TextInputWithLabel';
-import { Button } from '@/components/Button';
-import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { authService } from '@/services/auth';
 import { F } from '@/utilities/constants';
+
+const PRIMARY = '#5B21B6';
+const INDIGO  = '#4F46E5';
 
 function isValidEmail(v: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
 }
 function getPasswordError(pwd: string): string | undefined {
-  if (pwd.length < 8)        return 'At least 8 characters required.';
-  if (!/[A-Z]/.test(pwd))    return 'Add at least one uppercase letter.';
-  if (!/[0-9]/.test(pwd))    return 'Add at least one number.';
+  if (pwd.length < 8)     return 'At least 8 characters required.';
+  if (!/[A-Z]/.test(pwd)) return 'Add at least one uppercase letter.';
+  if (!/[0-9]/.test(pwd)) return 'Add at least one number.';
   return undefined;
 }
 
 const ROLES = [
-  { key: 'CREATOR',  label: 'Content Creator', sub: 'Earn by creating',  icon: 'camera'   as const, grad: ['#4F46E5', '#7C3AED'] as const },
-  { key: 'BUSINESS', label: 'Brand / Business', sub: 'Find creators',     icon: 'briefcase' as const, grad: ['#F97316', '#EF4444'] as const },
+  {
+    key: 'CREATOR',  label: 'Content Creator',  sub: 'I create content and want to collaborate with brands',
+    icon: 'camera-outline' as const,
+  },
+  {
+    key: 'BUSINESS', label: 'Brand / Business',  sub: 'I represent a brand and want to work with creators',
+    icon: 'briefcase-outline' as const,
+  },
 ] as const;
 
 const PASSWORD_RULES = [
-  { test: (p: string) => p.length >= 8,     label: '8+ characters' },
-  { test: (p: string) => /[A-Z]/.test(p),   label: 'One uppercase'  },
-  { test: (p: string) => /[0-9]/.test(p),   label: 'One number'     },
+  { test: (p: string) => p.length >= 8,   label: '8+ chars'  },
+  { test: (p: string) => /[A-Z]/.test(p), label: 'Uppercase' },
+  { test: (p: string) => /[0-9]/.test(p), label: 'Number'    },
 ];
 
+// ── Input field ───────────────────────────────────────────────────────────────
+
+function Field({
+  icon, label, value, onChangeText, placeholder,
+  secureTextEntry = false, keyboardType = 'default', error,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  value: string;
+  onChangeText: (v: string) => void;
+  placeholder: string;
+  secureTextEntry?: boolean;
+  keyboardType?: 'default' | 'email-address';
+  error?: string;
+}) {
+  const C = useAppColors();
+  const [focused, setFocused] = useState(false);
+  const [hidden,  setHidden]  = useState(secureTextEntry);
+  const anim = useRef(new Animated.Value(0)).current;
+  const border = anim.interpolate({ inputRange: [0, 1], outputRange: [error ? '#FECACA' : '#E5E7EB', error ? '#EF4444' : PRIMARY] });
+
+  return (
+    <View style={s.fieldWrap}>
+      <Text style={[s.fieldLabel, { color: C.text }]}>{label}</Text>
+      <Animated.View style={[s.field, { borderColor: border, backgroundColor: C.surface }]}>
+        <Ionicons name={icon} size={17} color={focused ? PRIMARY : '#9CA3AF'} style={s.fieldIcon} />
+        <TextInput
+          style={[s.fieldInput, { color: C.text }]}
+          value={value}
+          onChangeText={onChangeText}
+          placeholder={placeholder}
+          placeholderTextColor="#9CA3AF"
+          secureTextEntry={hidden}
+          keyboardType={keyboardType}
+          autoCapitalize="none"
+          autoCorrect={false}
+          onFocus={() => { setFocused(true);  Animated.timing(anim, { toValue: 1, duration: 180, useNativeDriver: false }).start(); }}
+          onBlur={()  => { setFocused(false); Animated.timing(anim, { toValue: 0, duration: 180, useNativeDriver: false }).start(); }}
+        />
+        {secureTextEntry && (
+          <Pressable onPress={() => setHidden(h => !h)} hitSlop={8} style={s.eyeBtn}>
+            <Ionicons name={hidden ? 'eye-outline' : 'eye-off-outline'} size={17} color="#9CA3AF" />
+          </Pressable>
+        )}
+      </Animated.View>
+      {!!error && (
+        <View style={s.fieldError}>
+          <Ionicons name="alert-circle-outline" size={12} color="#EF4444" />
+          <Text style={s.fieldErrorText}>{error}</Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
+// ── Screen ────────────────────────────────────────────────────────────────────
+
 export default function SignupScreen() {
-  const { t } = useLanguage();
   const C = useAppColors();
 
   const [role,      setRole]      = useState<'CREATOR' | 'BUSINESS'>('CREATOR');
@@ -46,7 +115,7 @@ export default function SignupScreen() {
   const [loading,   setLoading]   = useState(false);
   const [apiError,  setApiError]  = useState('');
 
-  const emailError    = submitted && !isValidEmail(email)  ? 'Enter a valid email address' : undefined;
+  const emailError    = submitted && !isValidEmail(email)     ? 'Enter a valid email address' : undefined;
   const passwordError = submitted ? getPasswordError(password) : undefined;
 
   async function handleCreate() {
@@ -55,11 +124,7 @@ export default function SignupScreen() {
     if (!isValidEmail(email) || getPasswordError(password)) return;
     setLoading(true);
     try {
-      await authService.register({
-        email:    email.trim().toLowerCase(),
-        password,
-        role,
-      });
+      await authService.register({ email: email.trim().toLowerCase(), password, role });
       router.push({ pathname: '/verify', params: { email: email.trim().toLowerCase() } });
     } catch (err) {
       setApiError(err instanceof Error ? err.message : 'Registration failed. Please try again.');
@@ -68,174 +133,160 @@ export default function SignupScreen() {
     }
   }
 
-  function handleGoogleSignIn() {
-    setApiError('Google sign-in is not available yet.');
-  }
-
   return (
-    <SafeAreaView style={[s.safe, { backgroundColor: C.background }]} edges={['top']}>
+    <SafeAreaView style={[s.root, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
       <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+        <ScrollView
+          contentContainerStyle={s.scroll}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}>
 
-          {/* Back button */}
-          <Pressable
-            onPress={() => (router.canGoBack() ? router.back() : router.replace('/login'))}
-            style={[s.back, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <Ionicons name="chevron-back" size={20} color={C.text} />
-          </Pressable>
+          {/* App header */}
+          <View style={s.appHeader}>
+            <View style={s.appHeaderLeft}>
+              <LinearGradient colors={['#7C3AED', PRIMARY]} style={s.logoBox} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+                <Ionicons name="people" size={18} color="#fff" />
+              </LinearGradient>
+              <View>
+                <Text style={[s.appName, { color: C.text }]}>CreatorMarket</Text>
+                <Text style={s.appTagline}>Where creators and brands grow together</Text>
+              </View>
+            </View>
+            <Pressable
+              style={[s.backBtn, { borderColor: '#E5E7EB', backgroundColor: C.surface }]}
+              onPress={() => (router.canGoBack() ? router.back() : router.replace('/login'))}>
+              <Ionicons name="chevron-back" size={18} color={C.text} />
+            </Pressable>
+          </View>
 
-          {/* Branding header */}
-          <View style={s.headerContent}>
-            <LinearGradient
-              colors={['#4F46E5', '#7C3AED']}
-              start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-              style={s.logoCircle}>
-              <Ionicons name="sparkles" size={22} color="#fff" />
-            </LinearGradient>
-            <Text style={[s.title, { color: C.text, fontFamily: F.extrabold }]}>Create Account</Text>
-            <Text style={[s.subtitle, { color: C.textSecondary, fontFamily: F.regular }]}>
-              Join thousands of creators and brands
+          {/* Heading */}
+          <View style={s.headingWrap}>
+            <Text style={[s.heading, { color: C.text }]}>Create your account ✨</Text>
+            <Text style={[s.headingSub, { color: '#6B7280' }]}>
+              Join CreatorMarket and unlock endless collaboration opportunities.
             </Text>
           </View>
 
-          {/* User type selector */}
-          <View style={[s.sectionCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <View style={s.roleHeadingWrap}>
-              <Text style={[s.sectionLabel, { color: C.text, fontFamily: F.extrabold }]}>I am a…</Text>
-              <View style={[s.roleHeadingLine, { backgroundColor: C.brinjal1 }]} />
-            </View>
-            <View style={s.roleRow}>
-              {ROLES.map((r) => {
-                const active = role === r.key;
-                return (
-                  <Pressable
-                    key={r.key}
-                    style={[s.roleCard, { backgroundColor: active ? 'transparent' : C.background, borderColor: active ? 'transparent' : C.border }]}
-                    onPress={() => { setRole(r.key); setSubmitted(false); setApiError(''); }}>
+          {/* Role selector */}
+          <Text style={[s.sectionLabel, { color: C.text }]}>I'm joining as</Text>
+          <View style={s.roleRow}>
+            {ROLES.map((r) => {
+              const active = role === r.key;
+              return (
+                <Pressable
+                  key={r.key}
+                  style={[
+                    s.roleCard,
+                    { borderColor: active ? PRIMARY : '#E5E7EB', backgroundColor: C.surface },
+                    active && { borderWidth: 2 },
+                  ]}
+                  onPress={() => { setRole(r.key); setSubmitted(false); setApiError(''); }}>
+                  <View style={[s.roleIconBox, { backgroundColor: active ? `${PRIMARY}12` : '#F9FAFB' }]}>
+                    <Ionicons name={r.icon} size={24} color={active ? PRIMARY : '#9CA3AF'} />
                     {active && (
-                      <LinearGradient
-                        colors={r.grad}
-                        start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                        style={StyleSheet.absoluteFill}
-                      />
+                      <View style={s.roleIconBadge}>
+                        <Ionicons name="sparkles" size={9} color={PRIMARY} />
+                      </View>
                     )}
-                    <View style={[s.roleIcon, { backgroundColor: active ? 'rgba(255,255,255,0.22)' : C.primaryLight }]}>
-                      <Ionicons name={r.icon} size={20} color={active ? '#fff' : C.brinjal1} />
+                  </View>
+                  <Text style={[s.roleLabel, { color: active ? PRIMARY : C.text }]}>{r.label}</Text>
+                  <Text style={[s.roleSub, { color: '#6B7280' }]} numberOfLines={2}>{r.sub}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          {/* Form */}
+          <View style={s.form}>
+            <Field
+              icon="mail-outline"
+              label="Email address"
+              value={email}
+              onChangeText={(v) => { setEmail(v); setApiError(''); }}
+              placeholder="you@email.com"
+              keyboardType="email-address"
+              error={emailError}
+            />
+            <Field
+              icon="lock-closed-outline"
+              label="Password"
+              value={password}
+              onChangeText={(v) => { setPassword(v); setApiError(''); }}
+              placeholder="Create a password"
+              secureTextEntry
+              error={passwordError}
+            />
+
+            {/* Password strength */}
+            {password.length > 0 && (
+              <View style={s.rulesRow}>
+                {PASSWORD_RULES.map((rule) => {
+                  const ok = rule.test(password);
+                  return (
+                    <View key={rule.label} style={[s.rulePill, { backgroundColor: ok ? '#F0FDF4' : '#F9FAFB', borderColor: ok ? '#86EFAC' : '#E5E7EB' }]}>
+                      <Ionicons name={ok ? 'checkmark-circle' : 'ellipse-outline'} size={11} color={ok ? '#16A34A' : '#9CA3AF'} />
+                      <Text style={[s.ruleText, { color: ok ? '#16A34A' : '#9CA3AF' }]}>{rule.label}</Text>
                     </View>
-                    <Text style={[s.roleLabel, { color: active ? '#fff' : C.text, fontFamily: F.bold }]}>{r.label}</Text>
-                    <Text style={[s.roleSub, { color: active ? 'rgba(255,255,255,0.8)' : C.textSecondary, fontFamily: F.regular }]}>{r.sub}</Text>
-                    {active && (
-                      <View style={s.roleCheck}>
-                        <Ionicons name="checkmark-circle" size={18} color="#fff" />
-                      </View>
-                    )}
-                  </Pressable>
-                );
-              })}
-            </View>
-          </View>
-
-          {/* Account details form */}
-          <View style={[s.sectionCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <View style={s.roleHeadingWrap}>
-              <Text style={[s.sectionLabel, { color: C.text, fontFamily: F.extrabold }]}>Account details</Text>
-              <View style={[s.roleHeadingLine, { backgroundColor: C.brinjal1 }]} />
-            </View>
-            <View style={s.form}>
-              <TextInputWithLabel
-                label="Email Address"
-                value={email}
-                onChangeText={(v) => { setEmail(v); setApiError(''); }}
-                placeholder="name@example.com"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                leftIcon="mail-outline"
-                error={emailError}
-              />
-              <TextInputWithLabel
-                label="Password"
-                value={password}
-                onChangeText={(v) => { setPassword(v); setApiError(''); }}
-                placeholder="Create a strong password"
-                secureTextEntry
-                secureToggle
-                leftIcon="lock-closed-outline"
-                error={passwordError}
-              />
-
-              {password.length > 0 && (
-                <View style={s.rulesWrap}>
-                  {PASSWORD_RULES.map((rule) => {
-                    const ok = rule.test(password);
-                    return (
-                      <View key={rule.label} style={s.ruleRow}>
-                        <Ionicons name={ok ? 'checkmark-circle' : 'ellipse-outline'} size={14} color={ok ? '#10B981' : C.textSecondary} />
-                        <Text style={[s.ruleText, { color: ok ? '#10B981' : C.textSecondary, fontFamily: ok ? F.medium : F.regular }]}>
-                          {rule.label}
-                        </Text>
-                      </View>
-                    );
-                  })}
-                </View>
-              )}
-
-              {apiError ? (
-                <View style={[s.errorBanner, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}>
-                  <Ionicons name="alert-circle" size={16} color={C.error} />
-                  <Text style={[s.errorBannerText, { color: C.error, fontFamily: F.medium }]}>{apiError}</Text>
-                </View>
-              ) : null}
-
-              <Button
-                label={loading ? 'Creating account…' : 'Create Account'}
-                onPress={handleCreate}
-                loading={loading}
-                icon="arrow-forward"
-              />
-
-              {/* OR divider */}
-              <View style={s.divider}>
-                <View style={[s.dividerLine, { backgroundColor: C.border }]} />
-                <Text style={[s.dividerText, { color: C.textSecondary, fontFamily: F.regular }]}>or continue with</Text>
-                <View style={[s.dividerLine, { backgroundColor: C.border }]} />
+                  );
+                })}
               </View>
+            )}
 
-              {/* Google Sign In */}
-              <Pressable
-                style={[s.googleBtn, { backgroundColor: C.background, borderColor: C.border }]}
-                onPress={handleGoogleSignIn}>
-                <View style={s.googleBadge}>
-                  <Text style={s.googleG}>G</Text>
-                </View>
-                <Text style={[s.googleBtnText, { color: C.text, fontFamily: F.semibold }]}>
-                  Continue with Google
-                </Text>
-              </Pressable>
+            <Text style={s.passwordHint}>Min. 8 characters with uppercase letters and numbers</Text>
 
-              <Text style={[s.terms, { color: C.textSecondary, fontFamily: F.regular }]}>
-                By creating an account you agree to our{' '}
-                <Text
-                  style={{ color: C.brinjal1, fontFamily: F.semibold }}
-                  onPress={() => router.push('/legal?type=terms' as never)}>
-                  Terms of Service
-                </Text>
-                {' '}and{' '}
-                <Text
-                  style={{ color: C.brinjal1, fontFamily: F.semibold }}
-                  onPress={() => router.push('/legal?type=privacy-policy' as never)}>
-                  Privacy Policy
-                </Text>
-                .
-              </Text>
-            </View>
+            {!!apiError && (
+              <View style={s.errorBanner}>
+                <Ionicons name="alert-circle" size={15} color="#EF4444" />
+                <Text style={s.errorText}>{apiError}</Text>
+              </View>
+            )}
           </View>
+
+          {/* Submit */}
+          <Pressable
+            onPress={handleCreate}
+            disabled={loading}
+            style={({ pressed }) => [s.primaryBtn, { backgroundColor: PRIMARY, opacity: pressed ? 0.88 : 1 }]}>
+            {loading
+              ? <Ionicons name="sync" size={18} color="#fff" />
+              : <Text style={s.primaryBtnText}>Sign up</Text>}
+          </Pressable>
+
+          {/* Divider */}
+          <View style={s.divider}>
+            <View style={[s.dividerLine, { backgroundColor: '#E5E7EB' }]} />
+            <Text style={s.dividerText}>or continue with</Text>
+            <View style={[s.dividerLine, { backgroundColor: '#E5E7EB' }]} />
+          </View>
+
+          {/* Google */}
+          <Pressable
+            style={[s.socialBtn, { borderColor: '#E5E7EB', backgroundColor: C.surface }]}
+            onPress={() => setApiError('Google sign-in is not available yet.')}>
+            <View style={s.googleBadge}><Text style={s.googleG}>G</Text></View>
+            <Text style={[s.socialBtnText, { color: C.text }]}>Continue with Google</Text>
+          </Pressable>
+
+          {/* Terms */}
+          <Text style={s.terms}>
+            By signing up you agree to our{' '}
+            <Text style={{ color: PRIMARY, fontFamily: F.semibold }} onPress={() => router.push('/legal?type=terms' as never)}>Terms</Text>
+            {' '}and{' '}
+            <Text style={{ color: PRIMARY, fontFamily: F.semibold }} onPress={() => router.push('/legal?type=privacy-policy' as never)}>Privacy Policy</Text>.
+          </Text>
 
           {/* Login link */}
-          <View style={s.loginRow}>
-            <Text style={[s.loginText, { color: C.textSecondary, fontFamily: F.regular }]}>Already have an account?</Text>
+          <View style={s.switchRow}>
+            <Text style={[s.switchText, { color: '#6B7280' }]}>Already have an account?</Text>
             <Pressable onPress={() => router.replace('/login')}>
-              <Text style={[s.loginLink, { color: C.brinjal1, fontFamily: F.bold }]}>Sign In</Text>
+              <Text style={[s.switchLink, { color: PRIMARY }]}>Log in</Text>
             </Pressable>
+          </View>
+
+          {/* Security footer */}
+          <View style={s.secureRow}>
+            <Ionicons name="shield-checkmark-outline" size={13} color="#9CA3AF" />
+            <Text style={s.secureText}>Secure sign up  •  Your data is safe with us</Text>
           </View>
 
         </ScrollView>
@@ -245,56 +296,67 @@ export default function SignupScreen() {
 }
 
 const s = StyleSheet.create({
-  safe:   { flex: 1 },
+  root:   { flex: 1 },
   flex:   { flex: 1 },
-  scroll: { flexGrow: 1, paddingHorizontal: 20, paddingTop: 8, paddingBottom: 48 },
+  scroll: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 12, paddingBottom: 32 },
 
-  back: {
-    width: 42, height: 42, borderRadius: 13, borderWidth: 1.5,
-    justifyContent: 'center', alignItems: 'center',
-    shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 }, elevation: 2, marginBottom: 12,
-  },
+  appHeader:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 },
+  appHeaderLeft:{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
+  logoBox:      { width: 38, height: 38, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
+  appName:      { fontSize: 15, fontWeight: '700', fontFamily: F.bold },
+  appTagline:   { fontSize: 10, color: '#9CA3AF', fontFamily: F.regular, marginTop: 1 },
+  backBtn:      { width: 34, height: 34, borderRadius: 10, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center' },
 
-  headerContent: { alignItems: 'center', gap: 6, marginBottom: 16 },
-  logoCircle: { width: 56, height: 56, borderRadius: 17, justifyContent: 'center', alignItems: 'center', marginBottom: 2 },
-  title:    { fontSize: 24, textAlign: 'center' },
-  subtitle: { fontSize: 13, lineHeight: 19, textAlign: 'center' },
+  headingWrap: { marginBottom: 22, gap: 6 },
+  heading:     { fontSize: 24, fontWeight: '800', fontFamily: F.extrabold },
+  headingSub:  { fontSize: 13, color: '#6B7280', fontFamily: F.regular, lineHeight: 19 },
 
-  sectionCard: { borderRadius: 20, borderWidth: 1.5, padding: 18, marginBottom: 16, gap: 14 },
-  sectionLabel: { fontSize: 18, fontWeight: '800', textAlign: 'center', fontFamily: 'System' },
+  sectionLabel: { fontSize: 13, fontWeight: '600', fontFamily: F.semibold, marginBottom: 10 },
 
-  roleHeadingWrap: { alignItems: 'center', gap: 6 },
-  roleHeadingLine: { width: 36, height: 3, borderRadius: 2 },
+  roleRow:     { flexDirection: 'row', gap: 12, marginBottom: 22 },
+  roleCard:    { flex: 1, borderRadius: 14, borderWidth: 1.5, padding: 14, gap: 8, alignItems: 'center' },
+  roleIconBox: { width: 52, height: 52, borderRadius: 16, justifyContent: 'center', alignItems: 'center', position: 'relative' },
+  roleIconBadge:{ position: 'absolute', top: -2, right: -2, width: 16, height: 16, borderRadius: 8, backgroundColor: '#EDE9FE', justifyContent: 'center', alignItems: 'center' },
+  roleLabel:   { fontSize: 13, fontWeight: '700', fontFamily: F.bold, textAlign: 'center' },
+  roleSub:     { fontSize: 11, color: '#6B7280', fontFamily: F.regular, textAlign: 'center', lineHeight: 15 },
 
-  roleRow:   { flexDirection: 'row', gap: 12 },
-  roleCard:  { flex: 1, borderRadius: 16, borderWidth: 1.5, padding: 14, gap: 6, overflow: 'hidden' },
-  roleIcon:  { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
-  roleLabel: { fontSize: 13 },
-  roleSub:   { fontSize: 11 },
-  roleCheck: { position: 'absolute', top: 10, right: 10 },
+  form:     { gap: 14, marginBottom: 4 },
+  fieldWrap:    { gap: 6 },
+  fieldLabel:   { fontSize: 13, fontWeight: '600', fontFamily: F.semibold },
+  field:        { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 14, height: 50, gap: 10 },
+  fieldIcon:    { flexShrink: 0 },
+  fieldInput:   { flex: 1, fontSize: 15, fontFamily: F.regular },
+  eyeBtn:       { padding: 2 },
+  fieldError:   { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  fieldErrorText:{ fontSize: 12, color: '#EF4444', fontFamily: F.medium },
 
-  form: { gap: 14 },
+  rulesRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
+  rulePill: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 8, borderWidth: 1, paddingHorizontal: 8, paddingVertical: 4 },
+  ruleText: { fontSize: 11, fontFamily: F.medium },
 
-  rulesWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, paddingHorizontal: 2 },
-  ruleRow:   { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  ruleText:  { fontSize: 12 },
+  passwordHint: { fontSize: 11, color: '#9CA3AF', fontFamily: F.regular, marginTop: -6 },
 
-  errorBanner:     { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderRadius: 12, padding: 12 },
-  errorBannerText: { fontSize: 13, flex: 1 },
+  errorBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12, borderRadius: 10, backgroundColor: '#FFF1F2', borderWidth: 1, borderColor: '#FECDD3' },
+  errorText:   { fontSize: 13, color: '#EF4444', flex: 1, fontFamily: F.medium },
 
-  divider:     { flexDirection: 'row', alignItems: 'center', gap: 10, marginVertical: 2 },
-  dividerLine: { flex: 1, height: 1 },
-  dividerText: { fontSize: 12 },
+  primaryBtn:     { height: 52, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginTop: 18, marginBottom: 20 },
+  primaryBtnText: { fontSize: 16, fontWeight: '700', color: '#fff', fontFamily: F.bold },
 
-  googleBtn:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, borderRadius: 14, borderWidth: 1.5, paddingVertical: 14 },
-  googleBadge: { width: 22, height: 22, borderRadius: 11, backgroundColor: '#4285F4', justifyContent: 'center', alignItems: 'center' },
-  googleG:     { color: '#fff', fontSize: 13, fontWeight: '800', fontFamily: 'System' },
-  googleBtnText: { fontSize: 15 },
+  divider:     { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 },
+  dividerLine: { flex: 1, height: StyleSheet.hairlineWidth },
+  dividerText: { fontSize: 12, color: '#9CA3AF', fontFamily: F.regular },
 
-  terms: { fontSize: 12, lineHeight: 18, textAlign: 'center', marginTop: 4 },
+  socialBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, height: 50, borderRadius: 12, borderWidth: 1.5, marginBottom: 16 },
+  googleBadge:   { width: 22, height: 22, borderRadius: 11, backgroundColor: '#4285F4', justifyContent: 'center', alignItems: 'center' },
+  googleG:       { color: '#fff', fontSize: 12, fontWeight: '900', fontFamily: F.extrabold },
+  socialBtnText: { fontSize: 15, fontFamily: F.semibold },
 
-  loginRow:  { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, marginTop: 8 },
-  loginText: { fontSize: 14 },
-  loginLink: { fontSize: 14 },
+  terms: { fontSize: 12, color: '#9CA3AF', lineHeight: 18, textAlign: 'center', fontFamily: F.regular, marginBottom: 16 },
+
+  switchRow:  { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 5, marginBottom: 16 },
+  switchText: { fontSize: 14, fontFamily: F.regular },
+  switchLink: { fontSize: 14, fontFamily: F.bold, fontWeight: '700' },
+
+  secureRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5 },
+  secureText: { fontSize: 11, color: '#9CA3AF', fontFamily: F.regular },
 });

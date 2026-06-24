@@ -1,7 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import {
   Animated,
   KeyboardAvoidingView,
@@ -13,109 +13,70 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import type { Lang } from '@/i18n';
 import { F } from '@/utilities/constants';
 
-const LANG_OPTIONS: { lang: Lang; label: string; flag: string }[] = [
-  { lang: 'en', label: 'EN', flag: '🇬🇧' },
-  { lang: 'ne', label: 'नेप', flag: '🇳🇵' },
+const LANG_OPTIONS: { lang: Lang; flag: string }[] = [
+  { lang: 'en', flag: '🇬🇧' },
+  { lang: 'ne', flag: '🇳🇵' },
 ];
 
-const INDIGO = '#4F46E5';
-const VIOLET = '#7C3AED';
-const PINK   = '#EC4899';
+const PRIMARY = '#5B21B6';
 
-// ── Floating orb decorations ─────────────────────────────────────────────────
-
-function HeroBackground() {
-  return (
-    <>
-      {/* Big soft orb — top left */}
-      <View style={[s.orb, { width: 260, height: 260, top: -60, left: -80, backgroundColor: `${VIOLET}22`, borderRadius: 130 }]} />
-      {/* Smaller orb — top right */}
-      <View style={[s.orb, { width: 180, height: 180, top: 20, right: -50, backgroundColor: `${PINK}18`, borderRadius: 90 }]} />
-      {/* Tiny accent */}
-      <View style={[s.orb, { width: 100, height: 100, top: 160, left: 30, backgroundColor: `${INDIGO}14`, borderRadius: 50 }]} />
-    </>
-  );
-}
-
-// ── Platform tags floating above card ────────────────────────────────────────
-
-const PLATFORMS = [
-  { name: 'Instagram', icon: 'camera',        color: '#E1306C' },
-  { name: 'TikTok',    icon: 'musical-notes', color: '#000000' },
-  { name: 'YouTube',   icon: 'logo-youtube',  color: '#FF0000' },
-] as const;
-
-function PlatformTags() {
-  return (
-    <View style={s.platformRow}>
-      {PLATFORMS.map((p) => (
-        <View key={p.name} style={[s.platformTag, { backgroundColor: `${p.color}15`, borderColor: `${p.color}30` }]}>
-          <Ionicons name={p.icon as never} size={13} color={p.color} />
-          <Text style={[s.platformTagText, { color: p.color }]}>{p.name}</Text>
-        </View>
-      ))}
-    </View>
-  );
-}
-
-// ── Custom input field with icon ──────────────────────────────────────────────
+// ── Input field ───────────────────────────────────────────────────────────────
 
 function Field({
-  icon, value, onChangeText, placeholder, secureTextEntry = false, keyboardType = 'default', autoCapitalize = 'none',
+  icon, value, onChangeText, placeholder, label,
+  secureTextEntry = false, keyboardType = 'default',
+  rightSlot,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
+  label: string;
   value: string;
   onChangeText: (v: string) => void;
   placeholder: string;
   secureTextEntry?: boolean;
   keyboardType?: 'default' | 'email-address';
-  autoCapitalize?: 'none' | 'sentences';
+  rightSlot?: React.ReactNode;
 }) {
   const C = useAppColors();
   const [focused, setFocused] = useState(false);
   const [hidden,  setHidden]  = useState(secureTextEntry);
   const anim = useRef(new Animated.Value(0)).current;
-
-  function handleFocus() {
-    setFocused(true);
-    Animated.timing(anim, { toValue: 1, duration: 200, useNativeDriver: false }).start();
-  }
-  function handleBlur() {
-    setFocused(false);
-    Animated.timing(anim, { toValue: 0, duration: 200, useNativeDriver: false }).start();
-  }
-
-  const borderColor = anim.interpolate({ inputRange: [0, 1], outputRange: [C.border, INDIGO] });
-  const iconColor = focused ? INDIGO : C.textSecondary;
+  const border = anim.interpolate({ inputRange: [0, 1], outputRange: ['#E5E7EB', PRIMARY] });
 
   return (
-    <Animated.View style={[s.field, { borderColor, backgroundColor: focused ? `${INDIGO}06` : C.surface }]}>
-      <Ionicons name={icon} size={18} color={iconColor} style={s.fieldIcon} />
-      <TextInput
-        style={[s.fieldInput, { color: C.text }]}
-        value={value}
-        onChangeText={onChangeText}
-        placeholder={placeholder}
-        placeholderTextColor={C.textSecondary + '90'}
-        secureTextEntry={hidden}
-        keyboardType={keyboardType}
-        autoCapitalize={autoCapitalize}
-        autoCorrect={false}
-        onFocus={handleFocus}
-        onBlur={handleBlur}
-      />
-      {secureTextEntry && (
-        <Pressable onPress={() => setHidden((h) => !h)} hitSlop={8}>
-          <Ionicons name={hidden ? 'eye-outline' : 'eye-off-outline'} size={18} color={C.textSecondary} />
-        </Pressable>
-      )}
-    </Animated.View>
+    <View style={s.fieldWrap}>
+      <View style={s.fieldLabelRow}>
+        <Text style={[s.fieldLabel, { color: C.text }]}>{label}</Text>
+        {rightSlot}
+      </View>
+      <Animated.View style={[s.field, { borderColor: border, backgroundColor: C.surface }]}>
+        <Ionicons name={icon} size={17} color={focused ? PRIMARY : '#9CA3AF'} style={s.fieldIcon} />
+        <TextInput
+          style={[s.fieldInput, { color: C.text }]}
+          value={value}
+          onChangeText={onChangeText}
+          placeholder={placeholder}
+          placeholderTextColor="#9CA3AF"
+          secureTextEntry={hidden}
+          keyboardType={keyboardType}
+          autoCapitalize="none"
+          autoCorrect={false}
+          onFocus={() => { setFocused(true);  Animated.timing(anim, { toValue: 1, duration: 180, useNativeDriver: false }).start(); }}
+          onBlur={()  => { setFocused(false); Animated.timing(anim, { toValue: 0, duration: 180, useNativeDriver: false }).start(); }}
+        />
+        {secureTextEntry && (
+          <Pressable onPress={() => setHidden(h => !h)} hitSlop={8} style={s.eyeBtn}>
+            <Ionicons name={hidden ? 'eye-outline' : 'eye-off-outline'} size={17} color="#9CA3AF" />
+          </Pressable>
+        )}
+      </Animated.View>
+    </View>
   );
 }
 
@@ -126,32 +87,12 @@ export default function LoginScreen() {
   const { language, setLanguage, t } = useLanguage();
   const C                            = useAppColors();
   const params                       = useLocalSearchParams();
-  const verified                     = typeof params.verified === 'string' ? params.verified : undefined;
+  const verified = typeof params.verified === 'string' ? params.verified : undefined;
 
   const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
   const [loading,  setLoading]  = useState(false);
   const [error,    setError]    = useState('');
-
-
-  const cardSlide   = useRef(new Animated.Value(60)).current;
-  const cardOpacity = useRef(new Animated.Value(0)).current;
-  const heroScale   = useRef(new Animated.Value(0.92)).current;
-  const heroOpacity = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(heroOpacity,  { toValue: 1, duration: 500, useNativeDriver: true }),
-      Animated.spring(heroScale,    { toValue: 1, tension: 60, friction: 10, useNativeDriver: true }),
-      Animated.sequence([
-        Animated.delay(200),
-        Animated.parallel([
-          Animated.spring(cardSlide,   { toValue: 0, useNativeDriver: true, tension: 52, friction: 11 }),
-          Animated.timing(cardOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
-        ]),
-      ]),
-    ]).start();
-  }, []);
 
   useEffect(() => {
     if (user) router.replace((user.role === 'CREATOR' ? '/(creator)/' : '/(business)/') as never);
@@ -171,209 +112,176 @@ export default function LoginScreen() {
   }
 
   return (
-    <View style={s.root}>
-      {/* Gradient hero bg */}
-      <LinearGradient
-        colors={['#EDE9FE', '#F5F3FF', '#F7F8FF']}
-        locations={[0, 0.5, 1]}
-        style={s.gradientBg}
-      />
-      <HeroBackground />
-
-      {/* ── Hero ── */}
-      <Animated.View style={[s.hero, { opacity: heroOpacity, transform: [{ scale: heroScale }] }]}>
-
-        {/* Logo */}
-        <View style={s.logoOuter}>
-          <LinearGradient colors={[INDIGO, VIOLET]} style={s.logoGradient} start={{ x: 0.1, y: 0 }} end={{ x: 1, y: 1 }}>
-            <Text style={s.logoText}>CM</Text>
-          </LinearGradient>
-          {/* Glow ring */}
-          <View style={s.logoRing} />
-        </View>
-
-        <Text style={s.appName}>CreatorMarket</Text>
-        <Text style={s.tagline}>Where creators meet brands</Text>
-
-        <PlatformTags />
-      </Animated.View>
-
-      {/* ── Login card ── */}
+    <SafeAreaView style={[s.root, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
       <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <Animated.View style={[s.card, { backgroundColor: C.background, transform: [{ translateY: cardSlide }], opacity: cardOpacity }]}>
-          {/* Drag handle */}
-          <View style={[s.handle, { backgroundColor: C.border }]} />
+        <ScrollView
+          contentContainerStyle={s.scroll}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}>
 
-          <ScrollView
-            contentContainerStyle={s.cardContent}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}>
-
-            {/* Card header */}
-            <View style={s.cardHeader}>
+          {/* App header */}
+          <View style={s.appHeader}>
+            <View style={s.appHeaderLeft}>
+              <LinearGradient colors={['#7C3AED', PRIMARY]} style={s.logoBox} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+                <Ionicons name="people" size={18} color="#fff" />
+              </LinearGradient>
               <View>
-                <Text style={[s.cardTitle, { color: C.text }]}>{t('auth.login.title')}</Text>
-                <Text style={[s.cardSubtitle, { color: C.textSecondary }]}>{t('auth.login.subtitle')}</Text>
-              </View>
-              {/* Lang switcher */}
-              <View style={s.langRow}>
-                {LANG_OPTIONS.map(({ lang, flag }) => (
-                  <Pressable
-                    key={lang}
-                    style={[s.langBtn, language === lang && { borderColor: INDIGO, backgroundColor: `${INDIGO}12` }]}
-                    onPress={() => setLanguage(lang)}>
-                    <Text style={s.langFlag}>{flag}</Text>
-                  </Pressable>
-                ))}
+                <Text style={[s.appName, { color: C.text }]}>CreatorMarket</Text>
+                <Text style={[s.appTagline, { color: '#9CA3AF' }]}>Where creators and brands grow together</Text>
               </View>
             </View>
-
-            {/* Banners */}
-            {verified === '1' && (
-              <View style={s.successBanner}>
-                <View style={s.bannerIcon}>
-                  <Ionicons name="checkmark-circle" size={18} color="#15803D" />
-                </View>
-                <Text style={s.successText}>Account verified! Sign in to continue.</Text>
-              </View>
-            )}
-            {!!error && (
-              <View style={s.errorBanner}>
-                <View style={[s.bannerIcon, { backgroundColor: '#FEE2E2' }]}>
-                  <Ionicons name="alert-circle" size={18} color="#EF4444" />
-                </View>
-                <Text style={s.errorText}>{error}</Text>
-              </View>
-            )}
-
-            {/* Form */}
-            <View style={s.form}>
-              <Field
-                icon="mail-outline"
-                value={email}
-                onChangeText={setEmail}
-                placeholder={t('auth.login.emailPlaceholder')}
-                keyboardType="email-address"
-              />
-              <Field
-                icon="lock-closed-outline"
-                value={password}
-                onChangeText={setPassword}
-                placeholder={t('auth.login.passwordPlaceholder')}
-                secureTextEntry
-              />
-
-              {/* Forgot password */}
-              <Pressable onPress={() => router.push('/forgot-password')} style={s.forgotWrap}>
-                <Text style={[s.forgotText, { color: INDIGO }]}>Forgot Password?</Text>
-              </Pressable>
-
-              {/* Sign in button */}
-              <Pressable onPress={handleLogin} disabled={loading} style={({ pressed }) => [{ opacity: pressed ? 0.88 : 1 }]}>
-                <LinearGradient
-                  colors={loading ? ['#A5B4FC', '#C4B5FD'] : [INDIGO, VIOLET]}
-                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                  style={s.signInBtn}>
-                  {loading
-                    ? <Ionicons name="sync" size={18} color="#fff" />
-                    : <>
-                        <Text style={s.signInBtnText}>{t('auth.login.signIn')}</Text>
-                        <Ionicons name="arrow-forward" size={18} color="#fff" />
-                      </>}
-                </LinearGradient>
-              </Pressable>
+            {/* Lang */}
+            <View style={s.langRow}>
+              {LANG_OPTIONS.map(({ lang, flag }) => (
+                <Pressable
+                  key={lang}
+                  style={[s.langBtn, { borderColor: '#E5E7EB' }, language === lang && { borderColor: PRIMARY, backgroundColor: `${PRIMARY}10` }]}
+                  onPress={() => setLanguage(lang)}>
+                  <Text style={s.langFlag}>{flag}</Text>
+                </Pressable>
+              ))}
             </View>
+          </View>
 
-            {/* Divider */}
-            <View style={s.dividerRow}>
-              <View style={[s.dividerLine, { backgroundColor: C.border }]} />
-              <Text style={[s.dividerText, { color: C.textSecondary }]}>New here?</Text>
-              <View style={[s.dividerLine, { backgroundColor: C.border }]} />
+          {/* Heading */}
+          <View style={s.headingWrap}>
+            <Text style={[s.heading, { color: C.text }]}>Welcome back 👋</Text>
+            <Text style={[s.headingSub, { color: '#6B7280' }]}>
+              Log in to your account and continue collaborating and growing.
+            </Text>
+          </View>
+
+          {/* Banners */}
+          {verified === '1' && (
+            <View style={[s.banner, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}>
+              <Ionicons name="checkmark-circle" size={15} color="#15803D" />
+              <Text style={[s.bannerText, { color: '#15803D' }]}>Account verified! You can sign in now.</Text>
             </View>
+          )}
+          {!!error && (
+            <View style={[s.banner, { backgroundColor: '#FFF1F2', borderColor: '#FECDD3' }]}>
+              <Ionicons name="alert-circle" size={15} color="#EF4444" />
+              <Text style={[s.bannerText, { color: '#EF4444' }]}>{error}</Text>
+            </View>
+          )}
 
-            {/* Sign up */}
-            <Pressable
-              style={[s.signUpBtn, { borderColor: `${INDIGO}30`, backgroundColor: `${INDIGO}06` }]}
-              onPress={() => router.push('/signup')}>
-              <Ionicons name="person-add-outline" size={16} color={INDIGO} />
-              <Text style={[s.signUpText, { color: INDIGO }]}>
-                {t('auth.login.noAccount')}{' '}
-                <Text style={{ fontWeight: '800' }}>{t('auth.login.signUpLink')}</Text>
-              </Text>
+          {/* Form */}
+          <View style={s.form}>
+            <Field
+              icon="mail-outline"
+              label="Email address"
+              value={email}
+              onChangeText={setEmail}
+              placeholder="you@email.com"
+              keyboardType="email-address"
+            />
+            <Field
+              icon="lock-closed-outline"
+              label="Password"
+              value={password}
+              onChangeText={setPassword}
+              placeholder="Enter your password"
+              secureTextEntry
+              rightSlot={
+                <Pressable onPress={() => router.push('/forgot-password')}>
+                  <Text style={[s.forgotText, { color: PRIMARY }]}>Forgot password?</Text>
+                </Pressable>
+              }
+            />
+          </View>
+
+          {/* Sign in */}
+          <Pressable
+            onPress={handleLogin}
+            disabled={loading}
+            style={({ pressed }) => [s.primaryBtn, { backgroundColor: PRIMARY, opacity: pressed ? 0.88 : 1 }]}>
+            {loading
+              ? <Ionicons name="sync" size={18} color="#fff" />
+              : <Text style={s.primaryBtnText}>Log in</Text>}
+          </Pressable>
+
+          {/* Divider */}
+          <View style={s.divider}>
+            <View style={[s.dividerLine, { backgroundColor: '#E5E7EB' }]} />
+            <Text style={s.dividerText}>or continue with</Text>
+            <View style={[s.dividerLine, { backgroundColor: '#E5E7EB' }]} />
+          </View>
+
+          {/* Social buttons */}
+          <Pressable
+            style={[s.socialBtn, { borderColor: '#E5E7EB', backgroundColor: C.surface }]}
+            onPress={() => setError('Google sign-in is not available yet.')}>
+            <View style={s.googleBadge}><Text style={s.googleG}>G</Text></View>
+            <Text style={[s.socialBtnText, { color: C.text }]}>Continue with Google</Text>
+          </Pressable>
+
+          {/* Sign up link */}
+          <View style={s.switchRow}>
+            <Text style={[s.switchText, { color: '#6B7280' }]}>Don't have an account?</Text>
+            <Pressable onPress={() => router.push('/signup')}>
+              <Text style={[s.switchLink, { color: PRIMARY }]}>Sign up</Text>
             </Pressable>
+          </View>
 
-            {/* Footer */}
-            <View style={s.footer}>
-              <Text style={[s.footerCopy, { color: C.textSecondary }]}>© 2026 CreatorMarket</Text>
-            </View>
-          </ScrollView>
-        </Animated.View>
+          {/* Security footer */}
+          <View style={s.secureRow}>
+            <Ionicons name="shield-checkmark-outline" size={13} color="#9CA3AF" />
+            <Text style={s.secureText}>Secure login  •  Your data is safe with us</Text>
+          </View>
+
+        </ScrollView>
       </KeyboardAvoidingView>
-    </View>
+    </SafeAreaView>
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
-
 const s = StyleSheet.create({
-  root:       { flex: 1, backgroundColor: '#EDE9FE' },
-  flex:       { flex: 1 },
-  gradientBg: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
-  orb:        { position: 'absolute' },
+  root:   { flex: 1 },
+  flex:   { flex: 1 },
+  scroll: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 12, paddingBottom: 32 },
 
-  // Hero
-  hero:       { alignItems: 'center', paddingTop: 68, paddingBottom: 30 },
-  logoOuter:  { width: 86, height: 86, justifyContent: 'center', alignItems: 'center' },
-  logoGradient:{ width: 76, height: 76, borderRadius: 22, justifyContent: 'center', alignItems: 'center', shadowColor: INDIGO, shadowOpacity: 0.42, shadowRadius: 18, shadowOffset: { width: 0, height: 8 }, elevation: 14 },
-  logoText:   { fontSize: 28, fontWeight: '900', color: '#fff', letterSpacing: 1, fontFamily: F.extrabold },
-  logoRing:   { position: 'absolute', width: 86, height: 86, borderRadius: 25, borderWidth: 1.5, borderColor: `${INDIGO}30` },
+  appHeader:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 },
+  appHeaderLeft:{ flexDirection: 'row', alignItems: 'center', gap: 10 },
+  logoBox:      { width: 38, height: 38, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
+  appName:      { fontSize: 15, fontWeight: '700', fontFamily: F.bold },
+  appTagline:   { fontSize: 10, fontFamily: F.regular, marginTop: 1 },
+  langRow:      { flexDirection: 'row', gap: 6 },
+  langBtn:      { width: 32, height: 32, borderRadius: 16, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center' },
+  langFlag:     { fontSize: 14 },
 
-  appName:    { fontSize: 30, fontWeight: '900', color: INDIGO, letterSpacing: 0.2, marginTop: 18, fontFamily: F.extrabold },
-  tagline:    { fontSize: 13, color: '#9D8DF1', marginTop: 5, letterSpacing: 0.4, fontWeight: '500', fontFamily: F.medium },
+  headingWrap: { marginBottom: 24, gap: 6 },
+  heading:     { fontSize: 26, fontWeight: '800', fontFamily: F.extrabold },
+  headingSub:  { fontSize: 14, fontFamily: F.regular, lineHeight: 20 },
 
-  platformRow: { flexDirection: 'row', gap: 7, marginTop: 20, flexWrap: 'wrap', justifyContent: 'center', paddingHorizontal: 24 },
-  platformTag: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20, borderWidth: 1 },
-  platformTagText: { fontSize: 11, fontWeight: '700', fontFamily: F.bold },
+  banner:     { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12, borderRadius: 10, borderWidth: 1, marginBottom: 16 },
+  bannerText: { fontSize: 13, flex: 1, fontFamily: F.medium },
 
-  // Card
-  card:        { borderTopLeftRadius: 32, borderTopRightRadius: 32, flex: 1, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 24, shadowOffset: { width: 0, height: -6 }, elevation: 20 },
-  handle:      { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginTop: 12, marginBottom: 4 },
-  cardContent: { paddingHorizontal: 24, paddingTop: 20, paddingBottom: 40 },
+  form:     { gap: 16, marginBottom: 20 },
+  fieldWrap:    { gap: 6 },
+  fieldLabelRow:{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  fieldLabel:   { fontSize: 13, fontWeight: '600', fontFamily: F.semibold },
+  forgotText:   { fontSize: 13, fontFamily: F.semibold },
+  field:        { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 14, height: 50, gap: 10 },
+  fieldIcon:    { flexShrink: 0 },
+  fieldInput:   { flex: 1, fontSize: 15, fontFamily: F.regular },
+  eyeBtn:       { padding: 2 },
 
-  cardHeader:  { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24 },
-  cardTitle:   { fontSize: 24, fontWeight: '800', marginBottom: 3, fontFamily: F.extrabold },
-  cardSubtitle:{ fontSize: 13, lineHeight: 19, fontFamily: F.regular },
+  primaryBtn:     { height: 52, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
+  primaryBtnText: { fontSize: 16, fontWeight: '700', color: '#fff', fontFamily: F.bold },
 
-  langRow:     { flexDirection: 'row', gap: 6 },
-  langBtn:     { width: 36, height: 36, borderRadius: 18, borderWidth: 1.5, borderColor: 'rgba(0,0,0,0.12)', backgroundColor: 'rgba(0,0,0,0.03)', justifyContent: 'center', alignItems: 'center' },
-  langFlag:    { fontSize: 17 },
+  divider:     { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 },
+  dividerLine: { flex: 1, height: StyleSheet.hairlineWidth },
+  dividerText: { fontSize: 12, color: '#9CA3AF', fontFamily: F.regular },
 
-  // Banners
-  successBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 14, backgroundColor: '#F0FDF4', borderWidth: 1, borderColor: '#BBF7D0', marginBottom: 16 },
-  errorBanner:   { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 14, backgroundColor: '#FFF1F2', borderWidth: 1, borderColor: '#FECDD3', marginBottom: 16 },
-  bannerIcon:    { width: 30, height: 30, borderRadius: 15, backgroundColor: '#DCFCE7', justifyContent: 'center', alignItems: 'center' },
-  successText:   { fontSize: 13, fontWeight: '600', color: '#15803D', flex: 1, fontFamily: F.semibold },
-  errorText:     { fontSize: 13, fontWeight: '600', color: '#EF4444', flex: 1, fontFamily: F.semibold },
+  socialBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, height: 50, borderRadius: 12, borderWidth: 1.5, marginBottom: 8 },
+  googleBadge:   { width: 22, height: 22, borderRadius: 11, backgroundColor: '#4285F4', justifyContent: 'center', alignItems: 'center' },
+  googleG:       { color: '#fff', fontSize: 12, fontWeight: '900', fontFamily: F.extrabold },
+  socialBtnText: { fontSize: 15, fontFamily: F.semibold },
 
-  // Form
-  form:       { gap: 14 },
-  field:      { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 13, gap: 10 },
-  fieldIcon:  { flexShrink: 0 },
-  fieldInput: { flex: 1, fontSize: 15, paddingVertical: 0, fontFamily: F.regular },
+  switchRow:  { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 5, marginTop: 20, marginBottom: 16 },
+  switchText: { fontSize: 14, fontFamily: F.regular },
+  switchLink: { fontSize: 14, fontFamily: F.bold, fontWeight: '700' },
 
-  forgotWrap: { alignSelf: 'flex-end', paddingVertical: 2 },
-  forgotText: { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
-
-  signInBtn:     { borderRadius: 16, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, shadowColor: INDIGO, shadowOpacity: 0.38, shadowRadius: 12, shadowOffset: { width: 0, height: 5 }, elevation: 8 },
-  signInBtnText: { fontSize: 16, fontWeight: '800', color: '#fff', letterSpacing: 0.3, fontFamily: F.extrabold },
-
-  dividerRow:  { flexDirection: 'row', alignItems: 'center', gap: 12, marginVertical: 22 },
-  dividerLine: { flex: 1, height: 1 },
-  dividerText: { fontSize: 12, fontWeight: '600', fontFamily: F.semibold },
-
-  signUpBtn:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 16, borderWidth: 1.5, paddingVertical: 15 },
-  signUpText: { fontSize: 14, fontFamily: F.regular },
-
-  footer:     { marginTop: 32, alignItems: 'center' },
-  footerCopy: { fontSize: 11, fontFamily: F.regular },
+  secureRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5 },
+  secureText: { fontSize: 11, color: '#9CA3AF', fontFamily: F.regular },
 });
