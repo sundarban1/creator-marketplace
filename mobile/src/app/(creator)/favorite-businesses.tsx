@@ -56,7 +56,7 @@ function BusinessCard({ item, onRemove }: { item: BusinessListItem; onRemove: ()
             <Text style={[s.desc, { color: C.textSecondary }]} numberOfLines={2}>{item.description}</Text>
           ) : null}
           <Text style={[s.campaigns, { color: C.textSecondary }]}>
-            {item._count.campaigns} active campaign{item._count.campaigns !== 1 ? 's' : ''}
+            {item._count.campaigns} active event{item._count.campaigns !== 1 ? 's' : ''}
           </Text>
         </View>
         <Ionicons name="chevron-forward" size={18} color={C.border} />

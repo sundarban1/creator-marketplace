@@ -27,7 +27,7 @@ export const MOCK_CAMPAIGNS: RichCampaign[] = [
   },
   {
     id: '2',
-    title: 'Summer Skincare Campaign',
+    title: 'Summer Skincare Event',
     brand: 'Glow Skincare',
     platform: 'TikTok',
     platformIcon: '✨',

@@ -647,7 +647,7 @@ export default function ExploreCreatorsScreen() {
           <BackButton fallback="/(business)/" />
           <View style={s.headerMiddle}>
             <Text style={[s.headerTitle, { color: '#fff' }]}>{t('explore.exploreCreators')}</Text>
-            <Text style={s.headerSub}>Find the perfect creator for your campaign</Text>
+            <Text style={s.headerSub}>Find the perfect creator for your event</Text>
           </View>
           <Pressable
             style={s.savedLink}

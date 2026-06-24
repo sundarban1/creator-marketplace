@@ -29,6 +29,7 @@ const envSchema = z.object({
   EMAIL_SECURE:   z.string().optional(),
   EMAIL_USERNAME: z.string().optional(),
   EMAIL_PASSWORD: z.string().optional(),
+  ADMIN_EMAIL:    z.string().optional(),
   FRONTEND_URL: z.string().default('http://localhost:3000'),
 });
 

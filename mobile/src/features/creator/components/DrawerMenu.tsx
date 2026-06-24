@@ -17,7 +17,7 @@ type NavItem = {
 
 const ACCOUNT_ITEMS: NavItem[] = [
   { iconName: 'share-social-outline',    label: 'Social Accounts',      route: '/(creator)/settings?section=social',    color: '#E1306C' },
-  { iconName: 'options-outline',         label: 'Campaign Preferences', route: '/(creator)/settings?section=campaigns', color: '#7C3AED' },
+  { iconName: 'options-outline',         label: 'Event Preferences',    route: '/(creator)/settings?section=campaigns', color: '#7C3AED' },
   { iconName: 'wallet-outline',          label: 'Earnings & Payments',  route: '/(creator)/settings?section=earnings',  color: '#16A34A' },
   { iconName: 'images-outline',          label: 'Past Work',            route: '/(creator)/settings?section=past-work', color: '#F59E0B' },
   { iconName: 'shield-checkmark-outline', label: 'Security',            route: '/(creator)/settings?section=security',  color: '#3B82F6' },

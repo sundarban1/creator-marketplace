@@ -43,13 +43,23 @@ function fmtDate(d: Date | null) {
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
+export type EventTypeFilter = 'ALL' | 'PAID_CAMPAIGN' | 'OPEN_EVENT';
+
+const EVENT_TYPE_OPTS: { value: EventTypeFilter; label: string }[] = [
+  { value: 'ALL',           label: 'All'    },
+  { value: 'PAID_CAMPAIGN', label: '$ Paid' },
+  { value: 'OPEN_EVENT',    label: 'Free'   },
+];
+
 type Props = {
   visible: boolean;
+  tempEventType: EventTypeFilter;
   tempPriceMin: number;
   tempPriceMax: number;
   tempLocation: LocationFilter;
   tempDateFrom: Date | null;
   tempDateTo: Date | null;
+  setTempEventType: (v: EventTypeFilter) => void;
   setTempPriceMin: (v: number) => void;
   setTempPriceMax: (v: number) => void;
   setTempLocation: (v: LocationFilter) => void;
@@ -413,9 +423,11 @@ function DateRangePicker({
 
 export function FilterModal({
   visible,
+  tempEventType,
   tempPriceMin, tempPriceMax,
   tempLocation,
   tempDateFrom, tempDateTo,
+  setTempEventType,
   setTempPriceMin, setTempPriceMax,
   setTempLocation,
   setTempDateFrom, setTempDateTo,
@@ -437,8 +449,23 @@ export function FilterModal({
 
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.body}>
 
+          <Text style={[styles.section, { color: C.textSecondary }]}>Event Type</Text>
+          <View style={styles.eventTypeRow}>
+            {EVENT_TYPE_OPTS.map(({ value, label }) => {
+              const sel = tempEventType === value;
+              return (
+                <Pressable
+                  key={value}
+                  style={[styles.eventChip, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? C.primaryLight : C.background }]}
+                  onPress={() => setTempEventType(value)}>
+                  <Text style={[styles.eventChipTxt, { color: sel ? C.brinjal1 : C.textSecondary, fontWeight: sel ? '700' : '500' }]}>{label}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
           <Text style={[styles.section, { color: C.textSecondary }]}>Price Range</Text>
-          <RangeSlider minVal={tempPriceMin} maxVal={tempPriceMax} onMinChange={setTempPriceMin} onMaxChange={setTempPriceMax} />
+          <RangeSlider minVal={tempPriceMin} maxVal={tempPriceMax} onMinChange={setTempPriceMin} onMaxChange={setTempPriceMax} currency="Rs" max={100000} step={1000} />
 
           <View style={styles.sectionRow}>
             <Text style={[styles.section, { color: C.textSecondary, marginBottom: 0 }]}>Location</Text>
@@ -503,6 +530,9 @@ const styles = StyleSheet.create({
   title:    { fontSize: 17, fontWeight: '800', fontFamily: F.extrabold },
   reset:    { fontSize: 14, fontWeight: '600', fontFamily: F.semibold },
   body:     { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16, gap: 24 },
+  eventTypeRow:  { flexDirection: 'row', gap: 10 },
+  eventChip:     { flex: 1, paddingVertical: 10, borderRadius: 20, borderWidth: 1.5, alignItems: 'center' },
+  eventChipTxt:  { fontSize: 13, fontFamily: F.medium },
   section:    { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: -8, fontFamily: F.bold },
   sectionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: -8 },
   sectionHint:{ fontSize: 11, fontWeight: '600', fontFamily: F.semibold },

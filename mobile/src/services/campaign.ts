@@ -93,15 +93,16 @@ export const campaignService = {
   },
 
   async list(params?: {
-    category?:    string;
-    platform?:    string;
-    minBudget?:   number;
-    maxBudget?:   number;
-    isFeatured?:  boolean;
-    dateFrom?:    Date;
-    dateTo?:      Date;
-    page?:        number;
-    limit?:       number;
+    category?:     string;
+    platform?:     string;
+    minBudget?:    number;
+    maxBudget?:    number;
+    isFeatured?:   boolean;
+    dateFrom?:     Date;
+    dateTo?:       Date;
+    campaignType?: 'PAID_CAMPAIGN' | 'OPEN_EVENT';
+    page?:         number;
+    limit?:        number;
   }): Promise<{ campaigns: Campaign[]; total: number; page: number; totalPages: number }> {
     const res = await request<ApiCampaign[]>('GET', '/api/campaigns', undefined, {
       category:     params?.category,
@@ -111,6 +112,7 @@ export const campaignService = {
       isFeatured:   params?.isFeatured !== undefined ? String(params.isFeatured) : undefined,
       deadlineFrom: params?.dateFrom?.toISOString(),
       deadlineTo:   params?.dateTo?.toISOString(),
+      campaignType: params?.campaignType,
       page:         params?.page  ?? 1,
       limit:        params?.limit ?? 50,
     });
@@ -211,14 +213,14 @@ export const campaignService = {
       proposedRate: string;
       coverLetter: string;
       createdAt: string;
-      campaign: { id: string; title: string; platform: string };
+      campaign: { id: string; title: string; platform: string; campaignType: 'PAID_CAMPAIGN' | 'OPEN_EVENT' };
       creator: { id: string; fullName: string; avatarUrl: string | null; location: string | null };
     }>;
     total: number;
   }> {
     const res = await request<Array<{
       id: string; status: string; proposedRate: number; coverLetter: string; createdAt: string;
-      campaign: { id: string; title: string; platform: string };
+      campaign: { id: string; title: string; platform: string; campaignType?: string };
       creator: { id: string; fullName: string; avatarUrl: string | null; location: string | null };
     }>>('GET', '/api/campaigns/applications/business', undefined, {
       page: params?.page ?? 1,
@@ -231,7 +233,10 @@ export const campaignService = {
         proposedRate: `Rs. ${a.proposedRate.toLocaleString()}`,
         coverLetter: a.coverLetter ?? '',
         createdAt: a.createdAt,
-        campaign: a.campaign,
+        campaign: {
+          ...a.campaign,
+          campaignType: (a.campaign.campaignType ?? 'PAID_CAMPAIGN') as 'PAID_CAMPAIGN' | 'OPEN_EVENT',
+        },
         creator: a.creator,
       })),
       total: res.pagination?.total ?? res.data.length,
@@ -260,7 +265,7 @@ export const campaignService = {
     return res.data.map((a) => ({
       id: a.id,
       status: a.status.toLowerCase() as 'pending' | 'accepted' | 'rejected',
-      proposedRate: `$${a.proposedRate.toLocaleString()}`,
+      proposedRate: `Rs. ${a.proposedRate.toLocaleString()}`,
       createdAt: a.createdAt,
       creator: a.creator,
     }));
@@ -293,7 +298,7 @@ export const campaignService = {
       status:        a.status.toLowerCase() as 'pending' | 'accepted' | 'rejected',
       submittedAt:   a.createdAt,
       coverLetter:   a.coverLetter,
-      proposedRate:  `$${a.proposedRate.toLocaleString()}`,
+      proposedRate:  `Rs. ${a.proposedRate.toLocaleString()}`,
     }));
   },
 };

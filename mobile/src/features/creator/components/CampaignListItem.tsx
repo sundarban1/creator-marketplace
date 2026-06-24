@@ -30,7 +30,7 @@ export function CampaignListItem({ campaign }: { campaign: Campaign }) {
       style={({ pressed }) => [styles.listCard, { backgroundColor: C.surface }, pressed && { opacity: 0.88 }]}
       onPress={goToDetail}>
 
-      {/* Thumb */}
+      {/* Thumb + type badge below */}
       <View style={styles.thumbWrap}>
         <View style={[styles.listThumb, { backgroundColor: catMeta.bg }]}>
           <Text style={styles.listThumbIcon}>{catMeta.emoji}</Text>
@@ -38,6 +38,15 @@ export function CampaignListItem({ campaign }: { campaign: Campaign }) {
         {platIcon && (
           <View style={[styles.platBadge, { backgroundColor: platIcon.color }]}>
             <FontAwesome5 name={platIcon.name as never} size={9} color="#fff" brand />
+          </View>
+        )}
+        {campaign.campaignType === 'OPEN_EVENT' ? (
+          <View style={[styles.typeBadge, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}>
+            <Text style={[styles.typeBadgeText, { color: '#059669' }]}>Free</Text>
+          </View>
+        ) : (
+          <View style={[styles.typeBadge, { backgroundColor: '#EEF2FF', borderColor: '#C7D2FE' }]}>
+            <Text style={[styles.typeBadgeText, { color: '#4F46E5' }]}>$ Paid</Text>
           </View>
         )}
       </View>
@@ -85,7 +94,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 3 },
     elevation: 4,
   },
-  thumbWrap: { flexShrink: 0, position: 'relative' },
+  thumbWrap: { flexShrink: 0, alignItems: 'center', gap: 6 },
   listThumb: {
     width: 72, height: 72, borderRadius: 16,
     justifyContent: 'center', alignItems: 'center',
@@ -111,6 +120,8 @@ const styles = StyleSheet.create({
   listMetaRow:  { flexDirection: 'row', alignItems: 'center', gap: 4 },
   listMeta:     { fontSize: 11, fontFamily: F.regular },
 
+  typeBadge:     { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1 },
+  typeBadgeText: { fontSize: 11, fontWeight: '700', fontFamily: F.bold },
   applyBtn: {
     flexShrink: 0, alignSelf: 'center',
     borderRadius: 12, paddingVertical: 10, paddingHorizontal: 12,

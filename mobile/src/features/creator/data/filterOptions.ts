@@ -44,8 +44,8 @@ export const CATEGORY_META: Record<string, { emoji: string; bg: string }> = {
   'Education / Course':            { emoji: '🎓',  bg: '#FFFBEB' },
   'Real Estate Promotion':         { emoji: '🏠',  bg: '#F8FAFC' },
   'Retail Shop Promotion':         { emoji: '🛒',  bg: '#FFFBEB' },
-  'Discount / Offer Campaign':     { emoji: '🎯',  bg: '#FFF7ED' },
-  'Festival Campaign':             { emoji: '🎊',  bg: '#FDF4FF' },
+  'Discount / Offer Event':        { emoji: '🎯',  bg: '#FFF7ED' },
+  'Festival Event':                { emoji: '🎊',  bg: '#FDF4FF' },
   'Food Delivery / Cloud Kitchen': { emoji: '🍽️', bg: '#FFF7ED' },
 
   // Legacy "Promote X" categories (from current seeder)

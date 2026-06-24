@@ -1,5 +1,6 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
+import * as SecureStore from 'expo-secure-store';
 import { type Lang, getString, translations } from '@/i18n';
 import { storage } from '@/utilities/storage';
 
@@ -20,6 +21,13 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     const stored = storage.get(LANG_KEY);
     return stored === 'ne' ? 'ne' : 'en';
   });
+
+  // Async read from SecureStore on mount to restore persisted language
+  useEffect(() => {
+    SecureStore.getItemAsync(LANG_KEY).then((v) => {
+      if (v === 'ne' || v === 'en') setLangState(v);
+    });
+  }, []);
 
   function setLanguage(lang: Lang) {
     storage.set(LANG_KEY, lang);

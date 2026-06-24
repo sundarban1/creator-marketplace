@@ -37,7 +37,7 @@ export default function FeaturedCampaignsScreen() {
       setPage(pageNum);
       setTotalPages(res.totalPages);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load campaigns');
+      setError(e instanceof Error ? e.message : 'Failed to load events');
     }
   }
 
@@ -63,7 +63,7 @@ export default function FeaturedCampaignsScreen() {
       {/* Header */}
       <View style={[styles.header, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
         <BackButton fallback="/(creator)/" />
-        <Text style={[styles.headerTitle, { color: C.text }]}>⭐ Featured Campaigns</Text>
+        <Text style={[styles.headerTitle, { color: C.text }]}>⭐ Featured Events</Text>
         <View style={{ width: 38 }} />
       </View>
 
@@ -90,7 +90,7 @@ export default function FeaturedCampaignsScreen() {
           ListEmptyComponent={
             <View style={styles.emptyWrap}>
               <Text style={styles.emptyEmoji}>⭐</Text>
-              <Text style={[styles.emptyTitle, { color: C.text }]}>No featured campaigns yet</Text>
+              <Text style={[styles.emptyTitle, { color: C.text }]}>No featured events yet</Text>
             </View>
           }
           ListFooterComponent={
@@ -105,7 +105,7 @@ export default function FeaturedCampaignsScreen() {
               </Pressable>
             ) : campaigns.length > 0 ? (
               <Text style={[styles.endText, { color: C.textSecondary }]}>
-                Showing all {campaigns.length} featured campaigns
+                Showing all {campaigns.length} featured events
               </Text>
             ) : null
           }

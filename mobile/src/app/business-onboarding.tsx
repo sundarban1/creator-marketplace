@@ -228,7 +228,7 @@ export default function BusinessOnboardingScreen() {
                 <Text style={[styles.fieldError, { color: C.error }]}>{businessNameError}</Text>
               ) : (
                 <Text style={[styles.inputHint, { color: C.textSecondary }]}>
-                  This will appear on your public profile and campaign listings.
+                  This will appear on your public profile and event listings.
                 </Text>
               )}
             </View>
@@ -282,7 +282,7 @@ export default function BusinessOnboardingScreen() {
                 )}
               </View>
               <Text style={[styles.inputHint, { color: C.textSecondary }]}>
-                Creators will use this as a default location for your campaigns.
+                Creators will use this as a default location for your events.
               </Text>
             </View>
 

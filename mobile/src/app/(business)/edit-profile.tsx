@@ -237,7 +237,7 @@ export default function EditBusinessProfileScreen() {
         <View style={[styles.card, { backgroundColor: C.surface }]}>
           <View style={styles.field}>
             <Text style={[styles.subHint, { color: C.textSecondary }]}>
-              Select all that apply — creators can filter campaigns by industry.
+              Select all that apply — creators can filter events by industry.
             </Text>
             <View style={styles.chipGrid}>
               {ALL_CATEGORIES.map((cat) => {

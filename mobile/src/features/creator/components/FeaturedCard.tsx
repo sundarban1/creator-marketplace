@@ -100,6 +100,17 @@ export function FeaturedCard({ campaign }: { campaign: Campaign }) {
             </View>
           </View>
 
+          {/* Type badge */}
+          {campaign.campaignType === 'OPEN_EVENT' ? (
+            <View style={[styles.typeBadge, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}>
+              <Text style={[styles.typeBadgeText, { color: '#059669' }]}>✓ Free Event</Text>
+            </View>
+          ) : (
+            <View style={[styles.typeBadge, { backgroundColor: '#EEF2FF', borderColor: '#C7D2FE' }]}>
+              <Text style={[styles.typeBadgeText, { color: '#4F46E5' }]}>$ Paid Event</Text>
+            </View>
+          )}
+
           {/* View & Apply — static, whole card is the tap target */}
           <View style={[styles.applyBtn, { backgroundColor: C.brinjal1 }]}>
             <Text style={styles.applyBtnText}>View & Apply →</Text>
@@ -162,6 +173,9 @@ const styles = StyleSheet.create({
   metaText:    { fontSize: 11, fontFamily: F.regular, flexShrink: 1 },
   deadlineRow: { flexDirection: 'row', alignItems: 'center', gap: 3, flexShrink: 0 },
   deadlineText:{ fontSize: 11, fontFamily: F.medium },
+
+  typeBadge:     { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, alignSelf: 'flex-start', borderWidth: 1 },
+  typeBadgeText: { fontSize: 11, fontWeight: '700', fontFamily: F.bold },
 
   applyBtn:     { height: 38, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginTop: 2 },
   applyBtnText: { color: '#fff', fontWeight: '700', fontSize: 13, fontFamily: F.bold },

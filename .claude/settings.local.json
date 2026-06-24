@@ -13,7 +13,24 @@
       "Bash(npm run dev > /tmp/backend.log 2>&1 & *)",
       "Bash(echo \"Mobile PID: $!\")",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8081)",
-      "Bash(xcrun simctl *)"
+      "Bash(xcrun simctl *)",
+      "Bash(./node_modules/.bin/tsc --noEmit)",
+      "Bash(/Users/sundarban/Documents/projects/marketplace/mobile/node_modules/.bin/tsc --noEmit)",
+      "Bash(/Users/sundarban/Documents/projects/marketplace/mobile/node_modules/.bin/tsc --noEmit -p /Users/sundarban/Documents/projects/marketplace/.claude/worktrees/agent-a50b29e3979293af6/mobile/tsconfig.json)",
+      "Bash(git -C /Users/sundarban/Documents/projects/marketplace/.claude/worktrees/agent-a50b29e3979293af6 diff --stat HEAD)",
+      "Bash(npm run *)",
+      "Bash(echo \"backend PID: $!\")",
+      "Bash(npx expo *)",
+      "Bash(echo \"mobile PID: $!\")",
+      "Bash(lsof -ti:8081)",
+      "Bash(grep -rn \"\\\\$\\\\|price\\\\|priceRange\\\\|budget\\\\|Rs\\\\|currency\" /Users/sundarban/Documents/projects/marketplace/mobile/src/features/creator/ --include=\"*.tsx\" --include=\"*.ts\" -l)",
+      "Bash(grep -n \"\\\\$\\\\|Rs\\\\|priceRange\\\\|budgetMin\\\\|budgetMax\\\\|price\" /Users/sundarban/Documents/projects/marketplace/mobile/src/app/\\\\\\(creator\\\\\\)/index.tsx)",
+      "Bash(grep -rn \"'\\\\$'\\\\|\\\\\"\\\\\\\\$\\\\\"\\\\|\\\\`\\\\$\\\\|Rs\\\\|priceRange\\\\|budgetMin\\\\|budgetMax\\\\|slider\\\\|Slider\\\\|range\\\\|Range\" /Users/sundarban/Documents/projects/marketplace/mobile/src/app/\\\\\\(creator\\\\\\)/index.tsx)",
+      "Bash(grep -n \"\\\\$\\\\|Rs\\\\|SLIDER_MAX\\\\|priceMin\\\\|priceMax\\\\|tempPrice\" /Users/sundarban/Documents/projects/marketplace/mobile/src/app/\\\\\\(creator\\\\\\)/index.tsx)",
+      "Bash(grep -rn \"FilterModal\\\\|SLIDER_MAX\\\\|\\\\\\\\\\\\$\\\\s*{\\\\|'\\\\\\\\\\\\$'\\\\|\\\\\"\\\\\\\\$\\\\\"\\\\|Rs\\\\b\" /Users/sundarban/Documents/projects/marketplace/mobile/src/features/creator/ --include=\"*.tsx\" --include=\"*.ts\")",
+      "Bash(grep -n \"\\\\$\\\\|Rs\\\\|price\\\\|Price\\\\|budget\\\\|Budget\\\\|SLIDER\\\\|slider\" /Users/sundarban/Documents/projects/marketplace/mobile/src/features/creator/components/FilterModal.tsx)",
+      "Bash(grep -n \"\\\\$\\\\|Rs\\\\|min\\\\|max\\\\|label\\\\|Label\\\\|symbol\\\\|formatCurrency\\\\|formatPrice\" /Users/sundarban/Documents/projects/marketplace/mobile/src/features/creator/components/FilterModal.tsx)",
+      "Bash(grep -n \"\\\\$\\\\|Rs\\\\|minVal\\\\|maxVal\\\\|RangeSlider\" /Users/sundarban/Documents/projects/marketplace/mobile/src/features/creator/components/FilterModal.tsx)"
     ],
     "additionalDirectories": [
       "/private/tmp"

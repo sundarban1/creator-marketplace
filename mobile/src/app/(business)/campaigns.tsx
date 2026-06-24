@@ -147,7 +147,7 @@ export default function CampaignsScreen() {
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <Text style={[styles.pageTitle, { color: '#fff' }]}>{t('campaigns.title')}</Text>
-            <Text style={[styles.pageSub, { color: 'rgba(255,255,255,0.75)' }]}>Manage and track your campaigns</Text>
+            <Text style={[styles.pageSub, { color: 'rgba(255,255,255,0.75)' }]}>Manage and track your events</Text>
           </View>
           <Pressable
             style={[styles.newBtn, { backgroundColor: 'rgba(255,255,255,0.22)' }]}
@@ -190,7 +190,7 @@ export default function CampaignsScreen() {
             <View style={styles.emptyState}>
               <Text style={styles.emptyIcon}>📋</Text>
               <Text style={[styles.emptyTitle, { color: C.text }]}>
-                {activeFilter === 'All' ? t('campaigns.noCampaigns') : `${t('campaigns.' + activeFilter.toLowerCase())} campaigns`}
+                {activeFilter === 'All' ? t('campaigns.noCampaigns') : `${t('campaigns.' + activeFilter.toLowerCase())} events`}
               </Text>
               <Text style={[styles.emptySub, { color: C.textSecondary }]}>
                 {activeFilter === 'All' ? t('campaigns.createFirst') : t('explore.adjustFilters')}

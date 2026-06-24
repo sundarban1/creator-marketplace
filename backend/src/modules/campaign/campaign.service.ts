@@ -34,7 +34,8 @@ export class CampaignService {
     const campaign = await this.repo.create({
       businessId: business.id,
       ...input,
-      deadline: new Date(input.deadline),
+      deadline:  new Date(input.deadline),
+      eventDate: input.eventDate ? new Date(input.eventDate) : undefined,
     });
 
     // Broadcast new active campaign to all connected creators in real time
@@ -105,7 +106,8 @@ export class CampaignService {
 
     const updated = await this.repo.update(id, {
       ...input,
-      deadline: input.deadline ? new Date(input.deadline) : undefined,
+      deadline:  input.deadline  ? new Date(input.deadline)  : undefined,
+      eventDate: input.eventDate ? new Date(input.eventDate) : undefined,
     });
 
     return updated;

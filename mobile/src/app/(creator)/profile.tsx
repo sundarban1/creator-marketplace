@@ -292,7 +292,7 @@ export default function CreatorProfileScreen() {
             <EmptyState
               icon="briefcase-outline"
               title="No past work yet"
-              hint="Share links to posts, campaigns, or videos you've created for brands"
+              hint="Share links to posts, events, or videos you've created for brands"
               cta="+ Add Work Sample"
               onPress={() => router.push('/(creator)/settings?section=past-work' as never)}
               C={C} />

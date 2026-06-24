@@ -21,6 +21,7 @@ import { businessService } from '@/services/business';
 import { authService } from '@/services/auth';
 import { profileService, type SocialLinks } from '@/services/profile';
 import { COLORS, F } from '@/utilities/constants';
+import { request } from '@/lib/api';
 
 type ColorsType = typeof COLORS;
 const ColorCtx = createContext<ColorsType>(COLORS);
@@ -45,11 +46,6 @@ const NEPAL_PAYMENTS = [
   { id: 'khalti',   icon: '💜', label: 'Khalti',        color: '#5C2D91' },
   { id: 'bank',     icon: '🏦', label: 'Bank Transfer', color: '#1877F2' },
 ];
-const INTL_PAYMENTS = [
-  { id: 'card',     icon: '💳', label: 'Visa / Mastercard', color: '#003087' },
-  { id: 'stripe',   icon: '⚡', label: 'Stripe',            color: '#635BFF', future: true },
-];
-
 const MOCK_SAVED_CREATORS = [
   { id: 's1', name: 'Sarah Johnson',  handle: '@sarahjcreates',  followers: '28.4K', category: 'Lifestyle', avatar: 'SJ', avatarBg: '#EDE9FE', avatarColor: '#4F46E5', notes: '' },
   { id: 's2', name: 'James Liu',      handle: '@jamesliu_nz',    followers: '63.2K', category: 'Tech',      avatar: 'JL', avatarBg: '#FFF7ED', avatarColor: '#D97706', notes: 'Great engagement rate' },
@@ -57,9 +53,9 @@ const MOCK_SAVED_CREATORS = [
 ];
 
 const MOCK_TRANSACTIONS = [
-  { id: 't1', date: 'Jun 10, 2026', desc: 'Campaign: Winter Menu',      amount: '-NZ$200', type: 'debit' },
+  { id: 't1', date: 'Jun 10, 2026', desc: 'Event: Winter Menu',          amount: '-NZ$200', type: 'debit' },
   { id: 't2', date: 'Jun 05, 2026', desc: 'Wallet Top-up',              amount: '+NZ$500', type: 'credit' },
-  { id: 't3', date: 'May 28, 2026', desc: 'Campaign: New Collection',   amount: '-NZ$380', type: 'debit' },
+  { id: 't3', date: 'May 28, 2026', desc: 'Event: New Collection',       amount: '-NZ$380', type: 'debit' },
 ];
 
 const SECTION_TITLES: Record<string, string> = {
@@ -67,7 +63,7 @@ const SECTION_TITLES: Record<string, string> = {
   account:       'Account & Security',
   notifications: 'Notification Settings',
   payment:       'Payment Settings',
-  campaigns:     'Campaign Preferences',
+  campaigns:     'Event Preferences',
   saved:         'Saved Creators',
   verification:  'Verification',
   privacy:       'Privacy Settings',
@@ -227,10 +223,6 @@ export default function BusinessSettingsScreen() {
 
   // ── Section 4: Payment ──
   const [nepalPayments, setNepalPayments] = useState<string[]>(['esewa']);
-  const [intlPayments, setIntlPayments] = useState<string[]>([]);
-  const [billingCompany, setBillingCompany] = useState('');
-  const [billingAddress, setBillingAddress] = useState('');
-  const [vatPan, setVatPan] = useState('');
 
   // ── Section 5: Campaign Preferences ──
   const [prefPlatforms, setPrefPlatforms] = useState(['Instagram', 'TikTok']);
@@ -306,10 +298,6 @@ export default function BusinessSettingsScreen() {
     }
   }
 
-  function handleSavePayment() {
-    showToast('Billing information saved!');
-  }
-
   function handleChangePassword() {
     setPwSubmitted(true);
     if (newPw.length >= 8 && newPw === confirmPw) {
@@ -329,7 +317,7 @@ export default function BusinessSettingsScreen() {
   function handleDeactivateAccount() {
     Alert.alert(
       'Deactivate Account',
-      'Your account will be temporarily disabled. Your campaigns will be paused and your profile will be hidden from creators. You can reactivate anytime by logging back in.',
+      'Your account will be temporarily disabled. Your events will be paused and your profile will be hidden from creators. You can reactivate anytime by logging back in.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -417,18 +405,28 @@ export default function BusinessSettingsScreen() {
     showToast('Note saved');
   }
 
-  function handleSupportSubmit() {
+  async function handleSupportSubmit() {
     if (!supportMsg.trim()) return;
-    setSupportTopic(''); setSupportMsg('');
-    showToast("Message sent. We'll respond within 24 hours.");
-    setSubPage(null);
+    try {
+      await request('POST', '/api/support/contact', { topic: supportTopic || 'General', message: supportMsg });
+      setSupportTopic(''); setSupportMsg('');
+      showToast("Message sent. We'll respond within 24 hours.");
+      setSubPage(null);
+    } catch {
+      toast.error('Failed to send message. Please try again.');
+    }
   }
 
-  function handleReportSubmit() {
+  async function handleReportSubmit() {
     if (!reportDesc.trim()) return;
-    setReportType(''); setReportDesc('');
-    showToast('Issue reported. Thank you!');
-    setSubPage(null);
+    try {
+      await request('POST', '/api/support/report', { type: reportType || 'Other', description: reportDesc });
+      setReportType(''); setReportDesc('');
+      showToast('Issue reported. Thank you!');
+      setSubPage(null);
+    } catch {
+      toast.error('Failed to submit report. Please try again.');
+    }
   }
 
   function handleBack() {
@@ -503,18 +501,18 @@ export default function BusinessSettingsScreen() {
   // ── Sub-page: Help Center ─────────────────────────────────────
 
   const HELP_FAQS = [
-    { q: 'How do I post a campaign?', a: 'Go to Campaigns → tap the + button → fill in your campaign details, budget, and requirements → publish. Creators will begin applying within hours.' },
+    { q: 'How do I post an event?', a: 'Go to Events → tap the + button → fill in your event details, budget, and requirements → publish. Creators will begin applying within hours.' },
     { q: 'How are payments handled?', a: 'Budgets are held in escrow before work begins. Once you confirm content delivery, payment is released to the creator within 5 business days.' },
     { q: 'How do I pick the right creator?', a: 'Review their follower count, engagement rate, past work, and category match. Check proposal rate vs. your budget. Shortlisted creators stay in your pipeline.' },
-    { q: 'Can I cancel a campaign?', a: 'Yes, draft campaigns can be cancelled anytime. Active campaigns can be closed, but you may need to pay creators who have already delivered work.' },
-    { q: "What if a creator doesn't deliver?", a: 'Open a dispute from the campaign detail page. Our team mediates and you are eligible for a refund if the creator fails to deliver as agreed.' },
+    { q: 'Can I cancel an event?', a: 'Yes, draft events can be cancelled anytime. Active events can be closed, but you may need to pay creators who have already delivered work.' },
+    { q: "What if a creator doesn't deliver?", a: 'Open a dispute from the event detail page. Our team mediates and you are eligible for a refund if the creator fails to deliver as agreed.' },
   ];
 
   function renderHelpCenter() {
     return (
       <>
         <HintCard>
-          <Text style={[styles.hintText, { color: C.brinjal1 }]}>Find answers to common questions about running campaigns on CreatorMarket.</Text>
+          <Text style={[styles.hintText, { color: C.brinjal1 }]}>Find answers to common questions about running events on CreatorMarket.</Text>
         </HintCard>
         <View style={{ marginHorizontal: 16, gap: 8, marginTop: 8 }}>
           {HELP_FAQS.map((item, i) => {
@@ -540,7 +538,7 @@ export default function BusinessSettingsScreen() {
 
   // ── Sub-page: Contact Support ─────────────────────────────────
 
-  const SUPPORT_TOPICS = ['Technical Issue', 'Payment Problem', 'Campaign Issue', 'Creator Issue', 'Billing', 'Other'];
+  const SUPPORT_TOPICS = ['Technical Issue', 'Payment Problem', 'Event Issue', 'Creator Issue', 'Billing', 'Other'];
 
   function renderContactSupport() {
     return (
@@ -588,7 +586,7 @@ export default function BusinessSettingsScreen() {
 
   // ── Sub-page: Report Issue ────────────────────────────────────
 
-  const REPORT_TYPES = ['App Bug', 'Payment Issue', 'Creator Issue', 'Campaign Problem', 'Inappropriate Content', 'Other'];
+  const REPORT_TYPES = ['App Bug', 'Payment Issue', 'Creator Issue', 'Event Problem', 'Inappropriate Content', 'Other'];
 
   function renderReportIssue() {
     return (
@@ -635,10 +633,10 @@ export default function BusinessSettingsScreen() {
 
   const FAQS = [
     { q: 'What is CreatorMarket for businesses?', a: 'CreatorMarket lets you find and hire local content creators for paid collaborations — video promotions, product reviews, social media marketing, and more.' },
-    { q: 'How much does it cost?', a: 'Posting campaigns is free. A 10% platform fee applies on each completed collaboration, deducted from the campaign budget.' },
-    { q: 'How do I find the right creators?', a: 'Browse creator profiles by category, follower count, and platform. Or post a campaign and let creators apply to you.' },
+    { q: 'How much does it cost?', a: 'Posting events is free. A 10% platform fee applies on each completed collaboration, deducted from the event budget.' },
+    { q: 'How do I find the right creators?', a: 'Browse creator profiles by category, follower count, and platform. Or post an event and let creators apply to you.' },
     { q: 'What payment methods are supported?', a: 'For Nepal: eSewa, Khalti, and Bank Transfer. For international campaigns: Visa/Mastercard. Stripe support is coming soon.' },
-    { q: 'Can I run multiple campaigns at once?', a: 'Yes. You can have multiple active campaigns simultaneously and manage all proposals in one place.' },
+    { q: 'Can I run multiple events at once?', a: 'Yes. You can have multiple active events simultaneously and manage all proposals in one place.' },
     { q: 'Is my business information secure?', a: 'Yes. We use industry-standard encryption. Your contact details can be hidden from the public profile in Privacy Settings.' },
   ];
 
@@ -938,13 +936,6 @@ export default function BusinessSettingsScreen() {
             </View>
           )}
           <NavRow icon="🔑" label="Change Password" onPress={() => setSubPage('change-password')} />
-          <View style={[styles.row, { borderTopWidth: 0, borderBottomWidth: 1, borderBottomColor: C.border }]}>
-            <Text style={styles.rowIcon}>📱</Text>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.rowLabel, { color: C.text }]}>Login Sessions</Text>
-              <Text style={[styles.rowSub, { color: C.textSecondary }]}>1 active session</Text>
-            </View>
-          </View>
           <View style={styles.row}>
             <Text style={styles.rowIcon}>🔐</Text>
             <Text style={[styles.rowLabel, { color: C.text }]}>Two-Factor Authentication</Text>
@@ -975,16 +966,16 @@ export default function BusinessSettingsScreen() {
       <>
         <SectionHeader title="Push Notifications" />
         <Card>
-          <SwitchRow icon="📋" label="New Creator Applications" sub="When creators apply to your campaigns" value={notifApplications} onChange={() => setNotifApplications((v) => !v)} />
+          <SwitchRow icon="📋" label="New Creator Applications" sub="When creators apply to your events" value={notifApplications} onChange={() => setNotifApplications((v) => !v)} />
           <SwitchRow icon="💬" label="New Messages" sub="Chat messages from creators" value={notifMessages} onChange={() => setNotifMessages((v) => !v)} />
-          <SwitchRow icon="📊" label="Campaign Updates" sub="Status changes for your campaigns" value={notifCampaignUpdates} onChange={() => setNotifCampaignUpdates((v) => !v)} />
-          <SwitchRow icon="✅" label="Creator Accepted Campaign" sub="When a creator confirms collaboration" value={notifCreatorAccepted} onChange={() => setNotifCreatorAccepted((v) => !v)} isLast />
+          <SwitchRow icon="📊" label="Event Updates" sub="Status changes for your events" value={notifCampaignUpdates} onChange={() => setNotifCampaignUpdates((v) => !v)} />
+          <SwitchRow icon="✅" label="Creator Accepted Event" sub="When a creator confirms collaboration" value={notifCreatorAccepted} onChange={() => setNotifCreatorAccepted((v) => !v)} isLast />
         </Card>
 
         <SectionHeader title="Email Notifications" />
         <Card>
           <SwitchRow icon="📧" label="Enable Emails" sub="Receive email notifications" value={emailEnabled} onChange={() => setEmailEnabled((v) => !v)} />
-          <SwitchRow icon="📈" label="Weekly Campaign Summary" sub="Performance digest every Monday" value={emailWeeklySummary} onChange={() => setEmailWeeklySummary((v) => !v)} isLast />
+          <SwitchRow icon="📈" label="Weekly Event Summary" sub="Performance digest every Monday" value={emailWeeklySummary} onChange={() => setEmailWeeklySummary((v) => !v)} isLast />
         </Card>
 
         <HintCard>
@@ -1001,7 +992,7 @@ export default function BusinessSettingsScreen() {
       <>
         <SectionHeader title="Nepal Payment Methods" />
         <HintCard>
-          <Text style={[styles.hintText, { color: C.brinjal1 }]}>Select all methods you want to use for campaign payments.</Text>
+          <Text style={[styles.hintText, { color: C.brinjal1 }]}>Select all methods you want to use for event payments.</Text>
         </HintCard>
         <Card>
           {NEPAL_PAYMENTS.map((m, idx) => {
@@ -1021,58 +1012,6 @@ export default function BusinessSettingsScreen() {
               </Pressable>
             );
           })}
-        </Card>
-
-        <SectionHeader title="International Payment Methods" />
-        <Card>
-          {INTL_PAYMENTS.map((m, idx) => {
-            const selected = intlPayments.includes(m.id);
-            return (
-              <Pressable
-                key={m.id}
-                style={[styles.row, idx < INTL_PAYMENTS.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}
-                onPress={() => { if (!m.future) togglePayment(intlPayments, setIntlPayments, m.id); }}>
-                <View style={[styles.paymentIcon, { backgroundColor: m.color + '18' }]}>
-                  <Text style={styles.paymentEmoji}>{m.icon}</Text>
-                </View>
-                <Text style={[styles.rowLabel, { color: C.text }]}>{m.label}</Text>
-                {'future' in m && m.future ? (
-                  <View style={[styles.soonBadge, { backgroundColor: C.primaryLight }]}>
-                    <Text style={[styles.badgeText, { color: C.brinjal1 }]}>Coming Soon</Text>
-                  </View>
-                ) : (
-                  <View style={[styles.checkboxOuter, { borderColor: selected ? C.brinjal1 : C.border, backgroundColor: selected ? C.brinjal1 : 'transparent' }]}>
-                    {selected ? <Text style={styles.checkboxTick}>✓</Text> : null}
-                  </View>
-                )}
-              </Pressable>
-            );
-          })}
-        </Card>
-
-        <SectionHeader title="Billing Information" />
-        <Card>
-          <View style={styles.inlineForm}>
-            {[
-              { label: 'Company Name', value: billingCompany, set: setBillingCompany, placeholder: 'Registered company name' },
-              { label: 'Billing Address', value: billingAddress, set: setBillingAddress, placeholder: 'Street, City, Country' },
-              { label: 'VAT / PAN Number', value: vatPan, set: setVatPan, placeholder: 'e.g. 123456789' },
-            ].map((f) => (
-              <View key={f.label} style={styles.formField}>
-                <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>{f.label}</Text>
-                <TextInput
-                  style={[styles.formInput, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
-                  value={f.value}
-                  onChangeText={f.set}
-                  placeholder={f.placeholder}
-                  placeholderTextColor={C.textSecondary}
-                />
-              </View>
-            ))}
-            <Pressable style={[styles.primaryBtn, { backgroundColor: C.brinjal1 }]} onPress={handleSavePayment}>
-              <Text style={styles.primaryBtnText}>Save Billing Info</Text>
-            </Pressable>
-          </View>
         </Card>
 
         <SectionHeader title="Payment History" />
@@ -1101,7 +1040,7 @@ export default function BusinessSettingsScreen() {
     return (
       <>
         <HintCard>
-          <Text style={[styles.hintText, { color: C.brinjal1 }]}>These help us show your campaigns to the most relevant creators.</Text>
+          <Text style={[styles.hintText, { color: C.brinjal1 }]}>These help us show your events to the most relevant creators.</Text>
         </HintCard>
 
         <SectionHeader title="Preferred Platforms" />
@@ -1146,7 +1085,7 @@ export default function BusinessSettingsScreen() {
         <View style={styles.emptyState}>
           <Text style={styles.emptyIcon}>🔖</Text>
           <Text style={[styles.emptyText, { color: C.textSecondary }]}>No saved creators yet</Text>
-          <Text style={[styles.emptySubText, { color: C.textSecondary }]}>Browse campaigns and save creators you like</Text>
+          <Text style={[styles.emptySubText, { color: C.textSecondary }]}>Browse events and save creators you like</Text>
         </View>
       );
     }
@@ -1399,7 +1338,7 @@ export default function BusinessSettingsScreen() {
         <Card>
           <NavRow icon="🔔" label="Notifications"        onPress={() => router.push('/(business)/settings?section=notifications' as Parameters<typeof router.push>[0])} />
           <NavRow icon="💳" label="Payment Settings"     onPress={() => router.push('/(business)/settings?section=payment' as Parameters<typeof router.push>[0])} />
-          <NavRow icon="🎯" label="Campaign Preferences" onPress={() => router.push('/(business)/settings?section=campaigns' as Parameters<typeof router.push>[0])} />
+          <NavRow icon="🎯" label="Event Preferences" onPress={() => router.push('/(business)/settings?section=campaigns' as Parameters<typeof router.push>[0])} />
           <NavRow icon="🔖" label="Saved Creators"       onPress={() => router.push('/(business)/settings?section=saved' as Parameters<typeof router.push>[0])} />
           <NavRow icon="🔒" label="Privacy Settings"     onPress={() => router.push('/(business)/settings?section=privacy' as Parameters<typeof router.push>[0])} />
           <NavRow icon="🛡️" label="Account & Security"  onPress={() => router.push('/(business)/settings?section=account' as Parameters<typeof router.push>[0])} isLast />

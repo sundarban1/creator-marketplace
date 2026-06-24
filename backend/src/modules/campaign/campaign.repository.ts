@@ -20,9 +20,22 @@ export class CampaignRepository {
     paymentType: string;
     creatorsNeeded?: number;
     isFeatured?: boolean;
+    campaignType?: 'PAID_CAMPAIGN' | 'OPEN_EVENT';
+    capacity?: number;
+    eventDate?: Date;
+    venue?: string;
+    benefits?: string[];
   }) {
     return prisma.campaign.create({
-      data,
+      data: {
+        ...data,
+        campaignType: data.campaignType ?? 'PAID_CAMPAIGN',
+        capacity:     data.capacity ?? null,
+        eventDate:    data.eventDate ?? null,
+        venue:        data.venue ?? null,
+        benefits:     data.benefits ?? [],
+        eventStatus:  'OPEN',
+      },
       include: {
         business: { select: { businessName: true, logoUrl: true } },
         _count: { select: { applications: true } },
@@ -39,6 +52,7 @@ export class CampaignRepository {
     isFeatured?: boolean;
     deadlineFrom?: Date;
     deadlineTo?: Date;
+    campaignType?: 'PAID_CAMPAIGN' | 'OPEN_EVENT';
     page: number;
     limit: number;
   }) {
@@ -49,6 +63,9 @@ export class CampaignRepository {
     }
     if (filters.platform) {
       where.platform = { contains: filters.platform, mode: 'insensitive' };
+    }
+    if (filters.campaignType) {
+      where.campaignType = filters.campaignType;
     }
     if (filters.minBudget !== undefined) {
       where.budgetMax = { gte: filters.minBudget };
@@ -132,8 +149,15 @@ export class CampaignRepository {
     budgetMin: number;
     budgetMax: number;
     paymentType: string;
+    creatorsNeeded: number;
     status: CampaignStatus;
     isFeatured: boolean;
+    campaignType: 'PAID_CAMPAIGN' | 'OPEN_EVENT';
+    capacity: number | null;
+    eventDate: Date | null;
+    venue: string | null;
+    benefits: string[];
+    eventStatus: 'OPEN' | 'FULL' | 'CLOSED';
   }>) {
     return prisma.campaign.update({
       where: { id },
@@ -228,7 +252,7 @@ export class CampaignRepository {
             select: { id: true, fullName: true, avatarUrl: true, location: true },
           },
           campaign: {
-            select: { id: true, title: true, platform: true },
+            select: { id: true, title: true, platform: true, campaignType: true },
           },
         },
       }),

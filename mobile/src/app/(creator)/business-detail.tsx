@@ -311,7 +311,7 @@ export default function BusinessDetailScreen() {
           {/* Active Campaigns */}
           <View style={styles.campaignsSection}>
             <View style={styles.campaignsSectionHeader}>
-              <Text style={[styles.campaignsSectionTitle, { color: C.text }]}>Active Campaigns</Text>
+              <Text style={[styles.campaignsSectionTitle, { color: C.text }]}>Active Events</Text>
               <View style={[styles.countBadge, { backgroundColor: C.primaryLight }]}>
                 <Text style={[styles.countBadgeText, { color: C.brinjal1 }]}>{business.campaigns.length}</Text>
               </View>
@@ -320,7 +320,7 @@ export default function BusinessDetailScreen() {
             {business.campaigns.length === 0 ? (
               <View style={[styles.noCampaigns, { backgroundColor: C.surface, borderColor: C.border }]}>
                 <Ionicons name="mail-unread-outline" size={36} color={C.textSecondary} style={{ marginBottom: 8 }} />
-                <Text style={[styles.noCampaignsTitle, { color: C.text }]}>No active campaigns</Text>
+                <Text style={[styles.noCampaignsTitle, { color: C.text }]}>No active events</Text>
                 <Text style={[styles.noCampaignsSub, { color: C.textSecondary }]}>This brand isn't hiring right now. Check back later!</Text>
               </View>
             ) : (

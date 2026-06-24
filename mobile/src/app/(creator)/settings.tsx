@@ -4,6 +4,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { BackButton } from '@/components/BackButton';
 import { creatorService } from '@/services/creator';
+import { authService } from '@/services/auth';
+import { campaignService } from '@/services/campaign';
+import { useLanguage } from '@/context/LanguageContext';
 import { API_BASE, request } from '@/lib/api';
 import { RangeSlider } from '@/components/RangeSlider';
 import {
@@ -77,7 +80,7 @@ const PLATFORM_URL_PREFIX: Record<string, string> = {
   twitch:    'https://twitch.tv/',
 };
 
-const CAT_OPTIONS = [
+const FALLBACK_CAT_OPTIONS = [
   'Food', 'Travel', 'Fashion', 'Beauty', 'Fitness', 'Gaming', 'Tech', 'Education',
   'Lifestyle', 'Home & Living', 'Wellness', 'Music', 'Art & Design', 'Pets',
   'Parenting', 'Automotive', 'Finance', 'Sustainability', 'Photography', 'Sports',
@@ -107,7 +110,7 @@ const LANGUAGE_OPTIONS = [
 
 const SECTION_TITLES: Record<string, string> = {
   social: 'Social Accounts',
-  campaigns: 'Campaign Preferences',
+  campaigns: 'Event Preferences',
   earnings: 'Earnings & Payments',
   'past-work': 'Past Work',
   security: 'Security',
@@ -381,6 +384,7 @@ const pl = StyleSheet.create({
 export default function CreatorSettingsScreen() {
   const { user, logout } = useAuth();
   const { isDark, toggleDark } = useIsDark();
+  const { language, setLanguage } = useLanguage();
   const { section } = useLocalSearchParams<{ section?: string }>();
   const C: ColorsType = useAppColors();
   const toast = useToast();
@@ -444,8 +448,22 @@ export default function CreatorSettingsScreen() {
   const [supportSubmitting, setSupportSubmitting] = useState(false);
   const [reportSubmitting, setReportSubmitting] = useState(false);
 
-  // Language
-  const [selectedLang, setSelectedLang] = useState('English');
+  // Language — synced to LanguageContext
+  const langLabelToCode = (label: string): 'en' | 'ne' => label === 'Nepali' ? 'ne' : 'en';
+  const langCodeToLabel = (code: string): string => code === 'ne' ? 'Nepali' : 'English';
+  const [selectedLang, setSelectedLang] = useState(() => langCodeToLabel(language));
+
+  // Campaign categories from DB
+  const [dbCatOptions, setDbCatOptions] = useState<string[]>([]);
+
+  // Email/phone verification
+  const [emailVerified, setEmailVerified] = useState<boolean | null>(null);
+
+  // Phone verification sub-page
+  const [phoneSubPage, setPhoneSubPage] = useState<'input' | 'otp' | null>(null);
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [phoneOtp, setPhoneOtp] = useState('');
+  const [phoneLoading, setPhoneLoading] = useState(false);
 
   // Accordion (support / legal sub-pages)
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
@@ -487,6 +505,12 @@ export default function CreatorSettingsScreen() {
       if (profile.prefLocations?.length)  setPrefLocations(profile.prefLocations);
       if (profile.prefBudgetMin != null)  setPrefPriceMin(profile.prefBudgetMin);
       if (profile.prefBudgetMax != null)  setPrefPriceMax(profile.prefBudgetMax);
+      // Email verified status from DB
+      if (profile.user?.isEmailVerified != null) setEmailVerified(profile.user.isEmailVerified);
+    }).catch(() => {});
+    // Fetch categories for campaign preferences
+    campaignService.getCategories().then((cats) => {
+      if (cats.length > 0) setDbCatOptions(cats);
     }).catch(() => {});
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -842,7 +866,8 @@ export default function CreatorSettingsScreen() {
   // ── Navigation ────────────────────────────────────────────────
 
   function handleBack() {
-    if (subPage) setSubPage(null);
+    if (phoneSubPage) { setPhoneSubPage(null); setPhoneNumber(''); setPhoneOtp(''); }
+    else if (subPage) setSubPage(null);
     else router.back();
   }
 
@@ -875,7 +900,7 @@ export default function CreatorSettingsScreen() {
                   autoCapitalize="none"
                 />
                 <Pressable onPress={() => setShowNewPw((v) => !v)} style={styles.eyeBtn}>
-                  <Text style={styles.eyeIcon}>{showNewPw ? '🙈' : '👁'}</Text>
+                  <Ionicons name={showNewPw ? 'eye-off-outline' : 'eye-outline'} size={20} color={C.textSecondary} />
                 </Pressable>
               </View>
               {pwError ? <Text style={[styles.fieldError, { color: C.error }]}>{pwError}</Text> : null}
@@ -893,7 +918,7 @@ export default function CreatorSettingsScreen() {
                   autoCapitalize="none"
                 />
                 <Pressable onPress={() => setShowConfirmPw((v) => !v)} style={styles.eyeBtn}>
-                  <Text style={styles.eyeIcon}>{showConfirmPw ? '🙈' : '👁'}</Text>
+                  <Ionicons name={showConfirmPw ? 'eye-off-outline' : 'eye-outline'} size={20} color={C.textSecondary} />
                 </Pressable>
               </View>
               {cPwError ? <Text style={[styles.fieldError, { color: C.error }]}>{cPwError}</Text> : null}
@@ -975,7 +1000,7 @@ export default function CreatorSettingsScreen() {
 
   // ── Sub-page: Contact Support ─────────────────────────────────
 
-  const SUPPORT_TOPICS = ['Technical Issue', 'Payment Problem', 'Campaign Issue', 'Account Help', 'Other'];
+  const SUPPORT_TOPICS = ['Technical Issue', 'Payment Problem', 'Event Issue', 'Account Help', 'Other'];
 
   function renderContactSupport() {
     return (
@@ -1026,7 +1051,7 @@ export default function CreatorSettingsScreen() {
 
   // ── Sub-page: Report Issue ────────────────────────────────────
 
-  const REPORT_TYPES = ['App Bug', 'Payment Issue', 'Campaign Problem', 'Inappropriate Content', 'Other'];
+  const REPORT_TYPES = ['App Bug', 'Payment Issue', 'Event Problem', 'Inappropriate Content', 'Other'];
 
   function renderReportIssue() {
     return (
@@ -1419,7 +1444,7 @@ export default function CreatorSettingsScreen() {
                       </View>
                       {socialFormErrors.followers
                         ? <Text style={[styles.sheetFieldError, { color: C.error }]}>{socialFormErrors.followers}</Text>
-                        : <Text style={[styles.sheetFieldHint, { color: C.textSecondary }]}>Enter your current count — used to match campaigns</Text>}
+                        : <Text style={[styles.sheetFieldHint, { color: C.textSecondary }]}>Enter your current count — used to match events</Text>}
                     </View>
 
                     {/* Save button */}
@@ -1701,10 +1726,11 @@ export default function CreatorSettingsScreen() {
 
   function renderCampaignPreferences() {
     const catAtMax = prefCats.length >= 5;
+    const catList = dbCatOptions.length > 0 ? dbCatOptions : FALLBACK_CAT_OPTIONS;
     return (
       <>
         <View style={[styles.hintCard, { backgroundColor: C.primaryLight, marginTop: 12 }]}>
-          <Text style={[styles.hintText, { color: C.brinjal1 }]}>These help us match you with the most relevant campaigns.</Text>
+          <Text style={[styles.hintText, { color: C.brinjal1 }]}>These help us match you with the most relevant events.</Text>
         </View>
 
         <SectionHeader title="Categories" />
@@ -1716,7 +1742,7 @@ export default function CreatorSettingsScreen() {
         <Card>
           <View style={styles.chipSection}>
             <View style={styles.chipGroup}>
-              {CAT_OPTIONS.map((opt) => {
+              {catList.map((opt) => {
                 const active = prefCats.includes(opt);
                 const disabled = !active && catAtMax;
                 return (
@@ -1737,7 +1763,7 @@ export default function CreatorSettingsScreen() {
 
         <SectionHeader title="Price Range (Rs)" />
         <View style={[styles.hintCard, { backgroundColor: C.primaryLight }]}>
-          <Text style={[styles.hintText, { color: C.brinjal1 }]}>Only show campaigns within your preferred budget range (Rs 500 – Rs 1L).</Text>
+          <Text style={[styles.hintText, { color: C.brinjal1 }]}>Only show events within your preferred budget range (Rs 500 – Rs 1L).</Text>
         </View>
         <Card>
           <View style={styles.sliderSection}>
@@ -1793,7 +1819,7 @@ export default function CreatorSettingsScreen() {
         <Card>
           {earningsLoading ? (
             <View style={styles.earningsRow}>
-              {['Total Earned', 'Pending', 'Campaigns'].map((label) => (
+              {['Total Earned', 'Pending', 'Events'].map((label) => (
                 <View key={label} style={styles.earningsStat}>
                   <View style={[styles.earningsSkeletonValue, { backgroundColor: C.border }]} />
                   <Text style={[styles.earningsLabel, { color: C.textSecondary }]}>{label}</Text>
@@ -1805,7 +1831,7 @@ export default function CreatorSettingsScreen() {
               {[
                 { label: 'Total Earned',  value: `Rs ${(earningsSummary?.totalEarned     ?? 0).toFixed(0)}`, color: C.brinjal1 },
                 { label: 'Pending',       value: `Rs ${(earningsSummary?.pendingEarnings ?? 0).toFixed(0)}`, color: C.draft    },
-                { label: 'Campaigns',     value: String(earningsSummary?.totalApplications ?? 0),           color: C.active   },
+                { label: 'Events',        value: String(earningsSummary?.totalApplications ?? 0),           color: C.active   },
               ].map((stat) => (
                 <View key={stat.label} style={styles.earningsStat}>
                   <Text style={[styles.earningsValue, { color: stat.color }]}>{stat.value}</Text>
@@ -1842,9 +1868,115 @@ export default function CreatorSettingsScreen() {
     );
   }
 
+  // ── Phone verification handlers ───────────────────────────────
+
+  async function handleRequestPhoneOtp() {
+    if (!phoneNumber.trim()) return;
+    setPhoneLoading(true);
+    try {
+      await authService.requestPhoneOtp(phoneNumber.trim());
+      setPhoneSubPage('otp');
+    } catch (e: any) {
+      showToast(e.message ?? 'Failed to send OTP. Try again.', true);
+    } finally {
+      setPhoneLoading(false);
+    }
+  }
+
+  async function handleVerifyPhoneOtp() {
+    if (!phoneOtp.trim()) return;
+    setPhoneLoading(true);
+    try {
+      await authService.verifyPhoneOtp(phoneNumber.trim(), phoneOtp.trim());
+      setPhoneSubPage(null);
+      setPhoneNumber('');
+      setPhoneOtp('');
+      showToast('Phone number verified successfully!');
+    } catch (e: any) {
+      showToast(e.message ?? 'Invalid or expired code. Try again.', true);
+    } finally {
+      setPhoneLoading(false);
+    }
+  }
+
   // ── Section: Security ─────────────────────────────────────────
 
   function renderSecurity() {
+    // Phone verification inline UI
+    if (phoneSubPage === 'input') {
+      return (
+        <>
+          <SectionHeader title="Verify Phone Number" />
+          <Card>
+            <View style={styles.inlineForm}>
+              <View style={styles.formField}>
+                <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>Phone Number</Text>
+                <View style={[styles.pwRow, { backgroundColor: C.background, borderColor: C.border }]}>
+                  <TextInput
+                    style={[styles.pwInput, { color: C.text }]}
+                    value={phoneNumber}
+                    onChangeText={setPhoneNumber}
+                    placeholder="+977 98XXXXXXXX"
+                    placeholderTextColor={C.textSecondary}
+                    keyboardType="phone-pad"
+                    autoCorrect={false}
+                  />
+                </View>
+              </View>
+              <Pressable
+                style={[styles.saveBtn, { backgroundColor: C.brinjal1, opacity: (phoneNumber.trim() && !phoneLoading) ? 1 : 0.45 }]}
+                onPress={handleRequestPhoneOtp}
+                disabled={phoneLoading || !phoneNumber.trim()}>
+                <Text style={styles.saveBtnText}>{phoneLoading ? 'Sending…' : 'Send Verification Code'}</Text>
+              </Pressable>
+              <Pressable onPress={() => { setPhoneSubPage(null); setPhoneNumber(''); }}>
+                <Text style={[styles.cancelBtnText, { color: C.textSecondary, textAlign: 'center' }]}>Cancel</Text>
+              </Pressable>
+            </View>
+          </Card>
+        </>
+      );
+    }
+
+    if (phoneSubPage === 'otp') {
+      return (
+        <>
+          <SectionHeader title="Enter Verification Code" />
+          <View style={[styles.hintCard, { backgroundColor: C.primaryLight }]}>
+            <Text style={[styles.hintText, { color: C.brinjal1 }]}>A 6-digit code was sent to {phoneNumber}.</Text>
+          </View>
+          <Card>
+            <View style={styles.inlineForm}>
+              <View style={styles.formField}>
+                <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>Verification Code</Text>
+                <View style={[styles.pwRow, { backgroundColor: C.background, borderColor: C.border }]}>
+                  <TextInput
+                    style={[styles.pwInput, { color: C.text, letterSpacing: 6, fontSize: 20 }]}
+                    value={phoneOtp}
+                    onChangeText={(t) => setPhoneOtp(t.replace(/\D/g, '').slice(0, 6))}
+                    placeholder="------"
+                    placeholderTextColor={C.textSecondary}
+                    keyboardType="number-pad"
+                    maxLength={6}
+                  />
+                </View>
+              </View>
+              <Pressable
+                style={[styles.saveBtn, { backgroundColor: C.brinjal1, opacity: (phoneOtp.length === 6 && !phoneLoading) ? 1 : 0.45 }]}
+                onPress={handleVerifyPhoneOtp}
+                disabled={phoneLoading || phoneOtp.length < 6}>
+                <Text style={styles.saveBtnText}>{phoneLoading ? 'Verifying…' : 'Verify'}</Text>
+              </Pressable>
+              <Pressable onPress={() => setPhoneSubPage('input')}>
+                <Text style={[styles.cancelBtnText, { color: C.brinjal1, textAlign: 'center' }]}>Resend Code</Text>
+              </Pressable>
+            </View>
+          </Card>
+        </>
+      );
+    }
+
+    const isEmailVerified = emailVerified === true;
     return (
       <>
         <SectionHeader title="Login & Password" />
@@ -1855,17 +1987,34 @@ export default function CreatorSettingsScreen() {
         <SectionHeader title="Verification" />
         <Card>
           <View style={[styles.row, { borderBottomWidth: 1, borderBottomColor: C.border }]}>
-            <Text style={styles.rowIcon}>✉️</Text>
-            <Text style={[styles.rowLabel, { color: C.text }]}>Email Verified</Text>
-            <View style={styles.verifiedBadge}><Text style={[styles.badgeText, { color: C.active }]}>✓ Verified</Text></View>
+            <View style={[styles.navIonIconWrap, { backgroundColor: '#0891B218' }]}>
+              <Ionicons name="mail-outline" size={18} color="#0891B2" />
+            </View>
+            <Text style={[styles.rowLabel, { color: C.text }]}>Email</Text>
+            {emailVerified === null ? (
+              <ActivityIndicator size="small" color={C.brinjal1} />
+            ) : isEmailVerified ? (
+              <View style={styles.verifiedBadge}><Text style={[styles.badgeText, { color: C.active }]}>✓ Verified</Text></View>
+            ) : (
+              <View style={[styles.soonBadge, { backgroundColor: '#FEF3C7' }]}><Text style={[styles.badgeText, { color: '#D97706' }]}>Not Verified</Text></View>
+            )}
           </View>
-          <View style={[styles.row, { borderBottomWidth: 1, borderBottomColor: C.border }]}>
-            <Text style={styles.rowIcon}>📞</Text>
-            <Text style={[styles.rowLabel, { color: C.text }]}>Phone Verified</Text>
-            <View style={styles.verifiedBadge}><Text style={[styles.badgeText, { color: C.active }]}>✓ Verified</Text></View>
-          </View>
+          <Pressable style={[styles.row, { borderBottomWidth: 1, borderBottomColor: C.border }]} onPress={() => setPhoneSubPage('input')}>
+            <View style={[styles.navIonIconWrap, { backgroundColor: '#10B98118' }]}>
+              <Ionicons name="call-outline" size={18} color="#10B981" />
+            </View>
+            <Text style={[styles.rowLabel, { color: C.text }]}>Phone Number</Text>
+            <View style={styles.navRight}>
+              <View style={[styles.chip, { borderColor: C.brinjal1, backgroundColor: C.primaryLight, paddingHorizontal: 8, paddingVertical: 2 }]}>
+                <Text style={[styles.chipText, { color: C.brinjal1, fontSize: 12 }]}>Verify</Text>
+              </View>
+              <Text style={[styles.navArrow, { color: C.textSecondary }]}>›</Text>
+            </View>
+          </Pressable>
           <View style={styles.row}>
-            <Text style={styles.rowIcon}>🏅</Text>
+            <View style={[styles.navIonIconWrap, { backgroundColor: '#F59E0B18' }]}>
+              <Ionicons name="ribbon-outline" size={18} color="#F59E0B" />
+            </View>
             <Text style={[styles.rowLabel, { color: C.text }]}>Creator Badge</Text>
             <View style={[styles.soonBadge, { backgroundColor: C.primaryLight }]}>
               <Text style={[styles.badgeText, { color: C.brinjal1 }]}>Coming Soon</Text>
@@ -1873,7 +2022,7 @@ export default function CreatorSettingsScreen() {
           </View>
         </Card>
         <View style={[styles.hintCard, { backgroundColor: C.primaryLight }]}>
-          <Text style={[styles.hintText, { color: C.brinjal1 }]}>Verified creators get higher visibility in campaign matches.</Text>
+          <Text style={[styles.hintText, { color: C.brinjal1 }]}>Verified creators get higher visibility in event matches.</Text>
         </View>
       </>
     );
@@ -1944,7 +2093,12 @@ export default function CreatorSettingsScreen() {
               <Pressable
                 key={lang.label}
                 disabled={lang.future}
-                onPress={() => { if (!lang.future) setSelectedLang(lang.label); }}
+                onPress={() => {
+                  if (!lang.future) {
+                    setSelectedLang(lang.label);
+                    setLanguage(langLabelToCode(lang.label));
+                  }
+                }}
                 style={[
                   styles.langCard,
                   { backgroundColor: C.surface, borderColor: active ? C.brinjal1 : C.border, opacity: lang.future ? 0.55 : 1 },
@@ -2041,7 +2195,7 @@ export default function CreatorSettingsScreen() {
               </View>
               <Text style={[styles.confirmTitle, { color: C.text }]}>Deactivate Account</Text>
               <Text style={[styles.confirmBody, { color: C.textSecondary }]}>
-                Your profile will be hidden from brands and you{'’'}ll stop receiving campaign matches.{'\n\n'}
+                Your profile will be hidden from brands and you'll stop receiving event matches.{'\n\n'}
                 You can log back in at any time to instantly reactivate your account.
               </Text>
               <View style={styles.confirmActions}>
@@ -2077,7 +2231,7 @@ export default function CreatorSettingsScreen() {
               <Text style={[styles.confirmBody, { color: C.textSecondary }]}>
                 Once deleted, the following <Text style={{ fontWeight: '700', color: C.text }}>cannot be recovered</Text>:{'\n'}
                 {'•'} Your profile and social links{'\n'}
-                {'•'} Campaign history and proposals{'\n'}
+                {'•'} Event history and proposals{'\n'}
                 {'•'} Earnings data and payment info{'\n'}
                 {'•'} All messages and content{'\n\n'}
                 This action cannot be undone.

@@ -115,7 +115,7 @@ export default function ProposalsScreen() {
         <View style={[styles.decCircle2, { backgroundColor: 'rgba(255,255,255,0.07)' }]} />
         <View style={styles.header}>
           <Text style={[styles.heading, { color: '#fff' }]}>{t('creator.proposals.heading')}</Text>
-          <Text style={[styles.subheading, { color: 'rgba(255,255,255,0.8)' }]}>Track your campaign applications</Text>
+          <Text style={[styles.subheading, { color: 'rgba(255,255,255,0.8)' }]}>Track your event applications</Text>
         </View>
       </LinearGradient>
 
@@ -160,8 +160,8 @@ export default function ProposalsScreen() {
             <EmptyState
               emoji="📋"
               title="No proposals yet"
-              subtitle="Browse campaigns and apply to ones that match your content style and audience."
-              action={{ label: 'Browse Campaigns', onPress: () => router.push('/(creator)' as never) }}
+              subtitle="Browse events and apply to ones that match your content style and audience."
+              action={{ label: 'Browse Events', onPress: () => router.push('/(creator)' as never) }}
             />
           }
         />

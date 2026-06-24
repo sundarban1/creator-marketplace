@@ -15,8 +15,8 @@ export const TEMPLATE_IMAGES: Record<string, string> = {
   'Education / Course':            'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&q=80',
   'Real Estate Promotion':         'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400&q=80',
   'Retail Shop Promotion':         'https://images.unsplash.com/photo-1534452203293-494d7ddbf7e0?w=400&q=80',
-  'Discount / Offer Campaign':     'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=400&q=80',
-  'Festival Campaign':             'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400&q=80',
+  'Discount / Offer Event':        'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=400&q=80',
+  'Festival Event':                'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400&q=80',
   'Food Delivery / Cloud Kitchen': 'https://images.unsplash.com/photo-1526367790999-0150786686a2?w=400&q=80',
 
   // Legacy "Promote X" category values (from current seeder)

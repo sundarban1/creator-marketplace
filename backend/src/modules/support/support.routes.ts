@@ -4,7 +4,11 @@ import { Role } from '@prisma/client';
 import { authenticate, authorize } from '../../middleware/auth';
 import { validate } from '../../middleware/validate';
 import { success, paginated } from '../../utils/response';
+import { sendSupportNotification, sendReportNotification } from '../../utils/email';
+import { env } from '../../config/env';
 import prisma from '../../prisma';
+
+const ADMIN_EMAIL = env.ADMIN_EMAIL ?? env.EMAIL_USERNAME ?? 'admin@creatormarket.com';
 
 const router = Router();
 
@@ -26,10 +30,17 @@ const statusSchema = z.object({
 
 router.post('/contact', authenticate, validate(contactSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const request = await prisma.supportRequest.create({
+    const supportRequest = await prisma.supportRequest.create({
       data: { userId: req.user!.id, topic: req.body.topic, message: req.body.message },
+      include: { user: { select: { email: true } } },
     });
-    success(res, request, 'Support request submitted', 201);
+    sendSupportNotification({
+      adminEmail:  ADMIN_EMAIL,
+      userEmail:   (supportRequest as any).user?.email ?? req.user!.email,
+      topic:       req.body.topic,
+      message:     req.body.message,
+    }).catch(() => {});
+    success(res, supportRequest, 'Support request submitted', 201);
   } catch (err) { next(err); }
 });
 
@@ -39,7 +50,14 @@ router.post('/report', authenticate, validate(reportSchema), async (req: Request
   try {
     const report = await prisma.issueReport.create({
       data: { userId: req.user!.id, type: req.body.type, description: req.body.description },
+      include: { user: { select: { email: true } } },
     });
+    sendReportNotification({
+      adminEmail:  ADMIN_EMAIL,
+      userEmail:   (report as any).user?.email ?? req.user!.email,
+      type:        req.body.type,
+      description: req.body.description,
+    }).catch(() => {});
     success(res, report, 'Issue reported', 201);
   } catch (err) { next(err); }
 });

@@ -71,29 +71,29 @@ const BUDGET_MAP: Record<string, { min: number; max: number; payment: string }> 
 
 const TEMPLATE_CONTENT: Record<string, { title: string; desc: string }> = {
   'Food':           { title: 'Authentic Food Experience – Creator Collaboration', desc: "We're looking for food creators to showcase our restaurant, dishes, or food products with genuine taste reactions and stunning visuals. Help us inspire food lovers to discover us." },
-  'Travel':         { title: 'Nepal Adventure – Travel Creator Campaign', desc: "We're partnering with travel creators to showcase our destination, property, or travel experience. Create compelling journey content that inspires audiences to explore." },
-  'Fashion':        { title: 'Style Collaboration – Fashion Creator Campaign', desc: "We're looking for fashion creators to model and showcase our latest collection. Feature our pieces in your signature style and help us reach fashion-forward audiences." },
-  'Beauty':         { title: 'Glow Up – Beauty Creator Campaign', desc: "We're inviting beauty creators to feature our products or services, document transformation experiences, and share before/after content that inspires their audience." },
-  'Fitness':        { title: 'Fitness Collab – Gym & Wellness Campaign', desc: "We're looking for fitness creators to showcase our gym, equipment, or fitness products. Create motivational content that inspires audiences to start their fitness journey." },
+  'Travel':         { title: 'Nepal Adventure – Travel Creator Event', desc: "We're partnering with travel creators to showcase our destination, property, or travel experience. Create compelling journey content that inspires audiences to explore." },
+  'Fashion':        { title: 'Style Collaboration – Fashion Creator Event', desc: "We're looking for fashion creators to model and showcase our latest collection. Feature our pieces in your signature style and help us reach fashion-forward audiences." },
+  'Beauty':         { title: 'Glow Up – Beauty Creator Event', desc: "We're inviting beauty creators to feature our products or services, document transformation experiences, and share before/after content that inspires their audience." },
+  'Fitness':        { title: 'Fitness Collab – Gym & Wellness Event', desc: "We're looking for fitness creators to showcase our gym, equipment, or fitness products. Create motivational content that inspires audiences to start their fitness journey." },
   'Gaming':         { title: 'Gaming Review – Creator Collaboration', desc: "We're partnering with gaming creators for a review, gameplay showcase, or sponsored content about our game or gaming product. Share your genuine experience with your audience." },
   'Tech':           { title: 'Honest Tech Review – Creator Collab', desc: "We're partnering with tech creators for an unboxing, feature demo, and honest review of our latest product. Share your genuine take on performance and value." },
-  'Education':      { title: 'Learn & Grow – Education Creator Campaign', desc: "We're partnering with creators to promote our courses or programs. Highlight benefits and student success stories to help us reach learners ready to upskill." },
+  'Education':      { title: 'Learn & Grow – Education Creator Event', desc: "We're partnering with creators to promote our courses or programs. Highlight benefits and student success stories to help us reach learners ready to upskill." },
   'Lifestyle':      { title: 'Lifestyle Integration – Creator Partnership', desc: "We're looking for lifestyle creators to naturally integrate our brand into their daily content. Show how our product or service fits seamlessly into a modern lifestyle." },
-  'Home & Living':  { title: 'Home Transformation – Creator Campaign', desc: "We're inviting home & living creators to feature our products in real home settings. Create inspiring content that shows how our products elevate everyday living." },
+  'Home & Living':  { title: 'Home Transformation – Creator Event', desc: "We're inviting home & living creators to feature our products in real home settings. Create inspiring content that shows how our products elevate everyday living." },
   'Wellness':       { title: 'Wellness Journey – Creator Collaboration', desc: "We're partnering with wellness creators to showcase our products, services, or programs. Help us reach health-conscious audiences looking to improve their wellbeing." },
-  'Music':          { title: 'Music & Entertainment – Creator Campaign', desc: "We're looking for music creators to promote our event, brand, or product. Create engaging audio-visual content that connects with music lovers and builds excitement." },
-  'Art & Design':   { title: 'Creative Collab – Art & Design Campaign', desc: "We're partnering with creative and design creators to showcase our brand with artistic flair. Create visually stunning content that highlights our aesthetic and values." },
-  'Pets':           { title: 'Pet-Friendly Creator Campaign', desc: "We're looking for pet creators to feature our pet products or services. Show your furry friends enjoying what we offer and help us reach dedicated pet owners." },
-  'Parenting':      { title: 'Parenting Creator Campaign', desc: "We're partnering with parenting creators to showcase our family-friendly products. Share authentic family moments that resonate with parents and caregivers." },
-  'Automotive':     { title: 'Auto Creator Campaign', desc: "We're looking for automotive creators for a test drive, feature review, or showroom visit. Create engaging content that showcases performance, style, and value." },
-  'Finance':        { title: 'Financial Education – Creator Campaign', desc: "We're partnering with finance creators to educate audiences about our financial products or services. Help us build trust and reach people ready to make smart money moves." },
-  'Sustainability': { title: 'Eco-Conscious Creator Campaign', desc: "We're partnering with sustainability creators to promote our eco-friendly products or initiatives. Help us inspire audiences to make conscious choices for the planet." },
-  'Photography':    { title: 'Photography Showcase – Creator Campaign', desc: "We're looking for photography creators to capture and showcase our products, spaces, or experiences. Create stunning visual content that tells our brand's story." },
-  'Sports':         { title: 'Sports & Fitness – Creator Campaign', desc: "We're looking for sports creators to showcase our products, equipment, or services in action. Create high-energy content that motivates your athletic audience." },
-  'Film & TV':      { title: 'Entertainment Creator Campaign', desc: "We're partnering with film and entertainment creators for a review, reaction, or sponsored content about our production, platform, or entertainment product." },
-  'Mindfulness':    { title: 'Mindfulness & Wellness – Creator Campaign', desc: "We're partnering with mindfulness creators to promote our wellness products or programs. Help us reach audiences looking to reduce stress and improve mental wellbeing." },
-  'Food & Drink':   { title: 'Food & Beverage Creator Campaign', desc: "We're looking for food and drink creators to showcase our café, restaurant, or beverage products. Create aesthetic content with genuine taste reactions that inspire followers." },
-  'Entertainment':  { title: 'Event & Entertainment – Creator Campaign', desc: "We're hosting an event or launching entertainment content and need creators to build hype and coverage. Create compelling content that drives awareness and excitement." },
+  'Music':          { title: 'Music & Entertainment – Creator Event', desc: "We're looking for music creators to promote our event, brand, or product. Create engaging audio-visual content that connects with music lovers and builds excitement." },
+  'Art & Design':   { title: 'Creative Collab – Art & Design Event', desc: "We're partnering with creative and design creators to showcase our brand with artistic flair. Create visually stunning content that highlights our aesthetic and values." },
+  'Pets':           { title: 'Pet-Friendly Creator Event', desc: "We're looking for pet creators to feature our pet products or services. Show your furry friends enjoying what we offer and help us reach dedicated pet owners." },
+  'Parenting':      { title: 'Parenting Creator Event', desc: "We're partnering with parenting creators to showcase our family-friendly products. Share authentic family moments that resonate with parents and caregivers." },
+  'Automotive':     { title: 'Auto Creator Event', desc: "We're looking for automotive creators for a test drive, feature review, or showroom visit. Create engaging content that showcases performance, style, and value." },
+  'Finance':        { title: 'Financial Education – Creator Event', desc: "We're partnering with finance creators to educate audiences about our financial products or services. Help us build trust and reach people ready to make smart money moves." },
+  'Sustainability': { title: 'Eco-Conscious Creator Event', desc: "We're partnering with sustainability creators to promote our eco-friendly products or initiatives. Help us inspire audiences to make conscious choices for the planet." },
+  'Photography':    { title: 'Photography Showcase – Creator Event', desc: "We're looking for photography creators to capture and showcase our products, spaces, or experiences. Create stunning visual content that tells our brand's story." },
+  'Sports':         { title: 'Sports & Fitness – Creator Event', desc: "We're looking for sports creators to showcase our products, equipment, or services in action. Create high-energy content that motivates your athletic audience." },
+  'Film & TV':      { title: 'Entertainment Creator Event', desc: "We're partnering with film and entertainment creators for a review, reaction, or sponsored content about our production, platform, or entertainment product." },
+  'Mindfulness':    { title: 'Mindfulness & Wellness – Creator Event', desc: "We're partnering with mindfulness creators to promote our wellness products or programs. Help us reach audiences looking to reduce stress and improve mental wellbeing." },
+  'Food & Drink':   { title: 'Food & Beverage Creator Event', desc: "We're looking for food and drink creators to showcase our café, restaurant, or beverage products. Create aesthetic content with genuine taste reactions that inspire followers." },
+  'Entertainment':  { title: 'Event & Entertainment – Creator Event', desc: "We're hosting an event or launching entertainment content and need creators to build hype and coverage. Create compelling content that drives awareness and excitement." },
 };
 
 const DELIVERABLE_TYPES: { key: string; label: string }[] = [
@@ -813,6 +813,7 @@ export default function CreateCampaignScreen() {
   const C = useAppColors();
   const [phase, setPhase] = useState<'setup' | 'review'>('setup');
   const [loading, setLoading] = useState(false);
+  const [publishWarnVisible, setPublishWarnVisible] = useState(false);
   const [setupErrors, setSetupErrors] = useState<SetupErrors>({});
   const [reviewErrors, setReviewErrors] = useState<ReviewErrors>({});
   const [eventErrors, setEventErrors] = useState<EventErrors>({});
@@ -914,7 +915,7 @@ export default function CreateCampaignScreen() {
 
   function handleGenerate() {
     const errs: SetupErrors = {};
-    if (!form.template)          errs.template = 'Please select a campaign template.';
+    if (!form.template)          errs.template = 'Please select an event template.';
     if (form.goals.length === 0) errs.goals    = 'Please select at least one goal.';
     if (!form.budget)            errs.budget   = 'Please select a budget range.';
 
@@ -924,7 +925,7 @@ export default function CreateCampaignScreen() {
     const content = TEMPLATE_CONTENT[form.template] ?? { title: '', desc: '' };
     let desc = content.desc;
     if (desc) {
-      desc += `\n\nCampaign Goals: ${form.goals.join(', ')}`;
+      desc += `\n\nEvent Goals: ${form.goals.join(', ')}`;
       if (form.location) desc += `\nLocation: ${form.location}`;
     }
 
@@ -968,7 +969,7 @@ export default function CreateCampaignScreen() {
   async function handlePublish() {
     if (form.eventType === 'PAID_CAMPAIGN') {
       const errs: ReviewErrors = {};
-      if (!form.title.trim()) errs.title    = 'Campaign title is required.';
+      if (!form.title.trim()) errs.title    = 'Event title is required.';
       if (!form.platform)     errs.platform = 'Please select a platform.';
       if (!form.deadline)     errs.deadline = 'Please select an application deadline.';
       if (Object.keys(errs).length > 0) { setReviewErrors(errs); return; }
@@ -1001,10 +1002,10 @@ export default function CreateCampaignScreen() {
           isFeatured:     form.isFeatured,
           campaignType:   'PAID_CAMPAIGN',
         });
-        showToast('Campaign published successfully!');
+        showToast('Event published successfully!');
         setTimeout(() => router.replace('/(business)/'), 500);
       } catch (err) {
-        showToast(err instanceof Error ? err.message : 'Failed to create campaign.', 'error');
+        showToast(err instanceof Error ? err.message : 'Failed to create event.', 'error');
       } finally {
         setLoading(false);
       }
@@ -1067,8 +1068,8 @@ export default function CreateCampaignScreen() {
           <Ionicons name={phase === 'review' ? 'chevron-back' : 'close'} size={22} color="#fff" />
         </Pressable>
         <View style={s.headerCenter}>
-          <Text style={s.headerTitle}>Create Campaign</Text>
-          <Text style={s.headerSub}>{phase === 'setup' ? 'Set up your campaign' : 'Review & publish'}</Text>
+          <Text style={s.headerTitle}>Create Event</Text>
+          <Text style={s.headerSub}>{phase === 'setup' ? 'Set up your event' : 'Review & publish'}</Text>
         </View>
         <View style={[s.phasePill, { backgroundColor: 'rgba(255,255,255,0.25)' }]}>
           <Text style={s.phasePillText}>{phase === 'setup' ? '1/2' : '2/2'}</Text>
@@ -1103,7 +1104,7 @@ export default function CreateCampaignScreen() {
                       {form.eventType === 'PAID_CAMPAIGN' && <View style={[s.etRadioInner, { backgroundColor: C.brinjal1 }]} />}
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={[s.etOptionLabel, { color: form.eventType === 'PAID_CAMPAIGN' ? C.brinjal1 : C.text }]}>💰 Paid Campaign</Text>
+                      <Text style={[s.etOptionLabel, { color: form.eventType === 'PAID_CAMPAIGN' ? C.brinjal1 : C.text }]}>💰 Paid Event</Text>
                       <Text style={[s.etOptionSub, { color: C.textSecondary }]}>Creators are paid for content</Text>
                     </View>
                   </Pressable>
@@ -1125,7 +1126,7 @@ export default function CreateCampaignScreen() {
               {form.eventType === 'PAID_CAMPAIGN' && (
                 <>
                   {/* Template */}
-                  <SectionCard title="📂 Campaign Category" sub="Choose the category that best matches your campaign." colors={C}>
+                  <SectionCard title="📂 Event Category" sub="Choose the category that best matches your event." colors={C}>
                     <DropdownPicker
                       value={form.template}
                       onChange={(v) => {
@@ -1151,7 +1152,7 @@ export default function CreateCampaignScreen() {
                   </SectionCard>
 
                   {/* Goals */}
-                  <SectionCard title="🎯 Campaign Goals" sub="Select what you want to achieve with this campaign." colors={C}>
+                  <SectionCard title="🎯 Event Goals" sub="Select what you want to achieve with this event." colors={C}>
                     <MultiCheckboxDropdown
                       values={form.goals}
                       onChange={(v) => {
@@ -1159,7 +1160,7 @@ export default function CreateCampaignScreen() {
                         if (setupErrors.goals) setSetupErrors((e) => ({ ...e, goals: undefined }));
                       }}
                       options={GOALS}
-                      placeholder="Select campaign goals…"
+                      placeholder="Select event goals…"
                       colors={C}
                       error={setupErrors.goals}
                     />
@@ -1189,7 +1190,7 @@ export default function CreateCampaignScreen() {
                     style={({ pressed }) => [s.generateBtn, { backgroundColor: C.brinjal1, opacity: pressed ? 0.88 : 1 }]}
                     onPress={handleGenerate}>
                     <Ionicons name="sparkles" size={20} color="#fff" />
-                    <Text style={s.generateBtnText}>Generate Campaign</Text>
+                    <Text style={s.generateBtnText}>Generate Event</Text>
                   </Pressable>
                 </>
               )}
@@ -1259,13 +1260,13 @@ export default function CreateCampaignScreen() {
                   <View style={[s.generatedBanner, { backgroundColor: C.primaryLight }]}>
                     <Ionicons name="sparkles" size={20} color={C.brinjal1} />
                     <View style={{ flex: 1 }}>
-                      <Text style={[s.generatedTitle, { color: C.brinjal1 }]}>Campaign Generated</Text>
+                      <Text style={[s.generatedTitle, { color: C.brinjal1 }]}>Event Generated</Text>
                       <Text style={[s.generatedSub, { color: C.brinjal1 }]}>Review and edit before publishing. All fields are editable.</Text>
                     </View>
                   </View>
 
                   {/* Editable title */}
-                  <SectionCard title="📣 Campaign Title" colors={C}>
+                  <SectionCard title="📣 Event Title" colors={C}>
                     <TextInput
                       style={[s.input, { backgroundColor: C.background, borderColor: reviewErrors.title ? ERROR_RED : C.border, color: C.text }]}
                       value={form.title}
@@ -1273,7 +1274,7 @@ export default function CreateCampaignScreen() {
                         update('title', v);
                         if (reviewErrors.title) setReviewErrors((e) => ({ ...e, title: undefined }));
                       }}
-                      placeholder="Campaign title…"
+                      placeholder="Event title…"
                       placeholderTextColor={C.textSecondary}
                     />
                     {reviewErrors.title && <Text style={s.errorText}>{reviewErrors.title}</Text>}
@@ -1285,7 +1286,7 @@ export default function CreateCampaignScreen() {
                       style={[s.textarea, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
                       value={form.description}
                       onChangeText={(v) => update('description', v)}
-                      placeholder="Describe your campaign…"
+                      placeholder="Describe your event…"
                       placeholderTextColor={C.textSecondary}
                       multiline
                       numberOfLines={6}
@@ -1357,7 +1358,7 @@ export default function CreateCampaignScreen() {
                   </SectionCard>
 
                   {/* Creators Needed */}
-                  <SectionCard title="👥 Creators Needed" sub="How many creators do you need for this campaign?" colors={C}>
+                  <SectionCard title="👥 Creators Needed" sub="How many creators do you need for this event?" colors={C}>
                     <Stepper value={form.creatorsNeeded} onChange={(v) => update('creatorsNeeded', v)} colors={C} />
                   </SectionCard>
 
@@ -1383,7 +1384,7 @@ export default function CreateCampaignScreen() {
                     <View style={s.featuredLeft}>
                       <Text style={s.featuredEmoji}>⭐</Text>
                       <View style={{ flex: 1, gap: 3 }}>
-                        <Text style={[s.featuredLabel, { color: C.text }]}>Feature this Campaign</Text>
+                        <Text style={[s.featuredLabel, { color: C.text }]}>Feature this Event</Text>
                         <Text style={[s.featuredSub, { color: C.textSecondary }]}>Appears highlighted on creator home</Text>
                       </View>
                     </View>
@@ -1402,9 +1403,9 @@ export default function CreateCampaignScreen() {
                     </Pressable>
                     <Pressable
                       style={[s.publishBtn, { backgroundColor: loading ? C.border : C.brinjal1 }]}
-                      onPress={handlePublish}
+                      onPress={() => setPublishWarnVisible(true)}
                       disabled={loading}>
-                      <Text style={s.publishBtnText}>{loading ? 'Publishing…' : '🚀 Publish Campaign'}</Text>
+                      <Text style={s.publishBtnText}>{loading ? 'Publishing…' : '🚀 Publish Event'}</Text>
                     </Pressable>
                   </View>
                 </>
@@ -1448,26 +1449,25 @@ export default function CreateCampaignScreen() {
                   </SectionCard>
 
                   {/* Creator Benefits — auto-selected, editable */}
-                  <SectionCard title="🎁 Creator Benefits" sub="Auto-selected based on your category. Tick or untick as needed." colors={C}>
-                    {BENEFITS.map((benefit) => {
-                      const checked = form.benefits.includes(benefit);
-                      return (
-                        <Pressable
-                          key={benefit}
-                          style={[s.benefitRow, { borderColor: checked ? C.brinjal1 : C.border, backgroundColor: checked ? C.primaryLight : C.background }]}
-                          onPress={() => {
-                            const next = checked
-                              ? form.benefits.filter((b) => b !== benefit)
-                              : [...form.benefits, benefit];
-                            update('benefits', next);
-                          }}>
-                          <View style={[s.benefitCheck, { borderColor: checked ? C.brinjal1 : C.border, backgroundColor: checked ? C.brinjal1 : 'transparent' }]}>
-                            {checked && <Ionicons name="checkmark" size={12} color="#fff" />}
-                          </View>
-                          <Text style={[s.benefitLabel, { color: checked ? C.brinjal1 : C.text }]}>{benefit}</Text>
-                        </Pressable>
-                      );
-                    })}
+                  <SectionCard title="🎁 Creator Benefits" sub="Auto-selected based on your category. Tap to toggle." colors={C}>
+                    <View style={cg.wrap}>
+                      {BENEFITS.map((benefit) => {
+                        const checked = form.benefits.includes(benefit);
+                        return (
+                          <Pressable
+                            key={benefit}
+                            style={[cg.chip, { borderColor: checked ? C.brinjal1 : C.border, backgroundColor: checked ? C.primaryLight : C.surface }]}
+                            onPress={() => {
+                              const next = checked
+                                ? form.benefits.filter((b) => b !== benefit)
+                                : [...form.benefits, benefit];
+                              update('benefits', next);
+                            }}>
+                            <Text style={[cg.chipText, { color: checked ? C.brinjal1 : C.textSecondary, fontWeight: checked ? '700' : '500' }]}>{benefit}</Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
                   </SectionCard>
 
                   {/* Platform (optional) */}
@@ -1548,7 +1548,7 @@ export default function CreateCampaignScreen() {
                     </Pressable>
                     <Pressable
                       style={[s.publishBtn, { backgroundColor: loading ? C.border : C.brinjal1 }]}
-                      onPress={handlePublish}
+                      onPress={() => setPublishWarnVisible(true)}
                       disabled={loading}>
                       <Text style={s.publishBtnText}>{loading ? 'Publishing…' : '🎪 Publish Event'}</Text>
                     </Pressable>
@@ -1559,6 +1559,32 @@ export default function CreateCampaignScreen() {
           )}
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Pre-publish warning modal */}
+      <Modal visible={publishWarnVisible} transparent animationType="fade" onRequestClose={() => setPublishWarnVisible(false)}>
+        <Pressable style={s.warnScrim} onPress={() => setPublishWarnVisible(false)}>
+          <Pressable style={[s.warnSheet, { backgroundColor: C.surface }]} onPress={(e) => e.stopPropagation()}>
+            <View style={s.warnIconWrap}>
+              <Ionicons name="warning" size={32} color="#F59E0B" />
+            </View>
+            <Text style={[s.warnTitle, { color: C.text }]}>Before You Publish</Text>
+            <Text style={[s.warnBody, { color: C.textSecondary }]}>
+              Once a creator submits a proposal, this event will be <Text style={{ fontWeight: '700', color: C.text }}>locked for editing</Text>. Please review all details carefully before publishing.{'\n\n'}Make sure your event title, description, budget, and requirements are accurate and complete.
+            </Text>
+            <View style={s.warnActions}>
+              <Pressable style={[s.warnCancelBtn, { borderColor: C.border }]} onPress={() => setPublishWarnVisible(false)}>
+                <Text style={[s.warnCancelText, { color: C.textSecondary }]}>Go Back & Review</Text>
+              </Pressable>
+              <Pressable
+                style={[s.warnConfirmBtn, { backgroundColor: C.brinjal1 }]}
+                onPress={() => { setPublishWarnVisible(false); handlePublish(); }}>
+                <Ionicons name="rocket-outline" size={16} color="#fff" />
+                <Text style={s.warnConfirmText}>Publish Now</Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       {/* Toast */}
       {toast && (
@@ -1621,6 +1647,17 @@ const s = StyleSheet.create({
   publishBtn:    { flex: 2, borderRadius: 14, height: 52, justifyContent: 'center', alignItems: 'center', shadowColor: '#6C3DE0', shadowOpacity: 0.3, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
   publishBtnText:{ color: '#fff', fontSize: 15, fontWeight: '800', fontFamily: F.extrabold },
 
+  warnScrim:       { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 },
+  warnSheet:       { width: '100%', borderRadius: 20, padding: 24, alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 20, elevation: 10 },
+  warnIconWrap:    { width: 64, height: 64, borderRadius: 32, backgroundColor: '#FFF8E8', justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
+  warnTitle:       { fontSize: 18, fontWeight: '800', fontFamily: F.extrabold, marginBottom: 12, textAlign: 'center' },
+  warnBody:        { fontSize: 14, fontFamily: F.regular, lineHeight: 21, textAlign: 'center', marginBottom: 24 },
+  warnActions:     { flexDirection: 'row', gap: 10, width: '100%' },
+  warnCancelBtn:   { flex: 1, borderRadius: 12, borderWidth: 1.5, paddingVertical: 13, alignItems: 'center' },
+  warnCancelText:  { fontSize: 13, fontWeight: '600', fontFamily: F.semibold },
+  warnConfirmBtn:  { flex: 1, borderRadius: 12, paddingVertical: 13, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6 },
+  warnConfirmText: { color: '#fff', fontSize: 13, fontWeight: '700', fontFamily: F.bold },
+
   toast:     { position: 'absolute', bottom: 40, left: 20, right: 20, borderRadius: 14, paddingHorizontal: 18, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 10 },
   toastText: { color: '#fff', fontSize: 14, fontWeight: '700', flex: 1, fontFamily: F.bold },
 
@@ -1637,9 +1674,6 @@ const s = StyleSheet.create({
   eventHintBox:  { flexDirection: 'row', alignItems: 'flex-start', gap: 10, borderRadius: 12, padding: 14 },
   eventHintText: { flex: 1, fontSize: 12, lineHeight: 18, fontFamily: F.regular },
 
-  benefitRow:    { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 12, borderWidth: 1.5, paddingVertical: 13, paddingHorizontal: 14, marginBottom: 8 },
-  benefitCheck:  { width: 22, height: 22, borderRadius: 6, borderWidth: 2, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
-  benefitLabel:  { flex: 1, fontSize: 14, fontFamily: F.medium },
 });
 
 const dlv = StyleSheet.create({

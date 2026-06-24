@@ -11,7 +11,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { CampaignListItem } from '@/features/creator/components/CampaignListItem';
 import { FeaturedCard } from '@/features/creator/components/FeaturedCard';
 import { FilterModal } from '@/features/creator/components/FilterModal';
-import type { LocationFilter } from '@/features/creator/components/FilterModal';
+import type { EventTypeFilter, LocationFilter } from '@/features/creator/components/FilterModal';
 import { CATEGORY_META, DEFAULT_META, FILTER_TABS, displayCategory } from '@/features/creator/data/filterOptions';
 import { campaignService } from '@/services/campaign';
 import { creatorService } from '@/services/creator';
@@ -19,7 +19,7 @@ import { getSocket } from '@/lib/socket';
 import { F } from '@/utilities/constants';
 import type { Campaign } from '@/types';
 
-const SLIDER_MAX = 1000;
+const SLIDER_MAX = 100000;
 
 const PLATFORM_ICONS: Record<string, { icon: string; color: string; onColor?: string }> = {
   instagram:     { icon: 'logo-instagram', color: '#E1306C' },
@@ -57,6 +57,8 @@ export default function HomeScreen() {
   const [activeCategory, setActiveCategory] = useState('All');
   const [activeFilterTab, setActiveFilterTab] = useState(0); // 0 = New
   const [showBanner, setShowBanner] = useState(true);
+  const [eventType, setEventType] = useState<EventTypeFilter>('ALL');
+  const [tempEventType, setTempEventType] = useState<EventTypeFilter>('ALL');
   const [priceMin, setPriceMin] = useState(0);
   const [priceMax, setPriceMax] = useState(SLIDER_MAX);
   const [locationFilter, setLocationFilter] = useState<LocationFilter>([]);
@@ -78,6 +80,7 @@ export default function HomeScreen() {
       priceMax?: number;
       dateFrom?: Date | null;
       dateTo?: Date | null;
+      eventType?: EventTypeFilter;
       showLoader?: boolean;
     } = {},
   ) {
@@ -91,20 +94,22 @@ export default function HomeScreen() {
     const pMax  = overrides.priceMax  !== undefined ? overrides.priceMax  : priceMax;
     const df    = overrides.dateFrom  !== undefined ? overrides.dateFrom  : dateFrom;
     const dt    = overrides.dateTo    !== undefined ? overrides.dateTo    : dateTo;
+    const et    = overrides.eventType !== undefined ? overrides.eventType : eventType;
 
     try {
       const { campaigns: data } = await campaignService.list({
-        category:  cat  !== 'All' ? cat  : undefined,
-        platform:  plat !== 'All' ? plat : undefined,
-        minBudget: pMin > 0 ? pMin : undefined,
-        maxBudget: pMax < SLIDER_MAX ? pMax : undefined,
-        dateFrom:  df ?? undefined,
-        dateTo:    dt ?? undefined,
+        category:     cat  !== 'All' ? cat  : undefined,
+        platform:     plat !== 'All' ? plat : undefined,
+        minBudget:    pMin > 0 ? pMin : undefined,
+        maxBudget:    pMax < SLIDER_MAX ? pMax : undefined,
+        dateFrom:     df ?? undefined,
+        dateTo:       dt ?? undefined,
+        campaignType: et !== 'ALL' ? et : undefined,
         limit: 50,
       });
       setCampaigns(data);
     } catch (e) {
-      setFetchError(e instanceof Error ? e.message : 'Failed to load campaigns');
+      setFetchError(e instanceof Error ? e.message : 'Failed to load events');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -139,9 +144,10 @@ export default function HomeScreen() {
     void fetchCampaigns({ showLoader: false });
   }, [activeCategory, priceMin, priceMax, dateFrom, dateTo]);
 
-  const isFilterActive = priceMin > 0 || priceMax < SLIDER_MAX || locationFilter.length > 0 || !!dateFrom;
+  const isFilterActive = eventType !== 'ALL' || priceMin > 0 || priceMax < SLIDER_MAX || locationFilter.length > 0 || !!dateFrom;
 
   function openFilter() {
+    setTempEventType(eventType);
     setTempPriceMin(priceMin);
     setTempPriceMax(priceMax);
     setTempLocation(locationFilter);
@@ -151,6 +157,7 @@ export default function HomeScreen() {
   }
 
   function applyFilter() {
+    setEventType(tempEventType);
     setPriceMin(tempPriceMin);
     setPriceMax(tempPriceMax);
     setLocationFilter(tempLocation);
@@ -160,10 +167,11 @@ export default function HomeScreen() {
 
     // Re-fetch with the new committed values (don't wait for state to flush)
     void fetchCampaigns({
-      priceMin: tempPriceMin,
-      priceMax: tempPriceMax,
-      dateFrom: tempDateFrom,
-      dateTo:   tempDateTo,
+      eventType: tempEventType,
+      priceMin:  tempPriceMin,
+      priceMax:  tempPriceMax,
+      dateFrom:  tempDateFrom,
+      dateTo:    tempDateTo,
     });
 
     // Persist first non-Remote location's lat/lng to creator profile
@@ -178,6 +186,7 @@ export default function HomeScreen() {
   }
 
   function resetFilter() {
+    setTempEventType('ALL');
     setTempPriceMin(0);
     setTempPriceMax(SLIDER_MAX);
     setTempLocation([]);
@@ -186,6 +195,7 @@ export default function HomeScreen() {
   }
 
   function resetAllFilters() {
+    setEventType('ALL');
     setPriceMin(0);
     setPriceMax(SLIDER_MAX);
     setLocationFilter([]);
@@ -194,7 +204,7 @@ export default function HomeScreen() {
     setActiveCategory('All');
     setActivePlatform('All');
     setActiveFilterTab(-1);
-    void fetchCampaigns({ category: 'All', platform: 'All', priceMin: 0, priceMax: SLIDER_MAX, dateFrom: null, dateTo: null });
+    void fetchCampaigns({ category: 'All', platform: 'All', priceMin: 0, priceMax: SLIDER_MAX, dateFrom: null, dateTo: null, eventType: 'ALL' });
   }
 
   const visibleCategories = [
@@ -249,7 +259,7 @@ export default function HomeScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brinjal1} />}>
 
         {/* ── Gradient header ── */}
-        <LinearGradient colors={['#1e1b4b', '#4338ca', '#7c3aed']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.gradientHeader}>
+        <LinearGradient colors={['#312e81', '#4f46e5', '#8b5cf6']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.gradientHeader}>
           {/* Decorative background circles */}
           <View style={styles.decCircleLarge} />
           <View style={styles.decCircleMid} />
@@ -400,12 +410,12 @@ export default function HomeScreen() {
         {loading ? (
           <View style={styles.loadingWrap}>
             <ActivityIndicator size="large" color={C.brinjal1} />
-            <Text style={[styles.loadingText, { color: C.textSecondary }]}>Loading campaigns…</Text>
+            <Text style={[styles.loadingText, { color: C.textSecondary }]}>Loading events…</Text>
           </View>
         ) : (
           <>
             <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: C.text }]}>Featured Campaigns</Text>
+              <Text style={[styles.sectionTitle, { color: C.text }]}>Featured Events</Text>
               {featured.length > 0 && (
                 <Pressable onPress={() => router.push('/(creator)/featured-campaigns')}>
                   <Text style={[styles.seeAll, { color: C.brinjal1 }]}>See All</Text>
@@ -419,7 +429,7 @@ export default function HomeScreen() {
             ) : (
               <View style={[styles.featuredEmpty, { backgroundColor: C.surface, borderColor: C.border }]}>
                 <Ionicons name="star-outline" size={32} color={C.textSecondary} />
-                <Text style={[styles.featuredEmptyTitle, { color: C.text }]}>No featured campaigns right now</Text>
+                <Text style={[styles.featuredEmptyTitle, { color: C.text }]}>No featured events right now</Text>
                 <Text style={[styles.featuredEmptySub, { color: C.textSecondary }]}>Check back soon — new opportunities are added regularly.</Text>
               </View>
             )}
@@ -434,9 +444,15 @@ export default function HomeScreen() {
               <View style={styles.exploreTexts}>
                 <Text style={[styles.exploreTitle, { color: '#065F46' }]}>Explore Brands</Text>
                 <Text style={[styles.exploreSub, { color: '#059669' }]}>Find businesses hiring creators</Text>
-                <View style={styles.earnBadge}>
-                  <Ionicons name="cash-outline" size={11} color="#fff" />
-                  <Text style={styles.earnText}>Earn Money</Text>
+                <View style={styles.earnBadgesRow}>
+                  <View style={styles.earnBadge}>
+                    <Ionicons name="cash-outline" size={11} color="#fff" />
+                    <Text style={styles.earnText}>Earn Money</Text>
+                  </View>
+                  <View style={[styles.earnBadge, { backgroundColor: '#065F46' }]}>
+                    <Ionicons name="people-outline" size={11} color="#fff" />
+                    <Text style={styles.earnText}>Network People</Text>
+                  </View>
                 </View>
               </View>
               <Ionicons name="arrow-forward-circle" size={26} color="#059669" />
@@ -463,10 +479,10 @@ export default function HomeScreen() {
               {filteredList.length === 0 ? (
                 <View style={styles.emptyWrap}>
                   <Ionicons name="search" size={40} color={C.textSecondary} />
-                  <Text style={[styles.emptyTitle, { color: C.text }]}>No campaigns found</Text>
+                  <Text style={[styles.emptyTitle, { color: C.text }]}>No events found</Text>
                   <Text style={[styles.emptyHint, { color: C.textSecondary }]}>
                     {campaigns.length === 0
-                      ? 'No active campaigns at the moment. Check back soon!'
+                      ? 'No active events at the moment. Check back soon!'
                       : 'Try adjusting your search or filters.'}
                   </Text>
                 </View>
@@ -496,11 +512,13 @@ export default function HomeScreen() {
 
       <FilterModal
         visible={filterOpen}
+        tempEventType={tempEventType}
         tempPriceMin={tempPriceMin}
         tempPriceMax={tempPriceMax}
         tempLocation={tempLocation}
         tempDateFrom={tempDateFrom}
         tempDateTo={tempDateTo}
+        setTempEventType={setTempEventType}
         setTempPriceMin={setTempPriceMin}
         setTempPriceMax={setTempPriceMax}
         setTempLocation={setTempLocation}
@@ -525,7 +543,7 @@ const styles = StyleSheet.create({
   decCircleSmall: { position: 'absolute', width: 70,  height: 70,  borderRadius: 35,  backgroundColor: 'rgba(255,255,255,0.07)', top: 30,    left: '45%' },
 
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingHorizontal: 20, paddingTop: 14, paddingBottom: 18 },
-  headerLeft: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, flex: 1 },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingTop: 2 },
   menuBtn: { padding: 0 },
   menuBtnInner: { width: 38, height: 38, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' },
@@ -592,7 +610,7 @@ const styles = StyleSheet.create({
   featuredEmpty: { marginHorizontal: 20, marginBottom: 0, borderRadius: 18, borderWidth: 1.5, borderStyle: 'dashed', padding: 24, alignItems: 'center', gap: 8 },
   featuredEmptyTitle: { fontSize: 14, fontFamily: F.bold, textAlign: 'center' },
   featuredEmptySub: { fontSize: 12, fontFamily: F.regular, textAlign: 'center', lineHeight: 18 },
-  filterTabsWrap: { borderBottomWidth: 1, marginTop: 20, marginBottom: 16 },
+  filterTabsWrap: { borderBottomWidth: 1, marginTop: 8, marginBottom: 16 },
   filterTabsRow: { flexDirection: 'row', paddingHorizontal: 20 },
   filterTab: { paddingVertical: 12, marginRight: 24, position: 'relative' },
   filterTabText: { fontSize: 14, fontFamily: F.medium },
@@ -604,11 +622,12 @@ const styles = StyleSheet.create({
   emptyTitle: { fontSize: 17, fontFamily: F.bold },
   emptyHint: { fontSize: 13, fontFamily: F.regular, textAlign: 'center', lineHeight: 20, paddingHorizontal: 24 },
 
-  exploreStrip:   { flexDirection: 'row', alignItems: 'center', borderRadius: 18, marginHorizontal: 20, marginTop: 16, marginBottom: 20, paddingHorizontal: 16, paddingVertical: 14, gap: 14 },
+  exploreStrip:   { flexDirection: 'row', alignItems: 'center', borderRadius: 18, marginHorizontal: 20, marginTop: 16, marginBottom: 2, paddingHorizontal: 16, paddingVertical: 14, gap: 14 },
   exploreIconBox: { width: 44, height: 44, borderRadius: 14, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   exploreTexts:   { flex: 1, gap: 2 },
   exploreTitle:   { fontSize: 15, fontFamily: F.bold },
-  earnBadge:      { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#059669', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, alignSelf: 'flex-start', marginTop: 4 },
+  earnBadgesRow:  { flexDirection: 'row', gap: 6, marginTop: 4, flexWrap: 'wrap' },
+  earnBadge:      { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#059669', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, alignSelf: 'flex-start' },
   earnText:       { fontSize: 11, fontWeight: '700', color: '#fff', fontFamily: F.bold },
   exploreSub:     { fontSize: 12, fontFamily: F.regular, marginTop: 1 },
 

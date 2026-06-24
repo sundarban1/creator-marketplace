@@ -42,17 +42,21 @@ export function RangeSlider({
   const [dispMax, setDispMax] = useState(maxVal);
   const [trackW, setTrackW]   = useState(0);
 
-  const dispMinRef = useRef(minVal);
-  const dispMaxRef = useRef(maxVal);
-  const trackWRef  = useRef(0);
-  const startMinPx = useRef(0);
-  const startMaxPx = useRef(0);
-  const dragMin    = useRef(false);
-  const dragMax    = useRef(false);
+  const dispMinRef   = useRef(minVal);
+  const dispMaxRef   = useRef(maxVal);
+  const trackWRef    = useRef(0);
+  const startMinPx   = useRef(0);
+  const startMaxPx   = useRef(0);
+  const dragMin      = useRef(false);
+  const dragMax      = useRef(false);
+  const onMinRef     = useRef(onMinChange);
+  const onMaxRef     = useRef(onMaxChange);
 
   dispMinRef.current = dispMin;
   dispMaxRef.current = dispMax;
   trackWRef.current  = trackW;
+  onMinRef.current   = onMinChange;
+  onMaxRef.current   = onMaxChange;
 
   useEffect(() => { if (!dragMin.current) setDispMin(minVal); }, [minVal]);
   useEffect(() => { if (!dragMax.current) setDispMax(maxVal); }, [maxVal]);
@@ -70,8 +74,8 @@ export function RangeSlider({
       const clamped = Math.max(0, Math.min(startMinPx.current + g.dx, maxAllowed));
       setDispMin(pxToVal(clamped, tw, max, step));
     },
-    onPanResponderRelease: ()   => { dragMin.current = false; onMinChange(dispMinRef.current); },
-    onPanResponderTerminate: () => { dragMin.current = false; onMinChange(dispMinRef.current); },
+    onPanResponderRelease: ()   => { dragMin.current = false; onMinRef.current(dispMinRef.current); },
+    onPanResponderTerminate: () => { dragMin.current = false; onMinRef.current(dispMinRef.current); },
   })).current;
 
   const maxPan = useRef(PanResponder.create({
@@ -87,8 +91,8 @@ export function RangeSlider({
       const clamped = Math.max(minAllowed, Math.min(startMaxPx.current + g.dx, tw));
       setDispMax(pxToVal(clamped, tw, max, step));
     },
-    onPanResponderRelease: ()   => { dragMax.current = false; onMaxChange(dispMaxRef.current); },
-    onPanResponderTerminate: () => { dragMax.current = false; onMaxChange(dispMaxRef.current); },
+    onPanResponderRelease: ()   => { dragMax.current = false; onMaxRef.current(dispMaxRef.current); },
+    onPanResponderTerminate: () => { dragMax.current = false; onMaxRef.current(dispMaxRef.current); },
   })).current;
 
   const minPct = dispMin / max;

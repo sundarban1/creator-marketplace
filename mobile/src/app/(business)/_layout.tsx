@@ -104,7 +104,7 @@ export default function BusinessLayout() {
       <Tabs.Screen
         name="campaigns"
         options={{
-          title: 'Campaigns',
+          title: 'Events',
           tabBarIcon: ({ color, focused }) => (
             <TabIcon name="briefcase-outline" nameActive="briefcase" size={23} color={color} focused={focused} />
           ),

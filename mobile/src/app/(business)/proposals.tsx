@@ -23,12 +23,12 @@ type Proposal = {
   proposedRate: string;
   coverLetter: string;
   createdAt: string;
-  campaign: { id: string; title: string; platform: string };
+  campaign: { id: string; title: string; platform: string; campaignType: 'PAID_CAMPAIGN' | 'OPEN_EVENT' };
   creator: { id: string; fullName: string; avatarUrl: string | null; location: string | null };
 };
 
 type CampaignSection = {
-  campaign: { id: string; title: string; platform: string };
+  campaign: { id: string; title: string; platform: string; campaignType: 'PAID_CAMPAIGN' | 'OPEN_EVENT' };
   latestAt: string;
   data: Proposal[];
 };
@@ -40,6 +40,11 @@ const STATUS_CFG = {
   accepted: { bg: '#ECFDF5', color: '#16A34A', icon: 'checkmark-circle'     as const, label: 'Accepted' },
   rejected: { bg: '#FEF2F2', color: '#EF4444', icon: 'close-circle-outline' as const, label: 'Rejected' },
 };
+
+const PAID_ACCENT  = '#4F46E5';
+const FREE_ACCENT  = '#059669';
+const PAID_LIGHT   = '#EEF2FF';
+const FREE_LIGHT   = '#F0FDF4';
 
 function initials(name: string) {
   return name.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase();
@@ -85,16 +90,19 @@ function ProposalCard({
 }) {
   const C = useAppColors();
   const st = STATUS_CFG[p.status];
+  const isFree   = p.campaign.campaignType === 'OPEN_EVENT';
+  const accent   = isFree ? FREE_ACCENT : PAID_ACCENT;
+  const accentBg = isFree ? FREE_LIGHT  : PAID_LIGHT;
 
   return (
     <Pressable
-      style={[styles.card, { backgroundColor: C.surface }]}
+      style={[styles.card, { backgroundColor: C.surface, borderLeftColor: accent }]}
       onPress={() => router.push({ pathname: '/(business)/creator-detail', params: { id: p.creator.id } })}>
 
       {/* Creator row */}
       <View style={styles.cardHeader}>
-        <View style={[styles.avatar, { backgroundColor: C.primaryLight }]}>
-          <Text style={[styles.avatarText, { color: C.brinjal1 }]}>{initials(p.creator.fullName)}</Text>
+        <View style={[styles.avatar, { backgroundColor: accentBg }]}>
+          <Text style={[styles.avatarText, { color: accent }]}>{initials(p.creator.fullName)}</Text>
         </View>
         <View style={styles.creatorInfo}>
           <Text style={[styles.creatorName, { color: C.text }]}>{p.creator.fullName}</Text>
@@ -118,12 +126,20 @@ function ProposalCard({
         </Text>
       ) : null}
 
-      {/* Rate + time */}
+      {/* Rate row — conditional on event type */}
       <View style={styles.metaRow}>
-        <View style={styles.rateWrap}>
-          <Ionicons name="cash-outline" size={13} color={C.brinjal1} />
-          <Text style={[styles.rate, { color: C.brinjal1 }]}>{p.proposedRate}</Text>
-        </View>
+        {isFree ? (
+          <View style={[styles.freeTag, { backgroundColor: FREE_LIGHT }]}>
+            <Ionicons name="gift-outline" size={13} color={FREE_ACCENT} />
+            <Text style={[styles.freeTagText, { color: FREE_ACCENT }]}>Free Participation</Text>
+          </View>
+        ) : (
+          <View style={styles.rateWrap}>
+            <Ionicons name="cash-outline" size={13} color={PAID_ACCENT} />
+            <Text style={[styles.rate, { color: PAID_ACCENT }]}>{p.proposedRate}</Text>
+            <Text style={[styles.rateLabel, { color: C.textSecondary }]}>proposed</Text>
+          </View>
+        )}
         <Text style={[styles.time, { color: C.textSecondary }]}>{timeAgo(p.createdAt)}</Text>
       </View>
 
@@ -136,15 +152,15 @@ function ProposalCard({
             onPress={() => onReject(p)}>
             {acting
               ? <ActivityIndicator size="small" color="#EF4444" />
-              : <><Ionicons name="close" size={15} color="#EF4444" /><Text style={[styles.actionBtnText, { color: '#EF4444' }]}>Reject</Text></>}
+              : <><Ionicons name="close" size={15} color="#EF4444" /><Text style={[styles.actionBtnText, { color: '#EF4444' }]}>Decline</Text></>}
           </Pressable>
           <Pressable
-            style={[styles.actionBtn, { backgroundColor: C.brinjal1 }]}
+            style={[styles.actionBtn, { backgroundColor: accent }]}
             disabled={acting}
             onPress={() => onAccept(p)}>
             {acting
               ? <ActivityIndicator size="small" color="#fff" />
-              : <><Ionicons name="checkmark" size={15} color="#fff" /><Text style={[styles.actionBtnText, { color: '#fff' }]}>Accept</Text></>}
+              : <><Ionicons name="checkmark" size={15} color="#fff" /><Text style={[styles.actionBtnText, { color: '#fff' }]}>{isFree ? 'Approve' : 'Accept'}</Text></>}
           </Pressable>
         </View>
       )}
@@ -174,20 +190,23 @@ export default function ProposalsScreen() {
   const onRefresh = useCallback(() => void loadProposals(true), []);
 
   async function handleAccept(p: Proposal) {
+    const isFree = p.campaign.campaignType === 'OPEN_EVENT';
     Alert.alert(
-      'Accept Proposal',
-      `Accept ${p.creator.fullName}'s proposal for "${p.campaign.title}"?\n\nOther pending applicants will be notified that the campaign is closed.`,
+      isFree ? 'Approve Attendance' : 'Accept Proposal',
+      isFree
+        ? `Approve ${p.creator.fullName} to attend "${p.campaign.title}"?`
+        : `Accept ${p.creator.fullName}'s proposal for "${p.campaign.title}"?\n\nOther pending applicants will be notified that the campaign is closed.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Accept',
+          text: isFree ? 'Approve' : 'Accept',
           onPress: async () => {
             setActingId(p.id);
             try {
               await campaignService.acceptProposal(p.campaign.id, p.id);
               setProposals((prev) => prev.map((x) => (x.id === p.id ? { ...x, status: 'accepted' } : x)));
             } catch (e) {
-              Alert.alert('Error', e instanceof Error ? e.message : 'Failed to accept proposal');
+              Alert.alert('Error', e instanceof Error ? e.message : 'Failed to accept');
             } finally { setActingId(null); }
           },
         },
@@ -197,12 +216,12 @@ export default function ProposalsScreen() {
 
   async function handleReject(p: Proposal) {
     Alert.alert(
-      'Reject Proposal',
-      `Reject ${p.creator.fullName}'s proposal for "${p.campaign.title}"?`,
+      'Decline',
+      `Decline ${p.creator.fullName}'s application for "${p.campaign.title}"?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Reject',
+          text: 'Decline',
           style: 'destructive',
           onPress: async () => {
             setActingId(p.id);
@@ -210,7 +229,7 @@ export default function ProposalsScreen() {
               await campaignService.rejectProposal(p.campaign.id, p.id);
               setProposals((prev) => prev.map((x) => (x.id === p.id ? { ...x, status: 'rejected' } : x)));
             } catch (e) {
-              Alert.alert('Error', e instanceof Error ? e.message : 'Failed to reject proposal');
+              Alert.alert('Error', e instanceof Error ? e.message : 'Failed to decline');
             } finally { setActingId(null); }
           },
         },
@@ -244,6 +263,17 @@ export default function ProposalsScreen() {
         <View style={styles.header}>
           <Text style={[styles.pageTitle, { color: '#fff' }]}>Proposals</Text>
           <Text style={[styles.pageSub, { color: 'rgba(255,255,255,0.75)' }]}>Review and manage creator applications</Text>
+          {/* Legend */}
+          <View style={styles.legend}>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendDot, { backgroundColor: PAID_ACCENT }]} />
+              <Text style={styles.legendText}>Paid Event</Text>
+            </View>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendDot, { backgroundColor: FREE_ACCENT }]} />
+              <Text style={styles.legendText}>Free Event</Text>
+            </View>
+          </View>
         </View>
       </LinearGradient>
 
@@ -276,21 +306,38 @@ export default function ProposalsScreen() {
           contentContainerStyle={[styles.list, sections.length === 0 && styles.listEmpty]}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brinjal1} />}
           renderSectionHeader={({ section }) => {
+            const isFree   = section.campaign.campaignType === 'OPEN_EVENT';
+            const accent   = isFree ? FREE_ACCENT : PAID_ACCENT;
+            const accentBg = isFree ? FREE_LIGHT  : PAID_LIGHT;
             const pending  = section.data.filter((p) => p.status === 'pending').length;
             const accepted = section.data.filter((p) => p.status === 'accepted').length;
             return (
               <View style={[styles.sectionHeader, { backgroundColor: C.background }]}>
-                <View style={styles.sectionHeaderLeft}>
-                  <View style={[styles.platformPill, { backgroundColor: C.primaryLight }]}>
-                    <Text style={[styles.platformText, { color: C.brinjal1 }]}>{section.campaign.platform}</Text>
-                  </View>
+                {/* Type banner strip */}
+                <View style={[styles.sectionTypeBanner, { backgroundColor: accentBg, borderLeftColor: accent }]}>
+                  <Ionicons
+                    name={isFree ? 'gift-outline' : 'cash-outline'}
+                    size={13}
+                    color={accent}
+                  />
+                  <Text style={[styles.sectionTypeText, { color: accent }]}>
+                    {isFree ? 'Free Event' : 'Paid Event'}
+                  </Text>
+                  {!isFree && section.campaign.platform ? (
+                    <View style={[styles.platformPill, { backgroundColor: C.surface }]}>
+                      <Text style={[styles.platformText, { color: C.textSecondary }]}>{section.campaign.platform}</Text>
+                    </View>
+                  ) : null}
+                </View>
+                {/* Title + meta row */}
+                <View style={styles.sectionTitleRow}>
                   <Text style={[styles.sectionTitle, { color: C.text }]} numberOfLines={1}>
                     {section.campaign.title}
                   </Text>
                 </View>
                 <View style={styles.sectionMeta}>
                   <Text style={[styles.sectionCount, { color: C.textSecondary }]}>
-                    {section.data.length} proposal{section.data.length !== 1 ? 's' : ''}
+                    {section.data.length} application{section.data.length !== 1 ? 's' : ''}
                   </Text>
                   {pending > 0 && (
                     <View style={styles.pendingDot}>
@@ -299,7 +346,7 @@ export default function ProposalsScreen() {
                   )}
                   {accepted > 0 && (
                     <View style={styles.acceptedDot}>
-                      <Text style={styles.acceptedDotText}>✓ selected</Text>
+                      <Text style={styles.acceptedDotText}>✓ {isFree ? 'approved' : 'selected'}</Text>
                     </View>
                   )}
                 </View>
@@ -325,7 +372,7 @@ export default function ProposalsScreen() {
               </Text>
               <Text style={[styles.emptySub, { color: C.textSecondary }]}>
                 {activeFilter === 'All'
-                  ? 'Proposals from creators will appear here when they apply to your campaigns.'
+                  ? 'Proposals from creators will appear here when they apply to your events.'
                   : 'Try a different filter above.'}
               </Text>
             </View>
@@ -343,9 +390,14 @@ const styles = StyleSheet.create({
   decCircle1: { position: 'absolute', width: 200, height: 200, borderRadius: 100, top: -70, right: -40 },
   decCircle2: { position: 'absolute', width: 120, height: 120, borderRadius: 60, bottom: -35, left: 15 },
 
-  header:    { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 4, gap: 3 },
+  header:    { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 4, gap: 6 },
   pageTitle: { fontSize: 22, fontWeight: '800', fontFamily: F.extrabold },
   pageSub:   { fontSize: 13, fontFamily: F.regular },
+
+  legend:      { flexDirection: 'row', gap: 16, marginTop: 4 },
+  legendItem:  { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  legendDot:   { width: 10, height: 10, borderRadius: 5 },
+  legendText:  { fontSize: 12, color: 'rgba(255,255,255,0.85)', fontFamily: F.medium },
 
   statsRow:  { flexDirection: 'row', paddingHorizontal: 20, gap: 10, marginTop: 16, marginBottom: 8 },
   statCard:  { flex: 1, borderRadius: 14, padding: 12, alignItems: 'center', gap: 2, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, elevation: 2 },
@@ -355,22 +407,25 @@ const styles = StyleSheet.create({
   list:      { paddingBottom: 40 },
   listEmpty: { flexGrow: 1 },
 
-  sectionHeader:     { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8 },
-  sectionHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
-  sectionTitle:      { fontSize: 15, fontWeight: '700', flex: 1, fontFamily: F.bold },
-  platformPill:      { borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 },
-  platformText:      { fontSize: 10, fontWeight: '700', fontFamily: F.bold },
-  sectionMeta:       { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  sectionCount:      { fontSize: 12, fontFamily: F.regular },
-  pendingDot:        { backgroundColor: '#FFF7ED', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 2 },
-  pendingDotText:    { fontSize: 11, fontWeight: '700', color: '#D97706', fontFamily: F.bold },
-  acceptedDot:       { backgroundColor: '#ECFDF5', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 2 },
-  acceptedDotText:   { fontSize: 11, fontWeight: '700', color: '#16A34A', fontFamily: F.bold },
-  sectionSep:        { height: 8 },
+  sectionHeader:    { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8, gap: 6 },
+  sectionTypeBanner:{ flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, borderLeftWidth: 3 },
+  sectionTypeText:  { fontSize: 12, fontWeight: '700', fontFamily: F.bold },
+  platformPill:     { borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2, marginLeft: 4 },
+  platformText:     { fontSize: 10, fontWeight: '600', fontFamily: F.semibold },
+  sectionTitleRow:  { flexDirection: 'row', alignItems: 'center' },
+  sectionTitle:     { fontSize: 15, fontWeight: '700', flex: 1, fontFamily: F.bold },
+  sectionMeta:      { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  sectionCount:     { fontSize: 12, fontFamily: F.regular },
+  pendingDot:       { backgroundColor: '#FFF7ED', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 2 },
+  pendingDotText:   { fontSize: 11, fontWeight: '700', color: '#D97706', fontFamily: F.bold },
+  acceptedDot:      { backgroundColor: '#ECFDF5', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 2 },
+  acceptedDotText:  { fontSize: 11, fontWeight: '700', color: '#16A34A', fontFamily: F.bold },
+  sectionSep:       { height: 8 },
 
   cardWrap: { paddingHorizontal: 20, marginBottom: 8 },
   card: {
     borderRadius: 16, padding: 14, gap: 10,
+    borderLeftWidth: 4,
     shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8,
     shadowOffset: { width: 0, height: 2 }, elevation: 3,
   },
@@ -384,10 +439,15 @@ const styles = StyleSheet.create({
   statusBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
   statusText:  { fontSize: 11, fontWeight: '700', fontFamily: F.bold },
   coverLetter: { fontSize: 12, lineHeight: 17, fontStyle: 'italic', fontFamily: F.regular },
-  metaRow:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  rateWrap:    { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  rate:        { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
-  time:        { fontSize: 11, fontFamily: F.regular },
+
+  metaRow:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  rateWrap:   { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  rate:       { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
+  rateLabel:  { fontSize: 11, fontFamily: F.regular },
+  freeTag:    { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 4 },
+  freeTagText:{ fontSize: 12, fontWeight: '700', fontFamily: F.bold },
+  time:       { fontSize: 11, fontFamily: F.regular },
+
   actions:     { flexDirection: 'row', gap: 10, marginTop: 2 },
   actionBtn:   { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: 10, borderRadius: 10 },
   rejectBtn:   { borderWidth: 1.5 },

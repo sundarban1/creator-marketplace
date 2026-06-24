@@ -315,8 +315,14 @@ export default function CampaignDetailScreen() {
   const [editErrors, setEditErrors] = useState<EditErrors>({});
   const [saving, setSaving] = useState(false);
 
+  const isEditLocked = (campaign?.proposals ?? 0) > 0;
+
   function openEdit() {
     if (!campaign) return;
+    if (isEditLocked) {
+      showToast('Editing is locked — proposals have already been submitted for this event.', 'error');
+      return;
+    }
     setEditForm({
       title:        campaign.title,
       description:  campaign.description ?? '',
@@ -416,9 +422,9 @@ export default function CampaignDetailScreen() {
       const fresh = await campaignService.getById(campaign!.id);
       setCampaign(fresh);
       setEditOpen(false);
-      showToast('Campaign updated successfully!');
+      showToast('Event updated successfully!');
     } catch (e) {
-      showToast(e instanceof Error ? e.message : 'Failed to update campaign.', 'error');
+      showToast(e instanceof Error ? e.message : 'Failed to update event.', 'error');
     } finally {
       setSaving(false);
     }
@@ -434,7 +440,7 @@ export default function CampaignDetailScreen() {
         setCampaign(c);
         if (!isBusiness) setHasApplied((apps as { campaignId: string }[]).some((a) => a.campaignId === campaignId));
       })
-      .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load campaign'))
+      .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load event'))
       .finally(() => setLoading(false));
   }, [campaignId]);
 
@@ -453,7 +459,7 @@ export default function CampaignDetailScreen() {
       <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
         <LinearGradient colors={['#8B5CF6', '#6366F1', '#4F46E5']} start={{x:0,y:0}} end={{x:1,y:0}} style={s.gradientHeader}>
           <BackButton />
-          <Text style={[s.headerTitle, { color: '#fff' }]}>Campaign Details</Text>
+          <Text style={[s.headerTitle, { color: '#fff' }]}>Event Details</Text>
           <View style={{ width: 40 }} />
         </LinearGradient>
         <View style={s.centered}><ActivityIndicator size="large" color={C.brinjal1} /></View>
@@ -466,7 +472,7 @@ export default function CampaignDetailScreen() {
       <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
         <View style={s.centered}>
           <Text style={{ fontSize: 48 }}>🔍</Text>
-          <Text style={[{ fontSize: 17, fontWeight: '600' }, { color: C.textSecondary }]}>{error || 'Campaign not found'}</Text>
+          <Text style={[{ fontSize: 17, fontWeight: '600' }, { color: C.textSecondary }]}>{error || 'Event not found'}</Text>
           <Pressable style={[s.goBackBtn, { backgroundColor: C.brinjal1 }]} onPress={() => router.back()}>
             <Text style={s.goBackBtnTxt}>Go Back</Text>
           </Pressable>
@@ -485,7 +491,7 @@ export default function CampaignDetailScreen() {
       {/* Header */}
       <LinearGradient colors={['#8B5CF6', '#6366F1', '#4F46E5']} start={{x:0,y:0}} end={{x:1,y:0}} style={s.gradientHeader}>
         <BackButton />
-        <Text style={[s.headerTitle, { color: '#fff' }]}>Campaign Details</Text>
+        <Text style={[s.headerTitle, { color: '#fff' }]}>Event Details</Text>
         <View style={{ width: 40 }} />
       </LinearGradient>
 
@@ -507,6 +513,15 @@ export default function CampaignDetailScreen() {
               {posted === 0 ? 'Posted today' : posted === 1 ? 'Posted yesterday' : `Posted ${posted} days ago`}
             </Text>
           </View>
+          {campaign.campaignType === 'OPEN_EVENT' ? (
+            <View style={[s.heroTypeBadge, { backgroundColor: 'rgba(255,255,255,0.93)' }]}>
+              <Text style={[s.heroTypeTxt, { color: '#059669' }]}>✓ Free Event</Text>
+            </View>
+          ) : (
+            <View style={[s.heroTypeBadge, { backgroundColor: 'rgba(255,255,255,0.93)' }]}>
+              <Text style={[s.heroTypeTxt, { color: '#4F46E5' }]}>$ Paid Event</Text>
+            </View>
+          )}
         </View>
 
         {/* Title block */}
@@ -525,8 +540,19 @@ export default function CampaignDetailScreen() {
           </View>
           <Text style={[s.campaignTitle, { color: C.text }]}>{campaign.title}</Text>
           <View style={s.budgetRow}>
-            <Text style={[s.budget, { color: C.brinjal1 }]}>{campaign.budget}</Text>
-            <View style={[s.proposalsBadge, { backgroundColor: C.primaryLight }]}>
+            {campaign.campaignType !== 'OPEN_EVENT' && (
+              <Text style={[s.budget, { color: C.brinjal1 }]}>{campaign.budget}</Text>
+            )}
+            {campaign.campaignType === 'OPEN_EVENT' ? (
+              <View style={[s.typeBadge, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}>
+                <Text style={[s.typeBadgeText, { color: '#059669' }]}>✓ Free Event</Text>
+              </View>
+            ) : (
+              <View style={[s.typeBadge, { backgroundColor: '#EEF2FF', borderColor: '#C7D2FE' }]}>
+                <Text style={[s.typeBadgeText, { color: '#4F46E5' }]}>$ Paid Event</Text>
+              </View>
+            )}
+            <View style={[s.proposalsBadge, { backgroundColor: C.primaryLight, marginLeft: 'auto' }]}>
               <Text style={[s.proposalsTxt, { color: C.brinjal1 }]}>
                 {campaign.proposals} {campaign.proposals === 1 ? 'proposal' : 'proposals'}
               </Text>
@@ -546,7 +572,7 @@ export default function CampaignDetailScreen() {
             )}
             {campaign.goals.length > 0 && (
               <>
-                <Text style={[s.sectionLabel, { color: C.textSecondary }]}>Campaign Goals</Text>
+                <Text style={[s.sectionLabel, { color: C.textSecondary }]}>Event Goals</Text>
                 <View style={s.goalChips}>
                   {campaign.goals.map((g) => (
                     <View key={g} style={[s.goalChip, { backgroundColor: C.primaryLight }]}>
@@ -561,11 +587,15 @@ export default function CampaignDetailScreen() {
 
         {/* Details grid */}
         <View style={[s.card, { backgroundColor: C.surface }]}>
-          <Text style={[s.sectionLabel, { color: C.textSecondary }]}>Campaign Details</Text>
+          <Text style={[s.sectionLabel, { color: C.textSecondary }]}>Event Details</Text>
           <View style={s.detailsGrid}>
             <DetailRow icon="📅" label="Deadline"  value={formatDeadline(campaign.deadline)} C={C} />
-            <DetailRow icon="💳" label="Budget"    value={campaign.budget} C={C} />
-            <DetailRow icon="💰" label="Payment"   value={campaign.paymentType} C={C} />
+            {campaign.campaignType !== 'OPEN_EVENT' && (
+              <>
+                <DetailRow icon="💳" label="Budget"  value={campaign.budget} C={C} />
+                <DetailRow icon="💰" label="Payment" value={campaign.paymentType} C={C} />
+              </>
+            )}
             <DetailRow icon="📍" label="Location"  value={campaign.location ?? 'Remote'} C={C} />
             <DetailRow icon="📊" label="Status"    value={campaign.status ? campaign.status.charAt(0).toUpperCase() + campaign.status.slice(1) : 'Active'} C={C} />
           </View>
@@ -573,7 +603,7 @@ export default function CampaignDetailScreen() {
 
         {/* Description */}
         <View style={[s.card, { backgroundColor: C.surface }]}>
-          <Text style={[s.sectionLabel, { color: C.textSecondary }]}>About this Campaign</Text>
+          <Text style={[s.sectionLabel, { color: C.textSecondary }]}>About this Event</Text>
           <Text style={[s.description, { color: C.text }]}>{campaign.description}</Text>
         </View>
 
@@ -593,15 +623,19 @@ export default function CampaignDetailScreen() {
       {/* Sticky CTA */}
       <View style={[s.ctaBar, { backgroundColor: C.surface, borderTopColor: C.border }]}>
         <View style={s.ctaInfo}>
-          <Text style={[s.ctaBudget, { color: C.text }]}>{campaign.budget}</Text>
-          <Text style={[s.ctaLabel, { color: C.textSecondary }]}>{isBusiness ? 'Budget range' : 'Estimated budget'}</Text>
+          {campaign.campaignType === 'OPEN_EVENT' ? (
+            <Text style={[s.ctaBudget, { color: '#059669' }]}>Free Event</Text>
+          ) : (
+            <Text style={[s.ctaBudget, { color: C.text }]}>{campaign.budget}</Text>
+          )}
+          {isBusiness && <Text style={[s.ctaLabel, { color: C.textSecondary }]}>Budget range</Text>}
         </View>
         {isBusiness ? (
           <Pressable
-            style={({ pressed }) => [s.applyBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }, pressed && { opacity: 0.88 }]}
+            style={({ pressed }) => [s.applyBtn, { backgroundColor: isEditLocked ? C.border : C.brinjal1, shadowColor: isEditLocked ? 'transparent' : C.brinjal1 }, pressed && !isEditLocked && { opacity: 0.88 }]}
             onPress={openEdit}>
-            <Ionicons name="create-outline" size={16} color="#fff" />
-            <Text style={s.applyBtnTxt}>Edit Campaign</Text>
+            <Ionicons name={isEditLocked ? 'lock-closed-outline' : 'create-outline'} size={16} color="#fff" />
+            <Text style={s.applyBtnTxt}>{isEditLocked ? 'Locked' : 'Edit Event'}</Text>
           </Pressable>
         ) : hasApplied ? (
           <View style={s.appliedBadge}>
@@ -611,7 +645,7 @@ export default function CampaignDetailScreen() {
         ) : (
           <Pressable
             style={({ pressed }) => [s.applyBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }, pressed && { opacity: 0.88 }]}
-            onPress={() => campaign && router.push({ pathname: '/submit-proposal', params: { campaignId: campaign.id, campaignTitle: campaign.title, brand: campaign.brand, budget: campaign.budget, category: campaign.category } })}>
+            onPress={() => campaign && router.push({ pathname: '/submit-proposal', params: { campaignId: campaign.id, campaignTitle: campaign.title, brand: campaign.brand, budget: campaign.budget, category: campaign.category, campaignType: campaign.campaignType ?? 'PAID_CAMPAIGN' } })}>
             <Text style={s.applyBtnTxt}>Submit Proposal</Text>
           </Pressable>
         )}
@@ -627,7 +661,7 @@ export default function CampaignDetailScreen() {
 
               {/* Sheet header */}
               <View style={em.sheetHeader}>
-                <Text style={[em.sheetTitle, { color: C.text }]}>{isOpenEvent ? 'Edit Event' : 'Edit Campaign'}</Text>
+                <Text style={[em.sheetTitle, { color: C.text }]}>{isOpenEvent ? 'Edit Event' : 'Edit Event'}</Text>
                 <Pressable onPress={() => setEditOpen(false)}>
                   <Ionicons name="close" size={22} color={C.textSecondary} />
                 </Pressable>
@@ -643,7 +677,7 @@ export default function CampaignDetailScreen() {
                   style={[em.input, { backgroundColor: C.background, borderColor: editErrors.title ? ERROR_RED : C.border, color: C.text }]}
                   value={editForm.title}
                   onChangeText={(v) => updateEdit('title', v)}
-                  placeholder="Campaign title"
+                  placeholder="Event title"
                   placeholderTextColor={C.textSecondary}
                 />
                 {editErrors.title ? <Text style={em.errTxt}>{editErrors.title}</Text> : null}
@@ -655,7 +689,7 @@ export default function CampaignDetailScreen() {
                   style={[em.textarea, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
                   value={editForm.description}
                   onChangeText={(v) => updateEdit('description', v)}
-                  placeholder={isOpenEvent ? 'Describe your event…' : 'Describe your campaign…'}
+                  placeholder="Describe your event…"
                   placeholderTextColor={C.textSecondary}
                   multiline
                   numberOfLines={3}
@@ -836,7 +870,7 @@ export default function CampaignDetailScreen() {
                   <View style={em.featuredLeft}>
                     <Text style={{ fontSize: 22 }}>⭐</Text>
                     <View style={{ flex: 1, gap: 2 }}>
-                      <Text style={[em.featuredLabel, { color: C.text }]}>Feature this {isOpenEvent ? 'Event' : 'Campaign'}</Text>
+                      <Text style={[em.featuredLabel, { color: C.text }]}>Feature this Event</Text>
                       <Text style={[em.featuredSub, { color: C.textSecondary }]}>Appears highlighted on creator home</Text>
                     </View>
                   </View>
@@ -972,8 +1006,10 @@ const s = StyleSheet.create({
   heroBadge:    { position: 'absolute', top: 14, left: 16, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 },
   heroNewBadge: { position: 'absolute', top: 14, right: 16, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 },
   heroBadgeTxt: { fontSize: 10, fontWeight: '800', color: '#fff', letterSpacing: 0.5, fontFamily: F.extrabold },
-  heroPosted:   { position: 'absolute', bottom: 12, right: 14, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
-  heroPostedTxt:{ fontSize: 11, color: '#fff', fontWeight: '500', fontFamily: F.medium },
+  heroPosted:    { position: 'absolute', bottom: 12, left: 16, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
+  heroPostedTxt: { fontSize: 11, color: '#fff', fontWeight: '500', fontFamily: F.medium },
+  heroTypeBadge: { position: 'absolute', bottom: 12, right: 14, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
+  heroTypeTxt:   { fontSize: 11, fontWeight: '700', fontFamily: F.bold },
 
   titleBlock:    { paddingHorizontal: 20, paddingVertical: 16, gap: 10, borderBottomWidth: 1 },
   brandRow:      { flexDirection: 'row', alignItems: 'center', gap: 8 },
@@ -985,8 +1021,10 @@ const s = StyleSheet.create({
   platformTag:   { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
   platformTagTxt:{ fontSize: 12, fontWeight: '600', fontFamily: F.semibold },
   campaignTitle: { fontSize: 20, fontWeight: '800', lineHeight: 26, fontFamily: F.extrabold },
-  budgetRow:     { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  budgetRow:     { flexDirection: 'row', alignItems: 'center', gap: 10 },
   budget:        { fontSize: 22, fontWeight: '800', fontFamily: F.extrabold },
+  typeBadge:     { borderRadius: 8, paddingHorizontal: 9, paddingVertical: 4, borderWidth: 1 },
+  typeBadgeText: { fontSize: 12, fontWeight: '700', fontFamily: F.bold },
   proposalsBadge:{ borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
   proposalsTxt:  { fontSize: 12, fontWeight: '600', fontFamily: F.semibold },
 

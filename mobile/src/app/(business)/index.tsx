@@ -62,7 +62,7 @@ export default function BusinessHomeScreen() {
       const { campaigns: data } = await campaignService.listMy();
       setCampaigns(data);
     } catch (e) {
-      setFetchError(e instanceof Error ? e.message : 'Failed to load campaigns');
+      setFetchError(e instanceof Error ? e.message : 'Failed to load events');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -92,13 +92,27 @@ export default function BusinessHomeScreen() {
 
     type StatCard = { iconName: keyof typeof Ionicons.glyphMap; iconBg: string; iconColor: string; value: string; label: string; onPress: () => void };
   const STATS_CARDS: StatCard[] = [
-    { iconName: 'megaphone-outline', iconBg: '#EEF2FF', iconColor: '#4F46E5', value: String(stats.active),    label: 'Active\nCampaigns', onPress: () => router.push('/(business)/campaigns') },
+    { iconName: 'megaphone-outline', iconBg: '#EEF2FF', iconColor: '#4F46E5', value: String(stats.active),    label: 'Active\nEvents', onPress: () => router.push('/(business)/campaigns') },
     { iconName: 'document-text-outline', iconBg: '#F0FDF4', iconColor: '#059669', value: String(stats.proposals), label: 'Total\nProposals', onPress: () => router.push('/(business)/proposals') },
-    { iconName: 'folder-open-outline', iconBg: '#FDF4FF', iconColor: '#7C3AED', value: String(stats.total), label: 'All\nCampaigns', onPress: () => router.push('/(business)/campaigns') },
+    { iconName: 'folder-open-outline', iconBg: '#FDF4FF', iconColor: '#7C3AED', value: String(stats.total), label: 'All\nEvents', onPress: () => router.push('/(business)/campaigns') },
     { iconName: 'checkmark-done-circle-outline', iconBg: '#FFF7ED', iconColor: '#D97706', value: String(stats.completed), label: 'Completed', onPress: () => router.push('/(business)/campaigns') },
   ];
 
-  const recent = campaigns.slice(0, 5);
+  const [typeFilter, setTypeFilter] = useState<'All' | 'Paid' | 'Open'>('All');
+
+  const TYPE_TABS = [
+    { key: 'All'  as const, label: 'All'        },
+    { key: 'Paid' as const, label: 'Paid'       },
+    { key: 'Open' as const, label: 'Open (Free)' },
+  ];
+
+  function matchesType(c: Campaign) {
+    if (typeFilter === 'All')  return true;
+    if (typeFilter === 'Paid') return !c.campaignType || c.campaignType === 'PAID_CAMPAIGN';
+    return c.campaignType === 'OPEN_EVENT';
+  }
+
+  const recent = campaigns.filter(matchesType).slice(0, 5);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
@@ -153,7 +167,7 @@ export default function BusinessHomeScreen() {
             <Ionicons name="megaphone" size={22} color="#fff" />
           </LinearGradient>
           <View style={styles.createText}>
-            <Text style={[styles.createTitle, { color: C.text }]}>Create a Campaign</Text>
+            <Text style={[styles.createTitle, { color: C.text }]}>Create an Event</Text>
             <Text style={[styles.createSub, { color: C.textSecondary }]}>Post a promotion or collaboration opportunity</Text>
           </View>
           <View style={[styles.createArrow, { backgroundColor: C.primaryLight }]}>
@@ -200,26 +214,43 @@ export default function BusinessHomeScreen() {
               <Text style={styles.findEmoji}>🧑‍🎨</Text>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.findTitle, { color: '#059669' }]}>Explore Creators</Text>
-                <Text style={[styles.findSub, { color: '#059669' }]}>for your next campaign</Text>
+                <Text style={[styles.findSub, { color: '#059669' }]}>for your next event</Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color="#059669" />
             </Pressable>
 
-            {/* ── Recent Campaigns ── */}
+            {/* ── Recent Events header + type tabs ── */}
             <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: C.text }]}>Recent Campaigns</Text>
+              <Text style={[styles.sectionTitle, { color: C.text }]}>Recent Events</Text>
               <Pressable onPress={() => router.push('/(business)/campaigns')}>
                 <Text style={[styles.viewAll, { color: C.brinjal1 }]}>View all</Text>
               </Pressable>
             </View>
 
+            <View style={[styles.typeFilterWrap, { borderBottomColor: C.border }]}>
+              <View style={styles.typeFilterRow}>
+                {TYPE_TABS.map(({ key, label }) => {
+                  const active = typeFilter === key;
+                  return (
+                    <Pressable
+                      key={key}
+                      style={styles.typeFilterTab}
+                      onPress={() => setTypeFilter(key)}>
+                      <Text style={[styles.typeFilterLabel, { color: active ? C.brinjal1 : C.textSecondary, fontWeight: active ? '700' : '500' }]}>{label}</Text>
+                      {active && <View style={[styles.typeFilterUnderline, { backgroundColor: C.brinjal1 }]} />}
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+
             {recent.length === 0 ? (
               <View style={styles.emptyWrap}>
                 <Ionicons name="document-text" size={48} color={C.textSecondary} />
-                <Text style={[styles.emptyTitle, { color: C.text }]}>No campaigns yet</Text>
-                <Text style={[styles.emptyHint, { color: C.textSecondary }]}>Create your first campaign to start working with creators.</Text>
+                <Text style={[styles.emptyTitle, { color: C.text }]}>No events yet</Text>
+                <Text style={[styles.emptyHint, { color: C.textSecondary }]}>Create your first event to start working with creators.</Text>
                 <Pressable style={[styles.emptyBtn, { backgroundColor: C.brinjal1 }]} onPress={() => router.push('/create-campaign')}>
-                  <Text style={styles.emptyBtnText}>Create Campaign</Text>
+                  <Text style={styles.emptyBtnText}>Create Event</Text>
                 </Pressable>
               </View>
             ) : (
@@ -238,6 +269,11 @@ export default function BusinessHomeScreen() {
                       <View style={styles.campaignBody}>
                         <View style={styles.campaignTitleRow}>
                           <Text style={[styles.campaignTitle, { color: C.text }]} numberOfLines={1}>{c.title}</Text>
+                          <View style={[styles.typeBadge, c.campaignType === 'OPEN_EVENT' ? styles.typeBadgeFree : styles.typeBadgePaid]}>
+                            <Text style={[styles.typeBadgeText, c.campaignType === 'OPEN_EVENT' ? styles.typeBadgeTextFree : styles.typeBadgeTextPaid]}>
+                              {c.campaignType === 'OPEN_EVENT' ? 'Free' : '$ Paid'}
+                            </Text>
+                          </View>
                           <View style={[styles.statusBadge, { backgroundColor: st.bg }]}>
                             <Text style={[styles.statusText, { color: st.color }]}>{st.label}</Text>
                           </View>
@@ -301,23 +337,36 @@ const styles = StyleSheet.create({
   errorText: { color: '#DC2626', fontSize: 13, flex: 1, fontFamily: F.medium },
   retryText: { fontSize: 13, fontWeight: '700', marginLeft: 12, fontFamily: F.bold },
 
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginBottom: 14, marginTop: 20 },
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginBottom: 12, marginTop: 14 },
   sectionTitle: { fontSize: 17, fontWeight: '800', fontFamily: F.extrabold },
   viewAll: { fontSize: 13, fontWeight: '600', fontFamily: F.semibold },
 
   loadingWrap: { paddingVertical: 60, alignItems: 'center', gap: 14 },
   loadingText: { fontSize: 14, fontFamily: F.regular },
 
-  statsRow: { flexDirection: 'row', borderRadius: 20, marginHorizontal: 20, marginBottom: 20, shadowColor: '#4F46E5', shadowOpacity: 0.12, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 4, overflow: 'hidden' },
+  statsRow: { flexDirection: 'row', borderRadius: 20, marginHorizontal: 20, marginBottom: 16, shadowColor: '#4F46E5', shadowOpacity: 0.12, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 4, overflow: 'hidden' },
   statItem: { flex: 1, alignItems: 'center', paddingVertical: 18, paddingHorizontal: 4 },
   statIconBox: { width: 36, height: 36, borderRadius: 11, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
   statValue: { fontSize: 22, fontWeight: '800', marginBottom: 2, fontFamily: F.extrabold },
   statLabel: { fontSize: 10, textAlign: 'center', lineHeight: 13, fontFamily: F.medium },
 
-  findBanner: { flexDirection: 'row', alignItems: 'center', borderRadius: 16, marginHorizontal: 20, marginBottom: 20, paddingHorizontal: 16, paddingVertical: 14, gap: 10, backgroundColor: '#F0FDF4', borderWidth: 1, borderColor: '#BBF7D0' },
+  findBanner: { flexDirection: 'row', alignItems: 'center', borderRadius: 16, marginHorizontal: 20, marginBottom: 16, paddingHorizontal: 16, paddingVertical: 14, gap: 10, backgroundColor: '#F0FDF4', borderWidth: 1, borderColor: '#BBF7D0' },
   findEmoji: { fontSize: 22 },
   findTitle: { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
   findSub:   { fontSize: 11, fontFamily: F.regular, marginTop: 1 },
+
+  typeFilterWrap: { borderBottomWidth: 1, marginBottom: 12 },
+  typeFilterRow: { flexDirection: 'row', paddingHorizontal: 20 },
+  typeFilterTab: { paddingVertical: 12, marginRight: 24, position: 'relative' as const },
+  typeFilterLabel: { fontSize: 14, fontFamily: F.medium },
+  typeFilterUnderline: { position: 'absolute' as const, bottom: 0, left: 0, right: 0, height: 2.5, borderRadius: 2 },
+
+  typeBadge: { borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 },
+  typeBadgePaid: { backgroundColor: '#EEF2FF' },
+  typeBadgeFree: { backgroundColor: '#F0FDF4' },
+  typeBadgeText: { fontSize: 10, fontWeight: '700', fontFamily: F.bold },
+  typeBadgeTextPaid: { color: '#4F46E5' },
+  typeBadgeTextFree: { color: '#059669' },
 
   campaignList: { paddingHorizontal: 20, gap: 12 },
   campaignCard: { flexDirection: 'row', alignItems: 'center', borderRadius: 18, padding: 14, gap: 12, shadowColor: '#000', shadowOpacity: 0.07, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 4, overflow: 'hidden' },
