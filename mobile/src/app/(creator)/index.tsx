@@ -437,7 +437,7 @@ export default function HomeScreen() {
                 <Ionicons name="storefront-outline" size={20} color="#fff" />
               </View>
               <View style={styles.exploreTexts}>
-                <Text style={[styles.exploreTitle, { color: '#065F46' }]}>Explore Brands</Text>
+                <Text style={[styles.exploreTitle, { color: '#047857' }]}>Explore Brands</Text>
                 <Text style={[styles.exploreSub, { color: '#059669' }]}>Find businesses hiring creators</Text>
                 <View style={styles.earnBadgesRow}>
                   <View style={styles.earnBadge}>
@@ -572,8 +572,8 @@ const styles = StyleSheet.create({
   retryText: { fontSize: 13, fontWeight: '700', marginLeft: 12, fontFamily: F.bold },
 
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginTop: 20, marginBottom: 12 },
-  sectionTitle: { fontSize: 17, fontFamily: F.bold },
-  seeAll: { fontSize: 13, fontFamily: F.semibold },
+  sectionTitle: { fontSize: 15, fontFamily: F.semibold, letterSpacing: 0.2, opacity: 0.8 },
+  seeAll: { fontSize: 13, fontFamily: F.medium, opacity: 0.7 },
 
   categoriesRow: { paddingHorizontal: 20, gap: 10, marginBottom: 0 },
   catCard: {
@@ -584,7 +584,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 3 }, elevation: 3,
   },
   catEmoji:  { fontSize: 34 },
-  catLabel:  { fontSize: 10, fontWeight: '700', fontFamily: F.bold, lineHeight: 13, textAlign: 'center' },
+  catLabel:  { fontSize: 10, fontFamily: F.semibold, lineHeight: 13, textAlign: 'center' },
 
   platformsRow: { paddingHorizontal: 20, gap: 10, marginBottom: 0 },
   platCard: {
@@ -594,7 +594,7 @@ const styles = StyleSheet.create({
     shadowColor: '#000', shadowOpacity: 0.07, shadowRadius: 10,
     shadowOffset: { width: 0, height: 3 }, elevation: 3,
   },
-  platLabel: { fontSize: 10, fontFamily: F.bold, lineHeight: 13, textAlign: 'center' },
+  platLabel: { fontSize: 10, fontFamily: F.medium, lineHeight: 13, textAlign: 'center' },
 
   loadingWrap: { paddingVertical: 60, alignItems: 'center', gap: 14 },
   loadingText: { fontSize: 14, fontFamily: F.regular },
@@ -606,7 +606,7 @@ const styles = StyleSheet.create({
   filterTabsWrap: { borderBottomWidth: 1, marginTop: 8, marginBottom: 16 },
   filterTabsRow: { flexDirection: 'row', paddingHorizontal: 20 },
   filterTab: { paddingVertical: 12, marginRight: 24, position: 'relative' },
-  filterTabText: { fontSize: 14, fontFamily: F.medium },
+  filterTabText: { fontSize: 13, fontFamily: F.medium },
   filterTabUnderline: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 2.5, borderRadius: 2 },
 
   listWrap: { paddingHorizontal: 20, gap: 12 },
@@ -618,7 +618,7 @@ const styles = StyleSheet.create({
   exploreStrip:   { flexDirection: 'row', alignItems: 'center', borderRadius: 18, marginHorizontal: 20, marginTop: 16, marginBottom: 2, paddingHorizontal: 16, paddingVertical: 14, gap: 14 },
   exploreIconBox: { width: 44, height: 44, borderRadius: 14, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   exploreTexts:   { flex: 1, gap: 2 },
-  exploreTitle:   { fontSize: 15, fontFamily: F.bold },
+  exploreTitle:   { fontSize: 15, fontFamily: F.semibold },
   earnBadgesRow:  { flexDirection: 'row', gap: 6, marginTop: 4, flexWrap: 'wrap' },
   earnBadge:      { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#059669', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, alignSelf: 'flex-start' },
   earnText:       { fontSize: 11, fontWeight: '700', color: '#fff', fontFamily: F.bold },
@@ -626,7 +626,7 @@ const styles = StyleSheet.create({
 
   banner: { flexDirection: 'row', alignItems: 'center', borderRadius: 18, marginHorizontal: 20, marginTop: 20, padding: 16, gap: 12, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 10, shadowOffset: { width: 0, height: 2 }, elevation: 3, borderLeftWidth: 4 },
   bannerText: { flex: 1, gap: 2 },
-  bannerTitle: { fontSize: 13, fontFamily: F.bold },
-  bannerSub: { fontSize: 11, fontFamily: F.regular, lineHeight: 16 },
+  bannerTitle: { fontSize: 13, fontFamily: F.semibold },
+  bannerSub: { fontSize: 12, fontFamily: F.regular, lineHeight: 17, opacity: 0.75 },
   bannerClose: { position: 'absolute', top: 8, right: 8, padding: 4 },
 });

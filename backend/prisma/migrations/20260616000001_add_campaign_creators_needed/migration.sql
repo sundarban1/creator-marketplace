@@ -1,1 +1,0 @@
-ALTER TABLE "campaigns" ADD COLUMN "creatorsNeeded" INTEGER NOT NULL DEFAULT 1;

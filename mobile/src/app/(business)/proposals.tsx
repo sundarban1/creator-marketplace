@@ -38,6 +38,8 @@ type CampaignCard = {
   latestAt: string;
 };
 
+type TabKey = 'all' | 'paid' | 'free';
+
 const PAID_ACCENT = '#4F46E5';
 const FREE_ACCENT = '#059669';
 const PAID_LIGHT  = '#EEF2FF';
@@ -68,7 +70,7 @@ function CampaignEventCard({ item }: { item: CampaignCard }) {
     router.push({
       pathname: '/(business)/campaign-proposals',
       params: {
-        campaignId:   item.id,
+        campaignId:    item.id,
         campaignTitle: item.title,
         campaignType:  item.campaignType,
         platform:      item.platform,
@@ -85,7 +87,7 @@ function CampaignEventCard({ item }: { item: CampaignCard }) {
         <View style={[styles.typeBadge, { backgroundColor: accentBg }]}>
           <Ionicons name={isFree ? 'gift-outline' : 'cash-outline'} size={12} color={accent} />
           <Text style={[styles.typeBadgeText, { color: accent }]}>
-            {isFree ? 'Free Event' : 'Paid Event'}
+            {isFree ? 'Free Event' : 'Paid Campaign'}
           </Text>
         </View>
         {item.platform ? (
@@ -140,9 +142,10 @@ function CampaignEventCard({ item }: { item: CampaignCard }) {
 
 export default function ProposalsScreen() {
   const C = useAppColors();
-  const [proposals, setProposals] = useState<Proposal[]>([]);
-  const [loading, setLoading]     = useState(true);
+  const [proposals, setProposals]   = useState<Proposal[]>([]);
+  const [loading, setLoading]       = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [activeTab, setActiveTab]   = useState<TabKey>('all');
 
   async function load(showRefresh = false) {
     if (showRefresh) setRefreshing(true);
@@ -157,10 +160,17 @@ export default function ProposalsScreen() {
   useEffect(() => { void load(); }, []);
   const onRefresh = useCallback(() => void load(true), []);
 
-  const cards = buildCampaignCards(proposals);
+  const allCards  = buildCampaignCards(proposals);
+  const paidCards = allCards.filter((c) => c.campaignType === 'PAID_CAMPAIGN');
+  const freeCards = allCards.filter((c) => c.campaignType === 'OPEN_EVENT');
 
-  const totalPending  = proposals.filter((p) => p.status === 'pending').length;
-  const totalAccepted = proposals.filter((p) => p.status === 'accepted').length;
+  const cards = activeTab === 'paid' ? paidCards : activeTab === 'free' ? freeCards : allCards;
+
+  const tabs: { key: TabKey; label: string; count: number; color: string }[] = [
+    { key: 'all',  label: 'All',       count: allCards.length,  color: '#7C3AED' },
+    { key: 'paid', label: 'Paid',      count: paidCards.length, color: PAID_ACCENT },
+    { key: 'free', label: 'Free',      count: freeCards.length, color: FREE_ACCENT },
+  ];
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
@@ -173,33 +183,36 @@ export default function ProposalsScreen() {
         <View style={[styles.decCircle2, { backgroundColor: 'rgba(255,255,255,0.05)' }]} />
         <View style={styles.headerContent}>
           <Text style={styles.pageTitle}>Proposals</Text>
-          <Text style={styles.pageSub}>Review creator applications by event</Text>
-          {/* Overview chips */}
-          <View style={styles.overviewRow}>
-            <View style={styles.overviewChip}>
-              <Text style={styles.overviewNum}>{cards.length}</Text>
-              <Text style={styles.overviewLabel}>Events</Text>
-            </View>
-            <View style={styles.overviewChip}>
-              <Text style={styles.overviewNum}>{proposals.length}</Text>
-              <Text style={styles.overviewLabel}>Applications</Text>
-            </View>
-            {totalPending > 0 && (
-              <View style={[styles.overviewChip, { backgroundColor: 'rgba(217,119,6,0.25)' }]}>
-                <Ionicons name="time-outline" size={13} color="#FDE68A" />
-                <Text style={[styles.overviewNum, { color: '#FDE68A' }]}>{totalPending}</Text>
-                <Text style={[styles.overviewLabel, { color: '#FDE68A' }]}>Pending</Text>
-              </View>
-            )}
-            {totalAccepted > 0 && (
-              <View style={[styles.overviewChip, { backgroundColor: 'rgba(5,150,105,0.25)' }]}>
-                <Text style={[styles.overviewNum, { color: '#6EE7B7' }]}>{totalAccepted}</Text>
-                <Text style={[styles.overviewLabel, { color: '#6EE7B7' }]}>Accepted</Text>
-              </View>
-            )}
-          </View>
+          <Text style={styles.pageSub}>Review creator applications by campaign</Text>
         </View>
       </LinearGradient>
+
+      {/* Tab bar */}
+      <View style={[styles.tabBar, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
+        {tabs.map((tab) => {
+          const active = activeTab === tab.key;
+          return (
+            <Pressable
+              key={tab.key}
+              style={styles.tabItem}
+              onPress={() => setActiveTab(tab.key)}>
+              <View style={styles.tabInner}>
+                <Text style={[styles.tabLabel, { color: active ? tab.color : C.textSecondary }]}>
+                  {tab.label}
+                </Text>
+                {tab.count > 0 && (
+                  <View style={[styles.tabBadge, { backgroundColor: active ? tab.color : C.border }]}>
+                    <Text style={[styles.tabBadgeText, { color: active ? '#fff' : C.textSecondary }]}>
+                      {tab.count}
+                    </Text>
+                  </View>
+                )}
+              </View>
+              {active && <View style={[styles.tabUnderline, { backgroundColor: tab.color }]} />}
+            </Pressable>
+          );
+        })}
+      </View>
 
       {loading ? (
         <View style={styles.center}>
@@ -214,19 +227,16 @@ export default function ProposalsScreen() {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brinjal1} />}
           renderItem={({ item }) => <CampaignEventCard item={item} />}
           ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
-          ListHeaderComponent={
-            cards.length > 0 ? (
-              <Text style={[styles.listHeading, { color: C.textSecondary }]}>
-                {cards.length} event{cards.length !== 1 ? 's' : ''} with applications
-              </Text>
-            ) : null
-          }
           ListEmptyComponent={
             <View style={styles.empty}>
               <Ionicons name="document-text-outline" size={56} color={C.textSecondary} />
               <Text style={[styles.emptyTitle, { color: C.text }]}>No proposals yet</Text>
               <Text style={[styles.emptySub, { color: C.textSecondary }]}>
-                Proposals from creators will appear here when they apply to your events.
+                {activeTab === 'paid'
+                  ? 'No paid campaign proposals yet.'
+                  : activeTab === 'free'
+                  ? 'No free event proposals yet.'
+                  : 'Proposals from creators will appear here when they apply to your campaigns.'}
               </Text>
             </View>
           }
@@ -247,14 +257,16 @@ const styles = StyleSheet.create({
   pageTitle:      { fontSize: 22, fontWeight: '800', color: '#fff', fontFamily: F.extrabold },
   pageSub:        { fontSize: 13, color: 'rgba(255,255,255,0.75)', fontFamily: F.regular },
 
-  overviewRow:    { flexDirection: 'row', gap: 8, marginTop: 12, flexWrap: 'wrap' },
-  overviewChip:   { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 },
-  overviewNum:    { fontSize: 14, fontWeight: '800', color: '#fff', fontFamily: F.extrabold },
-  overviewLabel:  { fontSize: 11, color: 'rgba(255,255,255,0.8)', fontFamily: F.medium },
+  tabBar:       { flexDirection: 'row', borderBottomWidth: StyleSheet.hairlineWidth },
+  tabItem:      { flex: 1, alignItems: 'center' },
+  tabInner:     { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 12 },
+  tabLabel:     { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
+  tabBadge:     { borderRadius: 10, minWidth: 20, paddingHorizontal: 6, paddingVertical: 2, alignItems: 'center' },
+  tabBadgeText: { fontSize: 10, fontWeight: '700', fontFamily: F.bold },
+  tabUnderline: { height: 2.5, width: '60%', borderRadius: 2 },
 
-  list:        { paddingTop: 16, paddingHorizontal: 20, paddingBottom: 40 },
-  listEmpty:   { flexGrow: 1 },
-  listHeading: { fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12, fontFamily: F.semibold },
+  list:      { paddingTop: 16, paddingHorizontal: 20, paddingBottom: 40 },
+  listEmpty: { flexGrow: 1 },
 
   card: {
     borderRadius: 16,

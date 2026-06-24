@@ -1,2 +1,0 @@
-ALTER TABLE "creator_profiles" ADD COLUMN IF NOT EXISTS "locationLat" DOUBLE PRECISION;
-ALTER TABLE "creator_profiles" ADD COLUMN IF NOT EXISTS "locationLng" DOUBLE PRECISION;
