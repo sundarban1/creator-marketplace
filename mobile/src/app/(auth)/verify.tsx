@@ -2,6 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useAuth } from '@/context/AuthContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { authService } from '@/services/auth';
 import { F } from '@/utilities/constants';
@@ -19,6 +20,7 @@ function maskEmail(email: string) {
 
 export default function VerifyScreen() {
   const { email } = useLocalSearchParams<{ email: string }>();
+  const { reloadUser } = useAuth();
   const C = useAppColors();
 
   const [code, setCode] = useState<string[]>(Array(OTP_LENGTH).fill(''));
@@ -54,11 +56,13 @@ export default function VerifyScreen() {
     setLoading(true);
     setError('');
     try {
-      const user = await authService.verifyOtp(email ?? '', fullCode);
+      const verifiedUser = await authService.verifyOtp(email ?? '', fullCode);
       void authService.sendWelcomeEmail(email ?? '');
       setVerified(true);
-      // Show success animation briefly, then send to login
-      setTimeout(() => router.replace({ pathname: '/login', params: { verified: '1' } }), 1500);
+      // Hydrate AuthContext then navigate directly to the dashboard
+      const u = await reloadUser();
+      const dest = (u?.role === 'CREATOR' ? '/(creator)/' : '/(business)/') as never;
+      setTimeout(() => router.replace(dest), 1500);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Verification failed. Please try again.');
       setCode(Array(OTP_LENGTH).fill(''));

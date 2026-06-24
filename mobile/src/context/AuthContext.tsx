@@ -11,6 +11,7 @@ type AuthContextValue = {
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   updateUser: (patch: Partial<User>) => void;
+  reloadUser: () => Promise<User | null>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -63,8 +64,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   }
 
+  async function reloadUser(): Promise<User | null> {
+    const u = await authService.getStoredUser();
+    setUser(u);
+    return u;
+  }
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout, updateUser }}>
+    <AuthContext.Provider value={{ user, isLoading, login, logout, updateUser, reloadUser }}>
       {children}
     </AuthContext.Provider>
   );
