@@ -167,6 +167,16 @@ export default function SignupScreen() {
             </Text>
           </View>
 
+          {/* Tab bar */}
+          <View style={[s.tabBar, { backgroundColor: '#F3F4F6' }]}>
+            <Pressable style={s.tabBtn} onPress={() => router.replace('/login')}>
+              <Text style={[s.tabBtnText, { color: '#6B7280' }]}>Log in</Text>
+            </Pressable>
+            <View style={[s.tabBtn, s.tabBtnActive]}>
+              <Text style={[s.tabBtnText, { color: PRIMARY, fontFamily: F.bold }]}>Create Account</Text>
+            </View>
+          </View>
+
           {/* Role selector */}
           <Text style={[s.sectionLabel, { color: C.text }]}>I'm joining as</Text>
           <View style={s.roleRow}>
@@ -306,6 +316,11 @@ const s = StyleSheet.create({
   appName:      { fontSize: 15, fontWeight: '700', fontFamily: F.bold },
   appTagline:   { fontSize: 10, color: '#9CA3AF', fontFamily: F.regular, marginTop: 1 },
   backBtn:      { width: 34, height: 34, borderRadius: 10, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center' },
+
+  tabBar:      { flexDirection: 'row', borderRadius: 14, padding: 4, marginBottom: 20, gap: 2 },
+  tabBtn:      { flex: 1, height: 40, borderRadius: 11, justifyContent: 'center', alignItems: 'center' },
+  tabBtnActive:{ backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 3 },
+  tabBtnText:  { fontSize: 14, fontFamily: F.medium },
 
   headingWrap: { marginBottom: 22, gap: 6 },
   heading:     { fontSize: 24, fontWeight: '800', fontFamily: F.extrabold },
