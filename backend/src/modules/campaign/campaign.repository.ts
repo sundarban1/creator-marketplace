@@ -224,6 +224,7 @@ export class CampaignRepository {
         include: {
           creator: {
             select: {
+              id: true,
               fullName: true,
               avatarUrl: true,
               location: true,
@@ -304,6 +305,7 @@ export class CampaignRepository {
               budgetMax: true,
               deadline: true,
               status: true,
+              campaignType: true,
               business: { select: { businessName: true, logoUrl: true } },
             },
           },

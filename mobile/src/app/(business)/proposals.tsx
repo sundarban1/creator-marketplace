@@ -3,13 +3,12 @@ import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
   ActivityIndicator,
-  Alert,
+  FlatList,
+  Pressable,
   RefreshControl,
-  SectionList,
   StyleSheet,
   Text,
   View,
-  Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -27,141 +26,112 @@ type Proposal = {
   creator: { id: string; fullName: string; avatarUrl: string | null; location: string | null };
 };
 
-type CampaignSection = {
-  campaign: { id: string; title: string; platform: string; campaignType: 'PAID_CAMPAIGN' | 'OPEN_EVENT' };
+type CampaignCard = {
+  id: string;
+  title: string;
+  platform: string;
+  campaignType: 'PAID_CAMPAIGN' | 'OPEN_EVENT';
+  total: number;
+  pending: number;
+  accepted: number;
+  rejected: number;
   latestAt: string;
-  data: Proposal[];
 };
 
-type Filter = 'All' | 'Pending' | 'Accepted' | 'Rejected';
+const PAID_ACCENT = '#4F46E5';
+const FREE_ACCENT = '#059669';
+const PAID_LIGHT  = '#EEF2FF';
+const FREE_LIGHT  = '#F0FDF4';
 
-const STATUS_CFG = {
-  pending:  { bg: '#FFF7ED', color: '#D97706', icon: 'time-outline'         as const, label: 'Pending'  },
-  accepted: { bg: '#ECFDF5', color: '#16A34A', icon: 'checkmark-circle'     as const, label: 'Accepted' },
-  rejected: { bg: '#FEF2F2', color: '#EF4444', icon: 'close-circle-outline' as const, label: 'Rejected' },
-};
-
-const PAID_ACCENT  = '#4F46E5';
-const FREE_ACCENT  = '#059669';
-const PAID_LIGHT   = '#EEF2FF';
-const FREE_LIGHT   = '#F0FDF4';
-
-function initials(name: string) {
-  return name.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase();
-}
-
-function timeAgo(iso: string) {
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.floor(hrs / 24);
-  if (days < 7) return `${days}d ago`;
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
-
-function groupByCampaign(proposals: Proposal[]): CampaignSection[] {
-  const map = new Map<string, CampaignSection>();
+function buildCampaignCards(proposals: Proposal[]): CampaignCard[] {
+  const map = new Map<string, CampaignCard>();
   for (const p of proposals) {
-    const key = p.campaign.id;
-    if (!map.has(key)) {
-      map.set(key, { campaign: p.campaign, latestAt: p.createdAt, data: [] });
+    const { id, title, platform, campaignType } = p.campaign;
+    if (!map.has(id)) {
+      map.set(id, { id, title, platform, campaignType, total: 0, pending: 0, accepted: 0, rejected: 0, latestAt: p.createdAt });
     }
-    const g = map.get(key)!;
-    g.data.push(p);
-    if (p.createdAt > g.latestAt) g.latestAt = p.createdAt;
+    const c = map.get(id)!;
+    c.total++;
+    c[p.status]++;
+    if (p.createdAt > c.latestAt) c.latestAt = p.createdAt;
   }
-  return Array.from(map.values())
-    .sort((a, b) => b.latestAt.localeCompare(a.latestAt))
-    .map((g) => ({ ...g, data: [...g.data].sort((a, b) => b.createdAt.localeCompare(a.createdAt)) }));
+  return Array.from(map.values()).sort((a, b) => b.latestAt.localeCompare(a.latestAt));
 }
 
-function ProposalCard({
-  proposal: p,
-  onAccept,
-  onReject,
-  acting,
-}: {
-  proposal: Proposal;
-  onAccept: (p: Proposal) => void;
-  onReject: (p: Proposal) => void;
-  acting: boolean;
-}) {
+function CampaignEventCard({ item }: { item: CampaignCard }) {
   const C = useAppColors();
-  const st = STATUS_CFG[p.status];
-  const isFree   = p.campaign.campaignType === 'OPEN_EVENT';
+  const isFree   = item.campaignType === 'OPEN_EVENT';
   const accent   = isFree ? FREE_ACCENT : PAID_ACCENT;
   const accentBg = isFree ? FREE_LIGHT  : PAID_LIGHT;
+
+  function handlePress() {
+    router.push({
+      pathname: '/(business)/campaign-proposals',
+      params: {
+        campaignId:   item.id,
+        campaignTitle: item.title,
+        campaignType:  item.campaignType,
+        platform:      item.platform,
+      },
+    });
+  }
 
   return (
     <Pressable
       style={[styles.card, { backgroundColor: C.surface, borderLeftColor: accent }]}
-      onPress={() => router.push({ pathname: '/(business)/creator-detail', params: { id: p.creator.id } })}>
+      onPress={handlePress}>
+      {/* Type + platform row */}
+      <View style={styles.cardTopRow}>
+        <View style={[styles.typeBadge, { backgroundColor: accentBg }]}>
+          <Ionicons name={isFree ? 'gift-outline' : 'cash-outline'} size={12} color={accent} />
+          <Text style={[styles.typeBadgeText, { color: accent }]}>
+            {isFree ? 'Free Event' : 'Paid Event'}
+          </Text>
+        </View>
+        {item.platform ? (
+          <View style={[styles.platformPill, { backgroundColor: C.background }]}>
+            <Text style={[styles.platformText, { color: C.textSecondary }]}>{item.platform}</Text>
+          </View>
+        ) : null}
+        <View style={styles.cardTopSpacer} />
+        <Ionicons name="chevron-forward" size={16} color={C.textSecondary} />
+      </View>
 
-      {/* Creator row */}
-      <View style={styles.cardHeader}>
-        <View style={[styles.avatar, { backgroundColor: accentBg }]}>
-          <Text style={[styles.avatarText, { color: accent }]}>{initials(p.creator.fullName)}</Text>
+      {/* Title */}
+      <Text style={[styles.cardTitle, { color: C.text }]} numberOfLines={2}>
+        {item.title}
+      </Text>
+
+      {/* Stats row */}
+      <View style={[styles.statsRow, { borderTopColor: C.border }]}>
+        <View style={styles.statItem}>
+          <Text style={[styles.statNum, { color: C.text }]}>{item.total}</Text>
+          <Text style={[styles.statLabel, { color: C.textSecondary }]}>Total</Text>
         </View>
-        <View style={styles.creatorInfo}>
-          <Text style={[styles.creatorName, { color: C.text }]}>{p.creator.fullName}</Text>
-          {p.creator.location ? (
-            <View style={styles.locationRow}>
-              <Ionicons name="location-outline" size={11} color={C.textSecondary} />
-              <Text style={[styles.locationText, { color: C.textSecondary }]}>{p.creator.location}</Text>
-            </View>
-          ) : null}
+        <View style={[styles.statDivider, { backgroundColor: C.border }]} />
+        <View style={styles.statItem}>
+          <Text style={[styles.statNum, { color: '#D97706' }]}>{item.pending}</Text>
+          <Text style={[styles.statLabel, { color: C.textSecondary }]}>Pending</Text>
         </View>
-        <View style={[styles.statusBadge, { backgroundColor: st.bg }]}>
-          <Ionicons name={st.icon} size={12} color={st.color} />
-          <Text style={[styles.statusText, { color: st.color }]}>{st.label}</Text>
+        <View style={[styles.statDivider, { backgroundColor: C.border }]} />
+        <View style={styles.statItem}>
+          <Text style={[styles.statNum, { color: '#16A34A' }]}>{item.accepted}</Text>
+          <Text style={[styles.statLabel, { color: C.textSecondary }]}>{isFree ? 'Approved' : 'Accepted'}</Text>
+        </View>
+        <View style={[styles.statDivider, { backgroundColor: C.border }]} />
+        <View style={styles.statItem}>
+          <Text style={[styles.statNum, { color: '#EF4444' }]}>{item.rejected}</Text>
+          <Text style={[styles.statLabel, { color: C.textSecondary }]}>Declined</Text>
         </View>
       </View>
 
-      {/* Cover letter */}
-      {p.coverLetter ? (
-        <Text style={[styles.coverLetter, { color: C.textSecondary }]} numberOfLines={2}>
-          {p.coverLetter}
-        </Text>
-      ) : null}
-
-      {/* Rate row — conditional on event type */}
-      <View style={styles.metaRow}>
-        {isFree ? (
-          <View style={[styles.freeTag, { backgroundColor: FREE_LIGHT }]}>
-            <Ionicons name="gift-outline" size={13} color={FREE_ACCENT} />
-            <Text style={[styles.freeTagText, { color: FREE_ACCENT }]}>Free Participation</Text>
-          </View>
-        ) : (
-          <View style={styles.rateWrap}>
-            <Ionicons name="cash-outline" size={13} color={PAID_ACCENT} />
-            <Text style={[styles.rate, { color: PAID_ACCENT }]}>{p.proposedRate}</Text>
-            <Text style={[styles.rateLabel, { color: C.textSecondary }]}>proposed</Text>
-          </View>
-        )}
-        <Text style={[styles.time, { color: C.textSecondary }]}>{timeAgo(p.createdAt)}</Text>
-      </View>
-
-      {/* Actions — pending only */}
-      {p.status === 'pending' && (
-        <View style={styles.actions}>
-          <Pressable
-            style={[styles.actionBtn, styles.rejectBtn, { borderColor: C.border }]}
-            disabled={acting}
-            onPress={() => onReject(p)}>
-            {acting
-              ? <ActivityIndicator size="small" color="#EF4444" />
-              : <><Ionicons name="close" size={15} color="#EF4444" /><Text style={[styles.actionBtnText, { color: '#EF4444' }]}>Decline</Text></>}
-          </Pressable>
-          <Pressable
-            style={[styles.actionBtn, { backgroundColor: accent }]}
-            disabled={acting}
-            onPress={() => onAccept(p)}>
-            {acting
-              ? <ActivityIndicator size="small" color="#fff" />
-              : <><Ionicons name="checkmark" size={15} color="#fff" /><Text style={[styles.actionBtnText, { color: '#fff' }]}>{isFree ? 'Approve' : 'Accept'}</Text></>}
-          </Pressable>
+      {/* Pending action nudge */}
+      {item.pending > 0 && (
+        <View style={[styles.nudge, { backgroundColor: '#FFF7ED' }]}>
+          <Ionicons name="time-outline" size={13} color="#D97706" />
+          <Text style={[styles.nudgeText, { color: '#D97706' }]}>
+            {item.pending} application{item.pending !== 1 ? 's' : ''} awaiting review
+          </Text>
         </View>
       )}
     </Pressable>
@@ -171,209 +141,92 @@ function ProposalCard({
 export default function ProposalsScreen() {
   const C = useAppColors();
   const [proposals, setProposals] = useState<Proposal[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading]     = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [activeFilter, setActiveFilter] = useState<Filter>('All');
-  const [actingId, setActingId] = useState<string | null>(null);
 
-  async function loadProposals(showRefresh = false) {
+  async function load(showRefresh = false) {
     if (showRefresh) setRefreshing(true);
     else setLoading(true);
     try {
-      const { proposals: data } = await campaignService.getBusinessProposals({ limit: 200 });
+      const { proposals: data } = await campaignService.getBusinessProposals({ limit: 500 });
       setProposals(data);
-    } catch { /* empty state handles it */ }
+    } catch { /* empty state shows */ }
     finally { setLoading(false); setRefreshing(false); }
   }
 
-  useEffect(() => { void loadProposals(); }, []);
-  const onRefresh = useCallback(() => void loadProposals(true), []);
+  useEffect(() => { void load(); }, []);
+  const onRefresh = useCallback(() => void load(true), []);
 
-  async function handleAccept(p: Proposal) {
-    const isFree = p.campaign.campaignType === 'OPEN_EVENT';
-    Alert.alert(
-      isFree ? 'Approve Attendance' : 'Accept Proposal',
-      isFree
-        ? `Approve ${p.creator.fullName} to attend "${p.campaign.title}"?`
-        : `Accept ${p.creator.fullName}'s proposal for "${p.campaign.title}"?\n\nOther pending applicants will be notified that the campaign is closed.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: isFree ? 'Approve' : 'Accept',
-          onPress: async () => {
-            setActingId(p.id);
-            try {
-              await campaignService.acceptProposal(p.campaign.id, p.id);
-              setProposals((prev) => prev.map((x) => (x.id === p.id ? { ...x, status: 'accepted' } : x)));
-            } catch (e) {
-              Alert.alert('Error', e instanceof Error ? e.message : 'Failed to accept');
-            } finally { setActingId(null); }
-          },
-        },
-      ],
-    );
-  }
+  const cards = buildCampaignCards(proposals);
 
-  async function handleReject(p: Proposal) {
-    Alert.alert(
-      'Decline',
-      `Decline ${p.creator.fullName}'s application for "${p.campaign.title}"?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Decline',
-          style: 'destructive',
-          onPress: async () => {
-            setActingId(p.id);
-            try {
-              await campaignService.rejectProposal(p.campaign.id, p.id);
-              setProposals((prev) => prev.map((x) => (x.id === p.id ? { ...x, status: 'rejected' } : x)));
-            } catch (e) {
-              Alert.alert('Error', e instanceof Error ? e.message : 'Failed to decline');
-            } finally { setActingId(null); }
-          },
-        },
-      ],
-    );
-  }
-
-  const filtered = proposals.filter(
-    (p) => activeFilter === 'All' || p.status === activeFilter.toLowerCase(),
-  );
-  const sections = groupByCampaign(filtered);
-
-  const counts = {
-    pending:  proposals.filter((p) => p.status === 'pending').length,
-    accepted: proposals.filter((p) => p.status === 'accepted').length,
-    rejected: proposals.filter((p) => p.status === 'rejected').length,
-  };
-
-  const STAT_TABS: { label: string; val: number; color: string; filter: Filter }[] = [
-    { label: 'Total',    val: proposals.length, color: C.brinjal1, filter: 'All'      },
-    { label: 'Pending',  val: counts.pending,   color: '#D97706',  filter: 'Pending'  },
-    { label: 'Accepted', val: counts.accepted,  color: '#16A34A',  filter: 'Accepted' },
-    { label: 'Rejected', val: counts.rejected,  color: '#EF4444',  filter: 'Rejected' },
-  ];
+  const totalPending  = proposals.filter((p) => p.status === 'pending').length;
+  const totalAccepted = proposals.filter((p) => p.status === 'accepted').length;
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
-      <LinearGradient colors={['#1e1b4b', '#4338ca', '#7c3aed']} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientHeader}>
+      <LinearGradient
+        colors={['#1e1b4b', '#4338ca', '#7c3aed']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.gradientHeader}>
         <View style={[styles.decCircle1, { backgroundColor: 'rgba(255,255,255,0.08)' }]} />
         <View style={[styles.decCircle2, { backgroundColor: 'rgba(255,255,255,0.05)' }]} />
-        <View style={styles.header}>
-          <Text style={[styles.pageTitle, { color: '#fff' }]}>Proposals</Text>
-          <Text style={[styles.pageSub, { color: 'rgba(255,255,255,0.75)' }]}>Review and manage creator applications</Text>
-          {/* Legend */}
-          <View style={styles.legend}>
-            <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: PAID_ACCENT }]} />
-              <Text style={styles.legendText}>Paid Event</Text>
+        <View style={styles.headerContent}>
+          <Text style={styles.pageTitle}>Proposals</Text>
+          <Text style={styles.pageSub}>Review creator applications by event</Text>
+          {/* Overview chips */}
+          <View style={styles.overviewRow}>
+            <View style={styles.overviewChip}>
+              <Text style={styles.overviewNum}>{cards.length}</Text>
+              <Text style={styles.overviewLabel}>Events</Text>
             </View>
-            <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: FREE_ACCENT }]} />
-              <Text style={styles.legendText}>Free Event</Text>
+            <View style={styles.overviewChip}>
+              <Text style={styles.overviewNum}>{proposals.length}</Text>
+              <Text style={styles.overviewLabel}>Applications</Text>
             </View>
+            {totalPending > 0 && (
+              <View style={[styles.overviewChip, { backgroundColor: 'rgba(217,119,6,0.25)' }]}>
+                <Ionicons name="time-outline" size={13} color="#FDE68A" />
+                <Text style={[styles.overviewNum, { color: '#FDE68A' }]}>{totalPending}</Text>
+                <Text style={[styles.overviewLabel, { color: '#FDE68A' }]}>Pending</Text>
+              </View>
+            )}
+            {totalAccepted > 0 && (
+              <View style={[styles.overviewChip, { backgroundColor: 'rgba(5,150,105,0.25)' }]}>
+                <Text style={[styles.overviewNum, { color: '#6EE7B7' }]}>{totalAccepted}</Text>
+                <Text style={[styles.overviewLabel, { color: '#6EE7B7' }]}>Accepted</Text>
+              </View>
+            )}
           </View>
         </View>
       </LinearGradient>
-
-      {/* Stat filter cards */}
-      <View style={styles.statsRow}>
-        {STAT_TABS.map((s) => {
-          const active = activeFilter === s.filter;
-          return (
-            <Pressable
-              key={s.label}
-              style={[styles.statCard, { backgroundColor: C.surface }, active && { backgroundColor: s.color }]}
-              onPress={() => setActiveFilter(s.filter)}>
-              <Text style={[styles.statVal, { color: active ? '#fff' : s.color }]}>{s.val}</Text>
-              <Text style={[styles.statLabel, { color: active ? 'rgba(255,255,255,0.8)' : C.textSecondary }]}>{s.label}</Text>
-            </Pressable>
-          );
-        })}
-      </View>
 
       {loading ? (
         <View style={styles.center}>
           <ActivityIndicator size="large" color={C.brinjal1} />
         </View>
       ) : (
-        <SectionList
-          sections={sections}
-          keyExtractor={(p) => p.id}
-          stickySectionHeadersEnabled={false}
+        <FlatList
+          data={cards}
+          keyExtractor={(c) => c.id}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={[styles.list, sections.length === 0 && styles.listEmpty]}
+          contentContainerStyle={[styles.list, cards.length === 0 && styles.listEmpty]}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brinjal1} />}
-          renderSectionHeader={({ section }) => {
-            const isFree   = section.campaign.campaignType === 'OPEN_EVENT';
-            const accent   = isFree ? FREE_ACCENT : PAID_ACCENT;
-            const accentBg = isFree ? FREE_LIGHT  : PAID_LIGHT;
-            const pending  = section.data.filter((p) => p.status === 'pending').length;
-            const accepted = section.data.filter((p) => p.status === 'accepted').length;
-            return (
-              <View style={[styles.sectionHeader, { backgroundColor: C.background }]}>
-                {/* Type banner strip */}
-                <View style={[styles.sectionTypeBanner, { backgroundColor: accentBg, borderLeftColor: accent }]}>
-                  <Ionicons
-                    name={isFree ? 'gift-outline' : 'cash-outline'}
-                    size={13}
-                    color={accent}
-                  />
-                  <Text style={[styles.sectionTypeText, { color: accent }]}>
-                    {isFree ? 'Free Event' : 'Paid Event'}
-                  </Text>
-                  {!isFree && section.campaign.platform ? (
-                    <View style={[styles.platformPill, { backgroundColor: C.surface }]}>
-                      <Text style={[styles.platformText, { color: C.textSecondary }]}>{section.campaign.platform}</Text>
-                    </View>
-                  ) : null}
-                </View>
-                {/* Title + meta row */}
-                <View style={styles.sectionTitleRow}>
-                  <Text style={[styles.sectionTitle, { color: C.text }]} numberOfLines={1}>
-                    {section.campaign.title}
-                  </Text>
-                </View>
-                <View style={styles.sectionMeta}>
-                  <Text style={[styles.sectionCount, { color: C.textSecondary }]}>
-                    {section.data.length} application{section.data.length !== 1 ? 's' : ''}
-                  </Text>
-                  {pending > 0 && (
-                    <View style={styles.pendingDot}>
-                      <Text style={styles.pendingDotText}>{pending} pending</Text>
-                    </View>
-                  )}
-                  {accepted > 0 && (
-                    <View style={styles.acceptedDot}>
-                      <Text style={styles.acceptedDotText}>✓ {isFree ? 'approved' : 'selected'}</Text>
-                    </View>
-                  )}
-                </View>
-              </View>
-            );
-          }}
-          renderItem={({ item }) => (
-            <View style={styles.cardWrap}>
-              <ProposalCard
-                proposal={item}
-                onAccept={handleAccept}
-                onReject={handleReject}
-                acting={actingId === item.id}
-              />
-            </View>
-          )}
-          SectionSeparatorComponent={() => <View style={styles.sectionSep} />}
+          renderItem={({ item }) => <CampaignEventCard item={item} />}
+          ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
+          ListHeaderComponent={
+            cards.length > 0 ? (
+              <Text style={[styles.listHeading, { color: C.textSecondary }]}>
+                {cards.length} event{cards.length !== 1 ? 's' : ''} with applications
+              </Text>
+            ) : null
+          }
           ListEmptyComponent={
             <View style={styles.empty}>
-              <Ionicons name="document-text-outline" size={52} color={C.textSecondary} />
-              <Text style={[styles.emptyTitle, { color: C.text }]}>
-                {activeFilter === 'All' ? 'No proposals yet' : `No ${activeFilter.toLowerCase()} proposals`}
-              </Text>
+              <Ionicons name="document-text-outline" size={56} color={C.textSecondary} />
+              <Text style={[styles.emptyTitle, { color: C.text }]}>No proposals yet</Text>
               <Text style={[styles.emptySub, { color: C.textSecondary }]}>
-                {activeFilter === 'All'
-                  ? 'Proposals from creators will appear here when they apply to your events.'
-                  : 'Try a different filter above.'}
+                Proposals from creators will appear here when they apply to your events.
               </Text>
             </View>
           }
@@ -386,72 +239,50 @@ export default function ProposalsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  gradientHeader: { paddingBottom: 16, borderBottomLeftRadius: 28, borderBottomRightRadius: 28, overflow: 'hidden' },
-  decCircle1: { position: 'absolute', width: 200, height: 200, borderRadius: 100, top: -70, right: -40 },
-  decCircle2: { position: 'absolute', width: 120, height: 120, borderRadius: 60, bottom: -35, left: 15 },
 
-  header:    { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 4, gap: 6 },
-  pageTitle: { fontSize: 22, fontWeight: '800', fontFamily: F.extrabold },
-  pageSub:   { fontSize: 13, fontFamily: F.regular },
+  gradientHeader: { paddingBottom: 20, borderBottomLeftRadius: 28, borderBottomRightRadius: 28, overflow: 'hidden' },
+  decCircle1:     { position: 'absolute', width: 200, height: 200, borderRadius: 100, top: -70, right: -40 },
+  decCircle2:     { position: 'absolute', width: 120, height: 120, borderRadius: 60, bottom: -35, left: 15 },
+  headerContent:  { paddingHorizontal: 20, paddingTop: 16, gap: 4 },
+  pageTitle:      { fontSize: 22, fontWeight: '800', color: '#fff', fontFamily: F.extrabold },
+  pageSub:        { fontSize: 13, color: 'rgba(255,255,255,0.75)', fontFamily: F.regular },
 
-  legend:      { flexDirection: 'row', gap: 16, marginTop: 4 },
-  legendItem:  { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  legendDot:   { width: 10, height: 10, borderRadius: 5 },
-  legendText:  { fontSize: 12, color: 'rgba(255,255,255,0.85)', fontFamily: F.medium },
+  overviewRow:    { flexDirection: 'row', gap: 8, marginTop: 12, flexWrap: 'wrap' },
+  overviewChip:   { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 },
+  overviewNum:    { fontSize: 14, fontWeight: '800', color: '#fff', fontFamily: F.extrabold },
+  overviewLabel:  { fontSize: 11, color: 'rgba(255,255,255,0.8)', fontFamily: F.medium },
 
-  statsRow:  { flexDirection: 'row', paddingHorizontal: 20, gap: 10, marginTop: 16, marginBottom: 8 },
-  statCard:  { flex: 1, borderRadius: 14, padding: 12, alignItems: 'center', gap: 2, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, elevation: 2 },
-  statVal:   { fontSize: 20, fontWeight: '800', fontFamily: F.extrabold },
-  statLabel: { fontSize: 10, fontWeight: '600', textTransform: 'uppercase', fontFamily: F.semibold },
+  list:        { paddingTop: 16, paddingHorizontal: 20, paddingBottom: 40 },
+  listEmpty:   { flexGrow: 1 },
+  listHeading: { fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12, fontFamily: F.semibold },
 
-  list:      { paddingBottom: 40 },
-  listEmpty: { flexGrow: 1 },
-
-  sectionHeader:    { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8, gap: 6 },
-  sectionTypeBanner:{ flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, borderLeftWidth: 3 },
-  sectionTypeText:  { fontSize: 12, fontWeight: '700', fontFamily: F.bold },
-  platformPill:     { borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2, marginLeft: 4 },
-  platformText:     { fontSize: 10, fontWeight: '600', fontFamily: F.semibold },
-  sectionTitleRow:  { flexDirection: 'row', alignItems: 'center' },
-  sectionTitle:     { fontSize: 15, fontWeight: '700', flex: 1, fontFamily: F.bold },
-  sectionMeta:      { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  sectionCount:     { fontSize: 12, fontFamily: F.regular },
-  pendingDot:       { backgroundColor: '#FFF7ED', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 2 },
-  pendingDotText:   { fontSize: 11, fontWeight: '700', color: '#D97706', fontFamily: F.bold },
-  acceptedDot:      { backgroundColor: '#ECFDF5', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 2 },
-  acceptedDotText:  { fontSize: 11, fontWeight: '700', color: '#16A34A', fontFamily: F.bold },
-  sectionSep:       { height: 8 },
-
-  cardWrap: { paddingHorizontal: 20, marginBottom: 8 },
   card: {
-    borderRadius: 16, padding: 14, gap: 10,
+    borderRadius: 16,
     borderLeftWidth: 4,
-    shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 }, elevation: 3,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
   },
-  cardHeader:  { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  avatar:      { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
-  avatarText:  { fontSize: 14, fontWeight: '800', fontFamily: F.extrabold },
-  creatorInfo: { flex: 1, gap: 2 },
-  creatorName: { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
-  locationRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  locationText:{ fontSize: 11, fontFamily: F.regular },
-  statusBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
-  statusText:  { fontSize: 11, fontWeight: '700', fontFamily: F.bold },
-  coverLetter: { fontSize: 12, lineHeight: 17, fontStyle: 'italic', fontFamily: F.regular },
+  cardTopRow:    { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 10 },
+  cardTopSpacer: { flex: 1 },
+  typeBadge:     { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
+  typeBadgeText: { fontSize: 11, fontWeight: '700', fontFamily: F.bold },
+  platformPill:  { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
+  platformText:  { fontSize: 11, fontWeight: '600', fontFamily: F.semibold },
 
-  metaRow:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  rateWrap:   { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  rate:       { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
-  rateLabel:  { fontSize: 11, fontFamily: F.regular },
-  freeTag:    { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 4 },
-  freeTagText:{ fontSize: 12, fontWeight: '700', fontFamily: F.bold },
-  time:       { fontSize: 11, fontFamily: F.regular },
+  cardTitle: { fontSize: 15, fontWeight: '700', lineHeight: 20, paddingHorizontal: 16, paddingBottom: 12, fontFamily: F.bold },
 
-  actions:     { flexDirection: 'row', gap: 10, marginTop: 2 },
-  actionBtn:   { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: 10, borderRadius: 10 },
-  rejectBtn:   { borderWidth: 1.5 },
-  actionBtnText: { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
+  statsRow:    { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderTopWidth: StyleSheet.hairlineWidth },
+  statItem:    { flex: 1, alignItems: 'center', gap: 2 },
+  statNum:     { fontSize: 18, fontWeight: '800', fontFamily: F.extrabold },
+  statLabel:   { fontSize: 10, fontWeight: '600', textTransform: 'uppercase', fontFamily: F.semibold },
+  statDivider: { width: StyleSheet.hairlineWidth, height: 32 },
+
+  nudge:     { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, paddingVertical: 8 },
+  nudgeText: { fontSize: 12, fontWeight: '600', fontFamily: F.semibold },
 
   empty:      { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 10, paddingHorizontal: 32, paddingTop: 60 },
   emptyTitle: { fontSize: 17, fontWeight: '700', textAlign: 'center', fontFamily: F.bold },

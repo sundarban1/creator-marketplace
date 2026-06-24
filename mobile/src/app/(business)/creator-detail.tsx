@@ -296,7 +296,7 @@ export default function CreatorDetailScreen() {
               <View style={s.budgetInfo}>
                 <Text style={[s.budgetLabel, { color: C.textSecondary }]}>Preferred range</Text>
                 <Text style={[s.budgetValue, { color: C.brinjal1 }]}>
-                  ${profile.prefBudgetMin} – ${profile.prefBudgetMax}
+                  Rs. {profile.prefBudgetMin} – Rs. {profile.prefBudgetMax}
                 </Text>
               </View>
             </View>

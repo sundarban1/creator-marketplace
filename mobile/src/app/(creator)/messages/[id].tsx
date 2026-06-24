@@ -1,10 +1,18 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { messagingEvents } from '@/lib/messagingEvents';
 import { BackButton } from '@/components/BackButton';
+import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
 import {
-  FlatList, KeyboardAvoidingView, Platform, Pressable,
-  StyleSheet, Text, TextInput, View,
+  ActivityIndicator,
+  FlatList,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
@@ -15,23 +23,45 @@ import { notificationService } from '@/services/notifications';
 import { F } from '@/utilities/constants';
 import type { Message } from '@/types';
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+const AVATAR_COLORS = ['#7C3AED', '#0EA5E9', '#059669', '#D97706', '#EC4899', '#06B6D4', '#EF4444', '#8B5CF6'];
+
+function avatarColor(name: string) {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
+  return AVATAR_COLORS[Math.abs(h) % AVATAR_COLORS.length];
+}
+
+function initials(name: string) {
+  return name.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+}
+
 function formatTime(ts: string) {
   return new Date(ts).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 }
+
+// ── Message Bubble ─────────────────────────────────────────────────────────────
 
 function MessageBubble({ msg, isSent }: { msg: Message; isSent: boolean }) {
   const C = useAppColors();
   return (
     <View style={[s.bubbleWrap, isSent ? s.bubbleWrapSent : s.bubbleWrapReceived]}>
-      <View style={[s.bubble, isSent
-        ? { backgroundColor: C.brinjal1, borderBottomRightRadius: 4 }
-        : { backgroundColor: C.surface,  borderBottomLeftRadius:  4 }]}>
+      <View
+        style={[
+          s.bubble,
+          isSent
+            ? { backgroundColor: '#0EA5E9', borderBottomRightRadius: 4 }
+            : { backgroundColor: C.surface, borderBottomLeftRadius: 4, borderWidth: StyleSheet.hairlineWidth, borderColor: C.border },
+        ]}>
         <Text style={[s.bubbleTxt, { color: isSent ? '#fff' : C.text }]}>{msg.text}</Text>
       </View>
       <Text style={[s.bubbleTime, { color: C.textSecondary }]}>{formatTime(msg.timestamp)}</Text>
     </View>
   );
 }
+
+// ── Screen ────────────────────────────────────────────────────────────────────
 
 export default function CreatorChatRoomScreen() {
   const { id, name, status: initStatus } = useLocalSearchParams<{ id: string; name?: string; status?: string }>();
@@ -50,17 +80,24 @@ export default function CreatorChatRoomScreen() {
   const isSending = useRef(false);
   const pollRef   = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const personName  = name ?? 'Chat';
+  const personColor = avatarColor(personName);
+
+  function markSeen() {
+    chatService.markSeen(id)
+      .then(() => {
+        messagingEvents.refresh();
+        notificationService.markReadByRef(id).catch(() => null);
+      })
+      .catch(() => null);
+  }
+
   function startPolling() {
     pollRef.current = setInterval(async () => {
       const msgs = await chatService.getMessages(id).catch(() => null);
       if (!msgs) return;
       setMessages((prev) => {
-        if (msgs.length > prev.length) {
-          chatService.markSeen(id).then(() => {
-              messagingEvents.refresh();
-              notificationService.markReadByRef(id).catch(() => null);
-            }).catch(() => null);
-        }
+        if (msgs.length > prev.length) markSeen();
         return msgs;
       });
     }, 4000);
@@ -79,10 +116,7 @@ export default function CreatorChatRoomScreen() {
     });
 
     if (convStatus === 'ACCEPTED') {
-      chatService.markSeen(id).then(() => {
-              messagingEvents.refresh();
-              notificationService.markReadByRef(id).catch(() => null);
-            }).catch(() => null);
+      markSeen();
       startPolling();
     }
     return () => { if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; } };
@@ -94,10 +128,7 @@ export default function CreatorChatRoomScreen() {
       await chatService.respondToRequest(id, action);
       setStatus(action === 'accept' ? 'ACCEPTED' : 'DECLINED');
       if (action === 'accept') {
-        chatService.markSeen(id).then(() => {
-              messagingEvents.refresh();
-              notificationService.markReadByRef(id).catch(() => null);
-            }).catch(() => null);
+        markSeen();
         startPolling();
       } else {
         messagingEvents.refresh();
@@ -123,41 +154,61 @@ export default function CreatorChatRoomScreen() {
     }
   }
 
+  const isPending = status === 'PENDING';
+
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
       {/* Header */}
       <View style={[s.header, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
         <BackButton fallback="/(creator)/messages" />
+        <View style={[s.headerAvatar, { backgroundColor: personColor }]}>
+          <Text style={s.headerAvatarTxt}>{initials(personName)}</Text>
+        </View>
         <View style={s.headerInfo}>
-          <Text style={[s.headerName, { color: C.text }]}>{name ?? 'Chat'}</Text>
-          {status === 'PENDING' && (
-            <Text style={[s.headerSub, { color: '#F59E0B' }]}>Request pending</Text>
-          )}
+          <Text style={[s.headerName, { color: C.text }]} numberOfLines={1}>{personName}</Text>
+          {isPending
+            ? <Text style={[s.headerStatus, { color: '#D97706' }]}>⏳ Request pending</Text>
+            : status === 'DECLINED'
+            ? <Text style={[s.headerStatus, { color: '#EF4444' }]}>Request declined</Text>
+            : <Text style={[s.headerStatus, { color: '#16A34A' }]}>● Active</Text>}
         </View>
       </View>
 
       {/* Accept / Decline bar for PENDING */}
-      {status === 'PENDING' && (
-        <View style={[s.requestBar, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
-          <Text style={[s.requestBarTxt, { color: C.text }]}>
-            Wants to start a conversation with you
-          </Text>
+      {isPending && (
+        <View style={[s.requestBar, { backgroundColor: '#FEF3C7', borderBottomColor: '#FDE68A' }]}>
+          <View style={s.requestBarTop}>
+            <Ionicons name="briefcase-outline" size={15} color="#92400E" />
+            <Text style={[s.requestBarTxt, { color: '#92400E' }]}>
+              {personName} wants to start a conversation
+            </Text>
+          </View>
           <View style={s.requestBarActions}>
             <Pressable
-              style={[s.declineBtn, { borderColor: C.border }]}
+              style={[s.declineBtn, { borderColor: '#FCA5A5', backgroundColor: '#FEF2F2' }]}
               onPress={() => handleRespond('decline')}
               disabled={acting !== null}>
-              <Text style={[s.declineTxt, { color: C.textSecondary }]}>
-                {acting === 'decline' ? '…' : 'Decline'}
-              </Text>
+              {acting === 'decline'
+                ? <ActivityIndicator size="small" color="#EF4444" />
+                : (
+                  <>
+                    <Ionicons name="close-circle-outline" size={15} color="#EF4444" />
+                    <Text style={[s.declineTxt, { color: '#EF4444' }]}>Decline</Text>
+                  </>
+                )}
             </Pressable>
             <Pressable
-              style={[s.acceptBtn, { backgroundColor: C.brinjal1 }]}
+              style={[s.acceptBtn, { backgroundColor: personColor }]}
               onPress={() => handleRespond('accept')}
               disabled={acting !== null}>
-              <Text style={s.acceptTxt}>
-                {acting === 'accept' ? '…' : 'Accept'}
-              </Text>
+              {acting === 'accept'
+                ? <ActivityIndicator size="small" color="#fff" />
+                : (
+                  <>
+                    <Ionicons name="checkmark-circle-outline" size={15} color="#fff" />
+                    <Text style={s.acceptTxt}>Accept</Text>
+                  </>
+                )}
             </Pressable>
           </View>
         </View>
@@ -177,13 +228,20 @@ export default function CreatorChatRoomScreen() {
           onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
-            <Text style={[s.empty, { color: C.textSecondary }]}>
-              {status === 'PENDING' ? 'Accept the request to start chatting.' : t('messages.startConversation')}
-            </Text>
+            <View style={s.emptyWrap}>
+              <View style={[s.emptyIcon, { backgroundColor: '#E0F2FE' }]}>
+                <Ionicons name="chatbubble-ellipses-outline" size={32} color="#0EA5E9" />
+              </View>
+              <Text style={[s.emptyTxt, { color: C.textSecondary }]}>
+                {isPending
+                  ? 'Accept the request to start chatting.'
+                  : t('messages.startConversation')}
+              </Text>
+            </View>
           }
         />
 
-        {/* Input — only shown when ACCEPTED */}
+        {/* Input bar — only when ACCEPTED */}
         {status === 'ACCEPTED' && (
           <View style={[s.inputBar, { backgroundColor: C.surface, borderTopColor: C.border }]}>
             <TextInput
@@ -196,10 +254,12 @@ export default function CreatorChatRoomScreen() {
               maxLength={1000}
             />
             <Pressable
-              style={[s.sendBtn, { backgroundColor: C.brinjal1 }, (!text.trim() || sending) && s.sendBtnDisabled]}
+              style={[s.sendBtn, { backgroundColor: text.trim() && !sending ? '#0EA5E9' : C.border }]}
               onPress={handleSend}
               disabled={!text.trim() || sending}>
-              <Text style={s.sendTxt}>↑</Text>
+              {sending
+                ? <ActivityIndicator size="small" color="#fff" />
+                : <Ionicons name="send" size={18} color="#fff" />}
             </Pressable>
           </View>
         )}
@@ -212,31 +272,35 @@ const s = StyleSheet.create({
   container: { flex: 1 },
   flex:      { flex: 1 },
 
-  header:     { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, gap: 12 },
-  headerInfo: { flex: 1, gap: 2 },
-  headerName: { fontSize: 16, fontWeight: '700', fontFamily: F.bold },
-  headerSub:  { fontSize: 12, fontFamily: F.regular },
+  header:          { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, gap: 10 },
+  headerAvatar:    { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
+  headerAvatarTxt: { color: '#fff', fontSize: 13, fontWeight: '800', fontFamily: F.extrabold },
+  headerInfo:      { flex: 1, gap: 1 },
+  headerName:      { fontSize: 16, fontWeight: '700', fontFamily: F.bold },
+  headerStatus:    { fontSize: 11, fontFamily: F.medium },
 
   requestBar:        { paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, gap: 10 },
-  requestBarTxt:     { fontSize: 13, fontWeight: '500', fontFamily: F.medium },
+  requestBarTop:     { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  requestBarTxt:     { flex: 1, fontSize: 13, fontWeight: '600', fontFamily: F.semibold },
   requestBarActions: { flexDirection: 'row', gap: 10 },
-  declineBtn: { flex: 1, borderRadius: 10, borderWidth: 1.5, height: 40, justifyContent: 'center', alignItems: 'center' },
+  declineBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, borderRadius: 10, borderWidth: 1.5, height: 40 },
   declineTxt: { fontSize: 13, fontWeight: '600', fontFamily: F.semibold },
-  acceptBtn:  { flex: 2, borderRadius: 10, height: 40, justifyContent: 'center', alignItems: 'center' },
+  acceptBtn:  { flex: 2, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, borderRadius: 10, height: 40 },
   acceptTxt:  { fontSize: 13, fontWeight: '700', color: '#fff', fontFamily: F.bold },
 
-  msgList:     { padding: 16, gap: 10, flexGrow: 1 },
-  bubbleWrap:  { maxWidth: '75%', gap: 3 },
+  msgList:     { padding: 16, gap: 6, flexGrow: 1 },
+  bubbleWrap:  { maxWidth: '78%', gap: 3 },
   bubbleWrapSent:     { alignSelf: 'flex-end',   alignItems: 'flex-end' },
   bubbleWrapReceived: { alignSelf: 'flex-start', alignItems: 'flex-start' },
-  bubble:     { borderRadius: 18, paddingHorizontal: 14, paddingVertical: 10 },
-  bubbleTxt:  { fontSize: 15, lineHeight: 21, fontFamily: F.regular },
-  bubbleTime: { fontSize: 11, paddingHorizontal: 4, fontFamily: F.regular },
-  empty:      { textAlign: 'center', marginTop: 40, fontSize: 14, fontFamily: F.regular },
+  bubble:      { borderRadius: 18, paddingHorizontal: 14, paddingVertical: 10 },
+  bubbleTxt:   { fontSize: 15, lineHeight: 22, fontFamily: F.regular },
+  bubbleTime:  { fontSize: 10, paddingHorizontal: 4, fontFamily: F.regular },
 
-  inputBar:       { flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: 16, paddingVertical: 12, borderTopWidth: 1, gap: 10 },
-  input:          { flex: 1, minHeight: 40, maxHeight: 120, borderWidth: 1.5, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 10, fontSize: 15, fontFamily: F.regular },
-  sendBtn:        { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
-  sendBtnDisabled:{ opacity: 0.4 },
-  sendTxt:        { color: '#fff', fontSize: 18, fontWeight: '700', fontFamily: F.bold },
+  emptyWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 60, gap: 12 },
+  emptyIcon: { width: 64, height: 64, borderRadius: 32, justifyContent: 'center', alignItems: 'center' },
+  emptyTxt:  { textAlign: 'center', fontSize: 14, fontFamily: F.regular, paddingHorizontal: 32, lineHeight: 20 },
+
+  inputBar:  { flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: 12, paddingVertical: 10, borderTopWidth: StyleSheet.hairlineWidth, gap: 8 },
+  input:     { flex: 1, minHeight: 44, maxHeight: 120, borderWidth: 1.5, borderRadius: 22, paddingHorizontal: 16, paddingVertical: 10, fontSize: 15, fontFamily: F.regular },
+  sendBtn:   { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center' },
 });

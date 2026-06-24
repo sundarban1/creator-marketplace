@@ -18,6 +18,7 @@ type Proposal = {
   submittedAt: string;
   coverLetter: string;
   proposedRate: string;
+  campaignType: 'PAID_CAMPAIGN' | 'OPEN_EVENT';
 };
 
 const STATUS_CFG = {
@@ -62,8 +63,19 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
 
         <View style={styles.cardMeta}>
           <View style={styles.metaItem}>
-            <Text style={[styles.metaLabel, { color: C.textSecondary }]}>Rate</Text>
-            <Text style={[styles.metaValue, { color: C.brinjal1 }]}>Rs {proposal.proposedRate}</Text>
+            {proposal.campaignType === 'OPEN_EVENT' ? (
+              <>
+                <Text style={[styles.metaLabel, { color: C.textSecondary }]}>Type</Text>
+                <View style={styles.freeTag}>
+                  <Text style={styles.freeTagText}>✓ Free Event</Text>
+                </View>
+              </>
+            ) : (
+              <>
+                <Text style={[styles.metaLabel, { color: C.textSecondary }]}>Rate</Text>
+                <Text style={[styles.metaValue, { color: C.brinjal1 }]}>{proposal.proposedRate}</Text>
+              </>
+            )}
           </View>
           <View style={[styles.metaDivider, { backgroundColor: C.border }]} />
           <View style={styles.metaItem}>
@@ -201,6 +213,8 @@ const styles = StyleSheet.create({
   metaItem:   { flex: 1, gap: 2 },
   metaLabel:  { fontSize: 10, fontWeight: '600', textTransform: 'uppercase', fontFamily: F.semibold },
   metaValue:  { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
+  freeTag:    { backgroundColor: '#F0FDF4', borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3, alignSelf: 'flex-start', marginTop: 2 },
+  freeTagText:{ fontSize: 12, fontWeight: '700', color: '#059669', fontFamily: F.bold },
   metaDivider:{ width: 1, height: 32, marginHorizontal: 12 },
   metaArrow:  { paddingLeft: 4 },
   arrow:      { fontSize: 22 },

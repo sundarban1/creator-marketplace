@@ -280,20 +280,15 @@ export default function HomeScreen() {
               </View>
             </View>
 
-            <View style={styles.headerRight}>
-              <Pressable style={styles.notifBtn} onPress={() => router.push('/(creator)/notifications' as never)}>
-                <Ionicons name="notifications-outline" size={20} color="rgba(255,255,255,0.9)" />
-              </Pressable>
-              <Pressable style={[styles.avatarCircle, { borderColor: 'rgba(255,255,255,0.5)', borderWidth: 2.5 }]} onPress={() => router.push('/(creator)/profile')}>
-                {user?.avatar ? (
-                  <Image source={{ uri: user.avatar }} style={styles.avatarImage} />
-                ) : (
-                  <View style={[styles.avatarFallback, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
-                    <Ionicons name="person" size={30} color="#fff" />
-                  </View>
-                )}
-              </Pressable>
-            </View>
+            <Pressable style={[styles.avatarCircle, { borderColor: 'rgba(255,255,255,0.5)', borderWidth: 2.5 }]} onPress={() => router.push('/(creator)/profile')}>
+              {user?.avatar ? (
+                <Image source={{ uri: user.avatar }} style={styles.avatarImage} resizeMode="cover" />
+              ) : (
+                <View style={[styles.avatarFallback, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
+                  <Ionicons name="person" size={24} color="#fff" />
+                </View>
+              )}
+            </Pressable>
           </View>
 
         </LinearGradient>
@@ -544,10 +539,8 @@ const styles = StyleSheet.create({
 
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingHorizontal: 20, paddingTop: 14, paddingBottom: 18 },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
-  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingTop: 2 },
   menuBtn: { padding: 0 },
   menuBtnInner: { width: 38, height: 38, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' },
-  notifBtn: { width: 38, height: 38, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' },
   greeting: { fontSize: 12, marginBottom: 3, fontFamily: F.medium },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   brandName: { fontSize: 22, fontFamily: F.extrabold, maxWidth: 180, letterSpacing: -0.3 },

@@ -255,17 +255,19 @@ export const campaignService = {
     id: string;
     status: 'pending' | 'accepted' | 'rejected';
     proposedRate: string;
+    coverLetter: string;
     createdAt: string;
-    creator: { fullName: string; avatarUrl: string | null; location: string | null };
+    creator: { id: string; fullName: string; avatarUrl: string | null; location: string | null };
   }>> {
     const res = await request<Array<{
-      id: string; status: string; proposedRate: number; createdAt: string;
-      creator: { fullName: string; avatarUrl: string | null; location: string | null };
+      id: string; status: string; proposedRate: number; coverLetter: string; createdAt: string;
+      creator: { id: string; fullName: string; avatarUrl: string | null; location: string | null };
     }>>('GET', `/api/campaigns/${campaignId}/applications`);
     return res.data.map((a) => ({
       id: a.id,
       status: a.status.toLowerCase() as 'pending' | 'accepted' | 'rejected',
       proposedRate: `Rs. ${a.proposedRate.toLocaleString()}`,
+      coverLetter: a.coverLetter ?? '',
       createdAt: a.createdAt,
       creator: a.creator,
     }));
@@ -280,6 +282,7 @@ export const campaignService = {
     submittedAt:   string;
     coverLetter:   string;
     proposedRate:  string;
+    campaignType:  'PAID_CAMPAIGN' | 'OPEN_EVENT';
   }>> {
     const res = await request<Array<{
       id:          string;
@@ -287,7 +290,7 @@ export const campaignService = {
       coverLetter: string;
       proposedRate: number;
       createdAt:   string;
-      campaign:    { id: string; title: string; business: { businessName: string } };
+      campaign:    { id: string; title: string; campaignType?: string; business: { businessName: string } };
     }>>('GET', '/api/campaigns/applications/my');
 
     return res.data.map((a) => ({
@@ -299,6 +302,7 @@ export const campaignService = {
       submittedAt:   a.createdAt,
       coverLetter:   a.coverLetter,
       proposedRate:  `Rs. ${a.proposedRate.toLocaleString()}`,
+      campaignType:  (a.campaign.campaignType ?? 'PAID_CAMPAIGN') as 'PAID_CAMPAIGN' | 'OPEN_EVENT',
     }));
   },
 };
