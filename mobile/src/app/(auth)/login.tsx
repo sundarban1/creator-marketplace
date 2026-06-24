@@ -15,6 +15,7 @@ import {
   View,
 } from 'react-native';
 import * as Google from 'expo-auth-session/providers/google';
+import * as Facebook from 'expo-auth-session/providers/facebook';
 import * as WebBrowser from 'expo-web-browser';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
@@ -126,11 +127,14 @@ function Field({
 
 // ── Login form ────────────────────────────────────────────────────────────────
 
-function LoginForm({ verified, onGooglePress, googleLoading, googleError }: {
+function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFacebookPress, facebookLoading, facebookError }: {
   verified?: string;
   onGooglePress: () => void;
   googleLoading: boolean;
   googleError: string;
+  onFacebookPress: () => void;
+  facebookLoading: boolean;
+  facebookError: string;
 }) {
   const { login } = useAuth();
   const { t }     = useLanguage();
@@ -203,18 +207,26 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError }: {
         <View style={[s.dividerLine, { backgroundColor: '#EDE9FE' }]} />
       </View>
 
-      <Pressable
-        style={[s.googleBtn, googleLoading && { opacity: 0.6 }]}
-        onPress={onGooglePress}
-        disabled={googleLoading}>
-        {googleLoading
-          ? <><View style={s.spinner} /><Text style={s.googleBtnText}>Signing in…</Text></>
-          : <><View style={s.googleBadge}><Text style={s.googleG}>G</Text></View><Text style={s.googleBtnText}>Continue with Google</Text></>}
-      </Pressable>
-      {!!googleError && (
+      <View style={s.socialRow}>
+        <Pressable style={[s.socialBtn, googleLoading && { opacity: 0.6 }]} onPress={onGooglePress} disabled={googleLoading}>
+          {googleLoading
+            ? <View style={s.spinner} />
+            : <View style={s.googleBadge}><Text style={s.googleG}>G</Text></View>}
+          <Text style={s.socialBtnText}>{googleLoading ? 'Signing in…' : 'Google'}</Text>
+        </Pressable>
+
+        <Pressable style={[s.socialBtnFb, facebookLoading && { opacity: 0.6 }]} onPress={onFacebookPress} disabled={facebookLoading}>
+          {facebookLoading
+            ? <View style={s.spinner} />
+            : <View style={s.fbBadge}><Text style={s.fbF}>f</Text></View>}
+          <Text style={s.socialBtnFbText}>{facebookLoading ? 'Signing in…' : 'Facebook'}</Text>
+        </Pressable>
+      </View>
+
+      {!!(googleError || facebookError) && (
         <View style={[s.banner, { backgroundColor: '#FFF1F2', borderColor: '#FECDD3' }]}>
           <Ionicons name="alert-circle" size={15} color="#EF4444" />
-          <Text style={[s.bannerText, { color: '#EF4444' }]}>{googleError}</Text>
+          <Text style={[s.bannerText, { color: '#EF4444' }]}>{googleError || facebookError}</Text>
         </View>
       )}
     </View>
@@ -223,10 +235,13 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError }: {
 
 // ── Create Account form ───────────────────────────────────────────────────────
 
-function SignupForm({ onGooglePress, googleLoading, googleError }: {
+function SignupForm({ onGooglePress, googleLoading, googleError, onFacebookPress, facebookLoading, facebookError }: {
   onGooglePress: () => void;
   googleLoading: boolean;
   googleError: string;
+  onFacebookPress: () => void;
+  facebookLoading: boolean;
+  facebookError: string;
 }) {
   const C = useAppColors();
 
@@ -338,18 +353,26 @@ function SignupForm({ onGooglePress, googleLoading, googleError }: {
         <View style={[s.dividerLine, { backgroundColor: '#EDE9FE' }]} />
       </View>
 
-      <Pressable
-        style={[s.googleBtn, googleLoading && { opacity: 0.6 }]}
-        onPress={onGooglePress}
-        disabled={googleLoading}>
-        {googleLoading
-          ? <><View style={s.spinner} /><Text style={s.googleBtnText}>Signing in…</Text></>
-          : <><View style={s.googleBadge}><Text style={s.googleG}>G</Text></View><Text style={s.googleBtnText}>Continue with Google</Text></>}
-      </Pressable>
-      {!!googleError && (
+      <View style={s.socialRow}>
+        <Pressable style={[s.socialBtn, googleLoading && { opacity: 0.6 }]} onPress={onGooglePress} disabled={googleLoading}>
+          {googleLoading
+            ? <View style={s.spinner} />
+            : <View style={s.googleBadge}><Text style={s.googleG}>G</Text></View>}
+          <Text style={s.socialBtnText}>{googleLoading ? 'Signing in…' : 'Google'}</Text>
+        </Pressable>
+
+        <Pressable style={[s.socialBtnFb, facebookLoading && { opacity: 0.6 }]} onPress={onFacebookPress} disabled={facebookLoading}>
+          {facebookLoading
+            ? <View style={s.spinner} />
+            : <View style={s.fbBadge}><Text style={s.fbF}>f</Text></View>}
+          <Text style={s.socialBtnFbText}>{facebookLoading ? 'Signing in…' : 'Facebook'}</Text>
+        </Pressable>
+      </View>
+
+      {!!(googleError || facebookError) && (
         <View style={[s.banner, { backgroundColor: '#FFF1F2', borderColor: '#FECDD3' }]}>
           <Ionicons name="alert-circle" size={15} color="#EF4444" />
-          <Text style={[s.bannerText, { color: '#EF4444' }]}>{googleError}</Text>
+          <Text style={[s.bannerText, { color: '#EF4444' }]}>{googleError || facebookError}</Text>
         </View>
       )}
 
@@ -372,17 +395,27 @@ export default function LoginScreen() {
   const insets                    = useSafeAreaInsets();
   const [tab, setTab]             = useState<'login' | 'signup'>(params.tab === 'signup' ? 'signup' : 'login');
 
-  const [googleLoading, setGoogleLoading] = useState(false);
-  const [googleError,   setGoogleError]   = useState('');
-  const [roleModal,     setRoleModal]     = useState(false);
-  const [pendingToken,  setPendingToken]  = useState('');
+  const [googleLoading,   setGoogleLoading]   = useState(false);
+  const [googleError,     setGoogleError]     = useState('');
+  const [facebookLoading, setFacebookLoading] = useState(false);
+  const [facebookError,   setFacebookError]   = useState('');
+  const [roleModal,       setRoleModal]       = useState(false);
+  const [pendingToken,    setPendingToken]    = useState('');
+  const [pendingProvider, setPendingProvider] = useState<'google' | 'facebook'>('google');
 
-  // Fallback to 'unset' prevents the hook crashing with "undefined" — we guard in handleGooglePress
+  // Fallback to 'unset' prevents the hook crashing with "undefined" — we guard in handleGooglePress/handleFacebookPress
   const [, googleResponse, googlePromptAsync] = Google.useAuthRequest({
     clientId:        process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID     ?? 'unset',
     webClientId:     process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID     ?? 'unset',
     iosClientId:     process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID     ?? 'unset',
     androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ?? 'unset',
+  });
+
+  const [, facebookResponse, facebookPromptAsync] = Facebook.useAuthRequest({
+    clientId:        process.env.EXPO_PUBLIC_FACEBOOK_APP_ID ?? 'unset',
+    webClientId:     process.env.EXPO_PUBLIC_FACEBOOK_APP_ID ?? 'unset',
+    iosClientId:     process.env.EXPO_PUBLIC_FACEBOOK_APP_ID ?? 'unset',
+    androidClientId: process.env.EXPO_PUBLIC_FACEBOOK_APP_ID ?? 'unset',
   });
 
   useEffect(() => {
@@ -397,6 +430,48 @@ export default function LoginScreen() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [googleResponse]);
+
+  useEffect(() => {
+    if (!facebookResponse) return;
+    if (facebookResponse.type === 'success' && facebookResponse.authentication?.accessToken) {
+      void handleFacebookToken(facebookResponse.authentication.accessToken);
+    } else if (facebookResponse.type === 'error') {
+      setFacebookError('Facebook sign-in failed. Please try again.');
+      setFacebookLoading(false);
+    } else if (facebookResponse.type === 'dismiss' || facebookResponse.type === 'cancel') {
+      setFacebookLoading(false);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [facebookResponse]);
+
+  async function handleFacebookToken(accessToken: string, role?: 'CREATOR' | 'BUSINESS') {
+    setFacebookLoading(true);
+    setFacebookError('');
+    try {
+      const result = await authService.facebookAuth({ accessToken, role });
+      if (result.needsRole) {
+        setPendingToken(accessToken);
+        setPendingProvider('facebook');
+        setRoleModal(true);
+        setFacebookLoading(false);
+        return;
+      }
+      await reloadUser();
+    } catch (e) {
+      setFacebookError(e instanceof Error ? e.message : 'Facebook sign-in failed. Please try again.');
+      setFacebookLoading(false);
+    }
+  }
+
+  function handleFacebookPress() {
+    if (!process.env.EXPO_PUBLIC_FACEBOOK_APP_ID) {
+      setFacebookError('Add EXPO_PUBLIC_FACEBOOK_APP_ID to .env to enable Facebook Sign-In.');
+      return;
+    }
+    setFacebookLoading(true);
+    setFacebookError('');
+    void facebookPromptAsync();
+  }
 
   async function handleGoogleToken(accessToken: string, role?: 'CREATOR' | 'BUSINESS') {
     setGoogleLoading(true);
@@ -440,7 +515,11 @@ export default function LoginScreen() {
 
   async function handleRoleSelect(selectedRole: 'CREATOR' | 'BUSINESS') {
     setRoleModal(false);
-    await handleGoogleToken(pendingToken, selectedRole);
+    if (pendingProvider === 'facebook') {
+      await handleFacebookToken(pendingToken, selectedRole);
+    } else {
+      await handleGoogleToken(pendingToken, selectedRole);
+    }
   }
 
   useEffect(() => {
@@ -517,8 +596,8 @@ export default function LoginScreen() {
 
             {/* Form */}
             {tab === 'login'
-              ? <LoginForm verified={params.verified} onGooglePress={handleGooglePress} googleLoading={googleLoading} googleError={googleError} />
-              : <SignupForm onGooglePress={handleGooglePress} googleLoading={googleLoading} googleError={googleError} />}
+              ? <LoginForm verified={params.verified} onGooglePress={handleGooglePress} googleLoading={googleLoading} googleError={googleError} onFacebookPress={handleFacebookPress} facebookLoading={facebookLoading} facebookError={facebookError} />
+              : <SignupForm onGooglePress={handleGooglePress} googleLoading={googleLoading} googleError={googleError} onFacebookPress={handleFacebookPress} facebookLoading={facebookLoading} facebookError={facebookError} />}
 
             {/* Footer */}
             <View style={s.footer}>
@@ -640,12 +719,17 @@ const s = StyleSheet.create({
   dividerLine: { flex: 1, height: 1 },
   dividerText: { fontSize: 12, color: '#A78BFA', fontFamily: F.medium },
 
-  // Google
-  googleBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, height: 52, borderRadius: 14, borderWidth: 1.5, borderColor: '#DDD6FE', backgroundColor: '#FAFAFE', marginBottom: 12 },
-  googleBadge:   { width: 24, height: 24, borderRadius: 12, backgroundColor: '#4285F4', justifyContent: 'center', alignItems: 'center' },
-  googleG:       { color: '#fff', fontSize: 13, fontWeight: '900', fontFamily: F.extrabold },
-  googleBtnText: { fontSize: 15, fontFamily: F.semibold, color: '#374151' },
-  spinner:       { width: 18, height: 18, borderRadius: 9, borderWidth: 2, borderColor: '#DDD6FE', borderTopColor: P2 },
+  // Social row (Google + Facebook side by side)
+  socialRow:      { flexDirection: 'row', gap: 12, marginBottom: 12 },
+  socialBtn:      { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 50, borderRadius: 14, borderWidth: 1.5, borderColor: '#DDD6FE', backgroundColor: '#FAFAFE' },
+  socialBtnText:  { fontSize: 14, fontFamily: F.semibold, color: '#374151' },
+  socialBtnFb:    { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 50, borderRadius: 14, borderWidth: 1.5, borderColor: '#BFDBFE', backgroundColor: '#EFF6FF' },
+  socialBtnFbText:{ fontSize: 14, fontFamily: F.semibold, color: '#1D4ED8' },
+  googleBadge:    { width: 22, height: 22, borderRadius: 11, backgroundColor: '#4285F4', justifyContent: 'center', alignItems: 'center' },
+  googleG:        { color: '#fff', fontSize: 12, fontWeight: '900', fontFamily: F.extrabold },
+  fbBadge:        { width: 22, height: 22, borderRadius: 11, backgroundColor: '#1877F2', justifyContent: 'center', alignItems: 'center' },
+  fbF:            { color: '#fff', fontSize: 13, fontWeight: '900', fontFamily: F.extrabold },
+  spinner:        { width: 18, height: 18, borderRadius: 9, borderWidth: 2, borderColor: '#DDD6FE', borderTopColor: P2 },
 
   // Role modal
   modalOverlay:    { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },

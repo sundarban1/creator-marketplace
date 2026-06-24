@@ -9,7 +9,16 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/expo.icon",
-      "bundleIdentifier": "com.sundarban.content"
+      "bundleIdentifier": "com.sundarban.content",
+      "infoPlist": {
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": ["fb27739673972329504"]
+          }
+        ],
+        "FacebookAppID": "27739673972329504",
+        "FacebookDisplayName": "CreatorMarket"
+      }
     },
     "android": {
       "adaptiveIcon": {

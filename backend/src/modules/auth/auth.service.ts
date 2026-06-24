@@ -24,6 +24,7 @@ import type {
   RequestPhoneOtpInput,
   VerifyPhoneOtpInput,
   GoogleAuthInput,
+  FacebookAuthInput,
 } from './auth.schema';
 
 function generateOtp(): string {
@@ -303,6 +304,54 @@ export class AuthService {
     }
 
     // Google has already verified the email — mark it verified without OTP
+    const verifiedUser = await this.repo.verifyEmail(createdUser.id);
+
+    const payload = { id: verifiedUser.id, email: verifiedUser.email, role: verifiedUser.role };
+    const accessToken  = signAccessToken(payload);
+    const refreshToken = signRefreshToken(payload);
+    await this.repo.updateRefreshToken(verifiedUser.id, refreshToken);
+
+    return { needsRole: false as const, user: buildUserResponse(verifiedUser), accessToken, refreshToken, isNewUser: true };
+  }
+
+  async facebookAuth(input: FacebookAuthInput) {
+    const fbRes = await fetch(
+      `https://graph.facebook.com/me?fields=id,name,email&access_token=${input.accessToken}`
+    );
+    if (!fbRes.ok) throw new AppError('Invalid or expired Facebook token. Please try again.', 401);
+
+    const fbUser = await fbRes.json() as { id: string; name?: string; email?: string };
+    if (!fbUser.email) throw new AppError('Facebook account has no email. Please use a different sign-in method.', 400);
+
+    const existing = await this.repo.findUserByEmail(fbUser.email);
+
+    if (existing) {
+      if (!existing.isActive) await this.repo.reactivateAccount(existing.id);
+      const user = await this.repo.findUserById(existing.id);
+      const payload = { id: user!.id, email: user!.email, role: user!.role };
+      const accessToken  = signAccessToken(payload);
+      const refreshToken = signRefreshToken(payload);
+      await this.repo.updateRefreshToken(user!.id, refreshToken);
+      return { needsRole: false as const, user: buildUserResponse(user!), accessToken, refreshToken, isNewUser: false };
+    }
+
+    if (!input.role) {
+      return { needsRole: true as const, email: fbUser.email, name: fbUser.name ?? fbUser.email.split('@')[0] };
+    }
+
+    const hashedPassword = await hashPassword(crypto.randomBytes(32).toString('hex'));
+
+    let createdUser;
+    if (input.role === 'CREATOR') {
+      createdUser = await this.repo.createUserWithCreatorProfile({
+        email: fbUser.email, password: hashedPassword, role: Role.CREATOR, fullName: fbUser.name,
+      });
+    } else {
+      createdUser = await this.repo.createUserWithBusinessProfile({
+        email: fbUser.email, password: hashedPassword, role: Role.BUSINESS, businessName: fbUser.name,
+      });
+    }
+
     const verifiedUser = await this.repo.verifyEmail(createdUser.id);
 
     const payload = { id: verifiedUser.id, email: verifiedUser.email, role: verifiedUser.role };

@@ -133,6 +133,15 @@ export class AuthController {
     }
   }
 
+  async facebookAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await authService.facebookAuth(req.body);
+      success(res, result, result.needsRole ? 'Role selection required' : 'Facebook sign-in successful');
+    } catch (err) {
+      next(err);
+    }
+  }
+
   async requestPhoneOtp(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const result = await authService.requestPhoneOtp(req.user!.id, req.body);

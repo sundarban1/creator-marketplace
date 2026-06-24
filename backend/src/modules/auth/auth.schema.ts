@@ -69,6 +69,11 @@ export const googleAuthSchema = z.object({
   role: z.enum(['CREATOR', 'BUSINESS']).optional(),
 });
 
+export const facebookAuthSchema = z.object({
+  accessToken: z.string().min(1, 'Facebook access token is required'),
+  role: z.enum(['CREATOR', 'BUSINESS']).optional(),
+});
+
 export type RegisterInput              = z.infer<typeof registerSchema>;
 export type LoginInput                 = z.infer<typeof loginSchema>;
 export type RefreshTokenInput          = z.infer<typeof refreshTokenSchema>;
@@ -81,3 +86,4 @@ export type VerifyResetOtpInput        = z.infer<typeof verifyResetOtpSchema>;
 export type RequestPhoneOtpInput       = z.infer<typeof requestPhoneOtpSchema>;
 export type VerifyPhoneOtpInput        = z.infer<typeof verifyPhoneOtpSchema>;
 export type GoogleAuthInput            = z.infer<typeof googleAuthSchema>;
+export type FacebookAuthInput          = z.infer<typeof facebookAuthSchema>;

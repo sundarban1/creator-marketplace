@@ -101,6 +101,29 @@ export const authService = {
     }
   },
 
+  async facebookAuth(payload: {
+    accessToken: string;
+    role?: 'CREATOR' | 'BUSINESS';
+  }): Promise<{ needsRole: true; email: string; name: string } | { needsRole: false; user: User }> {
+    const res = await request<
+      | { needsRole: true; email: string; name: string }
+      | (ApiLoginResponse & { needsRole: false; isNewUser: boolean })
+    >('POST', '/api/auth/facebook', payload);
+
+    if (res.data.needsRole) {
+      return { needsRole: true, email: res.data.email, name: res.data.name };
+    }
+
+    const { accessToken, refreshToken, user: apiUser } = res.data as ApiLoginResponse & { needsRole: false };
+    await Promise.all([
+      storage.set(ACCESS_TOKEN_KEY,  accessToken),
+      storage.set(REFRESH_TOKEN_KEY, refreshToken),
+    ]);
+    const user = toUser(apiUser);
+    await storage.setJSON(USER_KEY, user);
+    return { needsRole: false, user };
+  },
+
   async googleAuth(payload: {
     accessToken: string;
     role?: 'CREATOR' | 'BUSINESS';
