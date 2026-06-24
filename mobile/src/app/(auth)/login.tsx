@@ -13,7 +13,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
@@ -26,11 +26,13 @@ const LANG_OPTIONS: { lang: Lang; flag: string }[] = [
   { lang: 'ne', flag: '🇳🇵' },
 ];
 
-const P = '#5B21B6';
+const P1 = '#4C1D95';
+const P2 = '#6D28D9';
+const P3 = '#7C3AED';
 
 const ROLES = [
-  { key: 'CREATOR' as const,  label: 'Content Creator',  sub: 'I create content',        icon: 'camera-outline'    as const },
-  { key: 'BUSINESS' as const, label: 'Brand / Business',  sub: 'I represent a brand',     icon: 'briefcase-outline' as const },
+  { key: 'CREATOR'  as const, label: 'Content Creator', sub: 'Influencer & creator', icon: 'camera-outline'    as const, grad: ['#8B5CF6', '#6D28D9'] as const },
+  { key: 'BUSINESS' as const, label: 'Brand / Business', sub: 'Company & brand',     icon: 'briefcase-outline' as const, grad: ['#2563EB', '#1D4ED8'] as const },
 ];
 
 const PW_RULES = [
@@ -46,7 +48,7 @@ function pwError(p: string): string | undefined {
   if (!/[0-9]/.test(p)) return 'Add at least one number.';
 }
 
-// ── Shared input field ────────────────────────────────────────────────────────
+// ── Input field ───────────────────────────────────────────────────────────────
 
 function Field({
   icon, label, value, onChangeText, placeholder,
@@ -68,9 +70,10 @@ function Field({
   const [focused, setFocused] = useState(false);
   const [hidden,  setHidden]  = useState(secureTextEntry);
   const anim   = useRef(new Animated.Value(0)).current;
+  const shadow = anim.interpolate({ inputRange: [0, 1], outputRange: [0, 1] });
   const border = anim.interpolate({
     inputRange:  [0, 1],
-    outputRange: [error ? '#FECACA' : '#E5E7EB', error ? '#EF4444' : P],
+    outputRange: [error ? '#FECACA' : '#E8E0F8', error ? '#EF4444' : P2],
   });
 
   return (
@@ -79,24 +82,30 @@ function Field({
         <Text style={[s.fieldLabel, { color: C.text }]}>{label}</Text>
         {rightSlot}
       </View>
-      <Animated.View style={[s.field, { borderColor: border, backgroundColor: C.surface }]}>
-        <Ionicons name={icon} size={17} color={focused ? P : '#9CA3AF'} style={s.fieldIcon} />
+      <Animated.View style={[
+        s.field,
+        { borderColor: border, backgroundColor: focused ? '#FAFAFE' : C.surface },
+        focused && s.fieldFocused,
+      ]}>
+        <View style={[s.fieldIconWrap, { backgroundColor: focused ? `${P2}15` : '#F3F4F6' }]}>
+          <Ionicons name={icon} size={16} color={focused ? P2 : '#9CA3AF'} />
+        </View>
         <TextInput
           style={[s.fieldInput, { color: C.text }]}
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
-          placeholderTextColor="#9CA3AF"
+          placeholderTextColor="#C4B5FD"
           secureTextEntry={hidden}
           keyboardType={keyboardType}
           autoCapitalize={autoCapitalize}
           autoCorrect={false}
-          onFocus={() => { setFocused(true);  Animated.timing(anim, { toValue: 1, duration: 180, useNativeDriver: false }).start(); }}
-          onBlur={()  => { setFocused(false); Animated.timing(anim, { toValue: 0, duration: 180, useNativeDriver: false }).start(); }}
+          onFocus={() => { setFocused(true);  Animated.timing(anim, { toValue: 1, duration: 200, useNativeDriver: false }).start(); }}
+          onBlur={()  => { setFocused(false); Animated.timing(anim, { toValue: 0, duration: 200, useNativeDriver: false }).start(); }}
         />
         {secureTextEntry && (
-          <Pressable onPress={() => setHidden(h => !h)} hitSlop={8} style={s.eyeBtn}>
-            <Ionicons name={hidden ? 'eye-outline' : 'eye-off-outline'} size={17} color="#9CA3AF" />
+          <Pressable onPress={() => setHidden(h => !h)} hitSlop={10} style={s.eyeBtn}>
+            <Ionicons name={hidden ? 'eye-outline' : 'eye-off-outline'} size={18} color={focused ? P2 : '#9CA3AF'} />
           </Pressable>
         )}
       </Animated.View>
@@ -148,31 +157,47 @@ function LoginForm({ verified }: { verified?: string }) {
           <Text style={[s.bannerText, { color: '#EF4444' }]}>{error}</Text>
         </View>
       )}
+
       <View style={s.form}>
-        <Field icon="mail-outline" label="Email address" value={email} onChangeText={setEmail} placeholder="you@email.com" keyboardType="email-address" />
+        <Field
+          icon="mail-outline" label="Email address" value={email} onChangeText={setEmail}
+          placeholder="you@email.com" keyboardType="email-address"
+        />
         <Field
           icon="lock-closed-outline" label="Password" value={password} onChangeText={setPassword}
           placeholder="Enter your password" secureTextEntry
           rightSlot={
             <Pressable onPress={() => router.push('/forgot-password')}>
-              <Text style={[s.forgotText, { color: P }]}>Forgot password?</Text>
+              <Text style={[s.forgotText, { color: P2 }]}>Forgot password?</Text>
             </Pressable>
           }
         />
       </View>
+
       <Pressable
         onPress={handleLogin} disabled={loading}
-        style={({ pressed }) => [s.primaryBtn, { backgroundColor: P, opacity: pressed ? 0.88 : 1 }]}>
-        {loading ? <Ionicons name="sync" size={18} color="#fff" /> : <Text style={s.primaryBtnText}>Log in</Text>}
+        style={({ pressed }) => [s.primaryBtnWrap, { opacity: pressed ? 0.9 : 1 }]}>
+        <LinearGradient colors={[P3, P1]} style={s.primaryBtn} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
+          {loading
+            ? <Ionicons name="sync" size={18} color="#fff" />
+            : <>
+                <Text style={s.primaryBtnText}>Log in</Text>
+                <Ionicons name="arrow-forward" size={16} color="rgba(255,255,255,0.8)" />
+              </>}
+        </LinearGradient>
       </Pressable>
+
       <View style={s.divider}>
-        <View style={[s.dividerLine, { backgroundColor: '#E5E7EB' }]} />
-        <Text style={s.dividerText}>or continue with</Text>
-        <View style={[s.dividerLine, { backgroundColor: '#E5E7EB' }]} />
+        <View style={[s.dividerLine, { backgroundColor: '#EDE9FE' }]} />
+        <Text style={s.dividerText}>or</Text>
+        <View style={[s.dividerLine, { backgroundColor: '#EDE9FE' }]} />
       </View>
-      <Pressable style={[s.socialBtn, { borderColor: '#E5E7EB' }]} onPress={() => setError('Google sign-in is not available yet.')}>
+
+      <Pressable
+        style={s.googleBtn}
+        onPress={() => setError('Google sign-in is not available yet.')}>
         <View style={s.googleBadge}><Text style={s.googleG}>G</Text></View>
-        <Text style={s.socialBtnText}>Continue with Google</Text>
+        <Text style={s.googleBtnText}>Continue with Google</Text>
       </Pressable>
     </View>
   );
@@ -190,8 +215,8 @@ function SignupForm() {
   const [loading,   setLoading]   = useState(false);
   const [error,     setError]     = useState('');
 
-  const emErr = submitted && !isValidEmail(email)    ? 'Enter a valid email address' : undefined;
-  const pwErr = submitted ? pwError(password)        : undefined;
+  const emErr = submitted && !isValidEmail(email)  ? 'Enter a valid email address' : undefined;
+  const pwErr = submitted ? pwError(password)      : undefined;
 
   async function handleCreate() {
     setSubmitted(true);
@@ -210,7 +235,7 @@ function SignupForm() {
 
   return (
     <View>
-      {/* Role selector */}
+      {/* Role cards */}
       <Text style={[s.sectionLabel, { color: C.text }]}>I'm joining as</Text>
       <View style={s.roleRow}>
         {ROLES.map((r) => {
@@ -218,13 +243,21 @@ function SignupForm() {
           return (
             <Pressable
               key={r.key}
-              style={[s.roleCard, { borderColor: active ? P : '#E5E7EB', backgroundColor: C.surface }, active && { borderWidth: 2 }]}
+              style={[s.roleCard, { borderColor: active ? P2 : '#EDE9FE', backgroundColor: active ? `${P2}08` : C.surface }, active && s.roleCardActive]}
               onPress={() => { setRole(r.key); setSubmitted(false); setError(''); }}>
-              <View style={[s.roleIconBox, { backgroundColor: active ? `${P}12` : '#F9FAFB' }]}>
-                <Ionicons name={r.icon} size={24} color={active ? P : '#9CA3AF'} />
-              </View>
-              <Text style={[s.roleLabel, { color: active ? P : C.text }]}>{r.label}</Text>
-              <Text style={[s.roleSub, { color: '#6B7280' }]}>{r.sub}</Text>
+              <LinearGradient
+                colors={active ? r.grad : ['#F5F3FF', '#EDE9FE']}
+                style={s.roleIconBox}
+                start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+                <Ionicons name={r.icon} size={22} color={active ? '#fff' : '#8B5CF6'} />
+              </LinearGradient>
+              <Text style={[s.roleLabel, { color: active ? P1 : C.text }]}>{r.label}</Text>
+              <Text style={[s.roleSub, { color: active ? P2 : '#9CA3AF' }]}>{r.sub}</Text>
+              {active && (
+                <View style={s.roleCheck}>
+                  <Ionicons name="checkmark" size={10} color="#fff" />
+                </View>
+              )}
             </Pressable>
           );
         })}
@@ -232,16 +265,24 @@ function SignupForm() {
 
       {/* Fields */}
       <View style={s.form}>
-        <Field icon="mail-outline" label="Email address" value={email} onChangeText={(v) => { setEmail(v); setError(''); }} placeholder="you@email.com" keyboardType="email-address" error={emErr} />
-        <Field icon="lock-closed-outline" label="Password" value={password} onChangeText={(v) => { setPassword(v); setError(''); }} placeholder="Create a password" secureTextEntry error={pwErr} />
+        <Field
+          icon="mail-outline" label="Email address" value={email}
+          onChangeText={(v) => { setEmail(v); setError(''); }}
+          placeholder="you@email.com" keyboardType="email-address" error={emErr}
+        />
+        <Field
+          icon="lock-closed-outline" label="Password" value={password}
+          onChangeText={(v) => { setPassword(v); setError(''); }}
+          placeholder="Create a strong password" secureTextEntry error={pwErr}
+        />
         {password.length > 0 && (
           <View style={s.rulesRow}>
             {PW_RULES.map((rule) => {
               const ok = rule.test(password);
               return (
-                <View key={rule.label} style={[s.rulePill, { backgroundColor: ok ? '#F0FDF4' : '#F9FAFB', borderColor: ok ? '#86EFAC' : '#E5E7EB' }]}>
-                  <Ionicons name={ok ? 'checkmark-circle' : 'ellipse-outline'} size={11} color={ok ? '#16A34A' : '#9CA3AF'} />
-                  <Text style={[s.ruleText, { color: ok ? '#16A34A' : '#9CA3AF' }]}>{rule.label}</Text>
+                <View key={rule.label} style={[s.rulePill, { backgroundColor: ok ? '#F0FDF4' : '#F5F3FF', borderColor: ok ? '#86EFAC' : '#DDD6FE' }]}>
+                  <Ionicons name={ok ? 'checkmark-circle' : 'ellipse-outline'} size={11} color={ok ? '#16A34A' : '#A78BFA'} />
+                  <Text style={[s.ruleText, { color: ok ? '#16A34A' : '#8B5CF6' }]}>{rule.label}</Text>
                 </View>
               );
             })}
@@ -258,25 +299,33 @@ function SignupForm() {
 
       <Pressable
         onPress={handleCreate} disabled={loading}
-        style={({ pressed }) => [s.primaryBtn, { backgroundColor: P, opacity: pressed ? 0.88 : 1 }]}>
-        {loading ? <Ionicons name="sync" size={18} color="#fff" /> : <Text style={s.primaryBtnText}>Sign up</Text>}
+        style={({ pressed }) => [s.primaryBtnWrap, { opacity: pressed ? 0.9 : 1 }]}>
+        <LinearGradient colors={[P3, P1]} style={s.primaryBtn} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
+          {loading
+            ? <Ionicons name="sync" size={18} color="#fff" />
+            : <>
+                <Text style={s.primaryBtnText}>Create Account</Text>
+                <Ionicons name="arrow-forward" size={16} color="rgba(255,255,255,0.8)" />
+              </>}
+        </LinearGradient>
       </Pressable>
 
       <View style={s.divider}>
-        <View style={[s.dividerLine, { backgroundColor: '#E5E7EB' }]} />
-        <Text style={s.dividerText}>or continue with</Text>
-        <View style={[s.dividerLine, { backgroundColor: '#E5E7EB' }]} />
+        <View style={[s.dividerLine, { backgroundColor: '#EDE9FE' }]} />
+        <Text style={s.dividerText}>or</Text>
+        <View style={[s.dividerLine, { backgroundColor: '#EDE9FE' }]} />
       </View>
-      <Pressable style={[s.socialBtn, { borderColor: '#E5E7EB' }]} onPress={() => setError('Google sign-in is not available yet.')}>
+
+      <Pressable style={s.googleBtn} onPress={() => setError('Google sign-in is not available yet.')}>
         <View style={s.googleBadge}><Text style={s.googleG}>G</Text></View>
-        <Text style={s.socialBtnText}>Continue with Google</Text>
+        <Text style={s.googleBtnText}>Continue with Google</Text>
       </Pressable>
 
       <Text style={s.terms}>
-        By signing up you agree to our{' '}
-        <Text style={{ color: P, fontFamily: F.semibold }} onPress={() => router.push('/legal?type=terms' as never)}>Terms</Text>
+        By creating an account you agree to our{' '}
+        <Text style={{ color: P2, fontFamily: F.semibold }} onPress={() => router.push('/legal?type=terms' as never)}>Terms</Text>
         {' '}and{' '}
-        <Text style={{ color: P, fontFamily: F.semibold }} onPress={() => router.push('/legal?type=privacy-policy' as never)}>Privacy Policy</Text>.
+        <Text style={{ color: P2, fontFamily: F.semibold }} onPress={() => router.push('/legal?type=privacy-policy' as never)}>Privacy Policy</Text>.
       </Text>
     </View>
   );
@@ -287,8 +336,8 @@ function SignupForm() {
 export default function LoginScreen() {
   const { user }                  = useAuth();
   const { language, setLanguage } = useLanguage();
-  const C                         = useAppColors();
   const params                    = useLocalSearchParams<{ tab?: string; verified?: string }>();
+  const insets                    = useSafeAreaInsets();
   const [tab, setTab]             = useState<'login' | 'signup'>(params.tab === 'signup' ? 'signup' : 'login');
 
   useEffect(() => {
@@ -296,131 +345,175 @@ export default function LoginScreen() {
   }, [user]);
 
   return (
-    <SafeAreaView style={[s.root, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
+    <View style={[s.root, { backgroundColor: P1 }]}>
       <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
 
-          {/* App header */}
-          <View style={s.appHeader}>
-            <View style={s.appHeaderLeft}>
-              <LinearGradient colors={['#7C3AED', P]} style={s.logoBox} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
-                <Ionicons name="people" size={18} color="#fff" />
-              </LinearGradient>
-              <View>
-                <Text style={[s.appName, { color: C.text }]}>CreatorMarket</Text>
-                <Text style={[s.appTagline, { color: '#9CA3AF' }]}>Where creators and brands grow together</Text>
+        {/* ── Gradient hero ── */}
+        <LinearGradient colors={[P3, P2, P1]} style={[s.hero, { paddingTop: insets.top + 12 }]} start={{ x: 0.2, y: 0 }} end={{ x: 0.8, y: 1 }}>
+          {/* Decorative blobs */}
+          <View style={s.blob1} />
+          <View style={s.blob2} />
+          <View style={s.blob3} />
+
+          {/* Top row: logo + lang */}
+          <View style={s.heroTop}>
+            <View style={s.logoRow}>
+              <View style={s.logoBadge}>
+                <Ionicons name="people" size={16} color="#fff" />
               </View>
+              <Text style={s.logoText}>CreatorMarket</Text>
             </View>
             <View style={s.langRow}>
               {LANG_OPTIONS.map(({ lang, flag }) => (
-                <Pressable key={lang} style={[s.langBtn, { borderColor: '#E5E7EB' }, language === lang && { borderColor: P, backgroundColor: `${P}10` }]} onPress={() => setLanguage(lang)}>
+                <Pressable
+                  key={lang}
+                  style={[s.langBtn, language === lang && s.langBtnActive]}
+                  onPress={() => setLanguage(lang)}>
                   <Text style={s.langFlag}>{flag}</Text>
                 </Pressable>
               ))}
             </View>
           </View>
 
-          {/* Heading */}
-          <View style={s.headingWrap}>
-            <Text style={[s.heading, { color: C.text }]}>
-              {tab === 'login' ? 'Welcome back 👋' : 'Create your account ✨'}
+          {/* Hero heading */}
+          <View style={s.heroBody}>
+            <Text style={s.heroTitle}>
+              {tab === 'login' ? 'Welcome back 👋' : 'Join CreatorMarket ✨'}
             </Text>
-            <Text style={[s.headingSub, { color: '#6B7280' }]}>
+            <Text style={s.heroSub}>
               {tab === 'login'
-                ? 'Log in and continue collaborating and growing.'
-                : 'Join thousands of creators and brands.'}
+                ? 'Sign in and continue growing with creators and brands.'
+                : 'Connect with brands, grow your audience, get paid.'}
             </Text>
           </View>
+        </LinearGradient>
 
-          {/* Tab bar */}
-          <View style={[s.tabBar, { backgroundColor: '#F3F4F6' }]}>
-            {(['login', 'signup'] as const).map((t) => (
-              <Pressable key={t} style={[s.tabBtn, tab === t && s.tabBtnActive]} onPress={() => setTab(t)}>
-                <Text style={[s.tabBtnText, { color: tab === t ? P : '#6B7280' }, tab === t && { fontFamily: F.bold }]}>
-                  {t === 'login' ? 'Log in' : 'Create Account'}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
+        {/* ── White card ── */}
+        <View style={s.card}>
+          <ScrollView
+            contentContainerStyle={[s.cardScroll, { paddingBottom: insets.bottom + 24 }]}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}>
 
-          {/* Content */}
-          {tab === 'login' ? <LoginForm verified={params.verified} /> : <SignupForm />}
+            {/* Tab bar */}
+            <View style={s.tabBar}>
+              {(['login', 'signup'] as const).map((t) => (
+                <Pressable
+                  key={t}
+                  style={[s.tabBtn, tab === t && s.tabBtnActive]}
+                  onPress={() => setTab(t)}>
+                  {tab === t && (
+                    <LinearGradient colors={[P3, P1]} style={s.tabBtnGrad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} />
+                  )}
+                  <Text style={[s.tabBtnText, { color: tab === t ? '#fff' : '#6B7280' }]}>
+                    {t === 'login' ? 'Log in' : 'Create Account'}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
 
-          {/* Security footer */}
-          <View style={s.secureRow}>
-            <Ionicons name="shield-checkmark-outline" size={13} color="#9CA3AF" />
-            <Text style={s.secureText}>Secure  •  Your data is safe with us</Text>
-          </View>
+            {/* Form */}
+            {tab === 'login' ? <LoginForm verified={params.verified} /> : <SignupForm />}
 
-        </ScrollView>
+            {/* Footer */}
+            <View style={s.footer}>
+              <Ionicons name="shield-checkmark-outline" size={12} color="#A78BFA" />
+              <Text style={s.footerText}>Secure & encrypted  •  We never share your data</Text>
+            </View>
+
+          </ScrollView>
+        </View>
+
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const s = StyleSheet.create({
-  root:   { flex: 1 },
-  flex:   { flex: 1 },
-  scroll: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 12, paddingBottom: 32 },
+  root: { flex: 1 },
+  flex: { flex: 1 },
 
-  appHeader:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 },
-  appHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  logoBox:       { width: 38, height: 38, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
-  appName:       { fontSize: 15, fontWeight: '700', fontFamily: F.bold },
-  appTagline:    { fontSize: 10, fontFamily: F.regular, marginTop: 1 },
-  langRow:       { flexDirection: 'row', gap: 6 },
-  langBtn:       { width: 32, height: 32, borderRadius: 16, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center' },
-  langFlag:      { fontSize: 14 },
+  // Hero
+  hero:    { paddingHorizontal: 24, paddingBottom: 52, overflow: 'hidden' },
+  blob1:   { position: 'absolute', width: 240, height: 240, borderRadius: 120, backgroundColor: 'rgba(255,255,255,0.06)', top: -60, right: -60 },
+  blob2:   { position: 'absolute', width: 160, height: 160, borderRadius: 80,  backgroundColor: 'rgba(255,255,255,0.05)', bottom: 20, left: -50 },
+  blob3:   { position: 'absolute', width: 100, height: 100, borderRadius: 50,  backgroundColor: 'rgba(255,255,255,0.04)', top: 40, left: 80 },
 
-  headingWrap: { marginBottom: 20, gap: 4 },
-  heading:     { fontSize: 24, fontWeight: '800', fontFamily: F.extrabold },
-  headingSub:  { fontSize: 13, fontFamily: F.regular, lineHeight: 19 },
+  heroTop:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 },
+  logoRow:  { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  logoBadge:{ width: 32, height: 32, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' },
+  logoText: { fontSize: 16, fontWeight: '700', color: '#fff', fontFamily: F.bold },
+  langRow:  { flexDirection: 'row', gap: 6 },
+  langBtn:  { width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(255,255,255,0.12)', justifyContent: 'center', alignItems: 'center' },
+  langBtnActive: { backgroundColor: 'rgba(255,255,255,0.28)', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.5)' },
+  langFlag: { fontSize: 15 },
 
-  tabBar:      { flexDirection: 'row', borderRadius: 14, padding: 4, marginBottom: 20, gap: 2 },
-  tabBtn:      { flex: 1, height: 40, borderRadius: 11, justifyContent: 'center', alignItems: 'center' },
-  tabBtnActive:{ backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 3 },
-  tabBtnText:  { fontSize: 14, fontFamily: F.medium },
+  heroBody:  { gap: 8 },
+  heroTitle: { fontSize: 28, fontWeight: '800', color: '#fff', fontFamily: F.extrabold, lineHeight: 34 },
+  heroSub:   { fontSize: 14, color: 'rgba(255,255,255,0.72)', fontFamily: F.regular, lineHeight: 20 },
 
-  banner:     { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12, borderRadius: 10, borderWidth: 1, marginBottom: 16 },
+  // Card
+  card:       { flex: 1, backgroundColor: '#fff', borderTopLeftRadius: 32, borderTopRightRadius: 32, marginTop: -28, overflow: 'hidden' },
+  cardScroll: { paddingHorizontal: 24, paddingTop: 28 },
+
+  // Tab bar
+  tabBar:       { flexDirection: 'row', backgroundColor: '#F5F3FF', borderRadius: 14, padding: 4, marginBottom: 24, gap: 2 },
+  tabBtn:       { flex: 1, height: 42, borderRadius: 11, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
+  tabBtnActive: { shadowColor: P1, shadowOpacity: 0.2, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
+  tabBtnGrad:   { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 11 },
+  tabBtnText:   { fontSize: 14, fontFamily: F.semibold, zIndex: 1 },
+
+  // Banners
+  banner:     { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12, borderRadius: 12, borderWidth: 1, marginBottom: 16 },
   bannerText: { fontSize: 13, flex: 1, fontFamily: F.medium },
 
-  form:          { gap: 14, marginBottom: 16 },
-  fieldWrap:     { gap: 5 },
+  // Form
+  form:          { gap: 16, marginBottom: 20 },
+  fieldWrap:     { gap: 6 },
   fieldLabelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  fieldLabel:    { fontSize: 13, fontWeight: '600', fontFamily: F.semibold },
-  forgotText:    { fontSize: 13, fontFamily: F.semibold },
-  field:         { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 14, height: 50, gap: 10 },
-  fieldIcon:     { flexShrink: 0 },
-  fieldInput:    { flex: 1, fontSize: 15, fontFamily: F.regular },
-  eyeBtn:        { padding: 2 },
+  fieldLabel:    { fontSize: 13, fontWeight: '600', fontFamily: F.semibold, color: '#374151' },
+  forgotText:    { fontSize: 12, fontFamily: F.semibold, color: P2 },
+  field:         { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 14, paddingHorizontal: 4, height: 52, gap: 4, borderColor: '#E8E0F8' },
+  fieldFocused:  { shadowColor: P2, shadowOpacity: 0.12, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
+  fieldIconWrap: { width: 36, height: 36, borderRadius: 10, justifyContent: 'center', alignItems: 'center', marginLeft: 4 },
+  fieldInput:    { flex: 1, fontSize: 15, fontFamily: F.regular, color: '#111827' },
+  eyeBtn:        { paddingHorizontal: 12 },
   fieldErrRow:   { flexDirection: 'row', alignItems: 'center', gap: 4 },
   fieldErrText:  { fontSize: 11, color: '#EF4444', fontFamily: F.medium },
 
-  sectionLabel: { fontSize: 13, fontWeight: '600', fontFamily: F.semibold, marginBottom: 10 },
-  roleRow:      { flexDirection: 'row', gap: 12, marginBottom: 20 },
-  roleCard:     { flex: 1, borderRadius: 14, borderWidth: 1.5, padding: 14, gap: 8, alignItems: 'center' },
-  roleIconBox:  { width: 48, height: 48, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
-  roleLabel:    { fontSize: 13, fontWeight: '700', fontFamily: F.bold, textAlign: 'center' },
-  roleSub:      { fontSize: 11, color: '#6B7280', fontFamily: F.regular, textAlign: 'center', lineHeight: 15 },
+  // Role cards
+  sectionLabel:  { fontSize: 13, fontWeight: '600', fontFamily: F.semibold, color: '#374151', marginBottom: 12 },
+  roleRow:       { flexDirection: 'row', gap: 12, marginBottom: 20 },
+  roleCard:      { flex: 1, borderRadius: 18, borderWidth: 1.5, padding: 16, gap: 8, alignItems: 'center', position: 'relative' },
+  roleCardActive:{ shadowColor: P2, shadowOpacity: 0.18, shadowRadius: 14, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
+  roleIconBox:   { width: 52, height: 52, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
+  roleLabel:     { fontSize: 13, fontWeight: '700', fontFamily: F.bold, textAlign: 'center' },
+  roleSub:       { fontSize: 11, fontFamily: F.regular, textAlign: 'center', lineHeight: 15 },
+  roleCheck:     { position: 'absolute', top: 10, right: 10, width: 20, height: 20, borderRadius: 10, backgroundColor: P2, justifyContent: 'center', alignItems: 'center' },
 
-  rulesRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginTop: -4 },
+  // Password rules
+  rulesRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginTop: -8 },
   rulePill: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 8, borderWidth: 1, paddingHorizontal: 8, paddingVertical: 4 },
   ruleText: { fontSize: 11, fontFamily: F.medium },
 
-  primaryBtn:     { height: 52, borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 20 },
-  primaryBtnText: { fontSize: 16, fontWeight: '700', color: '#fff', fontFamily: F.bold },
+  // Button
+  primaryBtnWrap: { borderRadius: 14, marginBottom: 20, shadowColor: P1, shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
+  primaryBtn:     { height: 54, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  primaryBtnText: { fontSize: 16, fontWeight: '700', color: '#fff', fontFamily: F.bold, letterSpacing: 0.3 },
 
-  divider:     { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 },
-  dividerLine: { flex: 1, height: StyleSheet.hairlineWidth },
-  dividerText: { fontSize: 12, color: '#9CA3AF', fontFamily: F.regular },
+  // Divider
+  divider:     { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
+  dividerLine: { flex: 1, height: 1 },
+  dividerText: { fontSize: 12, color: '#A78BFA', fontFamily: F.medium },
 
-  socialBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, height: 50, borderRadius: 12, borderWidth: 1.5, marginBottom: 8 },
-  googleBadge:   { width: 22, height: 22, borderRadius: 11, backgroundColor: '#4285F4', justifyContent: 'center', alignItems: 'center' },
-  googleG:       { color: '#fff', fontSize: 12, fontWeight: '900', fontFamily: F.extrabold },
-  socialBtnText: { fontSize: 15, fontFamily: F.semibold },
+  // Google
+  googleBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, height: 52, borderRadius: 14, borderWidth: 1.5, borderColor: '#DDD6FE', backgroundColor: '#FAFAFE', marginBottom: 12 },
+  googleBadge:   { width: 24, height: 24, borderRadius: 12, backgroundColor: '#4285F4', justifyContent: 'center', alignItems: 'center' },
+  googleG:       { color: '#fff', fontSize: 13, fontWeight: '900', fontFamily: F.extrabold },
+  googleBtnText: { fontSize: 15, fontFamily: F.semibold, color: '#374151' },
 
-  terms:      { fontSize: 12, color: '#9CA3AF', lineHeight: 18, textAlign: 'center', fontFamily: F.regular, marginBottom: 8 },
+  terms:  { fontSize: 12, color: '#9CA3AF', lineHeight: 18, textAlign: 'center', fontFamily: F.regular, marginBottom: 8 },
 
-  secureRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, marginTop: 16 },
-  secureText: { fontSize: 11, color: '#9CA3AF', fontFamily: F.regular },
+  footer:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, marginTop: 12 },
+  footerText: { fontSize: 11, color: '#A78BFA', fontFamily: F.regular },
 });
