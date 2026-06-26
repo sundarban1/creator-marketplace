@@ -66,6 +66,7 @@ export default function HomeScreen() {
   const [dateTo, setDateTo] = useState<Date | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
+  const searchInputRef = useRef<TextInput>(null);
   const [tempPriceMin, setTempPriceMin] = useState(0);
   const [tempPriceMax, setTempPriceMax] = useState(SLIDER_MAX);
   const [tempLocation, setTempLocation] = useState<LocationFilter>([]);
@@ -296,16 +297,19 @@ export default function HomeScreen() {
         {/* ── Search bar ── */}
         <View style={styles.searchRow}>
           <View style={[styles.searchCard, searchFocused ? styles.searchCardFocused : { backgroundColor: C.surface, borderColor: C.border }]}>
-            <Ionicons name="search-outline" size={18} color={searchFocused ? C.brinjal1 : C.textSecondary} style={styles.searchIcon} />
-            <TextInput
-              style={[styles.searchInput, { color: C.text }]}
-              placeholder={t('creator.browse.searchPlaceholder')}
-              placeholderTextColor={C.textSecondary}
-              value={search}
-              onChangeText={setSearch}
-              onFocus={() => setSearchFocused(true)}
-              onBlur={() => setSearchFocused(false)}
-            />
+            <Pressable style={styles.searchInputArea} onPress={() => searchInputRef.current?.focus()}>
+              <Ionicons name="search-outline" size={18} color={searchFocused ? C.brinjal1 : C.textSecondary} style={styles.searchIcon} />
+              <TextInput
+                ref={searchInputRef}
+                style={[styles.searchInput, { color: C.text }]}
+                placeholder={t('creator.browse.searchPlaceholder')}
+                placeholderTextColor={C.textSecondary}
+                value={search}
+                onChangeText={setSearch}
+                onFocus={() => setSearchFocused(true)}
+                onBlur={() => setSearchFocused(false)}
+              />
+            </Pressable>
             <Pressable
               style={[styles.filterBtn, { backgroundColor: isFilterActive ? C.brinjal1 : C.primaryLight }]}
               onPress={openFilter}>
@@ -554,14 +558,15 @@ const styles = StyleSheet.create({
   searchRow: { paddingHorizontal: 20, paddingTop: 14, paddingBottom: 4 },
   searchCard: { flexDirection: 'row', alignItems: 'center', borderRadius: 16, paddingHorizontal: 14, height: 52, borderWidth: 1.5 },
   searchCardFocused: {
-    borderColor: '#4338CA',
+    borderColor: '#7C3AED',
     borderWidth: 2,
-    shadowColor: '#4338CA',
-    shadowOpacity: 0.15,
+    shadowColor: '#7C3AED',
+    shadowOpacity: 0.18,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 4 },
     elevation: 6,
   },
+  searchInputArea: { flex: 1, flexDirection: 'row', alignItems: 'center' },
   searchIcon: { marginRight: 8 },
   searchInput: { flex: 1, fontSize: 14, fontFamily: F.regular },
   filterBtn: { width: 36, height: 36, borderRadius: 11, justifyContent: 'center', alignItems: 'center' },
@@ -572,7 +577,7 @@ const styles = StyleSheet.create({
   retryText: { fontSize: 13, fontWeight: '700', marginLeft: 12, fontFamily: F.bold },
 
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginTop: 20, marginBottom: 12 },
-  sectionTitle: { fontSize: 15, fontFamily: F.semibold, letterSpacing: 0.2, opacity: 0.8 },
+  sectionTitle: { fontSize: 15, fontFamily: F.semibold, letterSpacing: 0.2 },
   seeAll: { fontSize: 13, fontFamily: F.medium, opacity: 0.7 },
 
   categoriesRow: { paddingHorizontal: 20, gap: 10, marginBottom: 0 },
@@ -580,8 +585,9 @@ const styles = StyleSheet.create({
     width: 78, height: 96, borderRadius: 18, overflow: 'hidden',
     alignItems: 'center', justifyContent: 'center', gap: 7,
     paddingHorizontal: 6,
-    shadowColor: '#000', shadowOpacity: 0.07, shadowRadius: 10,
-    shadowOffset: { width: 0, height: 3 }, elevation: 3,
+    shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 }, elevation: 2,
+    borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)',
   },
   catEmoji:  { fontSize: 34 },
   catLabel:  { fontSize: 10, fontFamily: F.semibold, lineHeight: 13, textAlign: 'center' },
@@ -591,8 +597,9 @@ const styles = StyleSheet.create({
     width: 78, height: 78, borderRadius: 18, overflow: 'hidden',
     alignItems: 'center', justifyContent: 'center', gap: 7,
     paddingHorizontal: 6,
-    shadowColor: '#000', shadowOpacity: 0.07, shadowRadius: 10,
-    shadowOffset: { width: 0, height: 3 }, elevation: 3,
+    shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 }, elevation: 2,
+    borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)',
   },
   platLabel: { fontSize: 10, fontFamily: F.medium, lineHeight: 13, textAlign: 'center' },
 

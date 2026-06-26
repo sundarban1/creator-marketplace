@@ -73,9 +73,9 @@ export function CampaignListItem({ campaign }: { campaign: Campaign }) {
       </View>
 
       {/* Apply button */}
-      <Pressable style={[styles.applyBtn, { backgroundColor: C.brinjal1 }]} onPress={goToDetail}>
-        <Ionicons name="send-outline" size={13} color="#fff" />
-        <Text style={styles.applyBtnText}>Apply</Text>
+      <Pressable style={[styles.applyBtn, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]} onPress={goToDetail}>
+        <Ionicons name="send-outline" size={13} color={C.brinjal1} />
+        <Text style={[styles.applyBtnText, { color: C.brinjal1 }]}>Apply</Text>
       </Pressable>
     </Pressable>
   );
@@ -88,11 +88,13 @@ const styles = StyleSheet.create({
     padding: 14,
     gap: 12,
     alignItems: 'center',
-    shadowColor: '#4F46E5',
-    shadowOpacity: 0.07,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.06)',
   },
   thumbWrap: { flexShrink: 0, alignItems: 'center', gap: 6 },
   listThumb: {
@@ -124,8 +126,9 @@ const styles = StyleSheet.create({
   typeBadgeText: { fontSize: 11, fontWeight: '700', fontFamily: F.bold },
   applyBtn: {
     flexShrink: 0, alignSelf: 'center',
-    borderRadius: 12, paddingVertical: 10, paddingHorizontal: 12,
-    alignItems: 'center', justifyContent: 'center', gap: 5,
+    borderRadius: 20, paddingVertical: 8, paddingHorizontal: 14,
+    alignItems: 'center', justifyContent: 'center', gap: 4,
+    borderWidth: 1.5,
   },
-  applyBtnText: { color: '#fff', fontSize: 11, fontFamily: F.bold },
+  applyBtnText: { fontSize: 11, fontFamily: F.bold },
 });

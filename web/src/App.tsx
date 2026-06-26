@@ -4,6 +4,7 @@ import { CategoriesProvider } from './context/CategoriesContext';
 import { PlatformsProvider } from './context/PlatformsContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { DashboardLayout } from './layouts/DashboardLayout';
+import { LandingPage } from './pages/LandingPage';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
 import { Users } from './pages/Users';
@@ -31,7 +32,8 @@ export default function App() {
         <CategoriesProvider>
           <PlatformsProvider>
             <Routes>
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/admin" element={<Navigate to="/dashboard" replace />} />
               <Route path="/login" element={<Login />} />
               <Route element={<ProtectedRoute />}>
                 <Route element={<DashboardLayout />}>

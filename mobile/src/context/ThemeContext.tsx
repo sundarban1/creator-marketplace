@@ -3,15 +3,15 @@ import { useColorScheme } from 'react-native';
 import { COLORS } from '@/utilities/constants';
 
 export const DARK_COLORS: typeof COLORS = {
-  brinjal1:    '#6366F1',
-  brinjal2:    '#4338CA',
-  primaryLight:'#1E1B4B',
+  brinjal1:    '#7C6FCD',
+  brinjal2:    '#5B4FC8',
+  primaryLight:'#2D2B52',
   accent:      '#FB923C',
   accentLight: '#431407',
-  background:  '#0A0A12',
-  surface:     '#14141E',
-  border:      '#252535',
-  borderDark:  '#333348',
+  background:  '#12121E',
+  surface:     '#1E1E30',
+  border:      '#2E2E45',
+  borderDark:  '#3D3D58',
   text:        '#F1F5F9',
   textSecondary:'#94A3B8',
   active:      '#34D399',

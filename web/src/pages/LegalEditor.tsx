@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Pencil, Trash2, Eye, EyeOff, Save, X } from 'lucide-react';
-import { api, LegalSection } from '../lib/api';
+import { api } from '../lib/api';
+import type { LegalSection } from '../lib/api';
 
 type DocType = 'PRIVACY_POLICY' | 'TERMS' | 'GUIDELINES';
 

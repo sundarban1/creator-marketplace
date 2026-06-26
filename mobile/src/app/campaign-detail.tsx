@@ -543,15 +543,6 @@ export default function CampaignDetailScreen() {
             {campaign.campaignType !== 'OPEN_EVENT' && (
               <Text style={[s.budget, { color: C.brinjal1 }]}>{campaign.budget}</Text>
             )}
-            {campaign.campaignType === 'OPEN_EVENT' ? (
-              <View style={[s.typeBadge, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}>
-                <Text style={[s.typeBadgeText, { color: '#059669' }]}>✓ Free Event</Text>
-              </View>
-            ) : (
-              <View style={[s.typeBadge, { backgroundColor: '#EEF2FF', borderColor: '#C7D2FE' }]}>
-                <Text style={[s.typeBadgeText, { color: '#4F46E5' }]}>$ Paid Event</Text>
-              </View>
-            )}
             <View style={[s.proposalsBadge, { backgroundColor: C.primaryLight, marginLeft: 'auto' }]}>
               <Text style={[s.proposalsTxt, { color: C.brinjal1 }]}>
                 {campaign.proposals} {campaign.proposals === 1 ? 'proposal' : 'proposals'}
@@ -621,15 +612,13 @@ export default function CampaignDetailScreen() {
       </ScrollView>
 
       {/* Sticky CTA */}
-      <View style={[s.ctaBar, { backgroundColor: C.surface, borderTopColor: C.border }]}>
-        <View style={s.ctaInfo}>
-          {campaign.campaignType === 'OPEN_EVENT' ? (
-            <Text style={[s.ctaBudget, { color: '#059669' }]}>Free Event</Text>
-          ) : (
+      <View style={[s.ctaBar, { backgroundColor: C.surface, borderTopColor: C.border, justifyContent: isBusiness ? 'space-between' : 'flex-end' }]}>
+        {isBusiness && (
+          <View style={s.ctaInfo}>
             <Text style={[s.ctaBudget, { color: C.text }]}>{campaign.budget}</Text>
-          )}
-          {isBusiness && <Text style={[s.ctaLabel, { color: C.textSecondary }]}>Budget range</Text>}
-        </View>
+            <Text style={[s.ctaLabel, { color: C.textSecondary }]}>Budget range</Text>
+          </View>
+        )}
         {isBusiness ? (
           <Pressable
             style={({ pressed }) => [s.applyBtn, { backgroundColor: isEditLocked ? C.border : C.brinjal1, shadowColor: isEditLocked ? 'transparent' : C.brinjal1 }, pressed && !isEditLocked && { opacity: 0.88 }]}
