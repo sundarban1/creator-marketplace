@@ -29,7 +29,19 @@ type Application = {
   creator: { fullName: string; avatarUrl: string | null; location: string | null };
 };
 
+type IoniconName = keyof typeof Ionicons.glyphMap;
+
 const FILTERS = ['All', 'Active', 'Draft', 'Closed'] as const;
+
+const EMPTY_CFG: Record<typeof FILTERS[number], {
+  icon: IoniconName; iconColor: string; iconBg: string;
+  title: string; sub: string; showCreate: boolean;
+}> = {
+  All:    { icon: 'megaphone-outline',    iconColor: '#7c3aed', iconBg: '#f5f3ff', title: 'No events yet',      sub: 'Post your first event and start connecting with creators.',       showCreate: true  },
+  Active: { icon: 'flash-outline',        iconColor: '#16A34A', iconBg: '#ECFDF5', title: 'No active events',   sub: 'Create an event to start finding creators for your brand.',       showCreate: true  },
+  Draft:  { icon: 'create-outline',       iconColor: '#D97706', iconBg: '#FEF3C7', title: 'No drafts saved',    sub: "Events you start but don't publish will appear here.",            showCreate: true  },
+  Closed: { icon: 'lock-closed-outline',  iconColor: '#6B7280', iconBg: '#F3F4F6', title: 'No closed events',   sub: 'Events that have ended or been closed will show up here.',        showCreate: false },
+};
 
 const STATUS_CFG = {
   active: { bg: '#EEF9F3', color: '#16A34A', label: 'Active' },
@@ -187,21 +199,43 @@ export default function CampaignsScreen() {
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brinjal1} />}>
           {shown.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyIcon}>📋</Text>
-              <Text style={[styles.emptyTitle, { color: C.text }]}>
-                {activeFilter === 'All' ? t('campaigns.noCampaigns') : `${t('campaigns.' + activeFilter.toLowerCase())} events`}
-              </Text>
-              <Text style={[styles.emptySub, { color: C.textSecondary }]}>
-                {activeFilter === 'All' ? t('campaigns.createFirst') : t('explore.adjustFilters')}
-              </Text>
-              {activeFilter === 'All' && (
-                <Pressable
-                  style={[styles.emptyBtn, { backgroundColor: C.brinjal1 }]}
-                  onPress={() => router.push('/create-campaign')}>
-                  <Text style={styles.emptyBtnText}>{t('campaign.title')}</Text>
-                </Pressable>
-              )}
+            <View style={styles.emptyWrap}>
+              <View style={[styles.emptyCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+                {/* Decorative dots */}
+                <View style={[styles.emptyDot1, { backgroundColor: EMPTY_CFG[activeFilter].iconBg }]} />
+                <View style={[styles.emptyDot2, { backgroundColor: EMPTY_CFG[activeFilter].iconBg }]} />
+
+                {/* Icon */}
+                <View style={[styles.emptyIconCircle, { backgroundColor: EMPTY_CFG[activeFilter].iconBg }]}>
+                  <Ionicons
+                    name={EMPTY_CFG[activeFilter].icon}
+                    size={36}
+                    color={EMPTY_CFG[activeFilter].iconColor}
+                  />
+                </View>
+
+                {/* Text */}
+                <Text style={[styles.emptyTitle, { color: C.text }]}>{EMPTY_CFG[activeFilter].title}</Text>
+                <Text style={[styles.emptySub, { color: C.textSecondary }]}>{EMPTY_CFG[activeFilter].sub}</Text>
+
+                {/* Create button */}
+                {EMPTY_CFG[activeFilter].showCreate && (
+                  <Pressable
+                    style={[styles.emptyCreateBtn, { backgroundColor: EMPTY_CFG[activeFilter].iconColor }]}
+                    onPress={() => router.push('/create-campaign')}>
+                    <Ionicons name="add-circle-outline" size={16} color="#fff" />
+                    <Text style={styles.emptyCreateBtnText}>Create New Event</Text>
+                  </Pressable>
+                )}
+
+                {/* Or switch tab hint for non-All filters */}
+                {activeFilter !== 'All' && (
+                  <Pressable onPress={() => setActiveFilter('All')} style={styles.emptySwitchRow}>
+                    <Text style={[styles.emptySwitchText, { color: C.textSecondary }]}>View all events  </Text>
+                    <Text style={[styles.emptySwitchLink, { color: C.brinjal1 }]}>See All →</Text>
+                  </Pressable>
+                )}
+              </View>
             </View>
           ) : (
             shown.map((c) => {
@@ -465,12 +499,24 @@ const styles = StyleSheet.create({
   list: { paddingHorizontal: 20, gap: 12, paddingBottom: 40 },
   listEmpty: { flexGrow: 1 },
 
-  emptyState: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 8, paddingHorizontal: 32 },
-  emptyIcon: { fontSize: 48, marginBottom: 4 },
-  emptyTitle: { fontSize: 17, fontWeight: '700', textAlign: 'center', fontFamily: F.bold },
-  emptySub: { fontSize: 13, textAlign: 'center', lineHeight: 20, fontFamily: F.regular },
-  emptyBtn: { marginTop: 12, borderRadius: 12, paddingHorizontal: 24, paddingVertical: 12 },
-  emptyBtnText: { color: '#fff', fontWeight: '700', fontSize: 14, fontFamily: F.bold },
+  emptyWrap: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24, paddingVertical: 16 },
+  emptyCard: {
+    width: '100%', borderRadius: 24, borderWidth: 1,
+    alignItems: 'center', paddingHorizontal: 28, paddingVertical: 36, gap: 10,
+    overflow: 'hidden',
+    shadowColor: '#4F46E5', shadowOpacity: 0.06, shadowRadius: 16,
+    shadowOffset: { width: 0, height: 4 }, elevation: 3,
+  },
+  emptyDot1: { position: 'absolute', width: 120, height: 120, borderRadius: 60, top: -40, right: -30, opacity: 0.5 },
+  emptyDot2: { position: 'absolute', width: 80, height: 80, borderRadius: 40, bottom: -25, left: -20, opacity: 0.4 },
+  emptyIconCircle: { width: 80, height: 80, borderRadius: 40, justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
+  emptyTitle: { fontSize: 18, fontWeight: '800', textAlign: 'center', fontFamily: F.extrabold },
+  emptySub: { fontSize: 13, textAlign: 'center', lineHeight: 20, fontFamily: F.regular, paddingHorizontal: 8 },
+  emptyCreateBtn: { flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 10, borderRadius: 14, paddingHorizontal: 22, paddingVertical: 12 },
+  emptyCreateBtnText: { color: '#fff', fontWeight: '700', fontSize: 14, fontFamily: F.bold },
+  emptySwitchRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
+  emptySwitchText: { fontSize: 12, fontFamily: F.regular },
+  emptySwitchLink: { fontSize: 12, fontWeight: '700', fontFamily: F.bold },
 
   card: {
     borderRadius: 18,
