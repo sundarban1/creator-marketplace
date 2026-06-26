@@ -14,8 +14,8 @@ const CONV_INCLUDE_BUSINESS = {
 };
 
 const CONV_INCLUDE_FULL = {
-  creator:  { select: { fullName: true, avatarUrl: true } },
-  business: { select: { businessName: true, logoUrl: true } },
+  creator:  { select: { fullName: true, avatarUrl: true, userId: true } },
+  business: { select: { businessName: true, logoUrl: true, userId: true } },
   campaign: { select: { title: true } },
 };
 

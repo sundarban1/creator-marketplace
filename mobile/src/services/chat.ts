@@ -31,7 +31,7 @@ function toConversation(api: ApiConversation, currentUserRole: 'CREATOR' | 'BUSI
   };
 }
 
-function toMessage(api: ApiMessage): Message {
+export function toMessage(api: ApiMessage): Message {
   return {
     id:             api.id,
     conversationId: api.conversationId,

@@ -18,7 +18,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
-import { chatService } from '@/services/chat';
+import { chatService, toMessage } from '@/services/chat';
+import { getSocket } from '@/lib/socket';
+import type { ApiMessage } from '@/lib/api';
 import { F } from '@/utilities/constants';
 import type { Message } from '@/types';
 
@@ -76,13 +78,11 @@ export default function BusinessChatRoomScreen() {
   const [sending, setSending] = useState(false);
   const listRef   = useRef<FlatList>(null);
   const isSending = useRef(false);
-  const pollRef   = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const personName  = name ?? 'Chat';
   const personColor = avatarColor(personName);
 
   useEffect(() => {
-    if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
     setMessages([]);
     setText('');
 
@@ -98,19 +98,22 @@ export default function BusinessChatRoomScreen() {
 
     if (convStatus === 'ACCEPTED') {
       chatService.markSeen(id).then(() => messagingEvents.refresh()).catch(() => null);
-      pollRef.current = setInterval(async () => {
-        const msgs = await chatService.getMessages(id).catch(() => null);
-        if (!msgs) return;
-        setMessages((prev) => {
-          if (msgs.length > prev.length) {
-            chatService.markSeen(id).then(() => messagingEvents.refresh()).catch(() => null);
-          }
-          return msgs;
-        });
-      }, 4000);
     }
+  }, [id]);
 
-    return () => { if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; } };
+  // Real-time: append incoming messages via WebSocket instead of polling
+  useEffect(() => {
+    const socket = getSocket();
+    if (!socket) return;
+    const handler = (data: { conversationId: string; message: ApiMessage }) => {
+      if (data.conversationId !== id) return;
+      const msg = toMessage(data.message);
+      setMessages((prev) => prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]);
+      setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 50);
+      chatService.markSeen(id).then(() => messagingEvents.refresh()).catch(() => null);
+    };
+    socket.on('message:new', handler);
+    return () => { socket.off('message:new', handler); };
   }, [id]);
 
   async function handleSend() {

@@ -1902,81 +1902,14 @@ export default function CreatorSettingsScreen() {
   // ── Section: Security ─────────────────────────────────────────
 
   function renderSecurity() {
-    // Phone verification inline UI
-    if (phoneSubPage === 'input') {
-      return (
-        <>
-          <SectionHeader title="Verify Phone Number" />
-          <Card>
-            <View style={styles.inlineForm}>
-              <View style={styles.formField}>
-                <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>Phone Number</Text>
-                <View style={[styles.pwRow, { backgroundColor: C.background, borderColor: C.border }]}>
-                  <TextInput
-                    style={[styles.pwInput, { color: C.text }]}
-                    value={phoneNumber}
-                    onChangeText={setPhoneNumber}
-                    placeholder="+977 98XXXXXXXX"
-                    placeholderTextColor={C.textSecondary}
-                    keyboardType="phone-pad"
-                    autoCorrect={false}
-                  />
-                </View>
-              </View>
-              <Pressable
-                style={[styles.saveBtn, { backgroundColor: C.brinjal1, opacity: (phoneNumber.trim() && !phoneLoading) ? 1 : 0.45 }]}
-                onPress={handleRequestPhoneOtp}
-                disabled={phoneLoading || !phoneNumber.trim()}>
-                <Text style={styles.saveBtnText}>{phoneLoading ? 'Sending…' : 'Send Verification Code'}</Text>
-              </Pressable>
-              <Pressable onPress={() => { setPhoneSubPage(null); setPhoneNumber(''); }}>
-                <Text style={[styles.cancelBtnText, { color: C.textSecondary, textAlign: 'center' }]}>Cancel</Text>
-              </Pressable>
-            </View>
-          </Card>
-        </>
-      );
-    }
-
-    if (phoneSubPage === 'otp') {
-      return (
-        <>
-          <SectionHeader title="Enter Verification Code" />
-          <View style={[styles.hintCard, { backgroundColor: C.primaryLight }]}>
-            <Text style={[styles.hintText, { color: C.brinjal1 }]}>A 6-digit code was sent to {phoneNumber}.</Text>
-          </View>
-          <Card>
-            <View style={styles.inlineForm}>
-              <View style={styles.formField}>
-                <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>Verification Code</Text>
-                <View style={[styles.pwRow, { backgroundColor: C.background, borderColor: C.border }]}>
-                  <TextInput
-                    style={[styles.pwInput, { color: C.text, letterSpacing: 6, fontSize: 20 }]}
-                    value={phoneOtp}
-                    onChangeText={(t) => setPhoneOtp(t.replace(/\D/g, '').slice(0, 6))}
-                    placeholder="------"
-                    placeholderTextColor={C.textSecondary}
-                    keyboardType="number-pad"
-                    maxLength={6}
-                  />
-                </View>
-              </View>
-              <Pressable
-                style={[styles.saveBtn, { backgroundColor: C.brinjal1, opacity: (phoneOtp.length === 6 && !phoneLoading) ? 1 : 0.45 }]}
-                onPress={handleVerifyPhoneOtp}
-                disabled={phoneLoading || phoneOtp.length < 6}>
-                <Text style={styles.saveBtnText}>{phoneLoading ? 'Verifying…' : 'Verify'}</Text>
-              </Pressable>
-              <Pressable onPress={() => setPhoneSubPage('input')}>
-                <Text style={[styles.cancelBtnText, { color: C.brinjal1, textAlign: 'center' }]}>Resend Code</Text>
-              </Pressable>
-            </View>
-          </Card>
-        </>
-      );
-    }
-
     const isEmailVerified = emailVerified === true;
+
+    function closePhone() {
+      setPhoneSubPage(null);
+      setPhoneNumber('');
+      setPhoneOtp('');
+    }
+
     return (
       <>
         <SectionHeader title="Login & Password" />
@@ -1984,8 +1917,10 @@ export default function CreatorSettingsScreen() {
           <NavRow icon="🔑" label="Change Password" onPress={() => setSubPage('change-password')} />
           <NavRow icon="📱" label="Logout All Devices" onPress={handleLogoutAll} isLast />
         </Card>
+
         <SectionHeader title="Verification" />
         <Card>
+          {/* Email row */}
           <View style={[styles.row, { borderBottomWidth: 1, borderBottomColor: C.border }]}>
             <View style={[styles.navIonIconWrap, { backgroundColor: '#0891B218' }]}>
               <Ionicons name="mail-outline" size={18} color="#0891B2" />
@@ -1999,18 +1934,92 @@ export default function CreatorSettingsScreen() {
               <View style={[styles.soonBadge, { backgroundColor: '#FEF3C7' }]}><Text style={[styles.badgeText, { color: '#D97706' }]}>Not Verified</Text></View>
             )}
           </View>
-          <Pressable style={[styles.row, { borderBottomWidth: 1, borderBottomColor: C.border }]} onPress={() => setPhoneSubPage('input')}>
+
+          {/* Phone row */}
+          <Pressable
+            style={[styles.row, { borderBottomWidth: phoneSubPage ? 1 : 1, borderBottomColor: C.border }]}
+            onPress={() => { if (!phoneSubPage) setPhoneSubPage('input'); }}>
             <View style={[styles.navIonIconWrap, { backgroundColor: '#10B98118' }]}>
               <Ionicons name="call-outline" size={18} color="#10B981" />
             </View>
             <Text style={[styles.rowLabel, { color: C.text }]}>Phone Number</Text>
-            <View style={styles.navRight}>
-              <View style={[styles.chip, { borderColor: C.brinjal1, backgroundColor: C.primaryLight, paddingHorizontal: 8, paddingVertical: 2 }]}>
-                <Text style={[styles.chipText, { color: C.brinjal1, fontSize: 12 }]}>Verify</Text>
+            {!phoneSubPage && (
+              <View style={styles.navRight}>
+                <View style={[styles.chip, { borderColor: C.brinjal1, backgroundColor: C.primaryLight, paddingHorizontal: 8, paddingVertical: 2 }]}>
+                  <Text style={[styles.chipText, { color: C.brinjal1, fontSize: 12 }]}>Verify</Text>
+                </View>
+                <Text style={[styles.navArrow, { color: C.textSecondary }]}>›</Text>
               </View>
-              <Text style={[styles.navArrow, { color: C.textSecondary }]}>›</Text>
-            </View>
+            )}
           </Pressable>
+
+          {/* Inline: enter phone number */}
+          {phoneSubPage === 'input' && (
+            <View style={[styles.inlinePhonePanel, { borderBottomColor: C.border, backgroundColor: C.background }]}>
+              <View style={styles.inlinePhonePanelHeader}>
+                <Text style={[styles.inlinePhonePanelTitle, { color: C.text }]}>Enter your phone number</Text>
+                <Pressable onPress={closePhone} hitSlop={10}>
+                  <Ionicons name="close-circle" size={22} color={C.textSecondary} />
+                </Pressable>
+              </View>
+              <View style={[styles.pwRow, { backgroundColor: C.surface, borderColor: C.border }]}>
+                <TextInput
+                  style={[styles.pwInput, { color: C.text }]}
+                  value={phoneNumber}
+                  onChangeText={setPhoneNumber}
+                  placeholder="+977 98XXXXXXXX"
+                  placeholderTextColor={C.textSecondary}
+                  keyboardType="phone-pad"
+                  autoCorrect={false}
+                  autoFocus
+                />
+              </View>
+              <Pressable
+                style={[styles.saveBtn, { backgroundColor: C.brinjal1, opacity: (phoneNumber.trim() && !phoneLoading) ? 1 : 0.45 }]}
+                onPress={handleRequestPhoneOtp}
+                disabled={phoneLoading || !phoneNumber.trim()}>
+                <Text style={styles.saveBtnText}>{phoneLoading ? 'Sending…' : 'Send Verification Code'}</Text>
+              </Pressable>
+            </View>
+          )}
+
+          {/* Inline: enter OTP */}
+          {phoneSubPage === 'otp' && (
+            <View style={[styles.inlinePhonePanel, { borderBottomColor: C.border, backgroundColor: C.background }]}>
+              <View style={styles.inlinePhonePanelHeader}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.inlinePhonePanelTitle, { color: C.text }]}>Enter verification code</Text>
+                  <Text style={[styles.inlinePhonePanelSub, { color: C.textSecondary }]}>Sent to {phoneNumber}</Text>
+                </View>
+                <Pressable onPress={closePhone} hitSlop={10}>
+                  <Ionicons name="close-circle" size={22} color={C.textSecondary} />
+                </Pressable>
+              </View>
+              <View style={[styles.pwRow, { backgroundColor: C.surface, borderColor: C.border }]}>
+                <TextInput
+                  style={[styles.pwInput, { color: C.text, letterSpacing: 8, fontSize: 22, textAlign: 'center' }]}
+                  value={phoneOtp}
+                  onChangeText={(t) => setPhoneOtp(t.replace(/\D/g, '').slice(0, 6))}
+                  placeholder="------"
+                  placeholderTextColor={C.textSecondary}
+                  keyboardType="number-pad"
+                  maxLength={6}
+                  autoFocus
+                />
+              </View>
+              <Pressable
+                style={[styles.saveBtn, { backgroundColor: C.brinjal1, opacity: (phoneOtp.length === 6 && !phoneLoading) ? 1 : 0.45 }]}
+                onPress={handleVerifyPhoneOtp}
+                disabled={phoneLoading || phoneOtp.length < 6}>
+                <Text style={styles.saveBtnText}>{phoneLoading ? 'Verifying…' : 'Verify'}</Text>
+              </Pressable>
+              <Pressable onPress={() => { setPhoneOtp(''); setPhoneSubPage('input'); }} style={{ alignItems: 'center', paddingTop: 4 }}>
+                <Text style={[styles.cancelBtnText, { color: C.brinjal1 }]}>Resend Code</Text>
+              </Pressable>
+            </View>
+          )}
+
+          {/* Creator Badge row */}
           <View style={styles.row}>
             <View style={[styles.navIonIconWrap, { backgroundColor: '#F59E0B18' }]}>
               <Ionicons name="ribbon-outline" size={18} color="#F59E0B" />
@@ -2021,6 +2030,7 @@ export default function CreatorSettingsScreen() {
             </View>
           </View>
         </Card>
+
         <View style={[styles.hintCard, { backgroundColor: C.primaryLight }]}>
           <Text style={[styles.hintText, { color: C.brinjal1 }]}>Verified creators get higher visibility in event matches.</Text>
         </View>
@@ -2429,6 +2439,11 @@ const styles = StyleSheet.create({
   saveBtnText: { fontSize: 14, fontWeight: '700', color: '#fff', fontFamily: F.bold },
   cancelBtn: { borderRadius: 10, paddingVertical: 11, alignItems: 'center' },
   cancelBtnText: { fontSize: 14, fontWeight: '600', fontFamily: F.semibold },
+
+  inlinePhonePanel: { paddingHorizontal: 16, paddingVertical: 14, gap: 12, borderBottomWidth: 1 },
+  inlinePhonePanelHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  inlinePhonePanelTitle: { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
+  inlinePhonePanelSub: { fontSize: 12, fontFamily: F.regular, marginTop: 2 },
 
   pwRow: { flexDirection: 'row', alignItems: 'center', borderRadius: 10, borderWidth: 1.5, paddingHorizontal: 12 },
   pwInput: { flex: 1, fontSize: 14, paddingVertical: 11, fontFamily: F.regular },

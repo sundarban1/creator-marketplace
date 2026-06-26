@@ -104,7 +104,7 @@ export default function FavoriteBusinessesScreen() {
 
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
-      <LinearGradient colors={['#F97316', '#EF4444', '#EC4899']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.gradientHeader}>
+      <LinearGradient colors={['#312e81', '#4f46e5', '#8b5cf6']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.gradientHeader}>
         <View style={[s.decCircle1, { backgroundColor: 'rgba(255,255,255,0.1)' }]} />
         <View style={[s.decCircle2, { backgroundColor: 'rgba(255,255,255,0.07)' }]} />
         <View style={s.header}>

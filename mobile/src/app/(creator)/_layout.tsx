@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ColorValue, Platform, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '@/context/AuthContext';
 import { DrawerContext } from '@/context/DrawerContext';
@@ -9,6 +9,7 @@ import { DrawerMenu } from '@/features/creator/components/DrawerMenu';
 import { chatService } from '@/services/chat';
 import { messagingEvents } from '@/lib/messagingEvents';
 import { useNotificationBadge } from '@/context/NotificationContext';
+import { getSocket } from '@/lib/socket';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
@@ -54,18 +55,20 @@ export default function CreatorLayout() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [badgeCount, setBadgeCount]   = useState(0);
   const { badgeCount: notifBadge } = useNotificationBadge();
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     function fetchBadge() {
       chatService.getBadgeCount().then((r) => setBadgeCount(r.count)).catch(() => null);
     }
     fetchBadge();
-    pollRef.current = setInterval(fetchBadge, 30000);
     const unsub = messagingEvents.subscribe(fetchBadge);
+    const socket = getSocket();
+    socket?.on('message:new', fetchBadge);
+    socket?.on('conversation:update', fetchBadge);
     return () => {
-      if (pollRef.current) clearInterval(pollRef.current);
       unsub();
+      socket?.off('message:new', fetchBadge);
+      socket?.off('conversation:update', fetchBadge);
     };
   }, []);
 

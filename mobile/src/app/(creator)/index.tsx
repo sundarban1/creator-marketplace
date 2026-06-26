@@ -54,6 +54,7 @@ export default function HomeScreen() {
   const [fetchError, setFetchError] = useState('');
 
   const [search, setSearch] = useState('');
+  const [activeSearch, setActiveSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
   const [activeFilterTab, setActiveFilterTab] = useState(0); // 0 = New
   const [showBanner, setShowBanner] = useState(true);
@@ -66,7 +67,8 @@ export default function HomeScreen() {
   const [dateTo, setDateTo] = useState<Date | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
-  const searchInputRef = useRef<TextInput>(null);
+  const searchInputRef  = useRef<TextInput>(null);
+  const searchDebounce  = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [tempPriceMin, setTempPriceMin] = useState(0);
   const [tempPriceMax, setTempPriceMax] = useState(SLIDER_MAX);
   const [tempLocation, setTempLocation] = useState<LocationFilter>([]);
@@ -75,6 +77,7 @@ export default function HomeScreen() {
 
   async function fetchCampaigns(
     overrides: {
+      search?: string;
       category?: string;
       platform?: string;
       priceMin?: number;
@@ -89,6 +92,7 @@ export default function HomeScreen() {
     if (showLoader) setLoading(true);
     setFetchError('');
 
+    const q    = overrides.search    !== undefined ? overrides.search    : activeSearch;
     const cat   = overrides.category  !== undefined ? overrides.category  : activeCategory;
     const plat  = overrides.platform  !== undefined ? overrides.platform  : activePlatform;
     const pMin  = overrides.priceMin  !== undefined ? overrides.priceMin  : priceMin;
@@ -99,6 +103,7 @@ export default function HomeScreen() {
 
     try {
       const { campaigns: data } = await campaignService.list({
+        search:       q    || undefined,
         category:     cat  !== 'All' ? cat  : undefined,
         platform:     plat !== 'All' ? plat : undefined,
         minBudget:    pMin > 0 ? pMin : undefined,
@@ -218,14 +223,9 @@ export default function HomeScreen() {
 
   const featured = campaigns.filter((c) => c.isFeatured);
 
-  // Category, budget, and deadline are filtered server-side.
-  // Client-side: search text, location, and quick-tab filters.
+  // Category, budget, deadline, and search are filtered server-side.
+  // Client-side: location and quick-tab filters only.
   const filteredList = campaigns.filter((c) => {
-    const matchSearch =
-      !search ||
-      c.title.toLowerCase().includes(search.toLowerCase()) ||
-      c.brand.toLowerCase().includes(search.toLowerCase());
-
     const matchLocation =
       locationFilter.length === 0 ||
       locationFilter.some((l) =>
@@ -248,7 +248,7 @@ export default function HomeScreen() {
       }
     }
 
-    return matchSearch && matchLocation && matchTab;
+    return matchLocation && matchTab;
   });
 
   return (
@@ -296,27 +296,46 @@ export default function HomeScreen() {
 
         {/* ── Search bar ── */}
         <View style={styles.searchRow}>
-          <View style={[styles.searchCard, searchFocused ? styles.searchCardFocused : { backgroundColor: C.surface, borderColor: C.border }]}>
-            <Pressable style={styles.searchInputArea} onPress={() => searchInputRef.current?.focus()}>
-              <Ionicons name="search-outline" size={18} color={searchFocused ? C.brinjal1 : C.textSecondary} style={styles.searchIcon} />
-              <TextInput
-                ref={searchInputRef}
-                style={[styles.searchInput, { color: C.text }]}
-                placeholder={t('creator.browse.searchPlaceholder')}
-                placeholderTextColor={C.textSecondary}
-                value={search}
-                onChangeText={setSearch}
-                onFocus={() => setSearchFocused(true)}
-                onBlur={() => setSearchFocused(false)}
-              />
-            </Pressable>
+          <Pressable
+            style={[styles.searchCard, searchFocused ? styles.searchCardFocused : { backgroundColor: C.surface, borderColor: C.border }]}
+            onPress={() => searchInputRef.current?.focus()}>
+            <Ionicons name="search-outline" size={18} color={searchFocused ? C.brinjal1 : C.textSecondary} style={styles.searchIcon} />
+            <TextInput
+              ref={searchInputRef}
+              style={[styles.searchInput, { color: C.text }]}
+              placeholder={t('creator.browse.searchPlaceholder')}
+              placeholderTextColor={C.textSecondary}
+              value={search}
+              onChangeText={(text) => {
+                setSearch(text);
+                if (searchDebounce.current) clearTimeout(searchDebounce.current);
+                if (text.length >= 3) {
+                  searchDebounce.current = setTimeout(() => {
+                    setActiveSearch(text);
+                    void fetchCampaigns({ search: text });
+                  }, 400);
+                } else if (!text && activeSearch) {
+                  setActiveSearch('');
+                  void fetchCampaigns({ search: '' });
+                }
+              }}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setSearchFocused(false)}
+              returnKeyType="search"
+              onSubmitEditing={() => {
+                searchInputRef.current?.blur();
+                if (searchDebounce.current) clearTimeout(searchDebounce.current);
+                setActiveSearch(search);
+                void fetchCampaigns({ search });
+              }}
+            />
             <Pressable
               style={[styles.filterBtn, { backgroundColor: isFilterActive ? C.brinjal1 : C.primaryLight }]}
               onPress={openFilter}>
               <Ionicons name="options-outline" size={18} color={isFilterActive ? '#fff' : C.brinjal1} />
               {isFilterActive && <View style={styles.filterActiveDot} />}
             </Pressable>
-          </View>
+          </Pressable>
         </View>
 
         {/* ── Error ── */}
@@ -566,7 +585,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 6,
   },
-  searchInputArea: { flex: 1, flexDirection: 'row', alignItems: 'center' },
   searchIcon: { marginRight: 8 },
   searchInput: { flex: 1, fontSize: 14, fontFamily: F.regular },
   filterBtn: { width: 36, height: 36, borderRadius: 11, justifyContent: 'center', alignItems: 'center' },

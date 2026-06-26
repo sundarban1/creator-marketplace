@@ -44,6 +44,7 @@ export class CampaignRepository {
   }
 
   async findMany(filters: {
+    search?: string;
     category?: string;
     platform?: string;
     minBudget?: number;
@@ -57,6 +58,13 @@ export class CampaignRepository {
     limit: number;
   }) {
     const where: Prisma.CampaignWhereInput = {};
+
+    if (filters.search) {
+      where.OR = [
+        { title:    { contains: filters.search, mode: 'insensitive' } },
+        { business: { businessName: { contains: filters.search, mode: 'insensitive' } } },
+      ];
+    }
 
     if (filters.category) {
       where.category = { contains: filters.category, mode: 'insensitive' };

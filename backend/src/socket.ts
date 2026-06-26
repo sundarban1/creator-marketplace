@@ -7,7 +7,7 @@ let io: Server | null = null;
 export function initSocket(httpServer: HttpServer): Server {
   io = new Server(httpServer, {
     cors: { origin: '*', credentials: true },
-    transports: ['websocket', 'polling'],
+    transports: ['websocket'],
   });
 
   io.use((socket, next) => {

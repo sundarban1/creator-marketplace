@@ -457,7 +457,7 @@ export default function CampaignDetailScreen() {
   if (loading) {
     return (
       <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
-        <LinearGradient colors={['#8B5CF6', '#6366F1', '#4F46E5']} start={{x:0,y:0}} end={{x:1,y:0}} style={s.gradientHeader}>
+        <LinearGradient colors={['#312e81', '#4f46e5', '#8b5cf6']} start={{x:0,y:0}} end={{x:1,y:0}} style={s.gradientHeader}>
           <BackButton />
           <Text style={[s.headerTitle, { color: '#fff' }]}>Event Details</Text>
           <View style={{ width: 40 }} />
@@ -489,7 +489,7 @@ export default function CampaignDetailScreen() {
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
 
       {/* Header */}
-      <LinearGradient colors={['#8B5CF6', '#6366F1', '#4F46E5']} start={{x:0,y:0}} end={{x:1,y:0}} style={s.gradientHeader}>
+      <LinearGradient colors={['#312e81', '#4f46e5', '#8b5cf6']} start={{x:0,y:0}} end={{x:1,y:0}} style={s.gradientHeader}>
         <BackButton />
         <Text style={[s.headerTitle, { color: '#fff' }]}>Event Details</Text>
         <View style={{ width: 40 }} />

@@ -69,7 +69,7 @@ export function DrawerMenu({ visible, user, onClose, onLogout }: Props) {
 
       <Animated.View style={[styles.panel, { backgroundColor: C.surface, transform: [{ translateX: slideAnim }] }]}>
         {/* Header */}
-        <View style={[styles.header, { paddingTop: insets.top + 20 }]}>
+        <View style={[styles.header, { paddingTop: insets.top + 20, backgroundColor: C.brinjal2 }]}>
           <View style={styles.userRow}>
             <View style={styles.avatarCircle}>
               <Text style={styles.avatarInitial}>{initial}</Text>
@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
     shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 20,
     shadowOffset: { width: 6, height: 0 }, elevation: 20, flexDirection: 'column',
   },
-  header: { backgroundColor: '#4F46E5', paddingHorizontal: 20, paddingBottom: 24 },
+  header: { paddingHorizontal: 20, paddingBottom: 24 },
   userRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   avatarCircle: {
     width: 44, height: 44, borderRadius: 22,

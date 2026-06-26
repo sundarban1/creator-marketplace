@@ -15,9 +15,7 @@ export function connectSocket(token: string): Socket {
 
   _socket = io(API_BASE, {
     auth: { token },
-    // Start with polling so socket.io has an XHR fallback when the raw
-    // WebSocket closes unexpectedly; upgrade to WebSocket once stable.
-    transports: ['polling', 'websocket'],
+    transports: ['websocket'],
     reconnection: true,
     reconnectionDelay: 1000,
     reconnectionAttempts: Infinity,

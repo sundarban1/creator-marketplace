@@ -1,8 +1,9 @@
 import { router, useFocusEffect } from 'expo-router';
 import { messagingEvents } from '@/lib/messagingEvents';
+import { getSocket } from '@/lib/socket';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
@@ -87,15 +88,15 @@ function ConversationRow({ conv }: { conv: Conversation }) {
           <Text style={[s.name, { color: C.text, fontWeight: hasUnread ? '700' : '600' }]} numberOfLines={1}>
             {conv.participantName}
           </Text>
-          <Text style={[s.time, { color: hasUnread ? '#7C3AED' : C.textSecondary, fontWeight: hasUnread ? '600' : '400' }]}>
+          <Text style={[s.time, { color: hasUnread ? C.brinjal1 : C.textSecondary, fontWeight: hasUnread ? '600' : '400' }]}>
             {formatTime(conv.lastMessageTime)}
           </Text>
         </View>
 
         {conv.campaignTitle ? (
-          <View style={styles.campaignPill}>
-            <Ionicons name="briefcase-outline" size={10} color="#7C3AED" />
-            <Text style={styles.campaignPillText} numberOfLines={1}>{conv.campaignTitle}</Text>
+          <View style={[styles.campaignPill, { backgroundColor: C.primaryLight }]}>
+            <Ionicons name="briefcase-outline" size={10} color={C.brinjal1} />
+            <Text style={[styles.campaignPillText, { color: C.brinjal1 }]} numberOfLines={1}>{conv.campaignTitle}</Text>
           </View>
         ) : null}
 
@@ -129,8 +130,6 @@ export default function BusinessChatListScreen() {
   const [loading, setLoading]             = useState(true);
   const [refreshing, setRefreshing]       = useState(false);
   const [query, setQuery]                 = useState('');
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
   async function load(silent = false) {
     if (!silent) setLoading(true);
     try {
@@ -146,8 +145,14 @@ export default function BusinessChatListScreen() {
 
   useEffect(() => {
     load();
-    pollRef.current = setInterval(() => load(true), 15000);
-    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+    const socket = getSocket();
+    const onUpdate = () => void load(true);
+    socket?.on('conversation:update', onUpdate);
+    socket?.on('message:new', onUpdate);
+    return () => {
+      socket?.off('conversation:update', onUpdate);
+      socket?.off('message:new', onUpdate);
+    };
   }, []);
 
   useFocusEffect(() => { messagingEvents.refresh(); });
@@ -175,7 +180,7 @@ export default function BusinessChatListScreen() {
             </Text>
           </View>
           {totalUnread > 0 && (
-            <View style={s.unreadPill}>
+            <View style={[s.unreadPill, { backgroundColor: C.brinjal2 }]}>
               <Text style={s.unreadPillTxt}>{totalUnread}</Text>
             </View>
           )}
@@ -226,8 +231,8 @@ export default function BusinessChatListScreen() {
           keyboardShouldPersistTaps="handled"
           ListEmptyComponent={
             <View style={s.empty}>
-              <View style={[s.emptyIcon, { backgroundColor: '#EEF2FF' }]}>
-                <Ionicons name="chatbubbles-outline" size={36} color="#7C3AED" />
+              <View style={[s.emptyIcon, { backgroundColor: C.primaryLight }]}>
+                <Ionicons name="chatbubbles-outline" size={36} color={C.brinjal1} />
               </View>
               <Text style={[s.emptyTitle, { color: C.text }]}>
                 {query.trim() ? `No results for "${query}"` : 'No conversations yet'}
@@ -246,8 +251,8 @@ export default function BusinessChatListScreen() {
 }
 
 const styles = StyleSheet.create({
-  campaignPill:     { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', backgroundColor: '#EEF2FF', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2, marginTop: 2 },
-  campaignPillText: { fontSize: 10, fontWeight: '600', color: '#7C3AED', fontFamily: F.semibold, maxWidth: 180 },
+  campaignPill:     { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2, marginTop: 2 },
+  campaignPillText: { fontSize: 10, fontWeight: '600', fontFamily: F.semibold, maxWidth: 180 },
 });
 
 const s = StyleSheet.create({
@@ -260,7 +265,7 @@ const s = StyleSheet.create({
   header:         { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 4, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   heading:        { fontSize: 22, fontWeight: '800', fontFamily: F.extrabold, color: '#fff' },
   headingSub:     { fontSize: 13, fontFamily: F.regular, color: 'rgba(255,255,255,0.75)', marginTop: 2 },
-  unreadPill:     { backgroundColor: '#F97316', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 },
+  unreadPill:     { borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 },
   unreadPillTxt:  { color: '#fff', fontSize: 14, fontWeight: '800', fontFamily: F.extrabold },
 
   searchRow:  { paddingHorizontal: 20, paddingVertical: 12 },

@@ -139,19 +139,24 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
   const { login } = useAuth();
   const { t }     = useLanguage();
 
-  const [email,    setEmail]    = useState('');
-  const [password, setPassword] = useState('');
-  const [loading,  setLoading]  = useState(false);
-  const [error,    setError]    = useState('');
+  const [email,     setEmail]     = useState('');
+  const [password,  setPassword]  = useState('');
+  const [submitted, setSubmitted] = useState(false);
+  const [loading,   setLoading]   = useState(false);
+  const [apiError,  setApiError]  = useState('');
+
+  const emErr = submitted && !isValidEmail(email) ? 'Enter a valid email address.' : undefined;
+  const pwErr = submitted && !password ? 'Password is required.' : undefined;
 
   async function handleLogin() {
-    if (!email || !password) { setError(t('auth.login.requiredError')); return; }
-    setError('');
+    setSubmitted(true);
+    if (!isValidEmail(email) || !password) return;
+    setApiError('');
     setLoading(true);
     try {
       await login(email.trim(), password);
     } catch (e) {
-      setError(e instanceof Error ? e.message : t('auth.login.requiredError'));
+      setApiError(e instanceof Error ? e.message : t('auth.login.requiredError'));
     } finally {
       setLoading(false);
     }
@@ -165,21 +170,23 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
           <Text style={[s.bannerText, { color: '#15803D' }]}>Account verified! You can sign in now.</Text>
         </View>
       )}
-      {!!error && (
+      {!!apiError && (
         <View style={[s.banner, { backgroundColor: '#FFF1F2', borderColor: '#FECDD3' }]}>
           <Ionicons name="alert-circle" size={15} color="#EF4444" />
-          <Text style={[s.bannerText, { color: '#EF4444' }]}>{error}</Text>
+          <Text style={[s.bannerText, { color: '#EF4444' }]}>{apiError}</Text>
         </View>
       )}
 
       <View style={s.form}>
         <Field
-          icon="mail-outline" label="Email address" value={email} onChangeText={setEmail}
-          placeholder="you@email.com" keyboardType="email-address"
+          icon="mail-outline" label="Email address" value={email}
+          onChangeText={(v) => { setEmail(v); setApiError(''); }}
+          placeholder="you@email.com" keyboardType="email-address" error={emErr}
         />
         <Field
-          icon="lock-closed-outline" label="Password" value={password} onChangeText={setPassword}
-          placeholder="Enter your password" secureTextEntry
+          icon="lock-closed-outline" label="Password" value={password}
+          onChangeText={(v) => { setPassword(v); setApiError(''); }}
+          placeholder="Enter your password" secureTextEntry error={pwErr}
           rightSlot={
             <Pressable onPress={() => router.push('/forgot-password')}>
               <Text style={[s.forgotText, { color: P2 }]}>Forgot password?</Text>

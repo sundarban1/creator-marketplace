@@ -1,9 +1,10 @@
 import { router, useFocusEffect } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { messagingEvents } from '@/lib/messagingEvents';
+import { getSocket } from '@/lib/socket';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
 import { chatService } from '@/services/chat';
@@ -79,9 +80,9 @@ function RequestCard({ conv, onRespond }: { conv: Conversation; onRespond: () =>
         <View style={s.reqInfo}>
           <Text style={[s.reqName, { color: C.text }]}>{conv.participantName}</Text>
           {conv.campaignTitle ? (
-            <View style={[s.campaignPill, { backgroundColor: '#EEF2FF' }]}>
-              <Ionicons name="briefcase-outline" size={10} color="#7C3AED" />
-              <Text style={s.campaignPillTxt} numberOfLines={1}>{conv.campaignTitle}</Text>
+            <View style={[s.campaignPill, { backgroundColor: C.primaryLight }]}>
+              <Ionicons name="briefcase-outline" size={10} color={C.brinjal1} />
+              <Text style={[s.campaignPillTxt, { color: C.brinjal1 }]} numberOfLines={1}>{conv.campaignTitle}</Text>
             </View>
           ) : null}
           <Text style={[s.reqTime, { color: C.textSecondary }]}>
@@ -122,7 +123,7 @@ function RequestCard({ conv, onRespond }: { conv: Conversation; onRespond: () =>
             )}
         </Pressable>
         <Pressable
-          style={[s.acceptBtn, { backgroundColor: color }]}
+          style={[s.acceptBtn, { backgroundColor: C.brinjal1 }]}
           onPress={() => respond('accept')}
           disabled={acting !== null}>
           {acting === 'accept'
@@ -151,14 +152,14 @@ function ChatRow({ conv }: { conv: Conversation }) {
       onPress={() =>
         router.push({ pathname: '/(creator)/messages/[id]', params: { id: conv.id, name: conv.participantName, status: conv.status } })
       }>
-      <View style={[s.unreadStripe, { backgroundColor: hasUnread ? '#0EA5E9' : 'transparent' }]} />
+      <View style={[s.unreadStripe, { backgroundColor: hasUnread ? C.brinjal1 : 'transparent' }]} />
       <Avatar name={conv.participantName} size={48} />
       <View style={s.chatContent}>
         <View style={s.chatTop}>
           <Text style={[s.chatName, { color: C.text, fontWeight: hasUnread ? '700' : '600' }]} numberOfLines={1}>
             {conv.participantName}
           </Text>
-          <Text style={[s.chatTime, { color: hasUnread ? '#0EA5E9' : C.textSecondary }]}>
+          <Text style={[s.chatTime, { color: hasUnread ? C.brinjal1 : C.textSecondary }]}>
             {formatTime(conv.lastMessageTime)}
           </Text>
         </View>
@@ -175,7 +176,7 @@ function ChatRow({ conv }: { conv: Conversation }) {
             {conv.lastMessage || 'No messages yet'}
           </Text>
           {hasUnread && (
-            <View style={[s.unreadBadge, { backgroundColor: '#0EA5E9' }]}>
+            <View style={[s.unreadBadge, { backgroundColor: C.brinjal1 }]}>
               <Text style={s.unreadBadgeTxt}>{conv.unreadCount > 99 ? '99+' : conv.unreadCount}</Text>
             </View>
           )}
@@ -196,8 +197,6 @@ export default function CreatorMessagesScreen() {
   const [chats, setChats]       = useState<Conversation[]>([]);
   const [loading, setLoading]   = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
   async function load(silent = false) {
     if (!silent) setLoading(true);
     try {
@@ -215,11 +214,15 @@ export default function CreatorMessagesScreen() {
 
   useEffect(() => {
     load();
-    pollRef.current = setInterval(() => load(true), 15000);
     const unsub = messagingEvents.subscribe(() => void load(true));
+    const socket = getSocket();
+    const onUpdate = () => void load(true);
+    socket?.on('conversation:update', onUpdate);
+    socket?.on('message:new', onUpdate);
     return () => {
-      if (pollRef.current) clearInterval(pollRef.current);
       unsub();
+      socket?.off('conversation:update', onUpdate);
+      socket?.off('message:new', onUpdate);
     };
   }, []);
 
@@ -233,7 +236,7 @@ export default function CreatorMessagesScreen() {
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
       <LinearGradient
-        colors={['#0c4a6e', '#0369a1', '#0EA5E9']}
+        colors={['#312e81', '#4f46e5', '#8b5cf6']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={s.gradientHeader}>
@@ -267,7 +270,7 @@ export default function CreatorMessagesScreen() {
                   {t === 'requests' ? 'Requests' : 'Messages'}
                 </Text>
                 {badge > 0 && (
-                  <View style={[s.tabBadge, { backgroundColor: t === 'requests' ? '#F97316' : '#0EA5E9' }]}>
+                  <View style={[s.tabBadge, { backgroundColor: C.brinjal1 }]}>
                     <Text style={s.tabBadgeTxt}>{badge}</Text>
                   </View>
                 )}
@@ -279,7 +282,7 @@ export default function CreatorMessagesScreen() {
 
       {loading ? (
         <View style={s.center}>
-          <ActivityIndicator size="large" color="#0EA5E9" />
+          <ActivityIndicator size="large" color={C.brinjal1} />
         </View>
       ) : tab === 'requests' ? (
         <FlatList
@@ -287,12 +290,12 @@ export default function CreatorMessagesScreen() {
           keyExtractor={(c) => c.id}
           renderItem={({ item }) => <RequestCard conv={item} onRespond={() => load()} />}
           contentContainerStyle={[s.requestList, requests.length === 0 && s.listEmpty]}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor="#0EA5E9" />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={C.brinjal1} />}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             <View style={s.empty}>
-              <View style={[s.emptyIcon, { backgroundColor: '#E0F2FE' }]}>
-                <Ionicons name="mail-open-outline" size={34} color="#0EA5E9" />
+              <View style={[s.emptyIcon, { backgroundColor: C.primaryLight }]}>
+                <Ionicons name="mail-open-outline" size={34} color={C.brinjal1} />
               </View>
               <Text style={[s.emptyTitle, { color: C.text }]}>No requests yet</Text>
               <Text style={[s.emptyHint, { color: C.textSecondary }]}>
@@ -307,12 +310,12 @@ export default function CreatorMessagesScreen() {
           keyExtractor={(c) => c.id}
           renderItem={({ item }) => <ChatRow conv={item} />}
           contentContainerStyle={[s.chatList, chats.length === 0 && s.listEmpty]}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor="#0EA5E9" />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={C.brinjal1} />}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             <View style={s.empty}>
-              <View style={[s.emptyIcon, { backgroundColor: '#E0F2FE' }]}>
-                <Ionicons name="chatbubbles-outline" size={34} color="#0EA5E9" />
+              <View style={[s.emptyIcon, { backgroundColor: C.primaryLight }]}>
+                <Ionicons name="chatbubbles-outline" size={34} color={C.brinjal1} />
               </View>
               <Text style={[s.emptyTitle, { color: C.text }]}>No conversations yet</Text>
               <Text style={[s.emptyHint, { color: C.textSecondary }]}>Accepted requests will appear here.</Text>
@@ -353,7 +356,7 @@ const s = StyleSheet.create({
   reqBadge:    { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
   reqBadgeTxt: { fontSize: 10, fontWeight: '700', fontFamily: F.bold },
   campaignPill:    { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
-  campaignPillTxt: { fontSize: 10, fontWeight: '600', color: '#7C3AED', fontFamily: F.semibold, maxWidth: 160 },
+  campaignPillTxt: { fontSize: 10, fontWeight: '600', fontFamily: F.semibold, maxWidth: 160 },
   reqMsgBox:   { flexDirection: 'row', alignItems: 'flex-start', gap: 8, borderRadius: 10, padding: 10, borderWidth: StyleSheet.hairlineWidth },
   reqMsg:      { flex: 1, fontSize: 13, lineHeight: 19, fontFamily: F.regular },
   reqMsgEmpty: { flex: 1, fontSize: 13, fontStyle: 'italic', fontFamily: F.regular },

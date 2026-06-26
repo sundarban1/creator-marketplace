@@ -54,6 +54,7 @@ export const updateCampaignSchema = z.object({
 });
 
 export const campaignListQuerySchema = z.object({
+  search:       z.string().optional(),
   category:     z.string().optional(),
   platform:     z.string().optional(),
   minBudget:    z.string().optional().transform((v) => (v ? parseFloat(v) : undefined)),

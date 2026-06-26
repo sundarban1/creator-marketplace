@@ -155,7 +155,7 @@ export default function EditBusinessProfileScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
-      <LinearGradient colors={['#4F46E5', '#7C3AED', '#9333EA']} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientTopBar}>
+      <LinearGradient colors={['#1e1b4b', '#4338ca', '#7c3aed']} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientTopBar}>
         <View style={styles.topBar}>
           <BackButton fallback="/(business)/profile" />
           <Text style={[styles.topTitle, { color: '#fff' }]}>Edit Business Profile</Text>

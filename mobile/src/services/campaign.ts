@@ -93,6 +93,7 @@ export const campaignService = {
   },
 
   async list(params?: {
+    search?:       string;
     category?:     string;
     platform?:     string;
     minBudget?:    number;
@@ -105,6 +106,7 @@ export const campaignService = {
     limit?:        number;
   }): Promise<{ campaigns: Campaign[]; total: number; page: number; totalPages: number }> {
     const res = await request<ApiCampaign[]>('GET', '/api/campaigns', undefined, {
+      search:       params?.search   || undefined,
       category:     params?.category,
       platform:     params?.platform,
       minBudget:    params?.minBudget,

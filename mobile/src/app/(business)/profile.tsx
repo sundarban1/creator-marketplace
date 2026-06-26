@@ -126,7 +126,7 @@ export default function BusinessProfileScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 60 }}>
 
         {/* ── Hero ── */}
-        <LinearGradient colors={['#4F46E5', '#7C3AED', '#9333EA']} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.hero}>
+        <LinearGradient colors={['#1e1b4b', '#4338ca', '#7c3aed']} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.hero}>
           <View style={styles.heroBubble1} />
           <View style={styles.heroBubble2} />
           <View style={styles.heroInner}>

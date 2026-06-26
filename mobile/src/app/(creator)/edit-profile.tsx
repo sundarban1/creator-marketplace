@@ -259,7 +259,7 @@ export default function EditProfileScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
-      <LinearGradient colors={['#F97316', '#EF4444', '#EC4899']} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientTopBar}>
+      <LinearGradient colors={['#312e81', '#4f46e5', '#8b5cf6']} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientTopBar}>
         <View style={styles.topBar}>
           <BackButton fallback="/(creator)/profile" />
           <Text style={[styles.topTitle, { color: '#fff' }]}>Edit Profile</Text>

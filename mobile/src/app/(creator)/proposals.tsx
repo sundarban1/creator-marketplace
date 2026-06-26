@@ -122,7 +122,7 @@ export default function ProposalsScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
-      <LinearGradient colors={['#F59E0B', '#F97316', '#EF4444']} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientHeader}>
+      <LinearGradient colors={['#312e81', '#4f46e5', '#8b5cf6']} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientHeader}>
         <View style={[styles.decCircle1, { backgroundColor: 'rgba(255,255,255,0.1)' }]} />
         <View style={[styles.decCircle2, { backgroundColor: 'rgba(255,255,255,0.07)' }]} />
         <View style={styles.header}>
