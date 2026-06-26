@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { useToast } from '@/components/Toast';
 import { creatorService } from '@/services/creator';
@@ -28,6 +29,7 @@ const MAX = 5;
 
 export default function EditCategoriesScreen() {
   const C = useAppColors();
+  const { t } = useLanguage();
   const toast = useToast();
   const [categories, setCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,7 +39,7 @@ export default function EditCategoriesScreen() {
     creatorService
       .getProfile()
       .then((p) => setCategories(p.categories ?? []))
-      .catch(() => toast.error('Could not load your profile. Please try again.'))
+      .catch(() => toast.error(t('editCategories.loadError')))
       .finally(() => setLoading(false));
   }, []);
 
@@ -45,7 +47,7 @@ export default function EditCategoriesScreen() {
     setCategories((prev) => {
       if (prev.includes(cat)) return prev.filter((c) => c !== cat);
       if (prev.length >= MAX) {
-        toast.warning(`You can select up to ${MAX} categories.`);
+        toast.warning(t('editCategories.maxWarning', { max: MAX }));
         return prev;
       }
       return [...prev, cat];
@@ -54,16 +56,16 @@ export default function EditCategoriesScreen() {
 
   async function handleSave() {
     if (categories.length === 0) {
-      toast.warning('Please select at least one category.');
+      toast.warning(t('editCategories.noSelection'));
       return;
     }
     setSaving(true);
     try {
       await creatorService.updateProfile({ categories });
-      toast.success('Categories saved!');
+      toast.success(t('editCategories.savedSuccess'));
       router.back();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to save. Please try again.');
+      toast.error(err instanceof Error ? err.message : t('editCategories.saveError'));
     } finally {
       setSaving(false);
     }
@@ -84,14 +86,14 @@ export default function EditCategoriesScreen() {
       <LinearGradient colors={['#F97316', '#EF4444', '#EC4899']} start={{x:0,y:0}} end={{x:1,y:1}} style={s.gradientTopBar}>
         <View style={s.topBar}>
           <BackButton fallback="/(creator)/profile" />
-          <Text style={[s.topTitle, { color: '#fff' }]}>Content Categories</Text>
+          <Text style={[s.topTitle, { color: '#fff' }]}>{t('editCategories.title')}</Text>
           <Pressable
             style={[s.saveBtn, { backgroundColor: saving ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.25)' }]}
             onPress={handleSave}
             disabled={saving}>
             {saving
               ? <ActivityIndicator color="#fff" size="small" />
-              : <Text style={s.saveBtnTxt}>Save</Text>}
+              : <Text style={s.saveBtnTxt}>{t('editCategories.save')}</Text>}
           </Pressable>
         </View>
       </LinearGradient>
@@ -102,7 +104,7 @@ export default function EditCategoriesScreen() {
 
         <View style={s.hint}>
           <Text style={[s.hintTxt, { color: C.textSecondary }]}>
-            Select up to {MAX} categories that best describe your content.
+            {t('editCategories.hint', { max: MAX })}
           </Text>
           <Text style={[s.counter, { color: categories.length >= MAX ? C.brinjal1 : C.textSecondary }]}>
             {categories.length}/{MAX}

@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CampaignListItem } from '@/features/creator/components/CampaignListItem';
 import { useAppColors } from '@/context/ThemeContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { campaignService } from '@/services/campaign';
 import type { Campaign } from '@/types';
 import { F } from '@/utilities/constants';
@@ -20,6 +21,7 @@ const PAGE_SIZE = 6;
 
 export default function FeaturedCampaignsScreen() {
   const C = useAppColors();
+  const { t } = useLanguage();
 
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [page, setPage] = useState(1);
@@ -37,7 +39,7 @@ export default function FeaturedCampaignsScreen() {
       setPage(pageNum);
       setTotalPages(res.totalPages);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load events');
+      setError(e instanceof Error ? e.message : t('creator.featuredCampaigns.loadError'));
     }
   }
 
@@ -63,20 +65,20 @@ export default function FeaturedCampaignsScreen() {
       {/* Header */}
       <View style={[styles.header, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
         <BackButton fallback="/(creator)/" />
-        <Text style={[styles.headerTitle, { color: C.text }]}>⭐ Featured Events</Text>
+        <Text style={[styles.headerTitle, { color: C.text }]}>{t('creator.featuredCampaigns.headerTitle')}</Text>
         <View style={{ width: 38 }} />
       </View>
 
       {loading ? (
         <View style={styles.loadingWrap}>
           <ActivityIndicator size="large" color={C.brinjal1} />
-          <Text style={[styles.loadingText, { color: C.textSecondary }]}>Loading…</Text>
+          <Text style={[styles.loadingText, { color: C.textSecondary }]}>{t('creator.featuredCampaigns.loading')}</Text>
         </View>
       ) : error ? (
         <View style={styles.errorWrap}>
           <Text style={styles.errorText}>{error}</Text>
           <Pressable onPress={() => { setLoading(true); fetchPage(1, true).finally(() => setLoading(false)); }}>
-            <Text style={[styles.retryText, { color: C.brinjal1 }]}>Retry</Text>
+            <Text style={[styles.retryText, { color: C.brinjal1 }]}>{t('creator.featuredCampaigns.retry')}</Text>
           </Pressable>
         </View>
       ) : (
@@ -90,7 +92,7 @@ export default function FeaturedCampaignsScreen() {
           ListEmptyComponent={
             <View style={styles.emptyWrap}>
               <Text style={styles.emptyEmoji}>⭐</Text>
-              <Text style={[styles.emptyTitle, { color: C.text }]}>No featured events yet</Text>
+              <Text style={[styles.emptyTitle, { color: C.text }]}>{t('creator.featuredCampaigns.empty')}</Text>
             </View>
           }
           ListFooterComponent={
@@ -101,11 +103,11 @@ export default function FeaturedCampaignsScreen() {
                 disabled={loadingMore}>
                 {loadingMore
                   ? <ActivityIndicator size="small" color={C.brinjal1} />
-                  : <Text style={[styles.loadMoreText, { color: C.brinjal1 }]}>Load More</Text>}
+                  : <Text style={[styles.loadMoreText, { color: C.brinjal1 }]}>{t('creator.featuredCampaigns.loadMore')}</Text>}
               </Pressable>
             ) : campaigns.length > 0 ? (
               <Text style={[styles.endText, { color: C.textSecondary }]}>
-                Showing all {campaigns.length} featured events
+                {t('creator.featuredCampaigns.showingAll', { n: campaigns.length })}
               </Text>
             ) : null
           }

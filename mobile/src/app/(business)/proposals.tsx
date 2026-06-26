@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppColors } from '@/context/ThemeContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { campaignService } from '@/services/campaign';
 import { F } from '@/utilities/constants';
 
@@ -62,6 +63,7 @@ function buildCampaignCards(proposals: Proposal[]): CampaignCard[] {
 
 function CampaignEventCard({ item }: { item: CampaignCard }) {
   const C = useAppColors();
+  const { t } = useLanguage();
   const isFree   = item.campaignType === 'OPEN_EVENT';
   const accent   = isFree ? FREE_ACCENT : PAID_ACCENT;
   const accentBg = isFree ? FREE_LIGHT  : PAID_LIGHT;
@@ -87,7 +89,7 @@ function CampaignEventCard({ item }: { item: CampaignCard }) {
         <View style={[styles.typeBadge, { backgroundColor: accentBg }]}>
           <Ionicons name={isFree ? 'gift-outline' : 'cash-outline'} size={12} color={accent} />
           <Text style={[styles.typeBadgeText, { color: accent }]}>
-            {isFree ? 'Free Event' : 'Paid Campaign'}
+            {isFree ? t('proposal.business.typeFreeEvent') : t('proposal.business.typePaidCampaign')}
           </Text>
         </View>
         {item.platform ? (
@@ -108,22 +110,22 @@ function CampaignEventCard({ item }: { item: CampaignCard }) {
       <View style={[styles.statsRow, { borderTopColor: C.border }]}>
         <View style={styles.statItem}>
           <Text style={[styles.statNum, { color: C.text }]}>{item.total}</Text>
-          <Text style={[styles.statLabel, { color: C.textSecondary }]}>Total</Text>
+          <Text style={[styles.statLabel, { color: C.textSecondary }]}>{t('proposal.business.statTotal')}</Text>
         </View>
         <View style={[styles.statDivider, { backgroundColor: C.border }]} />
         <View style={styles.statItem}>
           <Text style={[styles.statNum, { color: '#D97706' }]}>{item.pending}</Text>
-          <Text style={[styles.statLabel, { color: C.textSecondary }]}>Pending</Text>
+          <Text style={[styles.statLabel, { color: C.textSecondary }]}>{t('proposal.business.statPending')}</Text>
         </View>
         <View style={[styles.statDivider, { backgroundColor: C.border }]} />
         <View style={styles.statItem}>
           <Text style={[styles.statNum, { color: '#16A34A' }]}>{item.accepted}</Text>
-          <Text style={[styles.statLabel, { color: C.textSecondary }]}>{isFree ? 'Approved' : 'Accepted'}</Text>
+          <Text style={[styles.statLabel, { color: C.textSecondary }]}>{isFree ? t('proposal.business.statApproved') : t('proposal.business.statAccepted')}</Text>
         </View>
         <View style={[styles.statDivider, { backgroundColor: C.border }]} />
         <View style={styles.statItem}>
           <Text style={[styles.statNum, { color: '#EF4444' }]}>{item.rejected}</Text>
-          <Text style={[styles.statLabel, { color: C.textSecondary }]}>Declined</Text>
+          <Text style={[styles.statLabel, { color: C.textSecondary }]}>{t('proposal.business.statDeclined')}</Text>
         </View>
       </View>
 
@@ -132,7 +134,7 @@ function CampaignEventCard({ item }: { item: CampaignCard }) {
         <View style={[styles.nudge, { backgroundColor: '#FFF7ED' }]}>
           <Ionicons name="time-outline" size={13} color="#D97706" />
           <Text style={[styles.nudgeText, { color: '#D97706' }]}>
-            {item.pending} application{item.pending !== 1 ? 's' : ''} awaiting review
+            {t('proposal.business.nudge', { n: item.pending })}
           </Text>
         </View>
       )}
@@ -142,6 +144,7 @@ function CampaignEventCard({ item }: { item: CampaignCard }) {
 
 export default function ProposalsScreen() {
   const C = useAppColors();
+  const { t } = useLanguage();
   const [proposals, setProposals]   = useState<Proposal[]>([]);
   const [loading, setLoading]       = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -167,9 +170,9 @@ export default function ProposalsScreen() {
   const cards = activeTab === 'paid' ? paidCards : activeTab === 'free' ? freeCards : allCards;
 
   const tabs: { key: TabKey; label: string; count: number; color: string }[] = [
-    { key: 'all',  label: 'All',       count: allCards.length,  color: '#7C3AED' },
-    { key: 'paid', label: 'Paid',      count: paidCards.length, color: PAID_ACCENT },
-    { key: 'free', label: 'Free',      count: freeCards.length, color: FREE_ACCENT },
+    { key: 'all',  label: t('proposal.business.tabAll'),  count: allCards.length,  color: '#7C3AED' },
+    { key: 'paid', label: t('proposal.business.tabPaid'), count: paidCards.length, color: PAID_ACCENT },
+    { key: 'free', label: t('proposal.business.tabFree'), count: freeCards.length, color: FREE_ACCENT },
   ];
 
   return (
@@ -182,8 +185,8 @@ export default function ProposalsScreen() {
         <View style={[styles.decCircle1, { backgroundColor: 'rgba(255,255,255,0.08)' }]} />
         <View style={[styles.decCircle2, { backgroundColor: 'rgba(255,255,255,0.05)' }]} />
         <View style={styles.headerContent}>
-          <Text style={styles.pageTitle}>Proposals</Text>
-          <Text style={styles.pageSub}>Review creator applications by campaign</Text>
+          <Text style={styles.pageTitle}>{t('proposal.business.headerTitle')}</Text>
+          <Text style={styles.pageSub}>{t('proposal.business.headerSub')}</Text>
         </View>
       </LinearGradient>
 
@@ -230,13 +233,13 @@ export default function ProposalsScreen() {
           ListEmptyComponent={
             <View style={styles.empty}>
               <Ionicons name="document-text-outline" size={56} color={C.textSecondary} />
-              <Text style={[styles.emptyTitle, { color: C.text }]}>No proposals yet</Text>
+              <Text style={[styles.emptyTitle, { color: C.text }]}>{t('proposal.business.emptyTitle')}</Text>
               <Text style={[styles.emptySub, { color: C.textSecondary }]}>
                 {activeTab === 'paid'
-                  ? 'No paid campaign proposals yet.'
+                  ? t('proposal.business.emptyPaidSub')
                   : activeTab === 'free'
-                  ? 'No free event proposals yet.'
-                  : 'Proposals from creators will appear here when they apply to your campaigns.'}
+                  ? t('proposal.business.emptyFreeSub')
+                  : t('proposal.business.emptyAllSub')}
               </Text>
             </View>
           }

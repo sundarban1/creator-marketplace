@@ -6,6 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useLanguage, type TFn } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { chatService } from '@/services/chat';
 import { F } from '@/utilities/constants';
@@ -25,17 +26,17 @@ function initials(name: string) {
   return name.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase();
 }
 
-function formatTime(iso: string) {
+function formatTime(iso: string, t: TFn) {
   const d = new Date(iso);
   const now = new Date();
   const diff = now.getTime() - d.getTime();
-  if (diff < 60000) return 'now';
-  if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+  if (diff < 60000) return t('messages.timeNow');
+  if (diff < 3600000) return t('messages.timeMinutesAgo', { n: Math.floor(diff / 60000) });
   if (d.toDateString() === now.toDateString())
     return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
   const yesterday = new Date(now);
   yesterday.setDate(yesterday.getDate() - 1);
-  if (d.toDateString() === yesterday.toDateString()) return 'Yesterday';
+  if (d.toDateString() === yesterday.toDateString()) return t('messages.timeYesterday');
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
@@ -58,12 +59,13 @@ const av = StyleSheet.create({
 
 function ConversationRow({ conv }: { conv: Conversation }) {
   const C = useAppColors();
+  const { t } = useLanguage();
   const hasUnread = conv.unreadCount > 0;
 
   const statusCfg = {
-    PENDING:  { label: 'Pending',  bg: '#FEF3C7', color: '#92400E' },
-    ACCEPTED: { label: 'Active',   bg: '#DCFCE7', color: '#166534' },
-    DECLINED: { label: 'Declined', bg: '#FEE2E2', color: '#991B1B' },
+    PENDING:  { labelKey: 'messages.statusPending',  bg: '#FEF3C7', color: '#92400E' },
+    ACCEPTED: { labelKey: 'messages.statusActive',   bg: '#DCFCE7', color: '#166534' },
+    DECLINED: { labelKey: 'messages.statusDeclined', bg: '#FEE2E2', color: '#991B1B' },
   }[conv.status];
 
   return (
@@ -89,7 +91,7 @@ function ConversationRow({ conv }: { conv: Conversation }) {
             {conv.participantName}
           </Text>
           <Text style={[s.time, { color: hasUnread ? C.brinjal1 : C.textSecondary, fontWeight: hasUnread ? '600' : '400' }]}>
-            {formatTime(conv.lastMessageTime)}
+            {formatTime(conv.lastMessageTime, t)}
           </Text>
         </View>
 
@@ -104,7 +106,7 @@ function ConversationRow({ conv }: { conv: Conversation }) {
           <Text
             style={[s.lastMsg, { color: hasUnread ? C.text : C.textSecondary, fontWeight: hasUnread ? '500' : '400' }]}
             numberOfLines={1}>
-            {conv.lastMessage || 'No messages yet'}
+            {conv.lastMessage || t('messages.noMessagesYet')}
           </Text>
           <View style={s.rowMeta}>
             {hasUnread && (
@@ -113,7 +115,7 @@ function ConversationRow({ conv }: { conv: Conversation }) {
               </View>
             )}
             <View style={[s.statusPill, { backgroundColor: statusCfg.bg }]}>
-              <Text style={[s.statusTxt, { color: statusCfg.color }]}>{statusCfg.label}</Text>
+              <Text style={[s.statusTxt, { color: statusCfg.color }]}>{t(statusCfg.labelKey)}</Text>
             </View>
           </View>
         </View>
@@ -126,6 +128,7 @@ function ConversationRow({ conv }: { conv: Conversation }) {
 
 export default function BusinessChatListScreen() {
   const C = useAppColors();
+  const { t } = useLanguage();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading]             = useState(true);
   const [refreshing, setRefreshing]       = useState(false);
@@ -174,9 +177,13 @@ export default function BusinessChatListScreen() {
         <View style={[s.decCircle2, { backgroundColor: 'rgba(255,255,255,0.05)' }]} />
         <View style={s.header}>
           <View>
-            <Text style={s.heading}>Messages</Text>
+            <Text style={s.heading}>{t('messages.heading')}</Text>
             <Text style={s.headingSub}>
-              {totalUnread > 0 ? `${totalUnread} unread message${totalUnread !== 1 ? 's' : ''}` : 'Your active conversations'}
+              {totalUnread > 0
+                ? totalUnread !== 1
+                  ? t('messages.unreadMessages', { n: totalUnread })
+                  : t('messages.unreadMessage', { n: totalUnread })
+                : t('messages.yourActiveConversations')}
             </Text>
           </View>
           {totalUnread > 0 && (
@@ -195,7 +202,7 @@ export default function BusinessChatListScreen() {
             style={[s.searchInput, { color: C.text }]}
             value={query}
             onChangeText={setQuery}
-            placeholder="Search conversations…"
+            placeholder={t('messages.searchPlaceholder')}
             placeholderTextColor={C.textSecondary}
             returnKeyType="search"
             clearButtonMode="while-editing"
@@ -235,12 +242,12 @@ export default function BusinessChatListScreen() {
                 <Ionicons name="chatbubbles-outline" size={36} color={C.brinjal1} />
               </View>
               <Text style={[s.emptyTitle, { color: C.text }]}>
-                {query.trim() ? `No results for "${query}"` : 'No conversations yet'}
+                {query.trim() ? t('messages.noResultsFor', { query }) : t('messages.noConversationsYet')}
               </Text>
               <Text style={[s.emptyHint, { color: C.textSecondary }]}>
                 {query.trim()
-                  ? 'Try a different name.'
-                  : 'Visit a creator\'s profile and tap "Message" to start a conversation.'}
+                  ? t('messages.tryDifferentName')
+                  : t('messages.visitCreatorProfile')}
               </Text>
             </View>
           }

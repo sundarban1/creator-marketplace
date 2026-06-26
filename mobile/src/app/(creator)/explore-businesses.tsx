@@ -20,6 +20,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { EmptyState } from '@/components/EmptyState';
 import { useAppColors } from '@/context/ThemeContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { LocationSearchPicker, type LocationFilter } from '@/features/creator/components/FilterModal';
 import { businessService, type BusinessListItem } from '@/services/business';
 import { useFavoriteBusinesses } from '@/hooks/useFavoriteBusinesses';
@@ -76,6 +77,7 @@ function ExploreFilterModal({
   onClose:         () => void;
 }) {
   const C = useAppColors();
+  const { t } = useLanguage();
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -84,9 +86,9 @@ function ExploreFilterModal({
         <View style={[fm.handle, { backgroundColor: C.border }]} />
 
         <View style={[fm.header, { borderBottomColor: C.border }]}>
-          <Text style={[fm.title, { color: C.text }]}>Filters</Text>
+          <Text style={[fm.title, { color: C.text }]}>{t('explore.businesses.filterTitle')}</Text>
           <Pressable onPress={onReset}>
-            <Text style={[fm.reset, { color: C.brinjal1 }]}>Reset all</Text>
+            <Text style={[fm.reset, { color: C.brinjal1 }]}>{t('explore.businesses.filterResetAll')}</Text>
           </Pressable>
         </View>
 
@@ -94,13 +96,13 @@ function ExploreFilterModal({
 
           {/* Location */}
           <View style={fm.sectionRow}>
-            <Text style={[fm.section, { color: C.textSecondary }]}>Location</Text>
-            <Text style={[fm.sectionHint, { color: C.textSecondary }]}>{tempLocation.length}/3 selected</Text>
+            <Text style={[fm.section, { color: C.textSecondary }]}>{t('explore.businesses.filterLocation')}</Text>
+            <Text style={[fm.sectionHint, { color: C.textSecondary }]}>{t('explore.businesses.filterLocationCount', { n: tempLocation.length })}</Text>
           </View>
           <LocationSearchPicker selected={tempLocation} onSelect={setTempLocation} />
 
           {/* Platform */}
-          <Text style={[fm.section, { color: C.textSecondary }]}>Platform</Text>
+          <Text style={[fm.section, { color: C.textSecondary }]}>{t('explore.businesses.filterPlatform')}</Text>
           <View style={fm.chipGrid}>
             {PLATFORMS.map((p) => {
               const active = tempPlatform === p.label;
@@ -117,7 +119,7 @@ function ExploreFilterModal({
           </View>
 
           {/* Category */}
-          <Text style={[fm.section, { color: C.textSecondary }]}>Category</Text>
+          <Text style={[fm.section, { color: C.textSecondary }]}>{t('explore.businesses.filterCategory')}</Text>
           <View style={fm.chipGrid}>
             {CATEGORIES.map((cat) => {
               const active = tempCategory === cat.label;
@@ -139,7 +141,7 @@ function ExploreFilterModal({
           <Pressable
             style={({ pressed }) => [fm.applyBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }, pressed && { opacity: 0.88 }]}
             onPress={onApply}>
-            <Text style={fm.applyTxt}>Apply Filters</Text>
+            <Text style={fm.applyTxt}>{t('explore.businesses.filterApplyBtn')}</Text>
           </Pressable>
         </View>
       </View>

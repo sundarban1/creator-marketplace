@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { ColorValue, Platform, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '@/context/AuthContext';
 import { DrawerContext } from '@/context/DrawerContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { DrawerMenu } from '@/features/creator/components/DrawerMenu';
 import { chatService } from '@/services/chat';
@@ -51,6 +52,7 @@ const tabIcon = StyleSheet.create({
 
 export default function CreatorLayout() {
   const { user, logout } = useAuth();
+  const { t } = useLanguage();
   const C = useAppColors();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [badgeCount, setBadgeCount]   = useState(0);
@@ -87,7 +89,7 @@ export default function CreatorLayout() {
           <Tabs.Screen
             name="index"
             options={{
-              title: 'Home',
+              title: t('creator.tab.home'),
               tabBarIcon: ({ color, focused }) => (
                 <TabIcon name="home-outline" nameActive="home" size={23} color={color} focused={focused} />
               ),
@@ -97,7 +99,7 @@ export default function CreatorLayout() {
           <Tabs.Screen
             name="proposals"
             options={{
-              title: 'Proposals',
+              title: t('creator.tab.proposals'),
               tabBarIcon: ({ color, focused }) => (
                 <TabIcon name="document-text-outline" nameActive="document-text" size={23} color={color} focused={focused} />
               ),
@@ -112,7 +114,7 @@ export default function CreatorLayout() {
               },
             })}
             options={{
-              title: 'Messages',
+              title: t('creator.tab.messages'),
               tabBarIcon: ({ color, focused }) => (
                 <TabIcon name="chatbubble-outline" nameActive="chatbubble" size={23} color={color} focused={focused} badge={badgeCount} />
               ),
@@ -121,7 +123,7 @@ export default function CreatorLayout() {
           <Tabs.Screen
             name="notifications"
             options={{
-              title: 'Activity',
+              title: t('creator.tab.activity'),
               tabBarIcon: ({ color, focused }) => (
                 <TabIcon name="notifications-outline" nameActive="notifications" size={23} color={color} focused={focused} badge={notifBadge} />
               ),

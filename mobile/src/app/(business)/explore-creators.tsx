@@ -112,6 +112,7 @@ function isFilterActive(f: FilterState) {
 
 function LocationPicker({ selected, onChange }: { selected: LocationEntry[]; onChange: (v: LocationEntry[]) => void }) {
   const C = useAppColors();
+  const { t } = useLanguage();
   const [query, setQuery] = useState('');
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [searching, setSearching] = useState(false);
@@ -198,7 +199,7 @@ function LocationPicker({ selected, onChange }: { selected: LocationEntry[]; onC
               style={[lp.searchInput, { color: C.text }]}
               value={query}
               onChangeText={onQueryChange}
-              placeholder="Search city…"
+              placeholder={t('explore.searchCity')}
               placeholderTextColor={C.textSecondary}
               returnKeyType="search"
             />
@@ -647,7 +648,7 @@ export default function ExploreCreatorsScreen() {
           <BackButton fallback="/(business)/" />
           <View style={s.headerMiddle}>
             <Text style={[s.headerTitle, { color: '#fff' }]}>{t('explore.exploreCreators')}</Text>
-            <Text style={s.headerSub}>Find the perfect creator for your event</Text>
+            <Text style={s.headerSub}>{t('explore.businesses.exploreCreatorsSub')}</Text>
           </View>
           <Pressable
             style={s.savedLink}

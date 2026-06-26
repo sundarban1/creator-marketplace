@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/components/Toast';
 import { profileService } from '@/services/profile';
 import { CREATOR_CATEGORIES } from '@/features/creator/data/filterOptions';
@@ -29,6 +30,7 @@ function PlacesInput({ value, onChange, colors }: {
   colors: ReturnType<typeof useAppColors>;
 }) {
   const C = colors;
+  const { t } = useLanguage();
   const [suggestions, setSuggestions] = useState<PlacePrediction[]>([]);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -52,7 +54,7 @@ function PlacesInput({ value, onChange, colors }: {
         style={[styles.input, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
         value={value}
         onChangeText={handleChange}
-        placeholder="Search for a location…"
+        placeholder={t('profile.editBusiness.locationPlaceholder')}
         placeholderTextColor={C.textSecondary}
         autoCorrect={false}
       />
@@ -84,6 +86,7 @@ function generateBusinessDescription(name: string, cats: string[]): string {
 
 export default function EditBusinessProfileScreen() {
   const C = useAppColors();
+  const { t } = useLanguage();
   const toast = useToast();
 
   const [loading, setLoading]                   = useState(true);
@@ -158,7 +161,7 @@ export default function EditBusinessProfileScreen() {
       <LinearGradient colors={['#1e1b4b', '#4338ca', '#7c3aed']} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientTopBar}>
         <View style={styles.topBar}>
           <BackButton fallback="/(business)/profile" />
-          <Text style={[styles.topTitle, { color: '#fff' }]}>Edit Business Profile</Text>
+          <Text style={[styles.topTitle, { color: '#fff' }]}>{t('profile.editBusiness.headerTitle')}</Text>
           <View style={{ width: 38 }} />
         </View>
       </LinearGradient>
@@ -169,16 +172,16 @@ export default function EditBusinessProfileScreen() {
         keyboardShouldPersistTaps="handled">
 
         {/* ── Business Info ── */}
-        <Text style={[styles.sectionHeader, { color: C.textSecondary }]}>BUSINESS INFO</Text>
+        <Text style={[styles.sectionHeader, { color: C.textSecondary }]}>{t('profile.editBusiness.sectionBizInfo')}</Text>
         <View style={[styles.card, { backgroundColor: C.surface }]}>
 
           <View style={styles.field}>
-            <Text style={[styles.label, { color: C.textSecondary }]}>BUSINESS NAME *</Text>
+            <Text style={[styles.label, { color: C.textSecondary }]}>{t('profile.editBusiness.nameLabel')}</Text>
             <TextInput
               style={[styles.input, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
               value={businessName}
               onChangeText={setBusinessName}
-              placeholder="Your business name"
+              placeholder={t('profile.editBusiness.namePlaceholder')}
               placeholderTextColor={C.textSecondary}
             />
           </View>
@@ -187,10 +190,10 @@ export default function EditBusinessProfileScreen() {
 
           <View style={styles.field}>
             <View style={styles.labelRow}>
-              <Text style={[styles.label, { color: C.textSecondary }]}>DESCRIPTION</Text>
+              <Text style={[styles.label, { color: C.textSecondary }]}>{t('profile.editBusiness.descriptionLabel')}</Text>
               {categories.length > 0 && (
                 <Pressable onPress={handleRegenerateDescription} style={[styles.regenerateBtn, { backgroundColor: C.primaryLight }]}>
-                  <Text style={[styles.regenerateBtnText, { color: C.brinjal1 }]}>✨ Regenerate</Text>
+                  <Text style={[styles.regenerateBtnText, { color: C.brinjal1 }]}>{t('profile.editBusiness.regenerateBtn')}</Text>
                 </Pressable>
               )}
             </View>
@@ -198,24 +201,24 @@ export default function EditBusinessProfileScreen() {
               style={[styles.textarea, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
               value={description}
               onChangeText={(t) => { setDescription(t.slice(0, 600)); setDescriptionManuallyEdited(true); }}
-              placeholder="Select categories below to auto-generate a description…"
+              placeholder={t('profile.editBusiness.descriptionPlaceholder')}
               placeholderTextColor={C.textSecondary}
               multiline
               numberOfLines={4}
               textAlignVertical="top"
             />
-            <Text style={[styles.charCount, { color: C.textSecondary }]}>{description.length}/600</Text>
+            <Text style={[styles.charCount, { color: C.textSecondary }]}>{t('profile.editBusiness.charCount', { n: description.length })}</Text>
           </View>
 
           <View style={[styles.divider, { backgroundColor: C.border }]} />
 
           <View style={styles.field}>
-            <Text style={[styles.label, { color: C.textSecondary }]}>WEBSITE</Text>
+            <Text style={[styles.label, { color: C.textSecondary }]}>{t('profile.editBusiness.websiteLabel')}</Text>
             <TextInput
               style={[styles.input, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
               value={website}
               onChangeText={setWebsite}
-              placeholder="https://yourwebsite.com"
+              placeholder={t('profile.editBusiness.websitePlaceholder')}
               placeholderTextColor={C.textSecondary}
               keyboardType="url"
               autoCapitalize="none"
@@ -226,18 +229,18 @@ export default function EditBusinessProfileScreen() {
           <View style={[styles.divider, { backgroundColor: C.border }]} />
 
           <View style={styles.field}>
-            <Text style={[styles.label, { color: C.textSecondary }]}>LOCATION</Text>
+            <Text style={[styles.label, { color: C.textSecondary }]}>{t('profile.editBusiness.locationLabel')}</Text>
             <PlacesInput value={location} onChange={setLocation} colors={C} />
           </View>
 
         </View>
 
         {/* ── Industry Categories ── */}
-        <Text style={[styles.sectionHeader, { color: C.textSecondary }]}>INDUSTRY CATEGORIES</Text>
+        <Text style={[styles.sectionHeader, { color: C.textSecondary }]}>{t('profile.editBusiness.sectionCategories')}</Text>
         <View style={[styles.card, { backgroundColor: C.surface }]}>
           <View style={styles.field}>
             <Text style={[styles.subHint, { color: C.textSecondary }]}>
-              Select all that apply — creators can filter events by industry.
+              {t('profile.editBusiness.categoriesHint')}
             </Text>
             <View style={styles.chipGrid}>
               {ALL_CATEGORIES.map((cat) => {
@@ -267,7 +270,7 @@ export default function EditBusinessProfileScreen() {
           disabled={saving}>
           {saving
             ? <ActivityIndicator color="#fff" />
-            : <Text style={styles.saveBtnText}>Save Profile</Text>}
+            : <Text style={styles.saveBtnText}>{t('profile.editBusiness.saveBtn')}</Text>}
         </Pressable>
 
         <View style={{ height: 32 }} />

@@ -194,8 +194,8 @@ export default function CreatorProfileScreen() {
 
         {/* ── Categories ── */}
         <SectionCard
-          title="Content Categories"
-          action={{ label: profile?.categories?.length ? 'Edit' : '+ Add', onPress: () => router.push('/(creator)/edit-categories') }}
+          title={t('profile.contentCategories')}
+          action={{ label: profile?.categories?.length ? t('common.edit') : t('profile.addBtn'), onPress: () => router.push('/(creator)/edit-categories') }}
           C={C}>
           {profile?.categories?.length ? (
             <View style={s.chipWrap}>
@@ -208,9 +208,9 @@ export default function CreatorProfileScreen() {
           ) : (
             <EmptyState
               icon="grid-outline"
-              title="No categories yet"
-              hint="Add your content niches to attract matching brands"
-              cta="Add Categories"
+              title={t('profile.noCategoriesYet')}
+              hint={t('profile.categoriesHint')}
+              cta={t('profile.addContentCategories')}
               onPress={() => router.push('/(creator)/edit-categories')}
               C={C} />
           )}
@@ -219,7 +219,7 @@ export default function CreatorProfileScreen() {
         {/* ── Social Accounts ── */}
         <SectionCard
           title={t('profile.socialAccounts')}
-          action={{ label: richAccounts.length > 0 ? 'Manage' : '+ Add', onPress: () => router.push('/(creator)/settings?section=social' as never) }}
+          action={{ label: richAccounts.length > 0 ? t('profile.manage') : t('profile.addBtn'), onPress: () => router.push('/(creator)/settings?section=social' as never) }}
           C={C}>
           {richAccounts.length > 0 ? (
             <View style={s.cardList}>
@@ -238,7 +238,7 @@ export default function CreatorProfileScreen() {
                   {acc.followers > 0 && (
                     <View style={[s.followerPill, { backgroundColor: acc.color + '14' }]}>
                       <Text style={[s.followerNum, { color: acc.color }]}>{fmtFollowers(acc.followers)}</Text>
-                      <Text style={[s.followerLbl, { color: acc.color + 'CC' }]}>followers</Text>
+                      <Text style={[s.followerLbl, { color: acc.color + 'CC' }]}>{t('profile.followersLabel')}</Text>
                     </View>
                   )}
                   <Ionicons name="chevron-forward" size={16} color={C.border} />
@@ -248,9 +248,9 @@ export default function CreatorProfileScreen() {
           ) : (
             <EmptyState
               icon="share-social-outline"
-              title="No social accounts linked"
-              hint="Connect Instagram, TikTok, YouTube and more to showcase your reach"
-              cta="+ Link Account"
+              title={t('profile.noSocialLinked')}
+              hint={t('profile.socialHint')}
+              cta={t('profile.addAccount')}
               onPress={() => router.push('/(creator)/settings?section=social' as never)}
               C={C} />
           )}
@@ -259,7 +259,7 @@ export default function CreatorProfileScreen() {
         {/* ── Past Work ── */}
         <SectionCard
           title={t('profile.pastWork')}
-          action={{ label: '+ Add', onPress: () => router.push('/(creator)/settings?section=past-work' as never) }}
+          action={{ label: t('profile.addBtn'), onPress: () => router.push('/(creator)/settings?section=past-work' as never) }}
           C={C}>
           {portfolioLinks.length > 0 ? (
             <View style={s.cardList}>
@@ -285,15 +285,15 @@ export default function CreatorProfileScreen() {
                 style={[s.addMoreRow, { borderColor: C.brinjal1 + '55' }]}
                 onPress={() => router.push('/(creator)/settings?section=past-work' as never)}>
                 <Ionicons name="add-circle-outline" size={16} color={C.brinjal1} />
-                <Text style={[s.addMoreText, { color: C.brinjal1 }]}>Add another sample</Text>
+                <Text style={[s.addMoreText, { color: C.brinjal1 }]}>{t('profile.addAnotherSample')}</Text>
               </Pressable>
             </View>
           ) : (
             <EmptyState
               icon="briefcase-outline"
-              title="No past work yet"
-              hint="Share links to posts, events, or videos you've created for brands"
-              cta="+ Add Work Sample"
+              title={t('profile.noPastWorkYet')}
+              hint={t('profile.pastWorkHint')}
+              cta={t('profile.addWorkSample')}
               onPress={() => router.push('/(creator)/settings?section=past-work' as never)}
               C={C} />
           )}

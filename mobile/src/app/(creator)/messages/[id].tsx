@@ -166,10 +166,10 @@ export default function CreatorChatRoomScreen() {
         <View style={s.headerInfo}>
           <Text style={[s.headerName, { color: C.text }]} numberOfLines={1}>{personName}</Text>
           {isPending
-            ? <Text style={[s.headerStatus, { color: '#D97706' }]}>⏳ Request pending</Text>
+            ? <Text style={[s.headerStatus, { color: '#D97706' }]}>{t('messages.requestPending')}</Text>
             : status === 'DECLINED'
-            ? <Text style={[s.headerStatus, { color: '#EF4444' }]}>Request declined</Text>
-            : <Text style={[s.headerStatus, { color: '#16A34A' }]}>● Active</Text>}
+            ? <Text style={[s.headerStatus, { color: '#EF4444' }]}>{t('messages.requestDeclined')}</Text>
+            : <Text style={[s.headerStatus, { color: '#16A34A' }]}>{t('messages.active')}</Text>}
         </View>
       </View>
 
@@ -179,7 +179,7 @@ export default function CreatorChatRoomScreen() {
           <View style={s.requestBarTop}>
             <Ionicons name="briefcase-outline" size={15} color="#92400E" />
             <Text style={[s.requestBarTxt, { color: '#92400E' }]}>
-              {personName} wants to start a conversation
+              {t('messages.requestFrom', { name: personName })}
             </Text>
           </View>
           <View style={s.requestBarActions}>
@@ -192,7 +192,7 @@ export default function CreatorChatRoomScreen() {
                 : (
                   <>
                     <Ionicons name="close-circle-outline" size={15} color="#EF4444" />
-                    <Text style={[s.declineTxt, { color: '#EF4444' }]}>Decline</Text>
+                    <Text style={[s.declineTxt, { color: '#EF4444' }]}>{t('messages.decline')}</Text>
                   </>
                 )}
             </Pressable>
@@ -205,7 +205,7 @@ export default function CreatorChatRoomScreen() {
                 : (
                   <>
                     <Ionicons name="checkmark-circle-outline" size={15} color="#fff" />
-                    <Text style={s.acceptTxt}>Accept</Text>
+                    <Text style={s.acceptTxt}>{t('messages.accept')}</Text>
                   </>
                 )}
             </Pressable>
@@ -233,7 +233,7 @@ export default function CreatorChatRoomScreen() {
               </View>
               <Text style={[s.emptyTxt, { color: C.textSecondary }]}>
                 {isPending
-                  ? 'Accept the request to start chatting.'
+                  ? t('messages.acceptRequest')
                   : t('messages.startConversation')}
               </Text>
             </View>

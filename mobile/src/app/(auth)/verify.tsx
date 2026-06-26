@@ -4,6 +4,7 @@ import { Animated, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
 import { useAppColors } from '@/context/ThemeContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { authService } from '@/services/auth';
 import { F } from '@/utilities/constants';
 
@@ -22,6 +23,7 @@ export default function VerifyScreen() {
   const { email } = useLocalSearchParams<{ email: string }>();
   const { reloadUser } = useAuth();
   const C = useAppColors();
+  const { t } = useLanguage();
 
   const [code, setCode] = useState<string[]>(Array(OTP_LENGTH).fill(''));
   const [error, setError] = useState('');
@@ -123,7 +125,7 @@ export default function VerifyScreen() {
   function handleManualVerify() {
     const fullCode = code.join('');
     if (fullCode.length < OTP_LENGTH) {
-      setError(`Please enter all ${OTP_LENGTH} digits.`);
+      setError(t('auth.verify.incompleteError', { length: OTP_LENGTH }));
       return;
     }
     void submitCode(fullCode);
@@ -138,7 +140,7 @@ export default function VerifyScreen() {
       setResendTimer(RESEND_SECONDS);
       setTimeout(() => inputs.current[0]?.focus(), 50);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to resend code.');
+      setError(err instanceof Error ? err.message : t('auth.verify.resendError'));
     } finally {
       setResending(false);
     }
@@ -157,9 +159,9 @@ export default function VerifyScreen() {
             ]}>
             <Text style={styles.checkMark}>✓</Text>
           </Animated.View>
-          <Text style={[styles.successTitle, { color: C.text }]}>Account Verified!</Text>
+          <Text style={[styles.successTitle, { color: C.text }]}>{t('auth.verify.successTitle')}</Text>
           <Text style={[styles.successSub, { color: C.textSecondary }]}>
-            Your account has been successfully verified.{'\n'}Setting up your profile…
+            {t('auth.verify.successBody')}
           </Text>
         </Animated.View>
       </SafeAreaView>
@@ -183,10 +185,9 @@ export default function VerifyScreen() {
             <View style={styles.emailIconWrap}>
               <Text style={styles.emailIcon}>✉️</Text>
             </View>
-            <Text style={styles.heroTitle}>Check your email</Text>
+            <Text style={styles.heroTitle}>{t('auth.verify.title')}</Text>
             <Text style={styles.heroSub}>
-              We sent a {OTP_LENGTH}-digit code to{'\n'}
-              <Text style={styles.heroEmail}>{maskEmail(email ?? '')}</Text>
+              {t('auth.verify.subtitle', { length: OTP_LENGTH, email: maskEmail(email ?? '') })}
             </Text>
           </View>
         </View>
@@ -243,29 +244,29 @@ export default function VerifyScreen() {
             {loading ? (
               <View style={styles.loadingRow}>
                 <View style={[styles.spinner, { borderTopColor: '#fff' }]} />
-                <Text style={styles.verifyBtnText}>Verifying…</Text>
+                <Text style={styles.verifyBtnText}>{t('auth.verify.verifying')}</Text>
               </View>
             ) : (
-              <Text style={styles.verifyBtnText}>Verify & Continue</Text>
+              <Text style={styles.verifyBtnText}>{t('auth.verify.verifyBtn')}</Text>
             )}
           </Pressable>
 
           {/* Resend */}
           <View style={styles.resendRow}>
-            <Text style={[styles.resendLabel, { color: C.textSecondary }]}>Didn't receive the code? </Text>
+            <Text style={[styles.resendLabel, { color: C.textSecondary }]}>{t('auth.verify.resendPrompt')}</Text>
             {resendTimer > 0 ? (
-              <Text style={[styles.resendTimer, { color: C.textSecondary }]}>Resend in {resendTimer}s</Text>
+              <Text style={[styles.resendTimer, { color: C.textSecondary }]}>{t('auth.verify.resendCountdown', { n: resendTimer })}</Text>
             ) : (
               <Pressable onPress={handleResend} disabled={resending}>
                 <Text style={[styles.resendLink, { color: resending ? C.textSecondary : C.brinjal1 }]}>
-                  {resending ? 'Sending…' : 'Resend Code'}
+                  {resending ? t('auth.verify.resending') : t('auth.verify.resendBtn')}
                 </Text>
               </Pressable>
             )}
           </View>
 
           <Text style={[styles.hint, { color: C.textSecondary }]}>
-            Code expires in 10 minutes · Check your spam folder
+            {t('auth.verify.hint')}
           </Text>
         </View>
       </KeyboardAvoidingView>

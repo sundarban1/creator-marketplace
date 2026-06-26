@@ -16,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { EmptyState } from '@/components/EmptyState';
 import { useAppColors } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { businessService, type BusinessDetail, type BusinessActiveCampaign } from '@/services/business';
 import { campaignService } from '@/services/campaign';
 import { useFavoriteBusinesses } from '@/hooks/useFavoriteBusinesses';
@@ -66,6 +67,7 @@ function BusinessAvatar({ name, logoUrl, size = 88 }: { name: string; logoUrl: s
 
 function CampaignCard({ campaign, isApplied }: { campaign: BusinessActiveCampaign; isApplied: boolean }) {
   const C = useAppColors();
+  const { t } = useLanguage();
   const platformIcon = PLATFORM_ICON[campaign.platform] ?? { iconName: 'mobile-alt', color: '#888' };
   const catBg = CATEGORY_BG[campaign.category] ?? '#F2F0DC';
   const deadline = daysLeft(campaign.deadline);
@@ -113,13 +115,13 @@ function CampaignCard({ campaign, isApplied }: { campaign: BusinessActiveCampaig
         {isApplied ? (
           <View style={styles.appliedPill}>
             <Ionicons name="checkmark-circle" size={13} color="#059669" />
-            <Text style={styles.appliedPillText}>Applied</Text>
+            <Text style={styles.appliedPillText}>{t('businessDetail.applied')}</Text>
           </View>
         ) : (
           <Pressable
             style={[styles.applyNowBtn, { backgroundColor: C.brinjal1 }]}
             onPress={(e) => { e.stopPropagation(); goToDetail(); }}>
-            <Text style={styles.applyNowBtnText}>Apply Now</Text>
+            <Text style={styles.applyNowBtnText}>{t('businessDetail.applyNow')}</Text>
             <Ionicons name="arrow-forward" size={12} color="#fff" />
           </Pressable>
         )}
@@ -128,7 +130,7 @@ function CampaignCard({ campaign, isApplied }: { campaign: BusinessActiveCampaig
       <View style={styles.campaignRight}>
         <Ionicons name="chevron-forward" size={18} color={C.border} />
         <Text style={[styles.appliedCount, { color: C.textSecondary }]}>{campaign._count.applications}</Text>
-        <Text style={[styles.appliedLabel, { color: C.textSecondary }]}>applied</Text>
+        <Text style={[styles.appliedLabel, { color: C.textSecondary }]}>{t('businessDetail.appliedCount')}</Text>
       </View>
     </Pressable>
   );
@@ -137,6 +139,7 @@ function CampaignCard({ campaign, isApplied }: { campaign: BusinessActiveCampaig
 export default function BusinessDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const C = useAppColors();
+  const { t } = useLanguage();
   const { user } = useAuth();
   const toast = useToast();
   const { favoriteIds, toggle } = useFavoriteBusinesses();
@@ -181,7 +184,7 @@ export default function BusinessDetailScreen() {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
         <NavBar />
-        <EmptyState emoji="⚠️" title="Couldn't load business" subtitle={error || 'Business not found.'} action={{ label: 'Go Back', onPress: () => router.back() }} />
+        <EmptyState emoji="⚠️" title={t('businessDetail.loadError')} subtitle={error || t('common.notFound')} action={{ label: t('businessDetail.goBack'), onPress: () => router.back() }} />
       </SafeAreaView>
     );
   }
@@ -227,25 +230,25 @@ export default function BusinessDetailScreen() {
               {business.isVerified && (
                 <View style={[styles.verifiedRow, { backgroundColor: '#E8F5E9' }]}>
                   <Ionicons name="checkmark-circle" size={12} color="#388E3C" />
-                  <Text style={[styles.verifiedText, { color: '#388E3C' }]}>Verified Business</Text>
+                  <Text style={[styles.verifiedText, { color: '#388E3C' }]}>{t('businessDetail.verifiedBusiness')}</Text>
                 </View>
               )}
               <View style={styles.heroStats}>
                 <View style={styles.heroStat}>
                   <Text style={[styles.heroStatValue, { color: C.brinjal1 }]}>{business._count.campaigns}</Text>
-                  <Text style={[styles.heroStatLabel, { color: C.textSecondary }]}>Active</Text>
+                  <Text style={[styles.heroStatLabel, { color: C.textSecondary }]}>{t('businessDetail.statActive')}</Text>
                 </View>
                 <View style={[styles.heroStatDivider, { backgroundColor: C.border }]} />
                 <View style={styles.heroStat}>
                   <Text style={[styles.heroStatValue, { color: C.brinjal1 }]}>{joinedYear}</Text>
-                  <Text style={[styles.heroStatLabel, { color: C.textSecondary }]}>Joined</Text>
+                  <Text style={[styles.heroStatLabel, { color: C.textSecondary }]}>{t('businessDetail.statJoined')}</Text>
                 </View>
                 {business.categories.length > 0 && (
                   <>
                     <View style={[styles.heroStatDivider, { backgroundColor: C.border }]} />
                     <View style={styles.heroStat}>
                       <Text style={[styles.heroStatValue, { color: C.brinjal1 }]}>{business.categories.length}</Text>
-                      <Text style={[styles.heroStatLabel, { color: C.textSecondary }]}>Sectors</Text>
+                      <Text style={[styles.heroStatLabel, { color: C.textSecondary }]}>{t('businessDetail.statSectors')}</Text>
                     </View>
                   </>
                 )}
@@ -262,7 +265,7 @@ export default function BusinessDetailScreen() {
                 <View style={[styles.infoIconBox, { backgroundColor: C.primaryLight }]}>
                   <Ionicons name="document-text-outline" size={16} color={C.brinjal1} />
                 </View>
-                <Text style={[styles.infoCardTitle, { color: C.text }]}>About</Text>
+                <Text style={[styles.infoCardTitle, { color: C.text }]}>{t('businessDetail.sectionAbout')}</Text>
               </View>
               <Text style={[styles.aboutText, { color: C.text }]}>{business.description}</Text>
             </View>
@@ -277,7 +280,7 @@ export default function BusinessDetailScreen() {
                 <Ionicons name="globe" size={20} color={C.brinjal1} />
               </View>
               <View style={styles.websiteText}>
-                <Text style={[styles.websiteLabel, { color: C.textSecondary }]}>Website</Text>
+                <Text style={[styles.websiteLabel, { color: C.textSecondary }]}>{t('businessDetail.sectionWebsite')}</Text>
                 <Text style={[styles.websiteUrl, { color: C.brinjal1 }]} numberOfLines={1}>
                   {business.website.replace(/^https?:\/\//, '')}
                 </Text>
@@ -293,7 +296,7 @@ export default function BusinessDetailScreen() {
                 <View style={[styles.infoIconBox, { backgroundColor: C.primaryLight }]}>
                   <Ionicons name="pricetag" size={15} color={C.brinjal1} />
                 </View>
-                <Text style={[styles.infoCardTitle, { color: C.text }]}>Industries</Text>
+                <Text style={[styles.infoCardTitle, { color: C.text }]}>{t('businessDetail.sectionIndustries')}</Text>
               </View>
               <View style={styles.categoriesWrap}>
                 {business.categories.map((cat) => (
@@ -311,7 +314,7 @@ export default function BusinessDetailScreen() {
           {/* Active Campaigns */}
           <View style={styles.campaignsSection}>
             <View style={styles.campaignsSectionHeader}>
-              <Text style={[styles.campaignsSectionTitle, { color: C.text }]}>Active Events</Text>
+              <Text style={[styles.campaignsSectionTitle, { color: C.text }]}>{t('businessDetail.activeEvents')}</Text>
               <View style={[styles.countBadge, { backgroundColor: C.primaryLight }]}>
                 <Text style={[styles.countBadgeText, { color: C.brinjal1 }]}>{business.campaigns.length}</Text>
               </View>
@@ -320,8 +323,8 @@ export default function BusinessDetailScreen() {
             {business.campaigns.length === 0 ? (
               <View style={[styles.noCampaigns, { backgroundColor: C.surface, borderColor: C.border }]}>
                 <Ionicons name="mail-unread-outline" size={36} color={C.textSecondary} style={{ marginBottom: 8 }} />
-                <Text style={[styles.noCampaignsTitle, { color: C.text }]}>No active events</Text>
-                <Text style={[styles.noCampaignsSub, { color: C.textSecondary }]}>This brand isn't hiring right now. Check back later!</Text>
+                <Text style={[styles.noCampaignsTitle, { color: C.text }]}>{t('businessDetail.noActiveEvents')}</Text>
+                <Text style={[styles.noCampaignsSub, { color: C.textSecondary }]}>{t('businessDetail.noActiveEventsSub')}</Text>
               </View>
             ) : (
               <View style={{ gap: 10 }}>

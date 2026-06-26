@@ -3,6 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { F } from '@/utilities/constants';
 
@@ -10,20 +11,20 @@ const DRAWER_W = 280;
 
 type NavItem = {
   iconName: keyof typeof Ionicons.glyphMap;
-  label: string;
+  labelKey: string;
   route: string;
   color: string;
 };
 
 const ACCOUNT_ITEMS: NavItem[] = [
-  { iconName: 'share-social-outline',    label: 'Social Accounts',      route: '/(creator)/settings?section=social',    color: '#E1306C' },
-  { iconName: 'options-outline',         label: 'Event Preferences',    route: '/(creator)/settings?section=campaigns', color: '#7C3AED' },
-  { iconName: 'wallet-outline',          label: 'Earnings & Payments',  route: '/(creator)/settings?section=earnings',  color: '#16A34A' },
-  { iconName: 'images-outline',          label: 'Past Work',            route: '/(creator)/settings?section=past-work', color: '#F59E0B' },
-  { iconName: 'shield-checkmark-outline', label: 'Security',            route: '/(creator)/settings?section=security',  color: '#3B82F6' },
-  { iconName: 'help-buoy-outline',       label: 'Support',              route: '/(creator)/settings?section=support',   color: '#0891B2' },
-  { iconName: 'scale-outline',           label: 'Legal',                route: '/(creator)/settings?section=legal',     color: '#6366F1' },
-  { iconName: 'settings-outline',        label: 'Settings',             route: '/(creator)/settings',                  color: '#6B7280' },
+  { iconName: 'share-social-outline',    labelKey: 'drawer.socialAccounts',    route: '/(creator)/settings?section=social',    color: '#E1306C' },
+  { iconName: 'options-outline',         labelKey: 'drawer.eventPreferences',  route: '/(creator)/settings?section=campaigns', color: '#7C3AED' },
+  { iconName: 'wallet-outline',          labelKey: 'drawer.earningsPayments',  route: '/(creator)/settings?section=earnings',  color: '#16A34A' },
+  { iconName: 'images-outline',          labelKey: 'drawer.pastWork',          route: '/(creator)/settings?section=past-work', color: '#F59E0B' },
+  { iconName: 'shield-checkmark-outline', labelKey: 'drawer.security',         route: '/(creator)/settings?section=security',  color: '#3B82F6' },
+  { iconName: 'help-buoy-outline',       labelKey: 'drawer.support',           route: '/(creator)/settings?section=support',   color: '#0891B2' },
+  { iconName: 'scale-outline',           labelKey: 'drawer.legal',             route: '/(creator)/settings?section=legal',     color: '#6366F1' },
+  { iconName: 'settings-outline',        labelKey: 'drawer.settings',          route: '/(creator)/settings',                  color: '#6B7280' },
 ];
 
 type Props = {
@@ -36,6 +37,7 @@ type Props = {
 export function DrawerMenu({ visible, user, onClose, onLogout }: Props) {
   const insets = useSafeAreaInsets();
   const C = useAppColors();
+  const { t } = useLanguage();
   const slideAnim = useRef(new Animated.Value(-DRAWER_W)).current;
   const backdropOpacity = useRef(new Animated.Value(0)).current;
   const [rendered, setRendered] = useState(false);
@@ -84,18 +86,18 @@ export function DrawerMenu({ visible, user, onClose, onLogout }: Props) {
         {/* Nav */}
         <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
           <View style={styles.groupSeparator}>
-            <Text style={[styles.groupLabel, { color: C.textSecondary }]}>MY ACCOUNT</Text>
+            <Text style={[styles.groupLabel, { color: C.textSecondary }]}>{t('drawer.myAccount')}</Text>
           </View>
           <View style={[styles.navGroup, { backgroundColor: C.surface, borderColor: C.border }]}>
-            {ACCOUNT_ITEMS.map(({ iconName, label, route, color }, idx) => (
+            {ACCOUNT_ITEMS.map(({ iconName, labelKey, route, color }, idx) => (
               <Pressable
-                key={label}
+                key={labelKey}
                 style={[styles.navItem, idx < ACCOUNT_ITEMS.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}
                 onPress={() => { onClose(); router.push(route as Parameters<typeof router.push>[0]); }}>
                 <View style={[styles.navIconWrap, { backgroundColor: color + '18' }]}>
                   <Ionicons name={iconName} size={18} color={color} />
                 </View>
-                <Text style={[styles.navLabel, { color: C.text }]}>{label}</Text>
+                <Text style={[styles.navLabel, { color: C.text }]}>{t(labelKey)}</Text>
                 <Ionicons name="chevron-forward" size={16} color={C.border} />
               </Pressable>
             ))}
@@ -107,7 +109,7 @@ export function DrawerMenu({ visible, user, onClose, onLogout }: Props) {
           style={[styles.logout, { borderTopColor: C.border, paddingBottom: insets.bottom + 12 }]}
           onPress={onLogout}>
           <Ionicons name="log-out" size={20} color={C.error} />
-          <Text style={[styles.logoutText, { color: C.error }]}>Logout</Text>
+          <Text style={[styles.logoutText, { color: C.error }]}>{t('drawer.logout')}</Text>
         </Pressable>
       </Animated.View>
     </View>

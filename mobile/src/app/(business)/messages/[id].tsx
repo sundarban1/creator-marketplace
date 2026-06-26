@@ -145,9 +145,9 @@ export default function BusinessChatRoomScreen() {
         </View>
         <View style={s.headerInfo}>
           <Text style={[s.headerName, { color: C.text }]} numberOfLines={1}>{personName}</Text>
-          {isPending  && <Text style={[s.headerStatus, { color: '#D97706' }]}>⏳ Waiting for response</Text>}
-          {isDeclined && <Text style={[s.headerStatus, { color: '#EF4444' }]}>Request declined</Text>}
-          {!isPending && !isDeclined && <Text style={[s.headerStatus, { color: '#16A34A' }]}>● Active</Text>}
+          {isPending  && <Text style={[s.headerStatus, { color: '#D97706' }]}>{`⏳ ${t('messages.waitingResponse')}`}</Text>}
+          {isDeclined && <Text style={[s.headerStatus, { color: '#EF4444' }]}>{t('messages.requestDeclined')}</Text>}
+          {!isPending && !isDeclined && <Text style={[s.headerStatus, { color: '#16A34A' }]}>{t('messages.active')}</Text>}
         </View>
       </View>
 
@@ -156,7 +156,7 @@ export default function BusinessChatRoomScreen() {
         <View style={[s.pendingBanner, { backgroundColor: '#FEF3C7', borderBottomColor: '#FDE68A' }]}>
           <Ionicons name="time-outline" size={16} color="#92400E" />
           <Text style={[s.pendingTxt, { color: '#92400E' }]}>
-            Your message request is waiting for {personName} to accept.
+            {t('messages.pendingNotice', { name: personName })}
           </Text>
         </View>
       )}
@@ -181,7 +181,7 @@ export default function BusinessChatRoomScreen() {
               </View>
               <Text style={[s.emptyTxt, { color: C.textSecondary }]}>
                 {isPending
-                  ? 'Your request will appear here once accepted.'
+                  ? t('messages.requestWillAppear')
                   : t('messages.startConversation')}
               </Text>
             </View>

@@ -4,7 +4,7 @@ import { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { EmptyState } from '@/components/EmptyState';
-import { useLanguage } from '@/context/LanguageContext';
+import { useLanguage, type TFn } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { campaignService } from '@/services/campaign';
 import { F } from '@/utilities/constants';
@@ -22,22 +22,23 @@ type Proposal = {
 };
 
 const STATUS_CFG = {
-  pending:  { label: 'Pending',  icon: '⏳', bgLight: '#FFF8E1', bgDark: '#292000', textLight: '#B45309', textDark: '#FCD34D' },
-  accepted: { label: 'Accepted', icon: '✅', bgLight: '#F0FDF4', bgDark: '#052E16', textLight: '#15803D', textDark: '#4ADE80' },
-  rejected: { label: 'Rejected', icon: '❌', bgLight: '#FEF2F2', bgDark: '#2D1010', textLight: '#DC2626', textDark: '#F87171' },
+  pending:  { labelKey: 'proposal.creator.statusPending'  as const, icon: '⏳', bgLight: '#FFF8E1', bgDark: '#292000', textLight: '#B45309', textDark: '#FCD34D' },
+  accepted: { labelKey: 'proposal.creator.statusAccepted' as const, icon: '✅', bgLight: '#F0FDF4', bgDark: '#052E16', textLight: '#15803D', textDark: '#4ADE80' },
+  rejected: { labelKey: 'proposal.creator.statusRejected' as const, icon: '❌', bgLight: '#FEF2F2', bgDark: '#2D1010', textLight: '#DC2626', textDark: '#F87171' },
 };
 
-function timeAgo(iso: string): string {
+function timeAgo(iso: string, t: TFn): string {
   const diff = Date.now() - new Date(iso).getTime();
   const d = Math.floor(diff / 86400000);
-  if (d === 0) return 'Today';
-  if (d === 1) return 'Yesterday';
-  if (d < 7) return `${d} days ago`;
+  if (d === 0) return t('proposal.creator.timeToday');
+  if (d === 1) return t('proposal.creator.timeYesterday');
+  if (d < 7) return t('proposal.creator.timeDaysAgo', { n: d });
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
 function ProposalCard({ proposal }: { proposal: Proposal }) {
   const C = useAppColors();
+  const { t } = useLanguage();
   const cfg = STATUS_CFG[proposal.status];
 
   return (
@@ -55,7 +56,7 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
           </View>
           <View style={[styles.badge, { backgroundColor: cfg.bgLight }]}>
             <Text style={styles.badgeIcon}>{cfg.icon}</Text>
-            <Text style={[styles.badgeText, { color: cfg.textLight }]}>{cfg.label}</Text>
+            <Text style={[styles.badgeText, { color: cfg.textLight }]}>{t(cfg.labelKey)}</Text>
           </View>
         </View>
 
@@ -65,22 +66,22 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
           <View style={styles.metaItem}>
             {proposal.campaignType === 'OPEN_EVENT' ? (
               <>
-                <Text style={[styles.metaLabel, { color: C.textSecondary }]}>Type</Text>
+                <Text style={[styles.metaLabel, { color: C.textSecondary }]}>{t('proposal.creator.metaType')}</Text>
                 <View style={styles.freeTag}>
-                  <Text style={styles.freeTagText}>✓ Free Event</Text>
+                  <Text style={styles.freeTagText}>{t('proposal.creator.freeEventTag')}</Text>
                 </View>
               </>
             ) : (
               <>
-                <Text style={[styles.metaLabel, { color: C.textSecondary }]}>Rate</Text>
+                <Text style={[styles.metaLabel, { color: C.textSecondary }]}>{t('proposal.creator.metaRate')}</Text>
                 <Text style={[styles.metaValue, { color: C.brinjal1 }]}>{proposal.proposedRate}</Text>
               </>
             )}
           </View>
           <View style={[styles.metaDivider, { backgroundColor: C.border }]} />
           <View style={styles.metaItem}>
-            <Text style={[styles.metaLabel, { color: C.textSecondary }]}>Submitted</Text>
-            <Text style={[styles.metaValue, { color: C.text }]}>{timeAgo(proposal.submittedAt)}</Text>
+            <Text style={[styles.metaLabel, { color: C.textSecondary }]}>{t('proposal.creator.metaSubmitted')}</Text>
+            <Text style={[styles.metaValue, { color: C.text }]}>{timeAgo(proposal.submittedAt, t)}</Text>
           </View>
           <View style={styles.metaArrow}>
             <Text style={[styles.arrow, { color: C.textSecondary }]}>›</Text>
@@ -127,7 +128,7 @@ export default function ProposalsScreen() {
         <View style={[styles.decCircle2, { backgroundColor: 'rgba(255,255,255,0.07)' }]} />
         <View style={styles.header}>
           <Text style={[styles.heading, { color: '#fff' }]}>{t('creator.proposals.heading')}</Text>
-          <Text style={[styles.subheading, { color: 'rgba(255,255,255,0.8)' }]}>Track your event applications</Text>
+          <Text style={[styles.subheading, { color: 'rgba(255,255,255,0.8)' }]}>{t('proposal.creator.subheading')}</Text>
         </View>
       </LinearGradient>
 
@@ -135,10 +136,10 @@ export default function ProposalsScreen() {
       {proposals.length > 0 && (
         <View style={styles.statsRow}>
           {[
-            { label: 'Submitted', val: proposals.length,                          color: C.brinjal1 },
-            { label: 'Pending',   val: pending,                                   color: C.draft    },
-            { label: 'Accepted',  val: accepted,                                  color: C.active   },
-            { label: 'Rejected',  val: proposals.filter((p) => p.status === 'rejected').length, color: C.error },
+            { label: t('proposal.creator.statSubmitted'), val: proposals.length,                          color: C.brinjal1 },
+            { label: t('proposal.creator.statPending'),   val: pending,                                   color: C.draft    },
+            { label: t('proposal.creator.statAccepted'),  val: accepted,                                  color: C.active   },
+            { label: t('proposal.creator.statRejected'),  val: proposals.filter((p) => p.status === 'rejected').length, color: C.error },
           ].map((s) => (
             <View key={s.label} style={[styles.statCard, { backgroundColor: C.surface }]}>
               <Text style={[styles.statVal, { color: s.color }]}>{s.val}</Text>
@@ -151,14 +152,14 @@ export default function ProposalsScreen() {
       {loading ? (
         <View style={styles.center}>
           <ActivityIndicator size="large" color={C.brinjal1} />
-          <Text style={[styles.loadingText, { color: C.textSecondary }]}>Loading proposals…</Text>
+          <Text style={[styles.loadingText, { color: C.textSecondary }]}>{t('proposal.creator.loading')}</Text>
         </View>
       ) : error ? (
         <EmptyState
           emoji="⚠️"
-          title="Couldn't load proposals"
+          title={t('proposal.creator.loadError')}
           subtitle={error}
-          action={{ label: 'Retry', onPress: () => fetchProposals() }}
+          action={{ label: t('proposal.creator.retry'), onPress: () => fetchProposals() }}
         />
       ) : (
         <FlatList
@@ -171,9 +172,9 @@ export default function ProposalsScreen() {
           ListEmptyComponent={
             <EmptyState
               emoji="📋"
-              title="No proposals yet"
-              subtitle="Browse events and apply to ones that match your content style and audience."
-              action={{ label: 'Browse Events', onPress: () => router.push('/(creator)' as never) }}
+              title={t('proposal.creator.emptyTitle')}
+              subtitle={t('proposal.creator.emptySub')}
+              action={{ label: t('proposal.creator.browseEvents'), onPress: () => router.push('/(creator)' as never) }}
             />
           }
         />

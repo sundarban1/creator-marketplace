@@ -1092,34 +1092,65 @@ export default function CreateCampaignScreen() {
           {phase === 'setup' && (
             <View style={s.content}>
 
-              {/* Event Type Selector */}
-              <View style={[s.eventTypeCard, { backgroundColor: C.surface }]}>
-                <Text style={[s.eventTypeCardTitle, { color: C.text }]}>🎯 Event Type</Text>
-                <Text style={[s.eventTypeCardSub, { color: C.textSecondary }]}>Choose how you want to collaborate with creators</Text>
-                <View style={s.eventTypeRow}>
-                  <Pressable
-                    style={[s.eventTypeOption, { borderColor: form.eventType === 'PAID_CAMPAIGN' ? C.brinjal1 : C.border, backgroundColor: form.eventType === 'PAID_CAMPAIGN' ? C.primaryLight : C.background }]}
-                    onPress={() => { if (form.eventType !== 'PAID_CAMPAIGN') resetFormForType('PAID_CAMPAIGN'); }}>
-                    <View style={[s.etRadioOuter, { borderColor: form.eventType === 'PAID_CAMPAIGN' ? C.brinjal1 : C.border }]}>
-                      {form.eventType === 'PAID_CAMPAIGN' && <View style={[s.etRadioInner, { backgroundColor: C.brinjal1 }]} />}
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[s.etOptionLabel, { color: form.eventType === 'PAID_CAMPAIGN' ? C.brinjal1 : C.text }]}>💰 Paid Event</Text>
-                      <Text style={[s.etOptionSub, { color: C.textSecondary }]}>Creators are paid for content</Text>
-                    </View>
-                  </Pressable>
-                  <Pressable
-                    style={[s.eventTypeOption, { borderColor: form.eventType === 'OPEN_EVENT' ? C.brinjal1 : C.border, backgroundColor: form.eventType === 'OPEN_EVENT' ? C.primaryLight : C.background }]}
-                    onPress={() => { if (form.eventType !== 'OPEN_EVENT') resetFormForType('OPEN_EVENT'); }}>
-                    <View style={[s.etRadioOuter, { borderColor: form.eventType === 'OPEN_EVENT' ? C.brinjal1 : C.border }]}>
-                      {form.eventType === 'OPEN_EVENT' && <View style={[s.etRadioInner, { backgroundColor: C.brinjal1 }]} />}
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[s.etOptionLabel, { color: form.eventType === 'OPEN_EVENT' ? C.brinjal1 : C.text }]}>🎪 Open Creator Event</Text>
-                      <Text style={[s.etOptionSub, { color: C.textSecondary }]}>Invite creators to attend an event</Text>
-                    </View>
-                  </Pressable>
+              {/* Event Type Tab Slider */}
+              <View style={{ gap: 12 }}>
+                <Text style={[s.stepSectionHeading, { color: C.text }]}>What type of event?</Text>
+
+                {/* Tab bar */}
+                <View style={[s.etTabBar, { backgroundColor: C.surface, borderColor: C.border }]}>
+                  {([
+                    { type: 'PAID_CAMPAIGN' as const, emoji: '💰', label: 'Paid Event' },
+                    { type: 'OPEN_EVENT'    as const, emoji: '🎪', label: 'Open Event'    },
+                  ]).map((tab) => {
+                    const sel = form.eventType === tab.type;
+                    return (
+                      <Pressable
+                        key={tab.type}
+                        style={[s.etTab, sel && { backgroundColor: C.brinjal1, shadowColor: C.brinjal1, shadowOpacity: 0.3, shadowRadius: 6, shadowOffset: { width: 0, height: 3 }, elevation: 4 }]}
+                        onPress={() => { if (form.eventType !== tab.type) resetFormForType(tab.type); }}>
+                        <Text style={s.etTabEmoji}>{tab.emoji}</Text>
+                        <Text style={[s.etTabText, { color: sel ? '#fff' : C.textSecondary }]}>{tab.label}</Text>
+                      </Pressable>
+                    );
+                  })}
                 </View>
+
+                {/* Info panel for selected type */}
+                {form.eventType === 'PAID_CAMPAIGN' ? (
+                  <View style={[s.etInfoPanel, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
+                    <Text style={[s.etInfoSub, { color: C.brinjal1 }]}>Pay creators to produce content for your brand</Text>
+                    <View style={s.etInfoPerks}>
+                      {[
+                        'Set your budget per creator',
+                        'Receive proposals — pick the best fit',
+                        'Creator posts content after your approval',
+                        'Track deliverables and results',
+                      ].map((perk) => (
+                        <View key={perk} style={s.etCardPerkRow}>
+                          <Ionicons name="checkmark-circle" size={14} color={C.brinjal1} />
+                          <Text style={[s.etCardPerkText, { color: C.brinjal1 }]}>{perk}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                ) : (
+                  <View style={[s.etInfoPanel, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
+                    <Text style={[s.etInfoSub, { color: C.brinjal1 }]}>Invite creators to attend your event in person</Text>
+                    <View style={s.etInfoPerks}>
+                      {[
+                        'Non-monetary — creators get perks & exposure',
+                        'Set venue, date & capacity',
+                        'Creators register to attend',
+                        'Build brand awareness through live presence',
+                      ].map((perk) => (
+                        <View key={perk} style={s.etCardPerkRow}>
+                          <Ionicons name="checkmark-circle" size={14} color={C.brinjal1} />
+                          <Text style={[s.etCardPerkText, { color: C.brinjal1 }]}>{perk}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                )}
               </View>
 
               {/* Paid Campaign form */}
@@ -1152,32 +1183,68 @@ export default function CreateCampaignScreen() {
                   </SectionCard>
 
                   {/* Goals */}
-                  <SectionCard title="🎯 Event Goals" sub="Select what you want to achieve with this event." colors={C}>
-                    <MultiCheckboxDropdown
-                      values={form.goals}
-                      onChange={(v) => {
-                        update('goals', v);
-                        if (setupErrors.goals) setSetupErrors((e) => ({ ...e, goals: undefined }));
-                      }}
-                      options={GOALS}
-                      placeholder="Select event goals…"
-                      colors={C}
-                      error={setupErrors.goals}
-                    />
+                  <SectionCard title="🎯 Event Goals" sub="Select everything you want to achieve — tap to pick." colors={C}>
+                    <View style={{ gap: 8 }}>
+                      <View style={cg.wrap}>
+                        {GOALS.map((goal) => {
+                          const sel = form.goals.includes(goal);
+                          return (
+                            <Pressable
+                              key={goal}
+                              style={[s.goalChip, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? C.brinjal1 : C.background }]}
+                              onPress={() => {
+                                const next = sel ? form.goals.filter((g) => g !== goal) : [...form.goals, goal];
+                                update('goals', next);
+                                if (setupErrors.goals) setSetupErrors((e) => ({ ...e, goals: undefined }));
+                              }}>
+                              {sel && <Ionicons name="checkmark" size={13} color="#fff" />}
+                              <Text style={[s.goalChipText, { color: sel ? '#fff' : C.textSecondary }]}>{goal}</Text>
+                            </Pressable>
+                          );
+                        })}
+                      </View>
+                      {setupErrors.goals && <Text style={s.errorText}>{setupErrors.goals}</Text>}
+                    </View>
                   </SectionCard>
 
                   {/* Budget */}
-                  <SectionCard title="💰 Budget" sub="How much are you willing to invest per creator?" colors={C}>
-                    <RadioGroup
-                      value={form.budget}
-                      onChange={(v) => {
-                        update('budget', v);
-                        if (setupErrors.budget) setSetupErrors((e) => ({ ...e, budget: undefined }));
-                      }}
-                      options={BUDGETS}
-                      colors={C}
-                      error={setupErrors.budget}
-                    />
+                  <SectionCard title="💰 Budget per Creator" sub="How much are you willing to invest per creator?" colors={C}>
+                    <View style={{ gap: 8 }}>
+                      <View style={s.budgetGrid}>
+                        {BUDGETS.slice(0, 4).map((b) => {
+                          const sel = form.budget === b;
+                          return (
+                            <Pressable
+                              key={b}
+                              style={[s.budgetCard, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? C.brinjal1 : C.background }]}
+                              onPress={() => {
+                                update('budget', b);
+                                if (setupErrors.budget) setSetupErrors((e) => ({ ...e, budget: undefined }));
+                              }}>
+                              <Text style={[s.budgetCardText, { color: sel ? '#fff' : C.text }]} numberOfLines={2}>{b}</Text>
+                            </Pressable>
+                          );
+                        })}
+                      </View>
+                      {/* Product Exchange — full width */}
+                      {(() => {
+                        const b = BUDGETS[4];
+                        const sel = form.budget === b;
+                        return (
+                          <Pressable
+                            style={[s.budgetCardFull, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? C.primaryLight : C.background }]}
+                            onPress={() => {
+                              update('budget', b);
+                              if (setupErrors.budget) setSetupErrors((e) => ({ ...e, budget: undefined }));
+                            }}>
+                            <Ionicons name="gift-outline" size={16} color={sel ? C.brinjal1 : C.textSecondary} />
+                            <Text style={[s.budgetCardFullText, { color: sel ? C.brinjal1 : C.text }]}>{b}</Text>
+                            {sel && <Ionicons name="checkmark-circle" size={16} color={C.brinjal1} />}
+                          </Pressable>
+                        );
+                      })()}
+                      {setupErrors.budget && <Text style={s.errorText}>{setupErrors.budget}</Text>}
+                    </View>
                   </SectionCard>
 
                   {/* Location */}
@@ -1256,13 +1323,26 @@ export default function CreateCampaignScreen() {
               {/* Paid Campaign review */}
               {form.eventType === 'PAID_CAMPAIGN' && (
                 <>
-                  {/* Generated notice */}
-                  <View style={[s.generatedBanner, { backgroundColor: C.primaryLight }]}>
-                    <Ionicons name="sparkles" size={20} color={C.brinjal1} />
-                    <View style={{ flex: 1 }}>
-                      <Text style={[s.generatedTitle, { color: C.brinjal1 }]}>Event Generated</Text>
-                      <Text style={[s.generatedSub, { color: C.brinjal1 }]}>Review and edit before publishing. All fields are editable.</Text>
+                  {/* Step 2 generated banner */}
+                  <View style={[s.generatedBanner, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
+                    <View style={s.generatedBannerTop}>
+                      <Ionicons name="sparkles" size={18} color={C.brinjal1} />
+                      <Text style={[s.generatedTitle, { color: C.brinjal1 }]}>Event Generated from Your Inputs</Text>
                     </View>
+                    <View style={s.generatedChecklist}>
+                      {[
+                        { icon: 'document-text-outline', label: `Title & description written for "${form.template}"` },
+                        { icon: 'bar-chart-outline',     label: `Deliverables pre-filled from category template` },
+                        { icon: 'cash-outline',          label: `Budget: ${form.budget}` },
+                        { icon: 'flag-outline',          label: `Goals: ${form.goals.join(', ')}` },
+                      ].map((item) => (
+                        <View key={item.label} style={s.generatedCheckRow}>
+                          <Ionicons name={item.icon as any} size={13} color={C.brinjal1} />
+                          <Text style={[s.generatedCheckText, { color: C.brinjal1 }]} numberOfLines={1}>{item.label}</Text>
+                        </View>
+                      ))}
+                    </View>
+                    <Text style={[s.generatedSub, { color: C.brinjal1, marginTop: 4 }]}>All fields below are editable — personalise before publishing.</Text>
                   </View>
 
                   {/* Editable title */}
@@ -1415,12 +1495,25 @@ export default function CreateCampaignScreen() {
               {form.eventType === 'OPEN_EVENT' && (
                 <>
                   {/* Auto-generated banner */}
-                  <View style={[s.generatedBanner, { backgroundColor: C.primaryLight }]}>
-                    <Ionicons name="sparkles" size={20} color={C.brinjal1} />
-                    <View style={{ flex: 1 }}>
+                  <View style={[s.generatedBanner, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
+                    <View style={s.generatedBannerTop}>
+                      <Ionicons name="sparkles" size={18} color={C.brinjal1} />
                       <Text style={[s.generatedTitle, { color: C.brinjal1 }]}>Event Details Auto-Generated</Text>
-                      <Text style={[s.generatedSub, { color: C.brinjal1 }]}>Review and edit anything before publishing.</Text>
                     </View>
+                    <View style={s.generatedChecklist}>
+                      {[
+                        { icon: 'document-text-outline', label: `Title & description written for "${form.template}" event` },
+                        { icon: 'gift-outline',          label: `Creator benefits suggested for your category` },
+                        { icon: 'location-outline',      label: `Venue: ${form.venue || 'set on previous step'}` },
+                        { icon: 'people-outline',        label: `Capacity: ${form.capacity} creators` },
+                      ].map((item) => (
+                        <View key={item.label} style={s.generatedCheckRow}>
+                          <Ionicons name={item.icon as any} size={13} color={C.brinjal1} />
+                          <Text style={[s.generatedCheckText, { color: C.brinjal1 }]} numberOfLines={1}>{item.label}</Text>
+                        </View>
+                      ))}
+                    </View>
+                    <Text style={[s.generatedSub, { color: C.brinjal1, marginTop: 4 }]}>Review and edit anything before publishing.</Text>
                   </View>
 
                   {/* Title */}
@@ -1625,9 +1718,13 @@ const s = StyleSheet.create({
   generateBtn:     { borderRadius: 14, height: 56, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 10, marginTop: 8, shadowColor: '#6C3DE0', shadowOpacity: 0.3, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
   generateBtnText: { color: '#fff', fontSize: 16, fontWeight: '800', fontFamily: F.extrabold },
 
-  generatedBanner:  { flexDirection: 'row', alignItems: 'flex-start', gap: 12, borderRadius: 14, padding: 14 },
-  generatedTitle:   { fontSize: 14, fontWeight: '700', fontFamily: F.bold, marginBottom: 2 },
-  generatedSub:     { fontSize: 12, lineHeight: 17, fontFamily: F.regular },
+  generatedBanner:     { borderRadius: 14, padding: 14, borderWidth: 1, gap: 10 },
+  generatedBannerTop:  { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  generatedTitle:      { fontSize: 14, fontWeight: '700', fontFamily: F.bold, flex: 1 },
+  generatedChecklist:  { gap: 6 },
+  generatedCheckRow:   { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  generatedCheckText:  { fontSize: 12, fontFamily: F.regular, flex: 1 },
+  generatedSub:        { fontSize: 12, lineHeight: 17, fontFamily: F.regular },
 
   summaryRow:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingVertical: 10, gap: 12 },
   summaryLabel: { fontSize: 13, fontFamily: F.regular, width: 72 },
@@ -1661,15 +1758,32 @@ const s = StyleSheet.create({
   toast:     { position: 'absolute', bottom: 40, left: 20, right: 20, borderRadius: 14, paddingHorizontal: 18, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 10 },
   toastText: { color: '#fff', fontSize: 14, fontWeight: '700', flex: 1, fontFamily: F.bold },
 
-  eventTypeCard:      { borderRadius: 16, padding: 18, gap: 14, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
-  eventTypeCardTitle: { fontSize: 15, fontWeight: '800', fontFamily: F.extrabold },
-  eventTypeCardSub:   { fontSize: 12, lineHeight: 18, marginTop: -6, fontFamily: F.regular },
-  eventTypeRow:       { gap: 10 },
-  eventTypeOption:    { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, paddingHorizontal: 14, borderRadius: 12, borderWidth: 1.5 },
-  etRadioOuter:       { width: 20, height: 20, borderRadius: 10, borderWidth: 2, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
-  etRadioInner:       { width: 10, height: 10, borderRadius: 5 },
-  etOptionLabel:      { fontSize: 14, fontFamily: F.bold },
-  etOptionSub:        { fontSize: 11, fontFamily: F.regular, marginTop: 2 },
+  stepSectionHeading: { fontSize: 16, fontWeight: '800', fontFamily: F.extrabold },
+  stepSectionSub:     { fontSize: 12, fontFamily: F.regular, lineHeight: 18, marginBottom: 4 },
+
+  // Event type tab slider
+  etTabBar:      { flexDirection: 'row', borderRadius: 14, borderWidth: 1.5, padding: 4, gap: 4 },
+  etTab:         { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 11, borderRadius: 10 },
+  etTabEmoji:    { fontSize: 16 },
+  etTabText:     { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
+
+  // Event type info panel
+  etInfoPanel:   { borderRadius: 14, borderWidth: 1.5, padding: 16, gap: 8 },
+  etInfoSub:     { fontSize: 12, fontFamily: F.regular, lineHeight: 17, opacity: 0.85 },
+  etInfoPerks:   { gap: 8, marginTop: 4 },
+  etCardPerkRow:  { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  etCardPerkText: { fontSize: 12, fontFamily: F.regular, flex: 1 },
+
+  // Goal chips (inline multi-select)
+  goalChip:     { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 20, borderWidth: 1.5 },
+  goalChipText: { fontSize: 13, fontFamily: F.medium },
+
+  // Budget grid
+  budgetGrid:         { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  budgetCard:         { width: '48%', borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 14, alignItems: 'center', justifyContent: 'center' },
+  budgetCardText:     { fontSize: 12, fontWeight: '700', fontFamily: F.bold, textAlign: 'center' },
+  budgetCardFull:     { flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 16, paddingVertical: 13 },
+  budgetCardFullText: { flex: 1, fontSize: 13, fontWeight: '600', fontFamily: F.semibold },
 
   eventHintBox:  { flexDirection: 'row', alignItems: 'flex-start', gap: 10, borderRadius: 12, padding: 14 },
   eventHintText: { flex: 1, fontSize: 12, lineHeight: 18, fontFamily: F.regular },

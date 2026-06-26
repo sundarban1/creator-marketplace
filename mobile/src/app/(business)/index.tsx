@@ -6,6 +6,7 @@ import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, T
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
 import { useDrawer } from '@/context/DrawerContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { COLORS, F } from '@/utilities/constants';
 import { campaignService } from '@/services/campaign';
@@ -31,23 +32,24 @@ function getCategoryMeta(category: string) {
 }
 
 const STATUS_STYLE = {
-  active: { bg: '#DCFCE7', color: '#16A34A',  label: '🟢 Active' },
-  draft:  { bg: '#F1F5F9', color: '#64748B',  label: '⏸ Paused' },
-  closed: { bg: '#FEF9C3', color: '#CA8A04',  label: '🏁 Closed' },
+  active: { bg: '#DCFCE7', color: '#16A34A',  statusKey: 'business.home.statusActive' as const },
+  draft:  { bg: '#F1F5F9', color: '#64748B',  statusKey: 'business.home.statusPaused' as const },
+  closed: { bg: '#FEF9C3', color: '#CA8A04',  statusKey: 'business.home.statusClosed' as const },
 };
-
-function getGreeting() {
-  const h = new Date().getHours();
-  if (h < 12) return 'Good Morning';
-  if (h < 17) return 'Good Afternoon';
-  return 'Good Evening';
-}
 
 export default function BusinessHomeScreen() {
   const { user } = useAuth();
   const { openDrawer } = useDrawer();
+  const { t } = useLanguage();
   const C = useAppColors();
   const name = user?.name?.split(' ')[0] ?? 'there';
+
+  function getGreeting() {
+    const h = new Date().getHours();
+    if (h < 12) return t('business.home.goodMorning');
+    if (h < 17) return t('business.home.goodAfternoon');
+    return t('business.home.goodEvening');
+  }
 
   const { badgeCount: notifBadge, setBadgeCount } = useNotificationBadge();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
@@ -62,7 +64,7 @@ export default function BusinessHomeScreen() {
       const { campaigns: data } = await campaignService.listMy();
       setCampaigns(data);
     } catch (e) {
-      setFetchError(e instanceof Error ? e.message : 'Failed to load events');
+      setFetchError(e instanceof Error ? e.message : t('business.home.loadError'));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -92,18 +94,18 @@ export default function BusinessHomeScreen() {
 
     type StatCard = { iconName: keyof typeof Ionicons.glyphMap; iconBg: string; iconColor: string; value: string; label: string; onPress: () => void };
   const STATS_CARDS: StatCard[] = [
-    { iconName: 'megaphone-outline', iconBg: '#EEF2FF', iconColor: '#4F46E5', value: String(stats.active),    label: 'Active\nEvents', onPress: () => router.push('/(business)/campaigns') },
-    { iconName: 'document-text-outline', iconBg: '#F0FDF4', iconColor: '#059669', value: String(stats.proposals), label: 'Total\nProposals', onPress: () => router.push('/(business)/proposals') },
-    { iconName: 'folder-open-outline', iconBg: '#FDF4FF', iconColor: '#7C3AED', value: String(stats.total), label: 'All\nEvents', onPress: () => router.push('/(business)/campaigns') },
-    { iconName: 'checkmark-done-circle-outline', iconBg: '#FFF7ED', iconColor: '#D97706', value: String(stats.completed), label: 'Completed', onPress: () => router.push('/(business)/campaigns') },
+    { iconName: 'megaphone-outline', iconBg: '#EEF2FF', iconColor: '#4F46E5', value: String(stats.active),    label: t('business.home.statActiveEvents'), onPress: () => router.push('/(business)/campaigns') },
+    { iconName: 'document-text-outline', iconBg: '#F0FDF4', iconColor: '#059669', value: String(stats.proposals), label: t('business.home.statTotalProposals'), onPress: () => router.push('/(business)/proposals') },
+    { iconName: 'folder-open-outline', iconBg: '#FDF4FF', iconColor: '#7C3AED', value: String(stats.total), label: t('business.home.statAllEvents'), onPress: () => router.push('/(business)/campaigns') },
+    { iconName: 'checkmark-done-circle-outline', iconBg: '#FFF7ED', iconColor: '#D97706', value: String(stats.completed), label: t('business.home.statCompleted'), onPress: () => router.push('/(business)/campaigns') },
   ];
 
   const [typeFilter, setTypeFilter] = useState<'All' | 'Paid' | 'Open'>('All');
 
   const TYPE_TABS = [
-    { key: 'All'  as const, label: 'All'        },
-    { key: 'Paid' as const, label: 'Paid'       },
-    { key: 'Open' as const, label: 'Open (Free)' },
+    { key: 'All'  as const, label: t('business.home.tabAll')      },
+    { key: 'Paid' as const, label: t('business.home.tabPaid')     },
+    { key: 'Open' as const, label: t('business.home.tabOpenFree') },
   ];
 
   function matchesType(c: Campaign) {
@@ -136,7 +138,7 @@ export default function BusinessHomeScreen() {
                 </View>
               </Pressable>
               <View>
-                <Text style={[styles.greeting, { color: 'rgba(255,255,255,0.7)' }]}>नमस्ते 🙏</Text>
+                <Text style={[styles.greeting, { color: 'rgba(255,255,255,0.7)' }]}>{getGreeting()}</Text>
                 <Text style={[styles.brandName, { color: '#fff' }]} numberOfLines={1}>{user?.name ?? 'Business'}</Text>
               </View>
             </View>
@@ -167,8 +169,8 @@ export default function BusinessHomeScreen() {
             <Ionicons name="megaphone" size={22} color="#fff" />
           </LinearGradient>
           <View style={styles.createText}>
-            <Text style={[styles.createTitle, { color: C.text }]}>Create an Event</Text>
-            <Text style={[styles.createSub, { color: C.textSecondary }]}>Post a promotion or collaboration opportunity</Text>
+            <Text style={[styles.createTitle, { color: C.text }]}>{t('business.home.createEvent')}</Text>
+            <Text style={[styles.createSub, { color: C.textSecondary }]}>{t('business.home.createEventSub')}</Text>
           </View>
           <View style={[styles.createArrow, { backgroundColor: C.primaryLight }]}>
             <Ionicons name="add" size={20} color={C.brinjal1} />
@@ -180,20 +182,20 @@ export default function BusinessHomeScreen() {
           <View style={styles.errorCard}>
             <Text style={styles.errorText}>{fetchError}</Text>
             <Pressable onPress={() => fetchCampaigns()}>
-              <Text style={[styles.retryText, { color: C.brinjal1 }]}>Retry</Text>
+              <Text style={[styles.retryText, { color: C.brinjal1 }]}>{t('business.home.retry')}</Text>
             </Pressable>
           </View>
         ) : null}
 
         {/* ── Stats ── */}
         <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: C.text }]}>Overview</Text>
+          <Text style={[styles.sectionTitle, { color: C.text }]}>{t('business.home.overview')}</Text>
         </View>
 
         {loading ? (
           <View style={styles.loadingWrap}>
             <ActivityIndicator size="large" color={C.brinjal1} />
-            <Text style={[styles.loadingText, { color: C.textSecondary }]}>Loading your data…</Text>
+            <Text style={[styles.loadingText, { color: C.textSecondary }]}>{t('business.home.loading')}</Text>
           </View>
         ) : (
           <>
@@ -213,17 +215,17 @@ export default function BusinessHomeScreen() {
             <Pressable style={styles.findBanner} onPress={() => router.push('/(business)/explore-creators')}>
               <Text style={styles.findEmoji}>🧑‍🎨</Text>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.findTitle, { color: '#059669' }]}>Explore Creators</Text>
-                <Text style={[styles.findSub, { color: '#059669' }]}>for your next event</Text>
+                <Text style={[styles.findTitle, { color: '#059669' }]}>{t('business.home.exploreCreators')}</Text>
+                <Text style={[styles.findSub, { color: '#059669' }]}>{t('business.home.exploreCreatorsSub')}</Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color="#059669" />
             </Pressable>
 
             {/* ── Recent Events header + type tabs ── */}
             <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: C.text }]}>Recent Events</Text>
+              <Text style={[styles.sectionTitle, { color: C.text }]}>{t('business.home.recentEvents')}</Text>
               <Pressable onPress={() => router.push('/(business)/campaigns')}>
-                <Text style={[styles.viewAll, { color: C.brinjal1 }]}>View all</Text>
+                <Text style={[styles.viewAll, { color: C.brinjal1 }]}>{t('business.home.viewAll')}</Text>
               </Pressable>
             </View>
 
@@ -247,10 +249,10 @@ export default function BusinessHomeScreen() {
             {recent.length === 0 ? (
               <View style={styles.emptyWrap}>
                 <Ionicons name="document-text" size={48} color={C.textSecondary} />
-                <Text style={[styles.emptyTitle, { color: C.text }]}>No events yet</Text>
-                <Text style={[styles.emptyHint, { color: C.textSecondary }]}>Create your first event to start working with creators.</Text>
+                <Text style={[styles.emptyTitle, { color: C.text }]}>{t('business.home.noEventsTitle')}</Text>
+                <Text style={[styles.emptyHint, { color: C.textSecondary }]}>{t('business.home.noEventsSub')}</Text>
                 <Pressable style={[styles.emptyBtn, { backgroundColor: C.brinjal1 }]} onPress={() => router.push('/create-campaign')}>
-                  <Text style={styles.emptyBtnText}>Create Event</Text>
+                  <Text style={styles.emptyBtnText}>{t('business.home.createEventBtn')}</Text>
                 </Pressable>
               </View>
             ) : (
@@ -271,11 +273,11 @@ export default function BusinessHomeScreen() {
                           <Text style={[styles.campaignTitle, { color: C.text }]} numberOfLines={1}>{c.title}</Text>
                           <View style={[styles.typeBadge, c.campaignType === 'OPEN_EVENT' ? styles.typeBadgeFree : styles.typeBadgePaid]}>
                             <Text style={[styles.typeBadgeText, c.campaignType === 'OPEN_EVENT' ? styles.typeBadgeTextFree : styles.typeBadgeTextPaid]}>
-                              {c.campaignType === 'OPEN_EVENT' ? 'Free' : '$ Paid'}
+                              {c.campaignType === 'OPEN_EVENT' ? t('business.home.badgeFree') : t('business.home.badgePaid')}
                             </Text>
                           </View>
                           <View style={[styles.statusBadge, { backgroundColor: st.bg }]}>
-                            <Text style={[styles.statusText, { color: st.color }]}>{st.label}</Text>
+                            <Text style={[styles.statusText, { color: st.color }]}>{t(st.statusKey)}</Text>
                           </View>
                         </View>
                         <Text style={[styles.campaignMeta, { color: C.textSecondary }]}>{c.platform} · {c.budget}</Text>
@@ -283,7 +285,7 @@ export default function BusinessHomeScreen() {
                           <View style={styles.campaignStat}>
                             <Ionicons name="people" size={12} color={C.textSecondary} />
                             <Text style={[styles.campaignStatVal, { color: C.text }]}>{c.proposals}</Text>
-                            <Text style={[styles.campaignStatLabel, { color: C.textSecondary }]}>Proposals</Text>
+                            <Text style={[styles.campaignStatLabel, { color: C.textSecondary }]}>{t('business.home.proposalsLabel')}</Text>
                           </View>
                         </View>
                       </View>

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { ColorValue, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '@/context/AuthContext';
 import { DrawerContext } from '@/context/DrawerContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { BusinessDrawerMenu } from '@/features/business/components/BusinessDrawerMenu';
 import { COLORS } from '@/utilities/constants';
@@ -63,6 +64,7 @@ function CreateTabButton() {
 
 export default function BusinessLayout() {
   const { user, logout } = useAuth();
+  const { t } = useLanguage();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [badgeCount, setBadgeCount] = useState(0);
   const { badgeCount: notifBadge } = useNotificationBadge();
@@ -98,7 +100,7 @@ export default function BusinessLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
+          title: t('business.tab.home'),
           tabBarIcon: ({ color, focused }) => (
             <TabIcon name="home-outline" nameActive="home" size={23} color={color} focused={focused} />
           ),
@@ -107,7 +109,7 @@ export default function BusinessLayout() {
       <Tabs.Screen
         name="campaigns"
         options={{
-          title: 'Events',
+          title: t('business.tab.events'),
           tabBarIcon: ({ color, focused }) => (
             <TabIcon name="briefcase-outline" nameActive="briefcase" size={23} color={color} focused={focused} />
           ),
@@ -124,7 +126,7 @@ export default function BusinessLayout() {
       <Tabs.Screen
         name="proposals"
         options={{
-          title: 'Proposals',
+          title: t('business.tab.proposals'),
           tabBarIcon: ({ color, focused }) => (
             <TabIcon name="document-text-outline" nameActive="document-text" size={23} color={color} focused={focused} />
           ),
@@ -139,7 +141,7 @@ export default function BusinessLayout() {
           },
         })}
         options={{
-          title: 'Messages',
+          title: t('business.tab.messages'),
           tabBarIcon: ({ color, focused }) => (
             <TabIcon name="chatbubble-outline" nameActive="chatbubble" size={23} color={color} focused={focused} badge={badgeCount} />
           ),

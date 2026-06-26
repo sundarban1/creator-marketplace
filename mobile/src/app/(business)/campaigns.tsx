@@ -34,25 +34,24 @@ type IoniconName = keyof typeof Ionicons.glyphMap;
 const FILTERS = ['All', 'Active', 'Draft', 'Closed'] as const;
 
 const EMPTY_CFG: Record<typeof FILTERS[number], {
-  icon: IoniconName; iconColor: string; iconBg: string;
-  title: string; sub: string; showCreate: boolean;
+  icon: IoniconName; iconColor: string; iconBg: string; showCreate: boolean;
 }> = {
-  All:    { icon: 'megaphone-outline',    iconColor: '#7c3aed', iconBg: '#f5f3ff', title: 'No events yet',      sub: 'Post your first event and start connecting with creators.',       showCreate: true  },
-  Active: { icon: 'flash-outline',        iconColor: '#16A34A', iconBg: '#ECFDF5', title: 'No active events',   sub: 'Create an event to start finding creators for your brand.',       showCreate: true  },
-  Draft:  { icon: 'create-outline',       iconColor: '#D97706', iconBg: '#FEF3C7', title: 'No drafts saved',    sub: "Events you start but don't publish will appear here.",            showCreate: true  },
-  Closed: { icon: 'lock-closed-outline',  iconColor: '#6B7280', iconBg: '#F3F4F6', title: 'No closed events',   sub: 'Events that have ended or been closed will show up here.',        showCreate: false },
+  All:    { icon: 'megaphone-outline',    iconColor: '#7c3aed', iconBg: '#f5f3ff', showCreate: true  },
+  Active: { icon: 'flash-outline',        iconColor: '#16A34A', iconBg: '#ECFDF5', showCreate: true  },
+  Draft:  { icon: 'create-outline',       iconColor: '#D97706', iconBg: '#FEF3C7', showCreate: true  },
+  Closed: { icon: 'lock-closed-outline',  iconColor: '#6B7280', iconBg: '#F3F4F6', showCreate: false },
 };
 
 const STATUS_CFG = {
-  active: { bg: '#EEF9F3', color: '#16A34A', label: 'Active' },
-  draft:  { bg: '#F4F4F4', color: '#6B7280', label: 'Draft' },
-  closed: { bg: '#FEF3C7', color: '#D97706', label: 'Closed' },
+  active: { bg: '#EEF9F3', color: '#16A34A' },
+  draft:  { bg: '#F4F4F4', color: '#6B7280' },
+  closed: { bg: '#FEF3C7', color: '#D97706' },
 } as const;
 
 const PROPOSAL_STATUS_CFG = {
-  pending:  { bg: '#FFF7ED', color: '#D97706', label: 'Pending' },
-  accepted: { bg: '#EEF9F3', color: '#16A34A', label: 'Accepted' },
-  rejected: { bg: '#F3F4F6', color: '#6B7280', label: 'Rejected' },
+  pending:  { bg: '#FFF7ED', color: '#D97706' },
+  accepted: { bg: '#EEF9F3', color: '#16A34A' },
+  rejected: { bg: '#F3F4F6', color: '#6B7280' },
 } as const;
 
 function initials(name: string) {
@@ -159,7 +158,7 @@ export default function CampaignsScreen() {
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <Text style={[styles.pageTitle, { color: '#fff' }]}>{t('campaigns.title')}</Text>
-            <Text style={[styles.pageSub, { color: 'rgba(255,255,255,0.75)' }]}>Manage and track your events</Text>
+            <Text style={[styles.pageSub, { color: 'rgba(255,255,255,0.75)' }]}>{t('campaigns.subtitle')}</Text>
           </View>
           <Pressable
             style={[styles.newBtn, { backgroundColor: 'rgba(255,255,255,0.22)' }]}
@@ -182,7 +181,9 @@ export default function CampaignsScreen() {
               style={[styles.filterTab, { backgroundColor: active ? C.brinjal1 : C.surface, borderColor: active ? C.brinjal1 : C.border }]}
               onPress={() => setActiveFilter(f)}>
               <Text style={[styles.filterTabVal, { color: active ? '#fff' : C.text }]}>{count}</Text>
-              <Text style={[styles.filterTabLabel, { color: active ? 'rgba(255,255,255,0.82)' : C.textSecondary }]}>{f}</Text>
+              <Text style={[styles.filterTabLabel, { color: active ? 'rgba(255,255,255,0.82)' : C.textSecondary }]}>
+                {f === 'All' ? t('campaigns.all') : f === 'Active' ? t('campaigns.active') : f === 'Draft' ? t('campaigns.draft') : t('campaigns.closed')}
+              </Text>
             </Pressable>
           );
         })}
@@ -215,8 +216,12 @@ export default function CampaignsScreen() {
                 </View>
 
                 {/* Text */}
-                <Text style={[styles.emptyTitle, { color: C.text }]}>{EMPTY_CFG[activeFilter].title}</Text>
-                <Text style={[styles.emptySub, { color: C.textSecondary }]}>{EMPTY_CFG[activeFilter].sub}</Text>
+                <Text style={[styles.emptyTitle, { color: C.text }]}>
+                  {activeFilter === 'All' ? t('campaigns.emptyNoEvents') : activeFilter === 'Active' ? t('campaigns.emptyNoActive') : activeFilter === 'Draft' ? t('campaigns.emptyNoDrafts') : t('campaigns.emptyNoClosed')}
+                </Text>
+                <Text style={[styles.emptySub, { color: C.textSecondary }]}>
+                  {activeFilter === 'All' ? t('campaigns.emptyNoEventsSub') : activeFilter === 'Active' ? t('campaigns.emptyNoActiveSub') : activeFilter === 'Draft' ? t('campaigns.emptyNoDraftsSub') : t('campaigns.emptyNoClosedSub')}
+                </Text>
 
                 {/* Create button */}
                 {EMPTY_CFG[activeFilter].showCreate && (
@@ -224,7 +229,7 @@ export default function CampaignsScreen() {
                     style={[styles.emptyCreateBtn, { backgroundColor: EMPTY_CFG[activeFilter].iconColor }]}
                     onPress={() => router.push('/create-campaign')}>
                     <Ionicons name="add-circle-outline" size={16} color="#fff" />
-                    <Text style={styles.emptyCreateBtnText}>Create New Event</Text>
+                    <Text style={styles.emptyCreateBtnText}>{t('campaigns.createNewEvent')}</Text>
                   </Pressable>
                 )}
 
@@ -232,7 +237,7 @@ export default function CampaignsScreen() {
                 {activeFilter !== 'All' && (
                   <Pressable onPress={() => setActiveFilter('All')} style={styles.emptySwitchRow}>
                     <Text style={[styles.emptySwitchText, { color: C.textSecondary }]}>View all events  </Text>
-                    <Text style={[styles.emptySwitchLink, { color: C.brinjal1 }]}>See All →</Text>
+                    <Text style={[styles.emptySwitchLink, { color: C.brinjal1 }]}>{t('campaigns.seeAll')}</Text>
                   </Pressable>
                 )}
               </View>
@@ -262,7 +267,7 @@ export default function CampaignsScreen() {
                           <Text style={[styles.meta, { color: C.textSecondary }]}>{c.budget}</Text>
                         </View>
                         {(c.status === 'draft') ? (
-                          <Text style={[styles.draftNote, { color: C.textSecondary }]}>Tap to view & edit</Text>
+                          <Text style={[styles.draftNote, { color: C.textSecondary }]}>{t('campaigns.tapToEdit')}</Text>
                         ) : (
                           <View style={styles.statRow}>
                             <View style={[styles.statPill, { backgroundColor: C.primaryLight }]}>
@@ -272,7 +277,9 @@ export default function CampaignsScreen() {
                               </Text>
                             </View>
                             <View style={[styles.badge, { backgroundColor: st.bg }]}>
-                              <Text style={[styles.badgeText, { color: st.color }]}>{st.label}</Text>
+                              <Text style={[styles.badgeText, { color: st.color }]}>
+                                {c.status === 'active' ? t('campaigns.statusActive') : c.status === 'draft' ? t('campaigns.statusDraft') : t('campaigns.statusClosed')}
+                              </Text>
                             </View>
                           </View>
                         )}
@@ -323,7 +330,7 @@ export default function CampaignsScreen() {
 
           <View style={[styles.modalHeader, { borderBottomColor: C.border }]}>
             <View style={styles.modalHeaderText}>
-              <Text style={[styles.modalTitle, { color: C.text }]}>Invite Creators</Text>
+              <Text style={[styles.modalTitle, { color: C.text }]}>{t('campaigns.inviteModalTitle')}</Text>
               <Text style={[styles.modalSubtitle, { color: C.textSecondary }]} numberOfLines={1}>
                 {inviteCampaign?.title}
               </Text>
@@ -336,9 +343,9 @@ export default function CampaignsScreen() {
           {inviteSuccess ? (
             <View style={styles.inviteSuccess}>
               <Text style={styles.inviteSuccessEmoji}>🎉</Text>
-              <Text style={[styles.inviteSuccessText, { color: C.text }]}>Invitations sent!</Text>
+              <Text style={[styles.inviteSuccessText, { color: C.text }]}>{t('campaigns.invitationSent')}</Text>
               <Text style={[styles.inviteSuccessHint, { color: C.textSecondary }]}>
-                Creators will receive a notification right away.
+                {t('campaigns.invitationSentSub')}
               </Text>
             </View>
           ) : savedLoading ? (
@@ -346,14 +353,14 @@ export default function CampaignsScreen() {
           ) : savedCreators.length === 0 ? (
             <View style={styles.modalEmpty}>
               <Text style={styles.modalEmptyIcon}>🔖</Text>
-              <Text style={[styles.modalEmptyText, { color: C.textSecondary }]}>No saved creators yet</Text>
+              <Text style={[styles.modalEmptyText, { color: C.textSecondary }]}>{t('campaigns.noSavedCreators')}</Text>
               <Text style={[styles.modalEmptyHint, { color: C.textSecondary }]}>
-                Save creators from their profiles first, then invite them here.
+                {t('campaigns.noSavedCreatorsSub')}
               </Text>
               <Pressable
                 style={[styles.goSaveBtn, { backgroundColor: C.brinjal1 }]}
                 onPress={() => { setInviteCampaign(null); router.push('/(business)/saved-creators'); }}>
-                <Text style={styles.goSaveBtnText}>View Saved Creators</Text>
+                <Text style={styles.goSaveBtnText}>{t('campaigns.viewSavedCreators')}</Text>
               </Pressable>
             </View>
           ) : (
@@ -361,7 +368,7 @@ export default function CampaignsScreen() {
               {selectedCreators.size > 0 && (
                 <View style={[styles.selectionBanner, { backgroundColor: C.primaryLight }]}>
                   <Text style={[styles.selectionText, { color: C.brinjal1 }]}>
-                    {selectedCreators.size} creator{selectedCreators.size !== 1 ? 's' : ''} selected
+                    {t('campaigns.creatorsSelected', { n: selectedCreators.size })}
                   </Text>
                 </View>
               )}
@@ -382,7 +389,7 @@ export default function CampaignsScreen() {
                         <Text style={[styles.pickName, { color: C.text }]}>{creator.fullName ?? 'Creator'}</Text>
                         {topAcc && (
                           <Text style={[styles.pickSub, { color: C.textSecondary }]}>
-                            {topAcc.platform} · {topAcc.followers >= 1000 ? `${(topAcc.followers / 1000).toFixed(1)}K` : topAcc.followers} followers
+                            {topAcc.platform} · {topAcc.followers >= 1000 ? `${(topAcc.followers / 1000).toFixed(1)}K` : topAcc.followers} {t('campaigns.followersSuffix')}
                           </Text>
                         )}
                       </View>

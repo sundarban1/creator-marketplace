@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { creatorService, type ApiCreatorPublicProfile } from '@/services/creator';
 import { chatService } from '@/services/chat';
 import { F } from '@/utilities/constants';
@@ -85,6 +86,7 @@ function SectionTitle({ label, color }: { label: string; color: string }) {
 export default function CreatorDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const C = useAppColors();
+  const { t } = useLanguage();
 
   const [profile, setProfile]     = useState<ApiCreatorPublicProfile | null>(null);
   const [loading, setLoading]     = useState(true);

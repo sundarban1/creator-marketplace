@@ -6,7 +6,7 @@ import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from '
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { EmptyState } from '@/components/EmptyState';
 import { useAuth } from '@/context/AuthContext';
-import { useLanguage } from '@/context/LanguageContext';
+import { useLanguage, type TFn } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { useNotificationBadge } from '@/context/NotificationContext';
 import { notificationService } from '@/services/notifications';
@@ -21,45 +21,46 @@ type TypeConfig = {
   iconColor: string;
   iconBg: string;
   accentColor: string;
-  label: string;
+  labelKey: string;
 };
 
 const TYPE_CONFIG: Record<AppNotification['type'], TypeConfig> = {
-  proposal_received:        { icon: 'document-text',        iconColor: '#6366F1', iconBg: '#EEF2FF', accentColor: '#6366F1', label: 'New Proposal'  },
-  proposal_accepted:        { icon: 'checkmark-circle',     iconColor: '#10B981', iconBg: '#ECFDF5', accentColor: '#10B981', label: 'Accepted'      },
-  proposal_rejected:        { icon: 'close-circle',         iconColor: '#EF4444', iconBg: '#FEF2F2', accentColor: '#EF4444', label: 'Rejected'      },
-  new_message:              { icon: 'chatbubble',           iconColor: '#3B82F6', iconBg: '#EFF6FF', accentColor: '#3B82F6', label: 'Message'       },
-  campaign_deadline:        { icon: 'time',                 iconColor: '#F59E0B', iconBg: '#FFFBEB', accentColor: '#F59E0B', label: 'Deadline'      },
-  campaign_closed:          { icon: 'lock-closed',          iconColor: '#6B7280', iconBg: '#F3F4F6', accentColor: '#6B7280', label: 'Closed'        },
-  new_campaign:             { icon: 'megaphone',            iconColor: '#8B5CF6', iconBg: '#F5F3FF', accentColor: '#8B5CF6', label: 'New Event'     },
-  payment_released:         { icon: 'cash',                 iconColor: '#10B981', iconBg: '#ECFDF5', accentColor: '#10B981', label: 'Payment'       },
-  message_request_accepted: { icon: 'chatbubble-ellipses', iconColor: '#3B82F6', iconBg: '#EFF6FF', accentColor: '#3B82F6', label: 'Connected'     },
-  business_favorited:       { icon: 'heart',               iconColor: '#EF4444', iconBg: '#FFF1F2', accentColor: '#EF4444', label: 'Favorited'     },
-  creator_saved:            { icon: 'bookmark',            iconColor: '#7C3AED', iconBg: '#F5F3FF', accentColor: '#7C3AED', label: 'Saved'         },
-  campaign_invitation:      { icon: 'mail',                iconColor: '#0891B2', iconBg: '#E0F2FE', accentColor: '#0891B2', label: 'Invited'       },
+  proposal_received:        { icon: 'document-text',        iconColor: '#6366F1', iconBg: '#EEF2FF', accentColor: '#6366F1', labelKey: 'notifications.typeNewProposal'  },
+  proposal_accepted:        { icon: 'checkmark-circle',     iconColor: '#10B981', iconBg: '#ECFDF5', accentColor: '#10B981', labelKey: 'notifications.typeAccepted'      },
+  proposal_rejected:        { icon: 'close-circle',         iconColor: '#EF4444', iconBg: '#FEF2F2', accentColor: '#EF4444', labelKey: 'notifications.typeRejected'      },
+  new_message:              { icon: 'chatbubble',           iconColor: '#3B82F6', iconBg: '#EFF6FF', accentColor: '#3B82F6', labelKey: 'notifications.typeMessage'       },
+  campaign_deadline:        { icon: 'time',                 iconColor: '#F59E0B', iconBg: '#FFFBEB', accentColor: '#F59E0B', labelKey: 'notifications.typeDeadline'      },
+  campaign_closed:          { icon: 'lock-closed',          iconColor: '#6B7280', iconBg: '#F3F4F6', accentColor: '#6B7280', labelKey: 'notifications.typeClosed'        },
+  new_campaign:             { icon: 'megaphone',            iconColor: '#8B5CF6', iconBg: '#F5F3FF', accentColor: '#8B5CF6', labelKey: 'notifications.typeNewEvent'     },
+  payment_released:         { icon: 'cash',                 iconColor: '#10B981', iconBg: '#ECFDF5', accentColor: '#10B981', labelKey: 'notifications.typePayment'       },
+  message_request_accepted: { icon: 'chatbubble-ellipses', iconColor: '#3B82F6', iconBg: '#EFF6FF', accentColor: '#3B82F6', labelKey: 'notifications.typeConnected'     },
+  business_favorited:       { icon: 'heart',               iconColor: '#EF4444', iconBg: '#FFF1F2', accentColor: '#EF4444', labelKey: 'notifications.typeFavorited'     },
+  creator_saved:            { icon: 'bookmark',            iconColor: '#7C3AED', iconBg: '#F5F3FF', accentColor: '#7C3AED', labelKey: 'notifications.typeSaved'         },
+  campaign_invitation:      { icon: 'mail',                iconColor: '#0891B2', iconBg: '#E0F2FE', accentColor: '#0891B2', labelKey: 'notifications.typeInvited'       },
 };
 
-const FALLBACK: TypeConfig = { icon: 'notifications', iconColor: '#6B7280', iconBg: '#F3F4F6', accentColor: '#6B7280', label: 'Notification' };
+const FALLBACK: TypeConfig = { icon: 'notifications', iconColor: '#6B7280', iconBg: '#F3F4F6', accentColor: '#6B7280', labelKey: 'notifications.typeNotification' };
 
-function getGroup(timestamp: string): 'Today' | 'This Week' | 'Earlier' {
+function getGroup(timestamp: string): 'groupToday' | 'groupThisWeek' | 'groupEarlier' {
   const diffDays = (Date.now() - new Date(timestamp).getTime()) / (1000 * 60 * 60 * 24);
-  if (diffDays < 1) return 'Today';
-  if (diffDays < 7) return 'This Week';
-  return 'Earlier';
+  if (diffDays < 1) return 'groupToday';
+  if (diffDays < 7) return 'groupThisWeek';
+  return 'groupEarlier';
 }
 
-function timeAgo(timestamp: string): string {
+function timeAgo(timestamp: string, t: TFn): string {
   const diff = Date.now() - new Date(timestamp).getTime();
   const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
+  if (mins < 1) return t('notifications.timeJustNow');
+  if (mins < 60) return t('notifications.timeMinutesAgo', { n: mins });
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return `${Math.floor(hrs / 24)}d ago`;
+  if (hrs < 24) return t('notifications.timeHoursAgo', { n: hrs });
+  return t('notifications.timeDaysAgo', { n: Math.floor(hrs / 24) });
 }
 
 function NotificationItem({ item, onPress }: { item: AppNotification; onPress: (id: string) => void }) {
   const C = useAppColors();
+  const { t } = useLanguage();
   const cfg = TYPE_CONFIG[item.type] ?? FALLBACK;
 
   return (
@@ -93,14 +94,14 @@ function NotificationItem({ item, onPress }: { item: AppNotification; onPress: (
 
         {/* Type label chip */}
         <View style={[styles.labelChip, { backgroundColor: cfg.iconBg }]}>
-          <Text style={[styles.labelChipText, { color: cfg.iconColor }]}>{cfg.label}</Text>
+          <Text style={[styles.labelChipText, { color: cfg.iconColor }]}>{t(cfg.labelKey)}</Text>
         </View>
 
         <Text style={[styles.itemBody, { color: C.textSecondary }]} numberOfLines={2}>
           {item.body}
         </Text>
 
-        <Text style={[styles.itemTime, { color: C.textSecondary }]}>{timeAgo(item.timestamp)}</Text>
+        <Text style={[styles.itemTime, { color: C.textSecondary }]}>{timeAgo(item.timestamp, t)}</Text>
       </View>
     </Pressable>
   );
@@ -177,7 +178,7 @@ export default function NotificationsScreen() {
   }
 
   const unreadCount = notifications.filter((n) => !n.isRead).length;
-  const groups = ['Today', 'This Week', 'Earlier'] as const;
+  const groups = ['groupToday', 'groupThisWeek', 'groupEarlier'] as const;
   const grouped = groups
     .map((g) => ({ group: g, items: notifications.filter((n) => getGroup(n.timestamp) === g) }))
     .filter((g) => g.items.length > 0);
@@ -214,7 +215,7 @@ export default function NotificationsScreen() {
           keyExtractor={(g) => g.group}
           renderItem={({ item: g }) => (
             <View>
-              <Text style={[styles.groupLabel, { color: C.textSecondary }]}>{g.group}</Text>
+              <Text style={[styles.groupLabel, { color: C.textSecondary }]}>{t(`notifications.${g.group}`)}</Text>
               {g.items.map((n) => (
                 <NotificationItem key={n.id} item={n} onPress={handlePress} />
               ))}
@@ -225,8 +226,8 @@ export default function NotificationsScreen() {
           ListEmptyComponent={
             <EmptyState
               emoji="🔔"
-              title="All caught up!"
-              subtitle="You have no notifications right now. We'll let you know when something new happens."
+              title={t('notifications.emptyTitle')}
+              subtitle={t('notifications.emptySub')}
             />
           }
         />

@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Animated, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { authService } from '@/services/auth';
 import { profileService } from '@/services/profile';
@@ -11,7 +12,7 @@ import { F } from '@/utilities/constants';
 
 const CATEGORIES = CREATOR_CATEGORIES;
 const TOTAL_STEPS = 2;
-const GENDER_OPTIONS = ['Male', 'Female', 'Non-binary', 'Prefer not to say'];
+const GENDER_KEYS = ['Male', 'Female', 'Non-binary', 'Prefer not to say'] as const;
 const GOOGLE_PLACES_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY ?? '';
 type PlacePrediction = { place_id: string; description: string };
 
@@ -43,6 +44,7 @@ function generateUsernameSuggestions(name: string): string[] {
 
 export default function OnboardingScreen() {
   const { updateUser } = useAuth();
+  const { t } = useLanguage();
   const C = useAppColors();
   const [step, setStep] = useState(1);
 
@@ -80,15 +82,15 @@ export default function OnboardingScreen() {
   }, [finished]);
 
   // ── Step 1 validation ──
-  const fullNameError = step1Submitted && !fullName.trim() ? 'Full name is required' : undefined;
+  const fullNameError = step1Submitted && !fullName.trim() ? t('onboarding.fullNameRequired') : undefined;
   const usernameError = step1Submitted
-    ? !username.trim()                          ? 'Username is required'
-    : username.trim().length < 3               ? 'Must be at least 3 characters'
-    : !/^[a-zA-Z0-9_]+$/.test(username.trim()) ? 'Only letters, numbers, and underscores'
+    ? !username.trim()                          ? t('onboarding.usernameRequired')
+    : username.trim().length < 3               ? t('onboarding.usernameMinLength')
+    : !/^[a-zA-Z0-9_]+$/.test(username.trim()) ? t('onboarding.usernamePattern')
     : undefined
     : undefined;
-  const genderError   = step1Submitted && !gender ? 'Please select your gender' : undefined;
-  const locationError = step1Submitted && !location.trim() ? 'Location is required' : undefined;
+  const genderError   = step1Submitted && !gender ? t('onboarding.genderRequired') : undefined;
+  const locationError = step1Submitted && !location.trim() ? t('onboarding.locationRequired') : undefined;
 
   const step1Valid =
     fullName.trim().length > 0 &&
@@ -172,12 +174,12 @@ export default function OnboardingScreen() {
           <Animated.View style={[styles.checkCircle, { backgroundColor: C.active, shadowColor: C.active, transform: [{ scale: scaleAnim }] }]}>
             <Text style={styles.checkMark}>✓</Text>
           </Animated.View>
-          <Text style={[styles.successTitle, { color: C.text }]}>Profile Created! 🎉</Text>
+          <Text style={[styles.successTitle, { color: C.text }]}>{t('onboarding.successTitle')}</Text>
           <Text style={[styles.successSub, { color: C.textSecondary }]}>
-            You are ready to collaborate with businesses.{'\n'}Redirecting to home…
+            {t('onboarding.successBody')}
           </Text>
           <Pressable style={[styles.goHomeBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }]} onPress={goHome}>
-            <Text style={styles.goHomeBtnText}>Let's Go!</Text>
+            <Text style={styles.goHomeBtnText}>{t('onboarding.successBtn')}</Text>
           </Pressable>
         </Animated.View>
       </SafeAreaView>
@@ -185,8 +187,8 @@ export default function OnboardingScreen() {
   }
 
   const STEP_CONFIG = [
-    { title: 'About you',           subtitle: 'Fill in your details so brands can discover you.' },
-    { title: 'What do you create?', subtitle: 'Choose 1 to 5 categories. You can update this anytime.' },
+    { title: t('onboarding.step1Title'), subtitle: t('onboarding.step1Subtitle') },
+    { title: t('onboarding.step2Title'), subtitle: t('onboarding.step2Subtitle') },
   ];
   const { title, subtitle } = STEP_CONFIG[step - 1];
 
@@ -212,7 +214,7 @@ export default function OnboardingScreen() {
 
       {/* ── Step header ── */}
       <View style={styles.stepHeader}>
-        <Text style={[styles.stepNum, { color: C.brinjal1 }]}>Step {step} of {TOTAL_STEPS}</Text>
+        <Text style={[styles.stepNum, { color: C.brinjal1 }]}>{t('onboarding.stepIndicator', { n: step, total: TOTAL_STEPS })}</Text>
         <Text style={[styles.stepTitle, { color: C.text }]}>{title}</Text>
         <Text style={[styles.stepSubtitle, { color: C.textSecondary }]}>{subtitle}</Text>
       </View>
@@ -233,16 +235,16 @@ export default function OnboardingScreen() {
 
               {/* Full Name */}
               <View style={styles.formGroup}>
-                <Text style={[styles.formLabel, { color: C.text }]}>Full Name <Text style={{ color: C.error }}>*</Text></Text>
+                <Text style={[styles.formLabel, { color: C.text }]}>{t('onboarding.fullNameLabel')} <Text style={{ color: C.error }}>*</Text></Text>
                 <TextInput
                   style={[styles.formInput, { backgroundColor: C.surface, borderColor: fullNameError ? C.error : C.border, color: C.text }]}
                   value={fullName}
-                  onChangeText={(t) => {
+                  onChangeText={(v) => {
                     setStep1Error('');
-                    setFullName(t);
-                    setUsernameSuggestions(generateUsernameSuggestions(t));
+                    setFullName(v);
+                    setUsernameSuggestions(generateUsernameSuggestions(v));
                   }}
-                  placeholder="e.g. Aarav Sharma"
+                  placeholder={t('onboarding.fullNamePlaceholder')}
                   placeholderTextColor={C.textSecondary}
                   autoCapitalize="words"
                 />
@@ -251,28 +253,28 @@ export default function OnboardingScreen() {
 
               {/* Username */}
               <View style={styles.formGroup}>
-                <Text style={[styles.formLabel, { color: C.text }]}>Username <Text style={{ color: C.error }}>*</Text></Text>
+                <Text style={[styles.formLabel, { color: C.text }]}>{t('onboarding.usernameLabel')} <Text style={{ color: C.error }}>*</Text></Text>
                 <View style={[styles.usernameRow, { backgroundColor: C.surface, borderColor: usernameError ? C.error : C.border }]}>
                   <Text style={[styles.atSign, { color: C.brinjal1 }]}>@</Text>
                   <TextInput
                     style={[styles.usernameInput, { color: C.text }]}
                     value={username}
-                    onChangeText={(t) => {
+                    onChangeText={(v) => {
                       setStep1Error('');
-                      setUsername(t.replace(/[^a-zA-Z0-9_]/g, '').slice(0, 20));
+                      setUsername(v.replace(/[^a-zA-Z0-9_]/g, '').slice(0, 20));
                     }}
-                    placeholder="yourhandle"
+                    placeholder={t('onboarding.usernamePlaceholder')}
                     placeholderTextColor={C.textSecondary}
                     autoCapitalize="none"
                     autoCorrect={false}
                   />
-                  <Text style={[styles.usernameLimit, { color: C.textSecondary }]}>{username.length}/20</Text>
+                  <Text style={[styles.usernameLimit, { color: C.textSecondary }]}>{t('onboarding.usernameLimit', { n: username.length })}</Text>
                 </View>
                 {usernameError && <Text style={[styles.fieldError, { color: C.error }]}>{usernameError}</Text>}
-                {!usernameError && <Text style={[styles.fieldHint, { color: C.textSecondary }]}>Letters, numbers, underscores only. Must be unique.</Text>}
+                {!usernameError && <Text style={[styles.fieldHint, { color: C.textSecondary }]}>{t('onboarding.usernameHint')}</Text>}
                 {usernameSuggestions.length > 0 && (
                   <View>
-                    <Text style={[styles.suggestionLabel, { color: C.textSecondary }]}>Suggestions:</Text>
+                    <Text style={[styles.suggestionLabel, { color: C.textSecondary }]}>{t('onboarding.usernameSuggestions')}</Text>
                     <View style={styles.suggestionRow}>
                       {usernameSuggestions.map((s) => (
                         <Pressable
@@ -290,14 +292,14 @@ export default function OnboardingScreen() {
               {/* Phone */}
               <View style={styles.formGroup}>
                 <View style={styles.labelRow}>
-                  <Text style={[styles.formLabel, { color: C.text }]}>Phone Number</Text>
-                  <Text style={[styles.optionalTag, { color: C.textSecondary }]}>Optional</Text>
+                  <Text style={[styles.formLabel, { color: C.text }]}>{t('onboarding.phoneLabel')}</Text>
+                  <Text style={[styles.optionalTag, { color: C.textSecondary }]}>{t('onboarding.optional')}</Text>
                 </View>
                 <TextInput
                   style={[styles.formInput, { backgroundColor: C.surface, borderColor: C.border, color: C.text }]}
                   value={phone}
                   onChangeText={setPhone}
-                  placeholder="+977 98XXXXXXXX"
+                  placeholder={t('onboarding.phonePlaceholder')}
                   placeholderTextColor={C.textSecondary}
                   keyboardType="phone-pad"
                 />
@@ -305,9 +307,9 @@ export default function OnboardingScreen() {
 
               {/* Gender */}
               <View style={styles.formGroup}>
-                <Text style={[styles.formLabel, { color: C.text }]}>Gender <Text style={{ color: C.error }}>*</Text></Text>
+                <Text style={[styles.formLabel, { color: C.text }]}>{t('onboarding.genderLabel')} <Text style={{ color: C.error }}>*</Text></Text>
                 <View style={styles.genderRow}>
-                  {GENDER_OPTIONS.map((g) => {
+                  {GENDER_KEYS.map((g) => {
                     const selected = gender === g;
                     return (
                       <Pressable
@@ -315,7 +317,10 @@ export default function OnboardingScreen() {
                         style={[styles.genderChip, { borderColor: selected ? C.brinjal1 : genderError ? C.error : C.border, backgroundColor: selected ? C.primaryLight : C.surface }]}
                         onPress={() => { setGender(selected ? '' : g); setStep1Error(''); }}>
                         <Text style={[styles.genderChipText, { color: selected ? C.brinjal1 : C.text, fontFamily: selected ? F.bold : F.regular }]}>
-                          {g}
+                          {g === 'Male' ? t('onboarding.genderMale')
+                            : g === 'Female' ? t('onboarding.genderFemale')
+                            : g === 'Non-binary' ? t('onboarding.genderNonBinary')
+                            : t('onboarding.genderPreferNot')}
                         </Text>
                       </Pressable>
                     );
@@ -326,13 +331,13 @@ export default function OnboardingScreen() {
 
               {/* Location */}
               <View style={[styles.formGroup, { zIndex: 10 }]}>
-                <Text style={[styles.formLabel, { color: C.text }]}>Location <Text style={{ color: C.error }}>*</Text></Text>
+                <Text style={[styles.formLabel, { color: C.text }]}>{t('onboarding.locationLabel')} <Text style={{ color: C.error }}>*</Text></Text>
                 <View>
                   <TextInput
                     style={[styles.formInput, { backgroundColor: C.surface, borderColor: locationError ? C.error : C.border, color: C.text }]}
                     value={location}
                     onChangeText={handleLocationChange}
-                    placeholder="e.g. Kathmandu, Thamel"
+                    placeholder={t('onboarding.locationPlaceholder')}
                     placeholderTextColor={C.textSecondary}
                     autoCapitalize="words"
                   />
@@ -363,13 +368,13 @@ export default function OnboardingScreen() {
               {step1Loading ? (
                 <View style={styles.loadingRow}>
                   <View style={[styles.spinner, { borderTopColor: '#fff' }]} />
-                  <Text style={styles.primaryBtnText}>Saving…</Text>
+                  <Text style={styles.primaryBtnText}>{t('onboarding.saving')}</Text>
                 </View>
               ) : (
-                <Text style={styles.primaryBtnText}>Continue</Text>
+                <Text style={styles.primaryBtnText}>{t('onboarding.continueBtn')}</Text>
               )}
             </Pressable>
-            <Text style={[styles.finishNote, { color: C.textSecondary }]}>Fields marked * are required.</Text>
+            <Text style={[styles.finishNote, { color: C.textSecondary }]}>{t('onboarding.requiredFooter')}</Text>
 
           </ScrollView>
         )}
@@ -381,18 +386,18 @@ export default function OnboardingScreen() {
             <View style={styles.selectionBadgeRow}>
               <View style={[styles.selectionBadge, { backgroundColor: selectedCategories.length > 0 ? C.primaryLight : C.border }]}>
                 <Text style={[styles.selectionText, { color: selectedCategories.length > 0 ? C.brinjal1 : C.textSecondary }]}>
-                  {selectedCategories.length} / 5 selected
+                  {t('onboarding.categorySelected', { n: selectedCategories.length })}
                 </Text>
               </View>
               {selectedCategories.length === 5 && (
-                <Text style={[styles.maxReachedText, { color: C.error }]}>Max reached</Text>
+                <Text style={[styles.maxReachedText, { color: C.error }]}>{t('onboarding.maxReached')}</Text>
               )}
             </View>
 
             {step2Submitted && selectedCategories.length === 0 && (
               <View style={[styles.errorBanner, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}>
                 <Text style={[styles.errorBannerText, { color: C.error }]}>
-                  Please select at least 1 category to continue.
+                  {t('onboarding.categoryError')}
                 </Text>
               </View>
             )}
@@ -435,10 +440,10 @@ export default function OnboardingScreen() {
               {step2Loading ? (
                 <View style={styles.loadingRow}>
                   <View style={[styles.spinner, { borderTopColor: '#fff' }]} />
-                  <Text style={styles.primaryBtnText}>Saving…</Text>
+                  <Text style={styles.primaryBtnText}>{t('onboarding.saving')}</Text>
                 </View>
               ) : (
-                <Text style={styles.primaryBtnText}>Complete Setup →</Text>
+                <Text style={styles.primaryBtnText}>{t('onboarding.completeBtn')}</Text>
               )}
             </Pressable>
 

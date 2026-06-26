@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { authService } from '@/services/auth';
 import { profileService } from '@/services/profile';
@@ -48,6 +49,7 @@ const TOTAL_STEPS = 2;
 
 export default function BusinessOnboardingScreen() {
   const { updateUser } = useAuth();
+  const { t } = useLanguage();
   const C = useAppColors();
   const [step, setStep] = useState(1);
 
@@ -152,19 +154,19 @@ export default function BusinessOnboardingScreen() {
           <Animated.View style={[styles.checkCircle, { backgroundColor: C.active, shadowColor: C.active, transform: [{ scale: scaleAnim }] }]}>
             <Text style={styles.checkMark}>✓</Text>
           </Animated.View>
-          <Text style={[styles.successTitle, { color: C.text }]}>You're all set! 🎉</Text>
+          <Text style={[styles.successTitle, { color: C.text }]}>{t('businessOnboarding.successTitle')}</Text>
           <Text style={[styles.successSub, { color: C.textSecondary }]}>
-            Your business profile is ready.{'\n'}Let's start finding the right creators.
+            {t('businessOnboarding.successBody')}
           </Text>
           <Pressable style={[styles.goHomeBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }]} onPress={goHome}>
-            <Text style={styles.goHomeBtnText}>Explore Creators</Text>
+            <Text style={styles.goHomeBtnText}>{t('businessOnboarding.exploreBtn')}</Text>
           </Pressable>
         </Animated.View>
       </SafeAreaView>
     );
   }
 
-  const businessNameError = step1Submitted && !businessName.trim() ? 'Business name is required' : undefined;
+  const businessNameError = step1Submitted && !businessName.trim() ? t('businessOnboarding.nameRequired') : undefined;
 
   const STEP_CONFIG = [
     { title: 'Tell us about your business', subtitle: 'Basic details that appear on your public profile.' },

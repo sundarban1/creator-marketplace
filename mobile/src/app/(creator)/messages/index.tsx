@@ -6,6 +6,7 @@ import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Tex
 import { messagingEvents } from '@/lib/messagingEvents';
 import { getSocket } from '@/lib/socket';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useLanguage, type TFn } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { chatService } from '@/services/chat';
 import { F } from '@/utilities/constants';
@@ -25,17 +26,17 @@ function initials(name: string) {
   return name.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase();
 }
 
-function formatTime(iso: string) {
+function formatTime(iso: string, t: TFn) {
   const d = new Date(iso);
   const now = new Date();
   const diff = now.getTime() - d.getTime();
-  if (diff < 60000) return 'now';
-  if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+  if (diff < 60000) return t('messages.timeNow');
+  if (diff < 3600000) return t('messages.timeMinutesAgo', { n: Math.floor(diff / 60000) });
   if (d.toDateString() === now.toDateString())
     return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
   const yesterday = new Date(now);
   yesterday.setDate(yesterday.getDate() - 1);
-  if (d.toDateString() === yesterday.toDateString()) return 'Yesterday';
+  if (d.toDateString() === yesterday.toDateString()) return t('messages.timeYesterday');
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
@@ -58,6 +59,7 @@ const av = StyleSheet.create({
 
 function RequestCard({ conv, onRespond }: { conv: Conversation; onRespond: () => void }) {
   const C = useAppColors();
+  const { t } = useLanguage();
   const [acting, setActing] = useState<'accept' | 'decline' | null>(null);
   const color = avatarColor(conv.participantName);
 
@@ -86,7 +88,7 @@ function RequestCard({ conv, onRespond }: { conv: Conversation; onRespond: () =>
             </View>
           ) : null}
           <Text style={[s.reqTime, { color: C.textSecondary }]}>
-            {formatTime(conv.lastMessageTime)}
+            {formatTime(conv.lastMessageTime, t)}
           </Text>
         </View>
         <View style={[s.reqBadge, { backgroundColor: '#FEF3C7' }]}>
@@ -103,7 +105,7 @@ function RequestCard({ conv, onRespond }: { conv: Conversation; onRespond: () =>
       ) : (
         <View style={[s.reqMsgBox, { backgroundColor: C.background, borderColor: C.border }]}>
           <Ionicons name="person-add-outline" size={13} color={C.textSecondary} />
-          <Text style={[s.reqMsgEmpty, { color: C.textSecondary }]}>Wants to connect with you</Text>
+          <Text style={[s.reqMsgEmpty, { color: C.textSecondary }]}>{t('messages.wantsToConnect')}</Text>
         </View>
       )}
 
@@ -118,7 +120,7 @@ function RequestCard({ conv, onRespond }: { conv: Conversation; onRespond: () =>
             : (
               <>
                 <Ionicons name="close-circle-outline" size={16} color="#EF4444" />
-                <Text style={[s.declineTxt, { color: '#EF4444' }]}>Decline</Text>
+                <Text style={[s.declineTxt, { color: '#EF4444' }]}>{t('messages.decline')}</Text>
               </>
             )}
         </Pressable>
@@ -131,7 +133,7 @@ function RequestCard({ conv, onRespond }: { conv: Conversation; onRespond: () =>
             : (
               <>
                 <Ionicons name="checkmark-circle-outline" size={16} color="#fff" />
-                <Text style={s.acceptTxt}>Accept</Text>
+                <Text style={s.acceptTxt}>{t('messages.accept')}</Text>
               </>
             )}
         </Pressable>
@@ -144,6 +146,7 @@ function RequestCard({ conv, onRespond }: { conv: Conversation; onRespond: () =>
 
 function ChatRow({ conv }: { conv: Conversation }) {
   const C = useAppColors();
+  const { t } = useLanguage();
   const hasUnread = conv.unreadCount > 0;
 
   return (
@@ -160,7 +163,7 @@ function ChatRow({ conv }: { conv: Conversation }) {
             {conv.participantName}
           </Text>
           <Text style={[s.chatTime, { color: hasUnread ? C.brinjal1 : C.textSecondary }]}>
-            {formatTime(conv.lastMessageTime)}
+            {formatTime(conv.lastMessageTime, t)}
           </Text>
         </View>
         {conv.campaignTitle ? (
@@ -173,7 +176,7 @@ function ChatRow({ conv }: { conv: Conversation }) {
           <Text
             style={[s.chatLast, { color: hasUnread ? C.text : C.textSecondary, fontWeight: hasUnread ? '500' : '400' }]}
             numberOfLines={1}>
-            {conv.lastMessage || 'No messages yet'}
+            {conv.lastMessage || t('messages.noMessagesYet')}
           </Text>
           {hasUnread && (
             <View style={[s.unreadBadge, { backgroundColor: C.brinjal1 }]}>
@@ -192,6 +195,7 @@ type Tab = 'requests' | 'chats';
 
 export default function CreatorMessagesScreen() {
   const C = useAppColors();
+  const { t } = useLanguage();
   const [tab, setTab]           = useState<Tab>('requests');
   const [requests, setRequests] = useState<Conversation[]>([]);
   const [chats, setChats]       = useState<Conversation[]>([]);
@@ -245,29 +249,31 @@ export default function CreatorMessagesScreen() {
 
         <View style={s.header}>
           <View>
-            <Text style={s.heading}>Messages</Text>
+            <Text style={s.heading}>{t('messages.heading')}</Text>
             <Text style={s.headingSub}>
               {requests.length > 0
-                ? `${requests.length} pending request${requests.length !== 1 ? 's' : ''}`
+                ? requests.length !== 1
+                  ? t('messages.pendingRequests', { n: requests.length })
+                  : t('messages.pendingRequest', { n: requests.length })
                 : totalUnread > 0
-                ? `${totalUnread} unread`
-                : 'Your conversations'}
+                ? t('messages.unreadCount', { n: totalUnread })
+                : t('messages.yourConversations')}
             </Text>
           </View>
         </View>
 
         {/* Tab bar inside gradient */}
         <View style={s.tabBar}>
-          {(['requests', 'chats'] as Tab[]).map((t) => {
-            const active = tab === t;
-            const badge  = t === 'requests' ? requests.length : totalUnread;
+          {(['requests', 'chats'] as Tab[]).map((tabKey) => {
+            const active = tab === tabKey;
+            const badge  = tabKey === 'requests' ? requests.length : totalUnread;
             return (
               <Pressable
-                key={t}
+                key={tabKey}
                 style={[s.tab, active && s.tabActive]}
-                onPress={() => setTab(t)}>
+                onPress={() => setTab(tabKey)}>
                 <Text style={[s.tabTxt, { color: active ? '#fff' : 'rgba(255,255,255,0.65)', fontWeight: active ? '700' : '500' }]}>
-                  {t === 'requests' ? 'Requests' : 'Messages'}
+                  {tabKey === 'requests' ? t('messages.tabRequests') : t('messages.tabMessages')}
                 </Text>
                 {badge > 0 && (
                   <View style={[s.tabBadge, { backgroundColor: C.brinjal1 }]}>
@@ -297,9 +303,9 @@ export default function CreatorMessagesScreen() {
               <View style={[s.emptyIcon, { backgroundColor: C.primaryLight }]}>
                 <Ionicons name="mail-open-outline" size={34} color={C.brinjal1} />
               </View>
-              <Text style={[s.emptyTitle, { color: C.text }]}>No requests yet</Text>
+              <Text style={[s.emptyTitle, { color: C.text }]}>{t('messages.noRequestsYet')}</Text>
               <Text style={[s.emptyHint, { color: C.textSecondary }]}>
-                Businesses can send you a message request from your profile.
+                {t('messages.requestsFromBusinesses')}
               </Text>
             </View>
           }
@@ -317,8 +323,8 @@ export default function CreatorMessagesScreen() {
               <View style={[s.emptyIcon, { backgroundColor: C.primaryLight }]}>
                 <Ionicons name="chatbubbles-outline" size={34} color={C.brinjal1} />
               </View>
-              <Text style={[s.emptyTitle, { color: C.text }]}>No conversations yet</Text>
-              <Text style={[s.emptyHint, { color: C.textSecondary }]}>Accepted requests will appear here.</Text>
+              <Text style={[s.emptyTitle, { color: C.text }]}>{t('messages.noConversationsYet')}</Text>
+              <Text style={[s.emptyHint, { color: C.textSecondary }]}>{t('messages.acceptedRequestsHere')}</Text>
             </View>
           }
         />

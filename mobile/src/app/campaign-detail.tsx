@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { CATEGORY_META, DEFAULT_META, cardBg } from '@/features/creator/data/filterOptions';
 import { campaignService } from '@/services/campaign';
@@ -280,6 +281,7 @@ const EVENT_BENEFITS = [
 export default function CampaignDetailScreen() {
   const { campaignId } = useLocalSearchParams<{ campaignId: string }>();
   const { user } = useAuth();
+  const { t } = useLanguage();
   const C = useAppColors();
   const isBusiness = user?.role === 'BUSINESS';
 

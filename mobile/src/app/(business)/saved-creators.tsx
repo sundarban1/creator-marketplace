@@ -34,6 +34,7 @@ function formatFollowers(n: number): string {
 
 function CreatorCard({ item, onRemove }: { item: SavedCreatorItem; onRemove: () => void }) {
   const C = useAppColors();
+  const { t } = useLanguage();
   const { creator } = item;
   const name = creator.fullName ?? 'Creator';
   const topAccount = creator.socialAccounts.sort((a, b) => b.followers - a.followers)[0];
@@ -58,7 +59,7 @@ function CreatorCard({ item, onRemove }: { item: SavedCreatorItem; onRemove: () 
           ) : null}
           {topAccount ? (
             <Text style={[s.followers, { color: C.textSecondary }]}>
-              {topAccount.platform} · {formatFollowers(topAccount.followers)} followers
+              {topAccount.platform} · {formatFollowers(topAccount.followers)} {t('savedCreators.followersSuffix')}
             </Text>
           ) : null}
           {creator.categories.length > 0 && (
@@ -74,7 +75,7 @@ function CreatorCard({ item, onRemove }: { item: SavedCreatorItem; onRemove: () 
 
       <Pressable style={s.removeRow} onPress={onRemove}>
         <Ionicons name="bookmark-outline" size={15} color="#EF4444" />
-        <Text style={s.removeText}>Remove from saved</Text>
+        <Text style={s.removeText}>{t('savedCreators.removeFromSaved')}</Text>
       </Pressable>
     </View>
   );
@@ -121,7 +122,11 @@ export default function SavedCreatorsScreen() {
           <View style={{ alignItems: 'center', gap: 2 }}>
             <Text style={s.heading}>{t('savedCreators.title')}</Text>
             {items.length > 0 && (
-              <Text style={s.subheading}>{items.length} creator{items.length !== 1 ? 's' : ''} saved</Text>
+              <Text style={s.subheading}>
+                {items.length !== 1
+                  ? t('savedCreators.creatorsSaved', { n: items.length })
+                  : t('savedCreators.creatorSaved', { n: items.length })}
+              </Text>
             )}
           </View>
           <View style={{ width: 38 }} />

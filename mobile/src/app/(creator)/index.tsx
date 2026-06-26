@@ -42,7 +42,7 @@ function getPlatformMeta(name: string) {
 export default function HomeScreen() {
   const { user } = useAuth();
   const { openDrawer } = useContext(DrawerContext);
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   const C = useAppColors();
 
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
@@ -274,7 +274,7 @@ export default function HomeScreen() {
                 </View>
               </Pressable>
               <View>
-                <Text style={[styles.greeting, { color: 'rgba(255,255,255,0.7)' }]}>{language === 'ne' ? 'नमस्ते 🙏' : 'Hello 👋'}</Text>
+                <Text style={[styles.greeting, { color: 'rgba(255,255,255,0.7)' }]}>{t('creator.home.greeting')}</Text>
                 <View style={styles.nameRow}>
                   <Text style={[styles.brandName, { color: '#fff' }]} numberOfLines={1}>{user?.name ?? 'Creator'}</Text>
                 </View>
@@ -343,14 +343,14 @@ export default function HomeScreen() {
           <View style={[styles.errorCard, { backgroundColor: '#FEE2E2' }]}>
             <Text style={styles.errorText}>{fetchError}</Text>
             <Pressable onPress={() => fetchCampaigns()}>
-              <Text style={[styles.retryText, { color: C.brinjal1 }]}>Retry</Text>
+              <Text style={[styles.retryText, { color: C.brinjal1 }]}>{t('creator.home.retry')}</Text>
             </Pressable>
           </View>
         ) : null}
 
         {/* ── Categories ── */}
         <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: C.text }]}>Categories</Text>
+          <Text style={[styles.sectionTitle, { color: C.text }]}>{t('creator.home.categories')}</Text>
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoriesRow}>
           {visibleCategories.map((cat) => {
@@ -390,7 +390,7 @@ export default function HomeScreen() {
         {apiPlatforms.length > 0 && (
           <>
             <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: C.text }]}>Platforms</Text>
+              <Text style={[styles.sectionTitle, { color: C.text }]}>{t('creator.home.platforms')}</Text>
             </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.platformsRow}>
               {/* All */}
@@ -428,15 +428,15 @@ export default function HomeScreen() {
         {loading ? (
           <View style={styles.loadingWrap}>
             <ActivityIndicator size="large" color={C.brinjal1} />
-            <Text style={[styles.loadingText, { color: C.textSecondary }]}>Loading events…</Text>
+            <Text style={[styles.loadingText, { color: C.textSecondary }]}>{t('creator.home.loading')}</Text>
           </View>
         ) : (
           <>
             <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: C.text }]}>Featured Events</Text>
+              <Text style={[styles.sectionTitle, { color: C.text }]}>{t('creator.home.featuredEvents')}</Text>
               {featured.length > 0 && (
                 <Pressable onPress={() => router.push('/(creator)/featured-campaigns')}>
-                  <Text style={[styles.seeAll, { color: C.brinjal1 }]}>See All</Text>
+                  <Text style={[styles.seeAll, { color: C.brinjal1 }]}>{t('creator.home.seeAll')}</Text>
                 </Pressable>
               )}
             </View>
@@ -447,8 +447,8 @@ export default function HomeScreen() {
             ) : (
               <View style={[styles.featuredEmpty, { backgroundColor: C.surface, borderColor: C.border }]}>
                 <Ionicons name="star-outline" size={32} color={C.textSecondary} />
-                <Text style={[styles.featuredEmptyTitle, { color: C.text }]}>No featured events right now</Text>
-                <Text style={[styles.featuredEmptySub, { color: C.textSecondary }]}>Check back soon — new opportunities are added regularly.</Text>
+                <Text style={[styles.featuredEmptyTitle, { color: C.text }]}>{t('creator.home.noFeaturedEvents')}</Text>
+                <Text style={[styles.featuredEmptySub, { color: C.textSecondary }]}>{t('creator.home.noFeaturedEventsHint')}</Text>
               </View>
             )}
 
@@ -460,16 +460,16 @@ export default function HomeScreen() {
                 <Ionicons name="storefront-outline" size={20} color="#fff" />
               </View>
               <View style={styles.exploreTexts}>
-                <Text style={[styles.exploreTitle, { color: '#047857' }]}>Explore Brands</Text>
-                <Text style={[styles.exploreSub, { color: '#059669' }]}>Find businesses hiring creators</Text>
+                <Text style={[styles.exploreTitle, { color: '#047857' }]}>{t('creator.home.exploreBrands')}</Text>
+                <Text style={[styles.exploreSub, { color: '#059669' }]}>{t('creator.home.findBusinesses')}</Text>
                 <View style={styles.earnBadgesRow}>
                   <View style={styles.earnBadge}>
                     <Ionicons name="cash-outline" size={11} color="#fff" />
-                    <Text style={styles.earnText}>Earn Money</Text>
+                    <Text style={styles.earnText}>{t('creator.home.earnMoney')}</Text>
                   </View>
                   <View style={[styles.earnBadge, { backgroundColor: '#065F46' }]}>
                     <Ionicons name="people-outline" size={11} color="#fff" />
-                    <Text style={styles.earnText}>Network People</Text>
+                    <Text style={styles.earnText}>{t('creator.home.networkPeople')}</Text>
                   </View>
                 </View>
               </View>
@@ -497,11 +497,11 @@ export default function HomeScreen() {
               {filteredList.length === 0 ? (
                 <View style={styles.emptyWrap}>
                   <Ionicons name="search" size={40} color={C.textSecondary} />
-                  <Text style={[styles.emptyTitle, { color: C.text }]}>No events found</Text>
+                  <Text style={[styles.emptyTitle, { color: C.text }]}>{t('creator.home.noEventsFound')}</Text>
                   <Text style={[styles.emptyHint, { color: C.textSecondary }]}>
                     {campaigns.length === 0
-                      ? 'No active events at the moment. Check back soon!'
-                      : 'Try adjusting your search or filters.'}
+                      ? t('creator.home.noActiveEvents')
+                      : t('creator.home.tryAdjustFilters')}
                   </Text>
                 </View>
               ) : (
@@ -514,9 +514,9 @@ export default function HomeScreen() {
               <View style={[styles.banner, { backgroundColor: C.surface, borderLeftColor: C.brinjal1 }]}>
                 <Ionicons name="briefcase" size={28} color={C.brinjal1} style={{ flexShrink: 0 }} />
                 <View style={styles.bannerText}>
-                  <Text style={[styles.bannerTitle, { color: C.text }]}>Complete your profile</Text>
+                  <Text style={[styles.bannerTitle, { color: C.text }]}>{t('creator.home.completeProfile')}</Text>
                   <Text style={[styles.bannerSub, { color: C.textSecondary }]}>
-                    Add your social accounts to increase your chances of getting hired.
+                    {t('creator.home.completeProfileHint')}
                   </Text>
                 </View>
                 <Pressable style={styles.bannerClose} onPress={() => setShowBanner(false)}>

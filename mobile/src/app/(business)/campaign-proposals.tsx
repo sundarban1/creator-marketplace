@@ -16,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { BackButton } from '@/components/BackButton';
 import { useAppColors } from '@/context/ThemeContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { campaignService } from '@/services/campaign';
 import { F } from '@/utilities/constants';
 
@@ -72,6 +73,7 @@ function ProposalCard({
   acting: boolean;
 }) {
   const C = useAppColors();
+  const { t } = useLanguage();
   const accent   = isFree ? FREE_ACCENT : PAID_ACCENT;
   const accentBg = isFree ? FREE_LIGHT  : PAID_LIGHT;
   const st = STATUS_CFG[p.status];
@@ -99,7 +101,9 @@ function ProposalCard({
         <View style={styles.cardHeaderRight}>
           <View style={[styles.statusBadge, { backgroundColor: st.bg }]}>
             <Ionicons name={st.icon} size={12} color={st.color} />
-            <Text style={[styles.statusText, { color: st.color }]}>{st.label}</Text>
+            <Text style={[styles.statusText, { color: st.color }]}>
+              {p.status === 'pending' ? t('campaignProposals.statusPending') : p.status === 'accepted' ? t('campaignProposals.statusAccepted') : t('campaignProposals.statusRejected')}
+            </Text>
           </View>
           <Text style={[styles.timeText, { color: C.textSecondary }]}>{timeAgo(p.createdAt)}</Text>
         </View>
@@ -122,7 +126,7 @@ function ProposalCard({
       {isFree ? (
         <View style={[styles.freeTag, { backgroundColor: FREE_LIGHT }]}>
           <Ionicons name="gift-outline" size={14} color={FREE_ACCENT} />
-          <Text style={[styles.freeTagText, { color: FREE_ACCENT }]}>Free Participation</Text>
+          <Text style={[styles.freeTagText, { color: FREE_ACCENT }]}>{t('campaignProposals.freeParticipation')}</Text>
         </View>
       ) : (
         <View style={styles.rateRow}>
@@ -130,7 +134,7 @@ function ProposalCard({
             <Ionicons name="cash-outline" size={14} color={PAID_ACCENT} />
             <Text style={[styles.rateAmount, { color: PAID_ACCENT }]}>{p.proposedRate}</Text>
           </View>
-          <Text style={[styles.rateLabel, { color: C.textSecondary }]}>proposed rate</Text>
+          <Text style={[styles.rateLabel, { color: C.textSecondary }]}>{t('campaignProposals.proposedRate')}</Text>
         </View>
       )}
 
@@ -146,7 +150,7 @@ function ProposalCard({
             ) : (
               <>
                 <Ionicons name="close-circle-outline" size={16} color="#EF4444" />
-                <Text style={[styles.actionText, { color: '#EF4444' }]}>Decline</Text>
+                <Text style={[styles.actionText, { color: '#EF4444' }]}>{t('campaignProposals.declineBtn')}</Text>
               </>
             )}
           </Pressable>
@@ -171,6 +175,7 @@ function ProposalCard({
 
 export default function CampaignProposalsScreen() {
   const C = useAppColors();
+  const { t } = useLanguage();
   const params = useLocalSearchParams<{
     campaignId: string;
     campaignTitle: string;
@@ -182,7 +187,7 @@ export default function CampaignProposalsScreen() {
   const isFree     = params.campaignType === 'OPEN_EVENT';
   const accent     = isFree ? FREE_ACCENT : PAID_ACCENT;
   const accentBg   = isFree ? FREE_LIGHT  : PAID_LIGHT;
-  const acceptLabel = isFree ? 'Approve' : 'Accept';
+  const acceptLabel = isFree ? t('campaignProposals.approveBtn') : t('campaignProposals.acceptBtn');
 
   const [proposals, setProposals]       = useState<Proposal[]>([]);
   const [loading, setLoading]           = useState(true);
@@ -205,12 +210,12 @@ export default function CampaignProposalsScreen() {
 
   async function handleAccept(p: Proposal) {
     Alert.alert(
-      isFree ? 'Approve Attendance' : 'Accept Proposal',
+      isFree ? t('campaignProposals.alertApproveTitle') : t('campaignProposals.alertAcceptTitle'),
       isFree
         ? `Approve ${p.creator.fullName} for this event?`
         : `Accept ${p.creator.fullName}'s proposal?\n\nOther pending applicants will be notified that the campaign is closed.`,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('campaignProposals.alertCancel'), style: 'cancel' },
         {
           text: acceptLabel,
           onPress: async () => {
@@ -221,7 +226,7 @@ export default function CampaignProposalsScreen() {
                 prev.map((x) => (x.id === p.id ? { ...x, status: 'accepted' } : x)),
               );
             } catch (e) {
-              Alert.alert('Error', e instanceof Error ? e.message : 'Failed');
+              Alert.alert(t('campaignProposals.alertFailed'), e instanceof Error ? e.message : t('campaignProposals.alertFailed'));
             } finally {
               setActingId(null);
             }
@@ -233,12 +238,12 @@ export default function CampaignProposalsScreen() {
 
   async function handleReject(p: Proposal) {
     Alert.alert(
-      'Decline Application',
+      t('campaignProposals.alertDeclineTitle'),
       `Decline ${p.creator.fullName}'s application?`,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('campaignProposals.alertCancel'), style: 'cancel' },
         {
-          text: 'Decline',
+          text: t('campaignProposals.declineBtn'),
           style: 'destructive',
           onPress: async () => {
             setActingId(p.id);
@@ -248,7 +253,7 @@ export default function CampaignProposalsScreen() {
                 prev.map((x) => (x.id === p.id ? { ...x, status: 'rejected' } : x)),
               );
             } catch (e) {
-              Alert.alert('Error', e instanceof Error ? e.message : 'Failed');
+              Alert.alert(t('campaignProposals.alertFailed'), e instanceof Error ? e.message : t('campaignProposals.alertFailed'));
             } finally {
               setActingId(null);
             }
@@ -270,10 +275,10 @@ export default function CampaignProposalsScreen() {
 
   type FilterOpt = { key: StatusFilter; label: string; count: number; color: string };
   const FILTERS: FilterOpt[] = [
-    { key: 'all',      label: 'All',                                count: counts.all,      color: accent       },
-    { key: 'pending',  label: 'Pending',                            count: counts.pending,  color: '#D97706'    },
-    { key: 'accepted', label: isFree ? 'Approved' : 'Accepted',     count: counts.accepted, color: '#16A34A'    },
-    { key: 'rejected', label: 'Declined',                           count: counts.rejected, color: '#EF4444'    },
+    { key: 'all',      label: t('campaignProposals.filterAll'),                                                    count: counts.all,      color: accent    },
+    { key: 'pending',  label: t('campaignProposals.filterPending'),                                                count: counts.pending,  color: '#D97706' },
+    { key: 'accepted', label: isFree ? t('campaignProposals.filterApproved') : t('campaignProposals.filterApproved'), count: counts.accepted, color: '#16A34A' },
+    { key: 'rejected', label: t('campaignProposals.filterDeclined'),                                               count: counts.rejected, color: '#EF4444' },
   ];
 
   return (
@@ -293,7 +298,7 @@ export default function CampaignProposalsScreen() {
           {/* Total count pill */}
           <View style={styles.totalPill}>
             <Text style={styles.totalPillText}>
-              {proposals.length} application{proposals.length !== 1 ? 's' : ''}
+              {t('campaignProposals.applicationCount', { n: proposals.length })}
             </Text>
           </View>
         </View>
@@ -305,7 +310,7 @@ export default function CampaignProposalsScreen() {
             <View style={[styles.typeBadge, { backgroundColor: accentBg }]}>
               <Ionicons name={isFree ? 'gift-outline' : 'cash-outline'} size={12} color={accent} />
               <Text style={[styles.typeBadgeText, { color: accent }]}>
-                {isFree ? 'Free Event' : 'Paid Event'}
+                {isFree ? t('campaignProposals.badgeFreeEvent') : t('campaignProposals.badgePaidEvent')}
               </Text>
             </View>
             {platform ? (
@@ -320,17 +325,17 @@ export default function CampaignProposalsScreen() {
         <View style={styles.statStrip}>
           <View style={styles.statStripItem}>
             <Text style={styles.statStripNum}>{counts.pending}</Text>
-            <Text style={styles.statStripLabel}>Pending</Text>
+            <Text style={styles.statStripLabel}>{t('campaignProposals.statPending')}</Text>
           </View>
           <View style={[styles.statStripDivider, { backgroundColor: 'rgba(255,255,255,0.2)' }]} />
           <View style={styles.statStripItem}>
             <Text style={[styles.statStripNum, { color: '#6EE7B7' }]}>{counts.accepted}</Text>
-            <Text style={styles.statStripLabel}>{isFree ? 'Approved' : 'Accepted'}</Text>
+            <Text style={styles.statStripLabel}>{isFree ? t('campaignProposals.statApproved') : t('campaignProposals.statApproved')}</Text>
           </View>
           <View style={[styles.statStripDivider, { backgroundColor: 'rgba(255,255,255,0.2)' }]} />
           <View style={styles.statStripItem}>
             <Text style={[styles.statStripNum, { color: '#FCA5A5' }]}>{counts.rejected}</Text>
-            <Text style={styles.statStripLabel}>Declined</Text>
+            <Text style={styles.statStripLabel}>{t('campaignProposals.statDeclined')}</Text>
           </View>
         </View>
       </LinearGradient>
@@ -394,13 +399,13 @@ export default function CampaignProposalsScreen() {
               <Ionicons name="people-outline" size={56} color={C.textSecondary} />
               <Text style={[styles.emptyTitle, { color: C.text }]}>
                 {statusFilter === 'all'
-                  ? 'No applications yet'
-                  : `No ${FILTERS.find((f) => f.key === statusFilter)?.label.toLowerCase()} applications`}
+                  ? t('campaignProposals.emptyNoApplications')
+                  : t('campaignProposals.emptyNoFiltered', { filter: FILTERS.find((f) => f.key === statusFilter)?.label ?? statusFilter })}
               </Text>
               <Text style={[styles.emptySub, { color: C.textSecondary }]}>
                 {statusFilter === 'all'
-                  ? 'Creators who apply to this event will appear here.'
-                  : 'Try a different filter above.'}
+                  ? t('campaignProposals.emptyAllHint')
+                  : t('campaignProposals.emptyFilterHint')}
               </Text>
             </View>
           }

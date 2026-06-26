@@ -48,10 +48,10 @@ const PW_RULES = [
 ];
 
 function isValidEmail(v: string) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()); }
-function pwError(p: string): string | undefined {
-  if (p.length < 8)     return 'At least 8 characters required.';
-  if (!/[A-Z]/.test(p)) return 'Add at least one uppercase letter.';
-  if (!/[0-9]/.test(p)) return 'Add at least one number.';
+function getPwErrorKey(p: string): string | undefined {
+  if (p.length < 8)     return 'auth.signup.pwError8Chars';
+  if (!/[A-Z]/.test(p)) return 'auth.signup.pwErrorUppercase';
+  if (!/[0-9]/.test(p)) return 'auth.signup.pwErrorNumber';
 }
 
 // ── Input field ───────────────────────────────────────────────────────────────
@@ -145,8 +145,8 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
   const [loading,   setLoading]   = useState(false);
   const [apiError,  setApiError]  = useState('');
 
-  const emErr = submitted && !isValidEmail(email) ? 'Enter a valid email address.' : undefined;
-  const pwErr = submitted && !password ? 'Password is required.' : undefined;
+  const emErr = submitted && !isValidEmail(email) ? t('auth.login.emailInvalid') : undefined;
+  const pwErr = submitted && !password ? t('auth.login.passwordRequired') : undefined;
 
   async function handleLogin() {
     setSubmitted(true);
@@ -167,7 +167,7 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
       {verified === '1' && (
         <View style={[s.banner, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}>
           <Ionicons name="checkmark-circle" size={15} color="#15803D" />
-          <Text style={[s.bannerText, { color: '#15803D' }]}>Account verified! You can sign in now.</Text>
+          <Text style={[s.bannerText, { color: '#15803D' }]}>{t('auth.login.verifiedBanner')}</Text>
         </View>
       )}
       {!!apiError && (
@@ -179,17 +179,17 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
 
       <View style={s.form}>
         <Field
-          icon="mail-outline" label="Email address" value={email}
+          icon="mail-outline" label={t('auth.login.emailLabel')} value={email}
           onChangeText={(v) => { setEmail(v); setApiError(''); }}
-          placeholder="you@email.com" keyboardType="email-address" error={emErr}
+          placeholder={t('auth.login.emailInputPlaceholder')} keyboardType="email-address" error={emErr}
         />
         <Field
-          icon="lock-closed-outline" label="Password" value={password}
+          icon="lock-closed-outline" label={t('auth.login.password')} value={password}
           onChangeText={(v) => { setPassword(v); setApiError(''); }}
-          placeholder="Enter your password" secureTextEntry error={pwErr}
+          placeholder={t('auth.login.passwordEnterPlaceholder')} secureTextEntry error={pwErr}
           rightSlot={
             <Pressable onPress={() => router.push('/forgot-password')}>
-              <Text style={[s.forgotText, { color: P2 }]}>Forgot password?</Text>
+              <Text style={[s.forgotText, { color: P2 }]}>{t('auth.login.forgotPassword')}</Text>
             </Pressable>
           }
         />
@@ -202,7 +202,7 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
           {loading
             ? <Ionicons name="sync" size={18} color="#fff" />
             : <>
-                <Text style={s.primaryBtnText}>Log in</Text>
+                <Text style={s.primaryBtnText}>{t('auth.login.loginBtn')}</Text>
                 <Ionicons name="arrow-forward" size={16} color="rgba(255,255,255,0.8)" />
               </>}
         </LinearGradient>
@@ -210,7 +210,7 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
 
       <View style={s.divider}>
         <View style={[s.dividerLine, { backgroundColor: '#EDE9FE' }]} />
-        <Text style={s.dividerText}>or</Text>
+        <Text style={s.dividerText}>{t('auth.login.or')}</Text>
         <View style={[s.dividerLine, { backgroundColor: '#EDE9FE' }]} />
       </View>
 
@@ -218,7 +218,7 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
         {googleLoading
           ? <View style={s.spinner} />
           : <View style={s.googleBadge}><Text style={s.googleG}>G</Text></View>}
-        <Text style={s.socialBtnText}>{googleLoading ? 'Signing in…' : 'Continue with Google'}</Text>
+        <Text style={s.socialBtnText}>{googleLoading ? t('auth.login.signingIn') : t('auth.login.continueGoogle')}</Text>
       </Pressable>
       {/* Facebook login — commented out until FB app is configured
       <View style={s.socialRow}>
@@ -254,6 +254,7 @@ function SignupForm({ onGooglePress, googleLoading, googleError, onFacebookPress
   facebookError: string;
 }) {
   const C = useAppColors();
+  const { t } = useLanguage();
 
   const [role,      setRole]      = useState<'CREATOR' | 'BUSINESS'>('CREATOR');
   const [email,     setEmail]     = useState('');
@@ -262,19 +263,20 @@ function SignupForm({ onGooglePress, googleLoading, googleError, onFacebookPress
   const [loading,   setLoading]   = useState(false);
   const [error,     setError]     = useState('');
 
-  const emErr = submitted && !isValidEmail(email)  ? 'Enter a valid email address' : undefined;
-  const pwErr = submitted ? pwError(password)      : undefined;
+  const emErr = submitted && !isValidEmail(email)      ? t('auth.signup.emailInvalid') : undefined;
+  const pwErrKey = submitted ? getPwErrorKey(password) : undefined;
+  const pwErr    = pwErrKey ? t(pwErrKey) : undefined;
 
   async function handleCreate() {
     setSubmitted(true);
     setError('');
-    if (!isValidEmail(email) || pwError(password)) return;
+    if (!isValidEmail(email) || getPwErrorKey(password)) return;
     setLoading(true);
     try {
       await authService.register({ email: email.trim().toLowerCase(), password, role });
       router.push({ pathname: '/verify', params: { email: email.trim().toLowerCase() } });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Registration failed. Please try again.');
+      setError(err instanceof Error ? err.message : t('auth.signup.registrationFailed'));
     } finally {
       setLoading(false);
     }
@@ -283,10 +285,12 @@ function SignupForm({ onGooglePress, googleLoading, googleError, onFacebookPress
   return (
     <View>
       {/* Role cards */}
-      <Text style={[s.sectionLabel, { color: C.text }]}>I'm joining as</Text>
+      <Text style={[s.sectionLabel, { color: C.text }]}>{t('auth.signup.joiningAs')}</Text>
       <View style={s.roleRow}>
         {ROLES.map((r) => {
           const active = role === r.key;
+          const roleLabel = r.key === 'CREATOR' ? t('auth.signup.roleCreatorLabel') : t('auth.signup.roleBusinessLabel');
+          const roleSub   = r.key === 'CREATOR' ? t('auth.signup.roleCreatorSub')   : t('auth.signup.roleBusinessSub');
           return (
             <Pressable
               key={r.key}
@@ -298,8 +302,8 @@ function SignupForm({ onGooglePress, googleLoading, googleError, onFacebookPress
                 start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
                 <Ionicons name={r.icon} size={22} color={active ? '#fff' : '#8B5CF6'} />
               </LinearGradient>
-              <Text style={[s.roleLabel, { color: active ? P1 : C.text }]}>{r.label}</Text>
-              <Text style={[s.roleSub, { color: active ? P2 : '#9CA3AF' }]}>{r.sub}</Text>
+              <Text style={[s.roleLabel, { color: active ? P1 : C.text }]}>{roleLabel}</Text>
+              <Text style={[s.roleSub, { color: active ? P2 : '#9CA3AF' }]}>{roleSub}</Text>
               {active && (
                 <View style={s.roleCheck}>
                   <Ionicons name="checkmark" size={10} color="#fff" />
@@ -313,23 +317,24 @@ function SignupForm({ onGooglePress, googleLoading, googleError, onFacebookPress
       {/* Fields */}
       <View style={s.form}>
         <Field
-          icon="mail-outline" label="Email address" value={email}
+          icon="mail-outline" label={t('auth.signup.emailLabel')} value={email}
           onChangeText={(v) => { setEmail(v); setError(''); }}
-          placeholder="you@email.com" keyboardType="email-address" error={emErr}
+          placeholder={t('auth.signup.emailInputPlaceholder')} keyboardType="email-address" error={emErr}
         />
         <Field
-          icon="lock-closed-outline" label="Password" value={password}
+          icon="lock-closed-outline" label={t('auth.signup.password')} value={password}
           onChangeText={(v) => { setPassword(v); setError(''); }}
-          placeholder="Create a strong password" secureTextEntry error={pwErr}
+          placeholder={t('auth.signup.passwordCreatePlaceholder')} secureTextEntry error={pwErr}
         />
         {password.length > 0 && (
           <View style={s.rulesRow}>
-            {PW_RULES.map((rule) => {
+            {PW_RULES.map((rule, idx) => {
               const ok = rule.test(password);
+              const ruleLabel = idx === 0 ? t('auth.signup.pwRule8Chars') : idx === 1 ? t('auth.signup.pwRuleUppercase') : t('auth.signup.pwRuleNumber');
               return (
                 <View key={rule.label} style={[s.rulePill, { backgroundColor: ok ? '#F0FDF4' : '#F5F3FF', borderColor: ok ? '#86EFAC' : '#DDD6FE' }]}>
                   <Ionicons name={ok ? 'checkmark-circle' : 'ellipse-outline'} size={11} color={ok ? '#16A34A' : '#A78BFA'} />
-                  <Text style={[s.ruleText, { color: ok ? '#16A34A' : '#8B5CF6' }]}>{rule.label}</Text>
+                  <Text style={[s.ruleText, { color: ok ? '#16A34A' : '#8B5CF6' }]}>{ruleLabel}</Text>
                 </View>
               );
             })}
@@ -351,7 +356,7 @@ function SignupForm({ onGooglePress, googleLoading, googleError, onFacebookPress
           {loading
             ? <Ionicons name="sync" size={18} color="#fff" />
             : <>
-                <Text style={s.primaryBtnText}>Create Account</Text>
+                <Text style={s.primaryBtnText}>{t('auth.signup.createAccountBtn')}</Text>
                 <Ionicons name="arrow-forward" size={16} color="rgba(255,255,255,0.8)" />
               </>}
         </LinearGradient>
@@ -359,7 +364,7 @@ function SignupForm({ onGooglePress, googleLoading, googleError, onFacebookPress
 
       <View style={s.divider}>
         <View style={[s.dividerLine, { backgroundColor: '#EDE9FE' }]} />
-        <Text style={s.dividerText}>or</Text>
+        <Text style={s.dividerText}>{t('auth.signup.or')}</Text>
         <View style={[s.dividerLine, { backgroundColor: '#EDE9FE' }]} />
       </View>
 
@@ -367,7 +372,7 @@ function SignupForm({ onGooglePress, googleLoading, googleError, onFacebookPress
         {googleLoading
           ? <View style={s.spinner} />
           : <View style={s.googleBadge}><Text style={s.googleG}>G</Text></View>}
-        <Text style={s.socialBtnText}>{googleLoading ? 'Signing in…' : 'Continue with Google'}</Text>
+        <Text style={s.socialBtnText}>{googleLoading ? t('auth.login.signingIn') : t('auth.signup.continueGoogle')}</Text>
       </Pressable>
       {/* Facebook login — commented out until FB app is configured
       <View style={s.socialRow}>
@@ -390,10 +395,10 @@ function SignupForm({ onGooglePress, googleLoading, googleError, onFacebookPress
       )}
 
       <Text style={s.terms}>
-        By creating an account you agree to our{' '}
-        <Text style={{ color: P2, fontFamily: F.semibold }} onPress={() => router.push('/legal?type=terms' as never)}>Terms</Text>
-        {' '}and{' '}
-        <Text style={{ color: P2, fontFamily: F.semibold }} onPress={() => router.push('/legal?type=privacy-policy' as never)}>Privacy Policy</Text>.
+        {t('auth.signup.termsPrefix')}{' '}
+        <Text style={{ color: P2, fontFamily: F.semibold }} onPress={() => router.push('/legal?type=terms' as never)}>{t('auth.signup.termsLink')}</Text>
+        {' '}{t('auth.signup.termsAnd')}{' '}
+        <Text style={{ color: P2, fontFamily: F.semibold }} onPress={() => router.push('/legal?type=privacy-policy' as never)}>{t('auth.signup.privacyLink')}</Text>.
       </Text>
     </View>
   );
@@ -403,7 +408,7 @@ function SignupForm({ onGooglePress, googleLoading, googleError, onFacebookPress
 
 export default function LoginScreen() {
   const { user, reloadUser }      = useAuth();
-  const { language, setLanguage } = useLanguage();
+  const { language, setLanguage, t } = useLanguage();
   const params                    = useLocalSearchParams<{ tab?: string; verified?: string }>();
   const insets                    = useSafeAreaInsets();
   const [tab, setTab]             = useState<'login' | 'signup'>(params.tab === 'signup' ? 'signup' : 'login');
@@ -436,7 +441,7 @@ export default function LoginScreen() {
     if (googleResponse.type === 'success' && googleResponse.authentication?.accessToken) {
       void handleGoogleToken(googleResponse.authentication.accessToken);
     } else if (googleResponse.type === 'error') {
-      setGoogleError('Google sign-in failed. Please try again.');
+      setGoogleError(t('auth.login.googleFailed'));
       setGoogleLoading(false);
     } else if (googleResponse.type === 'dismiss' || googleResponse.type === 'cancel') {
       setGoogleLoading(false);
@@ -449,7 +454,7 @@ export default function LoginScreen() {
     if (facebookResponse.type === 'success' && facebookResponse.authentication?.accessToken) {
       void handleFacebookToken(facebookResponse.authentication.accessToken);
     } else if (facebookResponse.type === 'error') {
-      setFacebookError('Facebook sign-in failed. Please try again.');
+      setFacebookError(t('auth.login.facebookFailed'));
       setFacebookLoading(false);
     } else if (facebookResponse.type === 'dismiss' || facebookResponse.type === 'cancel') {
       setFacebookLoading(false);
@@ -573,12 +578,10 @@ export default function LoginScreen() {
           {/* Hero heading */}
           <View style={s.heroBody}>
             <Text style={s.heroTitle}>
-              {tab === 'login' ? 'Welcome back 👋' : 'Join CreatorMarket ✨'}
+              {tab === 'login' ? t('auth.login.heroTitleLogin') : t('auth.login.heroTitleSignup')}
             </Text>
             <Text style={s.heroSub}>
-              {tab === 'login'
-                ? 'Sign in and continue growing with creators and brands.'
-                : 'Connect with brands, grow your audience, get paid.'}
+              {tab === 'login' ? t('auth.login.heroSubLogin') : t('auth.login.heroSubSignup')}
             </Text>
           </View>
         </LinearGradient>
@@ -592,16 +595,16 @@ export default function LoginScreen() {
 
             {/* Tab bar */}
             <View style={s.tabBar}>
-              {(['login', 'signup'] as const).map((t) => (
+              {(['login', 'signup'] as const).map((tabKey) => (
                 <Pressable
-                  key={t}
-                  style={[s.tabBtn, tab === t && s.tabBtnActive]}
-                  onPress={() => setTab(t)}>
-                  {tab === t && (
+                  key={tabKey}
+                  style={[s.tabBtn, tab === tabKey && s.tabBtnActive]}
+                  onPress={() => setTab(tabKey)}>
+                  {tab === tabKey && (
                     <LinearGradient colors={[P3, P1]} style={s.tabBtnGrad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} />
                   )}
-                  <Text style={[s.tabBtnText, { color: tab === t ? '#fff' : '#6B7280' }]}>
-                    {t === 'login' ? 'Log in' : 'Create Account'}
+                  <Text style={[s.tabBtnText, { color: tab === tabKey ? '#fff' : '#6B7280' }]}>
+                    {tabKey === 'login' ? t('auth.login.tabLogin') : t('auth.login.tabSignup')}
                   </Text>
                 </Pressable>
               ))}
@@ -615,7 +618,7 @@ export default function LoginScreen() {
             {/* Footer */}
             <View style={s.footer}>
               <Ionicons name="shield-checkmark-outline" size={12} color="#A78BFA" />
-              <Text style={s.footerText}>Secure & encrypted  •  We never share your data</Text>
+              <Text style={s.footerText}>{t('auth.login.footer')}</Text>
             </View>
 
           </ScrollView>
@@ -628,24 +631,28 @@ export default function LoginScreen() {
         <View style={s.modalOverlay}>
           <View style={s.modalSheet}>
             <View style={s.modalHandle} />
-            <Text style={s.modalTitle}>One quick step ✨</Text>
-            <Text style={s.modalSub}>How will you use CreatorMarket?</Text>
+            <Text style={s.modalTitle}>{t('auth.login.roleModalTitle')}</Text>
+            <Text style={s.modalSub}>{t('auth.login.roleModalSub')}</Text>
             <View style={s.roleRow}>
-              {ROLES.map((r) => (
-                <Pressable
-                  key={r.key}
-                  style={s.roleCard}
-                  onPress={() => void handleRoleSelect(r.key)}>
-                  <LinearGradient colors={r.grad} style={s.roleIconBox} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
-                    <Ionicons name={r.icon} size={24} color="#fff" />
-                  </LinearGradient>
-                  <Text style={s.roleLabel}>{r.label}</Text>
-                  <Text style={s.roleSub}>{r.sub}</Text>
-                </Pressable>
-              ))}
+              {ROLES.map((r) => {
+                const roleLabel = r.key === 'CREATOR' ? t('auth.signup.roleCreatorLabel') : t('auth.signup.roleBusinessLabel');
+                const roleSub   = r.key === 'CREATOR' ? t('auth.signup.roleCreatorSub')   : t('auth.signup.roleBusinessSub');
+                return (
+                  <Pressable
+                    key={r.key}
+                    style={s.roleCard}
+                    onPress={() => void handleRoleSelect(r.key)}>
+                    <LinearGradient colors={r.grad} style={s.roleIconBox} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+                      <Ionicons name={r.icon} size={24} color="#fff" />
+                    </LinearGradient>
+                    <Text style={s.roleLabel}>{roleLabel}</Text>
+                    <Text style={s.roleSub}>{roleSub}</Text>
+                  </Pressable>
+                );
+              })}
             </View>
             <Pressable style={s.modalCancel} onPress={() => setRoleModal(false)}>
-              <Text style={s.modalCancelText}>Cancel</Text>
+              <Text style={s.modalCancelText}>{t('auth.login.roleModalCancel')}</Text>
             </Pressable>
           </View>
         </View>

@@ -3,6 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { F } from '@/utilities/constants';
 
@@ -10,23 +11,23 @@ const DRAWER_W = 280;
 
 type NavItem = {
   iconName: keyof typeof Ionicons.glyphMap;
-  label: string;
+  labelKey: string;
   route: string;
   color: string;
 };
 
-const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
+const NAV_GROUPS: { labelKey: string; items: NavItem[] }[] = [
   {
-    label: 'ACCOUNT & SECURITY',
+    labelKey: 'drawer.accountSecurity',
     items: [
-      { iconName: 'checkmark-circle-outline', label: 'Verification',         route: '/(business)/settings?section=verification', color: '#16A34A' },
-      { iconName: 'wallet-outline',           label: 'Payment',              route: '/(business)/settings?section=payment',       color: '#3B82F6' },
-      { iconName: 'megaphone-outline',        label: 'Event Preferences',    route: '/(business)/settings?section=campaigns',     color: '#7C3AED' },
-      { iconName: 'shield-outline',           label: 'Privacy',              route: '/(business)/settings?section=privacy',       color: '#4F46E5' },
-      { iconName: 'lock-closed-outline',      label: 'Account & Security',   route: '/(business)/settings?section=account',       color: '#6B7280' },
-      { iconName: 'globe-outline',            label: 'Presence & Goal',      route: '/(business)/presence-goal',                  color: '#F59E0B' },
-      { iconName: 'help-buoy-outline',        label: 'Support',              route: '/(business)/settings?section=support',       color: '#0891B2' },
-      { iconName: 'settings-outline',         label: 'App',                  route: '/(business)/settings?section=app',           color: '#EC4899' },
+      { iconName: 'checkmark-circle-outline', labelKey: 'drawer.verification',      route: '/(business)/settings?section=verification', color: '#16A34A' },
+      { iconName: 'wallet-outline',           labelKey: 'drawer.payment',           route: '/(business)/settings?section=payment',       color: '#3B82F6' },
+      { iconName: 'megaphone-outline',        labelKey: 'drawer.eventPreferences',  route: '/(business)/settings?section=campaigns',     color: '#7C3AED' },
+      { iconName: 'shield-outline',           labelKey: 'drawer.privacy',           route: '/(business)/settings?section=privacy',       color: '#4F46E5' },
+      { iconName: 'lock-closed-outline',      labelKey: 'drawer.accountSecurity',   route: '/(business)/settings?section=account',       color: '#6B7280' },
+      { iconName: 'globe-outline',            labelKey: 'drawer.presenceGoal',      route: '/(business)/presence-goal',                  color: '#F59E0B' },
+      { iconName: 'help-buoy-outline',        labelKey: 'drawer.support',           route: '/(business)/settings?section=support',       color: '#0891B2' },
+      { iconName: 'settings-outline',         labelKey: 'drawer.app',               route: '/(business)/settings?section=app',           color: '#EC4899' },
     ],
   },
 ];
@@ -41,6 +42,7 @@ type Props = {
 export function BusinessDrawerMenu({ visible, user, onClose, onLogout }: Props) {
   const insets = useSafeAreaInsets();
   const C = useAppColors();
+  const { t } = useLanguage();
   const slideAnim = useRef(new Animated.Value(-DRAWER_W)).current;
   const backdropOpacity = useRef(new Animated.Value(0)).current;
   const [rendered, setRendered] = useState(false);
@@ -94,14 +96,14 @@ export function BusinessDrawerMenu({ visible, user, onClose, onLogout }: Props) 
         {/* Nav */}
         <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
           {NAV_GROUPS.map((group) => (
-            <View key={group.label}>
+            <View key={group.labelKey}>
               <View style={styles.groupSeparator}>
-                <Text style={[styles.groupLabel, { color: C.textSecondary }]}>{group.label}</Text>
+                <Text style={[styles.groupLabel, { color: C.textSecondary }]}>{t(group.labelKey)}</Text>
               </View>
               <View style={[styles.navGroup, { backgroundColor: C.surface, borderColor: C.border }]}>
-                {group.items.map(({ iconName, label, route, color }, idx) => (
+                {group.items.map(({ iconName, labelKey, route, color }, idx) => (
                   <Pressable
-                    key={label}
+                    key={labelKey}
                     style={[
                       styles.navItem,
                       idx < group.items.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border },
@@ -110,7 +112,7 @@ export function BusinessDrawerMenu({ visible, user, onClose, onLogout }: Props) 
                     <View style={[styles.navIconWrap, { backgroundColor: color + '18' }]}>
                       <Ionicons name={iconName} size={18} color={color} />
                     </View>
-                    <Text style={[styles.navLabel, { color: C.text }]}>{label}</Text>
+                    <Text style={[styles.navLabel, { color: C.text }]}>{t(labelKey)}</Text>
                     <Ionicons name="chevron-forward" size={16} color={C.border} />
                   </Pressable>
                 ))}
@@ -124,7 +126,7 @@ export function BusinessDrawerMenu({ visible, user, onClose, onLogout }: Props) 
           style={[styles.logout, { borderTopColor: C.border, paddingBottom: insets.bottom + 12 }]}
           onPress={onLogout}>
           <Ionicons name="log-out" size={20} color={C.error} />
-          <Text style={[styles.logoutText, { color: C.error }]}>Logout</Text>
+          <Text style={[styles.logoutText, { color: C.error }]}>{t('drawer.logout')}</Text>
         </Pressable>
       </Animated.View>
     </View>

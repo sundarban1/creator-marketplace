@@ -3,11 +3,13 @@ import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { authService } from '@/services/auth';
 import { F } from '@/utilities/constants';
 
 export default function ForgotPasswordScreen() {
   const C = useAppColors();
+  const { t } = useLanguage();
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -15,7 +17,7 @@ export default function ForgotPasswordScreen() {
   const isValid = phone.trim().length >= 7;
 
   async function handleSendOtp() {
-    if (!isValid) { setError('Enter a valid phone number'); return; }
+    if (!isValid) { setError(t('auth.forgotPassword.phoneError')); return; }
     setError('');
     setLoading(true);
     try {
@@ -41,8 +43,8 @@ export default function ForgotPasswordScreen() {
           <View style={styles.iconWrap}>
             <Text style={styles.icon}>🔐</Text>
           </View>
-          <Text style={styles.heroTitle}>Forgot Password?</Text>
-          <Text style={styles.heroSub}>Enter your registered phone number{'\n'}and we'll send a reset code.</Text>
+          <Text style={styles.heroTitle}>{t('auth.forgotPassword.title')}</Text>
+          <Text style={styles.heroSub}>{t('auth.forgotPassword.subtitle')}</Text>
         </View>
       </View>
 
@@ -54,12 +56,12 @@ export default function ForgotPasswordScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
 
-          <Text style={[styles.label, { color: C.text }]}>Phone Number</Text>
+          <Text style={[styles.label, { color: C.text }]}>{t('auth.forgotPassword.phoneLabel')}</Text>
           <TextInput
             style={[styles.input, { backgroundColor: C.surface, borderColor: error ? C.error : C.border, color: C.text }]}
             value={phone}
-            onChangeText={(t) => { setPhone(t); setError(''); }}
-            placeholder="+977 98XXXXXXXX"
+            onChangeText={(v) => { setPhone(v); setError(''); }}
+            placeholder={t('auth.forgotPassword.phonePlaceholder')}
             placeholderTextColor={C.textSecondary}
             keyboardType="phone-pad"
             autoFocus
@@ -67,7 +69,7 @@ export default function ForgotPasswordScreen() {
           {error ? <Text style={[styles.errorText, { color: C.error }]}>{error}</Text> : null}
 
           <Text style={[styles.hint, { color: C.textSecondary }]}>
-            Use the phone number you registered with.
+            {t('auth.forgotPassword.phoneHint')}
           </Text>
 
           <Pressable
@@ -77,16 +79,16 @@ export default function ForgotPasswordScreen() {
             {loading ? (
               <View style={styles.loadingRow}>
                 <View style={[styles.spinner, { borderTopColor: '#fff' }]} />
-                <Text style={styles.btnText}>Sending…</Text>
+                <Text style={styles.btnText}>{t('auth.forgotPassword.sending')}</Text>
               </View>
             ) : (
-              <Text style={styles.btnText}>Send Reset Code</Text>
+              <Text style={styles.btnText}>{t('auth.forgotPassword.sendBtn')}</Text>
             )}
           </Pressable>
 
           <Pressable onPress={() => router.replace('/login')} style={styles.backToLogin}>
             <Text style={[styles.backToLoginText, { color: C.textSecondary }]}>
-              Back to <Text style={{ color: C.brinjal1, fontWeight: '700' }}>Sign In</Text>
+              {t('auth.forgotPassword.backTo')} <Text style={{ color: C.brinjal1, fontWeight: '700' }}>{t('auth.forgotPassword.signIn')}</Text>
             </Text>
           </Pressable>
 

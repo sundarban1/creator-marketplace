@@ -56,7 +56,9 @@ function BusinessCard({ item, onRemove }: { item: BusinessListItem; onRemove: ()
             <Text style={[s.desc, { color: C.textSecondary }]} numberOfLines={2}>{item.description}</Text>
           ) : null}
           <Text style={[s.campaigns, { color: C.textSecondary }]}>
-            {item._count.campaigns} active event{item._count.campaigns !== 1 ? 's' : ''}
+            {item._count.campaigns !== 1
+              ? t('favoriteBrands.campaignsPlural', { count: item._count.campaigns })
+              : t('favoriteBrands.campaigns', { count: item._count.campaigns })}
           </Text>
         </View>
         <Ionicons name="chevron-forward" size={18} color={C.border} />
@@ -114,7 +116,11 @@ export default function FavoriteBusinessesScreen() {
           <View style={{ alignItems: 'center', gap: 2 }}>
             <Text style={s.heading}>{t('favoriteBrands.title')}</Text>
             {items.length > 0 && (
-              <Text style={s.subheading}>{items.length} brand{items.length !== 1 ? 's' : ''} saved</Text>
+              <Text style={s.subheading}>
+                {items.length !== 1
+                  ? t('favoriteBrands.brandsSaved', { n: items.length })
+                  : t('favoriteBrands.brandSaved', { n: items.length })}
+              </Text>
             )}
           </View>
           <View style={{ width: 38 }} />

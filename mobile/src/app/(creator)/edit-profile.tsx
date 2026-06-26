@@ -17,6 +17,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
 import { useAppColors } from '@/context/ThemeContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/components/Toast';
 import { creatorService } from '@/services/creator';
 import { F } from '@/utilities/constants';
@@ -48,6 +49,7 @@ function LocationSearchModal({
   onClose: () => void;
 }) {
   const C = useAppColors();
+  const { t } = useLanguage();
   const [query, setQuery] = useState('');
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [searching, setSearching] = useState(false);
@@ -113,9 +115,9 @@ function LocationSearchModal({
       <SafeAreaView style={[lsm.container, { backgroundColor: C.background }]} edges={['top']}>
         <View style={[lsm.topBar, { borderBottomColor: C.border, backgroundColor: C.background }]}>
           <Pressable onPress={onClose}>
-            <Text style={[lsm.cancelTxt, { color: C.brinjal1 }]}>Cancel</Text>
+            <Text style={[lsm.cancelTxt, { color: C.brinjal1 }]}>{t('profile.editCreator.locationModalCancel')}</Text>
           </Pressable>
-          <Text style={[lsm.title, { color: C.text }]}>Search Location</Text>
+          <Text style={[lsm.title, { color: C.text }]}>{t('profile.editCreator.locationModalTitle')}</Text>
           <View style={{ width: 56 }} />
         </View>
 
@@ -125,7 +127,7 @@ function LocationSearchModal({
             style={[lsm.input, { color: C.text }]}
             value={query}
             onChangeText={handleChangeText}
-            placeholder="Type an address or city…"
+            placeholder={t('profile.editCreator.locationModalPlaceholder')}
             placeholderTextColor={C.textSecondary}
             autoFocus
             returnKeyType="search"
@@ -154,7 +156,7 @@ function LocationSearchModal({
           ListEmptyComponent={
             query.trim() && !searching ? (
               <View style={lsm.empty}>
-                <Text style={[lsm.emptyTxt, { color: C.textSecondary }]}>No results found</Text>
+                <Text style={[lsm.emptyTxt, { color: C.textSecondary }]}>{t('profile.editCreator.locationModalNoResults')}</Text>
               </View>
             ) : null
           }
@@ -188,6 +190,7 @@ const lsm = StyleSheet.create({
 export default function EditProfileScreen() {
   const { updateUser } = useAuth();
   const C = useAppColors();
+  const { t } = useLanguage();
   const toast = useToast();
 
   const [loading, setLoading] = useState(true);
@@ -262,7 +265,7 @@ export default function EditProfileScreen() {
       <LinearGradient colors={['#312e81', '#4f46e5', '#8b5cf6']} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientTopBar}>
         <View style={styles.topBar}>
           <BackButton fallback="/(creator)/profile" />
-          <Text style={[styles.topTitle, { color: '#fff' }]}>Edit Profile</Text>
+          <Text style={[styles.topTitle, { color: '#fff' }]}>{t('profile.editCreator.headerTitle')}</Text>
           <View style={{ width: 38 }} />
         </View>
       </LinearGradient>
@@ -272,16 +275,16 @@ export default function EditProfileScreen() {
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled">
 
-        <Text style={[styles.sectionHeader, { color: C.textSecondary }]}>PROFILE INFO</Text>
+        <Text style={[styles.sectionHeader, { color: C.textSecondary }]}>{t('profile.editCreator.sectionHeader')}</Text>
         <View style={[styles.card, { backgroundColor: C.surface }]}>
 
           <View style={styles.field}>
-            <Text style={[styles.label, { color: C.textSecondary }]}>FULL NAME *</Text>
+            <Text style={[styles.label, { color: C.textSecondary }]}>{t('profile.editCreator.fullNameLabel')}</Text>
             <TextInput
               style={[styles.input, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
               value={fullName}
               onChangeText={setFullName}
-              placeholder="Your full name"
+              placeholder={t('profile.editCreator.fullNamePlaceholder')}
               placeholderTextColor={C.textSecondary}
             />
           </View>
@@ -289,12 +292,12 @@ export default function EditProfileScreen() {
           <View style={[styles.divider, { backgroundColor: C.border }]} />
 
           <View style={styles.field}>
-            <Text style={[styles.label, { color: C.textSecondary }]}>BIO</Text>
+            <Text style={[styles.label, { color: C.textSecondary }]}>{t('profile.editCreator.bioLabel')}</Text>
             <TextInput
               style={[styles.textarea, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
               value={bio}
-              onChangeText={(t) => setBio(t.slice(0, 500))}
-              placeholder="Tell brands about yourself..."
+              onChangeText={(v) => setBio(v.slice(0, 500))}
+              placeholder={t('profile.editCreator.bioPlaceholder')}
               placeholderTextColor={C.textSecondary}
               multiline
               numberOfLines={4}

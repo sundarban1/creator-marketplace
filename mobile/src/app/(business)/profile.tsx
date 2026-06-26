@@ -175,7 +175,7 @@ export default function BusinessProfileScreen() {
             onPress={() => router.push('/(business)/edit-profile' as never)}>
             <Ionicons name="create" size={22} color={C.brinjal1} />
             <View style={styles.editCtaText}>
-              <Text style={[styles.editCtaTitle, { color: C.text }]}>{t('profile.editBusiness')}</Text>
+              <Text style={[styles.editCtaTitle, { color: C.text }]}>{t('profile.editBusinessBtn')}</Text>
               <Text style={[styles.editCtaSub, { color: C.textSecondary }]}>{t('profile.editBusinessSub')}</Text>
             </View>
             <Ionicons name="chevron-forward" size={22} color={C.brinjal1} />
