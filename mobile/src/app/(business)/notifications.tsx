@@ -1,1 +1,1 @@
-export { default } from '@/app/(creator)/notifications';
+export { default } from '@/app/(creator)/(tabs)/notifications';
