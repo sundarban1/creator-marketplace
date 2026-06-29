@@ -1593,6 +1593,7 @@ const en = {
     supportSendFailed:   'Failed to send message. Please try again.',
     reportSentToast:     'Issue reported. Thank you!',
     reportSendFailed:    'Failed to submit report. Please try again.',
+    languageSection:   'Language',
     appearanceSection: 'Appearance',
     darkModeLabel:     'Dark Mode',
     darkModeSub:       'Switch between light and dark theme',

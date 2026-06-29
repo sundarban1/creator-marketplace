@@ -144,7 +144,7 @@ function CampaignEventCard({ item }: { item: CampaignCard }) {
 
 export default function ProposalsScreen() {
   const C = useAppColors();
-  const { t } = useLanguage();
+  const { t, languageVersion } = useLanguage();
   const [proposals, setProposals]   = useState<Proposal[]>([]);
   const [loading, setLoading]       = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -160,7 +160,7 @@ export default function ProposalsScreen() {
     finally { setLoading(false); setRefreshing(false); }
   }
 
-  useEffect(() => { void load(); }, []);
+  useEffect(() => { void load(); }, [languageVersion]);
   const onRefresh = useCallback(() => void load(true), []);
 
   const allCards  = buildCampaignCards(proposals);

@@ -1,13 +1,17 @@
 import { NotificationRepository } from './notification.repository';
 import { toNotificationDto } from './notification.dto';
 import { emitToUser } from '../../socket';
+import { translateMany } from '../../utils/translation';
+
+const NOTIFICATION_FIELDS = ['title', 'body'] as const;
 
 const repo = new NotificationRepository();
 
 export const notificationService = {
-  async getForUser(userId: string) {
+  async getForUser(userId: string, lang = 'en') {
     const notifications = await repo.findByUser(userId);
-    return notifications.map(toNotificationDto);
+    const dtos = notifications.map(toNotificationDto);
+    return translateMany(dtos, [...NOTIFICATION_FIELDS], lang);
   },
 
   async markRead(id: string, userId: string) {

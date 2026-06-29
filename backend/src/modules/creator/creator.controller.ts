@@ -19,7 +19,7 @@ export class CreatorController {
       const platforms = platformsRaw ? platformsRaw.split(',').filter(Boolean) : undefined;
       const priceMin = req.query.priceMin ? parseFloat(String(req.query.priceMin)) : undefined;
       const priceMax = req.query.priceMax ? parseFloat(String(req.query.priceMax)) : undefined;
-      const result = await creatorService.listCreators({ page, limit, search, categories, location, platforms, priceMin, priceMax });
+      const result = await creatorService.listCreators({ page, limit, search, categories, location, platforms, priceMin, priceMax, lang: req.language });
       success(res, result, 'Creators retrieved');
     } catch (err) {
       next(err);
@@ -28,7 +28,7 @@ export class CreatorController {
 
   async getCreatorPublicProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const profile = await creatorService.getCreatorPublicProfile(req.params.id);
+      const profile = await creatorService.getCreatorPublicProfile(req.params.id, req.language);
       success(res, profile, 'Creator profile retrieved');
     } catch (err) {
       next(err);

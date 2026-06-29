@@ -53,6 +53,12 @@ const MOCK_SAVED_CREATORS = [
   { id: 's3', name: 'Priya Patel',    handle: '@priyalifestyle', followers: '14.9K', category: 'Fashion',   avatar: 'PP', avatarBg: '#FEE2E2', avatarColor: '#DC2626', notes: '' },
 ];
 
+const LANGUAGE_OPTIONS = [
+  { label: 'English', native: 'English', flag: '🇬🇧', desc: 'Default app language', future: false },
+  { label: 'Nepali',  native: 'नेपाली',  flag: '🇳🇵', desc: 'स्थानीय भाषा समर्थन', future: false },
+  { label: 'Hindi',   native: 'हिंदी',   flag: '🇮🇳', desc: 'Coming soon',         future: true  },
+];
+
 const MOCK_TRANSACTIONS = [
   { id: 't1', date: 'Jun 10, 2026', desc: 'Event: Winter Menu',          amount: '-NZ$200', type: 'debit' },
   { id: 't2', date: 'Jun 05, 2026', desc: 'Wallet Top-up',              amount: '+NZ$500', type: 'credit' },
@@ -154,7 +160,11 @@ export default function BusinessSettingsScreen() {
   const { section } = useLocalSearchParams<{ section?: string }>();
   const C: ColorsType = useAppColors();
   const toast = useToast();
-  const { t } = useLanguage();
+  const { language, setLanguage, t } = useLanguage();
+
+  const langLabelToCode = (label: string): 'en' | 'ne' => label === 'Nepali' ? 'ne' : 'en';
+  const langCodeToLabel = (code: string): string => code === 'ne' ? 'Nepali' : 'English';
+  const [selectedLang, setSelectedLang] = useState(() => langCodeToLabel(language));
 
   const [subPage, setSubPage] = useState<string | null>(null);
 
@@ -1293,6 +1303,48 @@ export default function BusinessSettingsScreen() {
   function renderAppSettings() {
     return (
       <>
+        <SectionHeader title={t('businessSettings.languageSection')} />
+        <View style={{ marginHorizontal: 16, gap: 10 }}>
+          {LANGUAGE_OPTIONS.map((lang) => {
+            const active = selectedLang === lang.label;
+            return (
+              <Pressable
+                key={lang.label}
+                disabled={lang.future}
+                onPress={() => {
+                  if (!lang.future) {
+                    setSelectedLang(lang.label);
+                    setLanguage(langLabelToCode(lang.label));
+                  }
+                }}
+                style={[
+                  styles.langCard,
+                  { backgroundColor: C.surface, borderColor: active ? C.brinjal1 : C.border, opacity: lang.future ? 0.55 : 1 },
+                ]}>
+                <Text style={styles.langFlag}>{lang.flag}</Text>
+                <View style={{ flex: 1 }}>
+                  <View style={styles.langNameRow}>
+                    <Text style={[styles.langName, { color: C.text }]}>{lang.label}</Text>
+                    <Text style={[styles.langNative, { color: C.textSecondary }]}>{lang.native}</Text>
+                  </View>
+                  <Text style={[styles.langDesc, { color: C.textSecondary }]}>{lang.desc}</Text>
+                </View>
+                {lang.future ? (
+                  <View style={[styles.soonBadge, { backgroundColor: C.primaryLight }]}>
+                    <Text style={[styles.badgeText, { color: C.brinjal1 }]}>Soon</Text>
+                  </View>
+                ) : active ? (
+                  <View style={[styles.activeLangCheck, { backgroundColor: C.brinjal1 }]}>
+                    <Text style={styles.activeLangCheckText}>✓</Text>
+                  </View>
+                ) : (
+                  <View style={[styles.inactiveLangCircle, { borderColor: C.border }]} />
+                )}
+              </Pressable>
+            );
+          })}
+        </View>
+
         <SectionHeader title={t('businessSettings.appearanceSection')} />
         <Card>
           <SwitchRow icon="🌙" label={t('businessSettings.darkModeLabel')} sub={t('businessSettings.darkModeSub')} value={isDark} onChange={toggleDark} isLast />
@@ -1563,4 +1615,19 @@ const styles = StyleSheet.create({
   phoneError: { fontSize: 12, fontFamily: F.regular, marginTop: -4 },
   phoneActionBtn: { flex: 1, borderRadius: 10, paddingVertical: 11, alignItems: 'center', justifyContent: 'center' },
   phoneActionBtnText: { fontSize: 14, fontWeight: '600', fontFamily: F.semibold },
+
+  langCard: {
+    flexDirection: 'row', alignItems: 'center', gap: 14,
+    borderRadius: 14, borderWidth: 2, padding: 16,
+    shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 }, elevation: 2,
+  },
+  langFlag: { fontSize: 32 },
+  langNameRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 2 },
+  langName: { fontSize: 15, fontWeight: '700', fontFamily: F.bold },
+  langNative: { fontSize: 13, fontFamily: F.regular },
+  langDesc: { fontSize: 12, fontFamily: F.regular },
+  activeLangCheck: { width: 24, height: 24, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+  activeLangCheckText: { color: '#fff', fontSize: 13, fontWeight: '800', fontFamily: F.extrabold },
+  inactiveLangCircle: { width: 24, height: 24, borderRadius: 12, borderWidth: 2 },
 });

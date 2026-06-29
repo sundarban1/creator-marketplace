@@ -1,6 +1,9 @@
 import { randomUUID } from 'crypto';
 import { AppError } from '../../middleware/error';
 import { toCreatorProfileDto, toPublicCreatorDto, toCreatorListItemDto, toSocialAccountDto } from './creator.dto';
+import { translateFields, translateMany } from '../../utils/translation';
+
+const CREATOR_FIELDS = ['bio', 'location', 'categories'] as const;
 import { CreatorRepository } from './creator.repository';
 import type {
   UpdateCreatorProfileInput,
@@ -28,19 +31,23 @@ export class CreatorService {
     platforms?: string[];
     priceMin?: number;
     priceMax?: number;
+    lang?: string;
   }) {
-    const { page, limit, search, categories, location, platforms, priceMin, priceMax } = params;
+    const { page, limit, search, categories, location, platforms, priceMin, priceMax, lang = 'en' } = params;
     const { creators: raw, total } = await this.repo.findMany({
       page, limit: Math.min(limit, 20),
       search, categories, location, platforms, priceMin, priceMax,
     });
-    return { creators: raw.map(toCreatorListItemDto), total, page, limit };
+    const dtos = raw.map(toCreatorListItemDto);
+    const creators = await translateMany(dtos, [...CREATOR_FIELDS], lang);
+    return { creators, total, page, limit };
   }
 
-  async getCreatorPublicProfile(creatorId: string) {
+  async getCreatorPublicProfile(creatorId: string, lang = 'en') {
     const profile = await this.repo.findByIdPublic(creatorId);
     if (!profile) throw new AppError('Creator not found', 404);
-    return toPublicCreatorDto(profile);
+    const dto = toPublicCreatorDto(profile);
+    return translateFields(dto, [...CREATOR_FIELDS], lang);
   }
 
   async getFilterOptions() {

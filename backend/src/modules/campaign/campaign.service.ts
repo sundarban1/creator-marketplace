@@ -6,6 +6,9 @@ import { CampaignRepository } from './campaign.repository';
 import { FavoriteRepository } from '../creator/favorite.repository';
 import { notificationService } from '../notifications/notification.service';
 import { emitToRole } from '../../socket';
+import { translateFields, translateMany } from '../../utils/translation';
+
+const CAMPAIGN_FIELDS = ['title', 'description', 'category', 'goals', 'platform', 'contentType', 'deliverables', 'paymentType', 'location', 'venue', 'benefits'] as const;
 import type {
   CreateCampaignInput,
   UpdateCampaignInput,
@@ -62,9 +65,9 @@ export class CampaignService {
     return campaign;
   }
 
-  async list(query: CampaignListQuery) {
+  async list(query: CampaignListQuery, lang = 'en') {
     const { page = 1, limit = 10, ...filters } = query;
-    const validatedLimit = Math.min(limit, 50); // cap at 50
+    const validatedLimit = Math.min(limit, 50);
 
     const { campaigns: raw, total } = await this.repo.findMany({
       ...filters,
@@ -72,7 +75,9 @@ export class CampaignService {
       limit: validatedLimit,
     });
 
-    return { campaigns: raw.map(toCampaignDto), total, page, limit: validatedLimit };
+    const dtos = raw.map(toCampaignDto);
+    const campaigns = await translateMany(dtos, [...CAMPAIGN_FIELDS], lang);
+    return { campaigns, total, page, limit: validatedLimit };
   }
 
   async getCategories(): Promise<string[]> {
@@ -83,12 +88,13 @@ export class CampaignService {
     return this.repo.getDistinctPlatforms();
   }
 
-  async getById(id: string) {
+  async getById(id: string, lang = 'en') {
     const campaign = await this.repo.findById(id);
     if (!campaign) {
       throw new AppError('Campaign not found', 404);
     }
-    return toCampaignDto(campaign);
+    const dto = toCampaignDto(campaign);
+    return translateFields(dto, [...CAMPAIGN_FIELDS], lang);
   }
 
   async update(id: string, userId: string, input: UpdateCampaignInput) {
@@ -134,14 +140,16 @@ export class CampaignService {
     return { message: 'Campaign deleted successfully' };
   }
 
-  async getMyCampaigns(userId: string, page: number, limit: number) {
+  async getMyCampaigns(userId: string, page: number, limit: number, lang = 'en') {
     const business = await this.businessRepo.findByUserId(userId);
     if (!business) {
       throw new AppError('Business profile not found', 404);
     }
 
     const { campaigns: raw, total } = await this.repo.findByBusinessId(business.id, page, Math.min(limit, 50));
-    return { campaigns: raw.map(toCampaignDto), total, page, limit };
+    const dtos = raw.map(toCampaignDto);
+    const campaigns = await translateMany(dtos, [...CAMPAIGN_FIELDS], lang);
+    return { campaigns, total, page, limit };
   }
 
   async apply(campaignId: string, userId: string, input: ApplyToCampaignInput) {

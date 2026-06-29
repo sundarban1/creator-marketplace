@@ -1593,6 +1593,7 @@ const ne = {
     supportSendFailed:   'सन्देश पठाउन असफल। पुनः प्रयास गर्नुहोस्।',
     reportSentToast:     'समस्या रिपोर्ट गरियो। धन्यवाद!',
     reportSendFailed:    'रिपोर्ट पेश गर्न असफल। पुनः प्रयास गर्नुहोस्।',
+    languageSection:   'भाषा',
     appearanceSection: 'स्वरूप',
     darkModeLabel:     'डार्क मोड',
     darkModeSub:       'हल्का र गाढा थिम बिच बदल्नुहोस्',

@@ -27,7 +27,7 @@ const NAV_GROUPS: { labelKey: string; items: NavItem[] }[] = [
       { iconName: 'lock-closed-outline',      labelKey: 'drawer.accountSecurity',   route: '/(business)/settings?section=account',       color: '#6B7280' },
       { iconName: 'globe-outline',            labelKey: 'drawer.presenceGoal',      route: '/(business)/presence-goal',                  color: '#F59E0B' },
       { iconName: 'help-buoy-outline',        labelKey: 'drawer.support',           route: '/(business)/settings?section=support',       color: '#0891B2' },
-      { iconName: 'settings-outline',         labelKey: 'drawer.app',               route: '/(business)/settings?section=app',           color: '#EC4899' },
+      { iconName: 'settings-outline',         labelKey: 'drawer.settings',          route: '/(business)/settings?section=app',           color: '#EC4899' },
     ],
   },
 ];

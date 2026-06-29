@@ -38,6 +38,7 @@ export class BusinessController {
         locations: locationList && locationList.length > 0 ? locationList : undefined,
         page:      parseInt(page,  10) || 1,
         limit:     parseInt(limit, 10) || 20,
+        lang:      req.language,
       });
       success(res, result, 'Businesses retrieved successfully');
     } catch (err) {
@@ -47,7 +48,7 @@ export class BusinessController {
 
   async getBusinessPublic(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const business = await businessService.getBusinessPublic(req.params.id);
+      const business = await businessService.getBusinessPublic(req.params.id, req.language);
       success(res, business, 'Business retrieved successfully');
     } catch (err) {
       next(err);

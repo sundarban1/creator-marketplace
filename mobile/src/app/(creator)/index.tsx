@@ -42,7 +42,7 @@ function getPlatformMeta(name: string) {
 export default function HomeScreen() {
   const { user } = useAuth();
   const { openDrawer } = useContext(DrawerContext);
-  const { t } = useLanguage();
+  const { t, languageVersion } = useLanguage();
   const C = useAppColors();
 
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
@@ -130,7 +130,7 @@ export default function HomeScreen() {
     campaignService.getPlatforms()
       .then((plats) => { if (plats.length > 0) setApiPlatforms(plats); })
       .catch(() => {});
-  }, []);
+  }, [languageVersion]);
 
   // Keep a stable ref to the latest fetch so the socket handler never captures stale state
   const fetchRef = useRef(fetchCampaigns);

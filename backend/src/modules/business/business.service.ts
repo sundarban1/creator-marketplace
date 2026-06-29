@@ -2,6 +2,9 @@ import { AppError } from '../../middleware/error';
 import { toBusinessProfileDto, toPublicBusinessDto, toBusinessListItemDto } from './business.dto';
 import { BusinessRepository } from './business.repository';
 import type { UpdateBusinessProfileInput } from './business.schema';
+import { translateFields, translateMany } from '../../utils/translation';
+
+const BUSINESS_FIELDS = ['description', 'location', 'categories'] as const;
 
 export class BusinessService {
   private repo: BusinessRepository;
@@ -34,14 +37,19 @@ export class BusinessService {
     locations?: string[];
     page:       number;
     limit:      number;
+    lang?:      string;
   }) {
-    const { businesses, total } = await this.repo.findMany(params);
-    return { businesses: businesses.map(toBusinessListItemDto), total };
+    const { lang = 'en', ...rest } = params;
+    const { businesses, total } = await this.repo.findMany(rest);
+    const dtos = businesses.map(toBusinessListItemDto);
+    const translated = await translateMany(dtos, [...BUSINESS_FIELDS], lang);
+    return { businesses: translated, total };
   }
 
-  async getBusinessPublic(id: string) {
+  async getBusinessPublic(id: string, lang = 'en') {
     const business = await this.repo.findPublicById(id);
     if (!business || !business.showPublicProfile) throw new AppError('Business not found', 404);
-    return toPublicBusinessDto(business);
+    const dto = toPublicBusinessDto(business);
+    return translateFields(dto, [...BUSINESS_FIELDS], lang);
   }
 }

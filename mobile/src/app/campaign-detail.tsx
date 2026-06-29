@@ -281,7 +281,7 @@ const EVENT_BENEFITS = [
 export default function CampaignDetailScreen() {
   const { campaignId } = useLocalSearchParams<{ campaignId: string }>();
   const { user } = useAuth();
-  const { t } = useLanguage();
+  const { t, languageVersion } = useLanguage();
   const C = useAppColors();
   const isBusiness = user?.role === 'BUSINESS';
 
@@ -444,7 +444,7 @@ export default function CampaignDetailScreen() {
       })
       .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load event'))
       .finally(() => setLoading(false));
-  }, [campaignId]);
+  }, [campaignId, languageVersion]);
 
   // Re-check applied status silently when returning from submit-proposal
   useFocusEffect(
@@ -614,13 +614,7 @@ export default function CampaignDetailScreen() {
       </ScrollView>
 
       {/* Sticky CTA */}
-      <View style={[s.ctaBar, { backgroundColor: C.surface, borderTopColor: C.border, justifyContent: isBusiness ? 'space-between' : 'center' }]}>
-        {isBusiness && (
-          <View style={s.ctaInfo}>
-            <Text style={[s.ctaBudget, { color: C.text }]}>{campaign.budget}</Text>
-            <Text style={[s.ctaLabel, { color: C.textSecondary }]}>{t('campaignDetail.budgetRange')}</Text>
-          </View>
-        )}
+      <View style={[s.ctaBar, { backgroundColor: C.surface, borderTopColor: C.border, justifyContent: 'center' }]}>
         {isBusiness ? (
           <Pressable
             style={({ pressed }) => [s.applyBtn, { backgroundColor: isEditLocked ? C.border : C.brinjal1, shadowColor: isEditLocked ? 'transparent' : C.brinjal1 }, pressed && !isEditLocked && { opacity: 0.88 }]}

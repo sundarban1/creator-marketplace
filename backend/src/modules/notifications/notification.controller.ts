@@ -4,7 +4,7 @@ import { notificationService } from './notification.service';
 export class NotificationController {
   async list(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const notifications = await notificationService.getForUser(req.user!.id);
+      const notifications = await notificationService.getForUser(req.user!.id, req.language);
       res.json({ success: true, data: notifications });
     } catch (err) { next(err); }
   }

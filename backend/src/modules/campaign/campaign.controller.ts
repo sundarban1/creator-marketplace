@@ -34,7 +34,7 @@ export class CampaignController {
 
   async list(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { campaigns, total, page, limit } = await campaignService.list(req.query as any);
+      const { campaigns, total, page, limit } = await campaignService.list(req.query as any, req.language);
       paginated(res, campaigns, total, page, limit);
     } catch (err) {
       next(err);
@@ -43,7 +43,7 @@ export class CampaignController {
 
   async getById(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const campaign = await campaignService.getById(req.params.id);
+      const campaign = await campaignService.getById(req.params.id, req.language);
       success(res, campaign, 'Campaign retrieved successfully');
     } catch (err) {
       next(err);
@@ -72,7 +72,7 @@ export class CampaignController {
     try {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 10;
-      const { campaigns, total } = await campaignService.getMyCampaigns(req.user!.id, page, limit);
+      const { campaigns, total } = await campaignService.getMyCampaigns(req.user!.id, page, limit, req.language);
       paginated(res, campaigns, total, page, limit);
     } catch (err) {
       next(err);

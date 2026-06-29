@@ -40,7 +40,7 @@ const STATUS_STYLE = {
 export default function BusinessHomeScreen() {
   const { user } = useAuth();
   const { openDrawer } = useDrawer();
-  const { t } = useLanguage();
+  const { t, languageVersion } = useLanguage();
   const C = useAppColors();
   const name = user?.name?.split(' ')[0] ?? 'there';
 
@@ -71,7 +71,7 @@ export default function BusinessHomeScreen() {
     }
   }
 
-  useEffect(() => { void fetchCampaigns(); }, []);
+  useEffect(() => { void fetchCampaigns(); }, [languageVersion]);
 
   // Refresh badge count from server every time this screen comes into focus
   // so socket-missed notifications (favorites, accepted requests) always appear

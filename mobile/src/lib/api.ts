@@ -95,6 +95,14 @@ export interface ApiMessage {
   sender:         { id: string; email: string; role: string };
 }
 
+// ── Language preference ────────────────────────────────────────────────────────
+// Kept as a module-level variable so buildHeaders() can read it without React context.
+let _currentLanguage = 'en';
+
+export function setApiLanguage(lang: string): void {
+  _currentLanguage = lang;
+}
+
 // ── Session expiry handler ─────────────────────────────────────────────────────
 // AuthContext registers its logout function here so any failed token refresh
 // automatically clears the user and redirects to login without requiring
@@ -166,6 +174,7 @@ export async function request<T>(
     const h: Record<string, string> = {
       'Content-Type': 'application/json',
       'X-Timezone':   Intl.DateTimeFormat().resolvedOptions().timeZone,
+      'X-Language':   _currentLanguage,
     };
     const t = token ?? storage.get(ACCESS_TOKEN_KEY);
     if (t) h['Authorization'] = `Bearer ${t}`;
