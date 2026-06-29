@@ -1,5 +1,6 @@
 import { ConversationStatus, Role } from '@prisma/client';
 import { AppError } from '../../middleware/error';
+import { toConversationDto, toMessageDto } from './messaging.dto';
 import { CreatorRepository } from '../creator/creator.repository';
 import { BusinessRepository } from '../business/business.repository';
 import { MessagingRepository } from './messaging.repository';
@@ -52,11 +53,13 @@ export class MessagingService {
   async listConversations(userId: string, role: Role, status?: ConversationStatus) {
     if (role === 'CREATOR') {
       const creator = await this.resolveCreator(userId);
-      return this.repo.findConversationsByCreator(creator.id, status);
+      const convs = await this.repo.findConversationsByCreator(creator.id, status);
+      return convs.map(toConversationDto);
     }
     if (role === 'BUSINESS') {
       const business = await this.resolveBusiness(userId);
-      return this.repo.findConversationsByBusiness(business.id, status);
+      const convs = await this.repo.findConversationsByBusiness(business.id, status);
+      return convs.map(toConversationDto);
     }
     return [];
   }
@@ -76,7 +79,7 @@ export class MessagingService {
       );
       // Notify creator of new pending message request
       emitToUser(otherCreator.userId, 'conversation:update', { conversationId: conv.id });
-      return conv;
+      return toConversationDto(conv);
     }
 
     if (role === 'CREATOR') {
@@ -91,7 +94,7 @@ export class MessagingService {
         input.requestMessage,
       );
       emitToUser(otherBusiness.userId, 'conversation:update', { conversationId: conv.id });
-      return conv;
+      return toConversationDto(conv);
     }
 
     throw new AppError('Unauthorized', 403);
@@ -144,8 +147,8 @@ export class MessagingService {
     const conversation = await this.repo.findConversationById(conversationId);
     if (!conversation) throw new AppError('Conversation not found', 404);
     await this.verifyConversationAccess(conversation, userId, role);
-    const { messages, total } = await this.repo.findMessages(conversationId, page, Math.min(limit, 100));
-    return { messages, total, page, limit };
+    const { messages: raw, total } = await this.repo.findMessages(conversationId, page, Math.min(limit, 100));
+    return { messages: raw.map(toMessageDto), total, page, limit };
   }
 
   async sendMessage(conversationId: string, userId: string, role: Role, input: SendMessageInput) {
@@ -160,7 +163,8 @@ export class MessagingService {
       throw new AppError('This conversation request was declined', 403);
     }
 
-    const message = await this.repo.createMessage({ conversationId, senderId: userId, content: input.content });
+    const raw     = await this.repo.createMessage({ conversationId, senderId: userId, content: input.content });
+    const message = toMessageDto(raw);
 
     // Push message to both participants in real-time
     emitToUser(conversation.creator.userId, 'message:new', { conversationId, message });

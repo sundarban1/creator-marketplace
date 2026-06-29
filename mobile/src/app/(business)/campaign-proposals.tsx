@@ -212,8 +212,8 @@ export default function CampaignProposalsScreen() {
     Alert.alert(
       isFree ? t('campaignProposals.alertApproveTitle') : t('campaignProposals.alertAcceptTitle'),
       isFree
-        ? `Approve ${p.creator.fullName} for this event?`
-        : `Accept ${p.creator.fullName}'s proposal?\n\nOther pending applicants will be notified that the campaign is closed.`,
+        ? t('campaignProposalsExtra.alertApproveBody', { name: p.creator.fullName })
+        : t('campaignProposalsExtra.alertAcceptBody', { name: p.creator.fullName }),
       [
         { text: t('campaignProposals.alertCancel'), style: 'cancel' },
         {
@@ -239,7 +239,7 @@ export default function CampaignProposalsScreen() {
   async function handleReject(p: Proposal) {
     Alert.alert(
       t('campaignProposals.alertDeclineTitle'),
-      `Decline ${p.creator.fullName}'s application?`,
+      t('campaignProposalsExtra.alertDeclineBody', { name: p.creator.fullName }),
       [
         { text: t('campaignProposals.alertCancel'), style: 'cancel' },
         {

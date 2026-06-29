@@ -8,6 +8,8 @@ declare global {
         email: string;
         role: Role;
       };
+      /** IANA timezone string sent by the client via X-Timezone header. Defaults to 'UTC'. */
+      timezone: string;
     }
   }
 }

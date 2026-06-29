@@ -38,10 +38,10 @@ const CATEGORIES    = ['Fashion','Health & Fitness','Food & Drink','Gaming','Edu
 const FOLLOWER_RANGES = ['< 1K','1K–10K','10K–50K','50K–100K','100K–500K','500K+'];
 const CONTENT_TYPES = ['Reel / Short Video','Story','Static Post','Blog Article','Podcast Mention'];
 const PAYMENT_TYPES = ['Fixed Fee','Commission','Product Exchange','Hybrid','Negotiable'];
-const STATUS_OPTIONS: { label: string; value: NonNullable<Campaign['status']> }[] = [
-  { label: 'Active', value: 'active' },
-  { label: 'Paused', value: 'draft'  },
-  { label: 'Closed', value: 'closed' },
+const STATUS_OPTIONS: { labelKey: string; value: NonNullable<Campaign['status']> }[] = [
+  { labelKey: 'campaignDetail.statusActive', value: 'active' },
+  { labelKey: 'campaignDetail.statusPaused', value: 'draft'  },
+  { labelKey: 'campaignDetail.statusClosed', value: 'closed' },
 ];
 
 const FOLLOWER_MIN_MAP: Record<string, number> = {
@@ -322,7 +322,7 @@ export default function CampaignDetailScreen() {
   function openEdit() {
     if (!campaign) return;
     if (isEditLocked) {
-      showToast('Editing is locked — proposals have already been submitted for this event.', 'error');
+      showToast(t('campaignDetail.toastLocked'), 'error');
       return;
     }
     setEditForm({
@@ -358,28 +358,28 @@ export default function CampaignDetailScreen() {
 
   function validateEdit(): EditErrors {
     const errs: EditErrors = {};
-    if (!editForm.title.trim()) errs.title = 'Title is required.';
-    if (!editForm.category)     errs.category = 'Please select a category.';
-    if (!editForm.deadline)     errs.deadline = 'Deadline is required.';
+    if (!editForm.title.trim()) errs.title = t('campaignDetail.errTitleRequired');
+    if (!editForm.category)     errs.category = t('campaignDetail.errCategoryRequired');
+    if (!editForm.deadline)     errs.deadline = t('campaignDetail.errDeadlineRequired');
 
     if (isOpenEvent) {
-      if (!editForm.eventDate) errs.eventDate = 'Event date is required.';
+      if (!editForm.eventDate) errs.eventDate = t('campaignDetail.errEventDateRequired');
       else if (editForm.deadline && editForm.eventDate <= editForm.deadline)
-        errs.deadline = 'Registration deadline must be before event date.';
-      if (!editForm.venue.trim()) errs.venue = 'Venue is required.';
+        errs.deadline = t('campaignDetail.errRegBeforeEvent');
+      if (!editForm.venue.trim()) errs.venue = t('campaignDetail.errVenueRequired');
     } else {
-      if (!editForm.platform)            errs.platform     = 'Please select a platform.';
-      if (!editForm.minFollowers)        errs.minFollowers = 'Please select a follower range.';
-      if (!editForm.contentType)         errs.contentType  = 'Please select a content type.';
-      if (!editForm.deliverables.trim()) errs.deliverables = 'Deliverables are required.';
-      if (!editForm.paymentType)         errs.paymentType  = 'Please select a payment type.';
+      if (!editForm.platform)            errs.platform     = t('campaignDetail.errPlatformRequired');
+      if (!editForm.minFollowers)        errs.minFollowers = t('campaignDetail.errFollowersRequired');
+      if (!editForm.contentType)         errs.contentType  = t('campaignDetail.errContentTypeRequired');
+      if (!editForm.deliverables.trim()) errs.deliverables = t('campaignDetail.errDeliverablesRequired');
+      if (!editForm.paymentType)         errs.paymentType  = t('campaignDetail.errPaymentTypeRequired');
       if (!editForm.budgetMin.trim() || isNaN(Number(editForm.budgetMin))) {
-        errs.budgetMin = 'Valid minimum budget is required.';
+        errs.budgetMin = t('campaignDetail.errMinBudgetRequired');
       }
       if (!editForm.budgetMax.trim() || isNaN(Number(editForm.budgetMax))) {
-        errs.budgetMax = 'Valid maximum budget is required.';
+        errs.budgetMax = t('campaignDetail.errMaxBudgetRequired');
       } else if (Number(editForm.budgetMax) < Number(editForm.budgetMin)) {
-        errs.budgetMax = 'Must be ≥ minimum budget.';
+        errs.budgetMax = t('campaignDetail.errBudgetMinMax');
       }
     }
     return errs;
@@ -424,9 +424,9 @@ export default function CampaignDetailScreen() {
       const fresh = await campaignService.getById(campaign!.id);
       setCampaign(fresh);
       setEditOpen(false);
-      showToast('Event updated successfully!');
+      showToast(t('campaignDetail.toastUpdated'));
     } catch (e) {
-      showToast(e instanceof Error ? e.message : 'Failed to update event.', 'error');
+      showToast(e instanceof Error ? e.message : t('campaignDetail.toastFailed'), 'error');
     } finally {
       setSaving(false);
     }
@@ -461,7 +461,7 @@ export default function CampaignDetailScreen() {
       <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
         <LinearGradient colors={['#312e81', '#4f46e5', '#8b5cf6']} start={{x:0,y:0}} end={{x:1,y:0}} style={s.gradientHeader}>
           <BackButton />
-          <Text style={[s.headerTitle, { color: '#fff' }]}>Event Details</Text>
+          <Text style={[s.headerTitle, { color: '#fff' }]}>{t('campaignDetail.headerTitle')}</Text>
           <View style={{ width: 40 }} />
         </LinearGradient>
         <View style={s.centered}><ActivityIndicator size="large" color={C.brinjal1} /></View>
@@ -474,9 +474,9 @@ export default function CampaignDetailScreen() {
       <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
         <View style={s.centered}>
           <Text style={{ fontSize: 48 }}>🔍</Text>
-          <Text style={[{ fontSize: 17, fontWeight: '600' }, { color: C.textSecondary }]}>{error || 'Event not found'}</Text>
+          <Text style={[{ fontSize: 17, fontWeight: '600' }, { color: C.textSecondary }]}>{error || t('campaignDetail.notFound')}</Text>
           <Pressable style={[s.goBackBtn, { backgroundColor: C.brinjal1 }]} onPress={() => router.back()}>
-            <Text style={s.goBackBtnTxt}>Go Back</Text>
+            <Text style={s.goBackBtnTxt}>{t('campaignDetail.goBack')}</Text>
           </Pressable>
         </View>
       </SafeAreaView>
@@ -493,7 +493,7 @@ export default function CampaignDetailScreen() {
       {/* Header */}
       <LinearGradient colors={['#312e81', '#4f46e5', '#8b5cf6']} start={{x:0,y:0}} end={{x:1,y:0}} style={s.gradientHeader}>
         <BackButton />
-        <Text style={[s.headerTitle, { color: '#fff' }]}>Event Details</Text>
+        <Text style={[s.headerTitle, { color: '#fff' }]}>{t('campaignDetail.headerTitle')}</Text>
         <View style={{ width: 40 }} />
       </LinearGradient>
 
@@ -512,16 +512,16 @@ export default function CampaignDetailScreen() {
           )}
           <View style={[s.heroPosted, { backgroundColor: 'rgba(0,0,0,0.38)' }]}>
             <Text style={s.heroPostedTxt}>
-              {posted === 0 ? 'Posted today' : posted === 1 ? 'Posted yesterday' : `Posted ${posted} days ago`}
+              {posted === 0 ? t('campaignDetail.postedToday') : posted === 1 ? t('campaignDetail.postedYesterday') : t('campaignDetail.postedDaysAgo', { n: posted })}
             </Text>
           </View>
           {campaign.campaignType === 'OPEN_EVENT' ? (
             <View style={[s.heroTypeBadge, { backgroundColor: 'rgba(255,255,255,0.93)' }]}>
-              <Text style={[s.heroTypeTxt, { color: '#059669' }]}>✓ Free Event</Text>
+              <Text style={[s.heroTypeTxt, { color: '#059669' }]}>{t('campaignDetail.badgeFreeEvent')}</Text>
             </View>
           ) : (
             <View style={[s.heroTypeBadge, { backgroundColor: 'rgba(255,255,255,0.93)' }]}>
-              <Text style={[s.heroTypeTxt, { color: '#4F46E5' }]}>$ Paid Event</Text>
+              <Text style={[s.heroTypeTxt, { color: '#4F46E5' }]}>{t('campaignDetail.badgePaidEvent')}</Text>
             </View>
           )}
         </View>
@@ -547,7 +547,7 @@ export default function CampaignDetailScreen() {
             )}
             <View style={[s.proposalsBadge, { backgroundColor: C.primaryLight, marginLeft: 'auto' }]}>
               <Text style={[s.proposalsTxt, { color: C.brinjal1 }]}>
-                {campaign.proposals} {campaign.proposals === 1 ? 'proposal' : 'proposals'}
+                {campaign.proposals === 1 ? t('campaignDetail.proposalCount', { n: campaign.proposals }) : t('campaignDetail.proposalsCount', { n: campaign.proposals })}
               </Text>
             </View>
           </View>
@@ -565,7 +565,7 @@ export default function CampaignDetailScreen() {
             )}
             {campaign.goals.length > 0 && (
               <>
-                <Text style={[s.sectionLabel, { color: C.textSecondary }]}>Event Goals</Text>
+                <Text style={[s.sectionLabel, { color: C.textSecondary }]}>{t('campaignDetail.sectionGoals')}</Text>
                 <View style={s.goalChips}>
                   {campaign.goals.map((g) => (
                     <View key={g} style={[s.goalChip, { backgroundColor: C.primaryLight }]}>
@@ -580,30 +580,30 @@ export default function CampaignDetailScreen() {
 
         {/* Details grid */}
         <View style={[s.card, { backgroundColor: C.surface }]}>
-          <Text style={[s.sectionLabel, { color: C.textSecondary }]}>Event Details</Text>
+          <Text style={[s.sectionLabel, { color: C.textSecondary }]}>{t('campaignDetail.sectionDetails')}</Text>
           <View style={s.detailsGrid}>
-            <DetailRow icon="📅" label="Deadline"  value={formatDeadline(campaign.deadline)} C={C} />
+            <DetailRow icon="📅" label={t('campaignDetail.detailDeadline')}  value={formatDeadline(campaign.deadline)} C={C} />
             {campaign.campaignType !== 'OPEN_EVENT' && (
               <>
-                <DetailRow icon="💳" label="Budget"  value={campaign.budget} C={C} />
-                <DetailRow icon="💰" label="Payment" value={campaign.paymentType} C={C} />
+                <DetailRow icon="💳" label={t('campaignDetail.detailBudget')}  value={campaign.budget} C={C} />
+                <DetailRow icon="💰" label={t('campaignDetail.detailPayment')} value={campaign.paymentType} C={C} />
               </>
             )}
-            <DetailRow icon="📍" label="Location"  value={campaign.location ?? 'Remote'} C={C} />
-            <DetailRow icon="📊" label="Status"    value={campaign.status ? campaign.status.charAt(0).toUpperCase() + campaign.status.slice(1) : 'Active'} C={C} />
+            <DetailRow icon="📍" label={t('campaignDetail.detailLocation')}  value={campaign.location ?? t('campaignDetail.remoteLocation')} C={C} />
+            <DetailRow icon="📊" label={t('campaignDetail.detailStatus')}    value={campaign.status ? campaign.status.charAt(0).toUpperCase() + campaign.status.slice(1) : t('campaignDetail.statusActive')} C={C} />
           </View>
         </View>
 
         {/* Description */}
         <View style={[s.card, { backgroundColor: C.surface }]}>
-          <Text style={[s.sectionLabel, { color: C.textSecondary }]}>About this Event</Text>
+          <Text style={[s.sectionLabel, { color: C.textSecondary }]}>{t('campaignDetail.sectionAbout')}</Text>
           <Text style={[s.description, { color: C.text }]}>{campaign.description}</Text>
         </View>
 
         {/* Deliverables */}
         {campaign.deliverables ? (
           <View style={[s.card, { backgroundColor: C.surface }]}>
-            <Text style={[s.sectionLabel, { color: C.textSecondary }]}>Deliverables</Text>
+            <Text style={[s.sectionLabel, { color: C.textSecondary }]}>{t('campaignDetail.sectionDeliverables')}</Text>
             {campaign.deliverables.split(/,\s*|\s*\+\s*/).filter(Boolean).map((d, i) => (
               <ReqItem key={i} text={d.trim()} C={C} />
             ))}
@@ -614,11 +614,11 @@ export default function CampaignDetailScreen() {
       </ScrollView>
 
       {/* Sticky CTA */}
-      <View style={[s.ctaBar, { backgroundColor: C.surface, borderTopColor: C.border, justifyContent: isBusiness ? 'space-between' : 'flex-end' }]}>
+      <View style={[s.ctaBar, { backgroundColor: C.surface, borderTopColor: C.border, justifyContent: isBusiness ? 'space-between' : 'center' }]}>
         {isBusiness && (
           <View style={s.ctaInfo}>
             <Text style={[s.ctaBudget, { color: C.text }]}>{campaign.budget}</Text>
-            <Text style={[s.ctaLabel, { color: C.textSecondary }]}>Budget range</Text>
+            <Text style={[s.ctaLabel, { color: C.textSecondary }]}>{t('campaignDetail.budgetRange')}</Text>
           </View>
         )}
         {isBusiness ? (
@@ -626,18 +626,18 @@ export default function CampaignDetailScreen() {
             style={({ pressed }) => [s.applyBtn, { backgroundColor: isEditLocked ? C.border : C.brinjal1, shadowColor: isEditLocked ? 'transparent' : C.brinjal1 }, pressed && !isEditLocked && { opacity: 0.88 }]}
             onPress={openEdit}>
             <Ionicons name={isEditLocked ? 'lock-closed-outline' : 'create-outline'} size={16} color="#fff" />
-            <Text style={s.applyBtnTxt}>{isEditLocked ? 'Locked' : 'Edit Event'}</Text>
+            <Text style={s.applyBtnTxt}>{isEditLocked ? t('campaignDetail.locked') : t('campaignDetail.editEvent')}</Text>
           </Pressable>
         ) : hasApplied ? (
           <View style={s.appliedBadge}>
             <Ionicons name="checkmark-circle" size={18} color="#059669" />
-            <Text style={s.appliedBadgeTxt}>Already Applied</Text>
+            <Text style={s.appliedBadgeTxt}>{t('campaignDetail.alreadyApplied')}</Text>
           </View>
         ) : (
           <Pressable
             style={({ pressed }) => [s.applyBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }, pressed && { opacity: 0.88 }]}
             onPress={() => campaign && router.push({ pathname: '/submit-proposal', params: { campaignId: campaign.id, campaignTitle: campaign.title, brand: campaign.brand, budget: campaign.budget, category: campaign.category, campaignType: campaign.campaignType ?? 'PAID_CAMPAIGN' } })}>
-            <Text style={s.applyBtnTxt}>Submit Proposal</Text>
+            <Text style={s.applyBtnTxt}>{t('campaignDetail.submitProposal')}</Text>
           </Pressable>
         )}
       </View>
@@ -652,7 +652,7 @@ export default function CampaignDetailScreen() {
 
               {/* Sheet header */}
               <View style={em.sheetHeader}>
-                <Text style={[em.sheetTitle, { color: C.text }]}>{isOpenEvent ? 'Edit Event' : 'Edit Event'}</Text>
+                <Text style={[em.sheetTitle, { color: C.text }]}>{t('campaignDetail.editEvent')}</Text>
                 <Pressable onPress={() => setEditOpen(false)}>
                   <Ionicons name="close" size={22} color={C.textSecondary} />
                 </Pressable>
@@ -661,26 +661,26 @@ export default function CampaignDetailScreen() {
               <ScrollView style={em.body} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
 
                 {/* ── Basic Info ── */}
-                <Text style={[em.sectionHdr, { color: C.textSecondary }]}>Basic Info</Text>
+                <Text style={[em.sectionHdr, { color: C.textSecondary }]}>{t('campaignDetail.editSectionBasicInfo')}</Text>
 
-                <Text style={[em.label, { color: C.text }]}>Title <Text style={{ color: C.brinjal1 }}>*</Text></Text>
+                <Text style={[em.label, { color: C.text }]}>{t('campaignDetail.fieldTitle')} <Text style={{ color: C.brinjal1 }}>*</Text></Text>
                 <TextInput
                   style={[em.input, { backgroundColor: C.background, borderColor: editErrors.title ? ERROR_RED : C.border, color: C.text }]}
                   value={editForm.title}
                   onChangeText={(v) => updateEdit('title', v)}
-                  placeholder="Event title"
+                  placeholder={t('campaignDetail.titlePlaceholder')}
                   placeholderTextColor={C.textSecondary}
                 />
                 {editErrors.title ? <Text style={em.errTxt}>{editErrors.title}</Text> : null}
 
                 <Text style={[em.label, { color: C.text, marginTop: 16 }]}>
-                  Description <Text style={[em.optional, { color: C.textSecondary }]}>(optional)</Text>
+                  {t('campaignDetail.fieldDescription')} <Text style={[em.optional, { color: C.textSecondary }]}>{t('campaignDetail.fieldOptional')}</Text>
                 </Text>
                 <TextInput
                   style={[em.textarea, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
                   value={editForm.description}
                   onChangeText={(v) => updateEdit('description', v)}
-                  placeholder="Describe your event…"
+                  placeholder={t('campaignDetail.descriptionPlaceholder')}
                   placeholderTextColor={C.textSecondary}
                   multiline
                   numberOfLines={3}
@@ -688,37 +688,37 @@ export default function CampaignDetailScreen() {
                 />
 
                 {/* ── Category ── */}
-                <Text style={[em.sectionHdr, { color: C.textSecondary, marginTop: 24 }]}>Category</Text>
+                <Text style={[em.sectionHdr, { color: C.textSecondary, marginTop: 24 }]}>{t('campaignDetail.editSectionCategory')}</Text>
                 <ChipGroup options={CATEGORIES} value={editForm.category} onChange={(v) => updateEdit('category', v)} colors={C} error={editErrors.category} />
 
                 {isOpenEvent ? (
                   <>
                     {/* ── Open Event fields ── */}
-                    <Text style={[em.sectionHdr, { color: C.textSecondary, marginTop: 24 }]}>Event Details</Text>
+                    <Text style={[em.sectionHdr, { color: C.textSecondary, marginTop: 24 }]}>{t('campaignDetail.editSectionDetails')}</Text>
 
-                    <Text style={[em.label, { color: C.text }]}>Event Date <Text style={{ color: C.brinjal1 }}>*</Text></Text>
+                    <Text style={[em.label, { color: C.text }]}>{t('campaignDetail.fieldEventDate')} <Text style={{ color: C.brinjal1 }}>*</Text></Text>
                     <Pressable
                       style={[em.dateTrigger, { backgroundColor: C.background, borderColor: editErrors.eventDate ? ERROR_RED : C.border }]}
                       onPress={() => setEventCalOpen(true)}>
                       <Text style={[em.dateTxt, { color: editForm.eventDate ? C.text : C.textSecondary }]}>
-                        {editForm.eventDate ? fmtDate(editForm.eventDate) : 'Tap to select event date'}
+                        {editForm.eventDate ? fmtDate(editForm.eventDate) : t('campaignDetail.eventDatePlaceholder')}
                       </Text>
                       <Text style={{ fontSize: 16 }}>📅</Text>
                     </Pressable>
                     {editErrors.eventDate ? <Text style={em.errTxt}>{editErrors.eventDate}</Text> : null}
 
-                    <Text style={[em.label, { color: C.text, marginTop: 16 }]}>Registration Deadline <Text style={{ color: C.brinjal1 }}>*</Text></Text>
+                    <Text style={[em.label, { color: C.text, marginTop: 16 }]}>{t('campaignDetail.fieldRegDeadline')} <Text style={{ color: C.brinjal1 }}>*</Text></Text>
                     <Pressable
                       style={[em.dateTrigger, { backgroundColor: C.background, borderColor: editErrors.deadline ? ERROR_RED : C.border }]}
                       onPress={() => setCalOpen(true)}>
                       <Text style={[em.dateTxt, { color: editForm.deadline ? C.text : C.textSecondary }]}>
-                        {editForm.deadline ? fmtDate(editForm.deadline) : 'Tap to select deadline'}
+                        {editForm.deadline ? fmtDate(editForm.deadline) : t('campaignDetail.deadlinePlaceholder')}
                       </Text>
                       <Text style={{ fontSize: 16 }}>📅</Text>
                     </Pressable>
                     {editErrors.deadline ? <Text style={em.errTxt}>{editErrors.deadline}</Text> : null}
 
-                    <Text style={[em.label, { color: C.text, marginTop: 16 }]}>Venue <Text style={{ color: C.brinjal1 }}>*</Text></Text>
+                    <Text style={[em.label, { color: C.text, marginTop: 16 }]}>{t('campaignDetail.fieldVenue')} <Text style={{ color: C.brinjal1 }}>*</Text></Text>
                     <PlacesInput
                       value={editForm.venue}
                       onChange={(v) => updateEdit('venue', v)}
@@ -726,17 +726,17 @@ export default function CampaignDetailScreen() {
                       error={editErrors.venue}
                     />
 
-                    <Text style={[em.label, { color: C.text, marginTop: 16 }]}>Creator Capacity</Text>
+                    <Text style={[em.label, { color: C.text, marginTop: 16 }]}>{t('campaignDetail.fieldCapacity')}</Text>
                     <TextInput
                       style={[em.input, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
                       value={editForm.capacity}
                       onChangeText={(v) => updateEdit('capacity', v.replace(/[^0-9]/g, ''))}
-                      placeholder="20"
+                      placeholder={t('campaignDetail.capacityPlaceholder')}
                       placeholderTextColor={C.textSecondary}
                       keyboardType="numeric"
                     />
 
-                    <Text style={[em.sectionHdr, { color: C.textSecondary, marginTop: 24 }]}>Creator Benefits</Text>
+                    <Text style={[em.sectionHdr, { color: C.textSecondary, marginTop: 24 }]}>{t('campaignDetail.editSectionBenefits')}</Text>
                     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                       {EVENT_BENEFITS.map((b) => {
                         const checked = editForm.benefits.includes(b);
@@ -757,23 +757,23 @@ export default function CampaignDetailScreen() {
                 ) : (
                   <>
                     {/* ── Paid Campaign fields ── */}
-                    <Text style={[em.sectionHdr, { color: C.textSecondary, marginTop: 24 }]}>Platform</Text>
+                    <Text style={[em.sectionHdr, { color: C.textSecondary, marginTop: 24 }]}>{t('campaignDetail.editSectionPlatform')}</Text>
                     <ChipGroup options={PLATFORMS} value={editForm.platform} onChange={(v) => updateEdit('platform', v)} colors={C} error={editErrors.platform} />
 
-                    <Text style={[em.sectionHdr, { color: C.textSecondary, marginTop: 24 }]}>Requirements</Text>
+                    <Text style={[em.sectionHdr, { color: C.textSecondary, marginTop: 24 }]}>{t('campaignDetail.editSectionRequirements')}</Text>
 
-                    <Text style={[em.label, { color: C.text }]}>Min Followers <Text style={{ color: C.brinjal1 }}>*</Text></Text>
+                    <Text style={[em.label, { color: C.text }]}>{t('campaignDetail.fieldMinFollowers')} <Text style={{ color: C.brinjal1 }}>*</Text></Text>
                     <ChipGroup options={FOLLOWER_RANGES} value={editForm.minFollowers} onChange={(v) => updateEdit('minFollowers', v)} colors={C} error={editErrors.minFollowers} />
 
-                    <Text style={[em.label, { color: C.text, marginTop: 16 }]}>Content Type <Text style={{ color: C.brinjal1 }}>*</Text></Text>
+                    <Text style={[em.label, { color: C.text, marginTop: 16 }]}>{t('campaignDetail.fieldContentType')} <Text style={{ color: C.brinjal1 }}>*</Text></Text>
                     <ChipGroup options={CONTENT_TYPES} value={editForm.contentType} onChange={(v) => updateEdit('contentType', v)} colors={C} error={editErrors.contentType} />
 
-                    <Text style={[em.label, { color: C.text, marginTop: 16 }]}>Deliverables <Text style={{ color: C.brinjal1 }}>*</Text></Text>
+                    <Text style={[em.label, { color: C.text, marginTop: 16 }]}>{t('campaignDetail.fieldDeliverables')} <Text style={{ color: C.brinjal1 }}>*</Text></Text>
                     <TextInput
                       style={[em.textarea, { backgroundColor: C.background, borderColor: editErrors.deliverables ? ERROR_RED : C.border, color: C.text }]}
                       value={editForm.deliverables}
                       onChangeText={(v) => updateEdit('deliverables', v)}
-                      placeholder="e.g. 2 Reels + 5 Stories with brand mention"
+                      placeholder={t('campaignDetail.deliverablesPlaceholder')}
                       placeholderTextColor={C.textSecondary}
                       multiline
                       numberOfLines={3}
@@ -781,9 +781,9 @@ export default function CampaignDetailScreen() {
                     />
                     {editErrors.deliverables ? <Text style={em.errTxt}>{editErrors.deliverables}</Text> : null}
 
-                    <Text style={[em.sectionHdr, { color: C.textSecondary, marginTop: 24 }]}>Budget & Payment</Text>
+                    <Text style={[em.sectionHdr, { color: C.textSecondary, marginTop: 24 }]}>{t('campaignDetail.editSectionBudget')}</Text>
 
-                    <Text style={[em.label, { color: C.text }]}>Budget (Rs.) <Text style={{ color: C.brinjal1 }}>*</Text></Text>
+                    <Text style={[em.label, { color: C.text }]}>{t('campaignDetail.fieldBudget')} <Text style={{ color: C.brinjal1 }}>*</Text></Text>
                     <View style={em.budgetRow}>
                       <View style={{ flex: 1 }}>
                         <View style={[em.currencyWrap, { backgroundColor: C.background, borderColor: editErrors.budgetMin ? ERROR_RED : C.border }]}>
@@ -792,7 +792,7 @@ export default function CampaignDetailScreen() {
                             style={[em.currencyInput, { color: C.text }]}
                             value={editForm.budgetMin}
                             onChangeText={(v) => updateEdit('budgetMin', v.replace(/[^0-9.]/g, ''))}
-                            placeholder="Min"
+                            placeholder={t('campaignDetail.budgetMinPlaceholder')}
                             placeholderTextColor={C.textSecondary}
                             keyboardType="numeric"
                           />
@@ -807,7 +807,7 @@ export default function CampaignDetailScreen() {
                             style={[em.currencyInput, { color: C.text }]}
                             value={editForm.budgetMax}
                             onChangeText={(v) => updateEdit('budgetMax', v.replace(/[^0-9.]/g, ''))}
-                            placeholder="Max"
+                            placeholder={t('campaignDetail.budgetMaxPlaceholder')}
                             placeholderTextColor={C.textSecondary}
                             keyboardType="numeric"
                           />
@@ -816,24 +816,24 @@ export default function CampaignDetailScreen() {
                       </View>
                     </View>
 
-                    <Text style={[em.label, { color: C.text, marginTop: 16 }]}>Payment Type <Text style={{ color: C.brinjal1 }}>*</Text></Text>
+                    <Text style={[em.label, { color: C.text, marginTop: 16 }]}>{t('campaignDetail.fieldPaymentType')} <Text style={{ color: C.brinjal1 }}>*</Text></Text>
                     <ChipGroup options={PAYMENT_TYPES} value={editForm.paymentType} onChange={(v) => updateEdit('paymentType', v)} colors={C} error={editErrors.paymentType} />
 
-                    <Text style={[em.sectionHdr, { color: C.textSecondary, marginTop: 24 }]}>Logistics</Text>
+                    <Text style={[em.sectionHdr, { color: C.textSecondary, marginTop: 24 }]}>{t('campaignDetail.editSectionLogistics')}</Text>
 
-                    <Text style={[em.label, { color: C.text }]}>Application Deadline <Text style={{ color: C.brinjal1 }}>*</Text></Text>
+                    <Text style={[em.label, { color: C.text }]}>{t('campaignDetail.fieldApplicationDeadline')} <Text style={{ color: C.brinjal1 }}>*</Text></Text>
                     <Pressable
                       style={[em.dateTrigger, { backgroundColor: C.background, borderColor: editErrors.deadline ? ERROR_RED : C.border }]}
                       onPress={() => setCalOpen(true)}>
                       <Text style={[em.dateTxt, { color: editForm.deadline ? C.text : C.textSecondary }]}>
-                        {editForm.deadline ? fmtDate(editForm.deadline) : 'Tap to select a date'}
+                        {editForm.deadline ? fmtDate(editForm.deadline) : t('campaignDetail.datePlaceholder')}
                       </Text>
                       <Text style={{ fontSize: 16 }}>📅</Text>
                     </Pressable>
                     {editErrors.deadline ? <Text style={em.errTxt}>{editErrors.deadline}</Text> : null}
 
                     <Text style={[em.label, { color: C.text, marginTop: 16 }]}>
-                      Location <Text style={[em.optional, { color: C.textSecondary }]}>(optional)</Text>
+                      {t('campaignDetail.fieldLocation')} <Text style={[em.optional, { color: C.textSecondary }]}>{t('campaignDetail.fieldOptional')}</Text>
                     </Text>
                     <PlacesInput
                       value={editForm.location}
@@ -843,12 +843,12 @@ export default function CampaignDetailScreen() {
                   </>
                 )}
 
-                <Text style={[em.label, { color: C.text, marginTop: 24 }]}>Status</Text>
+                <Text style={[em.label, { color: C.text, marginTop: 24 }]}>{t('campaignDetail.fieldStatus')}</Text>
                 <ChipGroup
-                  options={STATUS_OPTIONS.map((o) => o.label)}
-                  value={STATUS_OPTIONS.find((o) => o.value === editForm.status)?.label ?? 'Active'}
+                  options={STATUS_OPTIONS.map((o) => t(o.labelKey))}
+                  value={t(STATUS_OPTIONS.find((o) => o.value === editForm.status)?.labelKey ?? 'campaignDetail.statusActive')}
                   onChange={(label) => {
-                    const opt = STATUS_OPTIONS.find((o) => o.label === label);
+                    const opt = STATUS_OPTIONS.find((o) => t(o.labelKey) === label);
                     if (opt) updateEdit('status', opt.value);
                   }}
                   colors={C}
@@ -861,8 +861,8 @@ export default function CampaignDetailScreen() {
                   <View style={em.featuredLeft}>
                     <Text style={{ fontSize: 22 }}>⭐</Text>
                     <View style={{ flex: 1, gap: 2 }}>
-                      <Text style={[em.featuredLabel, { color: C.text }]}>Feature this Event</Text>
-                      <Text style={[em.featuredSub, { color: C.textSecondary }]}>Appears highlighted on creator home</Text>
+                      <Text style={[em.featuredLabel, { color: C.text }]}>{t('campaignDetail.featureEvent')}</Text>
+                      <Text style={[em.featuredSub, { color: C.textSecondary }]}>{t('campaignDetail.featureEventSub')}</Text>
                     </View>
                   </View>
                   <View style={[em.toggle, { backgroundColor: editForm.isFeatured ? '#F59E0B' : C.border }]}>
@@ -878,7 +878,7 @@ export default function CampaignDetailScreen() {
                 style={({ pressed }) => [em.saveBtn, { backgroundColor: saving ? C.border : C.brinjal1 }, pressed && !saving && { opacity: 0.88 }]}
                 onPress={handleSave}
                 disabled={saving}>
-                <Text style={em.saveBtnTxt}>{saving ? 'Saving…' : 'Save Changes'}</Text>
+                <Text style={em.saveBtnTxt}>{saving ? t('campaignDetail.saving') : t('campaignDetail.saveChanges')}</Text>
               </Pressable>
             </View>
           </KeyboardAvoidingView>
@@ -892,14 +892,14 @@ export default function CampaignDetailScreen() {
           <View style={[em.calSheet, { backgroundColor: C.surface }]}>
             <View style={[em.handle, { backgroundColor: C.border }]} />
             <View style={em.sheetHeader}>
-              <Text style={[em.sheetTitle, { color: C.text }]}>{isOpenEvent ? 'Registration Deadline' : 'Select Deadline'}</Text>
+              <Text style={[em.sheetTitle, { color: C.text }]}>{isOpenEvent ? t('campaignDetail.calendarRegDeadline') : t('campaignDetail.calendarSelectDeadline')}</Text>
               <Pressable onPress={() => setCalOpen(false)}>
-                <Text style={[em.doneBtn, { color: C.brinjal1 }]}>Done</Text>
+                <Text style={[em.doneBtn, { color: C.brinjal1 }]}>{t('campaignDetail.doneBtn')}</Text>
               </Pressable>
             </View>
             {editForm.deadline && (
               <View style={[em.selectedBadge, { backgroundColor: C.primaryLight }]}>
-                <Text style={[em.selectedTxt, { color: C.brinjal1 }]}>Selected: {fmtDate(editForm.deadline)}</Text>
+                <Text style={[em.selectedTxt, { color: C.brinjal1 }]}>{t('campaignDetail.calendarSelected', { date: fmtDate(editForm.deadline) })}</Text>
               </View>
             )}
             <CalendarGrid
@@ -918,14 +918,14 @@ export default function CampaignDetailScreen() {
           <View style={[em.calSheet, { backgroundColor: C.surface }]}>
             <View style={[em.handle, { backgroundColor: C.border }]} />
             <View style={em.sheetHeader}>
-              <Text style={[em.sheetTitle, { color: C.text }]}>Event Date</Text>
+              <Text style={[em.sheetTitle, { color: C.text }]}>{t('campaignDetail.calendarEventDate')}</Text>
               <Pressable onPress={() => setEventCalOpen(false)}>
-                <Text style={[em.doneBtn, { color: C.brinjal1 }]}>Done</Text>
+                <Text style={[em.doneBtn, { color: C.brinjal1 }]}>{t('campaignDetail.doneBtn')}</Text>
               </Pressable>
             </View>
             {editForm.eventDate && (
               <View style={[em.selectedBadge, { backgroundColor: C.primaryLight }]}>
-                <Text style={[em.selectedTxt, { color: C.brinjal1 }]}>Selected: {fmtDate(editForm.eventDate)}</Text>
+                <Text style={[em.selectedTxt, { color: C.brinjal1 }]}>{t('campaignDetail.calendarSelected', { date: fmtDate(editForm.eventDate) })}</Text>
               </View>
             )}
             <CalendarGrid

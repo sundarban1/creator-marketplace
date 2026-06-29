@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/components/Toast';
 import { useAppColors, useIsDark } from '@/context/ThemeContext';
 import { businessService } from '@/services/business';
@@ -58,26 +59,6 @@ const MOCK_TRANSACTIONS = [
   { id: 't3', date: 'May 28, 2026', desc: 'Event: New Collection',       amount: '-NZ$380', type: 'debit' },
 ];
 
-const SECTION_TITLES: Record<string, string> = {
-  profile:       'Business Profile',
-  account:       'Account & Security',
-  notifications: 'Notification Settings',
-  payment:       'Payment Settings',
-  campaigns:     'Event Preferences',
-  saved:         'Saved Creators',
-  verification:  'Verification',
-  privacy:       'Privacy Settings',
-  support:       'Support',
-  app:           'Settings',
-};
-
-const SUB_PAGE_TITLES: Record<string, string> = {
-  'change-password': 'Change Password',
-  'help-center':     'Help Center',
-  'contact-support': 'Contact Support',
-  'report-issue':    'Report Issue',
-  'faqs':            'FAQs',
-};
 
 // ── Helper components ─────────────────────────────────────────────────────────
 
@@ -173,6 +154,7 @@ export default function BusinessSettingsScreen() {
   const { section } = useLocalSearchParams<{ section?: string }>();
   const C: ColorsType = useAppColors();
   const toast = useToast();
+  const { t } = useLanguage();
 
   const [subPage, setSubPage] = useState<string | null>(null);
 
@@ -283,16 +265,16 @@ export default function BusinessSettingsScreen() {
   }
 
   function handleSaveProfile() {
-    showToast('Business profile saved!');
+    showToast(t('businessSettings.profileSavedToast'));
   }
 
   async function handleSaveSocialLinks() {
     setSocialSaving(true);
     try {
       await profileService.updateBusinessProfile({ socialLinks });
-      showToast('Online presence saved!');
+      showToast(t('settings.savedOnlinePresence'));
     } catch {
-      toast.error('Failed to save. Please try again.');
+      toast.error(t('businessSettings.saveSocialFailed'));
     } finally {
       setSocialSaving(false);
     }
@@ -302,33 +284,33 @@ export default function BusinessSettingsScreen() {
     setPwSubmitted(true);
     if (newPw.length >= 8 && newPw === confirmPw) {
       setNewPw(''); setConfirmPw(''); setPwSubmitted(false);
-      showToast('Password changed successfully!');
+      showToast(t('settings.passwordChanged'));
       setSubPage(null);
     }
   }
 
   function handleLogoutAll() {
-    Alert.alert('Logout All Devices', 'You will be signed out from all devices.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Logout All', style: 'destructive', onPress: logout },
+    Alert.alert(t('businessSettings.logoutAllTitle'), t('businessSettings.logoutAllMsg'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('businessSettings.logoutAllConfirmBtn'), style: 'destructive', onPress: logout },
     ]);
   }
 
   function handleDeactivateAccount() {
     Alert.alert(
-      'Deactivate Account',
-      'Your account will be temporarily disabled. Your events will be paused and your profile will be hidden from creators. You can reactivate anytime by logging back in.',
+      t('businessSettings.deactivateTitle'),
+      t('businessSettings.deactivateMsg'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Deactivate',
+          text: t('businessSettings.deactivateConfirmBtn'),
           style: 'destructive',
           onPress: async () => {
             try {
               await authService.deactivateAccount();
               await logout();
             } catch {
-              toast.error('Failed to deactivate. Please try again.');
+              toast.error(t('businessSettings.deactivateFailed'));
             }
           },
         },
@@ -337,9 +319,9 @@ export default function BusinessSettingsScreen() {
   }
 
   function handleDeleteAccount() {
-    Alert.alert('Delete Account', 'This permanently deletes your account and all data. This cannot be undone.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete Account', style: 'destructive', onPress: logout },
+    Alert.alert(t('businessSettings.deleteTitle'), t('businessSettings.deleteMsg'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('businessSettings.deleteConfirmBtn'), style: 'destructive', onPress: logout },
     ]);
   }
 
@@ -358,7 +340,7 @@ export default function BusinessSettingsScreen() {
   async function handleSendPhoneOtp() {
     setPhoneError('');
     if (!isValidNepaliPhone(phoneInput)) {
-      setPhoneError('Enter a valid Nepali mobile number (starts with 97 or 98, 10 digits)');
+      setPhoneError(t('settings.phoneInvalid'));
       return;
     }
     setPhoneLoading(true);
@@ -367,7 +349,7 @@ export default function BusinessSettingsScreen() {
       setPhoneStage('enter-otp');
       setPhoneOtp('');
     } catch (e: any) {
-      setPhoneError(e.message ?? 'Failed to send OTP. Please try again.');
+      setPhoneError(e.message ?? t('settings.phoneOtpFailed'));
     } finally {
       setPhoneLoading(false);
     }
@@ -376,7 +358,7 @@ export default function BusinessSettingsScreen() {
   async function handleVerifyPhoneOtp() {
     setPhoneError('');
     if (phoneOtp.length !== 6) {
-      setPhoneError('Enter the 6-digit code sent to your phone');
+      setPhoneError(t('settings.phoneOtpLength'));
       return;
     }
     setPhoneLoading(true);
@@ -385,16 +367,16 @@ export default function BusinessSettingsScreen() {
       setVerifiedPhone(normalisePhone(phoneInput));
       setPhoneStage('verified');
     } catch (e: any) {
-      setPhoneError(e.message ?? 'Incorrect code. Please try again.');
+      setPhoneError(e.message ?? t('settings.phoneVerifyFailed'));
     } finally {
       setPhoneLoading(false);
     }
   }
 
   function removeCreator(id: string) {
-    Alert.alert('Remove Creator', 'Remove from saved creators?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Remove', style: 'destructive', onPress: () => setSavedCreators((p) => p.filter((c) => c.id !== id)) },
+    Alert.alert(t('businessSettings.removeCreatorTitle'), t('businessSettings.removeCreatorMsg'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('common.remove'), style: 'destructive', onPress: () => setSavedCreators((p) => p.filter((c) => c.id !== id)) },
     ]);
   }
 
@@ -402,7 +384,7 @@ export default function BusinessSettingsScreen() {
     setSavedCreators((p) => p.map((c) => c.id === id ? { ...c, notes: noteText } : c));
     setEditingNoteId(null);
     setNoteText('');
-    showToast('Note saved');
+    showToast(t('businessSettings.noteSavedToast'));
   }
 
   async function handleSupportSubmit() {
@@ -410,10 +392,10 @@ export default function BusinessSettingsScreen() {
     try {
       await request('POST', '/api/support/contact', { topic: supportTopic || 'General', message: supportMsg });
       setSupportTopic(''); setSupportMsg('');
-      showToast("Message sent. We'll respond within 24 hours.");
+      showToast(t('businessSettings.supportSentToast'));
       setSubPage(null);
     } catch {
-      toast.error('Failed to send message. Please try again.');
+      toast.error(t('businessSettings.supportSendFailed'));
     }
   }
 
@@ -422,10 +404,10 @@ export default function BusinessSettingsScreen() {
     try {
       await request('POST', '/api/support/report', { type: reportType || 'Other', description: reportDesc });
       setReportType(''); setReportDesc('');
-      showToast('Issue reported. Thank you!');
+      showToast(t('businessSettings.reportSentToast'));
       setSubPage(null);
     } catch {
-      toast.error('Failed to submit report. Please try again.');
+      toast.error(t('businessSettings.reportSendFailed'));
     }
   }
 
@@ -434,31 +416,50 @@ export default function BusinessSettingsScreen() {
     else router.back();
   }
 
+  const SECTION_TITLE_KEYS: Record<string, string> = {
+    profile:       'businessSettings.sectionProfile',
+    account:       'businessSettings.sectionAccount',
+    notifications: 'businessSettings.sectionNotifications',
+    payment:       'businessSettings.sectionPayment',
+    campaigns:     'businessSettings.sectionCampaigns',
+    saved:         'businessSettings.sectionSaved',
+    verification:  'businessSettings.sectionVerification',
+    privacy:       'businessSettings.sectionPrivacy',
+    support:       'businessSettings.sectionSupport',
+    app:           'businessSettings.sectionApp',
+  };
+  const SUB_PAGE_TITLE_KEYS: Record<string, string> = {
+    'change-password': 'businessSettings.subChangePassword',
+    'help-center':     'businessSettings.subHelpCenter',
+    'contact-support': 'businessSettings.subContactSupport',
+    'report-issue':    'businessSettings.subReportIssue',
+    'faqs':            'businessSettings.subFaqs',
+  };
   const topTitle = subPage
-    ? (SUB_PAGE_TITLES[subPage] ?? 'Settings')
+    ? t(SUB_PAGE_TITLE_KEYS[subPage] ?? 'businessSettings.sectionApp')
     : section
-    ? (SECTION_TITLES[section] ?? 'Settings')
-    : 'Settings';
+    ? t(SECTION_TITLE_KEYS[section] ?? 'businessSettings.sectionApp')
+    : t('businessSettings.sectionApp');
 
   // ── Sub-page: Change Password ─────────────────────────────────
 
   function renderChangePassword() {
-    const pwError = pwSubmitted ? (!newPw ? 'Required' : newPw.length < 8 ? 'Minimum 8 characters' : undefined) : undefined;
-    const cPwError = pwSubmitted ? (!confirmPw ? 'Required' : confirmPw !== newPw ? 'Passwords do not match' : undefined) : undefined;
+    const pwError = pwSubmitted ? (!newPw ? t('businessSettings.errRequired') : newPw.length < 8 ? t('businessSettings.errPwTooShort') : undefined) : undefined;
+    const cPwError = pwSubmitted ? (!confirmPw ? t('businessSettings.errRequired') : confirmPw !== newPw ? t('businessSettings.errPwMismatch') : undefined) : undefined;
     return (
       <>
-        <SectionHeader title="Set New Password" />
+        <SectionHeader title={t('businessSettings.setNewPasswordSection')} />
         <Card>
           <View style={styles.inlineForm}>
             <View style={styles.formField}>
-              <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>New Password</Text>
+              <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>{t('businessSettings.newPasswordLabel')}</Text>
               <View style={[styles.pwRow, { backgroundColor: C.background, borderColor: pwError ? C.error : C.border }]}>
                 <TextInput
                   style={[styles.pwInput, { color: C.text }]}
                   value={newPw}
-                  onChangeText={(t) => { setNewPw(t); setPwSubmitted(false); }}
+                  onChangeText={(pw) => { setNewPw(pw); setPwSubmitted(false); }}
                   secureTextEntry={!showNewPw}
-                  placeholder="Min 8 characters"
+                  placeholder={t('businessSettings.newPasswordPlaceholder')}
                   placeholderTextColor={C.textSecondary}
                   autoCapitalize="none"
                 />
@@ -469,14 +470,14 @@ export default function BusinessSettingsScreen() {
               {pwError ? <Text style={[styles.fieldError, { color: C.error }]}>{pwError}</Text> : null}
             </View>
             <View style={styles.formField}>
-              <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>Confirm Password</Text>
+              <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>{t('businessSettings.confirmPasswordLabel')}</Text>
               <View style={[styles.pwRow, { backgroundColor: C.background, borderColor: cPwError ? C.error : C.border }]}>
                 <TextInput
                   style={[styles.pwInput, { color: C.text }]}
                   value={confirmPw}
-                  onChangeText={(t) => { setConfirmPw(t); setPwSubmitted(false); }}
+                  onChangeText={(pw) => { setConfirmPw(pw); setPwSubmitted(false); }}
                   secureTextEntry={!showConfirmPw}
-                  placeholder="Repeat password"
+                  placeholder={t('businessSettings.confirmPasswordPlaceholder')}
                   placeholderTextColor={C.textSecondary}
                   autoCapitalize="none"
                 />
@@ -487,12 +488,12 @@ export default function BusinessSettingsScreen() {
               {cPwError ? <Text style={[styles.fieldError, { color: C.error }]}>{cPwError}</Text> : null}
             </View>
             <Pressable style={[styles.primaryBtn, { backgroundColor: C.brinjal1 }]} onPress={handleChangePassword}>
-              <Text style={styles.primaryBtnText}>Update Password</Text>
+              <Text style={styles.primaryBtnText}>{t('businessSettings.updatePasswordBtn')}</Text>
             </Pressable>
           </View>
         </Card>
         <HintCard>
-          <Text style={[styles.hintText, { color: C.brinjal1 }]}>Use a strong password with letters, numbers, and symbols.</Text>
+          <Text style={[styles.hintText, { color: C.brinjal1 }]}>{t('businessSettings.passwordHint')}</Text>
         </HintCard>
       </>
     );
@@ -512,7 +513,7 @@ export default function BusinessSettingsScreen() {
     return (
       <>
         <HintCard>
-          <Text style={[styles.hintText, { color: C.brinjal1 }]}>Find answers to common questions about running events on CreatorMarket.</Text>
+          <Text style={[styles.hintText, { color: C.brinjal1 }]}>{t('businessSettings.helpHint')}</Text>
         </HintCard>
         <View style={{ marginHorizontal: 16, gap: 8, marginTop: 8 }}>
           {HELP_FAQS.map((item, i) => {
@@ -543,29 +544,29 @@ export default function BusinessSettingsScreen() {
   function renderContactSupport() {
     return (
       <>
-        <SectionHeader title="Get in Touch" />
+        <SectionHeader title={t('businessSettings.getInTouchSection')} />
         <Card>
           <View style={styles.inlineForm}>
             <View style={styles.formField}>
-              <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>Topic</Text>
+              <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>{t('businessSettings.topicLabel')}</Text>
               <View style={styles.chipGroup}>
-                {SUPPORT_TOPICS.map((t) => {
-                  const active = supportTopic === t;
+                {SUPPORT_TOPICS.map((topic) => {
+                  const active = supportTopic === topic;
                   return (
-                    <Pressable key={t} style={[styles.chip, { borderColor: active ? C.brinjal1 : C.border, backgroundColor: active ? C.primaryLight : C.surface }]} onPress={() => setSupportTopic(t)}>
-                      <Text style={[styles.chipText, { color: active ? C.brinjal1 : C.text }]}>{t}</Text>
+                    <Pressable key={topic} style={[styles.chip, { borderColor: active ? C.brinjal1 : C.border, backgroundColor: active ? C.primaryLight : C.surface }]} onPress={() => setSupportTopic(topic)}>
+                      <Text style={[styles.chipText, { color: active ? C.brinjal1 : C.text }]}>{topic}</Text>
                     </Pressable>
                   );
                 })}
               </View>
             </View>
             <View style={styles.formField}>
-              <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>Message</Text>
+              <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>{t('businessSettings.messageLabel')}</Text>
               <TextInput
                 style={[styles.formTextarea, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
                 value={supportMsg}
                 onChangeText={setSupportMsg}
-                placeholder="Describe your issue in detail..."
+                placeholder={t('businessSettings.messagePlaceholder')}
                 placeholderTextColor={C.textSecondary}
                 multiline
                 numberOfLines={5}
@@ -573,12 +574,12 @@ export default function BusinessSettingsScreen() {
               />
             </View>
             <Pressable style={[styles.primaryBtn, { backgroundColor: C.brinjal1, opacity: supportMsg.trim() ? 1 : 0.45 }]} onPress={handleSupportSubmit}>
-              <Text style={styles.primaryBtnText}>Send Message</Text>
+              <Text style={styles.primaryBtnText}>{t('businessSettings.sendMessageBtn')}</Text>
             </Pressable>
           </View>
         </Card>
         <HintCard>
-          <Text style={[styles.hintText, { color: C.brinjal1 }]}>📧 support@creatormarket.com — we respond within 24 hours.</Text>
+          <Text style={[styles.hintText, { color: C.brinjal1 }]}>{t('businessSettings.supportEmailHint')}</Text>
         </HintCard>
       </>
     );
@@ -591,29 +592,29 @@ export default function BusinessSettingsScreen() {
   function renderReportIssue() {
     return (
       <>
-        <SectionHeader title="Report an Issue" />
+        <SectionHeader title={t('businessSettings.reportIssueSection')} />
         <Card>
           <View style={styles.inlineForm}>
             <View style={styles.formField}>
-              <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>Issue Type</Text>
+              <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>{t('businessSettings.issueTypeLabel')}</Text>
               <View style={styles.chipGroup}>
-                {REPORT_TYPES.map((t) => {
-                  const active = reportType === t;
+                {REPORT_TYPES.map((rtype) => {
+                  const active = reportType === rtype;
                   return (
-                    <Pressable key={t} style={[styles.chip, { borderColor: active ? C.error : C.border, backgroundColor: active ? '#FEE2E2' : C.surface }]} onPress={() => setReportType(t)}>
-                      <Text style={[styles.chipText, { color: active ? C.error : C.text }]}>{t}</Text>
+                    <Pressable key={rtype} style={[styles.chip, { borderColor: active ? C.error : C.border, backgroundColor: active ? '#FEE2E2' : C.surface }]} onPress={() => setReportType(rtype)}>
+                      <Text style={[styles.chipText, { color: active ? C.error : C.text }]}>{rtype}</Text>
                     </Pressable>
                   );
                 })}
               </View>
             </View>
             <View style={styles.formField}>
-              <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>Description</Text>
+              <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>{t('businessSettings.descriptionLabel')}</Text>
               <TextInput
                 style={[styles.formTextarea, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
                 value={reportDesc}
                 onChangeText={setReportDesc}
-                placeholder="Describe the issue in as much detail as possible..."
+                placeholder={t('businessSettings.reportDescPlaceholder')}
                 placeholderTextColor={C.textSecondary}
                 multiline
                 numberOfLines={5}
@@ -621,7 +622,7 @@ export default function BusinessSettingsScreen() {
               />
             </View>
             <Pressable style={[styles.primaryBtn, { backgroundColor: C.error, opacity: reportDesc.trim() ? 1 : 0.45 }]} onPress={handleReportSubmit}>
-              <Text style={styles.primaryBtnText}>Submit Report</Text>
+              <Text style={styles.primaryBtnText}>{t('businessSettings.submitReportBtn')}</Text>
             </Pressable>
           </View>
         </Card>
@@ -669,30 +670,30 @@ export default function BusinessSettingsScreen() {
     return (
       <>
         {/* Company Information */}
-        <SectionHeader title="Company Information" />
+        <SectionHeader title={t('businessSettings.companyInfoSection')} />
         <Card>
           <View style={styles.inlineForm}>
             <View style={styles.formField}>
-              <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>Business Name</Text>
+              <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>{t('businessSettings.businessNameLabel')}</Text>
               <TextInput
                 style={[styles.formInput, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
                 value={bizName}
                 onChangeText={setBizName}
-                placeholder="Your business name"
+                placeholder={t('businessSettings.businessNamePlaceholder')}
                 placeholderTextColor={C.textSecondary}
               />
             </View>
             <View style={styles.formField}>
-              <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>Business Logo</Text>
+              <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>{t('businessSettings.businessLogoLabel')}</Text>
               <Pressable style={[styles.logoPicker, { backgroundColor: C.background, borderColor: C.border }]}>
                 <Text style={styles.logoPickerEmoji}>🏢</Text>
-                <Text style={[styles.logoPickerText, { color: C.brinjal1 }]}>Tap to upload logo</Text>
-                <Text style={[styles.logoPickerSub, { color: C.textSecondary }]}>JPG or PNG, square preferred</Text>
+                <Text style={[styles.logoPickerText, { color: C.brinjal1 }]}>{t('businessSettings.logoUploadHint')}</Text>
+                <Text style={[styles.logoPickerSub, { color: C.textSecondary }]}>{t('businessSettings.logoFormatHint')}</Text>
               </Pressable>
             </View>
             <View style={styles.formField}>
               <View style={styles.labelRow}>
-                <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>Business Category</Text>
+                <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>{t('businessSettings.businessCategoryLabel')}</Text>
                 <Text style={[styles.optionalTag, { color: C.textSecondary }]}>{bizCategory.length}/3</Text>
               </View>
               <View style={styles.chipGroup}>
@@ -711,12 +712,12 @@ export default function BusinessSettingsScreen() {
               </View>
             </View>
             <View style={styles.formField}>
-              <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>Business Description</Text>
+              <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>{t('businessSettings.businessDescLabel')}</Text>
               <TextInput
                 style={[styles.formTextarea, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
                 value={bizDescription}
                 onChangeText={setBizDescription}
-                placeholder="Describe your business, products, and what you're looking for in a creator..."
+                placeholder={t('businessSettings.businessDescPlaceholder')}
                 placeholderTextColor={C.textSecondary}
                 multiline
                 numberOfLines={4}
@@ -727,7 +728,7 @@ export default function BusinessSettingsScreen() {
         </Card>
 
         {/* Online Presence */}
-        <SectionHeader title="Online Presence" />
+        <SectionHeader title={t('businessSettings.onlinePresenceSection')} />
         <Card>
           <View style={styles.inlineForm}>
             {([
@@ -764,19 +765,19 @@ export default function BusinessSettingsScreen() {
               style={[styles.primaryBtn, { backgroundColor: C.brinjal1, opacity: socialSaving ? 0.65 : 1 }]}
               onPress={handleSaveSocialLinks}
               disabled={socialSaving}>
-              <Text style={styles.primaryBtnText}>{socialSaving ? 'Saving…' : 'Save Online Presence'}</Text>
+              <Text style={styles.primaryBtnText}>{socialSaving ? t('businessSettings.savingLabel') : t('businessSettings.saveOnlinePresenceBtn')}</Text>
             </Pressable>
           </View>
         </Card>
 
         {/* Contact Information */}
-        <SectionHeader title="Contact Information" />
+        <SectionHeader title={t('businessSettings.contactInfoSection')} />
         <Card>
           <View style={styles.inlineForm}>
             {[
-              { label: 'Contact Person Name', value: contactName, set: setContactName, placeholder: 'Full name', keyboard: 'default' as const },
-              { label: 'Email Address', value: contactEmail, set: setContactEmail, placeholder: 'email@business.com', keyboard: 'email-address' as const },
-              { label: 'Phone Number', value: contactPhone, set: setContactPhone, placeholder: '+977 9800000000', keyboard: 'phone-pad' as const },
+              { label: t('businessSettings.contactNameLabel'), value: contactName, set: setContactName, placeholder: t('businessSettings.contactNamePlaceholder'), keyboard: 'default' as const },
+              { label: t('businessSettings.contactEmailLabel'), value: contactEmail, set: setContactEmail, placeholder: t('businessSettings.contactEmailPlaceholder'), keyboard: 'email-address' as const },
+              { label: t('businessSettings.phoneNumberLabel'), value: contactPhone, set: setContactPhone, placeholder: t('businessSettings.contactPhonePlaceholder'), keyboard: 'phone-pad' as const },
             ].map((f) => (
               <View key={f.label} style={styles.formField}>
                 <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>{f.label}</Text>
@@ -797,10 +798,10 @@ export default function BusinessSettingsScreen() {
         {/* Actions */}
         <View style={styles.actionGroup}>
           <Pressable style={[styles.primaryBtn, { backgroundColor: C.brinjal1 }]} onPress={handleSaveProfile}>
-            <Text style={styles.primaryBtnText}>Save Changes</Text>
+            <Text style={styles.primaryBtnText}>{t('businessSettings.saveChangesBtn')}</Text>
           </Pressable>
           <Pressable style={[styles.secondaryBtn, { borderColor: C.brinjal1 }]}>
-            <Text style={[styles.secondaryBtnText, { color: C.brinjal1 }]}>Preview Profile</Text>
+            <Text style={[styles.secondaryBtnText, { color: C.brinjal1 }]}>{t('businessSettings.previewProfileBtn')}</Text>
           </Pressable>
         </View>
       </>
@@ -812,16 +813,16 @@ export default function BusinessSettingsScreen() {
   function renderAccount() {
     return (
       <>
-        <SectionHeader title="Login & Security" />
+        <SectionHeader title={t('businessSettings.loginSecuritySection')} />
         <Card>
           <View style={[styles.row, { borderBottomWidth: 1, borderBottomColor: C.border }]}>
             <Text style={styles.rowIcon}>✉️</Text>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.rowLabel, { color: C.text }]}>Email Address</Text>
+              <Text style={[styles.rowLabel, { color: C.text }]}>{t('businessSettings.emailAddressLabel')}</Text>
               <Text style={[styles.rowSub, { color: C.textSecondary }]}>{user?.email ?? 'business@example.com'}</Text>
             </View>
             <View style={[styles.verifiedBadge, { backgroundColor: '#DCFCE7' }]}>
-              <Text style={[styles.badgeText, { color: C.active }]}>✓ Verified</Text>
+              <Text style={[styles.badgeText, { color: C.active }]}>{t('businessSettings.verifiedBadge')}</Text>
             </View>
           </View>
           {/* Phone verification */}
@@ -832,11 +833,11 @@ export default function BusinessSettingsScreen() {
             >
               <Text style={styles.rowIcon}>📱</Text>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.rowLabel, { color: C.text }]}>Phone Number</Text>
-                <Text style={[styles.rowSub, { color: C.textSecondary }]}>Add & verify your phone number</Text>
+                <Text style={[styles.rowLabel, { color: C.text }]}>{t('businessSettings.phoneNumberLabel')}</Text>
+                <Text style={[styles.rowSub, { color: C.textSecondary }]}>{t('businessSettings.addVerifyPhoneLabel')}</Text>
               </View>
               <View style={[styles.soonBadge, { backgroundColor: C.primaryLight }]}>
-                <Text style={[styles.badgeText, { color: C.brinjal1 }]}>Add</Text>
+                <Text style={[styles.badgeText, { color: C.brinjal1 }]}>{t('businessSettings.addBadge')}</Text>
               </View>
             </Pressable>
           )}
@@ -844,11 +845,11 @@ export default function BusinessSettingsScreen() {
             <View style={[styles.row, { borderBottomWidth: 1, borderBottomColor: C.border }]}>
               <Text style={styles.rowIcon}>📱</Text>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.rowLabel, { color: C.text }]}>Phone Number</Text>
+                <Text style={[styles.rowLabel, { color: C.text }]}>{t('businessSettings.phoneNumberLabel')}</Text>
                 <Text style={[styles.rowSub, { color: C.textSecondary }]}>{verifiedPhone}</Text>
               </View>
               <View style={[styles.verifiedBadge, { backgroundColor: '#DCFCE7' }]}>
-                <Text style={[styles.badgeText, { color: C.active }]}>✓ Verified</Text>
+                <Text style={[styles.badgeText, { color: C.active }]}>{t('businessSettings.verifiedBadge')}</Text>
               </View>
             </View>
           )}
@@ -856,7 +857,7 @@ export default function BusinessSettingsScreen() {
             <View style={[{ borderBottomWidth: 1, borderBottomColor: C.border, paddingHorizontal: 16, paddingVertical: 14, gap: 10 }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <Text style={styles.rowIcon}>📱</Text>
-                <Text style={[styles.rowLabel, { color: C.text }]}>Verify Phone Number</Text>
+                <Text style={[styles.rowLabel, { color: C.text }]}>{t('businessSettings.verifyPhoneTitle')}</Text>
               </View>
               <View style={[styles.phoneInputRow]}>
                 <View style={[styles.phonePrefix, { backgroundColor: C.background, borderColor: C.border }]}>
@@ -879,14 +880,14 @@ export default function BusinessSettingsScreen() {
                   onPress={handleSendPhoneOtp}
                   disabled={phoneLoading}
                 >
-                  <Text style={[styles.phoneActionBtnText, { color: '#fff' }]}>{phoneLoading ? 'Sending…' : 'Send Code'}</Text>
+                  <Text style={[styles.phoneActionBtnText, { color: '#fff' }]}>{phoneLoading ? t('businessSettings.sendingCodeLabel') : t('businessSettings.sendCodeBtn')}</Text>
                 </Pressable>
                 <Pressable
                   style={[styles.phoneActionBtn, { backgroundColor: C.background, borderWidth: 1, borderColor: C.border }]}
                   onPress={() => { setPhoneStage('idle'); setPhoneError(''); }}
                   disabled={phoneLoading}
                 >
-                  <Text style={[styles.phoneActionBtnText, { color: C.textSecondary }]}>Cancel</Text>
+                  <Text style={[styles.phoneActionBtnText, { color: C.textSecondary }]}>{t('businessSettings.cancelBtn')}</Text>
                 </Pressable>
               </View>
             </View>
@@ -896,8 +897,8 @@ export default function BusinessSettingsScreen() {
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <Text style={styles.rowIcon}>📱</Text>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.rowLabel, { color: C.text }]}>Enter Verification Code</Text>
-                  <Text style={[styles.rowSub, { color: C.textSecondary }]}>Sent to +977 {phoneInput}</Text>
+                  <Text style={[styles.rowLabel, { color: C.text }]}>{t('businessSettings.enterVerificationCode')}</Text>
+                  <Text style={[styles.rowSub, { color: C.textSecondary }]}>{t('businessSettings.sentToPhone', { phone: phoneInput })}</Text>
                 </View>
                 <Pressable
                   onPress={() => { setPhoneStage('idle'); setPhoneOtp(''); setPhoneError(''); setPhoneInput(''); }}
@@ -923,37 +924,37 @@ export default function BusinessSettingsScreen() {
                   onPress={handleVerifyPhoneOtp}
                   disabled={phoneLoading}
                 >
-                  <Text style={[styles.phoneActionBtnText, { color: '#fff' }]}>{phoneLoading ? 'Verifying…' : 'Verify'}</Text>
+                  <Text style={[styles.phoneActionBtnText, { color: '#fff' }]}>{phoneLoading ? t('businessSettings.verifyingLabel') : t('businessSettings.verifyBtn')}</Text>
                 </Pressable>
                 <Pressable
                   style={[styles.phoneActionBtn, { backgroundColor: C.background, borderWidth: 1, borderColor: C.border }]}
                   onPress={() => { setPhoneStage('enter-phone'); setPhoneOtp(''); setPhoneError(''); }}
                   disabled={phoneLoading}
                 >
-                  <Text style={[styles.phoneActionBtnText, { color: C.textSecondary }]}>Resend</Text>
+                  <Text style={[styles.phoneActionBtnText, { color: C.textSecondary }]}>{t('businessSettings.resendBtn')}</Text>
                 </Pressable>
               </View>
             </View>
           )}
-          <NavRow icon="🔑" label="Change Password" onPress={() => setSubPage('change-password')} />
+          <NavRow icon="🔑" label={t('businessSettings.changePasswordLabel')} onPress={() => setSubPage('change-password')} />
           <View style={styles.row}>
             <Text style={styles.rowIcon}>🔐</Text>
-            <Text style={[styles.rowLabel, { color: C.text }]}>Two-Factor Authentication</Text>
+            <Text style={[styles.rowLabel, { color: C.text }]}>{t('businessSettings.twoFactorLabel')}</Text>
             <View style={[styles.soonBadge, { backgroundColor: C.primaryLight }]}>
-              <Text style={[styles.badgeText, { color: C.brinjal1 }]}>Coming Soon</Text>
+              <Text style={[styles.badgeText, { color: C.brinjal1 }]}>{t('businessSettings.comingSoonBadge')}</Text>
             </View>
           </View>
         </Card>
 
-        <SectionHeader title="Actions" />
+        <SectionHeader title={t('businessSettings.actionsSection')} />
         <Card>
-          <NavRow icon="📱" label="Logout All Devices" onPress={handleLogoutAll} />
-          <NavRow icon="⏸️" label="Deactivate Account" sub="Temporarily disable your account" onPress={handleDeactivateAccount} danger />
-          <NavRow icon="🗑️" label="Delete Account" sub="Permanently remove all your data" onPress={handleDeleteAccount} danger isLast />
+          <NavRow icon="📱" label={t('businessSettings.logoutAllDevicesLabel')} onPress={handleLogoutAll} />
+          <NavRow icon="⏸️" label={t('businessSettings.deactivateAccountLabel')} sub={t('businessSettings.deactivateAccountSub')} onPress={handleDeactivateAccount} danger />
+          <NavRow icon="🗑️" label={t('businessSettings.deleteAccountLabel')} sub={t('businessSettings.deleteAccountSub')} onPress={handleDeleteAccount} danger isLast />
         </Card>
 
         <HintCard>
-          <Text style={[styles.hintText, { color: C.brinjal1 }]}>Deactivating pauses your account — you can return anytime by logging back in. Deletion is permanent.</Text>
+          <Text style={[styles.hintText, { color: C.brinjal1 }]}>{t('businessSettings.deactivationHint')}</Text>
         </HintCard>
       </>
     );
@@ -964,22 +965,22 @@ export default function BusinessSettingsScreen() {
   function renderNotifications() {
     return (
       <>
-        <SectionHeader title="Push Notifications" />
+        <SectionHeader title={t('businessSettings.pushNotificationsSection')} />
         <Card>
-          <SwitchRow icon="📋" label="New Creator Applications" sub="When creators apply to your events" value={notifApplications} onChange={() => setNotifApplications((v) => !v)} />
-          <SwitchRow icon="💬" label="New Messages" sub="Chat messages from creators" value={notifMessages} onChange={() => setNotifMessages((v) => !v)} />
-          <SwitchRow icon="📊" label="Event Updates" sub="Status changes for your events" value={notifCampaignUpdates} onChange={() => setNotifCampaignUpdates((v) => !v)} />
-          <SwitchRow icon="✅" label="Creator Accepted Event" sub="When a creator confirms collaboration" value={notifCreatorAccepted} onChange={() => setNotifCreatorAccepted((v) => !v)} isLast />
+          <SwitchRow icon="📋" label={t('businessSettings.newApplicationsLabel')} sub={t('businessSettings.newApplicationsSub')} value={notifApplications} onChange={() => setNotifApplications((v) => !v)} />
+          <SwitchRow icon="💬" label={t('businessSettings.newMessagesLabel')} sub={t('businessSettings.newMessagesSub')} value={notifMessages} onChange={() => setNotifMessages((v) => !v)} />
+          <SwitchRow icon="📊" label={t('businessSettings.eventUpdatesLabel')} sub={t('businessSettings.eventUpdatesSub')} value={notifCampaignUpdates} onChange={() => setNotifCampaignUpdates((v) => !v)} />
+          <SwitchRow icon="✅" label={t('businessSettings.creatorAcceptedLabel')} sub={t('businessSettings.creatorAcceptedSub')} value={notifCreatorAccepted} onChange={() => setNotifCreatorAccepted((v) => !v)} isLast />
         </Card>
 
-        <SectionHeader title="Email Notifications" />
+        <SectionHeader title={t('businessSettings.emailNotificationsSection')} />
         <Card>
-          <SwitchRow icon="📧" label="Enable Emails" sub="Receive email notifications" value={emailEnabled} onChange={() => setEmailEnabled((v) => !v)} />
-          <SwitchRow icon="📈" label="Weekly Event Summary" sub="Performance digest every Monday" value={emailWeeklySummary} onChange={() => setEmailWeeklySummary((v) => !v)} isLast />
+          <SwitchRow icon="📧" label={t('businessSettings.enableEmailsLabel')} sub={t('businessSettings.enableEmailsSub')} value={emailEnabled} onChange={() => setEmailEnabled((v) => !v)} />
+          <SwitchRow icon="📈" label={t('businessSettings.weeklySummaryLabel')} sub={t('businessSettings.weeklySummarySub')} value={emailWeeklySummary} onChange={() => setEmailWeeklySummary((v) => !v)} isLast />
         </Card>
 
         <HintCard>
-          <Text style={[styles.hintText, { color: C.brinjal1 }]}>Changes are saved automatically. You can change your email preferences anytime.</Text>
+          <Text style={[styles.hintText, { color: C.brinjal1 }]}>{t('businessSettings.notifHint')}</Text>
         </HintCard>
       </>
     );
@@ -990,9 +991,9 @@ export default function BusinessSettingsScreen() {
   function renderPayment() {
     return (
       <>
-        <SectionHeader title="Nepal Payment Methods" />
+        <SectionHeader title={t('businessSettings.nepalPaymentsSection')} />
         <HintCard>
-          <Text style={[styles.hintText, { color: C.brinjal1 }]}>Select all methods you want to use for event payments.</Text>
+          <Text style={[styles.hintText, { color: C.brinjal1 }]}>{t('businessSettings.paymentMethodsHint')}</Text>
         </HintCard>
         <Card>
           {NEPAL_PAYMENTS.map((m, idx) => {
@@ -1014,7 +1015,7 @@ export default function BusinessSettingsScreen() {
           })}
         </Card>
 
-        <SectionHeader title="Payment History" />
+        <SectionHeader title={t('businessSettings.paymentHistorySection')} />
         <Card>
           {MOCK_TRANSACTIONS.map((tx, idx) => (
             <View key={tx.id} style={[styles.txRow, idx < MOCK_TRANSACTIONS.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}>
@@ -1027,8 +1028,8 @@ export default function BusinessSettingsScreen() {
           ))}
         </Card>
         <Card>
-          <NavRow icon="🧾" label="Receipts" onPress={() => showToast('No receipts yet')} />
-          <NavRow icon="📄" label="Invoices" onPress={() => showToast('No invoices yet')} isLast />
+          <NavRow icon="🧾" label={t('businessSettings.receiptsLabel')} onPress={() => showToast(t('businessSettings.noReceiptsToast'))} />
+          <NavRow icon="📄" label={t('businessSettings.invoicesLabel')} onPress={() => showToast(t('businessSettings.noInvoicesToast'))} isLast />
         </Card>
       </>
     );
@@ -1040,24 +1041,24 @@ export default function BusinessSettingsScreen() {
     return (
       <>
         <HintCard>
-          <Text style={[styles.hintText, { color: C.brinjal1 }]}>These help us show your events to the most relevant creators.</Text>
+          <Text style={[styles.hintText, { color: C.brinjal1 }]}>{t('businessSettings.prefHint')}</Text>
         </HintCard>
 
-        <SectionHeader title="Preferred Platforms" />
+        <SectionHeader title={t('businessSettings.prefPlatformsSection')} />
         <Card>
           <View style={styles.chipSection}>
             <ChipGroup options={PLATFORMS} selected={prefPlatforms} onToggle={(v) => toggleChip(prefPlatforms, setPrefPlatforms, v)} />
           </View>
         </Card>
 
-        <SectionHeader title="Preferred Creator Categories" />
+        <SectionHeader title={t('businessSettings.prefCategoriesSection')} />
         <Card>
           <View style={styles.chipSection}>
             <ChipGroup options={CREATOR_CATEGORIES} selected={prefCreatorCats} onToggle={(v) => toggleChip(prefCreatorCats, setPrefCreatorCats, v)} />
           </View>
         </Card>
 
-        <SectionHeader title="Default Budget Range" />
+        <SectionHeader title={t('businessSettings.defaultBudgetSection')} />
         <Card>
           {BUDGET_RANGES.map((range, idx) => (
             <Pressable
@@ -1072,7 +1073,7 @@ export default function BusinessSettingsScreen() {
           ))}
         </Card>
 
-        <Text style={[styles.saveHint, { color: C.textSecondary }]}>Changes are saved automatically.</Text>
+        <Text style={[styles.saveHint, { color: C.textSecondary }]}>{t('businessSettings.autoSavedHint')}</Text>
       </>
     );
   }
@@ -1084,14 +1085,14 @@ export default function BusinessSettingsScreen() {
       return (
         <View style={styles.emptyState}>
           <Text style={styles.emptyIcon}>🔖</Text>
-          <Text style={[styles.emptyText, { color: C.textSecondary }]}>No saved creators yet</Text>
-          <Text style={[styles.emptySubText, { color: C.textSecondary }]}>Browse events and save creators you like</Text>
+          <Text style={[styles.emptyText, { color: C.textSecondary }]}>{t('businessSettings.noSavedCreators')}</Text>
+          <Text style={[styles.emptySubText, { color: C.textSecondary }]}>{t('businessSettings.noSavedSub')}</Text>
         </View>
       );
     }
     return (
       <>
-        <SectionHeader title={`Saved (${savedCreators.length})`} />
+        <SectionHeader title={t('businessSettings.savedCount', { count: savedCreators.length })} />
         {savedCreators.map((creator) => {
           const isEditingNote = editingNoteId === creator.id;
           return (
@@ -1108,7 +1109,7 @@ export default function BusinessSettingsScreen() {
                   </View>
                 </View>
                 <Pressable style={[styles.removeBtn, { backgroundColor: '#FEE2E2' }]} onPress={() => removeCreator(creator.id)}>
-                  <Text style={[styles.removeBtnText, { color: C.error }]}>Remove</Text>
+                  <Text style={[styles.removeBtnText, { color: C.error }]}>{t('businessSettings.removeCreatorBtn')}</Text>
                 </Pressable>
               </View>
 
@@ -1124,12 +1125,12 @@ export default function BusinessSettingsScreen() {
                     style={[styles.noteInput, { color: C.text, borderColor: C.border }]}
                     value={noteText}
                     onChangeText={setNoteText}
-                    placeholder="Add a note..."
+                    placeholder={t('businessSettings.notePlaceholder')}
                     placeholderTextColor={C.textSecondary}
                     autoFocus
                   />
                   <Pressable style={[styles.noteSaveBtn, { backgroundColor: C.brinjal1 }]} onPress={() => saveNote(creator.id)}>
-                    <Text style={styles.noteSaveBtnText}>Save</Text>
+                    <Text style={styles.noteSaveBtnText}>{t('businessSettings.noteSaveBtnLabel')}</Text>
                   </Pressable>
                   <Pressable onPress={() => setEditingNoteId(null)}>
                     <Text style={[styles.noteCancelText, { color: C.textSecondary }]}>✕</Text>
@@ -1137,7 +1138,7 @@ export default function BusinessSettingsScreen() {
                 </View>
               ) : (
                 <Pressable style={styles.addNoteBtn} onPress={() => { setEditingNoteId(creator.id); setNoteText(creator.notes); }}>
-                  <Text style={[styles.addNoteText, { color: C.brinjal1 }]}>{creator.notes ? 'Edit note' : '+ Add note'}</Text>
+                  <Text style={[styles.addNoteText, { color: C.brinjal1 }]}>{creator.notes ? t('businessSettings.editNoteLabel') : t('businessSettings.addNoteLabel')}</Text>
                 </Pressable>
               )}
             </View>
@@ -1151,20 +1152,20 @@ export default function BusinessSettingsScreen() {
 
   function renderVerification() {
     const statusConfig = {
-      not_verified:  { label: 'Not Verified',  bg: '#F3F4F6', color: C.textSecondary },
-      under_review:  { label: 'Under Review',  bg: '#FFF7ED', color: C.draft },
-      verified:      { label: 'Verified ✓',    bg: '#DCFCE7', color: C.active },
+      not_verified:  { label: t('businessSettings.notVerifiedLabel'),   bg: '#F3F4F6', color: C.textSecondary },
+      under_review:  { label: t('businessSettings.underReviewLabel'),   bg: '#FFF7ED', color: C.draft },
+      verified:      { label: t('businessSettings.verifiedStatusLabel'), bg: '#DCFCE7', color: C.active },
     };
     const st = statusConfig[verificationStatus];
 
     return (
       <>
-        <SectionHeader title="Verification Status" />
+        <SectionHeader title={t('businessSettings.verificationStatusSection')} />
         <Card>
           <View style={[styles.row, { justifyContent: 'space-between' }]}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
               <Text style={styles.rowIcon}>🛡️</Text>
-              <Text style={[styles.rowLabel, { color: C.text }]}>Business Verification</Text>
+              <Text style={[styles.rowLabel, { color: C.text }]}>{t('businessSettings.businessVerificationLabel')}</Text>
             </View>
             <View style={[styles.statusBadge, { backgroundColor: st.bg }]}>
               <Text style={[styles.badgeText, { color: st.color }]}>{st.label}</Text>
@@ -1173,15 +1174,15 @@ export default function BusinessSettingsScreen() {
         </Card>
 
         <HintCard>
-          <Text style={[styles.hintText, { color: C.brinjal1 }]}>Verified businesses get a badge on their profile and higher trust from creators.</Text>
+          <Text style={[styles.hintText, { color: C.brinjal1 }]}>{t('businessSettings.verifiedHint')}</Text>
         </HintCard>
 
-        <SectionHeader title="Upload Documents" />
+        <SectionHeader title={t('businessSettings.uploadDocumentsSection')} />
         <Card>
           {[
-            { label: 'PAN Registration', icon: '📄', uploaded: panUploaded, toggle: () => setPanUploaded((v) => !v) },
-            { label: 'Company Registration Certificate', icon: '🏢', uploaded: regCertUploaded, toggle: () => setRegCertUploaded((v) => !v) },
-            { label: 'Business License', icon: '📋', uploaded: licenseUploaded, toggle: () => setLicenseUploaded((v) => !v) },
+            { label: t('businessSettings.panRegistrationLabel'), icon: '📄', uploaded: panUploaded, toggle: () => setPanUploaded((v) => !v) },
+            { label: t('businessSettings.companyRegLabel'), icon: '🏢', uploaded: regCertUploaded, toggle: () => setRegCertUploaded((v) => !v) },
+            { label: t('businessSettings.businessLicenseLabel'), icon: '📋', uploaded: licenseUploaded, toggle: () => setLicenseUploaded((v) => !v) },
           ].map((doc, idx, arr) => (
             <Pressable
               key={doc.label}
@@ -1191,16 +1192,16 @@ export default function BusinessSettingsScreen() {
               <View style={{ flex: 1 }}>
                 <Text style={[styles.rowLabel, { color: C.text }]}>{doc.label}</Text>
                 <Text style={[styles.rowSub, { color: doc.uploaded ? C.active : C.textSecondary }]}>
-                  {doc.uploaded ? '✓ Uploaded' : 'Tap to upload'}
+                  {doc.uploaded ? t('businessSettings.uploadedStatusLabel') : t('businessSettings.tapToUploadLabel')}
                 </Text>
               </View>
               {doc.uploaded ? (
                 <View style={[styles.verifiedBadge, { backgroundColor: '#DCFCE7' }]}>
-                  <Text style={[styles.badgeText, { color: C.active }]}>Done</Text>
+                  <Text style={[styles.badgeText, { color: C.active }]}>{t('businessSettings.doneBadge')}</Text>
                 </View>
               ) : (
                 <View style={[styles.uploadBtn, { backgroundColor: C.primaryLight }]}>
-                  <Text style={[styles.badgeText, { color: C.brinjal1 }]}>Upload</Text>
+                  <Text style={[styles.badgeText, { color: C.brinjal1 }]}>{t('businessSettings.uploadBtnLabel')}</Text>
                 </View>
               )}
             </Pressable>
@@ -1216,7 +1217,7 @@ export default function BusinessSettingsScreen() {
     try {
       await businessService.updatePrivacy(patch);
     } catch {
-      toast.error('Failed to save. Please try again.');
+      toast.error(t('businessSettings.privacySaveFailed'));
     }
   }
 
@@ -1224,14 +1225,14 @@ export default function BusinessSettingsScreen() {
     return (
       <>
         <HintCard>
-          <Text style={[styles.hintText, { color: C.brinjal1 }]}>Control who can see your business information and contact you.</Text>
+          <Text style={[styles.hintText, { color: C.brinjal1 }]}>{t('businessSettings.privacyHint')}</Text>
         </HintCard>
-        <SectionHeader title="Visibility" />
+        <SectionHeader title={t('businessSettings.visibilitySection')} />
         <Card>
           <SwitchRow
             iconNode={<Ionicons name="eye-outline" size={20} color={C.brinjal1} />}
-            label="Show Business Profile Publicly"
-            sub="Creators can find and view your profile"
+            label={t('businessSettings.showProfileLabel')}
+            sub={t('businessSettings.showProfileSub')}
             value={showProfilePublic}
             onChange={() => {
               const next = !showProfilePublic;
@@ -1241,8 +1242,8 @@ export default function BusinessSettingsScreen() {
           />
           <SwitchRow
             iconNode={<Ionicons name="lock-closed-outline" size={20} color={C.brinjal1} />}
-            label="Hide Contact Details"
-            sub="Keep website and contact info private"
+            label={t('businessSettings.hideContactLabel')}
+            sub={t('businessSettings.hideContactSub')}
             value={hideContactDetails}
             onChange={() => {
               const next = !hideContactDetails;
@@ -1252,8 +1253,8 @@ export default function BusinessSettingsScreen() {
           />
           <SwitchRow
             iconNode={<Ionicons name="chatbubble-outline" size={20} color={C.brinjal1} />}
-            label="Allow Creators to Message Directly"
-            sub="Creators can initiate conversations from your profile"
+            label={t('businessSettings.allowMessagesLabel')}
+            sub={t('businessSettings.allowMessagesSub')}
             value={allowDirectMessages}
             onChange={() => {
               const next = !allowDirectMessages;
@@ -1263,7 +1264,7 @@ export default function BusinessSettingsScreen() {
             isLast
           />
         </Card>
-        <Text style={[styles.saveHint, { color: C.textSecondary }]}>Changes are saved automatically.</Text>
+        <Text style={[styles.saveHint, { color: C.textSecondary }]}>{t('businessSettings.privacyAutoSaved')}</Text>
       </>
     );
   }
@@ -1273,15 +1274,15 @@ export default function BusinessSettingsScreen() {
   function renderSupport() {
     return (
       <>
-        <SectionHeader title="Get Help" />
+        <SectionHeader title={t('businessSettings.getHelpSection')} />
         <Card>
-          <NavRow ionIcon="help-circle-outline"         ionIconColor="#0891B2" label="Help Center"     onPress={() => setSubPage('help-center')} />
-          <NavRow ionIcon="chatbubble-ellipses-outline" ionIconColor="#7C3AED" label="Contact Support" onPress={() => setSubPage('contact-support')} />
-          <NavRow ionIcon="warning-outline"             ionIconColor="#EF4444" label="Report Issue"    onPress={() => setSubPage('report-issue')} />
-          <NavRow ionIcon="reader-outline"              ionIconColor="#F59E0B" label="FAQs"            onPress={() => setSubPage('faqs')} isLast />
+          <NavRow ionIcon="help-circle-outline"         ionIconColor="#0891B2" label={t('businessSettings.helpCenterNavLabel')}  onPress={() => setSubPage('help-center')} />
+          <NavRow ionIcon="chatbubble-ellipses-outline" ionIconColor="#7C3AED" label={t('businessSettings.contactSupportLabel')} onPress={() => setSubPage('contact-support')} />
+          <NavRow ionIcon="warning-outline"             ionIconColor="#EF4444" label={t('businessSettings.reportIssueLabel')}    onPress={() => setSubPage('report-issue')} />
+          <NavRow ionIcon="reader-outline"              ionIconColor="#F59E0B" label={t('businessSettings.faqsLabel')}           onPress={() => setSubPage('faqs')} isLast />
         </Card>
         <HintCard>
-          <Text style={[styles.hintText, { color: C.brinjal1 }]}>Average response time: under 24 hours on business days.</Text>
+          <Text style={[styles.hintText, { color: C.brinjal1 }]}>{t('businessSettings.supportHint')}</Text>
         </HintCard>
       </>
     );
@@ -1292,19 +1293,19 @@ export default function BusinessSettingsScreen() {
   function renderAppSettings() {
     return (
       <>
-        <SectionHeader title="Appearance" />
+        <SectionHeader title={t('businessSettings.appearanceSection')} />
         <Card>
-          <SwitchRow icon="🌙" label="Dark Mode" sub="Switch between light and dark theme" value={isDark} onChange={toggleDark} isLast />
+          <SwitchRow icon="🌙" label={t('businessSettings.darkModeLabel')} sub={t('businessSettings.darkModeSub')} value={isDark} onChange={toggleDark} isLast />
         </Card>
 
-        <SectionHeader title="About" />
+        <SectionHeader title={t('businessSettings.aboutSection')} />
         <Card>
           <View style={[styles.row, { borderBottomWidth: 1, borderBottomColor: C.border }]}>
             <Text style={styles.rowIcon}>ℹ️</Text>
-            <Text style={[styles.rowLabel, { color: C.text }]}>App Version</Text>
+            <Text style={[styles.rowLabel, { color: C.text }]}>{t('businessSettings.appVersionLabel')}</Text>
             <Text style={[styles.navValue, { color: C.textSecondary }]}>1.0.0</Text>
           </View>
-          <NavRow icon="👥" label="Team Members" badge="V1.1" onPress={() => showToast('Team management coming in V1.1')} isLast />
+          <NavRow icon="👥" label={t('businessSettings.teamMembersLabel')} badge="V1.1" onPress={() => showToast(t('businessSettings.teamMembersToast'))} isLast />
         </Card>
       </>
     );
@@ -1315,7 +1316,7 @@ export default function BusinessSettingsScreen() {
   function renderMainSettings() {
     return (
       <>
-        <SectionHeader title="Account" />
+        <SectionHeader title={t('businessSettings.accountSection')} />
         <Card>
           <View style={[styles.accountCard, { borderBottomWidth: 1, borderBottomColor: C.border }]}>
             <View style={[styles.accountAvatar, { backgroundColor: C.brinjal1 }]}>
@@ -1326,38 +1327,38 @@ export default function BusinessSettingsScreen() {
               <Text style={[styles.accountEmail, { color: C.textSecondary }]}>{user?.email ?? 'business@example.com'}</Text>
             </View>
             <Pressable style={[styles.editBtn, { backgroundColor: C.primaryLight }]} onPress={() => router.push('/(business)/settings?section=profile' as Parameters<typeof router.push>[0])}>
-              <Text style={[styles.editBtnText, { color: C.brinjal1 }]}>Edit</Text>
+              <Text style={[styles.editBtnText, { color: C.brinjal1 }]}>{t('businessSettings.editBtnLabel')}</Text>
             </Pressable>
           </View>
-          <NavRow icon="🏢" label="Business Profile"    onPress={() => router.push('/(business)/settings?section=profile' as Parameters<typeof router.push>[0])} />
-          <NavRow icon="✅" label="Verification"         onPress={() => router.push('/(business)/settings?section=verification' as Parameters<typeof router.push>[0])} />
-          <NavRow icon="🗑️" label="Delete Account"      onPress={handleDeleteAccount} danger isLast />
+          <NavRow icon="🏢" label={t('businessSettings.businessProfileNav')}  onPress={() => router.push('/(business)/settings?section=profile' as Parameters<typeof router.push>[0])} />
+          <NavRow icon="✅" label={t('businessSettings.verificationNav')}      onPress={() => router.push('/(business)/settings?section=verification' as Parameters<typeof router.push>[0])} />
+          <NavRow icon="🗑️" label={t('businessSettings.deleteAccountNav')}   onPress={handleDeleteAccount} danger isLast />
         </Card>
 
-        <SectionHeader title="Preferences" />
+        <SectionHeader title={t('businessSettings.preferencesSection')} />
         <Card>
-          <NavRow icon="🔔" label="Notifications"        onPress={() => router.push('/(business)/settings?section=notifications' as Parameters<typeof router.push>[0])} />
-          <NavRow icon="💳" label="Payment Settings"     onPress={() => router.push('/(business)/settings?section=payment' as Parameters<typeof router.push>[0])} />
-          <NavRow icon="🎯" label="Event Preferences" onPress={() => router.push('/(business)/settings?section=campaigns' as Parameters<typeof router.push>[0])} />
-          <NavRow icon="🔖" label="Saved Creators"       onPress={() => router.push('/(business)/settings?section=saved' as Parameters<typeof router.push>[0])} />
-          <NavRow icon="🔒" label="Privacy Settings"     onPress={() => router.push('/(business)/settings?section=privacy' as Parameters<typeof router.push>[0])} />
-          <NavRow icon="🛡️" label="Account & Security"  onPress={() => router.push('/(business)/settings?section=account' as Parameters<typeof router.push>[0])} isLast />
+          <NavRow icon="🔔" label={t('businessSettings.notificationsNav')}    onPress={() => router.push('/(business)/settings?section=notifications' as Parameters<typeof router.push>[0])} />
+          <NavRow icon="💳" label={t('businessSettings.paymentSettingsNav')}  onPress={() => router.push('/(business)/settings?section=payment' as Parameters<typeof router.push>[0])} />
+          <NavRow icon="🎯" label={t('businessSettings.eventPreferencesNav')} onPress={() => router.push('/(business)/settings?section=campaigns' as Parameters<typeof router.push>[0])} />
+          <NavRow icon="🔖" label={t('businessSettings.savedCreatorsNav')}    onPress={() => router.push('/(business)/settings?section=saved' as Parameters<typeof router.push>[0])} />
+          <NavRow icon="🔒" label={t('businessSettings.privacySettingsNav')}  onPress={() => router.push('/(business)/settings?section=privacy' as Parameters<typeof router.push>[0])} />
+          <NavRow icon="🛡️" label={t('businessSettings.accountSecurityNav')} onPress={() => router.push('/(business)/settings?section=account' as Parameters<typeof router.push>[0])} isLast />
         </Card>
 
-        <SectionHeader title="App" />
+        <SectionHeader title={t('businessSettings.appSection')} />
         <Card>
-          <SwitchRow icon="🌙" label="Dark Mode" value={isDark} onChange={toggleDark} />
+          <SwitchRow icon="🌙" label={t('businessSettings.darkModeLabel')} value={isDark} onChange={toggleDark} />
           <View style={[styles.row, { borderTopWidth: 0, borderBottomWidth: 1, borderBottomColor: C.border }]}>
             <Text style={styles.rowIcon}>ℹ️</Text>
-            <Text style={[styles.rowLabel, { color: C.text }]}>App Version</Text>
+            <Text style={[styles.rowLabel, { color: C.text }]}>{t('businessSettings.appVersionLabel')}</Text>
             <Text style={[styles.navValue, { color: C.textSecondary }]}>1.0.0</Text>
           </View>
-          <NavRow icon="👥" label="Team Members" badge="V1.1" onPress={() => showToast('Team management coming in V1.1')} isLast />
+          <NavRow icon="👥" label={t('businessSettings.teamMembersLabel')} badge="V1.1" onPress={() => showToast(t('businessSettings.teamMembersToast'))} isLast />
         </Card>
 
-        <SectionHeader title="Help" />
+        <SectionHeader title={t('businessSettings.helpSection')} />
         <Card>
-          <NavRow icon="❓" label="Support" onPress={() => router.push('/(business)/settings?section=support' as Parameters<typeof router.push>[0])} isLast />
+          <NavRow icon="❓" label={t('businessSettings.supportNav')} onPress={() => router.push('/(business)/settings?section=support' as Parameters<typeof router.push>[0])} isLast />
         </Card>
       </>
     );

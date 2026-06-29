@@ -109,24 +109,24 @@ const LANGUAGE_OPTIONS = [
 ];
 
 const SECTION_TITLES: Record<string, string> = {
-  social: 'Social Accounts',
-  campaigns: 'Event Preferences',
-  earnings: 'Earnings & Payments',
-  'past-work': 'Past Work',
-  security: 'Security',
-  support: 'Support',
-  legal: 'Legal',
+  social:      'creatorSettings.sectionSocial',
+  campaigns:   'creatorSettings.sectionCampaigns',
+  earnings:    'creatorSettings.sectionEarnings',
+  'past-work': 'creatorSettings.sectionPastWork',
+  security:    'creatorSettings.sectionSecurity',
+  support:     'creatorSettings.sectionSupport',
+  legal:       'creatorSettings.sectionLegal',
 };
 
 const SUB_PAGE_TITLES: Record<string, string> = {
-  'change-password':  'Change Password',
-  'help-center':      'Help Center',
-  'contact-support':  'Contact Support',
-  'report-issue':     'Report Issue',
-  'faqs':             'FAQs',
-  'privacy-policy':   'Privacy Policy',
-  'terms':            'Terms & Conditions',
-  'guidelines':       'Community Guidelines',
+  'change-password':  'creatorSettings.subChangePassword',
+  'help-center':      'creatorSettings.subHelpCenter',
+  'contact-support':  'creatorSettings.subContactSupport',
+  'report-issue':     'creatorSettings.subReportIssue',
+  'faqs':             'creatorSettings.subFaqs',
+  'privacy-policy':   'creatorSettings.subPrivacyPolicy',
+  'terms':            'creatorSettings.subTerms',
+  'guidelines':       'creatorSettings.subGuidelines',
 };
 
 function fmt(n: string): string {
@@ -230,6 +230,7 @@ function PrefLocationPicker({
   onChange: (locs: string[]) => void;
 }) {
   const C = useAppColors();
+  const { t } = useLanguage();
   const [query, setQuery] = useState('');
   const [predictions, setPredictions] = useState<PlacePrediction[]>([]);
   const [searching, setSearching] = useState(false);
@@ -294,7 +295,7 @@ function PrefLocationPicker({
         disabled={!remoteSelected && atMax}>
         <Text style={pl.remoteEmoji}>🌐</Text>
         <Text style={[pl.remoteText, { color: remoteSelected ? C.brinjal1 : C.text, fontWeight: remoteSelected ? '700' : '500' }]}>
-          Remote
+          {t('campaignDetail.remoteLocation')}
         </Text>
         {remoteSelected && <Text style={[pl.removeX, { color: C.brinjal1 }]}>✕</Text>}
       </Pressable>
@@ -322,7 +323,7 @@ function PrefLocationPicker({
               style={[pl.searchInput, { color: C.text }]}
               value={query}
               onChangeText={handleSearchChange}
-              placeholder="Search city…"
+              placeholder={t('creatorSettings.searchCityPlaceholder')}
               placeholderTextColor={C.textSecondary}
               returnKeyType="search"
             />
@@ -384,7 +385,7 @@ const pl = StyleSheet.create({
 export default function CreatorSettingsScreen() {
   const { user, logout } = useAuth();
   const { isDark, toggleDark } = useIsDark();
-  const { language, setLanguage } = useLanguage();
+  const { language, setLanguage, t } = useLanguage();
   const { section } = useLocalSearchParams<{ section?: string }>();
   const C: ColorsType = useAppColors();
   const toast = useToast();
@@ -656,12 +657,12 @@ export default function CreatorSettingsScreen() {
 
   function validateSocialForm() {
     const errors: Record<string, string> = {};
-    if (!socialForm.platform) errors.platform = 'Select a platform';
-    if (!socialForm.profileUrl.trim()) errors.profileUrl = 'Profile URL is required';
+    if (!socialForm.platform) errors.platform = t('creatorSettings.errSelectPlatform');
+    if (!socialForm.profileUrl.trim()) errors.profileUrl = t('creatorSettings.errProfileUrlRequired');
     else {
-      try { new URL(socialForm.profileUrl.trim()); } catch { errors.profileUrl = 'Enter a valid URL (https://...)'; }
+      try { new URL(socialForm.profileUrl.trim()); } catch { errors.profileUrl = t('creatorSettings.errInvalidUrl'); }
     }
-    if (!socialForm.followers.trim() || !/^\d+$/.test(socialForm.followers)) errors.followers = 'Enter a valid number';
+    if (!socialForm.followers.trim() || !/^\d+$/.test(socialForm.followers)) errors.followers = t('creatorSettings.errInvalidNumber');
     return errors;
   }
 
@@ -676,7 +677,7 @@ export default function CreatorSettingsScreen() {
           followers: Number(socialForm.followers),
         });
         setSocialAccounts((prev) => prev.map((a) => a.id === editingSocialId ? { ...a, ...updated } : a));
-        showToast('Social account updated');
+        showToast(t('creatorSettings.socialUpdatedToast'));
       } else {
         const created = await creatorService.addSocialAccount({
           platform: socialForm.platform,
@@ -684,11 +685,11 @@ export default function CreatorSettingsScreen() {
           followers: Number(socialForm.followers),
         });
         setSocialAccounts((prev) => [...prev, { id: created.id, platform: created.platform, profileUrl: created.profileUrl, followers: created.followers }]);
-        showToast('Social account added');
+        showToast(t('creatorSettings.socialAddedToast'));
       }
       resetSocialForm();
     } catch (e: any) {
-      setSocialFormErrors({ platform: e.message ?? 'Failed to save' });
+      setSocialFormErrors({ platform: e.message ?? t('creatorSettings.socialSaveFailed') });
     } finally {
       setSocialLoading(false);
     }
@@ -696,14 +697,14 @@ export default function CreatorSettingsScreen() {
 
   function deleteSocialAccount(acct: SocialAccount) {
     const cfg = PLATFORM_CONFIG[acct.platform];
-    Alert.alert(`Remove ${cfg?.label ?? acct.platform}`, 'This account will be removed from your profile.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Remove', style: 'destructive', onPress: async () => {
+    Alert.alert(t('creatorSettings.removeAccountTitle', { platform: cfg?.label ?? acct.platform }), t('creatorSettings.removeAccountBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('common.remove'), style: 'destructive', onPress: async () => {
         try {
           await creatorService.deleteSocialAccount(acct.id);
           setSocialAccounts((prev) => prev.filter((a) => a.id !== acct.id));
-          showToast('Social account removed');
-        } catch { showToast('Failed to remove. Try again.', true); }
+          showToast(t('creatorSettings.socialRemovedToast'));
+        } catch { showToast(t('creatorSettings.socialRemoveFailed'), true); }
       }},
     ]);
   }
@@ -733,9 +734,9 @@ export default function CreatorSettingsScreen() {
 
   function validatePortfolioForm() {
     const errors: Record<string, string> = {};
-    if (!portfolioForm.type) errors.type = 'Select a content type';
-    if (!portfolioForm.url.trim()) errors.url = 'URL is required';
-    else { try { new URL(portfolioForm.url.trim()); } catch { errors.url = 'Enter a valid URL (https://...)'; } }
+    if (!portfolioForm.type) errors.type = t('creatorSettings.errSelectContentType');
+    if (!portfolioForm.url.trim()) errors.url = t('creatorSettings.errUrlRequired');
+    else { try { new URL(portfolioForm.url.trim()); } catch { errors.url = t('creatorSettings.errInvalidUrl'); } }
     return errors;
   }
 
@@ -753,9 +754,9 @@ export default function CreatorSettingsScreen() {
         setPortfolio(updated.portfolioLinks);
       }
       resetPortfolioSheet();
-      showToast(editingPortfolioId ? 'Past work updated' : 'Past work added');
+      showToast(editingPortfolioId ? t('creatorSettings.pastWorkUpdatedToast') : t('creatorSettings.pastWorkAddedToast'));
     } catch (err: unknown) {
-      setPortfolioFormErrors({ url: err instanceof Error ? err.message : 'Failed to save. Try again.' });
+      setPortfolioFormErrors({ url: err instanceof Error ? err.message : t('creatorSettings.pastWorkSaveFailed') });
     } finally {
       setPortfolioLoading(false);
     }
@@ -764,16 +765,16 @@ export default function CreatorSettingsScreen() {
   function deletePortfolio(item: PortfolioItem) {
     const cfg = PORTFOLIO_CONFIG[item.label];
     Alert.alert(
-      `Remove ${cfg?.label ?? item.label}`,
-      'This will be removed from your profile.',
+      t('creatorSettings.removeWorkTitle', { item: cfg?.label ?? item.label }),
+      t('creatorSettings.removeWorkBody'),
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Remove', style: 'destructive', onPress: async () => {
+        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('common.remove'), style: 'destructive', onPress: async () => {
           try {
             const updated = await creatorService.removePortfolioLink(item.id);
             setPortfolio(updated.portfolioLinks);
-            showToast('Past work removed');
-          } catch { showToast('Failed to remove. Try again.', true); }
+            showToast(t('creatorSettings.pastWorkRemovedToast'));
+          } catch { showToast(t('creatorSettings.pastWorkRemoveFailed'), true); }
         }},
       ],
     );
@@ -785,7 +786,7 @@ export default function CreatorSettingsScreen() {
     const matchOk = newPw === confirmPw;
     if (pwOk && matchOk) {
       setNewPw(''); setConfirmPw(''); setPwSubmitted(false);
-      showToast('Password changed successfully!');
+      showToast(t('creatorSettings.pwChangedToast'));
       setSubPage(null);
     }
   }
@@ -803,10 +804,10 @@ export default function CreatorSettingsScreen() {
     try {
       await creatorService.deactivateAccount();
       setShowDeactivateModal(false);
-      showToast('Account deactivated. Log in to reactivate.');
+      showToast(t('creatorSettings.deactivatedToast'));
       setTimeout(logout, 1800);
     } catch {
-      showToast('Failed to deactivate account. Try again.');
+      showToast(t('creatorSettings.deactivateFailed'));
     } finally {
       setAccountActionLoading(false);
     }
@@ -817,19 +818,19 @@ export default function CreatorSettingsScreen() {
     try {
       await creatorService.deleteAccount();
       setShowDeleteModal(false);
-      showToast('Account deleted permanently.');
+      showToast(t('creatorSettings.deletedToast'));
       setTimeout(logout, 1800);
     } catch {
-      showToast('Failed to delete account. Try again.');
+      showToast(t('creatorSettings.deleteFailed'));
     } finally {
       setAccountActionLoading(false);
     }
   }
 
   function handleLogoutAll() {
-    Alert.alert('Logout All Devices', 'You will be signed out from all devices.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Logout All', style: 'destructive', onPress: logout },
+    Alert.alert(t('creatorSettings.logoutAllTitle'), t('creatorSettings.logoutAllBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('creatorSettings.logoutAllConfirm'), style: 'destructive', onPress: logout },
     ]);
   }
 
@@ -839,10 +840,10 @@ export default function CreatorSettingsScreen() {
     try {
       await request('POST', '/api/support/contact', { topic: supportTopic, message: supportMsg.trim() });
       setSupportTopic(''); setSupportMsg('');
-      showToast('Message sent. We\'ll respond within 24 hours.');
+      showToast(t('creatorSettings.supportSentToast'));
       setSubPage(null);
     } catch {
-      showToast('Failed to send. Please try again.', true);
+      showToast(t('creatorSettings.supportSendFailed'), true);
     } finally {
       setSupportSubmitting(false);
     }
@@ -854,10 +855,10 @@ export default function CreatorSettingsScreen() {
     try {
       await request('POST', '/api/support/report', { type: reportType, description: reportDesc.trim() });
       setReportType(''); setReportDesc('');
-      showToast('Issue reported. Thank you!');
+      showToast(t('creatorSettings.reportSentToast'));
       setSubPage(null);
     } catch {
-      showToast('Failed to submit. Please try again.', true);
+      showToast(t('creatorSettings.reportSendFailed'), true);
     } finally {
       setReportSubmitting(false);
     }
@@ -872,30 +873,30 @@ export default function CreatorSettingsScreen() {
   }
 
   const topTitle = subPage
-    ? (SUB_PAGE_TITLES[subPage] ?? 'Settings')
+    ? t(SUB_PAGE_TITLES[subPage] ?? 'creatorSettings.settings')
     : section
-    ? (SECTION_TITLES[section] ?? 'Settings')
-    : 'Settings';
+    ? t(SECTION_TITLES[section] ?? 'creatorSettings.settings')
+    : t('creatorSettings.settings');
 
   // ── Sub-page: Change Password ─────────────────────────────────
 
   function renderChangePassword() {
-    const pwError = pwSubmitted ? (!newPw ? 'Required' : newPw.length < 8 ? 'Minimum 8 characters' : undefined) : undefined;
-    const cPwError = pwSubmitted ? (!confirmPw ? 'Required' : confirmPw !== newPw ? 'Passwords do not match' : undefined) : undefined;
+    const pwError = pwSubmitted ? (!newPw ? t('common.required') : newPw.length < 8 ? t('creatorSettings.errPwTooShort') : undefined) : undefined;
+    const cPwError = pwSubmitted ? (!confirmPw ? t('common.required') : confirmPw !== newPw ? t('creatorSettings.errPwMismatch') : undefined) : undefined;
     return (
       <>
-        <SectionHeader title="Set New Password" />
+        <SectionHeader title={t('creatorSettings.setNewPasswordSection')} />
         <Card>
           <View style={styles.inlineForm}>
             <View style={styles.formField}>
-              <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>New Password</Text>
+              <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>{t('creatorSettings.newPasswordLabel')}</Text>
               <View style={[styles.pwRow, { backgroundColor: C.background, borderColor: pwError ? C.error : C.border }]}>
                 <TextInput
                   style={[styles.pwInput, { color: C.text }]}
                   value={newPw}
-                  onChangeText={(t) => { setNewPw(t); setPwSubmitted(false); }}
+                  onChangeText={(v) => { setNewPw(v); setPwSubmitted(false); }}
                   secureTextEntry={!showNewPw}
-                  placeholder="Min 8 characters"
+                  placeholder={t('creatorSettings.newPasswordPlaceholder')}
                   placeholderTextColor={C.textSecondary}
                   autoCapitalize="none"
                 />
@@ -906,14 +907,14 @@ export default function CreatorSettingsScreen() {
               {pwError ? <Text style={[styles.fieldError, { color: C.error }]}>{pwError}</Text> : null}
             </View>
             <View style={styles.formField}>
-              <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>Confirm Password</Text>
+              <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>{t('creatorSettings.confirmPasswordLabel')}</Text>
               <View style={[styles.pwRow, { backgroundColor: C.background, borderColor: cPwError ? C.error : C.border }]}>
                 <TextInput
                   style={[styles.pwInput, { color: C.text }]}
                   value={confirmPw}
-                  onChangeText={(t) => { setConfirmPw(t); setPwSubmitted(false); }}
+                  onChangeText={(v) => { setConfirmPw(v); setPwSubmitted(false); }}
                   secureTextEntry={!showConfirmPw}
-                  placeholder="Repeat password"
+                  placeholder={t('creatorSettings.confirmPasswordPlaceholder')}
                   placeholderTextColor={C.textSecondary}
                   autoCapitalize="none"
                 />
@@ -924,12 +925,12 @@ export default function CreatorSettingsScreen() {
               {cPwError ? <Text style={[styles.fieldError, { color: C.error }]}>{cPwError}</Text> : null}
             </View>
             <Pressable style={[styles.saveBtn, { backgroundColor: C.brinjal1 }]} onPress={handleChangePassword}>
-              <Text style={styles.saveBtnText}>Update Password</Text>
+              <Text style={styles.saveBtnText}>{t('creatorSettings.updatePasswordBtn')}</Text>
             </Pressable>
           </View>
         </Card>
         <View style={[styles.hintCard, { backgroundColor: C.primaryLight }]}>
-          <Text style={[styles.hintText, { color: C.brinjal1 }]}>Use a strong password with letters, numbers, and symbols.</Text>
+          <Text style={[styles.hintText, { color: C.brinjal1 }]}>{t('creatorSettings.passwordHint')}</Text>
         </View>
       </>
     );
@@ -956,8 +957,8 @@ export default function CreatorSettingsScreen() {
       return (
         <View style={[styles.helpEmpty, { backgroundColor: C.surface, borderColor: C.border }]}>
           <Text style={styles.helpEmptyIcon}>❓</Text>
-          <Text style={[styles.helpEmptyTitle, { color: C.text }]}>No help articles yet</Text>
-          <Text style={[styles.helpEmptySubtitle, { color: C.textSecondary }]}>Check back soon — our team is adding articles.</Text>
+          <Text style={[styles.helpEmptyTitle, { color: C.text }]}>{t('creatorSettings.noHelpArticles')}</Text>
+          <Text style={[styles.helpEmptySubtitle, { color: C.textSecondary }]}>{t('creatorSettings.noHelpArticlesSub')}</Text>
         </View>
       );
     }
@@ -970,7 +971,7 @@ export default function CreatorSettingsScreen() {
     return (
       <>
         <View style={[styles.hintCard, { backgroundColor: C.primaryLight, marginBottom: 0 }]}>
-          <Text style={[styles.hintText, { color: C.brinjal1 }]}>Find answers to common questions about CreatorMarket.</Text>
+          <Text style={[styles.hintText, { color: C.brinjal1 }]}>{t('creatorSettings.helpFindAnswers')}</Text>
         </View>
         {Object.entries(grouped).map(([cat, items]) => (
           <View key={cat}>
@@ -1005,29 +1006,29 @@ export default function CreatorSettingsScreen() {
   function renderContactSupport() {
     return (
       <>
-        <SectionHeader title="Get in Touch" />
+        <SectionHeader title={t('creatorSettings.getInTouchSection')} />
         <Card>
           <View style={styles.inlineForm}>
             <View style={styles.formField}>
-              <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>Topic</Text>
+              <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>{t('creatorSettings.topicLabel')}</Text>
               <View style={styles.chipGroup}>
-                {SUPPORT_TOPICS.map((t) => {
-                  const active = supportTopic === t;
+                {SUPPORT_TOPICS.map((topic) => {
+                  const active = supportTopic === topic;
                   return (
-                    <Pressable key={t} style={[styles.chip, { borderColor: active ? C.brinjal1 : C.border, backgroundColor: active ? C.primaryLight : C.surface }]} onPress={() => setSupportTopic(t)}>
-                      <Text style={[styles.chipText, { color: active ? C.brinjal1 : C.text }]}>{t}</Text>
+                    <Pressable key={topic} style={[styles.chip, { borderColor: active ? C.brinjal1 : C.border, backgroundColor: active ? C.primaryLight : C.surface }]} onPress={() => setSupportTopic(topic)}>
+                      <Text style={[styles.chipText, { color: active ? C.brinjal1 : C.text }]}>{topic}</Text>
                     </Pressable>
                   );
                 })}
               </View>
             </View>
             <View style={styles.formField}>
-              <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>Message</Text>
+              <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>{t('creatorSettings.messageLabel')}</Text>
               <TextInput
                 style={[styles.formTextarea, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
                 value={supportMsg}
                 onChangeText={setSupportMsg}
-                placeholder="Describe your issue in detail..."
+                placeholder={t('creatorSettings.supportMsgPlaceholder')}
                 placeholderTextColor={C.textSecondary}
                 multiline
                 numberOfLines={5}
@@ -1038,12 +1039,12 @@ export default function CreatorSettingsScreen() {
               style={[styles.saveBtn, { backgroundColor: C.brinjal1, opacity: (supportMsg.trim() && supportTopic && !supportSubmitting) ? 1 : 0.45 }]}
               onPress={handleSupportSubmit}
               disabled={supportSubmitting}>
-              <Text style={styles.saveBtnText}>{supportSubmitting ? 'Sending…' : 'Send Message'}</Text>
+              <Text style={styles.saveBtnText}>{supportSubmitting ? t('creatorSettings.sendingMsg') : t('creatorSettings.sendMessageBtn')}</Text>
             </Pressable>
           </View>
         </Card>
         <View style={[styles.hintCard, { backgroundColor: C.primaryLight }]}>
-          <Text style={[styles.hintText, { color: C.brinjal1 }]}>📧 You can also email us at support@creatormarket.com</Text>
+          <Text style={[styles.hintText, { color: C.brinjal1 }]}>{t('creatorSettings.supportEmailHint')}</Text>
         </View>
       </>
     );
@@ -1056,29 +1057,29 @@ export default function CreatorSettingsScreen() {
   function renderReportIssue() {
     return (
       <>
-        <SectionHeader title="Report an Issue" />
+        <SectionHeader title={t('creatorSettings.reportIssueSection')} />
         <Card>
           <View style={styles.inlineForm}>
             <View style={styles.formField}>
-              <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>Issue Type</Text>
+              <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>{t('creatorSettings.issueTypeLabel')}</Text>
               <View style={styles.chipGroup}>
-                {REPORT_TYPES.map((t) => {
-                  const active = reportType === t;
+                {REPORT_TYPES.map((rtype) => {
+                  const active = reportType === rtype;
                   return (
-                    <Pressable key={t} style={[styles.chip, { borderColor: active ? C.error : C.border, backgroundColor: active ? '#FEE2E2' : C.surface }]} onPress={() => setReportType(t)}>
-                      <Text style={[styles.chipText, { color: active ? C.error : C.text }]}>{t}</Text>
+                    <Pressable key={rtype} style={[styles.chip, { borderColor: active ? C.error : C.border, backgroundColor: active ? '#FEE2E2' : C.surface }]} onPress={() => setReportType(rtype)}>
+                      <Text style={[styles.chipText, { color: active ? C.error : C.text }]}>{rtype}</Text>
                     </Pressable>
                   );
                 })}
               </View>
             </View>
             <View style={styles.formField}>
-              <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>Description</Text>
+              <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>{t('creatorSettings.descriptionLabel')}</Text>
               <TextInput
                 style={[styles.formTextarea, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
                 value={reportDesc}
                 onChangeText={setReportDesc}
-                placeholder="Describe the issue with as much detail as possible..."
+                placeholder={t('creatorSettings.reportDescPlaceholder')}
                 placeholderTextColor={C.textSecondary}
                 multiline
                 numberOfLines={5}
@@ -1089,7 +1090,7 @@ export default function CreatorSettingsScreen() {
               style={[styles.saveBtn, { backgroundColor: C.error, opacity: (reportDesc.trim() && reportType && !reportSubmitting) ? 1 : 0.45 }]}
               onPress={handleReportSubmit}
               disabled={reportSubmitting}>
-              <Text style={styles.saveBtnText}>{reportSubmitting ? 'Submitting…' : 'Submit Report'}</Text>
+              <Text style={styles.saveBtnText}>{reportSubmitting ? t('creatorSettings.submittingReport') : t('creatorSettings.submitReportBtn')}</Text>
             </Pressable>
           </View>
         </Card>
@@ -1118,8 +1119,8 @@ export default function CreatorSettingsScreen() {
       return (
         <View style={[styles.helpEmpty, { backgroundColor: C.surface, borderColor: C.border }]}>
           <Text style={styles.helpEmptyIcon}>💬</Text>
-          <Text style={[styles.helpEmptyTitle, { color: C.text }]}>No FAQs yet</Text>
-          <Text style={[styles.helpEmptySubtitle, { color: C.textSecondary }]}>Frequently asked questions will appear here.</Text>
+          <Text style={[styles.helpEmptyTitle, { color: C.text }]}>{t('creatorSettings.noFaqsTitle')}</Text>
+          <Text style={[styles.helpEmptySubtitle, { color: C.textSecondary }]}>{t('creatorSettings.noFaqsSub')}</Text>
         </View>
       );
     }
@@ -1320,16 +1321,16 @@ export default function CreatorSettingsScreen() {
                 <View style={{ flex: 1 }}>
                   <Text style={styles.sheetTitle}>
                     {isEditing
-                      ? `Edit ${selectedPlatform?.label ?? ''}`
+                      ? t('creatorSettings.editSocialModalTitle', { platform: selectedPlatform?.label ?? '' })
                       : selectedPlatform
                         ? selectedPlatform.label
-                        : 'Add Social Account'}
+                        : t('creatorSettings.addSocialModalTitle')}
                   </Text>
                   {selectedPlatform && !isEditing && (
-                    <Text style={styles.sheetSubtitle}>Tap a different platform below to change</Text>
+                    <Text style={styles.sheetSubtitle}>{t('creatorSettings.tapToChangePlatform')}</Text>
                   )}
                   {isEditing && (
-                    <Text style={styles.sheetSubtitle}>Update your profile URL and follower count</Text>
+                    <Text style={styles.sheetSubtitle}>{t('creatorSettings.updateAccountSub')}</Text>
                   )}
                 </View>
               </View>
@@ -1343,7 +1344,7 @@ export default function CreatorSettingsScreen() {
                 {/* Platform grid — only shown when adding, not editing */}
                 {!isEditing && (
                   <View style={styles.sheetSection}>
-                    <Text style={[styles.sheetLabel, { color: C.textSecondary }]}>Select Platform</Text>
+                    <Text style={[styles.sheetLabel, { color: C.textSecondary }]}>{t('creatorSettings.selectPlatformLabel')}</Text>
                     {socialFormErrors.platform ? (
                       <Text style={[styles.fieldError, { color: C.error, marginBottom: 8 }]}>{socialFormErrors.platform}</Text>
                     ) : null}
@@ -1395,7 +1396,7 @@ export default function CreatorSettingsScreen() {
                   <>
                     {/* Profile URL */}
                     <View style={styles.sheetSection}>
-                      <Text style={[styles.sheetLabel, { color: C.textSecondary }]}>Profile URL</Text>
+                      <Text style={[styles.sheetLabel, { color: C.textSecondary }]}>{t('creatorSettings.profileUrlLabel')}</Text>
                       <View style={[
                         styles.sheetInputWrap,
                         { borderColor: socialFormErrors.profileUrl ? C.error : selectedPlatform ? selectedPlatform.color + '60' : C.border, backgroundColor: C.background },
@@ -1416,13 +1417,13 @@ export default function CreatorSettingsScreen() {
                       </View>
                       {socialFormErrors.profileUrl
                         ? <Text style={[styles.sheetFieldError, { color: C.error }]}>{socialFormErrors.profileUrl}</Text>
-                        : <Text style={[styles.sheetFieldHint, { color: C.textSecondary }]}>Paste your full public profile link</Text>}
+                        : <Text style={[styles.sheetFieldHint, { color: C.textSecondary }]}>{t('creatorSettings.profileUrlHint')}</Text>}
                     </View>
 
                     {/* Follower count */}
                     <View style={styles.sheetSection}>
                       <Text style={[styles.sheetLabel, { color: C.textSecondary }]}>
-                        {selectedPlatform?.followersLabel ?? 'Followers'} Count
+                        {t('creatorSettings.followersCountLabel', { label: selectedPlatform?.followersLabel ?? 'Followers' })}
                       </Text>
                       <View style={[
                         styles.sheetInputWrap,
@@ -1444,7 +1445,7 @@ export default function CreatorSettingsScreen() {
                       </View>
                       {socialFormErrors.followers
                         ? <Text style={[styles.sheetFieldError, { color: C.error }]}>{socialFormErrors.followers}</Text>
-                        : <Text style={[styles.sheetFieldHint, { color: C.textSecondary }]}>Enter your current count — used to match events</Text>}
+                        : <Text style={[styles.sheetFieldHint, { color: C.textSecondary }]}>{t('creatorSettings.followersHint')}</Text>}
                     </View>
 
                     {/* Save button */}
@@ -1459,16 +1460,16 @@ export default function CreatorSettingsScreen() {
                         {socialLoading ? (
                           <View style={styles.sheetSaveBtnRow}>
                             <View style={styles.sheetSpinner} />
-                            <Text style={styles.sheetSaveBtnText}>Saving…</Text>
+                            <Text style={styles.sheetSaveBtnText}>{t('creatorSettings.savingLabel')}</Text>
                           </View>
                         ) : (
                           <Text style={styles.sheetSaveBtnText}>
-                            {isEditing ? '✓  Save Changes' : `+ Add ${selectedPlatform?.label ?? 'Account'}`}
+                            {isEditing ? t('creatorSettings.saveChangesBtn') : t('creatorSettings.addAccountBtn', { platform: selectedPlatform?.label ?? 'Account' })}
                           </Text>
                         )}
                       </Pressable>
                       <Pressable style={[styles.sheetCancelBtn, { borderColor: C.border }]} onPress={resetSocialForm}>
-                        <Text style={[styles.sheetCancelBtnText, { color: C.textSecondary }]}>Cancel</Text>
+                        <Text style={[styles.sheetCancelBtnText, { color: C.textSecondary }]}>{t('common.cancel')}</Text>
                       </Pressable>
                     </View>
                   </>
@@ -1479,15 +1480,15 @@ export default function CreatorSettingsScreen() {
           </Animated.View>
         </Modal>
 
-        <SectionHeader title="Social Accounts" />
+        <SectionHeader title={t('creatorSettings.socialAccountsSection')} />
 
         {/* Empty state */}
         {socialAccounts.length === 0 && (
           <View style={[styles.socialEmptyState, { backgroundColor: C.surface, borderColor: C.border }]}>
             <Text style={styles.socialEmptyIcon}>📱</Text>
-            <Text style={[styles.socialEmptyTitle, { color: C.text }]}>No accounts linked yet</Text>
+            <Text style={[styles.socialEmptyTitle, { color: C.text }]}>{t('creatorSettings.noAccountsLinked')}</Text>
             <Text style={[styles.socialEmptySubtitle, { color: C.textSecondary }]}>
-              Add your social profiles so brands know your reach
+              {t('creatorSettings.noAccountsSub')}
             </Text>
           </View>
         )}
@@ -1516,7 +1517,7 @@ export default function CreatorSettingsScreen() {
                   </View>
                   <View style={styles.socialActions}>
                     <Pressable style={[styles.socialEditBtn, { backgroundColor: cfg.color + '15' }]} onPress={() => startEditSocialAccount(acct)}>
-                      <Text style={[styles.socialEditBtnText, { color: cfg.color }]}>Edit</Text>
+                      <Text style={[styles.socialEditBtnText, { color: cfg.color }]}>{t('creatorSettings.editBtn')}</Text>
                     </Pressable>
                     <Pressable style={styles.socialDisconnectBtn} onPress={() => deleteSocialAccount(acct)}>
                       <Text style={[styles.socialDisconnectText, { color: C.error }]}>✕</Text>
@@ -1532,7 +1533,7 @@ export default function CreatorSettingsScreen() {
         <Pressable
           style={[styles.addSocialBtn, { borderColor: C.brinjal1, backgroundColor: C.primaryLight }]}
           onPress={() => openSocialSheet()}>
-          <Text style={[styles.addSocialBtnText, { color: C.brinjal1 }]}>＋  Add Social Account</Text>
+          <Text style={[styles.addSocialBtnText, { color: C.brinjal1 }]}>{t('creatorSettings.addSocialBtn')}</Text>
         </Pressable>
 
       </>
@@ -1565,13 +1566,13 @@ export default function CreatorSettingsScreen() {
                 <View style={{ flex: 1 }}>
                   <Text style={styles.sheetTitle}>
                     {editingPortfolioId
-                      ? `Edit ${PORTFOLIO_CONFIG[portfolioForm.type]?.label ?? 'Work'}`
+                      ? t('creatorSettings.editPastWorkModalTitle', { type: PORTFOLIO_CONFIG[portfolioForm.type]?.label ?? 'Work' })
                       : portfolioForm.type && PORTFOLIO_CONFIG[portfolioForm.type]
                         ? PORTFOLIO_CONFIG[portfolioForm.type].label
-                        : 'Add Past Work'}
+                        : t('creatorSettings.addPastWorkModalTitle')}
                   </Text>
                   <Text style={styles.sheetSubtitle}>
-                    {editingPortfolioId ? 'Update the link for this work sample' : 'Show brands your best content'}
+                    {editingPortfolioId ? t('creatorSettings.updateWorkSub') : t('creatorSettings.showBrandsBest')}
                   </Text>
                 </View>
               </View>
@@ -1584,7 +1585,7 @@ export default function CreatorSettingsScreen() {
                 {/* Content type grid */}
                 {!editingPortfolioId && (
                   <View style={styles.sheetSection}>
-                    <Text style={[styles.sheetLabel, { color: C.textSecondary }]}>Content Type</Text>
+                    <Text style={[styles.sheetLabel, { color: C.textSecondary }]}>{t('creatorSettings.contentTypeLabel')}</Text>
                     {portfolioFormErrors.type ? (
                       <Text style={[styles.fieldError, { color: C.error, marginBottom: 8 }]}>{portfolioFormErrors.type}</Text>
                     ) : null}
@@ -1616,7 +1617,7 @@ export default function CreatorSettingsScreen() {
                 {(editingPortfolioId || portfolioForm.type) && (
                   <>
                     <View style={styles.sheetSection}>
-                      <Text style={[styles.sheetLabel, { color: C.textSecondary }]}>Link / URL</Text>
+                      <Text style={[styles.sheetLabel, { color: C.textSecondary }]}>{t('creatorSettings.linkUrlLabel')}</Text>
                       <View style={[
                         styles.sheetInputWrap,
                         { borderColor: portfolioFormErrors.url ? C.error : (portfolioForm.type && PORTFOLIO_CONFIG[portfolioForm.type] ? PORTFOLIO_CONFIG[portfolioForm.type].color + '60' : C.border), backgroundColor: C.background },
@@ -1637,7 +1638,7 @@ export default function CreatorSettingsScreen() {
                       </View>
                       {portfolioFormErrors.url
                         ? <Text style={[styles.sheetFieldError, { color: C.error }]}>{portfolioFormErrors.url}</Text>
-                        : <Text style={[styles.sheetFieldHint, { color: C.textSecondary }]}>Paste the full public link to your work</Text>}
+                        : <Text style={[styles.sheetFieldHint, { color: C.textSecondary }]}>{t('creatorSettings.linkUrlHint')}</Text>}
                     </View>
 
                     <View style={styles.sheetActions}>
@@ -1651,16 +1652,16 @@ export default function CreatorSettingsScreen() {
                         {portfolioLoading ? (
                           <View style={styles.sheetSaveBtnRow}>
                             <View style={styles.sheetSpinner} />
-                            <Text style={styles.sheetSaveBtnText}>Saving…</Text>
+                            <Text style={styles.sheetSaveBtnText}>{t('creatorSettings.savingLabel')}</Text>
                           </View>
                         ) : (
                           <Text style={styles.sheetSaveBtnText}>
-                            {editingPortfolioId ? '✓  Save Changes' : `+ Add ${PORTFOLIO_CONFIG[portfolioForm.type]?.label ?? 'Work'}`}
+                            {editingPortfolioId ? t('creatorSettings.saveChangesBtn') : t('creatorSettings.addWorkBtn', { type: PORTFOLIO_CONFIG[portfolioForm.type]?.label ?? 'Work' })}
                           </Text>
                         )}
                       </Pressable>
                       <Pressable style={[styles.sheetCancelBtn, { borderColor: C.border }]} onPress={resetPortfolioSheet}>
-                        <Text style={[styles.sheetCancelBtnText, { color: C.textSecondary }]}>Cancel</Text>
+                        <Text style={[styles.sheetCancelBtnText, { color: C.textSecondary }]}>{t('common.cancel')}</Text>
                       </Pressable>
                     </View>
                   </>
@@ -1670,15 +1671,15 @@ export default function CreatorSettingsScreen() {
           </Animated.View>
         </Modal>
 
-        <SectionHeader title="Past Work" />
+        <SectionHeader title={t('creatorSettings.pastWorkSection')} />
 
         {/* Empty state */}
         {portfolio.length === 0 && (
           <View style={[styles.socialEmptyState, { backgroundColor: C.surface, borderColor: C.border }]}>
             <Text style={styles.socialEmptyIcon}>🎨</Text>
-            <Text style={[styles.socialEmptyTitle, { color: C.text }]}>No work samples yet</Text>
+            <Text style={[styles.socialEmptyTitle, { color: C.text }]}>{t('creatorSettings.noPastWorkTitle')}</Text>
             <Text style={[styles.socialEmptySubtitle, { color: C.textSecondary }]}>
-              Add links to your best posts, videos, or media kit
+              {t('creatorSettings.noPastWorkSub')}
             </Text>
           </View>
         )}
@@ -1700,7 +1701,7 @@ export default function CreatorSettingsScreen() {
                   </View>
                   <View style={styles.socialActions}>
                     <Pressable style={[styles.socialEditBtn, { backgroundColor: cfg.color + '15' }]} onPress={() => openPortfolioSheet(item)}>
-                      <Text style={[styles.socialEditBtnText, { color: cfg.color }]}>Edit</Text>
+                      <Text style={[styles.socialEditBtnText, { color: cfg.color }]}>{t('creatorSettings.editBtn')}</Text>
                     </Pressable>
                     <Pressable style={styles.socialDisconnectBtn} onPress={() => deletePortfolio(item)}>
                       <Text style={[styles.socialDisconnectText, { color: C.error }]}>✕</Text>
@@ -1716,7 +1717,7 @@ export default function CreatorSettingsScreen() {
         <Pressable
           style={[styles.addSocialBtn, { borderColor: '#6366F1', backgroundColor: '#6366F115' }]}
           onPress={() => openPortfolioSheet()}>
-          <Text style={[styles.addSocialBtnText, { color: '#6366F1' }]}>＋  Add Past Work</Text>
+          <Text style={[styles.addSocialBtnText, { color: '#6366F1' }]}>{t('creatorSettings.addPastWorkBtn')}</Text>
         </Pressable>
       </>
     );
@@ -1730,13 +1731,15 @@ export default function CreatorSettingsScreen() {
     return (
       <>
         <View style={[styles.hintCard, { backgroundColor: C.primaryLight, marginTop: 12 }]}>
-          <Text style={[styles.hintText, { color: C.brinjal1 }]}>These help us match you with the most relevant events.</Text>
+          <Text style={[styles.hintText, { color: C.brinjal1 }]}>{t('creatorSettings.prefHint')}</Text>
         </View>
 
-        <SectionHeader title="Categories" />
+        <SectionHeader title={t('creatorSettings.prefCategoriesSection')} />
         <View style={[styles.hintCard, { backgroundColor: C.primaryLight }]}>
           <Text style={[styles.hintText, { color: C.brinjal1 }]}>
-            {prefCats.length}/5 selected{catAtMax ? ' · Max reached' : ''}
+            {catAtMax
+              ? t('creatorSettings.prefCategoriesMax', { n: prefCats.length })
+              : t('creatorSettings.prefCategoriesCount', { n: prefCats.length })}
           </Text>
         </View>
         <Card>
@@ -1761,9 +1764,9 @@ export default function CreatorSettingsScreen() {
           </View>
         </Card>
 
-        <SectionHeader title="Price Range (Rs)" />
+        <SectionHeader title={t('creatorSettings.prefPriceSection')} />
         <View style={[styles.hintCard, { backgroundColor: C.primaryLight }]}>
-          <Text style={[styles.hintText, { color: C.brinjal1 }]}>Only show events within your preferred budget range (Rs 500 – Rs 1L).</Text>
+          <Text style={[styles.hintText, { color: C.brinjal1 }]}>{t('creatorSettings.prefPriceHint')}</Text>
         </View>
         <Card>
           <View style={styles.sliderSection}>
@@ -1780,18 +1783,19 @@ export default function CreatorSettingsScreen() {
           </View>
         </Card>
 
-        <SectionHeader title="Preferred Platforms" />
+        <SectionHeader title={t('creatorSettings.prefPlatformsSection')} />
         <Card>
           <View style={styles.chipSection}>
             <ChipGroup options={PLATFORM_OPTIONS} selected={prefPlatforms} onToggle={togglePrefPlatform} />
           </View>
         </Card>
 
-        <SectionHeader title="Preferred Locations" />
+        <SectionHeader title={t('creatorSettings.prefLocationsSection')} />
         <View style={[styles.hintCard, { backgroundColor: C.primaryLight }]}>
           <Text style={[styles.hintText, { color: C.brinjal1 }]}>
-            Select up to 3 locations. Remote means you're open to work from anywhere.
-            {prefLocations.length >= 3 ? ' · Max reached' : ''}
+            {prefLocations.length >= 3
+              ? t('creatorSettings.prefLocationsMaxHint')
+              : t('creatorSettings.prefLocationsHint')}
           </Text>
         </View>
         <Card>
@@ -1805,7 +1809,7 @@ export default function CreatorSettingsScreen() {
             />
           </View>
         </Card>
-        <Text style={[styles.saveHint, { color: C.textSecondary }]}>Changes are saved automatically.</Text>
+        <Text style={[styles.saveHint, { color: C.textSecondary }]}>{t('creatorSettings.prefAutoSaved')}</Text>
       </>
     );
   }
@@ -1815,12 +1819,16 @@ export default function CreatorSettingsScreen() {
   function renderEarnings() {
     return (
       <>
-        <SectionHeader title="Earnings Summary" />
+        <SectionHeader title={t('creatorSettings.earningsSummarySection')} />
         <Card>
           {earningsLoading ? (
             <View style={styles.earningsRow}>
-              {['Total Earned', 'Pending', 'Events'].map((label) => (
-                <View key={label} style={styles.earningsStat}>
+              {[
+                { key: 'totalEarned', label: t('creatorSettings.totalEarnedLabel') },
+                { key: 'pending', label: t('creatorSettings.pendingEarningsLabel') },
+                { key: 'events', label: t('creatorSettings.eventsLabel') },
+              ].map(({ key, label }) => (
+                <View key={key} style={styles.earningsStat}>
                   <View style={[styles.earningsSkeletonValue, { backgroundColor: C.border }]} />
                   <Text style={[styles.earningsLabel, { color: C.textSecondary }]}>{label}</Text>
                 </View>
@@ -1829,11 +1837,11 @@ export default function CreatorSettingsScreen() {
           ) : (
             <View style={styles.earningsRow}>
               {[
-                { label: 'Total Earned',  value: `Rs ${(earningsSummary?.totalEarned     ?? 0).toFixed(0)}`, color: C.brinjal1 },
-                { label: 'Pending',       value: `Rs ${(earningsSummary?.pendingEarnings ?? 0).toFixed(0)}`, color: C.draft    },
-                { label: 'Events',        value: String(earningsSummary?.totalApplications ?? 0),           color: C.active   },
+                { key: 'totalEarned', label: t('creatorSettings.totalEarnedLabel'),    value: `Rs ${(earningsSummary?.totalEarned     ?? 0).toFixed(0)}`, color: C.brinjal1 },
+                { key: 'pending',     label: t('creatorSettings.pendingEarningsLabel'), value: `Rs ${(earningsSummary?.pendingEarnings ?? 0).toFixed(0)}`, color: C.draft    },
+                { key: 'events',      label: t('creatorSettings.eventsLabel'),          value: String(earningsSummary?.totalApplications ?? 0),           color: C.active   },
               ].map((stat) => (
-                <View key={stat.label} style={styles.earningsStat}>
+                <View key={stat.key} style={styles.earningsStat}>
                   <Text style={[styles.earningsValue, { color: stat.color }]}>{stat.value}</Text>
                   <Text style={[styles.earningsLabel, { color: C.textSecondary }]}>{stat.label}</Text>
                 </View>
@@ -1841,9 +1849,9 @@ export default function CreatorSettingsScreen() {
             </View>
           )}
         </Card>
-        <SectionHeader title="Payment Methods" />
+        <SectionHeader title={t('creatorSettings.paymentMethodsSection')} />
         <View style={[styles.hintCard, { backgroundColor: C.primaryLight }]}>
-          <Text style={[styles.hintText, { color: C.brinjal1 }]}>Select all methods you want to receive payments through.</Text>
+          <Text style={[styles.hintText, { color: C.brinjal1 }]}>{t('creatorSettings.paymentMethodsHint')}</Text>
         </View>
         <Card>
           {PAYMENT_METHODS.map((m, idx) => {
@@ -1877,7 +1885,7 @@ export default function CreatorSettingsScreen() {
       await authService.requestPhoneOtp(phoneNumber.trim());
       setPhoneSubPage('otp');
     } catch (e: any) {
-      showToast(e.message ?? 'Failed to send OTP. Try again.', true);
+      showToast(e.message ?? t('creatorSettings.otpSendFailed'), true);
     } finally {
       setPhoneLoading(false);
     }
@@ -1891,9 +1899,9 @@ export default function CreatorSettingsScreen() {
       setPhoneSubPage(null);
       setPhoneNumber('');
       setPhoneOtp('');
-      showToast('Phone number verified successfully!');
+      showToast(t('creatorSettings.phoneVerifiedToast'));
     } catch (e: any) {
-      showToast(e.message ?? 'Invalid or expired code. Try again.', true);
+      showToast(e.message ?? t('creatorSettings.otpInvalid'), true);
     } finally {
       setPhoneLoading(false);
     }
@@ -1912,26 +1920,26 @@ export default function CreatorSettingsScreen() {
 
     return (
       <>
-        <SectionHeader title="Login & Password" />
+        <SectionHeader title={t('creatorSettings.loginPasswordSection')} />
         <Card>
-          <NavRow icon="🔑" label="Change Password" onPress={() => setSubPage('change-password')} />
-          <NavRow icon="📱" label="Logout All Devices" onPress={handleLogoutAll} isLast />
+          <NavRow icon="🔑" label={t('creatorSettings.subChangePassword')} onPress={() => setSubPage('change-password')} />
+          <NavRow icon="📱" label={t('creatorSettings.logoutAllDevices')} onPress={handleLogoutAll} isLast />
         </Card>
 
-        <SectionHeader title="Verification" />
+        <SectionHeader title={t('creatorSettings.verificationSection')} />
         <Card>
           {/* Email row */}
           <View style={[styles.row, { borderBottomWidth: 1, borderBottomColor: C.border }]}>
             <View style={[styles.navIonIconWrap, { backgroundColor: '#0891B218' }]}>
               <Ionicons name="mail-outline" size={18} color="#0891B2" />
             </View>
-            <Text style={[styles.rowLabel, { color: C.text }]}>Email</Text>
+            <Text style={[styles.rowLabel, { color: C.text }]}>{t('creatorSettings.emailLabel')}</Text>
             {emailVerified === null ? (
               <ActivityIndicator size="small" color={C.brinjal1} />
             ) : isEmailVerified ? (
-              <View style={styles.verifiedBadge}><Text style={[styles.badgeText, { color: C.active }]}>✓ Verified</Text></View>
+              <View style={styles.verifiedBadge}><Text style={[styles.badgeText, { color: C.active }]}>{t('creatorSettings.verifiedBadge')}</Text></View>
             ) : (
-              <View style={[styles.soonBadge, { backgroundColor: '#FEF3C7' }]}><Text style={[styles.badgeText, { color: '#D97706' }]}>Not Verified</Text></View>
+              <View style={[styles.soonBadge, { backgroundColor: '#FEF3C7' }]}><Text style={[styles.badgeText, { color: '#D97706' }]}>{t('creatorSettings.notVerifiedBadge')}</Text></View>
             )}
           </View>
 
@@ -1942,11 +1950,11 @@ export default function CreatorSettingsScreen() {
             <View style={[styles.navIonIconWrap, { backgroundColor: '#10B98118' }]}>
               <Ionicons name="call-outline" size={18} color="#10B981" />
             </View>
-            <Text style={[styles.rowLabel, { color: C.text }]}>Phone Number</Text>
+            <Text style={[styles.rowLabel, { color: C.text }]}>{t('creatorSettings.phoneNumberLabel')}</Text>
             {!phoneSubPage && (
               <View style={styles.navRight}>
                 <View style={[styles.chip, { borderColor: C.brinjal1, backgroundColor: C.primaryLight, paddingHorizontal: 8, paddingVertical: 2 }]}>
-                  <Text style={[styles.chipText, { color: C.brinjal1, fontSize: 12 }]}>Verify</Text>
+                  <Text style={[styles.chipText, { color: C.brinjal1, fontSize: 12 }]}>{t('creatorSettings.verifyBtnLabel')}</Text>
                 </View>
                 <Text style={[styles.navArrow, { color: C.textSecondary }]}>›</Text>
               </View>
@@ -1957,7 +1965,7 @@ export default function CreatorSettingsScreen() {
           {phoneSubPage === 'input' && (
             <View style={[styles.inlinePhonePanel, { borderBottomColor: C.border, backgroundColor: C.background }]}>
               <View style={styles.inlinePhonePanelHeader}>
-                <Text style={[styles.inlinePhonePanelTitle, { color: C.text }]}>Enter your phone number</Text>
+                <Text style={[styles.inlinePhonePanelTitle, { color: C.text }]}>{t('creatorSettings.enterPhoneTitle')}</Text>
                 <Pressable onPress={closePhone} hitSlop={10}>
                   <Ionicons name="close-circle" size={22} color={C.textSecondary} />
                 </Pressable>
@@ -1967,7 +1975,7 @@ export default function CreatorSettingsScreen() {
                   style={[styles.pwInput, { color: C.text }]}
                   value={phoneNumber}
                   onChangeText={setPhoneNumber}
-                  placeholder="+977 98XXXXXXXX"
+                  placeholder={t('creatorSettings.phonePlaceholder')}
                   placeholderTextColor={C.textSecondary}
                   keyboardType="phone-pad"
                   autoCorrect={false}
@@ -1978,7 +1986,7 @@ export default function CreatorSettingsScreen() {
                 style={[styles.saveBtn, { backgroundColor: C.brinjal1, opacity: (phoneNumber.trim() && !phoneLoading) ? 1 : 0.45 }]}
                 onPress={handleRequestPhoneOtp}
                 disabled={phoneLoading || !phoneNumber.trim()}>
-                <Text style={styles.saveBtnText}>{phoneLoading ? 'Sending…' : 'Send Verification Code'}</Text>
+                <Text style={styles.saveBtnText}>{phoneLoading ? t('creatorSettings.sendingOtp') : t('creatorSettings.sendVerificationCode')}</Text>
               </Pressable>
             </View>
           )}
@@ -1988,8 +1996,8 @@ export default function CreatorSettingsScreen() {
             <View style={[styles.inlinePhonePanel, { borderBottomColor: C.border, backgroundColor: C.background }]}>
               <View style={styles.inlinePhonePanelHeader}>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.inlinePhonePanelTitle, { color: C.text }]}>Enter verification code</Text>
-                  <Text style={[styles.inlinePhonePanelSub, { color: C.textSecondary }]}>Sent to {phoneNumber}</Text>
+                  <Text style={[styles.inlinePhonePanelTitle, { color: C.text }]}>{t('creatorSettings.enterOtpTitle')}</Text>
+                  <Text style={[styles.inlinePhonePanelSub, { color: C.textSecondary }]}>{t('creatorSettings.sentToPhone', { phone: phoneNumber })}</Text>
                 </View>
                 <Pressable onPress={closePhone} hitSlop={10}>
                   <Ionicons name="close-circle" size={22} color={C.textSecondary} />
@@ -2011,10 +2019,10 @@ export default function CreatorSettingsScreen() {
                 style={[styles.saveBtn, { backgroundColor: C.brinjal1, opacity: (phoneOtp.length === 6 && !phoneLoading) ? 1 : 0.45 }]}
                 onPress={handleVerifyPhoneOtp}
                 disabled={phoneLoading || phoneOtp.length < 6}>
-                <Text style={styles.saveBtnText}>{phoneLoading ? 'Verifying…' : 'Verify'}</Text>
+                <Text style={styles.saveBtnText}>{phoneLoading ? t('creatorSettings.verifyingOtp') : t('creatorSettings.verifyBtnLabel')}</Text>
               </Pressable>
               <Pressable onPress={() => { setPhoneOtp(''); setPhoneSubPage('input'); }} style={{ alignItems: 'center', paddingTop: 4 }}>
-                <Text style={[styles.cancelBtnText, { color: C.brinjal1 }]}>Resend Code</Text>
+                <Text style={[styles.cancelBtnText, { color: C.brinjal1 }]}>{t('creatorSettings.resendCode')}</Text>
               </Pressable>
             </View>
           )}
@@ -2024,15 +2032,15 @@ export default function CreatorSettingsScreen() {
             <View style={[styles.navIonIconWrap, { backgroundColor: '#F59E0B18' }]}>
               <Ionicons name="ribbon-outline" size={18} color="#F59E0B" />
             </View>
-            <Text style={[styles.rowLabel, { color: C.text }]}>Creator Badge</Text>
+            <Text style={[styles.rowLabel, { color: C.text }]}>{t('creatorSettings.creatorBadgeLabel')}</Text>
             <View style={[styles.soonBadge, { backgroundColor: C.primaryLight }]}>
-              <Text style={[styles.badgeText, { color: C.brinjal1 }]}>Coming Soon</Text>
+              <Text style={[styles.badgeText, { color: C.brinjal1 }]}>{t('common.comingSoon')}</Text>
             </View>
           </View>
         </Card>
 
         <View style={[styles.hintCard, { backgroundColor: C.primaryLight }]}>
-          <Text style={[styles.hintText, { color: C.brinjal1 }]}>Verified creators get higher visibility in event matches.</Text>
+          <Text style={[styles.hintText, { color: C.brinjal1 }]}>{t('creatorSettings.verifiedHint')}</Text>
         </View>
       </>
     );
@@ -2043,15 +2051,15 @@ export default function CreatorSettingsScreen() {
   function renderSupport() {
     return (
       <>
-        <SectionHeader title="Get Help" />
+        <SectionHeader title={t('creatorSettings.getHelpSection')} />
         <Card>
-          <NavRow ionIcon="help-circle-outline"        ionIconColor="#0891B2" label="Help Center"      onPress={() => setSubPage('help-center')} />
-          <NavRow ionIcon="chatbubble-ellipses-outline" ionIconColor="#7C3AED" label="Contact Support" onPress={() => setSubPage('contact-support')} />
-          <NavRow ionIcon="warning-outline"            ionIconColor="#EF4444" label="Report Issue"    onPress={() => setSubPage('report-issue')} />
-          <NavRow ionIcon="reader-outline"             ionIconColor="#F59E0B" label="FAQs"            onPress={() => setSubPage('faqs')} isLast />
+          <NavRow ionIcon="help-circle-outline"        ionIconColor="#0891B2" label={t('creatorSettings.helpCenterLabel')}      onPress={() => setSubPage('help-center')} />
+          <NavRow ionIcon="chatbubble-ellipses-outline" ionIconColor="#7C3AED" label={t('creatorSettings.contactSupportLabel')} onPress={() => setSubPage('contact-support')} />
+          <NavRow ionIcon="warning-outline"            ionIconColor="#EF4444" label={t('creatorSettings.reportIssueLabel')}    onPress={() => setSubPage('report-issue')} />
+          <NavRow ionIcon="reader-outline"             ionIconColor="#F59E0B" label={t('creatorSettings.faqsLabel')}            onPress={() => setSubPage('faqs')} isLast />
         </Card>
         <View style={[styles.hintCard, { backgroundColor: C.primaryLight }]}>
-          <Text style={[styles.hintText, { color: C.brinjal1 }]}>Average response time: under 24 hours on business days.</Text>
+          <Text style={[styles.hintText, { color: C.brinjal1 }]}>{t('creatorSettings.supportResponseHint')}</Text>
         </View>
       </>
     );
@@ -2062,11 +2070,11 @@ export default function CreatorSettingsScreen() {
   function renderLegal() {
     return (
       <>
-        <SectionHeader title="Legal Documents" />
+        <SectionHeader title={t('creatorSettings.legalDocumentsSection')} />
         <Card>
-          <NavRow ionIcon="shield-checkmark-outline" ionIconColor="#3B82F6" label="Privacy Policy"       onPress={() => setSubPage('privacy-policy')} />
-          <NavRow ionIcon="document-text-outline"    ionIconColor="#6366F1" label="Terms & Conditions"   onPress={() => setSubPage('terms')} />
-          <NavRow ionIcon="people-outline"           ionIconColor="#16A34A" label="Community Guidelines" onPress={() => setSubPage('guidelines')} isLast />
+          <NavRow ionIcon="shield-checkmark-outline" ionIconColor="#3B82F6" label={t('creatorSettings.privacyPolicyLabel')}  onPress={() => setSubPage('privacy-policy')} />
+          <NavRow ionIcon="document-text-outline"    ionIconColor="#6366F1" label={t('creatorSettings.termsLabel')}          onPress={() => setSubPage('terms')} />
+          <NavRow ionIcon="people-outline"           ionIconColor="#16A34A" label={t('creatorSettings.guidelinesLabel')}     onPress={() => setSubPage('guidelines')} isLast />
         </Card>
       </>
     );
@@ -2078,7 +2086,7 @@ export default function CreatorSettingsScreen() {
     return (
       <>
         {/* Account */}
-        <SectionHeader title="Account" />
+        <SectionHeader title={t('creatorSettings.accountSection')} />
         <Card>
           <View style={[styles.accountCard, { borderBottomWidth: 1, borderBottomColor: C.border }]}>
             <View style={[styles.accountAvatar, { backgroundColor: C.brinjal1 }]}>
@@ -2089,13 +2097,13 @@ export default function CreatorSettingsScreen() {
               <Text style={[styles.accountEmail, { color: C.textSecondary }]}>{user?.email ?? 'creator@example.com'}</Text>
             </View>
           </View>
-          <NavRow ionIcon="create-outline" ionIconColor={C.brinjal1} label="Edit Profile" onPress={() => router.push('/(creator)/edit-profile')} />
-          <NavRow icon="⏸️" label="Deactivate Account" onPress={handleDeactivateAccount} />
-          <NavRow icon="🗑️" label="Delete Account" onPress={handleDeleteAccount} danger isLast />
+          <NavRow ionIcon="create-outline" ionIconColor={C.brinjal1} label={t('creatorSettings.editProfileLabel')} onPress={() => router.push('/(creator)/edit-profile')} />
+          <NavRow icon="⏸️" label={t('creatorSettings.deactivateAccount')} onPress={handleDeactivateAccount} />
+          <NavRow icon="🗑️" label={t('creatorSettings.deleteAccount')} onPress={handleDeleteAccount} danger isLast />
         </Card>
 
         {/* Language */}
-        <SectionHeader title="Language" />
+        <SectionHeader title={t('creatorSettings.languageSection')} />
         <View style={{ marginHorizontal: 16, gap: 10 }}>
           {LANGUAGE_OPTIONS.map((lang) => {
             const active = selectedLang === lang.label;
@@ -2138,15 +2146,15 @@ export default function CreatorSettingsScreen() {
         </View>
 
         {/* App Settings */}
-        <SectionHeader title="App Settings" />
+        <SectionHeader title={t('creatorSettings.appSettingsSection')} />
         <Card>
-          <SwitchRow icon="🌙" label="Dark Mode" value={isDark} onChange={toggleDark} />
+          <SwitchRow icon="🌙" label={t('creatorSettings.darkModeLabel')} value={isDark} onChange={toggleDark} />
           <View style={[styles.row, { borderBottomWidth: 1, borderBottomColor: C.border }]}>
             <Text style={styles.rowIcon}>ℹ️</Text>
-            <Text style={[styles.rowLabel, { color: C.text }]}>App Version</Text>
+            <Text style={[styles.rowLabel, { color: C.text }]}>{t('creatorSettings.appVersionLabel')}</Text>
             <Text style={[styles.versionText, { color: C.textSecondary }]}>1.0.0</Text>
           </View>
-          <NavRow icon="🌐" label="Language" value={selectedLang} onPress={() => {}} isLast />
+          <NavRow icon="🌐" label={t('creatorSettings.languageSection')} value={selectedLang} onPress={() => {}} isLast />
         </Card>
       </>
     );
@@ -2203,23 +2211,20 @@ export default function CreatorSettingsScreen() {
               <View style={[styles.confirmIconWrap, { backgroundColor: '#FFF7ED' }]}>
                 <Text style={styles.confirmIcon}>⏸️</Text>
               </View>
-              <Text style={[styles.confirmTitle, { color: C.text }]}>Deactivate Account</Text>
-              <Text style={[styles.confirmBody, { color: C.textSecondary }]}>
-                Your profile will be hidden from brands and you'll stop receiving event matches.{'\n\n'}
-                You can log back in at any time to instantly reactivate your account.
-              </Text>
+              <Text style={[styles.confirmTitle, { color: C.text }]}>{t('creatorSettings.deactivateTitle')}</Text>
+              <Text style={[styles.confirmBody, { color: C.textSecondary }]}>{t('creatorSettings.deactivateBody')}</Text>
               <View style={styles.confirmActions}>
                 <Pressable
                   style={[styles.confirmCancelBtn, { borderColor: C.border }]}
                   onPress={() => setShowDeactivateModal(false)}
                   disabled={accountActionLoading}>
-                  <Text style={[styles.confirmCancelText, { color: C.text }]}>Cancel</Text>
+                  <Text style={[styles.confirmCancelText, { color: C.text }]}>{t('common.cancel')}</Text>
                 </Pressable>
                 <Pressable
                   style={[styles.confirmActionBtn, { backgroundColor: '#F97316', opacity: accountActionLoading ? 0.6 : 1 }]}
                   onPress={confirmDeactivate}
                   disabled={accountActionLoading}>
-                  <Text style={styles.confirmActionText}>{accountActionLoading ? 'Deactivating…' : 'Deactivate'}</Text>
+                  <Text style={styles.confirmActionText}>{accountActionLoading ? t('creatorSettings.deactivatingBtn') : t('creatorSettings.deactivateConfirmBtn')}</Text>
                 </Pressable>
               </View>
             </Pressable>
@@ -2232,32 +2237,32 @@ export default function CreatorSettingsScreen() {
             <Pressable style={[styles.confirmCard, { backgroundColor: C.surface }]} onPress={() => {}}>
               <View style={[styles.dangerBanner, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}>
                 <Text style={styles.dangerBannerIcon}>⚠️</Text>
-                <Text style={[styles.dangerBannerText, { color: '#DC2626' }]}>This action is permanent and irreversible</Text>
+                <Text style={[styles.dangerBannerText, { color: '#DC2626' }]}>{t('creatorSettings.deletePermanentWarning')}</Text>
               </View>
               <View style={[styles.confirmIconWrap, { backgroundColor: '#FEF2F2' }]}>
                 <Text style={styles.confirmIcon}>🗑️</Text>
               </View>
-              <Text style={[styles.confirmTitle, { color: '#DC2626' }]}>Delete Account</Text>
+              <Text style={[styles.confirmTitle, { color: '#DC2626' }]}>{t('creatorSettings.deleteTitle')}</Text>
               <Text style={[styles.confirmBody, { color: C.textSecondary }]}>
-                Once deleted, the following <Text style={{ fontWeight: '700', color: C.text }}>cannot be recovered</Text>:{'\n'}
-                {'•'} Your profile and social links{'\n'}
-                {'•'} Event history and proposals{'\n'}
-                {'•'} Earnings data and payment info{'\n'}
-                {'•'} All messages and content{'\n\n'}
-                This action cannot be undone.
+                {t('creatorSettings.deleteBodyIntro')} <Text style={{ fontWeight: '700', color: C.text }}>{t('creatorSettings.deleteCannotRecover')}</Text>:{'\n'}
+                {'•'} {t('creatorSettings.deleteBullet1')}{'\n'}
+                {'•'} {t('creatorSettings.deleteBullet2')}{'\n'}
+                {'•'} {t('creatorSettings.deleteBullet3')}{'\n'}
+                {'•'} {t('creatorSettings.deleteBullet4')}{'\n\n'}
+                {t('creatorSettings.deleteBodyOutro')}
               </Text>
               <View style={styles.confirmActions}>
                 <Pressable
                   style={[styles.confirmCancelBtn, { borderColor: C.border }]}
                   onPress={() => setShowDeleteModal(false)}
                   disabled={accountActionLoading}>
-                  <Text style={[styles.confirmCancelText, { color: C.text }]}>Cancel</Text>
+                  <Text style={[styles.confirmCancelText, { color: C.text }]}>{t('common.cancel')}</Text>
                 </Pressable>
                 <Pressable
                   style={[styles.confirmActionBtn, { backgroundColor: '#DC2626', opacity: accountActionLoading ? 0.6 : 1 }]}
                   onPress={confirmDelete}
                   disabled={accountActionLoading}>
-                  <Text style={styles.confirmActionText}>{accountActionLoading ? 'Deleting…' : 'Delete Account'}</Text>
+                  <Text style={styles.confirmActionText}>{accountActionLoading ? t('creatorSettings.deletingBtn') : t('creatorSettings.deleteConfirmBtn')}</Text>
                 </Pressable>
               </View>
             </Pressable>

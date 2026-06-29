@@ -172,7 +172,7 @@ function LocationPicker({ selected, onChange }: { selected: LocationEntry[]; onC
         onPress={toggleRemote}
         disabled={!remoteSelected && atMax}>
         <Text style={lp.globeEmoji}>🌐</Text>
-        <Text style={[lp.remoteText, { color: remoteSelected ? C.brinjal1 : C.text, fontWeight: remoteSelected ? '700' : '500' }]}>Remote</Text>
+        <Text style={[lp.remoteText, { color: remoteSelected ? C.brinjal1 : C.text, fontWeight: remoteSelected ? '700' : '500' }]}>{t('campaignDetail.remoteLocation')}</Text>
         {remoteSelected && <Text style={[lp.removeX, { color: C.brinjal1 }]}>✕</Text>}
       </Pressable>
 

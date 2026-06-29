@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { campaignService } from '@/services/campaign';
 import { profileService } from '@/services/profile';
 import { CATEGORY_META, CREATOR_CATEGORIES, DEFAULT_META } from '@/features/creator/data/filterOptions';
@@ -370,6 +371,7 @@ function MultiCheckboxDropdown({
   error?: string;
 }) {
   const C = colors;
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
 
   function toggle(opt: string) {
@@ -377,7 +379,7 @@ function MultiCheckboxDropdown({
     else onChange([...values, opt]);
   }
 
-  const label = values.length === 0 ? placeholder : values.length === 1 ? values[0] : `${values[0]} +${values.length - 1} more`;
+  const label = values.length === 0 ? placeholder : values.length === 1 ? values[0] : `${values[0]} +${values.length - 1} ${t('createEvent.multiMore')}`;
 
   return (
     <>
@@ -403,7 +405,7 @@ function MultiCheckboxDropdown({
             <View style={mc.sheetHeader}>
               <Text style={[dp.sheetTitle, { color: C.text, marginBottom: 0 }]}>{placeholder}</Text>
               <Pressable onPress={() => setOpen(false)}>
-                <Text style={[mc.done, { color: C.brinjal1 }]}>Done</Text>
+                <Text style={[mc.done, { color: C.brinjal1 }]}>{t('createEvent.multiSelectDone')}</Text>
               </Pressable>
             </View>
             <ScrollView showsVerticalScrollIndicator={false} style={{ marginTop: 12 }}>
@@ -566,6 +568,7 @@ function PlacesInput({ value, onChange, colors, error }: {
   error?: string;
 }) {
   const C = colors;
+  const { t } = useLanguage();
   const [suggestions, setSuggestions] = useState<PlacePrediction[]>([]);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -590,7 +593,7 @@ function PlacesInput({ value, onChange, colors, error }: {
       <TextInput
         value={value}
         onChangeText={handleChange}
-        placeholder="e.g. Kathmandu, Pokhara or Remote"
+        placeholder={t('createEvent.locationPlaceholder')}
         placeholderTextColor={C.textSecondary}
         style={[pl.input, { backgroundColor: C.background, borderColor: error ? ERROR_RED : C.border, color: C.text }]}
       />
@@ -708,6 +711,7 @@ function DeadlinePicker({ value, onChange, error, colors, label }: {
   label?: string;
 }) {
   const C = colors;
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -715,7 +719,7 @@ function DeadlinePicker({ value, onChange, error, colors, label }: {
         style={[pl.input, { flexDirection: 'row', alignItems: 'center', borderColor: error ? ERROR_RED : value ? C.brinjal1 : C.border, backgroundColor: C.background, height: 50 }]}
         onPress={() => setOpen(true)}>
         <Text style={[{ flex: 1, fontSize: 15, fontFamily: F.regular, color: value ? C.text : C.textSecondary }]}>
-          {value ? fmtDate(value) : 'Tap to select a date'}
+          {value ? fmtDate(value) : t('createEvent.deadlineTapToSelect')}
         </Text>
         {value ? (
           <Pressable hitSlop={10} onPress={(e) => { e.stopPropagation(); onChange(null); }}>
@@ -733,14 +737,14 @@ function DeadlinePicker({ value, onChange, error, colors, label }: {
           <View style={[dp.sheet, { backgroundColor: C.surface }]}>
             <View style={[dp.handle, { backgroundColor: C.border }]} />
             <View style={mc.sheetHeader}>
-              <Text style={[dp.sheetTitle, { color: C.text, marginBottom: 0 }]}>{label ?? 'Application Deadline'}</Text>
+              <Text style={[dp.sheetTitle, { color: C.text, marginBottom: 0 }]}>{label ?? t('createEvent.deadlineDefaultLabel')}</Text>
               <Pressable onPress={() => setOpen(false)}>
-                <Text style={[mc.done, { color: C.brinjal1 }]}>Done</Text>
+                <Text style={[mc.done, { color: C.brinjal1 }]}>{t('createEvent.deadlineDone')}</Text>
               </Pressable>
             </View>
             {value && (
               <View style={[{ borderRadius: 10, padding: 10, marginTop: 12, backgroundColor: C.primaryLight }]}>
-                <Text style={[{ fontSize: 13, fontWeight: '700', fontFamily: F.bold, color: C.brinjal1 }]}>Selected: {fmtDate(value)}</Text>
+                <Text style={[{ fontSize: 13, fontWeight: '700', fontFamily: F.bold, color: C.brinjal1 }]}>{t('createEvent.deadlineSelected', { date: fmtDate(value) })}</Text>
               </View>
             )}
             <View style={{ marginTop: 16 }}>
@@ -759,6 +763,7 @@ function Stepper({ value, onChange, min = 1, max = 50, colors }: {
   value: number; onChange: (v: number) => void; min?: number; max?: number; colors: ReturnType<typeof useAppColors>;
 }) {
   const C = colors;
+  const { t } = useLanguage();
   return (
     <View style={[st.wrap, { backgroundColor: C.surface, borderColor: C.border }]}>
       <Pressable style={[st.btn, { backgroundColor: value <= min ? C.background : C.primaryLight }]}
@@ -767,7 +772,7 @@ function Stepper({ value, onChange, min = 1, max = 50, colors }: {
       </Pressable>
       <View style={st.center}>
         <Text style={[st.value, { color: C.brinjal1 }]}>{value}</Text>
-        <Text style={[st.unit, { color: C.textSecondary }]}>creator{value !== 1 ? 's' : ''}</Text>
+        <Text style={[st.unit, { color: C.textSecondary }]}>{value !== 1 ? t('createEvent.stepperCreators') : t('createEvent.stepperCreator')}</Text>
       </View>
       <Pressable style={[st.btn, { backgroundColor: value >= max ? C.background : C.primaryLight }]}
         onPress={() => onChange(Math.min(max, value + 1))} disabled={value >= max}>
@@ -811,6 +816,8 @@ const sc = StyleSheet.create({
 
 export default function CreateCampaignScreen() {
   const C = useAppColors();
+  const { t } = useLanguage();
+  const notRequiredLabel = t('createEvent.notRequired');
   const [phase, setPhase] = useState<'setup' | 'review'>('setup');
   const [loading, setLoading] = useState(false);
   const [publishWarnVisible, setPublishWarnVisible] = useState(false);
@@ -915,9 +922,9 @@ export default function CreateCampaignScreen() {
 
   function handleGenerate() {
     const errs: SetupErrors = {};
-    if (!form.template)          errs.template = 'Please select an event template.';
-    if (form.goals.length === 0) errs.goals    = 'Please select at least one goal.';
-    if (!form.budget)            errs.budget   = 'Please select a budget range.';
+    if (!form.template)          errs.template = t('createEvent.errNoTemplate');
+    if (form.goals.length === 0) errs.goals    = t('createEvent.errNoGoals');
+    if (!form.budget)            errs.budget   = t('createEvent.errNoBudget');
 
     if (Object.keys(errs).length > 0) { setSetupErrors(errs); return; }
     setSetupErrors({});
@@ -936,9 +943,9 @@ export default function CreateCampaignScreen() {
 
   function handleContinueEvent() {
     const errs: EventErrors = {};
-    if (!form.template)        errs.template = 'Please select an event category.';
-    if (!form.venue.trim())    errs.venue    = 'Venue / location is required.';
-    if (form.capacity < 1)     errs.capacity = 'Capacity must be at least 1.';
+    if (!form.template)        errs.template = t('createEvent.errNoCategory');
+    if (!form.venue.trim())    errs.venue    = t('createEvent.errNoVenue');
+    if (form.capacity < 1)     errs.capacity = t('createEvent.errMinCapacity');
 
     if (Object.keys(errs).length > 0) { setEventErrors(errs); return; }
     setEventErrors({});
@@ -969,9 +976,9 @@ export default function CreateCampaignScreen() {
   async function handlePublish() {
     if (form.eventType === 'PAID_CAMPAIGN') {
       const errs: ReviewErrors = {};
-      if (!form.title.trim()) errs.title    = 'Event title is required.';
-      if (!form.platform)     errs.platform = 'Please select a platform.';
-      if (!form.deadline)     errs.deadline = 'Please select an application deadline.';
+      if (!form.title.trim()) errs.title    = t('createEvent.errNoTitle');
+      if (!form.platform)     errs.platform = t('createEvent.errNoPlatform');
+      if (!form.deadline)     errs.deadline = t('createEvent.errNoDeadline');
       if (Object.keys(errs).length > 0) { setReviewErrors(errs); return; }
       setReviewErrors({});
 
@@ -1002,21 +1009,21 @@ export default function CreateCampaignScreen() {
           isFeatured:     form.isFeatured,
           campaignType:   'PAID_CAMPAIGN',
         });
-        showToast('Event published successfully!');
+        showToast(t('createEvent.toastPublished'));
         setTimeout(() => router.replace('/(business)/'), 500);
       } catch (err) {
-        showToast(err instanceof Error ? err.message : 'Failed to create event.', 'error');
+        showToast(err instanceof Error ? err.message : t('createEvent.toastPublishFailed'), 'error');
       } finally {
         setLoading(false);
       }
     } else {
       // Open Event publish
       const errs: ReviewErrors = {};
-      if (!form.title.trim()) errs.title     = 'Event title is required.';
-      if (!form.eventDate)    errs.eventDate = 'Please select an event date.';
-      if (!form.deadline)     errs.deadline  = 'Please select a registration deadline.';
+      if (!form.title.trim()) errs.title     = t('createEvent.errNoTitle');
+      if (!form.eventDate)    errs.eventDate = t('createEvent.errNoEventDate');
+      if (!form.deadline)     errs.deadline  = t('createEvent.errNoRegDeadline');
       else if (form.eventDate && form.deadline >= form.eventDate)
-        errs.deadline = 'Registration deadline must be before the event date.';
+        errs.deadline = t('createEvent.errDeadlineOrder');
       if (Object.keys(errs).length > 0) { setReviewErrors(errs); return; }
       setReviewErrors({});
 
@@ -1045,10 +1052,10 @@ export default function CreateCampaignScreen() {
           venue:          form.venue.trim() || undefined,
           benefits:       form.benefits,
         });
-        showToast('Event published successfully!');
+        showToast(t('createEvent.toastPublished'));
         setTimeout(() => router.replace('/(business)/'), 500);
       } catch (err) {
-        showToast(err instanceof Error ? err.message : 'Failed to create event.', 'error');
+        showToast(err instanceof Error ? err.message : t('createEvent.toastPublishFailed'), 'error');
       } finally {
         setLoading(false);
       }
@@ -1068,8 +1075,8 @@ export default function CreateCampaignScreen() {
           <Ionicons name={phase === 'review' ? 'chevron-back' : 'close'} size={22} color="#fff" />
         </Pressable>
         <View style={s.headerCenter}>
-          <Text style={s.headerTitle}>Create Event</Text>
-          <Text style={s.headerSub}>{phase === 'setup' ? 'Set up your event' : 'Review & publish'}</Text>
+          <Text style={s.headerTitle}>{t('createEvent.headerTitle')}</Text>
+          <Text style={s.headerSub}>{phase === 'setup' ? t('createEvent.headerSubSetup') : t('createEvent.headerSubReview')}</Text>
         </View>
         <View style={[s.phasePill, { backgroundColor: 'rgba(255,255,255,0.25)' }]}>
           <Text style={s.phasePillText}>{phase === 'setup' ? '1/2' : '2/2'}</Text>
@@ -1094,13 +1101,13 @@ export default function CreateCampaignScreen() {
 
               {/* Event Type Tab Slider */}
               <View style={{ gap: 12 }}>
-                <Text style={[s.stepSectionHeading, { color: C.text }]}>What type of event?</Text>
+                <Text style={[s.stepSectionHeading, { color: C.text }]}>{t('createEvent.eventTypeHeading')}</Text>
 
                 {/* Tab bar */}
                 <View style={[s.etTabBar, { backgroundColor: C.surface, borderColor: C.border }]}>
                   {([
-                    { type: 'PAID_CAMPAIGN' as const, emoji: '💰', label: 'Paid Event' },
-                    { type: 'OPEN_EVENT'    as const, emoji: '🎪', label: 'Open Event'    },
+                    { type: 'PAID_CAMPAIGN' as const, emoji: '💰', label: t('createEvent.tabPaidEvent') },
+                    { type: 'OPEN_EVENT'    as const, emoji: '🎪', label: t('createEvent.tabOpenEvent') },
                   ]).map((tab) => {
                     const sel = form.eventType === tab.type;
                     return (
@@ -1118,13 +1125,13 @@ export default function CreateCampaignScreen() {
                 {/* Info panel for selected type */}
                 {form.eventType === 'PAID_CAMPAIGN' ? (
                   <View style={[s.etInfoPanel, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
-                    <Text style={[s.etInfoSub, { color: C.brinjal1 }]}>Pay creators to produce content for your brand</Text>
+                    <Text style={[s.etInfoSub, { color: C.brinjal1 }]}>{t('createEvent.paidEventSub')}</Text>
                     <View style={s.etInfoPerks}>
                       {[
-                        'Set your budget per creator',
-                        'Receive proposals — pick the best fit',
-                        'Creator posts content after your approval',
-                        'Track deliverables and results',
+                        t('createEvent.paidPerk1'),
+                        t('createEvent.paidPerk2'),
+                        t('createEvent.paidPerk3'),
+                        t('createEvent.paidPerk4'),
                       ].map((perk) => (
                         <View key={perk} style={s.etCardPerkRow}>
                           <Ionicons name="checkmark-circle" size={14} color={C.brinjal1} />
@@ -1135,13 +1142,13 @@ export default function CreateCampaignScreen() {
                   </View>
                 ) : (
                   <View style={[s.etInfoPanel, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
-                    <Text style={[s.etInfoSub, { color: C.brinjal1 }]}>Invite creators to attend your event in person</Text>
+                    <Text style={[s.etInfoSub, { color: C.brinjal1 }]}>{t('createEvent.openEventSub')}</Text>
                     <View style={s.etInfoPerks}>
                       {[
-                        'Non-monetary — creators get perks & exposure',
-                        'Set venue, date & capacity',
-                        'Creators register to attend',
-                        'Build brand awareness through live presence',
+                        t('createEvent.openPerk1'),
+                        t('createEvent.openPerk2'),
+                        t('createEvent.openPerk3'),
+                        t('createEvent.openPerk4'),
                       ].map((perk) => (
                         <View key={perk} style={s.etCardPerkRow}>
                           <Ionicons name="checkmark-circle" size={14} color={C.brinjal1} />
@@ -1157,7 +1164,7 @@ export default function CreateCampaignScreen() {
               {form.eventType === 'PAID_CAMPAIGN' && (
                 <>
                   {/* Template */}
-                  <SectionCard title="📂 Event Category" sub="Choose the category that best matches your event." colors={C}>
+                  <SectionCard title={t('createEvent.secCategoryTitle')} sub={t('createEvent.secCategorySub')} colors={C}>
                     <DropdownPicker
                       value={form.template}
                       onChange={(v) => {
@@ -1176,14 +1183,14 @@ export default function CreateCampaignScreen() {
                         if (setupErrors.budget)   setSetupErrors((e) => ({ ...e, budget: undefined }));
                       }}
                       options={categoryOptions}
-                      placeholder="Select a category…"
+                      placeholder={t('createEvent.selectCategoryPlaceholder')}
                       colors={C}
                       error={setupErrors.template}
                     />
                   </SectionCard>
 
                   {/* Goals */}
-                  <SectionCard title="🎯 Event Goals" sub="Select everything you want to achieve — tap to pick." colors={C}>
+                  <SectionCard title={t('createEvent.secGoalsTitle')} sub={t('createEvent.secGoalsSub')} colors={C}>
                     <View style={{ gap: 8 }}>
                       <View style={cg.wrap}>
                         {GOALS.map((goal) => {
@@ -1208,7 +1215,7 @@ export default function CreateCampaignScreen() {
                   </SectionCard>
 
                   {/* Budget */}
-                  <SectionCard title="💰 Budget per Creator" sub="How much are you willing to invest per creator?" colors={C}>
+                  <SectionCard title={t('createEvent.secBudgetTitle')} sub={t('createEvent.secBudgetSub')} colors={C}>
                     <View style={{ gap: 8 }}>
                       <View style={s.budgetGrid}>
                         {BUDGETS.slice(0, 4).map((b) => {
@@ -1248,7 +1255,7 @@ export default function CreateCampaignScreen() {
                   </SectionCard>
 
                   {/* Location */}
-                  <SectionCard title="📍 Location" sub='Where should creators be based? Type "Remote" for online.' colors={C}>
+                  <SectionCard title={t('createEvent.secLocationTitle')} sub={t('createEvent.secLocationSub')} colors={C}>
                     <PlacesInput value={form.location} onChange={(v) => update('location', v)} colors={C} />
                   </SectionCard>
 
@@ -1257,7 +1264,7 @@ export default function CreateCampaignScreen() {
                     style={({ pressed }) => [s.generateBtn, { backgroundColor: C.brinjal1, opacity: pressed ? 0.88 : 1 }]}
                     onPress={handleGenerate}>
                     <Ionicons name="sparkles" size={20} color="#fff" />
-                    <Text style={s.generateBtnText}>Generate Event</Text>
+                    <Text style={s.generateBtnText}>{t('createEvent.generateEventBtn')}</Text>
                   </Pressable>
                 </>
               )}
@@ -1266,7 +1273,7 @@ export default function CreateCampaignScreen() {
               {form.eventType === 'OPEN_EVENT' && (
                 <>
                   {/* Category — same template picker as paid campaign */}
-                  <SectionCard title="📂 Event Category" sub="Choose the category that best matches your event." colors={C}>
+                  <SectionCard title={t('createEvent.secCategoryTitle')} sub={t('createEvent.secCategorySub')} colors={C}>
                     <DropdownPicker
                       value={form.template}
                       onChange={(v) => {
@@ -1274,14 +1281,14 @@ export default function CreateCampaignScreen() {
                         if (eventErrors.template) setEventErrors((e) => ({ ...e, template: undefined }));
                       }}
                       options={categoryOptions}
-                      placeholder="Select a category…"
+                      placeholder={t('createEvent.selectCategoryPlaceholder')}
                       colors={C}
                       error={eventErrors.template}
                     />
                   </SectionCard>
 
                   {/* Venue / Location */}
-                  <SectionCard title="📍 Venue / Location" sub="Where is the event taking place? (auto-filled from your business profile)" colors={C}>
+                  <SectionCard title={t('createEvent.secVenueTitle')} sub={t('createEvent.secVenueSub')} colors={C}>
                     <PlacesInput
                       value={form.venue}
                       onChange={(v) => { update('venue', v); if (eventErrors.venue) setEventErrors((e) => ({ ...e, venue: undefined })); }}
@@ -1291,7 +1298,7 @@ export default function CreateCampaignScreen() {
                   </SectionCard>
 
                   {/* Capacity */}
-                  <SectionCard title="👥 Creator Capacity" sub="Maximum number of creators who can attend." colors={C}>
+                  <SectionCard title={t('createEvent.secCapacityTitle')} sub={t('createEvent.secCapacitySub')} colors={C}>
                     <Stepper value={form.capacity} onChange={(v) => update('capacity', v)} min={1} max={500} colors={C} />
                     {eventErrors.capacity && <Text style={s.errorText}>{eventErrors.capacity}</Text>}
                   </SectionCard>
@@ -1300,7 +1307,7 @@ export default function CreateCampaignScreen() {
                   <View style={[s.eventHintBox, { backgroundColor: C.primaryLight }]}>
                     <Ionicons name="sparkles" size={16} color={C.brinjal1} />
                     <Text style={[s.eventHintText, { color: C.brinjal1 }]}>
-                      Event title, description, date and creator benefits will be auto-generated on the next page based on your selected category.
+                      {t('createEvent.eventHintText')}
                     </Text>
                   </View>
 
@@ -1309,7 +1316,7 @@ export default function CreateCampaignScreen() {
                     style={({ pressed }) => [s.generateBtn, { backgroundColor: C.brinjal1, opacity: pressed ? 0.88 : 1 }]}
                     onPress={handleContinueEvent}>
                     <Ionicons name="sparkles" size={20} color="#fff" />
-                    <Text style={s.generateBtnText}>Generate & Continue</Text>
+                    <Text style={s.generateBtnText}>{t('createEvent.generateContinueBtn')}</Text>
                   </Pressable>
                 </>
               )}
@@ -1327,14 +1334,14 @@ export default function CreateCampaignScreen() {
                   <View style={[s.generatedBanner, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
                     <View style={s.generatedBannerTop}>
                       <Ionicons name="sparkles" size={18} color={C.brinjal1} />
-                      <Text style={[s.generatedTitle, { color: C.brinjal1 }]}>Event Generated from Your Inputs</Text>
+                      <Text style={[s.generatedTitle, { color: C.brinjal1 }]}>{t('createEvent.paidBannerTitle')}</Text>
                     </View>
                     <View style={s.generatedChecklist}>
                       {[
-                        { icon: 'document-text-outline', label: `Title & description written for "${form.template}"` },
-                        { icon: 'bar-chart-outline',     label: `Deliverables pre-filled from category template` },
-                        { icon: 'cash-outline',          label: `Budget: ${form.budget}` },
-                        { icon: 'flag-outline',          label: `Goals: ${form.goals.join(', ')}` },
+                        { icon: 'document-text-outline', label: t('createEvent.paidCheckTitle', { template: form.template }) },
+                        { icon: 'bar-chart-outline',     label: t('createEvent.paidCheckDeliverables') },
+                        { icon: 'cash-outline',          label: t('createEvent.paidCheckBudget', { budget: form.budget }) },
+                        { icon: 'flag-outline',          label: t('createEvent.paidCheckGoals', { goals: form.goals.join(', ') }) },
                       ].map((item) => (
                         <View key={item.label} style={s.generatedCheckRow}>
                           <Ionicons name={item.icon as any} size={13} color={C.brinjal1} />
@@ -1342,11 +1349,11 @@ export default function CreateCampaignScreen() {
                         </View>
                       ))}
                     </View>
-                    <Text style={[s.generatedSub, { color: C.brinjal1, marginTop: 4 }]}>All fields below are editable — personalise before publishing.</Text>
+                    <Text style={[s.generatedSub, { color: C.brinjal1, marginTop: 4 }]}>{t('createEvent.paidBannerSub')}</Text>
                   </View>
 
                   {/* Editable title */}
-                  <SectionCard title="📣 Event Title" colors={C}>
+                  <SectionCard title={t('createEvent.secEventTitlePaid')} colors={C}>
                     <TextInput
                       style={[s.input, { backgroundColor: C.background, borderColor: reviewErrors.title ? ERROR_RED : C.border, color: C.text }]}
                       value={form.title}
@@ -1354,19 +1361,19 @@ export default function CreateCampaignScreen() {
                         update('title', v);
                         if (reviewErrors.title) setReviewErrors((e) => ({ ...e, title: undefined }));
                       }}
-                      placeholder="Event title…"
+                      placeholder={t('createEvent.eventTitlePlaceholder')}
                       placeholderTextColor={C.textSecondary}
                     />
                     {reviewErrors.title && <Text style={s.errorText}>{reviewErrors.title}</Text>}
                   </SectionCard>
 
                   {/* Editable description */}
-                  <SectionCard title="📝 Description" colors={C}>
+                  <SectionCard title={t('createEvent.secDescPaid')} colors={C}>
                     <TextInput
                       style={[s.textarea, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
                       value={form.description}
                       onChangeText={(v) => update('description', v)}
-                      placeholder="Describe your event…"
+                      placeholder={t('createEvent.descriptionPlaceholder')}
                       placeholderTextColor={C.textSecondary}
                       multiline
                       numberOfLines={6}
@@ -1374,7 +1381,7 @@ export default function CreateCampaignScreen() {
                   </SectionCard>
 
                   {/* Platform */}
-                  <SectionCard title="📱 Platform" sub="Where should creators post their content?" colors={C}>
+                  <SectionCard title={t('createEvent.secPlatformTitle')} sub={t('createEvent.secPlatformSub')} colors={C}>
                     <ChipGroup
                       options={platformOptions}
                       value={form.platform}
@@ -1388,7 +1395,7 @@ export default function CreateCampaignScreen() {
                   </SectionCard>
 
                   {/* Deliverables */}
-                  <SectionCard title="📦 Deliverables" sub="Set quantity to 0 to exclude." colors={C}>
+                  <SectionCard title={t('createEvent.secDeliverablesTitle')} sub={t('createEvent.secDeliverablesSub')} colors={C}>
                     <View style={{ gap: 2 }}>
                       {DELIVERABLE_TYPES.map((item, i) => {
                         const count = form.deliverables[item.key] ?? 0;
@@ -1425,7 +1432,7 @@ export default function CreateCampaignScreen() {
                   </SectionCard>
 
                   {/* Deadline */}
-                  <SectionCard title="📅 Application Deadline" sub="Last date creators can apply." colors={C}>
+                  <SectionCard title={t('createEvent.secDeadlineTitle')} sub={t('createEvent.secDeadlineSub')} colors={C}>
                     <DeadlinePicker
                       value={form.deadline}
                       onChange={(d) => {
@@ -1438,17 +1445,17 @@ export default function CreateCampaignScreen() {
                   </SectionCard>
 
                   {/* Creators Needed */}
-                  <SectionCard title="👥 Creators Needed" sub="How many creators do you need for this event?" colors={C}>
+                  <SectionCard title={t('createEvent.secCreatorsNeededTitle')} sub={t('createEvent.secCreatorsNeededSub')} colors={C}>
                     <Stepper value={form.creatorsNeeded} onChange={(v) => update('creatorsNeeded', v)} colors={C} />
                   </SectionCard>
 
                   {/* Summary */}
-                  <SectionCard title="📋 Summary" colors={C}>
+                  <SectionCard title={t('createEvent.secSummaryTitle')} colors={C}>
                     {[
-                      { label: 'Category', value: selectedTemplate ? `${selectedTemplate.emoji} ${form.template}` : '—' },
-                      { label: 'Goals',    value: form.goals.join(', ') || '—' },
-                      { label: 'Budget',   value: form.budget || '—' },
-                      { label: 'Location', value: form.location || 'Remote' },
+                      { label: t('createEvent.summaryCategory'), value: selectedTemplate ? `${selectedTemplate.emoji} ${form.template}` : '—' },
+                      { label: t('createEvent.summaryGoals'),    value: form.goals.join(', ') || '—' },
+                      { label: t('createEvent.summaryBudget'),   value: form.budget || '—' },
+                      { label: t('createEvent.summaryLocation'), value: form.location || t('createEvent.summaryRemote') },
                     ].map(({ label, value }, i, arr) => (
                       <View key={label} style={[s.summaryRow, i < arr.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}>
                         <Text style={[s.summaryLabel, { color: C.textSecondary }]}>{label}</Text>
@@ -1464,8 +1471,8 @@ export default function CreateCampaignScreen() {
                     <View style={s.featuredLeft}>
                       <Text style={s.featuredEmoji}>⭐</Text>
                       <View style={{ flex: 1, gap: 3 }}>
-                        <Text style={[s.featuredLabel, { color: C.text }]}>Feature this Event</Text>
-                        <Text style={[s.featuredSub, { color: C.textSecondary }]}>Appears highlighted on creator home</Text>
+                        <Text style={[s.featuredLabel, { color: C.text }]}>{t('createEvent.featuredLabel')}</Text>
+                        <Text style={[s.featuredSub, { color: C.textSecondary }]}>{t('createEvent.featuredSub')}</Text>
                       </View>
                     </View>
                     <View style={[s.toggle, { backgroundColor: form.isFeatured ? '#F59E0B' : C.border }]}>
@@ -1479,13 +1486,13 @@ export default function CreateCampaignScreen() {
                       style={[s.editBtn, { borderColor: C.brinjal1 }]}
                       onPress={() => setPhase('setup')}>
                       <Ionicons name="chevron-back" size={16} color={C.brinjal1} />
-                      <Text style={[s.editBtnText, { color: C.brinjal1 }]}>Edit Inputs</Text>
+                      <Text style={[s.editBtnText, { color: C.brinjal1 }]}>{t('createEvent.editInputsBtn')}</Text>
                     </Pressable>
                     <Pressable
                       style={[s.publishBtn, { backgroundColor: loading ? C.border : C.brinjal1 }]}
                       onPress={() => setPublishWarnVisible(true)}
                       disabled={loading}>
-                      <Text style={s.publishBtnText}>{loading ? 'Publishing…' : '🚀 Publish Event'}</Text>
+                      <Text style={s.publishBtnText}>{loading ? t('createEvent.publishingBtn') : t('createEvent.publishPaidBtn')}</Text>
                     </Pressable>
                   </View>
                 </>
@@ -1498,14 +1505,14 @@ export default function CreateCampaignScreen() {
                   <View style={[s.generatedBanner, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
                     <View style={s.generatedBannerTop}>
                       <Ionicons name="sparkles" size={18} color={C.brinjal1} />
-                      <Text style={[s.generatedTitle, { color: C.brinjal1 }]}>Event Details Auto-Generated</Text>
+                      <Text style={[s.generatedTitle, { color: C.brinjal1 }]}>{t('createEvent.openBannerTitle')}</Text>
                     </View>
                     <View style={s.generatedChecklist}>
                       {[
-                        { icon: 'document-text-outline', label: `Title & description written for "${form.template}" event` },
-                        { icon: 'gift-outline',          label: `Creator benefits suggested for your category` },
-                        { icon: 'location-outline',      label: `Venue: ${form.venue || 'set on previous step'}` },
-                        { icon: 'people-outline',        label: `Capacity: ${form.capacity} creators` },
+                        { icon: 'document-text-outline', label: t('createEvent.openCheckTitle', { template: form.template }) },
+                        { icon: 'gift-outline',          label: t('createEvent.openCheckBenefits') },
+                        { icon: 'location-outline',      label: t('createEvent.openCheckVenue', { venue: form.venue || t('createEvent.openVenueFallback') }) },
+                        { icon: 'people-outline',        label: t('createEvent.openCheckCapacity', { capacity: form.capacity }) },
                       ].map((item) => (
                         <View key={item.label} style={s.generatedCheckRow}>
                           <Ionicons name={item.icon as any} size={13} color={C.brinjal1} />
@@ -1513,28 +1520,28 @@ export default function CreateCampaignScreen() {
                         </View>
                       ))}
                     </View>
-                    <Text style={[s.generatedSub, { color: C.brinjal1, marginTop: 4 }]}>Review and edit anything before publishing.</Text>
+                    <Text style={[s.generatedSub, { color: C.brinjal1, marginTop: 4 }]}>{t('createEvent.openBannerSub')}</Text>
                   </View>
 
                   {/* Title */}
-                  <SectionCard title="🎪 Event Title" sub="Edit or personalise the auto-generated title." colors={C}>
+                  <SectionCard title={t('createEvent.secEventTitleOpen')} sub={t('createEvent.secEventTitleOpenSub')} colors={C}>
                     <TextInput
                       style={[s.input, { backgroundColor: C.background, borderColor: reviewErrors.title ? ERROR_RED : C.border, color: C.text }]}
                       value={form.title}
                       onChangeText={(v) => { update('title', v); if (reviewErrors.title) setReviewErrors((e) => ({ ...e, title: undefined })); }}
-                      placeholder="Event title…"
+                      placeholder={t('createEvent.eventTitlePlaceholder')}
                       placeholderTextColor={C.textSecondary}
                     />
                     {reviewErrors.title && <Text style={s.errorText}>{reviewErrors.title}</Text>}
                   </SectionCard>
 
                   {/* Description */}
-                  <SectionCard title="📝 Event Description" sub="Edit or personalise the auto-generated description." colors={C}>
+                  <SectionCard title={t('createEvent.secDescOpen')} sub={t('createEvent.secDescOpenSub')} colors={C}>
                     <TextInput
                       style={[s.textarea, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
                       value={form.description}
                       onChangeText={(v) => update('description', v)}
-                      placeholder="Event description…"
+                      placeholder={t('createEvent.eventDescPlaceholder')}
                       placeholderTextColor={C.textSecondary}
                       multiline
                       numberOfLines={6}
@@ -1542,7 +1549,7 @@ export default function CreateCampaignScreen() {
                   </SectionCard>
 
                   {/* Creator Benefits — auto-selected, editable */}
-                  <SectionCard title="🎁 Creator Benefits" sub="Auto-selected based on your category. Tap to toggle." colors={C}>
+                  <SectionCard title={t('createEvent.secBenefitsTitle')} sub={t('createEvent.secBenefitsSub')} colors={C}>
                     <View style={cg.wrap}>
                       {BENEFITS.map((benefit) => {
                         const checked = form.benefits.includes(benefit);
@@ -1564,17 +1571,17 @@ export default function CreateCampaignScreen() {
                   </SectionCard>
 
                   {/* Platform (optional) */}
-                  <SectionCard title="📱 Platform (Optional)" sub="Where should creators post event content?" colors={C}>
+                  <SectionCard title={t('createEvent.secPlatformOptTitle')} sub={t('createEvent.secPlatformOptSub')} colors={C}>
                     <ChipGroup
-                      options={['Instagram', 'TikTok', 'YouTube', 'Facebook', 'Not required']}
-                      value={form.platform || 'Not required'}
-                      onChange={(v) => update('platform', v === 'Not required' ? '' : v)}
+                      options={['Instagram', 'TikTok', 'YouTube', 'Facebook', notRequiredLabel]}
+                      value={form.platform || notRequiredLabel}
+                      onChange={(v) => update('platform', v === notRequiredLabel ? '' : v)}
                       colors={C}
                     />
                   </SectionCard>
 
                   {/* Event Date */}
-                  <SectionCard title="📅 Event Date" sub="Defaulted to one week from today. Registration deadline auto-updates." colors={C}>
+                  <SectionCard title={t('createEvent.secEventDateTitle')} sub={t('createEvent.secEventDateSub')} colors={C}>
                     <DeadlinePicker
                       value={form.eventDate}
                       onChange={(d) => {
@@ -1584,12 +1591,12 @@ export default function CreateCampaignScreen() {
                       }}
                       error={reviewErrors.eventDate}
                       colors={C}
-                      label="Event Date"
+                      label={t('createEvent.deadlineLabelEvent')}
                     />
                   </SectionCard>
 
                   {/* Registration Deadline — auto-set to eventDate - 2 days */}
-                  <SectionCard title="📅 Registration Deadline" sub="Auto-set to 2 days before event. You can adjust if needed." colors={C}>
+                  <SectionCard title={t('createEvent.secRegDeadlineTitle')} sub={t('createEvent.secRegDeadlineSub')} colors={C}>
                     <DeadlinePicker
                       value={form.deadline}
                       onChange={(d) => {
@@ -1598,17 +1605,17 @@ export default function CreateCampaignScreen() {
                       }}
                       error={reviewErrors.deadline}
                       colors={C}
-                      label="Registration Deadline"
+                      label={t('createEvent.deadlineLabelReg')}
                     />
                   </SectionCard>
 
                   {/* Event summary */}
-                  <SectionCard title="📋 Event Summary" colors={C}>
+                  <SectionCard title={t('createEvent.secEventSummaryTitle')} colors={C}>
                     {[
-                      { label: 'Category', value: form.template || '—' },
-                      { label: 'Venue',    value: form.venue || 'TBD' },
-                      { label: 'Date',     value: form.eventDate ? fmtDate(form.eventDate) : '—' },
-                      { label: 'Capacity', value: `${form.capacity} creators` },
+                      { label: t('createEvent.summaryCategory'), value: form.template || '—' },
+                      { label: t('createEvent.summaryVenue'),    value: form.venue || t('createEvent.summaryTBD') },
+                      { label: t('createEvent.summaryDate'),     value: form.eventDate ? fmtDate(form.eventDate) : '—' },
+                      { label: t('createEvent.summaryCapacity'), value: t('createEvent.summaryNCreators', { n: form.capacity }) },
                     ].map(({ label, value }, i, arr) => (
                       <View key={label} style={[s.summaryRow, i < arr.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}>
                         <Text style={[s.summaryLabel, { color: C.textSecondary }]}>{label}</Text>
@@ -1624,8 +1631,8 @@ export default function CreateCampaignScreen() {
                     <View style={s.featuredLeft}>
                       <Text style={s.featuredEmoji}>⭐</Text>
                       <View style={{ flex: 1, gap: 3 }}>
-                        <Text style={[s.featuredLabel, { color: C.text }]}>Feature this Event</Text>
-                        <Text style={[s.featuredSub, { color: C.textSecondary }]}>Appears highlighted on creator home</Text>
+                        <Text style={[s.featuredLabel, { color: C.text }]}>{t('createEvent.featuredLabel')}</Text>
+                        <Text style={[s.featuredSub, { color: C.textSecondary }]}>{t('createEvent.featuredSub')}</Text>
                       </View>
                     </View>
                     <View style={[s.toggle, { backgroundColor: form.isFeatured ? '#F59E0B' : C.border }]}>
@@ -1637,13 +1644,13 @@ export default function CreateCampaignScreen() {
                   <View style={s.reviewActions}>
                     <Pressable style={[s.editBtn, { borderColor: C.brinjal1 }]} onPress={() => setPhase('setup')}>
                       <Ionicons name="chevron-back" size={16} color={C.brinjal1} />
-                      <Text style={[s.editBtnText, { color: C.brinjal1 }]}>Edit Event</Text>
+                      <Text style={[s.editBtnText, { color: C.brinjal1 }]}>{t('createEvent.editEventBtn')}</Text>
                     </Pressable>
                     <Pressable
                       style={[s.publishBtn, { backgroundColor: loading ? C.border : C.brinjal1 }]}
                       onPress={() => setPublishWarnVisible(true)}
                       disabled={loading}>
-                      <Text style={s.publishBtnText}>{loading ? 'Publishing…' : '🎪 Publish Event'}</Text>
+                      <Text style={s.publishBtnText}>{loading ? t('createEvent.publishingBtn') : t('createEvent.publishOpenBtn')}</Text>
                     </Pressable>
                   </View>
                 </>
@@ -1660,19 +1667,19 @@ export default function CreateCampaignScreen() {
             <View style={s.warnIconWrap}>
               <Ionicons name="warning" size={32} color="#F59E0B" />
             </View>
-            <Text style={[s.warnTitle, { color: C.text }]}>Before You Publish</Text>
+            <Text style={[s.warnTitle, { color: C.text }]}>{t('createEvent.warnTitle')}</Text>
             <Text style={[s.warnBody, { color: C.textSecondary }]}>
-              Once a creator submits a proposal, this event will be <Text style={{ fontWeight: '700', color: C.text }}>locked for editing</Text>. Please review all details carefully before publishing.{'\n\n'}Make sure your event title, description, budget, and requirements are accurate and complete.
+              {t('createEvent.warnBodyPre')}<Text style={{ fontWeight: '700', color: C.text }}>{t('createEvent.warnBodyBold')}</Text>{t('createEvent.warnBodyPost')}
             </Text>
             <View style={s.warnActions}>
               <Pressable style={[s.warnCancelBtn, { borderColor: C.border }]} onPress={() => setPublishWarnVisible(false)}>
-                <Text style={[s.warnCancelText, { color: C.textSecondary }]}>Go Back & Review</Text>
+                <Text style={[s.warnCancelText, { color: C.textSecondary }]}>{t('createEvent.warnGoBack')}</Text>
               </Pressable>
               <Pressable
                 style={[s.warnConfirmBtn, { backgroundColor: C.brinjal1 }]}
                 onPress={() => { setPublishWarnVisible(false); handlePublish(); }}>
                 <Ionicons name="rocket-outline" size={16} color="#fff" />
-                <Text style={s.warnConfirmText}>Publish Now</Text>
+                <Text style={s.warnConfirmText}>{t('createEvent.warnPublishNow')}</Text>
               </Pressable>
             </View>
           </Pressable>

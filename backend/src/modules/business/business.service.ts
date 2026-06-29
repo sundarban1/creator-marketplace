@@ -1,4 +1,5 @@
 import { AppError } from '../../middleware/error';
+import { toBusinessProfileDto, toPublicBusinessDto, toBusinessListItemDto } from './business.dto';
 import { BusinessRepository } from './business.repository';
 import type { UpdateBusinessProfileInput } from './business.schema';
 
@@ -14,7 +15,7 @@ export class BusinessService {
     if (!profile) {
       throw new AppError('Business profile not found', 404);
     }
-    return profile;
+    return toBusinessProfileDto(profile);
   }
 
   async updateProfile(userId: string, input: UpdateBusinessProfileInput) {
@@ -23,8 +24,7 @@ export class BusinessService {
       throw new AppError('Business profile not found', 404);
     }
 
-    const updated = await this.repo.update(userId, input);
-    return updated;
+    return toBusinessProfileDto(await this.repo.update(userId, input));
   }
 
   async listBusinesses(params: {
@@ -35,12 +35,13 @@ export class BusinessService {
     page:       number;
     limit:      number;
   }) {
-    return this.repo.findMany(params);
+    const { businesses, total } = await this.repo.findMany(params);
+    return { businesses: businesses.map(toBusinessListItemDto), total };
   }
 
   async getBusinessPublic(id: string) {
     const business = await this.repo.findPublicById(id);
     if (!business || !business.showPublicProfile) throw new AppError('Business not found', 404);
-    return business;
+    return toPublicBusinessDto(business);
   }
 }

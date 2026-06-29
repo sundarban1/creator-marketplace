@@ -1,11 +1,13 @@
 import { NotificationRepository } from './notification.repository';
+import { toNotificationDto } from './notification.dto';
 import { emitToUser } from '../../socket';
 
 const repo = new NotificationRepository();
 
 export const notificationService = {
   async getForUser(userId: string) {
-    return repo.findByUser(userId);
+    const notifications = await repo.findByUser(userId);
+    return notifications.map(toNotificationDto);
   },
 
   async markRead(id: string, userId: string) {
@@ -33,7 +35,8 @@ export const notificationService = {
     refId?: string;
     refType?: string;
   }) {
-    const notification = await repo.create(data);
+    const raw = await repo.create(data);
+    const notification = toNotificationDto(raw);
     emitToUser(data.userId, 'notification:new', notification);
     return notification;
   },

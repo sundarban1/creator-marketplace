@@ -101,7 +101,7 @@ export default function BusinessProfileScreen() {
       <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
         <View style={[styles.navBar, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
           <BackButton fallback="/(business)/" />
-          <Text style={[styles.navTitle, { color: C.text }]}>Profile</Text>
+          <Text style={[styles.navTitle, { color: C.text }]}>{t('profileExtra.navTitle')}</Text>
           <View style={{ width: 44 }} />
         </View>
         <View style={styles.center}><ActivityIndicator size="large" color={C.brinjal1} /></View>
@@ -141,7 +141,7 @@ export default function BusinessProfileScreen() {
               <Text style={styles.heroName} numberOfLines={2}>{name}</Text>
               {profile?.isVerified && (
                 <View style={styles.verifiedRow}>
-                  <Text style={styles.verifiedText}>✓ Verified Business</Text>
+                  <Text style={styles.verifiedText}>{t('profileExtra.verifiedBusiness')}</Text>
                 </View>
               )}
               <View style={styles.heroStats}>

@@ -163,7 +163,10 @@ export async function request<T>(
   }
 
   function buildHeaders(token?: string): Record<string, string> {
-    const h: Record<string, string> = { 'Content-Type': 'application/json' };
+    const h: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'X-Timezone':   Intl.DateTimeFormat().resolvedOptions().timeZone,
+    };
     const t = token ?? storage.get(ACCESS_TOKEN_KEY);
     if (t) h['Authorization'] = `Bearer ${t}`;
     return h;

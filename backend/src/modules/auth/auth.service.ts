@@ -11,6 +11,7 @@ import {
 } from '../../utils/jwt';
 import { sendPasswordResetEmail, sendOtpEmail, sendWelcomeEmail } from '../../utils/email';
 import { AuthRepository } from './auth.repository';
+import { toUserDto } from './auth.dto';
 import type {
   RegisterInput,
   LoginInput,
@@ -29,23 +30,6 @@ import type {
 
 function generateOtp(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
-}
-
-function buildUserResponse(user: {
-  id: string; email: string; phone: string | null; role: Role;
-  isEmailVerified: boolean; isOnboarded: boolean;
-  createdAt: Date; updatedAt: Date;
-  creatorProfile?: { id: string; username: string | null; fullName: string | null; avatarUrl: string | null } | null;
-  businessProfile?: { id: string; businessName: string | null; logoUrl: string | null } | null;
-}) {
-  const name   = user.creatorProfile?.fullName ?? user.businessProfile?.businessName ?? user.email.split('@')[0];
-  const avatar = user.creatorProfile?.avatarUrl ?? user.businessProfile?.logoUrl ?? null;
-  return { id: user.id, email: user.email, phone: user.phone, role: user.role,
-           isEmailVerified: user.isEmailVerified, isOnboarded: user.isOnboarded,
-           createdAt: user.createdAt, updatedAt: user.updatedAt,
-           creatorProfile: user.creatorProfile ?? null,
-           businessProfile: user.businessProfile ?? null,
-           name, avatar };
 }
 
 export class AuthService {
@@ -110,7 +94,7 @@ export class AuthService {
     sendWelcomeEmail(verifiedUser.email, displayName, verifiedUser.role as 'CREATOR' | 'BUSINESS')
       .catch((err) => console.error('Welcome email failed:', err));
 
-    return { user: buildUserResponse(verifiedUser), accessToken, refreshToken };
+    return { user: toUserDto(verifiedUser), accessToken, refreshToken };
   }
 
   async resendOtp(input: ResendOtpInput) {
@@ -148,7 +132,7 @@ export class AuthService {
     const refreshToken = signRefreshToken(tokenPayload);
     await this.repo.updateRefreshToken(activeUser.id, refreshToken);
 
-    return { user: buildUserResponse(activeUser), accessToken, refreshToken, reactivated };
+    return { user: toUserDto(activeUser), accessToken, refreshToken, reactivated };
   }
 
   async completeOnboarding(userId: string) {
@@ -283,7 +267,7 @@ export class AuthService {
       const accessToken  = signAccessToken(payload);
       const refreshToken = signRefreshToken(payload);
       await this.repo.updateRefreshToken(user!.id, refreshToken);
-      return { needsRole: false as const, user: buildUserResponse(user!), accessToken, refreshToken, isNewUser: false };
+      return { needsRole: false as const, user: toUserDto(user!), accessToken, refreshToken, isNewUser: false };
     }
 
     if (!input.role) {
@@ -311,7 +295,7 @@ export class AuthService {
     const refreshToken = signRefreshToken(payload);
     await this.repo.updateRefreshToken(verifiedUser.id, refreshToken);
 
-    return { needsRole: false as const, user: buildUserResponse(verifiedUser), accessToken, refreshToken, isNewUser: true };
+    return { needsRole: false as const, user: toUserDto(verifiedUser), accessToken, refreshToken, isNewUser: true };
   }
 
   async facebookAuth(input: FacebookAuthInput) {
@@ -332,7 +316,7 @@ export class AuthService {
       const accessToken  = signAccessToken(payload);
       const refreshToken = signRefreshToken(payload);
       await this.repo.updateRefreshToken(user!.id, refreshToken);
-      return { needsRole: false as const, user: buildUserResponse(user!), accessToken, refreshToken, isNewUser: false };
+      return { needsRole: false as const, user: toUserDto(user!), accessToken, refreshToken, isNewUser: false };
     }
 
     if (!input.role) {
@@ -359,7 +343,7 @@ export class AuthService {
     const refreshToken = signRefreshToken(payload);
     await this.repo.updateRefreshToken(verifiedUser.id, refreshToken);
 
-    return { needsRole: false as const, user: buildUserResponse(verifiedUser), accessToken, refreshToken, isNewUser: true };
+    return { needsRole: false as const, user: toUserDto(verifiedUser), accessToken, refreshToken, isNewUser: true };
   }
 
   async resetPassword(input: ResetPasswordInput) {

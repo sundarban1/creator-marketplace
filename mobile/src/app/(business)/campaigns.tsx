@@ -236,7 +236,7 @@ export default function CampaignsScreen() {
                 {/* Or switch tab hint for non-All filters */}
                 {activeFilter !== 'All' && (
                   <Pressable onPress={() => setActiveFilter('All')} style={styles.emptySwitchRow}>
-                    <Text style={[styles.emptySwitchText, { color: C.textSecondary }]}>View all events  </Text>
+                    <Text style={[styles.emptySwitchText, { color: C.textSecondary }]}>{t('campaigns.viewAllEvents')}  </Text>
                     <Text style={[styles.emptySwitchLink, { color: C.brinjal1 }]}>{t('campaigns.seeAll')}</Text>
                   </Pressable>
                 )}
@@ -406,7 +406,7 @@ export default function CampaignsScreen() {
                   onPress={handleSendInvites}
                   disabled={selectedCreators.size === 0 || inviteSending}>
                   <Text style={styles.sendInviteBtnText}>
-                    {inviteSending ? 'Sending…' : selectedCreators.size > 0 ? `Send ${selectedCreators.size} Invite${selectedCreators.size !== 1 ? 's' : ''}` : 'Select creators to invite'}
+                    {inviteSending ? t('campaigns.sending') : selectedCreators.size > 0 ? t('campaigns.sendInvite', { n: selectedCreators.size }) : t('campaigns.selectCreatorsToInvite')}
                   </Text>
                 </Pressable>
               </View>
@@ -427,7 +427,7 @@ export default function CampaignsScreen() {
 
           <View style={[styles.modalHeader, { borderBottomColor: C.border }]}>
             <View style={styles.modalHeaderText}>
-              <Text style={[styles.modalTitle, { color: C.text }]}>Proposals</Text>
+              <Text style={[styles.modalTitle, { color: C.text }]}>{t('campaigns.proposalsTitle')}</Text>
               <Text style={[styles.modalSubtitle, { color: C.textSecondary }]} numberOfLines={1}>
                 {selectedCampaign?.title}
               </Text>
@@ -447,7 +447,7 @@ export default function CampaignsScreen() {
             ) : applications.length === 0 ? (
               <View style={styles.modalEmpty}>
                 <Text style={styles.modalEmptyIcon}>📭</Text>
-                <Text style={[styles.modalEmptyText, { color: C.textSecondary }]}>No proposals yet</Text>
+                <Text style={[styles.modalEmptyText, { color: C.textSecondary }]}>{t('campaigns.noProposalsYet')}</Text>
               </View>
             ) : (
               applications.map((a) => {

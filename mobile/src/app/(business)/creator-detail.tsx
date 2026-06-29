@@ -116,7 +116,7 @@ export default function CreatorDetailScreen() {
           if (conv) { setConvId(conv.id); setConvStatus(conv.status); }
         }).catch(() => {});
       })
-      .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load creator'))
+      .catch((e) => setError(e instanceof Error ? e.message : t('creatorDetailExtra.notFound')))
       .finally(() => setLoading(false));
   }, [id]);
 
@@ -163,10 +163,10 @@ export default function CreatorDetailScreen() {
         </View>
         <View style={s.centered}>
           <Text style={s.errorEmoji}>😕</Text>
-          <Text style={[s.errorTitle, { color: C.text }]}>Creator not found</Text>
-          <Text style={[s.errorHint, { color: C.textSecondary }]}>{error || 'This creator profile is unavailable.'}</Text>
+          <Text style={[s.errorTitle, { color: C.text }]}>{t('creatorDetailExtra.notFound')}</Text>
+          <Text style={[s.errorHint, { color: C.textSecondary }]}>{error || t('creatorDetailExtra.notFoundSub')}</Text>
           <Pressable onPress={() => router.back()} style={[s.retryBtn, { borderColor: C.brinjal1 }]}>
-            <Text style={[s.retryText, { color: C.brinjal1 }]}>Go back</Text>
+            <Text style={[s.retryText, { color: C.brinjal1 }]}>{t('creatorDetailExtra.goBack')}</Text>
           </Pressable>
         </View>
       </SafeAreaView>
@@ -201,7 +201,7 @@ export default function CreatorDetailScreen() {
       {/* Top bar */}
       <View style={s.topBar}>
         <BackButton fallback="/(business)/explore-creators" />
-        <Text style={[s.topTitle, { color: C.text }]}>Creator Profile</Text>
+        <Text style={[s.topTitle, { color: C.text }]}>{t('creatorDetailExtra.topTitle')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -218,7 +218,7 @@ export default function CreatorDetailScreen() {
               <Text style={[s.heroName, { color: C.text }]}>{profile.fullName ?? 'Creator'}</Text>
               {profile.isVerified && (
                 <View style={[s.verifiedBadge, { backgroundColor: '#E8F5E9' }]}>
-                  <Text style={s.verifiedText}>✓ Verified</Text>
+                  <Text style={s.verifiedText}>{t('creatorDetailExtra.verified')}</Text>
                 </View>
               )}
             </View>
@@ -234,7 +234,7 @@ export default function CreatorDetailScreen() {
         {/* ── Bio ── */}
         {profile.bio ? (
           <View style={[s.section, { backgroundColor: C.surface }]}>
-            <SectionTitle label="About" color={C.textSecondary} />
+            <SectionTitle label={t('creatorDetailExtra.sectionAbout')} color={C.textSecondary} />
             <Text style={[s.bioText, { color: C.text }]}>{profile.bio}</Text>
           </View>
         ) : null}
@@ -242,7 +242,7 @@ export default function CreatorDetailScreen() {
         {/* ── Categories ── */}
         {profile.categories.length > 0 && (
           <View style={[s.section, { backgroundColor: C.surface }]}>
-            <SectionTitle label="Content Categories" color={C.textSecondary} />
+            <SectionTitle label={t('creatorDetailExtra.sectionCategories')} color={C.textSecondary} />
             <View style={s.chips}>
               {profile.categories.map((cat) => {
                 const meta = CATEGORY_META[cat];
@@ -260,7 +260,7 @@ export default function CreatorDetailScreen() {
         {/* ── Social Platforms ── */}
         {mergedPlatforms.length > 0 && (
           <View style={[s.section, { backgroundColor: C.surface }]}>
-            <SectionTitle label="Social Platforms" color={C.textSecondary} />
+            <SectionTitle label={t('creatorDetailExtra.sectionPlatforms')} color={C.textSecondary} />
             <View style={s.socialList}>
               {mergedPlatforms.map((p) => {
                 const canOpen = !!p.profileUrl;
@@ -276,7 +276,7 @@ export default function CreatorDetailScreen() {
                     <View style={s.socialInfo}>
                       <Text style={[s.socialPlatform, { color: C.text }]}>{info.label}</Text>
                       {p.followers !== null ? (
-                        <Text style={[s.socialSub, { color: C.textSecondary }]}>{formatFollowers(p.followers)} followers</Text>
+                        <Text style={[s.socialSub, { color: C.textSecondary }]}>{formatFollowers(p.followers)} {t('creatorDetailExtra.followersSuffix')}</Text>
                       ) : p.handle ? (
                         <Text style={[s.socialSub, { color: C.textSecondary }]}>{p.handle}</Text>
                       ) : null}
@@ -292,11 +292,11 @@ export default function CreatorDetailScreen() {
         {/* ── Rate / Budget ── */}
         {hasBudget && (
           <View style={[s.section, { backgroundColor: C.surface }]}>
-            <SectionTitle label="Rate Preference" color={C.textSecondary} />
+            <SectionTitle label={t('creatorDetailExtra.sectionRatePreference')} color={C.textSecondary} />
             <View style={[s.budgetCard, { backgroundColor: C.primaryLight }]}>
               <Text style={s.budgetEmoji}>💰</Text>
               <View style={s.budgetInfo}>
-                <Text style={[s.budgetLabel, { color: C.textSecondary }]}>Preferred range</Text>
+                <Text style={[s.budgetLabel, { color: C.textSecondary }]}>{t('creatorDetailExtra.preferredRange')}</Text>
                 <Text style={[s.budgetValue, { color: C.brinjal1 }]}>
                   Rs. {profile.prefBudgetMin} – Rs. {profile.prefBudgetMax}
                 </Text>
@@ -308,7 +308,7 @@ export default function CreatorDetailScreen() {
         {/* ── Preferred Platforms ── */}
         {profile.prefPlatforms.length > 0 && (
           <View style={[s.section, { backgroundColor: C.surface }]}>
-            <SectionTitle label="Preferred Platforms" color={C.textSecondary} />
+            <SectionTitle label={t('creatorDetailExtra.sectionPreferredPlatforms')} color={C.textSecondary} />
             <View style={s.chips}>
               {profile.prefPlatforms.map((p) => {
                 const info = getPlatformInfo(p);
@@ -326,7 +326,7 @@ export default function CreatorDetailScreen() {
         {/* ── Portfolio ── */}
         {portfolioLinks.length > 0 && (
           <View style={[s.section, { backgroundColor: C.surface }]}>
-            <SectionTitle label="Portfolio" color={C.textSecondary} />
+            <SectionTitle label={t('creatorDetailExtra.sectionPortfolio')} color={C.textSecondary} />
             <View style={s.portfolioList}>
               {portfolioLinks.map((link) => (
                 <Pressable
@@ -350,15 +350,15 @@ export default function CreatorDetailScreen() {
       <View style={[msgBtn.bar, { backgroundColor: C.surface, borderTopColor: C.border }]}>
         {convStatus === 'ACCEPTED' ? (
           <Pressable style={[msgBtn.btn, { backgroundColor: C.brinjal1 }]} onPress={openChat}>
-            <Text style={msgBtn.txt}>💬  Open Chat</Text>
+            <Text style={msgBtn.txt}>{t('creatorDetailExtra.openChat')}</Text>
           </Pressable>
         ) : convStatus === 'PENDING' ? (
           <View style={[msgBtn.btn, { backgroundColor: C.border }]}>
-            <Text style={[msgBtn.txt, { color: '#fff' }]}>⏳  Request Sent</Text>
+            <Text style={[msgBtn.txt, { color: '#fff' }]}>{t('creatorDetailExtra.requestSent')}</Text>
           </View>
         ) : (
           <Pressable style={[msgBtn.btn, { backgroundColor: C.brinjal1 }]} onPress={() => setShowModal(true)}>
-            <Text style={msgBtn.txt}>✉️  Send Message</Text>
+            <Text style={msgBtn.txt}>{t('creatorDetailExtra.sendMessage')}</Text>
           </Pressable>
         )}
       </View>
@@ -370,19 +370,19 @@ export default function CreatorDetailScreen() {
           <View style={[rm.sheet, { backgroundColor: C.surface }]}>
             <View style={[rm.handle, { backgroundColor: C.border }]} />
             <View style={rm.titleRow}>
-              <Text style={[rm.title, { color: C.text }]}>Send Message Request</Text>
+              <Text style={[rm.title, { color: C.text }]}>{t('creatorDetailExtra.messageRequestTitle')}</Text>
               <Pressable style={[rm.closeBtn, { backgroundColor: C.background }]} onPress={() => setShowModal(false)} hitSlop={8}>
                 <Ionicons name="close" size={18} color={C.textSecondary} />
               </Pressable>
             </View>
             <Text style={[rm.subtitle, { color: C.textSecondary }]}>
-              Write an optional message to introduce yourself. {profile?.fullName} will see this when deciding to accept.
+              {t('creatorDetailExtra.messageRequestSubtitle', { name: profile?.fullName ?? '' })}
             </Text>
             <TextInput
               style={[rm.input, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
               value={requestMsg}
               onChangeText={setRequestMsg}
-              placeholder={`Hi ${profile?.fullName?.split(' ')[0] ?? 'there'}, I'd love to collaborate…`}
+              placeholder={t('creatorDetailExtra.messageRequestPlaceholder', { firstName: profile?.fullName?.split(' ')[0] ?? 'there' })}
               placeholderTextColor={C.textSecondary}
               multiline
               maxLength={500}
@@ -392,7 +392,7 @@ export default function CreatorDetailScreen() {
               style={[rm.sendBtn, { backgroundColor: sending ? C.border : C.brinjal1 }]}
               onPress={handleSendRequest}
               disabled={sending}>
-              <Text style={rm.sendTxt}>{sending ? 'Sending…' : 'Send Request'}</Text>
+              <Text style={rm.sendTxt}>{sending ? t('creatorDetailExtra.sendingLabel') : t('creatorDetailExtra.sendRequestBtn')}</Text>
             </Pressable>
           </View>
         </View>

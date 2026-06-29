@@ -1,4 +1,5 @@
 import { AppError } from '../../middleware/error';
+import { toCampaignDto, toApplicationDto } from './campaign.dto';
 import { BusinessRepository } from '../business/business.repository';
 import { CreatorRepository } from '../creator/creator.repository';
 import { CampaignRepository } from './campaign.repository';
@@ -31,15 +32,16 @@ export class CampaignService {
       throw new AppError('Business profile not found', 404);
     }
 
-    const campaign = await this.repo.create({
+    const raw = await this.repo.create({
       businessId: business.id,
       ...input,
       deadline:  new Date(input.deadline),
       eventDate: input.eventDate ? new Date(input.eventDate) : undefined,
     });
+    const campaign = toCampaignDto(raw);
 
     // Broadcast new active campaign to all connected creators in real time
-    if (campaign.status === 'ACTIVE') {
+    if (raw.status === 'ACTIVE') {
       emitToRole('CREATOR', 'campaign:new', campaign);
     }
 
@@ -50,8 +52,8 @@ export class CampaignService {
         userId:  uid,
         type:    'new_campaign',
         title:   `${business.businessName} posted a new campaign`,
-        body:    `${campaign.title} — ${campaign.category}`,
-        refId:   campaign.id,
+        body:    `${raw.title} — ${raw.category}`,
+        refId:   raw.id,
         refType: 'campaign',
       }));
       return notificationService.createMany(notifications);
@@ -64,13 +66,13 @@ export class CampaignService {
     const { page = 1, limit = 10, ...filters } = query;
     const validatedLimit = Math.min(limit, 50); // cap at 50
 
-    const { campaigns, total } = await this.repo.findMany({
+    const { campaigns: raw, total } = await this.repo.findMany({
       ...filters,
       page,
       limit: validatedLimit,
     });
 
-    return { campaigns, total, page, limit: validatedLimit };
+    return { campaigns: raw.map(toCampaignDto), total, page, limit: validatedLimit };
   }
 
   async getCategories(): Promise<string[]> {
@@ -86,7 +88,7 @@ export class CampaignService {
     if (!campaign) {
       throw new AppError('Campaign not found', 404);
     }
-    return campaign;
+    return toCampaignDto(campaign);
   }
 
   async update(id: string, userId: string, input: UpdateCampaignInput) {
@@ -110,7 +112,7 @@ export class CampaignService {
       eventDate: input.eventDate ? new Date(input.eventDate) : undefined,
     });
 
-    return updated;
+    return toCampaignDto(updated);
   }
 
   async delete(id: string, userId: string) {
@@ -138,8 +140,8 @@ export class CampaignService {
       throw new AppError('Business profile not found', 404);
     }
 
-    const { campaigns, total } = await this.repo.findByBusinessId(business.id, page, Math.min(limit, 50));
-    return { campaigns, total, page, limit };
+    const { campaigns: raw, total } = await this.repo.findByBusinessId(business.id, page, Math.min(limit, 50));
+    return { campaigns: raw.map(toCampaignDto), total, page, limit };
   }
 
   async apply(campaignId: string, userId: string, input: ApplyToCampaignInput) {
@@ -162,12 +164,13 @@ export class CampaignService {
       throw new AppError('You have already applied to this campaign', 409);
     }
 
-    const application = await this.repo.createApplication({
+    const rawApp = await this.repo.createApplication({
       campaignId,
       creatorId: creator.id,
       ...input,
       socialHandles: input.socialHandles as Record<string, string>,
     });
+    const application = toApplicationDto(rawApp);
 
     // Notify the business about the new proposal
     this.businessRepo.findById(campaign.businessId).then((business) => {
@@ -200,22 +203,22 @@ export class CampaignService {
       throw new AppError('You are not authorized to view these applications', 403);
     }
 
-    const { applications, total } = await this.repo.findApplicationsByCampaign(
+    const { applications: raw, total } = await this.repo.findApplicationsByCampaign(
       campaignId,
       page,
       Math.min(limit, 50)
     );
 
-    return { applications, total, page, limit };
+    return { applications: raw.map(toApplicationDto), total, page, limit };
   }
 
   async getBusinessApplications(userId: string, page: number, limit: number) {
     const business = await this.businessRepo.findByUserId(userId);
     if (!business) throw new AppError('Business profile not found', 404);
-    const { applications, total } = await this.repo.findApplicationsByBusinessId(
+    const { applications: raw, total } = await this.repo.findApplicationsByBusinessId(
       business.id, page, Math.min(limit, 100)
     );
-    return { applications, total, page, limit };
+    return { applications: raw.map(toApplicationDto), total, page, limit };
   }
 
   async acceptApplication(campaignId: string, appId: string, userId: string) {
@@ -255,7 +258,8 @@ export class CampaignService {
       throw new AppError('Application does not belong to this campaign', 400);
     }
 
-    const updated = await this.repo.updateApplicationStatus(appId, status);
+    const rawUpdated = await this.repo.updateApplicationStatus(appId, status);
+    const updated    = toApplicationDto(rawUpdated);
 
     // Notify creator about their proposal decision
     if (application.creator) {
@@ -303,12 +307,12 @@ export class CampaignService {
       throw new AppError('Creator profile not found', 404);
     }
 
-    const { applications, total } = await this.repo.findApplicationsByCreator(
+    const { applications: raw, total } = await this.repo.findApplicationsByCreator(
       creator.id,
       page,
       Math.min(limit, 50)
     );
 
-    return { applications, total, page, limit };
+    return { applications: raw.map(toApplicationDto), total, page, limit };
   }
 }

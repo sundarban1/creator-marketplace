@@ -9,6 +9,7 @@ import swaggerUi from 'swagger-ui-express';
 import { env } from './config/env';
 import { swaggerSpec } from './config/swagger';
 import { errorHandler, notFoundHandler } from './middleware/error';
+import { timezoneMiddleware } from './middleware/timezone';
 import prisma from './prisma';
 import { initSocket } from './socket';
 
@@ -45,12 +46,13 @@ app.use(
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Timezone'],
   })
 );
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));
+app.use(timezoneMiddleware);
 
 // ── Health check ─────────────────────────────────────────────────────────────
 /**

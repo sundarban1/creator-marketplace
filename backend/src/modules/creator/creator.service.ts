@@ -1,5 +1,6 @@
 import { randomUUID } from 'crypto';
 import { AppError } from '../../middleware/error';
+import { toCreatorProfileDto, toPublicCreatorDto, toCreatorListItemDto, toSocialAccountDto } from './creator.dto';
 import { CreatorRepository } from './creator.repository';
 import type {
   UpdateCreatorProfileInput,
@@ -29,17 +30,17 @@ export class CreatorService {
     priceMax?: number;
   }) {
     const { page, limit, search, categories, location, platforms, priceMin, priceMax } = params;
-    const { creators, total } = await this.repo.findMany({
+    const { creators: raw, total } = await this.repo.findMany({
       page, limit: Math.min(limit, 20),
       search, categories, location, platforms, priceMin, priceMax,
     });
-    return { creators, total, page, limit };
+    return { creators: raw.map(toCreatorListItemDto), total, page, limit };
   }
 
   async getCreatorPublicProfile(creatorId: string) {
     const profile = await this.repo.findByIdPublic(creatorId);
     if (!profile) throw new AppError('Creator not found', 404);
-    return profile;
+    return toPublicCreatorDto(profile);
   }
 
   async getFilterOptions() {
@@ -49,7 +50,7 @@ export class CreatorService {
   async getProfile(userId: string) {
     const profile = await this.repo.findByUserId(userId);
     if (!profile) throw new AppError('Creator profile not found', 404);
-    return profile;
+    return toCreatorProfileDto(profile);
   }
 
   async updateProfile(userId: string, input: UpdateCreatorProfileInput) {
@@ -62,7 +63,7 @@ export class CreatorService {
       if (taken) throw new AppError('This username is already taken', 409);
     }
 
-    return this.repo.update(userId, input);
+    return toCreatorProfileDto(await this.repo.update(userId, input));
   }
 
   async addPortfolioLink(userId: string, input: AddPortfolioLinkInput) {
@@ -71,7 +72,7 @@ export class CreatorService {
 
     const currentLinks = (profile.portfolioLinks as { id: string; label: string; url: string }[]) || [];
     const newLink = { id: randomUUID(), label: input.label, url: input.url };
-    return this.repo.addPortfolioLink(userId, newLink, currentLinks);
+    return toCreatorProfileDto(await this.repo.addPortfolioLink(userId, newLink, currentLinks));
   }
 
   async removePortfolioLink(userId: string, linkId: string) {
@@ -80,7 +81,7 @@ export class CreatorService {
 
     const currentLinks = (profile.portfolioLinks as { id: string; label: string; url: string }[]) || [];
     if (!currentLinks.some((l) => l.id === linkId)) throw new AppError('Portfolio link not found', 404);
-    return this.repo.removePortfolioLink(userId, linkId, currentLinks);
+    return toCreatorProfileDto(await this.repo.removePortfolioLink(userId, linkId, currentLinks));
   }
 
   async updateSocialLinks(userId: string, input: UpdateSocialLinksInput) {
@@ -88,13 +89,14 @@ export class CreatorService {
     if (!profile) throw new AppError('Creator profile not found', 404);
 
     const currentLinks = (profile.socialLinks as Record<string, string>) || {};
-    return this.repo.updateSocialLinks(userId, { ...currentLinks, ...input });
+    return toCreatorProfileDto(await this.repo.updateSocialLinks(userId, { ...currentLinks, ...input }));
   }
 
   // ── Social Accounts ────────────────────────────────────────────────────────
 
   async getSocialAccounts(userId: string) {
-    return this.repo.findSocialAccountsByUserId(userId);
+    const accounts = await this.repo.findSocialAccountsByUserId(userId);
+    return accounts.map(toSocialAccountDto);
   }
 
   async addSocialAccount(userId: string, input: AddSocialAccountInput) {
@@ -104,7 +106,7 @@ export class CreatorService {
     const existing = await this.repo.findSocialAccountByPlatform(profile.id, input.platform);
     if (existing) throw new AppError(`${input.platform} account is already added`, 409);
 
-    return this.repo.addSocialAccount(profile.id, input);
+    return toSocialAccountDto(await this.repo.addSocialAccount(profile.id, input));
   }
 
   async updateSocialAccount(userId: string, accountId: string, input: UpdateSocialAccountInput) {
@@ -114,7 +116,7 @@ export class CreatorService {
     const account = await this.repo.findSocialAccountById(accountId);
     if (!account || account.creatorProfileId !== profile.id) throw new AppError('Social account not found', 404);
 
-    return this.repo.updateSocialAccount(accountId, input);
+    return toSocialAccountDto(await this.repo.updateSocialAccount(accountId, input));
   }
 
   async deleteSocialAccount(userId: string, accountId: string) {
@@ -132,7 +134,7 @@ export class CreatorService {
   async updatePaymentMethods(userId: string, input: UpdatePaymentMethodsInput) {
     const profile = await this.repo.findByUserId(userId);
     if (!profile) throw new AppError('Creator profile not found', 404);
-    return this.repo.updatePaymentMethods(userId, input.methods);
+    return toCreatorProfileDto(await this.repo.updatePaymentMethods(userId, input.methods));
   }
 
   // ── Campaign Preferences ────────────────────────────────────────────────────
@@ -140,7 +142,7 @@ export class CreatorService {
   async updateCampaignPrefs(userId: string, input: UpdateCampaignPrefsInput) {
     const profile = await this.repo.findByUserId(userId);
     if (!profile) throw new AppError('Creator profile not found', 404);
-    return this.repo.updateCampaignPrefs(userId, input);
+    return toCreatorProfileDto(await this.repo.updateCampaignPrefs(userId, input));
   }
 
   // ── Earnings Summary ───────────────────────────────────────────────────────
