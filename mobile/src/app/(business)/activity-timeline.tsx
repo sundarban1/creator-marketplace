@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
+  Linking,
   Modal,
   Platform,
   Pressable,
@@ -75,6 +76,24 @@ function parseDeliverables(raw?: string): string[] {
 function parseUrls(raw?: string | null): string[] {
   if (!raw) return [];
   return raw.split(/[\n,]/).map(s => s.trim()).filter(Boolean);
+}
+
+function isValidUrl(url: string): boolean {
+  try {
+    const u = new URL(url);
+    return u.protocol === 'http:' || u.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+function validateUrls(raw: string): string {
+  const lines = parseUrls(raw);
+  if (lines.length === 0) return 'Please add at least one link.';
+  const invalid = lines.filter(u => !isValidUrl(u));
+  if (invalid.length === 1) return `Invalid URL: "${invalid[0]}" — must start with https://`;
+  if (invalid.length > 1)  return `${invalid.length} invalid URLs — each must start with https://`;
+  return '';
 }
 
 function statusLabel(ws: WS, paid: boolean) {
@@ -225,10 +244,10 @@ function ProgressTracker({ current, scrollRef }: { current: number; scrollRef: R
 
 // ─── Action Card ──────────────────────────────────────────────────────────────
 
-function ActionCard({ ws, paid, isCreator, submitting, onPay, onStartWork, onUpload, onApprove, onRevision }: {
-  ws: WS; paid: boolean; isCreator: boolean; submitting: boolean;
+function ActionCard({ ws, paid, isCreator, isFree, submitting, onPay, onStartWork, onUpload, onReview, onApprove, onRevision }: {
+  ws: WS; paid: boolean; isCreator: boolean; isFree: boolean; submitting: boolean;
   onPay: () => void; onStartWork: () => void; onUpload: () => void;
-  onApprove: () => void; onRevision: () => void;
+  onReview: () => void; onApprove: () => void; onRevision: () => void;
 }) {
   const C = useAppColors();
 
@@ -259,16 +278,16 @@ function ActionCard({ ws, paid, isCreator, submitting, onPay, onStartWork, onUpl
     <View style={[ac.card, { backgroundColor: '#fff', borderLeftColor: '#0EA5E9' }]}>
       <View style={[ac.iconBg, { backgroundColor: '#E0F2FE' }]}><Ionicons name="hourglass-outline" size={26} color="#0EA5E9" /></View>
       <Text style={[ac.heading, { color: C.text }]}>Waiting on Creator to Start</Text>
-      <Text style={[ac.sub, { color: C.textSecondary }]}>Payment secured ✅ Creator has been notified and will start soon.</Text>
+      <Text style={[ac.sub, { color: C.textSecondary }]}>{isFree ? 'Creator has been accepted and notified. Waiting for them to start.' : 'Payment secured ✅ Creator has been notified and will start soon.'}</Text>
     </View>
   );
 
-  // Creator: payment secured — Let's Create Content
+  // Creator: ready to start (payment secured for paid, free event no payment needed)
   if (paid && ws === 'NONE' && isCreator) return (
     <View style={[ac.card, { backgroundColor: '#fff', borderLeftColor: '#7C3AED' }]}>
       <View style={[ac.iconBg, { backgroundColor: '#EEF2FF' }]}><Ionicons name="rocket-outline" size={26} color="#7C3AED" /></View>
-      <Text style={[ac.heading, { color: C.text }]}>Payment Secured — Ready to Create!</Text>
-      <Text style={[ac.sub, { color: C.textSecondary }]}>The business has paid. Press the button below to officially start and notify them you've begun.</Text>
+      <Text style={[ac.heading, { color: C.text }]}>{isFree ? 'You\'re Accepted — Ready to Create!' : 'Payment Secured — Ready to Create!'}</Text>
+      <Text style={[ac.sub, { color: C.textSecondary }]}>{isFree ? 'You\'ve been selected for this event. Press below to officially start.' : 'The business has paid. Press the button below to officially start and notify them you\'ve begun.'}</Text>
       <Pressable style={[ac.btn, { backgroundColor: '#7C3AED', opacity: submitting ? 0.75 : 1 }]} onPress={onStartWork} disabled={submitting}>
         {submitting
           ? <ActivityIndicator size="small" color="#fff" />
@@ -303,18 +322,22 @@ function ActionCard({ ws, paid, isCreator, submitting, onPay, onStartWork, onUpl
   if (ws === 'SUBMITTED' && !isCreator) return (
     <View style={[ac.card, { backgroundColor: '#fff', borderLeftColor: '#D97706' }]}>
       <View style={[ac.iconBg, { backgroundColor: '#FFF7ED' }]}><Ionicons name="eye-outline" size={26} color="#D97706" /></View>
-      <Text style={[ac.heading, { color: C.text }]}>Review Deliverables</Text>
-      <Text style={[ac.sub, { color: C.textSecondary }]}>Creator submitted work. Approve or request changes within 5 days.</Text>
+      <Text style={[ac.heading, { color: C.text }]}>Creator Submitted Work</Text>
+      <Text style={[ac.sub, { color: C.textSecondary }]}>Review the submitted links, then approve or request changes within 5 days.</Text>
+      <Pressable style={[ac.btn, { backgroundColor: '#D97706' }]} onPress={onReview}>
+        <Ionicons name="eye-outline" size={16} color="#fff" />
+        <Text style={ac.btnTxt}>Review Deliverables</Text>
+      </Pressable>
       <View style={ac.btnRow}>
-        <Pressable style={[ac.btn, { flex: 1, backgroundColor: '#16A34A' }]} onPress={onApprove}>
-          {submitting ? <ActivityIndicator size="small" color="#fff" /> : <>
-            <Ionicons name="checkmark-done-outline" size={15} color="#fff" />
-            <Text style={ac.btnTxt}>Approve Work</Text>
-          </>}
-        </Pressable>
-        <Pressable style={[ac.btn, { flex: 1, backgroundColor: '#D97706' }]} onPress={onRevision}>
+        <Pressable style={[ac.btn, { flex: 1, backgroundColor: '#EF4444' }]} onPress={onRevision}>
           <Ionicons name="create-outline" size={15} color="#fff" />
           <Text style={ac.btnTxt}>Request Revision</Text>
+        </Pressable>
+        <Pressable style={[ac.btn, { flex: 1, backgroundColor: '#16A34A', opacity: submitting ? 0.75 : 1 }]} onPress={onApprove} disabled={submitting}>
+          {submitting ? <ActivityIndicator size="small" color="#fff" /> : <>
+            <Ionicons name="checkmark-done-outline" size={15} color="#fff" />
+            <Text style={ac.btnTxt}>Approve</Text>
+          </>}
         </Pressable>
       </View>
     </View>
@@ -366,14 +389,16 @@ export default function CampaignWorkspaceScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast]       = useState('');
 
-  const [showPay, setShowPay]         = useState(false);
-  const [showUpload, setShowUpload]   = useState(false);
+  const [showPay, setShowPay]           = useState(false);
+  const [showUpload, setShowUpload]     = useState(false);
+  const [showReview, setShowReview]     = useState(false);
   const [showRevision, setShowRevision] = useState(false);
-  const [showCancel, setShowCancel]   = useState(false);
+  const [showCancel, setShowCancel]     = useState(false);
 
   const [payMethod, setPayMethod]       = useState<'esewa' | 'khalti' | 'fonepay'>('esewa');
   const [uploadUrls, setUploadUrls]     = useState('');
   const [uploadNotes, setUploadNotes]   = useState('');
+  const [urlError, setUrlError]         = useState('');
   const [revisionNote, setRevisionNote] = useState('');
 
   const progressScrollRef = useRef<ScrollView>(null);
@@ -449,7 +474,7 @@ export default function CampaignWorkspaceScreen() {
   useEffect(() => {
     if (!loading && progressScrollRef.current) {
       const ws   = app?.workStatus ?? 'NONE';
-      const paid = campaign?.paymentStatus === 'PAID' || campaign?.paymentStatus === 'RELEASED';
+      const paid = campaign?.campaignType === 'OPEN_EVENT' || campaign?.paymentStatus === 'PAID' || campaign?.paymentStatus === 'RELEASED';
       const idx  = progressIdx(ws, paid);
       const x    = Math.max(0, idx * STEP_W - 120);
       setTimeout(() => progressScrollRef.current?.scrollTo({ x, animated: true }), 150);
@@ -487,6 +512,9 @@ export default function CampaignWorkspaceScreen() {
 
   async function handleSubmitWork() {
     if (!app) return;
+    const err = validateUrls(uploadUrls);
+    if (err) { setUrlError(err); return; }
+    setUrlError('');
     setSubmitting(true);
     try {
       await campaignService.submitWork(app.id, { note: uploadNotes, urls: uploadUrls });
@@ -566,7 +594,8 @@ export default function CampaignWorkspaceScreen() {
   }
 
   const ws   = app?.workStatus ?? 'NONE';
-  const paid = app?.paymentStatus === 'PAID' || app?.paymentStatus === 'RELEASED';
+  const isFreeEvent = campaign?.campaignType === 'OPEN_EVENT';
+  const paid = isFreeEvent || app?.paymentStatus === 'PAID' || app?.paymentStatus === 'RELEASED';
   const pIdx = progressIdx(ws, paid);
   const sLbl = statusLabel(ws, paid);
   const sClr = statusColor(ws, paid);
@@ -652,10 +681,11 @@ export default function CampaignWorkspaceScreen() {
 
         {/* ── Current Action Card ── */}
         <ActionCard
-          ws={ws} paid={paid} isCreator={isCreator} submitting={submitting}
+          ws={ws} paid={paid} isCreator={isCreator} isFree={isFreeEvent} submitting={submitting}
           onPay={() => setShowPay(true)}
           onStartWork={handleStartWork}
           onUpload={() => setShowUpload(true)}
+          onReview={() => setShowReview(true)}
           onApprove={handleApprove}
           onRevision={() => setShowRevision(true)}
         />
@@ -701,50 +731,6 @@ export default function CampaignWorkspaceScreen() {
           </View>
         </View>
 
-        {/* ── Deliverables ── */}
-        {deliverables.length > 0 && (
-          <View style={[s.card, { backgroundColor: '#fff' }]}>
-            <Text style={[s.secTitle, { color: C.text }]}>Deliverables</Text>
-            <Text style={[s.secSub, { color: C.textSecondary }]}>Required content for this campaign</Text>
-            <View style={{ marginTop: 12, gap: 8 }}>
-              {deliverables.map((d, idx) => {
-                const st  = ws === 'APPROVED' ? 'approved' : ws === 'SUBMITTED' ? 'submitted' : 'pending';
-                const clr = st === 'approved' ? '#16A34A' : st === 'submitted' ? '#7C3AED' : '#9CA3AF';
-                const bg  = st === 'approved' ? '#DCFCE7' : st === 'submitted' ? '#EEF2FF' : '#F3F4F6';
-                const ico = (st === 'approved' ? 'checkmark-circle' : st === 'submitted' ? 'time' : 'ellipse-outline') as any;
-                return (
-                  <View key={idx} style={[dl.item, { borderColor: '#F3F4F6' }]}>
-                    <View style={[dl.ico, { backgroundColor: bg }]}><Ionicons name={ico} size={15} color={clr} /></View>
-                    <Text style={[dl.label, { color: C.text }]} numberOfLines={1}>{d}</Text>
-                    <View style={[dl.badge, { backgroundColor: bg }]}>
-                      <Text style={[dl.badgeTxt, { color: clr }]}>
-                        {st === 'approved' ? 'Approved' : st === 'submitted' ? 'Submitted' : 'Pending'}
-                      </Text>
-                    </View>
-                  </View>
-                );
-              })}
-            </View>
-
-            {/* Submitted URLs — visible to business when work is submitted/approved */}
-            {!isCreator && submittedUrls.length > 0 && (ws === 'SUBMITTED' || ws === 'APPROVED') && (
-              <View style={{ marginTop: 16 }}>
-                <View style={[dl.urlHeader, { borderTopColor: '#F3F4F6' }]}>
-                  <Ionicons name="link-outline" size={14} color="#7C3AED" />
-                  <Text style={[dl.urlHeaderTxt, { color: C.text }]}>Uploaded Deliverable Links</Text>
-                </View>
-                <View style={{ gap: 8, marginTop: 8 }}>
-                  {submittedUrls.map((url, idx) => (
-                    <View key={idx} style={[dl.urlRow, { backgroundColor: '#F5F3FF', borderColor: '#EDE9FE' }]}>
-                      <Ionicons name="open-outline" size={13} color="#7C3AED" />
-                      <Text style={[dl.urlTxt, { color: '#7C3AED' }]} numberOfLines={1}>{url}</Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            )}
-          </View>
-        )}
 
         {/* ── Payment Details ── */}
         <View style={[s.card, { backgroundColor: '#fff' }]}>
@@ -843,19 +829,43 @@ export default function CampaignWorkspaceScreen() {
       </Sheet>
 
       {/* ── Upload Deliverables Modal ── */}
-      <Sheet visible={showUpload} onClose={() => setShowUpload(false)} title="Upload Deliverables">
-        <Text style={sh.sub}>Paste links or describe what you've created.</Text>
+      <Sheet visible={showUpload} onClose={() => { setShowUpload(false); setUrlError(''); }} title="Upload Deliverables">
+        <Text style={sh.sub}>Add one link per line. Each link must start with https://</Text>
         <View style={{ gap: 12, marginVertical: 14 }}>
           <View>
-            <Text style={sh.inputLabel}>Deliverable URLs / Links</Text>
+            <Text style={sh.inputLabel}>Deliverable Links *</Text>
             <TextInput
-              style={[sh.input, { color: '#111827', height: 80 }]}
-              placeholder="https://drive.google.com/... or YouTube link"
+              style={[sh.input, { color: '#111827', height: 100, borderColor: urlError ? '#EF4444' : '#E5E7EB' }]}
+              placeholder={"https://drive.google.com/...\nhttps://youtube.com/watch?v=..."}
               placeholderTextColor="#9CA3AF"
               value={uploadUrls}
-              onChangeText={setUploadUrls}
+              onChangeText={(t) => { setUploadUrls(t); if (urlError) setUrlError(''); }}
               multiline
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="url"
             />
+            {urlError ? (
+              <View style={up.errorRow}>
+                <Ionicons name="alert-circle" size={13} color="#EF4444" />
+                <Text style={up.errorTxt}>{urlError}</Text>
+              </View>
+            ) : null}
+
+            {/* Live per-link preview */}
+            {uploadUrls.trim().length > 0 && (
+              <View style={{ gap: 6, marginTop: 10 }}>
+                {parseUrls(uploadUrls).map((url, idx) => {
+                  const valid = isValidUrl(url);
+                  return (
+                    <View key={idx} style={[up.linkPreview, { borderColor: valid ? '#A7F3D0' : '#FECACA', backgroundColor: valid ? '#F0FDF4' : '#FEF2F2' }]}>
+                      <Ionicons name={valid ? 'checkmark-circle' : 'close-circle'} size={14} color={valid ? '#16A34A' : '#EF4444'} />
+                      <Text style={[up.linkPreviewTxt, { color: valid ? '#065F46' : '#991B1B' }]} numberOfLines={1}>{url}</Text>
+                    </View>
+                  );
+                })}
+              </View>
+            )}
           </View>
           <View>
             <Text style={sh.inputLabel}>Notes to Business</Text>
@@ -872,6 +882,79 @@ export default function CampaignWorkspaceScreen() {
         <Pressable style={[sh.primaryBtn, { backgroundColor: '#7C3AED', opacity: submitting ? 0.75 : 1 }]} onPress={handleSubmitWork} disabled={submitting}>
           {submitting ? <ActivityIndicator size="small" color="#fff" /> : <><Ionicons name="cloud-upload-outline" size={17} color="#fff" /><Text style={sh.primaryBtnTxt}>Submit Work</Text></>}
         </Pressable>
+      </Sheet>
+
+      {/* ── Review Deliverables Modal ── */}
+      <Sheet visible={showReview} onClose={() => setShowReview(false)} title="Review Deliverables">
+
+        {/* Submitted links — top */}
+        <View style={rv.section}>
+          <View style={rv.sectionHeader}>
+            <View style={[rv.sectionIcon, { backgroundColor: '#F5F3FF' }]}>
+              <Ionicons name="link" size={14} color="#7C3AED" />
+            </View>
+            <Text style={rv.sectionTitle}>Links Submitted by Creator</Text>
+          </View>
+          {submittedUrls.length > 0 ? (
+            <View style={{ gap: 8 }}>
+              {submittedUrls.map((url, idx) => (
+                <Pressable
+                  key={idx}
+                  style={rv.linkRow}
+                  onPress={() => Linking.openURL(url).catch(() => {})}>
+                  <Ionicons name="open-outline" size={14} color="#7C3AED" />
+                  <Text style={rv.linkTxt} numberOfLines={2}>{url}</Text>
+                  <Ionicons name="chevron-forward" size={13} color="#A78BFA" />
+                </Pressable>
+              ))}
+            </View>
+          ) : (
+            <View style={rv.noLinks}>
+              <Ionicons name="link-outline" size={20} color="#D1D5DB" />
+              <Text style={rv.noLinksTxt}>No links submitted yet</Text>
+            </View>
+          )}
+        </View>
+
+        {/* What needs to be delivered */}
+        {deliverables.length > 0 && (
+          <View style={[rv.section, { marginTop: 14 }]}>
+            <View style={rv.sectionHeader}>
+              <View style={[rv.sectionIcon, { backgroundColor: '#FFF7ED' }]}>
+                <Ionicons name="list" size={14} color="#D97706" />
+              </View>
+              <Text style={rv.sectionTitle}>What Needs to Be Delivered</Text>
+            </View>
+            <View style={{ gap: 8 }}>
+              {deliverables.map((d, idx) => (
+                <View key={idx} style={rv.deliverableRow}>
+                  <View style={rv.deliverableNum}>
+                    <Text style={rv.deliverableNumTxt}>{idx + 1}</Text>
+                  </View>
+                  <Text style={rv.deliverableTxt}>{d}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {/* Action buttons */}
+        <View style={{ flexDirection: 'row', gap: 10, marginTop: 20 }}>
+          <Pressable
+            style={[sh.primaryBtn, { flex: 1, backgroundColor: '#D97706' }]}
+            onPress={() => { setShowReview(false); setTimeout(() => setShowRevision(true), 200); }}>
+            <Ionicons name="create-outline" size={15} color="#fff" />
+            <Text style={sh.primaryBtnTxt}>Request Revision</Text>
+          </Pressable>
+          <Pressable
+            style={[sh.primaryBtn, { flex: 1, backgroundColor: '#16A34A', opacity: submitting ? 0.75 : 1 }]}
+            disabled={submitting}
+            onPress={() => { setShowReview(false); handleApprove(); }}>
+            {submitting
+              ? <ActivityIndicator size="small" color="#fff" />
+              : <><Ionicons name="checkmark-done-outline" size={15} color="#fff" /><Text style={sh.primaryBtnTxt}>Approve</Text></>}
+          </Pressable>
+        </View>
       </Sheet>
 
       {/* ── Request Revision Modal ── */}
@@ -1017,16 +1100,19 @@ const tl = StyleSheet.create({
   time:     { fontSize: 10, fontFamily: F.regular, marginTop: 4, lineHeight: 15 },
 });
 
-const dl = StyleSheet.create({
-  item:       { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderRadius: 10, padding: 10 },
-  ico:        { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  label:      { flex: 1, fontSize: 13, fontFamily: F.semibold },
-  badge:      { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
-  badgeTxt:   { fontSize: 10, fontFamily: F.bold },
-  urlHeader:  { flexDirection: 'row', alignItems: 'center', gap: 6, borderTopWidth: 1, paddingTop: 12 },
-  urlHeaderTxt:{ fontSize: 13, fontFamily: F.bold },
-  urlRow:     { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8 },
-  urlTxt:     { flex: 1, fontSize: 12, fontFamily: F.regular },
+const rv = StyleSheet.create({
+  section:          { backgroundColor: '#FAFAFA', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: '#F3F4F6' },
+  sectionHeader:    { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
+  sectionIcon:      { width: 26, height: 26, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
+  sectionTitle:     { fontSize: 13, fontFamily: F.bold, color: '#1F2937' },
+  linkRow:          { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#F5F3FF', borderWidth: 1, borderColor: '#EDE9FE', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 11 },
+  linkTxt:          { flex: 1, fontSize: 13, fontFamily: F.semibold, color: '#7C3AED', textDecorationLine: 'underline' },
+  noLinks:          { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 10 },
+  noLinksTxt:       { fontSize: 13, fontFamily: F.regular, color: '#9CA3AF' },
+  deliverableRow:   { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  deliverableNum:   { width: 22, height: 22, borderRadius: 11, backgroundColor: '#FED7AA', justifyContent: 'center', alignItems: 'center', marginTop: 1, flexShrink: 0 },
+  deliverableNumTxt:{ fontSize: 11, fontFamily: F.bold, color: '#D97706' },
+  deliverableTxt:   { flex: 1, fontSize: 13, fontFamily: F.regular, color: '#374151', lineHeight: 20 },
 });
 
 const py = StyleSheet.create({
@@ -1050,6 +1136,13 @@ const ac = StyleSheet.create({
   btnRow: { flexDirection: 'row', gap: 10, marginTop: 4 },
   btn:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, borderRadius: 12, paddingVertical: 13, marginTop: 4 },
   btnTxt: { fontSize: 14, fontFamily: F.bold, color: '#fff' },
+});
+
+const up = StyleSheet.create({
+  errorRow:       { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 6 },
+  errorTxt:       { fontSize: 12, fontFamily: F.semibold, color: '#EF4444', flex: 1 },
+  linkPreview:    { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 7 },
+  linkPreviewTxt: { flex: 1, fontSize: 12, fontFamily: F.regular },
 });
 
 const sh = StyleSheet.create({

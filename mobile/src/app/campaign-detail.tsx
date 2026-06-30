@@ -286,7 +286,8 @@ export default function CampaignDetailScreen() {
   const isBusiness = user?.role === 'BUSINESS';
 
   const [campaign, setCampaign] = useState<Campaign | null>(null);
-  const [hasApplied, setHasApplied] = useState(false);
+  const [hasApplied, setHasApplied]           = useState(false);
+  const [applicationStatus, setApplicationStatus] = useState<'pending' | 'accepted' | 'rejected' | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -440,7 +441,11 @@ export default function CampaignDetailScreen() {
     Promise.all([campaignService.getById(campaignId), appFetch])
       .then(([c, apps]) => {
         setCampaign(c);
-        if (!isBusiness) setHasApplied((apps as { campaignId: string }[]).some((a) => a.campaignId === campaignId));
+        if (!isBusiness) {
+          const myApp = (apps as { campaignId: string; status: string }[]).find((a) => a.campaignId === campaignId);
+          setHasApplied(!!myApp);
+          setApplicationStatus(myApp ? myApp.status as 'pending' | 'accepted' | 'rejected' : null);
+        }
       })
       .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load event'))
       .finally(() => setLoading(false));
@@ -451,7 +456,11 @@ export default function CampaignDetailScreen() {
     useCallback(() => {
       if (isBusiness || !campaignId) return;
       campaignService.getMyApplications()
-        .then((apps) => setHasApplied(apps.some((a) => a.campaignId === campaignId)))
+        .then((apps) => {
+          const myApp = apps.find((a) => a.campaignId === campaignId);
+          setHasApplied(!!myApp);
+          setApplicationStatus(myApp ? myApp.status as 'pending' | 'accepted' | 'rejected' : null);
+        })
         .catch(() => {});
     }, [campaignId, isBusiness])
   );
@@ -647,6 +656,16 @@ export default function CampaignDetailScreen() {
             <Ionicons name={isEditLocked ? 'lock-closed-outline' : 'create-outline'} size={16} color="#fff" />
             <Text style={s.applyBtnTxt}>{isEditLocked ? t('campaignDetail.locked') : t('campaignDetail.editEvent')}</Text>
           </Pressable>
+        ) : isOpenEvent && applicationStatus === 'accepted' ? (
+          <View style={s.invitedCard}>
+            <View style={s.invitedIconWrap}>
+              <Text style={s.invitedEmoji}>🎉</Text>
+            </View>
+            <View style={s.invitedTextBlock}>
+              <Text style={s.invitedTitle}>Congrats, You're Invited!</Text>
+              <Text style={s.invitedSub}>You've been selected for this event. Check your workspace to get started.</Text>
+            </View>
+          </View>
         ) : hasApplied ? (
           <View style={s.appliedBadge}>
             <Ionicons name="checkmark-circle" size={18} color="#059669" />
@@ -1070,6 +1089,13 @@ const s = StyleSheet.create({
   applyBtnTxt:   { color: '#fff', fontWeight: '800', fontSize: 15, fontFamily: F.extrabold },
   appliedBadge:  { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#ECFDF5', borderRadius: 14, paddingHorizontal: 20, paddingVertical: 14, borderWidth: 1.5, borderColor: '#A7F3D0' },
   appliedBadgeTxt:{ fontSize: 15, fontWeight: '800', color: '#059669', fontFamily: F.extrabold },
+
+  invitedCard:      { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#F0FDF4', borderRadius: 16, paddingHorizontal: 14, paddingVertical: 12, borderWidth: 1.5, borderColor: '#6EE7B7' },
+  invitedIconWrap:  { width: 44, height: 44, borderRadius: 22, backgroundColor: '#DCFCE7', justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  invitedEmoji:     { fontSize: 22 },
+  invitedTextBlock: { flex: 1, gap: 2 },
+  invitedTitle:     { fontSize: 15, fontWeight: '800', color: '#065F46', fontFamily: F.extrabold },
+  invitedSub:       { fontSize: 12, color: '#047857', fontFamily: F.regular, lineHeight: 17 },
 
   toast:    { position: 'absolute', bottom: 100, left: 20, right: 20, borderRadius: 14, paddingHorizontal: 18, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 10 },
   toastTxt: { color: '#fff', fontSize: 14, fontWeight: '700', flex: 1, fontFamily: F.bold },

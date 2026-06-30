@@ -107,9 +107,16 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
           </View>
         </View>
 
-        {/* ── Work progress tracker (accepted only) ── */}
+        {/* ── Accepted state ── */}
         {proposal.status === 'accepted' && (
-          <>
+          isFree ? (
+            /* Free event — no payment, just a congrats banner */
+            <View style={styles.invitedBanner}>
+              <Text style={styles.invitedEmoji}>🎉</Text>
+              <Text style={styles.invitedTitle}>Congratulations, You are invited!</Text>
+            </View>
+          ) : (
+            /* Paid campaign — show dynamic track button */
             <Pressable
               style={[styles.trackBtn, { backgroundColor: trackCfg.color }]}
               onPress={(e) => {
@@ -134,7 +141,7 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
               </View>
               <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.7)" />
             </Pressable>
-          </>
+          )
         )}
 
         {/* Pending/rejected subtle footer */}
@@ -288,12 +295,17 @@ const styles = StyleSheet.create({
   freeTag:     { backgroundColor: '#F0FDF4', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2, alignSelf: 'flex-start' },
   freeTagTxt:  { fontSize: 11, fontWeight: '700', color: '#059669', fontFamily: F.bold },
 
-  // Track button
+  // Track button (paid campaigns)
   trackBtn:     { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 12, paddingVertical: 11, paddingHorizontal: 12, marginTop: 8 },
   trackBtnIcon: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' },
   trackBtnText: { flex: 1, gap: 1 },
   trackBtnLabel:{ fontSize: 13, fontWeight: '700', color: '#fff', fontFamily: F.bold },
   trackBtnSub:  { fontSize: 11, color: 'rgba(255,255,255,0.75)', fontFamily: F.regular },
+
+  // Invited banner (free events)
+  invitedBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#F0FDF4', borderWidth: 1.5, borderColor: '#6EE7B7', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 11, marginTop: 8 },
+  invitedEmoji:  { fontSize: 20 },
+  invitedTitle:  { fontSize: 13, fontWeight: '700', color: '#065F46', fontFamily: F.bold },
 
   // Footer for non-accepted
   footerRow:  { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8, paddingTop: 10, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#F3F4F6' },

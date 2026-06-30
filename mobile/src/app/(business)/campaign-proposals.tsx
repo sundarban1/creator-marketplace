@@ -184,8 +184,8 @@ function ProposalCard({
         </View>
       )}
 
-      {/* Dynamic project action button for each accepted creator */}
-      {p.status === 'accepted' && (() => {
+      {/* Dynamic project action button — paid campaigns only */}
+      {p.status === 'accepted' && !isFree && (() => {
         const cfg = projectBtnConfig(p.workStatus);
         return (
           <Pressable
