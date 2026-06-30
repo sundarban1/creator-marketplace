@@ -19,6 +19,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import { campaignService } from '@/services/campaign';
+import { chatService } from '@/services/chat';
 import type { Campaign } from '@/types';
 import { F } from '@/utilities/constants';
 
@@ -572,12 +573,25 @@ export default function CampaignWorkspaceScreen() {
     }
   }
 
-  function handleMessage() {
-    if (isCreator) {
-      router.push('/(creator)/(tabs)/messages');
-    } else {
-      router.push('/(business)/(tabs)/messages');
+  async function handleMessage() {
+    const otherProfileId = app?.creatorProfileId;
+    const otherName      = isCreator ? (app?.creatorName ?? 'Brand') : (app?.creatorName ?? 'Creator');
+
+    if (otherProfileId) {
+      try {
+        const conv = await chatService.checkConversation(otherProfileId);
+        if (conv?.id) {
+          router.push({
+            pathname: isCreator ? '/(creator)/(tabs)/messages/[id]' : '/(business)/(tabs)/messages/[id]',
+            params: { id: conv.id, name: otherName, status: conv.status },
+          });
+          return;
+        }
+      } catch { /* fall through to messages list */ }
     }
+
+    // Fallback — open messages list so they can find the conversation
+    router.push(isCreator ? '/(creator)/(tabs)/messages' : '/(business)/(tabs)/messages');
   }
 
   if (loading) {
