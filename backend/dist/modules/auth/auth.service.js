@@ -1,24 +1,19 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthService = void 0;
+const crypto_1 = __importDefault(require("crypto"));
 const client_1 = require("@prisma/client");
 const error_1 = require("../../middleware/error");
 const hash_1 = require("../../utils/hash");
 const jwt_1 = require("../../utils/jwt");
 const email_1 = require("../../utils/email");
 const auth_repository_1 = require("./auth.repository");
+const auth_dto_1 = require("./auth.dto");
 function generateOtp() {
     return Math.floor(100000 + Math.random() * 900000).toString();
-}
-function buildUserResponse(user) {
-    const name = user.creatorProfile?.fullName ?? user.businessProfile?.businessName ?? user.email.split('@')[0];
-    const avatar = user.creatorProfile?.avatarUrl ?? user.businessProfile?.logoUrl ?? null;
-    return { id: user.id, email: user.email, phone: user.phone, role: user.role,
-        isEmailVerified: user.isEmailVerified, isOnboarded: user.isOnboarded,
-        createdAt: user.createdAt, updatedAt: user.updatedAt,
-        creatorProfile: user.creatorProfile ?? null,
-        businessProfile: user.businessProfile ?? null,
-        name, avatar };
 }
 class AuthService {
     repo;
@@ -76,7 +71,7 @@ class AuthService {
             ?? verifiedUser.email.split('@')[0];
         (0, email_1.sendWelcomeEmail)(verifiedUser.email, displayName, verifiedUser.role)
             .catch((err) => console.error('Welcome email failed:', err));
-        return { user: buildUserResponse(verifiedUser), accessToken, refreshToken };
+        return { user: (0, auth_dto_1.toUserDto)(verifiedUser), accessToken, refreshToken };
     }
     async resendOtp(input) {
         const user = await this.repo.findUserByEmail(input.email);
@@ -111,7 +106,7 @@ class AuthService {
         const accessToken = (0, jwt_1.signAccessToken)(tokenPayload);
         const refreshToken = (0, jwt_1.signRefreshToken)(tokenPayload);
         await this.repo.updateRefreshToken(activeUser.id, refreshToken);
-        return { user: buildUserResponse(activeUser), accessToken, refreshToken, reactivated };
+        return { user: (0, auth_dto_1.toUserDto)(activeUser), accessToken, refreshToken, reactivated };
     }
     async completeOnboarding(userId) {
         await this.repo.setOnboarded(userId);
@@ -212,6 +207,89 @@ class AuthService {
         await this.repo.deleteOtpsByUserId(userId);
         await this.repo.updateUserPhone(userId, input.phone.trim());
         return { message: 'Phone number verified successfully' };
+    }
+    async googleAuth(input) {
+        const googleRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+            headers: { Authorization: `Bearer ${input.accessToken}` },
+        });
+        if (!googleRes.ok)
+            throw new error_1.AppError('Invalid or expired Google token. Please try again.', 401);
+        const gUser = await googleRes.json();
+        if (!gUser.email)
+            throw new error_1.AppError('Could not retrieve email from Google.', 400);
+        const existing = await this.repo.findUserByEmail(gUser.email);
+        if (existing) {
+            if (!existing.isActive)
+                await this.repo.reactivateAccount(existing.id);
+            const user = await this.repo.findUserById(existing.id);
+            const payload = { id: user.id, email: user.email, role: user.role };
+            const accessToken = (0, jwt_1.signAccessToken)(payload);
+            const refreshToken = (0, jwt_1.signRefreshToken)(payload);
+            await this.repo.updateRefreshToken(user.id, refreshToken);
+            return { needsRole: false, user: (0, auth_dto_1.toUserDto)(user), accessToken, refreshToken, isNewUser: false };
+        }
+        if (!input.role) {
+            return { needsRole: true, email: gUser.email, name: gUser.name ?? gUser.email.split('@')[0] };
+        }
+        const hashedPassword = await (0, hash_1.hashPassword)(crypto_1.default.randomBytes(32).toString('hex'));
+        let createdUser;
+        if (input.role === 'CREATOR') {
+            createdUser = await this.repo.createUserWithCreatorProfile({
+                email: gUser.email, password: hashedPassword, role: client_1.Role.CREATOR, fullName: gUser.name,
+            });
+        }
+        else {
+            createdUser = await this.repo.createUserWithBusinessProfile({
+                email: gUser.email, password: hashedPassword, role: client_1.Role.BUSINESS, businessName: gUser.name,
+            });
+        }
+        // Google has already verified the email — mark it verified without OTP
+        const verifiedUser = await this.repo.verifyEmail(createdUser.id);
+        const payload = { id: verifiedUser.id, email: verifiedUser.email, role: verifiedUser.role };
+        const accessToken = (0, jwt_1.signAccessToken)(payload);
+        const refreshToken = (0, jwt_1.signRefreshToken)(payload);
+        await this.repo.updateRefreshToken(verifiedUser.id, refreshToken);
+        return { needsRole: false, user: (0, auth_dto_1.toUserDto)(verifiedUser), accessToken, refreshToken, isNewUser: true };
+    }
+    async facebookAuth(input) {
+        const fbRes = await fetch(`https://graph.facebook.com/me?fields=id,name,email&access_token=${input.accessToken}`);
+        if (!fbRes.ok)
+            throw new error_1.AppError('Invalid or expired Facebook token. Please try again.', 401);
+        const fbUser = await fbRes.json();
+        if (!fbUser.email)
+            throw new error_1.AppError('Facebook account has no email. Please use a different sign-in method.', 400);
+        const existing = await this.repo.findUserByEmail(fbUser.email);
+        if (existing) {
+            if (!existing.isActive)
+                await this.repo.reactivateAccount(existing.id);
+            const user = await this.repo.findUserById(existing.id);
+            const payload = { id: user.id, email: user.email, role: user.role };
+            const accessToken = (0, jwt_1.signAccessToken)(payload);
+            const refreshToken = (0, jwt_1.signRefreshToken)(payload);
+            await this.repo.updateRefreshToken(user.id, refreshToken);
+            return { needsRole: false, user: (0, auth_dto_1.toUserDto)(user), accessToken, refreshToken, isNewUser: false };
+        }
+        if (!input.role) {
+            return { needsRole: true, email: fbUser.email, name: fbUser.name ?? fbUser.email.split('@')[0] };
+        }
+        const hashedPassword = await (0, hash_1.hashPassword)(crypto_1.default.randomBytes(32).toString('hex'));
+        let createdUser;
+        if (input.role === 'CREATOR') {
+            createdUser = await this.repo.createUserWithCreatorProfile({
+                email: fbUser.email, password: hashedPassword, role: client_1.Role.CREATOR, fullName: fbUser.name,
+            });
+        }
+        else {
+            createdUser = await this.repo.createUserWithBusinessProfile({
+                email: fbUser.email, password: hashedPassword, role: client_1.Role.BUSINESS, businessName: fbUser.name,
+            });
+        }
+        const verifiedUser = await this.repo.verifyEmail(createdUser.id);
+        const payload = { id: verifiedUser.id, email: verifiedUser.email, role: verifiedUser.role };
+        const accessToken = (0, jwt_1.signAccessToken)(payload);
+        const refreshToken = (0, jwt_1.signRefreshToken)(payload);
+        await this.repo.updateRefreshToken(verifiedUser.id, refreshToken);
+        return { needsRole: false, user: (0, auth_dto_1.toUserDto)(verifiedUser), accessToken, refreshToken, isNewUser: true };
     }
     async resetPassword(input) {
         let decoded;

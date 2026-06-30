@@ -30,6 +30,7 @@ const envSchema = zod_1.z.object({
     EMAIL_SECURE: zod_1.z.string().optional(),
     EMAIL_USERNAME: zod_1.z.string().optional(),
     EMAIL_PASSWORD: zod_1.z.string().optional(),
+    ADMIN_EMAIL: zod_1.z.string().optional(),
     FRONTEND_URL: zod_1.z.string().default('http://localhost:3000'),
 });
 const parsed = envSchema.safeParse(process.env);

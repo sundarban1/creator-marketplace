@@ -1,15 +1,5 @@
 export declare const notificationService: {
-    getForUser(userId: string): Promise<{
-        type: string;
-        id: string;
-        createdAt: Date;
-        userId: string;
-        body: string;
-        title: string;
-        isRead: boolean;
-        refId: string | null;
-        refType: string | null;
-    }[]>;
+    getForUser(userId: string, lang?: string): Promise<import("./notification.dto").NotificationDto[]>;
     markRead(id: string, userId: string): Promise<void>;
     markAllRead(userId: string): Promise<void>;
     markReadByRef(userId: string, refId: string): Promise<void>;
@@ -23,17 +13,7 @@ export declare const notificationService: {
         body: string;
         refId?: string;
         refType?: string;
-    }): Promise<{
-        type: string;
-        id: string;
-        createdAt: Date;
-        userId: string;
-        body: string;
-        title: string;
-        isRead: boolean;
-        refId: string | null;
-        refType: string | null;
-    }>;
+    }): Promise<import("./notification.dto").NotificationDto>;
     createMany(data: Array<{
         userId: string;
         type: string;

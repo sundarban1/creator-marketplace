@@ -4,11 +4,20 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CampaignRepository = void 0;
+const client_1 = require("@prisma/client");
 const prisma_1 = __importDefault(require("../../prisma"));
 class CampaignRepository {
     async create(data) {
         return prisma_1.default.campaign.create({
-            data,
+            data: {
+                ...data,
+                campaignType: data.campaignType ?? 'PAID_CAMPAIGN',
+                capacity: data.capacity ?? null,
+                eventDate: data.eventDate ?? null,
+                venue: data.venue ?? null,
+                benefits: data.benefits ?? [],
+                eventStatus: 'OPEN',
+            },
             include: {
                 business: { select: { businessName: true, logoUrl: true } },
                 _count: { select: { applications: true } },
@@ -17,11 +26,20 @@ class CampaignRepository {
     }
     async findMany(filters) {
         const where = {};
+        if (filters.search) {
+            where.OR = [
+                { title: { contains: filters.search, mode: 'insensitive' } },
+                { business: { businessName: { contains: filters.search, mode: 'insensitive' } } },
+            ];
+        }
         if (filters.category) {
             where.category = { contains: filters.category, mode: 'insensitive' };
         }
         if (filters.platform) {
             where.platform = { contains: filters.platform, mode: 'insensitive' };
+        }
+        if (filters.campaignType) {
+            where.campaignType = filters.campaignType;
         }
         if (filters.minBudget !== undefined) {
             where.budgetMax = { gte: filters.minBudget };
@@ -96,13 +114,22 @@ class CampaignRepository {
         return prisma_1.default.campaign.delete({ where: { id } });
     }
     async getDistinctCategories() {
-        return [
-            'Food', 'Travel', 'Fashion', 'Beauty', 'Fitness', 'Gaming', 'Tech',
-            'Education', 'Lifestyle', 'Home & Living', 'Wellness', 'Music',
-            'Art & Design', 'Pets', 'Parenting', 'Automotive', 'Finance',
-            'Sustainability', 'Photography', 'Sports', 'Film & TV', 'Mindfulness',
-            'Food & Drink', 'Entertainment',
-        ];
+        const rows = await prisma_1.default.campaign.findMany({
+            where: { status: 'ACTIVE' },
+            select: { category: true },
+            distinct: ['category'],
+            orderBy: { category: 'asc' },
+        });
+        return rows.map((r) => r.category).filter(Boolean);
+    }
+    async getDistinctPlatforms() {
+        const rows = await prisma_1.default.campaign.findMany({
+            where: { status: 'ACTIVE' },
+            select: { platform: true },
+            distinct: ['platform'],
+            orderBy: { platform: 'asc' },
+        });
+        return rows.map((r) => r.platform).filter(Boolean);
     }
     async findApplication(campaignId, creatorId) {
         return prisma_1.default.application.findUnique({
@@ -129,6 +156,8 @@ class CampaignRepository {
                 include: {
                     creator: {
                         select: {
+                            id: true,
+                            userId: true,
                             fullName: true,
                             avatarUrl: true,
                             location: true,
@@ -142,6 +171,10 @@ class CampaignRepository {
         ]);
         return { applications, total };
     }
+    // Alias used by getCampaignApplications (campaign-proposals page)
+    async findApplicationsByCampaignId(campaignId, page, limit) {
+        return this.findApplicationsByCampaign(campaignId, page, limit);
+    }
     async findApplicationsByBusinessId(businessId, page, limit) {
         const skip = (page - 1) * limit;
         const [applications, total] = await Promise.all([
@@ -150,12 +183,27 @@ class CampaignRepository {
                 skip,
                 take: limit,
                 orderBy: { createdAt: 'desc' },
-                include: {
+                select: {
+                    id: true,
+                    campaignId: true,
+                    coverLetter: true,
+                    proposedRate: true,
+                    timeline: true,
+                    socialHandles: true,
+                    portfolioUrl: true,
+                    status: true,
+                    workStatus: true,
+                    workNote: true,
+                    submittedAt: true,
+                    deliverableUrls: true,
+                    paymentStatus: true,
+                    paidAt: true,
+                    createdAt: true,
                     creator: {
                         select: { id: true, fullName: true, avatarUrl: true, location: true },
                     },
                     campaign: {
-                        select: { id: true, title: true, platform: true },
+                        select: { id: true, title: true, platform: true, campaignType: true, paymentStatus: true },
                     },
                 },
             }),
@@ -167,8 +215,8 @@ class CampaignRepository {
         return prisma_1.default.application.findUnique({
             where: { id },
             include: {
-                campaign: true,
-                creator: { select: { userId: true, fullName: true } },
+                campaign: { include: { business: { select: { id: true, userId: true, businessName: true } } } },
+                creator: { select: { id: true, userId: true, fullName: true } },
             },
         });
     }
@@ -192,7 +240,22 @@ class CampaignRepository {
                 skip,
                 take: limit,
                 orderBy: { createdAt: 'desc' },
-                include: {
+                select: {
+                    id: true,
+                    campaignId: true,
+                    coverLetter: true,
+                    proposedRate: true,
+                    timeline: true,
+                    socialHandles: true,
+                    portfolioUrl: true,
+                    status: true,
+                    workStatus: true,
+                    workNote: true,
+                    submittedAt: true,
+                    deliverableUrls: true,
+                    paymentStatus: true,
+                    paidAt: true,
+                    createdAt: true,
                     campaign: {
                         select: {
                             id: true,
@@ -203,7 +266,10 @@ class CampaignRepository {
                             budgetMax: true,
                             deadline: true,
                             status: true,
-                            business: { select: { businessName: true, logoUrl: true } },
+                            campaignType: true,
+                            paymentStatus: true,
+                            paidAt: true,
+                            business: { select: { id: true, businessName: true, logoUrl: true } },
                         },
                     },
                 },
@@ -211,6 +277,94 @@ class CampaignRepository {
             prisma_1.default.application.count({ where: { creatorId } }),
         ]);
         return { applications, total };
+    }
+    async payForCampaign(campaignId, method) {
+        return prisma_1.default.campaign.update({
+            where: { id: campaignId },
+            data: {
+                paymentStatus: client_1.PaymentStatus.PAID,
+                paidAt: new Date(),
+                paymentMethod: method,
+            },
+        });
+    }
+    async startWork(appId) {
+        return prisma_1.default.application.update({
+            where: { id: appId },
+            data: { workStatus: client_1.WorkStatus.IN_PROGRESS },
+        });
+    }
+    async submitWork(appId, data) {
+        return prisma_1.default.application.update({
+            where: { id: appId },
+            data: {
+                workStatus: client_1.WorkStatus.SUBMITTED,
+                workNote: data.note ?? null,
+                deliverableUrls: data.urls ?? null,
+                submittedAt: new Date(),
+            },
+        });
+    }
+    async approveWork(appId) {
+        return prisma_1.default.application.update({
+            where: { id: appId },
+            data: { workStatus: client_1.WorkStatus.APPROVED },
+        });
+    }
+    async requestRevision(appId, note) {
+        return prisma_1.default.application.update({
+            where: { id: appId },
+            data: { workStatus: client_1.WorkStatus.IN_PROGRESS, workNote: note },
+        });
+    }
+    async payForApplication(appId) {
+        return prisma_1.default.application.update({
+            where: { id: appId },
+            data: { paymentStatus: 'PAID', paidAt: new Date() },
+        });
+    }
+    async releaseApplicationPayment(appId) {
+        return prisma_1.default.application.update({
+            where: { id: appId },
+            data: { paymentStatus: 'RELEASED' },
+        });
+    }
+    async countAcceptedApplications(campaignId) {
+        return prisma_1.default.application.count({
+            where: { campaignId, status: 'ACCEPTED' },
+        });
+    }
+    async rejectPendingApplications(campaignId, excludeAppId) {
+        const pending = await prisma_1.default.application.findMany({
+            where: { campaignId, id: { not: excludeAppId }, status: 'PENDING' },
+            select: { id: true, creator: { select: { userId: true } } },
+        });
+        if (pending.length === 0)
+            return [];
+        await prisma_1.default.application.updateMany({
+            where: { id: { in: pending.map((a) => a.id) } },
+            data: { status: 'REJECTED' },
+        });
+        return pending;
+    }
+    async closeCampaign(campaignId) {
+        await prisma_1.default.campaign.update({
+            where: { id: campaignId },
+            data: { status: 'CLOSED' },
+        });
+    }
+    async cancelCampaign(campaignId) {
+        return prisma_1.default.campaign.update({
+            where: { id: campaignId },
+            data: { status: 'CLOSED' },
+        });
+    }
+    async getUserEmails(userIds) {
+        const users = await prisma_1.default.user.findMany({
+            where: { id: { in: userIds } },
+            select: { id: true, email: true },
+        });
+        return new Map(users.map((u) => [u.id, u.email]));
     }
 }
 exports.CampaignRepository = CampaignRepository;

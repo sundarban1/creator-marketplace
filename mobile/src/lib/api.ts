@@ -48,26 +48,29 @@ export interface ApiSocialAccount {
 
 // ── Campaign shapes ────────────────────────────────────────────────────────────
 export interface ApiCampaign {
-  id:           string;
-  title:        string;
-  description:  string;
-  template?:    string | null;
-  category:     string;
-  goals:        string[];
-  platform:     string;
-  minFollowers: number;
-  contentType:  string;
-  deliverables: string;
-  paymentType:  string;
-  deadline:     string;
-  location?:    string | null;
-  budgetMin:    number;
-  budgetMax:    number;
-  status:       'ACTIVE' | 'PAUSED' | 'CLOSED';
-  isFeatured:   boolean;
-  createdAt:    string;
-  business:     { businessName: string; logoUrl: string | null };
-  _count:       { applications: number };
+  id:            string;
+  title:         string;
+  description:   string;
+  template?:     string | null;
+  category:      string;
+  goals:         string[];
+  platform:      string;
+  minFollowers:  number;
+  contentType:   string;
+  deliverables:  string;
+  paymentType:   string;
+  deadline:      string;
+  location?:     string | null;
+  budgetMin:     number;
+  budgetMax:     number;
+  status:        'ACTIVE' | 'PAUSED' | 'CLOSED';
+  isFeatured:    boolean;
+  createdAt:     string;
+  paymentStatus: 'UNPAID' | 'PAID' | 'RELEASED';
+  paidAt:        string | null;
+  paymentMethod: string | null;
+  business:      { businessName: string; logoUrl: string | null };
+  _count:        { applications: number };
 }
 
 // ── Messaging shapes ───────────────────────────────────────────────────────────

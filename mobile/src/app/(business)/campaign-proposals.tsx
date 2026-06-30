@@ -20,14 +20,26 @@ import { useLanguage } from '@/context/LanguageContext';
 import { campaignService } from '@/services/campaign';
 import { F } from '@/utilities/constants';
 
+type WS = 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED';
+
 type Proposal = {
   id: string;
   status: 'pending' | 'accepted' | 'rejected';
+  workStatus: WS;
   proposedRate: string;
   coverLetter: string;
   createdAt: string;
+  paymentStatus: 'UNPAID' | 'PAID' | 'RELEASED';
+  paidAt: string | null;
   creator: { id: string; fullName: string; avatarUrl: string | null; location: string | null };
 };
+
+function projectBtnConfig(ws: WS) {
+  if (ws === 'APPROVED')    return { label: 'Project Completed',   icon: 'checkmark-done-circle' as const, color: '#16A34A' };
+  if (ws === 'SUBMITTED')   return { label: 'Review Deliverables', icon: 'eye'                   as const, color: '#D97706' };
+  if (ws === 'IN_PROGRESS') return { label: 'Creator is Working',  icon: 'brush'                 as const, color: '#7C3AED' };
+  return                           { label: 'Start the Project',   icon: 'rocket'                as const, color: '#4F46E5' };
+}
 
 type StatusFilter = 'all' | 'pending' | 'accepted' | 'rejected';
 
@@ -64,6 +76,7 @@ function ProposalCard({
   onAccept,
   onReject,
   acting,
+  onStartProject,
 }: {
   proposal: Proposal;
   isFree: boolean;
@@ -71,6 +84,7 @@ function ProposalCard({
   onAccept: (p: Proposal) => void;
   onReject: (p: Proposal) => void;
   acting: boolean;
+  onStartProject?: (p: Proposal) => void;
 }) {
   const C = useAppColors();
   const { t } = useLanguage();
@@ -169,6 +183,20 @@ function ProposalCard({
           </Pressable>
         </View>
       )}
+
+      {/* Dynamic project action button for each accepted creator */}
+      {p.status === 'accepted' && (() => {
+        const cfg = projectBtnConfig(p.workStatus);
+        return (
+          <Pressable
+            style={({ pressed }) => [styles.startProjectBtn, { backgroundColor: cfg.color, opacity: pressed ? 0.88 : 1 }]}
+            onPress={() => onStartProject && onStartProject(p)}>
+            <Ionicons name={cfg.icon} size={16} color="#fff" />
+            <Text style={styles.startProjectBtnTxt}>{cfg.label}</Text>
+            <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.7)" style={{ marginLeft: 'auto' }} />
+          </Pressable>
+        );
+      })()}
     </Pressable>
   );
 }
@@ -193,14 +221,19 @@ export default function CampaignProposalsScreen() {
   const [loading, setLoading]           = useState(true);
   const [refreshing, setRefreshing]     = useState(false);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
-  const [actingId, setActingId]         = useState<string | null>(null);
+  const [actingId, setActingId] = useState<string | null>(null);
 
   async function load(showRefresh = false) {
     if (showRefresh) setRefreshing(true);
     else setLoading(true);
     try {
       const data = await campaignService.getApplications(campaignId);
-      setProposals(data);
+      setProposals(data.map((a) => ({
+        ...a,
+        workStatus: (a.workStatus ?? 'NONE') as WS,
+        paymentStatus: a.paymentStatus ?? 'UNPAID',
+        paidAt: a.paidAt ?? null,
+      })));
     } catch { /* empty state */ }
     finally { setLoading(false); setRefreshing(false); }
   }
@@ -261,6 +294,17 @@ export default function CampaignProposalsScreen() {
         },
       ],
     );
+  }
+
+  function handleStartProject(p: Proposal) {
+    router.push({
+      pathname: '/(business)/activity-timeline',
+      params: {
+        campaignId,
+        campaignTitle,
+        applicationId: p.id,
+      },
+    });
   }
 
   const counts = {
@@ -391,6 +435,7 @@ export default function CampaignProposalsScreen() {
               onAccept={handleAccept}
               onReject={handleReject}
               acting={actingId === item.id}
+              onStartProject={handleStartProject}
             />
           )}
           ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
@@ -520,6 +565,9 @@ const styles = StyleSheet.create({
   declineBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 11, borderRadius: 12, borderWidth: 1.5 },
   acceptBtn:  { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 11, borderRadius: 12 },
   actionText: { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
+
+  startProjectBtn:    { flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 12, paddingVertical: 11, paddingHorizontal: 14, marginTop: 10 },
+  startProjectBtnTxt: { fontSize: 13, fontWeight: '700', color: '#fff', fontFamily: F.bold },
 
   // ── Empty state ───────────────────────────────────────────────────────────────
   empty:      { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 10, paddingHorizontal: 32, paddingTop: 60 },

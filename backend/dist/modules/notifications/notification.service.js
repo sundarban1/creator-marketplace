@@ -2,11 +2,16 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.notificationService = void 0;
 const notification_repository_1 = require("./notification.repository");
+const notification_dto_1 = require("./notification.dto");
 const socket_1 = require("../../socket");
+const translation_1 = require("../../utils/translation");
+const NOTIFICATION_FIELDS = ['title', 'body'];
 const repo = new notification_repository_1.NotificationRepository();
 exports.notificationService = {
-    async getForUser(userId) {
-        return repo.findByUser(userId);
+    async getForUser(userId, lang = 'en') {
+        const notifications = await repo.findByUser(userId);
+        const dtos = notifications.map(notification_dto_1.toNotificationDto);
+        return (0, translation_1.translateMany)(dtos, [...NOTIFICATION_FIELDS], lang);
     },
     async markRead(id, userId) {
         await repo.markRead(id, userId);
@@ -22,7 +27,8 @@ exports.notificationService = {
         return { count };
     },
     async create(data) {
-        const notification = await repo.create(data);
+        const raw = await repo.create(data);
+        const notification = (0, notification_dto_1.toNotificationDto)(raw);
         (0, socket_1.emitToUser)(data.userId, 'notification:new', notification);
         return notification;
     },

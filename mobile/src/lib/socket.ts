@@ -5,10 +5,6 @@ let _socket: Socket | null = null;
 
 export function connectSocket(token: string): Socket {
   if (_socket) {
-    // Remove all JS listeners before closing so the native 'websocketClosed'
-    // event that fires after disconnect() has no dangling socket.io handlers
-    // to miss — this silences the "no listeners registered" RN warning.
-    _socket.removeAllListeners();
     _socket.disconnect();
     _socket = null;
   }
@@ -17,7 +13,7 @@ export function connectSocket(token: string): Socket {
     auth: { token },
     transports: ['websocket'],
     reconnection: true,
-    reconnectionDelay: 1000,
+    reconnectionDelay: 2000,
     reconnectionAttempts: Infinity,
     timeout: 10000,
   });
@@ -27,7 +23,6 @@ export function connectSocket(token: string): Socket {
 
 export function disconnectSocket(): void {
   if (_socket) {
-    _socket.removeAllListeners();
     _socket.disconnect();
     _socket = null;
   }

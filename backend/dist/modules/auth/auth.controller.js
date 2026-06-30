@@ -124,6 +124,24 @@ class AuthController {
             next(err);
         }
     }
+    async googleAuth(req, res, next) {
+        try {
+            const result = await authService.googleAuth(req.body);
+            (0, response_1.success)(res, result, result.needsRole ? 'Role selection required' : 'Google sign-in successful');
+        }
+        catch (err) {
+            next(err);
+        }
+    }
+    async facebookAuth(req, res, next) {
+        try {
+            const result = await authService.facebookAuth(req.body);
+            (0, response_1.success)(res, result, result.needsRole ? 'Role selection required' : 'Facebook sign-in successful');
+        }
+        catch (err) {
+            next(err);
+        }
+    }
     async requestPhoneOtp(req, res, next) {
         try {
             const result = await authService.requestPhoneOtp(req.user.id, req.body);

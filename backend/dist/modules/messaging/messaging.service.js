@@ -2,10 +2,12 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MessagingService = void 0;
 const error_1 = require("../../middleware/error");
+const messaging_dto_1 = require("./messaging.dto");
 const creator_repository_1 = require("../creator/creator.repository");
 const business_repository_1 = require("../business/business.repository");
 const messaging_repository_1 = require("./messaging.repository");
 const notification_service_1 = require("../notifications/notification.service");
+const socket_1 = require("../../socket");
 class MessagingService {
     repo;
     creatorRepo;
@@ -46,11 +48,13 @@ class MessagingService {
     async listConversations(userId, role, status) {
         if (role === 'CREATOR') {
             const creator = await this.resolveCreator(userId);
-            return this.repo.findConversationsByCreator(creator.id, status);
+            const convs = await this.repo.findConversationsByCreator(creator.id, status);
+            return convs.map(messaging_dto_1.toConversationDto);
         }
         if (role === 'BUSINESS') {
             const business = await this.resolveBusiness(userId);
-            return this.repo.findConversationsByBusiness(business.id, status);
+            const convs = await this.repo.findConversationsByBusiness(business.id, status);
+            return convs.map(messaging_dto_1.toConversationDto);
         }
         return [];
     }
@@ -61,7 +65,10 @@ class MessagingService {
             const otherCreator = await this.creatorRepo.findByUserId(input.otherUserId);
             if (!otherCreator)
                 throw new error_1.AppError('Creator not found', 404);
-            return this.repo.findOrCreateConversation(otherCreator.id, business.id, input.campaignId, input.requestMessage);
+            const conv = await this.repo.findOrCreateConversation(otherCreator.id, business.id, input.campaignId, input.requestMessage);
+            // Notify creator of new pending message request
+            (0, socket_1.emitToUser)(otherCreator.userId, 'conversation:update', { conversationId: conv.id });
+            return (0, messaging_dto_1.toConversationDto)(conv);
         }
         if (role === 'CREATOR') {
             const creator = await this.resolveCreator(userId);
@@ -70,7 +77,9 @@ class MessagingService {
                 throw new error_1.AppError('Business not found', 404);
             if (!otherBusiness.allowDirectMessages)
                 throw new error_1.AppError('This business does not accept direct messages', 403);
-            return this.repo.findOrCreateConversation(creator.id, otherBusiness.id, input.campaignId, input.requestMessage);
+            const conv = await this.repo.findOrCreateConversation(creator.id, otherBusiness.id, input.campaignId, input.requestMessage);
+            (0, socket_1.emitToUser)(otherBusiness.userId, 'conversation:update', { conversationId: conv.id });
+            return (0, messaging_dto_1.toConversationDto)(conv);
         }
         throw new error_1.AppError('Unauthorized', 403);
     }
@@ -92,8 +101,8 @@ class MessagingService {
             throw new error_1.AppError('Access denied', 403);
         const newStatus = action === 'accept' ? 'ACCEPTED' : 'DECLINED';
         await this.repo.updateStatus(conversationId, newStatus);
+        const business = await this.businessRepo.findById(conversation.businessId);
         if (action === 'accept') {
-            const business = await this.businessRepo.findById(conversation.businessId);
             if (business) {
                 notification_service_1.notificationService.create({
                     userId: business.userId,
@@ -105,6 +114,10 @@ class MessagingService {
                 }).catch(() => { });
             }
         }
+        // Notify both sides to refresh their conversation list
+        if (business)
+            (0, socket_1.emitToUser)(business.userId, 'conversation:update', { conversationId });
+        (0, socket_1.emitToUser)(creator.userId, 'conversation:update', { conversationId });
         return { status: newStatus };
     }
     // ── Messages ───────────────────────────────────────────────────────────────
@@ -113,8 +126,8 @@ class MessagingService {
         if (!conversation)
             throw new error_1.AppError('Conversation not found', 404);
         await this.verifyConversationAccess(conversation, userId, role);
-        const { messages, total } = await this.repo.findMessages(conversationId, page, Math.min(limit, 100));
-        return { messages, total, page, limit };
+        const { messages: raw, total } = await this.repo.findMessages(conversationId, page, Math.min(limit, 100));
+        return { messages: raw.map(messaging_dto_1.toMessageDto), total, page, limit };
     }
     async sendMessage(conversationId, userId, role, input) {
         const conversation = await this.repo.findConversationById(conversationId);
@@ -127,7 +140,12 @@ class MessagingService {
         if (conversation.status === 'DECLINED') {
             throw new error_1.AppError('This conversation request was declined', 403);
         }
-        return this.repo.createMessage({ conversationId, senderId: userId, content: input.content });
+        const raw = await this.repo.createMessage({ conversationId, senderId: userId, content: input.content });
+        const message = (0, messaging_dto_1.toMessageDto)(raw);
+        // Push message to both participants in real-time
+        (0, socket_1.emitToUser)(conversation.creator.userId, 'message:new', { conversationId, message });
+        (0, socket_1.emitToUser)(conversation.business.userId, 'message:new', { conversationId, message });
+        return message;
     }
     // ── Seen / badge ───────────────────────────────────────────────────────────
     async markSeen(conversationId, userId, role) {

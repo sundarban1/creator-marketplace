@@ -8,83 +8,8 @@ export declare class MessagingService {
     private resolveCreator;
     private resolveBusiness;
     private verifyConversationAccess;
-    listConversations(userId: string, role: Role, status?: ConversationStatus): Promise<({
-        campaign: {
-            title: string;
-        } | null;
-        business: {
-            businessName: string | null;
-            logoUrl: string | null;
-        };
-        messages: {
-            id: string;
-            createdAt: Date;
-            content: string;
-            conversationId: string;
-            senderId: string;
-        }[];
-    } & {
-        status: import(".prisma/client").$Enums.ConversationStatus;
-        id: string;
-        createdAt: Date;
-        creatorId: string;
-        businessId: string;
-        campaignId: string | null;
-        requestMessage: string | null;
-        lastMessageAt: Date | null;
-        businessSeenAt: Date | null;
-        creatorSeenAt: Date | null;
-    })[] | ({
-        campaign: {
-            title: string;
-        } | null;
-        creator: {
-            fullName: string | null;
-            avatarUrl: string | null;
-        };
-        messages: {
-            id: string;
-            createdAt: Date;
-            content: string;
-            conversationId: string;
-            senderId: string;
-        }[];
-    } & {
-        status: import(".prisma/client").$Enums.ConversationStatus;
-        id: string;
-        createdAt: Date;
-        creatorId: string;
-        businessId: string;
-        campaignId: string | null;
-        requestMessage: string | null;
-        lastMessageAt: Date | null;
-        businessSeenAt: Date | null;
-        creatorSeenAt: Date | null;
-    })[]>;
-    startConversation(userId: string, role: Role, input: StartConversationInput): Promise<{
-        campaign: {
-            title: string;
-        } | null;
-        business: {
-            businessName: string | null;
-            logoUrl: string | null;
-        };
-        creator: {
-            fullName: string | null;
-            avatarUrl: string | null;
-        };
-    } & {
-        status: import(".prisma/client").$Enums.ConversationStatus;
-        id: string;
-        createdAt: Date;
-        creatorId: string;
-        businessId: string;
-        campaignId: string | null;
-        requestMessage: string | null;
-        lastMessageAt: Date | null;
-        businessSeenAt: Date | null;
-        creatorSeenAt: Date | null;
-    }>;
+    listConversations(userId: string, role: Role, status?: ConversationStatus): Promise<import("./messaging.dto").ConversationDto[]>;
+    startConversation(userId: string, role: Role, input: StartConversationInput): Promise<import("./messaging.dto").ConversationDto>;
     checkConversation(userId: string, creatorProfileId: string): Promise<{
         status: import(".prisma/client").$Enums.ConversationStatus;
         id: string;
@@ -93,36 +18,12 @@ export declare class MessagingService {
         status: "ACCEPTED" | "DECLINED";
     }>;
     getMessages(conversationId: string, userId: string, role: Role, page: number, limit: number): Promise<{
-        messages: ({
-            sender: {
-                email: string;
-                id: string;
-                role: import(".prisma/client").$Enums.Role;
-            };
-        } & {
-            id: string;
-            createdAt: Date;
-            content: string;
-            conversationId: string;
-            senderId: string;
-        })[];
+        messages: import("./messaging.dto").MessageDto[];
         total: number;
         page: number;
         limit: number;
     }>;
-    sendMessage(conversationId: string, userId: string, role: Role, input: SendMessageInput): Promise<{
-        sender: {
-            email: string;
-            id: string;
-            role: import(".prisma/client").$Enums.Role;
-        };
-    } & {
-        id: string;
-        createdAt: Date;
-        content: string;
-        conversationId: string;
-        senderId: string;
-    }>;
+    sendMessage(conversationId: string, userId: string, role: Role, input: SendMessageInput): Promise<import("./messaging.dto").MessageDto>;
     markSeen(conversationId: string, userId: string, role: Role): Promise<void>;
     getBadgeCount(userId: string, role: Role): Promise<{
         count: number;

@@ -5,10 +5,12 @@ export declare class MessagingRepository {
             title: string;
         } | null;
         business: {
+            userId: string;
             businessName: string | null;
             logoUrl: string | null;
         };
         creator: {
+            userId: string;
             fullName: string | null;
             avatarUrl: string | null;
         };
@@ -83,10 +85,12 @@ export declare class MessagingRepository {
             title: string;
         } | null;
         business: {
+            userId: string;
             businessName: string | null;
             logoUrl: string | null;
         };
         creator: {
+            userId: string;
             fullName: string | null;
             avatarUrl: string | null;
         };

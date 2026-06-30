@@ -157,4 +157,79 @@ export class CampaignController {
       next(err);
     }
   }
+
+  async payForCampaign(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { method } = req.body as { method?: string };
+      const result = await campaignService.payForCampaign(
+        req.params.id,
+        req.user!.id,
+        method ?? 'ESEWA'
+      );
+      success(res, result, 'Payment successful');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async submitWork(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await campaignService.submitWork(
+        req.params.appId,
+        req.user!.id,
+        req.body as { note?: string; urls?: string }
+      );
+      success(res, result, 'Work submitted successfully');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async approveWork(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await campaignService.approveWork(req.params.appId, req.user!.id);
+      success(res, result, 'Work approved');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async requestRevision(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { note } = req.body as { note?: string };
+      const result = await campaignService.requestRevision(
+        req.params.appId,
+        req.user!.id,
+        note ?? ''
+      );
+      success(res, result, 'Revision requested');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async payForApplication(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await campaignService.payForApplication(req.params.appId, req.user!.id);
+      res.json({ success: true, data: result });
+    } catch (e) { next(e); }
+  }
+
+  async startWork(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await campaignService.startWork(req.params.appId, req.user!.id);
+      success(res, result, 'Work started');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async cancelCampaign(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await campaignService.cancelCampaign(req.params.id, req.user!.id);
+      success(res, result, 'Campaign cancelled');
+    } catch (err) {
+      next(err);
+    }
+  }
 }

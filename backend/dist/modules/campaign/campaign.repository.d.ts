@@ -18,6 +18,11 @@ export declare class CampaignRepository {
         paymentType: string;
         creatorsNeeded?: number;
         isFeatured?: boolean;
+        campaignType?: 'PAID_CAMPAIGN' | 'OPEN_EVENT';
+        capacity?: number;
+        eventDate?: Date;
+        venue?: string;
+        benefits?: string[];
     }): Promise<{
         _count: {
             applications: number;
@@ -48,8 +53,18 @@ export declare class CampaignRepository {
         paymentType: string;
         isFeatured: boolean;
         creatorsNeeded: number;
+        campaignType: import(".prisma/client").$Enums.CampaignType;
+        capacity: number | null;
+        eventDate: Date | null;
+        venue: string | null;
+        benefits: Prisma.JsonValue;
+        eventStatus: import(".prisma/client").$Enums.EventStatus;
+        paymentStatus: import(".prisma/client").$Enums.PaymentStatus;
+        paidAt: Date | null;
+        paymentMethod: string | null;
     }>;
     findMany(filters: {
+        search?: string;
         category?: string;
         platform?: string;
         minBudget?: number;
@@ -58,6 +73,7 @@ export declare class CampaignRepository {
         isFeatured?: boolean;
         deadlineFrom?: Date;
         deadlineTo?: Date;
+        campaignType?: 'PAID_CAMPAIGN' | 'OPEN_EVENT';
         page: number;
         limit: number;
     }): Promise<{
@@ -91,6 +107,15 @@ export declare class CampaignRepository {
             paymentType: string;
             isFeatured: boolean;
             creatorsNeeded: number;
+            campaignType: import(".prisma/client").$Enums.CampaignType;
+            capacity: number | null;
+            eventDate: Date | null;
+            venue: string | null;
+            benefits: Prisma.JsonValue;
+            eventStatus: import(".prisma/client").$Enums.EventStatus;
+            paymentStatus: import(".prisma/client").$Enums.PaymentStatus;
+            paidAt: Date | null;
+            paymentMethod: string | null;
         })[];
         total: number;
     }>;
@@ -126,6 +151,15 @@ export declare class CampaignRepository {
         paymentType: string;
         isFeatured: boolean;
         creatorsNeeded: number;
+        campaignType: import(".prisma/client").$Enums.CampaignType;
+        capacity: number | null;
+        eventDate: Date | null;
+        venue: string | null;
+        benefits: Prisma.JsonValue;
+        eventStatus: import(".prisma/client").$Enums.EventStatus;
+        paymentStatus: import(".prisma/client").$Enums.PaymentStatus;
+        paidAt: Date | null;
+        paymentMethod: string | null;
     }) | null>;
     findByBusinessId(businessId: string, page: number, limit: number): Promise<{
         campaigns: ({
@@ -154,6 +188,15 @@ export declare class CampaignRepository {
             paymentType: string;
             isFeatured: boolean;
             creatorsNeeded: number;
+            campaignType: import(".prisma/client").$Enums.CampaignType;
+            capacity: number | null;
+            eventDate: Date | null;
+            venue: string | null;
+            benefits: Prisma.JsonValue;
+            eventStatus: import(".prisma/client").$Enums.EventStatus;
+            paymentStatus: import(".prisma/client").$Enums.PaymentStatus;
+            paidAt: Date | null;
+            paymentMethod: string | null;
         })[];
         total: number;
     }>;
@@ -172,8 +215,15 @@ export declare class CampaignRepository {
         budgetMin: number;
         budgetMax: number;
         paymentType: string;
+        creatorsNeeded: number;
         status: CampaignStatus;
         isFeatured: boolean;
+        campaignType: 'PAID_CAMPAIGN' | 'OPEN_EVENT';
+        capacity: number | null;
+        eventDate: Date | null;
+        venue: string | null;
+        benefits: string[];
+        eventStatus: 'OPEN' | 'FULL' | 'CLOSED';
     }>): Promise<{
         status: import(".prisma/client").$Enums.CampaignStatus;
         description: string;
@@ -196,6 +246,15 @@ export declare class CampaignRepository {
         paymentType: string;
         isFeatured: boolean;
         creatorsNeeded: number;
+        campaignType: import(".prisma/client").$Enums.CampaignType;
+        capacity: number | null;
+        eventDate: Date | null;
+        venue: string | null;
+        benefits: Prisma.JsonValue;
+        eventStatus: import(".prisma/client").$Enums.EventStatus;
+        paymentStatus: import(".prisma/client").$Enums.PaymentStatus;
+        paidAt: Date | null;
+        paymentMethod: string | null;
     }>;
     delete(id: string): Promise<{
         status: import(".prisma/client").$Enums.CampaignStatus;
@@ -219,8 +278,18 @@ export declare class CampaignRepository {
         paymentType: string;
         isFeatured: boolean;
         creatorsNeeded: number;
+        campaignType: import(".prisma/client").$Enums.CampaignType;
+        capacity: number | null;
+        eventDate: Date | null;
+        venue: string | null;
+        benefits: Prisma.JsonValue;
+        eventStatus: import(".prisma/client").$Enums.EventStatus;
+        paymentStatus: import(".prisma/client").$Enums.PaymentStatus;
+        paidAt: Date | null;
+        paymentMethod: string | null;
     }>;
     getDistinctCategories(): Promise<string[]>;
+    getDistinctPlatforms(): Promise<string[]>;
     findApplication(campaignId: string, creatorId: string): Promise<{
         status: import(".prisma/client").$Enums.ApplicationStatus;
         id: string;
@@ -228,11 +297,17 @@ export declare class CampaignRepository {
         updatedAt: Date;
         creatorId: string;
         proposedRate: number;
+        paymentStatus: import(".prisma/client").$Enums.PaymentStatus;
+        paidAt: Date | null;
         campaignId: string;
         coverLetter: string;
         timeline: string;
         socialHandles: Prisma.JsonValue;
         portfolioUrl: string | null;
+        workStatus: import(".prisma/client").$Enums.WorkStatus;
+        workNote: string | null;
+        submittedAt: Date | null;
+        deliverableUrls: string | null;
     } | null>;
     createApplication(data: {
         campaignId: string;
@@ -256,15 +331,23 @@ export declare class CampaignRepository {
         updatedAt: Date;
         creatorId: string;
         proposedRate: number;
+        paymentStatus: import(".prisma/client").$Enums.PaymentStatus;
+        paidAt: Date | null;
         campaignId: string;
         coverLetter: string;
         timeline: string;
         socialHandles: Prisma.JsonValue;
         portfolioUrl: string | null;
+        workStatus: import(".prisma/client").$Enums.WorkStatus;
+        workNote: string | null;
+        submittedAt: Date | null;
+        deliverableUrls: string | null;
     }>;
     findApplicationsByCampaign(campaignId: string, page: number, limit: number): Promise<{
         applications: ({
             creator: {
+                id: string;
+                userId: string;
                 categories: string[];
                 location: string | null;
                 fullName: string | null;
@@ -278,26 +361,30 @@ export declare class CampaignRepository {
             updatedAt: Date;
             creatorId: string;
             proposedRate: number;
+            paymentStatus: import(".prisma/client").$Enums.PaymentStatus;
+            paidAt: Date | null;
             campaignId: string;
             coverLetter: string;
             timeline: string;
             socialHandles: Prisma.JsonValue;
             portfolioUrl: string | null;
+            workStatus: import(".prisma/client").$Enums.WorkStatus;
+            workNote: string | null;
+            submittedAt: Date | null;
+            deliverableUrls: string | null;
         })[];
         total: number;
     }>;
-    findApplicationsByBusinessId(businessId: string, page: number, limit: number): Promise<{
+    findApplicationsByCampaignId(campaignId: string, page: number, limit: number): Promise<{
         applications: ({
-            campaign: {
-                id: string;
-                platform: string;
-                title: string;
-            };
             creator: {
                 id: string;
+                userId: string;
+                categories: string[];
                 location: string | null;
                 fullName: string | null;
                 avatarUrl: string | null;
+                socialLinks: Prisma.JsonValue;
             };
         } & {
             status: import(".prisma/client").$Enums.ApplicationStatus;
@@ -306,16 +393,61 @@ export declare class CampaignRepository {
             updatedAt: Date;
             creatorId: string;
             proposedRate: number;
+            paymentStatus: import(".prisma/client").$Enums.PaymentStatus;
+            paidAt: Date | null;
             campaignId: string;
             coverLetter: string;
             timeline: string;
             socialHandles: Prisma.JsonValue;
             portfolioUrl: string | null;
+            workStatus: import(".prisma/client").$Enums.WorkStatus;
+            workNote: string | null;
+            submittedAt: Date | null;
+            deliverableUrls: string | null;
         })[];
+        total: number;
+    }>;
+    findApplicationsByBusinessId(businessId: string, page: number, limit: number): Promise<{
+        applications: {
+            status: import(".prisma/client").$Enums.ApplicationStatus;
+            campaign: {
+                id: string;
+                platform: string;
+                title: string;
+                campaignType: import(".prisma/client").$Enums.CampaignType;
+                paymentStatus: import(".prisma/client").$Enums.PaymentStatus;
+            };
+            id: string;
+            createdAt: Date;
+            proposedRate: number;
+            paymentStatus: import(".prisma/client").$Enums.PaymentStatus;
+            paidAt: Date | null;
+            creator: {
+                id: string;
+                location: string | null;
+                fullName: string | null;
+                avatarUrl: string | null;
+            };
+            campaignId: string;
+            coverLetter: string;
+            timeline: string;
+            socialHandles: Prisma.JsonValue;
+            portfolioUrl: string | null;
+            workStatus: import(".prisma/client").$Enums.WorkStatus;
+            workNote: string | null;
+            submittedAt: Date | null;
+            deliverableUrls: string | null;
+        }[];
         total: number;
     }>;
     findApplicationById(id: string): Promise<({
         campaign: {
+            business: {
+                id: string;
+                userId: string;
+                businessName: string | null;
+            };
+        } & {
             status: import(".prisma/client").$Enums.CampaignStatus;
             description: string;
             id: string;
@@ -337,8 +469,18 @@ export declare class CampaignRepository {
             paymentType: string;
             isFeatured: boolean;
             creatorsNeeded: number;
+            campaignType: import(".prisma/client").$Enums.CampaignType;
+            capacity: number | null;
+            eventDate: Date | null;
+            venue: string | null;
+            benefits: Prisma.JsonValue;
+            eventStatus: import(".prisma/client").$Enums.EventStatus;
+            paymentStatus: import(".prisma/client").$Enums.PaymentStatus;
+            paidAt: Date | null;
+            paymentMethod: string | null;
         };
         creator: {
+            id: string;
             userId: string;
             fullName: string | null;
         };
@@ -349,11 +491,17 @@ export declare class CampaignRepository {
         updatedAt: Date;
         creatorId: string;
         proposedRate: number;
+        paymentStatus: import(".prisma/client").$Enums.PaymentStatus;
+        paidAt: Date | null;
         campaignId: string;
         coverLetter: string;
         timeline: string;
         socialHandles: Prisma.JsonValue;
         portfolioUrl: string | null;
+        workStatus: import(".prisma/client").$Enums.WorkStatus;
+        workNote: string | null;
+        submittedAt: Date | null;
+        deliverableUrls: string | null;
     }) | null>;
     updateApplicationStatus(id: string, status: 'ACCEPTED' | 'REJECTED'): Promise<{
         status: import(".prisma/client").$Enums.ApplicationStatus;
@@ -362,11 +510,17 @@ export declare class CampaignRepository {
         updatedAt: Date;
         creatorId: string;
         proposedRate: number;
+        paymentStatus: import(".prisma/client").$Enums.PaymentStatus;
+        paidAt: Date | null;
         campaignId: string;
         coverLetter: string;
         timeline: string;
         socialHandles: Prisma.JsonValue;
         portfolioUrl: string | null;
+        workStatus: import(".prisma/client").$Enums.WorkStatus;
+        workNote: string | null;
+        submittedAt: Date | null;
+        deliverableUrls: string | null;
     }>;
     findPendingApplicationsByCampaign(campaignId: string, excludeAppId: string): Promise<({
         creator: {
@@ -379,14 +533,21 @@ export declare class CampaignRepository {
         updatedAt: Date;
         creatorId: string;
         proposedRate: number;
+        paymentStatus: import(".prisma/client").$Enums.PaymentStatus;
+        paidAt: Date | null;
         campaignId: string;
         coverLetter: string;
         timeline: string;
         socialHandles: Prisma.JsonValue;
         portfolioUrl: string | null;
+        workStatus: import(".prisma/client").$Enums.WorkStatus;
+        workNote: string | null;
+        submittedAt: Date | null;
+        deliverableUrls: string | null;
     })[]>;
     findApplicationsByCreator(creatorId: string, page: number, limit: number): Promise<{
-        applications: ({
+        applications: {
+            status: import(".prisma/client").$Enums.ApplicationStatus;
             campaign: {
                 status: import(".prisma/client").$Enums.CampaignStatus;
                 id: string;
@@ -396,25 +557,221 @@ export declare class CampaignRepository {
                 deadline: Date;
                 budgetMin: number;
                 budgetMax: number;
+                campaignType: import(".prisma/client").$Enums.CampaignType;
+                paymentStatus: import(".prisma/client").$Enums.PaymentStatus;
+                paidAt: Date | null;
                 business: {
+                    id: string;
                     businessName: string | null;
                     logoUrl: string | null;
                 };
             };
-        } & {
-            status: import(".prisma/client").$Enums.ApplicationStatus;
             id: string;
             createdAt: Date;
-            updatedAt: Date;
-            creatorId: string;
             proposedRate: number;
+            paymentStatus: import(".prisma/client").$Enums.PaymentStatus;
+            paidAt: Date | null;
             campaignId: string;
             coverLetter: string;
             timeline: string;
             socialHandles: Prisma.JsonValue;
             portfolioUrl: string | null;
-        })[];
+            workStatus: import(".prisma/client").$Enums.WorkStatus;
+            workNote: string | null;
+            submittedAt: Date | null;
+            deliverableUrls: string | null;
+        }[];
         total: number;
     }>;
+    payForCampaign(campaignId: string, method: string): Promise<{
+        status: import(".prisma/client").$Enums.CampaignStatus;
+        description: string;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        location: string | null;
+        platform: string;
+        businessId: string;
+        title: string;
+        template: string | null;
+        category: string;
+        goals: Prisma.JsonValue;
+        minFollowers: number;
+        contentType: string;
+        deliverables: string;
+        deadline: Date;
+        budgetMin: number;
+        budgetMax: number;
+        paymentType: string;
+        isFeatured: boolean;
+        creatorsNeeded: number;
+        campaignType: import(".prisma/client").$Enums.CampaignType;
+        capacity: number | null;
+        eventDate: Date | null;
+        venue: string | null;
+        benefits: Prisma.JsonValue;
+        eventStatus: import(".prisma/client").$Enums.EventStatus;
+        paymentStatus: import(".prisma/client").$Enums.PaymentStatus;
+        paidAt: Date | null;
+        paymentMethod: string | null;
+    }>;
+    startWork(appId: string): Promise<{
+        status: import(".prisma/client").$Enums.ApplicationStatus;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        creatorId: string;
+        proposedRate: number;
+        paymentStatus: import(".prisma/client").$Enums.PaymentStatus;
+        paidAt: Date | null;
+        campaignId: string;
+        coverLetter: string;
+        timeline: string;
+        socialHandles: Prisma.JsonValue;
+        portfolioUrl: string | null;
+        workStatus: import(".prisma/client").$Enums.WorkStatus;
+        workNote: string | null;
+        submittedAt: Date | null;
+        deliverableUrls: string | null;
+    }>;
+    submitWork(appId: string, data: {
+        note?: string;
+        urls?: string;
+    }): Promise<{
+        status: import(".prisma/client").$Enums.ApplicationStatus;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        creatorId: string;
+        proposedRate: number;
+        paymentStatus: import(".prisma/client").$Enums.PaymentStatus;
+        paidAt: Date | null;
+        campaignId: string;
+        coverLetter: string;
+        timeline: string;
+        socialHandles: Prisma.JsonValue;
+        portfolioUrl: string | null;
+        workStatus: import(".prisma/client").$Enums.WorkStatus;
+        workNote: string | null;
+        submittedAt: Date | null;
+        deliverableUrls: string | null;
+    }>;
+    approveWork(appId: string): Promise<{
+        status: import(".prisma/client").$Enums.ApplicationStatus;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        creatorId: string;
+        proposedRate: number;
+        paymentStatus: import(".prisma/client").$Enums.PaymentStatus;
+        paidAt: Date | null;
+        campaignId: string;
+        coverLetter: string;
+        timeline: string;
+        socialHandles: Prisma.JsonValue;
+        portfolioUrl: string | null;
+        workStatus: import(".prisma/client").$Enums.WorkStatus;
+        workNote: string | null;
+        submittedAt: Date | null;
+        deliverableUrls: string | null;
+    }>;
+    requestRevision(appId: string, note: string): Promise<{
+        status: import(".prisma/client").$Enums.ApplicationStatus;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        creatorId: string;
+        proposedRate: number;
+        paymentStatus: import(".prisma/client").$Enums.PaymentStatus;
+        paidAt: Date | null;
+        campaignId: string;
+        coverLetter: string;
+        timeline: string;
+        socialHandles: Prisma.JsonValue;
+        portfolioUrl: string | null;
+        workStatus: import(".prisma/client").$Enums.WorkStatus;
+        workNote: string | null;
+        submittedAt: Date | null;
+        deliverableUrls: string | null;
+    }>;
+    payForApplication(appId: string): Promise<{
+        status: import(".prisma/client").$Enums.ApplicationStatus;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        creatorId: string;
+        proposedRate: number;
+        paymentStatus: import(".prisma/client").$Enums.PaymentStatus;
+        paidAt: Date | null;
+        campaignId: string;
+        coverLetter: string;
+        timeline: string;
+        socialHandles: Prisma.JsonValue;
+        portfolioUrl: string | null;
+        workStatus: import(".prisma/client").$Enums.WorkStatus;
+        workNote: string | null;
+        submittedAt: Date | null;
+        deliverableUrls: string | null;
+    }>;
+    releaseApplicationPayment(appId: string): Promise<{
+        status: import(".prisma/client").$Enums.ApplicationStatus;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        creatorId: string;
+        proposedRate: number;
+        paymentStatus: import(".prisma/client").$Enums.PaymentStatus;
+        paidAt: Date | null;
+        campaignId: string;
+        coverLetter: string;
+        timeline: string;
+        socialHandles: Prisma.JsonValue;
+        portfolioUrl: string | null;
+        workStatus: import(".prisma/client").$Enums.WorkStatus;
+        workNote: string | null;
+        submittedAt: Date | null;
+        deliverableUrls: string | null;
+    }>;
+    countAcceptedApplications(campaignId: string): Promise<number>;
+    rejectPendingApplications(campaignId: string, excludeAppId: string): Promise<{
+        id: string;
+        creator: {
+            userId: string;
+        };
+    }[]>;
+    closeCampaign(campaignId: string): Promise<void>;
+    cancelCampaign(campaignId: string): Promise<{
+        status: import(".prisma/client").$Enums.CampaignStatus;
+        description: string;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        location: string | null;
+        platform: string;
+        businessId: string;
+        title: string;
+        template: string | null;
+        category: string;
+        goals: Prisma.JsonValue;
+        minFollowers: number;
+        contentType: string;
+        deliverables: string;
+        deadline: Date;
+        budgetMin: number;
+        budgetMax: number;
+        paymentType: string;
+        isFeatured: boolean;
+        creatorsNeeded: number;
+        campaignType: import(".prisma/client").$Enums.CampaignType;
+        capacity: number | null;
+        eventDate: Date | null;
+        venue: string | null;
+        benefits: Prisma.JsonValue;
+        eventStatus: import(".prisma/client").$Enums.EventStatus;
+        paymentStatus: import(".prisma/client").$Enums.PaymentStatus;
+        paidAt: Date | null;
+        paymentMethod: string | null;
+    }>;
+    getUserEmails(userIds: string[]): Promise<Map<string, string>>;
 }
 //# sourceMappingURL=campaign.repository.d.ts.map

@@ -9,7 +9,7 @@ let io = null;
 function initSocket(httpServer) {
     io = new socket_io_1.Server(httpServer, {
         cors: { origin: '*', credentials: true },
-        transports: ['websocket', 'polling'],
+        transports: ['websocket'],
     });
     io.use((socket, next) => {
         const token = socket.handshake.auth?.token;

@@ -5,7 +5,7 @@ const notification_service_1 = require("./notification.service");
 class NotificationController {
     async list(req, res, next) {
         try {
-            const notifications = await notification_service_1.notificationService.getForUser(req.user.id);
+            const notifications = await notification_service_1.notificationService.getForUser(req.user.id, req.language);
             res.json({ success: true, data: notifications });
         }
         catch (err) {

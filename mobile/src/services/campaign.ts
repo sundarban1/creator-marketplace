@@ -63,12 +63,14 @@ export function toCampaign(api: ApiCampaign): Campaign {
     status:       mapStatus(api.status),
     location:     api.location ?? undefined,
     createdAt:    api.createdAt,
-    campaignType: (api as any).campaignType ?? 'PAID_CAMPAIGN',
-    eventStatus:  (api as any).eventStatus,
-    capacity:     (api as any).capacity,
-    eventDate:    (api as any).eventDate,
-    venue:        (api as any).venue ?? undefined,
-    benefits:     Array.isArray((api as any).benefits) ? (api as any).benefits : [],
+    campaignType:  (api as any).campaignType ?? 'PAID_CAMPAIGN',
+    eventStatus:   (api as any).eventStatus,
+    capacity:      (api as any).capacity,
+    eventDate:     (api as any).eventDate,
+    venue:         (api as any).venue ?? undefined,
+    benefits:      Array.isArray((api as any).benefits) ? (api as any).benefits : [],
+    paymentStatus: api.paymentStatus ?? 'UNPAID',
+    paidAt:        api.paidAt ?? null,
   };
 }
 
@@ -212,17 +214,23 @@ export const campaignService = {
     proposals: Array<{
       id: string;
       status: 'pending' | 'accepted' | 'rejected';
+      workStatus: 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED';
       proposedRate: string;
       coverLetter: string;
       createdAt: string;
-      campaign: { id: string; title: string; platform: string; campaignType: 'PAID_CAMPAIGN' | 'OPEN_EVENT' };
+      campaign: {
+        id: string; title: string; platform: string;
+        campaignType: 'PAID_CAMPAIGN' | 'OPEN_EVENT';
+        paymentStatus: 'UNPAID' | 'PAID' | 'RELEASED';
+      };
       creator: { id: string; fullName: string; avatarUrl: string | null; location: string | null };
     }>;
     total: number;
   }> {
     const res = await request<Array<{
       id: string; status: string; proposedRate: number; coverLetter: string; createdAt: string;
-      campaign: { id: string; title: string; platform: string; campaignType?: string };
+      workStatus?: string;
+      campaign: { id: string; title: string; platform: string; campaignType?: string; paymentStatus?: string };
       creator: { id: string; fullName: string; avatarUrl: string | null; location: string | null };
     }>>('GET', '/api/campaigns/applications/business', undefined, {
       page: params?.page ?? 1,
@@ -232,17 +240,49 @@ export const campaignService = {
       proposals: res.data.map((a) => ({
         id: a.id,
         status: a.status.toLowerCase() as 'pending' | 'accepted' | 'rejected',
+        workStatus: (a.workStatus ?? 'NONE') as 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED',
         proposedRate: `Rs. ${a.proposedRate.toLocaleString()}`,
         coverLetter: a.coverLetter ?? '',
         createdAt: a.createdAt,
         campaign: {
-          ...a.campaign,
+          id: a.campaign.id,
+          title: a.campaign.title,
+          platform: a.campaign.platform,
           campaignType: (a.campaign.campaignType ?? 'PAID_CAMPAIGN') as 'PAID_CAMPAIGN' | 'OPEN_EVENT',
+          paymentStatus: (a.campaign.paymentStatus ?? 'UNPAID') as 'UNPAID' | 'PAID' | 'RELEASED',
         },
         creator: a.creator,
       })),
       total: res.pagination?.total ?? res.data.length,
     };
+  },
+
+  async payForCampaign(campaignId: string, method: string): Promise<void> {
+    await request('POST', `/api/campaigns/${campaignId}/pay`, { method });
+  },
+
+  async payForApplication(appId: string): Promise<void> {
+    await request('PUT', `/api/campaigns/applications/${appId}/pay`);
+  },
+
+  async submitWork(appId: string, data: { note?: string; urls?: string }): Promise<void> {
+    await request('PUT', `/api/campaigns/applications/${appId}/submit`, data);
+  },
+
+  async approveWork(appId: string): Promise<void> {
+    await request('PUT', `/api/campaigns/applications/${appId}/approve`);
+  },
+
+  async requestRevision(appId: string, note: string): Promise<void> {
+    await request('PUT', `/api/campaigns/applications/${appId}/request-revision`, { note });
+  },
+
+  async startWork(appId: string): Promise<void> {
+    await request('PUT', `/api/campaigns/applications/${appId}/start`);
+  },
+
+  async cancelCampaign(campaignId: string): Promise<void> {
+    await request('PUT', `/api/campaigns/${campaignId}/cancel`);
   },
 
   async acceptProposal(campaignId: string, appId: string): Promise<void> {
@@ -254,57 +294,91 @@ export const campaignService = {
   },
 
   async getApplications(campaignId: string): Promise<Array<{
-    id: string;
-    status: 'pending' | 'accepted' | 'rejected';
-    proposedRate: string;
-    coverLetter: string;
-    createdAt: string;
-    creator: { id: string; fullName: string; avatarUrl: string | null; location: string | null };
+    id:              string;
+    status:          'pending' | 'accepted' | 'rejected';
+    proposedRate:    string;
+    proposedRateRaw: number;
+    coverLetter:     string;
+    createdAt:       string;
+    workStatus:      'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED';
+    submittedAt:     string | null;
+    deliverableUrls: string | null;
+    paymentStatus:   'UNPAID' | 'PAID' | 'RELEASED';
+    paidAt:          string | null;
+    creator: { id: string; userId: string; fullName: string; avatarUrl: string | null; location: string | null };
   }>> {
     const res = await request<Array<{
       id: string; status: string; proposedRate: number; coverLetter: string; createdAt: string;
-      creator: { id: string; fullName: string; avatarUrl: string | null; location: string | null };
+      workStatus?: string; submittedAt?: string | null; deliverableUrls?: string | null;
+      paymentStatus?: string; paidAt?: string | null;
+      creator: { id: string; userId: string; fullName: string; avatarUrl: string | null; location: string | null };
     }>>('GET', `/api/campaigns/${campaignId}/applications`);
     return res.data.map((a) => ({
-      id: a.id,
-      status: a.status.toLowerCase() as 'pending' | 'accepted' | 'rejected',
-      proposedRate: `Rs. ${a.proposedRate.toLocaleString()}`,
-      coverLetter: a.coverLetter ?? '',
-      createdAt: a.createdAt,
-      creator: a.creator,
+      id:              a.id,
+      status:          a.status.toLowerCase() as 'pending' | 'accepted' | 'rejected',
+      proposedRate:    `Rs. ${a.proposedRate.toLocaleString()}`,
+      proposedRateRaw: a.proposedRate,
+      coverLetter:     a.coverLetter ?? '',
+      createdAt:       a.createdAt,
+      workStatus:      (a.workStatus ?? 'NONE') as 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED',
+      submittedAt:     a.submittedAt ?? null,
+      deliverableUrls: a.deliverableUrls ?? null,
+      paymentStatus:   (a.paymentStatus ?? 'UNPAID') as 'UNPAID' | 'PAID' | 'RELEASED',
+      paidAt:          a.paidAt ?? null,
+      creator:         a.creator,
     }));
   },
 
   async getMyApplications(): Promise<Array<{
-    id:            string;
-    campaignId:    string;
-    campaignTitle: string;
-    brand:         string;
-    status:        'pending' | 'accepted' | 'rejected';
-    submittedAt:   string;
-    coverLetter:   string;
-    proposedRate:  string;
-    campaignType:  'PAID_CAMPAIGN' | 'OPEN_EVENT';
+    id:               string;
+    campaignId:       string;
+    campaignTitle:    string;
+    brand:            string;
+    businessId:       string;
+    status:           'pending' | 'accepted' | 'rejected';
+    submittedAt:      string;
+    workSubmittedAt:  string | null;
+    coverLetter:      string;
+    proposedRate:     string;
+    proposedRateRaw:  number;
+    workStatus:       'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED';
+    campaignType:     'PAID_CAMPAIGN' | 'OPEN_EVENT';
+    paymentStatus:    'UNPAID' | 'PAID' | 'RELEASED';
+    paidAt:           string | null;
   }>> {
     const res = await request<Array<{
-      id:          string;
-      status:      string;
-      coverLetter: string;
-      proposedRate: number;
-      createdAt:   string;
-      campaign:    { id: string; title: string; campaignType?: string; business: { businessName: string } };
+      id:              string;
+      status:          string;
+      coverLetter:     string;
+      proposedRate:    number;
+      createdAt:       string;
+      workStatus?:     string;
+      submittedAt?:    string | null;
+      paymentStatus?:  string;
+      paidAt?:         string | null;
+      campaign:     {
+        id: string; title: string; campaignType?: string;
+        paymentStatus?: string; paidAt?: string | null;
+        business: { id: string; businessName: string };
+      };
     }>>('GET', '/api/campaigns/applications/my');
 
     return res.data.map((a) => ({
-      id:            a.id,
-      campaignId:    a.campaign.id,
-      campaignTitle: a.campaign.title,
-      brand:         a.campaign.business.businessName,
-      status:        a.status.toLowerCase() as 'pending' | 'accepted' | 'rejected',
-      submittedAt:   a.createdAt,
-      coverLetter:   a.coverLetter,
-      proposedRate:  `Rs. ${a.proposedRate.toLocaleString()}`,
-      campaignType:  (a.campaign.campaignType ?? 'PAID_CAMPAIGN') as 'PAID_CAMPAIGN' | 'OPEN_EVENT',
+      id:              a.id,
+      campaignId:      a.campaign.id,
+      campaignTitle:   a.campaign.title,
+      brand:           a.campaign.business.businessName,
+      businessId:      a.campaign.business.id,
+      status:          a.status.toLowerCase() as 'pending' | 'accepted' | 'rejected',
+      submittedAt:     a.createdAt,
+      workSubmittedAt: a.submittedAt ?? null,
+      coverLetter:     a.coverLetter,
+      proposedRate:    `Rs. ${a.proposedRate.toLocaleString()}`,
+      proposedRateRaw: a.proposedRate,
+      workStatus:      (a.workStatus ?? 'NONE') as 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED',
+      campaignType:    (a.campaign.campaignType ?? 'PAID_CAMPAIGN') as 'PAID_CAMPAIGN' | 'OPEN_EVENT',
+      paymentStatus:   (a.paymentStatus ?? a.campaign.paymentStatus ?? 'UNPAID') as 'UNPAID' | 'PAID' | 'RELEASED',
+      paidAt:          a.paidAt ?? a.campaign.paidAt ?? null,
     }));
   },
 };

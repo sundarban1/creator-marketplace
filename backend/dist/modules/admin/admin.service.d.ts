@@ -136,6 +136,15 @@ export declare class AdminService {
             paymentType: string;
             isFeatured: boolean;
             creatorsNeeded: number;
+            campaignType: import(".prisma/client").$Enums.CampaignType;
+            capacity: number | null;
+            eventDate: Date | null;
+            venue: string | null;
+            benefits: import("@prisma/client/runtime/library").JsonValue;
+            eventStatus: import(".prisma/client").$Enums.EventStatus;
+            paymentStatus: import(".prisma/client").$Enums.PaymentStatus;
+            paidAt: Date | null;
+            paymentMethod: string | null;
         })[];
         total: number;
     }>;

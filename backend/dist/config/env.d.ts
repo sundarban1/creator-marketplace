@@ -16,5 +16,6 @@ export declare const env: {
     EMAIL_SECURE?: string | undefined;
     EMAIL_USERNAME?: string | undefined;
     EMAIL_PASSWORD?: string | undefined;
+    ADMIN_EMAIL?: string | undefined;
 };
 //# sourceMappingURL=env.d.ts.map

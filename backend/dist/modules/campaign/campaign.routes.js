@@ -146,6 +146,7 @@ router.post('/', auth_1.authenticate, (0, auth_1.authorize)('BUSINESS'), (0, val
  */
 router.get('/', (0, validate_1.validate)(campaign_schema_1.campaignListQuerySchema, 'query'), ctrl.list.bind(ctrl));
 router.get('/categories', ctrl.getCategories.bind(ctrl));
+router.get('/platforms', ctrl.getPlatforms.bind(ctrl));
 /**
  * @swagger
  * /api/campaigns/my:
@@ -203,6 +204,12 @@ router.get('/my', auth_1.authenticate, (0, auth_1.authorize)('BUSINESS'), ctrl.g
  */
 router.get('/applications/my', auth_1.authenticate, (0, auth_1.authorize)('CREATOR'), ctrl.getMyApplications.bind(ctrl));
 router.get('/applications/business', auth_1.authenticate, (0, auth_1.authorize)('BUSINESS'), ctrl.getBusinessApplications.bind(ctrl));
+router.put('/applications/:appId/pay', auth_1.authenticate, (0, auth_1.authorize)('BUSINESS'), ctrl.payForApplication.bind(ctrl));
+router.put('/applications/:appId/submit', auth_1.authenticate, (0, auth_1.authorize)('CREATOR'), ctrl.submitWork.bind(ctrl));
+router.put('/applications/:appId/approve', auth_1.authenticate, (0, auth_1.authorize)('BUSINESS'), ctrl.approveWork.bind(ctrl));
+router.put('/applications/:appId/request-revision', auth_1.authenticate, (0, auth_1.authorize)('BUSINESS'), ctrl.requestRevision.bind(ctrl));
+router.put('/applications/:appId/start', auth_1.authenticate, (0, auth_1.authorize)('CREATOR'), ctrl.startWork.bind(ctrl));
+router.put('/:id/cancel', auth_1.authenticate, (0, auth_1.authorize)('BUSINESS'), ctrl.cancelCampaign.bind(ctrl));
 /**
  * @swagger
  * /api/campaigns/{id}:
@@ -370,6 +377,7 @@ router.delete('/:id', auth_1.authenticate, (0, auth_1.authorize)('BUSINESS'), ct
  *         description: Already applied to this campaign
  */
 router.post('/:id/apply', auth_1.authenticate, (0, auth_1.authorize)('CREATOR'), (0, validate_1.validate)(campaign_schema_1.applyToCampaignSchema), ctrl.apply.bind(ctrl));
+router.post('/:id/pay', auth_1.authenticate, (0, auth_1.authorize)('BUSINESS'), ctrl.payForCampaign.bind(ctrl));
 /**
  * @swagger
  * /api/campaigns/{id}/applications:

@@ -582,17 +582,42 @@ export default function CampaignDetailScreen() {
         <View style={[s.card, { backgroundColor: C.surface }]}>
           <Text style={[s.sectionLabel, { color: C.textSecondary }]}>{t('campaignDetail.sectionDetails')}</Text>
           <View style={s.detailsGrid}>
-            <DetailRow icon="📅" label={t('campaignDetail.detailDeadline')}  value={formatDeadline(campaign.deadline)} C={C} />
-            {campaign.campaignType !== 'OPEN_EVENT' && (
+            {isOpenEvent && campaign.eventDate ? (
+              <DetailRow icon="🎪" label="Event Date" value={formatDeadline(campaign.eventDate)} C={C} />
+            ) : null}
+            <DetailRow icon="📅" label={isOpenEvent ? 'Registration Deadline' : t('campaignDetail.detailDeadline')} value={formatDeadline(campaign.deadline)} C={C} />
+            {!isOpenEvent && (
               <>
                 <DetailRow icon="💳" label={t('campaignDetail.detailBudget')}  value={campaign.budget} C={C} />
                 <DetailRow icon="💰" label={t('campaignDetail.detailPayment')} value={campaign.paymentType} C={C} />
               </>
             )}
-            <DetailRow icon="📍" label={t('campaignDetail.detailLocation')}  value={campaign.location ?? t('campaignDetail.remoteLocation')} C={C} />
-            <DetailRow icon="📊" label={t('campaignDetail.detailStatus')}    value={campaign.status ? campaign.status.charAt(0).toUpperCase() + campaign.status.slice(1) : t('campaignDetail.statusActive')} C={C} />
+            {isOpenEvent && campaign.venue ? (
+              <DetailRow icon="📍" label="Venue" value={campaign.venue} C={C} />
+            ) : (
+              <DetailRow icon="📍" label={t('campaignDetail.detailLocation')} value={campaign.location ?? t('campaignDetail.remoteLocation')} C={C} />
+            )}
+            {isOpenEvent && campaign.capacity ? (
+              <DetailRow icon="👥" label="Capacity" value={`${campaign.capacity} creators`} C={C} />
+            ) : null}
+            <DetailRow icon="📊" label={t('campaignDetail.detailStatus')} value={campaign.status ? campaign.status.charAt(0).toUpperCase() + campaign.status.slice(1) : t('campaignDetail.statusActive')} C={C} />
           </View>
         </View>
+
+        {/* Benefits card — free events only */}
+        {isOpenEvent && campaign.benefits && campaign.benefits.length > 0 ? (
+          <View style={[s.card, { backgroundColor: C.surface }]}>
+            <Text style={[s.sectionLabel, { color: C.textSecondary }]}>What You Get</Text>
+            <View style={s.benefitsWrap}>
+              {campaign.benefits.map((b, i) => (
+                <View key={i} style={[s.benefitChip, { backgroundColor: '#F0FDF4', borderColor: '#A7F3D0' }]}>
+                  <Text style={s.benefitChipIcon}>🎁</Text>
+                  <Text style={[s.benefitChipTxt, { color: '#065F46' }]}>{b}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        ) : null}
 
         {/* Description */}
         <View style={[s.card, { backgroundColor: C.surface }]}>
@@ -1031,6 +1056,11 @@ const s = StyleSheet.create({
   reqItem:     { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingTop: 4 },
   reqDot:      { width: 6, height: 6, borderRadius: 3, marginTop: 7, flexShrink: 0 },
   reqText:     { flex: 1, fontSize: 14, lineHeight: 20, fontFamily: F.regular },
+
+  benefitsWrap:  { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  benefitChip:   { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 7 },
+  benefitChipIcon: { fontSize: 14 },
+  benefitChipTxt:{ fontSize: 13, fontWeight: '600', fontFamily: F.semibold },
 
   ctaBar:        { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12, borderTopWidth: 1, gap: 16, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 12, shadowOffset: { width: 0, height: -3 }, elevation: 8 },
   ctaInfo:       { flex: 1 },

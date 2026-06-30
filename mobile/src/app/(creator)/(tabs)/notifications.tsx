@@ -152,6 +152,43 @@ export default function NotificationsScreen() {
     if (!n) return;
     const isCreator = user?.role === 'CREATOR';
 
+    // Free event notifications
+    if (n.refType === 'event' && n.refId) {
+      if (isCreator) {
+        // Creator got accepted → view event details
+        router.push({ pathname: '/campaign-detail', params: { campaignId: n.refId } });
+      } else {
+        // Business got a new participation request → view proposals list
+        router.push({
+          pathname: '/(business)/campaign-proposals',
+          params: { campaignId: n.refId, campaignType: 'OPEN_EVENT', campaignTitle: '' },
+        });
+      }
+      return;
+    }
+
+    // proposal_received → show the proposals list (business only)
+    if (n.type === 'proposal_received' && n.refId && !isCreator) {
+      router.push({
+        pathname: '/(business)/campaign-proposals',
+        params: { campaignId: n.refId, campaignTitle: '', campaignType: '' },
+      });
+      return;
+    }
+
+    // workspace status notifications → activity timeline
+    if (n.refType === 'campaign' && n.refId &&
+      ['payment_released', 'campaign_closed'].includes(n.type)) {
+      router.push({
+        pathname: '/(business)/activity-timeline',
+        params: {
+          campaignId: n.refId,
+          ...(isCreator ? { role: 'CREATOR' } : {}),
+        },
+      });
+      return;
+    }
+
     if (n.type === 'campaign_invitation') {
       if (n.refId) {
         router.push({ pathname: '/campaign-detail', params: { campaignId: n.refId } });
@@ -170,10 +207,8 @@ export default function NotificationsScreen() {
       }
     } else if (n.type === 'new_message') {
       router.push(isCreator ? '/(creator)/messages/' : '/(business)/messages/');
-    } else if (['proposal_accepted', 'proposal_rejected', 'campaign_deadline', 'campaign_closed', 'payment_released'].includes(n.type)) {
+    } else if (['proposal_accepted', 'proposal_rejected', 'campaign_deadline'].includes(n.type)) {
       if (isCreator) router.push('/(creator)/proposals');
-    } else if (n.type === 'proposal_received') {
-      if (!isCreator) router.push('/(business)/proposals');
     }
   }
 
@@ -188,8 +223,14 @@ export default function NotificationsScreen() {
       <LinearGradient colors={['#312e81', '#4f46e5', '#8b5cf6']} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientHeader}>
         <View style={[styles.decCircle1, { backgroundColor: 'rgba(255,255,255,0.1)' }]} />
         <View style={[styles.decCircle2, { backgroundColor: 'rgba(255,255,255,0.07)' }]} />
-        <View style={styles.header}>
-          <View>
+        <View style={styles.headerRow}>
+          <Pressable
+            onPress={() => { if (router.canGoBack()) router.back(); }}
+            style={({ pressed }) => [styles.backBtn, { opacity: pressed ? 0.7 : 1 }]}
+            hitSlop={8}>
+            <Ionicons name="chevron-back" size={20} color="#fff" />
+          </Pressable>
+          <View style={{ flex: 1 }}>
             <Text style={[styles.heading, { color: '#fff' }]}>{t('notifications.heading')}</Text>
             {unreadCount > 0 && (
               <Text style={[styles.subheading, { color: 'rgba(255,255,255,0.8)' }]}>
@@ -241,7 +282,8 @@ const styles = StyleSheet.create({
   gradientHeader: { paddingBottom: 16, borderBottomLeftRadius: 28, borderBottomRightRadius: 28, overflow: 'hidden' },
   decCircle1: { position: 'absolute', width: 180, height: 180, borderRadius: 90, top: -60, right: -30 },
   decCircle2: { position: 'absolute', width: 110, height: 110, borderRadius: 55, bottom: -30, left: 20 },
-  header:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 4 },
+  headerRow:  { flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4 },
+  backBtn:    { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.15)', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.35)', justifyContent: 'center', alignItems: 'center' },
   heading:    { fontSize: 22, fontWeight: '700', fontFamily: F.extrabold },
   subheading: { fontSize: 13, marginTop: 2, fontFamily: F.regular },
   markAllBtn: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 8, borderWidth: 1 },

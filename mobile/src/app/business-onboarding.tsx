@@ -2,8 +2,6 @@ import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
   Animated,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -107,7 +105,7 @@ export default function BusinessOnboardingScreen() {
 
   async function handleStep1Continue() {
     setStep1Submitted(true);
-    if (!businessName.trim()) return;
+    if (!businessName.trim() || !location.trim()) return;
     setStep1Loading(true);
     setStep1Error('');
     try {
@@ -167,6 +165,7 @@ export default function BusinessOnboardingScreen() {
   }
 
   const businessNameError = step1Submitted && !businessName.trim() ? t('businessOnboarding.nameRequired') : undefined;
+  const locationError     = step1Submitted && !location.trim() ? 'Location is required' : undefined;
 
   const STEP_CONFIG = [
     { title: 'Tell us about your business', subtitle: 'Basic details that appear on your public profile.' },
@@ -201,11 +200,9 @@ export default function BusinessOnboardingScreen() {
         <Text style={[styles.stepSubtitle, { color: C.textSecondary }]}>{subtitle}</Text>
       </View>
 
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-
         {/* ────────── Step 1: Business basics ────────── */}
         {step === 1 && (
-          <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+          <ScrollView style={styles.flex} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
 
             {step1Error ? (
               <View style={[styles.errorBanner, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}>
@@ -216,7 +213,7 @@ export default function BusinessOnboardingScreen() {
             {/* Business Name */}
             <View style={styles.fieldGroup}>
               <Text style={[styles.fieldLabel, { color: C.text, marginBottom: 8 }]}>
-                Business Name <Text style={{ color: C.error }}>*</Text>
+                Name <Text style={{ color: C.error }}>*</Text>
               </Text>
               <TextInput
                 style={[styles.input, { backgroundColor: C.surface, borderColor: businessNameError ? C.error : C.border, color: C.text }]}
@@ -238,7 +235,7 @@ export default function BusinessOnboardingScreen() {
             {/* PAN No */}
             <View style={styles.fieldGroup}>
               <View style={styles.labelRow}>
-                <Text style={[styles.fieldLabel, { color: C.text }]}>Business PAN No</Text>
+                <Text style={[styles.fieldLabel, { color: C.text }]}>PAN No</Text>
                 <Text style={[styles.optionalTag, { color: C.textSecondary }]}>Optional</Text>
               </View>
               <TextInput
@@ -255,15 +252,14 @@ export default function BusinessOnboardingScreen() {
               </Text>
             </View>
 
-            {/* Business Location */}
+            {/* Location */}
             <View style={[styles.fieldGroup, { zIndex: 10 }]}>
-              <View style={styles.labelRow}>
-                <Text style={[styles.fieldLabel, { color: C.text }]}>Business Location</Text>
-                <Text style={[styles.optionalTag, { color: C.textSecondary }]}>Optional</Text>
-              </View>
+              <Text style={[styles.fieldLabel, { color: C.text, marginBottom: 8 }]}>
+                Location <Text style={{ color: C.error }}>*</Text>
+              </Text>
               <View>
                 <TextInput
-                  style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text }]}
+                  style={[styles.input, { backgroundColor: C.surface, borderColor: locationError ? C.error : C.border, color: C.text }]}
                   value={location}
                   onChangeText={handleLocationChange}
                   placeholder="e.g. Kathmandu, Thamel"
@@ -283,9 +279,13 @@ export default function BusinessOnboardingScreen() {
                   </View>
                 )}
               </View>
-              <Text style={[styles.inputHint, { color: C.textSecondary }]}>
-                Creators will use this as a default location for your events.
-              </Text>
+              {locationError ? (
+                <Text style={[styles.fieldError, { color: C.error }]}>{locationError}</Text>
+              ) : (
+                <Text style={[styles.inputHint, { color: C.textSecondary }]}>
+                  Creators will use this as a default location for your events.
+                </Text>
+              )}
             </View>
 
             <Pressable
@@ -307,7 +307,7 @@ export default function BusinessOnboardingScreen() {
 
         {/* ────────── Step 2: Business Category ────────── */}
         {step === 2 && (
-          <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+          <ScrollView style={styles.flex} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
 
             {step2Error ? (
               <View style={[styles.errorBanner, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}>
@@ -377,7 +377,6 @@ export default function BusinessOnboardingScreen() {
           </ScrollView>
         )}
 
-      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

@@ -358,5 +358,7 @@ router.post('/forgot-password-phone', (0, validate_1.validate)(auth_schema_1.for
 router.post('/verify-reset-otp', (0, validate_1.validate)(auth_schema_1.verifyResetOtpSchema), ctrl.verifyResetOtp.bind(ctrl));
 router.post('/request-phone-otp', auth_1.authenticate, (0, validate_1.validate)(auth_schema_1.requestPhoneOtpSchema), ctrl.requestPhoneOtp.bind(ctrl));
 router.post('/verify-phone-otp', auth_1.authenticate, (0, validate_1.validate)(auth_schema_1.verifyPhoneOtpSchema), ctrl.verifyPhoneOtp.bind(ctrl));
+router.post('/google', (0, validate_1.validate)(auth_schema_1.googleAuthSchema), ctrl.googleAuth.bind(ctrl));
+router.post('/facebook', (0, validate_1.validate)(auth_schema_1.facebookAuthSchema), ctrl.facebookAuth.bind(ctrl));
 exports.default = router;
 //# sourceMappingURL=auth.routes.js.map

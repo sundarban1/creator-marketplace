@@ -540,10 +540,6 @@ export default function LoginScreen() {
     }
   }
 
-  useEffect(() => {
-    if (user) router.replace((user.role === 'CREATOR' ? '/(creator)/' : '/(business)/') as never);
-  }, [user]);
-
   return (
     <View style={[s.root, { backgroundColor: P1 }]}>
       <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>

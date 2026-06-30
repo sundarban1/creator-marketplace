@@ -16,8 +16,8 @@ const CONV_INCLUDE_BUSINESS = {
     messages: { orderBy: { createdAt: 'desc' }, take: 1 },
 };
 const CONV_INCLUDE_FULL = {
-    creator: { select: { fullName: true, avatarUrl: true } },
-    business: { select: { businessName: true, logoUrl: true } },
+    creator: { select: { fullName: true, avatarUrl: true, userId: true } },
+    business: { select: { businessName: true, logoUrl: true, userId: true } },
     campaign: { select: { title: true } },
 };
 class MessagingRepository {

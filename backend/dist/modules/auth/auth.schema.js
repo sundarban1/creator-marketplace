@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.verifyPhoneOtpSchema = exports.requestPhoneOtpSchema = exports.verifyResetOtpSchema = exports.forgotPasswordByPhoneSchema = exports.resendOtpSchema = exports.verifyOtpSchema = exports.resetPasswordSchema = exports.forgotPasswordSchema = exports.refreshTokenSchema = exports.loginSchema = exports.registerSchema = void 0;
+exports.facebookAuthSchema = exports.googleAuthSchema = exports.verifyPhoneOtpSchema = exports.requestPhoneOtpSchema = exports.verifyResetOtpSchema = exports.forgotPasswordByPhoneSchema = exports.resendOtpSchema = exports.verifyOtpSchema = exports.resetPasswordSchema = exports.forgotPasswordSchema = exports.refreshTokenSchema = exports.loginSchema = exports.registerSchema = void 0;
 const zod_1 = require("zod");
 exports.registerSchema = zod_1.z.object({
     email: zod_1.z.string().email('Invalid email address'),
@@ -54,5 +54,13 @@ exports.requestPhoneOtpSchema = zod_1.z.object({
 exports.verifyPhoneOtpSchema = zod_1.z.object({
     phone: zod_1.z.string().min(7).max(15).regex(/^\+?[\d\s\-().]+$/, 'Invalid phone number'),
     code: zod_1.z.string().length(6, 'Code must be 6 digits').regex(/^\d{6}$/, 'Code must be numeric'),
+});
+exports.googleAuthSchema = zod_1.z.object({
+    accessToken: zod_1.z.string().min(1, 'Google access token is required'),
+    role: zod_1.z.enum(['CREATOR', 'BUSINESS']).optional(),
+});
+exports.facebookAuthSchema = zod_1.z.object({
+    accessToken: zod_1.z.string().min(1, 'Facebook access token is required'),
+    role: zod_1.z.enum(['CREATOR', 'BUSINESS']).optional(),
 });
 //# sourceMappingURL=auth.schema.js.map

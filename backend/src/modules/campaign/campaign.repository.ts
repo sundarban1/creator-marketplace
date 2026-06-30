@@ -1,4 +1,4 @@
-import { CampaignStatus, Prisma } from '@prisma/client';
+import { CampaignStatus, WorkStatus, PaymentStatus, Prisma } from '@prisma/client';
 import prisma from '../../prisma';
 
 export class CampaignRepository {
@@ -233,6 +233,7 @@ export class CampaignRepository {
           creator: {
             select: {
               id: true,
+              userId: true,
               fullName: true,
               avatarUrl: true,
               location: true,
@@ -248,6 +249,11 @@ export class CampaignRepository {
     return { applications, total };
   }
 
+  // Alias used by getCampaignApplications (campaign-proposals page)
+  async findApplicationsByCampaignId(campaignId: string, page: number, limit: number) {
+    return this.findApplicationsByCampaign(campaignId, page, limit);
+  }
+
   async findApplicationsByBusinessId(businessId: string, page: number, limit: number) {
     const skip = (page - 1) * limit;
     const [applications, total] = await Promise.all([
@@ -256,12 +262,27 @@ export class CampaignRepository {
         skip,
         take: limit,
         orderBy: { createdAt: 'desc' },
-        include: {
+        select: {
+          id: true,
+          campaignId: true,
+          coverLetter: true,
+          proposedRate: true,
+          timeline: true,
+          socialHandles: true,
+          portfolioUrl: true,
+          status: true,
+          workStatus: true,
+          workNote: true,
+          submittedAt: true,
+          deliverableUrls: true,
+          paymentStatus: true,
+          paidAt: true,
+          createdAt: true,
           creator: {
             select: { id: true, fullName: true, avatarUrl: true, location: true },
           },
           campaign: {
-            select: { id: true, title: true, platform: true, campaignType: true },
+            select: { id: true, title: true, platform: true, campaignType: true, paymentStatus: true },
           },
         },
       }),
@@ -274,8 +295,8 @@ export class CampaignRepository {
     return prisma.application.findUnique({
       where: { id },
       include: {
-        campaign: true,
-        creator: { select: { userId: true, fullName: true } },
+        campaign: { include: { business: { select: { id: true, userId: true, businessName: true } } } },
+        creator: { select: { id: true, userId: true, fullName: true } },
       },
     });
   }
@@ -302,7 +323,22 @@ export class CampaignRepository {
         skip,
         take: limit,
         orderBy: { createdAt: 'desc' },
-        include: {
+        select: {
+          id: true,
+          campaignId: true,
+          coverLetter: true,
+          proposedRate: true,
+          timeline: true,
+          socialHandles: true,
+          portfolioUrl: true,
+          status: true,
+          workStatus: true,
+          workNote: true,
+          submittedAt: true,
+          deliverableUrls: true,
+          paymentStatus: true,
+          paidAt: true,
+          createdAt: true,
           campaign: {
             select: {
               id: true,
@@ -314,7 +350,9 @@ export class CampaignRepository {
               deadline: true,
               status: true,
               campaignType: true,
-              business: { select: { businessName: true, logoUrl: true } },
+              paymentStatus: true,
+              paidAt: true,
+              business: { select: { id: true, businessName: true, logoUrl: true } },
             },
           },
         },
@@ -323,5 +361,107 @@ export class CampaignRepository {
     ]);
 
     return { applications, total };
+  }
+
+  async payForCampaign(campaignId: string, method: string) {
+    return prisma.campaign.update({
+      where: { id: campaignId },
+      data: {
+        paymentStatus: PaymentStatus.PAID,
+        paidAt:        new Date(),
+        paymentMethod: method,
+      },
+    });
+  }
+
+  async startWork(appId: string) {
+    return prisma.application.update({
+      where: { id: appId },
+      data: { workStatus: WorkStatus.IN_PROGRESS },
+    });
+  }
+
+  async submitWork(appId: string, data: { note?: string; urls?: string }) {
+    return prisma.application.update({
+      where: { id: appId },
+      data: {
+        workStatus:      WorkStatus.SUBMITTED,
+        workNote:        data.note ?? null,
+        deliverableUrls: data.urls ?? null,
+        submittedAt:     new Date(),
+      },
+    });
+  }
+
+  async approveWork(appId: string) {
+    return prisma.application.update({
+      where: { id: appId },
+      data: { workStatus: WorkStatus.APPROVED },
+    });
+  }
+
+  async requestRevision(appId: string, note: string) {
+    return prisma.application.update({
+      where: { id: appId },
+      data: { workStatus: WorkStatus.IN_PROGRESS, workNote: note },
+    });
+  }
+
+  async payForApplication(appId: string) {
+    return prisma.application.update({
+      where: { id: appId },
+      data: { paymentStatus: 'PAID', paidAt: new Date() },
+    });
+  }
+
+  async releaseApplicationPayment(appId: string) {
+    return prisma.application.update({
+      where: { id: appId },
+      data: { paymentStatus: 'RELEASED' },
+    });
+  }
+
+  async countAcceptedApplications(campaignId: string): Promise<number> {
+    return prisma.application.count({
+      where: { campaignId, status: 'ACCEPTED' },
+    });
+  }
+
+  async rejectPendingApplications(
+    campaignId: string,
+    excludeAppId: string
+  ): Promise<{ id: string; creator: { userId: string } }[]> {
+    const pending = await prisma.application.findMany({
+      where: { campaignId, id: { not: excludeAppId }, status: 'PENDING' },
+      select: { id: true, creator: { select: { userId: true } } },
+    });
+    if (pending.length === 0) return [];
+    await prisma.application.updateMany({
+      where: { id: { in: pending.map((a) => a.id) } },
+      data: { status: 'REJECTED' },
+    });
+    return pending;
+  }
+
+  async closeCampaign(campaignId: string): Promise<void> {
+    await prisma.campaign.update({
+      where: { id: campaignId },
+      data: { status: 'CLOSED' },
+    });
+  }
+
+  async cancelCampaign(campaignId: string) {
+    return prisma.campaign.update({
+      where: { id: campaignId },
+      data: { status: 'CLOSED' },
+    });
+  }
+
+  async getUserEmails(userIds: string[]): Promise<Map<string, string>> {
+    const users = await prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, email: true },
+    });
+    return new Map(users.map((u) => [u.id, u.email]));
   }
 }

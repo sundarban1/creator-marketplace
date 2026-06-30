@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 export declare class CampaignController {
     create(req: Request, res: Response, next: NextFunction): Promise<void>;
     getCategories(req: Request, res: Response, next: NextFunction): Promise<void>;
+    getPlatforms(req: Request, res: Response, next: NextFunction): Promise<void>;
     list(req: Request, res: Response, next: NextFunction): Promise<void>;
     getById(req: Request, res: Response, next: NextFunction): Promise<void>;
     update(req: Request, res: Response, next: NextFunction): Promise<void>;
@@ -13,5 +14,12 @@ export declare class CampaignController {
     rejectApplication(req: Request, res: Response, next: NextFunction): Promise<void>;
     getBusinessApplications(req: Request, res: Response, next: NextFunction): Promise<void>;
     getMyApplications(req: Request, res: Response, next: NextFunction): Promise<void>;
+    payForCampaign(req: Request, res: Response, next: NextFunction): Promise<void>;
+    submitWork(req: Request, res: Response, next: NextFunction): Promise<void>;
+    approveWork(req: Request, res: Response, next: NextFunction): Promise<void>;
+    requestRevision(req: Request, res: Response, next: NextFunction): Promise<void>;
+    payForApplication(req: Request, res: Response, next: NextFunction): Promise<void>;
+    startWork(req: Request, res: Response, next: NextFunction): Promise<void>;
+    cancelCampaign(req: Request, res: Response, next: NextFunction): Promise<void>;
 }
 //# sourceMappingURL=campaign.controller.d.ts.map

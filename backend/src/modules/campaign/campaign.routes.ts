@@ -230,6 +230,48 @@ router.get(
   ctrl.getBusinessApplications.bind(ctrl)
 );
 
+router.put(
+  '/applications/:appId/pay',
+  authenticate,
+  authorize('BUSINESS'),
+  ctrl.payForApplication.bind(ctrl)
+);
+
+router.put(
+  '/applications/:appId/submit',
+  authenticate,
+  authorize('CREATOR'),
+  ctrl.submitWork.bind(ctrl)
+);
+
+router.put(
+  '/applications/:appId/approve',
+  authenticate,
+  authorize('BUSINESS'),
+  ctrl.approveWork.bind(ctrl)
+);
+
+router.put(
+  '/applications/:appId/request-revision',
+  authenticate,
+  authorize('BUSINESS'),
+  ctrl.requestRevision.bind(ctrl)
+);
+
+router.put(
+  '/applications/:appId/start',
+  authenticate,
+  authorize('CREATOR'),
+  ctrl.startWork.bind(ctrl)
+);
+
+router.put(
+  '/:id/cancel',
+  authenticate,
+  authorize('BUSINESS'),
+  ctrl.cancelCampaign.bind(ctrl)
+);
+
 /**
  * @swagger
  * /api/campaigns/{id}:
@@ -411,6 +453,13 @@ router.post(
   authorize('CREATOR'),
   validate(applyToCampaignSchema),
   ctrl.apply.bind(ctrl)
+);
+
+router.post(
+  '/:id/pay',
+  authenticate,
+  authorize('BUSINESS'),
+  ctrl.payForCampaign.bind(ctrl)
 );
 
 /**

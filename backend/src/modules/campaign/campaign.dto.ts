@@ -25,6 +25,9 @@ export interface CampaignDto {
   venue: string | null;
   benefits: string[];
   eventStatus: string;
+  paymentStatus: string;
+  paidAt: string | null;
+  paymentMethod: string | null;
   createdAt: string;
   business?: {
     businessName: string | null;
@@ -44,6 +47,12 @@ export interface ApplicationDto {
   socialHandles: Record<string, string>;
   portfolioUrl: string | null;
   status: string;
+  workStatus: string;
+  workNote: string | null;
+  submittedAt: string | null;
+  deliverableUrls: string | null;
+  paymentStatus: string;
+  paidAt: string | null;
   createdAt: string;
   campaign?: {
     id?: string;
@@ -55,7 +64,9 @@ export interface ApplicationDto {
     deadline?: string;
     status?: string;
     campaignType?: string;
-    business?: { businessName: string | null; logoUrl: string | null };
+    paymentStatus?: string;
+    paidAt?: string | null;
+    business?: { id?: string; businessName: string | null; logoUrl: string | null };
   } | null;
   creator?: {
     id?: string;
@@ -94,6 +105,9 @@ type RawCampaign = {
   venue: string | null;
   benefits: Prisma.JsonValue;
   eventStatus: string;
+  paymentStatus: string;
+  paidAt: Date | null;
+  paymentMethod: string | null;
   createdAt: Date;
   business?: { businessName: string | null; logoUrl: string | null; website?: string | null; description?: string | null } | null;
   _count?: { applications: number };
@@ -125,6 +139,9 @@ export function toCampaignDto(c: RawCampaign): CampaignDto {
     venue:          c.venue,
     benefits:       (c.benefits ?? []) as string[],
     eventStatus:    c.eventStatus,
+    paymentStatus:  c.paymentStatus,
+    paidAt:         c.paidAt ? c.paidAt.toISOString() : null,
+    paymentMethod:  c.paymentMethod,
     createdAt:      c.createdAt.toISOString(),
   };
   if (c.business != null) dto.business = c.business;
@@ -141,6 +158,12 @@ type RawApplication = {
   socialHandles: Prisma.JsonValue;
   portfolioUrl: string | null;
   status: string;
+  workStatus: string;
+  workNote: string | null;
+  submittedAt: Date | null;
+  deliverableUrls: string | null;
+  paymentStatus: string;
+  paidAt: Date | null;
   createdAt: Date;
   campaign?: {
     id?: string;
@@ -152,7 +175,9 @@ type RawApplication = {
     deadline?: Date;
     status?: string;
     campaignType?: string;
-    business?: { businessName: string | null; logoUrl: string | null };
+    paymentStatus?: string;
+    paidAt?: Date | null;
+    business?: { id?: string; businessName: string | null; logoUrl: string | null };
   } | null;
   creator?: {
     id?: string;
@@ -167,20 +192,29 @@ type RawApplication = {
 
 export function toApplicationDto(a: RawApplication): ApplicationDto {
   const dto: ApplicationDto = {
-    id:           a.id,
-    campaignId:   a.campaignId,
-    coverLetter:  a.coverLetter,
-    proposedRate: a.proposedRate,
-    timeline:     a.timeline,
-    socialHandles: (a.socialHandles ?? {}) as Record<string, string>,
-    portfolioUrl: a.portfolioUrl,
-    status:       a.status,
-    createdAt:    a.createdAt.toISOString(),
+    id:              a.id,
+    campaignId:      a.campaignId,
+    coverLetter:     a.coverLetter,
+    proposedRate:    a.proposedRate,
+    timeline:        a.timeline,
+    socialHandles:   (a.socialHandles ?? {}) as Record<string, string>,
+    portfolioUrl:    a.portfolioUrl,
+    status:          a.status,
+    workStatus:      a.workStatus,
+    workNote:        a.workNote,
+    submittedAt:     a.submittedAt ? a.submittedAt.toISOString() : null,
+    deliverableUrls: a.deliverableUrls,
+    paymentStatus:   a.paymentStatus ?? 'UNPAID',
+    paidAt:          a.paidAt ? (a.paidAt instanceof Date ? a.paidAt.toISOString() : a.paidAt) : null,
+    createdAt:       a.createdAt.toISOString(),
   };
   if (a.campaign != null) {
     dto.campaign = {
       ...a.campaign,
       deadline: a.campaign.deadline ? a.campaign.deadline.toISOString() : undefined,
+      paidAt:   a.campaign.paidAt instanceof Date
+        ? a.campaign.paidAt.toISOString()
+        : (a.campaign.paidAt ?? null),
     };
   }
   if (a.creator != null) dto.creator = a.creator;

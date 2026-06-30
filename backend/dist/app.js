@@ -13,6 +13,8 @@ const swagger_ui_express_1 = __importDefault(require("swagger-ui-express"));
 const env_1 = require("./config/env");
 const swagger_1 = require("./config/swagger");
 const error_1 = require("./middleware/error");
+const timezone_1 = require("./middleware/timezone");
+const language_1 = require("./middleware/language");
 const prisma_1 = __importDefault(require("./prisma"));
 const socket_1 = require("./socket");
 // Route imports
@@ -45,11 +47,13 @@ app.use((0, cors_1.default)({
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Timezone', 'X-Language'],
 }));
 app.use(express_1.default.json({ limit: '10mb' }));
 app.use(express_1.default.urlencoded({ extended: true }));
 app.use((0, morgan_1.default)(env_1.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
+app.use(timezone_1.timezoneMiddleware);
+app.use(language_1.languageMiddleware);
 // ── Health check ─────────────────────────────────────────────────────────────
 /**
  * @swagger

@@ -106,6 +106,26 @@ export declare const verifyPhoneOtpSchema: z.ZodObject<{
     code: string;
     phone: string;
 }>;
+export declare const googleAuthSchema: z.ZodObject<{
+    accessToken: z.ZodString;
+    role: z.ZodOptional<z.ZodEnum<["CREATOR", "BUSINESS"]>>;
+}, "strip", z.ZodTypeAny, {
+    accessToken: string;
+    role?: "CREATOR" | "BUSINESS" | undefined;
+}, {
+    accessToken: string;
+    role?: "CREATOR" | "BUSINESS" | undefined;
+}>;
+export declare const facebookAuthSchema: z.ZodObject<{
+    accessToken: z.ZodString;
+    role: z.ZodOptional<z.ZodEnum<["CREATOR", "BUSINESS"]>>;
+}, "strip", z.ZodTypeAny, {
+    accessToken: string;
+    role?: "CREATOR" | "BUSINESS" | undefined;
+}, {
+    accessToken: string;
+    role?: "CREATOR" | "BUSINESS" | undefined;
+}>;
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RefreshTokenInput = z.infer<typeof refreshTokenSchema>;
@@ -117,4 +137,6 @@ export type ForgotPasswordByPhoneInput = z.infer<typeof forgotPasswordByPhoneSch
 export type VerifyResetOtpInput = z.infer<typeof verifyResetOtpSchema>;
 export type RequestPhoneOtpInput = z.infer<typeof requestPhoneOtpSchema>;
 export type VerifyPhoneOtpInput = z.infer<typeof verifyPhoneOtpSchema>;
+export type GoogleAuthInput = z.infer<typeof googleAuthSchema>;
+export type FacebookAuthInput = z.infer<typeof facebookAuthSchema>;
 //# sourceMappingURL=auth.schema.d.ts.map

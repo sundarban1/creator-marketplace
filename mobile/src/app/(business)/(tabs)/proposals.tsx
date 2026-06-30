@@ -17,13 +17,20 @@ import { useLanguage } from '@/context/LanguageContext';
 import { campaignService } from '@/services/campaign';
 import { F } from '@/utilities/constants';
 
+type WS = 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED';
+
 type Proposal = {
   id: string;
   status: 'pending' | 'accepted' | 'rejected';
+  workStatus: WS;
   proposedRate: string;
   coverLetter: string;
   createdAt: string;
-  campaign: { id: string; title: string; platform: string; campaignType: 'PAID_CAMPAIGN' | 'OPEN_EVENT' };
+  campaign: {
+    id: string; title: string; platform: string;
+    campaignType: 'PAID_CAMPAIGN' | 'OPEN_EVENT';
+    paymentStatus: 'UNPAID' | 'PAID' | 'RELEASED';
+  };
   creator: { id: string; fullName: string; avatarUrl: string | null; location: string | null };
 };
 
@@ -37,9 +44,11 @@ type CampaignCard = {
   accepted: number;
   rejected: number;
   latestAt: string;
+  acceptedWorkStatus: WS | null;
+  campaignPaid: boolean;
 };
 
-type TabKey = 'all' | 'paid' | 'free';
+type TabKey = 'all' | 'paid' | 'free' | 'accepted';
 
 const PAID_ACCENT = '#4F46E5';
 const FREE_ACCENT = '#059669';
@@ -49,16 +58,35 @@ const FREE_LIGHT  = '#F0FDF4';
 function buildCampaignCards(proposals: Proposal[]): CampaignCard[] {
   const map = new Map<string, CampaignCard>();
   for (const p of proposals) {
-    const { id, title, platform, campaignType } = p.campaign;
+    const { id, title, platform, campaignType, paymentStatus } = p.campaign;
     if (!map.has(id)) {
-      map.set(id, { id, title, platform, campaignType, total: 0, pending: 0, accepted: 0, rejected: 0, latestAt: p.createdAt });
+      map.set(id, {
+        id, title, platform, campaignType,
+        total: 0, pending: 0, accepted: 0, rejected: 0,
+        latestAt: p.createdAt,
+        acceptedWorkStatus: null,
+        campaignPaid: paymentStatus === 'PAID' || paymentStatus === 'RELEASED',
+      });
     }
     const c = map.get(id)!;
     c.total++;
     c[p.status]++;
     if (p.createdAt > c.latestAt) c.latestAt = p.createdAt;
+    if (p.status === 'accepted') {
+      c.acceptedWorkStatus = p.workStatus;
+      c.campaignPaid = paymentStatus === 'PAID' || paymentStatus === 'RELEASED';
+    }
   }
   return Array.from(map.values()).sort((a, b) => b.latestAt.localeCompare(a.latestAt));
+}
+
+function workspaceBtnConfig(ws: WS | null, paid: boolean, isFree = false) {
+  if (ws === 'APPROVED') return { label: 'Project Completed', sub: 'Work approved & payment released', color: '#16A34A', icon: 'checkmark-done-circle' as const };
+  if (ws === 'SUBMITTED') return { label: 'Review Deliverables', sub: 'Creator has submitted their work', color: '#D97706', icon: 'eye' as const };
+  if (ws === 'IN_PROGRESS') return { label: 'Creator is Working', sub: 'Content creation in progress', color: '#7C3AED', icon: 'brush' as const };
+  if (isFree) return { label: 'View everyone who applied', sub: '', color: FREE_ACCENT, icon: 'people' as const };
+  if (paid) return { label: 'Waiting for Creator', sub: 'Creator will start work soon', color: '#0EA5E9', icon: 'hourglass' as const };
+  return { label: 'View Project Details', sub: 'See accepted creator & manage payment', color: '#6366F1', icon: 'folder-open' as const };
 }
 
 function CampaignEventCard({ item }: { item: CampaignCard }) {
@@ -138,6 +166,41 @@ function CampaignEventCard({ item }: { item: CampaignCard }) {
           </Text>
         </View>
       )}
+
+      {/* Dynamic project status button for accepted campaigns */}
+      {item.accepted > 0 && (() => {
+        const cfg = workspaceBtnConfig(item.acceptedWorkStatus, item.campaignPaid, isFree);
+        return (
+          <Pressable
+            style={({ pressed }) => [styles.startWorkBtn, { backgroundColor: cfg.color, opacity: pressed ? 0.88 : 1 }]}
+            onPress={(e) => {
+              e.stopPropagation();
+              router.push({
+                pathname: '/(business)/campaign-proposals',
+                params: {
+                  campaignId:    item.id,
+                  campaignTitle: item.title,
+                  campaignType:  item.campaignType,
+                  platform:      item.platform,
+                },
+              });
+            }}>
+            {/* Icon badge */}
+            <View style={styles.btnIconBadge}>
+              <Ionicons name={cfg.icon} size={20} color="#fff" />
+            </View>
+            {/* Text */}
+            <View style={styles.btnTextBlock}>
+              <Text style={styles.startWorkBtnTxt}>{cfg.label}</Text>
+              {cfg.sub ? <Text style={styles.startWorkBtnSub}>{cfg.sub}</Text> : null}
+            </View>
+            {/* Arrow */}
+            <View style={styles.btnArrow}>
+              <Ionicons name="chevron-forward" size={16} color="#fff" />
+            </View>
+          </Pressable>
+        );
+      })()}
     </Pressable>
   );
 }
@@ -163,16 +226,22 @@ export default function ProposalsScreen() {
   useEffect(() => { void load(); }, [languageVersion]);
   const onRefresh = useCallback(() => void load(true), []);
 
-  const allCards  = buildCampaignCards(proposals);
-  const paidCards = allCards.filter((c) => c.campaignType === 'PAID_CAMPAIGN');
-  const freeCards = allCards.filter((c) => c.campaignType === 'OPEN_EVENT');
+  const allCards      = buildCampaignCards(proposals);
+  const paidCards     = allCards.filter((c) => c.campaignType === 'PAID_CAMPAIGN');
+  const freeCards     = allCards.filter((c) => c.campaignType === 'OPEN_EVENT');
+  const acceptedCards = allCards.filter((c) => c.accepted > 0);
 
-  const cards = activeTab === 'paid' ? paidCards : activeTab === 'free' ? freeCards : allCards;
+  const cards =
+    activeTab === 'paid'     ? paidCards     :
+    activeTab === 'free'     ? freeCards     :
+    activeTab === 'accepted' ? acceptedCards :
+    allCards;
 
   const tabs: { key: TabKey; label: string; count: number; color: string }[] = [
-    { key: 'all',  label: t('proposal.business.tabAll'),  count: allCards.length,  color: '#7C3AED' },
-    { key: 'paid', label: t('proposal.business.tabPaid'), count: paidCards.length, color: PAID_ACCENT },
-    { key: 'free', label: t('proposal.business.tabFree'), count: freeCards.length, color: FREE_ACCENT },
+    { key: 'all',      label: t('proposal.business.tabAll'),      count: allCards.length,      color: '#7C3AED' },
+    { key: 'paid',     label: t('proposal.business.tabPaid'),     count: paidCards.length,     color: PAID_ACCENT },
+    { key: 'free',     label: t('proposal.business.tabFree'),     count: freeCards.length,     color: FREE_ACCENT },
+    { key: 'accepted', label: t('proposal.business.tabAccepted'), count: acceptedCards.length, color: '#16A34A' },
   ];
 
   return (
@@ -232,14 +301,17 @@ export default function ProposalsScreen() {
           ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
           ListEmptyComponent={
             <View style={styles.empty}>
-              <Ionicons name="document-text-outline" size={56} color={C.textSecondary} />
+              <Ionicons
+                name={activeTab === 'accepted' ? 'checkmark-circle-outline' : 'document-text-outline'}
+                size={56}
+                color={activeTab === 'accepted' ? '#16A34A' : C.textSecondary}
+              />
               <Text style={[styles.emptyTitle, { color: C.text }]}>{t('proposal.business.emptyTitle')}</Text>
               <Text style={[styles.emptySub, { color: C.textSecondary }]}>
-                {activeTab === 'paid'
-                  ? t('proposal.business.emptyPaidSub')
-                  : activeTab === 'free'
-                  ? t('proposal.business.emptyFreeSub')
-                  : t('proposal.business.emptyAllSub')}
+                {activeTab === 'paid'     ? t('proposal.business.emptyPaidSub')     :
+                 activeTab === 'free'     ? t('proposal.business.emptyFreeSub')     :
+                 activeTab === 'accepted' ? t('proposal.business.emptyAcceptedSub') :
+                 t('proposal.business.emptyAllSub')}
               </Text>
             </View>
           }
@@ -298,6 +370,13 @@ const styles = StyleSheet.create({
 
   nudge:     { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, paddingVertical: 8 },
   nudgeText: { fontSize: 12, fontWeight: '600', fontFamily: F.semibold },
+
+  startWorkBtn:     { flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: 16, marginBottom: 14, marginTop: 6, paddingVertical: 13, paddingHorizontal: 14, borderRadius: 14 },
+  btnIconBadge:     { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.22)', justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  btnTextBlock:     { flex: 1, gap: 2 },
+  startWorkBtnTxt:  { fontSize: 14, fontWeight: '700', color: '#fff', fontFamily: F.bold },
+  startWorkBtnSub:  { fontSize: 11, color: 'rgba(255,255,255,0.75)', fontFamily: F.regular },
+  btnArrow:         { width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
 
   empty:      { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 10, paddingHorizontal: 32, paddingTop: 60 },
   emptyTitle: { fontSize: 17, fontWeight: '700', textAlign: 'center', fontFamily: F.bold },

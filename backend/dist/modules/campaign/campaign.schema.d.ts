@@ -5,17 +5,22 @@ export declare const createCampaignSchema: z.ZodEffects<z.ZodObject<{
     template: z.ZodOptional<z.ZodString>;
     category: z.ZodString;
     goals: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
-    platform: z.ZodString;
+    platform: z.ZodDefault<z.ZodString>;
     minFollowers: z.ZodDefault<z.ZodNumber>;
     contentType: z.ZodDefault<z.ZodString>;
     deliverables: z.ZodDefault<z.ZodString>;
     deadline: z.ZodString;
     location: z.ZodOptional<z.ZodString>;
-    budgetMin: z.ZodNumber;
-    budgetMax: z.ZodNumber;
-    paymentType: z.ZodString;
+    budgetMin: z.ZodDefault<z.ZodNumber>;
+    budgetMax: z.ZodDefault<z.ZodNumber>;
+    paymentType: z.ZodDefault<z.ZodString>;
     creatorsNeeded: z.ZodDefault<z.ZodNumber>;
     isFeatured: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
+    campaignType: z.ZodDefault<z.ZodEnum<["PAID_CAMPAIGN", "OPEN_EVENT"]>>;
+    capacity: z.ZodOptional<z.ZodNumber>;
+    eventDate: z.ZodOptional<z.ZodString>;
+    venue: z.ZodOptional<z.ZodString>;
+    benefits: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
 }, "strip", z.ZodTypeAny, {
     description: string;
     platform: string;
@@ -31,25 +36,35 @@ export declare const createCampaignSchema: z.ZodEffects<z.ZodObject<{
     paymentType: string;
     isFeatured: boolean;
     creatorsNeeded: number;
+    campaignType: "PAID_CAMPAIGN" | "OPEN_EVENT";
+    benefits: string[];
     location?: string | undefined;
     template?: string | undefined;
+    capacity?: number | undefined;
+    eventDate?: string | undefined;
+    venue?: string | undefined;
 }, {
-    platform: string;
     title: string;
     category: string;
     deadline: string;
-    budgetMin: number;
-    budgetMax: number;
-    paymentType: string;
     description?: string | undefined;
     location?: string | undefined;
+    platform?: string | undefined;
     template?: string | undefined;
     goals?: string[] | undefined;
     minFollowers?: number | undefined;
     contentType?: string | undefined;
     deliverables?: string | undefined;
+    budgetMin?: number | undefined;
+    budgetMax?: number | undefined;
+    paymentType?: string | undefined;
     isFeatured?: boolean | undefined;
     creatorsNeeded?: number | undefined;
+    campaignType?: "PAID_CAMPAIGN" | "OPEN_EVENT" | undefined;
+    capacity?: number | undefined;
+    eventDate?: string | undefined;
+    venue?: string | undefined;
+    benefits?: string[] | undefined;
 }>, {
     description: string;
     platform: string;
@@ -65,25 +80,35 @@ export declare const createCampaignSchema: z.ZodEffects<z.ZodObject<{
     paymentType: string;
     isFeatured: boolean;
     creatorsNeeded: number;
+    campaignType: "PAID_CAMPAIGN" | "OPEN_EVENT";
+    benefits: string[];
     location?: string | undefined;
     template?: string | undefined;
+    capacity?: number | undefined;
+    eventDate?: string | undefined;
+    venue?: string | undefined;
 }, {
-    platform: string;
     title: string;
     category: string;
     deadline: string;
-    budgetMin: number;
-    budgetMax: number;
-    paymentType: string;
     description?: string | undefined;
     location?: string | undefined;
+    platform?: string | undefined;
     template?: string | undefined;
     goals?: string[] | undefined;
     minFollowers?: number | undefined;
     contentType?: string | undefined;
     deliverables?: string | undefined;
+    budgetMin?: number | undefined;
+    budgetMax?: number | undefined;
+    paymentType?: string | undefined;
     isFeatured?: boolean | undefined;
     creatorsNeeded?: number | undefined;
+    campaignType?: "PAID_CAMPAIGN" | "OPEN_EVENT" | undefined;
+    capacity?: number | undefined;
+    eventDate?: string | undefined;
+    venue?: string | undefined;
+    benefits?: string[] | undefined;
 }>;
 export declare const updateCampaignSchema: z.ZodObject<{
     title: z.ZodOptional<z.ZodString>;
@@ -103,6 +128,12 @@ export declare const updateCampaignSchema: z.ZodObject<{
     creatorsNeeded: z.ZodOptional<z.ZodNumber>;
     status: z.ZodOptional<z.ZodEnum<["ACTIVE", "PAUSED", "CLOSED"]>>;
     isFeatured: z.ZodOptional<z.ZodBoolean>;
+    campaignType: z.ZodOptional<z.ZodEnum<["PAID_CAMPAIGN", "OPEN_EVENT"]>>;
+    capacity: z.ZodOptional<z.ZodNumber>;
+    eventDate: z.ZodOptional<z.ZodString>;
+    venue: z.ZodOptional<z.ZodString>;
+    benefits: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+    eventStatus: z.ZodOptional<z.ZodEnum<["OPEN", "FULL", "CLOSED"]>>;
 }, "strip", z.ZodTypeAny, {
     status?: "ACTIVE" | "PAUSED" | "CLOSED" | undefined;
     description?: string | undefined;
@@ -121,6 +152,12 @@ export declare const updateCampaignSchema: z.ZodObject<{
     paymentType?: string | undefined;
     isFeatured?: boolean | undefined;
     creatorsNeeded?: number | undefined;
+    campaignType?: "PAID_CAMPAIGN" | "OPEN_EVENT" | undefined;
+    capacity?: number | undefined;
+    eventDate?: string | undefined;
+    venue?: string | undefined;
+    benefits?: string[] | undefined;
+    eventStatus?: "CLOSED" | "OPEN" | "FULL" | undefined;
 }, {
     status?: "ACTIVE" | "PAUSED" | "CLOSED" | undefined;
     description?: string | undefined;
@@ -139,8 +176,15 @@ export declare const updateCampaignSchema: z.ZodObject<{
     paymentType?: string | undefined;
     isFeatured?: boolean | undefined;
     creatorsNeeded?: number | undefined;
+    campaignType?: "PAID_CAMPAIGN" | "OPEN_EVENT" | undefined;
+    capacity?: number | undefined;
+    eventDate?: string | undefined;
+    venue?: string | undefined;
+    benefits?: string[] | undefined;
+    eventStatus?: "CLOSED" | "OPEN" | "FULL" | undefined;
 }>;
 export declare const campaignListQuerySchema: z.ZodObject<{
+    search: z.ZodOptional<z.ZodString>;
     category: z.ZodOptional<z.ZodString>;
     platform: z.ZodOptional<z.ZodString>;
     minBudget: z.ZodEffects<z.ZodOptional<z.ZodString>, number | undefined, string | undefined>;
@@ -149,26 +193,31 @@ export declare const campaignListQuerySchema: z.ZodObject<{
     isFeatured: z.ZodEffects<z.ZodOptional<z.ZodString>, boolean | undefined, string | undefined>;
     deadlineFrom: z.ZodEffects<z.ZodOptional<z.ZodString>, Date | undefined, string | undefined>;
     deadlineTo: z.ZodEffects<z.ZodOptional<z.ZodString>, Date | undefined, string | undefined>;
+    campaignType: z.ZodOptional<z.ZodEnum<["PAID_CAMPAIGN", "OPEN_EVENT"]>>;
     page: z.ZodEffects<z.ZodOptional<z.ZodString>, number, string | undefined>;
     limit: z.ZodEffects<z.ZodOptional<z.ZodString>, number, string | undefined>;
 }, "strip", z.ZodTypeAny, {
     page: number;
     limit: number;
     status?: "ACTIVE" | "PAUSED" | "CLOSED" | undefined;
+    search?: string | undefined;
     platform?: string | undefined;
     category?: string | undefined;
     isFeatured?: boolean | undefined;
+    campaignType?: "PAID_CAMPAIGN" | "OPEN_EVENT" | undefined;
     minBudget?: number | undefined;
     maxBudget?: number | undefined;
     deadlineFrom?: Date | undefined;
     deadlineTo?: Date | undefined;
 }, {
     status?: "ACTIVE" | "PAUSED" | "CLOSED" | undefined;
+    search?: string | undefined;
     platform?: string | undefined;
     page?: string | undefined;
     limit?: string | undefined;
     category?: string | undefined;
     isFeatured?: string | undefined;
+    campaignType?: "PAID_CAMPAIGN" | "OPEN_EVENT" | undefined;
     minBudget?: string | undefined;
     maxBudget?: string | undefined;
     deadlineFrom?: string | undefined;
@@ -176,7 +225,7 @@ export declare const campaignListQuerySchema: z.ZodObject<{
 }>;
 export declare const applyToCampaignSchema: z.ZodObject<{
     coverLetter: z.ZodString;
-    proposedRate: z.ZodNumber;
+    proposedRate: z.ZodDefault<z.ZodNumber>;
     timeline: z.ZodString;
     socialHandles: z.ZodDefault<z.ZodRecord<z.ZodString, z.ZodString>>;
     portfolioUrl: z.ZodOptional<z.ZodString>;
@@ -187,9 +236,9 @@ export declare const applyToCampaignSchema: z.ZodObject<{
     socialHandles: Record<string, string>;
     portfolioUrl?: string | undefined;
 }, {
-    proposedRate: number;
     coverLetter: string;
     timeline: string;
+    proposedRate?: number | undefined;
     socialHandles?: Record<string, string> | undefined;
     portfolioUrl?: string | undefined;
 }>;

@@ -9,7 +9,10 @@ const client_1 = require("@prisma/client");
 const auth_1 = require("../../middleware/auth");
 const validate_1 = require("../../middleware/validate");
 const response_1 = require("../../utils/response");
+const email_1 = require("../../utils/email");
+const env_1 = require("../../config/env");
 const prisma_1 = __importDefault(require("../../prisma"));
+const ADMIN_EMAIL = env_1.env.ADMIN_EMAIL ?? env_1.env.EMAIL_USERNAME ?? 'admin@creatormarket.com';
 const router = (0, express_1.Router)();
 const contactSchema = zod_1.z.object({
     topic: zod_1.z.string().min(1, 'Topic is required'),
@@ -25,10 +28,17 @@ const statusSchema = zod_1.z.object({
 // ── Creator: submit contact request ─────────────────────────────────────────
 router.post('/contact', auth_1.authenticate, (0, validate_1.validate)(contactSchema), async (req, res, next) => {
     try {
-        const request = await prisma_1.default.supportRequest.create({
+        const supportRequest = await prisma_1.default.supportRequest.create({
             data: { userId: req.user.id, topic: req.body.topic, message: req.body.message },
+            include: { user: { select: { email: true } } },
         });
-        (0, response_1.success)(res, request, 'Support request submitted', 201);
+        (0, email_1.sendSupportNotification)({
+            adminEmail: ADMIN_EMAIL,
+            userEmail: supportRequest.user?.email ?? req.user.email,
+            topic: req.body.topic,
+            message: req.body.message,
+        }).catch(() => { });
+        (0, response_1.success)(res, supportRequest, 'Support request submitted', 201);
     }
     catch (err) {
         next(err);
@@ -39,7 +49,14 @@ router.post('/report', auth_1.authenticate, (0, validate_1.validate)(reportSchem
     try {
         const report = await prisma_1.default.issueReport.create({
             data: { userId: req.user.id, type: req.body.type, description: req.body.description },
+            include: { user: { select: { email: true } } },
         });
+        (0, email_1.sendReportNotification)({
+            adminEmail: ADMIN_EMAIL,
+            userEmail: report.user?.email ?? req.user.email,
+            type: req.body.type,
+            description: req.body.description,
+        }).catch(() => { });
         (0, response_1.success)(res, report, 'Issue reported', 201);
     }
     catch (err) {
