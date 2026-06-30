@@ -1,13 +1,13 @@
 import { router, Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useState } from 'react';
-import { ColorValue, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Animated, ColorValue, Dimensions, PanResponder, Platform, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '@/context/AuthContext';
 import { DrawerContext } from '@/context/DrawerContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { BusinessDrawerMenu } from '@/features/business/components/BusinessDrawerMenu';
-import { COLORS, F } from '@/utilities/constants';
+import { COLORS } from '@/utilities/constants';
 import { chatService } from '@/services/chat';
 import { messagingEvents } from '@/lib/messagingEvents';
 import { useNotificationBadge } from '@/context/NotificationContext';
@@ -51,12 +51,59 @@ const tabIcon = StyleSheet.create({
 });
 
 
+const FAB_SIZE = 62;
+const { width: SW, height: SH } = Dimensions.get('window');
+const TAB_H = Platform.OS === 'ios' ? 88 : 66;
+const FAB_INIT = {
+  x: SW - FAB_SIZE - 20,
+  y: (SH - TAB_H) / 2 - FAB_SIZE / 2,
+};
+
 export default function BusinessTabsLayout() {
   const { user, logout } = useAuth();
   const { t } = useLanguage();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [badgeCount, setBadgeCount] = useState(0);
   const { badgeCount: notifBadge } = useNotificationBadge();
+
+  // ── Draggable FAB ────────────────────────────────────────────────────────────
+  const fabPos   = useRef(new Animated.ValueXY(FAB_INIT)).current;
+  const fabIsDrag = useRef(false);
+
+  const fabPR = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder:  () => true,
+      onPanResponderGrant: () => {
+        fabPos.setOffset({
+          x: (fabPos.x as any)._value,
+          y: (fabPos.y as any)._value,
+        });
+        fabPos.setValue({ x: 0, y: 0 });
+        fabIsDrag.current = false;
+      },
+      onPanResponderMove: (_, gs) => {
+        if (Math.abs(gs.dx) > 4 || Math.abs(gs.dy) > 4) fabIsDrag.current = true;
+        fabPos.setValue({ x: gs.dx, y: gs.dy });
+      },
+      onPanResponderRelease: () => {
+        fabPos.flattenOffset();
+        const cx = (fabPos.x as any)._value as number;
+        const cy = (fabPos.y as any)._value as number;
+        const clampX = Math.max(8, Math.min(cx, SW - FAB_SIZE - 8));
+        const clampY = Math.max(40, Math.min(cy, SH - TAB_H - FAB_SIZE - 8));
+        if (clampX !== cx || clampY !== cy) {
+          Animated.spring(fabPos, {
+            toValue: { x: clampX, y: clampY },
+            useNativeDriver: false,
+            bounciness: 8,
+          }).start();
+        }
+        if (!fabIsDrag.current) router.push('/create-campaign');
+        fabIsDrag.current = false;
+      },
+    })
+  ).current;
 
   useEffect(() => {
     function fetchBadge() {
@@ -141,17 +188,15 @@ export default function BusinessTabsLayout() {
       <Tabs.Screen name="create" options={{ href: null }} />
     </Tabs>
 
-    {/* FAB: floating Create Event button — right side, vertically centered */}
-    <View style={styles.fabContainer} pointerEvents="box-none">
-      <Pressable
-        style={({ pressed }) => [pressed && { opacity: 0.82 }]}
-        onPress={() => router.push('/create-campaign')}>
-        <View style={styles.fabCircle}>
-          <Ionicons name="add" size={26} color="#fff" />
-        </View>
-        <Text style={styles.fabLabel}>{t('business.home.createEventBtn')}</Text>
-      </Pressable>
-    </View>
+    {/* Draggable FAB */}
+    <Animated.View
+      style={[styles.fabWrap, { transform: fabPos.getTranslateTransform() }]}
+      {...fabPR.panHandlers}
+    >
+      <View style={styles.fabCircle}>
+        <Ionicons name="add" size={28} color="#fff" />
+      </View>
+    </Animated.View>
 
     <BusinessDrawerMenu
       visible={drawerOpen}
@@ -187,35 +232,25 @@ const styles = StyleSheet.create({
     marginBottom: Platform.OS === 'ios' ? 2 : 4,
     marginTop: 2,
   },
-  fabContainer: {
+  fabWrap: {
     position: 'absolute',
-    right: 16,
     top: 0,
-    bottom: Platform.OS === 'ios' ? 88 : 66,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 200,
+    left: 0,
+    zIndex: 300,
   },
   fabCircle: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
+    width: FAB_SIZE,
+    height: FAB_SIZE,
+    borderRadius: FAB_SIZE / 2,
     backgroundColor: COLORS.brinjal1,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: COLORS.brinjal1,
-    shadowOpacity: 0.6,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 6 },
+    borderWidth: 2.5,
+    borderColor: '#fff',
+    shadowColor: '#1e1b4b',
+    shadowOpacity: 0.45,
+    shadowRadius: 8,
+    shadowOffset: { width: 3, height: 5 },
     elevation: 14,
-  },
-  fabLabel: {
-    color: COLORS.brinjal1,
-    fontSize: 10,
-    fontWeight: '800',
-    textAlign: 'center',
-    marginTop: 6,
-    fontFamily: F.extrabold,
-    lineHeight: 13,
   },
 });
