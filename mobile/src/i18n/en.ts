@@ -375,6 +375,7 @@ const en = {
       events: 'Events',
       proposals: 'Proposals',
       messages: 'Messages',
+      notifications: 'Notifications',
     },
     heading: 'Hello, {{name}} 👋',
     subtitle: 'Manage your events',
@@ -613,6 +614,10 @@ const en = {
     statusAccepted: 'Accepted',
     statusRejected: 'Rejected',
     applicationCount: '{{n}} application(s)',
+    projectCompleted:   'Project Completed',
+    reviewDeliverables: 'Review Deliverables',
+    creatorIsWorking:   'Creator is Working',
+    startTheProject:    'Start the Project',
   },
 
   // ── Creator Detail (business view) ───────────────────────────
@@ -1807,6 +1812,164 @@ const en = {
     warnBodyPost: '. Please review all details carefully before publishing.\n\nMake sure your event title, description, budget, and requirements are accurate and complete.',
     warnGoBack:   'Go Back & Review',
     warnPublishNow: 'Publish Now',
+  },
+
+  // ── Activity Timeline ─────────────────────────────────────────
+  activityTimeline: {
+    // Progress bar steps
+    progressAccepted:  'Accepted',
+    progressPayment:   'Payment',
+    progressSecured:   'Secured',
+    progressWaiting:   'Waiting',
+    progressStarted:   'Started',
+    progressSubmitted: 'Submitted',
+    progressReview:    'Review',
+    progressApproved:  'Approved',
+    progressReleased:  'Released',
+    progressCompleted: 'Completed',
+
+    // Header / status badge
+    statusCompleted:        'Completed',
+    statusUnderReview:      'Under Review',
+    statusInProgress:       'In Progress',
+    statusWaitingOnCreator: 'Waiting on Creator',
+    statusWaitingPayment:   'Waiting Payment',
+
+    // Campaign summary card
+    headerFallback:       'Campaign',
+    headerWorkspace:      'Campaign Workspace',
+    footerProposalDate:   'Proposal Date',
+    footerPayment:        'Payment',
+    footerPaymentPaid:    'Paid ✅',
+    footerPaymentPending: 'Pending',
+    footerCampaignId:     'Campaign ID',
+    footerCreatorLabel:   'Creator: {{name}}',
+    footerBrandLabel:     'by {{name}}',
+
+    // Section titles
+    campaignProgress:      'Campaign Progress',
+    sectionTimeline:       'Activity Timeline',
+    sectionTimelineSub:    'Nepal Time (NPT) • Newest first',
+    badgeDone:             'Done',
+    badgeCurrent:          'Current',
+    badgePending:          'Pending',
+
+    // Payment details card
+    paymentDetails:         'Payment Details',
+    paymentCreatorFee:      'Creator Fee',
+    paymentPlatformFee:     'Platform Fee (5%)',
+    paymentVat:             'VAT (13% of fee)',
+    paymentTotal:           'Total',
+    paymentStatus:          'Payment Status',
+    paymentStatusReleased:  '✅ Released',
+    paymentStatusHeld:      '🔒 Held Securely',
+    paymentStatusWaiting:   '⏳ Waiting',
+    paymentSecureNote:      'Payment is securely held until work is approved.',
+    paymentSecurityFooter:  'Your payment is secure with eSewa, Khalti and Fonepay.',
+    cancelEventBtn:         'Cancel Event',
+
+    // Timeline event titles & descriptions
+    tlProposalAccepted:                'Proposal Accepted',
+    tlProposalAcceptedDescBusiness:    "You accepted this creator's proposal.",
+    tlProposalAcceptedDescCreator:     'Business selected your proposal.',
+    tlWaitingPayment:                  'Waiting for Payment',
+    tlWaitingPaymentDescCreator:       "Business has 24 hours to complete payment. You'll be notified immediately.",
+    tlWaitingPaymentDescBusiness:      'Complete payment to secure the creator and begin the campaign.',
+    tlPaymentSecured:                  'Payment Secured',
+    tlPaymentSecuredDescCreator:       "Funds safely held by platform. Tap \"Let's Create Content\" to begin!",
+    tlPaymentSecuredDescBusiness:      'Funds safely held by platform. Waiting for creator to start.',
+    tlWaitingCreator:                  'Waiting on Creator to Start',
+    tlWaitingCreatorDescCreator:       "Tap \"Let's Create Content\" below to begin working on this campaign.",
+    tlWaitingCreatorDescBusiness:      'Creator has been notified. Waiting for them to start.',
+    tlWorkStarted:                     'Work Started',
+    tlWorkStartedDescCreator:          'You started working on the campaign.',
+    tlWorkStartedDescBusiness:         'Creator began working on deliverables.',
+    tlDeliverablesUploaded:            'Deliverables Uploaded',
+    tlDeliverablesUploadedDescCreator: 'You submitted work for review.',
+    tlDeliverablesUploadedDescBusiness:'Creator submitted deliverables. Please review.',
+    tlWorkApproved:                    'Work Approved',
+    tlWorkApprovedDescCreator:         'Business approved your work! Payment released to your wallet.',
+    tlWorkApprovedDescBusiness:        'You approved the deliverables. Payment released to creator.',
+
+    // Action card states
+    acPaymentRequiredTitle:  'Payment Required',
+    acPaymentRequiredSub:    'Complete payment to secure the creator and start the campaign.',
+    acPayNowBtn:             'Pay Now',
+    acWaitingPaymentTitle:   'Waiting for Payment',
+    acWaitingPaymentSub:     "Business has 24 hours to complete payment. You'll be notified immediately when done.",
+    acWaitingCreatorTitle:   'Waiting on Creator to Start',
+    acWaitingCreatorSubFree: 'Creator has been accepted and notified. Waiting for them to start.',
+    acWaitingCreatorSubPaid: 'Payment secured ✅ Creator has been notified and will start soon.',
+    acReadyFreeTitle:        "You're Accepted — Ready to Create!",
+    acReadyPaidTitle:        'Payment Secured — Ready to Create!',
+    acReadyFreeSub:          "You've been selected for this event. Press below to officially start.",
+    acReadyPaidSub:          "The business has paid. Press the button below to officially start and notify them you've begun.",
+    acStartBtn:              "Let's Create Content 🚀",
+    acCreatorWorkingTitle:   'Creator is Working 🎨',
+    acCreatorWorkingSub:     "Awaiting deliverable submission. You'll be notified when it's ready to review.",
+    acUploadTitle:           'Upload Your Deliverables',
+    acUploadSub:             'Share completed content links or files for the business to review.',
+    acUploadBtn:             'Upload Deliverables',
+    acSubmittedTitle:        'Creator Submitted Work',
+    acSubmittedSub:          'Review the submitted links, then approve or request changes within 5 days.',
+    acReviewBtn:             'Review Deliverables',
+    acRevisionBtn:           'Request Revision',
+    acApproveBtn:            'Approve',
+    acAwaitingReviewTitle:   'Awaiting Review',
+    acAwaitingReviewSub:     'Business is reviewing your work. Auto-approved in 5 days if no response.',
+    acCompletedBizTitle:     'Campaign Completed! 🎉',
+    acCompletedBizSub:       "You approved the work. Payment has been released to the creator's wallet.",
+    acCompletedCreatorTitle: 'Work Approved! 🎉',
+    acCompletedCreatorSub:   'Payment has been released to your wallet.',
+
+    // Pay modal
+    modalPayTitle:      'Complete Payment',
+    modalPaySub:        'Funds are held securely until you approve the work.',
+    modalPayWith:       'Pay with',
+    modalPayConfirmBtn: 'Confirm Payment · NPR {{amount}}',
+
+    // Upload modal
+    modalUploadTitle:            'Upload Deliverables',
+    modalUploadSub:              'Add one link per line. Each link must start with https://',
+    modalUploadLinksLabel:       'Deliverable Links *',
+    modalUploadNotesLabel:       'Notes to Business',
+    modalUploadNotesPlaceholder: 'Any notes or instructions...',
+    modalUploadSubmitBtn:        'Submit Work',
+
+    // Review modal
+    modalReviewTitle:               'Review Deliverables',
+    modalReviewLinksSection:        'Links Submitted by Creator',
+    modalReviewNoLinks:             'No links submitted yet',
+    modalReviewDeliverablesSection: 'What Needs to Be Delivered',
+
+    // Revision modal
+    modalRevisionTitle:            'Request Revision',
+    modalRevisionSub:              'Describe the changes you need the creator to make.',
+    modalRevisionNotesLabel:       'Revision Notes *',
+    modalRevisionNotesPlaceholder: 'Please change the caption to... The video needs to be...',
+    modalRevisionSendBtn:          'Send Revision Request',
+
+    // Cancel modal
+    modalCancelTitle:          'Cancel Event',
+    modalCancelSub:            'Are you sure you want to cancel this campaign?',
+    modalCancelFeeTitle:       '20% Cancellation Fee',
+    modalCancelFeeBody:        'Since payment has already been secured, a 20% deduction (NPR {{deduction}}) will be applied. You will receive a refund of NPR {{refund}} within 3–5 business days.',
+    modalCancelNoFee:          'No payment has been made, so no deduction will apply.',
+    modalCancelCreatorNotified:'The creator will be notified immediately.',
+    modalCancelKeepBtn:        'Keep Campaign',
+    modalCancelConfirmBtn:     'Yes, Cancel',
+
+    // Toast messages
+    toastPaySuccess:         '✅ Payment successful! Creator has been notified.',
+    toastWorkSubmitted:      '✅ Work submitted! Business will review within 5 days.',
+    toastWorkApproved:       '✅ Work approved! Payment released to creator.',
+    toastRevisionRequested:  'Revision requested. Creator has been notified.',
+    toastCampaignCancelled:  'Campaign cancelled. Creator has been notified.',
+
+    // URL validation
+    urlValidationAtLeastOne:  'Please add at least one link.',
+    urlValidationInvalidOne:  'Invalid URL: "{{url}}" — must start with https://',
+    urlValidationInvalidMany: '{{count}} invalid URLs — each must start with https://',
   },
 };
 

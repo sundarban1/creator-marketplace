@@ -18,6 +18,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { campaignService } from '@/services/campaign';
 import { chatService } from '@/services/chat';
 import type { Campaign } from '@/types';
@@ -44,7 +45,22 @@ type AppInfo = {
 // ─── Progress steps ────────────────────────────────────────────────────────────
 // idx: 0=Accepted 1=Payment 2=Secured 3=Waiting 4=Started 5=Submitted 6=Review 7=Approved 8=Released 9=Completed
 
-const PROGRESS = ['Accepted','Payment','Secured','Waiting','Started','Submitted','Review','Approved','Released','Completed'];
+type TFn = (key: string, params?: Record<string, string | number>) => string;
+
+function getProgressLabels(t: TFn): string[] {
+  return [
+    t('activityTimeline.progressAccepted'),
+    t('activityTimeline.progressPayment'),
+    t('activityTimeline.progressSecured'),
+    t('activityTimeline.progressWaiting'),
+    t('activityTimeline.progressStarted'),
+    t('activityTimeline.progressSubmitted'),
+    t('activityTimeline.progressReview'),
+    t('activityTimeline.progressApproved'),
+    t('activityTimeline.progressReleased'),
+    t('activityTimeline.progressCompleted'),
+  ];
+}
 
 function progressIdx(ws: WS, paid: boolean): number {
   if (ws === 'APPROVED')   return 7;
@@ -88,21 +104,21 @@ function isValidUrl(url: string): boolean {
   }
 }
 
-function validateUrls(raw: string): string {
+function validateUrls(raw: string, t: TFn): string {
   const lines = parseUrls(raw);
-  if (lines.length === 0) return 'Please add at least one link.';
+  if (lines.length === 0) return t('activityTimeline.urlValidationAtLeastOne');
   const invalid = lines.filter(u => !isValidUrl(u));
-  if (invalid.length === 1) return `Invalid URL: "${invalid[0]}" — must start with https://`;
-  if (invalid.length > 1)  return `${invalid.length} invalid URLs — each must start with https://`;
+  if (invalid.length === 1) return t('activityTimeline.urlValidationInvalidOne', { url: invalid[0] });
+  if (invalid.length > 1)  return t('activityTimeline.urlValidationInvalidMany', { count: invalid.length });
   return '';
 }
 
-function statusLabel(ws: WS, paid: boolean) {
-  if (ws === 'APPROVED')    return 'Completed';
-  if (ws === 'SUBMITTED')   return 'Under Review';
-  if (ws === 'IN_PROGRESS') return 'In Progress';
-  if (paid)                 return 'Waiting on Creator';
-  return 'Waiting Payment';
+function statusLabel(ws: WS, paid: boolean, t: TFn) {
+  if (ws === 'APPROVED')    return t('activityTimeline.statusCompleted');
+  if (ws === 'SUBMITTED')   return t('activityTimeline.statusUnderReview');
+  if (ws === 'IN_PROGRESS') return t('activityTimeline.statusInProgress');
+  if (paid)                 return t('activityTimeline.statusWaitingOnCreator');
+  return t('activityTimeline.statusWaitingPayment');
 }
 function statusColor(ws: WS, paid: boolean) {
   if (ws === 'APPROVED')    return '#16A34A';
@@ -114,30 +130,30 @@ function statusColor(ws: WS, paid: boolean) {
 
 type TLEvent = { icon: string; title: string; desc: string; time: string; done: boolean; isCurrent: boolean };
 
-function buildTimeline(ws: WS, paid: boolean, campaign: Campaign | null, app: AppInfo | null, isCreator: boolean): TLEvent[] {
+function buildTimeline(ws: WS, paid: boolean, campaign: Campaign | null, app: AppInfo | null, isCreator: boolean, t: TFn): TLEvent[] {
   const base = campaign?.createdAt ?? new Date().toISOString();
   const events: TLEvent[] = [];
 
   events.push({
-    icon: 'checkmark-circle', title: 'Proposal Accepted',
-    desc: isCreator ? 'Business selected your proposal.' : 'You accepted this creator\'s proposal.',
+    icon: 'checkmark-circle', title: t('activityTimeline.tlProposalAccepted'),
+    desc: isCreator ? t('activityTimeline.tlProposalAcceptedDescCreator') : t('activityTimeline.tlProposalAcceptedDescBusiness'),
     time: fmtNPT(base), done: true, isCurrent: false,
   });
 
   if (!paid && ws === 'NONE') {
     events.unshift({
-      icon: 'card', title: 'Waiting for Payment',
+      icon: 'card', title: t('activityTimeline.tlWaitingPayment'),
       desc: isCreator
-        ? 'Business has 24 hours to complete payment. You\'ll be notified immediately.'
-        : 'Complete payment to secure the creator and begin the campaign.',
+        ? t('activityTimeline.tlWaitingPaymentDescCreator')
+        : t('activityTimeline.tlWaitingPaymentDescBusiness'),
       time: '', done: false, isCurrent: true,
     });
   }
 
   if (paid || ws !== 'NONE') {
     events.unshift({
-      icon: 'lock-closed', title: 'Payment Secured',
-      desc: `Funds safely held by platform. ${isCreator ? 'Tap "Let\'s Create Content" to begin!' : 'Waiting for creator to start.'}`,
+      icon: 'lock-closed', title: t('activityTimeline.tlPaymentSecured'),
+      desc: isCreator ? t('activityTimeline.tlPaymentSecuredDescCreator') : t('activityTimeline.tlPaymentSecuredDescBusiness'),
       time: fmtNPT(campaign?.paidAt ?? base),
       done: ws !== 'NONE',
       isCurrent: paid && ws === 'NONE',
@@ -146,18 +162,18 @@ function buildTimeline(ws: WS, paid: boolean, campaign: Campaign | null, app: Ap
 
   if (paid && ws === 'NONE') {
     events.unshift({
-      icon: 'hourglass', title: 'Waiting on Creator to Start',
+      icon: 'hourglass', title: t('activityTimeline.tlWaitingCreator'),
       desc: isCreator
-        ? 'Tap "Let\'s Create Content" below to begin working on this campaign.'
-        : 'Creator has been notified. Waiting for them to start.',
+        ? t('activityTimeline.tlWaitingCreatorDescCreator')
+        : t('activityTimeline.tlWaitingCreatorDescBusiness'),
       time: '', done: false, isCurrent: true,
     });
   }
 
   if (ws === 'IN_PROGRESS' || ws === 'SUBMITTED' || ws === 'APPROVED') {
     events.unshift({
-      icon: 'play-circle', title: 'Work Started',
-      desc: isCreator ? 'You started working on the campaign.' : 'Creator began working on deliverables.',
+      icon: 'play-circle', title: t('activityTimeline.tlWorkStarted'),
+      desc: isCreator ? t('activityTimeline.tlWorkStartedDescCreator') : t('activityTimeline.tlWorkStartedDescBusiness'),
       time: fmtNPT(campaign?.paidAt ?? base),
       done: ws === 'SUBMITTED' || ws === 'APPROVED',
       isCurrent: ws === 'IN_PROGRESS',
@@ -166,8 +182,8 @@ function buildTimeline(ws: WS, paid: boolean, campaign: Campaign | null, app: Ap
 
   if (ws === 'SUBMITTED' || ws === 'APPROVED') {
     events.unshift({
-      icon: 'cloud-upload', title: 'Deliverables Uploaded',
-      desc: isCreator ? 'You submitted work for review.' : 'Creator submitted deliverables. Please review.',
+      icon: 'cloud-upload', title: t('activityTimeline.tlDeliverablesUploaded'),
+      desc: isCreator ? t('activityTimeline.tlDeliverablesUploadedDescCreator') : t('activityTimeline.tlDeliverablesUploadedDescBusiness'),
       time: fmtNPT(app?.submittedAt ?? base),
       done: ws === 'APPROVED', isCurrent: ws === 'SUBMITTED',
     });
@@ -175,10 +191,10 @@ function buildTimeline(ws: WS, paid: boolean, campaign: Campaign | null, app: Ap
 
   if (ws === 'APPROVED') {
     events.unshift({
-      icon: 'checkmark-done-circle', title: 'Work Approved',
+      icon: 'checkmark-done-circle', title: t('activityTimeline.tlWorkApproved'),
       desc: isCreator
-        ? 'Business approved your work! Payment released to your wallet.'
-        : 'You approved the deliverables. Payment released to creator.',
+        ? t('activityTimeline.tlWorkApprovedDescCreator')
+        : t('activityTimeline.tlWorkApprovedDescBusiness'),
       time: fmtNPT(app?.submittedAt ?? base), done: true, isCurrent: false,
     });
   }
@@ -210,7 +226,7 @@ function Sheet({ visible, onClose, title, children }: {
 
 const STEP_W = 74;
 
-function ProgressTracker({ current, scrollRef }: { current: number; scrollRef: React.RefObject<ScrollView | null> }) {
+function ProgressTracker({ current, scrollRef, labels }: { current: number; scrollRef: React.RefObject<ScrollView | null>; labels: string[] }) {
   return (
     <ScrollView
       ref={scrollRef}
@@ -218,7 +234,7 @@ function ProgressTracker({ current, scrollRef }: { current: number; scrollRef: R
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={pt.row}
     >
-      {PROGRESS.map((label, idx) => {
+      {labels.map((label, idx) => {
         const done   = idx < current;
         const active = idx === current;
         const clr    = done ? '#16A34A' : active ? '#7C3AED' : '#9CA3AF';
@@ -233,7 +249,7 @@ function ProgressTracker({ current, scrollRef }: { current: number; scrollRef: R
                  active ? <View style={pt.activePulse} /> :
                           <View style={pt.emptyCore} />}
               </View>
-              <View style={[pt.line, { backgroundColor: idx === PROGRESS.length - 1 ? 'transparent' : done ? '#16A34A' : '#E5E7EB' }]} />
+              <View style={[pt.line, { backgroundColor: idx === labels.length - 1 ? 'transparent' : done ? '#16A34A' : '#E5E7EB' }]} />
             </View>
             <Text style={[pt.label, { color: clr }]} numberOfLines={1}>{label}</Text>
           </View>
@@ -251,16 +267,17 @@ function ActionCard({ ws, paid, isCreator, isFree, submitting, onPay, onStartWor
   onReview: () => void; onApprove: () => void; onRevision: () => void;
 }) {
   const C = useAppColors();
+  const { t } = useLanguage();
 
   // Business: payment required
   if (!paid && ws === 'NONE' && !isCreator) return (
     <View style={[ac.card, { backgroundColor: '#fff', borderLeftColor: '#EF4444' }]}>
       <View style={[ac.iconBg, { backgroundColor: '#FEF2F2' }]}><Ionicons name="card-outline" size={26} color="#EF4444" /></View>
-      <Text style={[ac.heading, { color: C.text }]}>Payment Required</Text>
-      <Text style={[ac.sub, { color: C.textSecondary }]}>Complete payment to secure the creator and start the campaign.</Text>
+      <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acPaymentRequiredTitle')}</Text>
+      <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acPaymentRequiredSub')}</Text>
       <Pressable style={[ac.btn, { backgroundColor: '#EF4444' }]} onPress={onPay}>
         <Ionicons name="card-outline" size={16} color="#fff" />
-        <Text style={ac.btnTxt}>Pay Now</Text>
+        <Text style={ac.btnTxt}>{t('activityTimeline.acPayNowBtn')}</Text>
       </Pressable>
     </View>
   );
@@ -269,8 +286,8 @@ function ActionCard({ ws, paid, isCreator, isFree, submitting, onPay, onStartWor
   if (!paid && ws === 'NONE' && isCreator) return (
     <View style={[ac.card, { backgroundColor: '#fff', borderLeftColor: '#D97706' }]}>
       <View style={[ac.iconBg, { backgroundColor: '#FFF7ED' }]}><Ionicons name="time-outline" size={26} color="#D97706" /></View>
-      <Text style={[ac.heading, { color: C.text }]}>Waiting for Payment</Text>
-      <Text style={[ac.sub, { color: C.textSecondary }]}>Business has 24 hours to complete payment. You'll be notified immediately when done.</Text>
+      <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acWaitingPaymentTitle')}</Text>
+      <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acWaitingPaymentSub')}</Text>
     </View>
   );
 
@@ -278,21 +295,21 @@ function ActionCard({ ws, paid, isCreator, isFree, submitting, onPay, onStartWor
   if (paid && ws === 'NONE' && !isCreator) return (
     <View style={[ac.card, { backgroundColor: '#fff', borderLeftColor: '#0EA5E9' }]}>
       <View style={[ac.iconBg, { backgroundColor: '#E0F2FE' }]}><Ionicons name="hourglass-outline" size={26} color="#0EA5E9" /></View>
-      <Text style={[ac.heading, { color: C.text }]}>Waiting on Creator to Start</Text>
-      <Text style={[ac.sub, { color: C.textSecondary }]}>{isFree ? 'Creator has been accepted and notified. Waiting for them to start.' : 'Payment secured ✅ Creator has been notified and will start soon.'}</Text>
+      <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acWaitingCreatorTitle')}</Text>
+      <Text style={[ac.sub, { color: C.textSecondary }]}>{isFree ? t('activityTimeline.acWaitingCreatorSubFree') : t('activityTimeline.acWaitingCreatorSubPaid')}</Text>
     </View>
   );
 
-  // Creator: ready to start (payment secured for paid, free event no payment needed)
+  // Creator: ready to start
   if (paid && ws === 'NONE' && isCreator) return (
     <View style={[ac.card, { backgroundColor: '#fff', borderLeftColor: '#7C3AED' }]}>
       <View style={[ac.iconBg, { backgroundColor: '#EEF2FF' }]}><Ionicons name="rocket-outline" size={26} color="#7C3AED" /></View>
-      <Text style={[ac.heading, { color: C.text }]}>{isFree ? 'You\'re Accepted — Ready to Create!' : 'Payment Secured — Ready to Create!'}</Text>
-      <Text style={[ac.sub, { color: C.textSecondary }]}>{isFree ? 'You\'ve been selected for this event. Press below to officially start.' : 'The business has paid. Press the button below to officially start and notify them you\'ve begun.'}</Text>
+      <Text style={[ac.heading, { color: C.text }]}>{isFree ? t('activityTimeline.acReadyFreeTitle') : t('activityTimeline.acReadyPaidTitle')}</Text>
+      <Text style={[ac.sub, { color: C.textSecondary }]}>{isFree ? t('activityTimeline.acReadyFreeSub') : t('activityTimeline.acReadyPaidSub')}</Text>
       <Pressable style={[ac.btn, { backgroundColor: '#7C3AED', opacity: submitting ? 0.75 : 1 }]} onPress={onStartWork} disabled={submitting}>
         {submitting
           ? <ActivityIndicator size="small" color="#fff" />
-          : <><Ionicons name="rocket-outline" size={16} color="#fff" /><Text style={ac.btnTxt}>Let's Create Content 🚀</Text></>}
+          : <><Ionicons name="rocket-outline" size={16} color="#fff" /><Text style={ac.btnTxt}>{t('activityTimeline.acStartBtn')}</Text></>}
       </Pressable>
     </View>
   );
@@ -301,8 +318,8 @@ function ActionCard({ ws, paid, isCreator, isFree, submitting, onPay, onStartWor
   if (ws === 'IN_PROGRESS' && !isCreator) return (
     <View style={[ac.card, { backgroundColor: '#fff', borderLeftColor: '#7C3AED' }]}>
       <View style={[ac.iconBg, { backgroundColor: '#EEF2FF' }]}><Ionicons name="play-circle-outline" size={26} color="#7C3AED" /></View>
-      <Text style={[ac.heading, { color: C.text }]}>Creator is Working 🎨</Text>
-      <Text style={[ac.sub, { color: C.textSecondary }]}>Awaiting deliverable submission. You'll be notified when it's ready to review.</Text>
+      <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acCreatorWorkingTitle')}</Text>
+      <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acCreatorWorkingSub')}</Text>
     </View>
   );
 
@@ -310,11 +327,11 @@ function ActionCard({ ws, paid, isCreator, isFree, submitting, onPay, onStartWor
   if (ws === 'IN_PROGRESS' && isCreator) return (
     <View style={[ac.card, { backgroundColor: '#fff', borderLeftColor: '#7C3AED' }]}>
       <View style={[ac.iconBg, { backgroundColor: '#EEF2FF' }]}><Ionicons name="cloud-upload-outline" size={26} color="#7C3AED" /></View>
-      <Text style={[ac.heading, { color: C.text }]}>Upload Your Deliverables</Text>
-      <Text style={[ac.sub, { color: C.textSecondary }]}>Share completed content links or files for the business to review.</Text>
+      <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acUploadTitle')}</Text>
+      <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acUploadSub')}</Text>
       <Pressable style={[ac.btn, { backgroundColor: '#7C3AED' }]} onPress={onUpload}>
         <Ionicons name="cloud-upload-outline" size={16} color="#fff" />
-        <Text style={ac.btnTxt}>Upload Deliverables</Text>
+        <Text style={ac.btnTxt}>{t('activityTimeline.acUploadBtn')}</Text>
       </Pressable>
     </View>
   );
@@ -323,21 +340,21 @@ function ActionCard({ ws, paid, isCreator, isFree, submitting, onPay, onStartWor
   if (ws === 'SUBMITTED' && !isCreator) return (
     <View style={[ac.card, { backgroundColor: '#fff', borderLeftColor: '#D97706' }]}>
       <View style={[ac.iconBg, { backgroundColor: '#FFF7ED' }]}><Ionicons name="eye-outline" size={26} color="#D97706" /></View>
-      <Text style={[ac.heading, { color: C.text }]}>Creator Submitted Work</Text>
-      <Text style={[ac.sub, { color: C.textSecondary }]}>Review the submitted links, then approve or request changes within 5 days.</Text>
+      <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acSubmittedTitle')}</Text>
+      <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acSubmittedSub')}</Text>
       <Pressable style={[ac.btn, { backgroundColor: '#D97706' }]} onPress={onReview}>
         <Ionicons name="eye-outline" size={16} color="#fff" />
-        <Text style={ac.btnTxt}>Review Deliverables</Text>
+        <Text style={ac.btnTxt}>{t('activityTimeline.acReviewBtn')}</Text>
       </Pressable>
       <View style={ac.btnRow}>
         <Pressable style={[ac.btn, { flex: 1, backgroundColor: '#EF4444' }]} onPress={onRevision}>
           <Ionicons name="create-outline" size={15} color="#fff" />
-          <Text style={ac.btnTxt}>Request Revision</Text>
+          <Text style={ac.btnTxt}>{t('activityTimeline.acRevisionBtn')}</Text>
         </Pressable>
         <Pressable style={[ac.btn, { flex: 1, backgroundColor: '#16A34A', opacity: submitting ? 0.75 : 1 }]} onPress={onApprove} disabled={submitting}>
           {submitting ? <ActivityIndicator size="small" color="#fff" /> : <>
             <Ionicons name="checkmark-done-outline" size={15} color="#fff" />
-            <Text style={ac.btnTxt}>Approve</Text>
+            <Text style={ac.btnTxt}>{t('activityTimeline.acApproveBtn')}</Text>
           </>}
         </Pressable>
       </View>
@@ -348,8 +365,8 @@ function ActionCard({ ws, paid, isCreator, isFree, submitting, onPay, onStartWor
   if (ws === 'SUBMITTED' && isCreator) return (
     <View style={[ac.card, { backgroundColor: '#fff', borderLeftColor: '#0EA5E9' }]}>
       <View style={[ac.iconBg, { backgroundColor: '#E0F2FE' }]}><Ionicons name="hourglass-outline" size={26} color="#0EA5E9" /></View>
-      <Text style={[ac.heading, { color: C.text }]}>Awaiting Review</Text>
-      <Text style={[ac.sub, { color: C.textSecondary }]}>Business is reviewing your work. Auto-approved in 5 days if no response.</Text>
+      <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acAwaitingReviewTitle')}</Text>
+      <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acAwaitingReviewSub')}</Text>
     </View>
   );
 
@@ -357,8 +374,8 @@ function ActionCard({ ws, paid, isCreator, isFree, submitting, onPay, onStartWor
   if (!isCreator) return (
     <View style={[ac.card, { backgroundColor: '#fff', borderLeftColor: '#16A34A' }]}>
       <View style={[ac.iconBg, { backgroundColor: '#DCFCE7' }]}><Ionicons name="checkmark-done-circle-outline" size={26} color="#16A34A" /></View>
-      <Text style={[ac.heading, { color: C.text }]}>Campaign Completed! 🎉</Text>
-      <Text style={[ac.sub, { color: C.textSecondary }]}>You approved the work. Payment has been released to the creator's wallet.</Text>
+      <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acCompletedBizTitle')}</Text>
+      <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acCompletedBizSub')}</Text>
     </View>
   );
 
@@ -366,8 +383,8 @@ function ActionCard({ ws, paid, isCreator, isFree, submitting, onPay, onStartWor
   return (
     <View style={[ac.card, { backgroundColor: '#fff', borderLeftColor: '#16A34A' }]}>
       <View style={[ac.iconBg, { backgroundColor: '#DCFCE7' }]}><Ionicons name="trophy-outline" size={26} color="#16A34A" /></View>
-      <Text style={[ac.heading, { color: C.text }]}>Work Approved! 🎉</Text>
-      <Text style={[ac.sub, { color: C.textSecondary }]}>Payment has been released to your wallet.</Text>
+      <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acCompletedCreatorTitle')}</Text>
+      <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acCompletedCreatorSub')}</Text>
     </View>
   );
 }
@@ -377,6 +394,7 @@ function ActionCard({ ws, paid, isCreator, isFree, submitting, onPay, onStartWor
 export default function CampaignWorkspaceScreen() {
   const C = useAppColors();
   const { user } = useAuth();
+  const { t } = useLanguage();
   const { campaignId, campaignTitle, role, brand, applicationId } = useLocalSearchParams<{
     campaignId: string; campaignTitle: string; role?: string; brand?: string; applicationId?: string;
   }>();
@@ -489,7 +507,7 @@ export default function CampaignWorkspaceScreen() {
       await campaignService.payForApplication(app.id);
       setApp(a => a ? { ...a, paymentStatus: 'PAID' } : a);
       setShowPay(false);
-      showToast('✅ Payment successful! Creator has been notified.');
+      showToast(t('activityTimeline.toastPaySuccess'));
     } catch (e: any) {
       showToast(e?.message ?? 'Payment failed. Please try again.');
     } finally {
@@ -503,7 +521,7 @@ export default function CampaignWorkspaceScreen() {
     try {
       await campaignService.startWork(app.id);
       setApp(a => a ? { ...a, workStatus: 'IN_PROGRESS' } : a);
-      showToast('🚀 You started! Business has been notified.');
+      showToast(t('activityTimeline.acStartBtn'));
     } catch (e: any) {
       showToast(e?.message ?? 'Failed to start. Please try again.');
     } finally {
@@ -513,7 +531,7 @@ export default function CampaignWorkspaceScreen() {
 
   async function handleSubmitWork() {
     if (!app) return;
-    const err = validateUrls(uploadUrls);
+    const err = validateUrls(uploadUrls, t);
     if (err) { setUrlError(err); return; }
     setUrlError('');
     setSubmitting(true);
@@ -522,7 +540,7 @@ export default function CampaignWorkspaceScreen() {
       setApp(a => a ? { ...a, workStatus: 'SUBMITTED', submittedAt: new Date().toISOString(), deliverableUrls: uploadUrls || a.deliverableUrls } : a);
       setUploadUrls(''); setUploadNotes('');
       setShowUpload(false);
-      showToast('✅ Work submitted! Business will review within 5 days.');
+      showToast(t('activityTimeline.toastWorkSubmitted'));
     } catch (e: any) {
       showToast(e?.message ?? 'Submission failed. Please try again.');
     } finally {
@@ -536,7 +554,7 @@ export default function CampaignWorkspaceScreen() {
     try {
       await campaignService.approveWork(app.id);
       setApp(a => a ? { ...a, workStatus: 'APPROVED', paymentStatus: 'RELEASED' } : a);
-      showToast('✅ Work approved! Payment released to creator.');
+      showToast(t('activityTimeline.toastWorkApproved'));
     } catch (e: any) {
       showToast(e?.message ?? 'Approval failed. Please try again.');
     } finally {
@@ -551,7 +569,7 @@ export default function CampaignWorkspaceScreen() {
       await campaignService.requestRevision(app.id, revisionNote);
       setApp(a => a ? { ...a, workStatus: 'IN_PROGRESS' } : a);
       setRevisionNote(''); setShowRevision(false);
-      showToast('Revision requested. Creator has been notified.');
+      showToast(t('activityTimeline.toastRevisionRequested'));
     } catch (e: any) {
       showToast(e?.message ?? 'Failed. Please try again.');
     } finally {
@@ -564,7 +582,7 @@ export default function CampaignWorkspaceScreen() {
     try {
       await campaignService.cancelCampaign(campaignId);
       setShowCancel(false);
-      showToast('Campaign cancelled. Creator has been notified.');
+      showToast(t('activityTimeline.toastCampaignCancelled'));
       setTimeout(() => router.back(), 1500);
     } catch (e: any) {
       showToast(e?.message ?? 'Cancellation failed. Please try again.');
@@ -599,7 +617,7 @@ export default function CampaignWorkspaceScreen() {
       <SafeAreaView style={[s.screen, { backgroundColor: '#F9FAFB' }]} edges={['top']}>
         <View style={[s.header, { backgroundColor: '#fff', borderBottomColor: '#E5E7EB' }]}>
           <BackButton />
-          <Text style={[s.headerTitle, { color: C.text }]} numberOfLines={1}>{campaignTitle ?? 'Campaign'}</Text>
+          <Text style={[s.headerTitle, { color: C.text }]} numberOfLines={1}>{campaignTitle ?? t('activityTimeline.headerFallback')}</Text>
           <View style={{ width: 44 }} />
         </View>
         <View style={s.centered}><ActivityIndicator size="large" color="#7C3AED" /></View>
@@ -611,8 +629,9 @@ export default function CampaignWorkspaceScreen() {
   const isFreeEvent = campaign?.campaignType === 'OPEN_EVENT';
   const paid = isFreeEvent || app?.paymentStatus === 'PAID' || app?.paymentStatus === 'RELEASED';
   const pIdx = progressIdx(ws, paid);
-  const sLbl = statusLabel(ws, paid);
+  const sLbl = statusLabel(ws, paid, t);
   const sClr = statusColor(ws, paid);
+  const progressLabels = getProgressLabels(t);
 
   const crFee = app?.proposedRateRaw ?? 0;
   const pfFee = Math.round(crFee * 0.05);
@@ -621,7 +640,7 @@ export default function CampaignWorkspaceScreen() {
 
   const deliverables   = parseDeliverables(campaign?.deliverables);
   const submittedUrls  = parseUrls(app?.deliverableUrls);
-  const tlEvents       = buildTimeline(ws, paid, campaign, app, isCreator);
+  const tlEvents       = buildTimeline(ws, paid, campaign, app, isCreator, t);
 
   return (
     <SafeAreaView style={[s.screen, { backgroundColor: '#F9FAFB' }]} edges={['top']}>
@@ -631,7 +650,7 @@ export default function CampaignWorkspaceScreen() {
         <BackButton />
         <View style={s.headerCenter}>
           <Text style={[s.headerTitle, { color: C.text }]} numberOfLines={1}>
-            {campaignTitle ?? campaign?.title ?? 'Campaign Workspace'}
+            {campaignTitle ?? campaign?.title ?? t('activityTimeline.headerWorkspace')}
           </Text>
           <View style={[s.statusBadge, { backgroundColor: sClr + '18' }]}>
             <View style={[s.statusDot, { backgroundColor: sClr }]} />
@@ -657,7 +676,9 @@ export default function CampaignWorkspaceScreen() {
                 {campaign?.title ?? campaignTitle}
               </Text>
               <Text style={[s.summaryBrand, { color: '#7C3AED' }]}>
-                {isCreator ? `by ${brand ?? campaign?.brand ?? '—'}` : `Creator: ${app?.creatorName ?? '—'}`}
+                {isCreator
+                  ? t('activityTimeline.footerBrandLabel', { name: brand ?? campaign?.brand ?? '—' })
+                  : t('activityTimeline.footerCreatorLabel', { name: app?.creatorName ?? '—' })}
               </Text>
               <View style={s.metaRow}>
                 {campaign?.deadline && (
@@ -675,9 +696,9 @@ export default function CampaignWorkspaceScreen() {
           </View>
           <View style={[s.summaryFooter, { borderTopColor: '#F3F4F6' }]}>
             {[
-              { label: 'Proposal Date', value: fmtDate(campaign?.createdAt) },
-              { label: 'Payment',       value: paid ? 'Paid ✅' : 'Pending', color: paid ? '#16A34A' : '#EF4444' },
-              { label: 'Campaign ID',   value: (campaignId ?? '').slice(0, 8) + '…' },
+              { label: t('activityTimeline.footerProposalDate'), value: fmtDate(campaign?.createdAt) },
+              { label: t('activityTimeline.footerPayment'),       value: paid ? t('activityTimeline.footerPaymentPaid') : t('activityTimeline.footerPaymentPending'), color: paid ? '#16A34A' : '#EF4444' },
+              { label: t('activityTimeline.footerCampaignId'),   value: (campaignId ?? '').slice(0, 8) + '…' },
             ].map((item, idx) => (
               <View key={idx} style={s.footerItem}>
                 <Text style={[s.footerLabel, { color: C.textSecondary }]}>{item.label}</Text>
@@ -689,8 +710,8 @@ export default function CampaignWorkspaceScreen() {
 
         {/* ── Progress Tracker (centered on current step) ── */}
         <View style={[s.card, { backgroundColor: '#fff', paddingHorizontal: 0, paddingBottom: 16 }]}>
-          <Text style={[s.secTitle, { color: C.text, marginHorizontal: 16, marginBottom: 14 }]}>Campaign Progress</Text>
-          <ProgressTracker current={pIdx} scrollRef={progressScrollRef} />
+          <Text style={[s.secTitle, { color: C.text, marginHorizontal: 16, marginBottom: 14 }]}>{t('activityTimeline.campaignProgress')}</Text>
+          <ProgressTracker current={pIdx} scrollRef={progressScrollRef} labels={progressLabels} />
         </View>
 
         {/* ── Current Action Card ── */}
@@ -708,8 +729,8 @@ export default function CampaignWorkspaceScreen() {
         <View style={[s.card, { backgroundColor: '#fff' }]}>
           <View style={s.secHeader}>
             <View>
-              <Text style={[s.secTitle, { color: C.text }]}>Activity Timeline</Text>
-              <Text style={[s.secSub, { color: C.textSecondary }]}>Nepal Time (NPT) • Newest first</Text>
+              <Text style={[s.secTitle, { color: C.text }]}>{t('activityTimeline.sectionTimeline')}</Text>
+              <Text style={[s.secSub, { color: C.textSecondary }]}>{t('activityTimeline.sectionTimelineSub')}</Text>
             </View>
           </View>
           <View style={{ marginTop: 12 }}>
@@ -733,7 +754,7 @@ export default function CampaignWorkspaceScreen() {
                     </Text>
                     <View style={[tl.badge, { backgroundColor: ev.done ? '#DCFCE7' : ev.isCurrent ? '#EEF2FF' : '#F3F4F6' }]}>
                       <Text style={[tl.badgeTxt, { color: ev.done ? '#16A34A' : ev.isCurrent ? '#7C3AED' : '#9CA3AF' }]}>
-                        {ev.done ? 'Done' : ev.isCurrent ? 'Current' : 'Pending'}
+                        {ev.done ? t('activityTimeline.badgeDone') : ev.isCurrent ? t('activityTimeline.badgeCurrent') : t('activityTimeline.badgePending')}
                       </Text>
                     </View>
                   </View>
@@ -748,12 +769,12 @@ export default function CampaignWorkspaceScreen() {
 
         {/* ── Payment Details ── */}
         <View style={[s.card, { backgroundColor: '#fff' }]}>
-          <Text style={[s.secTitle, { color: C.text }]}>Payment Details</Text>
+          <Text style={[s.secTitle, { color: C.text }]}>{t('activityTimeline.paymentDetails')}</Text>
           <View style={{ marginTop: 12, gap: 10 }}>
             {[
-              { label: 'Creator Fee',         value: `NPR ${crFee.toLocaleString()}` },
-              { label: 'Platform Fee (5%)',    value: `NPR ${pfFee.toLocaleString()}` },
-              { label: 'VAT (13% of fee)',     value: `NPR ${vat.toLocaleString()}` },
+              { label: t('activityTimeline.paymentCreatorFee'),   value: `NPR ${crFee.toLocaleString()}` },
+              { label: t('activityTimeline.paymentPlatformFee'),  value: `NPR ${pfFee.toLocaleString()}` },
+              { label: t('activityTimeline.paymentVat'),          value: `NPR ${vat.toLocaleString()}` },
             ].map((row, idx) => (
               <View key={idx} style={py.row}>
                 <Text style={[py.label, { color: C.textSecondary }]}>{row.label}</Text>
@@ -762,28 +783,26 @@ export default function CampaignWorkspaceScreen() {
             ))}
             <View style={[py.divider, { backgroundColor: '#F3F4F6' }]} />
             <View style={py.row}>
-              <Text style={[py.totalLabel, { color: C.text }]}>Total</Text>
+              <Text style={[py.totalLabel, { color: C.text }]}>{t('activityTimeline.paymentTotal')}</Text>
               <Text style={[py.totalValue, { color: '#16A34A' }]}>NPR {total.toLocaleString()}</Text>
             </View>
             <View style={[py.divider, { backgroundColor: '#F3F4F6' }]} />
             <View style={py.row}>
-              <Text style={[py.label, { color: C.textSecondary }]}>Payment Status</Text>
+              <Text style={[py.label, { color: C.textSecondary }]}>{t('activityTimeline.paymentStatus')}</Text>
               <View style={[py.statusChip, {
                 backgroundColor: ws === 'APPROVED' ? '#DCFCE7' : paid ? '#E0F2FE' : '#FEF2F2',
               }]}>
                 <Text style={[py.statusChipTxt, {
                   color: ws === 'APPROVED' ? '#16A34A' : paid ? '#0EA5E9' : '#EF4444',
                 }]}>
-                  {ws === 'APPROVED' ? '✅ Released' : paid ? '🔒 Held Securely' : '⏳ Waiting'}
+                  {ws === 'APPROVED' ? t('activityTimeline.paymentStatusReleased') : paid ? t('activityTimeline.paymentStatusHeld') : t('activityTimeline.paymentStatusWaiting')}
                 </Text>
               </View>
             </View>
           </View>
           <View style={[py.trustBox, { backgroundColor: '#F0FDF4', borderColor: '#DCFCE7' }]}>
             <Ionicons name="shield-checkmark-outline" size={13} color="#16A34A" />
-            <Text style={[py.trustTxt, { color: '#16A34A' }]}>
-              Payment is securely held until work is approved.
-            </Text>
+            <Text style={[py.trustTxt, { color: '#16A34A' }]}>{t('activityTimeline.paymentSecureNote')}</Text>
           </View>
         </View>
 
@@ -794,16 +813,14 @@ export default function CampaignWorkspaceScreen() {
             onPress={() => setShowCancel(true)}
           >
             <Ionicons name="close-circle-outline" size={18} color="#EF4444" />
-            <Text style={[s.cancelBtnTxt, { color: '#EF4444' }]}>Cancel Event</Text>
+            <Text style={[s.cancelBtnTxt, { color: '#EF4444' }]}>{t('activityTimeline.cancelEventBtn')}</Text>
           </Pressable>
         )}
 
         {/* ── Security Footer ── */}
         <View style={s.secFooter}>
           <Ionicons name="shield-checkmark-outline" size={13} color="#9CA3AF" />
-          <Text style={[s.secFooterTxt, { color: '#9CA3AF' }]}>
-            Your payment is secure with eSewa, Khalti and Fonepay.
-          </Text>
+          <Text style={[s.secFooterTxt, { color: '#9CA3AF' }]}>{t('activityTimeline.paymentSecurityFooter')}</Text>
         </View>
 
         <View style={{ height: 40 }} />
@@ -817,8 +834,8 @@ export default function CampaignWorkspaceScreen() {
       ) : null}
 
       {/* ── Pay Modal ── */}
-      <Sheet visible={showPay} onClose={() => setShowPay(false)} title="Complete Payment">
-        <Text style={sh.sub}>Funds are held securely until you approve the work.</Text>
+      <Sheet visible={showPay} onClose={() => setShowPay(false)} title={t('activityTimeline.modalPayTitle')}>
+        <Text style={sh.sub}>{t('activityTimeline.modalPaySub')}</Text>
         <View style={{ gap: 8, marginVertical: 14 }}>
           {([['Creator Fee', crFee], ['Platform Fee (5%)', pfFee], ['VAT (13%)', vat]] as [string, number][]).map(([l, v]) => (
             <View key={l} style={sh.sumRow}><Text style={sh.sumLabel}>{l}</Text><Text style={sh.sumValue}>NPR {v.toLocaleString()}</Text></View>
@@ -826,7 +843,7 @@ export default function CampaignWorkspaceScreen() {
           <View style={[sh.divider, { backgroundColor: '#E5E7EB' }]} />
           <View style={sh.sumRow}><Text style={sh.totalLabel}>Total</Text><Text style={sh.totalValue}>NPR {total.toLocaleString()}</Text></View>
         </View>
-        <Text style={sh.sectionLabel}>Pay with</Text>
+        <Text style={sh.sectionLabel}>{t('activityTimeline.modalPayWith')}</Text>
         <View style={{ gap: 8, marginBottom: 16 }}>
           {([['esewa', '🟢 eSewa'], ['khalti', '🟣 Khalti'], ['fonepay', '📱 Fonepay QR']] as [typeof payMethod, string][]).map(([m, label]) => (
             <Pressable key={m}
@@ -838,16 +855,16 @@ export default function CampaignWorkspaceScreen() {
           ))}
         </View>
         <Pressable style={[sh.primaryBtn, { backgroundColor: '#7C3AED', opacity: submitting ? 0.75 : 1 }]} onPress={handlePay} disabled={submitting}>
-          {submitting ? <ActivityIndicator size="small" color="#fff" /> : <Text style={sh.primaryBtnTxt}>Confirm Payment · NPR {total.toLocaleString()}</Text>}
+          {submitting ? <ActivityIndicator size="small" color="#fff" /> : <Text style={sh.primaryBtnTxt}>{t('activityTimeline.modalPayConfirmBtn', { amount: total.toLocaleString() })}</Text>}
         </Pressable>
       </Sheet>
 
       {/* ── Upload Deliverables Modal ── */}
-      <Sheet visible={showUpload} onClose={() => { setShowUpload(false); setUrlError(''); }} title="Upload Deliverables">
-        <Text style={sh.sub}>Add one link per line. Each link must start with https://</Text>
+      <Sheet visible={showUpload} onClose={() => { setShowUpload(false); setUrlError(''); }} title={t('activityTimeline.modalUploadTitle')}>
+        <Text style={sh.sub}>{t('activityTimeline.modalUploadSub')}</Text>
         <View style={{ gap: 12, marginVertical: 14 }}>
           <View>
-            <Text style={sh.inputLabel}>Deliverable Links *</Text>
+            <Text style={sh.inputLabel}>{t('activityTimeline.modalUploadLinksLabel')}</Text>
             <TextInput
               style={[sh.input, { color: '#111827', height: 100, borderColor: urlError ? '#EF4444' : '#E5E7EB' }]}
               placeholder={"https://drive.google.com/...\nhttps://youtube.com/watch?v=..."}
@@ -882,10 +899,10 @@ export default function CampaignWorkspaceScreen() {
             )}
           </View>
           <View>
-            <Text style={sh.inputLabel}>Notes to Business</Text>
+            <Text style={sh.inputLabel}>{t('activityTimeline.modalUploadNotesLabel')}</Text>
             <TextInput
               style={[sh.input, { color: '#111827', height: 60 }]}
-              placeholder="Any notes or instructions..."
+              placeholder={t('activityTimeline.modalUploadNotesPlaceholder')}
               placeholderTextColor="#9CA3AF"
               value={uploadNotes}
               onChangeText={setUploadNotes}
@@ -894,12 +911,12 @@ export default function CampaignWorkspaceScreen() {
           </View>
         </View>
         <Pressable style={[sh.primaryBtn, { backgroundColor: '#7C3AED', opacity: submitting ? 0.75 : 1 }]} onPress={handleSubmitWork} disabled={submitting}>
-          {submitting ? <ActivityIndicator size="small" color="#fff" /> : <><Ionicons name="cloud-upload-outline" size={17} color="#fff" /><Text style={sh.primaryBtnTxt}>Submit Work</Text></>}
+          {submitting ? <ActivityIndicator size="small" color="#fff" /> : <><Ionicons name="cloud-upload-outline" size={17} color="#fff" /><Text style={sh.primaryBtnTxt}>{t('activityTimeline.modalUploadSubmitBtn')}</Text></>}
         </Pressable>
       </Sheet>
 
       {/* ── Review Deliverables Modal ── */}
-      <Sheet visible={showReview} onClose={() => setShowReview(false)} title="Review Deliverables">
+      <Sheet visible={showReview} onClose={() => setShowReview(false)} title={t('activityTimeline.modalReviewTitle')}>
 
         {/* Submitted links — top */}
         <View style={rv.section}>
@@ -907,7 +924,7 @@ export default function CampaignWorkspaceScreen() {
             <View style={[rv.sectionIcon, { backgroundColor: '#F5F3FF' }]}>
               <Ionicons name="link" size={14} color="#7C3AED" />
             </View>
-            <Text style={rv.sectionTitle}>Links Submitted by Creator</Text>
+            <Text style={rv.sectionTitle}>{t('activityTimeline.modalReviewLinksSection')}</Text>
           </View>
           {submittedUrls.length > 0 ? (
             <View style={{ gap: 8 }}>
@@ -925,7 +942,7 @@ export default function CampaignWorkspaceScreen() {
           ) : (
             <View style={rv.noLinks}>
               <Ionicons name="link-outline" size={20} color="#D1D5DB" />
-              <Text style={rv.noLinksTxt}>No links submitted yet</Text>
+              <Text style={rv.noLinksTxt}>{t('activityTimeline.modalReviewNoLinks')}</Text>
             </View>
           )}
         </View>
@@ -937,7 +954,7 @@ export default function CampaignWorkspaceScreen() {
               <View style={[rv.sectionIcon, { backgroundColor: '#FFF7ED' }]}>
                 <Ionicons name="list" size={14} color="#D97706" />
               </View>
-              <Text style={rv.sectionTitle}>What Needs to Be Delivered</Text>
+              <Text style={rv.sectionTitle}>{t('activityTimeline.modalReviewDeliverablesSection')}</Text>
             </View>
             <View style={{ gap: 8 }}>
               {deliverables.map((d, idx) => (
@@ -958,7 +975,7 @@ export default function CampaignWorkspaceScreen() {
             style={[sh.primaryBtn, { flex: 1, backgroundColor: '#D97706' }]}
             onPress={() => { setShowReview(false); setTimeout(() => setShowRevision(true), 200); }}>
             <Ionicons name="create-outline" size={15} color="#fff" />
-            <Text style={sh.primaryBtnTxt}>Request Revision</Text>
+            <Text style={sh.primaryBtnTxt}>{t('activityTimeline.acRevisionBtn')}</Text>
           </Pressable>
           <Pressable
             style={[sh.primaryBtn, { flex: 1, backgroundColor: '#16A34A', opacity: submitting ? 0.75 : 1 }]}
@@ -966,19 +983,19 @@ export default function CampaignWorkspaceScreen() {
             onPress={() => { setShowReview(false); handleApprove(); }}>
             {submitting
               ? <ActivityIndicator size="small" color="#fff" />
-              : <><Ionicons name="checkmark-done-outline" size={15} color="#fff" /><Text style={sh.primaryBtnTxt}>Approve</Text></>}
+              : <><Ionicons name="checkmark-done-outline" size={15} color="#fff" /><Text style={sh.primaryBtnTxt}>{t('activityTimeline.acApproveBtn')}</Text></>}
           </Pressable>
         </View>
       </Sheet>
 
       {/* ── Request Revision Modal ── */}
-      <Sheet visible={showRevision} onClose={() => setShowRevision(false)} title="Request Revision">
-        <Text style={sh.sub}>Describe the changes you need the creator to make.</Text>
+      <Sheet visible={showRevision} onClose={() => setShowRevision(false)} title={t('activityTimeline.modalRevisionTitle')}>
+        <Text style={sh.sub}>{t('activityTimeline.modalRevisionSub')}</Text>
         <View style={{ marginVertical: 14 }}>
-          <Text style={sh.inputLabel}>Revision Notes *</Text>
+          <Text style={sh.inputLabel}>{t('activityTimeline.modalRevisionNotesLabel')}</Text>
           <TextInput
             style={[sh.input, { color: '#111827', height: 100 }]}
-            placeholder="Please change the caption to... The video needs to be..."
+            placeholder={t('activityTimeline.modalRevisionNotesPlaceholder')}
             placeholderTextColor="#9CA3AF"
             value={revisionNote}
             onChangeText={setRevisionNote}
@@ -986,25 +1003,24 @@ export default function CampaignWorkspaceScreen() {
           />
         </View>
         <Pressable style={[sh.primaryBtn, { backgroundColor: '#D97706', opacity: submitting ? 0.75 : 1 }]} onPress={handleRevision} disabled={submitting}>
-          {submitting ? <ActivityIndicator size="small" color="#fff" /> : <Text style={sh.primaryBtnTxt}>Send Revision Request</Text>}
+          {submitting ? <ActivityIndicator size="small" color="#fff" /> : <Text style={sh.primaryBtnTxt}>{t('activityTimeline.modalRevisionSendBtn')}</Text>}
         </Pressable>
       </Sheet>
 
       {/* ── Cancel Event Modal (business) — 20% deduction warning ── */}
-      <Sheet visible={showCancel} onClose={() => setShowCancel(false)} title="Cancel Event">
-        <Text style={[sh.sub, { color: '#EF4444' }]}>Are you sure you want to cancel this campaign?</Text>
+      <Sheet visible={showCancel} onClose={() => setShowCancel(false)} title={t('activityTimeline.modalCancelTitle')}>
+        <Text style={[sh.sub, { color: '#EF4444' }]}>{t('activityTimeline.modalCancelSub')}</Text>
 
         {paid && (
           <View style={[sh.warnBox, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}>
             <Ionicons name="warning" size={20} color="#EF4444" />
             <View style={{ flex: 1 }}>
-              <Text style={[sh.warnTitle, { color: '#EF4444' }]}>20% Cancellation Fee</Text>
+              <Text style={[sh.warnTitle, { color: '#EF4444' }]}>{t('activityTimeline.modalCancelFeeTitle')}</Text>
               <Text style={[sh.warnBody, { color: '#B91C1C' }]}>
-                Since payment has already been secured, a{' '}
-                <Text style={{ fontFamily: F.bold }}>20% deduction (NPR {Math.round(total * 0.2).toLocaleString()})</Text>
-                {' '}will be applied. You will receive a refund of NPR{' '}
-                <Text style={{ fontFamily: F.bold }}>{Math.round(total * 0.8).toLocaleString()}</Text>
-                {' '}within 3–5 business days.
+                {t('activityTimeline.modalCancelFeeBody', {
+                  deduction: Math.round(total * 0.2).toLocaleString(),
+                  refund: Math.round(total * 0.8).toLocaleString(),
+                })}
               </Text>
             </View>
           </View>
@@ -1013,18 +1029,18 @@ export default function CampaignWorkspaceScreen() {
         {!paid && (
           <View style={[sh.infoBox, { backgroundColor: '#FFF7ED', borderColor: '#FED7AA', marginVertical: 12 }]}>
             <Ionicons name="information-circle-outline" size={15} color="#D97706" />
-            <Text style={[sh.infoTxt, { color: '#D97706' }]}>No payment has been made, so no deduction will apply.</Text>
+            <Text style={[sh.infoTxt, { color: '#D97706' }]}>{t('activityTimeline.modalCancelNoFee')}</Text>
           </View>
         )}
 
-        <Text style={[sh.sub, { marginTop: 12 }]}>The creator will be notified immediately.</Text>
+        <Text style={[sh.sub, { marginTop: 12 }]}>{t('activityTimeline.modalCancelCreatorNotified')}</Text>
 
         <View style={{ flexDirection: 'row', gap: 10, marginTop: 16 }}>
           <Pressable
             style={[sh.primaryBtn, { flex: 1, backgroundColor: '#F3F4F6' }]}
             onPress={() => setShowCancel(false)}
           >
-            <Text style={[sh.primaryBtnTxt, { color: '#374151' }]}>Keep Campaign</Text>
+            <Text style={[sh.primaryBtnTxt, { color: '#374151' }]}>{t('activityTimeline.modalCancelKeepBtn')}</Text>
           </Pressable>
           <Pressable
             style={[sh.primaryBtn, { flex: 1, backgroundColor: '#EF4444', opacity: submitting ? 0.75 : 1 }]}
@@ -1033,7 +1049,7 @@ export default function CampaignWorkspaceScreen() {
           >
             {submitting
               ? <ActivityIndicator size="small" color="#fff" />
-              : <Text style={sh.primaryBtnTxt}>Yes, Cancel</Text>}
+              : <Text style={sh.primaryBtnTxt}>{t('activityTimeline.modalCancelConfirmBtn')}</Text>}
           </Pressable>
         </View>
       </Sheet>

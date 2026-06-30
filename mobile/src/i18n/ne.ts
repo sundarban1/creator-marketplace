@@ -375,6 +375,7 @@ const ne = {
       events: 'इभेन्टहरू',
       proposals: 'प्रस्तावहरू',
       messages: 'सन्देशहरू',
+      notifications: 'सूचनाहरू',
     },
     heading: 'नमस्कार, {{name}} 👋',
     subtitle: 'आफ्नो इभेन्टहरू व्यवस्थापन गर्नुहोस्',
@@ -613,6 +614,10 @@ const ne = {
     statusAccepted: 'स्वीकृत',
     statusRejected: 'अस्वीकृत',
     applicationCount: '{{n}} आवेदन',
+    projectCompleted:   'परियोजना पूर्ण',
+    reviewDeliverables: 'डेलिभरेबल समीक्षा गर्नुहोस्',
+    creatorIsWorking:   'सिर्जनकर्ता काममा छन्',
+    startTheProject:    'परियोजना शुरू गर्नुहोस्',
   },
 
   // ── Creator Detail (business view) ───────────────────────────
@@ -1807,6 +1812,164 @@ const ne = {
     warnBodyPost: '। प्रकाशन गर्नु अघि सबै विवरणहरू ध्यानपूर्वक समीक्षा गर्नुहोस्।\n\nआफ्नो इभेन्ट शीर्षक, विवरण, बजेट र आवश्यकताहरू सही र पूर्ण छ भनी सुनिश्चित गर्नुहोस्।',
     warnGoBack:   'फर्केर समीक्षा गर्नुहोस्',
     warnPublishNow: 'अहिले प्रकाशन गर्नुहोस्',
+  },
+
+  // ── Activity Timeline ─────────────────────────────────────────
+  activityTimeline: {
+    // Progress bar steps
+    progressAccepted:  'स्वीकृत',
+    progressPayment:   'भुक्तानी',
+    progressSecured:   'सुरक्षित',
+    progressWaiting:   'प्रतीक्षा',
+    progressStarted:   'शुरू',
+    progressSubmitted: 'पेश',
+    progressReview:    'समीक्षा',
+    progressApproved:  'अनुमोदित',
+    progressReleased:  'जारी',
+    progressCompleted: 'पूर्ण',
+
+    // Header / status badge
+    statusCompleted:        'पूर्ण',
+    statusUnderReview:      'समीक्षामा',
+    statusInProgress:       'प्रगतिमा',
+    statusWaitingOnCreator: 'सिर्जनकर्ताको प्रतीक्षा',
+    statusWaitingPayment:   'भुक्तानीको प्रतीक्षा',
+
+    // Campaign summary card
+    headerFallback:       'अभियान',
+    headerWorkspace:      'अभियान कार्यस्थान',
+    footerProposalDate:   'प्रस्ताव मिति',
+    footerPayment:        'भुक्तानी',
+    footerPaymentPaid:    'भुक्तानी भयो ✅',
+    footerPaymentPending: 'बाँकी',
+    footerCampaignId:     'अभियान आईडी',
+    footerCreatorLabel:   'सिर्जनकर्ता: {{name}}',
+    footerBrandLabel:     '{{name}} द्वारा',
+
+    // Section titles
+    campaignProgress:   'अभियान प्रगति',
+    sectionTimeline:    'गतिविधि टाइमलाइन',
+    sectionTimelineSub: 'नेपाल समय (NPT) • नवीनतम पहिले',
+    badgeDone:          'भयो',
+    badgeCurrent:       'हालको',
+    badgePending:       'बाँकी',
+
+    // Payment details card
+    paymentDetails:         'भुक्तानी विवरण',
+    paymentCreatorFee:      'सिर्जनकर्ता शुल्क',
+    paymentPlatformFee:     'प्लेटफर्म शुल्क (५%)',
+    paymentVat:             'भ्याट (शुल्कको १३%)',
+    paymentTotal:           'जम्मा',
+    paymentStatus:          'भुक्तानी स्थिति',
+    paymentStatusReleased:  '✅ जारी भयो',
+    paymentStatusHeld:      '🔒 सुरक्षित राखिएको',
+    paymentStatusWaiting:   '⏳ प्रतीक्षामा',
+    paymentSecureNote:      'काम अनुमोदन नभएसम्म भुक्तानी सुरक्षित राखिएको छ।',
+    paymentSecurityFooter:  'तपाईंको भुक्तानी eSewa, Khalti र Fonepay मार्फत सुरक्षित छ।',
+    cancelEventBtn:         'इभेन्ट रद्द गर्नुहोस्',
+
+    // Timeline event titles & descriptions
+    tlProposalAccepted:                 'प्रस्ताव स्वीकृत',
+    tlProposalAcceptedDescBusiness:     'तपाईंले यो सिर्जनकर्ताको प्रस्ताव स्वीकार गर्नुभयो।',
+    tlProposalAcceptedDescCreator:      'व्यवसायले तपाईंको प्रस्ताव छान्नुभयो।',
+    tlWaitingPayment:                   'भुक्तानीको प्रतीक्षा',
+    tlWaitingPaymentDescCreator:        'व्यवसायसँग भुक्तानी गर्न २४ घण्टा छ। भुक्तानी भएलगत्तै तपाईंलाई सूचित गरिनेछ।',
+    tlWaitingPaymentDescBusiness:       'सिर्जनकर्तालाई सुरक्षित गर्न र अभियान शुरू गर्न भुक्तानी पूरा गर्नुहोस्।',
+    tlPaymentSecured:                   'भुक्तानी सुरक्षित',
+    tlPaymentSecuredDescCreator:        'प्लेटफर्मले रकम सुरक्षित राखेको छ। "सामग्री बनाउँ" मा ट्याप गर्नुहोस्!',
+    tlPaymentSecuredDescBusiness:       'प्लेटफर्मले रकम सुरक्षित राखेको छ। सिर्जनकर्ता शुरू हुने प्रतीक्षामा।',
+    tlWaitingCreator:                   'सिर्जनकर्ताले शुरू गर्ने प्रतीक्षा',
+    tlWaitingCreatorDescCreator:        '"सामग्री बनाउँ" मा ट्याप गरी यो अभियानमा काम शुरू गर्नुहोस्।',
+    tlWaitingCreatorDescBusiness:       'सिर्जनकर्तालाई सूचित गरिएको छ। उनीहरूको प्रतीक्षामा।',
+    tlWorkStarted:                      'काम शुरू भयो',
+    tlWorkStartedDescCreator:           'तपाईंले अभियानमा काम शुरू गर्नुभयो।',
+    tlWorkStartedDescBusiness:          'सिर्जनकर्ताले डेलिभरेबलमा काम गर्न थाले।',
+    tlDeliverablesUploaded:             'डेलिभरेबल अपलोड भयो',
+    tlDeliverablesUploadedDescCreator:  'तपाईंले समीक्षाका लागि काम पेश गर्नुभयो।',
+    tlDeliverablesUploadedDescBusiness: 'सिर्जनकर्ताले डेलिभरेबल पेश गर्यो। कृपया समीक्षा गर्नुहोस्।',
+    tlWorkApproved:                     'काम अनुमोदित',
+    tlWorkApprovedDescCreator:          'व्यवसायले तपाईंको काम अनुमोदित गर्यो! भुक्तानी तपाईंको वालेटमा जारी भयो।',
+    tlWorkApprovedDescBusiness:         'तपाईंले डेलिभरेबल अनुमोदित गर्नुभयो। भुक्तानी सिर्जनकर्तालाई जारी भयो।',
+
+    // Action card states
+    acPaymentRequiredTitle:  'भुक्तानी आवश्यक छ',
+    acPaymentRequiredSub:    'सिर्जनकर्तालाई सुरक्षित गर्न र अभियान शुरू गर्न भुक्तानी पूरा गर्नुहोस्।',
+    acPayNowBtn:             'अहिले तिर्नुहोस्',
+    acWaitingPaymentTitle:   'भुक्तानीको प्रतीक्षा',
+    acWaitingPaymentSub:     'व्यवसायसँग भुक्तानी गर्न २४ घण्टा छ। भुक्तानी भएलगत्तै तपाईंलाई सूचित गरिनेछ।',
+    acWaitingCreatorTitle:   'सिर्जनकर्ताले शुरू गर्ने प्रतीक्षा',
+    acWaitingCreatorSubFree: 'सिर्जनकर्तालाई स्वीकार गरी सूचित गरिएको छ। उनीहरूको शुरुवातको प्रतीक्षामा।',
+    acWaitingCreatorSubPaid: 'भुक्तानी सुरक्षित ✅ सिर्जनकर्तालाई सूचित गरिएको छ र चाँडै शुरू हुनेछन्।',
+    acReadyFreeTitle:        'तपाईं स्वीकृत — बनाउन तयार!',
+    acReadyPaidTitle:        'भुक्तानी सुरक्षित — बनाउन तयार!',
+    acReadyFreeSub:          'तपाईंलाई यो इभेन्टका लागि छानिएको छ। आधिकारिक रूपमा शुरू गर्न तल थिच्नुहोस्।',
+    acReadyPaidSub:          'व्यवसायले भुक्तानी गरिसकेको छ। आधिकारिक रूपमा शुरू गर्न तलको बटन थिच्नुहोस्।',
+    acStartBtn:              'सामग्री बनाउँ 🚀',
+    acCreatorWorkingTitle:   'सिर्जनकर्ता काममा छन् 🎨',
+    acCreatorWorkingSub:     'डेलिभरेबल पेश हुने प्रतीक्षामा। तयार भएपछि तपाईंलाई सूचित गरिनेछ।',
+    acUploadTitle:           'तपाईंको डेलिभरेबल अपलोड गर्नुहोस्',
+    acUploadSub:             'व्यवसायले समीक्षाका लागि पूरा भएका सामग्री लिङ्क वा फाइलहरू शेयर गर्नुहोस्।',
+    acUploadBtn:             'डेलिभरेबल अपलोड गर्नुहोस्',
+    acSubmittedTitle:        'सिर्जनकर्ताले काम पेश गर्यो',
+    acSubmittedSub:          'पेश गरिएका लिङ्कहरू समीक्षा गर्नुहोस्, त्यसपछि ५ दिनभित्र अनुमोदन वा परिवर्तन अनुरोध गर्नुहोस्।',
+    acReviewBtn:             'डेलिभरेबल समीक्षा गर्नुहोस्',
+    acRevisionBtn:           'संशोधन अनुरोध गर्नुहोस्',
+    acApproveBtn:            'अनुमोदन गर्नुहोस्',
+    acAwaitingReviewTitle:   'समीक्षाको प्रतीक्षामा',
+    acAwaitingReviewSub:     'व्यवसायले तपाईंको काम समीक्षा गर्दैछ। ५ दिनभित्र कुनै प्रतिक्रिया नभएमा स्वत: अनुमोदन हुनेछ।',
+    acCompletedBizTitle:     'अभियान पूर्ण! 🎉',
+    acCompletedBizSub:       'तपाईंले काम अनुमोदित गर्नुभयो। भुक्तानी सिर्जनकर्ताको वालेटमा जारी भयो।',
+    acCompletedCreatorTitle: 'काम अनुमोदित! 🎉',
+    acCompletedCreatorSub:   'भुक्तानी तपाईंको वालेटमा जारी भयो।',
+
+    // Pay modal
+    modalPayTitle:      'भुक्तानी पूरा गर्नुहोस्',
+    modalPaySub:        'काम अनुमोदन नभएसम्म रकम सुरक्षित राखिनेछ।',
+    modalPayWith:       'यसद्वारा तिर्नुहोस्',
+    modalPayConfirmBtn: 'भुक्तानी पुष्टि · NPR {{amount}}',
+
+    // Upload modal
+    modalUploadTitle:            'डेलिभरेबल अपलोड गर्नुहोस्',
+    modalUploadSub:              'प्रति पंक्ति एक लिङ्क थप्नुहोस्। प्रत्येक लिङ्क https:// बाट शुरू हुनुपर्छ',
+    modalUploadLinksLabel:       'डेलिभरेबल लिङ्कहरू *',
+    modalUploadNotesLabel:       'व्यवसायलाई नोटहरू',
+    modalUploadNotesPlaceholder: 'कुनै नोट वा निर्देशनहरू...',
+    modalUploadSubmitBtn:        'काम पेश गर्नुहोस्',
+
+    // Review modal
+    modalReviewTitle:               'डेलिभरेबल समीक्षा',
+    modalReviewLinksSection:        'सिर्जनकर्ताद्वारा पेश गरिएका लिङ्कहरू',
+    modalReviewNoLinks:             'अहिलेसम्म कुनै लिङ्क पेश गरिएको छैन',
+    modalReviewDeliverablesSection: 'के डेलिभर गर्नुपर्छ',
+
+    // Revision modal
+    modalRevisionTitle:            'संशोधन अनुरोध',
+    modalRevisionSub:              'सिर्जनकर्तालाई गर्नुपर्ने परिवर्तनहरू वर्णन गर्नुहोस्।',
+    modalRevisionNotesLabel:       'संशोधन नोटहरू *',
+    modalRevisionNotesPlaceholder: 'क्याप्सन यस्तो परिवर्तन गर्नुहोस्... भिडियो यस्तो हुनुपर्छ...',
+    modalRevisionSendBtn:          'संशोधन अनुरोध पठाउनुहोस्',
+
+    // Cancel modal
+    modalCancelTitle:           'इभेन्ट रद्द गर्नुहोस्',
+    modalCancelSub:             'के तपाईं यो अभियान रद्द गर्न निश्चित हुनुहुन्छ?',
+    modalCancelFeeTitle:        '२०% रद्द शुल्क',
+    modalCancelFeeBody:         'भुक्तानी पहिले नै सुरक्षित भइसकेकोले, २०% कटौती (NPR {{deduction}}) लागू हुनेछ। तपाईंलाई ३–५ कार्यदिनभित्र NPR {{refund}} फिर्ता मिल्नेछ।',
+    modalCancelNoFee:           'कुनै भुक्तानी भइसकेको छैन, त्यसैले कुनै कटौती लागू हुँदैन।',
+    modalCancelCreatorNotified: 'सिर्जनकर्तालाई तुरुन्तै सूचित गरिनेछ।',
+    modalCancelKeepBtn:         'अभियान राख्नुहोस्',
+    modalCancelConfirmBtn:      'हो, रद्द गर्नुहोस्',
+
+    // Toast messages
+    toastPaySuccess:        '✅ भुक्तानी सफल! सिर्जनकर्तालाई सूचित गरिएको छ।',
+    toastWorkSubmitted:     '✅ काम पेश भयो! व्यवसायले ५ दिनभित्र समीक्षा गर्नेछ।',
+    toastWorkApproved:      '✅ काम अनुमोदित! सिर्जनकर्तालाई भुक्तानी जारी भयो।',
+    toastRevisionRequested: 'संशोधन अनुरोध भयो। सिर्जनकर्तालाई सूचित गरिएको छ।',
+    toastCampaignCancelled: 'अभियान रद्द भयो। सिर्जनकर्तालाई सूचित गरिएको छ।',
+
+    // URL validation
+    urlValidationAtLeastOne:  'कम्तिमा एक लिङ्क थप्नुहोस्।',
+    urlValidationInvalidOne:  'अमान्य URL: "{{url}}" — https:// बाट शुरू हुनुपर्छ',
+    urlValidationInvalidMany: '{{count}} अमान्य URLs — प्रत्येक https:// बाट शुरू हुनुपर्छ',
   },
 };
 

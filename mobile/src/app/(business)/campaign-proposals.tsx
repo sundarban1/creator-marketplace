@@ -34,11 +34,12 @@ type Proposal = {
   creator: { id: string; fullName: string; avatarUrl: string | null; location: string | null };
 };
 
-function projectBtnConfig(ws: WS) {
-  if (ws === 'APPROVED')    return { label: 'Project Completed',   icon: 'checkmark-done-circle' as const, color: '#16A34A' };
-  if (ws === 'SUBMITTED')   return { label: 'Review Deliverables', icon: 'eye'                   as const, color: '#D97706' };
-  if (ws === 'IN_PROGRESS') return { label: 'Creator is Working',  icon: 'brush'                 as const, color: '#7C3AED' };
-  return                           { label: 'Start the Project',   icon: 'rocket'                as const, color: '#4F46E5' };
+type TFn = (key: string) => string;
+function projectBtnConfig(ws: WS, t: TFn) {
+  if (ws === 'APPROVED')    return { label: t('campaignProposals.projectCompleted'),   icon: 'checkmark-done-circle' as const, color: '#16A34A' };
+  if (ws === 'SUBMITTED')   return { label: t('campaignProposals.reviewDeliverables'), icon: 'eye'                   as const, color: '#D97706' };
+  if (ws === 'IN_PROGRESS') return { label: t('campaignProposals.creatorIsWorking'),   icon: 'brush'                 as const, color: '#7C3AED' };
+  return                           { label: t('campaignProposals.startTheProject'),    icon: 'rocket'                as const, color: '#4F46E5' };
 }
 
 type StatusFilter = 'all' | 'pending' | 'accepted' | 'rejected';
@@ -186,7 +187,7 @@ function ProposalCard({
 
       {/* Dynamic project action button — paid campaigns only */}
       {p.status === 'accepted' && !isFree && (() => {
-        const cfg = projectBtnConfig(p.workStatus);
+        const cfg = projectBtnConfig(p.workStatus, t);
         return (
           <Pressable
             style={({ pressed }) => [styles.startProjectBtn, { backgroundColor: cfg.color, opacity: pressed ? 0.88 : 1 }]}

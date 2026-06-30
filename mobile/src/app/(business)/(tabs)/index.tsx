@@ -51,7 +51,7 @@ export default function BusinessHomeScreen() {
     return t('business.home.goodEvening');
   }
 
-  const { badgeCount: notifBadge, setBadgeCount } = useNotificationBadge();
+  const { setBadgeCount } = useNotificationBadge();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -143,14 +143,6 @@ export default function BusinessHomeScreen() {
               </View>
             </View>
             <View style={styles.headerRight}>
-              <Pressable style={styles.notifBtn} onPress={() => router.push('/(business)/notifications')}>
-                <Ionicons name={notifBadge > 0 ? 'notifications' : 'notifications-outline'} size={20} color="rgba(255,255,255,0.9)" />
-                {notifBadge > 0 && (
-                  <View style={styles.bellBadge}>
-                    <Text style={styles.bellBadgeText}>{notifBadge > 99 ? '99+' : notifBadge}</Text>
-                  </View>
-                )}
-              </Pressable>
               <Pressable style={[styles.avatarCircle, { backgroundColor: 'rgba(255,255,255,0.2)', borderWidth: 2.5, borderColor: 'rgba(255,255,255,0.5)' }]} onPress={() => router.push('/(business)/profile')}>
                 <Text style={[styles.avatarText, { color: '#fff' }]}>
                   {(user?.name ?? 'B').split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2)}
@@ -315,7 +307,6 @@ const styles = StyleSheet.create({
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
   menuBtn: { padding: 0 },
   menuBtnInner: { width: 38, height: 38, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' },
-  notifBtn: { width: 38, height: 38, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center', position: 'relative' as const },
   greeting: { fontSize: 12, marginBottom: 3, fontFamily: F.medium },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   brandName: { fontSize: 19, fontFamily: F.extrabold, maxWidth: 180 },
@@ -323,8 +314,6 @@ const styles = StyleSheet.create({
   roleDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#a78bfa' },
   rolePillText: { fontSize: 11, fontFamily: F.semibold },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  bellBadge: { position: 'absolute', top: 6, right: 6, backgroundColor: '#F97316', borderRadius: 6, minWidth: 14, height: 14, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 2 },
-  bellBadgeText: { fontSize: 8, fontWeight: '800', color: '#fff', fontFamily: F.extrabold },
   avatarCircle: { width: 42, height: 42, borderRadius: 21, justifyContent: 'center', alignItems: 'center' },
   avatarText: { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
 

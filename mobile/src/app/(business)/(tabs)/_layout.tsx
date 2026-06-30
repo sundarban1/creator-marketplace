@@ -7,7 +7,7 @@ import { DrawerContext } from '@/context/DrawerContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { BusinessDrawerMenu } from '@/features/business/components/BusinessDrawerMenu';
-import { COLORS } from '@/utilities/constants';
+import { COLORS, F } from '@/utilities/constants';
 import { chatService } from '@/services/chat';
 import { messagingEvents } from '@/lib/messagingEvents';
 import { useNotificationBadge } from '@/context/NotificationContext';
@@ -50,17 +50,6 @@ const tabIcon = StyleSheet.create({
   badgeText: { fontSize: 9, fontWeight: '800', color: '#fff' },
 });
 
-function CreateTabButton() {
-  return (
-    <View style={styles.createWrap}>
-      <Pressable
-        style={({ pressed }) => [styles.createCircle, pressed && { opacity: 0.85 }]}
-        onPress={() => router.push('/create-campaign')}>
-        <Ionicons name="add" size={30} color="#fff" />
-      </Pressable>
-    </View>
-  );
-}
 
 export default function BusinessTabsLayout() {
   const { user, logout } = useAuth();
@@ -116,14 +105,6 @@ export default function BusinessTabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="create"
-        options={{
-          title: '',
-          tabBarLabel: () => null,
-          tabBarButton: () => <CreateTabButton />,
-        }}
-      />
-      <Tabs.Screen
         name="proposals"
         options={{
           title: t('business.tab.proposals'),
@@ -147,7 +128,30 @@ export default function BusinessTabsLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="notifications"
+        options={{
+          title: t('business.tab.notifications'),
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon name="notifications-outline" nameActive="notifications" size={23} color={color} focused={focused} badge={notifBadge} />
+          ),
+        }}
+      />
+      {/* Hide create.tsx from tab bar — navigated via FAB */}
+      <Tabs.Screen name="create" options={{ href: null }} />
     </Tabs>
+
+    {/* FAB: floating Create Event button — right side, vertically centered */}
+    <View style={styles.fabContainer} pointerEvents="box-none">
+      <Pressable
+        style={({ pressed }) => [pressed && { opacity: 0.82 }]}
+        onPress={() => router.push('/create-campaign')}>
+        <View style={styles.fabCircle}>
+          <Ionicons name="add" size={26} color="#fff" />
+        </View>
+        <Text style={styles.fabLabel}>{t('business.home.createEventBtn')}</Text>
+      </Pressable>
+    </View>
 
     <BusinessDrawerMenu
       visible={drawerOpen}
@@ -183,24 +187,35 @@ const styles = StyleSheet.create({
     marginBottom: Platform.OS === 'ios' ? 2 : 4,
     marginTop: 2,
   },
-  createWrap: {
-    flex: 1,
-    alignItems: 'center',
+  fabContainer: {
+    position: 'absolute',
+    right: 16,
+    top: 0,
+    bottom: Platform.OS === 'ios' ? 88 : 66,
     justifyContent: 'center',
-    paddingBottom: Platform.OS === 'ios' ? 0 : 4,
+    alignItems: 'center',
+    zIndex: 200,
   },
-  createCircle: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
+  fabCircle: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
     backgroundColor: COLORS.brinjal1,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 2,
     shadowColor: COLORS.brinjal1,
-    shadowOpacity: 0.5,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 5 },
-    elevation: 10,
+    shadowOpacity: 0.6,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 14,
+  },
+  fabLabel: {
+    color: COLORS.brinjal1,
+    fontSize: 10,
+    fontWeight: '800',
+    textAlign: 'center',
+    marginTop: 6,
+    fontFamily: F.extrabold,
+    lineHeight: 13,
   },
 });
