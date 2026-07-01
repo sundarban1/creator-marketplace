@@ -226,9 +226,9 @@ const styles = StyleSheet.create({
     paddingTop: 4,
   },
   tabLabel: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '700',
-    letterSpacing: 0.2,
+    letterSpacing: 0,
     marginBottom: Platform.OS === 'ios' ? 2 : 4,
     marginTop: 2,
   },

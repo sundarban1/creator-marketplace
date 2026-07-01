@@ -601,7 +601,7 @@ export default function CampaignWorkspaceScreen() {
         if (conv?.id) {
           router.push({
             pathname: isCreator ? '/(creator)/(tabs)/messages/[id]' : '/(business)/(tabs)/messages/[id]',
-            params: { id: conv.id, name: otherName, status: conv.status },
+            params: { id: conv.id, name: otherName, status: conv.status, focusInput: 'true' },
           });
           return;
         }
@@ -675,11 +675,23 @@ export default function CampaignWorkspaceScreen() {
               <Text style={[s.summaryTitle, { color: C.text }]} numberOfLines={2}>
                 {campaign?.title ?? campaignTitle}
               </Text>
-              <Text style={[s.summaryBrand, { color: '#7C3AED' }]}>
-                {isCreator
-                  ? t('activityTimeline.footerBrandLabel', { name: brand ?? campaign?.brand ?? '—' })
-                  : t('activityTimeline.footerCreatorLabel', { name: app?.creatorName ?? '—' })}
-              </Text>
+              <Pressable
+                onPress={() => {
+                  if (!app) return;
+                  if (isCreator) {
+                    router.push({ pathname: '/(creator)/business-detail', params: { id: app.creatorProfileId } });
+                  } else {
+                    router.push({ pathname: '/(business)/creator-detail', params: { id: app.creatorProfileId } });
+                  }
+                }}
+                style={{ alignSelf: 'flex-start' }}
+              >
+                <Text style={[s.summaryBrand, { color: '#7C3AED', textDecorationLine: 'underline' }]}>
+                  {isCreator
+                    ? t('activityTimeline.footerBrandLabel', { name: brand ?? campaign?.brand ?? '—' })
+                    : t('activityTimeline.footerCreatorLabel', { name: app?.creatorName ?? '—' })}
+                </Text>
+              </Pressable>
               <View style={s.metaRow}>
                 {campaign?.deadline && (
                   <View style={s.metaChip}>

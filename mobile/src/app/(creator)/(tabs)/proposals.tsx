@@ -1,8 +1,19 @@
 import { router, useFocusEffect } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { useCallback, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useRef, useState } from 'react';
+import {
+  Animated,
+  ActivityIndicator,
+  FlatList,
+  LayoutChangeEvent,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { EmptyState } from '@/components/EmptyState';
 import { useLanguage, type TFn } from '@/context/LanguageContext';
@@ -10,7 +21,11 @@ import { useAppColors } from '@/context/ThemeContext';
 import { campaignService } from '@/services/campaign';
 import { F } from '@/utilities/constants';
 
+// ─── Types ───────────────────────────────────────────────────────────────────
+
 type WS = 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED';
+type AppStatus = 'pending' | 'accepted' | 'rejected';
+type TabKey = 'all' | AppStatus;
 
 type Proposal = {
   id:              string;
@@ -18,7 +33,7 @@ type Proposal = {
   campaignTitle:   string;
   brand:           string;
   businessId:      string;
-  status:          'pending' | 'accepted' | 'rejected';
+  status:          AppStatus;
   submittedAt:     string;
   coverLetter:     string;
   proposedRate:    string;
@@ -27,19 +42,22 @@ type Proposal = {
   campaignType:    'PAID_CAMPAIGN' | 'OPEN_EVENT';
 };
 
-const STATUS_CFG = {
-  pending:  { labelKey: 'proposal.creator.statusPending'  as const, icon: 'time'           as const, color: '#B45309', bg: '#FFF8E1' },
-  accepted: { labelKey: 'proposal.creator.statusAccepted' as const, icon: 'checkmark-circle' as const, color: '#15803D', bg: '#F0FDF4' },
-  rejected: { labelKey: 'proposal.creator.statusRejected' as const, icon: 'close-circle'   as const, color: '#DC2626', bg: '#FEF2F2' },
-};
+// ─── Config ───────────────────────────────────────────────────────────────────
 
+const STATUS_CFG = {
+  pending:  { labelKey: 'proposal.creator.statusPending'  as const, icon: 'time'             as const, color: '#B45309', bg: '#FFF8E1' },
+  accepted: { labelKey: 'proposal.creator.statusAccepted' as const, icon: 'checkmark-circle' as const, color: '#15803D', bg: '#F0FDF4' },
+  rejected: { labelKey: 'proposal.creator.statusRejected' as const, icon: 'close-circle'     as const, color: '#DC2626', bg: '#FEF2F2' },
+};
 
 const TRACK_CFG: Record<WS, { label: string; icon: keyof typeof Ionicons.glyphMap; color: string; sub: string }> = {
-  NONE:        { label: 'Track Project',    icon: 'navigate',      color: '#7C3AED', sub: 'Waiting to start'          },
-  IN_PROGRESS: { label: 'View My Work',     icon: 'brush',         color: '#6D28D9', sub: 'Work in progress'          },
-  SUBMITTED:   { label: 'Awaiting Review',  icon: 'hourglass',     color: '#D97706', sub: 'Brand reviewing your work' },
-  APPROVED:    { label: 'Project Complete', icon: 'trophy',        color: '#16A34A', sub: 'Payment released!'         },
+  NONE:        { label: 'Track Project',    icon: 'navigate',   color: '#7C3AED', sub: 'Waiting to start'          },
+  IN_PROGRESS: { label: 'View My Work',     icon: 'brush',      color: '#6D28D9', sub: 'Work in progress'          },
+  SUBMITTED:   { label: 'Awaiting Review',  icon: 'hourglass',  color: '#D97706', sub: 'Brand reviewing your work' },
+  APPROVED:    { label: 'Project Complete', icon: 'trophy',     color: '#16A34A', sub: 'Payment released!'         },
 };
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function timeAgo(iso: string, t: TFn): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -50,26 +68,129 @@ function timeAgo(iso: string, t: TFn): string {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
+// ─── Tab Slider ───────────────────────────────────────────────────────────────
+
+type TabDef = { key: TabKey; label: string; icon: keyof typeof Ionicons.glyphMap; color: string; count: number };
+
+function TabSlider({ tabs, active, onChange }: {
+  tabs: TabDef[];
+  active: TabKey;
+  onChange: (k: TabKey) => void;
+}) {
+  const C = useAppColors();
+  const scrollRef = useRef<ScrollView>(null);
+  const indicatorX = useRef(new Animated.Value(0)).current;
+  const indicatorW = useRef(new Animated.Value(0)).current;
+  const tabLayouts = useRef<{ x: number; width: number }[]>([]);
+
+  function handleLayout(idx: number, e: LayoutChangeEvent) {
+    const { x, width } = e.nativeEvent.layout;
+    tabLayouts.current[idx] = { x, width };
+    if (tabs[idx].key === active) {
+      indicatorX.setValue(x + 8);
+      indicatorW.setValue(width - 16);
+    }
+  }
+
+  function handlePress(tab: TabDef, idx: number) {
+    onChange(tab.key);
+    const layout = tabLayouts.current[idx];
+    if (layout) {
+      Animated.spring(indicatorX, { toValue: layout.x + 8, useNativeDriver: false, speed: 20, bounciness: 4 }).start();
+      Animated.spring(indicatorW, { toValue: layout.width - 16, useNativeDriver: false, speed: 20, bounciness: 4 }).start();
+      scrollRef.current?.scrollTo({ x: Math.max(0, layout.x - 40), animated: true });
+    }
+  }
+
+  const activeTab = tabs.find((t) => t.key === active)!;
+
+  return (
+    <View style={ts.wrapper}>
+      <ScrollView
+        ref={scrollRef}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={ts.scroll}
+        bounces={false}
+      >
+        {tabs.map((tab, idx) => {
+          const isActive = tab.key === active;
+          return (
+            <Pressable
+              key={tab.key}
+              onLayout={(e) => handleLayout(idx, e)}
+              onPress={() => handlePress(tab, idx)}
+              style={ts.tab}
+            >
+              <View style={[ts.tabInner, isActive && { backgroundColor: `${activeTab.color}14` }]}>
+                <Ionicons
+                  name={tab.icon}
+                  size={14}
+                  color={isActive ? tab.color : C.textSecondary}
+                />
+                <Text style={[ts.tabLabel, { color: isActive ? tab.color : C.textSecondary }]}>
+                  {tab.label}
+                </Text>
+                {tab.count > 0 && (
+                  <View style={[ts.badge, { backgroundColor: isActive ? tab.color : C.border }]}>
+                    <Text style={[ts.badgeTxt, { color: isActive ? '#fff' : C.textSecondary }]}>
+                      {tab.count}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </Pressable>
+          );
+        })}
+
+        {/* Sliding underline */}
+        <Animated.View
+          style={[
+            ts.indicator,
+            { backgroundColor: activeTab.color, left: indicatorX, width: indicatorW },
+          ]}
+          pointerEvents="none"
+        />
+      </ScrollView>
+
+      {/* Bottom border */}
+      <View style={[ts.bottomBorder, { backgroundColor: C.border }]} />
+    </View>
+  );
+}
+
+const ts = StyleSheet.create({
+  wrapper:      { backgroundColor: 'transparent' },
+  scroll:       { paddingHorizontal: 12, paddingBottom: 0, position: 'relative' },
+  tab:          { paddingHorizontal: 4, paddingVertical: 10 },
+  tabInner:     { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 6 },
+  tabLabel:     { fontSize: 13, fontFamily: F.bold },
+  badge:        { minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 5, justifyContent: 'center', alignItems: 'center' },
+  badgeTxt:     { fontSize: 10, fontFamily: F.extrabold },
+  indicator:    { position: 'absolute', bottom: 0, height: 3, borderRadius: 2 },
+  bottomBorder: { height: StyleSheet.hairlineWidth, marginHorizontal: 16 },
+});
+
+// ─── Proposal Card ────────────────────────────────────────────────────────────
 
 function ProposalCard({ proposal }: { proposal: Proposal }) {
   const C = useAppColors();
   const { t } = useLanguage();
-  const cfg    = STATUS_CFG[proposal.status];
+  const cfg      = STATUS_CFG[proposal.status];
   const trackCfg = TRACK_CFG[proposal.workStatus];
-  const isFree = proposal.campaignType === 'OPEN_EVENT';
+  const isFree   = proposal.campaignType === 'OPEN_EVENT';
   const stripeColor =
     proposal.status === 'accepted' ? '#4F46E5' :
-    proposal.status === 'rejected' ? C.error    : '#D97706';
+    proposal.status === 'rejected' ? '#DC2626'  : '#D97706';
 
   return (
     <Pressable
       style={[styles.card, { backgroundColor: C.surface }]}
       onPress={() => router.push({ pathname: '/campaign-detail', params: { campaignId: proposal.campaignId } } as never)}>
-      {/* Left accent stripe */}
       <View style={[styles.stripe, { backgroundColor: stripeColor }]} />
 
       <View style={styles.cardBody}>
-        {/* ── Top row: brand + status badge ── */}
+        {/* Top row */}
         <View style={styles.topRow}>
           <View style={[styles.brandAvatar, { backgroundColor: `${stripeColor}18` }]}>
             <Ionicons name="business" size={18} color={stripeColor} />
@@ -84,7 +205,7 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
           </View>
         </View>
 
-        {/* ── Meta row: type/rate + submitted ── */}
+        {/* Meta row */}
         <View style={[styles.metaRow, { borderTopColor: C.border, borderBottomColor: C.border }]}>
           <View style={styles.metaItem}>
             <Ionicons name={isFree ? 'gift-outline' : 'cash-outline'} size={13} color={C.textSecondary} />
@@ -107,16 +228,14 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
           </View>
         </View>
 
-        {/* ── Accepted state ── */}
+        {/* Accepted state */}
         {proposal.status === 'accepted' && (
           isFree ? (
-            /* Free event — no payment, just a congrats banner */
             <View style={styles.invitedBanner}>
               <Text style={styles.invitedEmoji}>🎉</Text>
               <Text style={styles.invitedTitle}>Congratulations, You are invited!</Text>
             </View>
           ) : (
-            /* Paid campaign — show dynamic track button */
             <Pressable
               style={[styles.trackBtn, { backgroundColor: trackCfg.color }]}
               onPress={(e) => {
@@ -144,7 +263,7 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
           )
         )}
 
-        {/* Pending/rejected subtle footer */}
+        {/* Pending / rejected footer */}
         {proposal.status !== 'accepted' && (
           <View style={styles.footerRow}>
             <Ionicons
@@ -163,13 +282,16 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
   );
 }
 
+// ─── Screen ───────────────────────────────────────────────────────────────────
+
 export default function ProposalsScreen() {
   const { t } = useLanguage();
   const C = useAppColors();
   const [proposals, setProposals] = useState<Proposal[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading]     = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError]         = useState('');
+  const [activeTab, setActiveTab] = useState<TabKey>('all');
 
   async function fetchProposals(silent = false) {
     if (!silent) setLoading(true);
@@ -188,37 +310,51 @@ export default function ProposalsScreen() {
   useFocusEffect(useCallback(() => { void fetchProposals(); }, []));
   const onRefresh = useCallback(() => { setRefreshing(true); void fetchProposals(true); }, []);
 
-  const pending  = proposals.filter((p) => p.status === 'pending').length;
-  const accepted = proposals.filter((p) => p.status === 'accepted').length;
+  const counts = {
+    all:      proposals.length,
+    pending:  proposals.filter((p) => p.status === 'pending').length,
+    accepted: proposals.filter((p) => p.status === 'accepted').length,
+    rejected: proposals.filter((p) => p.status === 'rejected').length,
+  };
+
+  const tabs: TabDef[] = [
+    { key: 'all',      label: t('proposal.creator.tabAll'),      icon: 'documents-outline',       color: '#4F46E5', count: counts.all      },
+    { key: 'pending',  label: t('proposal.creator.tabPending'),  icon: 'time-outline',             color: '#D97706', count: counts.pending  },
+    { key: 'accepted', label: t('proposal.creator.tabAccepted'), icon: 'checkmark-circle-outline', color: '#15803D', count: counts.accepted },
+    { key: 'rejected', label: t('proposal.creator.tabRejected'), icon: 'close-circle-outline',     color: '#DC2626', count: counts.rejected },
+  ];
+
+  const filtered = activeTab === 'all'
+    ? proposals
+    : proposals.filter((p) => p.status === activeTab);
+
+  const emptyMessages: Record<TabKey, { emoji: string; title: string; sub: string }> = {
+    all:      { emoji: '📋', title: t('proposal.creator.emptyTitle'),        sub: t('proposal.creator.emptySub')        },
+    pending:  { emoji: '⏳', title: t('proposal.creator.emptyPendingTitle'), sub: t('proposal.creator.emptyPendingSub') },
+    accepted: { emoji: '🎉', title: t('proposal.creator.emptyAcceptedTitle'),sub: t('proposal.creator.emptyAcceptedSub')},
+    rejected: { emoji: '😔', title: t('proposal.creator.emptyRejectedTitle'),sub: t('proposal.creator.emptyRejectedSub')},
+  };
+  const emptyMsg = emptyMessages[activeTab];
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
+      {/* Header */}
       <LinearGradient colors={['#312e81', '#4f46e5', '#8b5cf6']} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientHeader}>
         <View style={[styles.decCircle1, { backgroundColor: 'rgba(255,255,255,0.1)' }]} />
         <View style={[styles.decCircle2, { backgroundColor: 'rgba(255,255,255,0.07)' }]} />
         <View style={styles.header}>
           <Text style={[styles.heading, { color: '#fff' }]}>{t('creator.proposals.heading')}</Text>
           <Text style={[styles.subheading, { color: 'rgba(255,255,255,0.8)' }]}>{t('proposal.creator.subheading')}</Text>
+
         </View>
       </LinearGradient>
 
-      {proposals.length > 0 && (
-        <View style={styles.statsRow}>
-          {[
-            { label: t('proposal.creator.statSubmitted'), val: proposals.length, color: C.brinjal1,  icon: 'documents-outline'    as const },
-            { label: t('proposal.creator.statPending'),   val: pending,          color: '#D97706',   icon: 'time-outline'         as const },
-            { label: t('proposal.creator.statAccepted'),  val: accepted,         color: '#15803D',   icon: 'checkmark-circle-outline' as const },
-            { label: t('proposal.creator.statRejected'),  val: proposals.filter((p) => p.status === 'rejected').length, color: '#DC2626', icon: 'close-circle-outline' as const },
-          ].map((s) => (
-            <View key={s.label} style={[styles.statCard, { backgroundColor: C.surface }]}>
-              <Ionicons name={s.icon} size={16} color={s.color} />
-              <Text style={[styles.statVal, { color: s.color }]}>{s.val}</Text>
-              <Text style={[styles.statLabel, { color: C.textSecondary }]}>{s.label}</Text>
-            </View>
-          ))}
-        </View>
-      )}
+      {/* Tab Slider */}
+      <View style={[styles.tabBar, { backgroundColor: C.surface }]}>
+        <TabSlider tabs={tabs} active={activeTab} onChange={setActiveTab} />
+      </View>
 
+      {/* Content */}
       {loading ? (
         <View style={styles.center}>
           <ActivityIndicator size="large" color={C.brinjal1} />
@@ -233,18 +369,18 @@ export default function ProposalsScreen() {
         />
       ) : (
         <FlatList
-          data={proposals}
+          data={filtered}
           keyExtractor={(p) => p.id}
           renderItem={({ item }) => <ProposalCard proposal={item} />}
-          contentContainerStyle={[styles.list, proposals.length === 0 && styles.listEmpty]}
+          contentContainerStyle={[styles.list, filtered.length === 0 && styles.listEmpty]}
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brinjal1} />}
           ListEmptyComponent={
             <EmptyState
-              emoji="📋"
-              title={t('proposal.creator.emptyTitle')}
-              subtitle={t('proposal.creator.emptySub')}
-              action={{ label: t('proposal.creator.browseEvents'), onPress: () => router.push('/(creator)' as never) }}
+              emoji={emptyMsg.emoji}
+              title={emptyMsg.title}
+              subtitle={emptyMsg.sub}
+              action={activeTab === 'all' ? { label: t('proposal.creator.browseEvents'), onPress: () => router.push('/(creator)' as never) } : undefined}
             />
           }
         />
@@ -253,31 +389,28 @@ export default function ProposalsScreen() {
   );
 }
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   container:      { flex: 1 },
-  gradientHeader: { paddingBottom: 16, borderBottomLeftRadius: 28, borderBottomRightRadius: 28, overflow: 'hidden' },
+  gradientHeader: { paddingBottom: 20, borderBottomLeftRadius: 28, borderBottomRightRadius: 28, overflow: 'hidden' },
   decCircle1:     { position: 'absolute', width: 180, height: 180, borderRadius: 90, top: -60, right: -30 },
   decCircle2:     { position: 'absolute', width: 110, height: 110, borderRadius: 55, bottom: -30, left: 20 },
-  header:         { paddingHorizontal: 20, paddingTop: 14, paddingBottom: 4, gap: 3 },
+  header:         { paddingHorizontal: 20, paddingTop: 14, paddingBottom: 4, gap: 4 },
   heading:        { fontSize: 22, fontWeight: '800', fontFamily: F.extrabold },
   subheading:     { fontSize: 13, fontFamily: F.regular },
 
-  statsRow: { flexDirection: 'row', paddingHorizontal: 16, gap: 8, marginTop: 16, marginBottom: 10 },
-  statCard: { flex: 1, borderRadius: 14, padding: 10, alignItems: 'center', gap: 3, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, elevation: 2 },
-  statVal:  { fontSize: 18, fontWeight: '800', fontFamily: F.extrabold },
-  statLabel:{ fontSize: 9, fontWeight: '600', textTransform: 'uppercase', fontFamily: F.semibold, textAlign: 'center' },
+  tabBar: { shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 3 },
 
-  list:     { paddingHorizontal: 16, paddingBottom: 80, gap: 12, paddingTop: 4 },
-  listEmpty:{ flexGrow: 1 },
-  center:   { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
+  list:        { paddingHorizontal: 16, paddingBottom: 80, gap: 12, paddingTop: 12 },
+  listEmpty:   { flexGrow: 1 },
+  center:      { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
   loadingText: { fontSize: 14, fontFamily: F.regular },
 
   card:     { borderRadius: 16, flexDirection: 'row', overflow: 'hidden', shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
   stripe:   { width: 4 },
   cardBody: { flex: 1, paddingHorizontal: 14, paddingTop: 14, paddingBottom: 12, gap: 0 },
 
-  // Top row
   topRow:       { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
   brandAvatar:  { width: 42, height: 42, borderRadius: 12, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   brandBlock:   { flex: 1, gap: 2 },
@@ -286,7 +419,6 @@ const styles = StyleSheet.create({
   statusBadge:  { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 5, flexShrink: 0 },
   statusText:   { fontSize: 11, fontWeight: '700', fontFamily: F.bold },
 
-  // Meta row
   metaRow:     { flexDirection: 'row', alignItems: 'center', borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth, paddingVertical: 10, marginBottom: 2 },
   metaItem:    { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 7 },
   metaLabel:   { fontSize: 10, fontWeight: '600', textTransform: 'uppercase', fontFamily: F.semibold },
@@ -295,19 +427,16 @@ const styles = StyleSheet.create({
   freeTag:     { backgroundColor: '#F0FDF4', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2, alignSelf: 'flex-start' },
   freeTagTxt:  { fontSize: 11, fontWeight: '700', color: '#059669', fontFamily: F.bold },
 
-  // Track button (paid campaigns)
   trackBtn:     { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 12, paddingVertical: 11, paddingHorizontal: 12, marginTop: 8 },
   trackBtnIcon: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' },
   trackBtnText: { flex: 1, gap: 1 },
   trackBtnLabel:{ fontSize: 13, fontWeight: '700', color: '#fff', fontFamily: F.bold },
   trackBtnSub:  { fontSize: 11, color: 'rgba(255,255,255,0.75)', fontFamily: F.regular },
 
-  // Invited banner (free events)
   invitedBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#F0FDF4', borderWidth: 1.5, borderColor: '#6EE7B7', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 11, marginTop: 8 },
   invitedEmoji:  { fontSize: 20 },
   invitedTitle:  { fontSize: 13, fontWeight: '700', color: '#065F46', fontFamily: F.bold },
 
-  // Footer for non-accepted
   footerRow:  { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8, paddingTop: 10, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#F3F4F6' },
   footerTxt:  { fontSize: 12, fontWeight: '600', fontFamily: F.semibold },
 });

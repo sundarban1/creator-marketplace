@@ -12,7 +12,8 @@ import { CampaignListItem } from '@/features/creator/components/CampaignListItem
 import { FeaturedCard } from '@/features/creator/components/FeaturedCard';
 import { FilterModal } from '@/features/creator/components/FilterModal';
 import type { EventTypeFilter, LocationFilter } from '@/features/creator/components/FilterModal';
-import { CATEGORY_META, DEFAULT_META, FILTER_TABS, displayCategory } from '@/features/creator/data/filterOptions';
+import { CATEGORY_META, DEFAULT_META, displayCategory } from '@/features/creator/data/filterOptions';
+import { TabSlider } from '@/components/TabSlider';
 import { campaignService } from '@/services/campaign';
 import { creatorService } from '@/services/creator';
 import { getSocket } from '@/lib/socket';
@@ -56,7 +57,7 @@ export default function HomeScreen() {
   const [search, setSearch] = useState('');
   const [activeSearch, setActiveSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
-  const [activeFilterTab, setActiveFilterTab] = useState(0); // 0 = New
+  const [activeFilterTab, setActiveFilterTab] = useState('all');
   const [showBanner, setShowBanner] = useState(true);
   const [eventType, setEventType] = useState<EventTypeFilter>('ALL');
   const [tempEventType, setTempEventType] = useState<EventTypeFilter>('ALL');
@@ -209,7 +210,7 @@ export default function HomeScreen() {
     setDateTo(null);
     setActiveCategory('All');
     setActivePlatform('All');
-    setActiveFilterTab(-1);
+    setActiveFilterTab('all');
     void fetchCampaigns({ category: 'All', platform: 'All', priceMin: 0, priceMax: SLIDER_MAX, dateFrom: null, dateTo: null, eventType: 'ALL' });
   }
 
@@ -235,10 +236,9 @@ export default function HomeScreen() {
       );
 
     let matchTab = true;
-    if (activeFilterTab === 0) matchTab = c.isNew;                // New
-    else if (activeFilterTab === 1) matchTab = !c.isFeatured;     // Recommended
-    else if (activeFilterTab === 2) matchTab = c.proposals >= 3;  // Trending
-    else if (activeFilterTab === 3) {                             // Ending Soon
+    if (activeFilterTab === 'recommended') matchTab = !c.isFeatured;
+    else if (activeFilterTab === 'trending') matchTab = c.proposals >= 3;
+    else if (activeFilterTab === 'ending-soon') {
       const deadline = c.deadline ? new Date(c.deadline) : null;
       if (deadline && !isNaN(deadline.getTime())) {
         const daysLeft = (deadline.getTime() - Date.now()) / (1000 * 60 * 60 * 24);
@@ -477,19 +477,17 @@ export default function HomeScreen() {
             </Pressable>
 
             {/* ── Tab filter ── */}
-            <View style={[styles.filterTabsWrap, { borderBottomColor: C.border }]}>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <View style={styles.filterTabsRow}>
-                  {FILTER_TABS.map((label, i) => (
-                    <Pressable key={label} style={styles.filterTab} onPress={() => setActiveFilterTab(activeFilterTab === i ? -1 : i)}>
-                      <Text style={[styles.filterTabText, { color: activeFilterTab === i ? C.brinjal1 : C.textSecondary }, activeFilterTab === i && { fontWeight: '700' }]}>
-                        {label}
-                      </Text>
-                      {activeFilterTab === i && <View style={[styles.filterTabUnderline, { backgroundColor: C.brinjal1 }]} />}
-                    </Pressable>
-                  ))}
-                </View>
-              </ScrollView>
+            <View style={[styles.filterTabsWrap, { backgroundColor: C.surface }]}>
+              <TabSlider
+                tabs={[
+                  { key: 'all',          label: t('creator.home.tabAll'),         icon: 'layers-outline',   color: '#4F46E5' },
+                  { key: 'recommended',  label: t('creator.home.tabRecommended'), icon: 'star-outline',     color: '#D97706' },
+                  { key: 'trending',     label: t('creator.home.tabTrending'),    icon: 'flame-outline',    color: '#DC2626' },
+                  { key: 'ending-soon',  label: t('creator.home.tabEndingSoon'),  icon: 'timer-outline',    color: '#059669' },
+                ]}
+                active={activeFilterTab}
+                onChange={setActiveFilterTab}
+              />
             </View>
 
             {/* ── Campaign list ── */}
@@ -628,11 +626,7 @@ const styles = StyleSheet.create({
   featuredEmpty: { marginHorizontal: 20, marginBottom: 0, borderRadius: 18, borderWidth: 1.5, borderStyle: 'dashed', padding: 24, alignItems: 'center', gap: 8 },
   featuredEmptyTitle: { fontSize: 14, fontFamily: F.bold, textAlign: 'center' },
   featuredEmptySub: { fontSize: 12, fontFamily: F.regular, textAlign: 'center', lineHeight: 18 },
-  filterTabsWrap: { borderBottomWidth: 1, marginTop: 8, marginBottom: 16 },
-  filterTabsRow: { flexDirection: 'row', paddingHorizontal: 20 },
-  filterTab: { paddingVertical: 12, marginRight: 24, position: 'relative' },
-  filterTabText: { fontSize: 13, fontFamily: F.medium },
-  filterTabUnderline: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 2.5, borderRadius: 2 },
+  filterTabsWrap: { marginTop: 8, marginBottom: 16, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
 
   listWrap: { paddingHorizontal: 20, gap: 12 },
 

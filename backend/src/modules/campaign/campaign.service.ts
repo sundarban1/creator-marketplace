@@ -18,6 +18,39 @@ import {
 } from '../../utils/email';
 
 const CAMPAIGN_FIELDS = ['title', 'description', 'category', 'goals', 'platform', 'contentType', 'deliverables', 'paymentType', 'location', 'venue', 'benefits'] as const;
+
+export const MASTER_CATEGORIES: { emoji: string; label: string }[] = [
+  { emoji: '🍔', label: 'Food' },
+  { emoji: '✈️', label: 'Travel' },
+  { emoji: '👗', label: 'Fashion' },
+  { emoji: '💄', label: 'Beauty' },
+  { emoji: '💪', label: 'Fitness' },
+  { emoji: '🎮', label: 'Gaming' },
+  { emoji: '📱', label: 'Tech' },
+  { emoji: '📚', label: 'Education' },
+  { emoji: '🌟', label: 'Lifestyle' },
+  { emoji: '🏠', label: 'Home & Living' },
+  { emoji: '🌿', label: 'Wellness' },
+  { emoji: '🎵', label: 'Music' },
+  { emoji: '🎨', label: 'Art & Design' },
+  { emoji: '🐾', label: 'Pets' },
+  { emoji: '🧸', label: 'Parenting' },
+  { emoji: '🚗', label: 'Automotive' },
+  { emoji: '💰', label: 'Finance' },
+  { emoji: '🌍', label: 'Sustainability' },
+  { emoji: '📷', label: 'Photography' },
+  { emoji: '🏋️', label: 'Sports' },
+  { emoji: '🎬', label: 'Film & TV' },
+  { emoji: '🧘', label: 'Mindfulness' },
+  { emoji: '🍷', label: 'Food & Drink' },
+  { emoji: '🎪', label: 'Entertainment' },
+  { emoji: '🍛', label: 'Restaurant' },
+  { emoji: '☕', label: 'Cafe' },
+  { emoji: '🏨', label: 'Hotel' },
+  { emoji: '🎉', label: 'Events' },
+  { emoji: '🛍️', label: 'Retail' },
+  { emoji: '🏥', label: 'Healthcare' },
+];
 import type {
   CreateCampaignInput,
   UpdateCampaignInput,
@@ -91,6 +124,10 @@ export class CampaignService {
 
   async getCategories(): Promise<string[]> {
     return this.repo.getDistinctCategories();
+  }
+
+  getMasterCategories(): { emoji: string; label: string }[] {
+    return MASTER_CATEGORIES;
   }
 
   async getPlatforms(): Promise<string[]> {

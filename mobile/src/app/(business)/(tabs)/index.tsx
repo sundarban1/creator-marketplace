@@ -3,6 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { TabSlider } from '@/components/TabSlider';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
 import { useDrawer } from '@/context/DrawerContext';
@@ -102,17 +103,20 @@ export default function BusinessHomeScreen() {
 
   const [typeFilter, setTypeFilter] = useState<'All' | 'Paid' | 'Open'>('All');
 
-  const TYPE_TABS = [
-    { key: 'All'  as const, label: t('business.home.tabAll')      },
-    { key: 'Paid' as const, label: t('business.home.tabPaid')     },
-    { key: 'Open' as const, label: t('business.home.tabOpenFree') },
-  ];
-
   function matchesType(c: Campaign) {
     if (typeFilter === 'All')  return true;
     if (typeFilter === 'Paid') return !c.campaignType || c.campaignType === 'PAID_CAMPAIGN';
     return c.campaignType === 'OPEN_EVENT';
   }
+
+  const paidCount = campaigns.filter((c) => !c.campaignType || c.campaignType === 'PAID_CAMPAIGN').length;
+  const openCount = campaigns.filter((c) => c.campaignType === 'OPEN_EVENT').length;
+
+  const TYPE_TABS = [
+    { key: 'All',  label: t('business.home.tabAll'),      icon: 'layers-outline'     as const, color: '#4F46E5', count: campaigns.length },
+    { key: 'Paid', label: t('business.home.tabPaid'),     icon: 'cash-outline'       as const, color: '#0369A1', count: paidCount         },
+    { key: 'Open', label: t('business.home.tabOpenFree'), icon: 'gift-outline'       as const, color: '#059669', count: openCount         },
+  ];
 
   const recent = campaigns.filter(matchesType).slice(0, 5);
 
@@ -221,21 +225,12 @@ export default function BusinessHomeScreen() {
               </Pressable>
             </View>
 
-            <View style={[styles.typeFilterWrap, { borderBottomColor: C.border }]}>
-              <View style={styles.typeFilterRow}>
-                {TYPE_TABS.map(({ key, label }) => {
-                  const active = typeFilter === key;
-                  return (
-                    <Pressable
-                      key={key}
-                      style={styles.typeFilterTab}
-                      onPress={() => setTypeFilter(key)}>
-                      <Text style={[styles.typeFilterLabel, { color: active ? C.brinjal1 : C.textSecondary, fontWeight: active ? '700' : '500' }]}>{label}</Text>
-                      {active && <View style={[styles.typeFilterUnderline, { backgroundColor: C.brinjal1 }]} />}
-                    </Pressable>
-                  );
-                })}
-              </View>
+            <View style={[styles.typeFilterWrap, { backgroundColor: C.surface }]}>
+              <TabSlider
+                tabs={TYPE_TABS}
+                active={typeFilter}
+                onChange={(k) => setTypeFilter(k as typeof typeFilter)}
+              />
             </View>
 
             {recent.length === 0 ? (
@@ -346,11 +341,7 @@ const styles = StyleSheet.create({
   findTitle: { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
   findSub:   { fontSize: 11, fontFamily: F.regular, marginTop: 1 },
 
-  typeFilterWrap: { borderBottomWidth: 1, marginBottom: 12 },
-  typeFilterRow: { flexDirection: 'row', paddingHorizontal: 20 },
-  typeFilterTab: { paddingVertical: 12, marginRight: 24, position: 'relative' as const },
-  typeFilterLabel: { fontSize: 14, fontFamily: F.medium },
-  typeFilterUnderline: { position: 'absolute' as const, bottom: 0, left: 0, right: 0, height: 2.5, borderRadius: 2 },
+  typeFilterWrap: { marginBottom: 12, borderRadius: 0, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
 
   typeBadge: { borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 },
   typeBadgePaid: { backgroundColor: '#EEF2FF' },

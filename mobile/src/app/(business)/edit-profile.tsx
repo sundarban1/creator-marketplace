@@ -15,12 +15,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/components/Toast';
-import { profileService } from '@/services/profile';
-import { CREATOR_CATEGORIES } from '@/features/creator/data/filterOptions';
+import { profileService, type Category } from '@/services/profile';
 import { F } from '@/utilities/constants';
 
 const GOOGLE_PLACES_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY ?? '';
-const ALL_CATEGORIES = CREATOR_CATEGORIES.map((c) => c.label);
 
 type PlacePrediction = { place_id: string; description: string };
 
@@ -97,14 +95,20 @@ export default function EditBusinessProfileScreen() {
   const [website, setWebsite]                   = useState('');
   const [location, setLocation]                 = useState('');
   const [categories, setCategories]             = useState<string[]>([]);
+  const [allCategories, setAllCategories]       = useState<Category[]>([]);
+
   useEffect(() => {
-    profileService.getBusinessProfile()
-      .then((profile) => {
+    Promise.all([
+      profileService.getBusinessProfile(),
+      profileService.getCategories(),
+    ])
+      .then(([profile, cats]) => {
         setBusinessName(profile.businessName ?? '');
         setDescription(profile.description ?? '');
         setWebsite(profile.website ?? '');
         setLocation(profile.location ?? '');
         setCategories(profile.categories ?? []);
+        setAllCategories(cats);
       })
       .catch(() => toast.error('Could not load profile.'))
       .finally(() => setLoading(false));
@@ -243,19 +247,19 @@ export default function EditBusinessProfileScreen() {
               {t('profile.editBusiness.categoriesHint')}
             </Text>
             <View style={styles.chipGrid}>
-              {ALL_CATEGORIES.map((cat) => {
-                const selected = categories.includes(cat);
+              {allCategories.map(({ emoji, label }) => {
+                const selected = categories.includes(label);
                 return (
                   <Pressable
-                    key={cat}
+                    key={label}
                     style={[
                       styles.chip,
                       selected
                         ? { backgroundColor: C.brinjal1 }
                         : { backgroundColor: C.background, borderColor: C.border, borderWidth: 1.5 },
                     ]}
-                    onPress={() => toggleCategory(cat)}>
-                    <Text style={[styles.chipText, { color: selected ? '#fff' : C.text }]}>{cat}</Text>
+                    onPress={() => toggleCategory(label)}>
+                    <Text style={[styles.chipText, { color: selected ? '#fff' : C.text }]}>{emoji} {label}</Text>
                   </Pressable>
                 );
               })}

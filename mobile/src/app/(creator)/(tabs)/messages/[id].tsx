@@ -66,7 +66,7 @@ function MessageBubble({ msg, isSent }: { msg: Message; isSent: boolean }) {
 // ── Screen ────────────────────────────────────────────────────────────────────
 
 export default function CreatorChatRoomScreen() {
-  const { id, name, status: initStatus } = useLocalSearchParams<{ id: string; name?: string; status?: string }>();
+  const { id, name, status: initStatus, focusInput } = useLocalSearchParams<{ id: string; name?: string; status?: string; focusInput?: string }>();
   const { user } = useAuth();
   const { t }    = useLanguage();
   const C        = useAppColors();
@@ -79,6 +79,7 @@ export default function CreatorChatRoomScreen() {
   const [sending, setSending]       = useState(false);
   const [acting, setActing]         = useState<'accept' | 'decline' | null>(null);
   const listRef   = useRef<FlatList>(null);
+  const inputRef  = useRef<TextInput>(null);
   const isSending = useRef(false);
 
   const personName  = name ?? 'Chat';
@@ -105,6 +106,10 @@ export default function CreatorChatRoomScreen() {
     });
 
     if (convStatus === 'ACCEPTED') markSeen();
+
+    if (focusInput === 'true' && convStatus === 'ACCEPTED') {
+      setTimeout(() => inputRef.current?.focus(), 400);
+    }
   }, [id]);
 
   // Real-time: append incoming messages via WebSocket instead of polling
@@ -244,6 +249,7 @@ export default function CreatorChatRoomScreen() {
         {status === 'ACCEPTED' && (
           <View style={[s.inputBar, { backgroundColor: C.surface, borderTopColor: C.border }]}>
             <TextInput
+              ref={inputRef}
               style={[s.input, { borderColor: C.border, color: C.text, backgroundColor: C.background }]}
               value={text}
               onChangeText={setText}

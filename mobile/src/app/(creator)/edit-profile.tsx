@@ -20,6 +20,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/components/Toast';
 import { creatorService } from '@/services/creator';
+import { profileService, type Category } from '@/services/profile';
 import { F } from '@/utilities/constants';
 
 const PLACES_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY ?? '';
@@ -201,16 +202,22 @@ export default function EditProfileScreen() {
   const [locationLat, setLocationLat] = useState<number | null>(null);
   const [locationLng, setLocationLng] = useState<number | null>(null);
   const [locationModalOpen, setLocationModalOpen] = useState(false);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [allCategories, setAllCategories] = useState<Category[]>([]);
 
   useEffect(() => {
-    creatorService
-      .getProfile()
-      .then((profile) => {
+    Promise.all([
+      creatorService.getProfile(),
+      profileService.getCategories(),
+    ])
+      .then(([profile, cats]) => {
         setFullName(profile.fullName ?? '');
         setBio(profile.bio ?? '');
         setLocation(profile.location ?? '');
         setLocationLat(profile.locationLat ?? null);
         setLocationLng(profile.locationLng ?? null);
+        setCategories(profile.categories ?? []);
+        setAllCategories(cats);
       })
       .catch(() => toast.error('Could not load profile. Please try again.'))
       .finally(() => setLoading(false));
@@ -233,6 +240,7 @@ export default function EditProfileScreen() {
       const payload: Parameters<typeof creatorService.updateProfile>[0] = {
         fullName: fullName.trim(),
         bio: bio.trim() || undefined,
+        categories,
       };
       if (location.trim()) {
         payload.location = location.trim();
@@ -327,6 +335,40 @@ export default function EditProfileScreen() {
 
         </View>
 
+        {/* ── Content Categories ── */}
+        {allCategories.length > 0 && (
+          <>
+            <Text style={[styles.sectionHeader, { color: C.textSecondary }]}>{t('profile.editCreator.sectionCategories')}</Text>
+            <View style={[styles.card, { backgroundColor: C.surface }]}>
+              <View style={styles.field}>
+                <Text style={[styles.label, { color: C.textSecondary }]}>{t('profile.editCreator.categoriesHint')}</Text>
+                <View style={styles.chipGrid}>
+                  {allCategories.map(({ emoji, label }) => {
+                    const selected = categories.includes(label);
+                    return (
+                      <Pressable
+                        key={label}
+                        style={[
+                          styles.chip,
+                          selected
+                            ? { backgroundColor: '#4f46e5' }
+                            : { backgroundColor: C.background, borderColor: C.border, borderWidth: 1.5 },
+                        ]}
+                        onPress={() =>
+                          setCategories((prev) =>
+                            prev.includes(label) ? prev.filter((c) => c !== label) : [...prev, label],
+                          )
+                        }>
+                        <Text style={[styles.chipText, { color: selected ? '#fff' : C.text }]}>{emoji} {label}</Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+            </View>
+          </>
+        )}
+
         <Pressable
           style={[styles.saveBtn, { backgroundColor: saving ? C.border : C.brinjal1 }]}
           onPress={handleSave}
@@ -366,6 +408,9 @@ const styles = StyleSheet.create({
   locationBtnTxt: { flex: 1, fontSize: 14, lineHeight: 20, fontFamily: F.regular },
   locationArrow:  { fontSize: 20, color: '#9CA3AF' },
   clearLocation:  { fontSize: 12, fontWeight: '600', marginTop: 2, fontFamily: F.semibold },
+  chipGrid:   { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
+  chip:       { borderRadius: 20, paddingHorizontal: 12, paddingVertical: 7 },
+  chipText:   { fontSize: 13, fontFamily: F.semibold },
   saveBtn:    { marginHorizontal: 16, marginTop: 20, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
   saveBtnText:{ fontSize: 15, fontWeight: '700', color: '#fff', fontFamily: F.bold },
 });

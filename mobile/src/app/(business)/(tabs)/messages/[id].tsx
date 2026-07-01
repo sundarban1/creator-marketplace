@@ -65,7 +65,7 @@ function MessageBubble({ msg, isSent }: { msg: Message; isSent: boolean }) {
 // ── Screen ────────────────────────────────────────────────────────────────────
 
 export default function BusinessChatRoomScreen() {
-  const { id, name, status: urlStatus } = useLocalSearchParams<{ id: string; name?: string; status?: string }>();
+  const { id, name, status: urlStatus, focusInput } = useLocalSearchParams<{ id: string; name?: string; status?: string; focusInput?: string }>();
   const { user } = useAuth();
   const { t }    = useLanguage();
   const C        = useAppColors();
@@ -76,8 +76,9 @@ export default function BusinessChatRoomScreen() {
   );
   const [text, setText]       = useState('');
   const [sending, setSending] = useState(false);
-  const listRef   = useRef<FlatList>(null);
-  const isSending = useRef(false);
+  const listRef    = useRef<FlatList>(null);
+  const inputRef   = useRef<TextInput>(null);
+  const isSending  = useRef(false);
 
   const personName  = name ?? 'Chat';
   const personColor = avatarColor(personName);
@@ -98,6 +99,10 @@ export default function BusinessChatRoomScreen() {
 
     if (convStatus === 'ACCEPTED') {
       chatService.markSeen(id).then(() => messagingEvents.refresh()).catch(() => null);
+    }
+
+    if (focusInput === 'true' && convStatus === 'ACCEPTED') {
+      setTimeout(() => inputRef.current?.focus(), 400);
     }
   }, [id]);
 
@@ -192,6 +197,7 @@ export default function BusinessChatRoomScreen() {
         {status === 'ACCEPTED' && (
           <View style={[s.inputBar, { backgroundColor: C.surface, borderTopColor: C.border }]}>
             <TextInput
+              ref={inputRef}
               style={[s.input, { borderColor: C.border, color: C.text, backgroundColor: C.background }]}
               value={text}
               onChangeText={setText}

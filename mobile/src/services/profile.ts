@@ -22,7 +22,14 @@ export type BusinessProfile = {
   user: { email: string };
 };
 
+export type Category = { emoji: string; label: string };
+
 export const profileService = {
+  async getCategories(): Promise<Category[]> {
+    const res = await request<Category[]>('GET', '/api/campaigns/master-categories');
+    return res.data;
+  },
+
   async getBusinessProfile(): Promise<BusinessProfile> {
     const res = await request<BusinessProfile>('GET', '/api/business/profile');
     return res.data;

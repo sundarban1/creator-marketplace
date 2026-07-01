@@ -224,12 +224,6 @@ export default function NotificationsScreen() {
         <View style={[styles.decCircle1, { backgroundColor: 'rgba(255,255,255,0.1)' }]} />
         <View style={[styles.decCircle2, { backgroundColor: 'rgba(255,255,255,0.07)' }]} />
         <View style={styles.headerRow}>
-          <Pressable
-            onPress={() => { if (router.canGoBack()) router.back(); }}
-            style={({ pressed }) => [styles.backBtn, { opacity: pressed ? 0.7 : 1 }]}
-            hitSlop={8}>
-            <Ionicons name="chevron-back" size={20} color="#fff" />
-          </Pressable>
           <View style={{ flex: 1 }}>
             <Text style={[styles.heading, { color: '#fff' }]}>{t('notifications.heading')}</Text>
             {unreadCount > 0 && (
@@ -283,7 +277,6 @@ const styles = StyleSheet.create({
   decCircle1: { position: 'absolute', width: 180, height: 180, borderRadius: 90, top: -60, right: -30 },
   decCircle2: { position: 'absolute', width: 110, height: 110, borderRadius: 55, bottom: -30, left: 20 },
   headerRow:  { flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4 },
-  backBtn:    { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.15)', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.35)', justifyContent: 'center', alignItems: 'center' },
   heading:    { fontSize: 22, fontWeight: '700', fontFamily: F.extrabold },
   subheading: { fontSize: 13, marginTop: 2, fontFamily: F.regular },
   markAllBtn: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 8, borderWidth: 1 },

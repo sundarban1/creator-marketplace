@@ -23,6 +23,15 @@ export class CampaignController {
     }
   }
 
+  getMasterCategories(req: Request, res: Response, next: NextFunction): void {
+    try {
+      const categories = campaignService.getMasterCategories();
+      success(res, categories, 'Master categories retrieved successfully');
+    } catch (err) {
+      next(err);
+    }
+  }
+
   async getPlatforms(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const platforms = await campaignService.getPlatforms();

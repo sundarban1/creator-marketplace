@@ -255,21 +255,6 @@ export default function BusinessProfileScreen() {
           )}
 
           {/* Quick actions */}
-          <View style={[styles.sectionDivider, { backgroundColor: C.border }]} />
-          <View style={styles.quickRow}>
-            <Pressable style={[styles.quickBtn, { backgroundColor: C.surface }]} onPress={() => router.push('/create-campaign')}>
-              <Ionicons name="megaphone" size={22} color={C.brinjal1} />
-              <Text style={[styles.quickLabel, { color: C.text }]}>{t('profile.newCampaign')}</Text>
-            </Pressable>
-            <Pressable style={[styles.quickBtn, { backgroundColor: C.surface }]} onPress={() => router.push('/(business)/campaigns' as never)}>
-              <Ionicons name="briefcase" size={22} color={C.brinjal1} />
-              <Text style={[styles.quickLabel, { color: C.text }]}>{t('campaigns.title')}</Text>
-            </Pressable>
-            <Pressable style={[styles.quickBtn, { backgroundColor: C.surface }]} onPress={() => router.push('/(business)/settings' as never)}>
-              <Ionicons name="settings" size={22} color={C.brinjal1} />
-              <Text style={[styles.quickLabel, { color: C.text }]}>{t('settings.title')}</Text>
-            </Pressable>
-          </View>
         </View>
       </ScrollView>
     </SafeAreaView>

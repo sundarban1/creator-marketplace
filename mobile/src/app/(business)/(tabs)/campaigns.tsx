@@ -15,6 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { TabSlider } from '@/components/TabSlider';
 import { campaignService } from '@/services/campaign';
 import { creatorService, type SavedCreatorItem } from '@/services/creator';
 import { CATEGORY_META, DEFAULT_META, cardBg } from '@/features/creator/data/filterOptions';
@@ -146,6 +147,17 @@ export default function CampaignsScreen() {
     }
   }
 
+  const activeCount = campaigns.filter((c) => c.status === 'active').length;
+  const draftCount  = campaigns.filter((c) => c.status === 'draft').length;
+  const closedCount = campaigns.filter((c) => c.status === 'closed').length;
+
+  const CAMP_TABS = [
+    { key: 'All',    label: t('campaigns.all'),    icon: 'layers-outline'      as const, color: '#4F46E5', count: campaigns.length },
+    { key: 'Active', label: t('campaigns.active'), icon: 'flash-outline'       as const, color: '#16A34A', count: activeCount       },
+    { key: 'Draft',  label: t('campaigns.draft'),  icon: 'create-outline'      as const, color: '#D97706', count: draftCount        },
+    { key: 'Closed', label: t('campaigns.closed'), icon: 'lock-closed-outline' as const, color: '#6B7280', count: closedCount       },
+  ];
+
   const shown = campaigns.filter((c) =>
     activeFilter === 'All' || c.status === activeFilter.toLowerCase()
   );
@@ -169,24 +181,12 @@ export default function CampaignsScreen() {
       </LinearGradient>
 
       {/* Filter tabs */}
-      <View style={styles.filterRow}>
-        {FILTERS.map((f) => {
-          const active = activeFilter === f;
-          const count = f === 'All'
-            ? campaigns.length
-            : campaigns.filter((c) => c.status === f.toLowerCase()).length;
-          return (
-            <Pressable
-              key={f}
-              style={[styles.filterTab, { backgroundColor: active ? C.brinjal1 : C.surface, borderColor: active ? C.brinjal1 : C.border }]}
-              onPress={() => setActiveFilter(f)}>
-              <Text style={[styles.filterTabVal, { color: active ? '#fff' : C.text }]}>{count}</Text>
-              <Text style={[styles.filterTabLabel, { color: active ? 'rgba(255,255,255,0.82)' : C.textSecondary }]}>
-                {f === 'All' ? t('campaigns.all') : f === 'Active' ? t('campaigns.active') : f === 'Draft' ? t('campaigns.draft') : t('campaigns.closed')}
-              </Text>
-            </Pressable>
-          );
-        })}
+      <View style={[styles.filterRow, { backgroundColor: C.surface }]}>
+        <TabSlider
+          tabs={CAMP_TABS}
+          active={activeFilter}
+          onChange={(k) => setActiveFilter(k as typeof activeFilter)}
+        />
       </View>
 
       {/* Campaign list */}
@@ -498,10 +498,7 @@ const styles = StyleSheet.create({
   newBtn: { borderRadius: 12, paddingHorizontal: 14, paddingVertical: 9 },
   newBtnText: { color: '#fff', fontWeight: '700', fontSize: 13, fontFamily: F.bold },
 
-  filterRow: { flexDirection: 'row', paddingHorizontal: 20, gap: 10, paddingTop: 16, paddingBottom: 16 },
-  filterTab: { flex: 1, borderRadius: 14, borderWidth: 1.5, paddingVertical: 10, alignItems: 'center', gap: 2, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, elevation: 2 },
-  filterTabVal: { fontSize: 20, fontWeight: '800', fontFamily: F.extrabold },
-  filterTabLabel: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.3, fontFamily: F.bold },
+  filterRow: { shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
 
   list: { paddingHorizontal: 20, gap: 12, paddingBottom: 40 },
   listEmpty: { flexGrow: 1 },
