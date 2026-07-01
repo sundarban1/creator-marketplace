@@ -36,4 +36,13 @@ export class NotificationController {
       res.json({ success: true });
     } catch (err) { next(err); }
   }
+
+  async registerPushToken(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { token } = req.body as { token: string };
+      if (!token) { res.status(400).json({ success: false, message: 'token required' }); return; }
+      await notificationService.registerPushToken(req.user!.id, token);
+      res.json({ success: true });
+    } catch (err) { next(err); }
+  }
 }

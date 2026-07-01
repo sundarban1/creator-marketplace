@@ -8,10 +8,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { BusinessDrawerMenu } from '@/features/business/components/BusinessDrawerMenu';
 import { COLORS } from '@/utilities/constants';
-import { chatService } from '@/services/chat';
-import { messagingEvents } from '@/lib/messagingEvents';
 import { useNotificationBadge } from '@/context/NotificationContext';
-import { getSocket } from '@/lib/socket';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
@@ -63,8 +60,7 @@ export default function BusinessTabsLayout() {
   const { user, logout } = useAuth();
   const { t } = useLanguage();
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [badgeCount, setBadgeCount] = useState(0);
-  const { badgeCount: notifBadge } = useNotificationBadge();
+  const { badgeCount: notifBadge, chatBadgeCount: badgeCount } = useNotificationBadge();
 
   // ── Draggable FAB ────────────────────────────────────────────────────────────
   const fabPos   = useRef(new Animated.ValueXY(FAB_INIT)).current;
@@ -105,21 +101,6 @@ export default function BusinessTabsLayout() {
     })
   ).current;
 
-  useEffect(() => {
-    function fetchBadge() {
-      chatService.getBadgeCount().then((r) => setBadgeCount(r.count)).catch(() => null);
-    }
-    fetchBadge();
-    const unsub = messagingEvents.subscribe(fetchBadge);
-    const socket = getSocket();
-    socket?.on('message:new', fetchBadge);
-    socket?.on('conversation:update', fetchBadge);
-    return () => {
-      unsub();
-      socket?.off('message:new', fetchBadge);
-      socket?.off('conversation:update', fetchBadge);
-    };
-  }, []);
 
   return (
     <DrawerContext.Provider value={{ openDrawer: () => setDrawerOpen(true) }}>

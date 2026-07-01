@@ -1,16 +1,26 @@
 import { router, useFocusEffect } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
+import { useCallback, useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { messagingEvents } from '@/lib/messagingEvents';
 import { getSocket } from '@/lib/socket';
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage, type TFn } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { chatService } from '@/services/chat';
 import { F } from '@/utilities/constants';
 import type { Conversation } from '@/types';
+
+const ACCENT = '#0EA5E9';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -42,7 +52,7 @@ function formatTime(iso: string, t: TFn) {
 
 // ── Avatar ────────────────────────────────────────────────────────────────────
 
-function Avatar({ name, size = 48 }: { name: string; size?: number }) {
+function Avatar({ name, size = 50 }: { name: string; size?: number }) {
   const color = avatarColor(name);
   return (
     <View style={[av.wrap, { width: size, height: size, borderRadius: size / 2, backgroundColor: color }]}>
@@ -55,69 +65,118 @@ const av = StyleSheet.create({
   text: { color: '#fff', fontWeight: '800', fontFamily: F.extrabold },
 });
 
-// ── Conversation Row ──────────────────────────────────────────────────────────
+// ── Pending Card (business sent, waiting for creator to accept) ───────────────
 
-function ConversationRow({ conv }: { conv: Conversation }) {
+function PendingCard({ conv }: { conv: Conversation }) {
+  const C = useAppColors();
+  const { t } = useLanguage();
+
+  return (
+    <View style={[s.reqCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+      <View style={[s.reqStripe, { backgroundColor: '#F59E0B' }]} />
+
+      <View style={s.reqTop}>
+        <Avatar name={conv.participantName} size={48} />
+        <View style={s.reqInfo}>
+          <View style={s.reqNameRow}>
+            <Text style={[s.reqName, { color: C.text }]} numberOfLines={1}>{conv.participantName}</Text>
+            <View style={[s.waitBadge, { backgroundColor: '#FEF3C7' }]}>
+              <Ionicons name="time-outline" size={10} color="#92400E" />
+              <Text style={[s.waitBadgeTxt, { color: '#92400E' }]}>Pending</Text>
+            </View>
+          </View>
+          {conv.campaignTitle ? (
+            <View style={[s.campaignPill, { backgroundColor: '#E0F2FE' }]}>
+              <Ionicons name="briefcase-outline" size={10} color={ACCENT} />
+              <Text style={[s.campaignPillTxt, { color: ACCENT }]} numberOfLines={1}>{conv.campaignTitle}</Text>
+            </View>
+          ) : null}
+          <Text style={[s.reqTime, { color: C.textSecondary }]}>
+            {formatTime(conv.lastMessageTime, t)}
+          </Text>
+        </View>
+      </View>
+
+      {(conv.requestMessage || conv.lastMessage) ? (
+        <View style={[s.reqMsgBox, { backgroundColor: C.background, borderColor: C.border }]}>
+          <Ionicons name="chatbubble-ellipses-outline" size={13} color={C.textSecondary} style={{ marginTop: 2 }} />
+          <Text style={[s.reqMsg, { color: C.text }]} numberOfLines={3}>
+            {conv.requestMessage || conv.lastMessage}
+          </Text>
+        </View>
+      ) : null}
+
+      <View style={[s.waitingNote, { backgroundColor: '#FFFBEB', borderColor: '#FDE68A' }]}>
+        <Ionicons name="hourglass-outline" size={13} color="#92400E" />
+        <Text style={[s.waitingNoteTxt, { color: '#92400E' }]}>
+          Waiting for {conv.participantName} to respond
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+// ── Chat Card ─────────────────────────────────────────────────────────────────
+
+function ChatCard({ conv }: { conv: Conversation }) {
   const C = useAppColors();
   const { t } = useLanguage();
   const hasUnread = conv.unreadCount > 0;
 
-  const statusCfg = {
-    PENDING:  { labelKey: 'messages.statusPending',  bg: '#FEF3C7', color: '#92400E' },
-    ACCEPTED: { labelKey: 'messages.statusActive',   bg: '#DCFCE7', color: '#166534' },
-    DECLINED: { labelKey: 'messages.statusDeclined', bg: '#FEE2E2', color: '#991B1B' },
-  }[conv.status];
-
   return (
     <Pressable
       style={({ pressed }) => [
-        s.row,
-        { backgroundColor: pressed ? C.background : C.surface, borderBottomColor: C.border },
+        s.card,
+        {
+          backgroundColor: C.surface,
+          borderColor: hasUnread ? 'rgba(14,165,233,0.3)' : C.border,
+          shadowColor: hasUnread ? ACCENT : '#000',
+          shadowOpacity: hasUnread ? 0.14 : 0.06,
+          opacity: pressed ? 0.93 : 1,
+        },
       ]}
       onPress={() =>
         router.push({
-          pathname: '/(business)/messages/[id]',
-          params: { id: conv.id, name: conv.participantName, status: conv.status },
+          pathname: '/(business)/messages/[id]' as never,
+          params: { id: conv.id, name: conv.participantName, status: conv.status, campaignTitle: conv.campaignTitle ?? '' },
         })
       }>
-      {/* Unread indicator stripe */}
-      <View style={[s.unreadStripe, { backgroundColor: hasUnread ? '#7C3AED' : 'transparent' }]} />
+      {hasUnread && <View style={s.stripe} />}
 
-      <Avatar name={conv.participantName} size={48} />
+      <View style={s.avatarWrap}>
+        {hasUnread && <View style={[s.avatarRing, { borderColor: ACCENT }]} pointerEvents="none" />}
+        <Avatar name={conv.participantName} size={50} />
+        {hasUnread && (
+          <View style={[s.avatarBadge, { backgroundColor: ACCENT }]}>
+            <Text style={s.avatarBadgeTxt}>{conv.unreadCount > 99 ? '99+' : conv.unreadCount}</Text>
+          </View>
+        )}
+      </View>
 
       <View style={s.content}>
         <View style={s.rowTop}>
-          <Text style={[s.name, { color: C.text, fontWeight: hasUnread ? '700' : '600' }]} numberOfLines={1}>
+          <Text style={[s.name, { color: C.text }, hasUnread && s.nameUnread]} numberOfLines={1}>
             {conv.participantName}
           </Text>
-          <Text style={[s.time, { color: hasUnread ? C.brinjal1 : C.textSecondary, fontWeight: hasUnread ? '600' : '400' }]}>
+          <Text style={[s.time, { color: hasUnread ? ACCENT : C.textSecondary }, hasUnread && s.timeUnread]}>
             {formatTime(conv.lastMessageTime, t)}
           </Text>
         </View>
 
         {conv.campaignTitle ? (
-          <View style={[styles.campaignPill, { backgroundColor: C.primaryLight }]}>
-            <Ionicons name="briefcase-outline" size={10} color={C.brinjal1} />
-            <Text style={[styles.campaignPillText, { color: C.brinjal1 }]} numberOfLines={1}>{conv.campaignTitle}</Text>
+          <View style={[s.campaignPill, { backgroundColor: '#E0F2FE' }]}>
+            <Ionicons name="briefcase-outline" size={10} color={ACCENT} />
+            <Text style={[s.campaignPillTxt, { color: ACCENT }]} numberOfLines={1}>{conv.campaignTitle}</Text>
           </View>
         ) : null}
 
         <View style={s.rowBottom}>
           <Text
-            style={[s.lastMsg, { color: hasUnread ? C.text : C.textSecondary, fontWeight: hasUnread ? '500' : '400' }]}
+            style={[s.preview, { color: hasUnread ? C.text : C.textSecondary }, hasUnread && s.previewUnread]}
             numberOfLines={1}>
             {conv.lastMessage || t('messages.noMessagesYet')}
           </Text>
-          <View style={s.rowMeta}>
-            {hasUnread && (
-              <View style={[s.unreadBadge, { backgroundColor: '#7C3AED' }]}>
-                <Text style={s.unreadBadgeTxt}>{conv.unreadCount > 99 ? '99+' : conv.unreadCount}</Text>
-              </View>
-            )}
-            <View style={[s.statusPill, { backgroundColor: statusCfg.bg }]}>
-              <Text style={[s.statusTxt, { color: statusCfg.color }]}>{t(statusCfg.labelKey)}</Text>
-            </View>
-          </View>
+          {!hasUnread && <Ionicons name="checkmark-done-outline" size={14} color={C.textSecondary} />}
         </View>
       </View>
     </Pressable>
@@ -126,20 +185,26 @@ function ConversationRow({ conv }: { conv: Conversation }) {
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 
+type Tab = 'chats' | 'pending';
+
 export default function BusinessChatListScreen() {
   const C = useAppColors();
   const { t } = useLanguage();
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [loading, setLoading]             = useState(true);
-  const [refreshing, setRefreshing]       = useState(false);
-  const [query, setQuery]                 = useState('');
+  const [tab, setTab]               = useState<Tab>('chats');
+  const [pending, setPending]       = useState<Conversation[]>([]);
+  const [chats, setChats]           = useState<Conversation[]>([]);
+  const [loading, setLoading]       = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
   async function load(silent = false) {
     if (!silent) setLoading(true);
     try {
-      const all = await chatService.getConversations('BUSINESS');
-      setConversations(
-        all.sort((a, b) => new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime()),
-      );
+      const [pend, accepted] = await Promise.all([
+        chatService.getConversations('BUSINESS', 'PENDING'),
+        chatService.getConversations('BUSINESS', 'ACCEPTED'),
+      ]);
+      setPending(pend);
+      setChats(accepted.sort((a, b) => new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime()));
     } finally {
       if (!silent) setLoading(false);
       setRefreshing(false);
@@ -148,107 +213,115 @@ export default function BusinessChatListScreen() {
 
   useEffect(() => {
     load();
+    const unsub = messagingEvents.subscribe(() => void load(true));
     const socket = getSocket();
     const onUpdate = () => void load(true);
     socket?.on('conversation:update', onUpdate);
     socket?.on('message:new', onUpdate);
     return () => {
+      unsub();
       socket?.off('conversation:update', onUpdate);
       socket?.off('message:new', onUpdate);
     };
   }, []);
 
-  useFocusEffect(() => { messagingEvents.refresh(); });
+  useFocusEffect(useCallback(() => {
+    messagingEvents.refresh();
+    void load(true);
+  }, []));
 
-  const filtered = query.trim()
-    ? conversations.filter((c) => c.participantName.toLowerCase().includes(query.toLowerCase()))
-    : conversations;
-
-  const totalUnread = conversations.reduce((acc, c) => acc + (c.unreadCount ?? 0), 0);
+  const totalUnread = chats.reduce((acc, c) => acc + (c.unreadCount ?? 0), 0);
 
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
+      {/* ── Gradient header ── */}
       <LinearGradient
-        colors={['#1e1b4b', '#4338ca', '#7c3aed']}
+        colors={['#0c4a6e', '#0369a1', '#0EA5E9']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={s.gradientHeader}>
-        <View style={[s.decCircle1, { backgroundColor: 'rgba(255,255,255,0.08)' }]} />
-        <View style={[s.decCircle2, { backgroundColor: 'rgba(255,255,255,0.05)' }]} />
+        <View style={s.decCircle1} />
+        <View style={s.decCircle2} />
+
         <View style={s.header}>
           <View>
             <Text style={s.heading}>{t('messages.heading')}</Text>
             <Text style={s.headingSub}>
-              {totalUnread > 0
-                ? totalUnread !== 1
-                  ? t('messages.unreadMessages', { n: totalUnread })
-                  : t('messages.unreadMessage', { n: totalUnread })
-                : t('messages.yourActiveConversations')}
+              {pending.length > 0
+                ? pending.length !== 1
+                  ? `${pending.length} pending responses`
+                  : '1 pending response'
+                : totalUnread > 0
+                ? t('messages.unreadCount', { n: totalUnread })
+                : t('messages.yourConversations')}
             </Text>
           </View>
-          {totalUnread > 0 && (
-            <View style={[s.unreadPill, { backgroundColor: C.brinjal2 }]}>
-              <Text style={s.unreadPillTxt}>{totalUnread}</Text>
-            </View>
-          )}
+        </View>
+
+        {/* Tab bar */}
+        <View style={s.tabBar}>
+          {(['chats', 'pending'] as Tab[]).map((tabKey) => {
+            const active = tab === tabKey;
+            const badge  = tabKey === 'pending' ? pending.length : totalUnread;
+            return (
+              <Pressable
+                key={tabKey}
+                style={[s.tab, active && s.tabActive]}
+                onPress={() => setTab(tabKey)}>
+                <Text style={[s.tabTxt, { color: active ? '#fff' : 'rgba(255,255,255,0.6)', fontWeight: active ? '700' : '500' }]}>
+                  {tabKey === 'chats' ? t('messages.tabMessages') : 'Pending'}
+                </Text>
+                {badge > 0 && (
+                  <View style={[s.tabBadge, { backgroundColor: active ? 'rgba(255,255,255,0.3)' : ACCENT }]}>
+                    <Text style={s.tabBadgeTxt}>{badge}</Text>
+                  </View>
+                )}
+              </Pressable>
+            );
+          })}
         </View>
       </LinearGradient>
 
-      {/* Search */}
-      <View style={[s.searchRow, { backgroundColor: C.background }]}>
-        <View style={[s.searchCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-          <Ionicons name="search-outline" size={17} color={C.textSecondary} />
-          <TextInput
-            style={[s.searchInput, { color: C.text }]}
-            value={query}
-            onChangeText={setQuery}
-            placeholder={t('messages.searchPlaceholder')}
-            placeholderTextColor={C.textSecondary}
-            returnKeyType="search"
-            clearButtonMode="while-editing"
-            autoCorrect={false}
-            autoCapitalize="none"
-          />
-          {query.length > 0 && (
-            <Pressable onPress={() => setQuery('')} hitSlop={10}>
-              <Ionicons name="close-circle" size={16} color={C.textSecondary} />
-            </Pressable>
-          )}
-        </View>
-      </View>
-
       {loading ? (
         <View style={s.center}>
-          <ActivityIndicator size="large" color="#7C3AED" />
+          <ActivityIndicator size="large" color={ACCENT} />
         </View>
-      ) : (
+      ) : tab === 'pending' ? (
         <FlatList
-          data={filtered}
+          data={pending}
           keyExtractor={(c) => c.id}
-          renderItem={({ item }) => <ConversationRow conv={item} />}
-          contentContainerStyle={[s.list, filtered.length === 0 && s.listEmpty]}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={() => { setRefreshing(true); load(); }}
-              tintColor="#7C3AED"
-            />
-          }
+          renderItem={({ item }) => <PendingCard conv={item} />}
+          contentContainerStyle={[s.reqList, pending.length === 0 && s.listEmpty]}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={ACCENT} />}
           showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
           ListEmptyComponent={
             <View style={s.empty}>
-              <View style={[s.emptyIcon, { backgroundColor: C.primaryLight }]}>
-                <Ionicons name="chatbubbles-outline" size={36} color={C.brinjal1} />
+              <View style={[s.emptyIcon, { backgroundColor: '#E0F2FE' }]}>
+                <Ionicons name="paper-plane-outline" size={34} color={ACCENT} />
               </View>
-              <Text style={[s.emptyTitle, { color: C.text }]}>
-                {query.trim() ? t('messages.noResultsFor', { query }) : t('messages.noConversationsYet')}
-              </Text>
+              <Text style={[s.emptyTitle, { color: C.text }]}>No pending requests</Text>
               <Text style={[s.emptyHint, { color: C.textSecondary }]}>
-                {query.trim()
-                  ? t('messages.tryDifferentName')
-                  : t('messages.visitCreatorProfile')}
+                Requests you've sent to creators will appear here
               </Text>
+            </View>
+          }
+        />
+      ) : (
+        <FlatList
+          data={chats}
+          keyExtractor={(c) => c.id}
+          renderItem={({ item }) => <ChatCard conv={item} />}
+          contentContainerStyle={[s.chatList, chats.length === 0 && s.listEmpty]}
+          ItemSeparatorComponent={() => <View style={s.sep} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={ACCENT} />}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <View style={s.empty}>
+              <View style={[s.emptyIcon, { backgroundColor: '#E0F2FE' }]}>
+                <Ionicons name="chatbubbles-outline" size={34} color={ACCENT} />
+              </View>
+              <Text style={[s.emptyTitle, { color: C.text }]}>{t('messages.noConversationsYet')}</Text>
+              <Text style={[s.emptyHint, { color: C.textSecondary }]}>{t('messages.visitCreatorProfile')}</Text>
             </View>
           }
         />
@@ -257,45 +330,82 @@ export default function BusinessChatListScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  campaignPill:     { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2, marginTop: 2 },
-  campaignPillText: { fontSize: 10, fontWeight: '600', fontFamily: F.semibold, maxWidth: 180 },
-});
-
 const s = StyleSheet.create({
   container: { flex: 1 },
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
-  gradientHeader: { paddingBottom: 16, borderBottomLeftRadius: 28, borderBottomRightRadius: 28, overflow: 'hidden' },
-  decCircle1:     { position: 'absolute', width: 200, height: 200, borderRadius: 100, top: -70, right: -40 },
-  decCircle2:     { position: 'absolute', width: 120, height: 120, borderRadius: 60, bottom: -35, left: 15 },
-  header:         { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 4, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  // Header
+  gradientHeader: { borderBottomLeftRadius: 28, borderBottomRightRadius: 28, overflow: 'hidden' },
+  decCircle1:     { position: 'absolute', width: 180, height: 180, borderRadius: 90, top: -60, right: -30, backgroundColor: 'rgba(255,255,255,0.08)' },
+  decCircle2:     { position: 'absolute', width: 110, height: 110, borderRadius: 55, bottom: -30, left: 10, backgroundColor: 'rgba(255,255,255,0.05)' },
+  header:         { paddingHorizontal: 20, paddingTop: 14, paddingBottom: 10 },
   heading:        { fontSize: 22, fontWeight: '800', fontFamily: F.extrabold, color: '#fff' },
   headingSub:     { fontSize: 13, fontFamily: F.regular, color: 'rgba(255,255,255,0.75)', marginTop: 2 },
-  unreadPill:     { borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 },
-  unreadPillTxt:  { color: '#fff', fontSize: 14, fontWeight: '800', fontFamily: F.extrabold },
 
-  searchRow:  { paddingHorizontal: 20, paddingVertical: 12 },
-  searchCard: { flexDirection: 'row', alignItems: 'center', borderRadius: 14, borderWidth: 1.5, paddingHorizontal: 14, height: 48, gap: 10 },
-  searchInput:{ flex: 1, fontSize: 15, paddingVertical: 0, fontFamily: F.regular },
+  // Tabs
+  tabBar:      { flexDirection: 'row', borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.2)' },
+  tab:         { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, gap: 6 },
+  tabActive:   { borderBottomWidth: 2.5, borderBottomColor: '#fff' },
+  tabTxt:      { fontSize: 14, fontFamily: F.medium },
+  tabBadge:    { borderRadius: 10, minWidth: 18, height: 18, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 5 },
+  tabBadgeTxt: { color: '#fff', fontSize: 10, fontWeight: '800', fontFamily: F.extrabold },
 
-  list:      { paddingBottom: 32 },
+  // Pending list
+  reqList:   { padding: 16, gap: 12, paddingBottom: 40 },
   listEmpty: { flexGrow: 1 },
 
-  row:          { flexDirection: 'row', alignItems: 'center', paddingRight: 20, paddingVertical: 12, gap: 12, borderBottomWidth: StyleSheet.hairlineWidth },
-  unreadStripe: { width: 3, height: '100%', borderRadius: 2, position: 'absolute', left: 0 },
-  content:      { flex: 1, gap: 2 },
-  rowTop:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  name:         { fontSize: 15, flex: 1, fontFamily: F.semibold },
-  time:         { fontSize: 11, fontFamily: F.medium, flexShrink: 0 },
-  rowBottom:    { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2 },
-  lastMsg:      { flex: 1, fontSize: 13, fontFamily: F.regular },
-  rowMeta:      { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  unreadBadge:  { borderRadius: 10, minWidth: 20, height: 20, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 5 },
-  unreadBadgeTxt: { color: '#fff', fontSize: 10, fontWeight: '800', fontFamily: F.extrabold },
-  statusPill:   { borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3 },
-  statusTxt:    { fontSize: 10, fontWeight: '700', fontFamily: F.bold },
+  // Pending card
+  reqCard:     { borderRadius: 18, borderWidth: 1.5, padding: 14, gap: 12, shadowRadius: 6, shadowOpacity: 0.07, shadowOffset: { width: 0, height: 2 }, elevation: 2, overflow: 'hidden' },
+  reqStripe:   { position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, borderTopLeftRadius: 18, borderBottomLeftRadius: 18 },
+  reqTop:      { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
+  reqInfo:     { flex: 1, gap: 4 },
+  reqNameRow:  { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  reqName:     { flex: 1, fontSize: 15, fontWeight: '700', fontFamily: F.bold },
+  waitBadge:   { flexDirection: 'row', alignItems: 'center', gap: 3, borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3 },
+  waitBadgeTxt:{ fontSize: 10, fontWeight: '700', fontFamily: F.bold },
+  reqTime:     { fontSize: 11, fontFamily: F.regular },
+  reqMsgBox:   { flexDirection: 'row', alignItems: 'flex-start', gap: 8, borderRadius: 12, padding: 12, borderWidth: StyleSheet.hairlineWidth },
+  reqMsg:      { flex: 1, fontSize: 13, lineHeight: 19, fontFamily: F.regular },
+  waitingNote: { flexDirection: 'row', alignItems: 'center', gap: 7, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9, borderWidth: StyleSheet.hairlineWidth },
+  waitingNoteTxt: { flex: 1, fontSize: 12, fontFamily: F.medium, fontWeight: '500' },
 
+  // Chat list
+  chatList: { padding: 16, paddingTop: 12, paddingBottom: 40 },
+  sep:      { height: 10 },
+
+  // Chat card
+  card: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 18,
+    borderWidth: 1.5,
+    paddingVertical: 14,
+    paddingRight: 14,
+    paddingLeft: 10,
+    gap: 12,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+    overflow: 'hidden',
+  },
+  stripe:         { position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, backgroundColor: ACCENT, borderTopLeftRadius: 18, borderBottomLeftRadius: 18 },
+  avatarWrap:     { position: 'relative' },
+  avatarRing:     { position: 'absolute', top: -3, left: -3, right: -3, bottom: -3, borderRadius: 29, borderWidth: 2 },
+  avatarBadge:    { position: 'absolute', top: -4, right: -4, minWidth: 20, height: 20, borderRadius: 10, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 4, borderWidth: 2, borderColor: '#fff' },
+  avatarBadgeTxt: { color: '#fff', fontSize: 10, fontWeight: '800', fontFamily: F.extrabold, lineHeight: 12 },
+  content:        { flex: 1, gap: 3 },
+  rowTop:         { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  name:           { flex: 1, fontSize: 15, fontFamily: F.semibold },
+  nameUnread:     { fontFamily: F.bold, fontWeight: '700' },
+  time:           { fontSize: 11, fontFamily: F.regular, flexShrink: 0 },
+  timeUnread:     { fontFamily: F.semibold, fontWeight: '600' },
+  campaignPill:    { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
+  campaignPillTxt: { fontSize: 10, fontWeight: '600', fontFamily: F.semibold, maxWidth: 180 },
+  rowBottom:      { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  preview:        { flex: 1, fontSize: 13, fontFamily: F.regular },
+  previewUnread:  { fontFamily: F.medium },
+
+  // Empty
   empty:      { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 60, paddingHorizontal: 40, gap: 12 },
   emptyIcon:  { width: 72, height: 72, borderRadius: 36, justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
   emptyTitle: { fontSize: 16, fontWeight: '700', fontFamily: F.bold, textAlign: 'center' },

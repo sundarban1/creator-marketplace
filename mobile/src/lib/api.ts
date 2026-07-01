@@ -1,8 +1,7 @@
 import { storage }                                from '@/utilities/storage';
 import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY }  from '@/utilities/constants';
 
-// For iOS simulator use localhost; for Android emulator use 10.0.2.2
-export const API_BASE = 'http://localhost:3000';
+export const API_BASE = process.env.EXPO_PUBLIC_API_BASE ?? 'http://localhost:3000';
 
 // ── Response envelope ──────────────────────────────────────────────────────────
 export interface ApiEnvelope<T> {

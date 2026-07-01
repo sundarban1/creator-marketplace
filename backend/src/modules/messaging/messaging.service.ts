@@ -170,6 +170,22 @@ export class MessagingService {
     emitToUser(conversation.creator.userId, 'message:new', { conversationId, message });
     emitToUser(conversation.business.userId, 'message:new', { conversationId, message });
 
+    // Send push notification to the recipient (not the sender)
+    const recipientUserId = userId === conversation.creator.userId
+      ? conversation.business.userId
+      : conversation.creator.userId;
+    const senderName = userId === conversation.creator.userId
+      ? (conversation.creator.fullName ?? 'Creator')
+      : (conversation.business.businessName ?? 'Business');
+    notificationService.create({
+      userId:  recipientUserId,
+      type:    'new_message',
+      title:   `New message from ${senderName}`,
+      body:    input.content.slice(0, 100),
+      refId:   conversationId,
+      refType: 'conversation',
+    }).catch(() => {});
+
     return message;
   }
 

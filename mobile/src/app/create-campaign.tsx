@@ -1233,23 +1233,6 @@ export default function CreateCampaignScreen() {
                           );
                         })}
                       </View>
-                      {/* Product Exchange — full width */}
-                      {(() => {
-                        const b = BUDGETS[4];
-                        const sel = form.budget === b;
-                        return (
-                          <Pressable
-                            style={[s.budgetCardFull, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? C.primaryLight : C.background }]}
-                            onPress={() => {
-                              update('budget', b);
-                              if (setupErrors.budget) setSetupErrors((e) => ({ ...e, budget: undefined }));
-                            }}>
-                            <Ionicons name="gift-outline" size={16} color={sel ? C.brinjal1 : C.textSecondary} />
-                            <Text style={[s.budgetCardFullText, { color: sel ? C.brinjal1 : C.text }]}>{b}</Text>
-                            {sel && <Ionicons name="checkmark-circle" size={16} color={C.brinjal1} />}
-                          </Pressable>
-                        );
-                      })()}
                       {setupErrors.budget && <Text style={s.errorText}>{setupErrors.budget}</Text>}
                     </View>
                   </SectionCard>

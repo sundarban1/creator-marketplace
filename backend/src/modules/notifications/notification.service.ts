@@ -1,11 +1,27 @@
+import { Expo, type ExpoPushMessage } from 'expo-server-sdk';
 import { NotificationRepository } from './notification.repository';
 import { toNotificationDto } from './notification.dto';
 import { emitToUser } from '../../socket';
 import { translateMany } from '../../utils/translation';
+import prisma from '../../prisma';
 
+const expo = new Expo();
 const NOTIFICATION_FIELDS = ['title', 'body'] as const;
 
 const repo = new NotificationRepository();
+
+async function sendExpoPush(userId: string, title: string, body: string) {
+  try {
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { pushToken: true } });
+    const token = user?.pushToken;
+    if (!token || !Expo.isExpoPushToken(token)) return;
+
+    const message: ExpoPushMessage = { to: token, title, body, sound: 'default', badge: 1 };
+    await expo.sendPushNotificationsAsync([message]);
+  } catch {
+    // non-critical — don't let push failure break the notification flow
+  }
+}
 
 export const notificationService = {
   async getForUser(userId: string, lang = 'en') {
@@ -31,6 +47,10 @@ export const notificationService = {
     return { count };
   },
 
+  async registerPushToken(userId: string, token: string) {
+    await prisma.user.update({ where: { id: userId }, data: { pushToken: token } });
+  },
+
   async create(data: {
     userId: string;
     type: string;
@@ -42,6 +62,7 @@ export const notificationService = {
     const raw = await repo.create(data);
     const notification = toNotificationDto(raw);
     emitToUser(data.userId, 'notification:new', notification);
+    void sendExpoPush(data.userId, data.title, data.body);
     return notification;
   },
 
@@ -57,11 +78,11 @@ export const notificationService = {
   ) {
     if (data.length === 0) return;
     const result = await repo.createMany(data);
-    // Emit to each unique user
     const byUser = new Map<string, typeof data[0]>();
     for (const d of data) byUser.set(d.userId, d);
-    for (const userId of byUser.keys()) {
+    for (const [userId, d] of byUser.entries()) {
       emitToUser(userId, 'notification:new', { userId });
+      void sendExpoPush(userId, d.title, d.body);
     }
     return result;
   },

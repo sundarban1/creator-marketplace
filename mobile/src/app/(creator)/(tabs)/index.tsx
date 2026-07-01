@@ -467,10 +467,6 @@ export default function HomeScreen() {
                     <Ionicons name="cash-outline" size={11} color="#fff" />
                     <Text style={styles.earnText}>{t('creator.home.earnMoney')}</Text>
                   </View>
-                  <View style={[styles.earnBadge, { backgroundColor: '#065F46' }]}>
-                    <Ionicons name="people-outline" size={11} color="#fff" />
-                    <Text style={styles.earnText}>{t('creator.home.networkPeople')}</Text>
-                  </View>
                 </View>
               </View>
               <Ionicons name="arrow-forward-circle" size={26} color="#059669" />

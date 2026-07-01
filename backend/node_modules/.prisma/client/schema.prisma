@@ -19,6 +19,7 @@ model User {
   phone            String?           @unique
   isOnboarded      Boolean           @default(false)
   isActive         Boolean           @default(true)
+  pushToken        String?
   businessProfile  BusinessProfile?
   creatorProfile   CreatorProfile?
   issueReports     IssueReport[]
