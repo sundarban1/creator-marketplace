@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import { Role } from '@prisma/client';
 import { AppError } from '../../middleware/error';
+import { env } from '../../config/env';
 import { hashPassword, comparePassword } from '../../utils/hash';
 import {
   signAccessToken,
@@ -67,7 +68,7 @@ export class AuthService {
     await this.repo.saveOtp(user.id, code, expiresAt);
     await sendOtpEmail(user.email, code);
 
-    console.log(`\n🔑 OTP for ${user.email}: ${code}\n`);
+    if (env.NODE_ENV !== 'production') console.log(`\n🔑 OTP for ${user.email}: ${code}\n`);
     return { email: user.email };
   }
 
@@ -107,7 +108,7 @@ export class AuthService {
     await this.repo.saveOtp(user.id, code, expiresAt);
     await sendOtpEmail(user.email, code);
 
-    console.log(`\n🔑 Resent OTP for ${user.email}: ${code}\n`);
+    if (env.NODE_ENV !== 'production') console.log(`\n🔑 Resent OTP for ${user.email}: ${code}\n`);
     return { message: 'Verification code resent to your email' };
   }
 
@@ -188,7 +189,7 @@ export class AuthService {
     await this.repo.saveOtp(user.id, code, expiresAt);
 
     // In production: send via SMS. For now log to console.
-    console.log(`\n🔑 Password reset OTP for ${input.phone}: ${code}\n`);
+    if (env.NODE_ENV !== 'production') console.log(`\n🔑 Password reset OTP for ${input.phone}: ${code}\n`);
 
     return { message: 'OTP sent to your phone number' };
   }
@@ -231,7 +232,7 @@ export class AuthService {
 
     // In production: integrate an SMS gateway (e.g. Sparrow SMS for Nepal).
     // For now, log the OTP to the console.
-    console.log(`\n📱 Phone verification OTP for ${phone}: ${code}\n`);
+    if (env.NODE_ENV !== 'production') console.log(`\n📱 Phone verification OTP for ${phone}: ${code}\n`);
 
     return { message: 'Verification code sent to your phone number' };
   }

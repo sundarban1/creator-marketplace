@@ -4,6 +4,8 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import compression from 'compression';
+import rateLimit from 'express-rate-limit';
 import swaggerUi from 'swagger-ui-express';
 
 import { env } from './config/env';
@@ -29,9 +31,23 @@ import notificationRoutes from './modules/notifications/notification.routes';
 
 const app = express();
 
-// ── Security & parsing middleware ────────────────────────────────────────────
-app.use(helmet());
+// ── Trust proxy (required when behind nginx / load balancer in production) ───
+if (env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
 
+// ── Compression ──────────────────────────────────────────────────────────────
+app.use(compression());
+
+// ── Security headers ─────────────────────────────────────────────────────────
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    contentSecurityPolicy: env.NODE_ENV === 'production' ? undefined : false,
+  })
+);
+
+// ── CORS ─────────────────────────────────────────────────────────────────────
 const allowedOrigins = env.FRONTEND_URL
   .split(',')
   .map((o) => o.trim())
@@ -50,11 +66,70 @@ app.use(
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Timezone', 'X-Language'],
   })
 );
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true }));
+
+// ── Body parsing ─────────────────────────────────────────────────────────────
+app.use(express.json({ limit: '2mb' }));
+app.use(express.urlencoded({ extended: true, limit: '2mb' }));
+
+// ── Logging ──────────────────────────────────────────────────────────────────
 app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));
+
+// ── Locale ───────────────────────────────────────────────────────────────────
 app.use(timezoneMiddleware);
 app.use(languageMiddleware);
+
+// ── Rate limiters ─────────────────────────────────────────────────────────────
+// Strict limiter for authentication endpoints (brute-force protection)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,  // 15 minutes
+  max: 20,
+  message: { success: false, message: 'Too many attempts. Please try again in 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: false,
+});
+
+// Tighter OTP limiter
+const otpLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,  // 10 minutes
+  max: 5,
+  message: { success: false, message: 'Too many OTP requests. Please wait 10 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// General API limiter (prevents abuse but allows normal traffic)
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000,  // 1 minute
+  max: 120,
+  message: { success: false, message: 'Too many requests. Please slow down.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => req.path === '/health',
+});
+
+// Upload endpoints need a higher limit (multipart payloads)
+const uploadLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 20,
+  message: { success: false, message: 'Too many upload requests.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Apply general limiter to all /api/* routes
+app.use('/api/', apiLimiter);
+
+// Apply auth-specific limiters
+app.use('/api/auth/login',        authLimiter);
+app.use('/api/auth/register',     authLimiter);
+app.use('/api/auth/forgot-password', authLimiter);
+app.use('/api/auth/verify-otp',   otpLimiter);
+app.use('/api/auth/resend-otp',   otpLimiter);
+
+// Upload endpoints
+app.use('/api/creator/avatar',  uploadLimiter);
+app.use('/api/business/logo',   uploadLimiter);
 
 // ── Health check ─────────────────────────────────────────────────────────────
 /**
@@ -117,7 +192,6 @@ app.use(
   })
 );
 
-// Serve raw swagger spec as JSON
 app.get('/api/docs.json', (_req, res) => {
   res.setHeader('Content-Type', 'application/json');
   res.json(swaggerSpec);
