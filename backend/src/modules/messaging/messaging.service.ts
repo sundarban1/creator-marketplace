@@ -166,6 +166,12 @@ export class MessagingService {
     const raw     = await this.repo.createMessage({ conversationId, senderId: userId, content: input.content });
     const message = toMessageDto(raw);
 
+    // Mark the conversation as seen for the sender immediately so their own
+    // badge count stays at zero (prevents the flash caused by the race between
+    // refreshChatBadge and markSeen on the client).
+    const senderSeenField = role === 'BUSINESS' ? 'businessSeenAt' : 'creatorSeenAt';
+    await this.repo.updateSeenAt(conversationId, senderSeenField);
+
     // Push message to both participants in real-time
     emitToUser(conversation.creator.userId, 'message:new', { conversationId, message });
     emitToUser(conversation.business.userId, 'message:new', { conversationId, message });

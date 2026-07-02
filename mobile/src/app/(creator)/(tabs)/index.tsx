@@ -400,9 +400,9 @@ export default function HomeScreen() {
                 <LinearGradient
                   colors={['#E1306C', '#1877F2', '#FF0000']}
                   start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                  style={[StyleSheet.absoluteFill, { opacity: activePlatform === 'All' ? 1 : 0.18, borderRadius: 18 }]}
+                  style={[StyleSheet.absoluteFill, { opacity: activePlatform === 'All' ? 1 : 0.18, borderRadius: 20 }]}
                 />
-                <Ionicons name="apps" size={30} color={activePlatform === 'All' ? '#fff' : C.textSecondary} />
+                <Ionicons name="apps" size={18} color={activePlatform === 'All' ? '#fff' : C.textSecondary} />
                 <Text style={[styles.platLabel, { color: activePlatform === 'All' ? '#fff' : C.text }]}>All</Text>
               </Pressable>
 
@@ -415,7 +415,7 @@ export default function HomeScreen() {
                     key={p}
                     style={[styles.platCard, { backgroundColor: isActive ? meta.color : meta.color + '28' }]}
                     onPress={() => { setActivePlatform(p); void fetchCampaigns({ platform: p }); }}>
-                    <Ionicons name={meta.icon as any} size={30} color={isActive ? fg : meta.color} />
+                    <Ionicons name={meta.icon as any} size={18} color={isActive ? fg : meta.color} />
                     <Text style={[styles.platLabel, { color: isActive ? fg : C.text }]} numberOfLines={2}>{p}</Text>
                   </Pressable>
                 );
@@ -604,16 +604,16 @@ const styles = StyleSheet.create({
   catEmoji:  { fontSize: 34 },
   catLabel:  { fontSize: 10, fontFamily: F.semibold, lineHeight: 13, textAlign: 'center' },
 
-  platformsRow: { paddingHorizontal: 20, gap: 10, marginBottom: 0 },
+  platformsRow: { paddingHorizontal: 20, gap: 8, marginBottom: 0 },
   platCard: {
-    width: 78, height: 78, borderRadius: 18, overflow: 'hidden',
-    alignItems: 'center', justifyContent: 'center', gap: 7,
-    paddingHorizontal: 6,
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    height: 38, borderRadius: 20, overflow: 'hidden',
+    paddingHorizontal: 12,
     shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 }, elevation: 2,
     borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)',
   },
-  platLabel: { fontSize: 10, fontFamily: F.medium, lineHeight: 13, textAlign: 'center' },
+  platLabel: { fontSize: 12, fontFamily: F.medium, lineHeight: 16 },
 
   loadingWrap: { paddingVertical: 60, alignItems: 'center', gap: 14 },
   loadingText: { fontSize: 14, fontFamily: F.regular },

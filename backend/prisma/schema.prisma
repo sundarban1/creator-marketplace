@@ -330,6 +330,14 @@ model CampaignInvitation {
   @@map("campaign_invitations")
 }
 
+model PlatformSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@map("platform_settings")
+}
+
 enum Role {
   CREATOR
   BUSINESS

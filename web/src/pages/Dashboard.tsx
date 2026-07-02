@@ -7,6 +7,8 @@ import {
   TrendingUp,
   Clock,
   UserPlus,
+  MessageSquare,
+  Send,
 } from 'lucide-react';
 import { StatCard }  from '../components/StatCard';
 import { useAuth }   from '../context/AuthContext';
@@ -32,6 +34,8 @@ export function Dashboard() {
   const { user }            = useAuth();
   const { data, loading, error } = useApi(() => api.admin.stats());
   const stats = data?.data;
+  const { data: convData, loading: convLoading } = useApi(() => api.admin.conversationStats());
+  const convStats = convData?.data;
 
   return (
     <div>
@@ -48,8 +52,8 @@ export function Dashboard() {
         </div>
       )}
 
-      {/* Stat cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
+      {/* Platform stat cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-4">
         {loading ? (
           Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)
         ) : (
@@ -98,6 +102,47 @@ export function Dashboard() {
             />
           </>
         )}
+      </div>
+
+      {/* Messaging stat cards */}
+      <div className="mb-6">
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Messaging</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+          {convLoading ? (
+            Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
+          ) : (
+            <>
+              <StatCard
+                title="Total Conversations"
+                value={(convStats?.total ?? 0).toLocaleString()}
+                icon={MessageSquare}
+                iconColor="text-sky-600"
+                iconBg="bg-sky-50"
+              />
+              <StatCard
+                title="Active Chats"
+                value={(convStats?.accepted ?? 0).toLocaleString()}
+                icon={MessageSquare}
+                iconColor="text-emerald-600"
+                iconBg="bg-emerald-50"
+              />
+              <StatCard
+                title="Pending Requests"
+                value={(convStats?.pending ?? 0).toLocaleString()}
+                icon={AlertTriangle}
+                iconColor="text-amber-600"
+                iconBg="bg-amber-50"
+              />
+              <StatCard
+                title="Messages Sent"
+                value={(convStats?.totalMessages ?? 0).toLocaleString()}
+                icon={Send}
+                iconColor="text-indigo-600"
+                iconBg="bg-indigo-50"
+              />
+            </>
+          )}
+        </div>
       </div>
 
       {/* Recent users */}

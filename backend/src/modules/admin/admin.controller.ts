@@ -109,3 +109,65 @@ export async function updateCampaignStatus(req: Request, res: Response, next: Ne
     next(err);
   }
 }
+
+// ── Settings ───────────────────────────────────────────────────────────────────
+
+// GET /api/admin/settings
+export async function getSettings(_req: Request, res: Response, next: NextFunction) {
+  try {
+    const settings = await service.getSettings();
+    return success(res, settings, 'Settings fetched');
+  } catch (err) {
+    next(err);
+  }
+}
+
+// PUT /api/admin/settings
+export async function updateSettings(req: Request, res: Response, next: NextFunction) {
+  try {
+    const settings = req.body as Record<string, unknown>;
+    if (!settings || typeof settings !== 'object' || Array.isArray(settings)) {
+      throw new AppError('Settings must be a flat key-value object', 400);
+    }
+    await service.updateSettings(settings);
+    const updated = await service.getSettings();
+    return success(res, updated, 'Settings updated');
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ── Conversations ─────────────────────────────────────────────────────────────
+
+// GET /api/admin/conversations/stats
+export async function getConversationStats(_req: Request, res: Response, next: NextFunction) {
+  try {
+    const stats = await service.getConversationStats();
+    return success(res, stats, 'Conversation stats fetched');
+  } catch (err) {
+    next(err);
+  }
+}
+
+// GET /api/admin/conversations
+export async function getConversations(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { page, limit } = parsePagination(req);
+    const status = req.query['status'] as string | undefined;
+    const search = req.query['search'] as string | undefined;
+    const { conversations, total } = await service.getConversations(page, limit, status, search);
+    return paginated(res, conversations, total, page, limit);
+  } catch (err) {
+    next(err);
+  }
+}
+
+// DELETE /api/admin/conversations/:id
+export async function deleteConversation(req: Request, res: Response, next: NextFunction) {
+  try {
+    await service.removeConversation(req.params['id']!);
+    return success(res, null, 'Conversation deleted');
+  } catch (err) {
+    next(err);
+  }
+}

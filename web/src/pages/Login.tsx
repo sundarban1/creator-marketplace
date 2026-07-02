@@ -127,10 +127,10 @@ export function Login() {
             <p className="text-xs font-semibold text-indigo-700 mb-2">Demo credentials</p>
             <div className="space-y-1.5">
               <button
-                onClick={(e) => fillDemo(e, 'admin@creatormarket.io', 'Admin@12345')}
+                onClick={(e) => fillDemo(e, 'admin@creatormarket.com.np', 'Admin@123456')}
                 className="w-full text-left text-xs text-indigo-600 hover:text-indigo-800 font-mono bg-white/70 hover:bg-white px-3 py-1.5 rounded-lg transition-colors"
               >
-                admin@creatormarket.io / Admin@12345
+                admin@creatormarket.com.np / Admin@123456
               </button>
             </div>
           </div>

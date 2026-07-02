@@ -1,6 +1,28 @@
 import { Role, CampaignStatus } from '@prisma/client';
 import prisma from '../../prisma';
 
+// ── Default platform settings ──────────────────────────────────────────────────
+
+const DEFAULTS: Record<string, unknown> = {
+  'registration.enabled':          true,
+  'creator.onboarding':            true,
+  'business.onboarding':           true,
+  'campaign.autoApproval':         false,
+  'payment.escrow':                true,
+  'messaging.enabled':             true,
+  'messaging.directMessages':      true,
+  'messaging.pushNotifications':   true,
+  'messaging.typingIndicators':    true,
+  'notifications.email':           true,
+  'notifications.reportAlerts':    true,
+  'notifications.paymentAlerts':   true,
+  'notifications.weeklySummary':   false,
+  'security.twoFactor':            true,
+  'security.ipAllowlist':          false,
+  'security.auditLogging':         true,
+  'security.sessionTimeout':       true,
+};
+
 export class AdminRepository {
   async getStats() {
     const [totalUsers, totalCreators, totalBusinesses, activeCampaigns, totalCampaigns, pendingApplications] =
@@ -178,5 +200,81 @@ export class AdminRepository {
 
   async deleteUser(userId: string) {
     return prisma.user.delete({ where: { id: userId } });
+  }
+
+  // ── Platform Settings ────────────────────────────────────────────────────────
+
+  async getSettings(): Promise<Record<string, unknown>> {
+    const rows = await prisma.platformSetting.findMany();
+    const stored: Record<string, unknown> = {};
+    for (const row of rows) {
+      try { stored[row.key] = JSON.parse(row.value); } catch { stored[row.key] = row.value; }
+    }
+    return { ...DEFAULTS, ...stored };
+  }
+
+  async upsertSettings(settings: Record<string, unknown>): Promise<void> {
+    await prisma.$transaction(
+      Object.entries(settings).map(([key, value]) =>
+        prisma.platformSetting.upsert({
+          where:  { key },
+          update: { value: JSON.stringify(value) },
+          create: { key, value: JSON.stringify(value) },
+        })
+      )
+    );
+  }
+
+  async getSetting(key: string): Promise<unknown> {
+    const row = await prisma.platformSetting.findUnique({ where: { key } });
+    if (!row) return DEFAULTS[key] ?? null;
+    try { return JSON.parse(row.value); } catch { return row.value; }
+  }
+
+  // ── Admin Conversations ──────────────────────────────────────────────────────
+
+  async getConversationStats() {
+    const [total, pending, accepted, declined, totalMessages] = await Promise.all([
+      prisma.conversation.count(),
+      prisma.conversation.count({ where: { status: 'PENDING' } }),
+      prisma.conversation.count({ where: { status: 'ACCEPTED' } }),
+      prisma.conversation.count({ where: { status: 'DECLINED' } }),
+      prisma.message.count(),
+    ]);
+    return { total, pending, accepted, declined, totalMessages };
+  }
+
+  async getAllConversations(page: number, limit: number, status?: string, search?: string) {
+    const where: Record<string, unknown> = {};
+    if (status) where['status'] = status;
+    if (search) {
+      where['OR'] = [
+        { creator:  { fullName:     { contains: search, mode: 'insensitive' } } },
+        { business: { businessName: { contains: search, mode: 'insensitive' } } },
+        { campaign: { title:        { contains: search, mode: 'insensitive' } } },
+      ];
+    }
+
+    const [conversations, total] = await Promise.all([
+      prisma.conversation.findMany({
+        where,
+        skip:    (page - 1) * limit,
+        take:    limit,
+        orderBy: { lastMessageAt: 'desc' },
+        include: {
+          creator:  { select: { fullName: true, avatarUrl: true } },
+          business: { select: { businessName: true, logoUrl: true } },
+          campaign: { select: { title: true } },
+          _count:   { select: { messages: true } },
+        },
+      }),
+      prisma.conversation.count({ where }),
+    ]);
+
+    return { conversations, total };
+  }
+
+  async deleteConversation(id: string) {
+    return prisma.conversation.delete({ where: { id } });
   }
 }

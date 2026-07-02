@@ -18,6 +18,7 @@ import { HelpCenter } from './pages/HelpCenter';
 import { FAQManager } from './pages/FAQManager';
 import { SupportInbox } from './pages/SupportInbox';
 import { LegalEditor } from './pages/LegalEditor';
+import { Conversations } from './pages/Conversations';
 import { CategoriesPage } from './pages/categories/CategoriesPage';
 import { NewCategoryPage } from './pages/categories/NewCategoryPage';
 import { EditCategoryPage } from './pages/categories/EditCategoryPage';
@@ -53,7 +54,8 @@ export default function App() {
                   <Route path="/help-center" element={<HelpCenter />} />
                   <Route path="/faqs" element={<FAQManager />} />
                   <Route path="/support-inbox" element={<SupportInbox />} />
-                  <Route path="/legal" element={<LegalEditor />} />
+                  <Route path="/legal"          element={<LegalEditor />} />
+                  <Route path="/conversations" element={<Conversations />} />
                   <Route path="/settings" element={<Settings />} />
                 </Route>
               </Route>

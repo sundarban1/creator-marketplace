@@ -39,4 +39,32 @@ export class AdminService {
   removeUser(userId: string) {
     return this.repo.deleteUser(userId);
   }
+
+  // ── Settings ────────────────────────────────────────────────────────────────
+
+  getSettings() {
+    return this.repo.getSettings();
+  }
+
+  updateSettings(settings: Record<string, unknown>) {
+    return this.repo.upsertSettings(settings);
+  }
+
+  getSetting(key: string) {
+    return this.repo.getSetting(key);
+  }
+
+  // ── Conversations ────────────────────────────────────────────────────────────
+
+  getConversationStats() {
+    return this.repo.getConversationStats();
+  }
+
+  getConversations(page: number, limit: number, status?: string, search?: string) {
+    return this.repo.getAllConversations(page, limit, status, search);
+  }
+
+  removeConversation(id: string) {
+    return this.repo.deleteConversation(id);
+  }
 }

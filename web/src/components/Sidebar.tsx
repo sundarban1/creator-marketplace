@@ -15,26 +15,56 @@ import {
   X,
   HelpCircle,
   MessageCircle,
+  MessageSquare,
   BookOpen,
   Scale,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
-const navItems = [
-  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/users', label: 'Users', icon: Users },
-  { to: '/creators', label: 'Creators', icon: Star },
-  { to: '/businesses', label: 'Businesses', icon: Briefcase },
-  { to: '/campaigns', label: 'Campaigns', icon: Megaphone },
-  { to: '/categories', label: 'Categories', icon: Tag },
-  { to: '/platforms', label: 'Platforms', icon: Share2 },
-  { to: '/payments',       label: 'Payments',       icon: CreditCard   },
-  { to: '/reports',        label: 'Reports',        icon: FileBarChart },
-  { to: '/help-center',    label: 'Help Center',    icon: HelpCircle   },
-  { to: '/faqs',           label: 'FAQs',           icon: BookOpen     },
-  { to: '/support-inbox',  label: 'Support Inbox',  icon: MessageCircle },
-  { to: '/legal',          label: 'Legal',          icon: Scale        },
-  { to: '/settings',       label: 'Settings',       icon: Settings     },
+type NavItem = { to: string; label: string; icon: React.ElementType };
+type NavGroup = { label: string; items: NavItem[] };
+
+const navGroups: NavGroup[] = [
+  {
+    label: 'Platform',
+    items: [
+      { to: '/dashboard',  label: 'Dashboard',  icon: LayoutDashboard },
+      { to: '/users',      label: 'Users',      icon: Users           },
+      { to: '/creators',   label: 'Creators',   icon: Star            },
+      { to: '/businesses', label: 'Businesses', icon: Briefcase       },
+      { to: '/campaigns',  label: 'Campaigns',  icon: Megaphone       },
+      { to: '/categories', label: 'Categories', icon: Tag             },
+      { to: '/platforms',  label: 'Platforms',  icon: Share2          },
+    ],
+  },
+  {
+    label: 'Messaging',
+    items: [
+      { to: '/conversations', label: 'Conversations', icon: MessageSquare },
+    ],
+  },
+  {
+    label: 'Finance',
+    items: [
+      { to: '/payments', label: 'Payments', icon: CreditCard   },
+      { to: '/reports',  label: 'Reports',  icon: FileBarChart },
+    ],
+  },
+  {
+    label: 'Support',
+    items: [
+      { to: '/help-center',   label: 'Help Center',   icon: HelpCircle    },
+      { to: '/faqs',          label: 'FAQs',          icon: BookOpen      },
+      { to: '/support-inbox', label: 'Support Inbox', icon: MessageCircle },
+      { to: '/legal',         label: 'Legal',         icon: Scale         },
+    ],
+  },
+  {
+    label: 'System',
+    items: [
+      { to: '/settings', label: 'Settings', icon: Settings },
+    ],
+  },
 ];
 
 interface SidebarProps {
@@ -89,24 +119,32 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-3 mb-3">Menu</p>
-          {navItems.map(({ to, label, icon: Icon }) => (
-            <NavLink
-              key={to}
-              to={to}
-              onClick={onClose}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  isActive
-                    ? 'bg-indigo-600 text-white'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                }`
-              }
-            >
-              <Icon size={18} />
-              {label}
-            </NavLink>
+        <nav className="flex-1 px-3 py-4 space-y-4 overflow-y-auto">
+          {navGroups.map((group) => (
+            <div key={group.label}>
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-3 mb-1.5">
+                {group.label}
+              </p>
+              <div className="space-y-0.5">
+                {group.items.map(({ to, label, icon: Icon }) => (
+                  <NavLink
+                    key={to}
+                    to={to}
+                    onClick={onClose}
+                    className={({ isActive }) =>
+                      `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                        isActive
+                          ? 'bg-indigo-600 text-white'
+                          : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                      }`
+                    }
+                  >
+                    <Icon size={17} />
+                    {label}
+                  </NavLink>
+                ))}
+              </div>
+            </div>
           ))}
         </nav>
 

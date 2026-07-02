@@ -143,6 +143,28 @@ export interface ApiCampaign {
   _count:    { applications: number };
 }
 
+export type PlatformSettings = Record<string, boolean | string | number>;
+
+export interface ApiConversationAdmin {
+  id:            string;
+  status:        'PENDING' | 'ACCEPTED' | 'DECLINED';
+  requestMessage?: string | null;
+  lastMessageAt?:  string | null;
+  createdAt:     string;
+  creator:       { fullName: string; avatarUrl?: string | null };
+  business:      { businessName: string; logoUrl?: string | null };
+  campaign?:     { title: string } | null;
+  _count:        { messages: number };
+}
+
+export interface ConversationStats {
+  total:         number;
+  pending:       number;
+  accepted:      number;
+  declined:      number;
+  totalMessages: number;
+}
+
 // ── Core fetch ─────────────────────────────────────────────────────────────────
 
 let pendingRefresh: Promise<string> | null = null;
@@ -255,6 +277,22 @@ export const api = {
 
     updateCampaignStatus: (id: string, status: string) =>
       request<ApiCampaign>('PATCH', `/api/admin/campaigns/${id}/status`, { status }),
+
+    getSettings: () =>
+      request<PlatformSettings>('GET', '/api/admin/settings'),
+
+    updateSettings: (settings: PlatformSettings) =>
+      request<PlatformSettings>('PUT', '/api/admin/settings', settings),
+
+    conversationStats: () =>
+      request<ConversationStats>('GET', '/api/admin/conversations/stats'),
+
+    conversations: (params?: { page?: number; limit?: number; status?: string; search?: string }) =>
+      request<ApiConversationAdmin[]>('GET', '/api/admin/conversations', undefined,
+        params as Record<string, string | number | undefined>),
+
+    deleteConversation: (id: string) =>
+      request<null>('DELETE', `/api/admin/conversations/${id}`),
   },
 
   help: {
