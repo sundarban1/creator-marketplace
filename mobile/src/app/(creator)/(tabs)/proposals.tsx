@@ -68,6 +68,10 @@ function timeAgo(iso: string, t: TFn): string {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
+function brandInitials(name: string): string {
+  return name.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+}
+
 // ─── Tab Slider ───────────────────────────────────────────────────────────────
 
 type TabDef = { key: TabKey; label: string; icon: keyof typeof Ionicons.glyphMap; color: string; count: number };
@@ -102,7 +106,7 @@ function TabSlider({ tabs, active, onChange }: {
     }
   }
 
-  const activeTab = tabs.find((t) => t.key === active)!;
+  const activeTab = tabs.find((tb) => tb.key === active)!;
 
   return (
     <View style={ts.wrapper}>
@@ -123,11 +127,7 @@ function TabSlider({ tabs, active, onChange }: {
               style={ts.tab}
             >
               <View style={[ts.tabInner, isActive && { backgroundColor: `${activeTab.color}14` }]}>
-                <Ionicons
-                  name={tab.icon}
-                  size={14}
-                  color={isActive ? tab.color : C.textSecondary}
-                />
+                <Ionicons name={tab.icon} size={14} color={isActive ? tab.color : C.textSecondary} />
                 <Text style={[ts.tabLabel, { color: isActive ? tab.color : C.textSecondary }]}>
                   {tab.label}
                 </Text>
@@ -142,18 +142,11 @@ function TabSlider({ tabs, active, onChange }: {
             </Pressable>
           );
         })}
-
-        {/* Sliding underline */}
         <Animated.View
-          style={[
-            ts.indicator,
-            { backgroundColor: activeTab.color, left: indicatorX, width: indicatorW },
-          ]}
+          style={[ts.indicator, { backgroundColor: activeTab.color, left: indicatorX, width: indicatorW }]}
           pointerEvents="none"
         />
       </ScrollView>
-
-      {/* Bottom border */}
       <View style={[ts.bottomBorder, { backgroundColor: C.border }]} />
     </View>
   );
@@ -176,37 +169,60 @@ const ts = StyleSheet.create({
 function ProposalCard({ proposal }: { proposal: Proposal }) {
   const C = useAppColors();
   const { t } = useLanguage();
+  const [expanded, setExpanded] = useState(false);
   const cfg      = STATUS_CFG[proposal.status];
   const trackCfg = TRACK_CFG[proposal.workStatus];
   const isFree   = proposal.campaignType === 'OPEN_EVENT';
-  const stripeColor =
+  const accentColor =
     proposal.status === 'accepted' ? '#4F46E5' :
-    proposal.status === 'rejected' ? '#DC2626'  : '#D97706';
+    proposal.status === 'rejected' ? '#DC2626' : '#D97706';
 
   return (
     <Pressable
-      style={[styles.card, { backgroundColor: C.surface }]}
+      style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}
       onPress={() => router.push({ pathname: '/campaign-detail', params: { campaignId: proposal.campaignId } } as never)}>
-      <View style={[styles.stripe, { backgroundColor: stripeColor }]} />
+
+      {/* Accent top strip */}
+      <View style={[styles.accentStrip, { backgroundColor: accentColor }]} />
 
       <View style={styles.cardBody}>
-        {/* Top row */}
+
+        {/* ── Top: brand + status ── */}
         <View style={styles.topRow}>
-          <View style={[styles.brandAvatar, { backgroundColor: `${stripeColor}18` }]}>
-            <Ionicons name="business" size={18} color={stripeColor} />
+          <View style={[styles.brandAvatar, { backgroundColor: `${accentColor}18` }]}>
+            <Text style={[styles.brandInitials, { color: accentColor }]}>{brandInitials(proposal.brand)}</Text>
           </View>
           <View style={styles.brandBlock}>
-            <Text style={[styles.brand, { color: C.text }]} numberOfLines={1}>{proposal.brand}</Text>
-            <Text style={[styles.campaign, { color: C.textSecondary }]} numberOfLines={1}>{proposal.campaignTitle}</Text>
+            <Text style={[styles.brandName, { color: C.text }]} numberOfLines={1}>{proposal.brand}</Text>
+            <Text style={[styles.campaignTitle, { color: C.textSecondary }]} numberOfLines={1}>{proposal.campaignTitle}</Text>
           </View>
           <View style={[styles.statusBadge, { backgroundColor: cfg.bg }]}>
-            <Ionicons name={cfg.icon} size={13} color={cfg.color} />
+            <Ionicons name={cfg.icon} size={12} color={cfg.color} />
             <Text style={[styles.statusText, { color: cfg.color }]}>{t(cfg.labelKey)}</Text>
           </View>
         </View>
 
-        {/* Meta row */}
-        <View style={[styles.metaRow, { borderTopColor: C.border, borderBottomColor: C.border }]}>
+        {/* ── Cover letter preview ── */}
+        {!!proposal.coverLetter && (
+          <View style={[styles.coverRow, { backgroundColor: C.background, borderColor: C.border }]}>
+            <Ionicons name="chatbox-ellipses-outline" size={13} color={C.textSecondary} style={{ marginTop: 1 }} />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.coverText, { color: C.textSecondary }]} numberOfLines={expanded ? undefined : 2}>
+                {proposal.coverLetter}
+              </Text>
+              {proposal.coverLetter.length > 100 && (
+                <Pressable onPress={(e) => { e.stopPropagation(); setExpanded((v) => !v); }}>
+                  <Text style={[styles.seeMore, { color: C.brinjal1 }]}>
+                    {expanded ? 'See less' : 'See more'}
+                  </Text>
+                </Pressable>
+              )}
+            </View>
+          </View>
+        )}
+
+        {/* ── Meta strip ── */}
+        <View style={[styles.metaStrip, { borderColor: C.border }]}>
           <View style={styles.metaItem}>
             <Ionicons name={isFree ? 'gift-outline' : 'cash-outline'} size={13} color={C.textSecondary} />
             <View>
@@ -214,7 +230,7 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
               {isFree ? (
                 <View style={styles.freeTag}><Text style={styles.freeTagTxt}>{t('proposal.creator.freeEventTag')}</Text></View>
               ) : (
-                <Text style={[styles.metaValue, { color: '#4F46E5' }]}>{proposal.proposedRate}</Text>
+                <Text style={[styles.metaValue, { color: accentColor }]}>{proposal.proposedRate}</Text>
               )}
             </View>
           </View>
@@ -228,12 +244,15 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
           </View>
         </View>
 
-        {/* Accepted state */}
+        {/* ── Accepted: workspace CTA or invited banner ── */}
         {proposal.status === 'accepted' && (
           isFree ? (
             <View style={styles.invitedBanner}>
               <Text style={styles.invitedEmoji}>🎉</Text>
-              <Text style={styles.invitedTitle}>Congratulations, You are invited!</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.invitedTitle}>You're invited!</Text>
+                <Text style={styles.invitedSub}>Congratulations — the brand accepted you</Text>
+              </View>
             </View>
           ) : (
             <Pressable
@@ -263,18 +282,20 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
           )
         )}
 
-        {/* Pending / rejected footer */}
+        {/* ── Pending / rejected footer ── */}
         {proposal.status !== 'accepted' && (
-          <View style={styles.footerRow}>
-            <Ionicons
-              name={proposal.status === 'pending' ? 'time-outline' : 'close-circle-outline'}
-              size={13}
-              color={cfg.color}
-            />
+          <View style={[styles.footerRow, { borderTopColor: C.border }]}>
+            <View style={[styles.footerDot, { backgroundColor: `${cfg.color}22` }]}>
+              <Ionicons
+                name={proposal.status === 'pending' ? 'time-outline' : 'close-circle-outline'}
+                size={13}
+                color={cfg.color}
+              />
+            </View>
             <Text style={[styles.footerTxt, { color: cfg.color }]}>
               {proposal.status === 'pending' ? 'Awaiting brand response' : 'Application was declined'}
             </Text>
-            <Ionicons name="chevron-forward" size={13} color={C.textSecondary} style={{ marginLeft: 'auto' }} />
+            <Ionicons name="chevron-forward" size={13} color={C.textSecondary} />
           </View>
         )}
       </View>
@@ -338,23 +359,25 @@ export default function ProposalsScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
-      {/* Header */}
+
+      {/* ── Gradient header ── */}
       <LinearGradient colors={['#312e81', '#4f46e5', '#8b5cf6']} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientHeader}>
         <View style={[styles.decCircle1, { backgroundColor: 'rgba(255,255,255,0.1)' }]} />
         <View style={[styles.decCircle2, { backgroundColor: 'rgba(255,255,255,0.07)' }]} />
-        <View style={styles.header}>
-          <Text style={[styles.heading, { color: '#fff' }]}>{t('creator.proposals.heading')}</Text>
-          <Text style={[styles.subheading, { color: 'rgba(255,255,255,0.8)' }]}>{t('proposal.creator.subheading')}</Text>
 
+        <View style={styles.headerContent}>
+          <Text style={styles.heading}>{t('creator.proposals.heading')}</Text>
+          <Text style={styles.subheading}>{t('proposal.creator.subheading')}</Text>
         </View>
+
       </LinearGradient>
 
-      {/* Tab Slider */}
+      {/* ── Tab bar ── */}
       <View style={[styles.tabBar, { backgroundColor: C.surface }]}>
         <TabSlider tabs={tabs} active={activeTab} onChange={setActiveTab} />
       </View>
 
-      {/* Content */}
+      {/* ── Content ── */}
       {loading ? (
         <View style={styles.center}>
           <ActivityIndicator size="large" color={C.brinjal1} />
@@ -393,33 +416,46 @@ export default function ProposalsScreen() {
 
 const styles = StyleSheet.create({
   container:      { flex: 1 },
-  gradientHeader: { paddingBottom: 20, borderBottomLeftRadius: 28, borderBottomRightRadius: 28, overflow: 'hidden' },
+
+  // Header
+  gradientHeader: { borderBottomLeftRadius: 28, borderBottomRightRadius: 28, overflow: 'hidden' },
   decCircle1:     { position: 'absolute', width: 180, height: 180, borderRadius: 90, top: -60, right: -30 },
   decCircle2:     { position: 'absolute', width: 110, height: 110, borderRadius: 55, bottom: -30, left: 20 },
-  header:         { paddingHorizontal: 20, paddingTop: 14, paddingBottom: 4, gap: 4 },
-  heading:        { fontSize: 22, fontWeight: '800', fontFamily: F.extrabold },
-  subheading:     { fontSize: 13, fontFamily: F.regular },
+  headerContent:  { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 14, gap: 3 },
+  heading:        { fontSize: 22, fontWeight: '800', fontFamily: F.extrabold, color: '#fff' },
+  subheading:     { fontSize: 13, fontFamily: F.regular, color: 'rgba(255,255,255,0.75)' },
 
+  // Tab bar
   tabBar: { shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 3 },
 
-  list:        { paddingHorizontal: 16, paddingBottom: 80, gap: 12, paddingTop: 12 },
-  listEmpty:   { flexGrow: 1 },
-  center:      { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
+  // List
+  list:      { paddingHorizontal: 16, paddingBottom: 80, gap: 12, paddingTop: 14 },
+  listEmpty: { flexGrow: 1 },
+  center:    { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
   loadingText: { fontSize: 14, fontFamily: F.regular },
 
-  card:     { borderRadius: 16, flexDirection: 'row', overflow: 'hidden', shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
-  stripe:   { width: 4 },
-  cardBody: { flex: 1, paddingHorizontal: 14, paddingTop: 14, paddingBottom: 12, gap: 0 },
+  // Card
+  card:        { borderRadius: 18, overflow: 'hidden', borderWidth: 1, shadowColor: '#000', shadowOpacity: 0.07, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
+  accentStrip: { height: 4 },
+  cardBody:    { paddingHorizontal: 14, paddingTop: 14, paddingBottom: 12, gap: 10 },
 
-  topRow:       { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
-  brandAvatar:  { width: 42, height: 42, borderRadius: 12, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  // Top row
+  topRow:       { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  brandAvatar:  { width: 44, height: 44, borderRadius: 13, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  brandInitials:{ fontSize: 15, fontFamily: F.extrabold },
   brandBlock:   { flex: 1, gap: 2 },
-  brand:        { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
-  campaign:     { fontSize: 12, fontFamily: F.regular },
+  brandName:    { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
+  campaignTitle:{ fontSize: 12, fontFamily: F.regular },
   statusBadge:  { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 5, flexShrink: 0 },
   statusText:   { fontSize: 11, fontWeight: '700', fontFamily: F.bold },
 
-  metaRow:     { flexDirection: 'row', alignItems: 'center', borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth, paddingVertical: 10, marginBottom: 2 },
+  // Cover letter
+  coverRow:  { flexDirection: 'row', alignItems: 'flex-start', gap: 7, borderRadius: 10, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 8 },
+  coverText: { fontSize: 12, fontFamily: F.regular, lineHeight: 17 },
+  seeMore:   { fontSize: 12, fontFamily: F.semibold, marginTop: 3 },
+
+  // Meta strip
+  metaStrip:   { flexDirection: 'row', alignItems: 'center', borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth, paddingVertical: 10 },
   metaItem:    { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 7 },
   metaLabel:   { fontSize: 10, fontWeight: '600', textTransform: 'uppercase', fontFamily: F.semibold },
   metaValue:   { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
@@ -427,16 +463,21 @@ const styles = StyleSheet.create({
   freeTag:     { backgroundColor: '#F0FDF4', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2, alignSelf: 'flex-start' },
   freeTagTxt:  { fontSize: 11, fontWeight: '700', color: '#059669', fontFamily: F.bold },
 
-  trackBtn:     { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 12, paddingVertical: 11, paddingHorizontal: 12, marginTop: 8 },
+  // Track button
+  trackBtn:     { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 12, paddingVertical: 11, paddingHorizontal: 12 },
   trackBtnIcon: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' },
   trackBtnText: { flex: 1, gap: 1 },
   trackBtnLabel:{ fontSize: 13, fontWeight: '700', color: '#fff', fontFamily: F.bold },
   trackBtnSub:  { fontSize: 11, color: 'rgba(255,255,255,0.75)', fontFamily: F.regular },
 
-  invitedBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#F0FDF4', borderWidth: 1.5, borderColor: '#6EE7B7', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 11, marginTop: 8 },
-  invitedEmoji:  { fontSize: 20 },
-  invitedTitle:  { fontSize: 13, fontWeight: '700', color: '#065F46', fontFamily: F.bold },
+  // Invited banner
+  invitedBanner:{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#F0FDF4', borderWidth: 1.5, borderColor: '#6EE7B7', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 11 },
+  invitedEmoji: { fontSize: 22 },
+  invitedTitle: { fontSize: 13, fontWeight: '700', color: '#065F46', fontFamily: F.bold },
+  invitedSub:   { fontSize: 11, color: '#047857', fontFamily: F.regular, marginTop: 1 },
 
-  footerRow:  { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8, paddingTop: 10, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#F3F4F6' },
-  footerTxt:  { fontSize: 12, fontWeight: '600', fontFamily: F.semibold },
+  // Footer row
+  footerRow:  { flexDirection: 'row', alignItems: 'center', gap: 8, paddingTop: 10, borderTopWidth: StyleSheet.hairlineWidth },
+  footerDot:  { width: 24, height: 24, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+  footerTxt:  { flex: 1, fontSize: 12, fontWeight: '600', fontFamily: F.semibold },
 });

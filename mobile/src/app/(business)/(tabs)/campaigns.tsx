@@ -50,9 +50,9 @@ const STATUS_CFG = {
 } as const;
 
 const PROPOSAL_STATUS_CFG = {
-  pending:  { bg: '#FFF7ED', color: '#D97706' },
-  accepted: { bg: '#EEF9F3', color: '#16A34A' },
-  rejected: { bg: '#F3F4F6', color: '#6B7280' },
+  pending:  { bg: '#FFF7ED', color: '#D97706', label: 'Pending'  },
+  accepted: { bg: '#EEF9F3', color: '#16A34A', label: 'Accepted' },
+  rejected: { bg: '#F3F4F6', color: '#6B7280', label: 'Rejected' },
 } as const;
 
 function initials(name: string) {
@@ -484,13 +484,13 @@ export default function CampaignsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 60 },
-  gradientHeader: { paddingBottom: 16, borderBottomLeftRadius: 28, borderBottomRightRadius: 28, overflow: 'hidden' },
+  gradientHeader: { borderBottomLeftRadius: 28, borderBottomRightRadius: 28, overflow: 'hidden' },
   decCircle1: { position: 'absolute', width: 200, height: 200, borderRadius: 100, top: -70, right: -40 },
   decCircle2: { position: 'absolute', width: 120, height: 120, borderRadius: 60, bottom: -35, left: 15 },
 
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: 20, paddingTop: 16, paddingBottom: 4,
+    paddingHorizontal: 20, paddingTop: 10, paddingBottom: 14,
   },
   headerLeft: { gap: 3 },
   pageTitle: { fontSize: 22, fontWeight: '800', fontFamily: F.extrabold },
@@ -500,7 +500,7 @@ const styles = StyleSheet.create({
 
   filterRow: { shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
 
-  list: { paddingHorizontal: 20, gap: 12, paddingBottom: 40 },
+  list: { paddingHorizontal: 20, paddingTop: 14, gap: 12, paddingBottom: 40 },
   listEmpty: { flexGrow: 1 },
 
   emptyWrap: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24, paddingVertical: 16 },
@@ -530,11 +530,11 @@ const styles = StyleSheet.create({
   },
   cardAccent: { width: 4 },
   cardContent: { flex: 1 },
-  cardMain: { flexDirection: 'row', alignItems: 'center', padding: 14, gap: 14 },
-  thumb: { width: 72, height: 72, borderRadius: 16, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
-  thumbEmoji: { fontSize: 30 },
-  body: { flex: 1, gap: 6 },
-  title: { fontSize: 15, fontWeight: '700', fontFamily: F.bold },
+  cardMain: { flexDirection: 'row', alignItems: 'center', padding: 14, gap: 12 },
+  thumb: { width: 60, height: 60, borderRadius: 14, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  thumbEmoji: { fontSize: 26 },
+  body: { flex: 1, gap: 5 },
+  title: { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   metaDot: { fontSize: 12 },
   badge: { borderRadius: 10, paddingHorizontal: 9, paddingVertical: 4 },

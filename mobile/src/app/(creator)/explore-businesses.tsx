@@ -173,13 +173,13 @@ const fm = StyleSheet.create({
 
 function BusinessAvatar({ name, logoUrl, size = 56 }: { name: string; logoUrl: string | null; size?: number }) {
   const C = useAppColors();
-  const letter = (name?.[0] ?? '?').toUpperCase();
+  const initials = name.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase();
   if (logoUrl) {
-    return <Image source={{ uri: logoUrl }} style={{ width: size, height: size, borderRadius: size / 2 }} resizeMode="cover" />;
+    return <Image source={{ uri: logoUrl }} style={{ width: size, height: size, borderRadius: size * 0.28 }} resizeMode="cover" />;
   }
   return (
-    <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: C.primaryLight, alignItems: 'center', justifyContent: 'center' }}>
-      <Text style={{ fontSize: size * 0.4, fontWeight: '800', color: C.brinjal1 }}>{letter}</Text>
+    <View style={{ width: size, height: size, borderRadius: size * 0.28, backgroundColor: C.primaryLight, alignItems: 'center', justifyContent: 'center' }}>
+      <Text style={{ fontSize: size * 0.36, fontWeight: '800', color: C.brinjal1, fontFamily: F.extrabold }}>{initials}</Text>
     </View>
   );
 }
@@ -198,80 +198,85 @@ function BusinessCard({
   const C = useAppColors();
 
   return (
-    <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
+    <Pressable
+      style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}
+      onPress={() => router.push({ pathname: '/(creator)/business-detail', params: { id: item.id } } as never)}>
 
-      {/* Card body */}
-      <Pressable
-        style={({ pressed }) => [styles.cardBody, pressed && { opacity: 0.9 }]}
-        onPress={() => router.push({ pathname: '/(creator)/business-detail', params: { id: item.id } } as never)}>
+      {/* Top section */}
+      <View style={styles.cardTop}>
+        <BusinessAvatar name={item.businessName} logoUrl={item.logoUrl} size={56} />
 
-        {/* Top row: avatar + info */}
-        <View style={styles.cardTop}>
-          <View style={[styles.avatarRing, { borderColor: C.brinjal1 }]}>
-            <BusinessAvatar name={item.businessName} logoUrl={item.logoUrl} size={50} />
-          </View>
-
-          <View style={styles.cardInfo}>
-            <View style={styles.nameRow}>
-              <Text style={[styles.bizName, { color: C.text }]} numberOfLines={1}>
-                {item.businessName}
-              </Text>
-              {item.isVerified && (
-                <Ionicons name="checkmark-circle" size={16} color={C.brinjal1} />
-              )}
-            </View>
-            {item.description ? (
-              <Text style={[styles.desc, { color: C.textSecondary }]} numberOfLines={2}>
-                {item.description}
-              </Text>
-            ) : null}
-          </View>
-        </View>
-
-        {/* Category chips */}
-        {item.categories.length > 0 && (
-          <View style={styles.chips}>
-            {item.categories.slice(0, 3).map((cat) => (
-              <View key={cat} style={[styles.chip, { backgroundColor: 'rgba(79,70,229,0.12)', borderColor: 'rgba(79,70,229,0.3)' }]}>
-                <Text style={[styles.chipTxt, { color: C.brinjal1 }]}>{cat}</Text>
-              </View>
-            ))}
-            {item.categories.length > 3 && (
-              <View style={[styles.chip, { backgroundColor: C.background, borderColor: C.border }]}>
-                <Text style={[styles.chipTxt, { color: C.textSecondary }]}>+{item.categories.length - 3}</Text>
+        <View style={styles.cardInfo}>
+          <View style={styles.nameRow}>
+            <Text style={[styles.bizName, { color: C.text }]} numberOfLines={1}>
+              {item.businessName}
+            </Text>
+            {item.isVerified && (
+              <View style={styles.verifiedBadge}>
+                <Ionicons name="checkmark-circle" size={13} color="#fff" />
+                <Text style={styles.verifiedTxt}>Verified</Text>
               </View>
             )}
           </View>
-        )}
-
-        {/* Footer: campaign count + view hint */}
-        <View style={[styles.cardFooter, { borderTopColor: C.border }]}>
-          <View style={[styles.campaignBadge, { backgroundColor: 'rgba(79,70,229,0.1)' }]}>
-            <Ionicons name="megaphone-outline" size={11} color={C.brinjal1} />
-            <Text style={[styles.campaignBadgeTxt, { color: C.brinjal1 }]}>
-              {item._count.campaigns} active campaign{item._count.campaigns !== 1 ? 's' : ''}
+          {item.description ? (
+            <Text style={[styles.desc, { color: C.textSecondary }]} numberOfLines={2}>
+              {item.description}
             </Text>
-          </View>
-          <View style={styles.viewHint}>
-            <Text style={[styles.viewHintTxt, { color: C.textSecondary }]}>View</Text>
-            <Ionicons name="chevron-forward" size={13} color={C.textSecondary} />
-          </View>
+          ) : (
+            <Text style={[styles.desc, { color: C.textSecondary, fontStyle: 'italic' }]}>No description provided</Text>
+          )}
         </View>
 
-      </Pressable>
-
-      {/* Heart — sibling of cardBody, absolutely positioned top-right */}
-      <Pressable style={styles.heartBtn} onPress={onToggleFavorite} hitSlop={12}>
-        <View style={[styles.heartCircle, { backgroundColor: isFavorited ? 'rgba(239,68,68,0.12)' : 'rgba(0,0,0,0.25)' }]}>
+        {/* Heart */}
+        <Pressable
+          style={[styles.heartBtn, { backgroundColor: isFavorited ? '#FEE2E2' : C.background }]}
+          onPress={(e) => { e.stopPropagation(); onToggleFavorite(); }}
+          hitSlop={10}>
           <Ionicons
             name={isFavorited ? 'heart' : 'heart-outline'}
             size={18}
             color={isFavorited ? '#EF4444' : C.textSecondary}
           />
-        </View>
-      </Pressable>
+        </Pressable>
+      </View>
 
-    </View>
+      {/* Category chips */}
+      {item.categories.length > 0 && (
+        <View style={styles.chips}>
+          {item.categories.slice(0, 3).map((cat) => {
+            const emoji = CATEGORIES.find((c) => c.label.toLowerCase() === cat.toLowerCase())?.emoji ?? '🏷️';
+            return (
+              <View key={cat} style={[styles.chip, { backgroundColor: C.primaryLight, borderColor: 'rgba(79,70,229,0.25)' }]}>
+                <Text style={styles.chipEmoji}>{emoji}</Text>
+                <Text style={[styles.chipTxt, { color: C.brinjal1 }]}>{cat}</Text>
+              </View>
+            );
+          })}
+          {item.categories.length > 3 && (
+            <View style={[styles.chip, { backgroundColor: C.background, borderColor: C.border }]}>
+              <Text style={[styles.chipTxt, { color: C.textSecondary }]}>+{item.categories.length - 3} more</Text>
+            </View>
+          )}
+        </View>
+      )}
+
+      {/* Footer */}
+      <View style={[styles.cardFooter, { borderTopColor: C.border }]}>
+        <View style={[styles.campaignBadge, { backgroundColor: item._count.campaigns > 0 ? 'rgba(79,70,229,0.1)' : C.background }]}>
+          <Ionicons name="megaphone-outline" size={12} color={item._count.campaigns > 0 ? C.brinjal1 : C.textSecondary} />
+          <Text style={[styles.campaignBadgeTxt, { color: item._count.campaigns > 0 ? C.brinjal1 : C.textSecondary }]}>
+            {item._count.campaigns > 0
+              ? `${item._count.campaigns} campaign${item._count.campaigns !== 1 ? 's' : ''}`
+              : 'No campaigns yet'}
+          </Text>
+        </View>
+        <View style={[styles.viewBtn, { backgroundColor: C.brinjal1 }]}>
+          <Text style={styles.viewBtnTxt}>View Profile</Text>
+          <Ionicons name="chevron-forward" size={13} color="#fff" />
+        </View>
+      </View>
+
+    </Pressable>
   );
 }
 
@@ -530,12 +535,12 @@ export default function ExploreBusinessesScreen() {
 
 const styles = StyleSheet.create({
   container:      { flex: 1 },
-  gradientHeader: { paddingBottom: 16, borderBottomLeftRadius: 28, borderBottomRightRadius: 28, overflow: 'hidden' },
+  gradientHeader: { borderBottomLeftRadius: 28, borderBottomRightRadius: 28, overflow: 'hidden' },
   decCircle1:     { position: 'absolute', width: 180, height: 180, borderRadius: 90, top: -60, right: -40 },
   decCircle2:     { position: 'absolute', width: 120, height: 120, borderRadius: 60, bottom: -30, left: 20 },
 
   // Header
-  header:         { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4, gap: 12 },
+  header:         { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 10, paddingBottom: 12, gap: 12 },
   headerMiddle:   { flex: 1, alignItems: 'center', gap: 2 },
   heading:        { fontSize: 20, fontWeight: '800', letterSpacing: -0.3, fontFamily: F.extrabold, color: '#fff' },
   headingSub:     { fontSize: 12, fontFamily: F.regular },
@@ -560,31 +565,31 @@ const styles = StyleSheet.create({
 
   center:         { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
   loadingText:    { fontSize: 14, fontFamily: F.regular },
-  list:           { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 48, gap: 12 },
+  list:           { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 48, gap: 14 },
   listEmpty:      { flexGrow: 1 },
 
   // Card
-  card:           { borderRadius: 18, borderWidth: StyleSheet.hairlineWidth, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
-  cardBody:       { padding: 16, gap: 12 },
-  cardTop:        { flexDirection: 'row', gap: 13, alignItems: 'flex-start' },
-  avatarRing:     { borderRadius: 30, borderWidth: 2, padding: 2 },
-  cardInfo:       { flex: 1, gap: 5, paddingTop: 2 },
-  nameRow:        { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  card:           { borderRadius: 20, borderWidth: 1, padding: 16, gap: 12, shadowColor: '#000', shadowOpacity: 0.07, shadowRadius: 14, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
+  cardTop:        { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
+  cardInfo:       { flex: 1, gap: 4 },
+  nameRow:        { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
   bizName:        { fontSize: 16, fontWeight: '800', flexShrink: 1, letterSpacing: -0.3, fontFamily: F.extrabold },
+  verifiedBadge:  { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: '#4F46E5', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
+  verifiedTxt:    { fontSize: 10, fontWeight: '700', color: '#fff', fontFamily: F.bold },
   desc:           { fontSize: 13, lineHeight: 19, fontFamily: F.regular },
 
+  // Heart (top-right inside cardTop)
+  heartBtn:       { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+
   chips:          { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  chip:           { borderRadius: 8, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 4 },
+  chip:           { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 10, borderWidth: 1, paddingHorizontal: 9, paddingVertical: 4 },
+  chipEmoji:      { fontSize: 12 },
   chipTxt:        { fontSize: 11, fontWeight: '700', fontFamily: F.bold },
 
-  // Card footer inside cardBody
-  cardFooter:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 10, borderTopWidth: StyleSheet.hairlineWidth },
-  campaignBadge:  { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 4 },
+  // Card footer
+  cardFooter:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 12, borderTopWidth: StyleSheet.hairlineWidth },
+  campaignBadge:    { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5 },
   campaignBadgeTxt: { fontSize: 12, fontWeight: '700', fontFamily: F.bold },
-  viewHint:       { flexDirection: 'row', alignItems: 'center', gap: 2 },
-  viewHintTxt:    { fontSize: 12, fontWeight: '600', fontFamily: F.semibold },
-
-  // Heart button — absolutely positioned, sibling of cardBody
-  heartBtn:       { position: 'absolute', top: 14, right: 14 },
-  heartCircle:    { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  viewBtn:          { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7 },
+  viewBtnTxt:       { fontSize: 12, fontWeight: '700', color: '#fff', fontFamily: F.bold },
 });

@@ -13,6 +13,7 @@ import { F } from '@/utilities/constants';
 import { campaignService } from '@/services/campaign';
 import { useNotificationBadge } from '@/context/NotificationContext';
 import { notificationService } from '@/services/notifications';
+import { profileService } from '@/services/profile';
 import type { Campaign } from '@/types';
 
 const CATEGORY_META: Record<string, { emoji: string; cardBg: string }> = {
@@ -57,6 +58,8 @@ export default function BusinessHomeScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [fetchError, setFetchError] = useState('');
+  const [missingFields, setMissingFields] = useState<string[]>([]);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
 
   async function fetchCampaigns(showLoader = true) {
     if (showLoader) setLoading(true);
@@ -72,7 +75,20 @@ export default function BusinessHomeScreen() {
     }
   }
 
-  useEffect(() => { void fetchCampaigns(); }, [languageVersion]);
+  useEffect(() => {
+    void fetchCampaigns();
+    profileService.getBusinessProfile()
+      .then((profile) => {
+        const missing: string[] = [];
+        if (!profile.logoUrl)            missing.push('Logo');
+        if (!profile.description)        missing.push('Description');
+        if (!profile.location)           missing.push('Location');
+        if (!profile.categories?.length) missing.push('Categories');
+        if (!profile.website)            missing.push('Website');
+        setMissingFields(missing);
+      })
+      .catch(() => {});
+  }, [languageVersion]);
 
   useFocusEffect(useCallback(() => {
     notificationService.getBadge().then((r) => setBadgeCount(r.count)).catch(() => {});
@@ -154,17 +170,55 @@ export default function BusinessHomeScreen() {
               <Text style={styles.statStripLabel}>Active</Text>
             </Pressable>
             <View style={styles.statStripDiv} />
-            <Pressable style={styles.statStripItem} onPress={() => router.push('/(business)/proposals')}>
-              <Text style={styles.statStripVal}>{stats.proposals}</Text>
-              <Text style={styles.statStripLabel}>Proposals</Text>
-            </Pressable>
-            <View style={styles.statStripDiv} />
             <Pressable style={styles.statStripItem} onPress={() => router.push('/(business)/campaigns')}>
               <Text style={styles.statStripVal}>{stats.total}</Text>
               <Text style={styles.statStripLabel}>Total</Text>
             </Pressable>
+            <View style={styles.statStripDiv} />
+            <Pressable style={styles.statStripItem} onPress={() => router.push('/(business)/campaigns')}>
+              <Text style={styles.statStripVal}>{stats.completed}</Text>
+              <Text style={styles.statStripLabel}>Completed</Text>
+            </Pressable>
           </View>
         </LinearGradient>
+
+        {/* ── Quick Actions ── */}
+        <View style={styles.quickActionsRow}>
+          {([
+            { icon: 'add-circle-outline' as const,  label: 'Create',    bg: '#EDE9FE', color: '#7C3AED', route: '/create-campaign' },
+            { icon: 'people-outline'     as const,  label: 'Proposals', bg: '#DCFCE7', color: '#059669', route: '/(business)/proposals' },
+            { icon: 'chatbubbles-outline'as const,  label: 'Messages',  bg: '#DBEAFE', color: '#2563EB', route: '/(business)/messages' },
+            { icon: 'briefcase-outline'  as const,  label: 'Events',    bg: '#FEF3C7', color: '#D97706', route: '/(business)/campaigns' },
+          ]).map(({ icon, label, bg, color, route }) => (
+            <Pressable key={label} style={[styles.quickAction, { backgroundColor: C.surface, borderColor: C.border }]}
+              onPress={() => router.push(route as never)}>
+              <View style={[styles.quickActionIcon, { backgroundColor: bg }]}>
+                <Ionicons name={icon} size={20} color={color} />
+              </View>
+              <Text style={[styles.quickActionLabel, { color: C.text }]}>{label}</Text>
+            </Pressable>
+          ))}
+        </View>
+
+        {/* ── Profile completion banner ── */}
+        {!bannerDismissed && missingFields.length > 0 && (
+          <Pressable
+            style={[styles.banner, { backgroundColor: C.surface, borderLeftColor: C.brinjal1 }]}
+            onPress={() => router.push('/(business)/edit-profile' as never)}>
+            <View style={[styles.bannerIconBox, { backgroundColor: C.primaryLight }]}>
+              <Ionicons name="business-outline" size={20} color={C.brinjal1} />
+            </View>
+            <View style={styles.bannerText}>
+              <Text style={[styles.bannerTitle, { color: C.text }]}>Complete your profile</Text>
+              <Text style={[styles.bannerSub, { color: C.textSecondary }]} numberOfLines={2}>
+                Missing: {missingFields.join(' · ')}
+              </Text>
+            </View>
+            <Pressable style={styles.bannerClose} onPress={() => setBannerDismissed(true)}>
+              <Ionicons name="close" size={16} color={C.textSecondary} />
+            </Pressable>
+          </Pressable>
+        )}
 
         {/* ── Attention banner (shown when proposals are pending) ── */}
         {!loading && stats.proposals > 0 && (
@@ -301,6 +355,20 @@ const styles = StyleSheet.create({
   statStripVal: { fontSize: 20, fontWeight: '800', color: '#fff', fontFamily: F.extrabold },
   statStripLabel: { fontSize: 10, color: 'rgba(255,255,255,0.7)', fontFamily: F.medium, marginTop: 2 },
   statStripDiv: { width: 1, backgroundColor: 'rgba(255,255,255,0.2)', marginVertical: 4 },
+
+  // Quick actions
+  quickActionsRow:  { flexDirection: 'row', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 4, gap: 10 },
+  quickAction:      { flex: 1, alignItems: 'center', borderRadius: 16, paddingVertical: 12, gap: 6, borderWidth: 1 },
+  quickActionIcon:  { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+  quickActionLabel: { fontSize: 11, fontFamily: F.medium, textAlign: 'center' },
+
+  // Profile completion banner
+  banner:        { flexDirection: 'row', alignItems: 'center', borderRadius: 16, marginHorizontal: 20, marginTop: 14, marginBottom: 2, padding: 14, gap: 12, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2, borderLeftWidth: 4 },
+  bannerIconBox: { width: 38, height: 38, borderRadius: 11, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  bannerText:    { flex: 1, gap: 2 },
+  bannerTitle:   { fontSize: 13, fontFamily: F.semibold },
+  bannerSub:     { fontSize: 12, fontFamily: F.regular, lineHeight: 17, opacity: 0.75 },
+  bannerClose:   { position: 'absolute', top: 8, right: 8, padding: 4 },
 
   // Attention banner
   attentionBanner: { flexDirection: 'row', alignItems: 'center', borderRadius: 14, marginHorizontal: 20, marginTop: 16, padding: 14, gap: 12, backgroundColor: '#FFFBEB', borderWidth: 1, borderColor: '#FDE68A' },

@@ -807,9 +807,9 @@ function SectionCard({ title, sub, children, colors }: {
 }
 
 const sc = StyleSheet.create({
-  card:  { borderRadius: 16, padding: 18, gap: 14, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
+  card:  { borderRadius: 16, padding: 16, gap: 10, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
   title: { fontSize: 15, fontWeight: '800', fontFamily: F.extrabold },
-  sub:   { fontSize: 12, lineHeight: 18, marginTop: -6, fontFamily: F.regular },
+  sub:   { fontSize: 12, lineHeight: 18, fontFamily: F.regular },
 });
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
@@ -1233,6 +1233,23 @@ export default function CreateCampaignScreen() {
                           );
                         })}
                       </View>
+                      {/* Free Product Exchange — full width */}
+                      {(() => {
+                        const b = BUDGETS[4];
+                        const sel = form.budget === b;
+                        return (
+                          <Pressable
+                            style={[s.budgetCardFull, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? C.brinjal1 : C.background }]}
+                            onPress={() => {
+                              update('budget', b);
+                              if (setupErrors.budget) setSetupErrors((e) => ({ ...e, budget: undefined }));
+                            }}>
+                            <Ionicons name="gift-outline" size={17} color={sel ? '#fff' : C.textSecondary} />
+                            <Text style={[s.budgetCardFullText, { color: sel ? '#fff' : C.text }]}>{b}</Text>
+                            {sel && <Ionicons name="checkmark-circle" size={17} color="#fff" />}
+                          </Pressable>
+                        );
+                      })()}
                       {setupErrors.budget && <Text style={s.errorText}>{setupErrors.budget}</Text>}
                     </View>
                   </SectionCard>
@@ -1698,8 +1715,8 @@ const s = StyleSheet.create({
   progressTrack:{ height: 3 },
   progressFill: { height: 3 },
 
-  scroll:   { padding: 20, paddingBottom: 48 },
-  content:  { gap: 16 },
+  scroll:   { padding: 18, paddingBottom: 48 },
+  content:  { gap: 14 },
 
   input:     { borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14, height: 50, fontSize: 15, fontFamily: F.regular },
   textarea:  { borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, minHeight: 120, textAlignVertical: 'top', fontFamily: F.regular },

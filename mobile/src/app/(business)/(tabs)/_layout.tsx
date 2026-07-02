@@ -27,9 +27,10 @@ function TabIcon({
   focused: boolean;
   badge?: number;
 }) {
+  const C = useAppColors();
   return (
     <View style={tabIcon.wrap}>
-      {focused && <View style={[tabIcon.pill, { backgroundColor: COLORS.brinjal1 }]} />}
+      {focused && <View style={[tabIcon.pill, { backgroundColor: C.brinjal1 }]} />}
       <Ionicons name={focused ? nameActive : name} size={size} color={color as string} />
       {!!badge && badge > 0 && (
         <View style={tabIcon.badge}>
@@ -59,6 +60,7 @@ const FAB_INIT = {
 export default function BusinessTabsLayout() {
   const { user, logout } = useAuth();
   const { t } = useLanguage();
+  const C = useAppColors();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const { badgeCount: notifBadge, chatBadgeCount: badgeCount } = useNotificationBadge();
 
@@ -108,9 +110,9 @@ export default function BusinessTabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: COLORS.brinjal1,
+        tabBarActiveTintColor: C.brinjal1,
         tabBarInactiveTintColor: '#ABABBB',
-        tabBarStyle: styles.tabBar,
+        tabBarStyle: [styles.tabBar, { backgroundColor: C.surface, borderTopColor: C.border }],
         tabBarLabelStyle: styles.tabLabel,
         tabBarItemStyle: styles.tabItem,
       }}>
@@ -192,8 +194,6 @@ export default function BusinessTabsLayout() {
 
 const styles = StyleSheet.create({
   tabBar: {
-    backgroundColor: COLORS.surface,
-    borderTopColor: COLORS.border,
     borderTopWidth: 1,
     height: Platform.OS === 'ios' ? 88 : 66,
     paddingTop: 10,

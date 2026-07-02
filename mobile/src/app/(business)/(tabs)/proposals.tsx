@@ -301,11 +301,24 @@ export default function ProposalsScreen() {
           ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
           ListEmptyComponent={
             <View style={styles.empty}>
-              <Ionicons
-                name={activeTab === 'accepted' ? 'checkmark-circle-outline' : 'document-text-outline'}
-                size={56}
-                color={activeTab === 'accepted' ? '#16A34A' : C.textSecondary}
-              />
+              <View style={[styles.emptyIconCircle, {
+                backgroundColor: activeTab === 'accepted' ? '#EEF9F3' :
+                                 activeTab === 'paid'     ? PAID_LIGHT :
+                                 activeTab === 'free'     ? FREE_LIGHT :
+                                 '#F5F3FF',
+              }]}>
+                <Ionicons
+                  name={activeTab === 'accepted' ? 'checkmark-circle-outline' :
+                        activeTab === 'paid'     ? 'cash-outline'             :
+                        activeTab === 'free'     ? 'gift-outline'             :
+                        'document-text-outline'}
+                  size={36}
+                  color={activeTab === 'accepted' ? '#16A34A' :
+                         activeTab === 'paid'     ? PAID_ACCENT :
+                         activeTab === 'free'     ? FREE_ACCENT :
+                         '#7C3AED'}
+                />
+              </View>
               <Text style={[styles.emptyTitle, { color: C.text }]}>{t('proposal.business.emptyTitle')}</Text>
               <Text style={[styles.emptySub, { color: C.textSecondary }]}>
                 {activeTab === 'paid'     ? t('proposal.business.emptyPaidSub')     :
@@ -325,10 +338,10 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
-  gradientHeader: { paddingBottom: 20, borderBottomLeftRadius: 28, borderBottomRightRadius: 28, overflow: 'hidden' },
+  gradientHeader: { borderBottomLeftRadius: 28, borderBottomRightRadius: 28, overflow: 'hidden' },
   decCircle1:     { position: 'absolute', width: 200, height: 200, borderRadius: 100, top: -70, right: -40 },
   decCircle2:     { position: 'absolute', width: 120, height: 120, borderRadius: 60, bottom: -35, left: 15 },
-  headerContent:  { paddingHorizontal: 20, paddingTop: 16, gap: 4 },
+  headerContent:  { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 16, gap: 4 },
   pageTitle:      { fontSize: 22, fontWeight: '800', color: '#fff', fontFamily: F.extrabold },
   pageSub:        { fontSize: 13, color: 'rgba(255,255,255,0.75)', fontFamily: F.regular },
 
@@ -353,20 +366,20 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     elevation: 3,
   },
-  cardTopRow:    { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 10 },
+  cardTopRow:    { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8 },
   cardTopSpacer: { flex: 1 },
   typeBadge:     { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
   typeBadgeText: { fontSize: 11, fontWeight: '700', fontFamily: F.bold },
   platformPill:  { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
   platformText:  { fontSize: 11, fontWeight: '600', fontFamily: F.semibold },
 
-  cardTitle: { fontSize: 15, fontWeight: '700', lineHeight: 20, paddingHorizontal: 16, paddingBottom: 12, fontFamily: F.bold },
+  cardTitle: { fontSize: 15, fontWeight: '700', lineHeight: 20, paddingHorizontal: 16, paddingBottom: 10, fontFamily: F.bold },
 
-  statsRow:    { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderTopWidth: StyleSheet.hairlineWidth },
+  statsRow:    { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, borderTopWidth: StyleSheet.hairlineWidth },
   statItem:    { flex: 1, alignItems: 'center', gap: 2 },
-  statNum:     { fontSize: 18, fontWeight: '800', fontFamily: F.extrabold },
-  statLabel:   { fontSize: 10, fontWeight: '600', textTransform: 'uppercase', fontFamily: F.semibold },
-  statDivider: { width: StyleSheet.hairlineWidth, height: 32 },
+  statNum:     { fontSize: 16, fontWeight: '700', fontFamily: F.bold },
+  statLabel:   { fontSize: 11, fontWeight: '500', fontFamily: F.medium },
+  statDivider: { width: StyleSheet.hairlineWidth, height: 28 },
 
   nudge:     { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, paddingVertical: 8 },
   nudgeText: { fontSize: 12, fontWeight: '600', fontFamily: F.semibold },
@@ -378,7 +391,8 @@ const styles = StyleSheet.create({
   startWorkBtnSub:  { fontSize: 11, color: 'rgba(255,255,255,0.75)', fontFamily: F.regular },
   btnArrow:         { width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
 
-  empty:      { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 10, paddingHorizontal: 32, paddingTop: 60 },
+  empty:           { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 10, paddingHorizontal: 32, paddingTop: 60 },
+  emptyIconCircle: { width: 80, height: 80, borderRadius: 40, justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
   emptyTitle: { fontSize: 17, fontWeight: '700', textAlign: 'center', fontFamily: F.bold },
   emptySub:   { fontSize: 13, textAlign: 'center', lineHeight: 20, fontFamily: F.regular },
 });

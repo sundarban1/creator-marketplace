@@ -123,9 +123,7 @@ export default function CreatorProfileScreen() {
               <Ionicons name="chevron-back" size={22} color="#fff" />
             </Pressable>
             <Text style={s.topTitle}>{t('profile.myProfile')}</Text>
-            <Pressable style={s.topIconBtn} onPress={logout}>
-              <Ionicons name="log-out-outline" size={20} color="#fff" />
-            </Pressable>
+            <View style={{ width: 36 }} />
           </View>
         </LinearGradient>
 
