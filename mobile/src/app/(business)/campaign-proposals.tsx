@@ -92,6 +92,7 @@ function ProposalCard({
   const accent   = isFree ? FREE_ACCENT : PAID_ACCENT;
   const accentBg = isFree ? FREE_LIGHT  : PAID_LIGHT;
   const st = STATUS_CFG[p.status];
+  const [coverExpanded, setCoverExpanded] = useState(false);
 
   return (
     <Pressable
@@ -130,10 +131,28 @@ function ProposalCard({
       {/* Cover letter */}
       {p.coverLetter ? (
         <View style={[styles.coverWrap, { backgroundColor: C.background }]}>
-          <Ionicons name="chatbubble-ellipses-outline" size={13} color={C.textSecondary} style={{ marginTop: 1 }} />
-          <Text style={[styles.coverLetter, { color: C.textSecondary }]} numberOfLines={3}>
-            {p.coverLetter}
-          </Text>
+          <Ionicons name="chatbubble-ellipses-outline" size={13} color={C.textSecondary} style={{ marginTop: 2 }} />
+          <View style={{ flex: 1 }}>
+            <Text
+              style={[styles.coverLetter, { color: C.textSecondary }]}
+              numberOfLines={coverExpanded ? undefined : 3}>
+              {p.coverLetter}
+            </Text>
+            {p.coverLetter.length > 120 && (
+              <Pressable
+                onPress={(e) => { e.stopPropagation(); setCoverExpanded((v) => !v); }}
+                style={styles.seeMoreBtn}>
+                <Text style={[styles.seeMoreText, { color: accent }]}>
+                  {coverExpanded ? 'See less' : 'See more'}
+                </Text>
+                <Ionicons
+                  name={coverExpanded ? 'chevron-up' : 'chevron-down'}
+                  size={12}
+                  color={accent}
+                />
+              </Pressable>
+            )}
+          </View>
         </View>
       ) : null}
 
@@ -552,7 +571,9 @@ const styles = StyleSheet.create({
   cardDivider: { height: StyleSheet.hairlineWidth },
 
   coverWrap:   { flexDirection: 'row', alignItems: 'flex-start', gap: 8, borderRadius: 10, padding: 10 },
-  coverLetter: { flex: 1, fontSize: 12, lineHeight: 18, fontStyle: 'italic', fontFamily: F.regular },
+  coverLetter: { fontSize: 12, lineHeight: 18, fontStyle: 'italic', fontFamily: F.regular },
+  seeMoreBtn:  { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 4 },
+  seeMoreText: { fontSize: 12, fontWeight: '700', fontFamily: F.bold },
 
   rateRow:    { flexDirection: 'row', alignItems: 'center', gap: 10 },
   ratePill:   { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6 },

@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { motion, type Variants } from 'framer-motion';
+import { motion, AnimatePresence, type Variants } from 'framer-motion';
 import {
   Camera, Briefcase, MessageSquare, BarChart2, Shield, Zap,
   Star, ChevronDown, ChevronUp, Mail, Globe, AtSign,
@@ -87,6 +86,14 @@ const MOCK_SCREENS = [
   { label: 'Secure Chat',       icon: MessageSquare, grad: ['#065F46', '#059669'] },
 ];
 
+const BUSINESS_SCREENS = [
+  { src: '/screenshots/screen-home.jpg',   label: 'Creator Home',       grad: ['#4C1D95', '#7C3AED'], desc: 'Discover brand campaigns' },
+  { icon: Briefcase,                        label: 'Business Dashboard', grad: ['#1E3A8A', '#312E81'], desc: 'Manage all your events' },
+  { src: '/screenshots/screen-detail.jpg', label: 'Event Details',       grad: ['#065F46', '#047857'], desc: 'Full campaign breakdown' },
+  { icon: Users,                            label: 'Proposals Inbox',    grad: ['#7C2D12', '#B45309'], desc: 'Review creator proposals' },
+  { src: '/screenshots/screen-login.jpg',  label: 'Secure Sign-In',     grad: ['#6D28D9', '#8B5CF6'], desc: 'Email or Google login' },
+];
+
 const STATS = [
   { label: 'Creators',     value: '2,500+', icon: Camera },
   { label: 'Brands',       value: '400+',   icon: Briefcase },
@@ -94,9 +101,75 @@ const STATS = [
   { label: 'Paid Out',     value: '₹2Cr+',  icon: DollarSign },
 ];
 
+type HeroScreen = {
+  src?: string;
+  CustomScreen?: React.ComponentType;
+  icon?: React.ElementType;
+  label: string;
+  tag: string;
+  tagColor: string;
+  title: string;
+  desc: string;
+  bullets: string[];
+  grad: [string, string];
+};
+
+const HERO_SCREENS: HeroScreen[] = [
+  {
+    src: '/screenshots/screen-home.jpg',
+    label: 'Creator Home',
+    tag: 'For Creators',
+    tagColor: '#10B981',
+    title: 'Discover brand campaigns',
+    desc: 'Browse hundreds of live campaigns by category, platform, and budget. Featured deals, new listings, and smart filters — all in one clean feed.',
+    bullets: ['Instagram, YouTube, TikTok & more', 'Budget range & follower-count filters', 'Featured & trending campaigns daily'],
+    grad: ['#4C1D95', '#7C3AED'],
+  },
+  {
+    src: '/screenshots/screen-detail.jpg',
+    label: 'Event Details',
+    tag: 'Campaign Details',
+    tagColor: '#3B82F6',
+    title: 'Everything you need to decide',
+    desc: 'Full campaign specs in one clean view — goals, deadline, deliverables, platform, payment type, and brand profile.',
+    bullets: ['Paid Event or Free Product Exchange', 'Event goals & content requirements', 'One-tap Submit Proposal button'],
+    grad: ['#1E3A8A', '#2563EB'],
+  },
+  {
+    CustomScreen: BusinessDashboardScreen,
+    label: 'Business Dashboard',
+    tag: 'For Brands',
+    tagColor: '#F59E0B',
+    title: 'Manage every campaign in one place',
+    desc: 'Track active events, monitor proposal counts, and switch between Paid and Free event tabs. Create new campaigns or invite creators directly.',
+    bullets: ['Active · Paid · Open (Free) event tabs', 'Live proposal count per campaign', 'Invite creators to your events'],
+    grad: ['#1E3A8A', '#312E81'],
+  },
+  {
+    CustomScreen: MessagesScreen,
+    label: 'Message Inbox',
+    tag: 'For Brands',
+    tagColor: '#059669',
+    title: 'Review creator proposals & messages',
+    desc: 'See every creator who applied — cover letters, proposed rates, timelines. Expand the full pitch, then Accept or Decline in one tap.',
+    bullets: ['Cover letter preview with expand toggle', 'Proposed rate & application status', 'Accept · Decline · Message creator'],
+    grad: ['#064E3B', '#059669'],
+  },
+  {
+    src: '/screenshots/screen-login.jpg',
+    label: 'Sign In',
+    tag: 'Onboarding',
+    tagColor: '#8B5CF6',
+    title: 'Up and running in under a minute',
+    desc: 'Sign in with email or Google. Pick your role — Creator or Brand — and start exploring immediately. English and Nepali supported.',
+    bullets: ['Email or Google sign-in', 'Creator & Brand role selection', 'English & Nepali language support'],
+    grad: ['#6D28D9', '#8B5CF6'],
+  },
+];
+
 // ── Nav ─────────────────────────────────────────────────────────────────────
 
-function Nav({ onAdminClick }: { onAdminClick: () => void }) {
+function Nav() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -131,9 +204,6 @@ function Nav({ onAdminClick }: { onAdminClick: () => void }) {
               {l}
             </button>
           ))}
-          <button onClick={onAdminClick} className="ml-2 px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold transition-colors">
-            Admin
-          </button>
         </div>
 
         {/* Mobile menu button */}
@@ -150,9 +220,6 @@ function Nav({ onAdminClick }: { onAdminClick: () => void }) {
               {l}
             </button>
           ))}
-          <button onClick={onAdminClick} className="mt-1 px-4 py-2 rounded-lg bg-violet-600 text-white text-sm font-semibold text-center">
-            Admin Dashboard
-          </button>
         </div>
       )}
     </nav>
@@ -212,6 +279,182 @@ function PhoneMockup({
   );
 }
 
+// ── Custom app screen mockups ─────────────────────────────────────────────────
+
+function BusinessDashboardScreen() {
+  const S = { fontSize: 0 } as const; // silence unused-var lint
+  void S;
+  const row = (n: string, l: string, border: boolean) => (
+    <div key={l} style={{ flex: 1, textAlign: 'center', borderRight: border ? '1px solid rgba(255,255,255,0.2)' : 'none' }}>
+      <div style={{ fontSize: 14, fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>{n}</div>
+      <div style={{ fontSize: 7, color: 'rgba(255,255,255,0.6)', marginTop: 1 }}>{l}</div>
+    </div>
+  );
+  return (
+    <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', background: '#F1F5F9' }}>
+      {/* Purple gradient header */}
+      <div style={{ background: 'linear-gradient(160deg,#2E1065,#4C1D95)', paddingTop: 36, paddingBottom: 14, paddingLeft: 12, paddingRight: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 10 }}>
+          <div>
+            <div style={{ fontSize: 8, color: 'rgba(255,255,255,0.6)', marginBottom: 2 }}>Good Evening</div>
+            <div style={{ fontSize: 13, fontWeight: 800, color: '#fff' }}>Paradise Cafe</div>
+          </div>
+          <div style={{ width: 28, height: 28, borderRadius: 14, background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ fontSize: 11, color: '#fff', fontWeight: 700 }}>P</div>
+          </div>
+        </div>
+        {/* Stats */}
+        <div style={{ background: 'rgba(255,255,255,0.13)', borderRadius: 14, padding: '8px 0', display: 'flex' }}>
+          {row('3','Active',true)}{row('3','Total',true)}{row('0','Complete',false)}
+        </div>
+      </div>
+
+      {/* Body */}
+      <div style={{ padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {/* Quick actions */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 6 }}>
+          {[['➕','Create'],['👥','Proposals'],['💬','Messages'],['📅','Events']].map(([ic,lb]) => (
+            <div key={lb} style={{ background: '#fff', borderRadius: 14, padding: '7px 4px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+              <div style={{ fontSize: 12 }}>{ic}</div>
+              <div style={{ fontSize: 6, color: '#374151', fontWeight: 500 }}>{lb}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Profile banner */}
+        <div style={{ background: '#fff', borderRadius: 12, padding: '7px 8px', display: 'flex', alignItems: 'center', gap: 7, borderLeft: '3px solid #7C3AED' }}>
+          <div style={{ fontSize: 11 }}>🏢</div>
+          <div>
+            <div style={{ fontSize: 7, fontWeight: 700, color: '#111', marginBottom: 1 }}>Complete your profile</div>
+            <div style={{ fontSize: 6, color: '#9CA3AF' }}>Missing: Logo · Website</div>
+          </div>
+        </div>
+
+        {/* Attention banner */}
+        <div style={{ background: '#FFFBEB', borderRadius: 12, padding: '7px 8px', display: 'flex', alignItems: 'center', gap: 7, border: '1px solid #FDE68A' }}>
+          <div style={{ fontSize: 11 }}>⚠️</div>
+          <div>
+            <div style={{ fontSize: 7, fontWeight: 700, color: '#92400E', marginBottom: 1 }}>Needs Your Attention</div>
+            <div style={{ fontSize: 6, color: '#B45309' }}>4 proposals waiting for review</div>
+          </div>
+          <div style={{ marginLeft: 'auto', fontSize: 9, color: '#D97706' }}>›</div>
+        </div>
+
+        {/* Explore creators */}
+        <div style={{ background: '#F0FDF4', borderRadius: 12, padding: '7px 8px', display: 'flex', alignItems: 'center', gap: 7, border: '1px solid #BBF7D0' }}>
+          <div style={{ fontSize: 11 }}>🎨</div>
+          <div>
+            <div style={{ fontSize: 7, fontWeight: 700, color: '#065F46', marginBottom: 1 }}>Explore Creators</div>
+            <div style={{ fontSize: 6, color: '#059669' }}>for your next event</div>
+          </div>
+          <div style={{ marginLeft: 'auto', fontSize: 9, color: '#059669' }}>›</div>
+        </div>
+
+        {/* Recent events header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ fontSize: 9, fontWeight: 800, color: '#111' }}>Recent Events</div>
+          <div style={{ fontSize: 7, color: '#7C3AED', fontWeight: 600 }}>View all</div>
+        </div>
+
+        {/* Event card */}
+        <div style={{ background: '#fff', borderRadius: 12, padding: '7px 8px', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ width: 28, height: 28, borderRadius: 10, background: '#EDE9FE', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>👗</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 2 }}>
+              <div style={{ fontSize: 7, fontWeight: 700, color: '#111' }}>Fashion Cr...</div>
+              <div style={{ fontSize: 5, background: '#D1FAE5', color: '#065F46', padding: '1px 4px', borderRadius: 99, fontWeight: 700 }}>Free</div>
+              <div style={{ fontSize: 5, background: '#D1FAE5', color: '#065F46', padding: '1px 4px', borderRadius: 99, fontWeight: 700 }}>● Active</div>
+            </div>
+            <div style={{ fontSize: 6, color: '#9CA3AF' }}>Instagram · Free Product Exchange</div>
+            <div style={{ fontSize: 6, color: '#374151', marginTop: 1 }}>👥 2 Proposals</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom tab bar */}
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: '#fff', borderTop: '1px solid #E5E7EB', display: 'flex', paddingTop: 5, paddingBottom: 6 }}>
+        {[['🏠','Home',true],['📅','Events',false],['📄','Proposals',false],['💬','Messages',false],['🔔','Activity',false]].map(([ic,lb,active]) => (
+          <div key={String(lb)} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+            <div style={{ fontSize: 13 }}>{ic}</div>
+            <div style={{ fontSize: 5, color: active ? '#7C3AED' : '#9CA3AF', fontWeight: active ? 700 : 400 }}>{lb}</div>
+            {active && <div style={{ width: 16, height: 2, background: '#7C3AED', borderRadius: 1 }} />}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function MessagesScreen() {
+  const convos = [
+    { init: 'SB', name: 'Sundar Ban', campaign: 'Nepal Adventure – Travel...', last: 'Hi Paradise Cafe team! I\'m thrilled…', time: '2d', color: '#7C3AED', status: '✅ Accepted', statusColor: '#10B981' },
+    { init: 'SB', name: 'Sundar Ban', campaign: 'Fashion Creator Showcase', last: 'Looking forward to collaborating!', time: '1d', color: '#2563EB', status: '⏳ Pending', statusColor: '#F59E0B' },
+    { init: 'PL', name: 'Priya Lama', campaign: 'Glow Up – Beauty Creator', last: 'Thank you for the opportunity…', time: '5h', color: '#059669', status: '✅ Accepted', statusColor: '#10B981' },
+  ];
+  return (
+    <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', background: '#F1F5F9' }}>
+      {/* Purple gradient header */}
+      <div style={{ background: 'linear-gradient(160deg,#312E81,#4C1D95)', paddingTop: 36, paddingBottom: 18, paddingLeft: 12, paddingRight: 12, borderBottomLeftRadius: 24, borderBottomRightRadius: 24 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
+          <div style={{ fontSize: 15, fontWeight: 800, color: '#fff' }}>Proposals</div>
+          <div style={{ fontSize: 9, background: 'rgba(255,255,255,0.15)', color: '#fff', padding: '3px 8px', borderRadius: 99 }}>2 application(s)</div>
+        </div>
+        <div style={{ fontSize: 8, color: 'rgba(255,255,255,0.6)', marginBottom: 10 }}>Review creator applications by campaign</div>
+        {/* Tabs */}
+        <div style={{ display: 'flex', gap: 14 }}>
+          {[['All','2',true],['Paid','1',false],['Free','1',false],['Accepted','2',false]].map(([t,c,active]) => (
+            <div key={String(t)} style={{ display: 'flex', alignItems: 'center', gap: 3, paddingBottom: 5, borderBottom: active ? '2px solid #fff' : '2px solid transparent' }}>
+              <div style={{ fontSize: 7, fontWeight: active ? 700 : 400, color: active ? '#fff' : 'rgba(255,255,255,0.5)' }}>{t}</div>
+              <div style={{ fontSize: 6, background: active ? '#7C3AED' : 'rgba(255,255,255,0.2)', color: '#fff', padding: '0 4px', borderRadius: 99 }}>{c}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Creator cards */}
+      <div style={{ padding: '8px 8px 0', display: 'flex', flexDirection: 'column', gap: 7 }}>
+        {convos.map((c, i) => (
+          <div key={i} style={{ background: '#fff', borderRadius: 14, padding: '9px 10px', border: '2px solid #F3F4F6', borderLeft: `3px solid ${c.color}` }}>
+            {/* Top row */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 6 }}>
+              <div style={{ width: 26, height: 26, borderRadius: 13, background: '#EDE9FE', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ fontSize: 8, fontWeight: 700, color: c.color }}>{c.init}</div>
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 8, fontWeight: 700, color: '#111' }}>{c.name}</div>
+                <div style={{ fontSize: 6, color: '#9CA3AF' }}>📍 Birtamode, Nepal</div>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
+                <div style={{ fontSize: 7, fontWeight: 700, color: c.statusColor }}>✅ Accepted</div>
+                <div style={{ fontSize: 6, color: '#9CA3AF' }}>{c.time} ago</div>
+              </div>
+            </div>
+            {/* Cover letter preview */}
+            <div style={{ background: '#F8F9FF', borderRadius: 9, padding: '5px 7px', display: 'flex', gap: 5, marginBottom: 5 }}>
+              <div style={{ fontSize: 9 }}>💬</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 6, color: '#6B7280', lineHeight: 1.4, fontStyle: 'italic' }}>{c.last}</div>
+                <div style={{ fontSize: 6, color: c.color, fontWeight: 700, marginTop: 3 }}>See more ▾</div>
+              </div>
+            </div>
+            {/* Rate */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+              <div style={{ fontSize: 6, background: '#EDE9FE', color: '#5B21B6', padding: '2px 6px', borderRadius: 99, fontWeight: 700 }}>💰 Rs. 25,000</div>
+              <div style={{ fontSize: 6, color: '#9CA3AF' }}>proposed rate</div>
+            </div>
+            {/* CTA */}
+            {i === 0 && (
+              <div style={{ background: '#7C3AED', borderRadius: 9, padding: '5px 0', textAlign: 'center', marginTop: 6 }}>
+                <div style={{ fontSize: 7, color: '#fff', fontWeight: 700 }}>✏️ Creator is Working →</div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── FAQ Item ──────────────────────────────────────────────────────────────────
 
 function FaqItem({ q, a }: { q: string; a: string }) {
@@ -237,12 +480,27 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 export function LandingPage() {
-  const navigate = useNavigate();
   const contactRef = useRef<HTMLFormElement>(null);
+  const [activeIdx, setActiveIdx] = useState(0);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  function startTimer() {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    intervalRef.current = setInterval(() => {
+      setActiveIdx(i => (i + 1) % HERO_SCREENS.length);
+    }, 3800);
+  }
+
+  useEffect(() => {
+    startTimer();
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+  }, []);
+
+  const screen = HERO_SCREENS[activeIdx]!;
 
   return (
     <div className="min-h-screen bg-white font-sans">
-      <Nav onAdminClick={() => navigate('/admin')} />
+      <Nav />
 
       {/* ── Hero ────────────────────────────────────────────────────────── */}
       <section
@@ -253,22 +511,71 @@ export function LandingPage() {
         {/* Decorative blobs */}
         <div className="absolute top-[-80px] right-[-80px] w-96 h-96 rounded-full bg-violet-400/20 blur-3xl" />
         <div className="absolute bottom-[-60px] left-[-60px] w-72 h-72 rounded-full bg-indigo-400/20 blur-3xl" />
-        <div className="absolute top-1/2 right-1/4 w-48 h-48 rounded-full bg-purple-300/10 blur-2xl" />
+        <div className="absolute top-1/3 left-1/3 w-64 h-64 rounded-full bg-purple-300/10 blur-3xl" />
 
-        <div className="relative max-w-6xl mx-auto px-5 pt-24 pb-16 grid md:grid-cols-2 gap-12 items-center w-full">
-          {/* Left: text */}
-          <motion.div variants={staggerContainer} initial="hidden" animate="show">
-            <motion.div variants={fadeUp} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/15 text-white/90 text-xs font-semibold mb-6">
+        <div className="relative max-w-6xl mx-auto px-5 pt-24 pb-20 grid md:grid-cols-2 gap-14 items-center w-full">
+
+          {/* ── Left: static header + dynamic description ── */}
+          <motion.div className="flex flex-col" variants={staggerContainer} initial="hidden" animate="show">
+
+            <motion.div variants={fadeUp} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/15 text-white/90 text-xs font-semibold mb-5 self-start">
               <Zap size={12} className="text-yellow-300" />
               Nepal's #1 Creator Marketplace
             </motion.div>
-            <motion.h1 variants={fadeUp} className="text-4xl md:text-5xl font-extrabold text-white leading-tight mb-5">
+
+            <motion.h1 variants={fadeUp} className="text-4xl md:text-5xl font-extrabold text-white leading-tight mb-6">
               Where Creators<br />Meet Brands
             </motion.h1>
-            <motion.p variants={fadeUp} className="text-white/75 text-lg leading-relaxed mb-8 max-w-md">
-              The all-in-one platform for content creators and brands to discover each other, run campaigns, and grow together.
-            </motion.p>
-            <motion.div variants={fadeUp} className="flex flex-wrap gap-3 mb-10">
+
+            {/* Dynamic description card — changes with each screen */}
+            <motion.div variants={fadeUp} className="mb-5">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeIdx}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
+                  className="bg-white/10 backdrop-blur-sm rounded-2xl p-5 border border-white/15"
+                >
+                  <div
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold mb-3"
+                    style={{ backgroundColor: `${screen.tagColor}30`, color: screen.tagColor }}
+                  >
+                    {screen.tag}
+                  </div>
+                  <div className="text-white font-bold text-lg mb-2 leading-snug">{screen.title}</div>
+                  <p className="text-white/70 text-sm leading-relaxed mb-4">{screen.desc}</p>
+                  <ul className="space-y-2">
+                    {screen.bullets.map(b => (
+                      <li key={b} className="flex items-center gap-2 text-white/80 text-sm">
+                        <CheckCircle size={14} className="text-green-400 flex-shrink-0" />
+                        {b}
+                      </li>
+                    ))}
+                  </ul>
+                </motion.div>
+              </AnimatePresence>
+            </motion.div>
+
+            {/* Progress dots */}
+            <motion.div variants={fadeUp} className="flex items-center gap-2 mb-7">
+              {HERO_SCREENS.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => { setActiveIdx(i); startTimer(); }}
+                  className="h-1.5 rounded-full transition-all duration-500 focus:outline-none"
+                  style={{
+                    width: i === activeIdx ? 28 : 8,
+                    backgroundColor: i === activeIdx ? '#fff' : 'rgba(255,255,255,0.3)',
+                  }}
+                />
+              ))}
+              <span className="ml-2 text-white/40 text-xs tabular-nums">{activeIdx + 1} / {HERO_SCREENS.length}</span>
+            </motion.div>
+
+            {/* CTA buttons */}
+            <motion.div variants={fadeUp} className="flex flex-wrap gap-3 mb-8">
               <motion.button whileHover={{ y: -2, boxShadow: '0 12px 32px rgba(0,0,0,0.2)' }} className="flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-white text-violet-700 font-bold text-sm shadow-lg transition-shadow">
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
                 Download for iOS
@@ -278,6 +585,7 @@ export function LandingPage() {
                 Get on Android
               </motion.button>
             </motion.div>
+
             {/* Mini stats */}
             <motion.div variants={fadeUp} className="flex gap-6">
               {[['2,500+', 'Creators'], ['400+', 'Brands'], ['8,000+', 'Campaigns']].map(([v, l]) => (
@@ -289,26 +597,102 @@ export function LandingPage() {
             </motion.div>
           </motion.div>
 
-          {/* Right: real app screenshots */}
+          {/* ── Right: single animated phone ── */}
           <motion.div
-            className="hidden md:flex justify-center items-end gap-3 relative h-[420px]"
-            variants={staggerContainer} initial="hidden" animate="show"
+            className="flex flex-col items-center justify-center gap-4"
+            initial={{ opacity: 0, y: 48 }} animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1], delay: 0.15 }}
           >
-            {APP_SCREENS.map((screen, i) => (
-              <motion.div
-                key={screen.label}
-                variants={fadeUp}
-                style={{ translateY: i === 1 ? -28 : 0 }}
-                whileHover={{ y: i === 1 ? -40 : -10, transition: { type: 'spring', stiffness: 280 } }}
-              >
-                <PhoneMockup
-                  src={screen.src}
-                  label={screen.label}
-                  grad={screen.grad}
-                  size={i === 1 ? 'lg' : 'md'}
+            <div className="relative">
+              {/* Animated glow behind phone — colour follows screen */}
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeIdx}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 0.45 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.6 }}
+                  className="absolute inset-[-20px] rounded-[3.6rem] blur-3xl pointer-events-none"
+                  style={{ background: `linear-gradient(135deg, ${screen.grad[0]}, ${screen.grad[1]})` }}
                 />
+              </AnimatePresence>
+
+              {/* Phone shell */}
+              <div className="relative w-[220px] h-[460px] rounded-[3rem] border-[6px] border-gray-800 bg-gray-900 shadow-2xl overflow-hidden">
+                {/* Dynamic Island */}
+                <div className="absolute top-2.5 left-1/2 -translate-x-1/2 w-[88px] h-[22px] bg-black rounded-full z-20" />
+
+                {/* Animated screen */}
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={activeIdx}
+                    initial={{ opacity: 0, y: 28 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -28 }}
+                    transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
+                    className="absolute inset-0"
+                  >
+                    {screen.src ? (
+                      <img
+                        src={screen.src}
+                        alt={screen.label}
+                        className="absolute inset-0 w-full h-full object-cover object-top"
+                      />
+                    ) : screen.CustomScreen ? (
+                      <screen.CustomScreen />
+                    ) : (
+                      <div
+                        className="absolute inset-0 flex flex-col items-center justify-center gap-4 px-6"
+                        style={{ background: `linear-gradient(150deg, ${screen.grad[0]}, ${screen.grad[1]})` }}
+                      >
+                        {screen.icon && (
+                          <div className="w-16 h-16 rounded-3xl bg-white/20 flex items-center justify-center">
+                            <screen.icon size={30} className="text-white" />
+                          </div>
+                        )}
+                        <div className="text-white font-bold text-sm text-center">{screen.label}</div>
+                      </div>
+                    )}
+                  </motion.div>
+                </AnimatePresence>
+
+                {/* Reflection sheen */}
+                <div className="absolute inset-0 bg-gradient-to-br from-white/8 via-transparent to-transparent pointer-events-none z-10" />
+
+                {/* Bottom progress indicator inside phone */}
+                <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-1.5 z-30">
+                  {HERO_SCREENS.map((_, i) => (
+                    <div
+                      key={i}
+                      className="h-1 rounded-full transition-all duration-500"
+                      style={{
+                        width: i === activeIdx ? 20 : 6,
+                        backgroundColor: i === activeIdx ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.3)',
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Screen label below phone */}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeIdx}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.3 }}
+                className="text-center"
+              >
+                <div
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold"
+                  style={{ backgroundColor: `${screen.tagColor}25`, color: screen.tagColor }}
+                >
+                  {screen.label}
+                </div>
               </motion.div>
-            ))}
+            </AnimatePresence>
           </motion.div>
         </div>
 
@@ -488,80 +872,159 @@ export function LandingPage() {
           <div className="text-center mb-16">
             <span className="text-violet-300 font-semibold text-sm uppercase tracking-wider">See the app</span>
             <h2 className="text-3xl font-extrabold text-white mt-2">Beautiful & intuitive</h2>
-            <p className="text-violet-300 mt-3 max-w-md mx-auto">Designed to be fast, clean, and enjoyable to use every day.</p>
+            <p className="text-violet-300 mt-3 max-w-md mx-auto">Designed for creators and brands — fast, clean, and enjoyable every day.</p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            {/* Left: feature callouts */}
-            <motion.div
-              className="space-y-6"
-              variants={staggerContainer} initial="hidden" whileInView="show" viewport={VP}
-            >
+          {/* ── Creator side ── */}
+          <div className="grid md:grid-cols-2 gap-12 items-center mb-20">
+            <motion.div className="space-y-6" variants={staggerContainer} initial="hidden" whileInView="show" viewport={VP}>
+              <motion.div variants={slideLeft}>
+                <span className="text-green-400 font-semibold text-xs uppercase tracking-wider">For Creators</span>
+                <h3 className="text-2xl font-extrabold text-white mt-1 mb-3">Find & apply to brand campaigns</h3>
+                <p className="text-violet-300 text-sm leading-relaxed mb-5">
+                  Browse hundreds of live campaigns filtered by category, platform, and budget. Apply with one tap and track your proposal status in real time.
+                </p>
+              </motion.div>
               {[
-                { icon: Search,        title: 'Discover campaigns',     desc: 'Browse hundreds of live brand campaigns filtered by category, platform, and budget.' },
-                { icon: BarChart2,     title: 'Track every detail',     desc: 'Full campaign specs, deadlines, goals, and requirements in one clean view.' },
-                { icon: DollarSign,   title: 'Apply in seconds',       desc: 'Submit your proposal with one tap and track its status in real time.' },
+                { icon: Search,       title: 'Smart discovery',       desc: 'Filter by niche, platform (Instagram, YouTube, TikTok), and budget range.' },
+                { icon: BarChart2,    title: 'Full campaign details',  desc: 'Event goals, deadlines, deliverables, and brand info — all in one view.' },
+                { icon: DollarSign,   title: 'Secure milestone pay',   desc: 'Get paid on time, every time. Funds held in escrow until you deliver.' },
+                { icon: Bell,         title: 'Real-time notifications',desc: 'Instant alerts for new proposals, messages, and payment releases.' },
               ].map(({ icon: Icon, title, desc }) => (
-                <motion.div key={title} variants={slideLeft} className="flex items-start gap-4">
-                  <div className="w-11 h-11 rounded-2xl bg-white/15 flex items-center justify-center flex-shrink-0">
-                    <Icon size={20} className="text-violet-200" />
+                <motion.div key={title} variants={slideLeft} className="flex items-start gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Icon size={17} className="text-violet-200" />
                   </div>
                   <div>
-                    <div className="font-bold text-white mb-1">{title}</div>
-                    <div className="text-violet-300 text-sm leading-relaxed">{desc}</div>
+                    <div className="font-semibold text-white text-sm mb-0.5">{title}</div>
+                    <div className="text-violet-300 text-xs leading-relaxed">{desc}</div>
                   </div>
                 </motion.div>
               ))}
             </motion.div>
 
-            {/* Right: phones */}
             <motion.div
               className="flex justify-center items-end gap-4"
               variants={staggerContainer} initial="hidden" whileInView="show" viewport={VP}
             >
+              <motion.div variants={fadeUp} whileHover={{ y: -10, transition: { type: 'spring', stiffness: 250 } }}>
+                <PhoneMockup src={APP_SCREENS[0]!.src} label="Creator Home" grad={APP_SCREENS[0]!.grad} size="md" />
+              </motion.div>
+              <motion.div variants={fadeUp} style={{ translateY: -28 }} whileHover={{ y: -38, transition: { type: 'spring', stiffness: 250 } }}>
+                <PhoneMockup src={APP_SCREENS[1]!.src} label="Event Details" grad={APP_SCREENS[1]!.grad} size="lg" />
+              </motion.div>
+            </motion.div>
+          </div>
+
+          {/* ── Business side ── */}
+          <div className="grid md:grid-cols-2 gap-12 items-center mb-20">
+            <motion.div
+              className="flex justify-center items-end gap-4 order-2 md:order-1"
+              variants={staggerContainer} initial="hidden" whileInView="show" viewport={VP}
+            >
+              <motion.div variants={fadeUp} style={{ translateY: -24 }} whileHover={{ y: -34, transition: { type: 'spring', stiffness: 250 } }}>
+                <PhoneMockup
+                  label="Business Dashboard"
+                  grad={['#1E3A8A', '#2563EB']}
+                  icon={Briefcase}
+                  size="lg"
+                />
+              </motion.div>
+              <motion.div variants={fadeUp} whileHover={{ y: -10, transition: { type: 'spring', stiffness: 250 } }}>
+                <PhoneMockup
+                  label="Proposals Inbox"
+                  grad={['#065F46', '#059669']}
+                  icon={Users}
+                  size="md"
+                />
+              </motion.div>
+            </motion.div>
+
+            <motion.div className="space-y-6 order-1 md:order-2" variants={staggerContainer} initial="hidden" whileInView="show" viewport={VP}>
+              <motion.div variants={slideRight}>
+                <span className="text-blue-300 font-semibold text-xs uppercase tracking-wider">For Brands</span>
+                <h3 className="text-2xl font-extrabold text-white mt-1 mb-3">Manage campaigns & review proposals</h3>
+                <p className="text-violet-300 text-sm leading-relaxed mb-5">
+                  Post paid campaigns or free product-exchange events. Review creator proposals, approve the best fit, and track deliverables — all from your dashboard.
+                </p>
+              </motion.div>
               {[
-                { ...APP_SCREENS[0]!, size: 'md' as const, shift: 0 },
-                { ...APP_SCREENS[1]!, size: 'lg' as const, shift: -24 },
-              ].map((screen) => (
-                <motion.div
-                  key={screen.label}
-                  variants={fadeUp}
-                  style={{ translateY: screen.shift }}
-                  whileHover={{ y: screen.shift - 10, transition: { type: 'spring', stiffness: 250 } }}
-                >
-                  <PhoneMockup src={screen.src} label={screen.label} grad={screen.grad} size={screen.size} />
+                { icon: TrendingUp,    title: 'Campaign dashboard',     desc: 'See active, draft, and closed campaigns with live proposal counts.' },
+                { icon: Users,         title: 'Review creator cards',   desc: 'Read cover letters, see proposed rates, and accept or decline with one tap.' },
+                { icon: BarChart2,     title: 'Track work progress',    desc: 'Campaign progress tracker: Secured → Started → Submitted → Approved.' },
+                { icon: DollarSign,    title: 'Pay only for results',   desc: 'Funds released only after you approve the creator\'s delivered content.' },
+              ].map(({ icon: Icon, title, desc }) => (
+                <motion.div key={title} variants={slideRight} className="flex items-start gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Icon size={17} className="text-blue-200" />
+                  </div>
+                  <div>
+                    <div className="font-semibold text-white text-sm mb-0.5">{title}</div>
+                    <div className="text-violet-300 text-xs leading-relaxed">{desc}</div>
+                  </div>
                 </motion.div>
               ))}
             </motion.div>
           </div>
 
-          {/* Login screen highlight */}
+          {/* ── Onboarding row ── */}
           <motion.div
-            className="mt-20 grid md:grid-cols-2 gap-12 items-center"
+            className="grid md:grid-cols-2 gap-12 items-center"
             variants={staggerContainer} initial="hidden" whileInView="show" viewport={VP}
           >
-            <motion.div
-              className="flex justify-center"
-              variants={fadeUp}
-              whileHover={{ y: -8, transition: { type: 'spring', stiffness: 250 } }}
-            >
-              <PhoneMockup src={APP_SCREENS[2]!.src} label={APP_SCREENS[2]!.label} grad={APP_SCREENS[2]!.grad} size="lg" />
+            <motion.div className="flex justify-center" variants={fadeUp}
+              whileHover={{ y: -8, transition: { type: 'spring', stiffness: 250 } }}>
+              <PhoneMockup src={APP_SCREENS[2]!.src} label="Sign In" grad={APP_SCREENS[2]!.grad} size="lg" />
             </motion.div>
-            <motion.div className="space-y-6" variants={staggerContainer}>
+            <motion.div className="space-y-5" variants={staggerContainer}>
               <motion.div variants={slideRight}>
-                <span className="text-violet-300 font-semibold text-sm uppercase tracking-wider">Onboarding</span>
-                <h3 className="text-2xl font-extrabold text-white mt-2 mb-3">Sign up in under a minute</h3>
-                <p className="text-violet-300 leading-relaxed">
-                  Create your account with email or Google. Choose whether you're a creator or a brand — and you're in.
+                <span className="text-violet-300 font-semibold text-xs uppercase tracking-wider">Onboarding</span>
+                <h3 className="text-2xl font-extrabold text-white mt-1 mb-3">Up and running in under a minute</h3>
+                <p className="text-violet-300 text-sm leading-relaxed">
+                  Sign up with email or Google. Pick your role — Creator or Brand — and start exploring campaigns immediately. No lengthy forms, no waiting.
                 </p>
               </motion.div>
-              {['Email or Google sign-in', 'Choose Creator or Brand role', 'Start exploring campaigns immediately'].map(item => (
+              {[
+                'Email or Google sign-in — your choice',
+                'Separate onboarding for Creators and Brands',
+                'Language support: English and Nepali',
+                'Verified profiles for trust on both sides',
+                'Explore campaigns or post one right away',
+              ].map(item => (
                 <motion.div key={item} variants={slideRight} className="flex items-center gap-3">
-                  <CheckCircle size={18} className="text-green-400 flex-shrink-0" />
+                  <CheckCircle size={16} className="text-green-400 flex-shrink-0" />
                   <span className="text-white/80 text-sm">{item}</span>
                 </motion.div>
               ))}
             </motion.div>
+          </motion.div>
+
+          {/* ── Feature tiles strip ── */}
+          <motion.div
+            className="mt-20 grid grid-cols-2 md:grid-cols-4 gap-4"
+            variants={staggerContainer} initial="hidden" whileInView="show" viewport={VP}
+          >
+            {[
+              { icon: Search,        title: 'Smart Filters',      desc: 'Filter by type, platform, budget & location', grad: '#7C3AED' },
+              { icon: MessageSquare, title: 'In-App Messaging',   desc: 'Chat directly with brands or creators', grad: '#2563EB' },
+              { icon: BarChart2,     title: 'Progress Tracker',   desc: 'Step-by-step campaign milestone view', grad: '#059669' },
+              { icon: Shield,        title: 'Escrow Payments',    desc: 'Funds secured before work begins', grad: '#D97706' },
+            ].map(({ icon: Icon, title, desc, grad }) => (
+              <motion.div
+                key={title}
+                variants={fadeUp}
+                className="rounded-2xl p-5 bg-white/08 border border-white/10 hover:border-white/20 transition-colors"
+              >
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center mb-3"
+                  style={{ backgroundColor: `${grad}30` }}
+                >
+                  <Icon size={18} style={{ color: grad }} />
+                </div>
+                <div className="font-semibold text-white text-sm mb-1">{title}</div>
+                <div className="text-violet-300 text-xs leading-relaxed">{desc}</div>
+              </motion.div>
+            ))}
           </motion.div>
         </div>
       </section>
