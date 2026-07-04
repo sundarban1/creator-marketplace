@@ -251,8 +251,6 @@ export default function ProposalsScreen() {
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.gradientHeader}>
-        <View style={[styles.decCircle1, { backgroundColor: 'rgba(255,255,255,0.08)' }]} />
-        <View style={[styles.decCircle2, { backgroundColor: 'rgba(255,255,255,0.05)' }]} />
         <View style={styles.headerContent}>
           <Text style={styles.pageTitle}>{t('proposal.business.headerTitle')}</Text>
           <Text style={styles.pageSub}>{t('proposal.business.headerSub')}</Text>
@@ -339,8 +337,6 @@ const styles = StyleSheet.create({
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
   gradientHeader: { borderBottomLeftRadius: 28, borderBottomRightRadius: 28, overflow: 'hidden' },
-  decCircle1:     { position: 'absolute', width: 200, height: 200, borderRadius: 100, top: -70, right: -40 },
-  decCircle2:     { position: 'absolute', width: 120, height: 120, borderRadius: 60, bottom: -35, left: 15 },
   headerContent:  { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 16, gap: 4 },
   pageTitle:      { fontSize: 22, fontWeight: '800', color: '#fff', fontFamily: F.extrabold },
   pageSub:        { fontSize: 13, color: 'rgba(255,255,255,0.75)', fontFamily: F.regular },

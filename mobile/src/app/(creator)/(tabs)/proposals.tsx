@@ -362,8 +362,6 @@ export default function ProposalsScreen() {
 
       {/* ── Gradient header ── */}
       <LinearGradient colors={['#312e81', '#4f46e5', '#8b5cf6']} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientHeader}>
-        <View style={[styles.decCircle1, { backgroundColor: 'rgba(255,255,255,0.1)' }]} />
-        <View style={[styles.decCircle2, { backgroundColor: 'rgba(255,255,255,0.07)' }]} />
 
         <View style={styles.headerContent}>
           <Text style={styles.heading}>{t('creator.proposals.heading')}</Text>
@@ -419,8 +417,6 @@ const styles = StyleSheet.create({
 
   // Header
   gradientHeader: { borderBottomLeftRadius: 28, borderBottomRightRadius: 28, overflow: 'hidden' },
-  decCircle1:     { position: 'absolute', width: 180, height: 180, borderRadius: 90, top: -60, right: -30 },
-  decCircle2:     { position: 'absolute', width: 110, height: 110, borderRadius: 55, bottom: -30, left: 20 },
   headerContent:  { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 14, gap: 3 },
   heading:        { fontSize: 22, fontWeight: '800', fontFamily: F.extrabold, color: '#fff' },
   subheading:     { fontSize: 13, fontFamily: F.regular, color: 'rgba(255,255,255,0.75)' },

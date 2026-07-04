@@ -241,8 +241,6 @@ export default function BusinessChatListScreen() {
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={s.gradientHeader}>
-        <View style={s.decCircle1} />
-        <View style={s.decCircle2} />
 
         <View style={s.header}>
           <View>
@@ -325,8 +323,6 @@ const s = StyleSheet.create({
 
   // Header
   gradientHeader: { borderBottomLeftRadius: 28, borderBottomRightRadius: 28, overflow: 'hidden' },
-  decCircle1:     { position: 'absolute', width: 180, height: 180, borderRadius: 90, top: -60, right: -30, backgroundColor: 'rgba(255,255,255,0.08)' },
-  decCircle2:     { position: 'absolute', width: 110, height: 110, borderRadius: 55, bottom: -30, left: 10, backgroundColor: 'rgba(255,255,255,0.05)' },
   header:         { paddingHorizontal: 20, paddingTop: 14, paddingBottom: 10 },
   heading:        { fontSize: 22, fontWeight: '800', fontFamily: F.extrabold, color: '#fff' },
   headingSub:     { fontSize: 13, fontFamily: F.regular, color: 'rgba(255,255,255,0.75)', marginTop: 2 },

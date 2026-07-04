@@ -353,8 +353,6 @@ export default function CampaignProposalsScreen() {
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.gradientHeader}>
-        <View style={[styles.decCircle1, { backgroundColor: 'rgba(255,255,255,0.07)' }]} />
-        <View style={[styles.decCircle2, { backgroundColor: 'rgba(255,255,255,0.04)' }]} />
 
         {/* Back button row */}
         <View style={styles.headerTopRow}>
@@ -491,8 +489,6 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 24,
     overflow: 'hidden',
   },
-  decCircle1: { position: 'absolute', width: 180, height: 180, borderRadius: 90, top: -60, right: -30 },
-  decCircle2: { position: 'absolute', width: 100, height: 100, borderRadius: 50, bottom: -30, left: 10 },
 
   headerTopRow: {
     flexDirection: 'row',

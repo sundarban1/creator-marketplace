@@ -641,8 +641,6 @@ export default function ExploreCreatorsScreen() {
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
       <LinearGradient colors={['#1e1b4b', '#4338ca', '#7c3aed']} start={{x:0,y:0}} end={{x:1,y:1}} style={s.gradientHeader}>
-        <View style={[s.decCircle1, { backgroundColor: 'rgba(255,255,255,0.08)' }]} />
-        <View style={[s.decCircle2, { backgroundColor: 'rgba(255,255,255,0.05)' }]} />
         {/* Header */}
         <View style={s.header}>
           <BackButton fallback="/(business)/" />
@@ -808,8 +806,6 @@ export default function ExploreCreatorsScreen() {
 const s = StyleSheet.create({
   container: { flex: 1 },
   gradientHeader: { paddingBottom: 16, borderBottomLeftRadius: 28, borderBottomRightRadius: 28, overflow: 'hidden' },
-  decCircle1:    { position: 'absolute', width: 200, height: 200, borderRadius: 100, top: -70, right: -50 },
-  decCircle2:    { position: 'absolute', width: 130, height: 130, borderRadius: 65, bottom: -40, left: 10 },
 
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 4, gap: 12 },
   headerMiddle: { flex: 1, alignItems: 'center', gap: 2 },

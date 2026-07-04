@@ -81,12 +81,7 @@ export function CampaignListItem({ campaign }: { campaign: Campaign }) {
 
       {/* Info */}
       <View style={styles.listInfo}>
-        <View style={styles.listBrandRow}>
-          <Text style={[styles.listBrandName, { color: C.textSecondary }]} numberOfLines={1}>{campaign.brand}</Text>
-          <View style={[styles.verifiedBadge, { backgroundColor: C.brinjal1 }]}>
-            <Text style={styles.verifiedIcon}>✓</Text>
-          </View>
-        </View>
+        <Text style={[styles.listBrandName, { color: C.textSecondary }]} numberOfLines={1}>{campaign.brand}</Text>
         <Text style={[styles.listTitle, { color: C.text }]} numberOfLines={2}>{campaign.title}</Text>
         <View style={styles.budgetRow}>
           <Ionicons name="cash-outline" size={13} color={C.brinjal1} />
@@ -117,7 +112,6 @@ export function CampaignListItem({ campaign }: { campaign: Campaign }) {
 
       {/* Apply button */}
       <Pressable style={[styles.applyBtn, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]} onPress={goToDetail}>
-        <Ionicons name="send-outline" size={13} color={C.brinjal1} />
         <Text style={[styles.applyBtnText, { color: C.brinjal1 }]}>Apply</Text>
       </Pressable>
     </Pressable>

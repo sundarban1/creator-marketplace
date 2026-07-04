@@ -113,8 +113,6 @@ export default function SavedCreatorsScreen() {
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
       <LinearGradient colors={['#1e1b4b', '#4338ca', '#7c3aed']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.gradientHeader}>
-        <View style={[s.decCircle1, { backgroundColor: 'rgba(255,255,255,0.08)' }]} />
-        <View style={[s.decCircle2, { backgroundColor: 'rgba(255,255,255,0.05)' }]} />
         <View style={s.header}>
           <Pressable style={s.backBtn} onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={22} color="#fff" />
@@ -169,8 +167,6 @@ export default function SavedCreatorsScreen() {
 const s = StyleSheet.create({
   container: { flex: 1 },
   gradientHeader: { paddingBottom: 14, borderBottomLeftRadius: 28, borderBottomRightRadius: 28, overflow: 'hidden' },
-  decCircle1: { position: 'absolute', width: 180, height: 180, borderRadius: 90, top: -60, right: -30 },
-  decCircle2: { position: 'absolute', width: 110, height: 110, borderRadius: 55, bottom: -30, left: 15 },
   header:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 10, paddingBottom: 0 },
   backBtn:   { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center' },
   heading:   { fontSize: 20, fontWeight: '800', color: '#fff', fontFamily: F.extrabold },

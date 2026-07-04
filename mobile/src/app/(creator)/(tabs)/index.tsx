@@ -275,16 +275,11 @@ export default function HomeScreen() {
 
         {/* ── Gradient header ── */}
         <LinearGradient colors={['#312e81', '#4f46e5', '#8b5cf6']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.gradientHeader}>
-          <View style={styles.decCircleLarge} />
-          <View style={styles.decCircleMid} />
-          <View style={styles.decCircleSmall} />
 
           <View style={styles.header}>
             <View style={styles.headerLeft}>
               <Pressable onPress={openDrawer}>
-                <View style={styles.menuBtnInner}>
-                  <Ionicons name="menu" size={22} color="#fff" />
-                </View>
+                <Ionicons name="menu" size={24} color="#fff" />
               </Pressable>
               <View>
                 <Text style={styles.greeting}>{t('creator.home.greeting')}</Text>
@@ -581,9 +576,6 @@ const styles = StyleSheet.create({
 
   // ── Header ──
   gradientHeader: { borderBottomLeftRadius: 32, borderBottomRightRadius: 32, overflow: 'hidden' },
-  decCircleLarge: { position: 'absolute', width: 260, height: 260, borderRadius: 130, backgroundColor: 'rgba(255,255,255,0.05)', top: -80, right: -60 },
-  decCircleMid:   { position: 'absolute', width: 140, height: 140, borderRadius: 70,  backgroundColor: 'rgba(167,139,250,0.15)', bottom: 10, left: -30 },
-  decCircleSmall: { position: 'absolute', width: 70,  height: 70,  borderRadius: 35,  backgroundColor: 'rgba(255,255,255,0.07)', top: 30,   left: '45%' },
 
   header:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 14 },
   headerLeft:   { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },

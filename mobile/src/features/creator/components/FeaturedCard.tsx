@@ -94,6 +94,13 @@ export function FeaturedCard({ campaign }: { campaign: Campaign }) {
             </View>
             <Text style={styles.brandPillName} numberOfLines={1}>{campaign.brand}</Text>
           </View>
+
+          {/* Platform badge — bottom right */}
+          {platMeta && (
+            <View style={[styles.platformBadge, { backgroundColor: platMeta.color }]}>
+              <FontAwesome5 name={platMeta.icon} size={11} color="#fff" brand />
+            </View>
+          )}
         </View>
 
         {/* ── Body ── */}
@@ -109,9 +116,12 @@ export function FeaturedCard({ campaign }: { campaign: Campaign }) {
 
           {/* Location + type row */}
           <View style={styles.metaRow}>
-            <Text style={[styles.metaText, { color: C.textSecondary }]} numberOfLines={1}>
-              📍 {campaign.location ?? 'Nepal'}
-            </Text>
+            <View style={styles.deadlineRow}>
+              <Ionicons name="location-outline" size={11} color={C.textSecondary} />
+              <Text style={[styles.metaText, { color: C.textSecondary }]} numberOfLines={1}>
+                {campaign.location ?? 'Nepal'}
+              </Text>
+            </View>
             {campaign.campaignType === 'OPEN_EVENT' ? (
               <View style={[styles.typePill, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}>
                 <Text style={[styles.typePillText, { color: '#059669' }]}>Free</Text>
@@ -144,19 +154,12 @@ export function FeaturedCard({ campaign }: { campaign: Campaign }) {
             );
           })()}
 
-          {/* View & Apply — static, whole card is the tap target */}
           <View style={[styles.applyBtn, { backgroundColor: C.brinjal1 }]}>
-            <Text style={styles.applyBtnText}>View & Apply →</Text>
+            <Text style={styles.applyBtnText}>Apply Now</Text>
           </View>
         </View>
       </View>
 
-      {/* Platform badge straddling image/body boundary */}
-      {platMeta && (
-        <View style={[styles.platformBadge, { backgroundColor: platMeta.color }]}>
-          <FontAwesome5 name={platMeta.icon} size={13} color="#fff" brand />
-        </View>
-      )}
     </Pressable>
   );
 }
@@ -188,12 +191,10 @@ const styles = StyleSheet.create({
   brandPillName:   { fontSize: 11, fontWeight: '600', flexShrink: 1, color: '#111', fontFamily: F.semibold },
 
   platformBadge: {
-    position: 'absolute', top: CARD_IMG_H - 17, right: 14,
-    width: 34, height: 34, borderRadius: 17,
+    position: 'absolute', bottom: 10, right: 10,
+    width: 28, height: 28, borderRadius: 14,
     justifyContent: 'center', alignItems: 'center',
-    borderWidth: 2.5, borderColor: '#fff',
-    shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 }, elevation: 8, zIndex: 10,
+    borderWidth: 2, borderColor: 'rgba(255,255,255,0.6)',
   },
 
   featBody:  { padding: 14, gap: 9 },

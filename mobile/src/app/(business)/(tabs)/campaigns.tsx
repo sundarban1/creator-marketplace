@@ -165,8 +165,6 @@ export default function CampaignsScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
       <LinearGradient colors={['#1e1b4b', '#4338ca', '#7c3aed']} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientHeader}>
-        <View style={[styles.decCircle1, { backgroundColor: 'rgba(255,255,255,0.08)' }]} />
-        <View style={[styles.decCircle2, { backgroundColor: 'rgba(255,255,255,0.05)' }]} />
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <Text style={[styles.pageTitle, { color: '#fff' }]}>{t('campaigns.title')}</Text>
@@ -485,8 +483,6 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 60 },
   gradientHeader: { borderBottomLeftRadius: 28, borderBottomRightRadius: 28, overflow: 'hidden' },
-  decCircle1: { position: 'absolute', width: 200, height: 200, borderRadius: 100, top: -70, right: -40 },
-  decCircle2: { position: 'absolute', width: 120, height: 120, borderRadius: 60, bottom: -35, left: 15 },
 
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',

@@ -221,8 +221,6 @@ export default function NotificationsScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
       <LinearGradient colors={['#312e81', '#4f46e5', '#8b5cf6']} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientHeader}>
-        <View style={[styles.decCircle1, { backgroundColor: 'rgba(255,255,255,0.1)' }]} />
-        <View style={[styles.decCircle2, { backgroundColor: 'rgba(255,255,255,0.07)' }]} />
         <View style={styles.headerRow}>
           <View style={{ flex: 1 }}>
             <Text style={[styles.heading, { color: '#fff' }]}>{t('notifications.heading')}</Text>
@@ -274,8 +272,6 @@ export default function NotificationsScreen() {
 const styles = StyleSheet.create({
   container:  { flex: 1 },
   gradientHeader: { paddingBottom: 16, borderBottomLeftRadius: 28, borderBottomRightRadius: 28, overflow: 'hidden' },
-  decCircle1: { position: 'absolute', width: 180, height: 180, borderRadius: 90, top: -60, right: -30 },
-  decCircle2: { position: 'absolute', width: 110, height: 110, borderRadius: 55, bottom: -30, left: 20 },
   headerRow:  { flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4 },
   heading:    { fontSize: 22, fontWeight: '700', fontFamily: F.extrabold },
   subheading: { fontSize: 13, marginTop: 2, fontFamily: F.regular },

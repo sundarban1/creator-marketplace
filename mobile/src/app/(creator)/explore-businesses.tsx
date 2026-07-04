@@ -393,8 +393,6 @@ export default function ExploreBusinessesScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
       <LinearGradient colors={['#312e81', '#4f46e5', '#8b5cf6']} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientHeader}>
-        <View style={[styles.decCircle1, { backgroundColor: 'rgba(255,255,255,0.1)' }]} />
-        <View style={[styles.decCircle2, { backgroundColor: 'rgba(255,255,255,0.07)' }]} />
         {/* ── Header ── */}
         <View style={styles.header}>
           <BackButton fallback="/(creator)/" />
@@ -536,8 +534,6 @@ export default function ExploreBusinessesScreen() {
 const styles = StyleSheet.create({
   container:      { flex: 1 },
   gradientHeader: { borderBottomLeftRadius: 28, borderBottomRightRadius: 28, overflow: 'hidden' },
-  decCircle1:     { position: 'absolute', width: 180, height: 180, borderRadius: 90, top: -60, right: -40 },
-  decCircle2:     { position: 'absolute', width: 120, height: 120, borderRadius: 60, bottom: -30, left: 20 },
 
   // Header
   header:         { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 10, paddingBottom: 12, gap: 12 },
