@@ -308,17 +308,14 @@ export class CampaignService {
     const rawUpdated = await this.repo.updateApplicationStatus(appId, status);
     const updated    = toApplicationDto(rawUpdated);
 
-    // Capacity enforcement for both OPEN_EVENT and PAID_CAMPAIGN
+    // Capacity enforcement for OPEN_EVENT (uses capacity field)
     if (status === 'ACCEPTED') {
       const campaignCapacity = (campaign as any).capacity as number | null;
       if (campaignCapacity != null) {
         const acceptedCount = await this.repo.countAcceptedApplications(campaignId);
         if (acceptedCount >= campaignCapacity) {
-          // Reject all remaining pending applications
           const rejected = await this.repo.rejectPendingApplications(campaignId, appId);
-          // Close the campaign
           await this.repo.closeCampaign(campaignId);
-          // Notify each rejected creator
           if (rejected.length > 0) {
             notificationService.createMany(
               rejected.map((a) => ({
@@ -331,6 +328,28 @@ export class CampaignService {
               }))
             ).catch(() => {});
           }
+        }
+      }
+    }
+
+    // Capacity enforcement for PAID_CAMPAIGN (uses creatorsNeeded field)
+    if (status === 'ACCEPTED' && (campaign as any).campaignType === 'PAID_CAMPAIGN') {
+      const needed: number = ((campaign as any).creatorsNeeded as number) ?? 1;
+      const acceptedCount = await this.repo.countAcceptedApplications(campaignId);
+      if (acceptedCount >= needed) {
+        const rejected = await this.repo.rejectPendingApplications(campaignId, appId);
+        await this.repo.closeCampaign(campaignId);
+        if (rejected.length > 0) {
+          notificationService.createMany(
+            rejected.map((a) => ({
+              userId:  a.creator.userId,
+              type:    'campaign_closed' as const,
+              title:   `"${campaign.title}" is now full`,
+              body:    'All creator slots for this campaign have been filled.',
+              refId:   campaign.id,
+              refType: 'campaign',
+            }))
+          ).catch(() => {});
         }
       }
     }
