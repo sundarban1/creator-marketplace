@@ -310,10 +310,10 @@ export default function HomeScreen() {
                   <Ionicons name="menu" size={22} color="#fff" />
                 </View>
               </Pressable>
-              <Text style={styles.greetingLine} numberOfLines={1}>
-                <Text style={styles.greeting}>{t('creator.home.greeting')} </Text>
-                <Text style={styles.brandName}>{user?.name ?? 'Creator'}</Text>
-              </Text>
+              <View>
+                <Text style={styles.greeting}>{t('creator.home.greeting')}</Text>
+                <Text style={styles.brandName} numberOfLines={1}>{user?.name ?? 'Creator'}</Text>
+              </View>
             </View>
 
             <View style={styles.headerRight}>
@@ -635,9 +635,8 @@ const styles = StyleSheet.create({
   headerRight:  { flexDirection: 'row', alignItems: 'center', gap: 10 },
   menuBtn:      { padding: 0 },
   menuBtnInner: { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center' },
-  greetingLine: { flex: 1, fontSize: 20, fontFamily: F.bold, color: '#fff', letterSpacing: -0.3 },
-  greeting:     { fontSize: 12, fontFamily: F.medium, color: 'rgba(255,255,255,0.75)' },
-  brandName:    { fontSize: 20, fontFamily: F.bold, color: '#fff', letterSpacing: -0.3 },
+  greeting:     { fontSize: 12, marginBottom: 2, fontFamily: F.medium, color: 'rgba(255,255,255,0.75)' },
+  brandName:    { fontSize: 20, fontFamily: F.bold, color: '#fff', maxWidth: 180, letterSpacing: -0.3 },
   avatarCircle: { width: 44, height: 44, borderRadius: 22, overflow: 'hidden', shadowOpacity: 0.4, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
   avatarImage:  { width: 44, height: 44 },
   avatarFallback: { width: 44, height: 44, justifyContent: 'center', alignItems: 'center' },
