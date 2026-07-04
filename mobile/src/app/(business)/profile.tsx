@@ -5,7 +5,6 @@ import { BackButton } from '@/components/BackButton';
 import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Image,
   Linking,
   Pressable,
@@ -14,6 +13,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { useToast } from '@/components/Toast';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
 import { useAppColors } from '@/context/ThemeContext';
@@ -60,6 +60,7 @@ export default function BusinessProfileScreen() {
   const { user, updateUser } = useAuth();
   const C = useAppColors();
   const { t } = useLanguage();
+  const toast = useToast();
   const [profile, setProfile]               = useState<BusinessProfile | null>(null);
   const [activeCampaigns, setActiveCampaigns] = useState(0);
   const [loading, setLoading]               = useState(true);
@@ -74,7 +75,7 @@ export default function BusinessProfileScreen() {
         updateUser({ avatar: url });
       }
     } catch {
-      Alert.alert(t('profile.uploadFailed'), t('profile.uploadFailedSub'));
+      toast.error(t('profile.uploadFailed'));
     } finally {
       setLogoUploading(false);
     }

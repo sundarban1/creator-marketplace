@@ -3,9 +3,10 @@ import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useCallback, useState } from 'react';
 import {
-  ActivityIndicator, Alert, Image, Linking,
+  ActivityIndicator, Image, Linking,
   Pressable, ScrollView, StyleSheet, Text, View,
 } from 'react-native';
+import { useToast } from '@/components/Toast';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
 import { useAppColors } from '@/context/ThemeContext';
@@ -60,6 +61,7 @@ export default function CreatorProfileScreen() {
   const { user, updateUser, logout } = useAuth();
   const C = useAppColors();
   const { t } = useLanguage();
+  const toast = useToast();
   const [profile, setProfile]           = useState<ApiCreatorProfile | null>(null);
   const [avatarUploading, setUploading] = useState(false);
 
@@ -76,7 +78,7 @@ export default function CreatorProfileScreen() {
         updateUser({ avatar: url });
       }
     } catch {
-      Alert.alert(t('profile.uploadFailed'), t('profile.uploadFailedSub'));
+      toast.error(t('profile.uploadFailed'));
     } finally {
       setUploading(false);
     }

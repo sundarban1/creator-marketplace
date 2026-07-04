@@ -3,7 +3,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import {
-  Alert,
   Animated,
   Pressable,
   ScrollView,
@@ -13,6 +12,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { AppModal } from '@/components/AppModal';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
@@ -237,6 +237,10 @@ export default function BusinessSettingsScreen() {
   const [hideContactDetails, setHideContactDetails] = useState(false);
   const [allowDirectMessages, setAllowDirectMessages] = useState(true);
 
+  // ── Confirmation modal ──
+  const [appModal, setAppModal] = useState({ visible: false, title: '', body: '', confirmLabel: '', type: 'danger' as 'danger' | 'warning', warning: undefined as string | undefined, onConfirm: () => {} });
+  function closeAppModal() { setAppModal((m) => ({ ...m, visible: false })); }
+
   useEffect(() => {
     businessService.getMyProfile().then((p) => {
       setShowProfilePublic(p.showPublicProfile);
@@ -300,39 +304,40 @@ export default function BusinessSettingsScreen() {
   }
 
   function handleLogoutAll() {
-    Alert.alert(t('businessSettings.logoutAllTitle'), t('businessSettings.logoutAllMsg'), [
-      { text: t('common.cancel'), style: 'cancel' },
-      { text: t('businessSettings.logoutAllConfirmBtn'), style: 'destructive', onPress: logout },
-    ]);
+    setAppModal({
+      visible: true, type: 'warning',
+      title: t('businessSettings.logoutAllTitle'),
+      body: t('businessSettings.logoutAllMsg'),
+      confirmLabel: t('businessSettings.logoutAllConfirmBtn'),
+      warning: undefined,
+      onConfirm: () => { closeAppModal(); logout(); },
+    });
   }
 
   function handleDeactivateAccount() {
-    Alert.alert(
-      t('businessSettings.deactivateTitle'),
-      t('businessSettings.deactivateMsg'),
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('businessSettings.deactivateConfirmBtn'),
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await authService.deactivateAccount();
-              await logout();
-            } catch {
-              toast.error(t('businessSettings.deactivateFailed'));
-            }
-          },
-        },
-      ],
-    );
+    setAppModal({
+      visible: true, type: 'warning',
+      title: t('businessSettings.deactivateTitle'),
+      body: t('businessSettings.deactivateMsg'),
+      confirmLabel: t('businessSettings.deactivateConfirmBtn'),
+      warning: undefined,
+      onConfirm: async () => {
+        closeAppModal();
+        try { await authService.deactivateAccount(); await logout(); }
+        catch { toast.error(t('businessSettings.deactivateFailed')); }
+      },
+    });
   }
 
   function handleDeleteAccount() {
-    Alert.alert(t('businessSettings.deleteTitle'), t('businessSettings.deleteMsg'), [
-      { text: t('common.cancel'), style: 'cancel' },
-      { text: t('businessSettings.deleteConfirmBtn'), style: 'destructive', onPress: logout },
-    ]);
+    setAppModal({
+      visible: true, type: 'danger',
+      title: t('businessSettings.deleteTitle'),
+      body: t('businessSettings.deleteMsg'),
+      confirmLabel: t('businessSettings.deleteConfirmBtn'),
+      warning: 'This permanently deletes your account and all data. This action cannot be undone.',
+      onConfirm: () => { closeAppModal(); logout(); },
+    });
   }
 
   function isValidNepaliPhone(phone: string): boolean {
@@ -384,10 +389,14 @@ export default function BusinessSettingsScreen() {
   }
 
   function removeCreator(id: string) {
-    Alert.alert(t('businessSettings.removeCreatorTitle'), t('businessSettings.removeCreatorMsg'), [
-      { text: t('common.cancel'), style: 'cancel' },
-      { text: t('common.remove'), style: 'destructive', onPress: () => setSavedCreators((p) => p.filter((c) => c.id !== id)) },
-    ]);
+    setAppModal({
+      visible: true, type: 'danger',
+      title: t('businessSettings.removeCreatorTitle'),
+      body: t('businessSettings.removeCreatorMsg'),
+      confirmLabel: t('common.remove'),
+      warning: undefined,
+      onConfirm: () => { closeAppModal(); setSavedCreators((p) => p.filter((c) => c.id !== id)); },
+    });
   }
 
   function saveNote(id: string) {
@@ -1461,7 +1470,16 @@ export default function BusinessSettingsScreen() {
           <View style={{ height: 48 }} />
         </ScrollView>
 
-
+        <AppModal
+          visible={appModal.visible}
+          type={appModal.type}
+          title={appModal.title}
+          body={appModal.body}
+          confirmLabel={appModal.confirmLabel}
+          warning={appModal.warning}
+          onConfirm={appModal.onConfirm}
+          onCancel={closeAppModal}
+        />
       </SafeAreaView>
     </ColorCtx.Provider>
   );

@@ -3,8 +3,8 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
+  Modal,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -221,6 +221,158 @@ function ProposalCard({
   );
 }
 
+// ─── Confirm Modal ────────────────────────────────────────────────────────────
+
+type ModalState = {
+  visible:  boolean;
+  type:     'accept' | 'reject';
+  proposal: Proposal | null;
+  loading:  boolean;
+};
+
+function ConfirmModal({
+  state,
+  isFree,
+  capacity,
+  acceptedCount,
+  onConfirm,
+  onCancel,
+}: {
+  state:         ModalState;
+  isFree:        boolean;
+  capacity:      number | null;
+  acceptedCount: number;
+  onConfirm:     () => void;
+  onCancel:      () => void;
+}) {
+  const C = useAppColors();
+  const p = state.proposal;
+  if (!p) return null;
+
+  const isAccept      = state.type === 'accept';
+  const slotsAfter    = capacity != null ? acceptedCount + 1 : null;
+  const willFill      = capacity != null && slotsAfter === capacity;
+  const remainPending = willFill; // backend will auto-decline the rest
+
+  const iconName  = isAccept ? 'checkmark-circle' : 'close-circle';
+  const iconColor = isAccept ? (isFree ? FREE_ACCENT : PAID_ACCENT) : '#EF4444';
+  const iconBg    = isAccept ? (isFree ? FREE_LIGHT  : PAID_LIGHT)  : '#FEF2F2';
+
+  return (
+    <Modal
+      visible={state.visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onCancel}>
+      <View style={cm.backdrop}>
+        <View style={[cm.sheet, { backgroundColor: C.surface }]}>
+
+          {/* Icon */}
+          <View style={[cm.iconCircle, { backgroundColor: iconBg }]}>
+            <Ionicons name={iconName} size={36} color={iconColor} />
+          </View>
+
+          {/* Title */}
+          <Text style={[cm.title, { color: C.text }]}>
+            {isAccept
+              ? (isFree ? 'Approve Creator?' : 'Accept Proposal?')
+              : 'Decline Proposal?'}
+          </Text>
+
+          {/* Creator name */}
+          <Text style={[cm.creatorName, { color: C.textSecondary }]}>
+            {p.creator.fullName}
+          </Text>
+
+          {/* Body */}
+          <Text style={[cm.body, { color: C.textSecondary }]}>
+            {isAccept
+              ? (isFree
+                  ? `You are about to approve ${p.creator.fullName} for this free event. They will be notified immediately.`
+                  : `You are about to accept ${p.creator.fullName}'s proposal${!isFree ? ` for ${p.proposedRate}` : ''}.`)
+              : `You are about to decline ${p.creator.fullName}'s application. They will be notified.`}
+          </Text>
+
+          {/* Paid: irreversible warning */}
+          {isAccept && !isFree && (
+            <View style={[cm.warningBox, { backgroundColor: '#FFF7ED', borderColor: '#FED7AA' }]}>
+              <Ionicons name="warning-outline" size={16} color="#C2410C" />
+              <Text style={[cm.warningText, { color: '#C2410C' }]}>
+                Once accepted, this decision cannot be reversed. Please review carefully before confirming.
+              </Text>
+            </View>
+          )}
+
+          {/* Threshold warning */}
+          {isAccept && willFill && capacity != null && (
+            <View style={[cm.warningBox, { backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }]}>
+              <Ionicons name="people-outline" size={16} color="#1D4ED8" />
+              <Text style={[cm.warningText, { color: '#1D4ED8' }]}>
+                This fills the last slot ({slotsAfter}/{capacity}). All other pending applications will be automatically declined.
+              </Text>
+            </View>
+          )}
+
+          {/* Capacity progress if available */}
+          {isAccept && capacity != null && !willFill && (
+            <View style={[cm.capacityRow, { backgroundColor: C.background }]}>
+              <Ionicons name="people-outline" size={14} color={C.textSecondary} />
+              <Text style={[cm.capacityText, { color: C.textSecondary }]}>
+                Slots: {slotsAfter}/{capacity} after accepting
+              </Text>
+            </View>
+          )}
+
+          {/* Actions */}
+          <View style={cm.actions}>
+            <Pressable
+              style={[cm.cancelBtn, { borderColor: C.border, backgroundColor: C.background }]}
+              onPress={onCancel}
+              disabled={state.loading}>
+              <Text style={[cm.cancelText, { color: C.text }]}>Cancel</Text>
+            </Pressable>
+            <Pressable
+              style={[cm.confirmBtn, { backgroundColor: isAccept ? iconColor : '#EF4444', opacity: state.loading ? 0.7 : 1 }]}
+              onPress={onConfirm}
+              disabled={state.loading}>
+              {state.loading ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <>
+                  <Ionicons name={iconName} size={16} color="#fff" />
+                  <Text style={cm.confirmText}>
+                    {isAccept ? (isFree ? 'Approve' : 'Accept') : 'Decline'}
+                  </Text>
+                </>
+              )}
+            </Pressable>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+const cm = StyleSheet.create({
+  backdrop:     { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 },
+  sheet:        { width: '100%', borderRadius: 24, padding: 24, alignItems: 'center', gap: 12, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 24, shadowOffset: { width: 0, height: 8 }, elevation: 12 },
+  iconCircle:   { width: 72, height: 72, borderRadius: 36, justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
+  title:        { fontSize: 20, fontWeight: '800', fontFamily: F.extrabold, textAlign: 'center' },
+  creatorName:  { fontSize: 14, fontFamily: F.semibold, textAlign: 'center', marginTop: -4 },
+  body:         { fontSize: 13, fontFamily: F.regular, textAlign: 'center', lineHeight: 20 },
+  warningBox:   { flexDirection: 'row', alignItems: 'flex-start', gap: 8, borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, width: '100%' },
+  warningText:  { flex: 1, fontSize: 12, fontFamily: F.medium, lineHeight: 18 },
+  capacityRow:  { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, width: '100%' },
+  capacityText: { fontSize: 12, fontFamily: F.semibold },
+  actions:      { flexDirection: 'row', gap: 10, width: '100%', marginTop: 4 },
+  cancelBtn:    { flex: 1, height: 46, borderRadius: 12, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center' },
+  cancelText:   { fontSize: 14, fontWeight: '600', fontFamily: F.semibold },
+  confirmBtn:   { flex: 1, height: 46, borderRadius: 12, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6 },
+  confirmText:  { fontSize: 14, fontWeight: '700', color: '#fff', fontFamily: F.bold },
+});
+
+// ─── Screen ───────────────────────────────────────────────────────────────────
+
 export default function CampaignProposalsScreen() {
   const C = useAppColors();
   const { t } = useLanguage();
@@ -238,16 +390,22 @@ export default function CampaignProposalsScreen() {
   const acceptLabel = isFree ? t('campaignProposals.approveBtn') : t('campaignProposals.acceptBtn');
 
   const [proposals, setProposals]       = useState<Proposal[]>([]);
+  const [capacity, setCapacity]         = useState<number | null>(null);
   const [loading, setLoading]           = useState(true);
   const [refreshing, setRefreshing]     = useState(false);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
-  const [actingId, setActingId] = useState<string | null>(null);
+  const [actingId, setActingId]         = useState<string | null>(null);
+  const [modal, setModal]               = useState<ModalState>({ visible: false, type: 'accept', proposal: null, loading: false });
 
   async function load(showRefresh = false) {
     if (showRefresh) setRefreshing(true);
     else setLoading(true);
     try {
-      const data = await campaignService.getApplications(campaignId);
+      const [data, campaign] = await Promise.all([
+        campaignService.getApplications(campaignId),
+        campaignService.getById(campaignId),
+      ]);
+      setCapacity((campaign as any).capacity ?? null);
       setProposals(data.map((a) => ({
         ...a,
         workStatus: (a.workStatus ?? 'NONE') as WS,
@@ -261,59 +419,48 @@ export default function CampaignProposalsScreen() {
   useEffect(() => { void load(); }, [campaignId]);
   const onRefresh = useCallback(() => void load(true), [campaignId]);
 
-  async function handleAccept(p: Proposal) {
-    Alert.alert(
-      isFree ? t('campaignProposals.alertApproveTitle') : t('campaignProposals.alertAcceptTitle'),
-      isFree
-        ? t('campaignProposalsExtra.alertApproveBody', { name: p.creator.fullName })
-        : t('campaignProposalsExtra.alertAcceptBody', { name: p.creator.fullName }),
-      [
-        { text: t('campaignProposals.alertCancel'), style: 'cancel' },
-        {
-          text: acceptLabel,
-          onPress: async () => {
-            setActingId(p.id);
-            try {
-              await campaignService.acceptProposal(campaignId, p.id);
-              setProposals((prev) =>
-                prev.map((x) => (x.id === p.id ? { ...x, status: 'accepted' } : x)),
-              );
-            } catch (e) {
-              Alert.alert(t('campaignProposals.alertFailed'), e instanceof Error ? e.message : t('campaignProposals.alertFailed'));
-            } finally {
-              setActingId(null);
-            }
-          },
-        },
-      ],
-    );
+  function handleAccept(p: Proposal) {
+    setModal({ visible: true, type: 'accept', proposal: p, loading: false });
   }
 
-  async function handleReject(p: Proposal) {
-    Alert.alert(
-      t('campaignProposals.alertDeclineTitle'),
-      t('campaignProposalsExtra.alertDeclineBody', { name: p.creator.fullName }),
-      [
-        { text: t('campaignProposals.alertCancel'), style: 'cancel' },
-        {
-          text: t('campaignProposals.declineBtn'),
-          style: 'destructive',
-          onPress: async () => {
-            setActingId(p.id);
-            try {
-              await campaignService.rejectProposal(campaignId, p.id);
-              setProposals((prev) =>
-                prev.map((x) => (x.id === p.id ? { ...x, status: 'rejected' } : x)),
-              );
-            } catch (e) {
-              Alert.alert(t('campaignProposals.alertFailed'), e instanceof Error ? e.message : t('campaignProposals.alertFailed'));
-            } finally {
-              setActingId(null);
-            }
-          },
-        },
-      ],
-    );
+  function handleReject(p: Proposal) {
+    setModal({ visible: true, type: 'reject', proposal: p, loading: false });
+  }
+
+  function closeModal() {
+    setModal((m) => ({ ...m, visible: false, loading: false }));
+  }
+
+  async function confirmModal() {
+    const p = modal.proposal;
+    if (!p) return;
+    setModal((m) => ({ ...m, loading: true }));
+    setActingId(p.id);
+    try {
+      if (modal.type === 'accept') {
+        await campaignService.acceptProposal(campaignId, p.id);
+        const newAcceptedCount = proposals.filter((x) => x.status === 'accepted').length + 1;
+        const willFill = capacity != null && newAcceptedCount >= capacity;
+        setProposals((prev) =>
+          prev.map((x) => {
+            if (x.id === p.id) return { ...x, status: 'accepted' as const };
+            // optimistically auto-decline remaining pending if threshold hit
+            if (willFill && x.status === 'pending') return { ...x, status: 'rejected' as const };
+            return x;
+          }),
+        );
+      } else {
+        await campaignService.rejectProposal(campaignId, p.id);
+        setProposals((prev) =>
+          prev.map((x) => (x.id === p.id ? { ...x, status: 'rejected' as const } : x)),
+        );
+      }
+      closeModal();
+    } catch {
+      closeModal();
+    } finally {
+      setActingId(null);
+    }
   }
 
   function handleStartProject(p: Proposal) {
@@ -431,6 +578,15 @@ export default function CampaignProposalsScreen() {
           })}
         </ScrollView>
       </View>
+
+      <ConfirmModal
+        state={modal}
+        isFree={isFree}
+        capacity={capacity}
+        acceptedCount={proposals.filter((p) => p.status === 'accepted').length}
+        onConfirm={confirmModal}
+        onCancel={closeModal}
+      />
 
       {loading ? (
         <View style={styles.center}>

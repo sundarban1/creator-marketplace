@@ -11,7 +11,6 @@ import { API_BASE, request } from '@/lib/api';
 import { RangeSlider } from '@/components/RangeSlider';
 import {
   ActivityIndicator,
-  Alert,
   Animated,
   Modal,
   Pressable,
@@ -22,6 +21,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { AppModal } from '@/components/AppModal';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors, useIsDark } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
@@ -440,10 +440,14 @@ export default function CreatorSettingsScreen() {
   const [legalLoading, setLegalLoading] = useState(false);
   const [legalLastUpdated, setLegalLastUpdated] = useState<Record<string, string>>({});
 
-  // Account action modals
+  // Account action modals (kept for legacy renders if any)
   const [showDeactivateModal, setShowDeactivateModal] = useState(false);
   const [showDeleteModal,     setShowDeleteModal]     = useState(false);
   const [accountActionLoading, setAccountActionLoading] = useState(false);
+
+  // Confirmation modal
+  const [appModal, setAppModal] = useState({ visible: false, title: '', body: '', confirmLabel: '', type: 'danger' as 'danger' | 'warning', warning: undefined as string | undefined, onConfirm: async () => {} });
+  function closeAppModal() { setAppModal((m) => ({ ...m, visible: false })); }
 
   // Support / Report submitting
   const [supportSubmitting, setSupportSubmitting] = useState(false);
@@ -697,16 +701,21 @@ export default function CreatorSettingsScreen() {
 
   function deleteSocialAccount(acct: SocialAccount) {
     const cfg = PLATFORM_CONFIG[acct.platform];
-    Alert.alert(t('creatorSettings.removeAccountTitle', { platform: cfg?.label ?? acct.platform }), t('creatorSettings.removeAccountBody'), [
-      { text: t('common.cancel'), style: 'cancel' },
-      { text: t('common.remove'), style: 'destructive', onPress: async () => {
+    setAppModal({
+      visible: true, type: 'danger',
+      title: t('creatorSettings.removeAccountTitle', { platform: cfg?.label ?? acct.platform }),
+      body: t('creatorSettings.removeAccountBody'),
+      confirmLabel: t('common.remove'),
+      warning: undefined,
+      onConfirm: async () => {
+        closeAppModal();
         try {
           await creatorService.deleteSocialAccount(acct.id);
           setSocialAccounts((prev) => prev.filter((a) => a.id !== acct.id));
           showToast(t('creatorSettings.socialRemovedToast'));
         } catch { showToast(t('creatorSettings.socialRemoveFailed'), true); }
-      }},
-    ]);
+      },
+    });
   }
 
   function openPortfolioSheet(item?: PortfolioItem) {
@@ -764,20 +773,21 @@ export default function CreatorSettingsScreen() {
 
   function deletePortfolio(item: PortfolioItem) {
     const cfg = PORTFOLIO_CONFIG[item.label];
-    Alert.alert(
-      t('creatorSettings.removeWorkTitle', { item: cfg?.label ?? item.label }),
-      t('creatorSettings.removeWorkBody'),
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        { text: t('common.remove'), style: 'destructive', onPress: async () => {
-          try {
-            const updated = await creatorService.removePortfolioLink(item.id);
-            setPortfolio(updated.portfolioLinks);
-            showToast(t('creatorSettings.pastWorkRemovedToast'));
-          } catch { showToast(t('creatorSettings.pastWorkRemoveFailed'), true); }
-        }},
-      ],
-    );
+    setAppModal({
+      visible: true, type: 'danger',
+      title: t('creatorSettings.removeWorkTitle', { item: cfg?.label ?? item.label }),
+      body: t('creatorSettings.removeWorkBody'),
+      confirmLabel: t('common.remove'),
+      warning: undefined,
+      onConfirm: async () => {
+        closeAppModal();
+        try {
+          const updated = await creatorService.removePortfolioLink(item.id);
+          setPortfolio(updated.portfolioLinks);
+          showToast(t('creatorSettings.pastWorkRemovedToast'));
+        } catch { showToast(t('creatorSettings.pastWorkRemoveFailed'), true); }
+      },
+    });
   }
 
   function handleChangePassword() {
@@ -828,10 +838,14 @@ export default function CreatorSettingsScreen() {
   }
 
   function handleLogoutAll() {
-    Alert.alert(t('creatorSettings.logoutAllTitle'), t('creatorSettings.logoutAllBody'), [
-      { text: t('common.cancel'), style: 'cancel' },
-      { text: t('creatorSettings.logoutAllConfirm'), style: 'destructive', onPress: logout },
-    ]);
+    setAppModal({
+      visible: true, type: 'warning',
+      title: t('creatorSettings.logoutAllTitle'),
+      body: t('creatorSettings.logoutAllBody'),
+      confirmLabel: t('creatorSettings.logoutAllConfirm'),
+      warning: undefined,
+      onConfirm: async () => { closeAppModal(); logout(); },
+    });
   }
 
   async function handleSupportSubmit() {
@@ -2269,6 +2283,16 @@ export default function CreatorSettingsScreen() {
           </Pressable>
         </Modal>
 
+        <AppModal
+          visible={appModal.visible}
+          type={appModal.type}
+          title={appModal.title}
+          body={appModal.body}
+          confirmLabel={appModal.confirmLabel}
+          warning={appModal.warning}
+          onConfirm={() => { void appModal.onConfirm(); }}
+          onCancel={closeAppModal}
+        />
       </SafeAreaView>
     </ColorCtx.Provider>
   );

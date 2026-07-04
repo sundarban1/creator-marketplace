@@ -276,21 +276,21 @@ const styles = StyleSheet.create({
   list:       { paddingBottom: 32 },
   listEmpty:  { flexGrow: 1 },
 
-  groupLabel: { fontSize: 11, fontWeight: '700', paddingHorizontal: 20, paddingTop: 18, paddingBottom: 6, textTransform: 'uppercase', letterSpacing: 0.8, fontFamily: F.bold },
+  groupLabel: { fontSize: 11, fontWeight: '700', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 8, textTransform: 'uppercase', letterSpacing: 0.8, fontFamily: F.bold },
 
-  item:       { flexDirection: 'row', paddingVertical: 14, paddingHorizontal: 20, borderBottomWidth: 1, gap: 12, alignItems: 'flex-start' },
+  item:       { flexDirection: 'row', paddingVertical: 16, paddingHorizontal: 20, borderBottomWidth: 1, gap: 14, alignItems: 'flex-start' },
   accentBar:  { position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, borderRadius: 2 },
 
-  iconWrap:   { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', flexShrink: 0, marginTop: 2 },
+  iconWrap:   { width: 46, height: 46, borderRadius: 23, justifyContent: 'center', alignItems: 'center', flexShrink: 0, marginTop: 1 },
 
-  itemContent:{ flex: 1, gap: 4 },
-  titleRow:   { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  itemTitle:  { fontSize: 14, fontWeight: '700', flex: 1, fontFamily: F.bold },
+  itemContent:{ flex: 1, gap: 5 },
+  titleRow:   { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  itemTitle:  { fontSize: 14, fontWeight: '700', flex: 1, fontFamily: F.bold, lineHeight: 20 },
   unreadDot:  { width: 7, height: 7, borderRadius: 4, flexShrink: 0 },
 
   labelChip:     { alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 },
   labelChipText: { fontSize: 10, fontWeight: '700', letterSpacing: 0.3, fontFamily: F.bold },
 
-  itemBody:   { fontSize: 13, lineHeight: 18, fontFamily: F.regular },
-  itemTime:   { fontSize: 11, opacity: 0.6, fontFamily: F.regular },
+  itemBody:   { fontSize: 13, lineHeight: 19, fontFamily: F.regular },
+  itemTime:   { fontSize: 11, opacity: 0.55, fontFamily: F.regular, marginTop: 1 },
 });
