@@ -60,7 +60,7 @@ function BusinessAvatar({ name, logoUrl, size = 88 }: { name: string; logoUrl: s
   }
   return (
     <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: C.primaryLight, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: '#fff' }}>
-      <Text style={{ fontSize: size * 0.38, fontWeight: '800', color: C.brinjal1 }}>{letter}</Text>
+      <Text style={{ fontSize: size * 0.38, fontWeight: '700', color: C.brinjal1 }}>{letter}</Text>
     </View>
   );
 }
@@ -355,12 +355,12 @@ const styles = StyleSheet.create({
   heroInner:             { flexDirection: 'row', alignItems: 'flex-start', gap: 16 },
   heroMeta:              { flex: 1, paddingTop: 4 },
   heroNameRow:           { marginBottom: 6 },
-  heroName:              { fontSize: 22, fontWeight: '800', lineHeight: 28, fontFamily: F.extrabold },
+  heroName:              { fontSize: 22, fontWeight: '700', lineHeight: 28, fontFamily: F.bold },
   verifiedRow:           { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, marginBottom: 12, alignSelf: 'flex-start' },
   verifiedText:          { fontSize: 11, fontWeight: '700', fontFamily: F.bold },
   heroStats:             { flexDirection: 'row', alignItems: 'center', gap: 12 },
   heroStat:              { alignItems: 'center' },
-  heroStatValue:         { fontSize: 18, fontWeight: '800', fontFamily: F.extrabold },
+  heroStatValue:         { fontSize: 18, fontWeight: '700', fontFamily: F.bold },
   heroStatLabel:         { fontSize: 10, fontWeight: '600', textTransform: 'uppercase', marginTop: 1, fontFamily: F.semibold },
   heroStatDivider:       { width: 1, height: 28 },
 
@@ -384,9 +384,9 @@ const styles = StyleSheet.create({
   sectionDivider:        { height: 1, marginVertical: 4 },
   campaignsSection:      { gap: 12 },
   campaignsSectionHeader:{ flexDirection: 'row', alignItems: 'center', gap: 10 },
-  campaignsSectionTitle: { fontSize: 17, fontWeight: '800', fontFamily: F.extrabold },
+  campaignsSectionTitle: { fontSize: 17, fontWeight: '700', fontFamily: F.bold },
   countBadge:            { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
-  countBadgeText:        { fontSize: 13, fontWeight: '800', fontFamily: F.extrabold },
+  countBadgeText:        { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
 
   noCampaigns:           { borderRadius: 16, borderWidth: 1, padding: 32, alignItems: 'center', gap: 4 },
   noCampaignsTitle:      { fontSize: 16, fontWeight: '700', fontFamily: F.bold },
@@ -401,13 +401,13 @@ const styles = StyleSheet.create({
   campaignTitle:         { fontSize: 14, fontWeight: '700', lineHeight: 20, fontFamily: F.bold },
   campaignMeta:          { fontSize: 11, marginTop: 1, fontFamily: F.regular },
   campaignFooter:        { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4, flexWrap: 'wrap' },
-  campaignBudget:        { fontSize: 13, fontWeight: '800', fontFamily: F.extrabold },
+  campaignBudget:        { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
   deadlinePill:          { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
   deadlineText:          { fontSize: 11, fontWeight: '700', fontFamily: F.bold },
   locationRow:           { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 2 },
   campaignLocation:      { fontSize: 11, fontFamily: F.regular },
   campaignRight:         { paddingVertical: 12, paddingRight: 12, alignItems: 'center', justifyContent: 'center', gap: 2, flexShrink: 0 },
-  appliedCount:          { fontSize: 13, fontWeight: '800', fontFamily: F.extrabold },
+  appliedCount:          { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
   appliedLabel:          { fontSize: 9, textTransform: 'uppercase', fontWeight: '600', fontFamily: F.semibold },
 
   appliedPill:           { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#ECFDF5', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, alignSelf: 'flex-start', marginTop: 4 },

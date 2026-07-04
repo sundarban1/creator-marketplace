@@ -245,10 +245,10 @@ const styles = StyleSheet.create({
   logoAccentLg: { position: 'absolute', width: 88, height: 88, borderRadius: 44, backgroundColor: '#EDE9FE', bottom: -22, left: -22 },
   logoAccentSm: { position: 'absolute', width: 50, height: 50, borderRadius: 25, backgroundColor: '#DDD6FE', top: -12, right: -10 },
   logoLetters:  { position: 'absolute', inset: 0, justifyContent: 'center', alignItems: 'center', flexDirection: 'row', gap: 1 },
-  logoC:        { fontSize: 36, fontWeight: '900', color: '#4F46E5', lineHeight: 42, fontFamily: F.extrabold },
+  logoC:        { fontSize: 36, fontWeight: '900', color: '#4F46E5', lineHeight: 42, fontFamily: F.bold },
   logoM:        { fontSize: 24, fontWeight: '700', color: '#7C3AED', lineHeight: 42, marginTop: 7, fontFamily: F.bold },
 
-  appName:  { fontSize: 32, fontWeight: '900', color: BRINJAL, letterSpacing: 0.5, marginTop: 22, fontFamily: F.extrabold },
+  appName:  { fontSize: 32, fontWeight: '900', color: BRINJAL, letterSpacing: 0.5, marginTop: 22, fontFamily: F.bold },
   tagline:  { fontSize: 14, color: '#888', marginTop: 8, letterSpacing: 0.4, fontWeight: '500', fontFamily: F.medium },
 
   dotsRow: { position: 'absolute', bottom: 56, flexDirection: 'row', gap: 9, alignItems: 'center' },

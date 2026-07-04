@@ -1502,7 +1502,7 @@ const styles = StyleSheet.create({
   topTitle: { fontSize: 16, fontWeight: '700', fontFamily: F.bold },
 
   sectionHeader: {
-    fontSize: 11, fontWeight: '700', letterSpacing: 0.8,
+    fontSize: 11, fontWeight: '700', letterSpacing: 0,
     marginTop: 20, marginBottom: 6, marginHorizontal: 20, fontFamily: F.bold,
   },
   card: {
@@ -1525,7 +1525,7 @@ const styles = StyleSheet.create({
 
   chipSection: { paddingHorizontal: 12, paddingTop: 8, paddingBottom: 12 },
   chipGroup: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1.5 },
+  chip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, borderWidth: 1.5 },
   chipText: { fontSize: 13, fontFamily: F.medium },
 
   logoPicker: { borderRadius: 12, borderWidth: 1.5, borderStyle: 'dashed', height: 100, justifyContent: 'center', alignItems: 'center', gap: 4 },
@@ -1558,7 +1558,7 @@ const styles = StyleSheet.create({
   paymentIcon: { width: 38, height: 38, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
   paymentEmoji: { fontSize: 20 },
   checkboxOuter: { width: 22, height: 22, borderRadius: 6, borderWidth: 2, justifyContent: 'center', alignItems: 'center' },
-  checkboxTick: { color: '#fff', fontSize: 12, fontWeight: '800', fontFamily: F.extrabold },
+  checkboxTick: { color: '#fff', fontSize: 12, fontWeight: '700', fontFamily: F.bold },
   radioOuter: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, justifyContent: 'center', alignItems: 'center' },
   radioInner: { width: 11, height: 11, borderRadius: 6 },
 
@@ -1569,7 +1569,7 @@ const styles = StyleSheet.create({
 
   accountCard: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, paddingBottom: 12 },
   accountAvatar: { width: 50, height: 50, borderRadius: 25, justifyContent: 'center', alignItems: 'center' },
-  accountAvatarText: { fontSize: 20, fontWeight: '800', color: '#fff', fontFamily: F.extrabold },
+  accountAvatarText: { fontSize: 20, fontWeight: '700', color: '#fff', fontFamily: F.bold },
   accountName: { fontSize: 16, fontWeight: '700', fontFamily: F.bold },
   accountEmail: { fontSize: 13, marginTop: 2, fontFamily: F.regular },
   editBtn: { borderRadius: 8, paddingHorizontal: 14, paddingVertical: 6 },
@@ -1584,7 +1584,7 @@ const styles = StyleSheet.create({
   creatorCard: { marginHorizontal: 16, marginBottom: 12, borderRadius: 14, padding: 14, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
   creatorCardTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   creatorAvatar: { width: 46, height: 46, borderRadius: 23, justifyContent: 'center', alignItems: 'center' },
-  creatorAvatarText: { fontSize: 16, fontWeight: '800', fontFamily: F.extrabold },
+  creatorAvatarText: { fontSize: 16, fontWeight: '700', fontFamily: F.bold },
   creatorName: { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
   creatorMeta: { fontSize: 12, marginTop: 2, fontFamily: F.regular },
   categoryPill: { alignSelf: 'flex-start', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2, marginTop: 4 },
@@ -1646,6 +1646,6 @@ const styles = StyleSheet.create({
   langNative: { fontSize: 13, fontFamily: F.regular },
   langDesc: { fontSize: 12, fontFamily: F.regular },
   activeLangCheck: { width: 24, height: 24, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
-  activeLangCheckText: { color: '#fff', fontSize: 13, fontWeight: '800', fontFamily: F.extrabold },
+  activeLangCheckText: { color: '#fff', fontSize: 13, fontWeight: '700', fontFamily: F.bold },
   inactiveLangCircle: { width: 24, height: 24, borderRadius: 12, borderWidth: 2 },
 });

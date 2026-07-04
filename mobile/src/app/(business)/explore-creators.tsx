@@ -233,12 +233,12 @@ function LocationPicker({ selected, onChange }: { selected: LocationEntry[]; onC
 
 const lp = StyleSheet.create({
   wrap:        { gap: 10 },
-  remoteChip:  { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 22, borderWidth: 1.5 },
+  remoteChip:  { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 12, borderWidth: 1.5 },
   globeEmoji:  { fontSize: 14 },
   remoteText:  { fontSize: 13, fontFamily: F.regular },
   removeX:     { fontSize: 12, fontWeight: '700', fontFamily: F.bold },
   chips:       { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  locChip:     { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1.5 },
+  locChip:     { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 12, borderWidth: 1.5 },
   locChipText: { fontSize: 13, fontWeight: '600', fontFamily: F.semibold },
   searchRow:   { flexDirection: 'row', alignItems: 'center', borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 12, height: 44, gap: 8 },
   searchIcon:  { fontSize: 15 },
@@ -365,14 +365,14 @@ const fm = StyleSheet.create({
   sheet:       { position: 'absolute', left: 0, right: 0, bottom: 0, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '92%', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 20, shadowOffset: { width: 0, height: -4 }, elevation: 20 },
   handle:      { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginTop: 12, marginBottom: 4 },
   header:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1 },
-  title:       { fontSize: 17, fontWeight: '800', fontFamily: F.extrabold },
+  title:       { fontSize: 17, fontWeight: '700', fontFamily: F.bold },
   reset:       { fontSize: 14, fontWeight: '600', fontFamily: F.semibold },
   body:        { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16, gap: 16 },
   sectionRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  sectionLabel:{ fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8, fontFamily: F.bold },
+  sectionLabel:{ fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0, fontFamily: F.bold },
   sectionHint: { fontSize: 11, fontWeight: '600', fontFamily: F.semibold },
   chips:       { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip:        { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 13, paddingVertical: 8, borderRadius: 20, borderWidth: 1.5 },
+  chip:        { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 13, paddingVertical: 8, borderRadius: 12, borderWidth: 1.5 },
   chipEmoji:   { fontSize: 13 },
   chipText:    { fontSize: 13, fontFamily: F.medium },
   footer:      { padding: 20, borderTopWidth: 1 },
@@ -805,11 +805,11 @@ export default function ExploreCreatorsScreen() {
 
 const s = StyleSheet.create({
   container: { flex: 1 },
-  gradientHeader: { paddingBottom: 16, borderBottomLeftRadius: 28, borderBottomRightRadius: 28, overflow: 'hidden' },
+  gradientHeader: { paddingBottom: 16, borderBottomLeftRadius: 16, borderBottomRightRadius: 16, overflow: 'hidden' },
 
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 4, gap: 12 },
   headerMiddle: { flex: 1, alignItems: 'center', gap: 2 },
-  headerTitle: { fontSize: 20, fontWeight: '800', textAlign: 'center', fontFamily: F.extrabold, color: '#fff' },
+  headerTitle: { fontSize: 20, fontWeight: '700', textAlign: 'center', fontFamily: F.bold, color: '#fff' },
   headerSub: { fontSize: 12, color: 'rgba(255,255,255,0.75)', fontFamily: F.regular, textAlign: 'center' },
   savedLink: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 6 },
   savedLinkText: { fontSize: 12, fontWeight: '700', color: '#fff', fontFamily: F.bold },
@@ -825,7 +825,7 @@ const s = StyleSheet.create({
   chipText: { fontSize: 12, fontWeight: '600', fontFamily: F.semibold },
 
   countRow: { paddingHorizontal: 20, marginTop: 10, marginBottom: 8, alignItems: 'flex-end' },
-  countPill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 1.5 },
+  countPill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 6, borderRadius: 12, borderWidth: 1.5 },
   countText: { fontSize: 12, fontWeight: '700', fontFamily: F.bold },
 
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, paddingHorizontal: 32 },
@@ -839,14 +839,14 @@ const s = StyleSheet.create({
 
   list: { paddingHorizontal: 20, paddingBottom: 40, gap: 14 },
 
-  card: { borderRadius: 18, padding: 16, gap: 11, borderWidth: 1, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 14, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
+  card: { borderRadius: 14, padding: 16, gap: 11, borderWidth: 1, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
   cardHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   avatar: { width: 68, height: 68, borderRadius: 34, flexShrink: 0 },
   avatarPlaceholder: { justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
   avatarIconWrap: { alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' },
   cardMeta: { flex: 1, gap: 4 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  name: { fontSize: 15, fontWeight: '800', flexShrink: 1, fontFamily: F.extrabold },
+  name: { fontSize: 15, fontWeight: '700', flexShrink: 1, fontFamily: F.bold },
   locationRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   location: { fontSize: 12, fontFamily: F.regular },
   platformRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap', marginTop: 2 },

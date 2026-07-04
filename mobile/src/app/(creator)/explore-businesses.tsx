@@ -154,10 +154,10 @@ const fm = StyleSheet.create({
   sheet:           { position: 'absolute', left: 0, right: 0, bottom: 0, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '80%', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 20, shadowOffset: { width: 0, height: -4 }, elevation: 20 },
   handle:          { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginTop: 12, marginBottom: 4 },
   header:          { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1 },
-  title:           { fontSize: 17, fontWeight: '800', fontFamily: F.extrabold },
+  title:           { fontSize: 17, fontWeight: '700', fontFamily: F.bold },
   reset:           { fontSize: 14, fontWeight: '600', fontFamily: F.semibold },
   body:            { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16, gap: 20 },
-  section:         { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: -4, fontFamily: F.bold },
+  section:         { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0, marginBottom: -4, fontFamily: F.bold },
   sectionRow:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: -4 },
   sectionHint:     { fontSize: 11, fontWeight: '600', fontFamily: F.semibold },
   chipGrid:        { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
@@ -179,7 +179,7 @@ function BusinessAvatar({ name, logoUrl, size = 56 }: { name: string; logoUrl: s
   }
   return (
     <View style={{ width: size, height: size, borderRadius: size * 0.28, backgroundColor: C.primaryLight, alignItems: 'center', justifyContent: 'center' }}>
-      <Text style={{ fontSize: size * 0.36, fontWeight: '800', color: C.brinjal1, fontFamily: F.extrabold }}>{initials}</Text>
+      <Text style={{ fontSize: size * 0.36, fontWeight: '700', color: C.brinjal1, fontFamily: F.bold }}>{initials}</Text>
     </View>
   );
 }
@@ -533,12 +533,12 @@ export default function ExploreBusinessesScreen() {
 
 const styles = StyleSheet.create({
   container:      { flex: 1 },
-  gradientHeader: { borderBottomLeftRadius: 28, borderBottomRightRadius: 28, overflow: 'hidden' },
+  gradientHeader: { borderBottomLeftRadius: 16, borderBottomRightRadius: 16, overflow: 'hidden' },
 
   // Header
   header:         { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 10, paddingBottom: 12, gap: 12 },
   headerMiddle:   { flex: 1, alignItems: 'center', gap: 2 },
-  heading:        { fontSize: 20, fontWeight: '800', letterSpacing: -0.3, fontFamily: F.extrabold, color: '#fff' },
+  heading:        { fontSize: 20, fontWeight: '700', letterSpacing: -0.3, fontFamily: F.bold, color: '#fff' },
   headingSub:     { fontSize: 12, fontFamily: F.regular },
   countRow:       { alignItems: 'flex-end', paddingHorizontal: 16, marginBottom: 4 },
   countPill:      { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 5, borderRadius: 20, borderWidth: 1.5 },
@@ -569,7 +569,7 @@ const styles = StyleSheet.create({
   cardTop:        { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
   cardInfo:       { flex: 1, gap: 4 },
   nameRow:        { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
-  bizName:        { fontSize: 16, fontWeight: '800', flexShrink: 1, letterSpacing: -0.3, fontFamily: F.extrabold },
+  bizName:        { fontSize: 16, fontWeight: '700', flexShrink: 1, letterSpacing: -0.3, fontFamily: F.bold },
   verifiedBadge:  { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: '#4F46E5', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
   verifiedTxt:    { fontSize: 10, fontWeight: '700', color: '#fff', fontFamily: F.bold },
   desc:           { fontSize: 13, lineHeight: 19, fontFamily: F.regular },

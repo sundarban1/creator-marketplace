@@ -43,7 +43,7 @@ function BusinessAvatar({ name, logoUrl, size = 88, uploading, onPress }: {
         {logoUrl ? (
           <Image source={{ uri: logoUrl }} style={{ width: size, height: size, borderRadius: radius }} />
         ) : (
-          <Text style={{ fontSize: size * 0.38, fontWeight: '800', color: '#fff' }}>{letter}</Text>
+          <Text style={{ fontSize: size * 0.38, fontWeight: '700', color: '#fff' }}>{letter}</Text>
         )}
       </View>
       {/* Camera badge — matches creator profile */}
@@ -277,12 +277,12 @@ const styles = StyleSheet.create({
   heroBubble2:      { position: 'absolute', width: 140, height: 140, borderRadius: 70, backgroundColor: 'rgba(255,255,255,0.06)', bottom: -30, left: -30 },
   heroInner:        { flexDirection: 'row', alignItems: 'flex-start', gap: 16 },
   heroMeta:         { flex: 1, paddingTop: 4 },
-  heroName:         { fontSize: 22, fontWeight: '800', color: '#fff', lineHeight: 28, marginBottom: 6, fontFamily: F.extrabold },
+  heroName:         { fontSize: 20, fontWeight: '700', color: '#fff', lineHeight: 28, marginBottom: 6, fontFamily: F.bold },
   verifiedRow:      { alignSelf: 'flex-start', backgroundColor: 'rgba(255,255,255,0.18)', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, marginBottom: 12 },
   verifiedText:     { fontSize: 11, fontWeight: '700', color: '#fff', fontFamily: F.bold },
   heroStats:        { flexDirection: 'row', alignItems: 'center', gap: 12 },
   heroStat:         { alignItems: 'center' },
-  heroStatValue:    { fontSize: 18, fontWeight: '800', color: '#fff', fontFamily: F.extrabold },
+  heroStatValue:    { fontSize: 16, fontWeight: '700', color: '#fff', fontFamily: F.bold },
   heroStatLabel:    { fontSize: 10, fontWeight: '600', textTransform: 'uppercase', marginTop: 1, color: 'rgba(255,255,255,0.75)', fontFamily: F.semibold },
   heroStatDivider:  { width: 1, height: 28, backgroundColor: 'rgba(255,255,255,0.25)' },
 

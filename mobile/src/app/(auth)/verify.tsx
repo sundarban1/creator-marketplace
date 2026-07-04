@@ -286,11 +286,11 @@ const styles = StyleSheet.create({
   heroContent: { alignItems: 'center', paddingHorizontal: 24, gap: 10 },
   emailIconWrap: { width: 68, height: 68, borderRadius: 34, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
   emailIcon: { fontSize: 30 },
-  heroTitle: { fontSize: 22, fontWeight: '800', color: '#fff', textAlign: 'center', fontFamily: F.extrabold },
+  heroTitle: { fontSize: 20, fontWeight: '700', color: '#fff', textAlign: 'center', fontFamily: F.bold },
   heroSub: { fontSize: 14, color: 'rgba(255,255,255,0.78)', textAlign: 'center', lineHeight: 22, fontFamily: F.regular },
   heroEmail: { fontWeight: '700', color: '#fff', fontFamily: F.bold },
 
-  card: { flex: 1, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, paddingTop: 36, alignItems: 'center' },
+  card: { flex: 1, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingTop: 36, alignItems: 'center' },
 
   otpRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
   otpBox: {
@@ -300,8 +300,8 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     textAlign: 'center',
     fontSize: 22,
-    fontWeight: '800',
-    fontFamily: F.extrabold,
+    fontWeight: '700',
+    fontFamily: F.bold,
   },
 
   errorBanner: { width: '100%', borderWidth: 1, borderRadius: 10, padding: 12, marginBottom: 14 },
@@ -345,13 +345,13 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowOpacity: 0.35,
+    shadowOpacity: 0.15,
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 6 },
     elevation: 8,
     marginBottom: 8,
   },
   checkMark: { fontSize: 48, color: '#fff', fontWeight: '700', lineHeight: 56, fontFamily: F.bold },
-  successTitle: { fontSize: 26, fontWeight: '800', fontFamily: F.extrabold },
+  successTitle: { fontSize: 26, fontWeight: '700', fontFamily: F.bold },
   successSub: { fontSize: 15, textAlign: 'center', lineHeight: 24, fontFamily: F.regular },
 });

@@ -350,7 +350,7 @@ const dp = StyleSheet.create({
   sheet:      { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 40, maxHeight: '70%' },
   handle:     { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginBottom: 16 },
   sheetHeader:{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 0 },
-  sheetTitle: { fontSize: 16, fontWeight: '800', fontFamily: F.extrabold, marginBottom: 12 },
+  sheetTitle: { fontSize: 16, fontWeight: '700', fontFamily: F.bold, marginBottom: 12 },
   item:         { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 12, marginBottom: 4 },
   itemThumbWrap:{ width: 44, height: 44, borderRadius: 10, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   itemThumb:    { width: 44, height: 44 },
@@ -522,7 +522,7 @@ function ChipMultiGroup({
 
 const cg = StyleSheet.create({
   wrap:     { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip:     { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 20, borderWidth: 1.5 },
+  chip:     { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 12, borderWidth: 1.5 },
   chipText: { fontSize: 13, fontFamily: F.medium },
   error:    { fontSize: 12, color: ERROR_RED, fontFamily: F.regular },
 });
@@ -787,7 +787,7 @@ const st = StyleSheet.create({
   btn:    { width: 52, height: 52, justifyContent: 'center', alignItems: 'center' },
   btnTxt: { fontSize: 24, fontWeight: '300', lineHeight: 28, fontFamily: F.regular },
   center: { flex: 1, alignItems: 'center' },
-  value:  { fontSize: 24, fontWeight: '800', fontFamily: F.extrabold },
+  value:  { fontSize: 24, fontWeight: '700', fontFamily: F.bold },
   unit:   { fontSize: 11, fontWeight: '500', marginTop: 1, fontFamily: F.medium },
 });
 
@@ -1651,7 +1651,7 @@ const s = StyleSheet.create({
   header:       { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14 },
   backBtn:      { width: 38, height: 38, borderRadius: 19, justifyContent: 'center', alignItems: 'center' },
   headerCenter: { flex: 1, alignItems: 'center' },
-  headerTitle:  { fontSize: 16, fontWeight: '800', fontFamily: F.extrabold, color: '#fff' },
+  headerTitle:  { fontSize: 16, fontWeight: '700', fontFamily: F.bold, color: '#fff' },
   headerSub:    { fontSize: 11, marginTop: 1, fontFamily: F.regular, color: 'rgba(255,255,255,0.75)' },
   phasePill:    { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
   phasePillText:{ fontSize: 12, fontWeight: '700', fontFamily: F.bold, color: '#fff' },
@@ -1694,7 +1694,7 @@ const s = StyleSheet.create({
   warnScrim:       { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 },
   warnSheet:       { width: '100%', borderRadius: 20, padding: 24, alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 20, elevation: 10 },
   warnIconWrap:    { width: 64, height: 64, borderRadius: 32, backgroundColor: '#FFF8E8', justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
-  warnTitle:       { fontSize: 18, fontWeight: '800', fontFamily: F.extrabold, marginBottom: 12, textAlign: 'center' },
+  warnTitle:       { fontSize: 18, fontWeight: '700', fontFamily: F.bold, marginBottom: 12, textAlign: 'center' },
   warnBody:        { fontSize: 14, fontFamily: F.regular, lineHeight: 21, textAlign: 'center', marginBottom: 24 },
   warnActions:     { flexDirection: 'row', gap: 10, width: '100%' },
   warnCancelBtn:   { flex: 1, borderRadius: 12, borderWidth: 1.5, paddingVertical: 13, alignItems: 'center' },
@@ -1718,7 +1718,7 @@ const s = StyleSheet.create({
   etInfoSub:   { fontSize: 12, fontFamily: F.regular, lineHeight: 18 },
 
   // Goal chips (inline multi-select)
-  goalChip:     { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 20, borderWidth: 1.5 },
+  goalChip:     { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 12, borderWidth: 1.5 },
   goalChipText: { fontSize: 13, fontFamily: F.medium },
 
   // Budget grid

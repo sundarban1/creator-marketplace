@@ -362,46 +362,46 @@ const s = StyleSheet.create({
   topIconBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center' },
 
   // Profile card (floats over cover)
-  profileCard: { marginHorizontal: 16, marginTop: -60, borderRadius: 24, padding: 20, alignItems: 'center', gap: 6,
-                 shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 20, shadowOffset: { width: 0, height: 8 }, elevation: 8 },
+  profileCard: { marginHorizontal: 16, marginTop: -60, borderRadius: 20, padding: 20, alignItems: 'center', gap: 6,
+                 shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 20, shadowOffset: { width: 0, height: 8 }, elevation: 8 },
 
   // Avatar
   avatarArea:     { marginTop: -50, marginBottom: 6, alignItems: 'center', alignSelf: 'center' },
   avatarPressable:{ position: 'relative', alignItems: 'center', justifyContent: 'center' },
   avatar:         { width: 96, height: 96, borderRadius: 48, justifyContent: 'center', alignItems: 'center',
                     borderWidth: 4, borderColor: '#fff', overflow: 'hidden' },
-  avatarInitial:  { fontSize: 38, fontWeight: '800', color: '#fff', fontFamily: F.extrabold, textAlign: 'center', lineHeight: 96 },
+  avatarInitial:  { fontSize: 38, fontWeight: '700', color: '#fff', fontFamily: F.bold, textAlign: 'center', lineHeight: 96 },
   cameraBadge:    { position: 'absolute', bottom: 2, right: 2, width: 28, height: 28, borderRadius: 14,
                     justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#fff' },
 
   // Identity
-  name:        { fontSize: 22, fontWeight: '800', fontFamily: F.extrabold, textAlign: 'center' },
+  name:        { fontSize: 22, fontWeight: '700', fontFamily: F.bold, textAlign: 'center' },
   locationRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   location:    { fontSize: 13, fontFamily: F.regular },
   bio:         { fontSize: 13, textAlign: 'center', lineHeight: 20, paddingHorizontal: 8, fontFamily: F.regular },
 
   editBtn:     { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6,
-                 borderWidth: 1.5, borderRadius: 20, paddingHorizontal: 20, paddingVertical: 8 },
+                 borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 20, paddingVertical: 8 },
   editBtnText: { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
 
   // Stats strip
   statsStrip:   { flexDirection: 'row', alignItems: 'center', width: '100%', marginTop: 16,
                   paddingTop: 16, borderTopWidth: 1 },
   statItem:     { flex: 1, alignItems: 'center', gap: 2 },
-  statValue:    { fontSize: 18, fontWeight: '800', fontFamily: F.extrabold },
+  statValue:    { fontSize: 18, fontWeight: '700', fontFamily: F.bold },
   statLabel:    { fontSize: 11, fontWeight: '500', fontFamily: F.medium },
   statDivider:  { width: 1, height: 32 },
 
   // Section cards
-  sectionCard:   { marginHorizontal: 16, marginTop: 12, borderRadius: 20, padding: 18,
-                   shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
+  sectionCard:   { marginHorizontal: 16, marginTop: 12, borderRadius: 16, padding: 18,
+                   shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
   sectionTitle:  { fontSize: 15, fontWeight: '700', fontFamily: F.bold },
   sectionAction: { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
 
   // Category chips
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip:     { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20 },
+  chip:     { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 12 },
   chipText: { fontSize: 13, fontWeight: '600', fontFamily: F.semibold },
 
   // Social / portfolio rows
@@ -412,7 +412,7 @@ const s = StyleSheet.create({
   socialName:    { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
   socialHandle:  { fontSize: 12, fontFamily: F.regular },
   followerPill:  { alignItems: 'center', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, marginRight: 4 },
-  followerNum:   { fontSize: 13, fontWeight: '800', fontFamily: F.extrabold },
+  followerNum:   { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
   followerLbl:   { fontSize: 9, fontWeight: '600', textTransform: 'uppercase', fontFamily: F.semibold },
 
   // Add more

@@ -317,13 +317,13 @@ const s = StyleSheet.create({
   appTagline:   { fontSize: 10, color: '#9CA3AF', fontFamily: F.regular, marginTop: 1 },
   backBtn:      { width: 34, height: 34, borderRadius: 10, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center' },
 
-  tabBar:      { flexDirection: 'row', borderRadius: 14, padding: 4, marginBottom: 20, gap: 2 },
-  tabBtn:      { flex: 1, height: 40, borderRadius: 11, justifyContent: 'center', alignItems: 'center' },
+  tabBar:      { flexDirection: 'row', borderRadius: 12, padding: 4, marginBottom: 20, gap: 2 },
+  tabBtn:      { flex: 1, height: 40, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
   tabBtnActive:{ backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 3 },
   tabBtnText:  { fontSize: 14, fontFamily: F.medium },
 
   headingWrap: { marginBottom: 22, gap: 6 },
-  heading:     { fontSize: 24, fontWeight: '800', fontFamily: F.extrabold },
+  heading:     { fontSize: 20, fontWeight: '700', fontFamily: F.bold },
   headingSub:  { fontSize: 13, color: '#6B7280', fontFamily: F.regular, lineHeight: 19 },
 
   sectionLabel: { fontSize: 13, fontWeight: '600', fontFamily: F.semibold, marginBottom: 10 },
@@ -363,7 +363,7 @@ const s = StyleSheet.create({
 
   socialBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, height: 50, borderRadius: 12, borderWidth: 1.5, marginBottom: 16 },
   googleBadge:   { width: 22, height: 22, borderRadius: 11, backgroundColor: '#4285F4', justifyContent: 'center', alignItems: 'center' },
-  googleG:       { color: '#fff', fontSize: 12, fontWeight: '900', fontFamily: F.extrabold },
+  googleG:       { color: '#fff', fontSize: 12, fontWeight: '900', fontFamily: F.bold },
   socialBtnText: { fontSize: 15, fontFamily: F.semibold },
 
   terms: { fontSize: 12, color: '#9CA3AF', lineHeight: 18, textAlign: 'center', fontFamily: F.regular, marginBottom: 16 },

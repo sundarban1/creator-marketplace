@@ -131,7 +131,7 @@ function TypingDots({ avatarName, color }: { avatarName: string; color: string }
 const td = StyleSheet.create({
   row:     { flexDirection: 'row', alignItems: 'flex-end', gap: 8, paddingHorizontal: 16, paddingBottom: 6 },
   mini:    { width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
-  miniTxt: { color: '#fff', fontSize: 10, fontFamily: F.extrabold },
+  miniTxt: { color: '#fff', fontSize: 10, fontFamily: F.bold },
   bubble:  { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 12, borderRadius: 18, borderBottomLeftRadius: 4, borderWidth: StyleSheet.hairlineWidth },
   dot:     { width: 7, height: 7, borderRadius: 3.5 },
 });
@@ -465,7 +465,7 @@ const s = StyleSheet.create({
   header:          { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, gap: 10 },
   backBtn:         { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' },
   headerAvatar:    { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: 'rgba(255,255,255,0.4)' },
-  headerAvatarTxt: { color: '#fff', fontSize: 14, fontFamily: F.extrabold },
+  headerAvatarTxt: { color: '#fff', fontSize: 14, fontFamily: F.bold },
   headerInfo:      { flex: 1 },
   headerName:      { color: '#fff', fontSize: 16, fontFamily: F.bold },
   headerSub:       { fontSize: 11, fontFamily: F.medium, marginTop: 1 },
@@ -492,7 +492,7 @@ const s = StyleSheet.create({
   bubbleRowSent:     { justifyContent: 'flex-end' },
   bubbleRowReceived: { justifyContent: 'flex-start' },
   msgAvatar:    { width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center', marginBottom: 2 },
-  msgAvatarTxt: { color: '#fff', fontSize: 10, fontFamily: F.extrabold },
+  msgAvatarTxt: { color: '#fff', fontSize: 10, fontFamily: F.bold },
   avatarSpacer: { width: 28 },
   bubbleWrap:         { maxWidth: '75%' },
   bubbleWrapSent:     { alignItems: 'flex-end' },

@@ -362,12 +362,12 @@ function PrefLocationPicker({
 
 const pl = StyleSheet.create({
   container:    { gap: 10 },
-  remoteChip:   { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 22, borderWidth: 1.5 },
+  remoteChip:   { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 12, borderWidth: 1.5 },
   remoteEmoji:  { fontSize: 14 },
   remoteText:   { fontSize: 13 },
   removeX:      { fontSize: 12, fontWeight: '700' },
   selectedRow:  { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  selectedChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1.5 },
+  selectedChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 12, borderWidth: 1.5 },
   selectedText: { fontSize: 13, fontWeight: '600' },
   searchRow:    { flexDirection: 'row', alignItems: 'center', borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 12, height: 44, gap: 8 },
   searchIcon:   { fontSize: 15 },
@@ -2314,7 +2314,7 @@ const styles = StyleSheet.create({
 
   sectionHeader: {
     fontSize: 11, fontWeight: '700',
-    letterSpacing: 0.8, marginTop: 20, marginBottom: 6, marginHorizontal: 20, fontFamily: F.bold,
+    letterSpacing: 0, marginTop: 20, marginBottom: 6, marginHorizontal: 20, fontFamily: F.bold,
   },
   card: {
     marginHorizontal: 16, borderRadius: 14,
@@ -2344,12 +2344,12 @@ const styles = StyleSheet.create({
   chipSection: { paddingHorizontal: 12, paddingTop: 8, paddingBottom: 12 },
   sliderSection: { paddingHorizontal: 16, paddingVertical: 16 },
   chipGroup: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1.5 },
+  chip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, borderWidth: 1.5 },
   chipText: { fontSize: 13, fontFamily: F.medium },
 
   accountCard: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, paddingBottom: 12 },
   accountAvatar: { width: 50, height: 50, borderRadius: 25, justifyContent: 'center', alignItems: 'center' },
-  accountAvatarText: { fontSize: 20, fontWeight: '800', color: '#fff', fontFamily: F.extrabold },
+  accountAvatarText: { fontSize: 20, fontWeight: '700', color: '#fff', fontFamily: F.bold },
   accountName: { fontSize: 16, fontWeight: '700', fontFamily: F.bold },
   accountEmail: { fontSize: 13, marginTop: 2, fontFamily: F.regular },
   editBtn: { borderRadius: 8, paddingHorizontal: 14, paddingVertical: 6 },
@@ -2368,7 +2368,7 @@ const styles = StyleSheet.create({
   langNative: { fontSize: 13, fontFamily: F.regular },
   langDesc: { fontSize: 12, fontFamily: F.regular },
   activeLangCheck: { width: 24, height: 24, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
-  activeLangCheckText: { color: '#fff', fontSize: 13, fontWeight: '800', fontFamily: F.extrabold },
+  activeLangCheckText: { color: '#fff', fontSize: 13, fontWeight: '700', fontFamily: F.bold },
   inactiveLangCircle: { width: 24, height: 24, borderRadius: 12, borderWidth: 2 },
   soonBadge: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
   badgeText: { fontSize: 11, fontWeight: '700', fontFamily: F.bold },
@@ -2400,7 +2400,7 @@ const styles = StyleSheet.create({
   sheetHeader: { borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 20, paddingTop: 20, paddingBottom: 18 },
   sheetHeaderInner: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   sheetPlatformIcon: { width: 52, height: 52, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' },
-  sheetTitle: { fontSize: 20, fontWeight: '800', color: '#fff', fontFamily: F.extrabold },
+  sheetTitle: { fontSize: 20, fontWeight: '700', color: '#fff', fontFamily: F.bold },
   sheetSubtitle: { fontSize: 12, color: 'rgba(255,255,255,0.75)', marginTop: 3, fontFamily: F.regular },
   sheetBody: { padding: 20, paddingBottom: 36 },
   sheetSection: { marginBottom: 20 },
@@ -2418,7 +2418,7 @@ const styles = StyleSheet.create({
   platformGridEmoji: { fontSize: 24 },
   platformGridLabel: { fontSize: 11, fontWeight: '700', textAlign: 'center', fontFamily: F.bold },
   platformGridAddedBadge: { position: 'absolute', top: 4, right: 4, width: 16, height: 16, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
-  platformGridAddedText: { fontSize: 9, fontWeight: '800', fontFamily: F.extrabold },
+  platformGridAddedText: { fontSize: 9, fontWeight: '700', fontFamily: F.bold },
   platformGridSelectedDot: { position: 'absolute', bottom: 6, width: 6, height: 6, borderRadius: 3 },
 
   // Inputs inside sheet
@@ -2426,14 +2426,14 @@ const styles = StyleSheet.create({
   sheetInputPrefix: { fontSize: 18, marginRight: 6 },
   sheetInput: { flex: 1, fontSize: 15, paddingVertical: 12, fontFamily: F.regular },
   sheetCountBadge: { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, marginLeft: 8 },
-  sheetCountBadgeText: { fontSize: 13, fontWeight: '800', fontFamily: F.extrabold },
+  sheetCountBadgeText: { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
 
   // Sheet action buttons
   sheetActions: { gap: 10, marginTop: 6 },
   sheetSaveBtn: { borderRadius: 14, paddingVertical: 15, alignItems: 'center' },
   sheetSaveBtnRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   sheetSpinner: { width: 16, height: 16, borderRadius: 8, borderWidth: 2, borderColor: 'rgba(255,255,255,0.4)', borderTopColor: '#fff' },
-  sheetSaveBtnText: { color: '#fff', fontSize: 15, fontWeight: '800', fontFamily: F.extrabold },
+  sheetSaveBtnText: { color: '#fff', fontSize: 15, fontWeight: '700', fontFamily: F.bold },
   sheetCancelBtn: { borderRadius: 14, paddingVertical: 13, alignItems: 'center', borderWidth: 1.5 },
   sheetCancelBtnText: { fontSize: 14, fontWeight: '600', fontFamily: F.semibold },
 
@@ -2453,7 +2453,7 @@ const styles = StyleSheet.create({
   socialFollowerBadgeText: { fontSize: 11, fontWeight: '700', fontFamily: F.bold },
 
   // Form section title (kept for other uses)
-  formSectionTitle: { fontSize: 15, fontWeight: '800', marginBottom: 16, fontFamily: F.extrabold },
+  formSectionTitle: { fontSize: 15, fontWeight: '700', marginBottom: 16, fontFamily: F.bold },
   connectBtn: { borderRadius: 8, paddingHorizontal: 12, paddingVertical: 5 },
   connectBtnText: { fontSize: 12, fontWeight: '700', color: '#fff', fontFamily: F.bold },
 
@@ -2489,14 +2489,14 @@ const styles = StyleSheet.create({
 
   earningsRow: { flexDirection: 'row', justifyContent: 'space-around', paddingVertical: 16, paddingHorizontal: 16 },
   earningsStat: { alignItems: 'center', gap: 4 },
-  earningsValue: { fontSize: 22, fontWeight: '800', fontFamily: F.extrabold },
+  earningsValue: { fontSize: 22, fontWeight: '700', fontFamily: F.bold },
   earningsLabel: { fontSize: 11, fontWeight: '600', textAlign: 'center', fontFamily: F.semibold },
   earningsSkeletonValue: { width: 52, height: 26, borderRadius: 6, marginBottom: 2 },
 
   paymentIcon: { width: 38, height: 38, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
   paymentEmoji: { fontSize: 20 },
   checkboxOuter: { width: 22, height: 22, borderRadius: 6, borderWidth: 2, justifyContent: 'center', alignItems: 'center' },
-  checkboxTick: { color: '#fff', fontSize: 12, fontWeight: '800', fontFamily: F.extrabold },
+  checkboxTick: { color: '#fff', fontSize: 12, fontWeight: '700', fontFamily: F.bold },
 
   verifiedBadge: { backgroundColor: '#DCFCE7', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
 
@@ -2545,7 +2545,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center', alignItems: 'center', marginBottom: 16,
   },
   confirmIcon: { fontSize: 26 },
-  confirmTitle: { fontSize: 20, fontWeight: '800', marginBottom: 10, fontFamily: F.extrabold },
+  confirmTitle: { fontSize: 20, fontWeight: '700', marginBottom: 10, fontFamily: F.bold },
   confirmBody: { fontSize: 14, lineHeight: 22, marginBottom: 24, fontFamily: F.regular },
   confirmActions: { flexDirection: 'row', gap: 10 },
   confirmCancelBtn: {

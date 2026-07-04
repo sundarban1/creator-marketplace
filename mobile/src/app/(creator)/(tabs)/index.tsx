@@ -626,14 +626,14 @@ const styles = StyleSheet.create({
   scrollContent: { paddingBottom: 40 },
 
   // ── Header ──
-  gradientHeader: { borderBottomLeftRadius: 32, borderBottomRightRadius: 32, overflow: 'hidden' },
+  gradientHeader: { borderBottomLeftRadius: 16, borderBottomRightRadius: 16, overflow: 'hidden' },
 
   header:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 14 },
   headerLeft:   { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
   headerRight:  { flexDirection: 'row', alignItems: 'center', gap: 10 },
   menuBtnInner: { width: 38, height: 38, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' },
   greeting:     { fontSize: 12, marginBottom: 2, fontFamily: F.medium, color: 'rgba(255,255,255,0.75)' },
-  brandName:    { fontSize: 20, fontFamily: F.extrabold, color: '#fff', maxWidth: 180, letterSpacing: -0.3 },
+  brandName:    { fontSize: 20, fontFamily: F.bold, color: '#fff', maxWidth: 180, letterSpacing: -0.3 },
   avatarCircle: { width: 44, height: 44, borderRadius: 22, overflow: 'hidden', shadowOpacity: 0.4, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
   avatarImage:  { width: 44, height: 44 },
   avatarFallback: { width: 44, height: 44, justifyContent: 'center', alignItems: 'center' },
@@ -701,7 +701,7 @@ const styles = StyleSheet.create({
 
   // ── Featured ──
   featuredRow:       { paddingHorizontal: 20, gap: 16, marginBottom: 0 },
-  featuredEmpty:     { marginHorizontal: 20, marginBottom: 0, borderRadius: 18, borderWidth: 1.5, borderStyle: 'dashed', padding: 24, alignItems: 'center', gap: 8 },
+  featuredEmpty:     { marginHorizontal: 20, marginBottom: 0, borderRadius: 14, borderWidth: 1.5, borderStyle: 'dashed', padding: 24, alignItems: 'center', gap: 8 },
   featuredEmptyTitle:{ fontSize: 14, fontFamily: F.bold, textAlign: 'center' },
   featuredEmptySub:  { fontSize: 12, fontFamily: F.regular, textAlign: 'center', lineHeight: 18 },
 

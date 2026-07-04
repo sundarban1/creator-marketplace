@@ -204,10 +204,10 @@ const styles = StyleSheet.create({
   heroContent: { alignItems: 'center', paddingHorizontal: 24, gap: 10, paddingTop: 52 },
   iconWrap: { width: 68, height: 68, borderRadius: 34, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
   icon: { fontSize: 30 },
-  heroTitle: { fontSize: 22, fontWeight: '800', color: '#fff', textAlign: 'center', fontFamily: F.extrabold },
+  heroTitle: { fontSize: 20, fontWeight: '700', color: '#fff', textAlign: 'center', fontFamily: F.bold },
   heroSub: { fontSize: 14, color: 'rgba(255,255,255,0.78)', textAlign: 'center', lineHeight: 22, fontFamily: F.regular },
 
-  card: { flex: 1, borderTopLeftRadius: 28, borderTopRightRadius: 28 },
+  card: { flex: 1, borderTopLeftRadius: 24, borderTopRightRadius: 24 },
   cardContent: { padding: 28, paddingBottom: 40 },
   errorBanner: { borderRadius: 10, borderWidth: 1, padding: 12, marginBottom: 16 },
   errorBannerText: { fontSize: 13, fontWeight: '600', fontFamily: F.semibold },

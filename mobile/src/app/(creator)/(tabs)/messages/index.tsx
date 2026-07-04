@@ -65,7 +65,7 @@ function Avatar({ name, size = 50 }: { name: string; size?: number }) {
 }
 const av = StyleSheet.create({
   wrap: { justifyContent: 'center', alignItems: 'center' },
-  text: { color: '#fff', fontWeight: '800', fontFamily: F.extrabold },
+  text: { color: '#fff', fontWeight: '700', fontFamily: F.bold },
 });
 
 // ── Request Card ──────────────────────────────────────────────────────────────
@@ -385,9 +385,9 @@ const s = StyleSheet.create({
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
   // Header
-  gradientHeader: { borderBottomLeftRadius: 28, borderBottomRightRadius: 28, overflow: 'hidden' },
+  gradientHeader: { borderBottomLeftRadius: 16, borderBottomRightRadius: 16, overflow: 'hidden' },
   header:         { paddingHorizontal: 20, paddingTop: 14, paddingBottom: 10 },
-  heading:        { fontSize: 22, fontWeight: '800', fontFamily: F.extrabold, color: '#fff' },
+  heading:        { fontSize: 22, fontWeight: '700', fontFamily: F.bold, color: '#fff' },
   headingSub:     { fontSize: 13, fontFamily: F.regular, color: 'rgba(255,255,255,0.75)', marginTop: 2 },
 
   // Request list
@@ -395,8 +395,8 @@ const s = StyleSheet.create({
   listEmpty:{ flexGrow: 1 },
 
   // Request card
-  reqCard:     { borderRadius: 18, borderWidth: 1.5, padding: 14, gap: 12, shadowRadius: 6, shadowOpacity: 0.07, shadowOffset: { width: 0, height: 2 }, elevation: 2, overflow: 'hidden' },
-  reqStripe:   { position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, borderTopLeftRadius: 18, borderBottomLeftRadius: 18 },
+  reqCard:     { borderRadius: 14, borderWidth: 1.5, padding: 14, gap: 12, shadowRadius: 6, shadowOpacity: 0.04, shadowOffset: { width: 0, height: 2 }, elevation: 2, overflow: 'hidden' },
+  reqStripe:   { position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, borderTopLeftRadius: 14, borderBottomLeftRadius: 14 },
   reqTop:      { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
   reqInfo:     { flex: 1, gap: 4 },
   reqNameRow:  { flexDirection: 'row', alignItems: 'center', gap: 8 },
@@ -429,7 +429,7 @@ const s = StyleSheet.create({
   avatarWrap:  { position: 'relative' },
   avatarRing:  { position: 'absolute', top: -3, left: -3, right: -3, bottom: -3, borderRadius: 29, borderWidth: 2 },
   avatarBadge: { position: 'absolute', top: -4, right: -4, minWidth: 20, height: 20, borderRadius: 10, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 4, borderWidth: 2, borderColor: '#fff' },
-  avatarBadgeTxt: { color: '#fff', fontSize: 10, fontWeight: '800', fontFamily: F.extrabold, lineHeight: 12 },
+  avatarBadgeTxt: { color: '#fff', fontSize: 10, fontWeight: '700', fontFamily: F.bold, lineHeight: 12 },
   content:     { flex: 1, gap: 3 },
   rowTop:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   name:        { flex: 1, fontSize: 15, fontFamily: F.semibold },

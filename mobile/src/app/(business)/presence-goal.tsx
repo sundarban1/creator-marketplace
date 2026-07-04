@@ -160,7 +160,7 @@ export default function PresenceGoalScreen() {
 const styles = StyleSheet.create({
   container:       { flex: 1 },
   flex:            { flex: 1 },
-  gradientHeader:  { overflow: 'hidden', borderBottomLeftRadius: 20, borderBottomRightRadius: 20 },
+  gradientHeader:  { overflow: 'hidden', borderBottomLeftRadius: 16, borderBottomRightRadius: 16 },
   header:          { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14 },
   headerTitle:     { fontSize: 17, fontWeight: '700', fontFamily: F.bold },
   scrollContent:   { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 48 },
@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
   serviceLabel:     { fontSize: 15, fontWeight: '700', fontFamily: F.bold },
   serviceDesc:      { fontSize: 12, fontFamily: F.regular },
   serviceCheck:     { width: 22, height: 22, borderRadius: 11, borderWidth: 2, justifyContent: 'center', alignItems: 'center' },
-  serviceCheckMark: { color: '#fff', fontSize: 12, fontWeight: '800', fontFamily: F.extrabold },
+  serviceCheckMark: { color: '#fff', fontSize: 12, fontWeight: '700', fontFamily: F.bold },
 
   saveBtn:     { borderRadius: 14, paddingVertical: 15, alignItems: 'center', shadowOpacity: 0.25, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 5 },
   saveBtnText: { color: '#fff', fontSize: 16, fontWeight: '700', fontFamily: F.bold },

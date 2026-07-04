@@ -336,9 +336,9 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
-  gradientHeader: { borderBottomLeftRadius: 28, borderBottomRightRadius: 28, overflow: 'hidden' },
+  gradientHeader: { borderBottomLeftRadius: 16, borderBottomRightRadius: 16, overflow: 'hidden' },
   headerContent:  { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 16, gap: 4 },
-  pageTitle:      { fontSize: 22, fontWeight: '800', color: '#fff', fontFamily: F.extrabold },
+  pageTitle:      { fontSize: 22, fontWeight: '700', color: '#fff', fontFamily: F.bold },
   pageSub:        { fontSize: 13, color: 'rgba(255,255,255,0.75)', fontFamily: F.regular },
 
   tabBar:       { flexDirection: 'row', borderBottomWidth: StyleSheet.hairlineWidth },

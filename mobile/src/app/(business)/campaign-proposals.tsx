@@ -357,7 +357,7 @@ const cm = StyleSheet.create({
   backdrop:     { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 },
   sheet:        { width: '100%', borderRadius: 24, padding: 24, alignItems: 'center', gap: 12, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 24, shadowOffset: { width: 0, height: 8 }, elevation: 12 },
   iconCircle:   { width: 72, height: 72, borderRadius: 36, justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
-  title:        { fontSize: 20, fontWeight: '800', fontFamily: F.extrabold, textAlign: 'center' },
+  title:        { fontSize: 20, fontWeight: '700', fontFamily: F.bold, textAlign: 'center' },
   creatorName:  { fontSize: 14, fontFamily: F.semibold, textAlign: 'center', marginTop: -4 },
   body:         { fontSize: 13, fontFamily: F.regular, textAlign: 'center', lineHeight: 20 },
   warningBox:   { flexDirection: 'row', alignItems: 'flex-start', gap: 8, borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, width: '100%' },
@@ -646,8 +646,8 @@ const styles = StyleSheet.create({
   // ── Gradient header ──────────────────────────────────────────────────────────
   gradientHeader: {
     paddingBottom: 16,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16,
     overflow: 'hidden',
   },
 
@@ -668,11 +668,11 @@ const styles = StyleSheet.create({
   totalPillText: { fontSize: 12, fontWeight: '600', color: '#fff', fontFamily: F.semibold },
 
   headerBody: { paddingHorizontal: 16, paddingTop: 8, gap: 8 },
-  headerTitle: { fontSize: 20, fontWeight: '800', color: '#fff', fontFamily: F.extrabold, lineHeight: 26 },
+  headerTitle: { fontSize: 20, fontWeight: '700', color: '#fff', fontFamily: F.bold, lineHeight: 26 },
   headerBadgeRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  typeBadge:     { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
+  typeBadge:     { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
   typeBadgeText: { fontSize: 11, fontWeight: '700', fontFamily: F.bold },
-  platformPill:  { backgroundColor: 'rgba(255,255,255,0.18)', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
+  platformPill:  { backgroundColor: 'rgba(255,255,255,0.18)', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
   platformText:  { fontSize: 11, fontWeight: '600', color: '#fff', fontFamily: F.semibold },
 
   statStrip: {
@@ -685,7 +685,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   statStripItem:    { flex: 1, alignItems: 'center', gap: 2 },
-  statStripNum:     { fontSize: 18, fontWeight: '800', color: '#fff', fontFamily: F.extrabold },
+  statStripNum:     { fontSize: 16, fontWeight: '700', color: '#fff', fontFamily: F.bold },
   statStripLabel:   { fontSize: 10, fontWeight: '600', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', fontFamily: F.semibold },
   statStripDivider: { width: 1, height: 32 },
 
@@ -695,7 +695,7 @@ const styles = StyleSheet.create({
   // ── Filter bar ───────────────────────────────────────────────────────────────
   filterBar:    { borderBottomWidth: StyleSheet.hairlineWidth },
   filterScroll: { paddingHorizontal: 16, paddingVertical: 10, gap: 8 },
-  filterChip:   { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1.5, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 7 },
+  filterChip:   { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 7 },
   filterChipText:      { fontSize: 13, fontWeight: '600', fontFamily: F.semibold },
   filterChipBadge:     { borderRadius: 10, minWidth: 20, height: 20, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 5 },
   filterChipBadgeText: { fontSize: 11, fontWeight: '700', fontFamily: F.bold },
@@ -711,14 +711,14 @@ const styles = StyleSheet.create({
     padding: 14,
     gap: 10,
     shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
     shadowOffset: { width: 0, height: 2 },
     elevation: 3,
   },
   cardHeader:     { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
   avatar:         { width: 46, height: 46, borderRadius: 23, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
-  avatarText:     { fontSize: 15, fontWeight: '800', fontFamily: F.extrabold },
+  avatarText:     { fontSize: 15, fontWeight: '700', fontFamily: F.bold },
   creatorMeta:    { flex: 1, gap: 3 },
   creatorName:    { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
   locationRow:    { flexDirection: 'row', alignItems: 'center', gap: 3 },

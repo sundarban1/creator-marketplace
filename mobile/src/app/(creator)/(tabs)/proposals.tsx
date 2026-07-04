@@ -159,7 +159,7 @@ const ts = StyleSheet.create({
   tabInner:     { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 6 },
   tabLabel:     { fontSize: 13, fontFamily: F.bold },
   badge:        { minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 5, justifyContent: 'center', alignItems: 'center' },
-  badgeTxt:     { fontSize: 10, fontFamily: F.extrabold },
+  badgeTxt:     { fontSize: 10, fontFamily: F.bold },
   indicator:    { position: 'absolute', bottom: 0, height: 3, borderRadius: 2 },
   bottomBorder: { height: StyleSheet.hairlineWidth, marginHorizontal: 16 },
 });
@@ -402,9 +402,9 @@ const styles = StyleSheet.create({
   container:      { flex: 1 },
 
   // Header
-  gradientHeader: { borderBottomLeftRadius: 28, borderBottomRightRadius: 28, overflow: 'hidden' },
-  headerContent:  { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 14, gap: 3 },
-  heading:        { fontSize: 22, fontWeight: '800', fontFamily: F.extrabold, color: '#fff' },
+  gradientHeader: { borderBottomLeftRadius: 16, borderBottomRightRadius: 16, overflow: 'hidden' },
+  headerContent:  { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 12, gap: 3 },
+  heading:        { fontSize: 20, fontWeight: '700', fontFamily: F.bold, color: '#fff' },
   subheading:     { fontSize: 13, fontFamily: F.regular, color: 'rgba(255,255,255,0.75)' },
 
   // Tab bar
@@ -417,14 +417,14 @@ const styles = StyleSheet.create({
   loadingText: { fontSize: 14, fontFamily: F.regular },
 
   // Card
-  card:        { borderRadius: 18, flexDirection: 'row', borderWidth: 1, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 3, overflow: 'hidden' },
+  card:        { borderRadius: 14, flexDirection: 'row', borderWidth: 1, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 3, overflow: 'hidden' },
   leftStrip:   { width: 4 },
   cardBody:    { flex: 1, paddingHorizontal: 14, paddingTop: 14, paddingBottom: 12, gap: 10 },
 
   // Top row
   topRow:       { flexDirection: 'row', alignItems: 'center', gap: 10 },
   brandAvatar:  { width: 42, height: 42, borderRadius: 12, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
-  brandInitials:{ fontSize: 15, fontFamily: F.extrabold },
+  brandInitials:{ fontSize: 15, fontFamily: F.bold },
   brandBlock:   { flex: 1, gap: 2 },
   brandName:    { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
   campaignTitle:{ fontSize: 12, fontFamily: F.regular },

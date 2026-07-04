@@ -664,9 +664,9 @@ const s = StyleSheet.create({
 
   // Hero
   hero:    { paddingHorizontal: 24, paddingBottom: 52, overflow: 'hidden' },
-  blob1:   { position: 'absolute', width: 240, height: 240, borderRadius: 120, backgroundColor: 'rgba(255,255,255,0.06)', top: -60, right: -60 },
-  blob2:   { position: 'absolute', width: 160, height: 160, borderRadius: 80,  backgroundColor: 'rgba(255,255,255,0.05)', bottom: 20, left: -50 },
-  blob3:   { position: 'absolute', width: 100, height: 100, borderRadius: 50,  backgroundColor: 'rgba(255,255,255,0.04)', top: 40, left: 80 },
+  blob1:   { position: 'absolute', width: 240, height: 240, borderRadius: 120, backgroundColor: 'rgba(255,255,255,0.03)', top: -60, right: -60 },
+  blob2:   { position: 'absolute', width: 160, height: 160, borderRadius: 80,  backgroundColor: 'rgba(255,255,255,0.03)', bottom: 20, left: -50 },
+  blob3:   { position: 'absolute', width: 100, height: 100, borderRadius: 50,  backgroundColor: 'rgba(255,255,255,0.03)', top: 40, left: 80 },
 
   heroTop:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 },
   logoRow:  { flexDirection: 'row', alignItems: 'center', gap: 8 },
@@ -678,18 +678,18 @@ const s = StyleSheet.create({
   langFlag: { fontSize: 15 },
 
   heroBody:  { gap: 8 },
-  heroTitle: { fontSize: 28, fontWeight: '800', color: '#fff', fontFamily: F.extrabold, lineHeight: 34 },
+  heroTitle: { fontSize: 28, fontWeight: '700', color: '#fff', fontFamily: F.bold, lineHeight: 34 },
   heroSub:   { fontSize: 14, color: 'rgba(255,255,255,0.72)', fontFamily: F.regular, lineHeight: 20 },
 
   // Card
-  card:       { flex: 1, backgroundColor: '#fff', borderTopLeftRadius: 32, borderTopRightRadius: 32, marginTop: -28, overflow: 'hidden' },
+  card:       { flex: 1, backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, marginTop: -28, overflow: 'hidden' },
   cardScroll: { paddingHorizontal: 24, paddingTop: 28 },
 
   // Tab bar
-  tabBar:       { flexDirection: 'row', backgroundColor: '#F5F3FF', borderRadius: 14, padding: 4, marginBottom: 24, gap: 2 },
-  tabBtn:       { flex: 1, height: 42, borderRadius: 11, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
+  tabBar:       { flexDirection: 'row', backgroundColor: '#F5F3FF', borderRadius: 12, padding: 4, marginBottom: 24, gap: 2 },
+  tabBtn:       { flex: 1, height: 42, borderRadius: 10, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
   tabBtnActive: { shadowColor: P1, shadowOpacity: 0.2, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
-  tabBtnGrad:   { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 11 },
+  tabBtnGrad:   { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 10 },
   tabBtnText:   { fontSize: 14, fontFamily: F.semibold, zIndex: 1 },
 
   // Banners
@@ -713,7 +713,7 @@ const s = StyleSheet.create({
   // Role cards
   sectionLabel:  { fontSize: 13, fontWeight: '600', fontFamily: F.semibold, color: '#374151', marginBottom: 12 },
   roleRow:       { flexDirection: 'row', gap: 12, marginBottom: 20 },
-  roleCard:      { flex: 1, borderRadius: 18, borderWidth: 1.5, padding: 16, gap: 8, alignItems: 'center', position: 'relative' },
+  roleCard:      { flex: 1, borderRadius: 14, borderWidth: 1.5, padding: 16, gap: 8, alignItems: 'center', position: 'relative' },
   roleCardActive:{ shadowColor: P2, shadowOpacity: 0.18, shadowRadius: 14, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
   roleIconBox:   { width: 52, height: 52, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
   roleLabel:     { fontSize: 13, fontWeight: '700', fontFamily: F.bold, textAlign: 'center' },
@@ -726,7 +726,7 @@ const s = StyleSheet.create({
   ruleText: { fontSize: 11, fontFamily: F.medium },
 
   // Button
-  primaryBtnWrap: { borderRadius: 14, marginBottom: 20, shadowColor: P1, shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
+  primaryBtnWrap: { borderRadius: 14, marginBottom: 20, shadowColor: P1, shadowOpacity: 0.2, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
   primaryBtn:     { height: 54, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   primaryBtnText: { fontSize: 16, fontWeight: '700', color: '#fff', fontFamily: F.bold, letterSpacing: 0.3 },
 
@@ -743,16 +743,16 @@ const s = StyleSheet.create({
   socialBtnFb:    { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 50, borderRadius: 14, borderWidth: 1.5, borderColor: '#BFDBFE', backgroundColor: '#EFF6FF' },
   socialBtnFbText:{ fontSize: 14, fontFamily: F.semibold, color: '#1D4ED8' },
   googleBadge:    { width: 22, height: 22, borderRadius: 11, backgroundColor: '#4285F4', justifyContent: 'center', alignItems: 'center' },
-  googleG:        { color: '#fff', fontSize: 12, fontWeight: '900', fontFamily: F.extrabold },
+  googleG:        { color: '#fff', fontSize: 12, fontWeight: '900', fontFamily: F.bold },
   fbBadge:        { width: 22, height: 22, borderRadius: 11, backgroundColor: '#1877F2', justifyContent: 'center', alignItems: 'center' },
-  fbF:            { color: '#fff', fontSize: 13, fontWeight: '900', fontFamily: F.extrabold },
+  fbF:            { color: '#fff', fontSize: 13, fontWeight: '900', fontFamily: F.bold },
   spinner:        { width: 18, height: 18, borderRadius: 9, borderWidth: 2, borderColor: '#DDD6FE', borderTopColor: P2 },
 
   // Role modal
   modalOverlay:    { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  modalSheet:      { backgroundColor: '#fff', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, paddingBottom: 36, gap: 4 },
+  modalSheet:      { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 36, gap: 4 },
   modalHandle:     { width: 40, height: 4, borderRadius: 2, backgroundColor: '#DDD6FE', alignSelf: 'center', marginBottom: 20 },
-  modalTitle:      { fontSize: 22, fontWeight: '800', fontFamily: F.extrabold, color: P1, textAlign: 'center' },
+  modalTitle:      { fontSize: 20, fontWeight: '700', fontFamily: F.bold, color: P1, textAlign: 'center' },
   modalSub:        { fontSize: 14, fontFamily: F.regular, color: '#6B7280', textAlign: 'center', marginBottom: 20 },
   modalCancel:     { marginTop: 16, alignItems: 'center', padding: 12 },
   modalCancelText: { fontSize: 15, fontFamily: F.semibold, color: '#9CA3AF' },

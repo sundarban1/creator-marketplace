@@ -166,10 +166,10 @@ export default function SavedCreatorsScreen() {
 
 const s = StyleSheet.create({
   container: { flex: 1 },
-  gradientHeader: { paddingBottom: 14, borderBottomLeftRadius: 28, borderBottomRightRadius: 28, overflow: 'hidden' },
+  gradientHeader: { paddingBottom: 14, borderBottomLeftRadius: 16, borderBottomRightRadius: 16, overflow: 'hidden' },
   header:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 10, paddingBottom: 0 },
   backBtn:   { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center' },
-  heading:   { fontSize: 20, fontWeight: '800', color: '#fff', fontFamily: F.extrabold },
+  heading:   { fontSize: 20, fontWeight: '700', color: '#fff', fontFamily: F.bold },
   subheading:{ fontSize: 12, color: 'rgba(255,255,255,0.8)', marginTop: 2, fontFamily: F.regular },
 
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },

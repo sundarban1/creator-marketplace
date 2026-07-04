@@ -337,20 +337,20 @@ const styles = StyleSheet.create({
   scroll: { paddingBottom: 40 },
 
   // Header
-  gradientHeader: { paddingBottom: 14, borderBottomLeftRadius: 32, borderBottomRightRadius: 32, overflow: 'hidden' },
+  gradientHeader: { paddingBottom: 14, borderBottomLeftRadius: 16, borderBottomRightRadius: 16, overflow: 'hidden' },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingHorizontal: 20, paddingTop: 14, paddingBottom: 18 },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
   menuBtn: { padding: 0 },
   menuBtnInner: { width: 38, height: 38, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' },
   greeting: { fontSize: 12, marginBottom: 3, fontFamily: F.medium },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  brandName: { fontSize: 20, fontFamily: F.extrabold, maxWidth: 180, letterSpacing: -0.3 },
+  brandName: { fontSize: 20, fontFamily: F.bold, maxWidth: 180, letterSpacing: -0.3 },
   avatarCircle: { width: 44, height: 44, borderRadius: 22, overflow: 'hidden', shadowOpacity: 0.4, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
   avatarImage: { width: 44, height: 44 },
   avatarFallback: { width: 44, height: 44, justifyContent: 'center', alignItems: 'center' },
   statsStrip: { flexDirection: 'row', marginHorizontal: 20, marginBottom: 4, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 16, paddingVertical: 12 },
   statStripItem: { flex: 1, alignItems: 'center' },
-  statStripVal: { fontSize: 20, fontWeight: '800', color: '#fff', fontFamily: F.extrabold },
+  statStripVal: { fontSize: 20, fontWeight: '700', color: '#fff', fontFamily: F.bold },
   statStripLabel: { fontSize: 10, color: 'rgba(255,255,255,0.7)', fontFamily: F.medium, marginTop: 2 },
   statStripDiv: { width: 1, backgroundColor: 'rgba(255,255,255,0.2)', marginVertical: 4 },
 
@@ -402,7 +402,7 @@ const styles = StyleSheet.create({
   typeBadgeTextFree: { color: '#059669' },
 
   campaignList: { paddingHorizontal: 20, gap: 12 },
-  campaignCard: { flexDirection: 'row', alignItems: 'center', borderRadius: 18, padding: 14, gap: 12, shadowColor: '#000', shadowOpacity: 0.07, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 4, overflow: 'hidden' },
+  campaignCard: { flexDirection: 'row', alignItems: 'center', borderRadius: 14, padding: 14, gap: 12, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 4, overflow: 'hidden' },
   thumb: { width: 72, height: 72, borderRadius: 14, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   thumbEmoji: { fontSize: 28 },
   campaignBody: { flex: 1, gap: 5 },

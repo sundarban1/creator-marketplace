@@ -266,17 +266,17 @@ export default function NotificationsScreen() {
 
 const styles = StyleSheet.create({
   container:  { flex: 1 },
-  gradientHeader: { borderBottomLeftRadius: 28, borderBottomRightRadius: 28, overflow: 'hidden' },
-  headerRow:  { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingTop: 14, paddingBottom: 14 },
-  heading:    { fontSize: 22, fontWeight: '800', fontFamily: F.extrabold, color: '#fff' },
+  gradientHeader: { borderBottomLeftRadius: 16, borderBottomRightRadius: 16, overflow: 'hidden' },
+  headerRow:  { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingTop: 12, paddingBottom: 14 },
+  heading:    { fontSize: 20, fontWeight: '700', fontFamily: F.bold, color: '#fff' },
   subheading: { fontSize: 13, marginTop: 2, fontFamily: F.regular, color: 'rgba(255,255,255,0.75)' },
-  markAllBtn: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1 },
+  markAllBtn: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 12, borderWidth: 1 },
   markAllText:{ fontSize: 12, fontWeight: '600', fontFamily: F.semibold, color: '#fff' },
   center:     { flex: 1, alignItems: 'center', justifyContent: 'center' },
   list:       { paddingBottom: 32 },
   listEmpty:  { flexGrow: 1 },
 
-  groupLabel: { fontSize: 11, fontWeight: '700', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 8, textTransform: 'uppercase', letterSpacing: 0.8, fontFamily: F.bold },
+  groupLabel: { fontSize: 11, fontWeight: '700', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 8, textTransform: 'uppercase', letterSpacing: 0, fontFamily: F.bold },
 
   item:       { flexDirection: 'row', paddingVertical: 16, paddingHorizontal: 20, borderBottomWidth: 1, gap: 14, alignItems: 'flex-start' },
   accentBar:  { position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, borderRadius: 2 },

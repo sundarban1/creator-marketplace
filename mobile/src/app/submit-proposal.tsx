@@ -296,7 +296,7 @@ const styles = StyleSheet.create({
   scroll:          { padding: 20, gap: 16, paddingBottom: 48 },
 
   campaignBadge:   { borderRadius: 14, padding: 16, gap: 6, borderLeftWidth: 4 },
-  badgeLabel:      { fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8, fontFamily: F.bold },
+  badgeLabel:      { fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0, fontFamily: F.bold },
   campaignTitle:   { fontSize: 16, fontWeight: '700', fontFamily: F.bold },
   campaignBrand:   { fontSize: 13, fontFamily: F.regular },
   budgetPill:      { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20, marginTop: 2 },

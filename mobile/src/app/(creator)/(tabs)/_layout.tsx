@@ -165,7 +165,7 @@ const tabS = StyleSheet.create({
   },
   badgeTxt: {
     fontSize: 8,
-    fontWeight: '800',
+    fontWeight: '700',
     color: '#fff',
   },
 });
