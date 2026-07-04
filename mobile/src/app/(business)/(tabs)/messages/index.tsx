@@ -130,13 +130,7 @@ function ChatCard({ conv }: { conv: Conversation }) {
     <Pressable
       style={({ pressed }) => [
         s.card,
-        {
-          backgroundColor: C.surface,
-          borderColor: hasUnread ? 'rgba(14,165,233,0.3)' : C.border,
-          shadowColor: hasUnread ? ACCENT : '#000',
-          shadowOpacity: hasUnread ? 0.14 : 0.06,
-          opacity: pressed ? 0.93 : 1,
-        },
+        { backgroundColor: pressed ? C.surface : C.background },
       ]}
       onPress={() =>
         router.push({
@@ -320,7 +314,7 @@ export default function BusinessChatListScreen() {
           keyExtractor={(c) => c.id}
           renderItem={({ item }) => <ChatCard conv={item} />}
           contentContainerStyle={[s.chatList, chats.length === 0 && s.listEmpty]}
-          ItemSeparatorComponent={() => <View style={s.sep} />}
+          ItemSeparatorComponent={() => <View style={[s.sep, { backgroundColor: C.border }]} />}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={ACCENT} />}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
@@ -368,25 +362,18 @@ const s = StyleSheet.create({
   waitingNoteTxt: { flex: 1, fontSize: 12, fontFamily: F.medium, fontWeight: '500' },
 
   // Chat list
-  chatList: { padding: 16, paddingTop: 12, paddingBottom: 40 },
-  sep:      { height: 10 },
+  chatList: { paddingBottom: 40 },
+  sep:      { height: StyleSheet.hairlineWidth, backgroundColor: 'transparent', marginLeft: 82 },
 
   // Chat card
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 18,
-    borderWidth: 1.5,
-    paddingVertical: 14,
-    paddingRight: 14,
-    paddingLeft: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     gap: 12,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
-    overflow: 'hidden',
   },
-  stripe:         { position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, backgroundColor: ACCENT, borderTopLeftRadius: 18, borderBottomLeftRadius: 18 },
+  stripe:         { position: 'absolute', left: 0, top: 8, bottom: 8, width: 3, backgroundColor: ACCENT, borderRadius: 2 },
   avatarWrap:     { position: 'relative' },
   avatarRing:     { position: 'absolute', top: -3, left: -3, right: -3, bottom: -3, borderRadius: 29, borderWidth: 2 },
   avatarBadge:    { position: 'absolute', top: -4, right: -4, minWidth: 20, height: 20, borderRadius: 10, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 4, borderWidth: 2, borderColor: '#fff' },
