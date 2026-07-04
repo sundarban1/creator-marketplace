@@ -142,7 +142,7 @@ const s = StyleSheet.create({
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center' },
   gradientTopBar: { overflow: 'hidden', borderBottomLeftRadius: 20, borderBottomRightRadius: 20 },
   topBar:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
-  topTitle:  { fontSize: 16, fontWeight: '700', fontFamily: F.bold },
+  topTitle:  { fontSize: 20, fontWeight: '700', fontFamily: F.bold, lineHeight: 24 },
   saveBtn:   { borderRadius: 10, paddingHorizontal: 16, paddingVertical: 8, minWidth: 56, alignItems: 'center' },
   saveBtnTxt:{ color: '#fff', fontSize: 14, fontWeight: '700', fontFamily: F.bold },
   content:   { padding: 20, paddingBottom: 48 },

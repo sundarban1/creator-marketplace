@@ -489,7 +489,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20, paddingTop: 10, paddingBottom: 14,
   },
   headerLeft: { gap: 3 },
-  pageTitle: { fontSize: 22, fontWeight: '700', fontFamily: F.bold },
+  pageTitle: { fontSize: 20, fontWeight: '700', fontFamily: F.bold, lineHeight: 24 },
   pageSub:   { fontSize: 13, fontFamily: F.regular },
   newBtn: { borderRadius: 12, paddingHorizontal: 14, paddingVertical: 9 },
   newBtnText: { color: '#fff', fontWeight: '700', fontSize: 13, fontFamily: F.bold },

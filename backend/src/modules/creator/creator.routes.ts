@@ -50,6 +50,7 @@ router.use(authenticate, authorize('CREATOR'));
  *         description: Not authorized (wrong role)
  */
 router.get('/profile', ctrl.getProfile.bind(ctrl));
+router.get('/username-available', ctrl.checkUsernameAvailability.bind(ctrl));
 
 /**
  * @swagger

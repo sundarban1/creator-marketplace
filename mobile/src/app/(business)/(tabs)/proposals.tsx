@@ -338,7 +338,7 @@ const styles = StyleSheet.create({
 
   gradientHeader: { borderBottomLeftRadius: 16, borderBottomRightRadius: 16, overflow: 'hidden' },
   headerContent:  { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 16, gap: 4 },
-  pageTitle:      { fontSize: 22, fontWeight: '700', color: '#fff', fontFamily: F.bold },
+  pageTitle:      { fontSize: 20, fontWeight: '700', color: '#fff', fontFamily: F.bold, lineHeight: 24 },
   pageSub:        { fontSize: 13, color: 'rgba(255,255,255,0.75)', fontFamily: F.regular },
 
   tabBar:       { flexDirection: 'row', borderBottomWidth: StyleSheet.hairlineWidth },

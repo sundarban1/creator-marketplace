@@ -538,7 +538,7 @@ const styles = StyleSheet.create({
   // Header
   header:         { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 10, paddingBottom: 12, gap: 12 },
   headerMiddle:   { flex: 1, alignItems: 'center', gap: 2 },
-  heading:        { fontSize: 20, fontWeight: '700', letterSpacing: -0.3, fontFamily: F.bold, color: '#fff' },
+  heading:        { fontSize: 20, fontWeight: '700', fontFamily: F.bold, color: '#fff', lineHeight: 24 },
   headingSub:     { fontSize: 12, fontFamily: F.regular },
   countRow:       { alignItems: 'flex-end', paddingHorizontal: 16, marginBottom: 4 },
   countPill:      { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 5, borderRadius: 20, borderWidth: 1.5 },

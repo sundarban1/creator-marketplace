@@ -268,7 +268,7 @@ const styles = StyleSheet.create({
   container:  { flex: 1 },
   gradientHeader: { borderBottomLeftRadius: 16, borderBottomRightRadius: 16, overflow: 'hidden' },
   headerRow:  { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingTop: 12, paddingBottom: 14 },
-  heading:    { fontSize: 20, fontWeight: '700', fontFamily: F.bold, color: '#fff' },
+  heading:    { fontSize: 20, fontWeight: '700', fontFamily: F.bold, color: '#fff', lineHeight: 24 },
   subheading: { fontSize: 13, marginTop: 2, fontFamily: F.regular, color: 'rgba(255,255,255,0.75)' },
   markAllBtn: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 12, borderWidth: 1 },
   markAllText:{ fontSize: 12, fontWeight: '600', fontFamily: F.semibold, color: '#fff' },

@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
   flex:            { flex: 1 },
   gradientHeader:  { overflow: 'hidden', borderBottomLeftRadius: 16, borderBottomRightRadius: 16 },
   header:          { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14 },
-  headerTitle:     { fontSize: 17, fontWeight: '700', fontFamily: F.bold },
+  headerTitle:     { fontSize: 20, fontWeight: '700', fontFamily: F.bold, lineHeight: 24 },
   scrollContent:   { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 48 },
   sectionHint:     { fontSize: 13, lineHeight: 19, marginBottom: 20, fontFamily: F.regular },
   fieldGroup:      { marginBottom: 24 },

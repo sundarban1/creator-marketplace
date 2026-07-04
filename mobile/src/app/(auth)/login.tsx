@@ -48,6 +48,7 @@ const PW_RULES = [
 ];
 
 function isValidEmail(v: string) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()); }
+const EMAIL_DOMAINS = ['gmail.com', 'yahoo.com'];
 function getPwErrorKey(p: string): string | undefined {
   if (p.length < 8)     return 'auth.signup.pwError8Chars';
   if (!/[A-Z]/.test(p)) return 'auth.signup.pwErrorUppercase';
@@ -107,7 +108,7 @@ function Field({
           autoCapitalize={autoCapitalize}
           autoCorrect={false}
           onFocus={() => { setFocused(true);  Animated.timing(anim, { toValue: 1, duration: 200, useNativeDriver: false }).start(); }}
-          onBlur={()  => { setFocused(false); Animated.timing(anim, { toValue: 0, duration: 200, useNativeDriver: false }).start(); }}
+          onBlur={()  => { setTimeout(() => { setFocused(false); Animated.timing(anim, { toValue: 0, duration: 200, useNativeDriver: false }).start(); }, 150); }}
         />
         {secureTextEntry && (
           <Pressable onPress={() => setHidden(h => !h)} hitSlop={10} style={s.eyeBtn}>
@@ -115,6 +116,27 @@ function Field({
           </Pressable>
         )}
       </Animated.View>
+      {keyboardType === 'email-address' && focused && (() => {
+        const atIndex = value.indexOf('@');
+        if (atIndex === -1) return null;
+        const localPart  = value.slice(0, atIndex);
+        const domainPart = value.slice(atIndex + 1);
+        if (domainPart.includes('.')) return null;
+        const suggestions = EMAIL_DOMAINS.filter((d) => d.startsWith(domainPart));
+        if (suggestions.length === 0) return null;
+        return (
+          <View style={s.domainSuggestBox}>
+            {suggestions.map((domain) => (
+              <Pressable
+                key={domain}
+                style={s.domainSuggestItem}
+                onPress={() => onChangeText(`${localPart}@${domain}`)}>
+                <Text style={s.domainSuggestText}>{localPart}@<Text style={s.domainSuggestTextBold}>{domain}</Text></Text>
+              </Pressable>
+            ))}
+          </View>
+        );
+      })()}
       {!!error && (
         <View style={s.fieldErrRow}>
           <Ionicons name="alert-circle-outline" size={12} color="#EF4444" />
@@ -709,6 +731,10 @@ const s = StyleSheet.create({
   eyeBtn:        { paddingHorizontal: 12 },
   fieldErrRow:   { flexDirection: 'row', alignItems: 'center', gap: 4 },
   fieldErrText:  { fontSize: 11, color: '#EF4444', fontFamily: F.medium },
+  domainSuggestBox:      { borderWidth: 1, borderColor: '#E8E0F8', borderRadius: 12, overflow: 'hidden', backgroundColor: '#fff' },
+  domainSuggestItem:     { paddingHorizontal: 14, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#F0EBFB' },
+  domainSuggestText:     { fontSize: 14, fontFamily: F.regular, color: '#6B7280' },
+  domainSuggestTextBold: { fontFamily: F.semibold, color: '#374151' },
 
   // Role cards
   sectionLabel:  { fontSize: 13, fontWeight: '600', fontFamily: F.semibold, color: '#374151', marginBottom: 12 },

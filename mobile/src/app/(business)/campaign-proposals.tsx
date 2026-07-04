@@ -668,7 +668,7 @@ const styles = StyleSheet.create({
   totalPillText: { fontSize: 12, fontWeight: '600', color: '#fff', fontFamily: F.semibold },
 
   headerBody: { paddingHorizontal: 16, paddingTop: 8, gap: 8 },
-  headerTitle: { fontSize: 20, fontWeight: '700', color: '#fff', fontFamily: F.bold, lineHeight: 26 },
+  headerTitle: { fontSize: 20, fontWeight: '700', color: '#fff', fontFamily: F.bold, lineHeight: 24 },
   headerBadgeRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   typeBadge:     { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
   typeBadgeText: { fontSize: 11, fontWeight: '700', fontFamily: F.bold },

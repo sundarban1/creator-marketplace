@@ -339,7 +339,7 @@ const s = StyleSheet.create({
   // Header
   gradientHeader: { borderBottomLeftRadius: 16, borderBottomRightRadius: 16, overflow: 'hidden' },
   header:         { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 10 },
-  heading:        { fontSize: 20, fontWeight: '700', fontFamily: F.bold, color: '#fff' },
+  heading:        { fontSize: 20, fontWeight: '700', fontFamily: F.bold, color: '#fff', lineHeight: 24 },
   headingSub:     { fontSize: 13, fontFamily: F.regular, color: 'rgba(255,255,255,0.75)', marginTop: 2 },
 
   // Pending list

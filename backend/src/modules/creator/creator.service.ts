@@ -54,6 +54,11 @@ export class CreatorService {
     return this.repo.getFilterOptions();
   }
 
+  async isUsernameAvailable(username: string) {
+    const taken = await this.repo.findByUsername(username);
+    return { available: !taken };
+  }
+
   async getProfile(userId: string) {
     const profile = await this.repo.findByUserId(userId);
     if (!profile) throw new AppError('Creator profile not found', 404);

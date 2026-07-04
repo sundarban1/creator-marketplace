@@ -1499,7 +1499,7 @@ const styles = StyleSheet.create({
   },
   backBtn: { width: 36, height: 36, borderRadius: 18, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center' },
   backArrow: { fontSize: 26, lineHeight: 30 },
-  topTitle: { fontSize: 16, fontWeight: '700', fontFamily: F.bold },
+  topTitle: { fontSize: 20, fontWeight: '700', fontFamily: F.bold, lineHeight: 24 },
 
   sectionHeader: {
     fontSize: 11, fontWeight: '700', letterSpacing: 0,

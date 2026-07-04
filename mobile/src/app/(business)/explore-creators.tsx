@@ -809,7 +809,7 @@ const s = StyleSheet.create({
 
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 4, gap: 12 },
   headerMiddle: { flex: 1, alignItems: 'center', gap: 2 },
-  headerTitle: { fontSize: 20, fontWeight: '700', textAlign: 'center', fontFamily: F.bold, color: '#fff' },
+  headerTitle: { fontSize: 20, fontWeight: '700', textAlign: 'center', fontFamily: F.bold, color: '#fff', lineHeight: 24 },
   headerSub: { fontSize: 12, color: 'rgba(255,255,255,0.75)', fontFamily: F.regular, textAlign: 'center' },
   savedLink: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 6 },
   savedLinkText: { fontSize: 12, fontWeight: '700', color: '#fff', fontFamily: F.bold },

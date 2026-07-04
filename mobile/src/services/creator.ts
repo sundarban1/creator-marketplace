@@ -6,6 +6,7 @@ export type { ApiSocialAccount };
 export interface ApiCreatorProfile {
   id: string;
   userId: string;
+  username: string | null;
   fullName: string;
   bio: string | null;
   location: string | null;
@@ -122,8 +123,14 @@ export const creatorService = {
     return res.data;
   },
 
+  async isUsernameAvailable(username: string): Promise<boolean> {
+    const res = await request<{ available: boolean }>('GET', `/api/creator/username-available?username=${encodeURIComponent(username)}`);
+    return res.data.available;
+  },
+
   async updateProfile(data: {
     fullName?: string;
+    username?: string;
     bio?: string;
     location?: string;
     locationLat?: number;

@@ -288,7 +288,7 @@ const styles = StyleSheet.create({
   center:        { flex: 1, justifyContent: 'center', alignItems: 'center' },
   gradientTopBar: { overflow: 'hidden', borderBottomLeftRadius: 16, borderBottomRightRadius: 16 },
   topBar:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
-  topTitle:      { fontSize: 16, fontWeight: '700', fontFamily: F.bold },
+  topTitle:      { fontSize: 20, fontWeight: '700', fontFamily: F.bold, lineHeight: 24 },
   content:       { paddingBottom: 24 },
   sectionHeader: { fontSize: 11, fontWeight: '700', letterSpacing: 0, marginTop: 20, marginBottom: 6, marginHorizontal: 20, fontFamily: F.bold },
   card:          { marginHorizontal: 16, borderRadius: 14, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2, overflow: 'hidden' },

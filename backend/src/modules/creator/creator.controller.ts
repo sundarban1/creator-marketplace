@@ -44,6 +44,17 @@ export class CreatorController {
     }
   }
 
+  async checkUsernameAvailability(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const username = req.query.username as string | undefined;
+      if (!username) throw new AppError('Username query param is required', 400);
+      const result = await creatorService.isUsernameAvailable(username);
+      success(res, result, 'Username availability checked');
+    } catch (err) {
+      next(err);
+    }
+  }
+
   async getProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const profile = await creatorService.getProfile(req.user!.id);

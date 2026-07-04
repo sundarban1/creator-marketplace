@@ -2310,7 +2310,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 16, paddingVertical: 12,
   },
-  topTitle: { fontSize: 16, fontWeight: '700', fontFamily: F.bold },
+  topTitle: { fontSize: 20, fontWeight: '700', fontFamily: F.bold, lineHeight: 24 },
 
   sectionHeader: {
     fontSize: 11, fontWeight: '700',

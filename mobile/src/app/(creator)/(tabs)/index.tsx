@@ -79,6 +79,10 @@ export default function HomeScreen() {
   const [tempDateFrom, setTempDateFrom] = useState<Date | null>(null);
   const [tempDateTo, setTempDateTo] = useState<Date | null>(null);
 
+  const PAGE_SIZE = 10;
+  const [featuredVisibleCount, setFeaturedVisibleCount] = useState(PAGE_SIZE);
+  const [listVisibleCount, setListVisibleCount] = useState(PAGE_SIZE);
+
   async function fetchCampaigns(
     overrides: {
       search?: string;
@@ -292,12 +296,34 @@ export default function HomeScreen() {
     return matchLocation && matchTab;
   });
 
+  const visibleFeatured = featured.slice(0, featuredVisibleCount);
+  const visibleList     = filteredList.slice(0, listVisibleCount);
+
+  useEffect(() => { setFeaturedVisibleCount(PAGE_SIZE); }, [campaigns]);
+  useEffect(() => { setListVisibleCount(PAGE_SIZE); }, [campaigns, activeFilterTab, locationFilter]);
+
+  function handleFeaturedScroll(e: { nativeEvent: { contentOffset: { x: number }; contentSize: { width: number }; layoutMeasurement: { width: number } } }) {
+    const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
+    if (contentOffset.x + layoutMeasurement.width >= contentSize.width - 80) {
+      setFeaturedVisibleCount((n) => Math.min(n + PAGE_SIZE, featured.length));
+    }
+  }
+
+  function handleListScroll(e: { nativeEvent: { contentOffset: { y: number }; contentSize: { height: number }; layoutMeasurement: { height: number } } }) {
+    const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
+    if (contentOffset.y + layoutMeasurement.height >= contentSize.height - 200) {
+      setListVisibleCount((n) => Math.min(n + PAGE_SIZE, filteredList.length));
+    }
+  }
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
       <ScrollView
         style={styles.scroll}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        onScroll={handleListScroll}
+        scrollEventThrottle={16}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brinjal1} />}>
 
         {/* ── Gradient header ── */}
@@ -400,7 +426,7 @@ export default function HomeScreen() {
         {!bannerDismissed && missingFields.length > 0 && (
           <Pressable
             style={[styles.banner, { backgroundColor: C.surface, borderLeftColor: C.brinjal1 }]}
-            onPress={() => router.push('/(creator)/edit-profile')}>
+            onPress={() => router.push('/(creator)/profile')}>
             <View style={[styles.bannerIconBox, { backgroundColor: C.primaryLight }]}>
               <Ionicons name="person-outline" size={20} color={C.brinjal1} />
             </View>
@@ -545,8 +571,18 @@ export default function HomeScreen() {
               )}
             </View>
             {featured.length > 0 ? (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.featuredRow}>
-                {featured.map((c) => <FeaturedCard key={c.id} campaign={c} />)}
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.featuredRow}
+                onScroll={handleFeaturedScroll}
+                scrollEventThrottle={16}>
+                {visibleFeatured.map((c) => <FeaturedCard key={c.id} campaign={c} />)}
+                {featuredVisibleCount < featured.length && (
+                  <View style={styles.featuredLoadingMore}>
+                    <ActivityIndicator size="small" color={C.brinjal1} />
+                  </View>
+                )}
               </ScrollView>
             ) : (
               <View style={[styles.featuredEmpty, { backgroundColor: C.surface, borderColor: C.border }]}>
@@ -593,7 +629,14 @@ export default function HomeScreen() {
                   </Text>
                 </View>
               ) : (
-                filteredList.map((c) => <CampaignListItem key={c.id} campaign={c} />)
+                <>
+                  {visibleList.map((c) => <CampaignListItem key={c.id} campaign={c} />)}
+                  {listVisibleCount < filteredList.length && (
+                    <View style={styles.listLoadingMore}>
+                      <ActivityIndicator size="small" color={C.brinjal1} />
+                    </View>
+                  )}
+                </>
               )}
             </View>
           </>
@@ -638,8 +681,8 @@ const styles = StyleSheet.create({
   greeting:     { fontSize: 12, marginBottom: 2, fontFamily: F.medium, color: 'rgba(255,255,255,0.75)' },
   brandName:    { fontSize: 20, fontFamily: F.bold, color: '#fff', maxWidth: 180, letterSpacing: -0.3 },
   avatarCircle: { width: 44, height: 44, borderRadius: 22, overflow: 'hidden', shadowOpacity: 0.4, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
-  avatarImage:  { width: 44, height: 44 },
-  avatarFallback: { width: 44, height: 44, justifyContent: 'center', alignItems: 'center' },
+  avatarImage:  { width: '100%', height: '100%' },
+  avatarFallback: { width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center' },
 
   // ── Search ──
   searchRow: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 4 },
@@ -707,6 +750,7 @@ const styles = StyleSheet.create({
   featuredEmpty:     { marginHorizontal: 20, marginBottom: 0, borderRadius: 14, borderWidth: 1.5, borderStyle: 'dashed', padding: 24, alignItems: 'center', gap: 8 },
   featuredEmptyTitle:{ fontSize: 14, fontFamily: F.bold, textAlign: 'center' },
   featuredEmptySub:  { fontSize: 12, fontFamily: F.regular, textAlign: 'center', lineHeight: 18 },
+  featuredLoadingMore: { width: 60, justifyContent: 'center', alignItems: 'center' },
 
   // ── Attention banner ──
   attentionBanner: { flexDirection: 'row', alignItems: 'center', borderRadius: 14, marginHorizontal: 20, marginTop: 12, padding: 14, gap: 12, backgroundColor: '#FFFBEB', borderWidth: 1, borderColor: '#FDE68A' },
@@ -719,6 +763,7 @@ const styles = StyleSheet.create({
 
   // ── Campaign list ──
   listWrap:   { paddingHorizontal: 20, gap: 12 },
+  listLoadingMore: { paddingVertical: 16, alignItems: 'center' },
   emptyWrap:  { alignItems: 'center', paddingVertical: 48, gap: 10 },
   emptyTitle: { fontSize: 17, fontFamily: F.bold },
   emptyHint:  { fontSize: 13, fontFamily: F.regular, textAlign: 'center', lineHeight: 20, paddingHorizontal: 24 },

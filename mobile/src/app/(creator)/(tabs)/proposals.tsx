@@ -404,7 +404,7 @@ const styles = StyleSheet.create({
   // Header
   gradientHeader: { borderBottomLeftRadius: 16, borderBottomRightRadius: 16, overflow: 'hidden' },
   headerContent:  { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 12, gap: 3 },
-  heading:        { fontSize: 20, fontWeight: '700', fontFamily: F.bold, color: '#fff' },
+  heading:        { fontSize: 20, fontWeight: '700', fontFamily: F.bold, color: '#fff', lineHeight: 24 },
   subheading:     { fontSize: 13, fontFamily: F.regular, color: 'rgba(255,255,255,0.75)' },
 
   // Tab bar

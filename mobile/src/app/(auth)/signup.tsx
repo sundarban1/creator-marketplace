@@ -24,6 +24,7 @@ const INDIGO  = '#4F46E5';
 function isValidEmail(v: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
 }
+const EMAIL_DOMAINS = ['gmail.com', 'yahoo.com'];
 function getPasswordError(pwd: string): string | undefined {
   if (pwd.length < 8)     return 'At least 8 characters required.';
   if (!/[A-Z]/.test(pwd)) return 'Add at least one uppercase letter.';
@@ -85,7 +86,7 @@ function Field({
           autoCapitalize="none"
           autoCorrect={false}
           onFocus={() => { setFocused(true);  Animated.timing(anim, { toValue: 1, duration: 180, useNativeDriver: false }).start(); }}
-          onBlur={()  => { setFocused(false); Animated.timing(anim, { toValue: 0, duration: 180, useNativeDriver: false }).start(); }}
+          onBlur={()  => { setTimeout(() => { setFocused(false); Animated.timing(anim, { toValue: 0, duration: 180, useNativeDriver: false }).start(); }, 150); }}
         />
         {secureTextEntry && (
           <Pressable onPress={() => setHidden(h => !h)} hitSlop={8} style={s.eyeBtn}>
@@ -93,6 +94,27 @@ function Field({
           </Pressable>
         )}
       </Animated.View>
+      {keyboardType === 'email-address' && focused && (() => {
+        const atIndex = value.indexOf('@');
+        if (atIndex === -1) return null;
+        const localPart  = value.slice(0, atIndex);
+        const domainPart = value.slice(atIndex + 1);
+        if (domainPart.includes('.')) return null;
+        const suggestions = EMAIL_DOMAINS.filter((d) => d.startsWith(domainPart));
+        if (suggestions.length === 0) return null;
+        return (
+          <View style={[s.domainSuggestBox, { backgroundColor: C.surface }]}>
+            {suggestions.map((domain) => (
+              <Pressable
+                key={domain}
+                style={s.domainSuggestItem}
+                onPress={() => onChangeText(`${localPart}@${domain}`)}>
+                <Text style={s.domainSuggestText}>{localPart}@<Text style={s.domainSuggestTextBold}>{domain}</Text></Text>
+              </Pressable>
+            ))}
+          </View>
+        );
+      })()}
       {!!error && (
         <View style={s.fieldError}>
           <Ionicons name="alert-circle-outline" size={12} color="#EF4444" />
@@ -210,7 +232,7 @@ export default function SignupScreen() {
           <View style={s.form}>
             <Field
               icon="mail-outline"
-              label="Email address"
+              label="Email"
               value={email}
               onChangeText={(v) => { setEmail(v); setApiError(''); }}
               placeholder="you@email.com"
@@ -344,6 +366,10 @@ const s = StyleSheet.create({
   eyeBtn:       { padding: 2 },
   fieldError:   { flexDirection: 'row', alignItems: 'center', gap: 4 },
   fieldErrorText:{ fontSize: 12, color: '#EF4444', fontFamily: F.medium },
+  domainSuggestBox:      { borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 12, overflow: 'hidden' },
+  domainSuggestItem:     { paddingHorizontal: 14, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#F3F4F6' },
+  domainSuggestText:     { fontSize: 14, fontFamily: F.regular, color: '#6B7280' },
+  domainSuggestTextBold: { fontFamily: F.semibold, color: '#374151' },
 
   rulesRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
   rulePill: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 8, borderWidth: 1, paddingHorizontal: 8, paddingVertical: 4 },

@@ -151,6 +151,9 @@ export default function CreatorProfileScreen() {
 
           {/* Identity */}
           <Text style={[s.name, { color: C.text }]}>{displayName}</Text>
+          {profile?.username ? (
+            <Text style={[s.username, { color: C.textSecondary }]}>@{profile.username}</Text>
+          ) : null}
           {profile?.location ? (
             <View style={s.locationRow}>
               <Ionicons name="location-sharp" size={13} color={C.brinjal1} />
@@ -358,7 +361,7 @@ const s = StyleSheet.create({
   bubble2:  { width: 100, height: 100, bottom: -20, left: 30 },
   bubble3:  { width: 60,  height: 60,  top: 20,   left: -20  },
   topBar:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 10 },
-  topTitle: { fontSize: 17, fontWeight: '700', color: '#fff', fontFamily: F.bold },
+  topTitle: { fontSize: 20, fontWeight: '700', color: '#fff', fontFamily: F.bold, lineHeight: 24 },
   topIconBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center' },
 
   // Profile card (floats over cover)
@@ -376,6 +379,7 @@ const s = StyleSheet.create({
 
   // Identity
   name:        { fontSize: 22, fontWeight: '700', fontFamily: F.bold, textAlign: 'center' },
+  username:    { fontSize: 14, fontFamily: F.regular, textAlign: 'center', marginTop: 2 },
   locationRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   location:    { fontSize: 13, fontFamily: F.regular },
   bio:         { fontSize: 13, textAlign: 'center', lineHeight: 20, paddingHorizontal: 8, fontFamily: F.regular },

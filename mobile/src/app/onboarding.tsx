@@ -6,6 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { authService } from '@/services/auth';
+import { creatorService } from '@/services/creator';
 import { profileService } from '@/services/profile';
 import { CREATOR_CATEGORIES } from '@/features/creator/data/filterOptions';
 import { F } from '@/utilities/constants';
@@ -24,7 +25,7 @@ function generateCreatorBio(categories: string[]): string {
   return `I'm a ${catStr} content creator passionate about sharing authentic stories and engaging experiences. I love collaborating with brands that align with my values to create content that truly connects with audiences and drives meaningful results.`;
 }
 
-function generateUsernameSuggestions(name: string): string[] {
+function generateUsernameCandidates(name: string): string[] {
   const clean = name.toLowerCase().replace(/[^a-z0-9 ]/gi, '').trim();
   const parts = clean.split(/\s+/).filter(Boolean);
   if (parts.length === 0) return [];
@@ -39,7 +40,24 @@ function generateUsernameSuggestions(name: string): string[] {
     out.push(`the_${parts[0]}`.slice(0, 20));
     out.push(`${parts[0]}_official`.slice(0, 20));
   }
-  return [...new Set(out.filter(s => s.length >= 3 && /^[a-zA-Z0-9_]+$/.test(s)))].slice(0, 4);
+  const base = out[0] ?? parts[0];
+  for (let n = 1; n <= 12; n++) out.push(`${base}${n}`.slice(0, 20));
+  return [...new Set(out.filter(s => s.length >= 3 && /^[a-zA-Z0-9_]+$/.test(s)))];
+}
+
+// Checks candidates against the backend and returns the first `max` that aren't already taken.
+async function resolveAvailableUsernames(name: string, max = 4): Promise<string[]> {
+  const candidates = generateUsernameCandidates(name);
+  const results = await Promise.all(
+    candidates.map(async (candidate) => {
+      try {
+        return (await creatorService.isUsernameAvailable(candidate)) ? candidate : null;
+      } catch {
+        return null;
+      }
+    })
+  );
+  return results.filter((c): c is string => c !== null).slice(0, max);
 }
 
 export default function OnboardingScreen() {
@@ -57,6 +75,8 @@ export default function OnboardingScreen() {
   const [locationSuggestions, setLocationSuggestions] = useState<PlacePrediction[]>([]);
   const locationDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [usernameSuggestions, setUsernameSuggestions] = useState<string[]>([]);
+  const usernameSuggestDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const usernameSuggestRequestId = useRef(0);
   const [step1Submitted, setStep1Submitted] = useState(false);
   const [step1Loading,   setStep1Loading]   = useState(false);
   const [step1Error,     setStep1Error]     = useState('');
@@ -98,6 +118,18 @@ export default function OnboardingScreen() {
     /^[a-zA-Z0-9_]+$/.test(username.trim()) &&
     !!gender &&
     location.trim().length > 0;
+
+  function handleFullNameChange(v: string) {
+    setStep1Error('');
+    setFullName(v);
+    if (usernameSuggestDebounce.current) clearTimeout(usernameSuggestDebounce.current);
+    if (!v.trim()) { setUsernameSuggestions([]); return; }
+    const requestId = ++usernameSuggestRequestId.current;
+    usernameSuggestDebounce.current = setTimeout(async () => {
+      const available = await resolveAvailableUsernames(v);
+      if (requestId === usernameSuggestRequestId.current) setUsernameSuggestions(available);
+    }, 400);
+  }
 
   function toggleCategory(label: string) {
     setSelectedCategories((prev) => {
@@ -237,11 +269,7 @@ export default function OnboardingScreen() {
                 <TextInput
                   style={[styles.formInput, { backgroundColor: C.surface, borderColor: fullNameError ? C.error : C.border, color: C.text }]}
                   value={fullName}
-                  onChangeText={(v) => {
-                    setStep1Error('');
-                    setFullName(v);
-                    setUsernameSuggestions(generateUsernameSuggestions(v));
-                  }}
+                  onChangeText={handleFullNameChange}
                   placeholder={t('onboarding.fullNamePlaceholder')}
                   placeholderTextColor={C.textSecondary}
                   autoCapitalize="words"
