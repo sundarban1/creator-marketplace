@@ -549,6 +549,11 @@ export default function CampaignProposalsScreen() {
         </View>
       </LinearGradient>
 
+      {/* Section label */}
+      <View style={styles.sectionLabelRow}>
+        <Text style={[styles.sectionLabel, { color: C.text }]}>View Creator Status on Project</Text>
+      </View>
+
       {/* Filter chips */}
       <View style={[styles.filterBar, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
@@ -683,6 +688,9 @@ const styles = StyleSheet.create({
   statStripNum:     { fontSize: 18, fontWeight: '800', color: '#fff', fontFamily: F.extrabold },
   statStripLabel:   { fontSize: 10, fontWeight: '600', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', fontFamily: F.semibold },
   statStripDivider: { width: 1, height: 32 },
+
+  sectionLabelRow: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 4 },
+  sectionLabel:    { fontSize: 16, fontFamily: F.bold },
 
   // ── Filter bar ───────────────────────────────────────────────────────────────
   filterBar:    { borderBottomWidth: StyleSheet.hairlineWidth },
