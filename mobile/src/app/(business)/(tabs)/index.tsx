@@ -143,10 +143,10 @@ export default function BusinessHomeScreen() {
                   <Ionicons name="menu" size={22} color="#fff" />
                 </View>
               </Pressable>
-              <Text style={styles.greetingLine} numberOfLines={1}>
-                <Text style={[styles.greeting, { color: 'rgba(255,255,255,0.7)' }]}>{getGreeting()} </Text>
-                <Text style={[styles.brandName, { color: '#fff' }]}>{user?.name ?? 'Business'}</Text>
-              </Text>
+              <View>
+                <Text style={[styles.greeting, { color: 'rgba(255,255,255,0.7)' }]}>{getGreeting()}</Text>
+                <Text style={[styles.brandName, { color: '#fff' }]} numberOfLines={1}>{user?.name ?? 'Business'}</Text>
+              </View>
             </View>
             <Pressable style={[styles.avatarCircle, { borderColor: 'rgba(255,255,255,0.5)', borderWidth: 2.5 }]} onPress={() => router.push('/(business)/profile')}>
               {user?.avatar ? (
@@ -340,9 +340,8 @@ const styles = StyleSheet.create({
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
   menuBtn: { padding: 0 },
   menuBtnInner: { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center' },
-  greetingLine: { flex: 1, fontSize: 20, fontFamily: F.bold, letterSpacing: -0.3 },
-  greeting: { fontSize: 12, fontFamily: F.medium },
-  brandName: { fontSize: 20, fontFamily: F.bold, letterSpacing: -0.3 },
+  greeting: { fontSize: 12, marginBottom: 3, fontFamily: F.medium },
+  brandName: { fontSize: 20, fontFamily: F.bold, maxWidth: 180, letterSpacing: -0.3 },
   avatarCircle: { width: 44, height: 44, borderRadius: 22, overflow: 'hidden', shadowOpacity: 0.4, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
   avatarImage: { width: 44, height: 44 },
   avatarFallback: { width: 44, height: 44, justifyContent: 'center', alignItems: 'center' },
