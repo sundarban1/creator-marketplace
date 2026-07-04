@@ -1,4 +1,6 @@
-import { useState }     from 'react';
+import { useState, useMemo } from 'react';
+import { useNavigate }       from 'react-router-dom';
+import { ChevronDown }       from 'lucide-react';
 import { DataTable }    from '../components/DataTable';
 import { StatusBadge }  from '../components/StatusBadge';
 import { PageHeader }   from '../components/PageHeader';
@@ -25,21 +27,37 @@ function formatBudget(min: number, max: number): string {
 }
 
 export function Campaigns() {
-  const [statusFilter, setStatusFilter] = useState<string>('All');
+  const navigate = useNavigate();
+  const [statusFilter,   setStatusFilter]   = useState<string>('All');
+  const [businessFilter, setBusinessFilter] = useState<string>('All');
 
   const { data, loading, error, refetch } = useApi(() =>
     api.admin.campaigns({
-      limit:  50,
+      limit:  200,
       status: statusFilter === 'All' ? undefined : statusFilter,
     })
   );
 
-  const campaigns = data?.data ?? [];
-  const total     = data?.pagination?.total ?? campaigns.length;
+  const allCampaigns = data?.data ?? [];
+
+  const businessNames = useMemo(() => {
+    const names = [...new Set(allCampaigns.map((c) => c.business.businessName))].sort();
+    return names;
+  }, [allCampaigns]);
+
+  const campaigns = useMemo(() =>
+    businessFilter === 'All'
+      ? allCampaigns
+      : allCampaigns.filter((c) => c.business.businessName === businessFilter),
+    [allCampaigns, businessFilter]
+  );
+
+  const total     = campaigns.length;
   const activeCnt = campaigns.filter((c) => c.status === 'ACTIVE').length;
 
   function handleStatusChange(s: string) {
     setStatusFilter(s);
+    setBusinessFilter('All');
     setTimeout(() => refetch(), 0);
   }
 
@@ -107,10 +125,13 @@ export function Campaigns() {
     {
       key:    'actions',
       header: 'Actions',
-      render: () => (
-        <div className="flex gap-2">
-          <button className="text-xs text-indigo-600 hover:text-indigo-800 font-medium">View</button>
-        </div>
+      render: (row: ApiCampaign) => (
+        <button
+          className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+          onClick={() => navigate(`/campaigns/${row.id}`)}
+        >
+          View
+        </button>
       ),
     },
   ];
@@ -126,21 +147,39 @@ export function Campaigns() {
         }
       />
 
-      {/* Status filter tabs */}
-      <div className="flex gap-1 bg-gray-100 rounded-lg p-1 mb-4 w-fit">
-        {STATUS_FILTERS.map((s) => (
-          <button
-            key={s}
-            onClick={() => handleStatusChange(s)}
-            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-              statusFilter === s
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
+      {/* Filters */}
+      <div className="flex items-center justify-between gap-3 mb-4">
+        {/* Status tabs */}
+        <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+          {STATUS_FILTERS.map((s) => (
+            <button
+              key={s}
+              onClick={() => handleStatusChange(s)}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                statusFilter === s
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+
+        {/* Business dropdown */}
+        <div className="relative">
+          <select
+            value={businessFilter}
+            onChange={(e) => setBusinessFilter(e.target.value)}
+            className="appearance-none pl-3 pr-8 py-1.5 text-xs font-medium border border-gray-200 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
           >
-            {s}
-          </button>
-        ))}
+            <option value="All">All Companies</option>
+            {businessNames.map((name) => (
+              <option key={name} value={name}>{name}</option>
+            ))}
+          </select>
+          <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+        </div>
       </div>
 
       {error && (

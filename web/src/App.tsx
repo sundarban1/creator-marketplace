@@ -19,6 +19,7 @@ import { FAQManager } from './pages/FAQManager';
 import { SupportInbox } from './pages/SupportInbox';
 import { LegalEditor } from './pages/LegalEditor';
 import { Conversations } from './pages/Conversations';
+import { CampaignDetail } from './pages/CampaignDetail';
 import { CategoriesPage } from './pages/categories/CategoriesPage';
 import { NewCategoryPage } from './pages/categories/NewCategoryPage';
 import { EditCategoryPage } from './pages/categories/EditCategoryPage';
@@ -43,6 +44,7 @@ export default function App() {
                   <Route path="/creators" element={<Creators />} />
                   <Route path="/businesses" element={<Businesses />} />
                   <Route path="/campaigns" element={<Campaigns />} />
+                  <Route path="/campaigns/:id" element={<CampaignDetail />} />
                   <Route path="/categories" element={<CategoriesPage />} />
                   <Route path="/categories/new" element={<NewCategoryPage />} />
                   <Route path="/categories/edit/:id" element={<EditCategoryPage />} />

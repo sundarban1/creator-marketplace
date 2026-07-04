@@ -74,6 +74,7 @@ export interface ApiUser {
   email:           string;
   role:            string;
   isEmailVerified: boolean;
+  isActive:        boolean;
   createdAt:       string;
   creatorProfile?:  { fullName: string; avatarUrl?: string | null; isVerified: boolean } | null;
   businessProfile?: { businessName: string; logoUrl?: string | null; isVerified: boolean } | null;
@@ -81,7 +82,8 @@ export interface ApiUser {
 
 export interface ApiCreator {
   id:         string;
-  fullName:   string;
+  userId:     string;
+  fullName:   string | null;
   bio?:       string | null;
   location?:  string | null;
   avatarUrl?: string | null;
@@ -89,12 +91,13 @@ export interface ApiCreator {
   socialLinks: Record<string, string>;
   isVerified:  boolean;
   createdAt:   string;
-  user:  { email: string; isEmailVerified: boolean; createdAt: string };
+  user:  { id: string; email: string; isEmailVerified: boolean; isActive: boolean; createdAt: string };
   _count: { applications: number };
 }
 
 export interface ApiBusiness {
   id:           string;
+  userId:       string;
   businessName: string;
   description?: string | null;
   logoUrl?:     string | null;
@@ -102,7 +105,7 @@ export interface ApiBusiness {
   categories:   string[];
   isVerified:   boolean;
   createdAt:    string;
-  user:  { email: string; isEmailVerified: boolean; createdAt: string };
+  user:  { id: string; email: string; isEmailVerified: boolean; isActive: boolean; createdAt: string };
   _count: { campaigns: number };
 }
 
@@ -141,6 +144,62 @@ export interface ApiCampaign {
   createdAt: string;
   business:  { businessName: string; logoUrl?: string | null };
   _count:    { applications: number };
+}
+
+export interface ApiApplication {
+  id:            string;
+  coverLetter:   string;
+  proposedRate:  number;
+  timeline:      string;
+  portfolioUrl?: string | null;
+  status:        string;
+  workStatus:    string;
+  paymentStatus: string;
+  createdAt:     string;
+  updatedAt:     string;
+  creator: {
+    id:         string;
+    fullName:   string | null;
+    avatarUrl?: string | null;
+    location?:  string | null;
+    categories: string[];
+    user:       { email: string };
+  };
+}
+
+export interface ApiCampaignDetail {
+  id:             string;
+  title:          string;
+  description:    string;
+  category:       string;
+  platform:       string;
+  budgetMin:      number;
+  budgetMax:      number;
+  paymentType:    string;
+  status:         string;
+  campaignType:   string;
+  goals:          string[];
+  deliverables:   string;
+  contentType:    string;
+  location?:      string | null;
+  deadline:       string;
+  creatorsNeeded: number;
+  isFeatured:     boolean;
+  capacity?:      number | null;
+  eventDate?:     string | null;
+  venue?:         string | null;
+  benefits:       string[];
+  createdAt:      string;
+  updatedAt:      string;
+  business: {
+    id:           string;
+    businessName: string;
+    logoUrl?:     string | null;
+    website?:     string | null;
+    description?: string | null;
+  };
+  applications:   ApiApplication[];
+  _count:         { applications: number };
 }
 
 export type PlatformSettings = Record<string, boolean | string | number>;
@@ -269,8 +328,14 @@ export const api = {
       request<ApiCampaign[]>('GET', '/api/admin/campaigns', undefined,
         params as Record<string, string | number | undefined>),
 
+    campaignDetail: (id: string) =>
+      request<ApiCampaignDetail>('GET', `/api/admin/campaigns/${id}`),
+
     verifyUser: (id: string, verified: boolean) =>
       request<ApiUser>('PATCH', `/api/admin/users/${id}/verify`, { verified }),
+
+    suspendUser: (id: string, isActive: boolean) =>
+      request<{ id: string; email: string; isActive: boolean }>('PATCH', `/api/admin/users/${id}/suspend`, { isActive }),
 
     deleteUser: (id: string) =>
       request<null>('DELETE', `/api/admin/users/${id}`),

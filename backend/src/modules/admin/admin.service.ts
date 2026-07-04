@@ -32,6 +32,18 @@ export class AdminService {
     return this.repo.updateUserVerification(userId, verified);
   }
 
+  suspendUser(userId: string, isActive: boolean) {
+    return this.repo.updateUserActiveStatus(userId, isActive);
+  }
+
+  getUser(userId: string) {
+    return this.repo.getUserById(userId);
+  }
+
+  getCampaignDetail(campaignId: string) {
+    return this.repo.getCampaignDetail(campaignId);
+  }
+
   setCampaignStatus(campaignId: string, status: CampaignStatus) {
     return this.repo.updateCampaignStatus(campaignId, status);
   }

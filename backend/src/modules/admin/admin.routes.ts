@@ -5,10 +5,12 @@ import {
   getStats,
   getUsers,
   verifyUser,
+  suspendUser,
   deleteUser,
   getCreators,
   getBusinesses,
   getCampaigns,
+  getCampaignDetail,
   updateCampaignStatus,
   getSettings,
   updateSettings,
@@ -28,12 +30,14 @@ router.get('/stats', getStats);
 
 router.get('/users', getUsers);
 router.patch('/users/:id/verify', verifyUser);
+router.patch('/users/:id/suspend', suspendUser);
 router.delete('/users/:id', deleteUser);
 
 router.get('/creators',  getCreators);
 router.get('/businesses', getBusinesses);
 
 router.get('/campaigns', getCampaigns);
+router.get('/campaigns/:id', getCampaignDetail);
 router.patch('/campaigns/:id/status', updateCampaignStatus);
 
 // ── Platform Settings ───────────────────────────────────────────────────────────

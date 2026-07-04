@@ -86,6 +86,7 @@ export class AdminRepository {
           email:           true,
           role:            true,
           isEmailVerified: true,
+          isActive:        true,
           createdAt:       true,
           creatorProfile:  { select: { fullName:     true, avatarUrl: true, isVerified: true } },
           businessProfile: { select: { businessName: true, logoUrl:   true, isVerified: true } },
@@ -113,7 +114,7 @@ export class AdminRepository {
         take:    limit,
         orderBy: { createdAt: 'desc' },
         include: {
-          user:   { select: { email: true, isEmailVerified: true, createdAt: true } },
+          user:   { select: { id: true, email: true, isEmailVerified: true, isActive: true, createdAt: true } },
           _count: { select: { applications: true } },
         },
       }),
@@ -139,7 +140,7 @@ export class AdminRepository {
         take:    limit,
         orderBy: { createdAt: 'desc' },
         include: {
-          user:   { select: { email: true, isEmailVerified: true, createdAt: true } },
+          user:   { select: { id: true, email: true, isEmailVerified: true, isActive: true, createdAt: true } },
           _count: { select: { campaigns: true } },
         },
       }),
@@ -182,11 +183,51 @@ export class AdminRepository {
     return { campaigns, total };
   }
 
+  async getCampaignDetail(campaignId: string) {
+    return prisma.campaign.findUnique({
+      where: { id: campaignId },
+      include: {
+        business: {
+          select: { id: true, businessName: true, logoUrl: true, website: true, description: true },
+        },
+        applications: {
+          orderBy: { createdAt: 'desc' },
+          include: {
+            creator: {
+              select: {
+                id: true, fullName: true, avatarUrl: true, location: true, categories: true,
+                user: { select: { email: true } },
+              },
+            },
+          },
+        },
+        _count: { select: { applications: true } },
+      },
+    });
+  }
+
   async updateUserVerification(userId: string, isEmailVerified: boolean) {
     return prisma.user.update({
       where: { id: userId },
       data:  { isEmailVerified },
       select: { id: true, email: true, isEmailVerified: true },
+    });
+  }
+
+  async getUserById(userId: string) {
+    const user = await prisma.user.findUnique({
+      where:  { id: userId },
+      select: { id: true, email: true, isActive: true },
+    });
+    if (!user) throw new Error('User not found');
+    return user;
+  }
+
+  async updateUserActiveStatus(userId: string, isActive: boolean) {
+    return prisma.user.update({
+      where:  { id: userId },
+      data:   { isActive },
+      select: { id: true, email: true, isActive: true },
     });
   }
 

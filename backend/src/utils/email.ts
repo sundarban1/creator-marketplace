@@ -475,6 +475,58 @@ export async function sendEventAcceptedEmail(
   await sendEmail(creatorEmail, `🎉 You're accepted for "${eventTitle}"!`, html);
 }
 
+// ── Admin Account Actions ─────────────────────────────────────────────────────
+
+export async function sendAccountSuspendedEmail(email: string, name: string): Promise<void> {
+  const html = wrapLayout(`
+    <h2 style="color:#DC2626;font-size:22px;font-weight:700;margin:0 0 8px;">Your account has been suspended</h2>
+    <p style="color:#6b7280;font-size:15px;margin:0 0 20px;line-height:1.6;">
+      Hi <strong>${name}</strong>, your CreatorMarket account has been temporarily suspended by an administrator.
+    </p>
+    <div style="background:#FEF2F2;border:1.5px solid #FECACA;border-radius:10px;padding:16px 20px;margin-bottom:24px;">
+      <p style="margin:0;color:#991B1B;font-size:14px;line-height:1.6;">
+        You will not be able to log in while your account is suspended. If you believe this is a mistake,
+        please contact our support team.
+      </p>
+    </div>
+    <p style="color:#9ca3af;font-size:13px;margin:0;">
+      This action was taken in accordance with our Terms of Service. Your data remains intact and may be reinstated upon review.
+    </p>
+  `);
+  await sendEmail(email, 'Your CreatorMarket account has been suspended', html);
+}
+
+export async function sendAccountReactivatedEmail(email: string, name: string): Promise<void> {
+  const html = wrapLayout(`
+    <h2 style="color:#059669;font-size:22px;font-weight:700;margin:0 0 8px;">Your account has been reactivated</h2>
+    <p style="color:#6b7280;font-size:15px;margin:0 0 20px;line-height:1.6;">
+      Hi <strong>${name}</strong>, great news — your CreatorMarket account has been reactivated. You can now log in and use the platform normally.
+    </p>
+    <p style="color:#9ca3af;font-size:13px;margin:0;">
+      If you have any questions, please contact our support team through the app.
+    </p>
+  `);
+  await sendEmail(email, 'Your CreatorMarket account has been reactivated', html);
+}
+
+export async function sendAccountDeletedEmail(email: string, name: string): Promise<void> {
+  const html = wrapLayout(`
+    <h2 style="color:#DC2626;font-size:22px;font-weight:700;margin:0 0 8px;">Your account has been deleted</h2>
+    <p style="color:#6b7280;font-size:15px;margin:0 0 20px;line-height:1.6;">
+      Hi <strong>${name}</strong>, your CreatorMarket account and all associated data have been permanently deleted by an administrator.
+    </p>
+    <div style="background:#FEF2F2;border:1.5px solid #FECACA;border-radius:10px;padding:16px 20px;margin-bottom:24px;">
+      <p style="margin:0;color:#991B1B;font-size:14px;line-height:1.6;">
+        This action is permanent and cannot be undone. All your data, campaigns, proposals, and messages have been removed from our system.
+      </p>
+    </div>
+    <p style="color:#9ca3af;font-size:13px;margin:0;">
+      If you believe this was done in error, please contact us immediately at support@creatormarket.com.np.
+    </p>
+  `);
+  await sendEmail(email, 'Your CreatorMarket account has been deleted', html);
+}
+
 export async function sendCampaignCancelledEmail(
   recipientEmail: string,
   recipientName: string,

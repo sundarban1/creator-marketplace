@@ -1,6 +1,7 @@
 type Status =
   | 'active'
   | 'inactive'
+  | 'suspended'
   | 'banned'
   | 'pending'
   | 'unverified'
@@ -19,6 +20,7 @@ type Status =
 const styles: Record<Status, string> = {
   active:     'bg-emerald-100 text-emerald-700',
   inactive:   'bg-gray-100 text-gray-600',
+  suspended:  'bg-orange-100 text-orange-700',
   banned:     'bg-red-100 text-red-700',
   pending:    'bg-amber-100 text-amber-700',
   unverified: 'bg-gray-100 text-gray-500',

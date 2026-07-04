@@ -4,10 +4,13 @@ import { DataTable }     from '../components/DataTable';
 import { StatusBadge }   from '../components/StatusBadge';
 import { Avatar }        from '../components/Avatar';
 import { PageHeader }    from '../components/PageHeader';
+import { ConfirmModal }  from '../components/ConfirmModal';
 import { api, type ApiUser } from '../lib/api';
 import { useApi }        from '../lib/useApi';
 
 const ROLE_FILTERS = ['All', 'CREATOR', 'BUSINESS', 'ADMIN'] as const;
+
+type Action = { type: 'suspend' | 'activate' | 'delete'; user: ApiUser };
 
 function initials(u: ApiUser): string {
   const name =
@@ -26,6 +29,7 @@ function displayName(u: ApiUser): string {
 }
 
 function verifiedStatus(u: ApiUser): string {
+  if (u.isActive === false) return 'suspended';
   if (!u.isEmailVerified) return 'unverified';
   const profileVerified =
     u.creatorProfile?.isVerified ?? u.businessProfile?.isVerified ?? true;
@@ -36,8 +40,11 @@ export function Users() {
   const [roleFilter, setRoleFilter] = useState<string>('All');
   const [search,     setSearch]     = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [action,  setAction]  = useState<Action | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [toast,   setToast]   = useState<{ msg: string; ok: boolean } | null>(null);
 
-  const { data, loading, error, refetch } = useApi(() =>
+  const { data, loading: fetching, error, refetch } = useApi(() =>
     api.admin.users({
       limit:  50,
       role:   roleFilter === 'All' ? undefined : roleFilter,
@@ -47,6 +54,11 @@ export function Users() {
 
   const users = data?.data ?? [];
   const total = data?.pagination?.total ?? users.length;
+
+  function showToast(msg: string, ok = true) {
+    setToast({ msg, ok });
+    setTimeout(() => setToast(null), 3000);
+  }
 
   function handleSearchChange(val: string) {
     setSearch(val);
@@ -59,8 +71,28 @@ export function Users() {
 
   function handleRoleChange(role: string) {
     setRoleFilter(role);
-    // trigger refetch by re-running useApi — we do it via search change trick
     setTimeout(() => refetch(), 0);
+  }
+
+  async function handleConfirm() {
+    if (!action) return;
+    setLoading(true);
+    try {
+      if (action.type === 'delete') {
+        await api.admin.deleteUser(action.user.id);
+        showToast(`${displayName(action.user)} deleted.`);
+      } else {
+        const isActive = action.type === 'activate';
+        await api.admin.suspendUser(action.user.id, isActive);
+        showToast(`Account ${isActive ? 'reactivated' : 'suspended'}.`);
+      }
+      setAction(null);
+      refetch();
+    } catch (e) {
+      showToast((e as Error).message ?? 'Something went wrong.', false);
+    } finally {
+      setLoading(false);
+    }
   }
 
   const columns = [
@@ -81,7 +113,7 @@ export function Users() {
       key:    'role',
       header: 'Role',
       render: (row: ApiUser) => (
-        <span className="capitalize text-gray-700 text-sm">{row.role}</span>
+        <span className="capitalize text-gray-700 text-sm">{row.role.toLowerCase()}</span>
       ),
     },
     {
@@ -103,23 +135,64 @@ export function Users() {
     {
       key:    'actions',
       header: 'Actions',
-      render: () => (
+      render: (row: ApiUser) => (
         <div className="flex gap-2">
-          <button className="text-xs text-indigo-600 hover:text-indigo-800 font-medium">View</button>
-          <button className="text-xs text-gray-400 hover:text-gray-600 font-medium">Edit</button>
+          {row.isActive === false ? (
+            <button
+              className="text-xs text-green-600 hover:text-green-800 font-medium"
+              onClick={() => setAction({ type: 'activate', user: row })}
+            >
+              Activate
+            </button>
+          ) : (
+            <button
+              className="text-xs text-orange-500 hover:text-orange-700 font-medium"
+              onClick={() => setAction({ type: 'suspend', user: row })}
+            >
+              Suspend
+            </button>
+          )}
+          <button
+            className="text-xs text-red-500 hover:text-red-700 font-medium"
+            onClick={() => setAction({ type: 'delete', user: row })}
+          >
+            Delete
+          </button>
         </div>
       ),
     },
   ];
 
+  const modalCfg = action
+    ? action.type === 'delete'
+      ? {
+          title:        `Delete ${displayName(action.user)}?`,
+          body:         `This permanently deletes the account and all associated data. An email will be sent to ${action.user.email}. This cannot be undone.`,
+          confirmLabel: 'Delete account',
+          variant:      'danger' as const,
+        }
+      : action.type === 'suspend'
+      ? {
+          title:        `Suspend ${displayName(action.user)}?`,
+          body:         `The user will be unable to log in. An email notification will be sent to ${action.user.email}.`,
+          confirmLabel: 'Suspend account',
+          variant:      'warning' as const,
+        }
+      : {
+          title:        `Reactivate ${displayName(action.user)}?`,
+          body:         `The user will regain full access to their account. An email notification will be sent to ${action.user.email}.`,
+          confirmLabel: 'Reactivate',
+          variant:      'success' as const,
+        }
+    : null;
+
   return (
     <div>
       <PageHeader
         title="Users"
-        subtitle={loading ? 'Loading...' : `${total} total users`}
+        subtitle={fetching ? 'Loading...' : `${total} total users`}
       />
 
-      {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3 mb-4">
         <div className="relative flex-1 max-w-sm">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -137,9 +210,7 @@ export function Users() {
               key={r}
               onClick={() => handleRoleChange(r)}
               className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                roleFilter === r
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700'
+                roleFilter === r ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
               }`}
             >
               {r}
@@ -149,12 +220,10 @@ export function Users() {
       </div>
 
       {error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
-          {error}
-        </div>
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">{error}</div>
       )}
 
-      {loading ? (
+      {fetching ? (
         <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="h-14 animate-pulse bg-gray-50 first:rounded-t-xl last:rounded-b-xl" />
@@ -162,6 +231,25 @@ export function Users() {
         </div>
       ) : (
         <DataTable columns={columns} data={users} keyField="id" />
+      )}
+
+      {modalCfg && (
+        <ConfirmModal
+          open={!!action}
+          title={modalCfg.title}
+          body={modalCfg.body}
+          confirmLabel={modalCfg.confirmLabel}
+          variant={modalCfg.variant}
+          loading={loading}
+          onConfirm={handleConfirm}
+          onCancel={() => setAction(null)}
+        />
+      )}
+
+      {toast && (
+        <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 px-5 py-3 rounded-xl text-sm font-medium text-white shadow-lg z-50 ${toast.ok ? 'bg-gray-900' : 'bg-red-600'}`}>
+          {toast.msg}
+        </div>
       )}
     </div>
   );

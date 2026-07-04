@@ -3,6 +3,11 @@ import { CampaignStatus } from '@prisma/client';
 import { AdminService } from './admin.service';
 import { success, paginated } from '../../utils/response';
 import { AppError } from '../../middleware/error';
+import {
+  sendAccountSuspendedEmail,
+  sendAccountReactivatedEmail,
+  sendAccountDeletedEmail,
+} from '../../utils/email';
 
 const service = new AdminService();
 
@@ -48,10 +53,32 @@ export async function verifyUser(req: Request, res: Response, next: NextFunction
   }
 }
 
+// PATCH /api/admin/users/:id/suspend
+export async function suspendUser(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { id }       = req.params;
+    const { isActive } = req.body as { isActive: boolean };
+    if (typeof isActive !== 'boolean') throw new AppError('isActive must be a boolean', 400);
+    const updated = await service.suspendUser(id!, isActive);
+    const name = updated.email.split('@')[0]!;
+    if (!isActive) {
+      sendAccountSuspendedEmail(updated.email, name).catch(() => {});
+    } else {
+      sendAccountReactivatedEmail(updated.email, name).catch(() => {});
+    }
+    return success(res, updated, isActive ? 'Account reactivated' : 'Account suspended');
+  } catch (err) {
+    next(err);
+  }
+}
+
 // DELETE /api/admin/users/:id
 export async function deleteUser(req: Request, res: Response, next: NextFunction) {
   try {
-    await service.removeUser(req.params['id']!);
+    const { id } = req.params;
+    const user = await service.getUser(id!);
+    await service.removeUser(id!);
+    sendAccountDeletedEmail(user.email, user.email.split('@')[0]!).catch(() => {});
     return success(res, null, 'User deleted');
   } catch (err) {
     next(err);
@@ -90,6 +117,17 @@ export async function getCampaigns(req: Request, res: Response, next: NextFuncti
     const search = req.query['search'] as string | undefined;
     const { campaigns, total } = await service.getCampaigns(page, limit, status, search);
     return paginated(res, campaigns, total, page, limit);
+  } catch (err) {
+    next(err);
+  }
+}
+
+// GET /api/admin/campaigns/:id
+export async function getCampaignDetail(req: Request, res: Response, next: NextFunction) {
+  try {
+    const campaign = await service.getCampaignDetail(req.params['id']!);
+    if (!campaign) throw new AppError('Campaign not found', 404);
+    return success(res, campaign, 'Campaign detail fetched');
   } catch (err) {
     next(err);
   }
