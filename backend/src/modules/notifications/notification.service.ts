@@ -16,7 +16,7 @@ export async function sendExpoPush(userId: string, title: string, body: string) 
     const token = user?.pushToken;
     if (!token || !Expo.isExpoPushToken(token)) return;
 
-    const message: ExpoPushMessage = { to: token, title, body, sound: 'default', badge: 1 };
+    const message: ExpoPushMessage = { to: token, title, body, sound: 'default', badge: 1, channelId: 'default' };
     await expo.sendPushNotificationsAsync([message]);
   } catch {
     // non-critical — don't let push failure break the notification flow

@@ -58,23 +58,36 @@ type ListItem =
   | { _k: 'msg';    msg: Message; isSent: boolean; showAvatar: boolean; isLast: boolean; id: string }
   | { _k: 'typing'; id: string };
 
+// Builds items for an inverted FlatList (newest first = renders at bottom).
+// Typing indicator is first so it appears at the visual bottom.
+// Date separators appear after the oldest message of each day so they render
+// above that day's group when the list is flipped.
 function buildItems(msgs: Message[], userId: string, typing: boolean): ListItem[] {
   const items: ListItem[] = [];
-  let lastDate = '';
-  for (let i = 0; i < msgs.length; i++) {
-    const msg = msgs[i]!;
-    const dateStr = new Date(msg.timestamp).toDateString();
-    if (dateStr !== lastDate) {
-      items.push({ _k: 'date', label: formatDateLabel(msg.timestamp), id: `d-${dateStr}-${msg.id}` });
-      lastDate = dateStr;
-    }
-    const isSent = msg.senderId === userId;
-    const nextMsg = msgs[i + 1];
-    const showAvatar = !isSent && (!nextMsg || nextMsg.senderId !== msg.senderId);
-    const isLast = i === msgs.length - 1;
-    items.push({ _k: 'msg', msg, isSent, showAvatar, isLast, id: msg.id });
-  }
+
   if (typing) items.push({ _k: 'typing', id: 'typing' });
+
+  const rev = [...msgs].reverse(); // newest first
+  const lastSentId = rev.find((m) => m.senderId === userId && !m.id.startsWith('temp-'))?.id ?? '';
+
+  for (let i = 0; i < rev.length; i++) {
+    const msg       = rev[i]!;
+    const prevInArr = rev[i - 1]; // more recent → rendered below in UI
+    const nextInArr = rev[i + 1]; // older → rendered above in UI
+
+    const isSent     = msg.senderId === userId;
+    const showAvatar = !isSent && (!prevInArr || prevInArr.senderId !== msg.senderId);
+    const isLast     = !msg.id.startsWith('temp-') && msg.id === lastSentId;
+
+    items.push({ _k: 'msg', msg, isSent, showAvatar, isLast, id: msg.id });
+
+    const currDate = new Date(msg.timestamp).toDateString();
+    const nextDate = nextInArr ? new Date(nextInArr.timestamp).toDateString() : null;
+    if (!nextDate || currDate !== nextDate) {
+      items.push({ _k: 'date', label: formatDateLabel(msg.timestamp), id: `d-${currDate}-${i}` });
+    }
+  }
+
   return items;
 }
 
@@ -193,10 +206,9 @@ export default function BusinessChatRoomScreen() {
   const personName  = name ?? 'Chat';
   const personColor = avatarColor(personName);
 
-  const hasScrolled = useRef(false);
-
+  // Scroll to offset 0 = visual bottom for inverted FlatList
   function scrollToBottom(animated = true) {
-    setTimeout(() => listRef.current?.scrollToEnd({ animated }), 80);
+    listRef.current?.scrollToOffset({ offset: 0, animated });
   }
 
   function markSeen() {
@@ -212,7 +224,6 @@ export default function BusinessChatRoomScreen() {
   useEffect(() => {
     setMessages([]);
     setText('');
-    hasScrolled.current = false;
     const convStatus = (urlStatus as 'PENDING' | 'ACCEPTED' | 'DECLINED') ?? 'ACCEPTED';
     setStatus(convStatus);
     if (!id) return;
@@ -297,7 +308,7 @@ export default function BusinessChatRoomScreen() {
     }
     if (typingTimer.current) clearTimeout(typingTimer.current);
 
-    // Optimistic update — show message immediately
+    // Optimistic update — show message immediately at bottom
     const tempId = `temp-${Date.now()}`;
     const optimistic: Message = {
       id: tempId, conversationId: id,
@@ -369,17 +380,13 @@ export default function BusinessChatRoomScreen() {
       )}
 
       <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={0}>
+        {/* inverted=true → newest messages at bottom, scroll up for history (Instagram pattern) */}
         <FlatList
           ref={listRef}
           style={[s.flex, { backgroundColor: C.background }]}
           data={listItems}
           keyExtractor={(item) => item.id}
-          onContentSizeChange={() => {
-            if (!hasScrolled.current && listItems.length > 0) {
-              listRef.current?.scrollToEnd({ animated: false });
-              hasScrolled.current = true;
-            }
-          }}
+          inverted
           renderItem={({ item }) => {
             if (item._k === 'date') {
               return (
@@ -401,7 +408,7 @@ export default function BusinessChatRoomScreen() {
               />
             );
           }}
-          contentContainerStyle={[s.msgList, { flexGrow: 1 }]}
+          contentContainerStyle={s.msgList}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             <View style={s.emptyWrap}>
@@ -498,7 +505,7 @@ const s = StyleSheet.create({
   bubbleTime: { fontSize: 10, fontFamily: F.regular },
 
   // Empty
-  emptyWrap:  { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 80, gap: 10, paddingHorizontal: 32 },
+  emptyWrap:  { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10, paddingHorizontal: 32, paddingVertical: 80 },
   emptyIcon:  { width: 72, height: 72, borderRadius: 36, justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
   emptyTitle: { fontSize: 16, fontFamily: F.bold, textAlign: 'center' },
   emptyHint:  { fontSize: 13, fontFamily: F.regular, textAlign: 'center', lineHeight: 19 },
