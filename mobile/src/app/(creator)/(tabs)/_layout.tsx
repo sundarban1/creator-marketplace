@@ -1,7 +1,7 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { ColorValue, Platform, StyleSheet, Text, View } from 'react-native';
+import { Dimensions, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '@/context/AuthContext';
 import { DrawerContext } from '@/context/DrawerContext';
 import { useLanguage } from '@/context/LanguageContext';
@@ -11,41 +11,166 @@ import { useNotificationBadge } from '@/context/NotificationContext';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
-function TabIcon({
-  name,
-  nameActive,
-  size,
-  color,
-  focused,
-  badge,
+// ── Tab config ────────────────────────────────────────────────────────────────
+
+const TAB_CONFIG: Record<string, { icon: IoniconName; iconActive: IoniconName; label: string }> = {
+  index:         { icon: 'home-outline',          iconActive: 'home',          label: 'Home' },
+  proposals:     { icon: 'document-text-outline', iconActive: 'document-text', label: 'Proposals' },
+  messages:      { icon: 'chatbubble-outline',    iconActive: 'chatbubble',    label: 'Messages' },
+  notifications: { icon: 'notifications-outline', iconActive: 'notifications', label: 'Activity' },
+};
+
+// ── Custom tab bar ────────────────────────────────────────────────────────────
+
+function CustomTabBar({
+  state,
+  navigation,
+  chatBadge,
+  notifBadge,
 }: {
-  name: IoniconName;
-  nameActive: IoniconName;
-  size: number;
-  color: ColorValue;
-  focused: boolean;
-  badge?: number;
+  state: any;
+  navigation: any;
+  chatBadge: number;
+  notifBadge: number;
 }) {
   const C = useAppColors();
+  const { t } = useLanguage();
+
+  const labelMap: Record<string, string> = {
+    index:         t('creator.tab.home'),
+    proposals:     t('creator.tab.proposals'),
+    messages:      t('creator.tab.messages'),
+    notifications: t('creator.tab.activity'),
+  };
+
+  const badgeMap: Record<string, number> = {
+    messages:      chatBadge,
+    notifications: notifBadge,
+  };
+
+  const tabs = (state.routes as any[]).filter((r) => TAB_CONFIG[r.name]);
+
   return (
-    <View style={tabIcon.wrap}>
-      {focused && <View style={[tabIcon.pill, { backgroundColor: C.brinjal1 }]} />}
-      <Ionicons name={focused ? nameActive : name} size={size} color={color as string} />
-      {!!badge && badge > 0 && (
-        <View style={tabIcon.badge}>
-          <Text style={tabIcon.badgeText}>{badge > 99 ? '99+' : badge}</Text>
-        </View>
-      )}
+    <View style={[tabS.bar, { backgroundColor: C.surface, borderTopColor: C.border }]}>
+      {tabs.map((route) => {
+        const focused = state.routes[state.index]?.name === route.name;
+        const cfg     = TAB_CONFIG[route.name]!;
+        const label   = labelMap[route.name] ?? cfg.label;
+        const badge   = badgeMap[route.name] ?? 0;
+
+        function onPress() {
+          if (route.name === 'messages') {
+            navigation.navigate('messages', { screen: 'index' });
+          } else {
+            navigation.navigate(route.name);
+          }
+        }
+
+        return (
+          <Pressable
+            key={route.key}
+            onPress={onPress}
+            style={tabS.item}
+            android_ripple={{ color: 'transparent' }}
+          >
+            {/* Icon bubble */}
+            <View
+              style={[
+                tabS.bubble,
+                focused && { backgroundColor: `${C.brinjal1}18` },
+              ]}
+            >
+              <Ionicons
+                name={focused ? cfg.iconActive : cfg.icon}
+                size={21}
+                color={focused ? C.brinjal1 : '#ABABBB'}
+              />
+              {badge > 0 && (
+                <View style={tabS.badge}>
+                  <Text style={tabS.badgeTxt}>{badge > 99 ? '99+' : badge}</Text>
+                </View>
+              )}
+            </View>
+
+            {/* Label */}
+            <Text
+              style={[
+                tabS.label,
+                { color: focused ? C.brinjal1 : '#ABABBB', fontWeight: focused ? '700' : '500' },
+              ]}
+              numberOfLines={1}
+            >
+              {label}
+            </Text>
+
+            {/* Active dot */}
+            {focused && <View style={[tabS.dot, { backgroundColor: C.brinjal1 }]} />}
+          </Pressable>
+        );
+      })}
     </View>
   );
 }
 
-const tabIcon = StyleSheet.create({
-  wrap:      { alignItems: 'center', justifyContent: 'center', paddingTop: 2 },
-  pill:      { position: 'absolute', top: -10, width: 20, height: 3, borderRadius: 2 },
-  badge:     { position: 'absolute', top: -3, right: -9, backgroundColor: '#EF4444', borderRadius: 8, minWidth: 16, height: 16, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 3 },
-  badgeText: { fontSize: 9, fontWeight: '800', color: '#fff' },
+const tabS = StyleSheet.create({
+  bar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: Platform.OS === 'ios' ? 84 : 64,
+    paddingTop: 6,
+    paddingBottom: Platform.OS === 'ios' ? 24 : 6,
+    paddingHorizontal: 4,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    shadowColor: '#000',
+    shadowOpacity: 0.07,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: -4 },
+    elevation: 12,
+  },
+  item: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+  },
+  bubble: {
+    width: 44,
+    height: 32,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  label: {
+    fontSize: 10,
+    letterSpacing: 0,
+  },
+  dot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    marginTop: 1,
+  },
+  badge: {
+    position: 'absolute',
+    top: 1,
+    right: 2,
+    backgroundColor: '#EF4444',
+    borderRadius: 8,
+    minWidth: 15,
+    height: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 3,
+  },
+  badgeTxt: {
+    fontSize: 8,
+    fontWeight: '800',
+    color: '#fff',
+  },
 });
+
+// ── Layout ────────────────────────────────────────────────────────────────────
 
 export default function CreatorTabsLayout() {
   const { user, logout } = useAuth();
@@ -58,32 +183,18 @@ export default function CreatorTabsLayout() {
     <DrawerContext.Provider value={{ openDrawer: () => setDrawerOpen(true) }}>
       <View style={{ flex: 1 }}>
         <Tabs
-          screenOptions={{
-            headerShown: false,
-            tabBarActiveTintColor: C.brinjal1,
-            tabBarInactiveTintColor: '#ABABBB',
-            tabBarStyle: [styles.tabBar, { backgroundColor: C.surface, borderTopColor: C.border }],
-            tabBarLabelStyle: styles.tabLabel,
-            tabBarItemStyle: styles.tabItem,
-          }}>
-          <Tabs.Screen
-            name="index"
-            options={{
-              title: t('creator.tab.home'),
-              tabBarIcon: ({ color, focused }) => (
-                <TabIcon name="home-outline" nameActive="home" size={23} color={color} focused={focused} />
-              ),
-            }}
-          />
-          <Tabs.Screen
-            name="proposals"
-            options={{
-              title: t('creator.tab.proposals'),
-              tabBarIcon: ({ color, focused }) => (
-                <TabIcon name="document-text-outline" nameActive="document-text" size={23} color={color} focused={focused} />
-              ),
-            }}
-          />
+          screenOptions={{ headerShown: false }}
+          tabBar={(props) => (
+            <CustomTabBar
+              state={props.state}
+              navigation={props.navigation}
+              chatBadge={badgeCount}
+              notifBadge={notifBadge}
+            />
+          )}
+        >
+          <Tabs.Screen name="index"    options={{ title: t('creator.tab.home') }} />
+          <Tabs.Screen name="proposals" options={{ title: t('creator.tab.proposals') }} />
           <Tabs.Screen
             name="messages"
             listeners={({ navigation }) => ({
@@ -92,22 +203,9 @@ export default function CreatorTabsLayout() {
                 navigation.navigate('messages', { screen: 'index' });
               },
             })}
-            options={{
-              title: t('creator.tab.messages'),
-              tabBarIcon: ({ color, focused }) => (
-                <TabIcon name="chatbubble-outline" nameActive="chatbubble" size={23} color={color} focused={focused} badge={badgeCount} />
-              ),
-            }}
+            options={{ title: t('creator.tab.messages') }}
           />
-          <Tabs.Screen
-            name="notifications"
-            options={{
-              title: t('creator.tab.activity'),
-              tabBarIcon: ({ color, focused }) => (
-                <TabIcon name="notifications-outline" nameActive="notifications" size={23} color={color} focused={focused} badge={notifBadge} />
-              ),
-            }}
-          />
+          <Tabs.Screen name="notifications" options={{ title: t('creator.tab.activity') }} />
         </Tabs>
 
         <DrawerMenu
@@ -120,26 +218,3 @@ export default function CreatorTabsLayout() {
     </DrawerContext.Provider>
   );
 }
-
-const styles = StyleSheet.create({
-  tabBar: {
-    borderTopWidth: 1,
-    height: Platform.OS === 'ios' ? 88 : 66,
-    paddingTop: 10,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: -4 },
-    elevation: 10,
-  },
-  tabItem: {
-    paddingTop: 4,
-  },
-  tabLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 0.2,
-    marginBottom: Platform.OS === 'ios' ? 2 : 4,
-    marginTop: 2,
-  },
-});

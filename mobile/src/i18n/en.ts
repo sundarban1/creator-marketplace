@@ -356,7 +356,7 @@ const en = {
 
   drawer: {
     myAccount: 'MY ACCOUNT',
-    accountSecurity: 'ACCOUNT & SECURITY',
+    accountSecurity: 'Account & Security',
     logout: 'Logout',
     socialAccounts: 'Social Accounts',
     eventPreferences: 'Event Preferences',

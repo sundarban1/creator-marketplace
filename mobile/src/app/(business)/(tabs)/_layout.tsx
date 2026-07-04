@@ -1,7 +1,10 @@
 import { router, Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useRef, useState } from 'react';
-import { Animated, ColorValue, Dimensions, PanResponder, Platform, StyleSheet, Text, View } from 'react-native';
+import { useRef, useState } from 'react';
+import {
+  Animated, Dimensions, PanResponder, Platform,
+  Pressable, StyleSheet, Text, View,
+} from 'react-native';
 import { useAuth } from '@/context/AuthContext';
 import { DrawerContext } from '@/context/DrawerContext';
 import { useLanguage } from '@/context/LanguageContext';
@@ -12,50 +15,179 @@ import { useNotificationBadge } from '@/context/NotificationContext';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
-function TabIcon({
-  name,
-  nameActive,
-  size,
-  color,
-  focused,
-  badge,
+// ── Tab config ────────────────────────────────────────────────────────────────
+
+const TAB_CONFIG: Record<string, { icon: IoniconName; iconActive: IoniconName; label: string }> = {
+  index:         { icon: 'home-outline',          iconActive: 'home',          label: 'Home' },
+  campaigns:     { icon: 'briefcase-outline',     iconActive: 'briefcase',     label: 'Events' },
+  proposals:     { icon: 'document-text-outline', iconActive: 'document-text', label: 'Proposals' },
+  messages:      { icon: 'chatbubble-outline',    iconActive: 'chatbubble',    label: 'Messages' },
+  notifications: { icon: 'notifications-outline', iconActive: 'notifications', label: 'Activity' },
+};
+
+// ── Custom tab bar ────────────────────────────────────────────────────────────
+
+function CustomTabBar({
+  state,
+  navigation,
+  chatBadge,
+  notifBadge,
 }: {
-  name: IoniconName;
-  nameActive: IoniconName;
-  size: number;
-  color: ColorValue;
-  focused: boolean;
-  badge?: number;
+  state: any;
+  navigation: any;
+  chatBadge: number;
+  notifBadge: number;
 }) {
   const C = useAppColors();
+  const { t } = useLanguage();
+
+  const labelMap: Record<string, string> = {
+    index:         t('business.tab.home'),
+    campaigns:     t('business.tab.events'),
+    proposals:     t('business.tab.proposals'),
+    messages:      t('business.tab.messages'),
+    notifications: t('business.tab.notifications'),
+  };
+
+  const badgeMap: Record<string, number> = {
+    messages:      chatBadge,
+    notifications: notifBadge,
+  };
+
+  const tabs = (state.routes as any[]).filter((r) => TAB_CONFIG[r.name]);
+
   return (
-    <View style={tabIcon.wrap}>
-      {focused && <View style={[tabIcon.pill, { backgroundColor: C.brinjal1 }]} />}
-      <Ionicons name={focused ? nameActive : name} size={size} color={color as string} />
-      {!!badge && badge > 0 && (
-        <View style={tabIcon.badge}>
-          <Text style={tabIcon.badgeText}>{badge > 99 ? '99+' : badge}</Text>
-        </View>
-      )}
+    <View style={[tabS.bar, { backgroundColor: C.surface, borderTopColor: C.border }]}>
+      {tabs.map((route) => {
+        const focused = state.routes[state.index]?.name === route.name;
+        const cfg     = TAB_CONFIG[route.name]!;
+        const label   = labelMap[route.name] ?? cfg.label;
+        const badge   = badgeMap[route.name] ?? 0;
+
+        function onPress() {
+          if (route.name === 'messages') {
+            navigation.navigate('messages', { screen: 'index' });
+          } else {
+            navigation.navigate(route.name);
+          }
+        }
+
+        return (
+          <Pressable
+            key={route.key}
+            onPress={onPress}
+            style={tabS.item}
+            android_ripple={{ color: 'transparent' }}
+          >
+            {/* Icon bubble */}
+            <View
+              style={[
+                tabS.bubble,
+                focused && { backgroundColor: `${C.brinjal1}18` },
+              ]}
+            >
+              <Ionicons
+                name={focused ? cfg.iconActive : cfg.icon}
+                size={21}
+                color={focused ? C.brinjal1 : '#ABABBB'}
+              />
+              {/* Badge dot */}
+              {badge > 0 && (
+                <View style={tabS.badge}>
+                  <Text style={tabS.badgeTxt}>{badge > 99 ? '99+' : badge}</Text>
+                </View>
+              )}
+            </View>
+
+            {/* Label */}
+            <Text
+              style={[
+                tabS.label,
+                { color: focused ? C.brinjal1 : '#ABABBB', fontWeight: focused ? '700' : '500' },
+              ]}
+              numberOfLines={1}
+            >
+              {label}
+            </Text>
+
+            {/* Active underline dot */}
+            {focused && <View style={[tabS.dot, { backgroundColor: C.brinjal1 }]} />}
+          </Pressable>
+        );
+      })}
     </View>
   );
 }
 
-const tabIcon = StyleSheet.create({
-  wrap:      { alignItems: 'center', justifyContent: 'center', paddingTop: 2 },
-  pill:      { position: 'absolute', top: -10, width: 20, height: 3, borderRadius: 2 },
-  badge:     { position: 'absolute', top: -3, right: -9, backgroundColor: '#EF4444', borderRadius: 8, minWidth: 16, height: 16, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 3 },
-  badgeText: { fontSize: 9, fontWeight: '800', color: '#fff' },
+const tabS = StyleSheet.create({
+  bar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: Platform.OS === 'ios' ? 84 : 64,
+    paddingTop: 6,
+    paddingBottom: Platform.OS === 'ios' ? 24 : 6,
+    paddingHorizontal: 4,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    shadowColor: '#000',
+    shadowOpacity: 0.07,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: -4 },
+    elevation: 12,
+  },
+  item: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+  },
+  bubble: {
+    width: 44,
+    height: 32,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  label: {
+    fontSize: 10,
+    letterSpacing: 0,
+  },
+  dot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    marginTop: 1,
+  },
+  badge: {
+    position: 'absolute',
+    top: 1,
+    right: 2,
+    backgroundColor: '#EF4444',
+    borderRadius: 8,
+    minWidth: 15,
+    height: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 3,
+  },
+  badgeTxt: {
+    fontSize: 8,
+    fontWeight: '800',
+    color: '#fff',
+  },
 });
 
+// ── FAB setup ─────────────────────────────────────────────────────────────────
 
-const FAB_SIZE = 62;
+const FAB_SIZE = 58;
 const { width: SW, height: SH } = Dimensions.get('window');
-const TAB_H = Platform.OS === 'ios' ? 88 : 66;
+const TAB_H = Platform.OS === 'ios' ? 84 : 64;
 const FAB_INIT = {
   x: SW - FAB_SIZE - 20,
   y: (SH - TAB_H) / 2 - FAB_SIZE / 2,
 };
+
+// ── Layout ────────────────────────────────────────────────────────────────────
 
 export default function BusinessTabsLayout() {
   const { user, logout } = useAuth();
@@ -64,8 +196,8 @@ export default function BusinessTabsLayout() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const { badgeCount: notifBadge, chatBadgeCount: badgeCount } = useNotificationBadge();
 
-  // ── Draggable FAB ────────────────────────────────────────────────────────────
-  const fabPos   = useRef(new Animated.ValueXY(FAB_INIT)).current;
+  // Draggable FAB
+  const fabPos    = useRef(new Animated.ValueXY(FAB_INIT)).current;
   const fabIsDrag = useRef(false);
 
   const fabPR = useRef(
@@ -103,135 +235,78 @@ export default function BusinessTabsLayout() {
     })
   ).current;
 
-
   return (
     <DrawerContext.Provider value={{ openDrawer: () => setDrawerOpen(true) }}>
-    <View style={{ flex: 1 }}>
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: C.brinjal1,
-        tabBarInactiveTintColor: '#ABABBB',
-        tabBarStyle: [styles.tabBar, { backgroundColor: C.surface, borderTopColor: C.border }],
-        tabBarLabelStyle: styles.tabLabel,
-        tabBarItemStyle: styles.tabItem,
-      }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: t('business.tab.home'),
-          tabBarIcon: ({ color, focused }) => (
-            <TabIcon name="home-outline" nameActive="home" size={23} color={color} focused={focused} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="campaigns"
-        options={{
-          title: t('business.tab.events'),
-          tabBarIcon: ({ color, focused }) => (
-            <TabIcon name="briefcase-outline" nameActive="briefcase" size={23} color={color} focused={focused} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="proposals"
-        options={{
-          title: t('business.tab.proposals'),
-          tabBarIcon: ({ color, focused }) => (
-            <TabIcon name="document-text-outline" nameActive="document-text" size={23} color={color} focused={focused} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="messages"
-        listeners={({ navigation }) => ({
-          tabPress: (e) => {
-            e.preventDefault();
-            navigation.navigate('messages', { screen: 'index' });
-          },
-        })}
-        options={{
-          title: t('business.tab.messages'),
-          tabBarIcon: ({ color, focused }) => (
-            <TabIcon name="chatbubble-outline" nameActive="chatbubble" size={23} color={color} focused={focused} badge={badgeCount} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="notifications"
-        options={{
-          title: t('business.tab.notifications'),
-          tabBarIcon: ({ color, focused }) => (
-            <TabIcon name="notifications-outline" nameActive="notifications" size={23} color={color} focused={focused} badge={notifBadge} />
-          ),
-        }}
-      />
-      {/* Hide create.tsx from tab bar — navigated via FAB */}
-      <Tabs.Screen name="create" options={{ href: null }} />
-    </Tabs>
+      <View style={{ flex: 1 }}>
+        <Tabs
+          screenOptions={{ headerShown: false }}
+          tabBar={(props) => (
+            <CustomTabBar
+              state={props.state}
+              navigation={props.navigation}
+              chatBadge={badgeCount}
+              notifBadge={notifBadge}
+            />
+          )}
+        >
+          <Tabs.Screen name="index"    options={{ title: t('business.tab.home') }} />
+          <Tabs.Screen name="campaigns" options={{ title: t('business.tab.events') }} />
+          <Tabs.Screen name="proposals" options={{ title: t('business.tab.proposals') }} />
+          <Tabs.Screen
+            name="messages"
+            listeners={({ navigation }) => ({
+              tabPress: (e) => {
+                e.preventDefault();
+                navigation.navigate('messages', { screen: 'index' });
+              },
+            })}
+            options={{ title: t('business.tab.messages') }}
+          />
+          <Tabs.Screen name="notifications" options={{ title: t('business.tab.notifications') }} />
+          {/* create.tsx is navigated via FAB, not a visible tab */}
+          <Tabs.Screen name="create" options={{ href: null }} />
+        </Tabs>
 
-    {/* Draggable FAB */}
-    <Animated.View
-      style={[styles.fabWrap, { transform: fabPos.getTranslateTransform() }]}
-      {...fabPR.panHandlers}
-    >
-      <View style={styles.fabCircle}>
-        <Ionicons name="add" size={28} color="#fff" />
+        {/* Draggable FAB */}
+        <Animated.View
+          style={[fabS.wrap, { transform: fabPos.getTranslateTransform() }]}
+          {...fabPR.panHandlers}
+        >
+          <View style={[fabS.circle, { backgroundColor: C.brinjal1 }]}>
+            <Ionicons name="add" size={26} color="#fff" />
+          </View>
+        </Animated.View>
+
+        <BusinessDrawerMenu
+          visible={drawerOpen}
+          user={user}
+          onClose={() => setDrawerOpen(false)}
+          onLogout={() => { setDrawerOpen(false); setTimeout(logout, 220); }}
+        />
       </View>
-    </Animated.View>
-
-    <BusinessDrawerMenu
-      visible={drawerOpen}
-      user={user}
-      onClose={() => setDrawerOpen(false)}
-      onLogout={() => { setDrawerOpen(false); setTimeout(logout, 220); }}
-    />
-    </View>
     </DrawerContext.Provider>
   );
 }
 
-const styles = StyleSheet.create({
-  tabBar: {
-    borderTopWidth: 1,
-    height: Platform.OS === 'ios' ? 88 : 66,
-    paddingTop: 10,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: -4 },
-    elevation: 10,
-  },
-  tabItem: {
-    paddingTop: 4,
-  },
-  tabLabel: {
-    fontSize: 9,
-    fontWeight: '700',
-    letterSpacing: 0,
-    marginBottom: Platform.OS === 'ios' ? 2 : 4,
-    marginTop: 2,
-  },
-  fabWrap: {
+const fabS = StyleSheet.create({
+  wrap: {
     position: 'absolute',
     top: 0,
     left: 0,
     zIndex: 300,
   },
-  fabCircle: {
+  circle: {
     width: FAB_SIZE,
     height: FAB_SIZE,
     borderRadius: FAB_SIZE / 2,
-    backgroundColor: COLORS.brinjal1,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2.5,
     borderColor: '#fff',
     shadowColor: '#1e1b4b',
-    shadowOpacity: 0.45,
-    shadowRadius: 8,
-    shadowOffset: { width: 3, height: 5 },
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    shadowOffset: { width: 2, height: 5 },
     elevation: 14,
   },
 });

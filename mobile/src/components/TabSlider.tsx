@@ -18,9 +18,10 @@ type Props = {
   tabs: TabDef[];
   active: string;
   onChange: (key: string) => void;
+  justify?: boolean;
 };
 
-export function TabSlider({ tabs, active, onChange }: Props) {
+export function TabSlider({ tabs, active, onChange, justify = false }: Props) {
   const C = useAppColors();
   const scrollRef    = useRef<ScrollView>(null);
   const indicatorX   = useRef(new Animated.Value(0)).current;
@@ -45,53 +46,64 @@ export function TabSlider({ tabs, active, onChange }: Props) {
     if (layout) {
       Animated.spring(indicatorX, { toValue: layout.x + 8, useNativeDriver: false, speed: 22, bounciness: 4 }).start();
       Animated.spring(indicatorW, { toValue: layout.width - 16, useNativeDriver: false, speed: 22, bounciness: 4 }).start();
-      scrollRef.current?.scrollTo({ x: Math.max(0, layout.x - 40), animated: true });
+      if (!justify) scrollRef.current?.scrollTo({ x: Math.max(0, layout.x - 40), animated: true });
     }
   }
 
+  const tabItems = tabs.map((tab, idx) => {
+    const isActive = tab.key === active;
+    const tabColor = tab.color ?? '#4F46E5';
+    return (
+      <Pressable
+        key={tab.key}
+        onLayout={(e) => handleLayout(idx, e)}
+        onPress={() => handlePress(tab, idx)}
+        style={[s.tab, justify && s.tabFlex]}
+      >
+        <View style={[s.tabInner, justify && s.tabInnerCenter, isActive && { backgroundColor: `${tabColor}15` }]}>
+          {tab.icon && (
+            <Ionicons name={tab.icon} size={14} color={isActive ? tabColor : C.textSecondary} />
+          )}
+          <Text style={[s.tabLabel, { color: isActive ? tabColor : C.textSecondary }]}>
+            {tab.label}
+          </Text>
+          {tab.count !== undefined && tab.count > 0 && (
+            <View style={[s.badge, { backgroundColor: tabColor }]}>
+              <Text style={[s.badgeTxt, { color: '#fff' }]}>
+                {tab.count > 99 ? '99+' : tab.count}
+              </Text>
+            </View>
+          )}
+        </View>
+      </Pressable>
+    );
+  });
+
   return (
     <View style={s.wrapper}>
-      <ScrollView
-        ref={scrollRef}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={s.scroll}
-        bounces={false}
-      >
-        {tabs.map((tab, idx) => {
-          const isActive  = tab.key === active;
-          const tabColor  = tab.color ?? '#4F46E5';
-          return (
-            <Pressable
-              key={tab.key}
-              onLayout={(e) => handleLayout(idx, e)}
-              onPress={() => handlePress(tab, idx)}
-              style={s.tab}
-            >
-              <View style={[s.tabInner, isActive && { backgroundColor: `${tabColor}15` }]}>
-                {tab.icon && (
-                  <Ionicons name={tab.icon} size={14} color={isActive ? tabColor : C.textSecondary} />
-                )}
-                <Text style={[s.tabLabel, { color: isActive ? tabColor : C.textSecondary }]}>
-                  {tab.label}
-                </Text>
-                {tab.count !== undefined && tab.count > 0 && (
-                  <View style={[s.badge, { backgroundColor: isActive ? tabColor : C.border }]}>
-                    <Text style={[s.badgeTxt, { color: isActive ? '#fff' : C.textSecondary }]}>
-                      {tab.count > 99 ? '99+' : tab.count}
-                    </Text>
-                  </View>
-                )}
-              </View>
-            </Pressable>
-          );
-        })}
-
-        <Animated.View
-          style={[s.indicator, { backgroundColor: activeColor, left: indicatorX, width: indicatorW }]}
-          pointerEvents="none"
-        />
-      </ScrollView>
+      {justify ? (
+        <View style={s.row}>
+          {tabItems}
+          <Animated.View
+            style={[s.indicator, { backgroundColor: activeColor, left: indicatorX, width: indicatorW }]}
+            pointerEvents="none"
+          />
+        </View>
+      ) : (
+        <ScrollView
+          ref={scrollRef}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={s.scroll}
+          bounces={false}
+        >
+          {tabItems}
+          <Animated.View
+            style={[s.indicator, { backgroundColor: activeColor, left: indicatorX, width: indicatorW }]}
+            pointerEvents="none"
+          />
+        </ScrollView>
+      )}
 
       <View style={[s.border, { backgroundColor: C.border }]} />
     </View>
@@ -99,13 +111,16 @@ export function TabSlider({ tabs, active, onChange }: Props) {
 }
 
 const s = StyleSheet.create({
-  wrapper:   { backgroundColor: 'transparent' },
-  scroll:    { paddingHorizontal: 12, paddingBottom: 0 },
-  tab:       { paddingHorizontal: 4, paddingVertical: 10 },
-  tabInner:  { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 6 },
-  tabLabel:  { fontSize: 13, fontFamily: F.bold },
-  badge:     { minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 5, justifyContent: 'center', alignItems: 'center' },
-  badgeTxt:  { fontSize: 10, fontFamily: F.extrabold },
-  indicator: { position: 'absolute', bottom: 0, height: 3, borderRadius: 2 },
-  border:    { height: StyleSheet.hairlineWidth, marginHorizontal: 16 },
+  wrapper:        { backgroundColor: 'transparent' },
+  row:            { flexDirection: 'row' },
+  scroll:         { paddingHorizontal: 12, paddingBottom: 0 },
+  tab:            { paddingHorizontal: 4, paddingVertical: 10 },
+  tabFlex:        { flex: 1, alignItems: 'center' },
+  tabInner:       { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 6 },
+  tabInnerCenter: { justifyContent: 'center' },
+  tabLabel:       { fontSize: 13, fontFamily: F.bold },
+  badge:          { minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 5, justifyContent: 'center', alignItems: 'center' },
+  badgeTxt:       { fontSize: 10, fontFamily: F.extrabold },
+  indicator:      { position: 'absolute', bottom: 0, height: 3, borderRadius: 2 },
+  border:         { height: StyleSheet.hairlineWidth, marginHorizontal: 16 },
 });

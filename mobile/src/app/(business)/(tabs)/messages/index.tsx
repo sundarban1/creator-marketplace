@@ -11,6 +11,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { TabSlider } from '@/components/TabSlider';
 import { messagingEvents } from '@/lib/messagingEvents';
 import { getSocket } from '@/lib/socket';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -236,7 +237,7 @@ export default function BusinessChatListScreen() {
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
       {/* ── Gradient header ── */}
       <LinearGradient
-        colors={['#0c4a6e', '#0369a1', '#0EA5E9']}
+        colors={['#312e81', '#4f46e5', '#8b5cf6']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={s.gradientHeader}>
@@ -257,30 +258,18 @@ export default function BusinessChatListScreen() {
             </Text>
           </View>
         </View>
-
-        {/* Tab bar */}
-        <View style={s.tabBar}>
-          {(['chats', 'pending'] as Tab[]).map((tabKey) => {
-            const active = tab === tabKey;
-            const badge  = tabKey === 'pending' ? pending.length : totalUnread;
-            return (
-              <Pressable
-                key={tabKey}
-                style={[s.tab, active && s.tabActive]}
-                onPress={() => setTab(tabKey)}>
-                <Text style={[s.tabTxt, { color: active ? '#fff' : 'rgba(255,255,255,0.6)', fontWeight: active ? '700' : '500' }]}>
-                  {tabKey === 'chats' ? t('messages.tabMessages') : 'Pending'}
-                </Text>
-                {badge > 0 && (
-                  <View style={[s.tabBadge, { backgroundColor: active ? 'rgba(255,255,255,0.3)' : ACCENT }]}>
-                    <Text style={s.tabBadgeTxt}>{badge}</Text>
-                  </View>
-                )}
-              </Pressable>
-            );
-          })}
-        </View>
       </LinearGradient>
+
+      {/* ── Tab slider ── */}
+      <TabSlider
+        justify
+        tabs={[
+          { key: 'chats',   label: t('messages.tabMessages'), count: totalUnread,   color: '#4f46e5' },
+          { key: 'pending', label: 'Pending',                 count: pending.length, color: '#4f46e5' },
+        ]}
+        active={tab}
+        onChange={(key) => setTab(key as Tab)}
+      />
 
       {loading ? (
         <View style={s.center}>
@@ -341,14 +330,6 @@ const s = StyleSheet.create({
   header:         { paddingHorizontal: 20, paddingTop: 14, paddingBottom: 10 },
   heading:        { fontSize: 22, fontWeight: '800', fontFamily: F.extrabold, color: '#fff' },
   headingSub:     { fontSize: 13, fontFamily: F.regular, color: 'rgba(255,255,255,0.75)', marginTop: 2 },
-
-  // Tabs
-  tabBar:      { flexDirection: 'row', borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.2)' },
-  tab:         { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, gap: 6 },
-  tabActive:   { borderBottomWidth: 2.5, borderBottomColor: '#fff' },
-  tabTxt:      { fontSize: 14, fontFamily: F.medium },
-  tabBadge:    { borderRadius: 10, minWidth: 18, height: 18, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 5 },
-  tabBadgeTxt: { color: '#fff', fontSize: 10, fontWeight: '800', fontFamily: F.extrabold },
 
   // Pending list
   reqList:   { padding: 16, gap: 12, paddingBottom: 40 },
