@@ -305,13 +305,15 @@ export default function HomeScreen() {
 
           <View style={styles.header}>
             <View style={styles.headerLeft}>
-              <Pressable onPress={openDrawer}>
-                <Ionicons name="menu" size={24} color="#fff" />
+              <Pressable style={styles.menuBtn} onPress={openDrawer}>
+                <View style={styles.menuBtnInner}>
+                  <Ionicons name="menu" size={22} color="#fff" />
+                </View>
               </Pressable>
-              <View>
-                <Text style={styles.greeting}>{t('creator.home.greeting')}</Text>
-                <Text style={styles.brandName} numberOfLines={1}>{user?.name ?? 'Creator'}</Text>
-              </View>
+              <Text style={styles.greetingLine} numberOfLines={1}>
+                <Text style={styles.greeting}>{t('creator.home.greeting')} </Text>
+                <Text style={styles.brandName}>{user?.name ?? 'Creator'}</Text>
+              </Text>
             </View>
 
             <View style={styles.headerRight}>
@@ -631,9 +633,11 @@ const styles = StyleSheet.create({
   header:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 14 },
   headerLeft:   { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
   headerRight:  { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  menuBtnInner: { width: 38, height: 38, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' },
-  greeting:     { fontSize: 12, marginBottom: 2, fontFamily: F.medium, color: 'rgba(255,255,255,0.75)' },
-  brandName:    { fontSize: 20, fontFamily: F.bold, color: '#fff', maxWidth: 180, letterSpacing: -0.3 },
+  menuBtn:      { padding: 0 },
+  menuBtnInner: { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center' },
+  greetingLine: { flex: 1, fontSize: 20, fontFamily: F.bold, color: '#fff', letterSpacing: -0.3 },
+  greeting:     { fontSize: 12, fontFamily: F.medium, color: 'rgba(255,255,255,0.75)' },
+  brandName:    { fontSize: 20, fontFamily: F.bold, color: '#fff', letterSpacing: -0.3 },
   avatarCircle: { width: 44, height: 44, borderRadius: 22, overflow: 'hidden', shadowOpacity: 0.4, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
   avatarImage:  { width: 44, height: 44 },
   avatarFallback: { width: 44, height: 44, justifyContent: 'center', alignItems: 'center' },
