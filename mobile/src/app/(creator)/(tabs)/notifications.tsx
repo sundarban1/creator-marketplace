@@ -253,7 +253,7 @@ export default function NotificationsScreen() {
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             <EmptyState
-              emoji="🔔"
+              icon="notifications-outline"
               title={t('notifications.emptyTitle')}
               subtitle={t('notifications.emptySub')}
             />

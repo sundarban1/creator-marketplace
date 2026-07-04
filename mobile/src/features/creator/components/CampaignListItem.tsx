@@ -1,5 +1,4 @@
 import { router } from 'expo-router';
-import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAppColors } from '@/context/ThemeContext';
@@ -35,18 +34,9 @@ function expiryLabel(iso: string): { label: string; color: string } {
   return { label: `${Math.ceil(days / 30)}mo left`,    color: '#6B7280' };
 }
 
-const PLATFORM_ICON: Record<string, { name: string; color: string }> = {
-  Instagram:     { name: 'instagram', color: '#E1306C' },
-  TikTok:        { name: 'tiktok',    color: '#010101' },
-  YouTube:       { name: 'youtube',   color: '#FF0000' },
-  'Twitter / X': { name: 'twitter',   color: '#1DA1F2' },
-  LinkedIn:      { name: 'linkedin',  color: '#0A66C2' },
-  Facebook:      { name: 'facebook',  color: '#1877F2' },
-};
 
 export function CampaignListItem({ campaign }: { campaign: Campaign }) {
   const C = useAppColors();
-  const platIcon = PLATFORM_ICON[campaign.platform];
   const catMeta  = CATEGORY_META[campaign.category] ?? DEFAULT_META;
 
   function goToDetail() {
@@ -63,11 +53,6 @@ export function CampaignListItem({ campaign }: { campaign: Campaign }) {
         <View style={[styles.listThumb, { backgroundColor: catMeta.bg }]}>
           <Text style={styles.listThumbIcon}>{catMeta.emoji}</Text>
         </View>
-        {platIcon && (
-          <View style={[styles.platBadge, { backgroundColor: platIcon.color }]}>
-            <FontAwesome5 name={platIcon.name as never} size={9} color="#fff" brand />
-          </View>
-        )}
         {campaign.campaignType === 'OPEN_EVENT' ? (
           <View style={[styles.typeBadge, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}>
             <Text style={[styles.typeBadgeText, { color: '#059669' }]}>Free</Text>
@@ -140,14 +125,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   listThumbIcon: { fontSize: 32 },
-  platBadge: {
-    position: 'absolute', top: -5, left: -5,
-    width: 24, height: 24, borderRadius: 12,
-    justifyContent: 'center', alignItems: 'center',
-    borderWidth: 2, borderColor: '#fff',
-    shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 }, elevation: 5,
-  },
   listInfo:     { flex: 1, gap: 4 },
   listBrandRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   listBrandName:{ fontSize: 12, fontFamily: F.semibold, flex: 1 },

@@ -1,4 +1,3 @@
-import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -8,14 +7,6 @@ import { getTemplateImage } from '@/features/creator/data/templateImages';
 import type { Campaign } from '@/types';
 import { F } from '@/utilities/constants';
 
-const PLATFORM_META: Record<string, { color: string; icon: string }> = {
-  Instagram:     { color: '#E1306C', icon: 'instagram' },
-  TikTok:        { color: '#010101', icon: 'tiktok' },
-  YouTube:       { color: '#FF0000', icon: 'youtube' },
-  'Twitter / X': { color: '#1DA1F2', icon: 'twitter' },
-  LinkedIn:      { color: '#0A66C2', icon: 'linkedin' },
-  Facebook:      { color: '#1877F2', icon: 'facebook' },
-};
 
 const CARD_W    = 216;
 const CARD_IMG_H = 148;
@@ -52,7 +43,6 @@ export function FeaturedCard({ campaign }: { campaign: Campaign }) {
   const C = useAppColors();
   const catMeta   = CATEGORY_META[campaign.category] ?? DEFAULT_META;
   const cardImage = getTemplateImage(campaign.template, campaign.category);
-  const platMeta  = PLATFORM_META[campaign.platform];
 
   function goToDetail() {
     router.push({ pathname: '/campaign-detail', params: { campaignId: campaign.id } });
@@ -154,12 +144,6 @@ export function FeaturedCard({ campaign }: { campaign: Campaign }) {
         </View>
       </View>
 
-      {/* Platform badge — straddling image/body boundary */}
-      {platMeta && (
-        <View style={[styles.platformBadge, { backgroundColor: platMeta.color }]}>
-          <FontAwesome5 name={platMeta.icon} size={11} color="#fff" brand />
-        </View>
-      )}
     </Pressable>
   );
 }
@@ -189,18 +173,6 @@ const styles = StyleSheet.create({
   brandAvatar:     { width: 20, height: 20, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
   brandAvatarText: { fontSize: 9, fontWeight: '800', color: '#fff', fontFamily: F.extrabold },
   brandPillName:   { fontSize: 11, fontWeight: '600', flexShrink: 1, color: '#111', fontFamily: F.semibold },
-
-  platformBadge: {
-    position: 'absolute',
-    top: CARD_IMG_H - 15,
-    right: 16,
-    width: 30, height: 30, borderRadius: 15,
-    justifyContent: 'center', alignItems: 'center',
-    borderWidth: 2, borderColor: '#fff',
-    shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 }, elevation: 8,
-    zIndex: 10,
-  },
 
   featBody:  { padding: 14, gap: 9 },
   featTitle: { fontSize: 14, fontWeight: '700', lineHeight: 20, fontFamily: F.bold },

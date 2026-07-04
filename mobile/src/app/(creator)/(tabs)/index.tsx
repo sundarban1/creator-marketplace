@@ -60,6 +60,7 @@ export default function HomeScreen() {
   const [activeFilterTab, setActiveFilterTab] = useState('all');
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [missingFields, setMissingFields] = useState<string[]>([]);
+  const [pendingActions, setPendingActions] = useState<Array<{ type: 'start_work' | 'upload_work' | 'event_pending'; title: string }>>([]);
   const [eventType, setEventType] = useState<EventTypeFilter>('ALL');
   const [tempEventType, setTempEventType] = useState<EventTypeFilter>('ALL');
   const [priceMin, setPriceMin] = useState(0);
@@ -158,6 +159,30 @@ export default function HomeScreen() {
     const handler = () => { void fetchRef.current({ showLoader: false }); };
     socket.on('campaign:new', handler);
     return () => { socket.off('campaign:new', handler); };
+  }, []));
+
+  // Check for pending creator actions on every focus
+  useFocusEffect(useCallback(() => {
+    campaignService.getMyApplications()
+      .then((apps) => {
+        const actions: Array<{ type: 'start_work' | 'upload_work' | 'event_pending'; title: string }> = [];
+        for (const app of apps) {
+          if (app.status !== 'accepted') continue;
+          if (app.campaignType === 'PAID_CAMPAIGN') {
+            if (app.paymentStatus === 'PAID' && app.workStatus === 'NONE') {
+              actions.push({ type: 'start_work', title: app.campaignTitle });
+            } else if (app.paymentStatus === 'PAID' && app.workStatus === 'IN_PROGRESS') {
+              actions.push({ type: 'upload_work', title: app.campaignTitle });
+            }
+          } else if (app.campaignType === 'OPEN_EVENT') {
+            if (app.workStatus === 'NONE' || app.workStatus === 'IN_PROGRESS') {
+              actions.push({ type: 'event_pending', title: app.campaignTitle });
+            }
+          }
+        }
+        setPendingActions(actions);
+      })
+      .catch(() => {});
   }, []));
 
   const onRefresh = useCallback(() => {
@@ -384,6 +409,30 @@ export default function HomeScreen() {
             <Pressable style={styles.bannerClose} onPress={() => setBannerDismissed(true)}>
               <Ionicons name="close" size={16} color={C.textSecondary} />
             </Pressable>
+          </Pressable>
+        )}
+
+        {/* ── Pending action attention banner ── */}
+        {pendingActions.length > 0 && (
+          <Pressable
+            style={styles.attentionBanner}
+            onPress={() => router.push('/(creator)/(tabs)/proposals')}>
+            <View style={styles.attentionIconWrap}>
+              <Ionicons name="alert-circle" size={18} color="#D97706" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.attentionTitle}>Action Required</Text>
+              <Text style={styles.attentionSub} numberOfLines={1}>
+                {pendingActions.length === 1
+                  ? pendingActions[0]!.type === 'start_work'
+                    ? `Payment received — start work on "${pendingActions[0]!.title}"`
+                    : pendingActions[0]!.type === 'upload_work'
+                      ? `Upload deliverables for "${pendingActions[0]!.title}"`
+                      : `Submit your content for "${pendingActions[0]!.title}"`
+                  : `${pendingActions.length} campaigns are waiting for your action`}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color="#D97706" />
           </Pressable>
         )}
 
@@ -653,6 +702,12 @@ const styles = StyleSheet.create({
   featuredEmpty:     { marginHorizontal: 20, marginBottom: 0, borderRadius: 18, borderWidth: 1.5, borderStyle: 'dashed', padding: 24, alignItems: 'center', gap: 8 },
   featuredEmptyTitle:{ fontSize: 14, fontFamily: F.bold, textAlign: 'center' },
   featuredEmptySub:  { fontSize: 12, fontFamily: F.regular, textAlign: 'center', lineHeight: 18 },
+
+  // ── Attention banner ──
+  attentionBanner: { flexDirection: 'row', alignItems: 'center', borderRadius: 14, marginHorizontal: 20, marginTop: 12, padding: 14, gap: 12, backgroundColor: '#FFFBEB', borderWidth: 1, borderColor: '#FDE68A' },
+  attentionIconWrap: { width: 36, height: 36, borderRadius: 10, backgroundColor: '#FEF3C7', justifyContent: 'center', alignItems: 'center' },
+  attentionTitle: { fontSize: 13, color: '#92400E', fontFamily: F.bold },
+  attentionSub: { fontSize: 11, color: '#B45309', fontFamily: F.regular, marginTop: 1 },
 
   // ── Tab filter ──
   filterTabsWrap: { marginTop: 8, marginBottom: 4, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 2 },

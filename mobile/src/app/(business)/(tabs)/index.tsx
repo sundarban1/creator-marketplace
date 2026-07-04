@@ -134,8 +134,6 @@ export default function BusinessHomeScreen() {
 
         {/* ── Gradient header ── */}
         <LinearGradient colors={['#1e1b4b', '#4338ca', '#7c3aed']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.gradientHeader}>
-          <View style={styles.decRing1} />
-          <View style={styles.decRing2} />
 
           {/* Menu · Greeting · Avatar */}
           <View style={styles.header}>
@@ -248,7 +246,9 @@ export default function BusinessHomeScreen() {
 
         {/* ── Find creators banner ── */}
         <Pressable style={styles.findBanner} onPress={() => router.push('/(business)/explore-creators')}>
-          <Text style={styles.findEmoji}>🧑‍🎨</Text>
+          <View style={styles.findIconWrap}>
+            <Ionicons name="people-outline" size={22} color="#059669" />
+          </View>
           <View style={{ flex: 1 }}>
             <Text style={[styles.findTitle, { color: '#059669' }]}>{t('business.home.exploreCreators')}</Text>
             <Text style={[styles.findSub, { color: '#059669' }]}>{t('business.home.exploreCreatorsSub')}</Text>
@@ -338,8 +338,6 @@ const styles = StyleSheet.create({
 
   // Header
   gradientHeader: { paddingBottom: 14, borderBottomLeftRadius: 32, borderBottomRightRadius: 32, overflow: 'hidden' },
-  decRing1: { position: 'absolute', width: 220, height: 220, borderRadius: 110, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', top: -60, right: -40 },
-  decRing2: { position: 'absolute', width: 140, height: 140, borderRadius: 70,  borderWidth: 1, borderColor: 'rgba(167,139,250,0.2)', bottom: 20, left: -30 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingHorizontal: 20, paddingTop: 14, paddingBottom: 18 },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
   menuBtn: { padding: 0 },
@@ -387,9 +385,9 @@ const styles = StyleSheet.create({
   retryText: { fontSize: 13, fontWeight: '700', marginLeft: 12, fontFamily: F.bold },
 
   // Find banner
-  findBanner: { flexDirection: 'row', alignItems: 'center', borderRadius: 16, marginHorizontal: 20, marginTop: 14, marginBottom: 4, paddingHorizontal: 16, paddingVertical: 14, gap: 10, backgroundColor: '#F0FDF4', borderWidth: 1, borderColor: '#BBF7D0' },
-  findEmoji: { fontSize: 22 },
-  findTitle: { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
+  findBanner: { flexDirection: 'row', alignItems: 'center', borderRadius: 16, marginHorizontal: 20, marginTop: 14, marginBottom: 4, paddingHorizontal: 16, paddingVertical: 14, gap: 12, backgroundColor: '#F0FDF4', borderWidth: 1, borderColor: '#BBF7D0' },
+  findIconWrap: { width: 38, height: 38, borderRadius: 12, backgroundColor: '#D1FAE5', justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  findTitle: { fontSize: 14, fontFamily: F.bold },
   findSub:   { fontSize: 11, fontFamily: F.regular, marginTop: 1 },
 
   // Type filter
