@@ -223,16 +223,16 @@ export default function NotificationsScreen() {
       <LinearGradient colors={['#312e81', '#4f46e5', '#8b5cf6']} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientHeader}>
         <View style={styles.headerRow}>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.heading, { color: '#fff' }]}>{t('notifications.heading')}</Text>
-            {unreadCount > 0 && (
-              <Text style={[styles.subheading, { color: 'rgba(255,255,255,0.8)' }]}>
-                {t('notifications.unread', { count: unreadCount })}
-              </Text>
-            )}
+            <Text style={styles.heading}>{t('notifications.heading')}</Text>
+            <Text style={styles.subheading}>
+              {unreadCount > 0
+                ? t('notifications.unread', { count: unreadCount })
+                : t('notifications.allCaughtUp')}
+            </Text>
           </View>
           {unreadCount > 0 && (
-            <Pressable onPress={handleMarkAll} style={[styles.markAllBtn, { borderColor: 'rgba(255,255,255,0.7)' }]}>
-              <Text style={[styles.markAllText, { color: '#fff' }]}>{t('notifications.markAllRead')}</Text>
+            <Pressable onPress={handleMarkAll} style={[styles.markAllBtn, { borderColor: 'rgba(255,255,255,0.5)' }]}>
+              <Text style={styles.markAllText}>{t('notifications.markAllRead')}</Text>
             </Pressable>
           )}
         </View>
@@ -271,12 +271,12 @@ export default function NotificationsScreen() {
 
 const styles = StyleSheet.create({
   container:  { flex: 1 },
-  gradientHeader: { paddingBottom: 16, borderBottomLeftRadius: 28, borderBottomRightRadius: 28, overflow: 'hidden' },
-  headerRow:  { flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4 },
-  heading:    { fontSize: 22, fontWeight: '700', fontFamily: F.extrabold },
-  subheading: { fontSize: 13, marginTop: 2, fontFamily: F.regular },
-  markAllBtn: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 8, borderWidth: 1 },
-  markAllText:{ fontSize: 12, fontWeight: '600', fontFamily: F.semibold },
+  gradientHeader: { borderBottomLeftRadius: 28, borderBottomRightRadius: 28, overflow: 'hidden' },
+  headerRow:  { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingTop: 14, paddingBottom: 14 },
+  heading:    { fontSize: 22, fontWeight: '800', fontFamily: F.extrabold, color: '#fff' },
+  subheading: { fontSize: 13, marginTop: 2, fontFamily: F.regular, color: 'rgba(255,255,255,0.75)' },
+  markAllBtn: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1 },
+  markAllText:{ fontSize: 12, fontWeight: '600', fontFamily: F.semibold, color: '#fff' },
   center:     { flex: 1, alignItems: 'center', justifyContent: 'center' },
   list:       { paddingBottom: 32 },
   listEmpty:  { flexGrow: 1 },
