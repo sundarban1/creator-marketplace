@@ -17,7 +17,8 @@ import { TabSlider } from '@/components/TabSlider';
 import { campaignService } from '@/services/campaign';
 import { creatorService } from '@/services/creator';
 import { getSocket } from '@/lib/socket';
-import { F } from '@/utilities/constants';
+import { storage } from '@/utilities/storage';
+import { ACCESS_TOKEN_KEY, F } from '@/utilities/constants';
 import type { Campaign } from '@/types';
 
 const SLIDER_MAX = 100000;
@@ -163,6 +164,7 @@ export default function HomeScreen() {
 
   // Check for pending creator actions on every focus
   useFocusEffect(useCallback(() => {
+    if (!storage.get(ACCESS_TOKEN_KEY)) return;
     campaignService.getMyApplications()
       .then((apps) => {
         const actions: Array<{ type: 'start_work' | 'upload_work' | 'event_pending'; title: string }> = [];

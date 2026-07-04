@@ -55,13 +55,13 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    const token = storage.get(ACCESS_TOKEN_KEY);
+    if (!token) return;
+
     // Fetch initial badge counts and register push token
     refreshBadge();
     refreshChatBadge();
-    void notificationService.registerPushToken();
-
-    const token = storage.get(ACCESS_TOKEN_KEY);
-    if (!token) return;
+    notificationService.registerPushToken().catch(() => {});
 
     const socket = connectSocket(token);
     socketRef.current = socket;
