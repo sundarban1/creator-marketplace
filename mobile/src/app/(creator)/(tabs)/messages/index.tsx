@@ -2,6 +2,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useEffect, useState } from 'react';
+import { useAuth } from '@/context/AuthContext';
 import { TabSlider } from '@/components/TabSlider';
 import {
   ActivityIndicator,
@@ -19,6 +20,7 @@ import { useLanguage, type TFn } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { chatService } from '@/services/chat';
 import { F } from '@/utilities/constants';
+import type { ApiMessage } from '@/lib/api';
 import type { Conversation } from '@/types';
 
 const ACCENT = '#0EA5E9';
@@ -240,6 +242,7 @@ type Tab = 'requests' | 'chats';
 export default function CreatorMessagesScreen() {
   const C = useAppColors();
   const { t } = useLanguage();
+  const { user } = useAuth();
   const [tab, setTab]               = useState<Tab>('chats');
   const [requests, setRequests]     = useState<Conversation[]>([]);
   const [chats, setChats]           = useState<Conversation[]>([]);
@@ -265,15 +268,34 @@ export default function CreatorMessagesScreen() {
     load();
     const unsub = messagingEvents.subscribe(() => void load(true));
     const socket = getSocket();
-    const onUpdate = () => void load(true);
-    socket?.on('conversation:update', onUpdate);
-    socket?.on('message:new', onUpdate);
+
+    // Real-time: update conversation in-place instead of full reload
+    const onMessageNew = (data: { conversationId: string; message: ApiMessage }) => {
+      setChats((prev) => {
+        const idx = prev.findIndex((c) => c.id === data.conversationId);
+        if (idx === -1) { void load(true); return prev; }
+        const updated = [...prev];
+        const conv = { ...updated[idx]! };
+        conv.lastMessage = data.message.content;
+        conv.lastMessageTime = data.message.createdAt;
+        if (data.message.senderId !== user?.id) {
+          conv.unreadCount = (conv.unreadCount ?? 0) + 1;
+        }
+        updated.splice(idx, 1);
+        updated.unshift(conv);
+        return updated;
+      });
+    };
+    const onConvUpdate = () => void load(true);
+
+    socket?.on('conversation:update', onConvUpdate);
+    socket?.on('message:new', onMessageNew);
     return () => {
       unsub();
-      socket?.off('conversation:update', onUpdate);
-      socket?.off('message:new', onUpdate);
+      socket?.off('conversation:update', onConvUpdate);
+      socket?.off('message:new', onMessageNew);
     };
-  }, []);
+  }, [user?.id]);
 
   useFocusEffect(useCallback(() => {
     messagingEvents.refresh();

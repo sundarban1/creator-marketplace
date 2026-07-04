@@ -1,13 +1,17 @@
 import { ConversationStatus } from '@prisma/client';
 import prisma from '../../prisma';
 
-const CONV_INCLUDE_CREATOR = {
+const CONV_SELECT_CREATOR = {
+  id: true, creatorId: true, businessId: true, campaignId: true, status: true,
+  requestMessage: true, lastMessageAt: true, creatorSeenAt: true, createdAt: true,
   business: { select: { businessName: true, logoUrl: true } },
   campaign: { select: { title: true } },
   messages: { orderBy: { createdAt: 'desc' as const }, take: 1 },
 };
 
-const CONV_INCLUDE_BUSINESS = {
+const CONV_SELECT_BUSINESS = {
+  id: true, creatorId: true, businessId: true, campaignId: true, status: true,
+  requestMessage: true, lastMessageAt: true, businessSeenAt: true, createdAt: true,
   creator:  { select: { fullName: true, avatarUrl: true } },
   campaign: { select: { title: true } },
   messages: { orderBy: { createdAt: 'desc' as const }, take: 1 },
@@ -73,7 +77,7 @@ export class MessagingRepository {
     return prisma.conversation.findMany({
       where: { creatorId, ...(status ? { status } : {}) },
       orderBy: [{ lastMessageAt: 'desc' }, { createdAt: 'desc' }],
-      include: CONV_INCLUDE_CREATOR,
+      select: CONV_SELECT_CREATOR,
     });
   }
 
@@ -81,7 +85,7 @@ export class MessagingRepository {
     return prisma.conversation.findMany({
       where: { businessId, ...(status ? { status } : {}) },
       orderBy: [{ lastMessageAt: 'desc' }, { createdAt: 'desc' }],
-      include: CONV_INCLUDE_BUSINESS,
+      select: CONV_SELECT_BUSINESS,
     });
   }
 
@@ -110,16 +114,19 @@ export class MessagingRepository {
   async findMessages(conversationId: string, page: number, limit: number) {
     const skip = (page - 1) * limit;
     const [messages, total] = await Promise.all([
+      // Fetch newest-first so page 1 always contains the most recent messages.
+      // The controller reverses the array before sending so the client receives
+      // messages in chronological order (oldest → newest).
       prisma.message.findMany({
         where: { conversationId },
         skip,
         take: limit,
-        orderBy: { createdAt: 'asc' },
+        orderBy: { createdAt: 'desc' },
         include: { sender: { select: { id: true, email: true, role: true } } },
       }),
       prisma.message.count({ where: { conversationId } }),
     ]);
-    return { messages, total };
+    return { messages: messages.reverse(), total };
   }
 
   async createMessage(data: { conversationId: string; senderId: string; content: string }) {

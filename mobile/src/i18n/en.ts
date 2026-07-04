@@ -297,6 +297,7 @@ const en = {
     accept: 'Accept',
     requestPending: '⏳ Request pending',
     acceptRequest: 'Accept the request to start chatting.',
+    sendFirstMessage: 'Send a message to start the conversation.',
     requestWillAppear: 'Your request will appear here once accepted.',
     timeNow: 'now',
     timeMinutesAgo: '{{n}}m ago',

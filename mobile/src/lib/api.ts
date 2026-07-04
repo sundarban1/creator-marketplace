@@ -82,6 +82,7 @@ export interface ApiConversation {
   requestMessage?: string | null;
   lastMessageAt?:  string | null;
   createdAt:      string;
+  unreadCount:    number;
   creator?:       { fullName: string; avatarUrl: string | null };
   business?:      { businessName: string; logoUrl: string | null };
   campaign?:      { title: string } | null;

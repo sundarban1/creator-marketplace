@@ -10,7 +10,7 @@ const NOTIFICATION_FIELDS = ['title', 'body'] as const;
 
 const repo = new NotificationRepository();
 
-async function sendExpoPush(userId: string, title: string, body: string) {
+export async function sendExpoPush(userId: string, title: string, body: string) {
   try {
     const user = await prisma.user.findUnique({ where: { id: userId }, select: { pushToken: true } });
     const token = user?.pushToken;

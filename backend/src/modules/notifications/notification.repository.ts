@@ -27,9 +27,15 @@ export class NotificationRepository {
 
   async findByUser(userId: string) {
     return prisma.notification.findMany({
-      where: { userId },
+      where: { userId, NOT: { type: 'new_message' } },
       orderBy: { createdAt: 'desc' },
       take: 50,
+    });
+  }
+
+  async getUnreadCountExcludeMessages(userId: string) {
+    return prisma.notification.count({
+      where: { userId, isRead: false, NOT: { type: 'new_message' } },
     });
   }
 
@@ -48,7 +54,9 @@ export class NotificationRepository {
   }
 
   async getUnreadCount(userId: string) {
-    return prisma.notification.count({ where: { userId, isRead: false } });
+    return prisma.notification.count({
+      where: { userId, isRead: false, NOT: { type: 'new_message' } },
+    });
   }
 
   async markReadByRef(userId: string, refId: string) {

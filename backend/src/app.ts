@@ -105,7 +105,17 @@ const apiLimiter = rateLimit({
   message: { success: false, message: 'Too many requests. Please slow down.' },
   standardHeaders: true,
   legacyHeaders: false,
-  skip: (req) => req.path === '/health',
+  // Skip health checks and messaging routes — chat needs high-frequency polling
+  skip: (req) => req.path === '/health' || req.path.startsWith('/api/messaging/'),
+});
+
+// Messaging routes need a much higher ceiling for real-time chat
+const messagingLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 600,
+  message: { success: false, message: 'Too many requests. Please slow down in chat.' },
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 
 // Upload endpoints need a higher limit (multipart payloads)
@@ -117,8 +127,9 @@ const uploadLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// Apply general limiter to all /api/* routes
+// Apply general limiter to all /api/* routes (messaging is excluded via skip above)
 app.use('/api/', apiLimiter);
+app.use('/api/messaging/', messagingLimiter);
 
 // Apply auth-specific limiters
 app.use('/api/auth/login',        authLimiter);

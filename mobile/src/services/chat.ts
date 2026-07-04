@@ -25,7 +25,7 @@ function toConversation(api: ApiConversation, currentUserRole: 'CREATOR' | 'BUSI
     requestMessage:  api.requestMessage,
     lastMessage:     lastMsg?.content ?? api.requestMessage ?? '',
     lastMessageTime: api.lastMessageAt ?? lastMsg?.createdAt ?? api.createdAt,
-    unreadCount:     0,
+    unreadCount:     api.unreadCount ?? 0,
     campaignTitle:   api.campaign?.title,
     isOnline:        false,
   };
@@ -85,6 +85,8 @@ export const chatService = {
   async getMessages(conversationId: string): Promise<Message[]> {
     const res = await request<ApiMessage[]>(
       'GET', `/api/messaging/conversations/${conversationId}/messages`,
+      undefined,
+      { limit: 100 },
     );
     return res.data.map(toMessage);
   },

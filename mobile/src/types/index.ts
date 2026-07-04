@@ -76,7 +76,7 @@ export type Message = {
   senderId: string;
   text: string;
   timestamp: string;
-  status: 'sent' | 'delivered' | 'read';
+  status: 'sending' | 'sent' | 'delivered' | 'read';
   attachmentUrl?: string;
 };
 

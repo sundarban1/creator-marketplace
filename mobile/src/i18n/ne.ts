@@ -297,6 +297,7 @@ const ne = {
     accept: 'स्वीकार',
     requestPending: '⏳ अनुरोध पेन्डिङ',
     acceptRequest: 'च्याट गर्न अनुरोध स्वीकार गर्नुहोस्।',
+    sendFirstMessage: 'कुराकानी सुरु गर्न सन्देश पठाउनुहोस्।',
     requestWillAppear: 'तपाईंको अनुरोध स्वीकृत भएपछि यहाँ देखिनेछ।',
     timeNow: 'अहिले',
     timeMinutesAgo: '{{n}} मि. अघि',

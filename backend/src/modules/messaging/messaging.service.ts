@@ -4,7 +4,7 @@ import { toConversationDto, toMessageDto } from './messaging.dto';
 import { CreatorRepository } from '../creator/creator.repository';
 import { BusinessRepository } from '../business/business.repository';
 import { MessagingRepository } from './messaging.repository';
-import { notificationService } from '../notifications/notification.service';
+import { notificationService, sendExpoPush } from '../notifications/notification.service';
 import { emitToUser } from '../../socket';
 import type { StartConversationInput, SendMessageInput } from './messaging.schema';
 
@@ -54,12 +54,12 @@ export class MessagingService {
     if (role === 'CREATOR') {
       const creator = await this.resolveCreator(userId);
       const convs = await this.repo.findConversationsByCreator(creator.id, status);
-      return convs.map(toConversationDto);
+      return convs.map((c) => toConversationDto(c, 'CREATOR'));
     }
     if (role === 'BUSINESS') {
       const business = await this.resolveBusiness(userId);
       const convs = await this.repo.findConversationsByBusiness(business.id, status);
-      return convs.map(toConversationDto);
+      return convs.map((c) => toConversationDto(c, 'BUSINESS'));
     }
     return [];
   }
@@ -147,7 +147,7 @@ export class MessagingService {
     const conversation = await this.repo.findConversationById(conversationId);
     if (!conversation) throw new AppError('Conversation not found', 404);
     await this.verifyConversationAccess(conversation, userId, role);
-    const { messages: raw, total } = await this.repo.findMessages(conversationId, page, Math.min(limit, 100));
+    const { messages: raw, total } = await this.repo.findMessages(conversationId, page, Math.min(limit, 200));
     return { messages: raw.map(toMessageDto), total, page, limit };
   }
 
@@ -172,25 +172,24 @@ export class MessagingService {
     const senderSeenField = role === 'BUSINESS' ? 'businessSeenAt' : 'creatorSeenAt';
     await this.repo.updateSeenAt(conversationId, senderSeenField);
 
-    // Push message to both participants in real-time
-    emitToUser(conversation.creator.userId, 'message:new', { conversationId, message });
-    emitToUser(conversation.business.userId, 'message:new', { conversationId, message });
+    // Compute updated badge counts for both sides (after seenAt was updated above)
+    const [creatorBadge, businessBadge] = await Promise.all([
+      this.repo.getBadgeCount(conversation.creatorId, 'CREATOR'),
+      this.repo.getBadgeCount(conversation.businessId, 'BUSINESS'),
+    ]);
 
-    // Send push notification to the recipient (not the sender)
+    // Push message + updated badge count to both participants in real-time
+    emitToUser(conversation.creator.userId,  'message:new', { conversationId, message, chatBadgeCount: creatorBadge.count });
+    emitToUser(conversation.business.userId, 'message:new', { conversationId, message, chatBadgeCount: businessBadge.count });
+
+    // Push notification (no DB record — message notifications do not appear in the bell)
     const recipientUserId = userId === conversation.creator.userId
       ? conversation.business.userId
       : conversation.creator.userId;
     const senderName = userId === conversation.creator.userId
       ? (conversation.creator.fullName ?? 'Creator')
       : (conversation.business.businessName ?? 'Business');
-    notificationService.create({
-      userId:  recipientUserId,
-      type:    'new_message',
-      title:   `New message from ${senderName}`,
-      body:    input.content.slice(0, 100),
-      refId:   conversationId,
-      refType: 'conversation',
-    }).catch(() => {});
+    sendExpoPush(recipientUserId, senderName, input.content.slice(0, 100)).catch(() => {});
 
     return message;
   }

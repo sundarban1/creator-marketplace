@@ -74,12 +74,15 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     });
 
     // ── Chat badge + message forwarding ─────────────────────────────────────
-    // Refresh badge via REST (stays accurate for both sender and receiver).
-    // Also forward message:new to the incomingMessageEvents bus so chat screens
-    // receive it even if the socket instance is replaced.
+    // The server includes chatBadgeCount in the message:new payload so we can
+    // update the badge without a REST round-trip. Falls back to REST on conv:update.
     const onConvUpdate = () => { refreshChatBadge(); };
-    const onMessageNew = (data: { conversationId: string; message: ApiMessage }) => {
-      refreshChatBadge();
+    const onMessageNew = (data: { conversationId: string; message: ApiMessage; chatBadgeCount?: number }) => {
+      if (typeof data.chatBadgeCount === 'number') {
+        setChatBadgeCount(data.chatBadgeCount);
+      } else {
+        refreshChatBadge();
+      }
       incomingMessageEvents.emit(data);
     };
     socket.on('message:new',         onMessageNew);
