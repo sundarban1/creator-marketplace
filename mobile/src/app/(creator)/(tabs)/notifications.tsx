@@ -92,11 +92,6 @@ function NotificationItem({ item, onPress }: { item: AppNotification; onPress: (
           )}
         </View>
 
-        {/* Type label chip */}
-        <View style={[styles.labelChip, { backgroundColor: cfg.iconBg }]}>
-          <Text style={[styles.labelChipText, { color: cfg.iconColor }]}>{t(cfg.labelKey)}</Text>
-        </View>
-
         <Text style={[styles.itemBody, { color: C.textSecondary }]} numberOfLines={2}>
           {item.body}
         </Text>

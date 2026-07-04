@@ -95,12 +95,6 @@ export function FeaturedCard({ campaign }: { campaign: Campaign }) {
             <Text style={styles.brandPillName} numberOfLines={1}>{campaign.brand}</Text>
           </View>
 
-          {/* Platform badge — bottom right */}
-          {platMeta && (
-            <View style={[styles.platformBadge, { backgroundColor: platMeta.color }]}>
-              <FontAwesome5 name={platMeta.icon} size={11} color="#fff" brand />
-            </View>
-          )}
         </View>
 
         {/* ── Body ── */}
@@ -160,6 +154,12 @@ export function FeaturedCard({ campaign }: { campaign: Campaign }) {
         </View>
       </View>
 
+      {/* Platform badge — straddling image/body boundary */}
+      {platMeta && (
+        <View style={[styles.platformBadge, { backgroundColor: platMeta.color }]}>
+          <FontAwesome5 name={platMeta.icon} size={11} color="#fff" brand />
+        </View>
+      )}
     </Pressable>
   );
 }
@@ -191,10 +191,15 @@ const styles = StyleSheet.create({
   brandPillName:   { fontSize: 11, fontWeight: '600', flexShrink: 1, color: '#111', fontFamily: F.semibold },
 
   platformBadge: {
-    position: 'absolute', bottom: 10, right: 10,
-    width: 28, height: 28, borderRadius: 14,
+    position: 'absolute',
+    top: CARD_IMG_H - 15,
+    right: 16,
+    width: 30, height: 30, borderRadius: 15,
     justifyContent: 'center', alignItems: 'center',
-    borderWidth: 2, borderColor: 'rgba(255,255,255,0.6)',
+    borderWidth: 2, borderColor: '#fff',
+    shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 }, elevation: 8,
+    zIndex: 10,
   },
 
   featBody:  { padding: 14, gap: 9 },

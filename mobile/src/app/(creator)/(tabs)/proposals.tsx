@@ -45,15 +45,15 @@ type Proposal = {
 // ─── Config ───────────────────────────────────────────────────────────────────
 
 const STATUS_CFG = {
-  pending:  { labelKey: 'proposal.creator.statusPending'  as const, icon: 'time'             as const, color: '#B45309', bg: '#FFF8E1' },
-  accepted: { labelKey: 'proposal.creator.statusAccepted' as const, icon: 'checkmark-circle' as const, color: '#15803D', bg: '#F0FDF4' },
-  rejected: { labelKey: 'proposal.creator.statusRejected' as const, icon: 'close-circle'     as const, color: '#DC2626', bg: '#FEF2F2' },
+  pending:  { labelKey: 'proposal.creator.statusPending'  as const, icon: 'time'             as const, color: '#B45309', bg: '#FFF7ED' },
+  accepted: { labelKey: 'proposal.creator.statusAccepted' as const, icon: 'checkmark-circle' as const, color: '#16A34A', bg: '#F0FDF4' },
+  rejected: { labelKey: 'proposal.creator.statusRejected' as const, icon: 'close-circle'     as const, color: '#B91C1C', bg: '#FEF2F2' },
 };
 
 const TRACK_CFG: Record<WS, { label: string; icon: keyof typeof Ionicons.glyphMap; color: string; sub: string }> = {
-  NONE:        { label: 'Track Project',    icon: 'navigate',   color: '#7C3AED', sub: 'Waiting to start'          },
-  IN_PROGRESS: { label: 'View My Work',     icon: 'brush',      color: '#6D28D9', sub: 'Work in progress'          },
-  SUBMITTED:   { label: 'Awaiting Review',  icon: 'hourglass',  color: '#D97706', sub: 'Brand reviewing your work' },
+  NONE:        { label: 'Track Project',    icon: 'navigate',   color: '#C2410C', sub: 'Waiting to start'          },
+  IN_PROGRESS: { label: 'View My Work',     icon: 'brush',      color: '#C2410C', sub: 'Work in progress'          },
+  SUBMITTED:   { label: 'Awaiting Review',  icon: 'hourglass',  color: '#B45309', sub: 'Brand reviewing your work' },
   APPROVED:    { label: 'Project Complete', icon: 'trophy',     color: '#16A34A', sub: 'Payment released!'         },
 };
 
@@ -170,24 +170,22 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
   const C = useAppColors();
   const { t } = useLanguage();
   const [expanded, setExpanded] = useState(false);
-  const cfg      = STATUS_CFG[proposal.status];
-  const trackCfg = TRACK_CFG[proposal.workStatus];
-  const isFree   = proposal.campaignType === 'OPEN_EVENT';
-  const accentColor =
-    proposal.status === 'accepted' ? '#4F46E5' :
-    proposal.status === 'rejected' ? '#DC2626' : '#D97706';
+  const cfg        = STATUS_CFG[proposal.status];
+  const trackCfg   = TRACK_CFG[proposal.workStatus];
+  const isFree     = proposal.campaignType === 'OPEN_EVENT';
+  const accentColor = cfg.color;
 
   return (
     <Pressable
       style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}
       onPress={() => router.push({ pathname: '/campaign-detail', params: { campaignId: proposal.campaignId } } as never)}>
 
-      {/* Accent top strip */}
-      <View style={[styles.accentStrip, { backgroundColor: accentColor }]} />
+      {/* Left accent strip */}
+      <View style={[styles.leftStrip, { backgroundColor: accentColor }]} />
 
       <View style={styles.cardBody}>
 
-        {/* ── Top: brand + status ── */}
+        {/* ── Top: brand avatar + names + status pill ── */}
         <View style={styles.topRow}>
           <View style={[styles.brandAvatar, { backgroundColor: `${accentColor}18` }]}>
             <Text style={[styles.brandInitials, { color: accentColor }]}>{brandInitials(proposal.brand)}</Text>
@@ -196,8 +194,8 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
             <Text style={[styles.brandName, { color: C.text }]} numberOfLines={1}>{proposal.brand}</Text>
             <Text style={[styles.campaignTitle, { color: C.textSecondary }]} numberOfLines={1}>{proposal.campaignTitle}</Text>
           </View>
-          <View style={[styles.statusBadge, { backgroundColor: cfg.bg }]}>
-            <Ionicons name={cfg.icon} size={12} color={cfg.color} />
+          <View style={[styles.statusPill, { backgroundColor: cfg.bg }]}>
+            <Ionicons name={cfg.icon} size={11} color={cfg.color} />
             <Text style={[styles.statusText, { color: cfg.color }]}>{t(cfg.labelKey)}</Text>
           </View>
         </View>
@@ -212,7 +210,7 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
               </Text>
               {proposal.coverLetter.length > 100 && (
                 <Pressable onPress={(e) => { e.stopPropagation(); setExpanded((v) => !v); }}>
-                  <Text style={[styles.seeMore, { color: C.brinjal1 }]}>
+                  <Text style={[styles.seeMore, { color: accentColor }]}>
                     {expanded ? 'See less' : 'See more'}
                   </Text>
                 </Pressable>
@@ -221,37 +219,32 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
           </View>
         )}
 
-        {/* ── Meta strip ── */}
-        <View style={[styles.metaStrip, { borderColor: C.border }]}>
-          <View style={styles.metaItem}>
-            <Ionicons name={isFree ? 'gift-outline' : 'cash-outline'} size={13} color={C.textSecondary} />
-            <View>
-              <Text style={[styles.metaLabel, { color: C.textSecondary }]}>{isFree ? 'Type' : t('proposal.creator.metaRate')}</Text>
-              {isFree ? (
-                <View style={styles.freeTag}><Text style={styles.freeTagTxt}>{t('proposal.creator.freeEventTag')}</Text></View>
-              ) : (
-                <Text style={[styles.metaValue, { color: accentColor }]}>{proposal.proposedRate}</Text>
-              )}
-            </View>
+        {/* ── Meta row ── */}
+        <View style={styles.metaRow}>
+          <View style={[styles.metaChip, { backgroundColor: C.background }]}>
+            <Ionicons name={isFree ? 'gift-outline' : 'cash-outline'} size={12} color={accentColor} />
+            {isFree ? (
+              <Text style={[styles.metaChipTxt, { color: accentColor }]}>{t('proposal.creator.freeEventTag')}</Text>
+            ) : (
+              <Text style={[styles.metaChipTxt, { color: accentColor }]}>{proposal.proposedRate}</Text>
+            )}
           </View>
-          <View style={[styles.metaDivider, { backgroundColor: C.border }]} />
-          <View style={styles.metaItem}>
-            <Ionicons name="calendar-outline" size={13} color={C.textSecondary} />
-            <View>
-              <Text style={[styles.metaLabel, { color: C.textSecondary }]}>{t('proposal.creator.metaSubmitted')}</Text>
-              <Text style={[styles.metaValue, { color: C.text }]}>{timeAgo(proposal.submittedAt, t)}</Text>
-            </View>
+          <View style={[styles.metaChip, { backgroundColor: C.background }]}>
+            <Ionicons name="calendar-outline" size={12} color={C.textSecondary} />
+            <Text style={[styles.metaChipTxt, { color: C.textSecondary }]}>{timeAgo(proposal.submittedAt, t)}</Text>
           </View>
         </View>
 
         {/* ── Accepted: workspace CTA or invited banner ── */}
         {proposal.status === 'accepted' && (
           isFree ? (
-            <View style={styles.invitedBanner}>
-              <Text style={styles.invitedEmoji}>🎉</Text>
+            <View style={[styles.invitedBanner, { borderColor: `${accentColor}40` }]}>
+              <View style={[styles.invitedIcon, { backgroundColor: `${accentColor}18` }]}>
+                <Ionicons name="checkmark-circle" size={20} color={accentColor} />
+              </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.invitedTitle}>You're invited!</Text>
-                <Text style={styles.invitedSub}>Congratulations — the brand accepted you</Text>
+                <Text style={[styles.invitedTitle, { color: accentColor }]}>You're invited!</Text>
+                <Text style={[styles.invitedSub, { color: C.textSecondary }]}>The brand accepted your application</Text>
               </View>
             </View>
           ) : (
@@ -271,13 +264,13 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
                 });
               }}>
               <View style={styles.trackBtnIcon}>
-                <Ionicons name={trackCfg.icon} size={18} color="#fff" />
+                <Ionicons name={trackCfg.icon} size={17} color="#fff" />
               </View>
               <View style={styles.trackBtnText}>
                 <Text style={styles.trackBtnLabel}>{trackCfg.label}</Text>
                 <Text style={styles.trackBtnSub}>{trackCfg.sub}</Text>
               </View>
-              <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.7)" />
+              <Ionicons name="chevron-forward" size={15} color="rgba(255,255,255,0.6)" />
             </Pressable>
           )
         )}
@@ -285,15 +278,8 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
         {/* ── Pending / rejected footer ── */}
         {proposal.status !== 'accepted' && (
           <View style={[styles.footerRow, { borderTopColor: C.border }]}>
-            <View style={[styles.footerDot, { backgroundColor: `${cfg.color}22` }]}>
-              <Ionicons
-                name={proposal.status === 'pending' ? 'time-outline' : 'close-circle-outline'}
-                size={13}
-                color={cfg.color}
-              />
-            </View>
             <Text style={[styles.footerTxt, { color: cfg.color }]}>
-              {proposal.status === 'pending' ? 'Awaiting brand response' : 'Application was declined'}
+              {proposal.status === 'pending' ? 'Awaiting brand response' : 'Application was not accepted'}
             </Text>
             <Ionicons name="chevron-forward" size={13} color={C.textSecondary} />
           </View>
@@ -339,10 +325,10 @@ export default function ProposalsScreen() {
   };
 
   const tabs: TabDef[] = [
-    { key: 'all',      label: t('proposal.creator.tabAll'),      icon: 'documents-outline',       color: '#4F46E5', count: counts.all      },
-    { key: 'pending',  label: t('proposal.creator.tabPending'),  icon: 'time-outline',             color: '#D97706', count: counts.pending  },
-    { key: 'accepted', label: t('proposal.creator.tabAccepted'), icon: 'checkmark-circle-outline', color: '#15803D', count: counts.accepted },
-    { key: 'rejected', label: t('proposal.creator.tabRejected'), icon: 'close-circle-outline',     color: '#DC2626', count: counts.rejected },
+    { key: 'all',      label: t('proposal.creator.tabAll'),      icon: 'documents-outline',       color: '#C2410C', count: counts.all      },
+    { key: 'pending',  label: t('proposal.creator.tabPending'),  icon: 'time-outline',             color: '#B45309', count: counts.pending  },
+    { key: 'accepted', label: t('proposal.creator.tabAccepted'), icon: 'checkmark-circle-outline', color: '#16A34A', count: counts.accepted },
+    { key: 'rejected', label: t('proposal.creator.tabRejected'), icon: 'close-circle-outline',     color: '#B91C1C', count: counts.rejected },
   ];
 
   const filtered = activeTab === 'all'
@@ -431,18 +417,18 @@ const styles = StyleSheet.create({
   loadingText: { fontSize: 14, fontFamily: F.regular },
 
   // Card
-  card:        { borderRadius: 18, overflow: 'hidden', borderWidth: 1, shadowColor: '#000', shadowOpacity: 0.07, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
-  accentStrip: { height: 4 },
-  cardBody:    { paddingHorizontal: 14, paddingTop: 14, paddingBottom: 12, gap: 10 },
+  card:        { borderRadius: 18, flexDirection: 'row', borderWidth: 1, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 3, overflow: 'hidden' },
+  leftStrip:   { width: 4 },
+  cardBody:    { flex: 1, paddingHorizontal: 14, paddingTop: 14, paddingBottom: 12, gap: 10 },
 
   // Top row
   topRow:       { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  brandAvatar:  { width: 44, height: 44, borderRadius: 13, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  brandAvatar:  { width: 42, height: 42, borderRadius: 12, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   brandInitials:{ fontSize: 15, fontFamily: F.extrabold },
   brandBlock:   { flex: 1, gap: 2 },
   brandName:    { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
   campaignTitle:{ fontSize: 12, fontFamily: F.regular },
-  statusBadge:  { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 5, flexShrink: 0 },
+  statusPill:   { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 20, paddingHorizontal: 8, paddingVertical: 4, flexShrink: 0 },
   statusText:   { fontSize: 11, fontWeight: '700', fontFamily: F.bold },
 
   // Cover letter
@@ -450,30 +436,25 @@ const styles = StyleSheet.create({
   coverText: { fontSize: 12, fontFamily: F.regular, lineHeight: 17 },
   seeMore:   { fontSize: 12, fontFamily: F.semibold, marginTop: 3 },
 
-  // Meta strip
-  metaStrip:   { flexDirection: 'row', alignItems: 'center', borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth, paddingVertical: 10 },
-  metaItem:    { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 7 },
-  metaLabel:   { fontSize: 10, fontWeight: '600', textTransform: 'uppercase', fontFamily: F.semibold },
-  metaValue:   { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
-  metaDivider: { width: StyleSheet.hairlineWidth, height: 32, marginHorizontal: 8 },
-  freeTag:     { backgroundColor: '#F0FDF4', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2, alignSelf: 'flex-start' },
-  freeTagTxt:  { fontSize: 11, fontWeight: '700', color: '#059669', fontFamily: F.bold },
+  // Meta chips
+  metaRow:      { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
+  metaChip:     { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 5 },
+  metaChipTxt:  { fontSize: 12, fontWeight: '600', fontFamily: F.semibold },
 
   // Track button
   trackBtn:     { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 12, paddingVertical: 11, paddingHorizontal: 12 },
-  trackBtnIcon: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' },
+  trackBtnIcon: { width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' },
   trackBtnText: { flex: 1, gap: 1 },
   trackBtnLabel:{ fontSize: 13, fontWeight: '700', color: '#fff', fontFamily: F.bold },
   trackBtnSub:  { fontSize: 11, color: 'rgba(255,255,255,0.75)', fontFamily: F.regular },
 
   // Invited banner
-  invitedBanner:{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#F0FDF4', borderWidth: 1.5, borderColor: '#6EE7B7', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 11 },
-  invitedEmoji: { fontSize: 22 },
-  invitedTitle: { fontSize: 13, fontWeight: '700', color: '#065F46', fontFamily: F.bold },
-  invitedSub:   { fontSize: 11, color: '#047857', fontFamily: F.regular, marginTop: 1 },
+  invitedBanner:{ flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 11 },
+  invitedIcon:  { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
+  invitedTitle: { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
+  invitedSub:   { fontSize: 11, fontFamily: F.regular, marginTop: 1 },
 
   // Footer row
   footerRow:  { flexDirection: 'row', alignItems: 'center', gap: 8, paddingTop: 10, borderTopWidth: StyleSheet.hairlineWidth },
-  footerDot:  { width: 24, height: 24, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
   footerTxt:  { flex: 1, fontSize: 12, fontWeight: '600', fontFamily: F.semibold },
 });
