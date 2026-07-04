@@ -346,7 +346,7 @@ const styles = StyleSheet.create({
   menuBtnInner: { width: 38, height: 38, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' },
   greeting: { fontSize: 12, marginBottom: 3, fontFamily: F.medium },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  brandName: { fontSize: 22, fontFamily: F.extrabold, maxWidth: 180, letterSpacing: -0.3 },
+  brandName: { fontSize: 20, fontFamily: F.extrabold, maxWidth: 180, letterSpacing: -0.3 },
   avatarCircle: { width: 44, height: 44, borderRadius: 22, overflow: 'hidden', shadowOpacity: 0.4, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
   avatarImage: { width: 44, height: 44 },
   avatarFallback: { width: 44, height: 44, justifyContent: 'center', alignItems: 'center' },
@@ -358,7 +358,7 @@ const styles = StyleSheet.create({
 
   // Quick actions
   quickActionsRow:  { flexDirection: 'row', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 4, gap: 10 },
-  quickAction:      { flex: 1, alignItems: 'center', borderRadius: 16, paddingVertical: 12, gap: 6, borderWidth: 1 },
+  quickAction:      { flex: 1, alignItems: 'center', borderRadius: 16, paddingVertical: 12, gap: 6, borderWidth: 1, shadowColor: '#000', shadowOpacity: 0.03, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 1 },
   quickActionIcon:  { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
   quickActionLabel: { fontSize: 11, fontFamily: F.medium, textAlign: 'center' },
 
@@ -377,9 +377,9 @@ const styles = StyleSheet.create({
   attentionSub: { fontSize: 11, color: '#B45309', fontFamily: F.regular, marginTop: 1 },
 
   // Section headers
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginBottom: 12, marginTop: 18 },
-  sectionTitle: { fontSize: 17, fontWeight: '800', fontFamily: F.extrabold },
-  viewAll: { fontSize: 13, fontWeight: '600', fontFamily: F.semibold },
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginBottom: 12, marginTop: 20 },
+  sectionTitle: { fontSize: 16, fontFamily: F.bold },
+  viewAll: { fontSize: 13, fontFamily: F.semibold, opacity: 0.7 },
 
   // Error
   errorCard: { backgroundColor: '#FEE2E2', marginHorizontal: 20, marginBottom: 16, borderRadius: 12, padding: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderLeftWidth: 4, borderLeftColor: '#EF4444' },
@@ -422,7 +422,7 @@ const styles = StyleSheet.create({
   loadingText: { fontSize: 14, fontFamily: F.regular },
 
   emptyWrap: { alignItems: 'center', paddingVertical: 48, gap: 10, paddingHorizontal: 32 },
-  emptyTitle: { fontSize: 18, fontWeight: '700', fontFamily: F.bold },
+  emptyTitle: { fontSize: 17, fontFamily: F.bold },
   emptyHint: { fontSize: 13, textAlign: 'center', lineHeight: 20, fontFamily: F.regular },
   emptyBtn: { borderRadius: 14, paddingHorizontal: 28, paddingVertical: 13, marginTop: 8 },
   emptyBtnText: { color: '#fff', fontSize: 14, fontWeight: '700', fontFamily: F.bold },

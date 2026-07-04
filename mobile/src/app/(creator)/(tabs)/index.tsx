@@ -583,9 +583,9 @@ const styles = StyleSheet.create({
   menuBtnInner: { width: 38, height: 38, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' },
   greeting:     { fontSize: 12, marginBottom: 2, fontFamily: F.medium, color: 'rgba(255,255,255,0.75)' },
   brandName:    { fontSize: 20, fontFamily: F.extrabold, color: '#fff', maxWidth: 180, letterSpacing: -0.3 },
-  avatarCircle: { width: 42, height: 42, borderRadius: 21, overflow: 'hidden', shadowOpacity: 0.4, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
-  avatarImage:  { width: 42, height: 42 },
-  avatarFallback: { width: 42, height: 42, justifyContent: 'center', alignItems: 'center' },
+  avatarCircle: { width: 44, height: 44, borderRadius: 22, overflow: 'hidden', shadowOpacity: 0.4, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
+  avatarImage:  { width: 44, height: 44 },
+  avatarFallback: { width: 44, height: 44, justifyContent: 'center', alignItems: 'center' },
 
   // ── Search ──
   searchRow: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 4 },
@@ -600,7 +600,7 @@ const styles = StyleSheet.create({
   filterActiveDot: { position: 'absolute', top: 4, right: 4, width: 7, height: 7, borderRadius: 4, backgroundColor: '#EF4444' },
 
   // ── Quick Actions ──
-  quickActionsRow:  { flexDirection: 'row', paddingHorizontal: 20, paddingTop: 14, paddingBottom: 2, gap: 10 },
+  quickActionsRow:  { flexDirection: 'row', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 4, gap: 10 },
   quickAction:      { flex: 1, alignItems: 'center', borderRadius: 16, paddingVertical: 12, gap: 6, borderWidth: 1, shadowColor: '#000', shadowOpacity: 0.03, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 1 },
   quickActionIcon:  { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
   quickActionLabel: { fontSize: 11, fontFamily: F.medium, textAlign: 'center' },
@@ -620,8 +620,8 @@ const styles = StyleSheet.create({
 
   // ── Section headers ──
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginTop: 20, marginBottom: 12 },
-  sectionTitle:  { fontSize: 15, fontFamily: F.semibold, letterSpacing: 0.2 },
-  seeAll:        { fontSize: 13, fontFamily: F.medium, opacity: 0.7 },
+  sectionTitle:  { fontSize: 16, fontFamily: F.bold },
+  seeAll:        { fontSize: 13, fontFamily: F.semibold, opacity: 0.7 },
 
   // ── Categories (pills) ──
   categoriesRow: { paddingHorizontal: 20, gap: 8, marginBottom: 0 },
