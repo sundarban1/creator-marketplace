@@ -612,7 +612,7 @@ export default function LoginScreen() {
             ))}
           </View>
 
-          {/* Top row: logo + lang */}
+          {/* Top row: logo centered, lang switcher pinned to the right */}
           <View style={s.heroTop}>
             <View style={s.logoBadgeCard}>
               <Image source={require('@/assets/images/logo.png')} style={s.logoImage} resizeMode="contain" />
@@ -746,10 +746,10 @@ const s = StyleSheet.create({
   bgIconLayer: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   bgIcon:      { position: 'absolute', opacity: 0.14 },
 
-  heroTop:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 },
+  heroTop:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 28, position: 'relative' },
   logoBadgeCard: { backgroundColor: '#fff', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6 },
   logoImage: { width: 88, height: 88 / (2040 / 624) },
-  langRow:  { flexDirection: 'row', gap: 6 },
+  langRow:  { flexDirection: 'row', gap: 6, position: 'absolute', right: 0, top: '50%', transform: [{ translateY: -17 }] },
   langBtn:  { width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(255,255,255,0.12)', justifyContent: 'center', alignItems: 'center' },
   langBtnActive: { backgroundColor: 'rgba(255,255,255,0.28)', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.5)' },
   langFlag: { fontSize: 15 },
