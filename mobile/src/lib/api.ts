@@ -65,10 +65,21 @@ export interface ApiCampaign {
   budgetMax:     number;
   status:        'ACTIVE' | 'PAUSED' | 'CLOSED';
   isFeatured:    boolean;
+  creatorsNeeded?: number;
   createdAt:     string;
   paymentStatus: 'UNPAID' | 'PAID' | 'RELEASED';
   paidAt:        string | null;
   paymentMethod: string | null;
+  objective?:            string | null;
+  contentGuidelines?:    string[];
+  targetAudience?:       string[];
+  hashtags?:             string[];
+  sampleCaption?:        string | null;
+  callToAction?:         string | null;
+  approvalRequirements?: string | null;
+  aiGenerated?:           boolean;
+  aiSuggestedCategories?: string[];
+  aiSuggestedPlatforms?:  string[];
   business:      { businessName: string; logoUrl: string | null };
   _count:        { applications: number };
 }

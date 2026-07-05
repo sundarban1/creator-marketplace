@@ -42,6 +42,17 @@ export type Campaign = {
   benefits?:      string[];
   paymentStatus?: 'UNPAID' | 'PAID' | 'RELEASED';
   paidAt?:        string | null;
+  creatorsNeeded?: number;
+  objective?:            string;
+  contentGuidelines?:    string[];
+  targetAudience?:       string[];
+  hashtags?:             string[];
+  sampleCaption?:        string;
+  callToAction?:         string;
+  approvalRequirements?: string;
+  aiGenerated?:           boolean;
+  aiSuggestedCategories?: string[];
+  aiSuggestedPlatforms?:  string[];
 };
 
 export type Proposal = {

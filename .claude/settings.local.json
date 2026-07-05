@@ -80,7 +80,12 @@
       "Bash(curl -s http://localhost:3000/api/nonexistent-route -o /dev/null)",
       "Bash(curl -s -X POST http://localhost:3000/api/auth/login -H 'Content-Type: application/json' -d '{}' -o /dev/null)",
       "Bash(curl -s http://localhost:3000/health -o /dev/null)",
-      "Bash(curl -s -X POST http://localhost:3000/api/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"nope@example.com\",\"password\":\"wrongpass\"}' -o /dev/null)"
+      "Bash(curl -s -X POST http://localhost:3000/api/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"nope@example.com\",\"password\":\"wrongpass\"}' -o /dev/null)",
+      "Bash(node -e \"const A = require\\('@anthropic-ai/sdk'\\); console.log\\(typeof A, Object.keys\\(A\\)\\)\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000/api/categories)",
+      "Bash(kill 34014)",
+      "Bash(disown)",
+      "Bash(curl -s -X POST http://localhost:3000/api/campaigns/ai/generate -H 'Authorization: Bearer __CMDSUB_OUTPUT__' -H 'Content-Type: application/json' -d '{\"prompt\": \"momo restaurant\"}')"
     ],
     "additionalDirectories": [
       "/private/tmp"

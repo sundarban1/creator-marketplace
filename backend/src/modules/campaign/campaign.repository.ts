@@ -25,6 +25,18 @@ export class CampaignRepository {
     eventDate?: Date;
     venue?: string;
     benefits?: string[];
+    objective?: string;
+    contentGuidelines?: string[];
+    targetAudience?: string[];
+    hashtags?: string[];
+    sampleCaption?: string;
+    callToAction?: string;
+    approvalRequirements?: string;
+    aiGenerated?: boolean;
+    aiPrompt?: string;
+    aiSuggestedCategories?: string[];
+    aiSuggestedPlatforms?: string[];
+    aiNeedsInputFields?: string[];
   }) {
     return prisma.campaign.create({
       data: {

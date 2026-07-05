@@ -26,6 +26,7 @@ import businessReferralRoutes from './modules/business-referral/business-referra
 import walletRoutes from './modules/wallet/wallet.routes';
 import businessRoutes from './modules/business/business.routes';
 import campaignRoutes from './modules/campaign/campaign.routes';
+import campaignAiRoutes from './modules/campaign-ai/campaign-ai.routes';
 import messagingRoutes from './modules/messaging/messaging.routes';
 import adminRoutes from './modules/admin/admin.routes';
 import categoryRoutes from './modules/category/category.routes';
@@ -155,6 +156,15 @@ const uploadLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// AI generation is slow/costly — keep this tight
+const aiGenerateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 5,
+  message: { success: false, message: 'Too many AI generation requests. Please wait a moment.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // Apply general limiter to all /api/* routes (messaging is excluded via skip above)
 app.use('/api/', apiLimiter);
 app.use('/api/messaging/', messagingLimiter);
@@ -169,6 +179,9 @@ app.use('/api/auth/resend-otp',   otpLimiter);
 // Upload endpoints
 app.use('/api/creator/avatar',  uploadLimiter);
 app.use('/api/business/logo',   uploadLimiter);
+
+// AI generation
+app.use('/api/campaigns/ai/generate', aiGenerateLimiter);
 
 // ── Health check ─────────────────────────────────────────────────────────────
 /**
@@ -243,6 +256,7 @@ app.use('/api/creator/referral', referralRoutes);
 app.use('/api/creator/wallet', walletRoutes);
 app.use('/api/business/referral', businessReferralRoutes);
 app.use('/api/business', businessRoutes);
+app.use('/api/campaigns/ai', campaignAiRoutes);
 app.use('/api/campaigns', campaignRoutes);
 app.use('/api/messaging', messagingRoutes);
 app.use('/api/admin/categories', categoryAdminRoutes);

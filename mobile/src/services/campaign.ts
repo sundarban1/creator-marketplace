@@ -2,6 +2,30 @@ import { request }          from '@/lib/api';
 import type { ApiCampaign } from '@/lib/api';
 import type { Campaign }    from '@/types';
 
+export interface AiCampaignDraft {
+  title: string;
+  description: string;
+  objective: string;
+  category: string;
+  platform: string;
+  contentGuidelines: string[];
+  targetAudience: string[];
+  suggestedDurationDays: number;
+  creatorsNeeded: number;
+  budgetMin: number;
+  budgetMax: number;
+  paymentType: string;
+  deliverables: string;
+  hashtags: string[];
+  sampleCaption: string;
+  callToAction: string;
+  approvalRequirements: string;
+  location: string | null;
+  needsInput: string[];
+  aiSuggestedCategories: string[];
+  aiSuggestedPlatforms: string[];
+}
+
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
 const PLATFORM_ICONS: Record<string, string> = {
@@ -71,6 +95,17 @@ export function toCampaign(api: ApiCampaign): Campaign {
     benefits:      Array.isArray((api as any).benefits) ? (api as any).benefits : [],
     paymentStatus: api.paymentStatus ?? 'UNPAID',
     paidAt:        api.paidAt ?? null,
+    creatorsNeeded: api.creatorsNeeded,
+    objective:            api.objective ?? undefined,
+    contentGuidelines:    api.contentGuidelines ?? [],
+    targetAudience:       api.targetAudience ?? [],
+    hashtags:             api.hashtags ?? [],
+    sampleCaption:        api.sampleCaption ?? undefined,
+    callToAction:         api.callToAction ?? undefined,
+    approvalRequirements: api.approvalRequirements ?? undefined,
+    aiGenerated:           api.aiGenerated ?? false,
+    aiSuggestedCategories: api.aiSuggestedCategories ?? [],
+    aiSuggestedPlatforms:  api.aiSuggestedPlatforms ?? [],
   };
 }
 
@@ -175,9 +210,25 @@ export const campaignService = {
     eventDate?:    string;
     venue?:        string;
     benefits?:     string[];
+    objective?:            string;
+    contentGuidelines?:    string[];
+    targetAudience?:       string[];
+    hashtags?:             string[];
+    sampleCaption?:        string;
+    callToAction?:         string;
+    approvalRequirements?: string;
+    aiGenerated?:           boolean;
+    aiPrompt?:              string;
+    aiSuggestedCategories?: string[];
+    aiSuggestedPlatforms?:  string[];
   }): Promise<Campaign> {
     const res = await request<ApiCampaign>('POST', '/api/campaigns', data);
     return toCampaign(res.data);
+  },
+
+  async generateWithAi(prompt: string): Promise<AiCampaignDraft> {
+    const res = await request<AiCampaignDraft>('POST', '/api/campaigns/ai/generate', { prompt });
+    return res.data;
   },
 
   async update(id: string, data: {

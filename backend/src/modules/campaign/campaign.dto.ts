@@ -28,6 +28,17 @@ export interface CampaignDto {
   paymentStatus: string;
   paidAt: string | null;
   paymentMethod: string | null;
+  objective: string | null;
+  contentGuidelines: string[];
+  targetAudience: string[];
+  hashtags: string[];
+  sampleCaption: string | null;
+  callToAction: string | null;
+  approvalRequirements: string | null;
+  aiGenerated: boolean;
+  aiPrompt: string | null;
+  aiSuggestedCategories: string[];
+  aiSuggestedPlatforms: string[];
   createdAt: string;
   business?: {
     businessName: string | null;
@@ -108,6 +119,17 @@ type RawCampaign = {
   paymentStatus: string;
   paidAt: Date | null;
   paymentMethod: string | null;
+  objective: string | null;
+  contentGuidelines: string[];
+  targetAudience: string[];
+  hashtags: string[];
+  sampleCaption: string | null;
+  callToAction: string | null;
+  approvalRequirements: string | null;
+  aiGenerated: boolean;
+  aiPrompt: string | null;
+  aiSuggestedCategories: string[];
+  aiSuggestedPlatforms: string[];
   createdAt: Date;
   business?: { businessName: string | null; logoUrl: string | null; website?: string | null; description?: string | null } | null;
   _count?: { applications: number };
@@ -142,6 +164,17 @@ export function toCampaignDto(c: RawCampaign): CampaignDto {
     paymentStatus:  c.paymentStatus,
     paidAt:         c.paidAt ? c.paidAt.toISOString() : null,
     paymentMethod:  c.paymentMethod,
+    objective:            c.objective,
+    contentGuidelines:    c.contentGuidelines ?? [],
+    targetAudience:       c.targetAudience ?? [],
+    hashtags:             c.hashtags ?? [],
+    sampleCaption:        c.sampleCaption,
+    callToAction:         c.callToAction,
+    approvalRequirements: c.approvalRequirements,
+    aiGenerated:           c.aiGenerated,
+    aiPrompt:              c.aiPrompt,
+    aiSuggestedCategories: c.aiSuggestedCategories ?? [],
+    aiSuggestedPlatforms:  c.aiSuggestedPlatforms ?? [],
     createdAt:      c.createdAt.toISOString(),
   };
   if (c.business != null) dto.business = c.business;

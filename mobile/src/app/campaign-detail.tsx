@@ -572,6 +572,9 @@ export default function CampaignDetailScreen() {
                 </View>
               </View>
             )}
+            {!!campaign.aiSuggestedCategories?.length && (
+              <Text style={[s.aiAlsoRelevant, { color: C.textSecondary }]}>Also relevant: {campaign.aiSuggestedCategories.join(', ')}</Text>
+            )}
             {campaign.goals.length > 0 && (
               <>
                 <Text style={[s.sectionLabel, { color: C.textSecondary }]}>{t('campaignDetail.sectionGoals')}</Text>
@@ -579,6 +582,30 @@ export default function CampaignDetailScreen() {
                   {campaign.goals.map((g) => (
                     <View key={g} style={[s.goalChip, { backgroundColor: C.primaryLight }]}>
                       <Text style={[s.goalChipTxt, { color: C.brinjal1 }]}>{g}</Text>
+                    </View>
+                  ))}
+                </View>
+              </>
+            )}
+          </View>
+        )}
+
+        {/* Objective + Target Audience */}
+        {(campaign.objective || (campaign.targetAudience && campaign.targetAudience.length > 0)) && (
+          <View style={[s.card, { backgroundColor: C.surface }]}>
+            {campaign.objective && (
+              <>
+                <Text style={[s.sectionLabel, { color: C.textSecondary }]}>Objective</Text>
+                <Text style={[s.description, { color: C.text }]}>{campaign.objective}</Text>
+              </>
+            )}
+            {campaign.targetAudience && campaign.targetAudience.length > 0 && (
+              <>
+                <Text style={[s.sectionLabel, { color: C.textSecondary, marginTop: campaign.objective ? 12 : 0 }]}>Target Audience</Text>
+                <View style={s.goalChips}>
+                  {campaign.targetAudience.map((aud) => (
+                    <View key={aud} style={[s.goalChip, { backgroundColor: C.primaryLight }]}>
+                      <Text style={[s.goalChipTxt, { color: C.brinjal1 }]}>{aud}</Text>
                     </View>
                   ))}
                 </View>
@@ -599,6 +626,9 @@ export default function CampaignDetailScreen() {
               <>
                 <DetailRow icon="💳" label={t('campaignDetail.detailBudget')}  value={campaign.budget} C={C} />
                 <DetailRow icon="💰" label={t('campaignDetail.detailPayment')} value={campaign.paymentType} C={C} />
+                {campaign.creatorsNeeded != null && (
+                  <DetailRow icon="👥" label="Creators Needed" value={String(campaign.creatorsNeeded)} C={C} />
+                )}
               </>
             )}
             {isOpenEvent && campaign.venue ? (
@@ -628,6 +658,16 @@ export default function CampaignDetailScreen() {
           </View>
         ) : null}
 
+        {/* Content Guidelines */}
+        {campaign.contentGuidelines && campaign.contentGuidelines.length > 0 && (
+          <View style={[s.card, { backgroundColor: C.surface }]}>
+            <Text style={[s.sectionLabel, { color: C.textSecondary }]}>Content Guidelines</Text>
+            {campaign.contentGuidelines.map((g, i) => (
+              <ReqItem key={i} text={g} C={C} />
+            ))}
+          </View>
+        )}
+
         {/* Description */}
         <View style={[s.card, { backgroundColor: C.surface }]}>
           <Text style={[s.sectionLabel, { color: C.textSecondary }]}>{t('campaignDetail.sectionAbout')}</Text>
@@ -643,6 +683,44 @@ export default function CampaignDetailScreen() {
             ))}
           </View>
         ) : null}
+
+        {/* Hashtags */}
+        {campaign.hashtags && campaign.hashtags.length > 0 && (
+          <View style={[s.card, { backgroundColor: C.surface }]}>
+            <Text style={[s.sectionLabel, { color: C.textSecondary }]}>Hashtags</Text>
+            <View style={s.goalChips}>
+              {campaign.hashtags.map((tag) => (
+                <View key={tag} style={[s.goalChip, { backgroundColor: C.primaryLight }]}>
+                  <Text style={[s.goalChipTxt, { color: C.brinjal1 }]}>#{tag.replace(/^#/, '')}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {/* Sample Caption */}
+        {campaign.sampleCaption && (
+          <View style={[s.card, { backgroundColor: C.surface }]}>
+            <Text style={[s.sectionLabel, { color: C.textSecondary }]}>Sample Caption</Text>
+            <Text style={[s.description, { color: C.text, fontStyle: 'italic' }]}>&ldquo;{campaign.sampleCaption}&rdquo;</Text>
+          </View>
+        )}
+
+        {/* Call to Action */}
+        {campaign.callToAction && (
+          <View style={[s.card, { backgroundColor: C.surface }]}>
+            <Text style={[s.sectionLabel, { color: C.textSecondary }]}>Call to Action</Text>
+            <Text style={[s.description, { color: C.text }]}>{campaign.callToAction}</Text>
+          </View>
+        )}
+
+        {/* Approval Requirements */}
+        {campaign.approvalRequirements && (
+          <View style={[s.card, { backgroundColor: C.surface }]}>
+            <Text style={[s.sectionLabel, { color: C.textSecondary }]}>Brand Approval Requirements</Text>
+            <Text style={[s.description, { color: C.text }]}>{campaign.approvalRequirements}</Text>
+          </View>
+        )}
 
         <View style={{ height: 24 }} />
       </ScrollView>
@@ -1062,6 +1140,7 @@ const s = StyleSheet.create({
   templateRow: { flexDirection: 'row' },
   templateBadge:{ borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
   templateTxt: { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
+  aiAlsoRelevant: { fontSize: 11, fontFamily: F.regular, marginTop: 6 },
   goalChips:   { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   goalChip:    { borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 },
   goalChipTxt: { fontSize: 12, fontWeight: '600', fontFamily: F.semibold },

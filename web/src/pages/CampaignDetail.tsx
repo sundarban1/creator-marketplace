@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Building2, MapPin, Calendar, Users, DollarSign,
   Target, Clock, CheckCircle2, XCircle, Hourglass, Star,
-  FileText, Activity,
+  FileText, Activity, Sparkles,
 } from 'lucide-react';
 import { StatusBadge }  from '../components/StatusBadge';
 import { Avatar }       from '../components/Avatar';
@@ -339,11 +339,93 @@ export function CampaignDetail() {
               </div>
             )}
 
+            {/* Objective */}
+            {campaign.objective && (
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Objective</p>
+                <p className="text-sm text-gray-700 leading-relaxed">{campaign.objective}</p>
+              </div>
+            )}
+
+            {/* Target Audience */}
+            {!!campaign.targetAudience?.length && (
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Target Audience</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {campaign.targetAudience.map((a) => (
+                    <span key={a} className="text-xs bg-purple-50 text-purple-700 px-2.5 py-1 rounded-full">{a}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Content Guidelines */}
+            {!!campaign.contentGuidelines?.length && (
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Content Guidelines</p>
+                <ul className="text-sm text-gray-700 leading-relaxed list-disc list-inside space-y-0.5">
+                  {campaign.contentGuidelines.map((g, i) => <li key={i}>{g}</li>)}
+                </ul>
+              </div>
+            )}
+
+            {/* Hashtags */}
+            {!!campaign.hashtags?.length && (
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Hashtags</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {campaign.hashtags.map((h) => (
+                    <span key={h} className="text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full">#{h.replace(/^#/, '')}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Description */}
             {campaign.description && (
               <div>
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Description</p>
                 <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{campaign.description}</p>
+              </div>
+            )}
+
+            {/* Sample Caption */}
+            {campaign.sampleCaption && (
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Sample Caption</p>
+                <p className="text-sm text-gray-700 leading-relaxed italic">&ldquo;{campaign.sampleCaption}&rdquo;</p>
+              </div>
+            )}
+
+            {/* Call to Action */}
+            {campaign.callToAction && (
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Call to Action</p>
+                <p className="text-sm text-gray-700 leading-relaxed">{campaign.callToAction}</p>
+              </div>
+            )}
+
+            {/* Approval Requirements */}
+            {campaign.approvalRequirements && (
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Brand Approval Requirements</p>
+                <p className="text-sm text-gray-700 leading-relaxed">{campaign.approvalRequirements}</p>
+              </div>
+            )}
+
+            {/* AI provenance */}
+            {campaign.aiGenerated && (
+              <div className="bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-2.5 flex items-start gap-2">
+                <Sparkles size={14} className="text-indigo-500 mt-0.5 flex-shrink-0" />
+                <div className="text-xs text-indigo-700">
+                  <span className="font-semibold">Generated with AI</span>
+                  {campaign.aiPrompt && <p className="text-indigo-600 mt-0.5">&ldquo;{campaign.aiPrompt}&rdquo;</p>}
+                  {(!!campaign.aiSuggestedCategories?.length || !!campaign.aiSuggestedPlatforms?.length) && (
+                    <p className="text-indigo-500 mt-1">
+                      Also relevant: {[...(campaign.aiSuggestedCategories ?? []), ...(campaign.aiSuggestedPlatforms ?? [])].join(', ')}
+                    </p>
+                  )}
+                </div>
               </div>
             )}
           </div>

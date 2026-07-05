@@ -3,6 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Animated,
   Image,
   KeyboardAvoidingView,
@@ -62,6 +63,24 @@ const CREATOR_TYPES = [
 ];
 
 const PLATFORM_FALLBACK = ['Instagram', 'TikTok', 'YouTube', 'Facebook'];
+
+const AI_PROMPT_EXAMPLES = [
+  "I want to promote my cafe's new iced coffee.",
+  "We're launching a new clothing collection for Dashain.",
+  "Looking for travel creators to showcase our hotel in Pokhara.",
+  "Need 5 food creators to review our momo restaurant.",
+  'Promote our mobile app to university students.',
+];
+
+const NEEDS_INPUT_LABELS: Record<string, string> = {
+  location: 'Location',
+  budgetMin: 'Budget',
+  budgetMax: 'Budget',
+  creatorsNeeded: 'Creators Needed',
+  deadline: 'Duration',
+  platform: 'Platform',
+  category: 'Category',
+};
 
 const BUDGET_MAP: Record<string, { min: number; max: number; payment: string }> = {
   'Under Rs. 5,000':        { min: 0,     max: 5000,   payment: 'Fixed Fee' },
@@ -246,6 +265,22 @@ type FormData = {
   capacity:     number;
   benefits:     string[];
   eventContent: string[];
+  // AI-generated fields (PAID_CAMPAIGN only)
+  objective: string;
+  contentGuidelines: string[];
+  targetAudience: string[];
+  hashtags: string[];
+  sampleCaption: string;
+  callToAction: string;
+  approvalRequirements: string;
+  aiGenerated: boolean;
+  aiPrompt: string;
+  aiSuggestedCategories: string[];
+  aiSuggestedPlatforms: string[];
+  needsInput: string[];
+  aiBudgetMin: number;
+  aiBudgetMax: number;
+  aiDeliverables: string;
 };
 
 type SetupErrors = Partial<Record<'template' | 'goals' | 'budget', string>>;
@@ -872,7 +907,29 @@ export default function CreateCampaignScreen() {
     capacity:     20,
     benefits:     [],
     eventContent: [],
+    // AI-generated fields
+    objective: '',
+    contentGuidelines: [],
+    targetAudience: [],
+    hashtags: [],
+    sampleCaption: '',
+    callToAction: '',
+    approvalRequirements: '',
+    aiGenerated: false,
+    aiPrompt: '',
+    aiSuggestedCategories: [],
+    aiSuggestedPlatforms: [],
+    needsInput: [],
+    aiBudgetMin: 0,
+    aiBudgetMax: 0,
+    aiDeliverables: '',
   });
+
+  const [aiModalVisible, setAiModalVisible] = useState(false);
+  const [aiPromptText, setAiPromptText] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiPlaceholder] = useState(() => AI_PROMPT_EXAMPLES[Math.floor(Math.random() * AI_PROMPT_EXAMPLES.length)]);
+  const [newHashtag, setNewHashtag] = useState('');
 
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const toastOpacity = useRef(new Animated.Value(0)).current;
@@ -914,6 +971,21 @@ export default function CreateCampaignScreen() {
       capacity:       20,
       benefits:       [],
       eventContent:   [],
+      objective: '',
+      contentGuidelines: [],
+      targetAudience: [],
+      hashtags: [],
+      sampleCaption: '',
+      callToAction: '',
+      approvalRequirements: '',
+      aiGenerated: false,
+      aiPrompt: '',
+      aiSuggestedCategories: [],
+      aiSuggestedPlatforms: [],
+      needsInput: [],
+      aiBudgetMin: 0,
+      aiBudgetMax: 0,
+      aiDeliverables: '',
     }));
     setSetupErrors({});
     setReviewErrors({});
@@ -940,6 +1012,50 @@ export default function CreateCampaignScreen() {
     setForm((prev) => ({ ...prev, title: content.title, description: desc }));
     setPhase('review');
     scrollRef.current?.scrollTo({ y: 0, animated: false });
+  }
+
+  async function handleGenerateWithAi() {
+    if (!aiPromptText.trim() || aiLoading) return;
+    setAiLoading(true);
+    try {
+      const draft = await campaignService.generateWithAi(aiPromptText.trim());
+      const matchedCategory = categoryOptions.find((c) => c.label === draft.category);
+      setForm((prev) => ({
+        ...prev,
+        template:    matchedCategory ? draft.category : prev.template,
+        platform:    draft.platform,
+        title:       draft.title,
+        description: draft.description,
+        goals:       prev.goals.length > 0 ? prev.goals : ['Brand Awareness'],
+        budget:      '',
+        location:    draft.location ?? prev.location,
+        creatorsNeeded: draft.creatorsNeeded,
+        deadline:    dayStart(new Date(Date.now() + draft.suggestedDurationDays * 24 * 60 * 60 * 1000)),
+        objective:            draft.objective,
+        contentGuidelines:    draft.contentGuidelines,
+        targetAudience:       draft.targetAudience,
+        hashtags:             draft.hashtags,
+        sampleCaption:        draft.sampleCaption,
+        callToAction:         draft.callToAction,
+        approvalRequirements: draft.approvalRequirements,
+        aiDeliverables:       draft.deliverables,
+        aiGenerated:           true,
+        aiPrompt:              aiPromptText.trim(),
+        aiSuggestedCategories: draft.aiSuggestedCategories,
+        aiSuggestedPlatforms:  draft.aiSuggestedPlatforms,
+        needsInput:            draft.needsInput,
+        aiBudgetMin: draft.budgetMin,
+        aiBudgetMax: draft.budgetMax,
+      }));
+      setAiModalVisible(false);
+      setAiPromptText('');
+      setPhase('review');
+      scrollRef.current?.scrollTo({ y: 0, animated: false });
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : t('createEvent.aiGenerateFailed'), 'error');
+    } finally {
+      setAiLoading(false);
+    }
   }
 
   function handleContinueEvent() {
@@ -983,7 +1099,9 @@ export default function CreateCampaignScreen() {
       if (Object.keys(errs).length > 0) { setReviewErrors(errs); return; }
       setReviewErrors({});
 
-      const budget = BUDGET_MAP[form.budget] ?? { min: 0, max: 0, payment: 'Negotiable' };
+      const budget = form.aiGenerated
+        ? { min: form.aiBudgetMin, max: form.aiBudgetMax, payment: 'Fixed Fee' }
+        : BUDGET_MAP[form.budget] ?? { min: 0, max: 0, payment: 'Negotiable' };
       setLoading(true);
       try {
         await campaignService.create({
@@ -996,7 +1114,7 @@ export default function CreateCampaignScreen() {
           location:       form.location.trim() || undefined,
           minFollowers:   0,
           contentType:    form.goals[0] ?? '',
-          deliverables:   (() => {
+          deliverables:   form.aiGenerated ? form.aiDeliverables : (() => {
             const parts = DELIVERABLE_TYPES
               .filter((d) => (form.deliverables[d.key] ?? 0) > 0)
               .map((d) => `${form.deliverables[d.key]} ${d.label}`);
@@ -1009,6 +1127,17 @@ export default function CreateCampaignScreen() {
           creatorsNeeded: form.creatorsNeeded,
           isFeatured:     form.isFeatured,
           campaignType:   'PAID_CAMPAIGN',
+          objective:            form.aiGenerated ? form.objective : undefined,
+          contentGuidelines:    form.aiGenerated ? form.contentGuidelines : undefined,
+          targetAudience:       form.aiGenerated ? form.targetAudience : undefined,
+          hashtags:             form.aiGenerated ? form.hashtags : undefined,
+          sampleCaption:        form.aiGenerated ? form.sampleCaption : undefined,
+          callToAction:         form.aiGenerated ? form.callToAction : undefined,
+          approvalRequirements: form.aiGenerated ? form.approvalRequirements : undefined,
+          aiGenerated:           form.aiGenerated,
+          aiPrompt:              form.aiGenerated ? form.aiPrompt : undefined,
+          aiSuggestedCategories: form.aiGenerated ? form.aiSuggestedCategories : undefined,
+          aiSuggestedPlatforms:  form.aiGenerated ? form.aiSuggestedPlatforms : undefined,
         });
         showToast(t('createEvent.toastPublished'));
         setTimeout(() => router.replace('/(business)/'), 500);
@@ -1134,6 +1263,20 @@ export default function CreateCampaignScreen() {
               {/* Paid Campaign form */}
               {form.eventType === 'PAID_CAMPAIGN' && (
                 <>
+                  {/* Generate with AI */}
+                  <Pressable
+                    style={[ai.card, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}
+                    onPress={() => setAiModalVisible(true)}>
+                    <View style={ai.cardIconWrap}>
+                      <Text style={ai.cardIcon}>✨</Text>
+                    </View>
+                    <View style={{ flex: 1, gap: 2 }}>
+                      <Text style={[ai.cardTitle, { color: C.brinjal1 }]}>{t('createEvent.aiGenerateCardTitle')}</Text>
+                      <Text style={[ai.cardSub, { color: C.text }]}>{t('createEvent.aiGenerateCardSub')}</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={18} color={C.brinjal1} />
+                  </Pressable>
+
                   {/* Template */}
                   <SectionCard title={t('createEvent.secCategoryTitle')} sub={t('createEvent.secCategorySub')} colors={C}>
                     <DropdownPicker
@@ -1310,6 +1453,21 @@ export default function CreateCampaignScreen() {
                     </View>
                   </View>
 
+                  {/* AI "needs input" banner */}
+                  {form.aiGenerated && form.needsInput.length > 0 && (
+                    <View style={[ai.needsInputBanner, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
+                      <Ionicons name="sparkles" size={16} color={C.brinjal1} />
+                      <Text style={[ai.needsInputText, { color: C.text }]}>
+                        {t('createEvent.aiNeedsInputBanner', {
+                          fields: [...new Set(form.needsInput.map((f) => NEEDS_INPUT_LABELS[f] ?? f))].join(', '),
+                        })}
+                      </Text>
+                      <Pressable hitSlop={8} onPress={() => update('needsInput', [])}>
+                        <Ionicons name="close" size={16} color={C.textSecondary} />
+                      </Pressable>
+                    </View>
+                  )}
+
                   {/* Editable title */}
                   <SectionCard title={t('createEvent.secEventTitlePaid')} colors={C}>
                     <TextInput
@@ -1338,6 +1496,31 @@ export default function CreateCampaignScreen() {
                     />
                   </SectionCard>
 
+                  {/* AI-only: Objective */}
+                  {form.aiGenerated && (
+                    <SectionCard title={t('createEvent.secObjectiveTitle')} colors={C}>
+                      <TextInput
+                        style={[s.input, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
+                        value={form.objective}
+                        onChangeText={(v) => update('objective', v)}
+                        placeholderTextColor={C.textSecondary}
+                      />
+                    </SectionCard>
+                  )}
+
+                  {/* AI-only: Target Audience */}
+                  {form.aiGenerated && (
+                    <SectionCard title={t('createEvent.secTargetAudienceTitle')} sub={t('createEvent.secTargetAudienceSub')} colors={C}>
+                      <TextInput
+                        style={[s.textarea, { backgroundColor: C.background, borderColor: C.border, color: C.text, minHeight: 70 }]}
+                        value={form.targetAudience.join(', ')}
+                        onChangeText={(v) => update('targetAudience', v.split(',').map((x) => x.trim()).filter(Boolean))}
+                        multiline
+                        placeholderTextColor={C.textSecondary}
+                      />
+                    </SectionCard>
+                  )}
+
                   {/* Platform */}
                   <SectionCard title={t('createEvent.secPlatformTitle')} sub={t('createEvent.secPlatformSub')} colors={C}>
                     <ChipGroup
@@ -1353,41 +1536,170 @@ export default function CreateCampaignScreen() {
                   </SectionCard>
 
                   {/* Deliverables */}
-                  <SectionCard title={t('createEvent.secDeliverablesTitle')} sub={t('createEvent.secDeliverablesSub')} colors={C}>
-                    <View style={{ gap: 2 }}>
-                      {DELIVERABLE_TYPES.map((item, i) => {
-                        const count = form.deliverables[item.key] ?? 0;
-                        const active = count > 0;
-                        return (
-                          <View
-                            key={item.key}
-                            style={[
-                              dlv.row,
-                              { borderBottomColor: C.border },
-                              i === DELIVERABLE_TYPES.length - 1 && { borderBottomWidth: 0 },
-                            ]}>
-                            <View style={[dlv.bullet, { backgroundColor: active ? C.brinjal1 : C.border }]} />
-                            <Text style={[dlv.label, { color: active ? C.text : C.textSecondary, fontFamily: active ? F.semibold : F.regular }]}>
-                              {item.label}
-                            </Text>
-                            <View style={[dlv.counter, { borderColor: active ? C.brinjal1 : C.border, backgroundColor: C.background }]}>
-                              <Pressable
-                                style={dlv.counterBtn}
-                                onPress={() => update('deliverables', { ...form.deliverables, [item.key]: Math.max(0, count - 1) })}>
-                                <Text style={[dlv.counterBtnTxt, { color: count <= 0 ? C.border : C.brinjal1 }]}>−</Text>
-                              </Pressable>
-                              <Text style={[dlv.counterVal, { color: active ? C.brinjal1 : C.textSecondary }]}>{count}</Text>
-                              <Pressable
-                                style={dlv.counterBtn}
-                                onPress={() => update('deliverables', { ...form.deliverables, [item.key]: Math.min(10, count + 1) })}>
-                                <Text style={[dlv.counterBtnTxt, { color: C.brinjal1 }]}>+</Text>
-                              </Pressable>
+                  {form.aiGenerated ? (
+                    <SectionCard title={t('createEvent.secDeliverablesTitle')} sub={t('createEvent.secDeliverablesSub')} colors={C}>
+                      <TextInput
+                        style={[s.input, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
+                        value={form.aiDeliverables}
+                        onChangeText={(v) => update('aiDeliverables', v)}
+                        placeholderTextColor={C.textSecondary}
+                      />
+                    </SectionCard>
+                  ) : (
+                    <SectionCard title={t('createEvent.secDeliverablesTitle')} sub={t('createEvent.secDeliverablesSub')} colors={C}>
+                      <View style={{ gap: 2 }}>
+                        {DELIVERABLE_TYPES.map((item, i) => {
+                          const count = form.deliverables[item.key] ?? 0;
+                          const active = count > 0;
+                          return (
+                            <View
+                              key={item.key}
+                              style={[
+                                dlv.row,
+                                { borderBottomColor: C.border },
+                                i === DELIVERABLE_TYPES.length - 1 && { borderBottomWidth: 0 },
+                              ]}>
+                              <View style={[dlv.bullet, { backgroundColor: active ? C.brinjal1 : C.border }]} />
+                              <Text style={[dlv.label, { color: active ? C.text : C.textSecondary, fontFamily: active ? F.semibold : F.regular }]}>
+                                {item.label}
+                              </Text>
+                              <View style={[dlv.counter, { borderColor: active ? C.brinjal1 : C.border, backgroundColor: C.background }]}>
+                                <Pressable
+                                  style={dlv.counterBtn}
+                                  onPress={() => update('deliverables', { ...form.deliverables, [item.key]: Math.max(0, count - 1) })}>
+                                  <Text style={[dlv.counterBtnTxt, { color: count <= 0 ? C.border : C.brinjal1 }]}>−</Text>
+                                </Pressable>
+                                <Text style={[dlv.counterVal, { color: active ? C.brinjal1 : C.textSecondary }]}>{count}</Text>
+                                <Pressable
+                                  style={dlv.counterBtn}
+                                  onPress={() => update('deliverables', { ...form.deliverables, [item.key]: Math.min(10, count + 1) })}>
+                                  <Text style={[dlv.counterBtnTxt, { color: C.brinjal1 }]}>+</Text>
+                                </Pressable>
+                              </View>
                             </View>
-                          </View>
-                        );
-                      })}
-                    </View>
-                  </SectionCard>
+                          );
+                        })}
+                      </View>
+                    </SectionCard>
+                  )}
+
+                  {/* AI-only: Content Guidelines */}
+                  {form.aiGenerated && (
+                    <SectionCard title={t('createEvent.secContentGuidelinesTitle')} sub={t('createEvent.secContentGuidelinesSub')} colors={C}>
+                      <TextInput
+                        style={[s.textarea, { backgroundColor: C.background, borderColor: C.border, color: C.text, minHeight: 90 }]}
+                        value={form.contentGuidelines.join('\n')}
+                        onChangeText={(v) => update('contentGuidelines', v.split('\n').map((x) => x.trim()).filter(Boolean))}
+                        multiline
+                        placeholderTextColor={C.textSecondary}
+                      />
+                    </SectionCard>
+                  )}
+
+                  {/* AI-only: Hashtags */}
+                  {form.aiGenerated && (
+                    <SectionCard title={t('createEvent.secHashtagsTitle')} colors={C}>
+                      <View style={ai.chipWrap}>
+                        {form.hashtags.map((tag) => (
+                          <Pressable
+                            key={tag}
+                            style={[ai.hashtagChip, { borderColor: C.brinjal1, backgroundColor: C.primaryLight }]}
+                            onPress={() => update('hashtags', form.hashtags.filter((h) => h !== tag))}>
+                            <Text style={[ai.hashtagChipText, { color: C.brinjal1 }]}>#{tag.replace(/^#/, '')}</Text>
+                            <Ionicons name="close" size={13} color={C.brinjal1} />
+                          </Pressable>
+                        ))}
+                      </View>
+                      <View style={ai.addChip}>
+                        <TextInput
+                          style={[ai.addChipInput, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
+                          value={newHashtag}
+                          onChangeText={setNewHashtag}
+                          placeholder={t('createEvent.addHashtagPlaceholder')}
+                          placeholderTextColor={C.textSecondary}
+                          autoCapitalize="none"
+                          onSubmitEditing={() => {
+                            const v = newHashtag.trim().replace(/^#/, '');
+                            if (v && !form.hashtags.includes(v)) update('hashtags', [...form.hashtags, v]);
+                            setNewHashtag('');
+                          }}
+                        />
+                        <Pressable
+                          style={[ai.addChipBtn, { backgroundColor: C.brinjal1 }]}
+                          onPress={() => {
+                            const v = newHashtag.trim().replace(/^#/, '');
+                            if (v && !form.hashtags.includes(v)) update('hashtags', [...form.hashtags, v]);
+                            setNewHashtag('');
+                          }}>
+                          <Ionicons name="add" size={20} color="#fff" />
+                        </Pressable>
+                      </View>
+                    </SectionCard>
+                  )}
+
+                  {/* AI-only: Sample Caption */}
+                  {form.aiGenerated && (
+                    <SectionCard title={t('createEvent.secSampleCaptionTitle')} colors={C}>
+                      <TextInput
+                        style={[s.textarea, { backgroundColor: C.background, borderColor: C.border, color: C.text, minHeight: 90 }]}
+                        value={form.sampleCaption}
+                        onChangeText={(v) => update('sampleCaption', v)}
+                        multiline
+                        placeholderTextColor={C.textSecondary}
+                      />
+                    </SectionCard>
+                  )}
+
+                  {/* AI-only: Call to Action */}
+                  {form.aiGenerated && (
+                    <SectionCard title={t('createEvent.secCallToActionTitle')} colors={C}>
+                      <TextInput
+                        style={[s.input, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
+                        value={form.callToAction}
+                        onChangeText={(v) => update('callToAction', v)}
+                        placeholderTextColor={C.textSecondary}
+                      />
+                    </SectionCard>
+                  )}
+
+                  {/* AI-only: Approval Requirements */}
+                  {form.aiGenerated && (
+                    <SectionCard title={t('createEvent.secApprovalRequirementsTitle')} colors={C}>
+                      <TextInput
+                        style={[s.textarea, { backgroundColor: C.background, borderColor: C.border, color: C.text, minHeight: 70 }]}
+                        value={form.approvalRequirements}
+                        onChangeText={(v) => update('approvalRequirements', v)}
+                        multiline
+                        placeholderTextColor={C.textSecondary}
+                      />
+                    </SectionCard>
+                  )}
+
+                  {/* AI-only: Budget (raw editable range, replaces preset chips) */}
+                  {form.aiGenerated && (
+                    <SectionCard title={t('createEvent.secAiBudgetTitle')} sub={t('createEvent.secAiBudgetSub')} colors={C}>
+                      <View style={ai.budgetRow}>
+                        <View style={ai.budgetInputWrap}>
+                          <Text style={[ai.budgetLabel, { color: C.textSecondary }]}>{t('createEvent.aiBudgetMinLabel')}</Text>
+                          <TextInput
+                            style={[s.input, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
+                            value={String(form.aiBudgetMin)}
+                            onChangeText={(v) => update('aiBudgetMin', parseInt(v.replace(/[^0-9]/g, ''), 10) || 0)}
+                            keyboardType="number-pad"
+                          />
+                        </View>
+                        <View style={ai.budgetInputWrap}>
+                          <Text style={[ai.budgetLabel, { color: C.textSecondary }]}>{t('createEvent.aiBudgetMaxLabel')}</Text>
+                          <TextInput
+                            style={[s.input, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
+                            value={String(form.aiBudgetMax)}
+                            onChangeText={(v) => update('aiBudgetMax', parseInt(v.replace(/[^0-9]/g, ''), 10) || 0)}
+                            keyboardType="number-pad"
+                          />
+                        </View>
+                      </View>
+                    </SectionCard>
+                  )}
 
                   {/* Deadline */}
                   <SectionCard title={t('createEvent.secDeadlineTitle')} sub={t('createEvent.secDeadlineSub')} colors={C}>
@@ -1631,6 +1943,50 @@ export default function CreateCampaignScreen() {
         </Pressable>
       </Modal>
 
+      {/* AI generation modal */}
+      <Modal visible={aiModalVisible} transparent animationType="slide" onRequestClose={() => !aiLoading && setAiModalVisible(false)}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={dp.modalWrap}>
+          <Pressable style={dp.scrim} onPress={() => !aiLoading && setAiModalVisible(false)} />
+          <View style={[dp.sheet, { backgroundColor: C.surface }]}>
+            <View style={[dp.handle, { backgroundColor: C.border }]} />
+            <View style={mc.sheetHeader}>
+              <Text style={[dp.sheetTitle, { color: C.text, marginBottom: 0 }]}>{t('createEvent.aiModalTitle')}</Text>
+              <Pressable onPress={() => !aiLoading && setAiModalVisible(false)}>
+                <Ionicons name="close-circle" size={22} color={C.textSecondary} />
+              </Pressable>
+            </View>
+            <TextInput
+              style={[s.textarea, { backgroundColor: C.background, borderColor: C.border, color: C.text, marginTop: 12 }]}
+              value={aiPromptText}
+              onChangeText={(v) => setAiPromptText(v.slice(0, 500))}
+              placeholder={aiPlaceholder}
+              placeholderTextColor={C.textSecondary}
+              multiline
+              numberOfLines={4}
+              editable={!aiLoading}
+              autoFocus
+            />
+            <Text style={[ai.charCount, { color: C.textSecondary }]}>{aiPromptText.length}/500</Text>
+            <Pressable
+              style={[s.generateBtn, { backgroundColor: (!aiPromptText.trim() || aiLoading) ? C.border : C.brinjal1 }]}
+              onPress={handleGenerateWithAi}
+              disabled={!aiPromptText.trim() || aiLoading}>
+              {aiLoading ? (
+                <>
+                  <ActivityIndicator size="small" color="#fff" />
+                  <Text style={s.generateBtnText}>{t('createEvent.aiModalGenerating')}</Text>
+                </>
+              ) : (
+                <>
+                  <Text style={s.generateBtnText}>{t('createEvent.aiModalGenerateBtn')}</Text>
+                  <Ionicons name="sparkles" size={18} color="#fff" />
+                </>
+              )}
+            </Pressable>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
       {/* Toast */}
       {toast && (
         <Animated.View
@@ -1742,4 +2098,24 @@ const dlv = StyleSheet.create({
   counterBtn: { width: 34, height: 34, justifyContent: 'center', alignItems: 'center' },
   counterBtnTxt: { fontSize: 20, lineHeight: 24, fontWeight: '300' },
   counterVal: { width: 28, textAlign: 'center', fontSize: 14, fontWeight: '700', fontFamily: F.bold },
+});
+
+const ai = StyleSheet.create({
+  card:         { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 16, borderWidth: 1.5, padding: 16 },
+  cardIconWrap: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.5)' },
+  cardIcon:     { fontSize: 20 },
+  cardTitle:    { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
+  cardSub:      { fontSize: 12, fontFamily: F.regular, lineHeight: 17 },
+  charCount:    { fontSize: 11, fontFamily: F.regular, textAlign: 'right', marginTop: 4 },
+  needsInputBanner: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, borderRadius: 12, padding: 12, borderWidth: 1 },
+  needsInputText:   { flex: 1, fontSize: 12, lineHeight: 18, fontFamily: F.regular },
+  chipWrap:     { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  hashtagChip:  { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10, borderWidth: 1.5 },
+  hashtagChipText: { fontSize: 13, fontFamily: F.medium },
+  addChip:      { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  addChipInput: { flex: 1, borderRadius: 10, borderWidth: 1.5, paddingHorizontal: 12, height: 40, fontSize: 13, fontFamily: F.regular },
+  addChipBtn:   { width: 40, height: 40, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
+  budgetRow:    { flexDirection: 'row', gap: 10 },
+  budgetInputWrap: { flex: 1, gap: 4 },
+  budgetLabel:  { fontSize: 11, fontFamily: F.medium },
 });

@@ -207,6 +207,18 @@ model Campaign {
   paymentStatus PaymentStatus @default(UNPAID)
   paidAt        DateTime?
   paymentMethod String?
+  objective              String?
+  contentGuidelines      String[]      @default([])
+  targetAudience         String[]      @default([])
+  hashtags               String[]      @default([])
+  sampleCaption          String?
+  callToAction           String?
+  approvalRequirements   String?
+  aiGenerated            Boolean       @default(false)
+  aiPrompt               String?
+  aiSuggestedCategories  String[]      @default([])
+  aiSuggestedPlatforms   String[]      @default([])
+  aiNeedsInputFields     String[]      @default([])
   applications   Application[]
   business       BusinessProfile    @relation(fields: [businessId], references: [id], onDelete: Cascade)
   conversations  Conversation[]

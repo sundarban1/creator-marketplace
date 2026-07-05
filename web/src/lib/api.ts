@@ -244,6 +244,17 @@ export interface ApiCampaignDetail {
   eventDate?:     string | null;
   venue?:         string | null;
   benefits:       string[];
+  objective?:            string | null;
+  contentGuidelines?:    string[];
+  targetAudience?:       string[];
+  hashtags?:             string[];
+  sampleCaption?:        string | null;
+  callToAction?:         string | null;
+  approvalRequirements?: string | null;
+  aiGenerated?:           boolean;
+  aiPrompt?:              string | null;
+  aiSuggestedCategories?: string[];
+  aiSuggestedPlatforms?:  string[];
   createdAt:      string;
   updatedAt:      string;
   business: {
