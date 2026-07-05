@@ -39,7 +39,7 @@ function PlacesInput({ value, onChange, colors }: {
     if (!text.trim() || !GOOGLE_PLACES_KEY) { setSuggestions([]); return; }
     debounceRef.current = setTimeout(async () => {
       try {
-        const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(text)}&key=${GOOGLE_PLACES_KEY}&language=en&types=geocode`;
+        const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(text)}&key=${GOOGLE_PLACES_KEY}&language=en&types=geocode&components=country:np`;
         const res = await fetch(url);
         const json = await res.json();
         setSuggestions((json.predictions ?? []).slice(0, 5));

@@ -90,7 +90,8 @@
       "Bash(grep -n \"^  [a-zA-Z]*: {$\" /Users/sundarban/Documents/projects/marketplace/mobile/src/i18n/en.ts)",
       "Bash(awk -F: '$1<945')",
       "Bash(grep -n \"async update\\(id: string, data: {\" -A 20 /Users/sundarban/Documents/projects/marketplace/mobile/src/services/campaign.ts)",
-      "Bash(curl -s -X DELETE http://localhost:3000/api/campaigns/__TRACKED_VAR__ -H 'Authorization: Bearer __TRACKED_VAR__')"
+      "Bash(curl -s -X DELETE http://localhost:3000/api/campaigns/__TRACKED_VAR__ -H 'Authorization: Bearer __TRACKED_VAR__')",
+      "Bash(grep -rn \"types=geocode\\\\`\\\\|types=\\(cities\\)\\\\`\\\\|language=en\\\\`\" src --include=\"*.tsx\")"
     ],
     "additionalDirectories": [
       "/private/tmp"

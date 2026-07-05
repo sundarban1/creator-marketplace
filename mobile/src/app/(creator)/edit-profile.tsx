@@ -75,7 +75,7 @@ function LocationSearchModal({
     if (!PLACES_KEY) { setPredictions([]); return; }
     setSearching(true);
     try {
-      const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(text)}&key=${PLACES_KEY}&language=en`;
+      const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(text)}&key=${PLACES_KEY}&language=en&components=country:np`;
       const res = await fetch(url);
       const data = (await res.json()) as { predictions: Prediction[]; status: string };
       setPredictions(data.status === 'OK' ? data.predictions : []);

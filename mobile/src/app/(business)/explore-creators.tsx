@@ -143,7 +143,7 @@ function LocationPicker({ selected, onChange }: { selected: LocationEntry[]; onC
     if (!PLACES_KEY) return;
     setSearching(true);
     try {
-      const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(text)}&key=${PLACES_KEY}&language=en&types=(cities)`;
+      const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(text)}&key=${PLACES_KEY}&language=en&types=(cities)&components=country:np`;
       const data = (await (await fetch(url)).json()) as { predictions: Prediction[]; status: string };
       setPredictions(data.status === 'OK' ? data.predictions : []);
     } catch { setPredictions([]); }

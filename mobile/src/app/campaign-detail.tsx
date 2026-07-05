@@ -196,7 +196,7 @@ function PlacesInput({ value, onChange, colors, error }: {
     if (!text.trim() || !PLACES_KEY) { setSuggestions([]); return; }
     debounceRef.current = setTimeout(async () => {
       try {
-        const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(text)}&key=${PLACES_KEY}&language=en&types=geocode`;
+        const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(text)}&key=${PLACES_KEY}&language=en&types=geocode&components=country:np`;
         const res = await fetch(url);
         const json = await res.json();
         setSuggestions(json.status === 'OK' ? json.predictions : []);
