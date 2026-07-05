@@ -115,7 +115,12 @@
       "Bash(curl -s -X PUT http://localhost:3000/api/business/profile -H 'Authorization: Bearer __CMDSUB_OUTPUT__' -H 'Content-Type: application/json' -d '{\"allowDirectMessages\": false}')",
       "Bash(curl -s -X POST http://localhost:3000/api/messaging/conversations/__TRACKED_VAR__/accept -H 'Authorization: Bearer __CMDSUB_OUTPUT__')",
       "Bash(curl -s -X POST http://localhost:3000/api/messaging/conversations -H 'Authorization: Bearer __CMDSUB_OUTPUT__' -H 'Content-Type: application/json' -d '{\"otherUserId\":\"__TRACKED_VAR__\",\"requestMessage\":\"We would love to work with you!\"}')",
-      "Bash(tee /tmp/mobile-tsc3.log)"
+      "Bash(tee /tmp/mobile-tsc3.log)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\('scripts',{}\\), indent=2\\)\\)\")",
+      "Bash(git fetch *)",
+      "Bash(git ls-tree *)",
+      "Bash(grep -E \"^backend/\\\\.env$|^backend/pgadmin/pgpassfile$\")",
+      "Bash(git add *)"
     ],
     "additionalDirectories": [
       "/private/tmp"
