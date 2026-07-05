@@ -80,13 +80,11 @@ function buildCampaignCards(proposals: Proposal[]): CampaignCard[] {
   return Array.from(map.values()).sort((a, b) => b.latestAt.localeCompare(a.latestAt));
 }
 
-function workspaceBtnConfig(ws: WS | null, paid: boolean, isFree = false) {
+function workspaceBtnConfig(ws: WS | null) {
   if (ws === 'APPROVED') return { label: 'Project Completed', sub: 'Work approved & payment released', color: '#16A34A', icon: 'checkmark-done-circle' as const };
   if (ws === 'SUBMITTED') return { label: 'Review Deliverables', sub: 'Creator has submitted their work', color: '#D97706', icon: 'eye' as const };
   if (ws === 'IN_PROGRESS') return { label: 'Creator is Working', sub: 'Content creation in progress', color: '#7C3AED', icon: 'brush' as const };
-  if (isFree) return { label: 'View everyone who applied', sub: '', color: FREE_ACCENT, icon: 'people' as const };
-  if (paid) return { label: 'Waiting for Creator', sub: 'Creator will start work soon', color: '#0EA5E9', icon: 'hourglass' as const };
-  return { label: 'View Project Details', sub: 'See accepted creator & manage payment', color: '#6366F1', icon: 'folder-open' as const };
+  return { label: 'Track the project status', sub: '', color: '#6366F1', icon: 'folder-open' as const };
 }
 
 function CampaignEventCard({ item }: { item: CampaignCard }) {
@@ -169,7 +167,7 @@ function CampaignEventCard({ item }: { item: CampaignCard }) {
 
       {/* Dynamic project status button for accepted campaigns */}
       {item.accepted > 0 && (() => {
-        const cfg = workspaceBtnConfig(item.acceptedWorkStatus, item.campaignPaid, isFree);
+        const cfg = workspaceBtnConfig(item.acceptedWorkStatus);
         return (
           <Pressable
             style={({ pressed }) => [styles.startWorkBtn, { backgroundColor: cfg.color, opacity: pressed ? 0.88 : 1 }]}
