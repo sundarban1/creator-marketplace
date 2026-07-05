@@ -58,7 +58,7 @@ export class CampaignAiService {
 
   async suggestDescription(input: SuggestDescriptionInput): Promise<string> {
     if (!env.ANTHROPIC_API_KEY) {
-      throw new AppError('AI generation is not configured', 503);
+      throw new AppError('This feature is temporarily unavailable. Please fill in the form manually.', 503);
     }
 
     const parts: string[] = [];
@@ -84,7 +84,7 @@ export class CampaignAiService {
     } catch (err) {
       if (err instanceof AppError) throw err;
       if (err instanceof Anthropic.APIConnectionTimeoutError) {
-        throw new AppError('AI generation timed out. Please try again.', 504);
+        throw new AppError('This is taking longer than expected. Please try again.', 504);
       }
       logger.error({ err }, 'AI description suggestion failed');
       throw new AppError("Couldn't generate a description. Please try again or write your own.", 422);
@@ -93,7 +93,7 @@ export class CampaignAiService {
 
   async generateDraft(prompt: string): Promise<AiCampaignDraft & { aiSuggestedCategories: string[]; aiSuggestedPlatforms: string[] }> {
     if (!env.ANTHROPIC_API_KEY) {
-      throw new AppError('AI generation is not configured', 503);
+      throw new AppError('This feature is temporarily unavailable. Please fill in the form manually.', 503);
     }
 
     const realCategories = await this.categoryRepo.findManyPublic(CategoryScope.BUSINESS);
@@ -122,7 +122,7 @@ export class CampaignAiService {
     } catch (err) {
       if (err instanceof AppError) throw err;
       if (err instanceof Anthropic.APIConnectionTimeoutError) {
-        throw new AppError('AI generation timed out. Please try again or fill in the form manually.', 504);
+        throw new AppError('This is taking longer than expected. Please try again or fill in the form manually.', 504);
       }
       logger.error({ err }, 'AI campaign generation failed');
       throw new AppError("Couldn't generate a draft from that description. Please try rephrasing or fill in the form manually.", 422);

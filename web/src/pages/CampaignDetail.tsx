@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Building2, MapPin, Calendar, Users, DollarSign,
   Target, Clock, CheckCircle2, XCircle, Hourglass, Star,
-  FileText, Activity, Sparkles,
+  FileText, Activity,
 } from 'lucide-react';
 import { StatusBadge }  from '../components/StatusBadge';
 import { Avatar }       from '../components/Avatar';
@@ -413,12 +413,12 @@ export function CampaignDetail() {
               </div>
             )}
 
-            {/* AI provenance */}
+            {/* Quick-create provenance */}
             {campaign.aiGenerated && (
               <div className="bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-2.5 flex items-start gap-2">
-                <Sparkles size={14} className="text-indigo-500 mt-0.5 flex-shrink-0" />
+                <FileText size={14} className="text-indigo-500 mt-0.5 flex-shrink-0" />
                 <div className="text-xs text-indigo-700">
-                  <span className="font-semibold">Generated with AI</span>
+                  <span className="font-semibold">Created from a quick description</span>
                   {campaign.aiPrompt && <p className="text-indigo-600 mt-0.5">&ldquo;{campaign.aiPrompt}&rdquo;</p>}
                   {(!!campaign.aiSuggestedCategories?.length || !!campaign.aiSuggestedPlatforms?.length) && (
                     <p className="text-indigo-500 mt-1">
