@@ -91,6 +91,8 @@ export function errorHandler(
 
   // Custom AppError
   if (err instanceof AppError) {
+    const level = err.statusCode >= 500 || !err.isOperational ? 'error' : 'warn';
+    req.log[level]({ err }, err.message);
     res.status(err.statusCode).json({
       success: false,
       message: err.message,
@@ -99,7 +101,7 @@ export function errorHandler(
   }
 
   // Generic / unknown errors
-  console.error('Unhandled error:', err);
+  req.log.error({ err }, 'Unhandled error');
   res.status(500).json({
     success: false,
     message:

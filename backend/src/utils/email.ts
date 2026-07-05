@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import { env } from '../config/env';
+import { logger } from '../config/logger';
 
 const FROM_NAME    = 'CreatorMarket';
 const FROM_ADDRESS = env.EMAIL_USERNAME ?? 'no-reply@creatormarket.com';
@@ -35,14 +36,12 @@ async function sendEmail(to: string, subject: string, html: string): Promise<voi
   const transporter = createTransporter();
 
   if (!transporter) {
-    console.log('\n📧 [DEV] Email not sent (no SMTP configured):');
-    console.log(`  To:      ${to}`);
-    console.log(`  Subject: ${subject}\n`);
+    logger.debug({ to, subject }, 'Email not sent (no SMTP configured)');
     return;
   }
 
   await transporter.sendMail({ from: FROM, to, subject, html });
-  console.log(`📧 Email sent → ${to} | ${subject}`);
+  logger.info({ to, subject }, 'Email sent');
 }
 
 // ── Templates ─────────────────────────────────────────────────────────────────
@@ -115,7 +114,7 @@ export async function sendOtpEmail(email: string, code: string): Promise<void> {
   `);
 
   await sendEmail(email, 'Your CreatorMarket verification code', html);
-  console.log(`🔑 OTP for ${email}: ${code}`);
+  if (env.NODE_ENV !== 'production') logger.debug({ email, code }, 'OTP email issued');
 }
 
 // ── Welcome Email ─────────────────────────────────────────────────────────────

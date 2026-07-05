@@ -1,14 +1,16 @@
 import './config/env'; // load and validate env first
 import { createServer } from 'http';
+import { randomUUID } from 'crypto';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import morgan from 'morgan';
+import pinoHttp from 'pino-http';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import swaggerUi from 'swagger-ui-express';
 
 import { env } from './config/env';
+import { logger } from './config/logger';
 import { swaggerSpec } from './config/swagger';
 import { errorHandler, notFoundHandler } from './middleware/error';
 import { timezoneMiddleware } from './middleware/timezone';
@@ -77,7 +79,28 @@ app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 
 // ── Logging ──────────────────────────────────────────────────────────────────
-app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));
+app.use(
+  pinoHttp({
+    logger,
+    genReqId: (req, res) => {
+      const existing = req.headers['x-request-id'];
+      const id = existing ? String(existing) : randomUUID();
+      res.setHeader('X-Request-Id', id);
+      return id;
+    },
+    customLogLevel: (_req, res, err) => {
+      if (err || res.statusCode >= 500) return 'error';
+      if (res.statusCode >= 400) return 'warn';
+      return 'info';
+    },
+    customSuccessMessage: (req, res) => `${req.method} ${req.url} completed with ${res.statusCode}`,
+    customErrorMessage: (req, res, err) => `${req.method} ${req.url} failed with ${res.statusCode}: ${err.message}`,
+    customProps: (req) => ({ userId: req.user?.id }),
+    autoLogging: {
+      ignore: (req) => req.url === '/health',
+    },
+  })
+);
 
 // ── Locale ───────────────────────────────────────────────────────────────────
 app.use(timezoneMiddleware);
@@ -241,18 +264,18 @@ const PORT = parseInt(env.PORT, 10);
 async function bootstrap() {
   try {
     await prisma.$connect();
-    console.log('✅ Database connected');
+    logger.info('Database connected');
 
     const httpServer = createServer(app);
     initSocket(httpServer);
 
     httpServer.listen(PORT, () => {
-      console.log(`🚀 Server running on http://localhost:${PORT}`);
-      console.log(`📚 API Docs available at http://localhost:${PORT}/api/docs`);
-      console.log(`🌍 Environment: ${env.NODE_ENV}`);
+      logger.info(`Server running on http://localhost:${PORT}`);
+      logger.info(`API Docs available at http://localhost:${PORT}/api/docs`);
+      logger.info(`Environment: ${env.NODE_ENV}`);
     });
   } catch (error) {
-    console.error('❌ Failed to start server:', error);
+    logger.error({ err: error }, 'Failed to start server');
     await prisma.$disconnect();
     process.exit(1);
   }
@@ -260,14 +283,14 @@ async function bootstrap() {
 
 // Graceful shutdown
 process.on('SIGINT', async () => {
-  console.log('\n⏳ Shutting down gracefully...');
+  logger.info('Shutting down gracefully...');
   await prisma.$disconnect();
-  console.log('✅ Database disconnected');
+  logger.info('Database disconnected');
   process.exit(0);
 });
 
 process.on('SIGTERM', async () => {
-  console.log('\n⏳ SIGTERM received, shutting down...');
+  logger.info('SIGTERM received, shutting down...');
   await prisma.$disconnect();
   process.exit(0);
 });

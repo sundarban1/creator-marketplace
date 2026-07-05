@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import { Role } from '@prisma/client';
 import { AppError } from '../../middleware/error';
 import { env } from '../../config/env';
+import { logger } from '../../config/logger';
 import { hashPassword, comparePassword } from '../../utils/hash';
 import {
   signAccessToken,
@@ -72,11 +73,11 @@ export class AuthService {
     if (input.referralCode && 'creatorProfile' in user && user.creatorProfile) {
       // Best-effort: an invalid/expired code shouldn't block account creation.
       this.referralService.linkCreatorToReferrer(user.creatorProfile.id, input.referralCode)
-        .catch((err) => console.error('Referral code linking failed at signup:', err));
+        .catch((err) => logger.error({ err, userId: user.id }, 'Referral code linking failed at signup'));
     }
     if (input.referralCode && 'businessProfile' in user && user.businessProfile) {
       this.businessReferralService.linkBusinessToReferrer(user.businessProfile.id, input.referralCode)
-        .catch((err) => console.error('Business referral code linking failed at signup:', err));
+        .catch((err) => logger.error({ err, userId: user.id }, 'Business referral code linking failed at signup'));
     }
     if (deviceId) await this.repo.setDeviceId(user.id, deviceId);
 
@@ -85,7 +86,7 @@ export class AuthService {
     await this.repo.saveOtp(user.id, code, expiresAt);
     await sendOtpEmail(user.email, code);
 
-    if (env.NODE_ENV !== 'production') console.log(`\n🔑 OTP for ${user.email}: ${code}\n`);
+    if (env.NODE_ENV !== 'production') logger.debug({ email: user.email, code }, 'Signup OTP issued');
     return { email: user.email };
   }
 
@@ -110,7 +111,7 @@ export class AuthService {
       ?? verifiedUser.businessProfile?.businessName
       ?? verifiedUser.email.split('@')[0];
     sendWelcomeEmail(verifiedUser.email, displayName, verifiedUser.role as 'CREATOR' | 'BUSINESS')
-      .catch((err) => console.error('Welcome email failed:', err));
+      .catch((err) => logger.error({ err, userId: verifiedUser.id }, 'Welcome email failed'));
 
     return { user: toUserDto(verifiedUser), accessToken, refreshToken };
   }
@@ -125,7 +126,7 @@ export class AuthService {
     await this.repo.saveOtp(user.id, code, expiresAt);
     await sendOtpEmail(user.email, code);
 
-    if (env.NODE_ENV !== 'production') console.log(`\n🔑 Resent OTP for ${user.email}: ${code}\n`);
+    if (env.NODE_ENV !== 'production') logger.debug({ email: user.email, code }, 'Resent OTP issued');
     return { message: 'Verification code resent to your email' };
   }
 
@@ -207,7 +208,7 @@ export class AuthService {
     await this.repo.saveOtp(user.id, code, expiresAt);
 
     // In production: send via SMS. For now log to console.
-    if (env.NODE_ENV !== 'production') console.log(`\n🔑 Password reset OTP for ${input.phone}: ${code}\n`);
+    if (env.NODE_ENV !== 'production') logger.debug({ phone: input.phone, code }, 'Password reset OTP issued');
 
     return { message: 'OTP sent to your phone number' };
   }
@@ -250,7 +251,7 @@ export class AuthService {
 
     // In production: integrate an SMS gateway (e.g. Sparrow SMS for Nepal).
     // For now, log the OTP to the console.
-    if (env.NODE_ENV !== 'production') console.log(`\n📱 Phone verification OTP for ${phone}: ${code}\n`);
+    if (env.NODE_ENV !== 'production') logger.debug({ phone, code }, 'Phone verification OTP issued');
 
     return { message: 'Verification code sent to your phone number' };
   }

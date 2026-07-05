@@ -72,7 +72,15 @@
       "Bash(curl -s http://localhost:3000/api/creator/profile -H 'Authorization: Bearer __CMDSUB_OUTPUT__')",
       "Bash(curl -s http://localhost:3000/api/admin/creators?limit=50 -H 'Authorization: Bearer __CMDSUB_OUTPUT__')",
       "Bash(curl -s -X PATCH http://localhost:3000/api/admin/creators/cmr7bne9z0009k65nusheagne/verify -H 'Authorization: Bearer __CMDSUB_OUTPUT__' -H 'Content-Type: application/json' -d '{\"verified\": true}')",
-      "Bash(curl -s -X PATCH http://localhost:3000/api/admin/creators/cmr7cdauw000jvheva7zl8ng0/verify -H 'Authorization: Bearer __CMDSUB_OUTPUT__' -H 'Content-Type: application/json' -d '{\"verified\": true}')"
+      "Bash(curl -s -X PATCH http://localhost:3000/api/admin/creators/cmr7cdauw000jvheva7zl8ng0/verify -H 'Authorization: Bearer __CMDSUB_OUTPUT__' -H 'Content-Type: application/json' -d '{\"verified\": true}')",
+      "Bash(xargs -I{} echo {})",
+      "Bash(npm uninstall *)",
+      "Bash(xargs -I{} sh -c 'echo ==={}===; cat {}')",
+      "Bash(curl -s http://localhost:3000/api/categories -o /dev/null)",
+      "Bash(curl -s http://localhost:3000/api/nonexistent-route -o /dev/null)",
+      "Bash(curl -s -X POST http://localhost:3000/api/auth/login -H 'Content-Type: application/json' -d '{}' -o /dev/null)",
+      "Bash(curl -s http://localhost:3000/health -o /dev/null)",
+      "Bash(curl -s -X POST http://localhost:3000/api/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"nope@example.com\",\"password\":\"wrongpass\"}' -o /dev/null)"
     ],
     "additionalDirectories": [
       "/private/tmp"

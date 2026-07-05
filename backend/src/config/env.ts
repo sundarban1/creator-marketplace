@@ -31,6 +31,7 @@ const envSchema = z.object({
   EMAIL_PASSWORD: z.string().optional(),
   ADMIN_EMAIL:    z.string().optional(),
   FRONTEND_URL: z.string().default('http://localhost:3000'),
+  LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);
