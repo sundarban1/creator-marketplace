@@ -16,6 +16,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/components/Toast';
 import { profileService, type Category } from '@/services/profile';
+import { categoryService } from '@/services/category';
 import { F } from '@/utilities/constants';
 
 const GOOGLE_PLACES_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY ?? '';
@@ -100,9 +101,10 @@ export default function EditBusinessProfileScreen() {
   useEffect(() => {
     Promise.all([
       profileService.getBusinessProfile(),
-      profileService.getCategories(),
+      categoryService.getCategories('BUSINESS'),
     ])
-      .then(([profile, cats]) => {
+      .then(([profile, apiCats]) => {
+        const cats: Category[] = apiCats.map((c) => ({ emoji: c.icon, label: c.name }));
         setBusinessName(profile.businessName ?? '');
         setDescription(profile.description ?? '');
         setWebsite(profile.website ?? '');

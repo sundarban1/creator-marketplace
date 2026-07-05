@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BackButton } from '@/components/BackButton';
 import { useEffect, useState } from 'react';
@@ -101,6 +102,13 @@ export default function ReferralScreen() {
             <Text style={[styles.conditionNote, { color: C.brinjal1 }]}>
               {t('referral.conditionNote', { amount: overview.rewardAmount })}
             </Text>
+            <Pressable
+              style={styles.verifiedLinkRow}
+              onPress={() => router.push('/(creator)/settings?section=security')}>
+              <Ionicons name="ribbon-outline" size={16} color={C.brinjal1} />
+              <Text style={[styles.verifiedLinkText, { color: C.brinjal1 }]}>{t('referral.howToGetVerifiedLink')}</Text>
+              <Ionicons name="chevron-forward" size={14} color={C.brinjal1} />
+            </Pressable>
           </View>
 
           {/* Referral code */}
@@ -197,6 +205,8 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 15, fontWeight: '700', fontFamily: F.bold, marginBottom: 4 },
   stepText: { fontSize: 13, lineHeight: 20, fontFamily: F.regular },
   conditionNote: { fontSize: 12, fontFamily: F.medium, marginTop: 6, lineHeight: 18 },
+  verifiedLinkRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10 },
+  verifiedLinkText: { fontSize: 12, fontFamily: F.semibold },
 
   field: { gap: 6 },
   label: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: F.bold },

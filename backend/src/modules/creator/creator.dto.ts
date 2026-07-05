@@ -29,6 +29,8 @@ export interface CreatorProfileDto {
   prefLocations: string[];
   prefBudgetMin: number | null;
   prefBudgetMax: number | null;
+  citizenshipDocUrl: string | null;
+  citizenshipStatus: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
   createdAt: string;
   updatedAt: string;
   user: {
@@ -118,6 +120,8 @@ type RawCreatorProfile = {
   prefLocations: string[];
   prefBudgetMin: number | null;
   prefBudgetMax: number | null;
+  citizenshipDocUrl: string | null;
+  citizenshipStatus: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
   createdAt: Date;
   updatedAt: Date;
   user?: { id: string; email: string; role: string; isEmailVerified: boolean; isOnboarded: boolean } | null;
@@ -144,6 +148,8 @@ export function toCreatorProfileDto(p: RawCreatorProfile): CreatorProfileDto {
     prefLocations: p.prefLocations,
     prefBudgetMin: p.prefBudgetMin,
     prefBudgetMax: p.prefBudgetMax,
+    citizenshipDocUrl: p.citizenshipDocUrl,
+    citizenshipStatus: p.citizenshipStatus,
     createdAt:     p.createdAt.toISOString(),
     updatedAt:     p.updatedAt.toISOString(),
     user:          p.user ?? null,

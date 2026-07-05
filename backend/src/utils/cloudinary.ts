@@ -6,12 +6,15 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-export type UploadFolder = 'creators/avatars' | 'businesses/logos';
+export type UploadFolder = 'creators/avatars' | 'businesses/logos' | 'creators/citizenship';
+
+const DEFAULT_TRANSFORMATION = [{ width: 400, height: 400, crop: 'fill', gravity: 'face' }];
 
 export async function uploadImage(
   buffer: Buffer,
   folder: UploadFolder,
   publicId: string,
+  transformation: Record<string, unknown>[] = DEFAULT_TRANSFORMATION,
 ): Promise<string> {
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
@@ -20,7 +23,7 @@ export async function uploadImage(
         public_id:      publicId,
         overwrite:      true,
         resource_type:  'image',
-        transformation: [{ width: 400, height: 400, crop: 'fill', gravity: 'face' }],
+        transformation,
       },
       (err, result) => {
         if (err || !result) return reject(err ?? new Error('Cloudinary upload failed'));

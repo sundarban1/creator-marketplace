@@ -27,6 +27,7 @@ import { useAppColors, useIsDark } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/components/Toast';
 import { COLORS, F } from '@/utilities/constants';
+import { pickAndUpload } from '@/utilities/uploadImage';
 
 type ColorsType = typeof COLORS;
 const ColorCtx = createContext<ColorsType>(COLORS);
@@ -49,11 +50,11 @@ const PLATFORM_CONFIG: Record<string, { id: string; label: string; iconName: str
   Object.fromEntries(ALL_SOCIAL_PLATFORMS.map((p) => [p.id, p]));
 
 const PORTFOLIO_TYPES: { id: string; label: string; iconName: string; iconLib: 'fa5' | 'ion'; color: string; urlHint: string }[] = [
-  { id: 'instagram', label: 'Instagram',   iconName: 'logo-instagram',    iconLib: 'ion', color: '#E1306C', urlHint: 'https://instagram.com/p/...' },
-  { id: 'tiktok',    label: 'TikTok',      iconName: 'logo-tiktok',       iconLib: 'ion', color: '#010101', urlHint: 'https://tiktok.com/@user/video/...' },
-  { id: 'youtube',   label: 'YouTube',     iconName: 'logo-youtube',      iconLib: 'ion', color: '#FF0000', urlHint: 'https://youtube.com/watch?v=...' },
-  { id: 'facebook',  label: 'Facebook',    iconName: 'logo-facebook',     iconLib: 'ion', color: '#1877F2', urlHint: 'https://facebook.com/...' },
-  { id: 'twitter',   label: 'X / Twitter', iconName: 'logo-twitter',      iconLib: 'ion', color: '#1DA1F2', urlHint: 'https://x.com/user/status/...' },
+  { id: 'instagram', label: 'Instagram',   iconName: 'logo-instagram',    iconLib: 'ion', color: '#E1306C', urlHint: 'e.g. CxYz1AbC2d' },
+  { id: 'tiktok',    label: 'TikTok',      iconName: 'logo-tiktok',       iconLib: 'ion', color: '#010101', urlHint: 'e.g. yourhandle/video/7123456789012345678' },
+  { id: 'youtube',   label: 'YouTube',     iconName: 'logo-youtube',      iconLib: 'ion', color: '#FF0000', urlHint: 'e.g. dQw4w9WgXcQ' },
+  { id: 'facebook',  label: 'Facebook',    iconName: 'logo-facebook',     iconLib: 'ion', color: '#1877F2', urlHint: 'e.g. 1234567890123456' },
+  { id: 'twitter',   label: 'X / Twitter', iconName: 'logo-twitter',      iconLib: 'ion', color: '#1DA1F2', urlHint: 'e.g. 1717171717171717171' },
   { id: 'blog',      label: 'Blog Post',   iconName: 'newspaper-outline', iconLib: 'ion', color: '#F59E0B', urlHint: 'https://yourblog.com/post-title' },
   { id: 'website',   label: 'Website',     iconName: 'globe-outline',     iconLib: 'ion', color: '#6366F1', urlHint: 'https://yourwebsite.com' },
   { id: 'photo',     label: 'Photography', iconName: 'camera-outline',    iconLib: 'ion', color: '#10B981', urlHint: 'https://...' },
@@ -62,6 +63,23 @@ const PORTFOLIO_TYPES: { id: string; label: string; iconName: string; iconLib: '
 
 const PORTFOLIO_CONFIG: Record<string, typeof PORTFOLIO_TYPES[0]> =
   Object.fromEntries(PORTFOLIO_TYPES.map((p) => [p.id, p]));
+
+// Platforms where the creator can just type the content ID and we build the full link ourselves.
+const PORTFOLIO_URL_PREFIX: Record<string, string> = {
+  instagram: 'https://www.instagram.com/reels/',
+  tiktok:    'https://www.tiktok.com/@',
+  youtube:   'https://www.youtube.com/watch?v=',
+  facebook:  'https://www.facebook.com/watch/?v=',
+  twitter:   'https://x.com/i/status/',
+};
+
+/** Builds the final portfolio link from whatever the creator typed — a bare ID, or a full URL they pasted themselves. */
+function buildPortfolioUrl(type: string, idOrUrl: string): string {
+  const trimmed = idOrUrl.trim();
+  const prefix = PORTFOLIO_URL_PREFIX[type];
+  if (!prefix || /^https?:\/\//i.test(trimmed)) return trimmed;
+  return prefix + trimmed.replace(/^\/+/, '');
+}
 
 function PlatformIcon({ iconName, iconLib, size, color, style }: { iconName: string; iconLib?: 'fa5' | 'ion'; size: number; color: string; style?: any }) {
   if (iconLib === 'ion') return <Ionicons name={iconName as any} size={size} color={color} style={style} />;
@@ -464,6 +482,11 @@ export default function CreatorSettingsScreen() {
   // Email/phone verification
   const [emailVerified, setEmailVerified] = useState<boolean | null>(null);
 
+  // Citizenship verification
+  const [citizenshipStatus, setCitizenshipStatus] = useState<'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED'>('NONE');
+  const [creatorIsVerified, setCreatorIsVerified] = useState(false);
+  const [citizenshipUploading, setCitizenshipUploading] = useState(false);
+
   // Phone verification sub-page
   const [phoneSubPage, setPhoneSubPage] = useState<'input' | 'otp' | null>(null);
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -512,6 +535,8 @@ export default function CreatorSettingsScreen() {
       if (profile.prefBudgetMax != null)  setPrefPriceMax(profile.prefBudgetMax);
       // Email verified status from DB
       if (profile.user?.isEmailVerified != null) setEmailVerified(profile.user.isEmailVerified);
+      if (profile.citizenshipStatus) setCitizenshipStatus(profile.citizenshipStatus);
+      setCreatorIsVerified(profile.isVerified === true);
     }).catch(() => {});
     // Fetch categories for campaign preferences
     campaignService.getCategories().then((cats) => {
@@ -744,8 +769,15 @@ export default function CreatorSettingsScreen() {
   function validatePortfolioForm() {
     const errors: Record<string, string> = {};
     if (!portfolioForm.type) errors.type = t('creatorSettings.errSelectContentType');
-    if (!portfolioForm.url.trim()) errors.url = t('creatorSettings.errUrlRequired');
-    else { try { new URL(portfolioForm.url.trim()); } catch { errors.url = t('creatorSettings.errInvalidUrl'); } }
+    const raw = portfolioForm.url.trim();
+    if (!raw) { errors.url = t('creatorSettings.errUrlRequired'); return errors; }
+
+    const hasPrefix = !!PORTFOLIO_URL_PREFIX[portfolioForm.type];
+    if (hasPrefix && !/^https?:\/\//i.test(raw) && /\s/.test(raw)) {
+      errors.url = t('creatorSettings.errInvalidId');
+    } else {
+      try { new URL(buildPortfolioUrl(portfolioForm.type, raw)); } catch { errors.url = t('creatorSettings.errInvalidUrl'); }
+    }
     return errors;
   }
 
@@ -754,12 +786,13 @@ export default function CreatorSettingsScreen() {
     if (Object.keys(errors).length > 0) { setPortfolioFormErrors(errors); return; }
     setPortfolioLoading(true);
     try {
+      const finalUrl = buildPortfolioUrl(portfolioForm.type, portfolioForm.url);
       if (editingPortfolioId) {
         await creatorService.removePortfolioLink(editingPortfolioId);
-        const updated = await creatorService.addPortfolioLink(portfolioForm.type, portfolioForm.url.trim());
+        const updated = await creatorService.addPortfolioLink(portfolioForm.type, finalUrl);
         setPortfolio(updated.portfolioLinks);
       } else {
-        const updated = await creatorService.addPortfolioLink(portfolioForm.type, portfolioForm.url.trim());
+        const updated = await creatorService.addPortfolioLink(portfolioForm.type, finalUrl);
         setPortfolio(updated.portfolioLinks);
       }
       resetPortfolioSheet();
@@ -1631,7 +1664,9 @@ export default function CreatorSettingsScreen() {
                 {(editingPortfolioId || portfolioForm.type) && (
                   <>
                     <View style={styles.sheetSection}>
-                      <Text style={[styles.sheetLabel, { color: C.textSecondary }]}>{t('creatorSettings.linkUrlLabel')}</Text>
+                      <Text style={[styles.sheetLabel, { color: C.textSecondary }]}>
+                        {portfolioForm.type && PORTFOLIO_URL_PREFIX[portfolioForm.type] ? t('creatorSettings.linkIdLabel') : t('creatorSettings.linkUrlLabel')}
+                      </Text>
                       <View style={[
                         styles.sheetInputWrap,
                         { borderColor: portfolioFormErrors.url ? C.error : (portfolioForm.type && PORTFOLIO_CONFIG[portfolioForm.type] ? PORTFOLIO_CONFIG[portfolioForm.type].color + '60' : C.border), backgroundColor: C.background },
@@ -1652,7 +1687,9 @@ export default function CreatorSettingsScreen() {
                       </View>
                       {portfolioFormErrors.url
                         ? <Text style={[styles.sheetFieldError, { color: C.error }]}>{portfolioFormErrors.url}</Text>
-                        : <Text style={[styles.sheetFieldHint, { color: C.textSecondary }]}>{t('creatorSettings.linkUrlHint')}</Text>}
+                        : portfolioForm.type && PORTFOLIO_URL_PREFIX[portfolioForm.type]
+                          ? <Text style={[styles.sheetFieldHint, { color: C.textSecondary }]}>{t('creatorSettings.linkIdHint', { prefix: PORTFOLIO_URL_PREFIX[portfolioForm.type] })}</Text>
+                          : <Text style={[styles.sheetFieldHint, { color: C.textSecondary }]}>{t('creatorSettings.linkUrlHint')}</Text>}
                     </View>
 
                     <View style={styles.sheetActions}>
@@ -1932,6 +1969,21 @@ export default function CreatorSettingsScreen() {
       setPhoneOtp('');
     }
 
+    async function handleUploadCitizenship() {
+      setCitizenshipUploading(true);
+      try {
+        const url = await pickAndUpload('creator-citizenship');
+        if (url) {
+          setCitizenshipStatus('PENDING');
+          toast.success(t('creatorSettings.citizenshipUploadSuccess'));
+        }
+      } catch {
+        toast.error(t('creatorSettings.citizenshipUploadFailed'));
+      } finally {
+        setCitizenshipUploading(false);
+      }
+    }
+
     return (
       <>
         <SectionHeader title={t('creatorSettings.loginPasswordSection')} />
@@ -2041,15 +2093,48 @@ export default function CreatorSettingsScreen() {
             </View>
           )}
 
+          {/* Citizenship upload row */}
+          <Pressable
+            style={[styles.row, { borderBottomWidth: 1, borderBottomColor: C.border }]}
+            disabled={citizenshipUploading || citizenshipStatus === 'PENDING' || citizenshipStatus === 'APPROVED'}
+            onPress={handleUploadCitizenship}>
+            <View style={[styles.navIonIconWrap, { backgroundColor: '#6366F118' }]}>
+              <Ionicons name="card-outline" size={18} color="#6366F1" />
+            </View>
+            <Text style={[styles.rowLabel, { color: C.text }]}>{t('creatorSettings.uploadCitizenshipLabel')}</Text>
+            <View style={styles.navRight}>
+              {citizenshipUploading ? (
+                <ActivityIndicator size="small" color={C.brinjal1} />
+              ) : citizenshipStatus === 'APPROVED' ? (
+                <View style={styles.verifiedBadge}><Text style={[styles.badgeText, { color: C.active }]}>{t('creatorSettings.citizenshipApproved')}</Text></View>
+              ) : citizenshipStatus === 'PENDING' ? (
+                <View style={[styles.soonBadge, { backgroundColor: '#FEF3C7' }]}><Text style={[styles.badgeText, { color: '#D97706' }]}>{t('creatorSettings.citizenshipPending')}</Text></View>
+              ) : citizenshipStatus === 'REJECTED' ? (
+                <View style={[styles.soonBadge, { backgroundColor: '#FEE2E2' }]}><Text style={[styles.badgeText, { color: '#DC2626' }]}>{t('creatorSettings.citizenshipRejected')}</Text></View>
+              ) : (
+                <View style={[styles.chip, { borderColor: C.brinjal1, backgroundColor: C.primaryLight, paddingHorizontal: 8, paddingVertical: 2 }]}>
+                  <Text style={[styles.chipText, { color: C.brinjal1, fontSize: 12 }]}>{t('creatorSettings.citizenshipNotUploaded')}</Text>
+                </View>
+              )}
+              {!citizenshipUploading && citizenshipStatus !== 'PENDING' && citizenshipStatus !== 'APPROVED' && (
+                <Text style={[styles.navArrow, { color: C.textSecondary }]}>›</Text>
+              )}
+            </View>
+          </Pressable>
+
           {/* Creator Badge row */}
           <View style={styles.row}>
             <View style={[styles.navIonIconWrap, { backgroundColor: '#F59E0B18' }]}>
               <Ionicons name="ribbon-outline" size={18} color="#F59E0B" />
             </View>
             <Text style={[styles.rowLabel, { color: C.text }]}>{t('creatorSettings.creatorBadgeLabel')}</Text>
-            <View style={[styles.soonBadge, { backgroundColor: C.primaryLight }]}>
-              <Text style={[styles.badgeText, { color: C.brinjal1 }]}>{t('common.comingSoon')}</Text>
-            </View>
+            {creatorIsVerified ? (
+              <View style={styles.verifiedBadge}><Text style={[styles.badgeText, { color: C.active }]}>{t('creatorSettings.verifiedBadge')}</Text></View>
+            ) : (
+              <View style={[styles.soonBadge, { backgroundColor: C.primaryLight }]}>
+                <Text style={[styles.badgeText, { color: C.brinjal1 }]}>{t('creatorSettings.notVerifiedBadge')}</Text>
+              </View>
+            )}
           </View>
         </Card>
 

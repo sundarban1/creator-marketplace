@@ -51,12 +51,18 @@ export function RangeSlider({
   const dragMax      = useRef(false);
   const onMinRef     = useRef(onMinChange);
   const onMaxRef     = useRef(onMaxChange);
+  const maxRef       = useRef(max);
+  const stepRef      = useRef(step);
+  const minGapRef    = useRef(minGap);
 
   dispMinRef.current = dispMin;
   dispMaxRef.current = dispMax;
   trackWRef.current  = trackW;
   onMinRef.current   = onMinChange;
   onMaxRef.current   = onMaxChange;
+  maxRef.current     = max;
+  stepRef.current    = step;
+  minGapRef.current  = minGap;
 
   useEffect(() => { if (!dragMin.current) setDispMin(minVal); }, [minVal]);
   useEffect(() => { if (!dragMax.current) setDispMax(maxVal); }, [maxVal]);
@@ -64,15 +70,18 @@ export function RangeSlider({
   const minPan = useRef(PanResponder.create({
     onStartShouldSetPanResponder: () => true,
     onMoveShouldSetPanResponder:  () => true,
+    onPanResponderTerminationRequest: () => false,
+    onShouldBlockNativeResponder: () => true,
     onPanResponderGrant: () => {
       dragMin.current = true;
-      startMinPx.current = valToPx(dispMinRef.current, trackWRef.current, max);
+      startMinPx.current = valToPx(dispMinRef.current, trackWRef.current, maxRef.current);
     },
     onPanResponderMove: (_, g) => {
       const tw = trackWRef.current;
-      const maxAllowed = valToPx(dispMaxRef.current, tw, max) - valToPx(minGap, tw, max);
+      const maxV = maxRef.current;
+      const maxAllowed = valToPx(dispMaxRef.current, tw, maxV) - valToPx(minGapRef.current, tw, maxV);
       const clamped = Math.max(0, Math.min(startMinPx.current + g.dx, maxAllowed));
-      setDispMin(pxToVal(clamped, tw, max, step));
+      setDispMin(pxToVal(clamped, tw, maxV, stepRef.current));
     },
     onPanResponderRelease: ()   => { dragMin.current = false; onMinRef.current(dispMinRef.current); },
     onPanResponderTerminate: () => { dragMin.current = false; onMinRef.current(dispMinRef.current); },
@@ -81,15 +90,18 @@ export function RangeSlider({
   const maxPan = useRef(PanResponder.create({
     onStartShouldSetPanResponder: () => true,
     onMoveShouldSetPanResponder:  () => true,
+    onPanResponderTerminationRequest: () => false,
+    onShouldBlockNativeResponder: () => true,
     onPanResponderGrant: () => {
       dragMax.current = true;
-      startMaxPx.current = valToPx(dispMaxRef.current, trackWRef.current, max);
+      startMaxPx.current = valToPx(dispMaxRef.current, trackWRef.current, maxRef.current);
     },
     onPanResponderMove: (_, g) => {
       const tw = trackWRef.current;
-      const minAllowed = valToPx(dispMinRef.current, tw, max) + valToPx(minGap, tw, max);
+      const maxV = maxRef.current;
+      const minAllowed = valToPx(dispMinRef.current, tw, maxV) + valToPx(minGapRef.current, tw, maxV);
       const clamped = Math.max(minAllowed, Math.min(startMaxPx.current + g.dx, tw));
-      setDispMax(pxToVal(clamped, tw, max, step));
+      setDispMax(pxToVal(clamped, tw, maxV, stepRef.current));
     },
     onPanResponderRelease: ()   => { dragMax.current = false; onMaxRef.current(dispMaxRef.current); },
     onPanResponderTerminate: () => { dragMax.current = false; onMaxRef.current(dispMaxRef.current); },

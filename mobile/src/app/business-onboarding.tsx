@@ -15,6 +15,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { authService } from '@/services/auth';
 import { profileService } from '@/services/profile';
+import { categoryService } from '@/services/category';
 import { F } from '@/utilities/constants';
 
 const GOOGLE_PLACES_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY ?? '';
@@ -53,7 +54,6 @@ export default function BusinessOnboardingScreen() {
 
   // Step 1
   const [businessName, setBusinessName] = useState('');
-  const [panNo, setPanNo] = useState('');
   const [location, setLocation] = useState('');
   const [locationSuggestions, setLocationSuggestions] = useState<PlacePrediction[]>([]);
   const locationDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -66,6 +66,15 @@ export default function BusinessOnboardingScreen() {
   const [categorySubmitted, setCategorySubmitted] = useState(false);
   const [step2Loading, setStep2Loading] = useState(false);
   const [step2Error, setStep2Error] = useState('');
+  const [categories, setCategories] = useState(BUSINESS_CATEGORIES);
+
+  useEffect(() => {
+    categoryService.getCategories('BUSINESS')
+      .then((cats) => {
+        if (cats.length > 0) setCategories(cats.map((c) => ({ emoji: c.icon, label: c.name })));
+      })
+      .catch(() => { /* keep the fallback default list */ });
+  }, []);
 
   const scaleAnim   = useRef(new Animated.Value(0)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
@@ -111,7 +120,6 @@ export default function BusinessOnboardingScreen() {
     try {
       await profileService.updateBusinessProfile({
         businessName: businessName.trim(),
-        panNo: panNo.trim() || undefined,
         location: location.trim() || null,
       });
       updateUser({ name: businessName.trim() });
@@ -232,26 +240,6 @@ export default function BusinessOnboardingScreen() {
               )}
             </View>
 
-            {/* PAN No */}
-            <View style={styles.fieldGroup}>
-              <View style={styles.labelRow}>
-                <Text style={[styles.fieldLabel, { color: C.text }]}>PAN No</Text>
-                <Text style={[styles.optionalTag, { color: C.textSecondary }]}>Optional</Text>
-              </View>
-              <TextInput
-                style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text }]}
-                value={panNo}
-                onChangeText={setPanNo}
-                placeholder="e.g. 123456789"
-                placeholderTextColor={C.textSecondary}
-                keyboardType="numeric"
-                maxLength={20}
-              />
-              <Text style={[styles.inputHint, { color: C.textSecondary }]}>
-                Your PAN helps verify your business with creators.
-              </Text>
-            </View>
-
             {/* Location */}
             <View style={[styles.fieldGroup, { zIndex: 10 }]}>
               <Text style={[styles.fieldLabel, { color: C.text, marginBottom: 8 }]}>
@@ -335,7 +323,7 @@ export default function BusinessOnboardingScreen() {
                 <Text style={[styles.fieldError, { color: C.error, marginBottom: 8 }]}>Select at least one category</Text>
               )}
               <View style={styles.categoryGrid}>
-                {BUSINESS_CATEGORIES.map((cat) => {
+                {categories.map((cat) => {
                   const isSelected = selectedCategories.includes(cat.label);
                   const isDisabled = !isSelected && selectedCategories.length >= 3;
                   return (
@@ -400,7 +388,6 @@ const styles = StyleSheet.create({
   fieldGroup: { marginBottom: 24 },
   labelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
   fieldLabel: { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
-  optionalTag: { fontSize: 12, fontWeight: '500', fontFamily: F.medium },
   fieldError: { fontSize: 12, fontWeight: '500', fontFamily: F.medium },
   input: { borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 13, fontSize: 15, fontFamily: F.regular },
   textarea: { minHeight: 120, paddingTop: 13, textAlignVertical: 'top' },

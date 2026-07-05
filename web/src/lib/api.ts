@@ -90,6 +90,8 @@ export interface ApiCreator {
   categories: string[];
   socialLinks: Record<string, string>;
   isVerified:  boolean;
+  citizenshipDocUrl?: string | null;
+  citizenshipStatus?: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
   createdAt:   string;
   user:  { id: string; email: string; isEmailVerified: boolean; isActive: boolean; createdAt: string };
   _count: { applications: number };
@@ -134,6 +136,18 @@ export interface ApiBusinessReferral {
     samePayout: boolean;
     sameDevice: boolean;
   };
+}
+
+export interface ApiCategory {
+  id: string;
+  icon: string;
+  iconBg: string;
+  name: string;
+  key: string;
+  scope: 'CREATOR' | 'BUSINESS' | 'BOTH';
+  status: 'ACTIVE' | 'INACTIVE';
+  createdAt: string;
+  itemCount?: number;
 }
 
 export interface ApiBusiness {
@@ -417,6 +431,21 @@ export const api = {
 
     releaseBusinessReferral: (id: string) =>
       request<ApiBusinessReferral>('PATCH', `/api/admin/business-referrals/${id}/release`),
+
+    categories: () =>
+      request<ApiCategory[]>('GET', '/api/admin/categories'),
+
+    createCategory: (data: { icon: string; iconBg: string; name: string; key: string; scope: string; status: string }) =>
+      request<ApiCategory>('POST', '/api/admin/categories', data),
+
+    updateCategory: (id: string, data: { icon: string; iconBg: string; name: string; key: string; scope: string; status: string }) =>
+      request<ApiCategory>('PUT', `/api/admin/categories/${id}`, data),
+
+    toggleCategoryStatus: (id: string, status: string) =>
+      request<ApiCategory>('PATCH', `/api/admin/categories/${id}/status`, { status }),
+
+    deleteCategory: (id: string) =>
+      request<null>('DELETE', `/api/admin/categories/${id}`),
   },
 
   help: {

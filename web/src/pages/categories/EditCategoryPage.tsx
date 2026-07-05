@@ -5,10 +5,14 @@ import { CategoryForm } from './CategoryForm';
 
 export function EditCategoryPage() {
   const { id } = useParams<{ id: string }>();
-  const { getById, updateCategory } = useCategories();
+  const { getById, updateCategory, loading } = useCategories();
   const navigate = useNavigate();
 
   const category = id ? getById(id) : undefined;
+
+  if (loading) {
+    return <div className="flex items-center justify-center h-64 text-sm text-gray-400">Loading…</div>;
+  }
 
   if (!category) {
     return (
@@ -30,9 +34,13 @@ export function EditCategoryPage() {
     );
   }
 
-  function handleSubmit(data: Omit<Category, 'id' | 'createdAt' | 'itemCount'>) {
-    updateCategory(category!.id, data);
-    navigate('/categories');
+  async function handleSubmit(data: Omit<Category, 'id' | 'createdAt' | 'itemCount'>) {
+    try {
+      await updateCategory(category!.id, data);
+      navigate('/categories');
+    } catch (e) {
+      window.alert((e as Error).message ?? 'Failed to update category.');
+    }
   }
 
   return (

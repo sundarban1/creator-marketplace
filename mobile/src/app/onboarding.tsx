@@ -8,10 +8,10 @@ import { useAppColors } from '@/context/ThemeContext';
 import { authService } from '@/services/auth';
 import { creatorService } from '@/services/creator';
 import { profileService } from '@/services/profile';
+import { categoryService } from '@/services/category';
 import { CREATOR_CATEGORIES } from '@/features/creator/data/filterOptions';
 import { F } from '@/utilities/constants';
 
-const CATEGORIES = CREATOR_CATEGORIES;
 const TOTAL_STEPS = 2;
 const GENDER_KEYS = ['Male', 'Female', 'Non-binary', 'Prefer not to say'] as const;
 const GOOGLE_PLACES_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY ?? '';
@@ -86,6 +86,15 @@ export default function OnboardingScreen() {
   const [step2Submitted, setStep2Submitted] = useState(false);
   const [step2Loading,   setStep2Loading]   = useState(false);
   const [step2Error,     setStep2Error]     = useState('');
+  const [categories, setCategories] = useState<{ emoji: string; label: string }[]>(CREATOR_CATEGORIES);
+
+  useEffect(() => {
+    categoryService.getCategories('CREATOR')
+      .then((cats) => {
+        if (cats.length > 0) setCategories(cats.map((c) => ({ emoji: c.icon, label: c.name })));
+      })
+      .catch(() => { /* keep the fallback default list */ });
+  }, []);
 
   const scaleAnim   = useRef(new Animated.Value(0)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
@@ -435,7 +444,7 @@ export default function OnboardingScreen() {
             ) : null}
 
             <View style={styles.categoryGrid}>
-              {CATEGORIES.map((cat) => {
+              {categories.map((cat) => {
                 const isSelected = selectedCategories.includes(cat.label);
                 const isDisabled = !isSelected && selectedCategories.length >= 5;
                 return (

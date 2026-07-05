@@ -1,6 +1,6 @@
 import { useState, useEffect, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { Category, CategoryStatus } from '../../context/CategoriesContext';
+import type { Category, CategoryStatus, CategoryScope } from '../../context/CategoriesContext';
 
 const BG_COLORS = [
   { hex: '#f3e8ff', label: 'Purple' },
@@ -38,6 +38,7 @@ export function CategoryForm({ initial, onSubmit, submitLabel }: CategoryFormPro
   const [name, setName] = useState(initial?.name ?? '');
   const [key, setKey] = useState(initial?.key ?? '');
   const [status, setStatus] = useState<CategoryStatus>(initial?.status ?? 'active');
+  const [scope, setScope] = useState<CategoryScope>(initial?.scope ?? 'both');
   const [keyTouched, setKeyTouched] = useState(!!initial);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -60,7 +61,7 @@ export function CategoryForm({ initial, onSubmit, submitLabel }: CategoryFormPro
     e.preventDefault();
     const e2 = validate();
     if (Object.keys(e2).length) { setErrors(e2); return; }
-    onSubmit({ icon: icon.trim(), iconBg, name: name.trim(), key: key.trim(), status });
+    onSubmit({ icon: icon.trim(), iconBg, name: name.trim(), key: key.trim(), status, scope });
   }
 
   return (
@@ -163,8 +164,34 @@ export function CategoryForm({ initial, onSubmit, submitLabel }: CategoryFormPro
           </div>
         </div>
 
-        {/* Sidebar: status + actions */}
+        {/* Sidebar: scope + status + actions */}
         <div className="space-y-5">
+          <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <h3 className="text-sm font-semibold text-gray-800 mb-1">Applies to</h3>
+            <p className="text-xs text-gray-400 mb-4">Which onboarding/profile flows show this category.</p>
+            <div className="flex flex-col gap-2">
+              {(['both', 'creator', 'business'] as CategoryScope[]).map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setScope(s)}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border-2 transition-all ${
+                    scope === s ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <span className={`text-sm font-medium capitalize ${scope === s ? 'text-gray-900' : 'text-gray-500'}`}>
+                    {s === 'both' ? 'Creators & Businesses' : s === 'creator' ? 'Creators only' : 'Businesses only'}
+                  </span>
+                  {scope === s && (
+                    <svg className="ml-auto w-4 h-4 text-indigo-600 flex-shrink-0" viewBox="0 0 16 16" fill="currentColor">
+                      <path d="M13.78 4.22a.75.75 0 010 1.06l-7.25 7.25a.75.75 0 01-1.06 0L2.22 9.28a.75.75 0 011.06-1.06L6 10.94l6.72-6.72a.75.75 0 011.06 0z" />
+                    </svg>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="bg-white rounded-xl border border-gray-200 p-5">
             <h3 className="text-sm font-semibold text-gray-800 mb-4">Status</h3>
             <div className="flex flex-col gap-2">

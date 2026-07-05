@@ -31,7 +31,7 @@ function DeleteModal({ name, onConfirm, onCancel }: { name: string; onConfirm: (
 }
 
 export function CategoriesPage() {
-  const { categories, toggleStatus, deleteCategory } = useCategories();
+  const { categories, loading, toggleStatus, deleteCategory } = useCategories();
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
@@ -79,6 +79,7 @@ export function CategoriesPage() {
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Icon</th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Name</th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider hidden sm:table-cell">Key</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Scope</th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider hidden md:table-cell">Items</th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider hidden lg:table-cell">Created</th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
@@ -86,14 +87,21 @@ export function CategoriesPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {filtered.length === 0 && (
+            {loading && (
               <tr>
-                <td colSpan={7} className="px-4 py-12 text-center text-gray-400 text-sm">
+                <td colSpan={8} className="px-4 py-12 text-center text-gray-400 text-sm">
+                  Loading…
+                </td>
+              </tr>
+            )}
+            {!loading && filtered.length === 0 && (
+              <tr>
+                <td colSpan={8} className="px-4 py-12 text-center text-gray-400 text-sm">
                   No categories found.
                 </td>
               </tr>
             )}
-            {filtered.map((cat) => (
+            {!loading && filtered.map((cat) => (
               <tr key={cat.id} className="hover:bg-gray-50 transition-colors">
                 {/* Icon */}
                 <td className="px-4 py-3">
@@ -114,6 +122,13 @@ export function CategoriesPage() {
                 <td className="px-4 py-3 hidden sm:table-cell">
                   <span className="font-mono text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-md">
                     {cat.key}
+                  </span>
+                </td>
+
+                {/* Scope */}
+                <td className="px-4 py-3">
+                  <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full capitalize">
+                    {cat.scope === 'both' ? 'Both' : cat.scope === 'creator' ? 'Creators' : 'Businesses'}
                   </span>
                 </td>
 

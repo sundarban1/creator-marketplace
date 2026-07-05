@@ -20,7 +20,8 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/components/Toast';
 import { creatorService } from '@/services/creator';
-import { profileService, type Category } from '@/services/profile';
+import type { Category } from '@/services/profile';
+import { categoryService } from '@/services/category';
 import { F } from '@/utilities/constants';
 
 const PLACES_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY ?? '';
@@ -213,9 +214,10 @@ export default function EditProfileScreen() {
   useEffect(() => {
     Promise.all([
       creatorService.getProfile(),
-      profileService.getCategories(),
+      categoryService.getCategories('CREATOR'),
     ])
-      .then(([profile, cats]) => {
+      .then(([profile, apiCats]) => {
+        const cats: Category[] = apiCats.map((c) => ({ emoji: c.icon, label: c.name }));
         setFullName(profile.fullName ?? '');
         setUsername(profile.username ?? '');
         setOriginalUsername(profile.username ?? '');

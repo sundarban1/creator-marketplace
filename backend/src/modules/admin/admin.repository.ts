@@ -215,10 +215,18 @@ export class AdminRepository {
   }
 
   async updateCreatorVerification(creatorProfileId: string, isVerified: boolean) {
+    const data: { isVerified: boolean; citizenshipStatus?: 'APPROVED' } = { isVerified };
+    if (isVerified) {
+      const existing = await prisma.creatorProfile.findUnique({
+        where:  { id: creatorProfileId },
+        select: { citizenshipDocUrl: true },
+      });
+      if (existing?.citizenshipDocUrl) data.citizenshipStatus = 'APPROVED';
+    }
     return prisma.creatorProfile.update({
       where: { id: creatorProfileId },
-      data:  { isVerified },
-      select: { id: true, fullName: true, isVerified: true },
+      data,
+      select: { id: true, fullName: true, isVerified: true, citizenshipStatus: true, citizenshipDocUrl: true },
     });
   }
 

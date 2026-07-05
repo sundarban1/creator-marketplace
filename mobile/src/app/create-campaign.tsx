@@ -19,8 +19,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { campaignService } from '@/services/campaign';
+import { categoryService } from '@/services/category';
 import { profileService } from '@/services/profile';
-import { CATEGORY_META, CREATOR_CATEGORIES, DEFAULT_META } from '@/features/creator/data/filterOptions';
+import { CREATOR_CATEGORIES } from '@/features/creator/data/filterOptions';
 import { F } from '@/utilities/constants';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -829,12 +830,12 @@ export default function CreateCampaignScreen() {
   const [platformOptions, setPlatformOptions] = useState<string[]>(PLATFORM_FALLBACK);
 
   useEffect(() => {
-    campaignService.getCategories().then((cats) => {
+    categoryService.getCategories('BUSINESS').then((cats) => {
       if (cats.length > 0) {
         setCategoryOptions(
-          cats.map((label) => ({
-            label,
-            emoji: (CATEGORY_META[label] ?? DEFAULT_META).emoji,
+          cats.map((c) => ({
+            label: c.name,
+            emoji: c.icon,
           }))
         );
       }

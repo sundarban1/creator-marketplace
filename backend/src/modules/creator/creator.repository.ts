@@ -107,6 +107,13 @@ export class CreatorRepository {
     return prisma.creatorProfile.findUnique({ where: { username } });
   }
 
+  async updateCitizenship(userId: string, docUrl: string) {
+    return prisma.creatorProfile.update({
+      where: { userId },
+      data:  { citizenshipDocUrl: docUrl, citizenshipStatus: 'PENDING', citizenshipUploadedAt: new Date() },
+    });
+  }
+
   async update(userId: string, data: Partial<{
     username:    string;
     fullName:    string;

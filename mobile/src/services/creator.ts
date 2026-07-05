@@ -22,6 +22,9 @@ export interface ApiCreatorProfile {
   prefLocations:  string[];
   prefBudgetMin:  number;
   prefBudgetMax:  number;
+  isVerified: boolean;
+  citizenshipDocUrl: string | null;
+  citizenshipStatus: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
   user: { id: string; email: string; role: string; isEmailVerified: boolean };
 }
 

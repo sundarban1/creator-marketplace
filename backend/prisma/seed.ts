@@ -2,13 +2,17 @@ import { PrismaClient } from '@prisma/client';
 import { seedUsers } from './seeds/users';
 import { seedCampaigns } from './seeds/campaigns';
 import { seedContent } from './seeds/content';
+import { seedCategories } from './seeds/categories';
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log('\n🌱 Seeding database…\n');
 
-  console.log('── Users ────────────────────────────────────────────────');
+  console.log('── Categories ───────────────────────────────────────────');
+  await seedCategories(prisma);
+
+  console.log('\n── Users ────────────────────────────────────────────────');
   const { businesses } = await seedUsers(prisma);
 
   console.log('\n── Campaigns ────────────────────────────────────────────');

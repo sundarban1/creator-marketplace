@@ -146,13 +146,21 @@ export function Creators() {
       render: (row: ApiCreator) => {
         const suspended = row.user.isActive === false;
         return (
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
             <button
               className="text-xs text-indigo-600 hover:text-indigo-800 font-medium disabled:opacity-50"
               disabled={verifyingId === row.id}
               onClick={() => handleToggleVerified(row)}>
               {row.isVerified ? 'Unverify' : 'Verify'}
             </button>
+            {row.citizenshipDocUrl && (
+              <button
+                className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                onClick={() => window.open(row.citizenshipDocUrl!, '_blank')}>
+                View Citizenship
+              </button>
+            )}
+            {row.citizenshipStatus === 'PENDING' && <StatusBadge status="pending" />}
             {suspended ? (
               <button className="text-xs text-green-600 hover:text-green-800 font-medium" onClick={() => setAction({ type: 'activate', creator: row })}>
                 Activate

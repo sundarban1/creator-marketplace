@@ -5,14 +5,15 @@ import { API_BASE } from '@/lib/api';
 import { storage } from '@/utilities/storage';
 import { ACCESS_TOKEN_KEY } from '@/utilities/constants';
 
-export type UploadTarget = 'creator-avatar' | 'business-logo';
+export type UploadTarget = 'creator-avatar' | 'business-logo' | 'creator-citizenship';
 
-const TARGET_CONFIG: Record<UploadTarget, { path: string; field: string }> = {
-  'creator-avatar': { path: '/api/creator/avatar', field: 'avatar' },
-  'business-logo':  { path: '/api/business/logo',  field: 'logo'   },
+const TARGET_CONFIG: Record<UploadTarget, { path: string; field: string; cropSquare: boolean }> = {
+  'creator-avatar':      { path: '/api/creator/avatar',      field: 'avatar',   cropSquare: true  },
+  'business-logo':       { path: '/api/business/logo',       field: 'logo',     cropSquare: true  },
+  'creator-citizenship': { path: '/api/creator/citizenship', field: 'document', cropSquare: false },
 };
 
-async function pickFromLibrary(): Promise<ImagePicker.ImagePickerAsset | null> {
+async function pickFromLibrary(cropSquare: boolean): Promise<ImagePicker.ImagePickerAsset | null> {
   const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (status !== 'granted') {
     Alert.alert('Permission required', 'Please allow access to your photo library in Settings.');
@@ -20,22 +21,20 @@ async function pickFromLibrary(): Promise<ImagePicker.ImagePickerAsset | null> {
   }
   const result = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ['images'],
-    allowsEditing: true,
-    aspect: [1, 1],
+    ...(cropSquare ? { allowsEditing: true, aspect: [1, 1] as [number, number] } : {}),
     quality: 0.85,
   });
   return result.canceled ? null : result.assets[0];
 }
 
-async function pickFromCamera(): Promise<ImagePicker.ImagePickerAsset | null> {
+async function pickFromCamera(cropSquare: boolean): Promise<ImagePicker.ImagePickerAsset | null> {
   const { status } = await ImagePicker.requestCameraPermissionsAsync();
   if (status !== 'granted') {
     Alert.alert('Permission required', 'Please allow camera access in Settings.');
     return null;
   }
   const result = await ImagePicker.launchCameraAsync({
-    allowsEditing: true,
-    aspect: [1, 1],
+    ...(cropSquare ? { allowsEditing: true, aspect: [1, 1] as [number, number] } : {}),
     quality: 0.85,
   });
   return result.canceled ? null : result.assets[0];
@@ -92,14 +91,15 @@ async function uploadAsset(asset: ImagePicker.ImagePickerAsset, target: UploadTa
   const json = await res.json() as { success: boolean; data: Record<string, string>; message?: string };
   if (!res.ok) throw new Error(json.message ?? 'Upload failed');
 
-  return json.data.avatarUrl ?? json.data.logoUrl ?? '';
+  return json.data.avatarUrl ?? json.data.logoUrl ?? json.data.docUrl ?? '';
 }
 
 export async function pickAndUpload(target: UploadTarget): Promise<string | null> {
   const source = await promptSource();
   if (!source) return null;
 
-  const asset = source === 'library' ? await pickFromLibrary() : await pickFromCamera();
+  const { cropSquare } = TARGET_CONFIG[target];
+  const asset = source === 'library' ? await pickFromLibrary(cropSquare) : await pickFromCamera(cropSquare);
   if (!asset) return null;
 
   return uploadAsset(asset, target);

@@ -78,6 +78,10 @@ export class CreatorService {
     return toCreatorProfileDto(await this.repo.update(userId, input));
   }
 
+  async uploadCitizenship(userId: string, docUrl: string) {
+    return toCreatorProfileDto(await this.repo.updateCitizenship(userId, docUrl));
+  }
+
   async addPortfolioLink(userId: string, input: AddPortfolioLinkInput) {
     const profile = await this.repo.findByUserId(userId);
     if (!profile) throw new AppError('Creator profile not found', 404);

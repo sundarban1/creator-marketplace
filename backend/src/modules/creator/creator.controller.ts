@@ -183,4 +183,20 @@ export class CreatorController {
       next(err);
     }
   }
+
+  async uploadCitizenship(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.file) throw new AppError('No image file provided', 400);
+      const docUrl = await uploadToCloudinary(
+        req.file.buffer,
+        'creators/citizenship',
+        `citizenship_${req.user!.id}`,
+        [],
+      );
+      const profile = await creatorService.uploadCitizenship(req.user!.id, docUrl);
+      success(res, { docUrl: profile.citizenshipDocUrl, citizenshipStatus: profile.citizenshipStatus }, 'Citizenship document uploaded');
+    } catch (err) {
+      next(err);
+    }
+  }
 }

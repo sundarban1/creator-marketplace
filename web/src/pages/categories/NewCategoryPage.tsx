@@ -7,9 +7,13 @@ export function NewCategoryPage() {
   const { addCategory } = useCategories();
   const navigate = useNavigate();
 
-  function handleSubmit(data: Omit<Category, 'id' | 'createdAt' | 'itemCount'>) {
-    addCategory(data);
-    navigate('/categories');
+  async function handleSubmit(data: Omit<Category, 'id' | 'createdAt' | 'itemCount'>) {
+    try {
+      await addCategory(data);
+      navigate('/categories');
+    } catch (e) {
+      window.alert((e as Error).message ?? 'Failed to create category.');
+    }
   }
 
   return (
