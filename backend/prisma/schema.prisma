@@ -444,6 +444,7 @@ enum Role {
 }
 
 enum CampaignStatus {
+  DRAFT
   ACTIVE
   PAUSED
   CLOSED

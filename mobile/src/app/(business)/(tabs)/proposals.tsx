@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { campaignService } from '@/services/campaign';
+import { TabSlider } from '@/components/TabSlider';
 import { F } from '@/utilities/constants';
 
 type WS = 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED';
@@ -235,11 +236,11 @@ export default function ProposalsScreen() {
     activeTab === 'accepted' ? acceptedCards :
     allCards;
 
-  const tabs: { key: TabKey; label: string; count: number; color: string }[] = [
-    { key: 'all',      label: t('proposal.business.tabAll'),      count: allCards.length,      color: '#7C3AED' },
-    { key: 'paid',     label: t('proposal.business.tabPaid'),     count: paidCards.length,     color: PAID_ACCENT },
-    { key: 'free',     label: t('proposal.business.tabFree'),     count: freeCards.length,     color: FREE_ACCENT },
-    { key: 'accepted', label: t('proposal.business.tabAccepted'), count: acceptedCards.length, color: '#16A34A' },
+  const tabs = [
+    { key: 'all',      label: t('proposal.business.tabAll'),      icon: 'layers-outline'          as const, count: allCards.length,      color: '#7C3AED' },
+    { key: 'paid',     label: t('proposal.business.tabPaid'),     icon: 'cash-outline'             as const, count: paidCards.length,     color: PAID_ACCENT },
+    { key: 'free',     label: t('proposal.business.tabFree'),     icon: 'gift-outline'             as const, count: freeCards.length,     color: FREE_ACCENT },
+    { key: 'accepted', label: t('proposal.business.tabAccepted'), icon: 'checkmark-circle-outline' as const, count: acceptedCards.length, color: '#16A34A' },
   ];
 
   return (
@@ -256,30 +257,12 @@ export default function ProposalsScreen() {
       </LinearGradient>
 
       {/* Tab bar */}
-      <View style={[styles.tabBar, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
-        {tabs.map((tab) => {
-          const active = activeTab === tab.key;
-          return (
-            <Pressable
-              key={tab.key}
-              style={styles.tabItem}
-              onPress={() => setActiveTab(tab.key)}>
-              <View style={styles.tabInner}>
-                <Text style={[styles.tabLabel, { color: active ? tab.color : C.textSecondary }]}>
-                  {tab.label}
-                </Text>
-                {tab.count > 0 && (
-                  <View style={[styles.tabBadge, { backgroundColor: active ? tab.color : C.border }]}>
-                    <Text style={[styles.tabBadgeText, { color: active ? '#fff' : C.textSecondary }]}>
-                      {tab.count}
-                    </Text>
-                  </View>
-                )}
-              </View>
-              {active && <View style={[styles.tabUnderline, { backgroundColor: tab.color }]} />}
-            </Pressable>
-          );
-        })}
+      <View style={[styles.filterRow, { backgroundColor: C.surface }]}>
+        <TabSlider
+          tabs={tabs}
+          active={activeTab}
+          onChange={(k) => setActiveTab(k as TabKey)}
+        />
       </View>
 
       {loading ? (
@@ -339,13 +322,7 @@ const styles = StyleSheet.create({
   pageTitle:      { fontSize: 20, fontWeight: '700', color: '#fff', fontFamily: F.bold, lineHeight: 24 },
   pageSub:        { fontSize: 13, color: 'rgba(255,255,255,0.75)', fontFamily: F.regular },
 
-  tabBar:       { flexDirection: 'row', borderBottomWidth: StyleSheet.hairlineWidth },
-  tabItem:      { flex: 1, alignItems: 'center' },
-  tabInner:     { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 12 },
-  tabLabel:     { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
-  tabBadge:     { borderRadius: 10, minWidth: 20, paddingHorizontal: 6, paddingVertical: 2, alignItems: 'center' },
-  tabBadgeText: { fontSize: 10, fontWeight: '700', fontFamily: F.bold },
-  tabUnderline: { height: 2.5, width: '60%', borderRadius: 2 },
+  filterRow: { shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
 
   list:      { paddingTop: 16, paddingHorizontal: 20, paddingBottom: 40 },
   listEmpty: { flexGrow: 1 },

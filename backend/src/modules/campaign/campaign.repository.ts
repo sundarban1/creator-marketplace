@@ -25,6 +25,7 @@ export class CampaignRepository {
     eventDate?: Date;
     venue?: string;
     benefits?: string[];
+    status?: 'DRAFT' | 'ACTIVE';
     objective?: string;
     contentGuidelines?: string[];
     targetAudience?: string[];
@@ -46,6 +47,7 @@ export class CampaignRepository {
         eventDate:    data.eventDate ?? null,
         venue:        data.venue ?? null,
         benefits:     data.benefits ?? [],
+        status:       data.status ?? 'ACTIVE',
         eventStatus:  'OPEN',
       },
       include: {

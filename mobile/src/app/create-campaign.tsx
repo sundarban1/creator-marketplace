@@ -34,23 +34,6 @@ const CATEGORY_FALLBACK = CREATOR_CATEGORIES.map((c) => ({
   emoji: c.emoji,
 }));
 
-const GOALS = [
-  'Brand Awareness',
-  'More Customers',
-  'Product Launch',
-  'Event Promotion',
-  'Social Media Content',
-  'User Generated Content',
-];
-
-const BUDGETS = [
-  'Under Rs. 5,000',
-  'Rs. 5,000 – 15,000',
-  'Rs. 15,000 – 50,000',
-  'Rs. 50,000+',
-  'Free Product Exchange',
-];
-
 const CREATOR_TYPES = [
   'Food Creator',
   'Travel Creator',
@@ -72,51 +55,6 @@ const AI_PROMPT_EXAMPLES = [
   'Promote our mobile app to university students.',
 ];
 
-const NEEDS_INPUT_LABELS: Record<string, string> = {
-  location: 'Location',
-  budgetMin: 'Budget',
-  budgetMax: 'Budget',
-  creatorsNeeded: 'Creators Needed',
-  deadline: 'Duration',
-  platform: 'Platform',
-  category: 'Category',
-};
-
-const BUDGET_MAP: Record<string, { min: number; max: number; payment: string }> = {
-  'Under Rs. 5,000':        { min: 0,     max: 5000,   payment: 'Fixed Fee' },
-  'Rs. 5,000 – 15,000':     { min: 5000,  max: 15000,  payment: 'Fixed Fee' },
-  'Rs. 15,000 – 50,000':    { min: 15000, max: 50000,  payment: 'Fixed Fee' },
-  'Rs. 50,000+':            { min: 50000, max: 999999, payment: 'Fixed Fee' },
-  'Free Product Exchange':  { min: 0,     max: 0,      payment: 'Product Exchange' },
-};
-
-const TEMPLATE_CONTENT: Record<string, { title: string; desc: string }> = {
-  'Food':           { title: 'Authentic Food Experience – Creator Collaboration', desc: "We're looking for food creators to showcase our restaurant, dishes, or food products with genuine taste reactions and stunning visuals. Help us inspire food lovers to discover us." },
-  'Travel':         { title: 'Nepal Adventure – Travel Creator Event', desc: "We're partnering with travel creators to showcase our destination, property, or travel experience. Create compelling journey content that inspires audiences to explore." },
-  'Fashion':        { title: 'Style Collaboration – Fashion Creator Event', desc: "We're looking for fashion creators to model and showcase our latest collection. Feature our pieces in your signature style and help us reach fashion-forward audiences." },
-  'Beauty':         { title: 'Glow Up – Beauty Creator Event', desc: "We're inviting beauty creators to feature our products or services, document transformation experiences, and share before/after content that inspires their audience." },
-  'Fitness':        { title: 'Fitness Collab – Gym & Wellness Event', desc: "We're looking for fitness creators to showcase our gym, equipment, or fitness products. Create motivational content that inspires audiences to start their fitness journey." },
-  'Gaming':         { title: 'Gaming Review – Creator Collaboration', desc: "We're partnering with gaming creators for a review, gameplay showcase, or sponsored content about our game or gaming product. Share your genuine experience with your audience." },
-  'Tech':           { title: 'Honest Tech Review – Creator Collab', desc: "We're partnering with tech creators for an unboxing, feature demo, and honest review of our latest product. Share your genuine take on performance and value." },
-  'Education':      { title: 'Learn & Grow – Education Creator Event', desc: "We're partnering with creators to promote our courses or programs. Highlight benefits and student success stories to help us reach learners ready to upskill." },
-  'Lifestyle':      { title: 'Lifestyle Integration – Creator Partnership', desc: "We're looking for lifestyle creators to naturally integrate our brand into their daily content. Show how our product or service fits seamlessly into a modern lifestyle." },
-  'Home & Living':  { title: 'Home Transformation – Creator Event', desc: "We're inviting home & living creators to feature our products in real home settings. Create inspiring content that shows how our products elevate everyday living." },
-  'Wellness':       { title: 'Wellness Journey – Creator Collaboration', desc: "We're partnering with wellness creators to showcase our products, services, or programs. Help us reach health-conscious audiences looking to improve their wellbeing." },
-  'Music':          { title: 'Music & Entertainment – Creator Event', desc: "We're looking for music creators to promote our event, brand, or product. Create engaging audio-visual content that connects with music lovers and builds excitement." },
-  'Art & Design':   { title: 'Creative Collab – Art & Design Event', desc: "We're partnering with creative and design creators to showcase our brand with artistic flair. Create visually stunning content that highlights our aesthetic and values." },
-  'Pets':           { title: 'Pet-Friendly Creator Event', desc: "We're looking for pet creators to feature our pet products or services. Show your furry friends enjoying what we offer and help us reach dedicated pet owners." },
-  'Parenting':      { title: 'Parenting Creator Event', desc: "We're partnering with parenting creators to showcase our family-friendly products. Share authentic family moments that resonate with parents and caregivers." },
-  'Automotive':     { title: 'Auto Creator Event', desc: "We're looking for automotive creators for a test drive, feature review, or showroom visit. Create engaging content that showcases performance, style, and value." },
-  'Finance':        { title: 'Financial Education – Creator Event', desc: "We're partnering with finance creators to educate audiences about our financial products or services. Help us build trust and reach people ready to make smart money moves." },
-  'Sustainability': { title: 'Eco-Conscious Creator Event', desc: "We're partnering with sustainability creators to promote our eco-friendly products or initiatives. Help us inspire audiences to make conscious choices for the planet." },
-  'Photography':    { title: 'Photography Showcase – Creator Event', desc: "We're looking for photography creators to capture and showcase our products, spaces, or experiences. Create stunning visual content that tells our brand's story." },
-  'Sports':         { title: 'Sports & Fitness – Creator Event', desc: "We're looking for sports creators to showcase our products, equipment, or services in action. Create high-energy content that motivates your athletic audience." },
-  'Film & TV':      { title: 'Entertainment Creator Event', desc: "We're partnering with film and entertainment creators for a review, reaction, or sponsored content about our production, platform, or entertainment product." },
-  'Mindfulness':    { title: 'Mindfulness & Wellness – Creator Event', desc: "We're partnering with mindfulness creators to promote our wellness products or programs. Help us reach audiences looking to reduce stress and improve mental wellbeing." },
-  'Food & Drink':   { title: 'Food & Beverage Creator Event', desc: "We're looking for food and drink creators to showcase our café, restaurant, or beverage products. Create aesthetic content with genuine taste reactions that inspire followers." },
-  'Entertainment':  { title: 'Event & Entertainment – Creator Event', desc: "We're hosting an event or launching entertainment content and need creators to build hype and coverage. Create compelling content that drives awareness and excitement." },
-};
-
 const DELIVERABLE_TYPES: { key: string; label: string }[] = [
   { key: 'REEL',                  label: 'Reel' },
   { key: 'STORY',                 label: 'Story' },
@@ -133,37 +71,6 @@ const DELIVERABLE_TYPES: { key: string; label: string }[] = [
 const DEFAULT_DELIVERABLES: Record<string, number> = Object.fromEntries(
   DELIVERABLE_TYPES.map((d) => [d.key, 0])
 );
-
-type TemplatePreset = { deliverables: Record<string, number>; goals: string[]; budget: string };
-const p = (overrides: Partial<Record<string, number>>, goals: string[], budget: string): TemplatePreset =>
-  ({ deliverables: { ...DEFAULT_DELIVERABLES, ...overrides }, goals, budget });
-
-const TEMPLATE_PRESETS: Record<string, TemplatePreset> = {
-  'Food':           p({ REEL: 1, STORY: 3, VISIT_STORE: 1 },                ['More Customers', 'Brand Awareness'],       'Rs. 5,000 – 15,000'),
-  'Travel':         p({ REEL: 1, PHOTO_POST: 5, STORY: 3, VISIT_STORE: 1 }, ['Brand Awareness', 'More Customers'],       'Rs. 15,000 – 50,000'),
-  'Fashion':        p({ REEL: 1, PHOTO_POST: 1, STORY: 1 },                 ['Brand Awareness', 'Social Media Content'], 'Rs. 5,000 – 15,000'),
-  'Beauty':         p({ REEL: 1, STORY: 2, VISIT_STORE: 1 },                ['More Customers', 'Brand Awareness'],       'Rs. 5,000 – 15,000'),
-  'Fitness':        p({ REEL: 1, STORY: 1, VISIT_STORE: 1 },                ['More Customers', 'Brand Awareness'],       'Under Rs. 5,000'),
-  'Gaming':         p({ REEL: 1, PRODUCT_REVIEW_VIDEO: 1, STORY: 1 },       ['Brand Awareness', 'Social Media Content'], 'Rs. 5,000 – 15,000'),
-  'Tech':           p({ PRODUCT_REVIEW_VIDEO: 1, PHOTO_POST: 1, STORY: 1 }, ['Product Launch', 'Brand Awareness'],       'Rs. 5,000 – 15,000'),
-  'Education':      p({ REEL: 1, STORY: 2, CAROUSEL_POST: 1 },              ['More Customers', 'Brand Awareness'],       'Rs. 5,000 – 15,000'),
-  'Lifestyle':      p({ REEL: 1, PHOTO_POST: 2, STORY: 3 },                 ['Brand Awareness', 'Social Media Content'], 'Rs. 5,000 – 15,000'),
-  'Home & Living':  p({ REEL: 1, PHOTO_POST: 3, STORY: 1 },                 ['Brand Awareness', 'Social Media Content'], 'Rs. 5,000 – 15,000'),
-  'Wellness':       p({ REEL: 1, STORY: 2, VISIT_STORE: 1 },                ['More Customers', 'Brand Awareness'],       'Rs. 5,000 – 15,000'),
-  'Music':          p({ REEL: 1, STORY: 2, EVENT_COVERAGE_VIDEO: 1 },       ['Brand Awareness', 'Event Promotion'],      'Rs. 5,000 – 15,000'),
-  'Art & Design':   p({ REEL: 1, PHOTO_POST: 3, STORY: 1 },                 ['Brand Awareness', 'Social Media Content'], 'Rs. 5,000 – 15,000'),
-  'Pets':           p({ REEL: 1, PHOTO_POST: 1, STORY: 2 },                 ['Brand Awareness', 'Social Media Content'], 'Under Rs. 5,000'),
-  'Parenting':      p({ REEL: 1, PHOTO_POST: 1, STORY: 2 },                 ['Brand Awareness', 'Social Media Content'], 'Rs. 5,000 – 15,000'),
-  'Automotive':     p({ REEL: 1, PHOTO_POST: 3, PRODUCT_REVIEW_VIDEO: 1 },  ['Brand Awareness', 'More Customers'],       'Rs. 15,000 – 50,000'),
-  'Finance':        p({ REEL: 1, STORY: 2, CAROUSEL_POST: 1 },              ['Brand Awareness', 'Social Media Content'], 'Rs. 5,000 – 15,000'),
-  'Sustainability': p({ REEL: 1, PHOTO_POST: 2, STORY: 1 },                 ['Brand Awareness', 'Social Media Content'], 'Rs. 5,000 – 15,000'),
-  'Photography':    p({ PHOTO_POST: 5, REEL: 1, STORY: 2 },                 ['Brand Awareness', 'Social Media Content'], 'Rs. 5,000 – 15,000'),
-  'Sports':         p({ REEL: 1, STORY: 1, VISIT_STORE: 1 },                ['More Customers', 'Brand Awareness'],       'Under Rs. 5,000'),
-  'Film & TV':      p({ REEL: 1, STORY: 2, EVENT_COVERAGE_VIDEO: 1 },       ['Brand Awareness', 'Event Promotion'],      'Rs. 5,000 – 15,000'),
-  'Mindfulness':    p({ REEL: 1, STORY: 3, PHOTO_POST: 1 },                 ['Brand Awareness', 'Social Media Content'], 'Rs. 5,000 – 15,000'),
-  'Food & Drink':   p({ REEL: 1, STORY: 3, PHOTO_POST: 1 },                 ['Brand Awareness', 'More Customers'],       'Rs. 5,000 – 15,000'),
-  'Entertainment':  p({ REEL: 2, STORY: 2, EVENT_COVERAGE_VIDEO: 1 },       ['Event Promotion', 'Brand Awareness'],      'Rs. 5,000 – 15,000'),
-};
 
 const GOOGLE_PLACES_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY ?? '';
 const ERROR_RED = '#EF4444';
@@ -283,7 +190,6 @@ type FormData = {
   aiDeliverables: string;
 };
 
-type SetupErrors = Partial<Record<'template' | 'goals' | 'budget', string>>;
 type ReviewErrors = Partial<Record<'title' | 'deadline' | 'platform' | 'eventDate', string>>;
 type EventErrors = Partial<Record<'template' | 'capacity' | 'venue', string>>;
 type PlacePrediction = { place_id: string; description: string };
@@ -857,7 +763,6 @@ export default function CreateCampaignScreen() {
   const [phase, setPhase] = useState<'setup' | 'review'>('setup');
   const [loading, setLoading] = useState(false);
   const [publishWarnVisible, setPublishWarnVisible] = useState(false);
-  const [setupErrors, setSetupErrors] = useState<SetupErrors>({});
   const [reviewErrors, setReviewErrors] = useState<ReviewErrors>({});
   const [eventErrors, setEventErrors] = useState<EventErrors>({});
   const scrollRef = useRef<ScrollView>(null);
@@ -925,10 +830,10 @@ export default function CreateCampaignScreen() {
     aiDeliverables: '',
   });
 
-  const [aiModalVisible, setAiModalVisible] = useState(false);
   const [aiPromptText, setAiPromptText] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
   const [aiPlaceholder] = useState(() => AI_PROMPT_EXAMPLES[Math.floor(Math.random() * AI_PROMPT_EXAMPLES.length)]);
+  const [aiLocationError, setAiLocationError] = useState<string | undefined>();
   const [newHashtag, setNewHashtag] = useState('');
 
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -987,48 +892,29 @@ export default function CreateCampaignScreen() {
       aiBudgetMax: 0,
       aiDeliverables: '',
     }));
-    setSetupErrors({});
     setReviewErrors({});
     setEventErrors({});
     setPhase('setup');
   }
 
-  function handleGenerate() {
-    const errs: SetupErrors = {};
-    if (!form.template)          errs.template = t('createEvent.errNoTemplate');
-    if (form.goals.length === 0) errs.goals    = t('createEvent.errNoGoals');
-    if (!form.budget)            errs.budget   = t('createEvent.errNoBudget');
-
-    if (Object.keys(errs).length > 0) { setSetupErrors(errs); return; }
-    setSetupErrors({});
-
-    const content = TEMPLATE_CONTENT[form.template] ?? { title: '', desc: '' };
-    let desc = content.desc;
-    if (desc) {
-      desc += `\n\nEvent Goals: ${form.goals.join(', ')}`;
-      if (form.location) desc += `\nLocation: ${form.location}`;
-    }
-
-    setForm((prev) => ({ ...prev, title: content.title, description: desc }));
-    setPhase('review');
-    scrollRef.current?.scrollTo({ y: 0, animated: false });
-  }
-
   async function handleGenerateWithAi() {
     if (!aiPromptText.trim() || aiLoading) return;
+    if (!form.location.trim()) {
+      setAiLocationError(t('createEvent.errNoLocation'));
+      return;
+    }
+    setAiLocationError(undefined);
     setAiLoading(true);
     try {
       const draft = await campaignService.generateWithAi(aiPromptText.trim());
-      const matchedCategory = categoryOptions.find((c) => c.label === draft.category);
       setForm((prev) => ({
         ...prev,
-        template:    matchedCategory ? draft.category : prev.template,
+        template:    draft.category,
         platform:    draft.platform,
         title:       draft.title,
         description: draft.description,
         goals:       prev.goals.length > 0 ? prev.goals : ['Brand Awareness'],
         budget:      '',
-        location:    draft.location ?? prev.location,
         creatorsNeeded: draft.creatorsNeeded,
         deadline:    dayStart(new Date(Date.now() + draft.suggestedDurationDays * 24 * 60 * 60 * 1000)),
         objective:            draft.objective,
@@ -1047,7 +933,6 @@ export default function CreateCampaignScreen() {
         aiBudgetMin: draft.budgetMin,
         aiBudgetMax: draft.budgetMax,
       }));
-      setAiModalVisible(false);
       setAiPromptText('');
       setPhase('review');
       scrollRef.current?.scrollTo({ y: 0, animated: false });
@@ -1090,6 +975,57 @@ export default function CreateCampaignScreen() {
     scrollRef.current?.scrollTo({ y: 0, animated: false });
   }
 
+  function buildPaidCampaignPayload() {
+    const budget = { min: form.aiBudgetMin, max: form.aiBudgetMax, payment: 'Fixed Fee' };
+    return {
+      title:          form.title.trim() || t('createEvent.untitledEvent'),
+      description:    form.description.trim(),
+      template:       form.template,
+      category:       form.template,
+      goals:          form.goals,
+      platform:       form.platform,
+      location:       form.location.trim() || undefined,
+      minFollowers:   0,
+      contentType:    form.goals[0] ?? '',
+      deliverables:   form.aiGenerated ? form.aiDeliverables : (() => {
+        const parts = DELIVERABLE_TYPES
+          .filter((d) => (form.deliverables[d.key] ?? 0) > 0)
+          .map((d) => `${form.deliverables[d.key]} ${d.label}`);
+        return parts.length > 0 ? parts.join(', ') : form.goals.join(', ');
+      })(),
+      deadline:       form.deadline!.toISOString(),
+      budgetMin:      budget.min,
+      budgetMax:      budget.max,
+      paymentType:    budget.payment,
+      creatorsNeeded: form.creatorsNeeded,
+      isFeatured:     form.isFeatured,
+      campaignType:   'PAID_CAMPAIGN' as const,
+      objective:            form.aiGenerated ? form.objective : undefined,
+      contentGuidelines:    form.aiGenerated ? form.contentGuidelines : undefined,
+      targetAudience:       form.aiGenerated ? form.targetAudience : undefined,
+      hashtags:             form.aiGenerated ? form.hashtags : undefined,
+      callToAction:         form.aiGenerated ? form.callToAction : undefined,
+      aiGenerated:           form.aiGenerated,
+      aiPrompt:              form.aiGenerated ? form.aiPrompt : undefined,
+      aiSuggestedCategories: form.aiGenerated ? form.aiSuggestedCategories : undefined,
+      aiSuggestedPlatforms:  form.aiGenerated ? form.aiSuggestedPlatforms : undefined,
+    };
+  }
+
+  async function handleSaveDraft() {
+    if (form.eventType !== 'PAID_CAMPAIGN' || loading) return;
+    setLoading(true);
+    try {
+      await campaignService.create({ ...buildPaidCampaignPayload(), status: 'DRAFT' });
+      showToast(t('createEvent.toastDraftSaved'));
+      setTimeout(() => router.replace('/(business)/'), 500);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : t('createEvent.toastDraftFailed'), 'error');
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function handlePublish() {
     if (form.eventType === 'PAID_CAMPAIGN') {
       const errs: ReviewErrors = {};
@@ -1099,46 +1035,9 @@ export default function CreateCampaignScreen() {
       if (Object.keys(errs).length > 0) { setReviewErrors(errs); return; }
       setReviewErrors({});
 
-      const budget = form.aiGenerated
-        ? { min: form.aiBudgetMin, max: form.aiBudgetMax, payment: 'Fixed Fee' }
-        : BUDGET_MAP[form.budget] ?? { min: 0, max: 0, payment: 'Negotiable' };
       setLoading(true);
       try {
-        await campaignService.create({
-          title:          form.title.trim(),
-          description:    form.description.trim(),
-          template:       form.template,
-          category:       form.template,
-          goals:          form.goals,
-          platform:       form.platform,
-          location:       form.location.trim() || undefined,
-          minFollowers:   0,
-          contentType:    form.goals[0] ?? '',
-          deliverables:   form.aiGenerated ? form.aiDeliverables : (() => {
-            const parts = DELIVERABLE_TYPES
-              .filter((d) => (form.deliverables[d.key] ?? 0) > 0)
-              .map((d) => `${form.deliverables[d.key]} ${d.label}`);
-            return parts.length > 0 ? parts.join(', ') : form.goals.join(', ');
-          })(),
-          deadline:       form.deadline!.toISOString(),
-          budgetMin:      budget.min,
-          budgetMax:      budget.max,
-          paymentType:    budget.payment,
-          creatorsNeeded: form.creatorsNeeded,
-          isFeatured:     form.isFeatured,
-          campaignType:   'PAID_CAMPAIGN',
-          objective:            form.aiGenerated ? form.objective : undefined,
-          contentGuidelines:    form.aiGenerated ? form.contentGuidelines : undefined,
-          targetAudience:       form.aiGenerated ? form.targetAudience : undefined,
-          hashtags:             form.aiGenerated ? form.hashtags : undefined,
-          sampleCaption:        form.aiGenerated ? form.sampleCaption : undefined,
-          callToAction:         form.aiGenerated ? form.callToAction : undefined,
-          approvalRequirements: form.aiGenerated ? form.approvalRequirements : undefined,
-          aiGenerated:           form.aiGenerated,
-          aiPrompt:              form.aiGenerated ? form.aiPrompt : undefined,
-          aiSuggestedCategories: form.aiGenerated ? form.aiSuggestedCategories : undefined,
-          aiSuggestedPlatforms:  form.aiGenerated ? form.aiSuggestedPlatforms : undefined,
-        });
+        await campaignService.create({ ...buildPaidCampaignPayload(), status: 'ACTIVE' });
         showToast(t('createEvent.toastPublished'));
         setTimeout(() => router.replace('/(business)/'), 500);
       } catch (err) {
@@ -1263,122 +1162,60 @@ export default function CreateCampaignScreen() {
               {/* Paid Campaign form */}
               {form.eventType === 'PAID_CAMPAIGN' && (
                 <>
-                  {/* Generate with AI */}
-                  <Pressable
-                    style={[ai.card, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}
-                    onPress={() => setAiModalVisible(true)}>
-                    <View style={ai.cardIconWrap}>
-                      <Text style={ai.cardIcon}>✨</Text>
-                    </View>
-                    <View style={{ flex: 1, gap: 2 }}>
-                      <Text style={[ai.cardTitle, { color: C.brinjal1 }]}>{t('createEvent.aiGenerateCardTitle')}</Text>
-                      <Text style={[ai.cardSub, { color: C.text }]}>{t('createEvent.aiGenerateCardSub')}</Text>
-                    </View>
-                    <Ionicons name="chevron-forward" size={18} color={C.brinjal1} />
-                  </Pressable>
-
-                  {/* Template */}
-                  <SectionCard title={t('createEvent.secCategoryTitle')} sub={t('createEvent.secCategorySub')} colors={C}>
-                    <DropdownPicker
-                      value={form.template}
-                      onChange={(v) => {
-                        const preset = TEMPLATE_PRESETS[v];
-                        setForm((prev) => ({
-                          ...prev,
-                          template: v,
-                          ...(preset ? {
-                            goals:        preset.goals,
-                            budget:       preset.budget,
-                            deliverables: preset.deliverables,
-                          } : {}),
-                        }));
-                        if (setupErrors.template) setSetupErrors((e) => ({ ...e, template: undefined }));
-                        if (setupErrors.goals)    setSetupErrors((e) => ({ ...e, goals: undefined }));
-                        if (setupErrors.budget)   setSetupErrors((e) => ({ ...e, budget: undefined }));
-                      }}
-                      options={categoryOptions}
-                      placeholder={t('createEvent.selectCategoryPlaceholder')}
-                      colors={C}
-                      error={setupErrors.template}
+                  {/* Describe & generate */}
+                  <SectionCard title={t('createEvent.aiPromptLabel')} sub={t('createEvent.aiPromptSub')} colors={C}>
+                    <TextInput
+                      style={[s.textarea, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
+                      value={aiPromptText}
+                      onChangeText={(v) => setAiPromptText(v.slice(0, 500))}
+                      placeholder={aiPlaceholder}
+                      placeholderTextColor={C.textSecondary}
+                      multiline
+                      numberOfLines={4}
+                      editable={!aiLoading}
                     />
-                  </SectionCard>
+                    <Text style={[ai.charCount, { color: C.textSecondary }]}>{aiPromptText.length}/500</Text>
 
-                  {/* Goals */}
-                  <SectionCard title={t('createEvent.secGoalsTitle')} sub={t('createEvent.secGoalsSub')} colors={C}>
-                    <View style={{ gap: 8 }}>
-                      <View style={cg.wrap}>
-                        {GOALS.map((goal) => {
-                          const sel = form.goals.includes(goal);
-                          return (
-                            <Pressable
-                              key={goal}
-                              style={[s.goalChip, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? C.brinjal1 : C.background }]}
-                              onPress={() => {
-                                const next = sel ? form.goals.filter((g) => g !== goal) : [...form.goals, goal];
-                                update('goals', next);
-                                if (setupErrors.goals) setSetupErrors((e) => ({ ...e, goals: undefined }));
-                              }}>
-                              {sel && <Ionicons name="checkmark" size={13} color="#fff" />}
-                              <Text style={[s.goalChipText, { color: sel ? '#fff' : C.textSecondary }]}>{goal}</Text>
-                            </Pressable>
-                          );
-                        })}
-                      </View>
-                      {setupErrors.goals && <Text style={s.errorText}>{setupErrors.goals}</Text>}
-                    </View>
-                  </SectionCard>
-
-                  {/* Budget */}
-                  <SectionCard title={t('createEvent.secBudgetTitle')} sub={t('createEvent.secBudgetSub')} colors={C}>
-                    <View style={{ gap: 8 }}>
-                      <View style={s.budgetGrid}>
-                        {BUDGETS.slice(0, 4).map((b) => {
-                          const sel = form.budget === b;
-                          return (
-                            <Pressable
-                              key={b}
-                              style={[s.budgetCard, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? C.brinjal1 : C.background }]}
-                              onPress={() => {
-                                update('budget', b);
-                                if (setupErrors.budget) setSetupErrors((e) => ({ ...e, budget: undefined }));
-                              }}>
-                              <Text style={[s.budgetCardText, { color: sel ? '#fff' : C.text }]} numberOfLines={2}>{b}</Text>
-                            </Pressable>
-                          );
-                        })}
-                      </View>
-                      {/* Free Product Exchange — full width */}
-                      {(() => {
-                        const b = BUDGETS[4];
-                        const sel = form.budget === b;
-                        return (
-                          <Pressable
-                            style={[s.budgetCardFull, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? C.brinjal1 : C.background }]}
-                            onPress={() => {
-                              update('budget', b);
-                              if (setupErrors.budget) setSetupErrors((e) => ({ ...e, budget: undefined }));
-                            }}>
-                            <Ionicons name="gift-outline" size={17} color={sel ? '#fff' : C.textSecondary} />
-                            <Text style={[s.budgetCardFullText, { color: sel ? '#fff' : C.text }]}>{b}</Text>
-                            {sel && <Ionicons name="checkmark-circle" size={17} color="#fff" />}
-                          </Pressable>
-                        );
-                      })()}
-                      {setupErrors.budget && <Text style={s.errorText}>{setupErrors.budget}</Text>}
+                    <Text style={[ai.exampleLabel, { color: C.textSecondary }]}>{t('createEvent.aiExamplesLabel')}</Text>
+                    <View style={ai.chipWrap}>
+                      {AI_PROMPT_EXAMPLES.map((ex) => (
+                        <Pressable
+                          key={ex}
+                          style={[ai.exampleChip, { borderColor: C.border, backgroundColor: C.background }]}
+                          onPress={() => setAiPromptText(ex)}
+                          disabled={aiLoading}>
+                          <Text style={[ai.exampleChipText, { color: C.textSecondary }]} numberOfLines={1}>{ex}</Text>
+                        </Pressable>
+                      ))}
                     </View>
                   </SectionCard>
 
                   {/* Location */}
                   <SectionCard title={t('createEvent.secLocationTitle')} sub={t('createEvent.secLocationSub')} colors={C}>
-                    <PlacesInput value={form.location} onChange={(v) => update('location', v)} colors={C} />
+                    <PlacesInput
+                      value={form.location}
+                      onChange={(v) => { update('location', v); if (aiLocationError) setAiLocationError(undefined); }}
+                      colors={C}
+                      error={aiLocationError}
+                    />
                   </SectionCard>
 
-                  {/* Generate button */}
+                  {/* Create Event */}
                   <Pressable
-                    style={({ pressed }) => [s.generateBtn, { backgroundColor: C.brinjal1, opacity: pressed ? 0.88 : 1 }]}
-                    onPress={handleGenerate}>
-                    <Text style={s.generateBtnText}>{t('createEvent.generateEventBtn')}</Text>
-                    <Ionicons name="arrow-forward" size={20} color="#fff" />
+                    style={[s.generateBtn, { backgroundColor: (!aiPromptText.trim() || aiLoading) ? C.border : C.brinjal1 }]}
+                    onPress={handleGenerateWithAi}
+                    disabled={!aiPromptText.trim() || aiLoading}>
+                    {aiLoading ? (
+                      <>
+                        <ActivityIndicator size="small" color="#fff" />
+                        <Text style={s.generateBtnText}>{t('createEvent.aiModalGenerating')}</Text>
+                      </>
+                    ) : (
+                      <>
+                        <Text style={s.generateBtnText}>{t('createEvent.createEventBtn')}</Text>
+                        <Ionicons name="arrow-forward" size={18} color="#fff" />
+                      </>
+                    )}
                   </Pressable>
                 </>
               )}
@@ -1446,27 +1283,8 @@ export default function CreateCampaignScreen() {
                 <>
                   {/* Step 2 review header */}
                   <View style={[s.reviewBanner, { backgroundColor: C.surface, borderLeftColor: C.brinjal1 }]}>
-                    <Ionicons name="eye-outline" size={20} color={C.brinjal1} />
-                    <View style={{ flex: 1, gap: 2 }}>
-                      <Text style={[s.reviewBannerTitle, { color: C.text }]}>{t('createEvent.paidBannerTitle')}</Text>
-                      <Text style={[s.reviewBannerSub, { color: C.textSecondary }]}>{t('createEvent.paidBannerSub')}</Text>
-                    </View>
+                    <Text style={[s.reviewBannerHeading, { color: C.text }]}>{t('createEvent.paidBannerSub')}</Text>
                   </View>
-
-                  {/* AI "needs input" banner */}
-                  {form.aiGenerated && form.needsInput.length > 0 && (
-                    <View style={[ai.needsInputBanner, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
-                      <Ionicons name="sparkles" size={16} color={C.brinjal1} />
-                      <Text style={[ai.needsInputText, { color: C.text }]}>
-                        {t('createEvent.aiNeedsInputBanner', {
-                          fields: [...new Set(form.needsInput.map((f) => NEEDS_INPUT_LABELS[f] ?? f))].join(', '),
-                        })}
-                      </Text>
-                      <Pressable hitSlop={8} onPress={() => update('needsInput', [])}>
-                        <Ionicons name="close" size={16} color={C.textSecondary} />
-                      </Pressable>
-                    </View>
-                  )}
 
                   {/* Editable title */}
                   <SectionCard title={t('createEvent.secEventTitlePaid')} colors={C}>
@@ -1498,11 +1316,12 @@ export default function CreateCampaignScreen() {
 
                   {/* AI-only: Objective */}
                   {form.aiGenerated && (
-                    <SectionCard title={t('createEvent.secObjectiveTitle')} colors={C}>
+                    <SectionCard title={t('createEvent.secObjectiveTitle')} sub={t('createEvent.secObjectiveSub')} colors={C}>
                       <TextInput
-                        style={[s.input, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
+                        style={[s.textarea, { backgroundColor: C.background, borderColor: C.border, color: C.text, minHeight: 70 }]}
                         value={form.objective}
                         onChangeText={(v) => update('objective', v)}
+                        multiline
                         placeholderTextColor={C.textSecondary}
                       />
                     </SectionCard>
@@ -1539,9 +1358,10 @@ export default function CreateCampaignScreen() {
                   {form.aiGenerated ? (
                     <SectionCard title={t('createEvent.secDeliverablesTitle')} sub={t('createEvent.secDeliverablesSub')} colors={C}>
                       <TextInput
-                        style={[s.input, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
+                        style={[s.textarea, { backgroundColor: C.background, borderColor: C.border, color: C.text, minHeight: 70 }]}
                         value={form.aiDeliverables}
                         onChangeText={(v) => update('aiDeliverables', v)}
+                        multiline
                         placeholderTextColor={C.textSecondary}
                       />
                     </SectionCard>
@@ -1637,38 +1457,13 @@ export default function CreateCampaignScreen() {
                     </SectionCard>
                   )}
 
-                  {/* AI-only: Sample Caption */}
-                  {form.aiGenerated && (
-                    <SectionCard title={t('createEvent.secSampleCaptionTitle')} colors={C}>
-                      <TextInput
-                        style={[s.textarea, { backgroundColor: C.background, borderColor: C.border, color: C.text, minHeight: 90 }]}
-                        value={form.sampleCaption}
-                        onChangeText={(v) => update('sampleCaption', v)}
-                        multiline
-                        placeholderTextColor={C.textSecondary}
-                      />
-                    </SectionCard>
-                  )}
-
                   {/* AI-only: Call to Action */}
                   {form.aiGenerated && (
-                    <SectionCard title={t('createEvent.secCallToActionTitle')} colors={C}>
-                      <TextInput
-                        style={[s.input, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
-                        value={form.callToAction}
-                        onChangeText={(v) => update('callToAction', v)}
-                        placeholderTextColor={C.textSecondary}
-                      />
-                    </SectionCard>
-                  )}
-
-                  {/* AI-only: Approval Requirements */}
-                  {form.aiGenerated && (
-                    <SectionCard title={t('createEvent.secApprovalRequirementsTitle')} colors={C}>
+                    <SectionCard title={t('createEvent.secCallToActionTitle')} sub={t('createEvent.secCallToActionSub')} colors={C}>
                       <TextInput
                         style={[s.textarea, { backgroundColor: C.background, borderColor: C.border, color: C.text, minHeight: 70 }]}
-                        value={form.approvalRequirements}
-                        onChangeText={(v) => update('approvalRequirements', v)}
+                        value={form.callToAction}
+                        onChangeText={(v) => update('callToAction', v)}
                         multiline
                         placeholderTextColor={C.textSecondary}
                       />
@@ -1724,7 +1519,7 @@ export default function CreateCampaignScreen() {
                     {[
                       { label: t('createEvent.summaryCategory'), value: selectedTemplate ? `${selectedTemplate.emoji} ${form.template}` : '—' },
                       { label: t('createEvent.summaryGoals'),    value: form.goals.join(', ') || '—' },
-                      { label: t('createEvent.summaryBudget'),   value: form.budget || '—' },
+                      { label: t('createEvent.summaryBudget'),   value: `Rs. ${form.aiBudgetMin.toLocaleString()} – ${form.aiBudgetMax.toLocaleString()}` },
                       { label: t('createEvent.summaryLocation'), value: form.location || t('createEvent.summaryRemote') },
                     ].map(({ label, value }, i, arr) => (
                       <View key={label} style={[s.summaryRow, i < arr.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}>
@@ -1748,6 +1543,15 @@ export default function CreateCampaignScreen() {
                     <View style={[s.toggle, { backgroundColor: form.isFeatured ? '#F59E0B' : C.border }]}>
                       <View style={[s.toggleThumb, { left: form.isFeatured ? 20 : 2 }]} />
                     </View>
+                  </Pressable>
+
+                  {/* Save as Draft */}
+                  <Pressable
+                    style={[s.draftBtn, { borderColor: C.border, opacity: loading ? 0.6 : 1 }]}
+                    onPress={handleSaveDraft}
+                    disabled={loading}>
+                    <Ionicons name="save-outline" size={16} color={C.textSecondary} />
+                    <Text style={[s.draftBtnText, { color: C.textSecondary }]}>{t('createEvent.saveDraftBtn')}</Text>
                   </Pressable>
 
                   {/* Actions */}
@@ -1935,56 +1739,11 @@ export default function CreateCampaignScreen() {
               <Pressable
                 style={[s.warnConfirmBtn, { backgroundColor: C.brinjal1 }]}
                 onPress={() => { setPublishWarnVisible(false); handlePublish(); }}>
-                <Ionicons name="rocket-outline" size={16} color="#fff" />
                 <Text style={s.warnConfirmText}>{t('createEvent.warnPublishNow')}</Text>
               </Pressable>
             </View>
           </Pressable>
         </Pressable>
-      </Modal>
-
-      {/* AI generation modal */}
-      <Modal visible={aiModalVisible} transparent animationType="slide" onRequestClose={() => !aiLoading && setAiModalVisible(false)}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={dp.modalWrap}>
-          <Pressable style={dp.scrim} onPress={() => !aiLoading && setAiModalVisible(false)} />
-          <View style={[dp.sheet, { backgroundColor: C.surface }]}>
-            <View style={[dp.handle, { backgroundColor: C.border }]} />
-            <View style={mc.sheetHeader}>
-              <Text style={[dp.sheetTitle, { color: C.text, marginBottom: 0 }]}>{t('createEvent.aiModalTitle')}</Text>
-              <Pressable onPress={() => !aiLoading && setAiModalVisible(false)}>
-                <Ionicons name="close-circle" size={22} color={C.textSecondary} />
-              </Pressable>
-            </View>
-            <TextInput
-              style={[s.textarea, { backgroundColor: C.background, borderColor: C.border, color: C.text, marginTop: 12 }]}
-              value={aiPromptText}
-              onChangeText={(v) => setAiPromptText(v.slice(0, 500))}
-              placeholder={aiPlaceholder}
-              placeholderTextColor={C.textSecondary}
-              multiline
-              numberOfLines={4}
-              editable={!aiLoading}
-              autoFocus
-            />
-            <Text style={[ai.charCount, { color: C.textSecondary }]}>{aiPromptText.length}/500</Text>
-            <Pressable
-              style={[s.generateBtn, { backgroundColor: (!aiPromptText.trim() || aiLoading) ? C.border : C.brinjal1 }]}
-              onPress={handleGenerateWithAi}
-              disabled={!aiPromptText.trim() || aiLoading}>
-              {aiLoading ? (
-                <>
-                  <ActivityIndicator size="small" color="#fff" />
-                  <Text style={s.generateBtnText}>{t('createEvent.aiModalGenerating')}</Text>
-                </>
-              ) : (
-                <>
-                  <Text style={s.generateBtnText}>{t('createEvent.aiModalGenerateBtn')}</Text>
-                  <Ionicons name="sparkles" size={18} color="#fff" />
-                </>
-              )}
-            </Pressable>
-          </View>
-        </KeyboardAvoidingView>
       </Modal>
 
       {/* Toast */}
@@ -2029,6 +1788,7 @@ const s = StyleSheet.create({
   reviewBanner:      { flexDirection: 'row', alignItems: 'flex-start', gap: 12, borderRadius: 12, borderLeftWidth: 3, paddingVertical: 14, paddingHorizontal: 14 },
   reviewBannerTitle: { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
   reviewBannerSub:   { fontSize: 12, fontFamily: F.regular, lineHeight: 18 },
+  reviewBannerHeading: { fontSize: 17, fontWeight: '700', fontFamily: F.bold, lineHeight: 23 },
 
   summaryRow:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingVertical: 10, gap: 12 },
   summaryLabel: { fontSize: 13, fontFamily: F.regular, width: 72 },
@@ -2042,6 +1802,8 @@ const s = StyleSheet.create({
   toggle:         { width: 44, height: 26, borderRadius: 13, position: 'relative' },
   toggleThumb:    { position: 'absolute', top: 3, width: 20, height: 20, borderRadius: 10, backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 3, shadowOffset: { width: 0, height: 1 }, elevation: 3 },
 
+  draftBtn:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderRadius: 14, height: 48, borderWidth: 1.5, marginTop: 8 },
+  draftBtnText:  { fontSize: 14, fontWeight: '600', fontFamily: F.semibold },
   reviewActions: { flexDirection: 'row', gap: 12, marginTop: 8 },
   editBtn:       { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, borderRadius: 14, height: 52, borderWidth: 1.5 },
   editBtnText:   { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
@@ -2101,14 +1863,10 @@ const dlv = StyleSheet.create({
 });
 
 const ai = StyleSheet.create({
-  card:         { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 16, borderWidth: 1.5, padding: 16 },
-  cardIconWrap: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.5)' },
-  cardIcon:     { fontSize: 20 },
-  cardTitle:    { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
-  cardSub:      { fontSize: 12, fontFamily: F.regular, lineHeight: 17 },
   charCount:    { fontSize: 11, fontFamily: F.regular, textAlign: 'right', marginTop: 4 },
-  needsInputBanner: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, borderRadius: 12, padding: 12, borderWidth: 1 },
-  needsInputText:   { flex: 1, fontSize: 12, lineHeight: 18, fontFamily: F.regular },
+  exampleLabel: { fontSize: 11, fontWeight: '700', fontFamily: F.bold, textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 4 },
+  exampleChip:  { borderRadius: 10, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 8, maxWidth: '100%' },
+  exampleChipText: { fontSize: 12, fontFamily: F.regular },
   chipWrap:     { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   hashtagChip:  { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10, borderWidth: 1.5 },
   hashtagChipText: { fontSize: 13, fontFamily: F.medium },

@@ -85,7 +85,12 @@
       "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000/api/categories)",
       "Bash(kill 34014)",
       "Bash(disown)",
-      "Bash(curl -s -X POST http://localhost:3000/api/campaigns/ai/generate -H 'Authorization: Bearer __CMDSUB_OUTPUT__' -H 'Content-Type: application/json' -d '{\"prompt\": \"momo restaurant\"}')"
+      "Bash(curl -s -X POST http://localhost:3000/api/campaigns/ai/generate -H 'Authorization: Bearer __CMDSUB_OUTPUT__' -H 'Content-Type: application/json' -d '{\"prompt\": \"momo restaurant\"}')",
+      "Bash(awk 'NR<=945 && /^  [a-zA-Z]+: {$/{line=NR; name=$0} END{}' /Users/sundarban/Documents/projects/marketplace/mobile/src/i18n/en.ts)",
+      "Bash(grep -n \"^  [a-zA-Z]*: {$\" /Users/sundarban/Documents/projects/marketplace/mobile/src/i18n/en.ts)",
+      "Bash(awk -F: '$1<945')",
+      "Bash(grep -n \"async update\\(id: string, data: {\" -A 20 /Users/sundarban/Documents/projects/marketplace/mobile/src/services/campaign.ts)",
+      "Bash(curl -s -X DELETE http://localhost:3000/api/campaigns/__TRACKED_VAR__ -H 'Authorization: Bearer __TRACKED_VAR__')"
     ],
     "additionalDirectories": [
       "/private/tmp"

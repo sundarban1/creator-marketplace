@@ -16,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { TabSlider } from '@/components/TabSlider';
+import { useToast } from '@/components/Toast';
 import { campaignService } from '@/services/campaign';
 import { creatorService, type SavedCreatorItem } from '@/services/creator';
 import { CATEGORY_META, DEFAULT_META, cardBg } from '@/features/creator/data/filterOptions';
@@ -62,10 +63,12 @@ function initials(name: string) {
 export default function CampaignsScreen() {
   const C = useAppColors();
   const { t } = useLanguage();
+  const toast = useToast();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeFilter, setActiveFilter] = useState<typeof FILTERS[number]>('All');
+  const [publishingId, setPublishingId] = useState<string | null>(null);
 
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const [applications, setApplications] = useState<Application[]>([]);
@@ -130,6 +133,20 @@ export default function CampaignsScreen() {
       setTimeout(() => setInviteCampaign(null), 1500);
     } catch { /* ignore */ } finally {
       setInviteSending(false);
+    }
+  }
+
+  async function handlePublishDraft(c: Campaign) {
+    if (publishingId) return;
+    setPublishingId(c.id);
+    try {
+      await campaignService.update(c.id, { status: 'active' });
+      toast.success(t('campaigns.draftPublished'));
+      await loadCampaigns();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('campaigns.draftPublishFailed'));
+    } finally {
+      setPublishingId(null);
     }
   }
 
@@ -286,7 +303,7 @@ export default function CampaignsScreen() {
                     </Pressable>
 
                     {/* Footer actions */}
-                    {(c.proposals > 0 || c.status === 'active') && (
+                    {(c.proposals > 0 || c.status === 'active' || c.status === 'draft') && (
                       <>
                         <View style={[styles.footerDivider, { backgroundColor: C.border }]} />
                         <View style={styles.footerRow}>
@@ -303,6 +320,19 @@ export default function CampaignsScreen() {
                               onPress={() => openInvite(c)}>
                               <Ionicons name="person-add-outline" size={13} color={C.brinjal1} />
                               <Text style={[styles.inviteBtnText, { color: C.brinjal1 }]}>{t('campaigns.invite')}</Text>
+                            </Pressable>
+                          )}
+                          {c.status === 'draft' && (
+                            <Pressable
+                              style={({ pressed }) => [styles.inviteBtn, { backgroundColor: C.primaryLight, opacity: publishingId === c.id ? 0.6 : 1 }, pressed && { opacity: 0.7 }]}
+                              disabled={publishingId === c.id}
+                              onPress={() => handlePublishDraft(c)}>
+                              {publishingId === c.id ? (
+                                <ActivityIndicator size="small" color={C.brinjal1} />
+                              ) : (
+                                <Ionicons name="cloud-upload-outline" size={13} color={C.brinjal1} />
+                              )}
+                              <Text style={[styles.inviteBtnText, { color: C.brinjal1 }]}>{t('campaigns.publishDraft')}</Text>
                             </Pressable>
                           )}
                         </View>

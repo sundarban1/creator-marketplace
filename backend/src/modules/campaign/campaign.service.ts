@@ -85,24 +85,24 @@ export class CampaignService {
     });
     const campaign = toCampaignDto(raw);
 
-    // Broadcast new active campaign to all connected creators in real time
     if (raw.status === 'ACTIVE') {
+      // Broadcast new active campaign to all connected creators in real time
       emitToRole('CREATOR', 'campaign:new', campaign);
-    }
 
-    // Notify creators who have favorited this business
-    this.favoriteRepo.getCreatorUserIdsForBusiness(business.id).then((userIds) => {
-      if (userIds.length === 0) return;
-      const notifications = userIds.map((uid) => ({
-        userId:  uid,
-        type:    'new_campaign',
-        title:   `${business.businessName} posted a new campaign`,
-        body:    `${raw.title} — ${raw.category}`,
-        refId:   raw.id,
-        refType: 'campaign',
-      }));
-      return notificationService.createMany(notifications);
-    }).catch(() => {});
+      // Notify creators who have favorited this business
+      this.favoriteRepo.getCreatorUserIdsForBusiness(business.id).then((userIds) => {
+        if (userIds.length === 0) return;
+        const notifications = userIds.map((uid) => ({
+          userId:  uid,
+          type:    'new_campaign',
+          title:   `${business.businessName} posted a new campaign`,
+          body:    `${raw.title} — ${raw.category}`,
+          refId:   raw.id,
+          refType: 'campaign',
+        }));
+        return notificationService.createMany(notifications);
+      }).catch(() => {});
+    }
 
     return campaign;
   }
@@ -164,7 +164,27 @@ export class CampaignService {
       eventDate: input.eventDate ? new Date(input.eventDate) : undefined,
     });
 
-    return toCampaignDto(updated);
+    const dto = toCampaignDto(updated);
+
+    // Publishing a draft (or reactivating a non-active campaign) — same fan-out as a brand-new campaign
+    if (input.status === 'ACTIVE' && campaign.status !== 'ACTIVE') {
+      emitToRole('CREATOR', 'campaign:new', dto);
+
+      this.favoriteRepo.getCreatorUserIdsForBusiness(business.id).then((userIds) => {
+        if (userIds.length === 0) return;
+        const notifications = userIds.map((uid) => ({
+          userId:  uid,
+          type:    'new_campaign',
+          title:   `${business.businessName} posted a new campaign`,
+          body:    `${updated.title} — ${updated.category}`,
+          refId:   updated.id,
+          refType: 'campaign',
+        }));
+        return notificationService.createMany(notifications);
+      }).catch(() => {});
+    }
+
+    return dto;
   }
 
   async delete(id: string, userId: string) {
@@ -216,6 +236,16 @@ export class CampaignService {
     const existingApplication = await this.repo.findApplication(campaignId, creator.id);
     if (existingApplication) {
       throw new AppError('You have already applied to this campaign', 409);
+    }
+
+    const isFreeCampaign = (campaign as any).campaignType === 'OPEN_EVENT';
+    if (!isFreeCampaign && campaign.budgetMax > 0) {
+      if (input.proposedRate < campaign.budgetMin || input.proposedRate > campaign.budgetMax) {
+        throw new AppError(
+          `Proposed rate must be between Rs. ${campaign.budgetMin.toLocaleString()} and Rs. ${campaign.budgetMax.toLocaleString()}`,
+          400,
+        );
+      }
     }
 
     const rawApp = await this.repo.createApplication({

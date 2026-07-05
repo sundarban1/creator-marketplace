@@ -99,11 +99,13 @@ function generateTemplate(category: string, title: string, brand: string): strin
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function SubmitProposalScreen() {
-  const { campaignId, campaignTitle, brand, budget, category, campaignType } = useLocalSearchParams<{
+  const { campaignId, campaignTitle, brand, budget, budgetMin, budgetMax, category, campaignType } = useLocalSearchParams<{
     campaignId:    string;
     campaignTitle: string;
     brand:         string;
     budget:        string;
+    budgetMin:     string;
+    budgetMax:     string;
     category:      string;
     campaignType:  string;
   }>();
@@ -124,11 +126,21 @@ export default function SubmitProposalScreen() {
   const coverLetterLen = coverLetter.trim().length;
   const proposedRate   = isFreeEvent ? 0 : parseFloat(rate.replace(/[^0-9.]/g, ''));
 
+  const budgetMinNum   = parseFloat(budgetMin ?? '') || 0;
+  const budgetMaxNum   = parseFloat(budgetMax ?? '') || 0;
+  const hasBudgetRange = !isFreeEvent && budgetMaxNum > 0;
+  const rateOutOfRange = hasBudgetRange && !!proposedRate && (proposedRate < budgetMinNum || proposedRate > budgetMaxNum);
+  const isRateInvalid  = !isFreeEvent && (!proposedRate || proposedRate <= 0 || rateOutOfRange);
+
   const coverError = submitted && coverLetterLen < 50
     ? `Cover letter must be at least 50 characters (${coverLetterLen}/50)`
     : undefined;
-  const rateError  = !isFreeEvent && submitted && (!proposedRate || proposedRate <= 0)
-    ? 'Enter a valid amount (e.g. 5000)'
+  const rateError  = !isFreeEvent && submitted
+    ? (!proposedRate || proposedRate <= 0)
+      ? 'Enter a valid amount (e.g. 5000)'
+      : rateOutOfRange
+        ? `Enter an amount between Rs. ${budgetMinNum.toLocaleString()} and Rs. ${budgetMaxNum.toLocaleString()}`
+        : undefined
     : undefined;
   const portError  = submitted && portfolio.trim() && !isValidUrl(portfolio.trim())
     ? 'Enter a valid URL (e.g. https://yourportfolio.com)'
@@ -142,7 +154,7 @@ export default function SubmitProposalScreen() {
 
   async function handleSubmit() {
     setSubmitted(true);
-    if (coverLetterLen < 50 || (!isFreeEvent && (!proposedRate || proposedRate <= 0)) || (portfolio.trim() && !isValidUrl(portfolio.trim()))) {
+    if (coverLetterLen < 50 || isRateInvalid || (portfolio.trim() && !isValidUrl(portfolio.trim()))) {
       toast.warning('Please fix the errors below before submitting.');
       return;
     }
@@ -258,6 +270,7 @@ export default function SubmitProposalScreen() {
                 placeholder="e.g. 5000"
                 keyboardType="numeric"
                 error={rateError}
+                hint={hasBudgetRange ? `Budget range: Rs. ${budgetMinNum.toLocaleString()} – Rs. ${budgetMaxNum.toLocaleString()}` : undefined}
               />
             )}
 
