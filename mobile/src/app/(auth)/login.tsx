@@ -320,7 +320,6 @@ function SignupForm({ onGooglePress, googleLoading, googleError, onFacebookPress
   return (
     <View>
       {/* Role cards */}
-      <Text style={[s.sectionLabel, { color: C.text }]}>{t('auth.signup.joiningAs')}</Text>
       <View style={s.roleRow}>
         {ROLES.map((r) => {
           const active = role === r.key;
@@ -792,7 +791,6 @@ const s = StyleSheet.create({
   domainSuggestTextBold: { fontFamily: F.semibold, color: '#374151' },
 
   // Role cards
-  sectionLabel:  { fontSize: 13, fontWeight: '600', fontFamily: F.semibold, color: '#374151', marginBottom: 12 },
   roleRow:       { flexDirection: 'row', gap: 12, marginBottom: 20 },
   roleCard:      { flex: 1, borderRadius: 14, borderWidth: 1.5, padding: 16, gap: 8, alignItems: 'center', position: 'relative' },
   roleCardActive:{ shadowColor: P2, shadowOpacity: 0.18, shadowRadius: 14, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
