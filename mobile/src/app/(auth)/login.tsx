@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { useRef, useState, useEffect } from 'react';
 import {
   Animated,
@@ -36,6 +36,18 @@ const LANG_OPTIONS: { lang: Lang; flag: string }[] = [
 const P1 = '#4C1D95';
 const P2 = '#6D28D9';
 const P3 = '#7C3AED';
+
+// Decorative background icons scattered across the hero — purely visual, low-opacity texture
+const BG_ICONS: { name: string; size: number; rotate: string; style: object }[] = [
+  { name: 'camera',       size: 32, rotate: '-14deg', style: { top: 6,   left: '8%'  } },
+  { name: 'dollar-sign',  size: 24, rotate: '12deg',  style: { top: 2,   right: '30%' } },
+  { name: 'mobile-alt',   size: 28, rotate: '-8deg',  style: { top: 118, left: '4%'  } },
+  { name: 'laptop',       size: 34, rotate: '9deg',   style: { top: 140, right: '6%' } },
+  { name: 'hashtag',      size: 20, rotate: '-6deg',  style: { top: 54,  left: '44%' } },
+  { name: 'video',        size: 22, rotate: '15deg',  style: { top: 190, left: '38%' } },
+  { name: 'chart-line',   size: 20, rotate: '-10deg', style: { top: 30,  right: '4%' } },
+  { name: 'heart',        size: 18, rotate: '10deg',  style: { top: 210, right: '22%' } },
+];
 
 const ROLES = [
   { key: 'CREATOR'  as const, label: 'Content Creator', sub: 'Influencer & creator', icon: 'camera-outline'    as const, grad: ['#8B5CF6', '#6D28D9'] as const },
@@ -436,6 +448,19 @@ export default function LoginScreen() {
   const insets                    = useSafeAreaInsets();
   const [tab, setTab]             = useState<'login' | 'signup'>(params.tab === 'signup' ? 'signup' : 'login');
 
+  // Entrance animation — card slides up and fades in on mount
+  const cardAnim = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(cardAnim, { toValue: 1, duration: 480, useNativeDriver: true }).start();
+  }, [cardAnim]);
+
+  // Crossfade the form content whenever the Login/Signup tab changes
+  const formAnim = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    formAnim.setValue(0);
+    Animated.timing(formAnim, { toValue: 1, duration: 260, useNativeDriver: true }).start();
+  }, [tab, formAnim]);
+
   const [googleLoading,   setGoogleLoading]   = useState(false);
   const [googleError,     setGoogleError]     = useState('');
   const [facebookLoading, setFacebookLoading] = useState(false);
@@ -574,6 +599,19 @@ export default function LoginScreen() {
           <View style={s.blob2} />
           <View style={s.blob3} />
 
+          {/* Decorative background icons */}
+          <View style={s.bgIconLayer} pointerEvents="none">
+            {BG_ICONS.map((icon, i) => (
+              <FontAwesome5
+                key={i}
+                name={icon.name as any}
+                size={icon.size}
+                color="#ffffff"
+                style={[s.bgIcon, icon.style, { transform: [{ rotate: icon.rotate }] }]}
+              />
+            ))}
+          </View>
+
           {/* Top row: logo + lang */}
           <View style={s.heroTop}>
             <View style={s.logoBadgeCard}>
@@ -603,7 +641,16 @@ export default function LoginScreen() {
         </LinearGradient>
 
         {/* ── White card ── */}
-        <View style={s.card}>
+        <Animated.View
+          style={[
+            s.card,
+            {
+              opacity: cardAnim,
+              transform: [{
+                translateY: cardAnim.interpolate({ inputRange: [0, 1], outputRange: [28, 0] }),
+              }],
+            },
+          ]}>
           <ScrollView
             contentContainerStyle={[s.cardScroll, { paddingBottom: insets.bottom + 24 }]}
             keyboardShouldPersistTaps="handled"
@@ -627,9 +674,17 @@ export default function LoginScreen() {
             </View>
 
             {/* Form */}
-            {tab === 'login'
-              ? <LoginForm verified={params.verified} onGooglePress={handleGooglePress} googleLoading={googleLoading} googleError={googleError} onFacebookPress={handleFacebookPress} facebookLoading={facebookLoading} facebookError={facebookError} />
-              : <SignupForm onGooglePress={handleGooglePress} googleLoading={googleLoading} googleError={googleError} onFacebookPress={handleFacebookPress} facebookLoading={facebookLoading} facebookError={facebookError} />}
+            <Animated.View
+              style={{
+                opacity: formAnim,
+                transform: [{
+                  translateY: formAnim.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }),
+                }],
+              }}>
+              {tab === 'login'
+                ? <LoginForm verified={params.verified} onGooglePress={handleGooglePress} googleLoading={googleLoading} googleError={googleError} onFacebookPress={handleFacebookPress} facebookLoading={facebookLoading} facebookError={facebookError} />
+                : <SignupForm onGooglePress={handleGooglePress} googleLoading={googleLoading} googleError={googleError} onFacebookPress={handleFacebookPress} facebookLoading={facebookLoading} facebookError={facebookError} />}
+            </Animated.View>
 
             {/* Footer */}
             <View style={s.footer}>
@@ -638,7 +693,7 @@ export default function LoginScreen() {
             </View>
 
           </ScrollView>
-        </View>
+        </Animated.View>
 
       </KeyboardAvoidingView>
 
@@ -687,6 +742,9 @@ const s = StyleSheet.create({
   blob1:   { position: 'absolute', width: 240, height: 240, borderRadius: 120, backgroundColor: 'rgba(255,255,255,0.03)', top: -60, right: -60 },
   blob2:   { position: 'absolute', width: 160, height: 160, borderRadius: 80,  backgroundColor: 'rgba(255,255,255,0.03)', bottom: 20, left: -50 },
   blob3:   { position: 'absolute', width: 100, height: 100, borderRadius: 50,  backgroundColor: 'rgba(255,255,255,0.03)', top: 40, left: 80 },
+
+  bgIconLayer: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
+  bgIcon:      { position: 'absolute', opacity: 0.14 },
 
   heroTop:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 },
   logoBadgeCard: { backgroundColor: '#fff', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6 },
