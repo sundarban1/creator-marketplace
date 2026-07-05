@@ -54,7 +54,7 @@ const STEPS = [
 ];
 
 const FAQS = [
-  { q: 'Is CreatorMarket free to join?',               a: 'Yes — signing up is completely free for both creators and brands. We only charge a small platform fee when a campaign is successfully completed.' },
+  { q: 'Is Collab free to join?',               a: 'Yes — signing up is completely free for both creators and brands. We only charge a small platform fee when a campaign is successfully completed.' },
   { q: 'How do payments work?',                         a: 'Payments are held in escrow and released in milestones. Once a creator submits deliverables and the brand approves, funds are released automatically.' },
   { q: 'What types of creators can join?',              a: 'Any content creator — Instagram influencers, YouTubers, TikTokers, bloggers, podcasters, and more. You need at least 1,000 followers to apply.' },
   { q: 'How does the platform verify creators?',        a: 'We verify creators by connecting their social accounts directly. Audience stats, follower counts, and engagement rates are pulled live from platform APIs.' },
@@ -190,11 +190,8 @@ function Nav() {
     <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'bg-white/95 backdrop-blur shadow-sm' : 'bg-transparent'}`}>
       <div className="max-w-6xl mx-auto px-5 h-16 flex items-center justify-between">
         {/* Logo */}
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-600 to-violet-900 flex items-center justify-center">
-            <Users size={16} className="text-white" />
-          </div>
-          <span className={`font-bold text-lg ${scrolled ? 'text-violet-900' : 'text-white'}`}>CreatorMarket</span>
+        <div className="flex items-center bg-white rounded-lg px-2.5 py-1.5 shadow-sm">
+          <img src="/logo.png" alt="Collab" className="h-6 w-auto" />
         </div>
 
         {/* Desktop links */}
@@ -1100,7 +1097,7 @@ export function LandingPage() {
           variants={staggerContainer} initial="hidden" whileInView="show" viewport={VP}
         >
           <motion.h2 variants={fadeUp} className="text-3xl md:text-4xl font-extrabold text-white mb-4">Ready to grow together?</motion.h2>
-          <motion.p variants={fadeUp} className="text-white/70 text-lg mb-8">Join thousands of creators and brands already using CreatorMarket.</motion.p>
+          <motion.p variants={fadeUp} className="text-white/70 text-lg mb-8">Join thousands of creators and brands already using Collab.</motion.p>
           <motion.div variants={fadeUp} className="flex flex-wrap justify-center gap-4">
             <motion.button whileHover={{ y: -3, boxShadow: '0 16px 40px rgba(0,0,0,0.25)' }} whileTap={{ scale: 0.97 }} className="px-8 py-4 rounded-2xl bg-white text-violet-700 font-bold">
               Download the App
@@ -1131,7 +1128,7 @@ export function LandingPage() {
                 { icon: Mail,    label: 'Email',       value: 'hello@creatormarket.io' },
                 { icon: AtSign,  label: 'Instagram',   value: '@creatormarket' },
                 { icon: Globe,   label: 'X / Twitter', value: '@creatormarket' },
-                { icon: Play,    label: 'YouTube',     value: 'CreatorMarket Channel' },
+                { icon: Play,    label: 'YouTube',     value: 'Collab Channel' },
               ].map(({ icon: Icon, label, value }) => (
                 <div key={label} className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-lg bg-violet-100 flex items-center justify-center flex-shrink-0">
@@ -1188,11 +1185,8 @@ export function LandingPage() {
           <div className="grid md:grid-cols-4 gap-8 mb-10">
             {/* Brand */}
             <div className="md:col-span-2">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-7 h-7 rounded-lg bg-violet-600 flex items-center justify-center">
-                  <Users size={14} className="text-white" />
-                </div>
-                <span className="font-bold text-lg">CreatorMarket</span>
+              <div className="flex items-center bg-white rounded-lg px-2.5 py-1.5 mb-3 w-fit">
+                <img src="/logo.png" alt="Collab" className="h-6 w-auto" />
               </div>
               <p className="text-violet-300 text-sm leading-relaxed max-w-xs">
                 Nepal's leading marketplace connecting content creators with brands for authentic, impactful campaigns.
@@ -1224,7 +1218,7 @@ export function LandingPage() {
           </div>
 
           <div className="border-t border-violet-800 pt-6 flex flex-col md:flex-row items-center justify-between gap-3">
-            <p className="text-violet-400 text-xs">© {new Date().getFullYear()} CreatorMarket. All rights reserved.</p>
+            <p className="text-violet-400 text-xs">© {new Date().getFullYear()} Collab. All rights reserved.</p>
             <p className="text-violet-400 text-xs">Made with ♥ in Nepal</p>
           </div>
         </div>

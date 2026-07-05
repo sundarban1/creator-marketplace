@@ -98,10 +98,10 @@ const DEFAULTS: PlatformSettings = {
   'security.ipAllowlist':        false,
   'security.auditLogging':       true,
   'security.sessionTimeout':     true,
-  'platform.name':               'CreatorHub',
-  'platform.supportEmail':       'support@creatorhub.com',
+  'platform.name':               'Collab',
+  'platform.supportEmail':       'support@collab.com',
   'platform.commission':         '12',
-  'platform.description':        'CreatorHub connects brands with top creators for authentic campaigns.',
+  'platform.description':        'Collab connects brands with top creators for authentic campaigns.',
 };
 
 // ── Main component ─────────────────────────────────────────────────────────────

@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Eye, EyeOff, Zap, Lock, Mail, AlertCircle, Users, Megaphone, CreditCard } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, AlertCircle, Users, Megaphone, CreditCard } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const FEATURES = [
@@ -71,10 +71,10 @@ export function Login() {
 
         <div className="relative">
           <div className="flex items-center gap-3 mb-12">
-            <div className="w-10 h-10 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center">
-              <Zap size={20} className="text-white" />
+            <div className="bg-white rounded-xl px-3 py-2">
+              <img src="/logo.png" alt="Collab" className="h-7 w-auto" />
             </div>
-            <span className="text-white font-bold text-xl tracking-tight">CreatorHub Admin</span>
+            <span className="text-white font-bold text-xl tracking-tight">Admin</span>
           </div>
 
           <h1 className="text-4xl font-bold text-white leading-tight mb-4">
@@ -109,10 +109,8 @@ export function Login() {
       <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 bg-gray-50">
         {/* Mobile logo */}
         <div className="lg:hidden flex items-center gap-2.5 mb-10">
-          <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center">
-            <Zap size={18} className="text-white" />
-          </div>
-          <span className="text-gray-900 font-bold text-lg">CreatorHub Admin</span>
+          <img src="/logo.png" alt="Collab" className="h-8 w-auto" />
+          <span className="text-gray-900 font-bold text-lg">Admin</span>
         </div>
 
         <div className="w-full max-w-md">

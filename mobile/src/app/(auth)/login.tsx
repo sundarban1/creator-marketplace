@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRef, useState, useEffect } from 'react';
 import {
   Animated,
+  Image,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -575,11 +576,8 @@ export default function LoginScreen() {
 
           {/* Top row: logo + lang */}
           <View style={s.heroTop}>
-            <View style={s.logoRow}>
-              <View style={s.logoBadge}>
-                <Ionicons name="people" size={16} color="#fff" />
-              </View>
-              <Text style={s.logoText}>CreatorMarket</Text>
+            <View style={s.logoBadgeCard}>
+              <Image source={require('@/assets/images/logo.png')} style={s.logoImage} resizeMode="contain" />
             </View>
             <View style={s.langRow}>
               {LANG_OPTIONS.map(({ lang, flag }) => (
@@ -691,9 +689,8 @@ const s = StyleSheet.create({
   blob3:   { position: 'absolute', width: 100, height: 100, borderRadius: 50,  backgroundColor: 'rgba(255,255,255,0.03)', top: 40, left: 80 },
 
   heroTop:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 },
-  logoRow:  { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  logoBadge:{ width: 32, height: 32, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' },
-  logoText: { fontSize: 16, fontWeight: '700', color: '#fff', fontFamily: F.bold },
+  logoBadgeCard: { backgroundColor: '#fff', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6 },
+  logoImage: { width: 88, height: 88 / (2040 / 624) },
   langRow:  { flexDirection: 'row', gap: 6 },
   langBtn:  { width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(255,255,255,0.12)', justifyContent: 'center', alignItems: 'center' },
   langBtnActive: { backgroundColor: 'rgba(255,255,255,0.28)', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.5)' },

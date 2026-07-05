@@ -1,9 +1,9 @@
 import { router } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useRef, useState } from 'react';
 import {
   Animated,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -166,13 +166,7 @@ export default function SignupScreen() {
           {/* App header */}
           <View style={s.appHeader}>
             <View style={s.appHeaderLeft}>
-              <LinearGradient colors={['#7C3AED', PRIMARY]} style={s.logoBox} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
-                <Ionicons name="people" size={18} color="#fff" />
-              </LinearGradient>
-              <View>
-                <Text style={[s.appName, { color: C.text }]}>CreatorMarket</Text>
-                <Text style={s.appTagline}>Where creators and brands grow together</Text>
-              </View>
+              <Image source={require('@/assets/images/logo.png')} style={s.logoImage} resizeMode="contain" />
             </View>
             <Pressable
               style={[s.backBtn, { borderColor: '#E5E7EB', backgroundColor: C.surface }]}
@@ -185,7 +179,7 @@ export default function SignupScreen() {
           <View style={s.headingWrap}>
             <Text style={[s.heading, { color: C.text }]}>Create your account ✨</Text>
             <Text style={[s.headingSub, { color: '#6B7280' }]}>
-              Join CreatorMarket and unlock endless collaboration opportunities.
+              Join Collab and unlock endless collaboration opportunities.
             </Text>
           </View>
 
@@ -334,9 +328,7 @@ const s = StyleSheet.create({
 
   appHeader:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 },
   appHeaderLeft:{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
-  logoBox:      { width: 38, height: 38, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
-  appName:      { fontSize: 15, fontWeight: '700', fontFamily: F.bold },
-  appTagline:   { fontSize: 10, color: '#9CA3AF', fontFamily: F.regular, marginTop: 1 },
+  logoImage:    { width: 120, height: 120 / (2040 / 624) },
   backBtn:      { width: 34, height: 34, borderRadius: 10, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center' },
 
   tabBar:      { flexDirection: 'row', borderRadius: 12, padding: 4, marginBottom: 20, gap: 2 },

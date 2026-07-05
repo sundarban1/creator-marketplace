@@ -11,7 +11,6 @@ import {
   Tag,
   Share2,
   LogOut,
-  Zap,
   X,
   HelpCircle,
   MessageCircle,
@@ -107,11 +106,8 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       >
         {/* Logo */}
         <div className="flex items-center justify-between px-5 py-5 border-b border-slate-800">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center">
-              <Zap size={16} className="text-white" />
-            </div>
-            <span className="text-white font-bold text-lg tracking-tight">CreatorHub</span>
+          <div className="flex items-center gap-2.5 bg-white rounded-lg px-2.5 py-1.5">
+            <img src="/logo.png" alt="Collab" className="h-6 w-auto" />
           </div>
           <button onClick={onClose} className="lg:hidden text-slate-400 hover:text-white transition-colors">
             <X size={18} />

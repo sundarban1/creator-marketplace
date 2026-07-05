@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
 import Animated, { Easing, Keyframe } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
@@ -53,20 +53,13 @@ export function SplashScreen() {
 
       {/* Logo */}
       <Animated.View entering={logoKf.duration(TOTAL)} style={styles.logoOuter}>
-        <View style={styles.glowRing} />
-        <View style={styles.logo}>
-          <View style={styles.logoAccentLarge} />
-          <View style={styles.logoAccentSmall} />
-          <View style={styles.logoLetters}>
-            <Text style={styles.letterC}>C</Text>
-            <Text style={styles.letterM}>M</Text>
-          </View>
+        <View style={styles.logoCard}>
+          <Image source={require('@/assets/images/logo.png')} style={styles.logoImage} resizeMode="contain" />
         </View>
       </Animated.View>
 
       {/* Text */}
       <Animated.View entering={textKf.duration(TOTAL)} style={styles.textBlock}>
-        <Text style={styles.appName}>CreatorMarket</Text>
         <Text style={styles.tagline}>Where creators meet brands</Text>
       </Animated.View>
 
@@ -129,77 +122,25 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 36,
   },
-  glowRing: {
-    position: 'absolute',
-    width: 152,
-    height: 152,
-    borderRadius: 38,
-    backgroundColor: 'rgba(255,255,255,0.18)',
-  },
-  logo: {
-    width: 114,
-    height: 114,
-    borderRadius: 30,
+  logoCard: {
+    borderRadius: 24,
     backgroundColor: '#fff',
-    overflow: 'hidden',
+    paddingHorizontal: 24,
+    paddingVertical: 18,
     shadowColor: '#000',
     shadowOpacity: 0.4,
     shadowRadius: 24,
     shadowOffset: { width: 0, height: 12 },
     elevation: 20,
   },
-  logoAccentLarge: {
-    position: 'absolute',
-    width: 92,
-    height: 92,
-    borderRadius: 46,
-    backgroundColor: '#EDE9FE',
-    bottom: -23,
-    left: -23,
-  },
-  logoAccentSmall: {
-    position: 'absolute',
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: '#DDD6FE',
-    top: -13,
-    right: -10,
-  },
-  logoLetters: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 1,
-  },
-  letterC: {
-    fontSize: 40,
-    fontWeight: '900',
-    color: '#4F46E5',
-    lineHeight: 46,
-  },
-  letterM: {
-    fontSize: 27,
-    fontWeight: '700',
-    color: '#7C3AED99',
-    lineHeight: 46,
-    marginTop: 9,
+  logoImage: {
+    width: 200,
+    height: 200 / (2040 / 624),
   },
   textBlock: {
     alignItems: 'center',
     gap: 8,
     marginBottom: 64,
-  },
-  appName: {
-    fontSize: 32,
-    fontWeight: '800',
-    color: '#fff',
-    letterSpacing: 0.5,
   },
   tagline: {
     fontSize: 15,

@@ -1,13 +1,12 @@
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useRef } from 'react';
-import { Animated, StyleSheet, Text, View } from 'react-native';
+import { Animated, Image, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '@/context/AuthContext';
 import { F } from '@/utilities/constants';
 
 const PINK    = '#E8527A';
 const TEAL    = '#2EC4C4';
-const BRINJAL = '#4F46E5';
 
 // ─── Scattered icon ────────────────────────────────────────────────────────────
 
@@ -198,21 +197,9 @@ export default function SplashScreen() {
         </View>
 
         {/* Logo */}
-        <Animated.View style={{ transform: [{ scale: logoScale }], opacity: logoOpacity }}>
-          <View style={styles.logoBox}>
-            <View style={styles.logoAccentLg} />
-            <View style={styles.logoAccentSm} />
-            <View style={styles.logoLetters}>
-              <Text style={styles.logoC}>C</Text>
-              <Text style={styles.logoM}>M</Text>
-            </View>
-          </View>
+        <Animated.View style={{ transform: [{ scale: logoScale }], opacity: Animated.multiply(logoOpacity, textOpacity) }}>
+          <Image source={require('@/assets/images/logo.png')} style={styles.logoImage} resizeMode="contain" />
         </Animated.View>
-
-        {/* App name */}
-        <Animated.Text style={[styles.appName, { opacity: textOpacity }]}>
-          CreatorMarket
-        </Animated.Text>
 
         {/* Tagline */}
         <Animated.Text style={[styles.tagline, { opacity: tagOpacity }]}>
@@ -241,14 +228,8 @@ const styles = StyleSheet.create({
   chipText:    { fontSize: 12, fontWeight: '700', letterSpacing: 0.3, fontFamily: F.bold },
   chipDivider: { width: 1, height: 14, backgroundColor: 'rgba(0,0,0,0.12)' },
 
-  logoBox:      { width: 108, height: 108, borderRadius: 28, backgroundColor: '#fff', overflow: 'hidden', shadowColor: '#000', shadowOpacity: 0.10, shadowRadius: 24, shadowOffset: { width: 0, height: 8 }, elevation: 12, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' },
-  logoAccentLg: { position: 'absolute', width: 88, height: 88, borderRadius: 44, backgroundColor: '#EDE9FE', bottom: -22, left: -22 },
-  logoAccentSm: { position: 'absolute', width: 50, height: 50, borderRadius: 25, backgroundColor: '#DDD6FE', top: -12, right: -10 },
-  logoLetters:  { position: 'absolute', inset: 0, justifyContent: 'center', alignItems: 'center', flexDirection: 'row', gap: 1 },
-  logoC:        { fontSize: 36, fontWeight: '900', color: '#4F46E5', lineHeight: 42, fontFamily: F.bold },
-  logoM:        { fontSize: 24, fontWeight: '700', color: '#7C3AED', lineHeight: 42, marginTop: 7, fontFamily: F.bold },
+  logoImage: { width: 220, height: 220 / (2040 / 624) },
 
-  appName:  { fontSize: 32, fontWeight: '900', color: BRINJAL, letterSpacing: 0.5, marginTop: 22, fontFamily: F.bold },
   tagline:  { fontSize: 14, color: '#888', marginTop: 8, letterSpacing: 0.4, fontWeight: '500', fontFamily: F.medium },
 
   dotsRow: { position: 'absolute', bottom: 56, flexDirection: 'row', gap: 9, alignItems: 'center' },

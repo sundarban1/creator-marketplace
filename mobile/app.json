@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "content",
+    "name": "Collab",
     "slug": "content",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -19,7 +19,7 @@
           }
         ],
         "FacebookAppID": "27739673972329504",
-        "FacebookDisplayName": "CreatorMarket"
+        "FacebookDisplayName": "Collab"
       }
     },
     "android": {
@@ -56,7 +56,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Allow Creator Market to access your location to find nearby campaigns."
+          "locationWhenInUsePermission": "Allow Collab to access your location to find nearby campaigns."
         }
       ],
       "expo-secure-store",
@@ -69,8 +69,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow Creator Market to access your photos to update your profile picture.",
-          "cameraPermission": "Allow Creator Market to use your camera to take a profile photo."
+          "photosPermission": "Allow Collab to access your photos to update your profile picture.",
+          "cameraPermission": "Allow Collab to use your camera to take a profile photo."
         }
       ]
     ],

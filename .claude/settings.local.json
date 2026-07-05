@@ -30,7 +30,10 @@
       "Bash(grep -rn \"FilterModal\\\\|SLIDER_MAX\\\\|\\\\\\\\\\\\$\\\\s*{\\\\|'\\\\\\\\\\\\$'\\\\|\\\\\"\\\\\\\\$\\\\\"\\\\|Rs\\\\b\" /Users/sundarban/Documents/projects/marketplace/mobile/src/features/creator/ --include=\"*.tsx\" --include=\"*.ts\")",
       "Bash(grep -n \"\\\\$\\\\|Rs\\\\|price\\\\|Price\\\\|budget\\\\|Budget\\\\|SLIDER\\\\|slider\" /Users/sundarban/Documents/projects/marketplace/mobile/src/features/creator/components/FilterModal.tsx)",
       "Bash(grep -n \"\\\\$\\\\|Rs\\\\|min\\\\|max\\\\|label\\\\|Label\\\\|symbol\\\\|formatCurrency\\\\|formatPrice\" /Users/sundarban/Documents/projects/marketplace/mobile/src/features/creator/components/FilterModal.tsx)",
-      "Bash(grep -n \"\\\\$\\\\|Rs\\\\|minVal\\\\|maxVal\\\\|RangeSlider\" /Users/sundarban/Documents/projects/marketplace/mobile/src/features/creator/components/FilterModal.tsx)"
+      "Bash(grep -n \"\\\\$\\\\|Rs\\\\|minVal\\\\|maxVal\\\\|RangeSlider\" /Users/sundarban/Documents/projects/marketplace/mobile/src/features/creator/components/FilterModal.tsx)",
+      "Bash(lsof -iTCP:3000 -sTCP:LISTEN -P)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000/api/docs)",
+      "Bash(curl -s http://localhost:3000/api/auth/login -X POST -H \"Content-Type: application/json\" -d '{\"email\":\"test@test.com\",\"password\":\"wrong\"}')"
     ],
     "additionalDirectories": [
       "/private/tmp"
