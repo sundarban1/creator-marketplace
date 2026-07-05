@@ -182,6 +182,7 @@ app.use('/api/business/logo',   uploadLimiter);
 
 // AI generation
 app.use('/api/campaigns/ai/generate', aiGenerateLimiter);
+app.use('/api/campaigns/ai/suggest-description', aiGenerateLimiter);
 
 // ── Health check ─────────────────────────────────────────────────────────────
 /**

@@ -3,6 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import {
+  ActivityIndicator,
   Animated,
   Pressable,
   ScrollView,
@@ -18,11 +19,12 @@ import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/components/Toast';
 import { useAppColors, useIsDark } from '@/context/ThemeContext';
-import { businessService } from '@/services/business';
+import { businessService, type PaymentHistoryEntry } from '@/services/business';
 import { authService } from '@/services/auth';
 import { profileService, type SocialLinks } from '@/services/profile';
 import { COLORS, F } from '@/utilities/constants';
 import { request } from '@/lib/api';
+import { pickAndUpload } from '@/utilities/uploadImage';
 
 type ColorsType = typeof COLORS;
 const ColorCtx = createContext<ColorsType>(COLORS);
@@ -58,13 +60,6 @@ const LANGUAGE_OPTIONS = [
   { label: 'Nepali',  native: 'नेपाली',  flag: '🇳🇵', desc: 'स्थानीय भाषा समर्थन', future: false },
   { label: 'Hindi',   native: 'हिंदी',   flag: '🇮🇳', desc: 'Coming soon',         future: true  },
 ];
-
-const MOCK_TRANSACTIONS = [
-  { id: 't1', date: 'Jun 10, 2026', desc: 'Event: Winter Menu',          amount: '-NZ$200', type: 'debit' },
-  { id: 't2', date: 'Jun 05, 2026', desc: 'Wallet Top-up',              amount: '+NZ$500', type: 'credit' },
-  { id: 't3', date: 'May 28, 2026', desc: 'Event: New Collection',       amount: '-NZ$380', type: 'debit' },
-];
-
 
 // ── Helper components ─────────────────────────────────────────────────────────
 
@@ -215,6 +210,8 @@ export default function BusinessSettingsScreen() {
 
   // ── Section 4: Payment ──
   const [nepalPayments, setNepalPayments] = useState<string[]>(['esewa']);
+  const [paymentHistory, setPaymentHistory] = useState<PaymentHistoryEntry[]>([]);
+  const [paymentHistoryLoading, setPaymentHistoryLoading] = useState(true);
 
   // ── Section 5: Campaign Preferences ──
   const [prefPlatforms, setPrefPlatforms] = useState(['Instagram', 'TikTok']);
@@ -227,10 +224,46 @@ export default function BusinessSettingsScreen() {
   const [noteText, setNoteText] = useState('');
 
   // ── Section 8: Verification ──
-  const [panUploaded, setPanUploaded] = useState(false);
-  const [regCertUploaded, setRegCertUploaded] = useState(false);
-  const [licenseUploaded, setLicenseUploaded] = useState(false);
-  const verificationStatus = panUploaded && regCertUploaded ? 'under_review' : 'not_verified';
+  type DocStatus = 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
+  const [isBizVerified, setIsBizVerified] = useState(false);
+  const [panDocStatus, setPanDocStatus] = useState<DocStatus>('NONE');
+  const [companyRegDocStatus, setCompanyRegDocStatus] = useState<DocStatus>('NONE');
+  const [panUploading, setPanUploading] = useState(false);
+  const [companyRegUploading, setCompanyRegUploading] = useState(false);
+  const verificationStatus: 'verified' | 'under_review' | 'not_verified' =
+    isBizVerified ? 'verified'
+    : (panDocStatus === 'PENDING' || companyRegDocStatus === 'PENDING') ? 'under_review'
+    : 'not_verified';
+
+  async function handleUploadPan() {
+    setPanUploading(true);
+    try {
+      const url = await pickAndUpload('business-pan');
+      if (url) {
+        setPanDocStatus('PENDING');
+        showToast(t('businessSettings.uploadSuccessToast'));
+      }
+    } catch {
+      toast.error(t('businessSettings.uploadFailedToast'));
+    } finally {
+      setPanUploading(false);
+    }
+  }
+
+  async function handleUploadCompanyReg() {
+    setCompanyRegUploading(true);
+    try {
+      const url = await pickAndUpload('business-company-reg');
+      if (url) {
+        setCompanyRegDocStatus('PENDING');
+        showToast(t('businessSettings.uploadSuccessToast'));
+      }
+    } catch {
+      toast.error(t('businessSettings.uploadFailedToast'));
+    } finally {
+      setCompanyRegUploading(false);
+    }
+  }
 
   // ── Section 9: Privacy ──
   const [showProfilePublic, setShowProfilePublic] = useState(true);
@@ -249,7 +282,14 @@ export default function BusinessSettingsScreen() {
     }).catch(() => {});
     profileService.getBusinessProfile().then((p) => {
       setSocialLinks(p.socialLinks ?? {});
+      setIsBizVerified(p.isVerified);
+      setPanDocStatus(p.panDocStatus);
+      setCompanyRegDocStatus(p.companyRegDocStatus);
     }).catch(() => {});
+    businessService.getPaymentHistory()
+      .then(setPaymentHistory)
+      .catch(() => {})
+      .finally(() => setPaymentHistoryLoading(false));
   }, []);
 
   // ── Support forms ──
@@ -1036,15 +1076,29 @@ export default function BusinessSettingsScreen() {
 
         <SectionHeader title={t('businessSettings.paymentHistorySection')} />
         <Card>
-          {MOCK_TRANSACTIONS.map((tx, idx) => (
-            <View key={tx.id} style={[styles.txRow, idx < MOCK_TRANSACTIONS.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.txDesc, { color: C.text }]}>{tx.desc}</Text>
-                <Text style={[styles.txDate, { color: C.textSecondary }]}>{tx.date}</Text>
-              </View>
-              <Text style={[styles.txAmount, { color: tx.type === 'credit' ? C.active : C.text }]}>{tx.amount}</Text>
+          {paymentHistoryLoading ? (
+            <View style={{ paddingVertical: 20, alignItems: 'center' }}>
+              <ActivityIndicator size="small" color={C.brinjal1} />
             </View>
-          ))}
+          ) : paymentHistory.length === 0 ? (
+            <View style={{ paddingVertical: 20, alignItems: 'center' }}>
+              <Text style={{ color: C.textSecondary, fontSize: 13 }}>{t('businessSettings.noTransactionsYet')}</Text>
+            </View>
+          ) : (
+            paymentHistory.map((tx, idx) => (
+              <View key={tx.id} style={[styles.txRow, idx < paymentHistory.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.txDesc, { color: C.text }]} numberOfLines={1}>{tx.description}</Text>
+                  <Text style={[styles.txDate, { color: C.textSecondary }]}>
+                    {new Date(tx.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </Text>
+                </View>
+                <Text style={[styles.txAmount, { color: tx.type === 'credit' ? C.active : C.text }]}>
+                  {tx.type === 'credit' ? '+' : '-'}Rs. {tx.amount.toLocaleString('en-US')}
+                </Text>
+              </View>
+            ))
+          )}
         </Card>
         <Card>
           <NavRow icon="🧾" label={t('businessSettings.receiptsLabel')} onPress={() => showToast(t('businessSettings.noReceiptsToast'))} />
@@ -1199,24 +1253,34 @@ export default function BusinessSettingsScreen() {
         <SectionHeader title={t('businessSettings.uploadDocumentsSection')} />
         <Card>
           {[
-            { label: t('businessSettings.panRegistrationLabel'), icon: '📄', uploaded: panUploaded, toggle: () => setPanUploaded((v) => !v) },
-            { label: t('businessSettings.companyRegLabel'), icon: '🏢', uploaded: regCertUploaded, toggle: () => setRegCertUploaded((v) => !v) },
-            { label: t('businessSettings.businessLicenseLabel'), icon: '📋', uploaded: licenseUploaded, toggle: () => setLicenseUploaded((v) => !v) },
+            { label: t('businessSettings.panRegistrationLabel'), icon: '📄', status: panDocStatus, uploading: panUploading, upload: handleUploadPan },
+            { label: t('businessSettings.companyRegLabel'), icon: '🏢', status: companyRegDocStatus, uploading: companyRegUploading, upload: handleUploadCompanyReg },
           ].map((doc, idx, arr) => (
             <Pressable
               key={doc.label}
               style={[styles.row, idx < arr.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}
-              onPress={doc.toggle}>
+              disabled={doc.uploading || doc.status === 'PENDING' || doc.status === 'APPROVED'}
+              onPress={doc.upload}>
               <Text style={styles.rowIcon}>{doc.icon}</Text>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.rowLabel, { color: C.text }]}>{doc.label}</Text>
-                <Text style={[styles.rowSub, { color: doc.uploaded ? C.active : C.textSecondary }]}>
-                  {doc.uploaded ? t('businessSettings.uploadedStatusLabel') : t('businessSettings.tapToUploadLabel')}
+                <Text style={[styles.rowSub, { color: doc.status === 'APPROVED' ? C.active : C.textSecondary }]}>
+                  {doc.status === 'NONE' ? t('businessSettings.tapToUploadLabel') : t(`businessSettings.docStatus${doc.status}`)}
                 </Text>
               </View>
-              {doc.uploaded ? (
+              {doc.uploading ? (
+                <ActivityIndicator size="small" color={C.brinjal1} />
+              ) : doc.status === 'APPROVED' ? (
                 <View style={[styles.verifiedBadge, { backgroundColor: '#DCFCE7' }]}>
                   <Text style={[styles.badgeText, { color: C.active }]}>{t('businessSettings.doneBadge')}</Text>
+                </View>
+              ) : doc.status === 'PENDING' ? (
+                <View style={[styles.statusBadge, { backgroundColor: '#FFF7ED' }]}>
+                  <Text style={[styles.badgeText, { color: C.draft }]}>{t('businessSettings.underReviewLabel')}</Text>
+                </View>
+              ) : doc.status === 'REJECTED' ? (
+                <View style={[styles.statusBadge, { backgroundColor: '#FEE2E2' }]}>
+                  <Text style={[styles.badgeText, { color: '#DC2626' }]}>{t('businessSettings.docStatusREJECTED')}</Text>
                 </View>
               ) : (
                 <View style={[styles.uploadBtn, { backgroundColor: C.primaryLight }]}>

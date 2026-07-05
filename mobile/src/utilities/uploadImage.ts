@@ -5,12 +5,14 @@ import { API_BASE } from '@/lib/api';
 import { storage } from '@/utilities/storage';
 import { ACCESS_TOKEN_KEY } from '@/utilities/constants';
 
-export type UploadTarget = 'creator-avatar' | 'business-logo' | 'creator-citizenship';
+export type UploadTarget = 'creator-avatar' | 'business-logo' | 'creator-citizenship' | 'business-pan' | 'business-company-reg';
 
 const TARGET_CONFIG: Record<UploadTarget, { path: string; field: string; cropSquare: boolean }> = {
   'creator-avatar':      { path: '/api/creator/avatar',      field: 'avatar',   cropSquare: true  },
   'business-logo':       { path: '/api/business/logo',       field: 'logo',     cropSquare: true  },
   'creator-citizenship': { path: '/api/creator/citizenship', field: 'document', cropSquare: false },
+  'business-pan':            { path: '/api/business/documents/pan',         field: 'document', cropSquare: false },
+  'business-company-reg':    { path: '/api/business/documents/company-reg', field: 'document', cropSquare: false },
 };
 
 async function pickFromLibrary(cropSquare: boolean): Promise<ImagePicker.ImagePickerAsset | null> {

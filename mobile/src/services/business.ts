@@ -28,11 +28,22 @@ export type BusinessActiveCampaign = {
 export type BusinessDetail = BusinessListItem & {
   createdAt:           string;
   userId:              string;
+  phone:               string | null;
   campaigns:           BusinessActiveCampaign[];
   showPublicProfile:   boolean;
   hideContactDetails:  boolean;
   allowDirectMessages: boolean;
+  isPrivate?:          false;
 };
+
+export type PrivateBusinessDetail = {
+  id:           string;
+  businessName: string;
+  logoUrl:      string | null;
+  isPrivate:    true;
+};
+
+export type BusinessDetailResult = BusinessDetail | PrivateBusinessDetail;
 
 export const businessService = {
   async listBusinesses(params?: {
@@ -62,7 +73,7 @@ export const businessService = {
   },
 
   async getBusinessById(id: string) {
-    const res = await request<BusinessDetail>('GET', `/api/creator/businesses/${id}`);
+    const res = await request<BusinessDetailResult>('GET', `/api/creator/businesses/${id}`);
     return res.data;
   },
 
@@ -85,4 +96,17 @@ export const businessService = {
     const res = await request<BusinessListItem[]>('GET', '/api/creator/businesses/favorites/list');
     return res.data;
   },
+
+  async getPaymentHistory(): Promise<PaymentHistoryEntry[]> {
+    const res = await request<PaymentHistoryEntry[]>('GET', '/api/business/payment-history');
+    return res.data;
+  },
+};
+
+export type PaymentHistoryEntry = {
+  id:          string;
+  date:        string;
+  description: string;
+  amount:      number;
+  type:        'debit' | 'credit';
 };

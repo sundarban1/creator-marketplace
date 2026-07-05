@@ -23,7 +23,7 @@ export class MessagingController {
 
   async checkConversation(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const result = await messagingService.checkConversation(req.user!.id, req.params.creatorProfileId);
+      const result = await messagingService.checkConversation(req.user!.id, req.user!.role, req.params.creatorProfileId);
       success(res, result ?? null);
     } catch (err) { next(err); }
   }
@@ -35,7 +35,7 @@ export class MessagingController {
         res.status(400).json({ success: false, message: 'Invalid action' });
         return;
       }
-      const result = await messagingService.respondToRequest(req.params.id, req.user!.id, action);
+      const result = await messagingService.respondToRequest(req.params.id, req.user!.id, req.user!.role, action);
       success(res, result, `Request ${action}ed`);
     } catch (err) { next(err); }
   }

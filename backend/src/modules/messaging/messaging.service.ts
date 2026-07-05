@@ -86,12 +86,15 @@ export class MessagingService {
       const creator      = await this.resolveCreator(userId);
       const otherBusiness = await this.businessRepo.findByUserId(input.otherUserId);
       if (!otherBusiness) throw new AppError('Business not found', 404);
-      if (!otherBusiness.allowDirectMessages) throw new AppError('This business does not accept direct messages', 403);
+      // Direct-message-enabled businesses skip the request step entirely; others still require approval.
+      const initialStatus: ConversationStatus = otherBusiness.allowDirectMessages ? 'ACCEPTED' : 'PENDING';
       const conv = await this.repo.findOrCreateConversation(
         creator.id,
         otherBusiness.id,
         input.campaignId,
         input.requestMessage,
+        initialStatus,
+        userId,
       );
       emitToUser(otherBusiness.userId, 'conversation:update', { conversationId: conv.id });
       return toConversationDto(conv);
@@ -100,43 +103,61 @@ export class MessagingService {
     throw new AppError('Unauthorized', 403);
   }
 
-  // Check if a conversation exists between business (current user) and a creator
-  async checkConversation(userId: string, creatorProfileId: string) {
-    const business = await this.resolveBusiness(userId);
-    return this.repo.findConversationBetween(creatorProfileId, business.id);
+  // Check if a conversation exists between the current user and the given counterpart profile
+  async checkConversation(userId: string, role: Role, otherProfileId: string) {
+    if (role === 'BUSINESS') {
+      const business = await this.resolveBusiness(userId);
+      return this.repo.findConversationBetween(otherProfileId, business.id);
+    }
+    if (role === 'CREATOR') {
+      const creator = await this.resolveCreator(userId);
+      return this.repo.findConversationBetween(creator.id, otherProfileId);
+    }
+    return null;
   }
 
   // ── Request accept / decline ───────────────────────────────────────────────
 
-  async respondToRequest(conversationId: string, userId: string, action: 'accept' | 'decline') {
+  async respondToRequest(conversationId: string, userId: string, role: Role, action: 'accept' | 'decline') {
     const conversation = await this.repo.findConversationById(conversationId);
     if (!conversation) throw new AppError('Conversation not found', 404);
     if (conversation.status !== 'PENDING') throw new AppError('Request is not pending', 400);
 
-    // Only the creator can respond
-    const creator = await this.resolveCreator(userId);
-    if (creator.id !== conversation.creatorId) throw new AppError('Access denied', 403);
+    // Whichever side (creator or business) received the request may respond
+    if (role === 'CREATOR') {
+      const creator = await this.resolveCreator(userId);
+      if (creator.id !== conversation.creatorId) throw new AppError('Access denied', 403);
+    } else if (role === 'BUSINESS') {
+      const business = await this.resolveBusiness(userId);
+      if (business.id !== conversation.businessId) throw new AppError('Access denied', 403);
+    } else {
+      throw new AppError('Access denied', 403);
+    }
 
     const newStatus: ConversationStatus = action === 'accept' ? 'ACCEPTED' : 'DECLINED';
     await this.repo.updateStatus(conversationId, newStatus);
 
-    const business = await this.businessRepo.findById(conversation.businessId);
-    if (action === 'accept') {
-      if (business) {
-        notificationService.create({
-          userId:  business.userId,
-          type:    'message_request_accepted',
-          title:   `${creator.fullName} accepted your message request`,
-          body:    'You can now start chatting.',
-          refId:   creator.id,
-          refType: 'creator_profile',
-        }).catch(() => {});
-      }
+    const [creator, business] = await Promise.all([
+      this.creatorRepo.findById(conversation.creatorId),
+      this.businessRepo.findById(conversation.businessId),
+    ]);
+
+    if (action === 'accept' && creator && business) {
+      const responderName    = role === 'CREATOR' ? creator.fullName : business.businessName;
+      const recipientUserId  = role === 'CREATOR' ? business.userId : creator.userId;
+      notificationService.create({
+        userId:  recipientUserId,
+        type:    'message_request_accepted',
+        title:   `${responderName} accepted your message request`,
+        body:    'You can now start chatting.',
+        refId:   role === 'CREATOR' ? creator.id : business.id,
+        refType: role === 'CREATOR' ? 'creator_profile' : 'business_profile',
+      }).catch(() => {});
     }
 
     // Notify both sides to refresh their conversation list
     if (business) emitToUser(business.userId, 'conversation:update', { conversationId });
-    emitToUser(creator.userId, 'conversation:update', { conversationId });
+    if (creator) emitToUser(creator.userId, 'conversation:update', { conversationId });
 
     return { status: newStatus };
   }

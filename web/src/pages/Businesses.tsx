@@ -141,13 +141,29 @@ export function Businesses() {
       render: (row: ApiBusiness) => {
         const suspended = row.user.isActive === false;
         return (
-          <div className="flex gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               className="text-xs text-indigo-600 hover:text-indigo-800 font-medium disabled:opacity-50"
               disabled={verifyingId === row.id}
               onClick={() => handleToggleVerified(row)}>
               {row.isVerified ? 'Unverify' : 'Verify'}
             </button>
+            {row.panDocUrl && (
+              <button
+                className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                onClick={() => window.open(row.panDocUrl!, '_blank')}>
+                View PAN
+              </button>
+            )}
+            {row.panDocStatus === 'PENDING' && <StatusBadge status="pending" />}
+            {row.companyRegDocUrl && (
+              <button
+                className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                onClick={() => window.open(row.companyRegDocUrl!, '_blank')}>
+                View Reg. Cert
+              </button>
+            )}
+            {row.companyRegDocStatus === 'PENDING' && <StatusBadge status="pending" />}
             {suspended ? (
               <button className="text-xs text-green-600 hover:text-green-800 font-medium" onClick={() => setAction({ type: 'activate', business: row })}>
                 Activate

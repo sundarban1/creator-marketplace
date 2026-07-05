@@ -69,4 +69,45 @@ export class BusinessController {
       next(err);
     }
   }
+
+  async uploadPanDoc(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.file) throw new AppError('No image file provided', 400);
+      const docUrl = await uploadToCloudinary(
+        req.file.buffer,
+        'businesses/pan',
+        `pan_${req.user!.id}`,
+        [],
+      );
+      const profile = await businessService.uploadPanDoc(req.user!.id, docUrl);
+      success(res, { docUrl: profile.panDocUrl, panDocStatus: profile.panDocStatus }, 'PAN document uploaded');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async uploadCompanyRegDoc(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.file) throw new AppError('No image file provided', 400);
+      const docUrl = await uploadToCloudinary(
+        req.file.buffer,
+        'businesses/company-reg',
+        `companyreg_${req.user!.id}`,
+        [],
+      );
+      const profile = await businessService.uploadCompanyRegDoc(req.user!.id, docUrl);
+      success(res, { docUrl: profile.companyRegDocUrl, companyRegDocStatus: profile.companyRegDocStatus }, 'Company registration document uploaded');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async getPaymentHistory(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const history = await businessService.getPaymentHistory(req.user!.id);
+      success(res, history, 'Payment history retrieved successfully');
+    } catch (err) {
+      next(err);
+    }
+  }
 }

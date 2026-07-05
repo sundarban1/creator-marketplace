@@ -29,6 +29,8 @@ export class MessagingRepository {
     businessId: string,
     campaignId?: string,
     requestMessage?: string,
+    initialStatus: ConversationStatus = 'PENDING',
+    initiatorUserId?: string,
   ) {
     const existing = await prisma.conversation.findUnique({
       where: { creatorId_businessId: { creatorId, businessId } },
@@ -40,7 +42,7 @@ export class MessagingRepository {
       if (existing.status === 'DECLINED') {
         return prisma.conversation.update({
           where: { id: existing.id },
-          data: { status: 'PENDING', requestMessage: requestMessage ?? null },
+          data: { status: initialStatus, requestMessage: requestMessage ?? null },
           include: CONV_INCLUDE_FULL,
         });
       }
@@ -48,20 +50,24 @@ export class MessagingRepository {
     }
 
     const conv = await prisma.conversation.create({
-      data: { creatorId, businessId, campaignId, status: 'PENDING', requestMessage },
+      data: { creatorId, businessId, campaignId, status: initialStatus, requestMessage },
       include: CONV_INCLUDE_FULL,
     });
 
     // Store requestMessage as first Message so it appears in chat history
     if (requestMessage) {
-      // Find the business user's userId to set as senderId
-      const business = await prisma.businessProfile.findUnique({
-        where: { id: businessId },
-        select: { userId: true },
-      });
-      if (business) {
+      // Default to the business user (today's business-initiated flow) unless the caller specifies otherwise
+      let senderId = initiatorUserId;
+      if (!senderId) {
+        const business = await prisma.businessProfile.findUnique({
+          where: { id: businessId },
+          select: { userId: true },
+        });
+        senderId = business?.userId;
+      }
+      if (senderId) {
         await prisma.message.create({
-          data: { conversationId: conv.id, senderId: business.userId, content: requestMessage },
+          data: { conversationId: conv.id, senderId, content: requestMessage },
         });
         await prisma.conversation.update({
           where: { id: conv.id },

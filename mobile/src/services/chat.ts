@@ -61,12 +61,13 @@ export const chatService = {
     otherUserId: string,
     requestMessage?: string,
     campaignId?: string,
+    currentUserRole: 'CREATOR' | 'BUSINESS' = 'BUSINESS',
   ): Promise<Conversation> {
     const res = await request<ApiConversation>(
       'POST', '/api/messaging/conversations',
       { otherUserId, requestMessage, campaignId },
     );
-    return toConversation(res.data, 'BUSINESS');
+    return toConversation(res.data, currentUserRole);
   },
 
   async checkConversation(

@@ -231,10 +231,22 @@ export class AdminRepository {
   }
 
   async updateBusinessVerification(businessProfileId: string, isVerified: boolean) {
+    const data: { isVerified: boolean; panDocStatus?: 'APPROVED'; companyRegDocStatus?: 'APPROVED' } = { isVerified };
+    if (isVerified) {
+      const existing = await prisma.businessProfile.findUnique({
+        where:  { id: businessProfileId },
+        select: { panDocUrl: true, companyRegDocUrl: true },
+      });
+      if (existing?.panDocUrl) data.panDocStatus = 'APPROVED';
+      if (existing?.companyRegDocUrl) data.companyRegDocStatus = 'APPROVED';
+    }
     return prisma.businessProfile.update({
       where: { id: businessProfileId },
-      data:  { isVerified },
-      select: { id: true, businessName: true, isVerified: true },
+      data,
+      select: {
+        id: true, businessName: true, isVerified: true,
+        panDocUrl: true, panDocStatus: true, companyRegDocUrl: true, companyRegDocStatus: true,
+      },
     });
   }
 

@@ -62,6 +62,7 @@ export class BusinessRepository {
         description:          true,
         logoUrl:              true,
         website:              true,
+        phone:                true,
         categories:           true,
         isVerified:           true,
         createdAt:            true,
@@ -117,6 +118,7 @@ export class BusinessRepository {
       categories: string[];
       panNo: string | null;
       location: string | null;
+      phone: string | null;
       showPublicProfile: boolean;
       hideContactDetails: boolean;
       allowDirectMessages: boolean;
@@ -127,5 +129,49 @@ export class BusinessRepository {
       where: { userId },
       data,
     });
+  }
+
+  async updatePanDoc(userId: string, docUrl: string) {
+    return prisma.businessProfile.update({
+      where: { userId },
+      data:  { panDocUrl: docUrl, panDocStatus: 'PENDING', panDocUploadedAt: new Date() },
+    });
+  }
+
+  async updateCompanyRegDoc(userId: string, docUrl: string) {
+    return prisma.businessProfile.update({
+      where: { userId },
+      data:  { companyRegDocUrl: docUrl, companyRegDocStatus: 'PENDING', companyRegDocUploadedAt: new Date() },
+    });
+  }
+
+  async getPaymentHistoryData(businessId: string) {
+    const [applications, referrals] = await Promise.all([
+      prisma.application.findMany({
+        where: {
+          paymentStatus: { in: ['PAID', 'RELEASED'] },
+          campaign: { businessId },
+        },
+        select: {
+          id:           true,
+          proposedRate: true,
+          paidAt:       true,
+          creator:      { select: { fullName: true } },
+          campaign:     { select: { title: true } },
+        },
+        orderBy: { paidAt: 'desc' },
+      }),
+      prisma.businessReferral.findMany({
+        where: { referrerId: businessId, status: 'COMPLETED' },
+        select: {
+          id:          true,
+          rewardAmount: true,
+          completedAt:  true,
+          referred:     { select: { businessName: true } },
+        },
+        orderBy: { completedAt: 'desc' },
+      }),
+    ]);
+    return { applications, referrals };
   }
 }

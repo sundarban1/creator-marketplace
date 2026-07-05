@@ -335,11 +335,11 @@ export default function ProposalsScreen() {
     ? proposals
     : proposals.filter((p) => p.status === activeTab);
 
-  const emptyMessages: Record<TabKey, { emoji: string; title: string; sub: string }> = {
-    all:      { emoji: '📋', title: t('proposal.creator.emptyTitle'),        sub: t('proposal.creator.emptySub')        },
-    pending:  { emoji: '⏳', title: t('proposal.creator.emptyPendingTitle'), sub: t('proposal.creator.emptyPendingSub') },
-    accepted: { emoji: '🎉', title: t('proposal.creator.emptyAcceptedTitle'),sub: t('proposal.creator.emptyAcceptedSub')},
-    rejected: { emoji: '😔', title: t('proposal.creator.emptyRejectedTitle'),sub: t('proposal.creator.emptyRejectedSub')},
+  const emptyMessages: Record<TabKey, { faIcon: string; title: string; sub: string }> = {
+    all:      { faIcon: 'inbox',          title: t('proposal.creator.emptyTitle'),        sub: t('proposal.creator.emptySub')        },
+    pending:  { faIcon: 'hourglass-half', title: t('proposal.creator.emptyPendingTitle'), sub: t('proposal.creator.emptyPendingSub') },
+    accepted: { faIcon: 'check-circle',   title: t('proposal.creator.emptyAcceptedTitle'),sub: t('proposal.creator.emptyAcceptedSub')},
+    rejected: { faIcon: 'times-circle',   title: t('proposal.creator.emptyRejectedTitle'),sub: t('proposal.creator.emptyRejectedSub')},
   };
   const emptyMsg = emptyMessages[activeTab];
 
@@ -369,7 +369,7 @@ export default function ProposalsScreen() {
         </View>
       ) : error ? (
         <EmptyState
-          emoji="⚠️"
+          faIcon="exclamation-triangle"
           title={t('proposal.creator.loadError')}
           subtitle={error}
           action={{ label: t('proposal.creator.retry'), onPress: () => fetchProposals() }}
@@ -384,7 +384,7 @@ export default function ProposalsScreen() {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brinjal1} />}
           ListEmptyComponent={
             <EmptyState
-              emoji={emptyMsg.emoji}
+              faIcon={emptyMsg.faIcon}
               title={emptyMsg.title}
               subtitle={emptyMsg.sub}
               action={activeTab === 'all' ? { label: t('proposal.creator.browseEvents'), onPress: () => router.push('/(creator)' as never) } : undefined}

@@ -98,9 +98,6 @@ export function BusinessDrawerMenu({ visible, user, onClose, onLogout }: Props) 
         <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
           {NAV_GROUPS.map((group) => (
             <View key={group.labelKey}>
-              <View style={styles.groupSeparator}>
-                <Text style={[styles.groupLabel, { color: C.textSecondary }]}>{t(group.labelKey)}</Text>
-              </View>
               <View style={[styles.navGroup, { backgroundColor: C.surface, borderColor: C.border }]}>
                 {group.items.map(({ iconName, labelKey, route, color }, idx) => (
                   <Pressable
@@ -142,7 +139,7 @@ const styles = StyleSheet.create({
     shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 20,
     shadowOffset: { width: 6, height: 0 }, elevation: 20, flexDirection: 'column',
   },
-  header: { paddingHorizontal: 20, paddingBottom: 22 },
+  header: { paddingHorizontal: 20, paddingBottom: 16 },
   userRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   avatarCircle: {
     width: 48, height: 48, borderRadius: 24,
@@ -154,12 +151,10 @@ const styles = StyleSheet.create({
   userName: { fontSize: 15, fontWeight: '700', color: '#fff', marginBottom: 2, fontFamily: F.bold },
   userEmail: { fontSize: 11, color: 'rgba(255,255,255,0.7)', fontFamily: F.regular },
   scroll: { flex: 1 },
-  groupSeparator: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 4 },
-  groupLabel: { fontSize: 11, fontWeight: '800', letterSpacing: 0.6, fontFamily: F.extrabold },
-  navGroup: { marginHorizontal: 12, marginVertical: 6, borderRadius: 14, borderWidth: 1, overflow: 'hidden' },
-  navItem: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 14, paddingVertical: 14 },
-  navIconWrap: { width: 34, height: 34, borderRadius: 11, justifyContent: 'center', alignItems: 'center' },
+  navGroup: { marginHorizontal: 12, marginVertical: 4, borderRadius: 14, borderWidth: 1, overflow: 'hidden' },
+  navItem: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 9 },
+  navIconWrap: { width: 30, height: 30, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
   navLabel: { flex: 1, fontSize: 14, fontWeight: '600', fontFamily: F.semibold, letterSpacing: 0.1 },
-  logout: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingTop: 16, borderTopWidth: 1 },
+  logout: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingTop: 12, borderTopWidth: 1 },
   logoutText: { fontSize: 15, fontWeight: '700', fontFamily: F.bold },
 });

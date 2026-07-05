@@ -4,7 +4,7 @@ import { env } from '../../config/env';
 import { logger } from '../../config/logger';
 import { AppError } from '../../middleware/error';
 import { CategoryRepository } from '../category/category.repository';
-import { aiCampaignDraftSchema, type AiCampaignDraft } from './campaign-ai.schema';
+import { aiCampaignDraftSchema, type AiCampaignDraft, type SuggestDescriptionInput } from './campaign-ai.schema';
 
 const MODEL = 'claude-haiku-4-5-20251001';
 const REQUEST_TIMEOUT_MS = 20_000;
@@ -49,8 +49,47 @@ Respond with a JSON object with EXACTLY these keys:
 Always fill in every field with your best sensible guess, even for a very short prompt — never leave a field empty or refuse to answer. Respond with ONLY the JSON object.`;
 }
 
+const DESCRIPTION_SYSTEM_PROMPT = `You are a campaign-brief copywriter for a creator-marketplace app in Nepal, connecting brands with content creators for promotional campaigns.
+
+Given a few details about a brand's event/campaign, write a single description of 2-4 sentences describing what the campaign is about and what creators should do. Respond with ONLY the description text — no labels, no quotes, no markdown, no preamble.`;
+
 export class CampaignAiService {
   private categoryRepo = new CategoryRepository();
+
+  async suggestDescription(input: SuggestDescriptionInput): Promise<string> {
+    if (!env.ANTHROPIC_API_KEY) {
+      throw new AppError('AI generation is not configured', 503);
+    }
+
+    const parts: string[] = [];
+    if (input.title) parts.push(`Title: ${input.title}`);
+    if (input.category) parts.push(`Category: ${input.category}`);
+    if (input.platform) parts.push(`Platform: ${input.platform}`);
+    if (input.deliverables) parts.push(`Deliverables: ${input.deliverables}`);
+
+    const client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY, timeout: REQUEST_TIMEOUT_MS });
+    try {
+      const response = await client.messages.create({
+        model: MODEL,
+        max_tokens: 300,
+        system: DESCRIPTION_SYSTEM_PROMPT,
+        messages: [{ role: 'user', content: parts.join('\n') }],
+      });
+      const block = response.content[0];
+      const description = block?.type === 'text' ? block.text.trim().replace(/^["']|["']$/g, '') : '';
+      if (description.length < 10) {
+        throw new AppError("Couldn't generate a description. Please try again or write your own.", 422);
+      }
+      return description;
+    } catch (err) {
+      if (err instanceof AppError) throw err;
+      if (err instanceof Anthropic.APIConnectionTimeoutError) {
+        throw new AppError('AI generation timed out. Please try again.', 504);
+      }
+      logger.error({ err }, 'AI description suggestion failed');
+      throw new AppError("Couldn't generate a description. Please try again or write your own.", 422);
+    }
+  }
 
   async generateDraft(prompt: string): Promise<AiCampaignDraft & { aiSuggestedCategories: string[]; aiSuggestedPlatforms: string[] }> {
     if (!env.ANTHROPIC_API_KEY) {

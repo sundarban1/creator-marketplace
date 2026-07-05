@@ -1,26 +1,29 @@
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { useAppColors } from '@/context/ThemeContext';
 import { F } from '@/utilities/constants';
 
 type Props = {
   emoji?:    string;
   icon?:     keyof typeof Ionicons.glyphMap;
+  faIcon?:   string;
   title:     string;
   subtitle?: string;
   action?:   { label: string; onPress: () => void };
   children?: ReactNode;
 };
 
-export function EmptyState({ emoji, icon = 'cube-outline', title, subtitle, action, children }: Props) {
+export function EmptyState({ emoji, icon = 'cube-outline', faIcon, title, subtitle, action, children }: Props) {
   const C = useAppColors();
 
   return (
     <View style={styles.container}>
       <View style={[styles.iconWrap, { backgroundColor: C.surface, shadowColor: C.brinjal1 }]}>
-        {emoji ? (
+        {faIcon ? (
+          <FontAwesome5 name={faIcon as any} size={34} color={C.brinjal1} />
+        ) : emoji ? (
           <Text style={styles.emoji}>{emoji}</Text>
         ) : (
           <Ionicons name={icon} size={38} color={C.brinjal1} />

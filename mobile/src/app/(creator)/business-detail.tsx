@@ -6,10 +6,12 @@ import {
   ActivityIndicator,
   Image,
   Linking,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -17,8 +19,9 @@ import { EmptyState } from '@/components/EmptyState';
 import { useAppColors } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
-import { businessService, type BusinessDetail, type BusinessActiveCampaign } from '@/services/business';
+import { businessService, type BusinessDetailResult, type BusinessActiveCampaign } from '@/services/business';
 import { campaignService } from '@/services/campaign';
+import { chatService } from '@/services/chat';
 import { useFavoriteBusinesses } from '@/hooks/useFavoriteBusinesses';
 import { useToast } from '@/components/Toast';
 import { F } from '@/utilities/constants';
@@ -143,10 +146,17 @@ export default function BusinessDetailScreen() {
   const { user } = useAuth();
   const toast = useToast();
   const { favoriteIds, toggle } = useFavoriteBusinesses();
-  const [business, setBusiness] = useState<BusinessDetail | null>(null);
+  const [business, setBusiness] = useState<BusinessDetailResult | null>(null);
   const [appliedCampaignIds, setAppliedCampaignIds] = useState<Set<string>>(new Set());
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState('');
+
+  // Message request state
+  const [convId, setConvId]         = useState<string | null>(null);
+  const [convStatus, setConvStatus] = useState<'PENDING' | 'ACCEPTED' | 'DECLINED' | null>(null);
+  const [showMsgModal, setShowMsgModal] = useState(false);
+  const [requestMsg, setRequestMsg]     = useState('');
+  const [sendingMsg, setSendingMsg]     = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -158,10 +168,45 @@ export default function BusinessDetailScreen() {
       .then(([biz, applications]) => {
         setBusiness(biz);
         setAppliedCampaignIds(new Set(applications.map((a) => a.campaignId)));
+        if (!biz.isPrivate) {
+          chatService.checkConversation(biz.id).then((conv) => {
+            if (conv) { setConvId(conv.id); setConvStatus(conv.status); }
+          }).catch(() => {});
+        }
       })
       .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load'))
       .finally(() => setLoading(false));
   }, [id]);
+
+  async function handleSendMessageRequest() {
+    if (!business || business.isPrivate) return;
+    setSendingMsg(true);
+    try {
+      const conv = await chatService.sendMessageRequest(business.userId, requestMsg.trim() || undefined, undefined, 'CREATOR');
+      setConvId(conv.id);
+      setConvStatus(conv.status);
+      setShowMsgModal(false);
+      setRequestMsg('');
+      if (conv.status === 'ACCEPTED') {
+        router.push({
+          pathname: '/(creator)/messages/[id]' as never,
+          params: { id: conv.id, name: business.businessName, status: conv.status },
+        } as never);
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not send message. Please try again.');
+    } finally {
+      setSendingMsg(false);
+    }
+  }
+
+  function openChat() {
+    if (!convId || !business || business.isPrivate) return;
+    router.push({
+      pathname: '/(creator)/messages/[id]' as never,
+      params: { id: convId, name: business.businessName, status: convStatus ?? 'ACCEPTED' },
+    } as never);
+  }
 
   const NavBar = ({ title }: { title?: string }) => (
     <View style={[styles.navBar, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
@@ -185,6 +230,29 @@ export default function BusinessDetailScreen() {
       <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
         <NavBar />
         <EmptyState emoji="⚠️" title={t('businessDetail.loadError')} subtitle={error || t('common.notFound')} action={{ label: t('businessDetail.goBack'), onPress: () => router.back() }} />
+      </SafeAreaView>
+    );
+  }
+
+  if (business.isPrivate) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
+        <View style={[styles.navBar, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
+          <BackButton fallback="/(creator)/explore-businesses" />
+          <Text style={[styles.navTitle, { color: C.text }]} numberOfLines={1}>{business.businessName}</Text>
+          <View style={{ width: 40 }} />
+        </View>
+        <View style={[styles.hero, { backgroundColor: C.primaryLight }]}>
+          <View style={[styles.heroInner, { justifyContent: 'center' }]}>
+            <BusinessAvatar name={business.businessName} logoUrl={business.logoUrl} size={88} />
+            <Text style={[styles.heroName, { color: C.text, marginTop: 10 }]} numberOfLines={2}>{business.businessName}</Text>
+          </View>
+        </View>
+        <EmptyState
+          icon="lock-closed-outline"
+          title={t('businessDetail.privateTitle')}
+          subtitle={t('businessDetail.privateSubtitle')}
+        />
       </SafeAreaView>
     );
   }
@@ -289,6 +357,22 @@ export default function BusinessDetailScreen() {
             </Pressable>
           ) : null}
 
+          {/* Phone — hidden when business has hideContactDetails on */}
+          {business.phone && !business.hideContactDetails ? (
+            <Pressable
+              style={[styles.websiteCard, { backgroundColor: C.surface, borderColor: C.border }]}
+              onPress={() => Linking.openURL(`tel:${business.phone}`)}>
+              <View style={[styles.websiteIconBox, { backgroundColor: C.primaryLight }]}>
+                <Ionicons name="call" size={18} color={C.brinjal1} />
+              </View>
+              <View style={styles.websiteText}>
+                <Text style={[styles.websiteLabel, { color: C.textSecondary }]}>{t('businessDetail.sectionPhone')}</Text>
+                <Text style={[styles.websiteUrl, { color: C.brinjal1 }]} numberOfLines={1}>{business.phone}</Text>
+              </View>
+              <Ionicons name="open-outline" size={18} color={C.textSecondary} />
+            </Pressable>
+          ) : null}
+
           {/* Sectors / Categories */}
           {business.categories.length > 0 && (
             <View style={[styles.infoCard, { backgroundColor: C.surface }]}>
@@ -340,6 +424,58 @@ export default function BusinessDetailScreen() {
           </View>
         </View>
       </ScrollView>
+
+      {/* Sticky message bar */}
+      <View style={[styles.msgBar, { backgroundColor: C.surface, borderTopColor: C.border }]}>
+        {convStatus === 'ACCEPTED' ? (
+          <Pressable style={[styles.msgBtn, { backgroundColor: C.brinjal1 }]} onPress={openChat}>
+            <Text style={styles.msgBtnText}>{t('businessDetail.openChat')}</Text>
+          </Pressable>
+        ) : convStatus === 'PENDING' ? (
+          <View style={[styles.msgBtn, { backgroundColor: C.border }]}>
+            <Text style={[styles.msgBtnText, { color: '#fff' }]}>{t('businessDetail.requestSent')}</Text>
+          </View>
+        ) : (
+          <Pressable style={[styles.msgBtn, { backgroundColor: C.brinjal1 }]} onPress={() => setShowMsgModal(true)}>
+            <Text style={styles.msgBtnText}>{t('businessDetail.sendMessage')}</Text>
+          </Pressable>
+        )}
+      </View>
+
+      {/* Request message modal */}
+      <Modal visible={showMsgModal} transparent animationType="slide" onRequestClose={() => setShowMsgModal(false)}>
+        <View style={styles.modalOverlay}>
+          <Pressable style={styles.modalScrim} onPress={() => setShowMsgModal(false)} />
+          <View style={[styles.modalSheet, { backgroundColor: C.surface }]}>
+            <View style={[styles.modalHandle, { backgroundColor: C.border }]} />
+            <View style={styles.modalTitleRow}>
+              <Text style={[styles.modalTitle, { color: C.text }]}>{t('businessDetail.messageRequestTitle')}</Text>
+              <Pressable style={[styles.modalCloseBtn, { backgroundColor: C.background }]} onPress={() => setShowMsgModal(false)} hitSlop={8}>
+                <Ionicons name="close" size={18} color={C.textSecondary} />
+              </Pressable>
+            </View>
+            <Text style={[styles.modalSubtitle, { color: C.textSecondary }]}>
+              {t('businessDetail.messageRequestSubtitle', { name: business.businessName })}
+            </Text>
+            <TextInput
+              style={[styles.modalInput, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
+              value={requestMsg}
+              onChangeText={setRequestMsg}
+              placeholder={t('businessDetail.messageRequestPlaceholder')}
+              placeholderTextColor={C.textSecondary}
+              multiline
+              maxLength={500}
+            />
+            <Text style={[styles.modalCounter, { color: C.textSecondary }]}>{requestMsg.length}/500</Text>
+            <Pressable
+              style={[styles.modalSendBtn, { backgroundColor: sendingMsg ? C.border : C.brinjal1 }]}
+              onPress={handleSendMessageRequest}
+              disabled={sendingMsg}>
+              <Text style={styles.modalSendText}>{sendingMsg ? t('businessDetail.sendingLabel') : t('businessDetail.sendRequestBtn')}</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -414,4 +550,23 @@ const styles = StyleSheet.create({
   appliedPillText:       { fontSize: 11, fontWeight: '700', color: '#059669', fontFamily: F.bold },
   applyNowBtn:           { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5, alignSelf: 'flex-start', marginTop: 4 },
   applyNowBtnText:       { fontSize: 11, fontWeight: '700', color: '#fff', fontFamily: F.bold },
+
+  // Sticky message bar
+  msgBar:                { paddingHorizontal: 20, paddingVertical: 14, borderTopWidth: 1 },
+  msgBtn:                { borderRadius: 14, height: 52, justifyContent: 'center', alignItems: 'center' },
+  msgBtnText:            { color: '#fff', fontSize: 16, fontWeight: '700', fontFamily: F.bold },
+
+  // Request modal
+  modalOverlay:          { flex: 1, justifyContent: 'flex-end' },
+  modalScrim:            { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.45)' },
+  modalSheet:            { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 40, gap: 14 },
+  modalHandle:           { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginBottom: 4 },
+  modalTitleRow:         { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  modalTitle:            { fontSize: 18, fontWeight: '700', fontFamily: F.bold, flex: 1 },
+  modalCloseBtn:         { width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
+  modalSubtitle:         { fontSize: 13, lineHeight: 20, fontFamily: F.regular },
+  modalInput:            { borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, minHeight: 100, textAlignVertical: 'top', fontFamily: F.regular },
+  modalCounter:          { fontSize: 11, textAlign: 'right', marginTop: -6, fontFamily: F.regular },
+  modalSendBtn:          { borderRadius: 14, height: 52, justifyContent: 'center', alignItems: 'center' },
+  modalSendText:         { color: '#fff', fontSize: 16, fontWeight: '700', fontFamily: F.bold },
 });

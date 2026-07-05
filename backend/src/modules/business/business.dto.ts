@@ -10,14 +10,26 @@ export interface BusinessProfileDto {
   categories: string[];
   panNo: string | null;
   location: string | null;
+  phone: string | null;
   isVerified: boolean;
   showPublicProfile: boolean;
   hideContactDetails: boolean;
   allowDirectMessages: boolean;
   socialLinks: Record<string, string>;
+  panDocUrl: string | null;
+  panDocStatus: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
+  companyRegDocUrl: string | null;
+  companyRegDocStatus: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
   createdAt: string;
   updatedAt: string;
   user: { id: string; email: string; role: string; isEmailVerified: boolean } | null;
+}
+
+export interface PrivateBusinessDto {
+  id: string;
+  businessName: string | null;
+  logoUrl: string | null;
+  isPrivate: true;
 }
 
 export interface PublicBusinessDto {
@@ -27,6 +39,7 @@ export interface PublicBusinessDto {
   description: string | null;
   logoUrl: string | null;
   website: string | null;
+  phone: string | null;
   categories: string[];
   isVerified: boolean;
   showPublicProfile: boolean;
@@ -70,11 +83,16 @@ type RawBusinessProfile = {
   categories: string[];
   panNo: string | null;
   location: string | null;
+  phone?: string | null;
   isVerified: boolean;
   showPublicProfile: boolean;
   hideContactDetails: boolean;
   allowDirectMessages: boolean;
   socialLinks?: Prisma.JsonValue;
+  panDocUrl?: string | null;
+  panDocStatus?: string;
+  companyRegDocUrl?: string | null;
+  companyRegDocStatus?: string;
   createdAt: Date;
   updatedAt: Date;
   user?: { id: string; email: string; role: string; isEmailVerified: boolean } | null;
@@ -91,11 +109,16 @@ export function toBusinessProfileDto(b: RawBusinessProfile): BusinessProfileDto 
     categories:          b.categories,
     panNo:               b.panNo,
     location:            b.location,
+    phone:               b.phone ?? null,
     isVerified:          b.isVerified,
     showPublicProfile:   b.showPublicProfile,
     hideContactDetails:  b.hideContactDetails,
     allowDirectMessages: b.allowDirectMessages,
     socialLinks:         (b.socialLinks ?? {}) as Record<string, string>,
+    panDocUrl:           b.panDocUrl ?? null,
+    panDocStatus:        (b.panDocStatus ?? 'NONE') as BusinessProfileDto['panDocStatus'],
+    companyRegDocUrl:    b.companyRegDocUrl ?? null,
+    companyRegDocStatus: (b.companyRegDocStatus ?? 'NONE') as BusinessProfileDto['companyRegDocStatus'],
     createdAt:           b.createdAt.toISOString(),
     updatedAt:           b.updatedAt.toISOString(),
     user:                b.user ?? null,
@@ -109,6 +132,7 @@ type RawPublicBusiness = {
   description: string | null;
   logoUrl: string | null;
   website: string | null;
+  phone: string | null;
   categories: string[];
   isVerified: boolean;
   showPublicProfile: boolean;
@@ -139,6 +163,7 @@ export function toPublicBusinessDto(b: RawPublicBusiness): PublicBusinessDto {
     description:         b.description,
     logoUrl:             b.logoUrl,
     website:             b.website,
+    phone:               b.phone,
     categories:          b.categories,
     isVerified:          b.isVerified,
     showPublicProfile:   b.showPublicProfile,
@@ -148,6 +173,10 @@ export function toPublicBusinessDto(b: RawPublicBusiness): PublicBusinessDto {
     campaigns:           b.campaigns.map((c) => ({ ...c, deadline: c.deadline.toISOString() })),
     _count:              b._count,
   };
+}
+
+export function toPrivateBusinessDto(b: { id: string; businessName: string | null; logoUrl: string | null }): PrivateBusinessDto {
+  return { id: b.id, businessName: b.businessName, logoUrl: b.logoUrl, isPrivate: true };
 }
 
 type RawBusinessListItem = {

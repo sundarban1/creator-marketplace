@@ -160,6 +160,10 @@ export interface ApiBusiness {
   categories:   string[];
   isVerified:   boolean;
   createdAt:    string;
+  panDocUrl?:          string | null;
+  panDocStatus?:       'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
+  companyRegDocUrl?:   string | null;
+  companyRegDocStatus?: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
   user:  { id: string; email: string; isEmailVerified: boolean; isActive: boolean; createdAt: string };
   _count: { campaigns: number };
 }

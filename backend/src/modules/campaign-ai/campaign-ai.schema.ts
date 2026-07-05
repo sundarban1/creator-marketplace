@@ -5,6 +5,16 @@ export const generateCampaignSchema = z.object({
 });
 export type GenerateCampaignInput = z.infer<typeof generateCampaignSchema>;
 
+export const suggestDescriptionSchema = z.object({
+  title:        z.string().max(120).optional(),
+  category:     z.string().max(60).optional(),
+  platform:     z.string().max(60).optional(),
+  deliverables: z.string().max(300).optional(),
+}).refine((d) => !!(d.title || d.category || d.platform || d.deliverables), {
+  message: 'Add a title, category, platform, or deliverables first so there is something to base a description on',
+});
+export type SuggestDescriptionInput = z.infer<typeof suggestDescriptionSchema>;
+
 // Field keys the AI is allowed to flag as "not confident" — kept in sync with
 // FormData in mobile create-campaign.tsx so the chip renderer can key off them.
 export const NEEDS_INPUT_FIELDS = [

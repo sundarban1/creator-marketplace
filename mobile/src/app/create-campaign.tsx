@@ -72,6 +72,13 @@ const DEFAULT_DELIVERABLES: Record<string, number> = Object.fromEntries(
   DELIVERABLE_TYPES.map((d) => [d.key, 0])
 );
 
+function summarizeDeliverables(deliverables: Record<string, number>, fallback: string[]): string {
+  const parts = DELIVERABLE_TYPES
+    .filter((d) => (deliverables[d.key] ?? 0) > 0)
+    .map((d) => `${deliverables[d.key]} ${d.label}`);
+  return parts.length > 0 ? parts.join(', ') : fallback.join(', ');
+}
+
 const GOOGLE_PLACES_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY ?? '';
 const ERROR_RED = '#EF4444';
 
@@ -835,6 +842,7 @@ export default function CreateCampaignScreen() {
   const [aiPlaceholder] = useState(() => AI_PROMPT_EXAMPLES[Math.floor(Math.random() * AI_PROMPT_EXAMPLES.length)]);
   const [aiLocationError, setAiLocationError] = useState<string | undefined>();
   const [newHashtag, setNewHashtag] = useState('');
+  const [descSuggestLoading, setDescSuggestLoading] = useState(false);
 
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const toastOpacity = useRef(new Animated.Value(0)).current;
@@ -940,6 +948,31 @@ export default function CreateCampaignScreen() {
       showToast(err instanceof Error ? err.message : t('createEvent.aiGenerateFailed'), 'error');
     } finally {
       setAiLoading(false);
+    }
+  }
+
+  async function handleSuggestDescription() {
+    if (descSuggestLoading) return;
+    const deliverables = form.eventType === 'PAID_CAMPAIGN'
+      ? summarizeDeliverables(form.deliverables, form.goals)
+      : form.benefits.join(', ');
+    if (!form.title.trim() && !form.template && !deliverables) {
+      showToast(t('createEvent.descSuggestNeedsInfo'), 'error');
+      return;
+    }
+    setDescSuggestLoading(true);
+    try {
+      const description = await campaignService.suggestDescription({
+        title:        form.title.trim() || undefined,
+        category:     form.template || undefined,
+        platform:     form.platform || undefined,
+        deliverables: deliverables || undefined,
+      });
+      update('description', description);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : t('createEvent.descSuggestFailed'), 'error');
+    } finally {
+      setDescSuggestLoading(false);
     }
   }
 
@@ -1303,6 +1336,14 @@ export default function CreateCampaignScreen() {
 
                   {/* Editable description */}
                   <SectionCard title={t('createEvent.secDescPaid')} colors={C}>
+                    <Pressable
+                      style={[s.suggestBtn, { borderColor: C.brinjal1, opacity: descSuggestLoading ? 0.6 : 1 }]}
+                      onPress={handleSuggestDescription}
+                      disabled={descSuggestLoading}>
+                      {descSuggestLoading
+                        ? <ActivityIndicator size="small" color={C.brinjal1} />
+                        : <Text style={[s.suggestBtnText, { color: C.brinjal1 }]}>{t('createEvent.suggestDescriptionBtn')}</Text>}
+                    </Pressable>
                     <TextInput
                       style={[s.textarea, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
                       value={form.description}
@@ -1598,6 +1639,14 @@ export default function CreateCampaignScreen() {
 
                   {/* Description */}
                   <SectionCard title={t('createEvent.secDescOpen')} sub={t('createEvent.secDescOpenSub')} colors={C}>
+                    <Pressable
+                      style={[s.suggestBtn, { borderColor: C.brinjal1, opacity: descSuggestLoading ? 0.6 : 1 }]}
+                      onPress={handleSuggestDescription}
+                      disabled={descSuggestLoading}>
+                      {descSuggestLoading
+                        ? <ActivityIndicator size="small" color={C.brinjal1} />
+                        : <Text style={[s.suggestBtnText, { color: C.brinjal1 }]}>{t('createEvent.suggestDescriptionBtn')}</Text>}
+                    </Pressable>
                     <TextInput
                       style={[s.textarea, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
                       value={form.description}
@@ -1781,6 +1830,9 @@ const s = StyleSheet.create({
   input:     { borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14, height: 50, fontSize: 15, fontFamily: F.regular },
   textarea:  { borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, minHeight: 120, textAlignVertical: 'top', fontFamily: F.regular },
   errorText: { fontSize: 12, color: ERROR_RED, fontFamily: F.regular },
+
+  suggestBtn:     { alignSelf: 'flex-end', borderRadius: 20, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 7, minHeight: 30, alignItems: 'center', justifyContent: 'center' },
+  suggestBtnText: { fontSize: 12, fontWeight: '700', fontFamily: F.bold },
 
   generateBtn:     { borderRadius: 14, height: 52, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 8 },
   generateBtnText: { color: '#fff', fontSize: 15, fontWeight: '700', fontFamily: F.bold },

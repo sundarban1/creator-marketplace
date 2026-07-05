@@ -232,6 +232,16 @@ export const campaignService = {
     return res.data;
   },
 
+  async suggestDescription(input: {
+    title?:        string;
+    category?:     string;
+    platform?:     string;
+    deliverables?: string;
+  }): Promise<string> {
+    const res = await request<{ description: string }>('POST', '/api/campaigns/ai/suggest-description', input);
+    return res.data.description;
+  },
+
   async update(id: string, data: {
     title?: string;
     description?: string;

@@ -7,18 +7,25 @@ export type SocialLinks = {
   linkedin?:  string;
 };
 
+export type DocStatus = 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
+
 export type BusinessProfile = {
   id:           string;
   businessName: string;
   description:  string | null;
   logoUrl:      string | null;
   website:      string | null;
+  phone:        string | null;
   categories:   string[];
   panNo:        string | null;
   location:     string | null;
   isVerified:   boolean;
   createdAt:    string;
   socialLinks:  SocialLinks;
+  panDocUrl:           string | null;
+  panDocStatus:        DocStatus;
+  companyRegDocUrl:    string | null;
+  companyRegDocStatus: DocStatus;
   user: { email: string };
 };
 
@@ -52,6 +59,7 @@ export const profileService = {
     description?:   string;
     logoUrl?:       string;
     website?:       string;
+    phone?:         string;
     panNo?:         string;
     location?:      string | null;
     categories?:    string[];

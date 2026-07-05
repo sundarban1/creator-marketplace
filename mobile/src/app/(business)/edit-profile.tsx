@@ -94,6 +94,7 @@ export default function EditBusinessProfileScreen() {
   const [description, setDescription]           = useState('');
   const [descriptionManuallyEdited, setDescriptionManuallyEdited] = useState(false);
   const [website, setWebsite]                   = useState('');
+  const [phone, setPhone]                       = useState('');
   const [location, setLocation]                 = useState('');
   const [categories, setCategories]             = useState<string[]>([]);
   const [allCategories, setAllCategories]       = useState<Category[]>([]);
@@ -108,6 +109,7 @@ export default function EditBusinessProfileScreen() {
         setBusinessName(profile.businessName ?? '');
         setDescription(profile.description ?? '');
         setWebsite(profile.website ?? '');
+        setPhone(profile.phone ?? '');
         setLocation(profile.location ?? '');
         setCategories(profile.categories ?? []);
         setAllCategories(cats);
@@ -142,6 +144,7 @@ export default function EditBusinessProfileScreen() {
         businessName: businessName.trim(),
         description:  description.trim() || undefined,
         website:      website.trim() || undefined,
+        phone:        phone.trim() || undefined,
         location:     location.trim() || null,
         categories,
       });
@@ -229,6 +232,20 @@ export default function EditBusinessProfileScreen() {
               keyboardType="url"
               autoCapitalize="none"
               autoCorrect={false}
+            />
+          </View>
+
+          <View style={[styles.divider, { backgroundColor: C.border }]} />
+
+          <View style={styles.field}>
+            <Text style={[styles.label, { color: C.textSecondary }]}>{t('profile.editBusiness.phoneLabel')}</Text>
+            <TextInput
+              style={[styles.input, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
+              value={phone}
+              onChangeText={setPhone}
+              placeholder={t('profile.editBusiness.phonePlaceholder')}
+              placeholderTextColor={C.textSecondary}
+              keyboardType="phone-pad"
             />
           </View>
 
