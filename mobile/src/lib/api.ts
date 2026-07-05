@@ -1,5 +1,6 @@
 import { storage }                                from '@/utilities/storage';
 import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY }  from '@/utilities/constants';
+import { getCachedDeviceId } from '@/utilities/deviceId';
 
 export const API_BASE = process.env.EXPO_PUBLIC_API_BASE ?? 'http://localhost:3000';
 
@@ -181,6 +182,8 @@ export async function request<T>(
     };
     const t = token ?? storage.get(ACCESS_TOKEN_KEY);
     if (t) h['Authorization'] = `Bearer ${t}`;
+    const deviceId = getCachedDeviceId();
+    if (deviceId) h['X-Device-Id'] = deviceId;
     return h;
   }
 

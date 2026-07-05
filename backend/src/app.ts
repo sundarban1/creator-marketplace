@@ -19,6 +19,9 @@ import { initSocket } from './socket';
 // Route imports
 import authRoutes from './modules/auth/auth.routes';
 import creatorRoutes from './modules/creator/creator.routes';
+import referralRoutes from './modules/referral/referral.routes';
+import businessReferralRoutes from './modules/business-referral/business-referral.routes';
+import walletRoutes from './modules/wallet/wallet.routes';
 import businessRoutes from './modules/business/business.routes';
 import campaignRoutes from './modules/campaign/campaign.routes';
 import messagingRoutes from './modules/messaging/messaging.routes';
@@ -211,6 +214,9 @@ app.get('/api/docs.json', (_req, res) => {
 // ── API Routes ────────────────────────────────────────────────────────────────
 app.use('/api/auth', authRoutes);
 app.use('/api/creator', creatorRoutes);
+app.use('/api/creator/referral', referralRoutes);
+app.use('/api/creator/wallet', walletRoutes);
+app.use('/api/business/referral', businessReferralRoutes);
 app.use('/api/business', businessRoutes);
 app.use('/api/campaigns', campaignRoutes);
 app.use('/api/messaging', messagingRoutes);

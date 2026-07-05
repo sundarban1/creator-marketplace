@@ -466,6 +466,20 @@ export default function HomeScreen() {
           </Pressable>
         )}
 
+        {/* ── Refer a friend banner ── */}
+        <Pressable
+          style={[styles.banner, { backgroundColor: C.surface, borderLeftColor: '#EC4899' }]}
+          onPress={() => router.push('/(creator)/referral')}>
+          <View style={[styles.bannerIconBox, { backgroundColor: '#FCE7F3' }]}>
+            <Ionicons name="gift-outline" size={20} color="#EC4899" />
+          </View>
+          <View style={styles.bannerText}>
+            <Text style={[styles.bannerTitle, { color: C.text }]}>{t('referral.homeBannerTitle')}</Text>
+            <Text style={[styles.bannerSub, { color: C.textSecondary }]} numberOfLines={1}>{t('referral.homeBannerSub')}</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={16} color={C.textSecondary} />
+        </Pressable>
+
         {/* ── Error ── */}
         {fetchError ? (
           <View style={[styles.errorCard, { backgroundColor: '#FEE2E2' }]}>

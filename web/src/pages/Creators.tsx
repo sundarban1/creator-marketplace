@@ -22,6 +22,7 @@ export function Creators() {
   const [action,  setAction]  = useState<Action | null>(null);
   const [loading, setLoading] = useState(false);
   const [toast,   setToast]   = useState<{ msg: string; ok: boolean } | null>(null);
+  const [verifyingId, setVerifyingId] = useState<string | null>(null);
 
   const { data, loading: fetching, error, refetch } = useApi(() =>
     api.admin.creators({ limit: 50, search: debouncedSearch || undefined })
@@ -42,6 +43,19 @@ export function Creators() {
       setDebouncedSearch(val);
       refetch();
     }, 400);
+  }
+
+  async function handleToggleVerified(row: ApiCreator) {
+    setVerifyingId(row.id);
+    try {
+      await api.admin.verifyCreator(row.id, !row.isVerified);
+      showToast(`${row.fullName ?? 'Creator'} ${row.isVerified ? 'unverified' : 'verified'}.`);
+      refetch();
+    } catch (e) {
+      showToast((e as Error).message ?? 'Something went wrong.', false);
+    } finally {
+      setVerifyingId(null);
+    }
   }
 
   async function handleConfirm() {
@@ -133,6 +147,12 @@ export function Creators() {
         const suspended = row.user.isActive === false;
         return (
           <div className="flex gap-2">
+            <button
+              className="text-xs text-indigo-600 hover:text-indigo-800 font-medium disabled:opacity-50"
+              disabled={verifyingId === row.id}
+              onClick={() => handleToggleVerified(row)}>
+              {row.isVerified ? 'Unverify' : 'Verify'}
+            </button>
             {suspended ? (
               <button className="text-xs text-green-600 hover:text-green-800 font-medium" onClick={() => setAction({ type: 'activate', creator: row })}>
                 Activate

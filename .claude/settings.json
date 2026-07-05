@@ -186,7 +186,21 @@
       "Bash(DOCKER_HOST=unix:///Users/sundarban/Library/Containers/com.docker.docker/Data/docker.sock docker compose up -d postgres)",
       "Bash(DOCKER_HOST=unix:///Users/sundarban/.docker/run/docker.sock docker ps)",
       "Bash(docker context *)",
-      "Bash(curl -s -X POST http://localhost:3000/api/auth/register -H 'Content-Type: application/json' -d '{\"email\":\"testbiz@example.com\",\"password\":\"Test1234\",\"role\":\"BUSINESS\"}')"
+      "Bash(curl -s -X POST http://localhost:3000/api/auth/register -H 'Content-Type: application/json' -d '{\"email\":\"testbiz@example.com\",\"password\":\"Test1234\",\"role\":\"BUSINESS\"}')",
+      "Bash(curl -s -X PATCH http://localhost:3000/api/admin/business-referrals/__TRACKED_VAR__/release -H 'Authorization: Bearer __CMDSUB_OUTPUT__')",
+      "Bash(curl -s -X POST http://localhost:3000/api/business/referral/__TRACKED_VAR__/resend -H 'Authorization: Bearer __CMDSUB_OUTPUT__')",
+      "Bash(curl -s http://localhost:3000/api/business/referral -H 'Authorization: Bearer __CMDSUB_OUTPUT__')",
+      "Bash(curl -s -X PUT http://localhost:3000/api/campaigns/__TRACKED_VAR__/cancel -H 'Authorization: Bearer __CMDSUB_OUTPUT__')",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(d\\)\")",
+      "Bash(xargs ls)",
+      "Bash(awk -F: '$1>316 && $1<360')",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000/api/docs)",
+      "Bash(curl -s http://localhost:3000/api/creator/wallet -H 'Authorization: Bearer __CMDSUB_OUTPUT__')",
+      "Bash(curl -s -X POST http://localhost:3000/api/creator/wallet/withdraw -H 'Authorization: Bearer __CMDSUB_OUTPUT__' -H 'Content-Type: application/json' -d '{\"amount\":1000,\"method\":\"esewa\"}')",
+      "Bash(curl -s -X PUT http://localhost:3000/api/creator/payment-methods -H 'Authorization: Bearer __CMDSUB_OUTPUT__' -H 'Content-Type: application/json' -d '{\"methods\":[\"esewa\"]}')",
+      "Bash(curl -s -X POST http://localhost:3000/api/creator/wallet/withdraw -H 'Authorization: Bearer __CMDSUB_OUTPUT__' -H 'Content-Type: application/json' -d '{\"amount\":9999,\"method\":\"esewa\"}')",
+      "Bash(curl -s http://localhost:3000/api/creator/wallet/transactions -H 'Authorization: Bearer __CMDSUB_OUTPUT__')",
+      "Bash(curl -s http://localhost:3000/api/creator/wallet -H 'Authorization: Bearer __TRACKED_VAR__')"
     ],
     "additionalDirectories": [
       "/Users/sundarban/Documents/projects/marketplace/content",

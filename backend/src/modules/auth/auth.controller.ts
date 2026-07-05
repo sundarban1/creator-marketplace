@@ -7,7 +7,8 @@ const authService = new AuthService();
 export class AuthController {
   async register(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const result = await authService.register(req.body);
+      const deviceId = req.headers['x-device-id'] as string | undefined;
+      const result = await authService.register(req.body, deviceId);
       success(res, result, 'Account created successfully', 201);
     } catch (err) {
       next(err);
@@ -16,7 +17,8 @@ export class AuthController {
 
   async login(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const result = await authService.login(req.body);
+      const deviceId = req.headers['x-device-id'] as string | undefined;
+      const result = await authService.login(req.body, deviceId);
       success(res, result, 'Login successful');
     } catch (err) {
       next(err);

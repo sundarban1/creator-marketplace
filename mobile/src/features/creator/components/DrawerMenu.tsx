@@ -19,7 +19,8 @@ type NavItem = {
 const ACCOUNT_ITEMS: NavItem[] = [
   { iconName: 'share-social-outline',    labelKey: 'drawer.socialAccounts',    route: '/(creator)/settings?section=social',    color: '#E1306C' },
   { iconName: 'options-outline',         labelKey: 'drawer.eventPreferences',  route: '/(creator)/settings?section=campaigns', color: '#7C3AED' },
-  { iconName: 'wallet-outline',          labelKey: 'drawer.earningsPayments',  route: '/(creator)/settings?section=earnings',  color: '#16A34A' },
+  { iconName: 'wallet-outline',          labelKey: 'drawer.myWallet',          route: '/(creator)/wallet',                     color: '#16A34A' },
+  { iconName: 'gift-outline',            labelKey: 'drawer.referAFriend',      route: '/(creator)/referral',                   color: '#EC4899' },
   { iconName: 'images-outline',          labelKey: 'drawer.pastWork',          route: '/(creator)/settings?section=past-work', color: '#F59E0B' },
   { iconName: 'shield-checkmark-outline', labelKey: 'drawer.security',         route: '/(creator)/settings?section=security',  color: '#3B82F6' },
   { iconName: 'help-buoy-outline',       labelKey: 'drawer.support',           route: '/(creator)/settings?section=support',   color: '#0891B2' },

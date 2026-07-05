@@ -19,6 +19,7 @@ export function Businesses() {
   const [action,  setAction]  = useState<Action | null>(null);
   const [loading, setLoading] = useState(false);
   const [toast,   setToast]   = useState<{ msg: string; ok: boolean } | null>(null);
+  const [verifyingId, setVerifyingId] = useState<string | null>(null);
 
   const { data, loading: fetching, error, refetch } = useApi(() => api.admin.businesses({ limit: 50 }));
   const businesses = data?.data ?? [];
@@ -27,6 +28,19 @@ export function Businesses() {
   function showToast(msg: string, ok = true) {
     setToast({ msg, ok });
     setTimeout(() => setToast(null), 3000);
+  }
+
+  async function handleToggleVerified(row: ApiBusiness) {
+    setVerifyingId(row.id);
+    try {
+      await api.admin.verifyBusiness(row.id, !row.isVerified);
+      showToast(`${row.businessName} ${row.isVerified ? 'unverified' : 'verified'}.`);
+      refetch();
+    } catch (e) {
+      showToast((e as Error).message ?? 'Something went wrong.', false);
+    } finally {
+      setVerifyingId(null);
+    }
   }
 
   async function handleConfirm() {
@@ -128,6 +142,12 @@ export function Businesses() {
         const suspended = row.user.isActive === false;
         return (
           <div className="flex gap-2">
+            <button
+              className="text-xs text-indigo-600 hover:text-indigo-800 font-medium disabled:opacity-50"
+              disabled={verifyingId === row.id}
+              onClick={() => handleToggleVerified(row)}>
+              {row.isVerified ? 'Unverify' : 'Verify'}
+            </button>
             {suspended ? (
               <button className="text-xs text-green-600 hover:text-green-800 font-medium" onClick={() => setAction({ type: 'activate', business: row })}>
                 Activate

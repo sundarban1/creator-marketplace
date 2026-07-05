@@ -17,6 +17,12 @@ import {
   getConversationStats,
   getConversations,
   deleteConversation,
+  getReferrals,
+  releaseReferral,
+  verifyCreator,
+  verifyBusiness,
+  getBusinessReferrals,
+  releaseBusinessReferral,
 } from './admin.controller';
 
 const router = Router();
@@ -34,7 +40,9 @@ router.patch('/users/:id/suspend', suspendUser);
 router.delete('/users/:id', deleteUser);
 
 router.get('/creators',  getCreators);
+router.patch('/creators/:id/verify', verifyCreator);
 router.get('/businesses', getBusinesses);
+router.patch('/businesses/:id/verify', verifyBusiness);
 
 router.get('/campaigns', getCampaigns);
 router.get('/campaigns/:id', getCampaignDetail);
@@ -50,5 +58,13 @@ router.put('/settings', updateSettings);
 router.get('/conversations/stats', getConversationStats);
 router.get('/conversations',       getConversations);
 router.delete('/conversations/:id', deleteConversation);
+
+// ── Referrals ───────────────────────────────────────────────────────────────────
+
+router.get('/referrals',              getReferrals);
+router.patch('/referrals/:id/release', releaseReferral);
+
+router.get('/business-referrals',              getBusinessReferrals);
+router.patch('/business-referrals/:id/release', releaseBusinessReferral);
 
 export default router;

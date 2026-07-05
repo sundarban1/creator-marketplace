@@ -60,6 +60,7 @@ export default function BusinessHomeScreen() {
   const [fetchError, setFetchError] = useState('');
   const [missingFields, setMissingFields] = useState<string[]>([]);
   const [bannerDismissed, setBannerDismissed] = useState(false);
+  const [referralBannerDismissed, setReferralBannerDismissed] = useState(false);
 
   async function fetchCampaigns(showLoader = true) {
     if (showLoader) setLoading(true);
@@ -253,6 +254,24 @@ export default function BusinessHomeScreen() {
           </View>
           <Ionicons name="chevron-forward" size={18} color="#059669" />
         </Pressable>
+
+        {/* ── Refer a business banner ── */}
+        {!referralBannerDismissed && (
+          <Pressable
+            style={[styles.banner, { backgroundColor: C.surface, borderLeftColor: '#EC4899' }]}
+            onPress={() => router.push('/(business)/refer')}>
+            <View style={[styles.bannerIconBox, { backgroundColor: '#FCE7F3' }]}>
+              <Ionicons name="gift-outline" size={20} color="#EC4899" />
+            </View>
+            <View style={styles.bannerText}>
+              <Text style={[styles.bannerTitle, { color: C.text }]}>{t('businessReferral.homeBannerTitle')}</Text>
+              <Text style={[styles.bannerSub, { color: C.textSecondary }]} numberOfLines={1}>{t('businessReferral.homeBannerSub')}</Text>
+            </View>
+            <Pressable style={styles.bannerClose} onPress={() => setReferralBannerDismissed(true)}>
+              <Ionicons name="close" size={16} color={C.textSecondary} />
+            </Pressable>
+          </Pressable>
+        )}
 
         {/* ── Recent Events ── */}
         <View style={styles.sectionHeader}>

@@ -214,6 +214,22 @@ export class AdminRepository {
     });
   }
 
+  async updateCreatorVerification(creatorProfileId: string, isVerified: boolean) {
+    return prisma.creatorProfile.update({
+      where: { id: creatorProfileId },
+      data:  { isVerified },
+      select: { id: true, fullName: true, isVerified: true },
+    });
+  }
+
+  async updateBusinessVerification(businessProfileId: string, isVerified: boolean) {
+    return prisma.businessProfile.update({
+      where: { id: businessProfileId },
+      data:  { isVerified },
+      select: { id: true, businessName: true, isVerified: true },
+    });
+  }
+
   async getUserById(userId: string) {
     const user = await prisma.user.findUnique({
       where:  { id: userId },

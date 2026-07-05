@@ -4,6 +4,7 @@ import { setSessionExpiredHandler, clearSessionExpiredGuard } from '@/lib/api';
 import type { User } from '@/types';
 import { USER_KEY } from '@/utilities/constants';
 import { storage } from '@/utilities/storage';
+import { warmDeviceId } from '@/utilities/deviceId';
 
 type AuthContextValue = {
   user: User | null;
@@ -25,6 +26,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logoutRef = useRef<(() => Promise<void>) | undefined>(undefined);
 
   useEffect(() => {
+    void warmDeviceId();
+
     authService.getStoredUser().then((u) => {
       setUser(u);
       setIsLoading(false);

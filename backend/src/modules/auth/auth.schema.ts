@@ -13,6 +13,7 @@ export const registerSchema = z.object({
   }),
   fullName: z.string().min(2, 'Full name must be at least 2 characters').optional(),
   businessName: z.string().min(2, 'Business name must be at least 2 characters').optional(),
+  referralCode: z.string().min(4).max(20).optional(),
 });
 
 export const loginSchema = z.object({

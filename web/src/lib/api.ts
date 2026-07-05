@@ -95,6 +95,47 @@ export interface ApiCreator {
   _count: { applications: number };
 }
 
+export interface ApiReferral {
+  id: string;
+  referrer: { id: string; name: string | null };
+  referred: { id: string; name: string | null; isVerified: boolean };
+  code: string;
+  status: 'PENDING' | 'COMPLETED' | 'EXPIRED';
+  linkedAt: string;
+  expiresAt: string;
+  completedAt: string | null;
+  rewardAmount: number;
+  eligibility: {
+    verified: boolean;
+    profileComplete: boolean;
+    firstEventCompleted: boolean;
+    notExpired: boolean;
+  };
+}
+
+export interface ApiBusinessReferral {
+  id: string;
+  referrer: { id: string; name: string | null };
+  referred: { id: string; name: string | null; isVerified: boolean };
+  code: string;
+  status: 'PENDING' | 'COMPLETED' | 'EXPIRED';
+  linkedAt: string;
+  expiresAt: string;
+  completedAt: string | null;
+  rewardAmount: number;
+  eligibility: {
+    verified: boolean;
+    profileComplete: boolean;
+    fundedCampaignStable: boolean;
+    notExpired: boolean;
+  };
+  flags: {
+    samePan: boolean;
+    samePayout: boolean;
+    sameDevice: boolean;
+  };
+}
+
 export interface ApiBusiness {
   id:           string;
   userId:       string;
@@ -358,6 +399,24 @@ export const api = {
 
     deleteConversation: (id: string) =>
       request<null>('DELETE', `/api/admin/conversations/${id}`),
+
+    verifyCreator: (id: string, verified: boolean) =>
+      request<{ id: string; fullName: string | null; isVerified: boolean }>('PATCH', `/api/admin/creators/${id}/verify`, { verified }),
+
+    referrals: (status?: string) =>
+      request<ApiReferral[]>('GET', '/api/admin/referrals', undefined, status ? { status } : undefined),
+
+    releaseReferral: (id: string) =>
+      request<ApiReferral>('PATCH', `/api/admin/referrals/${id}/release`),
+
+    verifyBusiness: (id: string, verified: boolean) =>
+      request<{ id: string; businessName: string | null; isVerified: boolean }>('PATCH', `/api/admin/businesses/${id}/verify`, { verified }),
+
+    businessReferrals: (status?: string) =>
+      request<ApiBusinessReferral[]>('GET', '/api/admin/business-referrals', undefined, status ? { status } : undefined),
+
+    releaseBusinessReferral: (id: string) =>
+      request<ApiBusinessReferral>('PATCH', `/api/admin/business-referrals/${id}/release`),
   },
 
   help: {

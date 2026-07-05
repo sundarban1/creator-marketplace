@@ -12,6 +12,8 @@ import {
 } from '../../utils/jwt';
 import { sendPasswordResetEmail, sendOtpEmail, sendWelcomeEmail } from '../../utils/email';
 import { AuthRepository } from './auth.repository';
+import { ReferralService } from '../referral/referral.service';
+import { BusinessReferralService } from '../business-referral/business-referral.service';
 import { toUserDto } from './auth.dto';
 import type {
   RegisterInput,
@@ -35,12 +37,16 @@ function generateOtp(): string {
 
 export class AuthService {
   private repo: AuthRepository;
+  private referralService: ReferralService;
+  private businessReferralService: BusinessReferralService;
 
   constructor() {
     this.repo = new AuthRepository();
+    this.referralService = new ReferralService();
+    this.businessReferralService = new BusinessReferralService();
   }
 
-  async register(input: RegisterInput) {
+  async register(input: RegisterInput, deviceId?: string) {
     const [existingEmail, existingPhone] = await Promise.all([
       this.repo.findUserByEmail(input.email),
       input.phone ? this.repo.findUserByPhone(input.phone) : Promise.resolve(null),
@@ -62,6 +68,17 @@ export class AuthService {
         role: Role.BUSINESS, businessName: input.businessName,
       });
     }
+
+    if (input.referralCode && 'creatorProfile' in user && user.creatorProfile) {
+      // Best-effort: an invalid/expired code shouldn't block account creation.
+      this.referralService.linkCreatorToReferrer(user.creatorProfile.id, input.referralCode)
+        .catch((err) => console.error('Referral code linking failed at signup:', err));
+    }
+    if (input.referralCode && 'businessProfile' in user && user.businessProfile) {
+      this.businessReferralService.linkBusinessToReferrer(user.businessProfile.id, input.referralCode)
+        .catch((err) => console.error('Business referral code linking failed at signup:', err));
+    }
+    if (deviceId) await this.repo.setDeviceId(user.id, deviceId);
 
     const code = generateOtp();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
@@ -112,7 +129,7 @@ export class AuthService {
     return { message: 'Verification code resent to your email' };
   }
 
-  async login(input: LoginInput) {
+  async login(input: LoginInput, deviceId?: string) {
     const user = await this.repo.findUserByEmail(input.email);
     if (!user) throw new AppError('Invalid email or password', 401);
 
@@ -132,6 +149,7 @@ export class AuthService {
     const accessToken  = signAccessToken(tokenPayload);
     const refreshToken = signRefreshToken(tokenPayload);
     await this.repo.updateRefreshToken(activeUser.id, refreshToken);
+    if (deviceId) await this.repo.setDeviceId(activeUser.id, deviceId);
 
     return { user: toUserDto(activeUser), accessToken, refreshToken, reactivated };
   }

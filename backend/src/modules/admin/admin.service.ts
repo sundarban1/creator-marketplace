@@ -1,11 +1,20 @@
-import { CampaignStatus } from '@prisma/client';
+import { CampaignStatus, ReferralStatus } from '@prisma/client';
 import { AdminRepository } from './admin.repository';
+import { ReferralRepository } from '../referral/referral.repository';
+import { isCreatorProfileComplete } from '../referral/referral.service';
+import { BusinessReferralRepository } from '../business-referral/business-referral.repository';
+import { isBusinessProfileComplete, REFERRAL_HOLD_DAYS } from '../business-referral/business-referral.service';
+import { AppError } from '../../middleware/error';
 
 export class AdminService {
   private repo: AdminRepository;
+  private referralRepo: ReferralRepository;
+  private businessReferralRepo: BusinessReferralRepository;
 
   constructor() {
     this.repo = new AdminRepository();
+    this.referralRepo = new ReferralRepository();
+    this.businessReferralRepo = new BusinessReferralRepository();
   }
 
   getStats() {
@@ -78,5 +87,162 @@ export class AdminService {
 
   removeConversation(id: string) {
     return this.repo.deleteConversation(id);
+  }
+
+  // ── Referrals ────────────────────────────────────────────────────────────────
+
+  async listReferrals(status?: ReferralStatus) {
+    const rows = await this.referralRepo.listAllForAdmin(status);
+
+    return Promise.all(rows.map(async (raw) => {
+      let row = raw;
+      if (row.status === 'PENDING' && new Date() > row.expiresAt) {
+        const updated = await this.referralRepo.updateReferralStatus(row.id, { status: 'EXPIRED' });
+        row = { ...row, ...updated };
+      }
+      const firstEventCompleted = await this.referralRepo.hasApprovedApplication(row.referredId);
+      const profileComplete = isCreatorProfileComplete(row.referred);
+
+      return {
+        id: row.id,
+        referrer: { id: row.referrer.id, name: row.referrer.fullName ?? row.referrer.username },
+        referred: { id: row.referred.id, name: row.referred.fullName ?? row.referred.username, isVerified: row.referred.isVerified },
+        code: row.code,
+        status: row.status,
+        linkedAt: row.linkedAt,
+        expiresAt: row.expiresAt,
+        completedAt: row.completedAt,
+        rewardAmount: row.rewardAmount,
+        eligibility: {
+          verified: row.referred.isVerified,
+          profileComplete,
+          firstEventCompleted,
+          notExpired: row.status !== 'EXPIRED',
+        },
+      };
+    }));
+  }
+
+  async releaseReferral(referralId: string, adminUserId: string) {
+    const referral = await this.referralRepo.findReferralById(referralId);
+    if (!referral) throw new AppError('Referral not found', 404);
+    if (referral.status !== 'PENDING') throw new AppError('Referral is not pending', 400);
+    if (new Date() > referral.expiresAt) {
+      await this.referralRepo.updateReferralStatus(referralId, { status: 'EXPIRED' });
+      throw new AppError('Referral has expired', 400);
+    }
+
+    const referred = await this.referralRepo.findCreatorProfileById(referral.referredId);
+    if (!referred) throw new AppError('Referred creator not found', 404);
+    if (!referred.isVerified) throw new AppError('Referred creator is not verified yet', 400);
+    if (!isCreatorProfileComplete(referred)) throw new AppError('Referred creator profile is not complete yet', 400);
+
+    const firstEventCompleted = await this.referralRepo.hasApprovedApplication(referral.referredId);
+    if (!firstEventCompleted) throw new AppError('Referred creator has not completed a first event yet', 400);
+
+    return this.referralRepo.updateReferralStatus(referralId, {
+      status: 'COMPLETED',
+      completedAt: new Date(),
+      reviewedBy: adminUserId,
+    });
+  }
+
+  setCreatorVerified(creatorId: string, verified: boolean) {
+    return this.repo.updateCreatorVerification(creatorId, verified);
+  }
+
+  setBusinessVerified(businessId: string, verified: boolean) {
+    return this.repo.updateBusinessVerification(businessId, verified);
+  }
+
+  // ── Business Referrals ───────────────────────────────────────────────────────
+
+  async listBusinessReferrals(status?: ReferralStatus) {
+    const rows = await this.businessReferralRepo.listAllForAdmin(status);
+
+    return Promise.all(rows.map(async (raw) => {
+      let row = raw;
+      if (row.status === 'PENDING' && new Date() > row.expiresAt) {
+        const updated = await this.businessReferralRepo.updateReferralStatus(row.id, { status: 'EXPIRED' });
+        row = { ...row, ...updated };
+      }
+
+      const qualifyingCampaign = await this.businessReferralRepo.findQualifyingCampaign(row.referredId);
+      const fundedCampaignStable = !!qualifyingCampaign
+        && Date.now() - qualifyingCampaign.createdAt.getTime() >= REFERRAL_HOLD_DAYS * 24 * 60 * 60 * 1000;
+      const profileComplete = isBusinessProfileComplete(row.referred);
+
+      const samePan = !!row.referred.panNo && (
+        row.referred.panNo === row.referrer.panNo
+        || await this.businessReferralRepo.hasCompletedReferralForPanNo(row.referred.panNo, row.referredId)
+      );
+      const samePayout = row.referred.paymentMethods.length > 0
+        && row.referred.paymentMethods.some((m) => row.referrer.paymentMethods.includes(m));
+      const sameDevice = !!(row.referrer.user?.deviceId && row.referred.user?.deviceId
+        && row.referrer.user.deviceId === row.referred.user.deviceId);
+
+      return {
+        id: row.id,
+        referrer: { id: row.referrer.id, name: row.referrer.businessName },
+        referred: { id: row.referred.id, name: row.referred.businessName, isVerified: row.referred.isVerified },
+        code: row.code,
+        status: row.status,
+        linkedAt: row.linkedAt,
+        expiresAt: row.expiresAt,
+        completedAt: row.completedAt,
+        rewardAmount: row.rewardAmount,
+        eligibility: {
+          verified: row.referred.isVerified,
+          profileComplete,
+          fundedCampaignStable,
+          notExpired: row.status !== 'EXPIRED',
+        },
+        flags: { samePan, samePayout, sameDevice },
+      };
+    }));
+  }
+
+  async releaseBusinessReferral(referralId: string, adminUserId: string) {
+    const referral = await this.businessReferralRepo.findReferralById(referralId);
+    if (!referral) throw new AppError('Referral not found', 404);
+    if (referral.status !== 'PENDING') throw new AppError('Referral is not pending', 400);
+    if (new Date() > referral.expiresAt) {
+      await this.businessReferralRepo.updateReferralStatus(referralId, { status: 'EXPIRED' });
+      throw new AppError('Referral has expired', 400);
+    }
+
+    const referrer = await this.businessReferralRepo.findBusinessProfileById(referral.referrerId);
+    const referred = await this.businessReferralRepo.findBusinessProfileById(referral.referredId);
+    if (!referrer || !referred) throw new AppError('Business not found', 404);
+
+    if (!referred.isVerified) throw new AppError('Referred business is not verified yet', 400);
+    if (!isBusinessProfileComplete(referred)) throw new AppError('Referred business profile is not complete yet', 400);
+
+    const qualifyingCampaign = await this.businessReferralRepo.findQualifyingCampaign(referral.referredId);
+    if (!qualifyingCampaign) throw new AppError('Referred business has not published a funded campaign yet', 400);
+    const ageMs = Date.now() - qualifyingCampaign.createdAt.getTime();
+    if (ageMs < REFERRAL_HOLD_DAYS * 24 * 60 * 60 * 1000) {
+      throw new AppError(`The funded campaign must be at least ${REFERRAL_HOLD_DAYS} days old before releasing (anti-collusion hold)`, 400);
+    }
+
+    if (referred.panNo) {
+      if (referred.panNo === referrer.panNo) throw new AppError('Referred business shares a PAN/VAT number with the referrer', 400);
+      const panReused = await this.businessReferralRepo.hasCompletedReferralForPanNo(referred.panNo, referral.referredId);
+      if (panReused) throw new AppError('This PAN/VAT number has already collected a referral reward', 400);
+    }
+
+    const sharedPayout = referred.paymentMethods.length > 0
+      && referred.paymentMethods.some((m) => referrer.paymentMethods.includes(m));
+    if (sharedPayout) throw new AppError('Referred business shares a payout account with the referrer', 400);
+
+    if (referrer.user?.deviceId && referred.user?.deviceId && referrer.user.deviceId === referred.user.deviceId) {
+      throw new AppError('Referred business signed up from the same device as the referrer', 400);
+    }
+
+    return this.businessReferralRepo.updateReferralStatus(referralId, {
+      status: 'COMPLETED',
+      completedAt: new Date(),
+      reviewedBy: adminUserId,
+    });
   }
 }

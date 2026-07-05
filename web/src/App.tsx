@@ -12,6 +12,7 @@ import { Creators } from './pages/Creators';
 import { Businesses } from './pages/Businesses';
 import { Campaigns } from './pages/Campaigns';
 import { Payments } from './pages/Payments';
+import { Referrals } from './pages/Referrals';
 import { Reports } from './pages/Reports';
 import { Settings } from './pages/Settings';
 import { HelpCenter } from './pages/HelpCenter';
@@ -52,6 +53,7 @@ export default function App() {
                   <Route path="/platforms/new" element={<NewPlatformPage />} />
                   <Route path="/platforms/edit/:id" element={<EditPlatformPage />} />
                   <Route path="/payments" element={<Payments />} />
+                  <Route path="/referrals" element={<Referrals />} />
                   <Route path="/reports" element={<Reports />} />
                   <Route path="/help-center" element={<HelpCenter />} />
                   <Route path="/faqs" element={<FAQManager />} />

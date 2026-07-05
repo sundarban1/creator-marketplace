@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { CampaignStatus } from '@prisma/client';
+import { CampaignStatus, ReferralStatus } from '@prisma/client';
 import { AdminService } from './admin.service';
 import { success, paginated } from '../../utils/response';
 import { AppError } from '../../middleware/error';
@@ -205,6 +205,86 @@ export async function deleteConversation(req: Request, res: Response, next: Next
   try {
     await service.removeConversation(req.params['id']!);
     return success(res, null, 'Conversation deleted');
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ── Referrals ─────────────────────────────────────────────────────────────────
+
+// GET /api/admin/referrals
+export async function getReferrals(req: Request, res: Response, next: NextFunction) {
+  try {
+    const statusRaw = req.query['status'] as string | undefined;
+    if (statusRaw && !Object.values(ReferralStatus).includes(statusRaw as ReferralStatus)) {
+      throw new AppError(`Invalid status. Must be one of: ${Object.values(ReferralStatus).join(', ')}`, 400);
+    }
+    const referrals = await service.listReferrals(statusRaw as ReferralStatus | undefined);
+    return success(res, referrals, 'Referrals fetched');
+  } catch (err) {
+    next(err);
+  }
+}
+
+// PATCH /api/admin/referrals/:id/release
+export async function releaseReferral(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { id } = req.params;
+    const updated = await service.releaseReferral(id!, req.user!.id);
+    return success(res, updated, 'Referral reward released');
+  } catch (err) {
+    next(err);
+  }
+}
+
+// PATCH /api/admin/creators/:id/verify
+export async function verifyCreator(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { id }       = req.params;
+    const { verified } = req.body as { verified: boolean };
+    if (typeof verified !== 'boolean') throw new AppError('verified must be a boolean', 400);
+    const updated = await service.setCreatorVerified(id!, verified);
+    return success(res, updated, 'Creator verification badge updated');
+  } catch (err) {
+    next(err);
+  }
+}
+
+// PATCH /api/admin/businesses/:id/verify
+export async function verifyBusiness(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { id }       = req.params;
+    const { verified } = req.body as { verified: boolean };
+    if (typeof verified !== 'boolean') throw new AppError('verified must be a boolean', 400);
+    const updated = await service.setBusinessVerified(id!, verified);
+    return success(res, updated, 'Business verification badge updated');
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ── Business Referrals ───────────────────────────────────────────────────────
+
+// GET /api/admin/business-referrals
+export async function getBusinessReferrals(req: Request, res: Response, next: NextFunction) {
+  try {
+    const statusRaw = req.query['status'] as string | undefined;
+    if (statusRaw && !Object.values(ReferralStatus).includes(statusRaw as ReferralStatus)) {
+      throw new AppError(`Invalid status. Must be one of: ${Object.values(ReferralStatus).join(', ')}`, 400);
+    }
+    const referrals = await service.listBusinessReferrals(statusRaw as ReferralStatus | undefined);
+    return success(res, referrals, 'Business referrals fetched');
+  } catch (err) {
+    next(err);
+  }
+}
+
+// PATCH /api/admin/business-referrals/:id/release
+export async function releaseBusinessReferral(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { id } = req.params;
+    const updated = await service.releaseBusinessReferral(id!, req.user!.id);
+    return success(res, updated, 'Referral reward released');
   } catch (err) {
     next(err);
   }

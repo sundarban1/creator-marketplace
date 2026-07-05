@@ -10,6 +10,7 @@ import {
   Settings,
   Tag,
   Share2,
+  Gift,
   LogOut,
   X,
   HelpCircle,
@@ -45,8 +46,9 @@ const navGroups: NavGroup[] = [
   {
     label: 'Finance',
     items: [
-      { to: '/payments', label: 'Payments', icon: CreditCard   },
-      { to: '/reports',  label: 'Reports',  icon: FileBarChart },
+      { to: '/payments',   label: 'Payments',   icon: CreditCard   },
+      { to: '/referrals',  label: 'Referrals',  icon: Gift         },
+      { to: '/reports',    label: 'Reports',    icon: FileBarChart },
     ],
   },
   {

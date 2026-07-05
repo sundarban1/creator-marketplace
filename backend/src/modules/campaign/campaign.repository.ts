@@ -453,7 +453,7 @@ export class CampaignRepository {
   async cancelCampaign(campaignId: string) {
     return prisma.campaign.update({
       where: { id: campaignId },
-      data: { status: 'CLOSED' },
+      data: { status: 'CANCELLED' },
     });
   }
 

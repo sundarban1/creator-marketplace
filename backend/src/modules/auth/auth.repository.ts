@@ -61,6 +61,10 @@ export class AuthRepository {
     return prisma.user.update({ where: { id: userId }, data: { refreshToken } });
   }
 
+  async setDeviceId(userId: string, deviceId: string) {
+    return prisma.user.update({ where: { id: userId }, data: { deviceId } });
+  }
+
   async updatePassword(userId: string, hashedPassword: string) {
     return prisma.user.update({
       where: { id: userId },
