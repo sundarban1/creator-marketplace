@@ -24,7 +24,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { authService } from '@/services/auth';
 import type { Lang } from '@/i18n';
-import { F } from '@/utilities/constants';
+import { COLORS, F } from '@/utilities/constants';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -50,8 +50,8 @@ const BG_ICONS: { name: string; size: number; rotate: string; style: object }[] 
 ];
 
 const ROLES = [
-  { key: 'CREATOR'  as const, label: 'Content Creator', sub: 'Influencer & creator', icon: 'camera-outline'    as const, grad: ['#8B5CF6', '#6D28D9'] as const },
-  { key: 'BUSINESS' as const, label: 'Brand / Business', sub: 'Company & brand',     icon: 'briefcase-outline' as const, grad: ['#2563EB', '#1D4ED8'] as const },
+  { key: 'CREATOR'  as const, label: 'Content Creator', sub: 'Influencer & creator', icon: 'camera-outline'    as const, grad: [COLORS.brinjal1, COLORS.brinjal2] as const },
+  { key: 'BUSINESS' as const, label: 'Brand / Business', sub: 'Company & brand',     icon: 'briefcase-outline' as const, grad: [COLORS.accent, '#EA580C'] as const },
 ];
 
 const PW_RULES = [
@@ -323,24 +323,30 @@ function SignupForm({ onGooglePress, googleLoading, googleError, onFacebookPress
       <View style={s.roleRow}>
         {ROLES.map((r) => {
           const active = role === r.key;
+          const tint = r.grad[0];
           const roleLabel = r.key === 'CREATOR' ? t('auth.signup.roleCreatorLabel') : t('auth.signup.roleBusinessLabel');
           const roleSub   = r.key === 'CREATOR' ? t('auth.signup.roleCreatorSub')   : t('auth.signup.roleBusinessSub');
           return (
             <Pressable
               key={r.key}
-              style={[s.roleCard, { borderColor: active ? P2 : '#EDE9FE', backgroundColor: active ? `${P2}08` : C.surface }, active && s.roleCardActive]}
+              style={({ pressed }) => [
+                s.roleCard,
+                { borderColor: active ? tint : '#ECEAF5', backgroundColor: active ? `${tint}0D` : C.surface },
+                active && [s.roleCardActive, { shadowColor: tint }],
+                { transform: [{ scale: pressed ? 0.97 : 1 }] },
+              ]}
               onPress={() => { setRole(r.key); setSubmitted(false); setError(''); }}>
               <LinearGradient
                 colors={active ? r.grad : ['#F5F3FF', '#EDE9FE']}
-                style={s.roleIconBox}
+                style={[s.roleIconBox, active && { shadowColor: tint, shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 5 }]}
                 start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
-                <Ionicons name={r.icon} size={22} color={active ? '#fff' : '#8B5CF6'} />
+                <Ionicons name={r.icon} size={26} color={active ? '#fff' : '#8B5CF6'} />
               </LinearGradient>
-              <Text style={[s.roleLabel, { color: active ? P1 : C.text }]}>{roleLabel}</Text>
-              <Text style={[s.roleSub, { color: active ? P2 : '#9CA3AF' }]}>{roleSub}</Text>
+              <Text style={[s.roleLabel, { color: C.text }]}>{roleLabel}</Text>
+              <Text style={[s.roleSub, { color: active ? tint : '#9CA3AF' }]}>{roleSub}</Text>
               {active && (
-                <View style={s.roleCheck}>
-                  <Ionicons name="checkmark" size={10} color="#fff" />
+                <View style={[s.roleCheck, { backgroundColor: tint }]}>
+                  <Ionicons name="checkmark" size={13} color="#fff" />
                 </View>
               )}
             </Pressable>
@@ -562,7 +568,7 @@ export default function LoginScreen() {
     const webId     = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
 
     if (Platform.OS === 'ios' && !iosId) {
-      setGoogleError('iOS Google Sign-In needs EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID. Create an iOS OAuth client in Google Cloud Console (Bundle ID: com.sundarban.content).');
+      setGoogleError('iOS Google Sign-In needs EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID. Create an iOS OAuth client in Google Cloud Console (Bundle ID: com.sundarban.kolab).');
       return;
     }
     if (Platform.OS === 'android' && !androidId) {
@@ -710,13 +716,13 @@ export default function LoginScreen() {
                 return (
                   <Pressable
                     key={r.key}
-                    style={s.roleCard}
+                    style={({ pressed }) => [s.roleCard, { transform: [{ scale: pressed ? 0.97 : 1 }] }]}
                     onPress={() => void handleRoleSelect(r.key)}>
                     <LinearGradient colors={r.grad} style={s.roleIconBox} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
-                      <Ionicons name={r.icon} size={24} color="#fff" />
+                      <Ionicons name={r.icon} size={26} color="#fff" />
                     </LinearGradient>
-                    <Text style={s.roleLabel}>{roleLabel}</Text>
-                    <Text style={s.roleSub}>{roleSub}</Text>
+                    <Text style={[s.roleLabel, { color: '#111827' }]}>{roleLabel}</Text>
+                    <Text style={[s.roleSub, { color: '#9CA3AF' }]}>{roleSub}</Text>
                   </Pressable>
                 );
               })}
@@ -791,13 +797,13 @@ const s = StyleSheet.create({
   domainSuggestTextBold: { fontFamily: F.semibold, color: '#374151' },
 
   // Role cards
-  roleRow:       { flexDirection: 'row', gap: 12, marginBottom: 20 },
-  roleCard:      { flex: 1, borderRadius: 14, borderWidth: 1.5, padding: 16, gap: 8, alignItems: 'center', position: 'relative' },
-  roleCardActive:{ shadowColor: P2, shadowOpacity: 0.18, shadowRadius: 14, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
-  roleIconBox:   { width: 52, height: 52, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
-  roleLabel:     { fontSize: 13, fontWeight: '700', fontFamily: F.bold, textAlign: 'center' },
-  roleSub:       { fontSize: 11, fontFamily: F.regular, textAlign: 'center', lineHeight: 15 },
-  roleCheck:     { position: 'absolute', top: 10, right: 10, width: 20, height: 20, borderRadius: 10, backgroundColor: P2, justifyContent: 'center', alignItems: 'center' },
+  roleRow:       { flexDirection: 'row', gap: 14, marginBottom: 22 },
+  roleCard:      { flex: 1, borderRadius: 20, borderWidth: 1.5, borderColor: '#ECEAF5', padding: 18, gap: 10, alignItems: 'center', position: 'relative' },
+  roleCardActive:{ shadowOpacity: 0.16, shadowRadius: 16, shadowOffset: { width: 0, height: 6 }, elevation: 6 },
+  roleIconBox:   { width: 60, height: 60, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
+  roleLabel:     { fontSize: 14, fontWeight: '700', fontFamily: F.bold, textAlign: 'center' },
+  roleSub:       { fontSize: 11.5, fontFamily: F.regular, textAlign: 'center', lineHeight: 16 },
+  roleCheck:     { position: 'absolute', top: -8, right: -8, width: 26, height: 26, borderRadius: 13, justifyContent: 'center', alignItems: 'center', borderWidth: 2.5, borderColor: '#fff', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
 
   // Password rules
   rulesRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginTop: -8 },

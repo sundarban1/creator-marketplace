@@ -1,14 +1,14 @@
 {
   "expo": {
-    "name": "kolabh",
-    "slug": "content",
+    "name": "kolab",
+    "slug": "kolab",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "scheme": "content",
+    "icon": "./assets/images/app-icon.png",
+    "scheme": "kolab",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "bundleIdentifier": "com.sundarban.content",
+      "bundleIdentifier": "com.sundarban.kolab",
       "infoPlist": {
         "CFBundleURLTypes": [
           {
@@ -18,7 +18,7 @@
           }
         ],
         "FacebookAppID": "27739673972329504",
-        "FacebookDisplayName": "kolabh"
+        "FacebookDisplayName": "kolab"
       }
     },
     "android": {
@@ -34,7 +34,7 @@
         "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.RECORD_AUDIO"
       ],
-      "package": "com.sundarban.content"
+      "package": "com.sundarban.kolab"
     },
     "web": {
       "output": "static",
@@ -55,7 +55,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Allow kolabh to access your location to find nearby campaigns."
+          "locationWhenInUsePermission": "Allow kolab to access your location to find nearby campaigns."
         }
       ],
       "expo-secure-store",
@@ -68,8 +68,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow kolabh to access your photos to update your profile picture.",
-          "cameraPermission": "Allow kolabh to use your camera to take a profile photo."
+          "photosPermission": "Allow kolab to access your photos to update your profile picture.",
+          "cameraPermission": "Allow kolab to use your camera to take a profile photo."
         }
       ]
     ],

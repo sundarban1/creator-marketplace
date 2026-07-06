@@ -98,10 +98,10 @@ const DEFAULTS: PlatformSettings = {
   'security.ipAllowlist':        false,
   'security.auditLogging':       true,
   'security.sessionTimeout':     true,
-  'platform.name':               'kolabh',
+  'platform.name':               'kolab',
   'platform.supportEmail':       'support@collab.com',
   'platform.commission':         '12',
-  'platform.description':        'kolabh connects brands with top creators for authentic campaigns.',
+  'platform.description':        'kolab connects brands with top creators for authentic campaigns.',
 };
 
 // ── Main component ─────────────────────────────────────────────────────────────

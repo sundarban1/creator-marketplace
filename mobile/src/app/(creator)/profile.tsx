@@ -12,6 +12,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { creatorService, type ApiCreatorProfile } from '@/services/creator';
+import { useFavoriteBusinesses } from '@/hooks/useFavoriteBusinesses';
 import { F } from '@/utilities/constants';
 import { pickAndUpload } from '@/utilities/uploadImage';
 
@@ -62,6 +63,7 @@ export default function CreatorProfileScreen() {
   const C = useAppColors();
   const { t } = useLanguage();
   const toast = useToast();
+  const { favoriteIds } = useFavoriteBusinesses();
   const [profile, setProfile]           = useState<ApiCreatorProfile | null>(null);
   const [avatarUploading, setUploading] = useState(false);
 
@@ -103,7 +105,6 @@ export default function CreatorProfileScreen() {
         }));
 
   const portfolioLinks = profile?.portfolioLinks ?? [];
-  const totalFollowers = richAccounts.reduce((s, a) => s + a.followers, 0);
 
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
@@ -180,10 +181,8 @@ export default function CreatorProfileScreen() {
             </View>
             <View style={[s.statDivider, { backgroundColor: C.border }]} />
             <View style={s.statItem}>
-              <Text style={[s.statValue, { color: C.text }]}>
-                {totalFollowers > 0 ? fmtFollowers(totalFollowers) : '—'}
-              </Text>
-              <Text style={[s.statLabel, { color: C.textSecondary }]}>{t('profile.followers')}</Text>
+              <Text style={[s.statValue, { color: C.text }]}>{favoriteIds.size}</Text>
+              <Text style={[s.statLabel, { color: C.textSecondary }]}>{t('profile.savedBrands')}</Text>
             </View>
             <View style={[s.statDivider, { backgroundColor: C.border }]} />
             <View style={s.statItem}>

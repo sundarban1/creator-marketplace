@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BackButton } from '@/components/BackButton';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -17,61 +17,8 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/components/Toast';
 import { profileService, type Category } from '@/services/profile';
 import { categoryService } from '@/services/category';
+import { PlacesAutocompleteInput } from '@/components/PlacesAutocompleteInput';
 import { F } from '@/utilities/constants';
-
-const GOOGLE_PLACES_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY ?? '';
-
-type PlacePrediction = { place_id: string; description: string };
-
-function PlacesInput({ value, onChange, colors }: {
-  value: string;
-  onChange: (v: string) => void;
-  colors: ReturnType<typeof useAppColors>;
-}) {
-  const C = colors;
-  const { t } = useLanguage();
-  const [suggestions, setSuggestions] = useState<PlacePrediction[]>([]);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  function handleChange(text: string) {
-    onChange(text);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (!text.trim() || !GOOGLE_PLACES_KEY) { setSuggestions([]); return; }
-    debounceRef.current = setTimeout(async () => {
-      try {
-        const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(text)}&key=${GOOGLE_PLACES_KEY}&language=en&types=geocode&components=country:np`;
-        const res = await fetch(url);
-        const json = await res.json();
-        setSuggestions((json.predictions ?? []).slice(0, 5));
-      } catch { setSuggestions([]); }
-    }, 350);
-  }
-
-  return (
-    <View>
-      <TextInput
-        style={[styles.input, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
-        value={value}
-        onChangeText={handleChange}
-        placeholder={t('profile.editBusiness.locationPlaceholder')}
-        placeholderTextColor={C.textSecondary}
-        autoCorrect={false}
-      />
-      {suggestions.length > 0 && (
-        <View style={[styles.suggestBox, { backgroundColor: C.surface, borderColor: C.border }]}>
-          {suggestions.map((s, i) => (
-            <Pressable
-              key={s.place_id}
-              style={[styles.suggestItem, i < suggestions.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}
-              onPress={() => { onChange(s.description); setSuggestions([]); }}>
-              <Text style={[styles.suggestText, { color: C.text }]} numberOfLines={2}>{s.description}</Text>
-            </Pressable>
-          ))}
-        </View>
-      )}
-    </View>
-  );
-}
 
 function generateBusinessDescription(name: string, cats: string[]): string {
   if (cats.length === 0) return '';
@@ -253,7 +200,13 @@ export default function EditBusinessProfileScreen() {
 
           <View style={styles.field}>
             <Text style={[styles.label, { color: C.textSecondary }]}>{t('profile.editBusiness.locationLabel')}</Text>
-            <PlacesInput value={location} onChange={setLocation} colors={C} />
+            <PlacesAutocompleteInput
+              value={location}
+              onChangeText={setLocation}
+              placeholder={t('profile.editBusiness.locationPlaceholder')}
+              types="geocode"
+              autoCorrect={false}
+            />
           </View>
 
         </View>

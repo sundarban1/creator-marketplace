@@ -136,7 +136,7 @@ export default function LegalScreen() {
 
           <View style={styles.footer}>
             <Text style={[styles.footerText, { color: C.textSecondary }]}>
-              © 2026 kolabh · All rights reserved
+              © 2026 kolab · All rights reserved
             </Text>
           </View>
         </ScrollView>

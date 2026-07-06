@@ -10,12 +10,11 @@ import { creatorService } from '@/services/creator';
 import { profileService } from '@/services/profile';
 import { categoryService } from '@/services/category';
 import { CREATOR_CATEGORIES } from '@/features/creator/data/filterOptions';
+import { PlacesAutocompleteInput } from '@/components/PlacesAutocompleteInput';
 import { F } from '@/utilities/constants';
 
 const TOTAL_STEPS = 2;
 const GENDER_KEYS = ['Male', 'Female', 'Non-binary', 'Prefer not to say'] as const;
-const GOOGLE_PLACES_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY ?? '';
-type PlacePrediction = { place_id: string; description: string };
 
 function generateCreatorBio(categories: string[]): string {
   if (categories.length === 0) return '';
@@ -71,9 +70,7 @@ export default function OnboardingScreen() {
   const [username,  setUsername]  = useState('');
   const [phone,     setPhone]     = useState('');
   const [gender,    setGender]    = useState('');
-  const [location,            setLocation]            = useState('');
-  const [locationSuggestions, setLocationSuggestions] = useState<PlacePrediction[]>([]);
-  const locationDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [location, setLocation] = useState('');
   const [usernameSuggestions, setUsernameSuggestions] = useState<string[]>([]);
   const usernameSuggestDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const usernameSuggestRequestId = useRef(0);
@@ -151,16 +148,6 @@ export default function OnboardingScreen() {
   function handleLocationChange(text: string) {
     setLocation(text);
     setStep1Error('');
-    if (locationDebounce.current) clearTimeout(locationDebounce.current);
-    if (!text.trim() || !GOOGLE_PLACES_KEY) { setLocationSuggestions([]); return; }
-    locationDebounce.current = setTimeout(async () => {
-      try {
-        const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(text)}&key=${GOOGLE_PLACES_KEY}&language=en&types=geocode&components=country:np`;
-        const res = await fetch(url);
-        const json = await res.json();
-        setLocationSuggestions(json.status === 'OK' ? json.predictions : []);
-      } catch { setLocationSuggestions([]); }
-    }, 350);
   }
 
   async function handleStep1Continue() {
@@ -367,30 +354,14 @@ export default function OnboardingScreen() {
               {/* Location */}
               <View style={[styles.formGroup, { zIndex: 10 }]}>
                 <Text style={[styles.formLabel, { color: C.text }]}>{t('onboarding.locationLabel')} <Text style={{ color: C.error }}>*</Text></Text>
-                <View>
-                  <TextInput
-                    style={[styles.formInput, { backgroundColor: C.surface, borderColor: locationError ? C.error : C.border, color: C.text }]}
-                    value={location}
-                    onChangeText={handleLocationChange}
-                    placeholder={t('onboarding.locationPlaceholder')}
-                    placeholderTextColor={C.textSecondary}
-                    autoCapitalize="words"
-                  />
-                  {locationSuggestions.length > 0 && (
-                    <View style={[styles.suggestBox, { backgroundColor: C.surface, borderColor: C.border }]}>
-                      {locationSuggestions.map((place, i) => (
-                        <Pressable
-                          key={place.place_id}
-                          style={[styles.suggestItem, i < locationSuggestions.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}
-                          onPress={() => { setLocation(place.description); setLocationSuggestions([]); }}>
-                          <Text style={styles.suggestPin}>📍</Text>
-                          <Text style={[styles.suggestText, { color: C.text }]} numberOfLines={2}>{place.description}</Text>
-                        </Pressable>
-                      ))}
-                    </View>
-                  )}
-                </View>
-                {locationError && <Text style={[styles.fieldError, { color: C.error }]}>{locationError}</Text>}
+                <PlacesAutocompleteInput
+                  value={location}
+                  onChangeText={handleLocationChange}
+                  placeholder={t('onboarding.locationPlaceholder')}
+                  types="geocode"
+                  autoCapitalize="words"
+                  error={locationError}
+                />
               </View>
 
             </View>

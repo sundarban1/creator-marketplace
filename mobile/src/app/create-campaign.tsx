@@ -23,6 +23,7 @@ import { campaignService } from '@/services/campaign';
 import { categoryService } from '@/services/category';
 import { profileService } from '@/services/profile';
 import { CREATOR_CATEGORIES } from '@/features/creator/data/filterOptions';
+import { PlacesAutocompleteInput } from '@/components/PlacesAutocompleteInput';
 import { F } from '@/utilities/constants';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -79,7 +80,6 @@ function summarizeDeliverables(deliverables: Record<string, number>, fallback: s
   return parts.length > 0 ? parts.join(', ') : fallback.join(', ');
 }
 
-const GOOGLE_PLACES_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY ?? '';
 const ERROR_RED = '#EF4444';
 
 const BENEFITS = [
@@ -199,7 +199,6 @@ type FormData = {
 
 type ReviewErrors = Partial<Record<'title' | 'deadline' | 'platform' | 'eventDate', string>>;
 type EventErrors = Partial<Record<'template' | 'capacity' | 'venue', string>>;
-type PlacePrediction = { place_id: string; description: string };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -508,72 +507,6 @@ function ChipGroup({
   );
 }
 
-// ─── PlacesInput ──────────────────────────────────────────────────────────────
-
-function PlacesInput({ value, onChange, colors, error }: {
-  value: string;
-  onChange: (v: string) => void;
-  colors: ReturnType<typeof useAppColors>;
-  error?: string;
-}) {
-  const C = colors;
-  const { t } = useLanguage();
-  const [suggestions, setSuggestions] = useState<PlacePrediction[]>([]);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  function handleChange(text: string) {
-    onChange(text);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (!text.trim() || !GOOGLE_PLACES_KEY) { setSuggestions([]); return; }
-    debounceRef.current = setTimeout(async () => {
-      try {
-        const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(text)}&key=${GOOGLE_PLACES_KEY}&language=en&types=geocode&components=country:np`;
-        const res = await fetch(url);
-        const json = await res.json();
-        setSuggestions(json.status === 'OK' ? json.predictions : []);
-      } catch { setSuggestions([]); }
-    }, 350);
-  }
-
-  useEffect(() => () => { if (debounceRef.current) clearTimeout(debounceRef.current); }, []);
-
-  return (
-    <View style={pl.wrap}>
-      <TextInput
-        value={value}
-        onChangeText={handleChange}
-        placeholder={t('createEvent.locationPlaceholder')}
-        placeholderTextColor={C.textSecondary}
-        style={[pl.input, { backgroundColor: C.background, borderColor: error ? ERROR_RED : C.border, color: C.text }]}
-      />
-      {error && <Text style={pl.errorTxt}>{error}</Text>}
-      {suggestions.length > 0 && (
-        <View style={[pl.dropdown, { backgroundColor: C.surface, borderColor: C.border }]}>
-          {suggestions.map((place, i) => (
-            <Pressable
-              key={place.place_id}
-              style={[pl.item, i < suggestions.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}
-              onPress={() => { onChange(place.description); setSuggestions([]); }}>
-              <Text style={pl.pin}>📍</Text>
-              <Text style={[pl.itemText, { color: C.text }]} numberOfLines={2}>{place.description}</Text>
-            </Pressable>
-          ))}
-        </View>
-      )}
-    </View>
-  );
-}
-
-const pl = StyleSheet.create({
-  wrap:     { zIndex: 99 },
-  input:    { borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14, height: 50, fontSize: 15, fontFamily: F.regular },
-  errorTxt: { fontSize: 12, color: ERROR_RED, marginTop: 4, fontFamily: F.regular },
-  dropdown: { borderRadius: 12, borderWidth: 1.5, marginTop: 6, overflow: 'hidden', elevation: 10, zIndex: 100 },
-  item:     { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, gap: 10 },
-  pin:      { fontSize: 14 },
-  itemText: { fontSize: 13, flex: 1, fontFamily: F.regular },
-});
-
 // ─── CalendarGrid ─────────────────────────────────────────────────────────────
 
 function CalendarGrid({ value, onChange, colors }: {
@@ -665,7 +598,7 @@ function DeadlinePicker({ value, onChange, error, colors, label }: {
   return (
     <>
       <Pressable
-        style={[pl.input, { flexDirection: 'row', alignItems: 'center', borderColor: error ? ERROR_RED : value ? C.brinjal1 : C.border, backgroundColor: C.background, height: 50 }]}
+        style={[dp.trigger, { flexDirection: 'row', alignItems: 'center', borderColor: error ? ERROR_RED : value ? C.brinjal1 : C.border, backgroundColor: C.background, height: 50 }]}
         onPress={() => setOpen(true)}>
         <Text style={[{ flex: 1, fontSize: 15, fontFamily: F.regular, color: value ? C.text : C.textSecondary }]}>
           {value ? fmtDate(value) : t('createEvent.deadlineTapToSelect')}
@@ -678,7 +611,7 @@ function DeadlinePicker({ value, onChange, error, colors, label }: {
           <Ionicons name="calendar-outline" size={18} color={C.textSecondary} />
         )}
       </Pressable>
-      {error && <Text style={pl.errorTxt}>{error}</Text>}
+      {error && <Text style={dp.error}>{error}</Text>}
 
       <Modal visible={open} transparent animationType="slide" onRequestClose={() => setOpen(false)}>
         <View style={dp.modalWrap}>
@@ -1225,10 +1158,11 @@ export default function CreateCampaignScreen() {
 
                   {/* Location */}
                   <SectionCard title={t('createEvent.secLocationTitle')} sub={t('createEvent.secLocationSub')} colors={C}>
-                    <PlacesInput
+                    <PlacesAutocompleteInput
                       value={form.location}
-                      onChange={(v) => { update('location', v); if (aiLocationError) setAiLocationError(undefined); }}
-                      colors={C}
+                      onChangeText={(v) => { update('location', v); if (aiLocationError) setAiLocationError(undefined); }}
+                      placeholder={t('createEvent.locationPlaceholder')}
+                      types="geocode"
                       error={aiLocationError}
                     />
                   </SectionCard>
@@ -1273,10 +1207,11 @@ export default function CreateCampaignScreen() {
 
                   {/* Venue / Location */}
                   <SectionCard title={t('createEvent.secVenueTitle')} sub={t('createEvent.secVenueSub')} colors={C}>
-                    <PlacesInput
+                    <PlacesAutocompleteInput
                       value={form.venue}
-                      onChange={(v) => { update('venue', v); if (eventErrors.venue) setEventErrors((e) => ({ ...e, venue: undefined })); }}
-                      colors={C}
+                      onChangeText={(v) => { update('venue', v); if (eventErrors.venue) setEventErrors((e) => ({ ...e, venue: undefined })); }}
+                      placeholder={t('createEvent.locationPlaceholder')}
+                      types="geocode"
                       error={eventErrors.venue}
                     />
                   </SectionCard>

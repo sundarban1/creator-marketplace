@@ -58,7 +58,7 @@ function FaqModal({ initial, onSave, onClose, saving }: { initial: Partial<HelpA
           <div>
             <label className="block text-xs font-semibold text-gray-600 mb-1.5">Question <span className="text-red-500">*</span></label>
             <input value={form.question} onChange={(e) => { setForm((f) => ({ ...f, question: e.target.value })); setErrors((err) => ({ ...err, question: '' })); }}
-              placeholder="e.g. Is kolabh free to use?"
+              placeholder="e.g. Is kolab free to use?"
               className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition ${errors['question'] ? 'border-red-400' : 'border-gray-200'}`} />
             {errors['question'] && <p className="text-xs text-red-500 mt-1">{errors['question']}</p>}
           </div>

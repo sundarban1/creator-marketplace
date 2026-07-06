@@ -16,10 +16,8 @@ import { useAppColors } from '@/context/ThemeContext';
 import { authService } from '@/services/auth';
 import { profileService } from '@/services/profile';
 import { categoryService } from '@/services/category';
+import { PlacesAutocompleteInput } from '@/components/PlacesAutocompleteInput';
 import { F } from '@/utilities/constants';
-
-const GOOGLE_PLACES_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY ?? '';
-type PlacePrediction = { place_id: string; description: string };
 
 const BUSINESS_CATEGORIES = [
   { emoji: '🍔', label: 'Food & Beverage' },
@@ -55,8 +53,6 @@ export default function BusinessOnboardingScreen() {
   // Step 1
   const [businessName, setBusinessName] = useState('');
   const [location, setLocation] = useState('');
-  const [locationSuggestions, setLocationSuggestions] = useState<PlacePrediction[]>([]);
-  const locationDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [step1Loading, setStep1Loading] = useState(false);
   const [step1Error, setStep1Error] = useState('');
   const [step1Submitted, setStep1Submitted] = useState(false);
@@ -96,20 +92,6 @@ export default function BusinessOnboardingScreen() {
       if (prev.length >= 3) return prev;
       return [...prev, label];
     });
-  }
-
-  function handleLocationChange(text: string) {
-    setLocation(text);
-    if (locationDebounce.current) clearTimeout(locationDebounce.current);
-    if (!text.trim() || !GOOGLE_PLACES_KEY) { setLocationSuggestions([]); return; }
-    locationDebounce.current = setTimeout(async () => {
-      try {
-        const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(text)}&key=${GOOGLE_PLACES_KEY}&language=en&types=geocode&components=country:np`;
-        const res = await fetch(url);
-        const json = await res.json();
-        setLocationSuggestions(json.status === 'OK' ? json.predictions : []);
-      } catch { setLocationSuggestions([]); }
-    }, 350);
   }
 
   async function handleStep1Continue() {
@@ -245,31 +227,14 @@ export default function BusinessOnboardingScreen() {
               <Text style={[styles.fieldLabel, { color: C.text, marginBottom: 8 }]}>
                 Location <Text style={{ color: C.error }}>*</Text>
               </Text>
-              <View>
-                <TextInput
-                  style={[styles.input, { backgroundColor: C.surface, borderColor: locationError ? C.error : C.border, color: C.text }]}
-                  value={location}
-                  onChangeText={handleLocationChange}
-                  placeholder="e.g. Kathmandu, Thamel"
-                  placeholderTextColor={C.textSecondary}
-                />
-                {locationSuggestions.length > 0 && (
-                  <View style={[styles.suggestBox, { backgroundColor: C.surface, borderColor: C.border }]}>
-                    {locationSuggestions.map((place, i) => (
-                      <Pressable
-                        key={place.place_id}
-                        style={[styles.suggestItem, i < locationSuggestions.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}
-                        onPress={() => { setLocation(place.description); setLocationSuggestions([]); }}>
-                        <Text style={styles.suggestPin}>📍</Text>
-                        <Text style={[styles.suggestText, { color: C.text }]} numberOfLines={2}>{place.description}</Text>
-                      </Pressable>
-                    ))}
-                  </View>
-                )}
-              </View>
-              {locationError ? (
-                <Text style={[styles.fieldError, { color: C.error }]}>{locationError}</Text>
-              ) : (
+              <PlacesAutocompleteInput
+                value={location}
+                onChangeText={setLocation}
+                placeholder="e.g. Kathmandu, Thamel"
+                types="geocode"
+                error={locationError}
+              />
+              {!locationError && (
                 <Text style={[styles.inputHint, { color: C.textSecondary }]}>
                   Creators will use this as a default location for your events.
                 </Text>

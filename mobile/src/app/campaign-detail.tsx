@@ -21,6 +21,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { CATEGORY_META, DEFAULT_META, cardBg } from '@/features/creator/data/filterOptions';
+import { PlacesAutocompleteInput } from '@/components/PlacesAutocompleteInput';
 import { campaignService } from '@/services/campaign';
 import type { Campaign } from '@/types';
 import { F } from '@/utilities/constants';
@@ -28,7 +29,6 @@ import { F } from '@/utilities/constants';
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const ERROR_RED = '#EF4444';
-const PLACES_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY ?? '';
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const DAY_SHORT = ['Su','Mo','Tu','We','Th','Fr','Sa'];
@@ -177,69 +177,6 @@ const cal = StyleSheet.create({
 });
 
 // ─── PlacesInput ──────────────────────────────────────────────────────────────
-
-type PlacePrediction = { place_id: string; description: string };
-
-function PlacesInput({ value, onChange, colors, error }: {
-  value: string;
-  onChange: (v: string) => void;
-  colors: ReturnType<typeof useAppColors>;
-  error?: string;
-}) {
-  const C = colors;
-  const [suggestions, setSuggestions] = useState<PlacePrediction[]>([]);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  function handleChange(text: string) {
-    onChange(text);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (!text.trim() || !PLACES_KEY) { setSuggestions([]); return; }
-    debounceRef.current = setTimeout(async () => {
-      try {
-        const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(text)}&key=${PLACES_KEY}&language=en&types=geocode&components=country:np`;
-        const res = await fetch(url);
-        const json = await res.json();
-        setSuggestions(json.status === 'OK' ? json.predictions : []);
-      } catch { setSuggestions([]); }
-    }, 350);
-  }
-
-  useEffect(() => () => { if (debounceRef.current) clearTimeout(debounceRef.current); }, []);
-
-  return (
-    <View style={{ zIndex: 99 }}>
-      <TextInput
-        value={value}
-        onChangeText={handleChange}
-        placeholder="e.g. Kathmandu, New York or Remote"
-        placeholderTextColor={C.textSecondary}
-        style={[pl.input, { backgroundColor: C.background, borderColor: error ? ERROR_RED : C.border, color: C.text }]}
-      />
-      {error ? <Text style={pl.errTxt}>{error}</Text> : null}
-      {suggestions.length > 0 && (
-        <View style={[pl.dropdown, { backgroundColor: C.surface, borderColor: C.border }]}>
-          {suggestions.map((place, i) => (
-            <Pressable
-              key={place.place_id}
-              style={[pl.item, i < suggestions.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}
-              onPress={() => { onChange(place.description); setSuggestions([]); }}>
-              <Text style={pl.pin}>📍</Text>
-              <Text style={[pl.itemTxt, { color: C.text }]} numberOfLines={2}>{place.description}</Text>
-            </Pressable>
-          ))}
-        </View>
-      )}
-    </View>
-  );
-}
-const pl = StyleSheet.create({
-  input:    { borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14, height: 48, fontSize: 15 },
-  errTxt:   { fontSize: 12, color: ERROR_RED, marginTop: 4 },
-  dropdown: { borderRadius: 12, borderWidth: 1.5, marginTop: 6, overflow: 'hidden', elevation: 10, zIndex: 100 },
-  item:     { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, gap: 10 },
-  pin:      { fontSize: 14 },
-  itemTxt:  { fontSize: 13, flex: 1 },
-});
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -835,10 +772,11 @@ export default function CampaignDetailScreen() {
                     {editErrors.deadline ? <Text style={em.errTxt}>{editErrors.deadline}</Text> : null}
 
                     <Text style={[em.label, { color: C.text, marginTop: 16 }]}>{t('campaignDetail.fieldVenue')} <Text style={{ color: C.brinjal1 }}>*</Text></Text>
-                    <PlacesInput
+                    <PlacesAutocompleteInput
                       value={editForm.venue}
-                      onChange={(v) => updateEdit('venue', v)}
-                      colors={C}
+                      onChangeText={(v) => updateEdit('venue', v)}
+                      placeholder="e.g. Kathmandu, New York or Remote"
+                      types="geocode"
                       error={editErrors.venue}
                     />
 
@@ -951,10 +889,11 @@ export default function CampaignDetailScreen() {
                     <Text style={[em.label, { color: C.text, marginTop: 16 }]}>
                       {t('campaignDetail.fieldLocation')} <Text style={[em.optional, { color: C.textSecondary }]}>{t('campaignDetail.fieldOptional')}</Text>
                     </Text>
-                    <PlacesInput
+                    <PlacesAutocompleteInput
                       value={editForm.location}
-                      onChange={(v) => updateEdit('location', v)}
-                      colors={C}
+                      onChangeText={(v) => updateEdit('location', v)}
+                      placeholder="e.g. Kathmandu, New York or Remote"
+                      types="geocode"
                     />
                   </>
                 )}
