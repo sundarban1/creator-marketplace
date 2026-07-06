@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import {
@@ -99,8 +99,8 @@ function SwitchRow({ label, icon, iconNode, sub, value, onChange, isLast = false
   );
 }
 
-type NavRowProps = { icon?: string; ionIcon?: keyof typeof Ionicons.glyphMap; ionIconColor?: string; label: string; sub?: string; value?: string; badge?: string; onPress: () => void; danger?: boolean; isLast?: boolean };
-function NavRow({ icon, ionIcon, ionIconColor, label, sub, value, badge, onPress, danger = false, isLast = false }: NavRowProps) {
+type NavRowProps = { icon?: string; ionIcon?: keyof typeof Ionicons.glyphMap; faIcon?: string; ionIconColor?: string; label: string; sub?: string; value?: string; badge?: string; onPress: () => void; danger?: boolean; isLast?: boolean };
+function NavRow({ icon, ionIcon, faIcon, ionIconColor, label, sub, value, badge, onPress, danger = false, isLast = false }: NavRowProps) {
   const C = useContext(ColorCtx);
   const iColor = ionIconColor ?? C.brinjal1;
   return (
@@ -108,6 +108,10 @@ function NavRow({ icon, ionIcon, ionIconColor, label, sub, value, badge, onPress
       {ionIcon ? (
         <View style={[styles.navIonIconWrap, { backgroundColor: iColor + '18' }]}>
           <Ionicons name={ionIcon} size={18} color={iColor} />
+        </View>
+      ) : faIcon ? (
+        <View style={[styles.navIonIconWrap, { backgroundColor: iColor + '18' }]}>
+          <FontAwesome5 name={faIcon} size={16} color={iColor} />
         </View>
       ) : icon ? <Text style={styles.rowIcon}>{icon}</Text> : null}
       <View style={{ flex: 1 }}>
@@ -190,6 +194,7 @@ export default function BusinessSettingsScreen() {
   const [pwSubmitted, setPwSubmitted] = useState(false);
   const [showNewPw, setShowNewPw] = useState(false);
   const [showConfirmPw, setShowConfirmPw] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
 
   // ── Phone verification ──
   type PhoneVerifyStage = 'idle' | 'enter-phone' | 'enter-otp' | 'verified';
@@ -346,8 +351,13 @@ export default function BusinessSettingsScreen() {
     if (newPw.length >= 8 && newPw === confirmPw) {
       setNewPw(''); setConfirmPw(''); setPwSubmitted(false);
       showToast(t('settings.passwordChanged'));
-      setSubPage(null);
+      setShowChangePassword(false);
     }
+  }
+
+  function closeChangePassword() {
+    setShowChangePassword(false);
+    setNewPw(''); setConfirmPw(''); setPwSubmitted(false);
   }
 
   function handleLogoutAll() {
@@ -499,7 +509,6 @@ export default function BusinessSettingsScreen() {
     app:           'businessSettings.sectionApp',
   };
   const SUB_PAGE_TITLE_KEYS: Record<string, string> = {
-    'change-password': 'businessSettings.subChangePassword',
     'help-center':     'businessSettings.subHelpCenter',
     'contact-support': 'businessSettings.subContactSupport',
     'report-issue':    'businessSettings.subReportIssue',
@@ -510,64 +519,6 @@ export default function BusinessSettingsScreen() {
     : section
     ? t(SECTION_TITLE_KEYS[section] ?? 'businessSettings.sectionApp')
     : t('businessSettings.sectionApp');
-
-  // ── Sub-page: Change Password ─────────────────────────────────
-
-  function renderChangePassword() {
-    const pwError = pwSubmitted ? (!newPw ? t('businessSettings.errRequired') : newPw.length < 8 ? t('businessSettings.errPwTooShort') : undefined) : undefined;
-    const cPwError = pwSubmitted ? (!confirmPw ? t('businessSettings.errRequired') : confirmPw !== newPw ? t('businessSettings.errPwMismatch') : undefined) : undefined;
-    return (
-      <>
-        <SectionHeader title={t('businessSettings.setNewPasswordSection')} />
-        <Card>
-          <View style={styles.inlineForm}>
-            <View style={styles.formField}>
-              <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>{t('businessSettings.newPasswordLabel')}</Text>
-              <View style={[styles.pwRow, { backgroundColor: C.background, borderColor: pwError ? C.error : C.border }]}>
-                <TextInput
-                  style={[styles.pwInput, { color: C.text }]}
-                  value={newPw}
-                  onChangeText={(pw) => { setNewPw(pw); setPwSubmitted(false); }}
-                  secureTextEntry={!showNewPw}
-                  placeholder={t('businessSettings.newPasswordPlaceholder')}
-                  placeholderTextColor={C.textSecondary}
-                  autoCapitalize="none"
-                />
-                <Pressable onPress={() => setShowNewPw((v) => !v)} style={styles.eyeBtn}>
-                  <Text>{showNewPw ? '🙈' : '👁'}</Text>
-                </Pressable>
-              </View>
-              {pwError ? <Text style={[styles.fieldError, { color: C.error }]}>{pwError}</Text> : null}
-            </View>
-            <View style={styles.formField}>
-              <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>{t('businessSettings.confirmPasswordLabel')}</Text>
-              <View style={[styles.pwRow, { backgroundColor: C.background, borderColor: cPwError ? C.error : C.border }]}>
-                <TextInput
-                  style={[styles.pwInput, { color: C.text }]}
-                  value={confirmPw}
-                  onChangeText={(pw) => { setConfirmPw(pw); setPwSubmitted(false); }}
-                  secureTextEntry={!showConfirmPw}
-                  placeholder={t('businessSettings.confirmPasswordPlaceholder')}
-                  placeholderTextColor={C.textSecondary}
-                  autoCapitalize="none"
-                />
-                <Pressable onPress={() => setShowConfirmPw((v) => !v)} style={styles.eyeBtn}>
-                  <Text>{showConfirmPw ? '🙈' : '👁'}</Text>
-                </Pressable>
-              </View>
-              {cPwError ? <Text style={[styles.fieldError, { color: C.error }]}>{cPwError}</Text> : null}
-            </View>
-            <Pressable style={[styles.primaryBtn, { backgroundColor: C.brinjal1 }]} onPress={handleChangePassword}>
-              <Text style={styles.primaryBtnText}>{t('businessSettings.updatePasswordBtn')}</Text>
-            </Pressable>
-          </View>
-        </Card>
-        <HintCard>
-          <Text style={[styles.hintText, { color: C.brinjal1 }]}>{t('businessSettings.passwordHint')}</Text>
-        </HintCard>
-      </>
-    );
-  }
 
   // ── Sub-page: Help Center ─────────────────────────────────────
 
@@ -881,6 +832,8 @@ export default function BusinessSettingsScreen() {
   // ── Section: Account & Security ───────────────────────────────
 
   function renderAccount() {
+    const pwError  = pwSubmitted ? (!newPw ? t('businessSettings.errRequired') : newPw.length < 8 ? t('businessSettings.errPwTooShort') : undefined) : undefined;
+    const cPwError = pwSubmitted ? (!confirmPw ? t('businessSettings.errRequired') : confirmPw !== newPw ? t('businessSettings.errPwMismatch') : undefined) : undefined;
     return (
       <>
         <SectionHeader title={t('businessSettings.loginSecuritySection')} />
@@ -925,41 +878,31 @@ export default function BusinessSettingsScreen() {
           )}
           {phoneStage === 'enter-phone' && (
             <View style={[{ borderBottomWidth: 1, borderBottomColor: C.border, paddingHorizontal: 16, paddingVertical: 14, gap: 10 }]}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Text style={styles.rowIcon}>📱</Text>
-                <Text style={[styles.rowLabel, { color: C.text }]}>{t('businessSettings.verifyPhoneTitle')}</Text>
-              </View>
-              <View style={[styles.phoneInputRow]}>
-                <View style={[styles.phonePrefix, { backgroundColor: C.background, borderColor: C.border }]}>
-                  <Text style={[{ fontSize: 14, fontFamily: F.medium, color: C.text }]}>+977</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Text style={styles.rowIcon}>📱</Text>
+                  <Text style={[styles.rowLabel, { color: C.text, flexShrink: 1 }]} numberOfLines={1} ellipsizeMode="tail">{t('businessSettings.verifyPhoneTitle')}</Text>
                 </View>
-                <TextInput
-                  style={[styles.phoneField, { color: C.text, borderColor: phoneError ? C.error : C.border, backgroundColor: C.background }]}
-                  placeholder="98XXXXXXXX"
-                  placeholderTextColor={C.textSecondary}
-                  keyboardType="phone-pad"
-                  maxLength={10}
-                  value={phoneInput}
-                  onChangeText={(v) => { setPhoneInput(v.replace(/[^0-9]/g, '')); setPhoneError(''); }}
-                />
+                <Pressable onPress={() => { setPhoneStage('idle'); setPhoneInput(''); setPhoneError(''); }} hitSlop={10} disabled={phoneLoading} style={{ flexShrink: 0, marginLeft: 8 }}>
+                  <Ionicons name="close-circle" size={22} color={C.textSecondary} />
+                </Pressable>
               </View>
+              <TextInput
+                style={[styles.phoneField, { flex: 0, color: C.text, borderColor: phoneError ? C.error : C.border, backgroundColor: C.background }]}
+                placeholder="+977 98XXXXXXXX"
+                placeholderTextColor={C.textSecondary}
+                keyboardType="phone-pad"
+                value={phoneInput}
+                onChangeText={(v) => { setPhoneInput(v.replace(/[^0-9+]/g, '')); setPhoneError(''); }}
+              />
               {!!phoneError && <Text style={[styles.phoneError, { color: C.error }]}>{phoneError}</Text>}
-              <View style={{ flexDirection: 'row', gap: 8 }}>
-                <Pressable
-                  style={[styles.phoneActionBtn, { backgroundColor: C.brinjal1, opacity: phoneLoading ? 0.7 : 1 }]}
-                  onPress={handleSendPhoneOtp}
-                  disabled={phoneLoading}
-                >
-                  <Text style={[styles.phoneActionBtnText, { color: '#fff' }]}>{phoneLoading ? t('businessSettings.sendingCodeLabel') : t('businessSettings.sendCodeBtn')}</Text>
-                </Pressable>
-                <Pressable
-                  style={[styles.phoneActionBtn, { backgroundColor: C.background, borderWidth: 1, borderColor: C.border }]}
-                  onPress={() => { setPhoneStage('idle'); setPhoneError(''); }}
-                  disabled={phoneLoading}
-                >
-                  <Text style={[styles.phoneActionBtnText, { color: C.textSecondary }]}>{t('businessSettings.cancelBtn')}</Text>
-                </Pressable>
-              </View>
+              <Pressable
+                style={[styles.phoneActionBtn, { backgroundColor: C.brinjal1, opacity: phoneLoading ? 0.7 : 1 }]}
+                onPress={handleSendPhoneOtp}
+                disabled={phoneLoading}
+              >
+                <Text style={[styles.phoneActionBtnText, { color: '#fff' }]}>{phoneLoading ? t('businessSettings.sendingCodeLabel') : t('businessSettings.sendCodeBtn')}</Text>
+              </Pressable>
             </View>
           )}
           {phoneStage === 'enter-otp' && (
@@ -1006,7 +949,68 @@ export default function BusinessSettingsScreen() {
               </View>
             </View>
           )}
-          <NavRow icon="🔑" label={t('businessSettings.changePasswordLabel')} onPress={() => setSubPage('change-password')} />
+          <Pressable
+            style={[styles.row, { borderBottomWidth: 1, borderBottomColor: C.border }]}
+            onPress={() => setShowChangePassword((v) => !v)}>
+            <Text style={styles.rowIcon}>🔑</Text>
+            <Text style={[styles.rowLabel, { color: C.text, flex: 1 }]}>{t('businessSettings.changePasswordLabel')}</Text>
+            {!showChangePassword && <Text style={[styles.navArrow, { color: C.textSecondary }]}>›</Text>}
+          </Pressable>
+
+          {showChangePassword && (
+            <View style={[styles.inlineForm, { borderBottomWidth: 1, borderBottomColor: C.border }]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Text style={[styles.formFieldLabel, { color: C.text, fontSize: 14, flex: 1, flexShrink: 1 }]} numberOfLines={1} ellipsizeMode="tail">{t('businessSettings.setNewPasswordSection')}</Text>
+                <Pressable onPress={closeChangePassword} hitSlop={10} style={{ flexShrink: 0, marginLeft: 8 }}>
+                  <Ionicons name="close-circle" size={22} color={C.textSecondary} />
+                </Pressable>
+              </View>
+
+              <View style={styles.formField}>
+                <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>{t('businessSettings.newPasswordLabel')}</Text>
+                <View style={[styles.pwRow, { backgroundColor: C.background, borderColor: pwError ? C.error : C.border }]}>
+                  <TextInput
+                    style={[styles.pwInput, { color: C.text }]}
+                    value={newPw}
+                    onChangeText={(pw) => { setNewPw(pw); setPwSubmitted(false); }}
+                    secureTextEntry={!showNewPw}
+                    placeholder={t('businessSettings.newPasswordPlaceholder')}
+                    placeholderTextColor={C.textSecondary}
+                    autoCapitalize="none"
+                  />
+                  <Pressable onPress={() => setShowNewPw((v) => !v)} style={styles.eyeBtn}>
+                    <Ionicons name={showNewPw ? 'eye-off-outline' : 'eye-outline'} size={20} color={C.textSecondary} />
+                  </Pressable>
+                </View>
+                {pwError ? <Text style={[styles.fieldError, { color: C.error }]}>{pwError}</Text> : null}
+              </View>
+
+              <View style={styles.formField}>
+                <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>{t('businessSettings.confirmPasswordLabel')}</Text>
+                <View style={[styles.pwRow, { backgroundColor: C.background, borderColor: cPwError ? C.error : C.border }]}>
+                  <TextInput
+                    style={[styles.pwInput, { color: C.text }]}
+                    value={confirmPw}
+                    onChangeText={(pw) => { setConfirmPw(pw); setPwSubmitted(false); }}
+                    secureTextEntry={!showConfirmPw}
+                    placeholder={t('businessSettings.confirmPasswordPlaceholder')}
+                    placeholderTextColor={C.textSecondary}
+                    autoCapitalize="none"
+                  />
+                  <Pressable onPress={() => setShowConfirmPw((v) => !v)} style={styles.eyeBtn}>
+                    <Ionicons name={showConfirmPw ? 'eye-off-outline' : 'eye-outline'} size={20} color={C.textSecondary} />
+                  </Pressable>
+                </View>
+                {cPwError ? <Text style={[styles.fieldError, { color: C.error }]}>{cPwError}</Text> : null}
+              </View>
+
+              <Pressable style={[styles.primaryBtn, { backgroundColor: C.brinjal1 }]} onPress={handleChangePassword}>
+                <Text style={styles.primaryBtnText}>{t('businessSettings.updatePasswordBtn')}</Text>
+              </Pressable>
+              <Text style={[styles.rowSub, { color: C.textSecondary }]}>{t('businessSettings.passwordHint')}</Text>
+            </View>
+          )}
+
           <View style={styles.row}>
             <Text style={styles.rowIcon}>🔐</Text>
             <Text style={[styles.rowLabel, { color: C.text }]}>{t('businessSettings.twoFactorLabel')}</Text>
@@ -1061,7 +1065,6 @@ export default function BusinessSettingsScreen() {
   function renderPayment() {
     return (
       <>
-        <SectionHeader title={t('businessSettings.nepalPaymentsSection')} />
         <HintCard>
           <Text style={[styles.hintText, { color: C.brinjal1 }]}>{t('businessSettings.paymentMethodsHint')}</Text>
         </HintCard>
@@ -1489,7 +1492,7 @@ export default function BusinessSettingsScreen() {
           <NavRow icon="🎯" label={t('businessSettings.eventPreferencesNav')} onPress={() => router.push('/(business)/settings?section=campaigns' as Parameters<typeof router.push>[0])} />
           <NavRow icon="🔖" label={t('businessSettings.savedCreatorsNav')}    onPress={() => router.push('/(business)/settings?section=saved' as Parameters<typeof router.push>[0])} />
           <NavRow icon="🔒" label={t('businessSettings.privacySettingsNav')}  onPress={() => router.push('/(business)/settings?section=privacy' as Parameters<typeof router.push>[0])} />
-          <NavRow icon="🛡️" label={t('businessSettings.accountSecurityNav')} onPress={() => router.push('/(business)/settings?section=account' as Parameters<typeof router.push>[0])} isLast />
+          <NavRow faIcon="shield-alt" label={t('businessSettings.accountSecurityNav')} onPress={() => router.push('/(business)/settings?section=account' as Parameters<typeof router.push>[0])} isLast />
         </Card>
 
         <SectionHeader title={t('businessSettings.appSection')} />
@@ -1534,7 +1537,6 @@ export default function BusinessSettingsScreen() {
           keyboardShouldPersistTaps="handled">
 
           {/* Sub-pages */}
-          {subPage === 'change-password'  && renderChangePassword()}
           {subPage === 'help-center'      && renderHelpCenter()}
           {subPage === 'contact-support'  && renderContactSupport()}
           {subPage === 'report-issue'     && renderReportIssue()}
@@ -1713,8 +1715,6 @@ const styles = StyleSheet.create({
 
   otpCloseBtn: { width: 30, height: 30, borderRadius: 15, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
 
-  phoneInputRow: { flexDirection: 'row', gap: 8 },
-  phonePrefix: { borderWidth: 1.5, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 11, justifyContent: 'center', alignItems: 'center' },
   phoneField: { flex: 1, borderWidth: 1.5, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 11, fontSize: 14, fontFamily: F.regular },
   phoneError: { fontSize: 12, fontFamily: F.regular, marginTop: -4 },
   phoneActionBtn: { flex: 1, borderRadius: 10, paddingVertical: 11, alignItems: 'center', justifyContent: 'center' },

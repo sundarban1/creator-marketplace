@@ -137,7 +137,6 @@ const SECTION_TITLES: Record<string, string> = {
 };
 
 const SUB_PAGE_TITLES: Record<string, string> = {
-  'change-password':  'creatorSettings.subChangePassword',
   'help-center':      'creatorSettings.subHelpCenter',
   'contact-support':  'creatorSettings.subContactSupport',
   'report-issue':     'creatorSettings.subReportIssue',
@@ -493,6 +492,9 @@ export default function CreatorSettingsScreen() {
   const [phoneOtp, setPhoneOtp] = useState('');
   const [phoneLoading, setPhoneLoading] = useState(false);
 
+  // Change password — inline collapsible panel (Security section)
+  const [showChangePassword, setShowChangePassword] = useState(false);
+
   // Accordion (support / legal sub-pages)
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
   function toggleExpand(id: string) {
@@ -830,8 +832,13 @@ export default function CreatorSettingsScreen() {
     if (pwOk && matchOk) {
       setNewPw(''); setConfirmPw(''); setPwSubmitted(false);
       showToast(t('creatorSettings.pwChangedToast'));
-      setSubPage(null);
+      setShowChangePassword(false);
     }
+  }
+
+  function closeChangePassword() {
+    setShowChangePassword(false);
+    setNewPw(''); setConfirmPw(''); setPwSubmitted(false);
   }
 
   function handleDeactivateAccount() {
@@ -924,64 +931,6 @@ export default function CreatorSettingsScreen() {
     : section
     ? t(SECTION_TITLES[section] ?? 'creatorSettings.settings')
     : t('creatorSettings.settings');
-
-  // ── Sub-page: Change Password ─────────────────────────────────
-
-  function renderChangePassword() {
-    const pwError = pwSubmitted ? (!newPw ? t('common.required') : newPw.length < 8 ? t('creatorSettings.errPwTooShort') : undefined) : undefined;
-    const cPwError = pwSubmitted ? (!confirmPw ? t('common.required') : confirmPw !== newPw ? t('creatorSettings.errPwMismatch') : undefined) : undefined;
-    return (
-      <>
-        <SectionHeader title={t('creatorSettings.setNewPasswordSection')} />
-        <Card>
-          <View style={styles.inlineForm}>
-            <View style={styles.formField}>
-              <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>{t('creatorSettings.newPasswordLabel')}</Text>
-              <View style={[styles.pwRow, { backgroundColor: C.background, borderColor: pwError ? C.error : C.border }]}>
-                <TextInput
-                  style={[styles.pwInput, { color: C.text }]}
-                  value={newPw}
-                  onChangeText={(v) => { setNewPw(v); setPwSubmitted(false); }}
-                  secureTextEntry={!showNewPw}
-                  placeholder={t('creatorSettings.newPasswordPlaceholder')}
-                  placeholderTextColor={C.textSecondary}
-                  autoCapitalize="none"
-                />
-                <Pressable onPress={() => setShowNewPw((v) => !v)} style={styles.eyeBtn}>
-                  <Ionicons name={showNewPw ? 'eye-off-outline' : 'eye-outline'} size={20} color={C.textSecondary} />
-                </Pressable>
-              </View>
-              {pwError ? <Text style={[styles.fieldError, { color: C.error }]}>{pwError}</Text> : null}
-            </View>
-            <View style={styles.formField}>
-              <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>{t('creatorSettings.confirmPasswordLabel')}</Text>
-              <View style={[styles.pwRow, { backgroundColor: C.background, borderColor: cPwError ? C.error : C.border }]}>
-                <TextInput
-                  style={[styles.pwInput, { color: C.text }]}
-                  value={confirmPw}
-                  onChangeText={(v) => { setConfirmPw(v); setPwSubmitted(false); }}
-                  secureTextEntry={!showConfirmPw}
-                  placeholder={t('creatorSettings.confirmPasswordPlaceholder')}
-                  placeholderTextColor={C.textSecondary}
-                  autoCapitalize="none"
-                />
-                <Pressable onPress={() => setShowConfirmPw((v) => !v)} style={styles.eyeBtn}>
-                  <Ionicons name={showConfirmPw ? 'eye-off-outline' : 'eye-outline'} size={20} color={C.textSecondary} />
-                </Pressable>
-              </View>
-              {cPwError ? <Text style={[styles.fieldError, { color: C.error }]}>{cPwError}</Text> : null}
-            </View>
-            <Pressable style={[styles.saveBtn, { backgroundColor: C.brinjal1 }]} onPress={handleChangePassword}>
-              <Text style={styles.saveBtnText}>{t('creatorSettings.updatePasswordBtn')}</Text>
-            </Pressable>
-          </View>
-        </Card>
-        <View style={[styles.hintCard, { backgroundColor: C.primaryLight }]}>
-          <Text style={[styles.hintText, { color: C.brinjal1 }]}>{t('creatorSettings.passwordHint')}</Text>
-        </View>
-      </>
-    );
-  }
 
   // ── Sub-page: Help Center ─────────────────────────────────────
 
@@ -1527,8 +1476,6 @@ export default function CreatorSettingsScreen() {
           </Animated.View>
         </Modal>
 
-        <SectionHeader title={t('creatorSettings.socialAccountsSection')} />
-
         {/* Empty state */}
         {socialAccounts.length === 0 && (
           <View style={[styles.socialEmptyState, { backgroundColor: C.surface, borderColor: C.border }]}>
@@ -1721,8 +1668,6 @@ export default function CreatorSettingsScreen() {
             </ScrollView>
           </Animated.View>
         </Modal>
-
-        <SectionHeader title={t('creatorSettings.pastWorkSection')} />
 
         {/* Empty state */}
         {portfolio.length === 0 && (
@@ -1962,6 +1907,8 @@ export default function CreatorSettingsScreen() {
 
   function renderSecurity() {
     const isEmailVerified = emailVerified === true;
+    const pwError  = pwSubmitted ? (!newPw ? t('common.required') : newPw.length < 8 ? t('creatorSettings.errPwTooShort') : undefined) : undefined;
+    const cPwError = pwSubmitted ? (!confirmPw ? t('common.required') : confirmPw !== newPw ? t('creatorSettings.errPwMismatch') : undefined) : undefined;
 
     function closePhone() {
       setPhoneSubPage(null);
@@ -1988,7 +1935,69 @@ export default function CreatorSettingsScreen() {
       <>
         <SectionHeader title={t('creatorSettings.loginPasswordSection')} />
         <Card>
-          <NavRow icon="🔑" label={t('creatorSettings.subChangePassword')} onPress={() => setSubPage('change-password')} />
+          <Pressable
+            style={[styles.row, { borderBottomWidth: 1, borderBottomColor: C.border }]}
+            onPress={() => setShowChangePassword((v) => !v)}>
+            <Text style={styles.rowIcon}>🔑</Text>
+            <Text style={[styles.rowLabel, { color: C.text }]}>{t('creatorSettings.subChangePassword')}</Text>
+            {!showChangePassword && <Text style={[styles.navArrow, { color: C.textSecondary }]}>›</Text>}
+          </Pressable>
+
+          {showChangePassword && (
+            <View style={[styles.inlinePhonePanel, { borderBottomColor: C.border, backgroundColor: C.background }]}>
+              <View style={styles.inlinePhonePanelHeader}>
+                <Text style={[styles.inlinePhonePanelTitle, { color: C.text, flexShrink: 1 }]} numberOfLines={1} ellipsizeMode="tail">{t('creatorSettings.setNewPasswordSection')}</Text>
+                <Pressable onPress={closeChangePassword} hitSlop={10} style={{ flexShrink: 0, marginLeft: 8 }}>
+                  <Ionicons name="close-circle" size={22} color={C.textSecondary} />
+                </Pressable>
+              </View>
+
+              <View style={styles.formField}>
+                <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>{t('creatorSettings.newPasswordLabel')}</Text>
+                <View style={[styles.pwRow, { backgroundColor: C.surface, borderColor: pwError ? C.error : C.border }]}>
+                  <TextInput
+                    style={[styles.pwInput, { color: C.text }]}
+                    value={newPw}
+                    onChangeText={(v) => { setNewPw(v); setPwSubmitted(false); }}
+                    secureTextEntry={!showNewPw}
+                    placeholder={t('creatorSettings.newPasswordPlaceholder')}
+                    placeholderTextColor={C.textSecondary}
+                    autoCapitalize="none"
+                  />
+                  <Pressable onPress={() => setShowNewPw((v) => !v)} style={styles.eyeBtn}>
+                    <Ionicons name={showNewPw ? 'eye-off-outline' : 'eye-outline'} size={20} color={C.textSecondary} />
+                  </Pressable>
+                </View>
+                {pwError ? <Text style={[styles.fieldError, { color: C.error }]}>{pwError}</Text> : null}
+              </View>
+
+              <View style={styles.formField}>
+                <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>{t('creatorSettings.confirmPasswordLabel')}</Text>
+                <View style={[styles.pwRow, { backgroundColor: C.surface, borderColor: cPwError ? C.error : C.border }]}>
+                  <TextInput
+                    style={[styles.pwInput, { color: C.text }]}
+                    value={confirmPw}
+                    onChangeText={(v) => { setConfirmPw(v); setPwSubmitted(false); }}
+                    secureTextEntry={!showConfirmPw}
+                    placeholder={t('creatorSettings.confirmPasswordPlaceholder')}
+                    placeholderTextColor={C.textSecondary}
+                    autoCapitalize="none"
+                  />
+                  <Pressable onPress={() => setShowConfirmPw((v) => !v)} style={styles.eyeBtn}>
+                    <Ionicons name={showConfirmPw ? 'eye-off-outline' : 'eye-outline'} size={20} color={C.textSecondary} />
+                  </Pressable>
+                </View>
+                {cPwError ? <Text style={[styles.fieldError, { color: C.error }]}>{cPwError}</Text> : null}
+              </View>
+
+              <Pressable style={[styles.saveBtn, { backgroundColor: C.brinjal1 }]} onPress={handleChangePassword}>
+                <Text style={styles.saveBtnText}>{t('creatorSettings.updatePasswordBtn')}</Text>
+              </Pressable>
+
+              <Text style={[styles.inlinePhonePanelSub, { color: C.textSecondary }]}>{t('creatorSettings.passwordHint')}</Text>
+            </View>
+          )}
+
           <NavRow icon="📱" label={t('creatorSettings.logoutAllDevices')} onPress={handleLogoutAll} isLast />
         </Card>
 
@@ -2031,8 +2040,8 @@ export default function CreatorSettingsScreen() {
           {phoneSubPage === 'input' && (
             <View style={[styles.inlinePhonePanel, { borderBottomColor: C.border, backgroundColor: C.background }]}>
               <View style={styles.inlinePhonePanelHeader}>
-                <Text style={[styles.inlinePhonePanelTitle, { color: C.text }]}>{t('creatorSettings.enterPhoneTitle')}</Text>
-                <Pressable onPress={closePhone} hitSlop={10}>
+                <Text style={[styles.inlinePhonePanelTitle, { color: C.text, flexShrink: 1 }]} numberOfLines={1} ellipsizeMode="tail">{t('creatorSettings.enterPhoneTitle')}</Text>
+                <Pressable onPress={closePhone} hitSlop={10} style={{ flexShrink: 0, marginLeft: 8 }}>
                   <Ionicons name="close-circle" size={22} color={C.textSecondary} />
                 </Pressable>
               </View>
@@ -2150,7 +2159,6 @@ export default function CreatorSettingsScreen() {
   function renderSupport() {
     return (
       <>
-        <SectionHeader title={t('creatorSettings.getHelpSection')} />
         <Card>
           <NavRow ionIcon="help-circle-outline"        ionIconColor="#0891B2" label={t('creatorSettings.helpCenterLabel')}      onPress={() => setSubPage('help-center')} />
           <NavRow ionIcon="chatbubble-ellipses-outline" ionIconColor="#7C3AED" label={t('creatorSettings.contactSupportLabel')} onPress={() => setSubPage('contact-support')} />
@@ -2169,7 +2177,6 @@ export default function CreatorSettingsScreen() {
   function renderLegal() {
     return (
       <>
-        <SectionHeader title={t('creatorSettings.legalDocumentsSection')} />
         <Card>
           <NavRow ionIcon="shield-checkmark-outline" ionIconColor="#3B82F6" label={t('creatorSettings.privacyPolicyLabel')}  onPress={() => setSubPage('privacy-policy')} />
           <NavRow ionIcon="document-text-outline"    ionIconColor="#6366F1" label={t('creatorSettings.termsLabel')}          onPress={() => setSubPage('terms')} />
@@ -2280,7 +2287,6 @@ export default function CreatorSettingsScreen() {
           keyboardShouldPersistTaps="handled">
 
           {/* Sub-pages */}
-          {subPage === 'change-password'  && renderChangePassword()}
           {subPage === 'help-center'      && renderHelpCenter()}
           {subPage === 'contact-support'  && renderContactSupport()}
           {subPage === 'report-issue'     && renderReportIssue()}

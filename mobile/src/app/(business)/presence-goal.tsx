@@ -39,7 +39,7 @@ export default function PresenceGoalScreen() {
   const { t } = useLanguage();
   const toast = useToast();
   const [handles, setHandles] = useState<Record<string, string>>(
-    Object.fromEntries(SOCIAL_FIELDS.map((f) => [f.id, '']))
+    Object.fromEntries(SOCIAL_FIELDS.map((f) => [f.id, f.prefix]))
   );
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,7 +49,15 @@ export default function PresenceGoalScreen() {
   useEffect(() => {
     profileService.getBusinessProfile()
       .then((p) => {
-        setHandles((prev) => ({ ...prev, ...(p.socialLinks ?? {}) }));
+        const saved = p.socialLinks ?? {};
+        setHandles((prev) => {
+          const next = { ...prev };
+          for (const f of SOCIAL_FIELDS) {
+            const val = saved[f.id as keyof typeof saved];
+            if (val) next[f.id] = val.startsWith(f.prefix) ? val : f.prefix + val;
+          }
+          return next;
+        });
         setSelectedServices(p.presenceServices ?? []);
       })
       .catch(() => toast.error(t('presenceGoal.loadFailed')))
@@ -65,7 +73,10 @@ export default function PresenceGoalScreen() {
   async function handleSave() {
     setSaving(true);
     try {
-      await profileService.updateBusinessProfile({ socialLinks: handles, presenceServices: selectedServices });
+      const cleanedHandles = Object.fromEntries(
+        SOCIAL_FIELDS.map((f) => [f.id, handles[f.id] === f.prefix ? '' : handles[f.id]])
+      );
+      await profileService.updateBusinessProfile({ socialLinks: cleanedHandles, presenceServices: selectedServices });
       setSaved(true);
       setTimeout(() => {
         setSaved(false);
@@ -116,21 +127,19 @@ export default function PresenceGoalScreen() {
                   <View style={[styles.iconBadge, { backgroundColor: field.color + '18' }]}>
                     <Ionicons name={field.icon} size={20} color={field.color} />
                   </View>
-                  {/* Fixed prefix */}
-                  <Text style={[styles.prefix, { color: C.textSecondary }]}>{field.prefix}</Text>
-                  {/* Username input */}
+                  {/* Handle input — pre-filled with the platform's URL prefix */}
                   <TextInput
                     style={[styles.socialInput, { color: C.text }]}
                     value={handles[field.id]}
                     onChangeText={(t) => setHandles((prev) => ({ ...prev, [field.id]: t }))}
-                    placeholder={field.placeholder}
+                    placeholder={field.prefix + field.placeholder}
                     placeholderTextColor={C.textSecondary}
                     autoCapitalize="none"
                     autoCorrect={false}
                     keyboardType="default"
                   />
-                  {!!handles[field.id] && (
-                    <Pressable onPress={() => setHandles((prev) => ({ ...prev, [field.id]: '' }))} hitSlop={8}>
+                  {handles[field.id] !== field.prefix && (
+                    <Pressable onPress={() => setHandles((prev) => ({ ...prev, [field.id]: field.prefix }))} hitSlop={8}>
                       <Ionicons name="close-circle" size={18} color={C.textSecondary} />
                     </Pressable>
                   )}

@@ -178,10 +178,27 @@
       "Bash(curl -s -X POST http://localhost:3000/api/auth/login -H \"Content-Type: application/json\" -d '{\"email\":\"business@example.com\",\"password\":\"password123\"}')",
       "Bash(jobs -l)",
       "Bash(pkill -f \"prisma studio\")",
-      "Bash(git stash *)"
+      "Bash(git stash *)",
+      "WebFetch(domain:www.kollabo.in)",
+      "Bash(npx --no-install playwright --version)",
+      "Read(//Users/sundarban/.cache/**)",
+      "Bash(timeout 20 bash -c 'until curl -sf http://localhost:5173 >/dev/null; do sleep 0.5; done')",
+      "Bash(open -a \"Google Chrome\" \"http://localhost:5173/\")",
+      "Bash(open \"http://localhost:5173/\")",
+      "Bash(curl -sf http://localhost:5173/)",
+      "Bash(screencapture -x /private/tmp/claude-501/-Users-sundarban-Documents-projects-marketplace/f4dadbd6-ef73-4bff-b8ee-f2b326c42e8f/scratchpad/landing_top.png)",
+      "Bash(system_profiler SPDisplaysDataType)",
+      "Bash(ioreg -lw0)",
+      "Bash(npx playwright *)",
+      "Bash(node /private/tmp/claude-501/-Users-sundarban-Documents-projects-marketplace/f4dadbd6-ef73-4bff-b8ee-f2b326c42e8f/scratchpad/shot.mjs)",
+      "Bash(node scratch_shot.mjs)",
+      "Bash(curl -s http://localhost:5173/)",
+      "Bash(node scratch_inspect.mjs)",
+      "Bash(rm -f scratch_inspect.mjs *)"
     ],
     "additionalDirectories": [
-      "/private/tmp"
+      "/private/tmp",
+      "/private/tmp/claude-501/-Users-sundarban-Documents-projects-marketplace/f4dadbd6-ef73-4bff-b8ee-f2b326c42e8f/scratchpad"
     ]
   }
 }

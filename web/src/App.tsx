@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { CategoriesProvider } from './context/CategoriesContext';
 import { PlatformsProvider } from './context/PlatformsContext';
@@ -28,44 +28,54 @@ import { PlatformsPage } from './pages/platforms/PlatformsPage';
 import { NewPlatformPage } from './pages/platforms/NewPlatformPage';
 import { EditPlatformPage } from './pages/platforms/EditPlatformPage';
 
+// Admin-only data providers — mounted only inside the authenticated dashboard
+// so public routes (landing page, login) never trigger admin-scoped API calls.
+function AdminProviders() {
+  return (
+    <CategoriesProvider>
+      <PlatformsProvider>
+        <Outlet />
+      </PlatformsProvider>
+    </CategoriesProvider>
+  );
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <CategoriesProvider>
-          <PlatformsProvider>
-            <Routes>
-              <Route path="/" element={<LandingPage />} />
-              <Route path="/admin" element={<Navigate to="/dashboard" replace />} />
-              <Route path="/login" element={<Login />} />
-              <Route element={<ProtectedRoute />}>
-                <Route element={<DashboardLayout />}>
-                  <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/users" element={<Users />} />
-                  <Route path="/creators" element={<Creators />} />
-                  <Route path="/businesses" element={<Businesses />} />
-                  <Route path="/campaigns" element={<Campaigns />} />
-                  <Route path="/campaigns/:id" element={<CampaignDetail />} />
-                  <Route path="/categories" element={<CategoriesPage />} />
-                  <Route path="/categories/new" element={<NewCategoryPage />} />
-                  <Route path="/categories/edit/:id" element={<EditCategoryPage />} />
-                  <Route path="/platforms" element={<PlatformsPage />} />
-                  <Route path="/platforms/new" element={<NewPlatformPage />} />
-                  <Route path="/platforms/edit/:id" element={<EditPlatformPage />} />
-                  <Route path="/payments" element={<Payments />} />
-                  <Route path="/referrals" element={<Referrals />} />
-                  <Route path="/reports" element={<Reports />} />
-                  <Route path="/help-center" element={<HelpCenter />} />
-                  <Route path="/faqs" element={<FAQManager />} />
-                  <Route path="/support-inbox" element={<SupportInbox />} />
-                  <Route path="/legal"          element={<LegalEditor />} />
-                  <Route path="/conversations" element={<Conversations />} />
-                  <Route path="/settings" element={<Settings />} />
-                </Route>
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/admin" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/login" element={<Login />} />
+          <Route element={<ProtectedRoute />}>
+            <Route element={<AdminProviders />}>
+              <Route element={<DashboardLayout />}>
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/users" element={<Users />} />
+                <Route path="/creators" element={<Creators />} />
+                <Route path="/businesses" element={<Businesses />} />
+                <Route path="/campaigns" element={<Campaigns />} />
+                <Route path="/campaigns/:id" element={<CampaignDetail />} />
+                <Route path="/categories" element={<CategoriesPage />} />
+                <Route path="/categories/new" element={<NewCategoryPage />} />
+                <Route path="/categories/edit/:id" element={<EditCategoryPage />} />
+                <Route path="/platforms" element={<PlatformsPage />} />
+                <Route path="/platforms/new" element={<NewPlatformPage />} />
+                <Route path="/platforms/edit/:id" element={<EditPlatformPage />} />
+                <Route path="/payments" element={<Payments />} />
+                <Route path="/referrals" element={<Referrals />} />
+                <Route path="/reports" element={<Reports />} />
+                <Route path="/help-center" element={<HelpCenter />} />
+                <Route path="/faqs" element={<FAQManager />} />
+                <Route path="/support-inbox" element={<SupportInbox />} />
+                <Route path="/legal"          element={<LegalEditor />} />
+                <Route path="/conversations" element={<Conversations />} />
+                <Route path="/settings" element={<Settings />} />
               </Route>
-            </Routes>
-          </PlatformsProvider>
-        </CategoriesProvider>
+            </Route>
+          </Route>
+        </Routes>
       </AuthProvider>
     </BrowserRouter>
   );
