@@ -144,6 +144,11 @@ model BusinessProfile {
   showPublicProfile   Boolean              @default(true)
   paymentMethods      String[]             @default([])
   referralCode        String?              @unique
+  socialLinks              Json                 @default("{}")
+  presenceServices         String[]             @default([])
+  defaultPlatforms         String[]             @default([])
+  defaultCreatorCategories String[]             @default([])
+  defaultBudgetRange       String?
   panDocUrl               String?
   panDocStatus            DocumentStatus       @default(NONE)
   panDocUploadedAt        DateTime?

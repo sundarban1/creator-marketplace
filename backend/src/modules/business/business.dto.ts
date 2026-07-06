@@ -16,6 +16,11 @@ export interface BusinessProfileDto {
   hideContactDetails: boolean;
   allowDirectMessages: boolean;
   socialLinks: Record<string, string>;
+  presenceServices: string[];
+  paymentMethods: string[];
+  defaultPlatforms: string[];
+  defaultCreatorCategories: string[];
+  defaultBudgetRange: string | null;
   panDocUrl: string | null;
   panDocStatus: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
   companyRegDocUrl: string | null;
@@ -89,6 +94,11 @@ type RawBusinessProfile = {
   hideContactDetails: boolean;
   allowDirectMessages: boolean;
   socialLinks?: Prisma.JsonValue;
+  presenceServices?: string[];
+  paymentMethods?: string[];
+  defaultPlatforms?: string[];
+  defaultCreatorCategories?: string[];
+  defaultBudgetRange?: string | null;
   panDocUrl?: string | null;
   panDocStatus?: string;
   companyRegDocUrl?: string | null;
@@ -115,6 +125,11 @@ export function toBusinessProfileDto(b: RawBusinessProfile): BusinessProfileDto 
     hideContactDetails:  b.hideContactDetails,
     allowDirectMessages: b.allowDirectMessages,
     socialLinks:         (b.socialLinks ?? {}) as Record<string, string>,
+    presenceServices:         b.presenceServices ?? [],
+    paymentMethods:           b.paymentMethods ?? [],
+    defaultPlatforms:         b.defaultPlatforms ?? [],
+    defaultCreatorCategories: b.defaultCreatorCategories ?? [],
+    defaultBudgetRange:       b.defaultBudgetRange ?? null,
     panDocUrl:           b.panDocUrl ?? null,
     panDocStatus:        (b.panDocStatus ?? 'NONE') as BusinessProfileDto['panDocStatus'],
     companyRegDocUrl:    b.companyRegDocUrl ?? null,

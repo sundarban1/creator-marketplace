@@ -1,10 +1,11 @@
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { BackButton } from '@/components/BackButton';
 import { useLanguage } from '@/context/LanguageContext';
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -16,9 +17,11 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
+import { useToast } from '@/components/Toast';
+import { profileService } from '@/services/profile';
 import { F } from '@/utilities/constants';
 
-const SOCIAL_FIELDS = [
+const SOCIAL_FIELDS: Array<{ id: string; icon: keyof typeof Ionicons.glyphMap; color: string; label: string; prefix: string; placeholder: string }> = [
   { id: 'facebook',  icon: 'logo-facebook',  color: '#1877F2', label: 'Facebook',  prefix: 'facebook.com/',         placeholder: 'yourpage' },
   { id: 'instagram', icon: 'logo-instagram', color: '#E1306C', label: 'Instagram', prefix: 'instagram.com/',        placeholder: 'yourhandle' },
   { id: 'tiktok',    icon: 'musical-notes',  color: '#010101', label: 'TikTok',    prefix: 'tiktok.com/@',          placeholder: 'yourhandle' },
@@ -34,24 +37,45 @@ const SERVICES = [
 export default function PresenceGoalScreen() {
   const C = useAppColors();
   const { t } = useLanguage();
-  const [handles, setHandles] = useState(
+  const toast = useToast();
+  const [handles, setHandles] = useState<Record<string, string>>(
     Object.fromEntries(SOCIAL_FIELDS.map((f) => [f.id, '']))
   );
-  const [selectedServices, setSelectedServices] = useState([]);
+  const [selectedServices, setSelectedServices] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  function toggleService(id) {
+  useEffect(() => {
+    profileService.getBusinessProfile()
+      .then((p) => {
+        setHandles((prev) => ({ ...prev, ...(p.socialLinks ?? {}) }));
+        setSelectedServices(p.presenceServices ?? []);
+      })
+      .catch(() => toast.error(t('presenceGoal.loadFailed')))
+      .finally(() => setLoading(false));
+  }, []);
+
+  function toggleService(id: string) {
     setSelectedServices((prev) =>
       prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
     );
   }
 
-  function handleSave() {
-    setSaved(true);
-    setTimeout(() => {
-      setSaved(false);
-      router.back();
-    }, 900);
+  async function handleSave() {
+    setSaving(true);
+    try {
+      await profileService.updateBusinessProfile({ socialLinks: handles, presenceServices: selectedServices });
+      setSaved(true);
+      setTimeout(() => {
+        setSaved(false);
+        router.back();
+      }, 900);
+    } catch {
+      toast.error(t('presenceGoal.saveFailed'));
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -64,6 +88,11 @@ export default function PresenceGoalScreen() {
         </View>
       </LinearGradient>
 
+      {loading ? (
+        <View style={[styles.flex, styles.loadingWrap]}>
+          <ActivityIndicator size="large" color={C.brinjal1} />
+        </View>
+      ) : (
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
           contentContainerStyle={styles.scrollContent}
@@ -147,12 +176,18 @@ export default function PresenceGoalScreen() {
 
           <Pressable
             style={[styles.saveBtn, { backgroundColor: saved ? C.active : C.brinjal1, shadowColor: C.brinjal1 }]}
+            disabled={saving}
             onPress={handleSave}>
-            <Text style={styles.saveBtnText}>{saved ? t('presenceGoal.savedDone') : t('presenceGoal.saveChanges')}</Text>
+            {saving ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={styles.saveBtnText}>{saved ? t('presenceGoal.savedDone') : t('presenceGoal.saveChanges')}</Text>
+            )}
           </Pressable>
 
         </ScrollView>
       </KeyboardAvoidingView>
+      )}
     </SafeAreaView>
   );
 }
@@ -160,6 +195,7 @@ export default function PresenceGoalScreen() {
 const styles = StyleSheet.create({
   container:       { flex: 1 },
   flex:            { flex: 1 },
+  loadingWrap:     { justifyContent: 'center', alignItems: 'center' },
   gradientHeader:  { overflow: 'hidden', borderBottomLeftRadius: 16, borderBottomRightRadius: 16 },
   header:          { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14 },
   headerTitle:     { fontSize: 20, fontWeight: '700', fontFamily: F.bold, lineHeight: 24 },

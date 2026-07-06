@@ -172,7 +172,13 @@
       "Bash(open /Users/sundarban/Documents/projects/marketplace/mobile/ios/kolab.xcworkspace)",
       "Bash(xcodebuild -workspace kolab.xcworkspace -list)",
       "Bash(xcrun xctrace *)",
-      "Bash(xcodebuild -workspace kolab.xcworkspace -scheme kolab -configuration Debug -destination \"id=00008101-000E28520183001E\" -allowProvisioningUpdates build)"
+      "Bash(xcodebuild -workspace kolab.xcworkspace -scheme kolab -configuration Debug -destination \"id=00008101-000E28520183001E\" -allowProvisioningUpdates build)",
+      "Skill(claude-api)",
+      "Skill(claude-api:*)",
+      "Bash(curl -s -X POST http://localhost:3000/api/auth/login -H \"Content-Type: application/json\" -d '{\"email\":\"business@example.com\",\"password\":\"password123\"}')",
+      "Bash(jobs -l)",
+      "Bash(pkill -f \"prisma studio\")",
+      "Bash(git stash *)"
     ],
     "additionalDirectories": [
       "/private/tmp"

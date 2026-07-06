@@ -123,6 +123,11 @@ export class BusinessRepository {
       hideContactDetails: boolean;
       allowDirectMessages: boolean;
       socialLinks: Record<string, string>;
+      presenceServices: string[];
+      paymentMethods: string[];
+      defaultPlatforms: string[];
+      defaultCreatorCategories: string[];
+      defaultBudgetRange: string | null;
     }>
   ) {
     return prisma.businessProfile.update({

@@ -18,6 +18,11 @@ export const updateBusinessProfileSchema = z.object({
     tiktok:    z.string().optional(),
     linkedin:  z.string().optional(),
   }).optional(),
+  presenceServices:         z.array(z.string()).optional(),
+  paymentMethods:           z.array(z.string()).optional(),
+  defaultPlatforms:         z.array(z.string()).optional(),
+  defaultCreatorCategories: z.array(z.string()).optional(),
+  defaultBudgetRange:       z.string().optional().nullable(),
 });
 
 export type UpdateBusinessProfileInput = z.infer<typeof updateBusinessProfileSchema>;

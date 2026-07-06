@@ -159,6 +159,10 @@ export const authService = {
     await request('PATCH', '/api/auth/deactivate');
   },
 
+  async deleteAccount(): Promise<void> {
+    await request('DELETE', '/api/auth/account');
+  },
+
   async logout(): Promise<void> {
     try {
       const controller = new AbortController();

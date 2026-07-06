@@ -1569,6 +1569,8 @@ const en = {
     reviewDesc: 'Honest reviews & unboxing',
     socialMedia: 'Social Media Marketing',
     socialDesc: 'Instagram, Facebook, Twitter',
+    loadFailed: "Couldn't load your presence details. Please try again.",
+    saveFailed: "Couldn't save changes. Please try again.",
   },
 
   businessSettings: {
@@ -1664,6 +1666,7 @@ const en = {
     deleteMsg:             'This permanently deletes your account and all data. This cannot be undone.',
     deleteConfirmBtn:      'Delete Account',
     deactivateFailed:      'Failed to deactivate. Please try again.',
+    deleteFailed:          'Failed to delete account. Please try again.',
     pushNotificationsSection:  'Push Notifications',
     newApplicationsLabel:      'New Creator Applications',
     newApplicationsSub:        'When creators apply to your events',
@@ -1692,6 +1695,7 @@ const en = {
     prefCategoriesSection: 'Preferred Creator Categories',
     defaultBudgetSection: 'Default Budget Range',
     autoSavedHint:        'Changes are saved automatically.',
+    prefSaveFailed:       "Couldn't save your preference. Please try again.",
     savedCount:         'Saved ({{count}})',
     noSavedCreators:    'No saved creators yet',
     noSavedSub:         'Browse events and save creators you like',

@@ -285,6 +285,10 @@ export default function BusinessSettingsScreen() {
       setIsBizVerified(p.isVerified);
       setPanDocStatus(p.panDocStatus);
       setCompanyRegDocStatus(p.companyRegDocStatus);
+      if (p.defaultPlatforms?.length)         setPrefPlatforms(p.defaultPlatforms);
+      if (p.defaultCreatorCategories?.length)  setPrefCreatorCats(p.defaultCreatorCategories);
+      if (p.defaultBudgetRange)               setPrefBudget(p.defaultBudgetRange);
+      if (p.paymentMethods?.length)            setNepalPayments(p.paymentMethods);
     }).catch(() => {});
     businessService.getPaymentHistory()
       .then(setPaymentHistory)
@@ -302,8 +306,15 @@ export default function BusinessSettingsScreen() {
 
   // ── Helpers ──
 
-  function toggleChip(arr: string[], setArr: (v: string[]) => void, val: string) {
-    setArr(arr.includes(val) ? arr.filter((x) => x !== val) : [...arr, val]);
+  // Toggles a chip/checkbox array locally and persists the resulting array to the
+  // business profile — used for auto-saved preference sections (campaign prefs, payment methods).
+  async function toggleAndSave(
+    arr: string[], setArr: (v: string[]) => void, val: string,
+    save: (next: string[]) => Promise<void>,
+  ) {
+    const next = arr.includes(val) ? arr.filter((x) => x !== val) : [...arr, val];
+    setArr(next);
+    try { await save(next); } catch { toast.error(t('businessSettings.prefSaveFailed')); }
   }
 
   function toggleBizCategory(val: string) {
@@ -312,10 +323,6 @@ export default function BusinessSettingsScreen() {
       if (prev.length >= 3) return prev;
       return [...prev, val];
     });
-  }
-
-  function togglePayment(arr: string[], setArr: (v: string[]) => void, id: string) {
-    setArr(arr.includes(id) ? arr.filter((x) => x !== id) : [...arr, id]);
   }
 
   function handleSaveProfile() {
@@ -376,7 +383,11 @@ export default function BusinessSettingsScreen() {
       body: t('businessSettings.deleteMsg'),
       confirmLabel: t('businessSettings.deleteConfirmBtn'),
       warning: 'This permanently deletes your account and all data. This action cannot be undone.',
-      onConfirm: () => { closeAppModal(); logout(); },
+      onConfirm: async () => {
+        closeAppModal();
+        try { await authService.deleteAccount(); await logout(); }
+        catch { toast.error(t('businessSettings.deleteFailed')); }
+      },
     });
   }
 
@@ -1061,7 +1072,7 @@ export default function BusinessSettingsScreen() {
               <Pressable
                 key={m.id}
                 style={[styles.row, idx < NEPAL_PAYMENTS.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}
-                onPress={() => togglePayment(nepalPayments, setNepalPayments, m.id)}>
+                onPress={() => toggleAndSave(nepalPayments, setNepalPayments, m.id, (next) => profileService.updateBusinessProfile({ paymentMethods: next }))}>
                 <View style={[styles.paymentIcon, { backgroundColor: m.color + '18' }]}>
                   <Text style={styles.paymentEmoji}>{m.icon}</Text>
                 </View>
@@ -1120,14 +1131,22 @@ export default function BusinessSettingsScreen() {
         <SectionHeader title={t('businessSettings.prefPlatformsSection')} />
         <Card>
           <View style={styles.chipSection}>
-            <ChipGroup options={PLATFORMS} selected={prefPlatforms} onToggle={(v) => toggleChip(prefPlatforms, setPrefPlatforms, v)} />
+            <ChipGroup
+              options={PLATFORMS}
+              selected={prefPlatforms}
+              onToggle={(v) => toggleAndSave(prefPlatforms, setPrefPlatforms, v, (next) => profileService.updateBusinessProfile({ defaultPlatforms: next }))}
+            />
           </View>
         </Card>
 
         <SectionHeader title={t('businessSettings.prefCategoriesSection')} />
         <Card>
           <View style={styles.chipSection}>
-            <ChipGroup options={CREATOR_CATEGORIES} selected={prefCreatorCats} onToggle={(v) => toggleChip(prefCreatorCats, setPrefCreatorCats, v)} />
+            <ChipGroup
+              options={CREATOR_CATEGORIES}
+              selected={prefCreatorCats}
+              onToggle={(v) => toggleAndSave(prefCreatorCats, setPrefCreatorCats, v, (next) => profileService.updateBusinessProfile({ defaultCreatorCategories: next }))}
+            />
           </View>
         </Card>
 
@@ -1137,7 +1156,10 @@ export default function BusinessSettingsScreen() {
             <Pressable
               key={range}
               style={[styles.row, idx < BUDGET_RANGES.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}
-              onPress={() => setPrefBudget(range)}>
+              onPress={() => {
+                setPrefBudget(range);
+                profileService.updateBusinessProfile({ defaultBudgetRange: range }).catch(() => toast.error(t('businessSettings.prefSaveFailed')));
+              }}>
               <Text style={[styles.rowLabel, { color: C.text }]}>{range}</Text>
               <View style={[styles.radioOuter, { borderColor: prefBudget === range ? C.brinjal1 : C.border }]}>
                 {prefBudget === range ? <View style={[styles.radioInner, { backgroundColor: C.brinjal1 }]} /> : null}

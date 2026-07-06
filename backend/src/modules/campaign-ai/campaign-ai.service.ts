@@ -2,9 +2,38 @@ import Anthropic from '@anthropic-ai/sdk';
 import { CategoryScope } from '@prisma/client';
 import { env } from '../../config/env';
 import { logger } from '../../config/logger';
-import { AppError } from '../../middleware/error';
 import { CategoryRepository } from '../category/category.repository';
 import { aiCampaignDraftSchema, type AiCampaignDraft, type SuggestDescriptionInput } from './campaign-ai.schema';
+import dummyData from './campaign-ai.dummy.json';
+
+type DummyCampaignTemplate = AiCampaignDraft & { keywords: string[] };
+type DummyDescriptionTemplate = { keywords: string[]; text: string };
+
+const dummy = dummyData as unknown as {
+  campaignTemplates: DummyCampaignTemplate[];
+  descriptionTemplates: DummyDescriptionTemplate[];
+};
+
+// Picks the first template whose keywords appear in `haystack`; the entry with an
+// empty `keywords` array is the generic catch-all and always sorts last.
+function matchByKeywords<T extends { keywords: string[] }>(templates: T[], haystack: string): T {
+  const lower = haystack.toLowerCase();
+  const matched = templates.find((t) => t.keywords.length > 0 && t.keywords.some((k) => lower.includes(k)));
+  const fallback = templates.find((t) => t.keywords.length === 0);
+  return matched ?? fallback ?? templates[0];
+}
+
+// Used when the Anthropic API is unavailable (no key, auth/billing failure, timeout,
+// or a malformed response) so campaign creation still works end-to-end for demos/dev.
+function pickDummyDraft(prompt: string): AiCampaignDraft {
+  const { keywords, ...draft } = matchByKeywords(dummy.campaignTemplates, prompt);
+  return aiCampaignDraftSchema.parse(draft);
+}
+
+function pickDummyDescription(input: SuggestDescriptionInput): string {
+  const haystack = [input.title, input.category, input.platform, input.deliverables].filter(Boolean).join(' ');
+  return matchByKeywords(dummy.descriptionTemplates, haystack).text;
+}
 
 const MODEL = 'claude-haiku-4-5-20251001';
 const REQUEST_TIMEOUT_MS = 20_000;
@@ -57,18 +86,16 @@ export class CampaignAiService {
   private categoryRepo = new CategoryRepository();
 
   async suggestDescription(input: SuggestDescriptionInput): Promise<string> {
-    if (!env.ANTHROPIC_API_KEY) {
-      throw new AppError('This feature is temporarily unavailable. Please fill in the form manually.', 503);
-    }
-
-    const parts: string[] = [];
-    if (input.title) parts.push(`Title: ${input.title}`);
-    if (input.category) parts.push(`Category: ${input.category}`);
-    if (input.platform) parts.push(`Platform: ${input.platform}`);
-    if (input.deliverables) parts.push(`Deliverables: ${input.deliverables}`);
-
-    const client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY, timeout: REQUEST_TIMEOUT_MS });
     try {
+      if (!env.ANTHROPIC_API_KEY) throw new Error('ANTHROPIC_API_KEY not configured');
+
+      const parts: string[] = [];
+      if (input.title) parts.push(`Title: ${input.title}`);
+      if (input.category) parts.push(`Category: ${input.category}`);
+      if (input.platform) parts.push(`Platform: ${input.platform}`);
+      if (input.deliverables) parts.push(`Deliverables: ${input.deliverables}`);
+
+      const client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY, timeout: REQUEST_TIMEOUT_MS });
       const response = await client.messages.create({
         model: MODEL,
         max_tokens: 300,
@@ -77,56 +104,43 @@ export class CampaignAiService {
       });
       const block = response.content[0];
       const description = block?.type === 'text' ? block.text.trim().replace(/^["']|["']$/g, '') : '';
-      if (description.length < 10) {
-        throw new AppError("Couldn't generate a description. Please try again or write your own.", 422);
-      }
+      if (description.length < 10) throw new Error('AI description was too short');
       return description;
     } catch (err) {
-      if (err instanceof AppError) throw err;
-      if (err instanceof Anthropic.APIConnectionTimeoutError) {
-        throw new AppError('This is taking longer than expected. Please try again.', 504);
-      }
-      logger.error({ err }, 'AI description suggestion failed');
-      throw new AppError("Couldn't generate a description. Please try again or write your own.", 422);
+      logger.warn({ err: err instanceof Error ? err.message : err }, 'Anthropic unavailable — falling back to dummy description');
+      return pickDummyDescription(input);
     }
   }
 
   async generateDraft(prompt: string): Promise<AiCampaignDraft & { aiSuggestedCategories: string[]; aiSuggestedPlatforms: string[] }> {
-    if (!env.ANTHROPIC_API_KEY) {
-      throw new AppError('This feature is temporarily unavailable. Please fill in the form manually.', 503);
-    }
-
     const realCategories = await this.categoryRepo.findManyPublic(CategoryScope.BUSINESS);
     const categoryNames = realCategories.map((c) => c.name);
 
-    const raw = await this.callClaude(prompt, categoryNames);
-    const draft = this.parseAndValidate(raw);
+    let draft: AiCampaignDraft;
+    try {
+      if (!env.ANTHROPIC_API_KEY) throw new Error('ANTHROPIC_API_KEY not configured');
+      const raw = await this.callClaude(prompt, categoryNames);
+      draft = this.parseAndValidate(raw);
+    } catch (err) {
+      logger.warn({ err: err instanceof Error ? err.message : err }, 'Anthropic unavailable — falling back to dummy campaign draft');
+      draft = pickDummyDraft(prompt);
+    }
     return this.matchToRealTaxonomy(draft, categoryNames);
   }
 
   private async callClaude(prompt: string, categoryNames: string[]): Promise<string> {
     const client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY, timeout: REQUEST_TIMEOUT_MS });
-
-    try {
-      const response = await client.messages.create({
-        model: MODEL,
-        max_tokens: 1500,
-        system: buildSystemPrompt(categoryNames),
-        messages: [{ role: 'user', content: prompt }],
-      });
-      const block = response.content[0];
-      if (!block || block.type !== 'text') {
-        throw new AppError("Couldn't generate a draft from that description. Please try rephrasing or fill in the form manually.", 422);
-      }
-      return block.text;
-    } catch (err) {
-      if (err instanceof AppError) throw err;
-      if (err instanceof Anthropic.APIConnectionTimeoutError) {
-        throw new AppError('This is taking longer than expected. Please try again or fill in the form manually.', 504);
-      }
-      logger.error({ err }, 'AI campaign generation failed');
-      throw new AppError("Couldn't generate a draft from that description. Please try rephrasing or fill in the form manually.", 422);
+    const response = await client.messages.create({
+      model: MODEL,
+      max_tokens: 1500,
+      system: buildSystemPrompt(categoryNames),
+      messages: [{ role: 'user', content: prompt }],
+    });
+    const block = response.content[0];
+    if (!block || block.type !== 'text') {
+      throw new Error('AI response did not contain text content');
     }
+    return block.text;
   }
 
   private parseAndValidate(raw: string): AiCampaignDraft {
@@ -136,12 +150,12 @@ export class CampaignAiService {
       parsed = JSON.parse(stripped);
     } catch (err) {
       logger.debug({ err, raw }, 'AI campaign response was not valid JSON');
-      throw new AppError("Couldn't generate a draft from that description. Please try rephrasing or fill in the form manually.", 422);
+      throw new Error('AI campaign response was not valid JSON');
     }
     const result = aiCampaignDraftSchema.safeParse(parsed);
     if (!result.success) {
       logger.debug({ issues: result.error.issues, raw }, 'AI campaign response failed schema validation');
-      throw new AppError("Couldn't generate a draft from that description. Please try rephrasing or fill in the form manually.", 422);
+      throw new Error('AI campaign response failed schema validation');
     }
     return result.data;
   }

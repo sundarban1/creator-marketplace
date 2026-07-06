@@ -22,6 +22,11 @@ export type BusinessProfile = {
   isVerified:   boolean;
   createdAt:    string;
   socialLinks:  SocialLinks;
+  presenceServices:         string[];
+  paymentMethods:           string[];
+  defaultPlatforms:         string[];
+  defaultCreatorCategories: string[];
+  defaultBudgetRange:       string | null;
   panDocUrl:           string | null;
   panDocStatus:        DocStatus;
   companyRegDocUrl:    string | null;
@@ -64,6 +69,11 @@ export const profileService = {
     location?:      string | null;
     categories?:    string[];
     socialLinks?:   SocialLinks;
+    presenceServices?:         string[];
+    paymentMethods?:           string[];
+    defaultPlatforms?:         string[];
+    defaultCreatorCategories?: string[];
+    defaultBudgetRange?:       string | null;
   }): Promise<void> {
     await request('PUT', '/api/business/profile', data);
   },
