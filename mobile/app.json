@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Collab",
+    "name": "kolabh",
     "slug": "content",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -8,7 +8,6 @@
     "scheme": "content",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon",
       "bundleIdentifier": "com.sundarban.content",
       "infoPlist": {
         "CFBundleURLTypes": [
@@ -19,7 +18,7 @@
           }
         ],
         "FacebookAppID": "27739673972329504",
-        "FacebookDisplayName": "Collab"
+        "FacebookDisplayName": "kolabh"
       }
     },
     "android": {
@@ -56,7 +55,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Allow Collab to access your location to find nearby campaigns."
+          "locationWhenInUsePermission": "Allow kolabh to access your location to find nearby campaigns."
         }
       ],
       "expo-secure-store",
@@ -69,8 +68,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow Collab to access your photos to update your profile picture.",
-          "cameraPermission": "Allow Collab to use your camera to take a profile photo."
+          "photosPermission": "Allow kolabh to access your photos to update your profile picture.",
+          "cameraPermission": "Allow kolabh to use your camera to take a profile photo."
         }
       ]
     ],

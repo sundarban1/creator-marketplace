@@ -747,7 +747,7 @@ const s = StyleSheet.create({
 
   heroTop:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 28, position: 'relative' },
   logoBadgeCard: { backgroundColor: '#fff', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6 },
-  logoImage: { width: 88, height: 88 / (2040 / 624) },
+  logoImage: { width: 88, height: 88 / (2141 / 576) },
   langRow:  { flexDirection: 'row', gap: 6, position: 'absolute', right: 0, top: '50%', transform: [{ translateY: -17 }] },
   langBtn:  { width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(255,255,255,0.12)', justifyContent: 'center', alignItems: 'center' },
   langBtnActive: { backgroundColor: 'rgba(255,255,255,0.28)', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.5)' },

@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
   },
   logoImage: {
     width: 200,
-    height: 200 / (2040 / 624),
+    height: 200 / (2141 / 576),
   },
   textBlock: {
     alignItems: 'center',

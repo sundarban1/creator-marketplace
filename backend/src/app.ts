@@ -108,10 +108,16 @@ app.use(timezoneMiddleware);
 app.use(languageMiddleware);
 
 // ── Rate limiters ─────────────────────────────────────────────────────────────
+// Rate limits exist to blunt brute-force/abuse in production. In development a single
+// dev's dashboard (React StrictMode double-invoking effects, hot reloads, manual retries)
+// can burn through the same budget in seconds and lock out their own login — so limits
+// are relaxed (not removed) below production thresholds when NODE_ENV isn't 'production'.
+const isProd = env.NODE_ENV === 'production';
+
 // Strict limiter for authentication endpoints (brute-force protection)
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,  // 15 minutes
-  max: 20,
+  max: isProd ? 20 : 200,
   message: { success: false, message: 'Too many attempts. Please try again in 15 minutes.' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -121,7 +127,7 @@ const authLimiter = rateLimit({
 // Tighter OTP limiter
 const otpLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,  // 10 minutes
-  max: 5,
+  max: isProd ? 5 : 50,
   message: { success: false, message: 'Too many OTP requests. Please wait 10 minutes.' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -130,7 +136,7 @@ const otpLimiter = rateLimit({
 // General API limiter (prevents abuse but allows normal traffic)
 const apiLimiter = rateLimit({
   windowMs: 60 * 1000,  // 1 minute
-  max: 120,
+  max: isProd ? 120 : 1000,
   message: { success: false, message: 'Too many requests. Please slow down.' },
   standardHeaders: true,
   legacyHeaders: false,
