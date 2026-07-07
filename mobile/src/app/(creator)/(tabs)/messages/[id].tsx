@@ -15,7 +15,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
@@ -194,6 +194,7 @@ export default function CreatorChatRoomScreen() {
   const { user } = useAuth();
   const { t }    = useLanguage();
   const C        = useAppColors();
+  const insets   = useSafeAreaInsets();
 
   const [messages, setMessages]       = useState<Message[]>([]);
   const [status, setStatus]           = useState<'PENDING' | 'ACCEPTED' | 'DECLINED'>(
@@ -427,7 +428,7 @@ export default function CreatorChatRoomScreen() {
         </View>
       )}
 
-      <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={0}>
+      <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={0}>
         {/* inverted=true → newest messages at bottom, scroll up for history (Instagram pattern) */}
         <FlatList
           ref={listRef}
@@ -475,7 +476,7 @@ export default function CreatorChatRoomScreen() {
 
         {/* ── Input bar ── */}
         {status === 'ACCEPTED' && (
-          <View style={[s.inputBar, { backgroundColor: C.surface, borderTopColor: C.border }]}>
+          <View style={[s.inputBar, { backgroundColor: C.surface, borderTopColor: C.border, paddingBottom: 16 + insets.bottom }]}>
             <View style={[s.inputWrap, { borderColor: C.border, backgroundColor: C.background }]}>
               <TextInput
                 ref={inputRef}

@@ -1083,7 +1083,7 @@ export default function CreateCampaignScreen() {
         <View style={[s.progressFill, { width: phase === 'setup' ? '50%' : '100%', backgroundColor: C.brinjal1 }]} />
       </View>
 
-      <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView
           ref={scrollRef}
           contentContainerStyle={s.scroll}

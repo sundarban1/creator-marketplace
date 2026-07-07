@@ -6,6 +6,7 @@ import {
   ArrowRight, ArrowUpRight, CheckCircle, Users, TrendingUp,
   DollarSign, Search, Bell, Menu, X, Share2, UserPlus, Gift,
 } from 'lucide-react';
+import { LandingLanguageProvider, useLandingLanguage, type Lang } from '../context/LandingLanguageContext';
 
 // ── Animation primitives ─────────────────────────────────────────────────────
 
@@ -30,79 +31,6 @@ const scaleIn: Variants = {
   hidden: { opacity: 0, scale: 0.9 },
   show: { opacity: 1, scale: 1, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] } },
 };
-
-// ── Content ───────────────────────────────────────────────────────────────────
-
-const NAV_LINKS = [
-  { label: 'Why kolab', id: 'value' },
-  { label: 'How it works', id: 'how-it-works' },
-  { label: 'Features', id: 'features' },
-  { label: 'Referrals', id: 'referrals' },
-  { label: 'Stories', id: 'stories' },
-  { label: 'FAQ', id: 'faq' },
-];
-
-const REFERRAL_STEPS = [
-  { icon: Share2, title: 'Share your code', desc: 'Find your unique referral code in Settings and send it to a friend.' },
-  { icon: UserPlus, title: 'They join & get active', desc: 'Your friend signs up with your code and completes their first campaign.' },
-  { icon: Gift, title: 'You both get paid', desc: 'Rewards are credited automatically once the campaign is confirmed complete.' },
-];
-
-const CREATOR_REFERRAL_STEPS = [
-  'Share your referral code from your Creator settings',
-  'Your friend signs up and links your code',
-  'They complete their first campaign within 90 days',
-  'You earn NPR 500, they earn a NPR 200 bonus',
-];
-
-const BUSINESS_REFERRAL_STEPS = [
-  'Share your referral code from your Business settings',
-  'The brand signs up and links your code',
-  'They fund and run their first campaign within 90 days',
-  "You both earn NPR 500 once it's confirmed",
-];
-
-const KEYWORDS = [
-  'Discovery', 'Trust', 'Momentum', 'Reach', 'Authenticity', 'Community',
-  'Partnership', 'Visibility', 'Consistency', 'Opportunity', 'Impact', 'Growth',
-];
-
-const VALUE_PROPS = [
-  { icon: Compass, title: 'Discover the right match', desc: 'Creators surface campaigns that fit their niche. Brands surface creators whose audience actually matches theirs — no more cold DMs.' },
-  { icon: Handshake, title: 'Collaborate with confidence', desc: 'Proposals, negotiation, and messaging happen in one thread. Everyone sees the same terms, the same timeline, the same deliverables.' },
-  { icon: Rocket, title: 'Grow with every campaign', desc: 'Every completed collab builds a verified track record — followers for creators, a trusted supplier list for brands.' },
-];
-
-const STEPS = [
-  { num: '01', title: 'Create your profile', desc: 'Sign up as a creator or a brand in minutes. Add your niche, audience stats, or campaign goals — kolab handles the rest.' },
-  { num: '02', title: 'Connect & propose', desc: 'Browse live campaigns or discover creators by category and platform. Send a proposal, negotiate the rate, lock the deliverables.' },
-  { num: '03', title: 'Deliver & get paid', desc: 'Ship the content, mark it delivered, and get paid through milestone-based escrow the moment the brand approves.' },
-];
-
-const FEATURES = [
-  { icon: Search, title: 'Smart discovery', desc: 'Filter campaigns and creators by niche, platform, budget, and location — find a fit in seconds.' },
-  { icon: MessageSquare, title: 'Built-in messaging', desc: 'Negotiate and coordinate without leaving the app. Every conversation is tied to its campaign.' },
-  { icon: BarChart2, title: 'Campaign analytics', desc: 'Track proposals, views, and progress for every campaign from a single dashboard.' },
-  { icon: DollarSign, title: 'Secure escrow payments', desc: 'Funds are held until deliverables are approved — creators get paid, brands get results.' },
-  { icon: Bell, title: 'Real-time alerts', desc: 'Never miss a proposal, message, or payment release with instant notifications.' },
-  { icon: Shield, title: 'Verified profiles', desc: 'Every creator and business is verified, so both sides collaborate with confidence.' },
-];
-
-const TESTIMONIALS = [
-  { name: 'Priya Sharma', handle: 'priya.creates', role: 'Fashion Creator · 120K followers', avatar: 'PS', grad: ['#7C3AED', '#5B21B6'], quote: 'I landed three brand deals in my first week. Proposal to payment — the whole thing was seamless.' },
-  { name: 'Himalaya Brew', handle: null, role: 'D2C Brand · Marketing Lead', avatar: 'HB', grad: ['#2563EB', '#1D4ED8'], quote: 'We ran four campaigns in a month and saw 3× our usual engagement. Finding the right creators used to take weeks.' },
-  { name: 'Aditya Verma', handle: 'adityaverma.tech', role: 'Tech Creator · 85K subscribers', avatar: 'AV', grad: ['#059669', '#047857'], quote: 'The analytics dashboard alone is worth it — I can finally show brands real numbers.' },
-  { name: 'Dhaka Threads', handle: null, role: 'Apparel Brand · Founder', avatar: 'DT', grad: ['#D97706', '#B45309'], quote: 'Escrow payments changed everything. Creators trust us more because the money is already secured.' },
-];
-
-const FAQS = [
-  { q: 'Is kolab free to join?', a: 'Yes — signing up is completely free for both creators and brands. We only take a small platform fee once a campaign is successfully completed.' },
-  { q: 'How do payments work?', a: 'Payments are held in escrow and released in milestones. Once a creator submits deliverables and the brand approves them, funds are released automatically.' },
-  { q: 'What creators can join?', a: 'Any content creator — Instagram, YouTube, TikTok, bloggers, podcasters, and more. A minimum audience size applies to keep the marketplace credible.' },
-  { q: 'How are creators verified?', a: 'We verify creators by connecting their social accounts directly, so audience size and engagement are pulled live rather than self-reported.' },
-  { q: 'Can a brand run multiple campaigns?', a: 'Yes. Brands can create and manage unlimited campaigns at once, each with its own budget, timeline, and creator requirements.' },
-  { q: 'Is my data safe?', a: 'All data is encrypted in transit and at rest. We never sell personal data, and we comply with local privacy regulations.' },
-];
 
 // ── Floating gradient blob (mouse-parallax) ──────────────────────────────────
 
@@ -141,11 +69,52 @@ function ParallaxBlobs({ blobX, blobY, blobX2, blobY2 }: {
   );
 }
 
+// ── Language switcher ─────────────────────────────────────────────────────────
+
+function LanguageSwitcher({ scrolled }: { scrolled: boolean }) {
+  const { language, setLanguage } = useLandingLanguage();
+  const LANGS: { code: Lang; label: string }[] = [
+    { code: 'en', label: 'EN' },
+    { code: 'ne', label: 'ने' },
+  ];
+  return (
+    <div className={`flex items-center gap-0.5 rounded-full p-1 transition-colors ${scrolled ? 'bg-gray-100' : 'bg-white/15 backdrop-blur'}`}>
+      {LANGS.map(({ code, label }) => {
+        const active = language === code;
+        return (
+          <button
+            key={code}
+            onClick={() => setLanguage(code)}
+            aria-label={`Switch to ${code === 'en' ? 'English' : 'Nepali'}`}
+            className={`px-2.5 py-1 rounded-full text-xs font-bold transition-colors ${
+              active
+                ? scrolled ? 'bg-violet-700 text-white' : 'bg-white text-violet-700'
+                : scrolled ? 'text-gray-500 hover:text-gray-700' : 'text-white/75 hover:text-white'
+            }`}
+          >
+            {label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 // ── Nav ───────────────────────────────────────────────────────────────────────
 
 function Nav() {
+  const { t } = useLandingLanguage();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+
+  const NAV_LINKS = [
+    { label: t.nav.whyKolab, id: 'value' },
+    { label: t.nav.howItWorks, id: 'how-it-works' },
+    { label: t.nav.features, id: 'features' },
+    { label: t.nav.referrals, id: 'referrals' },
+    { label: t.nav.stories, id: 'stories' },
+    { label: t.nav.faq, id: 'faq' },
+  ];
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -190,13 +159,14 @@ function Nav() {
             ))}
           </motion.nav>
 
-          {/* CTA + burger */}
+          {/* Language switcher + CTA + burger — top-right cluster */}
           <div className="flex items-center gap-2">
+            <LanguageSwitcher scrolled={scrolled} />
             <button
               onClick={() => go('download')}
               className={`hidden sm:inline-flex items-center gap-1.5 rounded-full px-5 py-2.5 text-sm font-bold shadow-sm transition-colors ${scrolled ? 'bg-violet-700 text-white hover:bg-violet-800' : 'bg-white text-violet-700 hover:bg-violet-50'}`}
             >
-              Get Started <ArrowUpRight size={15} />
+              {t.nav.getStarted} <ArrowUpRight size={15} />
             </button>
             <button
               onClick={() => setOpen(v => !v)}
@@ -236,7 +206,7 @@ function Nav() {
                 onClick={() => go('download')}
                 className="mt-6 w-fit flex items-center gap-2 bg-white text-violet-700 font-bold px-6 py-3.5 rounded-2xl"
               >
-                Get Started <ArrowRight size={18} />
+                {t.nav.getStarted} <ArrowRight size={18} />
               </motion.button>
             </motion.div>
             <motion.div variants={fadeUp} initial="hidden" animate="show" className="absolute bottom-10 left-8 flex gap-4">
@@ -256,6 +226,8 @@ function Nav() {
 // ── Custom phone screens (original artwork) ──────────────────────────────────
 
 function BusinessDashboardScreen() {
+  const { t } = useLandingLanguage();
+  const m = t.mockup.dash;
   const row = (n: string, l: string, border: boolean) => (
     <div key={l} style={{ flex: 1, textAlign: 'center', borderRight: border ? '1px solid rgba(255,255,255,0.2)' : 'none' }}>
       <div style={{ fontSize: 14, fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>{n}</div>
@@ -267,20 +239,20 @@ function BusinessDashboardScreen() {
       <div style={{ background: 'linear-gradient(160deg,#2E1065,#4C1D95)', paddingTop: 36, paddingBottom: 14, paddingLeft: 12, paddingRight: 12 }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 10 }}>
           <div>
-            <div style={{ fontSize: 8, color: 'rgba(255,255,255,0.6)', marginBottom: 2 }}>Good Evening</div>
-            <div style={{ fontSize: 13, fontWeight: 800, color: '#fff' }}>Paradise Cafe</div>
+            <div style={{ fontSize: 8, color: 'rgba(255,255,255,0.6)', marginBottom: 2 }}>{m.goodEvening}</div>
+            <div style={{ fontSize: 13, fontWeight: 800, color: '#fff' }}>{m.businessName}</div>
           </div>
           <div style={{ width: 28, height: 28, borderRadius: 14, background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <div style={{ fontSize: 11, color: '#fff', fontWeight: 700 }}>P</div>
           </div>
         </div>
         <div style={{ background: 'rgba(255,255,255,0.13)', borderRadius: 14, padding: '8px 0', display: 'flex' }}>
-          {row('3', 'Active', true)}{row('3', 'Total', true)}{row('0', 'Complete', false)}
+          {row('3', m.active, true)}{row('3', m.total, true)}{row('0', m.complete, false)}
         </div>
       </div>
       <div style={{ padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: 6 }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 6 }}>
-          {[['➕', 'Create'], ['👥', 'Proposals'], ['💬', 'Messages'], ['📅', 'Events']].map(([ic, lb]) => (
+          {[['➕', m.create], ['👥', m.proposals], ['💬', m.messages], ['📅', m.events]].map(([ic, lb]) => (
             <div key={lb} style={{ background: '#fff', borderRadius: 14, padding: '7px 4px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
               <div style={{ fontSize: 12 }}>{ic}</div>
               <div style={{ fontSize: 6, color: '#374151', fontWeight: 500 }}>{lb}</div>
@@ -290,38 +262,38 @@ function BusinessDashboardScreen() {
         <div style={{ background: '#FFFBEB', borderRadius: 12, padding: '7px 8px', display: 'flex', alignItems: 'center', gap: 7, border: '1px solid #FDE68A' }}>
           <div style={{ fontSize: 11 }}>⚠️</div>
           <div>
-            <div style={{ fontSize: 7, fontWeight: 700, color: '#92400E', marginBottom: 1 }}>Needs Your Attention</div>
-            <div style={{ fontSize: 6, color: '#B45309' }}>4 proposals waiting for review</div>
+            <div style={{ fontSize: 7, fontWeight: 700, color: '#92400E', marginBottom: 1 }}>{m.needsAttention}</div>
+            <div style={{ fontSize: 6, color: '#B45309' }}>{m.needsAttentionSub}</div>
           </div>
           <div style={{ marginLeft: 'auto', fontSize: 9, color: '#D97706' }}>›</div>
         </div>
         <div style={{ background: '#F0FDF4', borderRadius: 12, padding: '7px 8px', display: 'flex', alignItems: 'center', gap: 7, border: '1px solid #BBF7D0' }}>
           <div style={{ fontSize: 11 }}>🎨</div>
           <div>
-            <div style={{ fontSize: 7, fontWeight: 700, color: '#065F46', marginBottom: 1 }}>Explore Creators</div>
-            <div style={{ fontSize: 6, color: '#059669' }}>for your next event</div>
+            <div style={{ fontSize: 7, fontWeight: 700, color: '#065F46', marginBottom: 1 }}>{m.exploreCreators}</div>
+            <div style={{ fontSize: 6, color: '#059669' }}>{m.exploreCreatorsSub}</div>
           </div>
           <div style={{ marginLeft: 'auto', fontSize: 9, color: '#059669' }}>›</div>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ fontSize: 9, fontWeight: 800, color: '#111' }}>Recent Events</div>
-          <div style={{ fontSize: 7, color: '#7C3AED', fontWeight: 600 }}>View all</div>
+          <div style={{ fontSize: 9, fontWeight: 800, color: '#111' }}>{m.recentEvents}</div>
+          <div style={{ fontSize: 7, color: '#7C3AED', fontWeight: 600 }}>{m.viewAll}</div>
         </div>
         <div style={{ background: '#fff', borderRadius: 12, padding: '7px 8px', display: 'flex', alignItems: 'center', gap: 8 }}>
           <div style={{ width: 28, height: 28, borderRadius: 10, background: '#EDE9FE', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>👗</div>
           <div style={{ flex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 2 }}>
-              <div style={{ fontSize: 7, fontWeight: 700, color: '#111' }}>Fashion Cr...</div>
-              <div style={{ fontSize: 5, background: '#D1FAE5', color: '#065F46', padding: '1px 4px', borderRadius: 99, fontWeight: 700 }}>Free</div>
-              <div style={{ fontSize: 5, background: '#D1FAE5', color: '#065F46', padding: '1px 4px', borderRadius: 99, fontWeight: 700 }}>● Active</div>
+              <div style={{ fontSize: 7, fontWeight: 700, color: '#111' }}>{m.campaignName}</div>
+              <div style={{ fontSize: 5, background: '#D1FAE5', color: '#065F46', padding: '1px 4px', borderRadius: 99, fontWeight: 700 }}>{m.free}</div>
+              <div style={{ fontSize: 5, background: '#D1FAE5', color: '#065F46', padding: '1px 4px', borderRadius: 99, fontWeight: 700 }}>{m.activeStatus}</div>
             </div>
-            <div style={{ fontSize: 6, color: '#9CA3AF' }}>Instagram · Free Product Exchange</div>
-            <div style={{ fontSize: 6, color: '#374151', marginTop: 1 }}>👥 2 Proposals</div>
+            <div style={{ fontSize: 6, color: '#9CA3AF' }}>{m.platformInfo}</div>
+            <div style={{ fontSize: 6, color: '#374151', marginTop: 1 }}>{m.proposalsCount}</div>
           </div>
         </div>
       </div>
       <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: '#fff', borderTop: '1px solid #E5E7EB', display: 'flex', paddingTop: 5, paddingBottom: 6 }}>
-        {[['🏠', 'Home', true], ['📅', 'Events', false], ['📄', 'Proposals', false], ['💬', 'Messages', false], ['🔔', 'Activity', false]].map(([ic, lb, active]) => (
+        {[['🏠', m.navHome, true], ['📅', m.navEvents, false], ['📄', m.navProposals, false], ['💬', m.navMessages, false], ['🔔', m.navActivity, false]].map(([ic, lb, active]) => (
           <div key={String(lb)} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
             <div style={{ fontSize: 13 }}>{ic}</div>
             <div style={{ fontSize: 5, color: active ? '#7C3AED' : '#9CA3AF', fontWeight: active ? 700 : 400 }}>{lb}</div>
@@ -334,23 +306,25 @@ function BusinessDashboardScreen() {
 }
 
 function MessagesScreen() {
+  const { t } = useLandingLanguage();
+  const m = t.mockup.msgs;
   const convos = [
-    { init: 'SB', name: 'Sundar Ban', last: "Hi Paradise Cafe team! I'm thrilled…", time: '2d', color: '#7C3AED', statusColor: '#10B981' },
-    { init: 'SB', name: 'Sundar Ban', last: 'Looking forward to collaborating!', time: '1d', color: '#2563EB', statusColor: '#F59E0B' },
-    { init: 'PL', name: 'Priya Lama', last: 'Thank you for the opportunity…', time: '5h', color: '#059669', statusColor: '#10B981' },
+    { init: 'SB', name: 'Sundar Ban', last: m.msg1, time: '2d', color: '#7C3AED', statusColor: '#10B981' },
+    { init: 'SB', name: 'Sundar Ban', last: m.msg2, time: '1d', color: '#2563EB', statusColor: '#F59E0B' },
+    { init: 'PL', name: 'Priya Lama', last: m.msg3, time: '5h', color: '#059669', statusColor: '#10B981' },
   ];
   return (
     <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', background: '#F1F5F9' }}>
       <div style={{ background: 'linear-gradient(160deg,#312E81,#4C1D95)', paddingTop: 36, paddingBottom: 18, paddingLeft: 12, paddingRight: 12, borderBottomLeftRadius: 24, borderBottomRightRadius: 24 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
-          <div style={{ fontSize: 15, fontWeight: 800, color: '#fff' }}>Proposals</div>
-          <div style={{ fontSize: 9, background: 'rgba(255,255,255,0.15)', color: '#fff', padding: '3px 8px', borderRadius: 99 }}>2 application(s)</div>
+          <div style={{ fontSize: 15, fontWeight: 800, color: '#fff' }}>{m.title}</div>
+          <div style={{ fontSize: 9, background: 'rgba(255,255,255,0.15)', color: '#fff', padding: '3px 8px', borderRadius: 99 }}>{m.appCount}</div>
         </div>
-        <div style={{ fontSize: 8, color: 'rgba(255,255,255,0.6)', marginBottom: 10 }}>Review creator applications by campaign</div>
+        <div style={{ fontSize: 8, color: 'rgba(255,255,255,0.6)', marginBottom: 10 }}>{m.subtitle}</div>
         <div style={{ display: 'flex', gap: 14 }}>
-          {[['All', '2', true], ['Paid', '1', false], ['Free', '1', false], ['Accepted', '2', false]].map(([t, c, active]) => (
-            <div key={String(t)} style={{ display: 'flex', alignItems: 'center', gap: 3, paddingBottom: 5, borderBottom: active ? '2px solid #fff' : '2px solid transparent' }}>
-              <div style={{ fontSize: 7, fontWeight: active ? 700 : 400, color: active ? '#fff' : 'rgba(255,255,255,0.5)' }}>{t}</div>
+          {[[m.tabAll, '2', true], [m.tabPaid, '1', false], [m.tabFree, '1', false], [m.tabAccepted, '2', false]].map(([tab, c, active]) => (
+            <div key={String(tab)} style={{ display: 'flex', alignItems: 'center', gap: 3, paddingBottom: 5, borderBottom: active ? '2px solid #fff' : '2px solid transparent' }}>
+              <div style={{ fontSize: 7, fontWeight: active ? 700 : 400, color: active ? '#fff' : 'rgba(255,255,255,0.5)' }}>{tab}</div>
               <div style={{ fontSize: 6, background: active ? '#7C3AED' : 'rgba(255,255,255,0.2)', color: '#fff', padding: '0 4px', borderRadius: 99 }}>{c}</div>
             </div>
           ))}
@@ -365,10 +339,10 @@ function MessagesScreen() {
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 8, fontWeight: 700, color: '#111' }}>{c.name}</div>
-                <div style={{ fontSize: 6, color: '#9CA3AF' }}>📍 Birtamode, Nepal</div>
+                <div style={{ fontSize: 6, color: '#9CA3AF' }}>{m.location}</div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
-                <div style={{ fontSize: 7, fontWeight: 700, color: c.statusColor }}>✅ Accepted</div>
+                <div style={{ fontSize: 7, fontWeight: 700, color: c.statusColor }}>{m.accepted}</div>
                 <div style={{ fontSize: 6, color: '#9CA3AF' }}>{c.time} ago</div>
               </div>
             </div>
@@ -433,18 +407,61 @@ function Eyebrow({ children }: { children: React.ReactNode }) {
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
-const HEADLINE_LINES = ['Where Creators', 'Meet Brands.'];
-
-const HERO_SLIDES = [
-  { tag: 'For Brands', tagColor: '#FBBF24', title: 'Manage every campaign', desc: 'Track active events and live proposal counts from one dashboard.', Screen: BusinessDashboardScreen, glow: ['#4C1D95', '#DB2777'] as [string, string] },
-  { tag: 'Messages', tagColor: '#34D399', title: 'Review proposals in a tap', desc: 'Cover letters, rates, and timelines — accept or decline instantly.', Screen: MessagesScreen, glow: ['#065F46', '#059669'] as [string, string] },
-];
-
 export function LandingPage() {
+  return (
+    <LandingLanguageProvider>
+      <LandingPageInner />
+    </LandingLanguageProvider>
+  );
+}
+
+function LandingPageInner() {
+  const { t } = useLandingLanguage();
   const heroRef = useRef<HTMLElement>(null);
   const blobs = useParallaxBlobs(heroRef);
   const [activeSlide, setActiveSlide] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const HEADLINE_LINES = [t.hero.headline1, t.hero.headline2];
+
+  const HERO_SLIDES = [
+    { tag: t.hero.slide1Tag, tagColor: '#FBBF24', title: t.hero.slide1Title, desc: t.hero.slide1Desc, Screen: BusinessDashboardScreen, glow: ['#4C1D95', '#DB2777'] as [string, string] },
+    { tag: t.hero.slide2Tag, tagColor: '#34D399', title: t.hero.slide2Title, desc: t.hero.slide2Desc, Screen: MessagesScreen, glow: ['#065F46', '#059669'] as [string, string] },
+  ];
+
+  const VALUE_PROPS = [
+    { icon: Compass, title: t.value.prop1Title, desc: t.value.prop1Desc },
+    { icon: Handshake, title: t.value.prop2Title, desc: t.value.prop2Desc },
+    { icon: Rocket, title: t.value.prop3Title, desc: t.value.prop3Desc },
+  ];
+
+  const STEPS = [
+    { num: '01', title: t.how.step1Title, desc: t.how.step1Desc },
+    { num: '02', title: t.how.step2Title, desc: t.how.step2Desc },
+    { num: '03', title: t.how.step3Title, desc: t.how.step3Desc },
+  ];
+
+  const FEATURES = [
+    { icon: Search, title: t.features.f1Title, desc: t.features.f1Desc },
+    { icon: MessageSquare, title: t.features.f2Title, desc: t.features.f2Desc },
+    { icon: BarChart2, title: t.features.f3Title, desc: t.features.f3Desc },
+    { icon: DollarSign, title: t.features.f4Title, desc: t.features.f4Desc },
+    { icon: Bell, title: t.features.f5Title, desc: t.features.f5Desc },
+    { icon: Shield, title: t.features.f6Title, desc: t.features.f6Desc },
+  ];
+
+  const REFERRAL_STEPS = [
+    { icon: Share2, title: t.referral.step1Title, desc: t.referral.step1Desc },
+    { icon: UserPlus, title: t.referral.step2Title, desc: t.referral.step2Desc },
+    { icon: Gift, title: t.referral.step3Title, desc: t.referral.step3Desc },
+  ];
+
+  const TESTIMONIALS = [
+    { name: 'Priya Sharma', handle: 'priya.creates', role: t.stories.t1Role, avatar: 'PS', grad: ['#7C3AED', '#5B21B6'], quote: t.stories.t1Quote },
+    { name: 'Himalaya Brew', handle: null, role: t.stories.t2Role, avatar: 'HB', grad: ['#2563EB', '#1D4ED8'], quote: t.stories.t2Quote },
+    { name: 'Aditya Verma', handle: 'adityaverma.tech', role: t.stories.t3Role, avatar: 'AV', grad: ['#059669', '#047857'], quote: t.stories.t3Quote },
+    { name: 'Dhaka Threads', handle: null, role: t.stories.t4Role, avatar: 'DT', grad: ['#D97706', '#B45309'], quote: t.stories.t4Quote },
+  ];
 
   function startTimer() {
     if (timerRef.current) clearInterval(timerRef.current);
@@ -454,6 +471,7 @@ export function LandingPage() {
   useEffect(() => {
     startTimer();
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const slide = HERO_SLIDES[activeSlide]!;
@@ -476,7 +494,7 @@ export function LandingPage() {
           <div>
             <motion.div initial="hidden" animate="show" variants={stagger()}>
               <motion.div variants={fadeUp} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/15 text-white/90 text-xs font-semibold mb-6 ring-1 ring-white/20">
-                <Sparkles size={12} className="text-yellow-300" /> Nepal's Creator × Brand Marketplace
+                <Sparkles size={12} className="text-yellow-300" /> {t.hero.badge}
               </motion.div>
 
               <h1 className="text-[2.75rem] leading-[1.05] sm:text-6xl sm:leading-[1.02] font-extrabold text-white mb-6">
@@ -488,20 +506,20 @@ export function LandingPage() {
               </h1>
 
               <motion.p variants={fadeUp} className="text-white/70 text-lg max-w-md mb-9 leading-relaxed">
-                Creators find campaigns worth their audience. Brands find creators worth the budget. kolab makes the whole collab — proposal to payment — happen in one place.
+                {t.hero.subtitle}
               </motion.p>
 
               <motion.div variants={fadeUp} className="flex flex-wrap gap-3 mb-10">
                 <motion.button whileHover={{ y: -2, boxShadow: '0 14px 32px rgba(0,0,0,0.25)' }} className="px-6 py-3.5 rounded-2xl bg-white text-violet-700 font-bold text-sm shadow-lg flex items-center gap-2">
-                  Join as a Creator <ArrowRight size={16} />
+                  {t.hero.joinCreator} <ArrowRight size={16} />
                 </motion.button>
                 <motion.button whileHover={{ y: -2, backgroundColor: 'rgba(255,255,255,0.18)' }} className="px-6 py-3.5 rounded-2xl bg-white/10 text-white font-bold text-sm ring-1 ring-white/25 transition-colors">
-                  Join as a Brand
+                  {t.hero.joinBrand}
                 </motion.button>
               </motion.div>
 
               <motion.div variants={fadeUp} className="flex gap-8">
-                {[['2,500+', 'Creators'], ['400+', 'Brands'], ['8,000+', 'Campaigns']].map(([v, l]) => (
+                {[['2,500+', t.hero.statCreators], ['400+', t.hero.statBrands], ['8,000+', t.hero.statCampaigns]].map(([v, l]) => (
                   <div key={l}>
                     <div className="text-white font-extrabold text-2xl">{v}</div>
                     <div className="text-white/55 text-xs">{l}</div>
@@ -571,8 +589,8 @@ export function LandingPage() {
       <section id="value" className="py-24 bg-white">
         <div className="max-w-5xl mx-auto px-5">
           <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="text-center mb-14">
-            <Eyebrow>Why kolab</Eyebrow>
-            <motion.h2 variants={fadeUp} className="text-3xl md:text-4xl font-extrabold text-gray-900 mt-3">Built for real collaboration</motion.h2>
+            <Eyebrow>{t.value.eyebrow}</Eyebrow>
+            <motion.h2 variants={fadeUp} className="text-3xl md:text-4xl font-extrabold text-gray-900 mt-3">{t.value.heading}</motion.h2>
           </motion.div>
 
           <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="grid md:grid-cols-3 gap-6 mb-14">
@@ -588,7 +606,7 @@ export function LandingPage() {
           </motion.div>
 
           <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger(0.04)} className="flex flex-wrap justify-center gap-2.5">
-            {KEYWORDS.map(k => (
+            {t.value.keywords.map(k => (
               <motion.span key={k} variants={scaleIn} className="px-4 py-2 rounded-full bg-gray-50 border border-gray-200 text-gray-600 text-sm font-medium hover:border-violet-300 hover:text-violet-700 transition-colors">
                 {k}
               </motion.span>
@@ -601,8 +619,8 @@ export function LandingPage() {
       <section id="how-it-works" className="py-24 bg-gray-50">
         <div className="max-w-5xl mx-auto px-5">
           <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="text-center mb-14">
-            <Eyebrow>Simple process</Eyebrow>
-            <motion.h2 variants={fadeUp} className="text-3xl md:text-4xl font-extrabold text-gray-900 mt-3">Three steps to your first collab</motion.h2>
+            <Eyebrow>{t.how.eyebrow}</Eyebrow>
+            <motion.h2 variants={fadeUp} className="text-3xl md:text-4xl font-extrabold text-gray-900 mt-3">{t.how.heading}</motion.h2>
           </motion.div>
           <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="grid md:grid-cols-3 gap-8">
             {STEPS.map((step, i) => (
@@ -625,8 +643,8 @@ export function LandingPage() {
       <section id="features" className="py-24 bg-white">
         <div className="max-w-5xl mx-auto px-5">
           <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="text-center mb-14">
-            <Eyebrow>Everything you need</Eyebrow>
-            <motion.h2 variants={fadeUp} className="text-3xl md:text-4xl font-extrabold text-gray-900 mt-3">Powerful, purpose-built features</motion.h2>
+            <Eyebrow>{t.features.eyebrow}</Eyebrow>
+            <motion.h2 variants={fadeUp} className="text-3xl md:text-4xl font-extrabold text-gray-900 mt-3">{t.features.heading}</motion.h2>
           </motion.div>
           <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="grid sm:grid-cols-2 md:grid-cols-3 gap-6">
             {FEATURES.map(({ icon: Icon, title, desc }) => (
@@ -646,18 +664,18 @@ export function LandingPage() {
       <section className="py-24 bg-gradient-to-br from-violet-50 to-indigo-50">
         <div className="max-w-5xl mx-auto px-5">
           <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="text-center mb-14">
-            <Eyebrow>Who it's for</Eyebrow>
-            <motion.h2 variants={fadeUp} className="text-3xl md:text-4xl font-extrabold text-gray-900 mt-3">Built for both sides of the deal</motion.h2>
+            <Eyebrow>{t.whoFor.eyebrow}</Eyebrow>
+            <motion.h2 variants={fadeUp} className="text-3xl md:text-4xl font-extrabold text-gray-900 mt-3">{t.whoFor.heading}</motion.h2>
           </motion.div>
           <div className="grid md:grid-cols-2 gap-8">
             <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={VP} transition={{ duration: 0.6 }} whileHover={{ y: -4 }} className="bg-white rounded-3xl p-8 border border-violet-100">
               <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-600 to-violet-900 flex items-center justify-center mb-5">
                 <Camera size={26} className="text-white" />
               </div>
-              <h3 className="text-xl font-extrabold text-gray-900 mb-1">For Creators</h3>
-              <p className="text-gray-500 text-sm mb-5">Influencers, YouTubers, bloggers, podcasters — turn your audience into income.</p>
+              <h3 className="text-xl font-extrabold text-gray-900 mb-1">{t.whoFor.creatorTitle}</h3>
+              <p className="text-gray-500 text-sm mb-5">{t.whoFor.creatorDesc}</p>
               <ul className="space-y-3">
-                {['Discover brand deals that match your niche', 'Submit proposals and negotiate your rate', 'Track deliverables and campaign progress', 'Get paid on time through secure escrow'].map(item => (
+                {t.whoFor.creatorItems.map(item => (
                   <li key={item} className="flex items-start gap-2.5 text-sm text-gray-700">
                     <CheckCircle size={16} className="text-violet-500 mt-0.5 flex-shrink-0" />{item}
                   </li>
@@ -669,10 +687,10 @@ export function LandingPage() {
               <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-900 flex items-center justify-center mb-5">
                 <Briefcase size={26} className="text-white" />
               </div>
-              <h3 className="text-xl font-extrabold text-gray-900 mb-1">For Brands</h3>
-              <p className="text-gray-500 text-sm mb-5">D2C brands, agencies, startups — amplify reach with the right creators.</p>
+              <h3 className="text-xl font-extrabold text-gray-900 mb-1">{t.whoFor.brandTitle}</h3>
+              <p className="text-gray-500 text-sm mb-5">{t.whoFor.brandDesc}</p>
               <ul className="space-y-3">
-                {['Post campaigns with your goals and budget', 'Browse and filter verified creators', 'Review proposals and pick the best fit', 'Pay only once you approve the results'].map(item => (
+                {t.whoFor.brandItems.map(item => (
                   <li key={item} className="flex items-start gap-2.5 text-sm text-gray-700">
                     <CheckCircle size={16} className="text-blue-500 mt-0.5 flex-shrink-0" />{item}
                   </li>
@@ -687,10 +705,10 @@ export function LandingPage() {
       <section id="referrals" className="py-24 bg-white">
         <div className="max-w-5xl mx-auto px-5">
           <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="text-center mb-14">
-            <Eyebrow>Earn together</Eyebrow>
-            <motion.h2 variants={fadeUp} className="text-3xl md:text-4xl font-extrabold text-gray-900 mt-3">Invite someone in your world, get rewarded</motion.h2>
+            <Eyebrow>{t.referral.eyebrow}</Eyebrow>
+            <motion.h2 variants={fadeUp} className="text-3xl md:text-4xl font-extrabold text-gray-900 mt-3">{t.referral.heading}</motion.h2>
             <motion.p variants={fadeUp} className="text-gray-500 mt-4 max-w-xl mx-auto">
-              Every creator and every brand gets a personal referral code. Share it with someone like you — when they get their first campaign done, you both earn.
+              {t.referral.subtitle}
             </motion.p>
           </motion.div>
 
@@ -715,14 +733,14 @@ export function LandingPage() {
                   <Camera size={24} className="text-white" />
                 </div>
                 <div className="text-right">
-                  <div className="text-2xl font-extrabold text-violet-700">NPR 500</div>
-                  <div className="text-xs text-gray-400 font-medium">+ NPR 200 for them</div>
+                  <div className="text-2xl font-extrabold text-violet-700">{t.referral.creatorReward}</div>
+                  <div className="text-xs text-gray-400 font-medium">{t.referral.creatorRewardSub}</div>
                 </div>
               </div>
-              <h3 className="text-xl font-extrabold text-gray-900 mb-1">Creator → Creator</h3>
-              <p className="text-gray-500 text-sm mb-5">Refer a fellow creator to kolab. When they complete their first campaign, you both earn.</p>
+              <h3 className="text-xl font-extrabold text-gray-900 mb-1">{t.referral.creatorTitle}</h3>
+              <p className="text-gray-500 text-sm mb-5">{t.referral.creatorDesc}</p>
               <ul className="space-y-3">
-                {CREATOR_REFERRAL_STEPS.map(item => (
+                {t.referral.creatorItems.map(item => (
                   <li key={item} className="flex items-start gap-2.5 text-sm text-gray-700">
                     <CheckCircle size={16} className="text-violet-500 mt-0.5 flex-shrink-0" />{item}
                   </li>
@@ -736,14 +754,14 @@ export function LandingPage() {
                   <Briefcase size={24} className="text-white" />
                 </div>
                 <div className="text-right">
-                  <div className="text-2xl font-extrabold text-blue-700">NPR 500</div>
-                  <div className="text-xs text-gray-400 font-medium">for both sides</div>
+                  <div className="text-2xl font-extrabold text-blue-700">{t.referral.businessReward}</div>
+                  <div className="text-xs text-gray-400 font-medium">{t.referral.businessRewardSub}</div>
                 </div>
               </div>
-              <h3 className="text-xl font-extrabold text-gray-900 mb-1">Business → Business</h3>
-              <p className="text-gray-500 text-sm mb-5">Know another brand that could use kolab? Refer them and earn once they're active.</p>
+              <h3 className="text-xl font-extrabold text-gray-900 mb-1">{t.referral.businessTitle}</h3>
+              <p className="text-gray-500 text-sm mb-5">{t.referral.businessDesc}</p>
               <ul className="space-y-3">
-                {BUSINESS_REFERRAL_STEPS.map(item => (
+                {t.referral.businessItems.map(item => (
                   <li key={item} className="flex items-start gap-2.5 text-sm text-gray-700">
                     <CheckCircle size={16} className="text-blue-500 mt-0.5 flex-shrink-0" />{item}
                   </li>
@@ -758,17 +776,17 @@ export function LandingPage() {
       <section className="py-24 overflow-hidden" style={{ background: 'linear-gradient(150deg, #1E1B4B 0%, #312E81 55%, #4C1D95 100%)' }}>
         <div className="max-w-6xl mx-auto px-5">
           <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="text-center mb-16">
-            <motion.span variants={fadeUp} className="text-violet-300 font-bold text-xs uppercase tracking-widest">See the app</motion.span>
-            <motion.h2 variants={fadeUp} className="text-3xl md:text-4xl font-extrabold text-white mt-3">Fast, clean, built for daily use</motion.h2>
+            <motion.span variants={fadeUp} className="text-violet-300 font-bold text-xs uppercase tracking-widest">{t.appDeepDive.eyebrow}</motion.span>
+            <motion.h2 variants={fadeUp} className="text-3xl md:text-4xl font-extrabold text-white mt-3">{t.appDeepDive.heading}</motion.h2>
           </motion.div>
 
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={VP} transition={{ duration: 0.6 }} className="space-y-5 order-2 md:order-1">
-              <span className="text-emerald-300 font-bold text-xs uppercase tracking-widest">For Brands</span>
-              <h3 className="text-2xl font-extrabold text-white">Review proposals in one tap</h3>
-              <p className="text-violet-300 text-sm leading-relaxed">See every creator who applied — cover letters, proposed rates, timelines. Expand the pitch, then accept or decline instantly.</p>
-              <div className="flex items-center gap-2 text-white/80 text-sm"><TrendingUp size={16} className="text-emerald-300" /> Live proposal counts per campaign</div>
-              <div className="flex items-center gap-2 text-white/80 text-sm"><Users size={16} className="text-emerald-300" /> Cover-letter preview with expand toggle</div>
+              <span className="text-emerald-300 font-bold text-xs uppercase tracking-widest">{t.appDeepDive.badge}</span>
+              <h3 className="text-2xl font-extrabold text-white">{t.appDeepDive.title}</h3>
+              <p className="text-violet-300 text-sm leading-relaxed">{t.appDeepDive.desc}</p>
+              <div className="flex items-center gap-2 text-white/80 text-sm"><TrendingUp size={16} className="text-emerald-300" /> {t.appDeepDive.stat1}</div>
+              <div className="flex items-center gap-2 text-white/80 text-sm"><Users size={16} className="text-emerald-300" /> {t.appDeepDive.stat2}</div>
             </motion.div>
             <motion.div initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }} viewport={VP} transition={{ duration: 0.6 }} className="flex justify-center order-1 md:order-2">
               <PhoneShell glow={['#065F46', '#059669']}>
@@ -783,8 +801,8 @@ export function LandingPage() {
       <section id="stories" className="py-24 bg-gray-50">
         <div className="max-w-5xl mx-auto px-5">
           <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="text-center mb-14">
-            <Eyebrow>Success stories</Eyebrow>
-            <motion.h2 variants={fadeUp} className="text-3xl md:text-4xl font-extrabold text-gray-900 mt-3">Loved by creators & brands</motion.h2>
+            <Eyebrow>{t.stories.eyebrow}</Eyebrow>
+            <motion.h2 variants={fadeUp} className="text-3xl md:text-4xl font-extrabold text-gray-900 mt-3">{t.stories.heading}</motion.h2>
           </motion.div>
           <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="grid sm:grid-cols-2 md:grid-cols-4 gap-6">
             {TESTIMONIALS.map(({ name, handle, role, avatar, grad, quote }) => (
@@ -812,11 +830,11 @@ export function LandingPage() {
       <section id="faq" className="py-24 bg-white">
         <div className="max-w-3xl mx-auto px-5">
           <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="text-center mb-12">
-            <Eyebrow>Got questions?</Eyebrow>
-            <motion.h2 variants={fadeUp} className="text-3xl md:text-4xl font-extrabold text-gray-900 mt-3">Frequently asked</motion.h2>
+            <Eyebrow>{t.faq.eyebrow}</Eyebrow>
+            <motion.h2 variants={fadeUp} className="text-3xl md:text-4xl font-extrabold text-gray-900 mt-3">{t.faq.heading}</motion.h2>
           </motion.div>
           <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="space-y-3">
-            {FAQS.map(faq => (
+            {t.faq.items.map(faq => (
               <motion.div key={faq.q} variants={fadeUp}><FaqItem {...faq} /></motion.div>
             ))}
           </motion.div>
@@ -827,18 +845,18 @@ export function LandingPage() {
       <section id="download" className="py-24 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #4C1D95 0%, #7C3AED 100%)' }}>
         <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, white 1px, transparent 1px), radial-gradient(circle at 80% 50%, white 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
         <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="relative max-w-3xl mx-auto px-5 text-center">
-          <motion.h2 variants={fadeUp} className="text-3xl md:text-4xl font-extrabold text-white mb-4">Ready to start collaborating?</motion.h2>
-          <motion.p variants={fadeUp} className="text-white/70 text-lg mb-8">Join thousands of creators and brands already growing on kolab.</motion.p>
+          <motion.h2 variants={fadeUp} className="text-3xl md:text-4xl font-extrabold text-white mb-4">{t.cta.heading}</motion.h2>
+          <motion.p variants={fadeUp} className="text-white/70 text-lg mb-8">{t.cta.subtitle}</motion.p>
           <motion.div variants={fadeUp} className="flex flex-wrap justify-center gap-4">
             <motion.button whileHover={{ y: -3, boxShadow: '0 16px 40px rgba(0,0,0,0.25)' }} whileTap={{ scale: 0.97 }} className="px-8 py-4 rounded-2xl bg-white text-violet-700 font-bold">
-              Download the App
+              {t.cta.download}
             </motion.button>
             <motion.button
               whileHover={{ backgroundColor: 'rgba(255,255,255,0.15)' }} whileTap={{ scale: 0.97 }}
               onClick={() => document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })}
               className="px-8 py-4 rounded-2xl border border-white/30 text-white font-bold"
             >
-              Contact Us
+              {t.cta.contact}
             </motion.button>
           </motion.div>
         </motion.div>
@@ -848,11 +866,11 @@ export function LandingPage() {
       <section id="contact" className="py-24 bg-gray-50">
         <div className="max-w-4xl mx-auto px-5 grid md:grid-cols-2 gap-12">
           <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()}>
-            <Eyebrow>Get in touch</Eyebrow>
-            <motion.h2 variants={fadeUp} className="text-3xl font-extrabold text-gray-900 mt-3 mb-4">Contact us</motion.h2>
-            <motion.p variants={fadeUp} className="text-gray-500 text-sm leading-relaxed mb-6">Have questions, partnership ideas, or want to learn more? Reach out — we typically reply within 24 hours.</motion.p>
+            <Eyebrow>{t.contact.eyebrow}</Eyebrow>
+            <motion.h2 variants={fadeUp} className="text-3xl font-extrabold text-gray-900 mt-3 mb-4">{t.contact.heading}</motion.h2>
+            <motion.p variants={fadeUp} className="text-gray-500 text-sm leading-relaxed mb-6">{t.contact.desc}</motion.p>
             <motion.div variants={stagger()} className="space-y-4">
-              {[{ icon: Mail, label: 'Email', value: 'hello@kolab.com.np' }, { icon: AtSign, label: 'Instagram', value: '@kolab.np' }, { icon: Globe, label: 'Website', value: 'kolab.com.np' }].map(({ icon: Icon, label, value }) => (
+              {[{ icon: Mail, label: t.contact.emailLabel, value: 'hello@kolab.com.np' }, { icon: AtSign, label: t.contact.instagramLabel, value: '@kolab.np' }, { icon: Globe, label: t.contact.websiteLabel, value: 'kolab.com.np' }].map(({ icon: Icon, label, value }) => (
                 <motion.div key={label} variants={fadeUp} className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-lg bg-violet-100 flex items-center justify-center flex-shrink-0"><Icon size={16} className="text-violet-600" /></div>
                   <div><div className="text-xs text-gray-400">{label}</div><div className="text-sm font-medium text-gray-800">{value}</div></div>
@@ -864,32 +882,32 @@ export function LandingPage() {
           <motion.form
             initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={VP} transition={{ duration: 0.5 }}
             className="bg-white rounded-2xl p-7 shadow-sm border border-gray-100 space-y-4"
-            onSubmit={e => { e.preventDefault(); alert("Message sent! We'll get back to you soon."); (e.target as HTMLFormElement).reset(); }}
+            onSubmit={e => { e.preventDefault(); alert(t.contact.successAlert); (e.target as HTMLFormElement).reset(); }}
           >
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5">Name</label>
-                <input required className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100" placeholder="Your name" />
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5">{t.contact.formName}</label>
+                <input required className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100" placeholder={t.contact.formNamePlaceholder} />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5">Email</label>
-                <input required type="email" className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100" placeholder="you@email.com" />
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5">{t.contact.formEmail}</label>
+                <input required type="email" className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100" placeholder={t.contact.formEmailPlaceholder} />
               </div>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5">I am a…</label>
+              <label className="block text-xs font-semibold text-gray-600 mb-1.5">{t.contact.formIAm}</label>
               <select className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-violet-400 bg-white">
-                <option>Content Creator</option>
-                <option>Brand / Business</option>
-                <option>Press / Media</option>
-                <option>Other</option>
+                <option>{t.contact.formOptionCreator}</option>
+                <option>{t.contact.formOptionBrand}</option>
+                <option>{t.contact.formOptionPress}</option>
+                <option>{t.contact.formOptionOther}</option>
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5">Message</label>
-              <textarea required rows={4} className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 resize-none" placeholder="How can we help?" />
+              <label className="block text-xs font-semibold text-gray-600 mb-1.5">{t.contact.formMessage}</label>
+              <textarea required rows={4} className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 resize-none" placeholder={t.contact.formMessagePlaceholder} />
             </div>
-            <button type="submit" className="w-full py-3 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-sm transition-colors">Send Message</button>
+            <button type="submit" className="w-full py-3 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-sm transition-colors">{t.contact.formSubmit}</button>
           </motion.form>
         </div>
       </section>
@@ -903,7 +921,7 @@ export function LandingPage() {
                 <img src="/logo.png" alt="kolab" className="h-5 w-5 rounded-full object-cover" />
                 <span className="font-extrabold text-gray-900 text-sm">kolab</span>
               </div>
-              <p className="text-violet-300 text-sm leading-relaxed max-w-xs">Nepal's marketplace connecting content creators with brands for authentic, impactful campaigns.</p>
+              <p className="text-violet-300 text-sm leading-relaxed max-w-xs">{t.footer.tagline}</p>
               <div className="flex gap-3 mt-4">
                 {[AtSign, Globe, Mail].map((Icon, i) => (
                   <div key={i} className="w-8 h-8 rounded-lg bg-violet-800 hover:bg-violet-700 flex items-center justify-center cursor-pointer transition-colors"><Icon size={15} className="text-violet-300" /></div>
@@ -911,17 +929,17 @@ export function LandingPage() {
               </div>
             </div>
             <div>
-              <div className="font-semibold text-sm mb-3">Product</div>
-              {['Features', 'How it works', 'Pricing', 'Download'].map(l => <div key={l} className="text-violet-400 text-sm mb-2 hover:text-violet-200 cursor-pointer transition-colors">{l}</div>)}
+              <div className="font-semibold text-sm mb-3">{t.footer.product}</div>
+              {t.footer.productLinks.map(l => <div key={l} className="text-violet-400 text-sm mb-2 hover:text-violet-200 cursor-pointer transition-colors">{l}</div>)}
             </div>
             <div>
-              <div className="font-semibold text-sm mb-3">Legal</div>
-              {['Privacy Policy', 'Terms & Conditions', 'Community Guidelines', 'Cookie Policy'].map(l => <div key={l} className="text-violet-400 text-sm mb-2 hover:text-violet-200 cursor-pointer transition-colors">{l}</div>)}
+              <div className="font-semibold text-sm mb-3">{t.footer.legal}</div>
+              {t.footer.legalLinks.map(l => <div key={l} className="text-violet-400 text-sm mb-2 hover:text-violet-200 cursor-pointer transition-colors">{l}</div>)}
             </div>
           </div>
           <div className="border-t border-violet-800 pt-6 flex flex-col md:flex-row items-center justify-between gap-3">
             <p className="text-violet-400 text-xs">© {new Date().getFullYear()} kolab. All rights reserved.</p>
-            <p className="text-violet-400 text-xs">Made with ♥ in Nepal</p>
+            <p className="text-violet-400 text-xs">{t.footer.madeWith}</p>
           </div>
         </div>
       </footer>

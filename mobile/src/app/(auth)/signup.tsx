@@ -157,7 +157,7 @@ export default function SignupScreen() {
 
   return (
     <SafeAreaView style={[s.root, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
-      <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView
           contentContainerStyle={s.scroll}
           keyboardShouldPersistTaps="handled"

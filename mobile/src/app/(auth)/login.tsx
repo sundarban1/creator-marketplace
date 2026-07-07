@@ -634,7 +634,7 @@ export default function LoginScreen() {
   return (
     <View style={[s.root, { backgroundColor: P1 }]}>
       <StatusBar style="light" />
-      <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
 
         {/* ── Gradient hero ── */}
         <LinearGradient colors={[P3, P2, P1]} style={[s.hero, { paddingTop: insets.top + 12 }]} start={{ x: 0.2, y: 0 }} end={{ x: 0.8, y: 1 }}>
