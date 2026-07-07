@@ -22,6 +22,15 @@ export function errorHandler(
   res: Response,
   _next: NextFunction
 ): void {
+  // Malformed request body (invalid JSON) from express.json()
+  if (err instanceof SyntaxError && 'status' in err && (err as { status?: number }).status === 400 && 'body' in err) {
+    res.status(400).json({
+      success: false,
+      message: 'Malformed JSON in request body',
+    });
+    return;
+  }
+
   // Zod validation errors
   if (err instanceof ZodError) {
     const formattedErrors = err.errors.map((e) => ({
@@ -92,7 +101,7 @@ export function errorHandler(
   // Custom AppError
   if (err instanceof AppError) {
     const level = err.statusCode >= 500 || !err.isOperational ? 'error' : 'warn';
-    req.log[level]({ err }, err.message);
+    (req.log?.[level] ?? console.error)({ err }, err.message);
     res.status(err.statusCode).json({
       success: false,
       message: err.message,
@@ -101,7 +110,7 @@ export function errorHandler(
   }
 
   // Generic / unknown errors
-  req.log.error({ err }, 'Unhandled error');
+  (req.log?.error ?? console.error)({ err }, 'Unhandled error');
   res.status(500).json({
     success: false,
     message:

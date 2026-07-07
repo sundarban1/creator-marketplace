@@ -75,11 +75,9 @@ app.use(
   })
 );
 
-// ── Body parsing ─────────────────────────────────────────────────────────────
-app.use(express.json({ limit: '2mb' }));
-app.use(express.urlencoded({ extended: true, limit: '2mb' }));
-
 // ── Logging ──────────────────────────────────────────────────────────────────
+// Registered before body parsing so req.log is always set, even if a request
+// fails to parse (malformed JSON) — errorHandler relies on req.log existing.
 app.use(
   pinoHttp({
     logger,
@@ -102,6 +100,10 @@ app.use(
     },
   })
 );
+
+// ── Body parsing ─────────────────────────────────────────────────────────────
+app.use(express.json({ limit: '2mb' }));
+app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 
 // ── Locale ───────────────────────────────────────────────────────────────────
 app.use(timezoneMiddleware);
