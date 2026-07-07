@@ -193,7 +193,7 @@ export default function VerifyScreen() {
             <View style={styles.emailIconWrap}>
               <Text style={styles.emailIcon}>{channel === 'email' ? '✉️' : '📱'}</Text>
             </View>
-            <Text style={styles.heroTitle}>{t('auth.verify.title')}</Text>
+            <Text style={styles.heroTitle}>{channel === 'email' ? t('auth.verify.titleEmail') : t('auth.verify.titlePhone')}</Text>
             <Text style={styles.heroSub}>
               {t('auth.verify.subtitle', { length: OTP_LENGTH, email: maskedContact })}
             </Text>
@@ -274,7 +274,7 @@ export default function VerifyScreen() {
           </View>
 
           <Text style={[styles.hint, { color: C.textSecondary }]}>
-            {t('auth.verify.hint')}
+            {t('auth.verify.expiryHint')}{channel === 'email' ? ` · ${t('auth.verify.spamHint')}` : ''}
           </Text>
         </View>
       </KeyboardAvoidingView>

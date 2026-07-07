@@ -134,7 +134,7 @@ export default function ResetOtpScreen() {
             <View style={styles.iconWrap}>
               <Text style={styles.icon}>{channel === 'email' ? '✉️' : '📱'}</Text>
             </View>
-            <Text style={styles.heroTitle}>Enter Reset Code</Text>
+            <Text style={styles.heroTitle}>{channel === 'email' ? 'Check your email' : 'Check your phone'}</Text>
             <Text style={styles.heroSub}>
               We sent a {OTP_LENGTH}-digit code to{'\n'}
               <Text style={styles.heroPhone}>{maskedContact}</Text>
@@ -204,7 +204,7 @@ export default function ResetOtpScreen() {
           </View>
 
           <Text style={[styles.hint, { color: C.textSecondary }]}>
-            Code expires in 10 minutes
+            Code expires in 10 minutes{channel === 'email' ? ' · Check your spam folder' : ''}
           </Text>
         </View>
       </KeyboardAvoidingView>
