@@ -16,10 +16,12 @@ const options: swaggerJsdoc.Options = {
       },
     },
     servers: [
-      {
-        url: `http://localhost:${env.PORT}`,
-        description: 'Development server',
-      },
+      env.NODE_ENV === 'production'
+        // Relative URL — Swagger UI resolves this against whatever host is serving
+        // the docs page, so it works on the Render URL (or any custom domain) without
+        // needing to hardcode it here.
+        ? { url: '/', description: 'Current server' }
+        : { url: `http://localhost:${env.PORT}`, description: 'Development server' },
     ],
     components: {
       securitySchemes: {

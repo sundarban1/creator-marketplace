@@ -195,7 +195,15 @@
       "Bash(curl -s http://localhost:5173/)",
       "Bash(node scratch_inspect.mjs)",
       "Bash(rm -f scratch_inspect.mjs *)",
-      "Bash(grep -n \"const { user, logout }\\\\|const toast = useToast\" /Users/sundarban/Documents/projects/marketplace/mobile/src/app/\\\\\\(business\\\\\\)/settings.tsx)"
+      "Bash(grep -n \"const { user, logout }\\\\|const toast = useToast\" /Users/sundarban/Documents/projects/marketplace/mobile/src/app/\\\\\\(business\\\\\\)/settings.tsx)",
+      "Bash(gh api *)",
+      "Bash(curl -s \"https://api.github.com/repos/sundarban1/creator-marketplace/contents/backend?ref=master\")",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(git check-ignore *)",
+      "Bash(curl -s \"https://api.github.com/repos/sundarban1/creator-marketplace/contents/backend/docker-entrypoint.sh?ref=master\")",
+      "Bash(curl -s \"https://raw.githubusercontent.com/sundarban1/creator-marketplace/master/backend/Dockerfile\")",
+      "Bash(node -e \"console.log\\(require\\('crypto'\\).randomBytes\\(48\\).toString\\('hex'\\)\\)\")"
     ],
     "additionalDirectories": [
       "/private/tmp",
