@@ -51,13 +51,6 @@ export function Login() {
     }
   }
 
-  function fillDemo(e: React.MouseEvent, demoEmail: string, demoPass: string) {
-    e.preventDefault();
-    setEmail(demoEmail);
-    setPassword(demoPass);
-    setError('');
-  }
-
   return (
     <div className="min-h-screen flex">
       {/* ── Left panel: branding ── */}
@@ -118,19 +111,6 @@ export function Login() {
           <div className="mb-8">
             <h2 className="text-2xl font-bold text-gray-900">Welcome back</h2>
             <p className="text-gray-500 mt-1 text-sm">Sign in to your admin account to continue.</p>
-          </div>
-
-          {/* Demo credentials banner */}
-          <div className="mb-6 p-4 bg-indigo-50 border border-indigo-100 rounded-xl">
-            <p className="text-xs font-semibold text-indigo-700 mb-2">Demo credentials</p>
-            <div className="space-y-1.5">
-              <button
-                onClick={(e) => fillDemo(e, 'admin@creatormarket.com.np', 'Admin@123456')}
-                className="w-full text-left text-xs text-indigo-600 hover:text-indigo-800 font-mono bg-white/70 hover:bg-white px-3 py-1.5 rounded-lg transition-colors"
-              >
-                admin@creatormarket.com.np / Admin@123456
-              </button>
-            </div>
           </div>
 
           {/* Form */}
