@@ -3,6 +3,18 @@ import { ZodError } from 'zod';
 import { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
 import { Prisma } from '@prisma/client';
 
+// req.log is normally always set by pinoHttp, but errors can originate before it
+// runs (e.g. a malformed body). Falls back to console so logging itself never throws
+// — calling req.log[level] directly (not through a detached reference) preserves the
+// `this` binding pino's logger methods need internally.
+export function logError(req: Request, err: unknown, msg: string, level: 'error' | 'warn' = 'error'): void {
+  if (req.log) {
+    req.log[level]({ err }, msg);
+  } else {
+    console.error(msg, err);
+  }
+}
+
 export class AppError extends Error {
   public readonly statusCode: number;
   public readonly isOperational: boolean;
@@ -101,7 +113,7 @@ export function errorHandler(
   // Custom AppError
   if (err instanceof AppError) {
     const level = err.statusCode >= 500 || !err.isOperational ? 'error' : 'warn';
-    (req.log?.[level] ?? console.error)({ err }, err.message);
+    logError(req, err, err.message, level);
     res.status(err.statusCode).json({
       success: false,
       message: err.message,
@@ -110,7 +122,7 @@ export function errorHandler(
   }
 
   // Generic / unknown errors
-  (req.log?.error ?? console.error)({ err }, 'Unhandled error');
+  logError(req, err, 'Unhandled error');
   res.status(500).json({
     success: false,
     message:
