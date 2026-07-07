@@ -21,6 +21,7 @@ export class AuthController {
       const result = await authService.login(req.body, deviceId);
       success(res, result, 'Login successful');
     } catch (err) {
+      (req.log?.error ?? console.error)({ err }, 'Login failed');
       next(err);
     }
   }
