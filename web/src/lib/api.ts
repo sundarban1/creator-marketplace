@@ -296,6 +296,11 @@ export interface ConversationStats {
 
 // ── Core fetch ─────────────────────────────────────────────────────────────────
 
+// A 401 from these endpoints means bad credentials or an invalid refresh token —
+// not an expired access token — so it must never trigger the silent refresh-retry
+// below (which would otherwise mask "Invalid email or password" with "Session expired").
+const AUTH_PATHS_WITHOUT_REFRESH_RETRY = ['/api/auth/login', '/api/auth/refresh', '/api/auth/logout'];
+
 let pendingRefresh: Promise<string> | null = null;
 
 async function refreshAccessToken(): Promise<string> {
@@ -350,7 +355,7 @@ async function request<T>(
     body:    body != null ? JSON.stringify(body) : undefined,
   });
 
-  if (res.status === 401) {
+  if (res.status === 401 && !AUTH_PATHS_WITHOUT_REFRESH_RETRY.includes(path)) {
     if (!pendingRefresh) {
       pendingRefresh = refreshAccessToken().finally(() => { pendingRefresh = null; });
     }
