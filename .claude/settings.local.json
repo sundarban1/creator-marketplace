@@ -212,11 +212,13 @@
       "Read(//Users/sundarban/.expo/**)",
       "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(list\\(d.keys\\(\\)\\)\\)\")",
       "Bash(awk 'NR==1305,0' src/app/\\\\\\(creator\\\\\\)/settings.tsx)",
-      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:5173/)"
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:5173/)",
+      "Bash(rm -rf node_modules/.tmp *.tsbuildinfo tsconfig.tsbuildinfo tsconfig.app.tsbuildinfo tsconfig.node.tsbuildinfo 2>/dev/null *)"
     ],
     "additionalDirectories": [
       "/private/tmp",
-      "/private/tmp/claude-501/-Users-sundarban-Documents-projects-marketplace/f4dadbd6-ef73-4bff-b8ee-f2b326c42e8f/scratchpad"
+      "/private/tmp/claude-501/-Users-sundarban-Documents-projects-marketplace/f4dadbd6-ef73-4bff-b8ee-f2b326c42e8f/scratchpad",
+      "/Users/sundarban/Documents/projects/marketplace/web"
     ]
   }
 }
