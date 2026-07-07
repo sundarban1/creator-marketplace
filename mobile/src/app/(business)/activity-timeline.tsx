@@ -658,7 +658,7 @@ export default function CampaignWorkspaceScreen() {
           </View>
         </View>
         {/* Only message icon — no three dots */}
-        <Pressable style={s.iconBtn} onPress={handleMessage}>
+        <Pressable style={s.iconBtn} onPress={handleMessage} hitSlop={6}>
           <Ionicons name="chatbubble-outline" size={22} color="#7C3AED" />
         </Pressable>
       </View>

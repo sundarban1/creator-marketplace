@@ -671,7 +671,7 @@ export default function ExploreCreatorsScreen() {
             autoCorrect={false}
           />
           {search.length > 0 && (
-            <Pressable onPress={() => setSearch('')}>
+            <Pressable onPress={() => setSearch('')} hitSlop={10}>
               <Ionicons name="close-circle" size={18} color={C.textSecondary} />
             </Pressable>
           )}

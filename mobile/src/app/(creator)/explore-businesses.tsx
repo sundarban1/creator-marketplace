@@ -423,7 +423,7 @@ export default function ExploreBusinessesScreen() {
             autoCapitalize="none"
           />
           {search.length > 0 && (
-            <Pressable onPress={() => { setSearch(''); void fetchBusinesses({ search: '', silent: true }); }}>
+            <Pressable onPress={() => { setSearch(''); void fetchBusinesses({ search: '', silent: true }); }} hitSlop={10}>
               <Ionicons name="close-circle" size={18} color={C.textSecondary} />
             </Pressable>
           )}

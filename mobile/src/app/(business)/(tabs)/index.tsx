@@ -139,7 +139,7 @@ export default function BusinessHomeScreen() {
           {/* Menu · Greeting · Avatar */}
           <View style={styles.header}>
             <View style={styles.headerLeft}>
-              <Pressable style={styles.menuBtn} onPress={openDrawer}>
+              <Pressable style={styles.menuBtn} onPress={openDrawer} hitSlop={6}>
                 <View style={styles.menuBtnInner}>
                   <Ionicons name="menu" size={22} color="#fff" />
                 </View>
@@ -216,7 +216,7 @@ export default function BusinessHomeScreen() {
                 Missing: {missingFields.join(' · ')}
               </Text>
             </View>
-            <Pressable style={styles.bannerClose} onPress={() => setBannerDismissed(true)}>
+            <Pressable style={styles.bannerClose} onPress={() => setBannerDismissed(true)} hitSlop={10}>
               <Ionicons name="close" size={16} color={C.textSecondary} />
             </Pressable>
           </Pressable>
@@ -272,7 +272,7 @@ export default function BusinessHomeScreen() {
               <Text style={[styles.bannerTitle, { color: C.text }]}>{t('businessReferral.homeBannerTitle')}</Text>
               <Text style={[styles.bannerSub, { color: C.textSecondary }]} numberOfLines={1}>{t('businessReferral.homeBannerSub')}</Text>
             </View>
-            <Pressable style={styles.bannerClose} onPress={() => setReferralBannerDismissed(true)}>
+            <Pressable style={styles.bannerClose} onPress={() => setReferralBannerDismissed(true)} hitSlop={10}>
               <Ionicons name="close" size={16} color={C.textSecondary} />
             </Pressable>
           </Pressable>

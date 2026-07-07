@@ -706,7 +706,7 @@ export default function CampaignDetailScreen() {
               {/* Sheet header */}
               <View style={em.sheetHeader}>
                 <Text style={[em.sheetTitle, { color: C.text }]}>{t('campaignDetail.editEvent')}</Text>
-                <Pressable onPress={() => setEditOpen(false)}>
+                <Pressable onPress={() => setEditOpen(false)} hitSlop={10}>
                   <Ionicons name="close" size={22} color={C.textSecondary} />
                 </Pressable>
               </View>
