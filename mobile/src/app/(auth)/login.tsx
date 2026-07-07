@@ -66,7 +66,7 @@ function isValidPhone(v: string) {
   const stripped = v.replace(/^\+?977/, '').replace(/[\s\-()]/g, '');
   return /^\d{7,10}$/.test(stripped);
 }
-const EMAIL_DOMAINS = ['gmail.com', 'yahoo.com'];
+const EMAIL_DOMAINS = ['gmail.com', 'yahoo.com', 'hotmail.com'];
 
 // ── Email / Phone identifier detection ───────────────────────────────────────
 
@@ -146,7 +146,7 @@ function Field({
           </Pressable>
         )}
       </Animated.View>
-      {keyboardType === 'email-address' && focused && (() => {
+      {!secureTextEntry && focused && (() => {
         const atIndex = value.indexOf('@');
         if (atIndex === -1) return null;
         const localPart  = value.slice(0, atIndex);
@@ -368,11 +368,14 @@ function SignupForm({ onGooglePress, googleLoading, googleError, onFacebookPress
               key={r.key}
               style={({ pressed }) => [
                 s.roleCard,
-                { borderColor: active ? tint : '#ECEAF5', backgroundColor: active ? `${tint}0D` : C.surface },
+                { borderColor: active ? tint : '#ECEAF5', backgroundColor: C.surface },
                 active && [s.roleCardActive, { shadowColor: tint }],
                 { transform: [{ scale: pressed ? 0.97 : 1 }] },
               ]}
               onPress={() => { setRole(r.key); setSubmitted(false); setError(''); }}>
+              {/* Tint overlay on its own layer — Android's elevation shadow doesn't
+                  composite correctly with a translucent backgroundColor on the same view. */}
+              {active && <View pointerEvents="none" style={[s.roleTintOverlay, { backgroundColor: `${tint}0D` }]} />}
               <LinearGradient
                 colors={active ? r.grad : ['#F5F3FF', '#EDE9FE']}
                 style={[s.roleIconBox, active && { shadowColor: tint, shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 5 }]}
@@ -634,7 +637,7 @@ export default function LoginScreen() {
   return (
     <View style={[s.root, { backgroundColor: P1 }]}>
       <StatusBar style="light" />
-      <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
 
         {/* ── Gradient hero ── */}
         <LinearGradient colors={[P3, P2, P1]} style={[s.hero, { paddingTop: insets.top + 12 }]} start={{ x: 0.2, y: 0 }} end={{ x: 0.8, y: 1 }}>
@@ -843,6 +846,7 @@ const s = StyleSheet.create({
   roleRow:       { flexDirection: 'row', gap: 14, marginBottom: 22 },
   roleCard:      { flex: 1, borderRadius: 20, borderWidth: 1.5, borderColor: '#ECEAF5', padding: 18, gap: 10, alignItems: 'center', position: 'relative' },
   roleCardActive:{ shadowOpacity: 0.16, shadowRadius: 16, shadowOffset: { width: 0, height: 6 }, elevation: 6 },
+  roleTintOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 20 },
   roleIconBox:   { width: 60, height: 60, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
   roleLabel:     { fontSize: 14, fontWeight: '700', fontFamily: F.bold, textAlign: 'center' },
   roleSub:       { fontSize: 11.5, fontFamily: F.regular, textAlign: 'center', lineHeight: 16 },

@@ -699,7 +699,7 @@ export default function CampaignDetailScreen() {
       <Modal visible={editOpen} transparent animationType="slide" onRequestClose={() => setEditOpen(false)}>
         <View style={em.overlay}>
           <Pressable style={em.scrim} onPress={() => setEditOpen(false)} />
-          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={em.sheetWrap}>
+          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={em.sheetWrap}>
             <View style={[em.sheet, { backgroundColor: C.surface }]}>
               <View style={[em.handle, { backgroundColor: C.border }]} />
 

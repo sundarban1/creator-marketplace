@@ -1366,11 +1366,14 @@ export default function CreatorSettingsScreen() {
                             ]}
                             onPress={() => {
                               const prefix = PLATFORM_URL_PREFIX[p.id] ?? '';
-                              setSocialForm((f) => ({
-                                ...f,
-                                platform: p.id,
-                                profileUrl: f.profileUrl || prefix,
-                              }));
+                              setSocialForm((f) => {
+                                // Preserve whatever handle the user typed after the previous
+                                // platform's prefix, so switching platforms swaps the prefix
+                                // instead of leaving the old one stuck in place.
+                                const oldPrefix = PLATFORM_URL_PREFIX[f.platform] ?? '';
+                                const handle = f.profileUrl.startsWith(oldPrefix) ? f.profileUrl.slice(oldPrefix.length) : '';
+                                return { ...f, platform: p.id, profileUrl: prefix + handle };
+                              });
                               setSocialFormErrors((e) => ({ ...e, platform: '' }));
                             }}>
                             <FontAwesome5 name={p.iconName as any} size={24} color={isSelected ? p.color : '#888'} style={alreadyAdded ? { opacity: 0.35 } : undefined} />
@@ -2512,7 +2515,7 @@ export default function CreatorSettingsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { flex: 1 },
-  scrollContent: { paddingBottom: 24 },
+  scrollContent: { paddingTop: 16, paddingBottom: 24 },
   gradientTopBar: { overflow: 'hidden', borderBottomLeftRadius: 20, borderBottomRightRadius: 20 },
 
   topBar: {

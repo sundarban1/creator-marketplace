@@ -429,6 +429,7 @@ export default function BusinessDetailScreen() {
       <View style={[styles.msgBar, { backgroundColor: C.surface, borderTopColor: C.border }]}>
         {convStatus === 'ACCEPTED' ? (
           <Pressable style={[styles.msgBtn, { backgroundColor: C.brinjal1 }]} onPress={openChat}>
+            <FontAwesome5 name="comment-dots" size={16} color="#fff" solid />
             <Text style={styles.msgBtnText}>{t('businessDetail.openChat')}</Text>
           </Pressable>
         ) : convStatus === 'PENDING' ? (
@@ -553,7 +554,7 @@ const styles = StyleSheet.create({
 
   // Sticky message bar
   msgBar:                { paddingHorizontal: 20, paddingVertical: 14, borderTopWidth: 1 },
-  msgBtn:                { borderRadius: 14, height: 52, justifyContent: 'center', alignItems: 'center' },
+  msgBtn:                { borderRadius: 14, height: 52, flexDirection: 'row', gap: 8, justifyContent: 'center', alignItems: 'center' },
   msgBtnText:            { color: '#fff', fontSize: 16, fontWeight: '700', fontFamily: F.bold },
 
   // Request modal

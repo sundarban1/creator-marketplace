@@ -13,7 +13,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { creatorService, type ApiCreatorPublicProfile } from '@/services/creator';
@@ -86,6 +86,7 @@ function SectionTitle({ label, color }: { label: string; color: string }) {
 export default function CreatorDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const C = useAppColors();
+  const insets = useSafeAreaInsets();
   const { t } = useLanguage();
 
   const [profile, setProfile]     = useState<ApiCreatorPublicProfile | null>(null);
@@ -347,9 +348,10 @@ export default function CreatorDetailScreen() {
       </ScrollView>
 
       {/* Sticky action bar */}
-      <View style={[msgBtn.bar, { backgroundColor: C.surface, borderTopColor: C.border }]}>
+      <View style={[msgBtn.bar, { backgroundColor: C.surface, borderTopColor: C.border, paddingBottom: 14 + insets.bottom }]}>
         {convStatus === 'ACCEPTED' ? (
           <Pressable style={[msgBtn.btn, { backgroundColor: C.brinjal1 }]} onPress={openChat}>
+            <FontAwesome5 name="comment-dots" size={16} color="#fff" solid />
             <Text style={msgBtn.txt}>{t('creatorDetailExtra.openChat')}</Text>
           </Pressable>
         ) : convStatus === 'PENDING' ? (
@@ -473,7 +475,7 @@ const s = StyleSheet.create({
 // Message button bar
 const msgBtn = StyleSheet.create({
   bar: { paddingHorizontal: 20, paddingVertical: 14, borderTopWidth: 1 },
-  btn: { borderRadius: 14, height: 52, justifyContent: 'center', alignItems: 'center' },
+  btn: { borderRadius: 14, height: 52, flexDirection: 'row', gap: 8, justifyContent: 'center', alignItems: 'center' },
   txt: { color: '#fff', fontSize: 16, fontWeight: '700', fontFamily: F.bold },
 });
 

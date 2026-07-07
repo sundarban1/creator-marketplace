@@ -72,7 +72,7 @@ export default function ForgotPasswordScreen() {
       </View>
 
       {/* ── Card ── */}
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
           style={[styles.card, { backgroundColor: C.background }]}
           contentContainerStyle={styles.cardContent}

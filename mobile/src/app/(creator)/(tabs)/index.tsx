@@ -346,13 +346,18 @@ export default function HomeScreen() {
               <Pressable
                 style={[styles.avatarCircle, { borderColor: 'rgba(255,255,255,0.5)', borderWidth: 2.5 }]}
                 onPress={() => router.push('/(creator)/profile')}>
-                {user?.avatar ? (
-                  <Image source={{ uri: user.avatar }} style={styles.avatarImage} resizeMode="cover" />
-                ) : (
-                  <View style={[styles.avatarFallback, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
-                    <Ionicons name="person" size={20} color="#fff" />
-                  </View>
-                )}
+                {/* Clipping lives on its own layer — Android's elevation shadow doesn't
+                    composite correctly with overflow:hidden + a translucent child background
+                    on the same view. */}
+                <View style={styles.avatarClip}>
+                  {user?.avatar ? (
+                    <Image source={{ uri: user.avatar }} style={styles.avatarImage} resizeMode="cover" />
+                  ) : (
+                    <View style={[styles.avatarFallback, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
+                      <Ionicons name="person" size={20} color="#fff" />
+                    </View>
+                  )}
+                </View>
               </Pressable>
             </View>
           </View>
@@ -361,7 +366,7 @@ export default function HomeScreen() {
         {/* ── Search bar ── */}
         <View style={styles.searchRow}>
           <Pressable
-            style={[styles.searchCard, searchFocused ? styles.searchCardFocused : { backgroundColor: C.surface, borderColor: C.border }]}
+            style={[styles.searchCard, { backgroundColor: C.surface, borderColor: C.border }, searchFocused && styles.searchCardFocused]}
             onPress={() => searchInputRef.current?.focus()}>
             <Ionicons name="search-outline" size={18} color={searchFocused ? C.brinjal1 : C.textSecondary} style={styles.searchIcon} />
             <TextInput
@@ -506,19 +511,22 @@ export default function HomeScreen() {
                   {
                     backgroundColor: isActive ? C.brinjal1 : isAll ? 'transparent' : C.surface,
                     borderColor: isActive ? C.brinjal1 : C.border,
-                    overflow: 'hidden',
                   },
                 ]}
                 onPress={() => {
                   setActiveCategory(cat.label);
                   void fetchCampaigns({ category: cat.label });
                 }}>
+                {/* Gradient clipping lives on its own layer — Android's elevation shadow
+                    doesn't composite correctly with overflow:hidden on the same view. */}
                 {isAll && !isActive && (
-                  <LinearGradient
-                    colors={['#7C3AED', '#EC4899', '#F97316']}
-                    start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                    style={StyleSheet.absoluteFill}
-                  />
+                  <View pointerEvents="none" style={styles.catPillGradientClip}>
+                    <LinearGradient
+                      colors={['#7C3AED', '#EC4899', '#F97316']}
+                      start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                      style={StyleSheet.absoluteFill}
+                    />
+                  </View>
                 )}
                 <Text style={styles.catEmoji}>{cat.emoji}</Text>
                 <Text
@@ -539,15 +547,17 @@ export default function HomeScreen() {
             </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.platformsRow}>
               <Pressable
-                style={[styles.platCard, { backgroundColor: 'transparent' }]}
+                style={styles.platCardShadow}
                 onPress={() => { setActivePlatform('All'); void fetchCampaigns({ platform: 'All' }); }}>
-                <LinearGradient
-                  colors={['#E1306C', '#1877F2', '#FF0000']}
-                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                  style={[StyleSheet.absoluteFill, { opacity: activePlatform === 'All' ? 1 : 0.18, borderRadius: 20 }]}
-                />
-                <Ionicons name="apps" size={18} color={activePlatform === 'All' ? '#fff' : C.textSecondary} />
-                <Text style={[styles.platLabel, { color: activePlatform === 'All' ? '#fff' : C.text }]}>All</Text>
+                <View style={[styles.platCard, { backgroundColor: 'transparent' }]}>
+                  <LinearGradient
+                    colors={['#E1306C', '#1877F2', '#FF0000']}
+                    start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                    style={[StyleSheet.absoluteFill, { opacity: activePlatform === 'All' ? 1 : 0.18 }]}
+                  />
+                  <Ionicons name="apps" size={18} color={activePlatform === 'All' ? '#fff' : C.textSecondary} />
+                  <Text style={[styles.platLabel, { color: activePlatform === 'All' ? '#fff' : C.text }]}>All</Text>
+                </View>
               </Pressable>
 
               {apiPlatforms.map((p) => {
@@ -557,10 +567,15 @@ export default function HomeScreen() {
                 return (
                   <Pressable
                     key={p}
-                    style={[styles.platCard, { backgroundColor: isActive ? meta.color : meta.color + '28' }]}
+                    style={styles.platCardShadow}
                     onPress={() => { setActivePlatform(p); void fetchCampaigns({ platform: p }); }}>
-                    <Ionicons name={meta.icon as any} size={18} color={isActive ? fg : meta.color} />
-                    <Text style={[styles.platLabel, { color: isActive ? fg : C.text }]} numberOfLines={1}>{p}</Text>
+                    {/* Tint + clipping live on their own layer — Android's elevation shadow
+                        doesn't composite correctly with overflow:hidden + a translucent
+                        background on the same view. */}
+                    <View style={[styles.platCard, { backgroundColor: isActive ? meta.color : meta.color + '28' }]}>
+                      <Ionicons name={meta.icon as any} size={18} color={isActive ? fg : meta.color} />
+                      <Text style={[styles.platLabel, { color: isActive ? fg : C.text }]} numberOfLines={1}>{p}</Text>
+                    </View>
                   </Pressable>
                 );
               })}
@@ -694,7 +709,8 @@ const styles = StyleSheet.create({
   menuBtnInner: { width: 38, height: 38, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center' },
   greeting:     { fontSize: 12, marginBottom: 2, fontFamily: F.medium, color: 'rgba(255,255,255,0.75)' },
   brandName:    { fontSize: 20, fontFamily: F.bold, color: '#fff', maxWidth: 180, letterSpacing: -0.3 },
-  avatarCircle: { width: 44, height: 44, borderRadius: 22, overflow: 'hidden', shadowOpacity: 0.4, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
+  avatarCircle: { width: 44, height: 44, borderRadius: 22, shadowOpacity: 0.4, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
+  avatarClip:   { width: '100%', height: '100%', borderRadius: 22, overflow: 'hidden' },
   avatarImage:  { width: '100%', height: '100%' },
   avatarFallback: { width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center' },
 
@@ -742,15 +758,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 2,
   },
+  catPillGradientClip: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 20, overflow: 'hidden' },
   catEmoji: { fontSize: 16 },
   catLabel: { fontSize: 12, fontFamily: F.semibold, lineHeight: 16 },
 
   // ── Platforms (pills) ──
   platformsRow: { paddingHorizontal: 20, gap: 8, marginBottom: 0 },
+  platCardShadow: { borderRadius: 20, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
   platCard: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     height: 38, borderRadius: 20, overflow: 'hidden', paddingHorizontal: 12,
-    shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 2,
     borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)',
   },
   platLabel: { fontSize: 12, fontFamily: F.medium, lineHeight: 16 },

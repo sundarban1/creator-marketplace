@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
   userName: { fontSize: 15, fontWeight: '700', color: '#fff', marginBottom: 2, fontFamily: F.bold },
   userEmail: { fontSize: 11, color: 'rgba(255,255,255,0.7)', fontFamily: F.regular },
   scroll: { flex: 1 },
-  scrollContent: { paddingTop: 8, paddingBottom: 6 },
+  scrollContent: { paddingTop: 8, paddingBottom: 18 },
   navGroup: { marginHorizontal: 12, marginVertical: 4, borderRadius: 14, borderWidth: 1, overflow: 'hidden' },
   navItem: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 9 },
   navIconWrap: { width: 30, height: 30, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },

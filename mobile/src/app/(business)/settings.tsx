@@ -1723,7 +1723,7 @@ export default function BusinessSettingsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { flex: 1 },
-  scrollContent: { paddingBottom: 24 },
+  scrollContent: { paddingTop: 16, paddingBottom: 24 },
   gradientTopBar: { overflow: 'hidden', borderBottomLeftRadius: 20, borderBottomRightRadius: 20 },
 
   topBar: {

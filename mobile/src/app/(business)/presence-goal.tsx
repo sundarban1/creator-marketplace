@@ -104,7 +104,7 @@ export default function PresenceGoalScreen() {
           <ActivityIndicator size="large" color={C.brinjal1} />
         </View>
       ) : (
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}

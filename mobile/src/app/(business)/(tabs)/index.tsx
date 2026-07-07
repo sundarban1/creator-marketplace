@@ -150,13 +150,18 @@ export default function BusinessHomeScreen() {
               </View>
             </View>
             <Pressable style={[styles.avatarCircle, { borderColor: 'rgba(255,255,255,0.5)', borderWidth: 2.5 }]} onPress={() => router.push('/(business)/profile')}>
-              {user?.avatar ? (
-                <Image source={{ uri: user.avatar }} style={styles.avatarImage} resizeMode="cover" />
-              ) : (
-                <View style={[styles.avatarFallback, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
-                  <Ionicons name="person" size={24} color="#fff" />
-                </View>
-              )}
+              {/* Clipping lives on its own layer — Android's elevation shadow doesn't
+                  composite correctly with overflow:hidden + a translucent child background
+                  on the same view. */}
+              <View style={styles.avatarClip}>
+                {user?.avatar ? (
+                  <Image source={{ uri: user.avatar }} style={styles.avatarImage} resizeMode="cover" />
+                ) : (
+                  <View style={[styles.avatarFallback, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
+                    <Ionicons name="person" size={24} color="#fff" />
+                  </View>
+                )}
+              </View>
             </Pressable>
           </View>
 
@@ -361,7 +366,8 @@ const styles = StyleSheet.create({
   menuBtnInner: { width: 38, height: 38, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center' },
   greeting: { fontSize: 12, marginBottom: 3, fontFamily: F.medium },
   brandName: { fontSize: 20, fontFamily: F.bold, maxWidth: 180, letterSpacing: -0.3 },
-  avatarCircle: { width: 44, height: 44, borderRadius: 22, overflow: 'hidden', shadowOpacity: 0.4, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
+  avatarCircle: { width: 44, height: 44, borderRadius: 22, shadowOpacity: 0.4, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
+  avatarClip:   { width: '100%', height: '100%', borderRadius: 22, overflow: 'hidden' },
   avatarImage: { width: '100%', height: '100%' },
   avatarFallback: { width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center' },
   statsStrip: { flexDirection: 'row', marginHorizontal: 20, marginBottom: 4, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 16, paddingVertical: 12 },
