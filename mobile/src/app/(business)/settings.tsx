@@ -154,7 +154,7 @@ function ChipGroup({ options, selected, onToggle }: ChipGroupProps) {
 // ── Main screen ───────────────────────────────────────────────────────────────
 
 export default function BusinessSettingsScreen() {
-  const { user, logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
   const { isDark, toggleDark } = useIsDark();
   const { section } = useLocalSearchParams<{ section?: string }>();
   const C: ColorsType = useAppColors();
@@ -205,6 +205,16 @@ export default function BusinessSettingsScreen() {
   const [phoneError,     setPhoneError]     = useState('');
   const [verifiedPhone,  setVerifiedPhone]  = useState('');
 
+  // ── Email verification (mirrors phone above) — for accounts that signed up
+  // via phone and still hold a placeholder email ──
+  type EmailVerifyStage = 'idle' | 'enter-email' | 'enter-otp' | 'verified';
+  const [emailStage,     setEmailStage]     = useState<EmailVerifyStage>(user?.email && user.email.includes('@') && !user.email.endsWith('.internal') ? 'verified' : 'idle');
+  const [emailInput,     setEmailInput]     = useState('');
+  const [emailOtp,       setEmailOtp]       = useState('');
+  const [emailLoading,   setEmailLoading]   = useState(false);
+  const [emailError,     setEmailError]     = useState('');
+  const [verifiedEmail,  setVerifiedEmail]  = useState(user?.email ?? '');
+
   // ── Section 3: Notifications ──
   const [notifApplications, setNotifApplications] = useState(true);
   const [notifMessages, setNotifMessages] = useState(true);
@@ -243,9 +253,9 @@ export default function BusinessSettingsScreen() {
   async function handleUploadPan() {
     setPanUploading(true);
     try {
-      const url = await pickAndUpload('business-pan');
-      if (url) {
-        setPanDocStatus('PENDING');
+      const result = await pickAndUpload('business-pan');
+      if (result) {
+        setPanDocStatus(result.status ?? 'PENDING');
         showToast(t('businessSettings.uploadSuccessToast'));
       }
     } catch {
@@ -258,9 +268,9 @@ export default function BusinessSettingsScreen() {
   async function handleUploadCompanyReg() {
     setCompanyRegUploading(true);
     try {
-      const url = await pickAndUpload('business-company-reg');
-      if (url) {
-        setCompanyRegDocStatus('PENDING');
+      const result = await pickAndUpload('business-company-reg');
+      if (result) {
+        setCompanyRegDocStatus(result.status ?? 'PENDING');
         showToast(t('businessSettings.uploadSuccessToast'));
       }
     } catch {
@@ -428,6 +438,48 @@ export default function BusinessSettingsScreen() {
       setPhoneError(e.message ?? t('settings.phoneOtpFailed'));
     } finally {
       setPhoneLoading(false);
+    }
+  }
+
+  function isValidEmailAddress(v: string): boolean {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
+  }
+
+  async function handleSendEmailOtp() {
+    setEmailError('');
+    if (!isValidEmailAddress(emailInput)) {
+      setEmailError(t('auth.login.emailInvalid'));
+      return;
+    }
+    setEmailLoading(true);
+    try {
+      await authService.requestEmailOtp(emailInput.trim());
+      setEmailStage('enter-otp');
+      setEmailOtp('');
+    } catch (e: any) {
+      setEmailError(e.message ?? t('businessSettings.emailOtpFailed'));
+    } finally {
+      setEmailLoading(false);
+    }
+  }
+
+  async function handleVerifyEmailOtp() {
+    setEmailError('');
+    if (emailOtp.length !== 6) {
+      setEmailError(t('settings.phoneOtpLength'));
+      return;
+    }
+    setEmailLoading(true);
+    try {
+      await authService.verifyEmailOtp(emailInput.trim(), emailOtp);
+      setVerifiedEmail(emailInput.trim());
+      setEmailStage('verified');
+      updateUser({ email: emailInput.trim() });
+      toast.success(t('businessSettings.emailVerifiedToast'));
+    } catch (e: any) {
+      setEmailError(e.message ?? t('settings.phoneOtpFailed'));
+    } finally {
+      setEmailLoading(false);
     }
   }
 
@@ -838,16 +890,109 @@ export default function BusinessSettingsScreen() {
       <>
         <SectionHeader title={t('businessSettings.loginSecuritySection')} />
         <Card>
-          <View style={[styles.row, { borderBottomWidth: 1, borderBottomColor: C.border }]}>
-            <Text style={styles.rowIcon}>✉️</Text>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.rowLabel, { color: C.text }]}>{t('businessSettings.emailAddressLabel')}</Text>
-              <Text style={[styles.rowSub, { color: C.textSecondary }]}>{user?.email ?? 'business@example.com'}</Text>
+          {/* Email verification */}
+          {emailStage === 'idle' && (
+            <Pressable
+              style={[styles.row, { borderBottomWidth: 1, borderBottomColor: C.border }]}
+              onPress={() => { setEmailStage('enter-email'); setEmailInput(''); setEmailError(''); }}
+            >
+              <Text style={styles.rowIcon}>✉️</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowLabel, { color: C.text }]}>{t('businessSettings.emailAddressLabel')}</Text>
+                <Text style={[styles.rowSub, { color: C.textSecondary }]}>{t('businessSettings.addVerifyEmailLabel')}</Text>
+              </View>
+              <View style={[styles.soonBadge, { backgroundColor: C.primaryLight }]}>
+                <Text style={[styles.badgeText, { color: C.brinjal1 }]}>{t('businessSettings.addBadge')}</Text>
+              </View>
+            </Pressable>
+          )}
+          {emailStage === 'verified' && (
+            <View style={[styles.row, { borderBottomWidth: 1, borderBottomColor: C.border }]}>
+              <Text style={styles.rowIcon}>✉️</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowLabel, { color: C.text }]}>{t('businessSettings.emailAddressLabel')}</Text>
+                <Text style={[styles.rowSub, { color: C.textSecondary }]}>{verifiedEmail || user?.email}</Text>
+              </View>
+              <View style={[styles.verifiedBadge, { backgroundColor: '#DCFCE7' }]}>
+                <Text style={[styles.badgeText, { color: C.active }]}>{t('businessSettings.verifiedBadge')}</Text>
+              </View>
             </View>
-            <View style={[styles.verifiedBadge, { backgroundColor: '#DCFCE7' }]}>
-              <Text style={[styles.badgeText, { color: C.active }]}>{t('businessSettings.verifiedBadge')}</Text>
+          )}
+          {emailStage === 'enter-email' && (
+            <View style={[{ borderBottomWidth: 1, borderBottomColor: C.border, paddingHorizontal: 16, paddingVertical: 14, gap: 10 }]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Text style={styles.rowIcon}>✉️</Text>
+                  <Text style={[styles.rowLabel, { color: C.text, flexShrink: 1 }]} numberOfLines={1} ellipsizeMode="tail">{t('businessSettings.verifyEmailTitle')}</Text>
+                </View>
+                <Pressable onPress={() => { setEmailStage('idle'); setEmailInput(''); setEmailError(''); }} hitSlop={10} disabled={emailLoading} style={{ flexShrink: 0, marginLeft: 8 }}>
+                  <Ionicons name="close-circle" size={22} color={C.textSecondary} />
+                </Pressable>
+              </View>
+              <TextInput
+                style={[styles.phoneField, { flex: 0, color: C.text, borderColor: emailError ? C.error : C.border, backgroundColor: C.background }]}
+                placeholder={t('businessSettings.emailPlaceholder')}
+                placeholderTextColor={C.textSecondary}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                value={emailInput}
+                onChangeText={(v) => { setEmailInput(v); setEmailError(''); }}
+              />
+              {!!emailError && <Text style={[styles.phoneError, { color: C.error }]}>{emailError}</Text>}
+              <Pressable
+                style={[styles.phoneActionBtn, { backgroundColor: C.brinjal1, opacity: emailLoading ? 0.7 : 1 }]}
+                onPress={handleSendEmailOtp}
+                disabled={emailLoading}
+              >
+                <Text style={[styles.phoneActionBtnText, { color: '#fff' }]}>{emailLoading ? t('businessSettings.sendingCodeLabel') : t('businessSettings.sendCodeBtn')}</Text>
+              </Pressable>
             </View>
-          </View>
+          )}
+          {emailStage === 'enter-otp' && (
+            <View style={[{ borderBottomWidth: 1, borderBottomColor: C.border, paddingHorizontal: 16, paddingVertical: 14, gap: 10 }]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Text style={styles.rowIcon}>✉️</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.rowLabel, { color: C.text }]}>{t('businessSettings.enterVerificationCode')}</Text>
+                  <Text style={[styles.rowSub, { color: C.textSecondary }]}>{t('businessSettings.sentToEmail', { email: emailInput })}</Text>
+                </View>
+                <Pressable
+                  onPress={() => { setEmailStage('idle'); setEmailOtp(''); setEmailError(''); setEmailInput(''); }}
+                  disabled={emailLoading}
+                  hitSlop={8}
+                  style={[styles.otpCloseBtn, { backgroundColor: C.background, borderColor: C.border }]}>
+                  <Ionicons name="close" size={16} color={C.textSecondary} />
+                </Pressable>
+              </View>
+              <TextInput
+                style={[styles.formInput, { color: C.text, borderColor: emailError ? C.error : C.border, backgroundColor: C.background, letterSpacing: 8, textAlign: 'center', fontSize: 20 }]}
+                placeholder="------"
+                placeholderTextColor={C.textSecondary}
+                keyboardType="number-pad"
+                maxLength={6}
+                value={emailOtp}
+                onChangeText={(v) => { setEmailOtp(v.replace(/[^0-9]/g, '')); setEmailError(''); }}
+              />
+              {!!emailError && <Text style={[styles.phoneError, { color: C.error }]}>{emailError}</Text>}
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <Pressable
+                  style={[styles.phoneActionBtn, { backgroundColor: C.brinjal1, opacity: emailLoading ? 0.7 : 1 }]}
+                  onPress={handleVerifyEmailOtp}
+                  disabled={emailLoading}
+                >
+                  <Text style={[styles.phoneActionBtnText, { color: '#fff' }]}>{emailLoading ? t('businessSettings.verifyingLabel') : t('businessSettings.verifyBtn')}</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.phoneActionBtn, { backgroundColor: C.background, borderWidth: 1, borderColor: C.border }]}
+                  onPress={() => { setEmailStage('enter-email'); setEmailOtp(''); setEmailError(''); }}
+                  disabled={emailLoading}
+                >
+                  <Text style={[styles.phoneActionBtnText, { color: C.textSecondary }]}>{t('businessSettings.resendBtn')}</Text>
+                </Pressable>
+              </View>
+            </View>
+          )}
           {/* Phone verification */}
           {phoneStage === 'idle' && (
             <Pressable

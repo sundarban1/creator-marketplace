@@ -19,8 +19,16 @@ function maskEmail(email: string) {
   return `${visible}${stars}@${domain}`;
 }
 
+function maskPhone(phone: string) {
+  if (phone.length <= 4) return phone;
+  return phone.slice(0, -4).replace(/\d/g, '*') + phone.slice(-4);
+}
+
 export default function VerifyScreen() {
-  const { email } = useLocalSearchParams<{ email: string }>();
+  const { email, phone } = useLocalSearchParams<{ email?: string; phone?: string }>();
+  const channel: 'email' | 'phone' = phone ? 'phone' : 'email';
+  const identifier = channel === 'email' ? { email: email ?? '' } : { phone: phone ?? '' };
+  const maskedContact = channel === 'email' ? maskEmail(email ?? '') : maskPhone(phone ?? '');
   const { reloadUser } = useAuth();
   const C = useAppColors();
   const { t } = useLanguage();
@@ -58,8 +66,8 @@ export default function VerifyScreen() {
     setLoading(true);
     setError('');
     try {
-      const verifiedUser = await authService.verifyOtp(email ?? '', fullCode);
-      void authService.sendWelcomeEmail(email ?? '');
+      await authService.verifyOtp(identifier, fullCode);
+      if (channel === 'email') void authService.sendWelcomeEmail(email ?? '');
       setVerified(true);
       // Hydrate AuthContext then navigate directly to the dashboard
       const u = await reloadUser();
@@ -135,7 +143,7 @@ export default function VerifyScreen() {
     setResending(true);
     setError('');
     try {
-      await authService.resendOtp(email ?? '');
+      await authService.resendOtp(identifier);
       setCode(Array(OTP_LENGTH).fill(''));
       setResendTimer(RESEND_SECONDS);
       setTimeout(() => inputs.current[0]?.focus(), 50);
@@ -183,11 +191,11 @@ export default function VerifyScreen() {
           </Pressable>
           <View style={styles.heroContent}>
             <View style={styles.emailIconWrap}>
-              <Text style={styles.emailIcon}>✉️</Text>
+              <Text style={styles.emailIcon}>{channel === 'email' ? '✉️' : '📱'}</Text>
             </View>
             <Text style={styles.heroTitle}>{t('auth.verify.title')}</Text>
             <Text style={styles.heroSub}>
-              {t('auth.verify.subtitle', { length: OTP_LENGTH, email: maskEmail(email ?? '') })}
+              {t('auth.verify.subtitle', { length: OTP_LENGTH, email: maskedContact })}
             </Text>
           </View>
         </View>

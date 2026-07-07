@@ -74,7 +74,10 @@ async function promptSource(): Promise<'library' | 'camera' | null> {
   return Platform.OS === 'ios' ? showIOSSheet() : showAndroidAlert();
 }
 
-async function uploadAsset(asset: ImagePicker.ImagePickerAsset, target: UploadTarget): Promise<string> {
+export type DocStatus = 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
+export type UploadResult = { url: string; status?: DocStatus };
+
+async function uploadAsset(asset: ImagePicker.ImagePickerAsset, target: UploadTarget): Promise<UploadResult> {
   const { path, field } = TARGET_CONFIG[target];
   const token = storage.get(ACCESS_TOKEN_KEY) ?? '';
 
@@ -93,10 +96,15 @@ async function uploadAsset(asset: ImagePicker.ImagePickerAsset, target: UploadTa
   const json = await res.json() as { success: boolean; data: Record<string, string>; message?: string };
   if (!res.ok) throw new Error(json.message ?? 'Upload failed');
 
-  return json.data.avatarUrl ?? json.data.logoUrl ?? json.data.docUrl ?? '';
+  return {
+    url: json.data.avatarUrl ?? json.data.logoUrl ?? json.data.docUrl ?? '',
+    // Only document uploads (pan/company-reg/citizenship) return a status —
+    // the server, not the client, is the source of truth for review state.
+    status: (json.data.panDocStatus ?? json.data.companyRegDocStatus ?? json.data.citizenshipStatus) as DocStatus | undefined,
+  };
 }
 
-export async function pickAndUpload(target: UploadTarget): Promise<string | null> {
+export async function pickAndUpload(target: UploadTarget): Promise<UploadResult | null> {
   const source = await promptSource();
   if (!source) return null;
 

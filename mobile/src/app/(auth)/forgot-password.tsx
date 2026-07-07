@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -7,24 +8,44 @@ import { useLanguage } from '@/context/LanguageContext';
 import { authService } from '@/services/auth';
 import { F } from '@/utilities/constants';
 
+type Channel = 'email' | 'phone';
+
+function isValidEmail(v: string) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()); }
+function isValidPhone(v: string) {
+  const stripped = v.replace(/^\+?977/, '').replace(/[\s\-()]/g, '');
+  return /^\d{7,10}$/.test(stripped);
+}
+
 export default function ForgotPasswordScreen() {
   const C = useAppColors();
   const { t } = useLanguage();
+  const [channel, setChannel] = useState<Channel>('email');
+  const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const isValid = phone.trim().length >= 7;
+  const isValid = channel === 'email' ? isValidEmail(email) : isValidPhone(phone);
 
   async function handleSendOtp() {
-    if (!isValid) { setError(t('auth.forgotPassword.phoneError')); return; }
+    if (!isValid) {
+      setError(channel === 'email' ? t('auth.forgotPassword.emailError') : t('auth.forgotPassword.phoneError'));
+      return;
+    }
     setError('');
     setLoading(true);
     try {
-      await authService.forgotPasswordByPhone(phone.trim());
-      router.push({ pathname: '/reset-otp', params: { phone: phone.trim() } });
+      if (channel === 'email') {
+        const trimmedEmail = email.trim().toLowerCase();
+        await authService.forgotPassword({ email: trimmedEmail });
+        router.push({ pathname: '/reset-otp', params: { email: trimmedEmail } });
+      } else {
+        const trimmedPhone = phone.trim();
+        await authService.forgotPassword({ phone: trimmedPhone });
+        router.push({ pathname: '/reset-otp', params: { phone: trimmedPhone } });
+      }
     } catch (e: any) {
-      setError(e.message ?? 'Failed to send OTP. Please try again.');
+      setError(e.message ?? 'Failed to send code. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -56,20 +77,53 @@ export default function ForgotPasswordScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
 
-          <Text style={[styles.label, { color: C.text }]}>{t('auth.forgotPassword.phoneLabel')}</Text>
-          <TextInput
-            style={[styles.input, { backgroundColor: C.surface, borderColor: error ? C.error : C.border, color: C.text }]}
-            value={phone}
-            onChangeText={(v) => { setPhone(v); setError(''); }}
-            placeholder={t('auth.forgotPassword.phonePlaceholder')}
-            placeholderTextColor={C.textSecondary}
-            keyboardType="phone-pad"
-            autoFocus
-          />
+          {/* Email / Phone toggle */}
+          <View style={[styles.channelToggle, { backgroundColor: C.surface }]}>
+            {(['email', 'phone'] as const).map((c) => {
+              const active = channel === c;
+              return (
+                <Pressable
+                  key={c}
+                  onPress={() => { setChannel(c); setError(''); }}
+                  style={[styles.channelTab, active && { backgroundColor: C.brinjal1 }]}>
+                  <Ionicons name={c === 'email' ? 'mail-outline' : 'call-outline'} size={14} color={active ? '#fff' : C.brinjal1} />
+                  <Text style={[styles.channelTabText, { color: active ? '#fff' : C.brinjal1 }]}>
+                    {c === 'email' ? t('auth.login.emailLabel') : t('creatorSettings.phoneNumberLabel')}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          <Text style={[styles.label, { color: C.text }]}>
+            {channel === 'email' ? t('auth.forgotPassword.emailLabel') : t('auth.forgotPassword.phoneLabel')}
+          </Text>
+          {channel === 'email' ? (
+            <TextInput
+              style={[styles.input, { backgroundColor: C.surface, borderColor: error ? C.error : C.border, color: C.text }]}
+              value={email}
+              onChangeText={(v) => { setEmail(v); setError(''); }}
+              placeholder={t('auth.forgotPassword.emailPlaceholder')}
+              placeholderTextColor={C.textSecondary}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoFocus
+            />
+          ) : (
+            <TextInput
+              style={[styles.input, { backgroundColor: C.surface, borderColor: error ? C.error : C.border, color: C.text }]}
+              value={phone}
+              onChangeText={(v) => { setPhone(v.replace(/[^0-9+]/g, '')); setError(''); }}
+              placeholder={t('auth.forgotPassword.phonePlaceholder')}
+              placeholderTextColor={C.textSecondary}
+              keyboardType="phone-pad"
+              autoFocus
+            />
+          )}
           {error ? <Text style={[styles.errorText, { color: C.error }]}>{error}</Text> : null}
 
           <Text style={[styles.hint, { color: C.textSecondary }]}>
-            {t('auth.forgotPassword.phoneHint')}
+            {channel === 'email' ? t('auth.forgotPassword.emailHint') : t('auth.forgotPassword.phoneHint')}
           </Text>
 
           <Pressable
@@ -113,6 +167,9 @@ const styles = StyleSheet.create({
   heroSub: { fontSize: 14, color: 'rgba(255,255,255,0.78)', textAlign: 'center', lineHeight: 22, fontFamily: F.regular },
   card: { flex: 1, borderTopLeftRadius: 24, borderTopRightRadius: 24 },
   cardContent: { padding: 28, paddingBottom: 40 },
+  channelToggle: { flexDirection: 'row', gap: 6, borderRadius: 12, padding: 4, marginBottom: 20 },
+  channelTab: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 9, borderRadius: 9 },
+  channelTabText: { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
   label: { fontSize: 14, fontWeight: '700', marginBottom: 8, fontFamily: F.bold },
   input: { borderRadius: 14, borderWidth: 1.5, paddingHorizontal: 16, paddingVertical: 14, fontSize: 16, marginBottom: 6, fontFamily: F.regular },
   errorText: { fontSize: 12, fontWeight: '500', marginBottom: 4, fontFamily: F.medium },

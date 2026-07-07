@@ -10,10 +10,11 @@ import {
   resetPasswordSchema,
   verifyOtpSchema,
   resendOtpSchema,
-  forgotPasswordByPhoneSchema,
   verifyResetOtpSchema,
   requestPhoneOtpSchema,
   verifyPhoneOtpSchema,
+  requestEmailOtpSchema,
+  verifyEmailOtpSchema,
   googleAuthSchema,
   facebookAuthSchema,
 } from './auth.schema';
@@ -231,24 +232,25 @@ router.post('/logout', optionalAuthenticate, ctrl.logout.bind(ctrl));
  * /api/auth/forgot-password:
  *   post:
  *     tags: [Auth]
- *     summary: Request password reset email
- *     description: Sends a password reset link to the user's email (always returns 200 to prevent email enumeration)
+ *     summary: Request a password reset code (email or phone)
+ *     description: Accepts either `email` or `phone` (never both) and sends a 6-digit reset code down that same channel. Always returns 200 to prevent account enumeration.
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
- *             required:
- *               - email
  *             properties:
  *               email:
  *                 type: string
  *                 format: email
  *                 example: jane@example.com
+ *               phone:
+ *                 type: string
+ *                 example: "+9779841234567"
  *     responses:
  *       200:
- *         description: Reset email sent (if email exists)
+ *         description: Reset code sent (if the identifier is registered)
  *         content:
  *           application/json:
  *             schema:
@@ -259,7 +261,7 @@ router.post('/logout', optionalAuthenticate, ctrl.logout.bind(ctrl));
  *                   example: true
  *                 message:
  *                   type: string
- *                   example: If that email exists, a reset link has been sent
+ *                   example: If that email is registered, a reset code has been sent
  */
 router.post('/forgot-password', validate(forgotPasswordSchema), ctrl.forgotPassword.bind(ctrl));
 
@@ -332,41 +334,20 @@ router.delete('/account',           authenticate, ctrl.deleteAccount.bind(ctrl))
 
 /**
  * @swagger
- * /api/auth/forgot-password-phone:
- *   post:
- *     tags: [Auth]
- *     summary: Request password reset via phone OTP
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required: [phone]
- *             properties:
- *               phone:
- *                 type: string
- *                 example: "+9779841234567"
- *     responses:
- *       200:
- *         description: OTP sent (always 200 to avoid phone enumeration)
- */
-router.post('/forgot-password-phone', validate(forgotPasswordByPhoneSchema), ctrl.forgotPasswordByPhone.bind(ctrl));
-
-/**
- * @swagger
  * /api/auth/verify-reset-otp:
  *   post:
  *     tags: [Auth]
- *     summary: Verify the phone OTP and receive a password reset token
+ *     summary: Verify a password-reset code (email or phone) and receive a reset token
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
- *             required: [phone, code]
+ *             required: [code]
  *             properties:
+ *               email:
+ *                 type: string
  *               phone:
  *                 type: string
  *               code:
@@ -381,6 +362,61 @@ router.post('/forgot-password-phone', validate(forgotPasswordByPhoneSchema), ctr
 router.post('/verify-reset-otp',    validate(verifyResetOtpSchema),    ctrl.verifyResetOtp.bind(ctrl));
 router.post('/request-phone-otp',   authenticate, validate(requestPhoneOtpSchema), ctrl.requestPhoneOtp.bind(ctrl));
 router.post('/verify-phone-otp',    authenticate, validate(verifyPhoneOtpSchema),  ctrl.verifyPhoneOtp.bind(ctrl));
+
+/**
+ * @swagger
+ * /api/auth/request-email-otp:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Add & verify a real email on the logged-in account
+ *     description: For phone-signup accounts that still hold a placeholder email. Sends a 6-digit code to the given email.
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email]
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *     responses:
+ *       200:
+ *         description: Verification code sent to the email
+ */
+router.post('/request-email-otp',   authenticate, validate(requestEmailOtpSchema), ctrl.requestEmailOtp.bind(ctrl));
+
+/**
+ * @swagger
+ * /api/auth/verify-email-otp:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Verify the email code and attach it to the logged-in account
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email, code]
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               code:
+ *                 type: string
+ *                 example: "123456"
+ *     responses:
+ *       200:
+ *         description: Email verified and attached to the account
+ */
+router.post('/verify-email-otp',    authenticate, validate(verifyEmailOtpSchema),  ctrl.verifyEmailOtp.bind(ctrl));
+
 router.post('/google',              validate(googleAuthSchema),          ctrl.googleAuth.bind(ctrl));
 router.post('/facebook',            validate(facebookAuthSchema),        ctrl.facebookAuth.bind(ctrl));
 

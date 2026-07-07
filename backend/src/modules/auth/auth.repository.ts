@@ -122,6 +122,18 @@ export class AuthRepository {
   }
 
   async updateUserPhone(userId: string, phone: string) {
-    return prisma.user.update({ where: { id: userId }, data: { phone } });
+    return prisma.user.update({ where: { id: userId }, data: { phone, isPhoneVerified: true } });
+  }
+
+  async verifyPhoneFlag(userId: string) {
+    return prisma.user.update({
+      where: { id: userId },
+      data: { isPhoneVerified: true },
+      include: profileSelect,
+    });
+  }
+
+  async updateUserEmail(userId: string, email: string) {
+    return prisma.user.update({ where: { id: userId }, data: { email, isEmailVerified: true } });
   }
 }

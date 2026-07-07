@@ -4,9 +4,12 @@ export type User = {
   id: string;
   name: string;
   email: string;
+  phone?: string | null;
   role: UserRole;
   avatar?: string;
   isFirstLogin?: boolean;
+  isEmailVerified?: boolean;
+  isPhoneVerified?: boolean;
 };
 
 export type Campaign = {

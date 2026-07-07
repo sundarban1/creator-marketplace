@@ -400,7 +400,7 @@ const pl = StyleSheet.create({
 // ── Main screen ───────────────────────────────────────────────
 
 export default function CreatorSettingsScreen() {
-  const { user, logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
   const { isDark, toggleDark } = useIsDark();
   const { language, setLanguage, t } = useLanguage();
   const { section } = useLocalSearchParams<{ section?: string }>();
@@ -491,6 +491,13 @@ export default function CreatorSettingsScreen() {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [phoneOtp, setPhoneOtp] = useState('');
   const [phoneLoading, setPhoneLoading] = useState(false);
+
+  // Email verification sub-page — for accounts that signed up via phone and
+  // still hold a placeholder email (mirrors the phone verification flow above)
+  const [emailSubPage, setEmailSubPage] = useState<'input' | 'otp' | null>(null);
+  const [emailInput, setEmailInput] = useState('');
+  const [emailOtp, setEmailOtp] = useState('');
+  const [emailOtpLoading, setEmailOtpLoading] = useState(false);
 
   // Change password — inline collapsible panel (Security section)
   const [showChangePassword, setShowChangePassword] = useState(false);
@@ -1903,6 +1910,39 @@ export default function CreatorSettingsScreen() {
     }
   }
 
+  // ── Email verification handlers (mirrors phone above) ──────────
+
+  async function handleRequestEmailOtp() {
+    if (!emailInput.trim()) return;
+    setEmailOtpLoading(true);
+    try {
+      await authService.requestEmailOtp(emailInput.trim());
+      setEmailSubPage('otp');
+    } catch (e: any) {
+      showToast(e.message ?? t('creatorSettings.otpSendFailed'), true);
+    } finally {
+      setEmailOtpLoading(false);
+    }
+  }
+
+  async function handleVerifyEmailOtp() {
+    if (!emailOtp.trim()) return;
+    setEmailOtpLoading(true);
+    try {
+      await authService.verifyEmailOtp(emailInput.trim(), emailOtp.trim());
+      setEmailVerified(true);
+      updateUser({ email: emailInput.trim() });
+      setEmailSubPage(null);
+      setEmailInput('');
+      setEmailOtp('');
+      showToast(t('creatorSettings.emailVerifiedToast'));
+    } catch (e: any) {
+      showToast(e.message ?? t('creatorSettings.otpInvalid'), true);
+    } finally {
+      setEmailOtpLoading(false);
+    }
+  }
+
   // ── Section: Security ─────────────────────────────────────────
 
   function renderSecurity() {
@@ -1916,12 +1956,18 @@ export default function CreatorSettingsScreen() {
       setPhoneOtp('');
     }
 
+    function closeEmail() {
+      setEmailSubPage(null);
+      setEmailInput('');
+      setEmailOtp('');
+    }
+
     async function handleUploadCitizenship() {
       setCitizenshipUploading(true);
       try {
-        const url = await pickAndUpload('creator-citizenship');
-        if (url) {
-          setCitizenshipStatus('PENDING');
+        const result = await pickAndUpload('creator-citizenship');
+        if (result) {
+          setCitizenshipStatus(result.status ?? 'PENDING');
           toast.success(t('creatorSettings.citizenshipUploadSuccess'));
         }
       } catch {
@@ -2004,7 +2050,10 @@ export default function CreatorSettingsScreen() {
         <SectionHeader title={t('creatorSettings.verificationSection')} />
         <Card>
           {/* Email row */}
-          <View style={[styles.row, { borderBottomWidth: 1, borderBottomColor: C.border }]}>
+          <Pressable
+            style={[styles.row, { borderBottomWidth: 1, borderBottomColor: C.border }]}
+            disabled={emailVerified !== false}
+            onPress={() => { if (emailVerified === false && !emailSubPage) setEmailSubPage('input'); }}>
             <View style={[styles.navIonIconWrap, { backgroundColor: '#0891B218' }]}>
               <Ionicons name="mail-outline" size={18} color="#0891B2" />
             </View>
@@ -2013,10 +2062,79 @@ export default function CreatorSettingsScreen() {
               <ActivityIndicator size="small" color={C.brinjal1} />
             ) : isEmailVerified ? (
               <View style={styles.verifiedBadge}><Text style={[styles.badgeText, { color: C.active }]}>{t('creatorSettings.verifiedBadge')}</Text></View>
-            ) : (
-              <View style={[styles.soonBadge, { backgroundColor: '#FEF3C7' }]}><Text style={[styles.badgeText, { color: '#D97706' }]}>{t('creatorSettings.notVerifiedBadge')}</Text></View>
-            )}
-          </View>
+            ) : !emailSubPage ? (
+              <View style={styles.navRight}>
+                <View style={[styles.chip, { borderColor: C.brinjal1, backgroundColor: C.primaryLight, paddingHorizontal: 8, paddingVertical: 2 }]}>
+                  <Text style={[styles.chipText, { color: C.brinjal1, fontSize: 12 }]}>{t('creatorSettings.verifyBtnLabel')}</Text>
+                </View>
+                <Text style={[styles.navArrow, { color: C.textSecondary }]}>›</Text>
+              </View>
+            ) : null}
+          </Pressable>
+
+          {/* Inline: enter email */}
+          {emailSubPage === 'input' && (
+            <View style={[styles.inlinePhonePanel, { borderBottomColor: C.border, backgroundColor: C.background }]}>
+              <View style={styles.inlinePhonePanelHeader}>
+                <Text style={[styles.inlinePhonePanelTitle, { color: C.text, flexShrink: 1 }]} numberOfLines={1} ellipsizeMode="tail">{t('creatorSettings.enterEmailTitle')}</Text>
+                <Pressable onPress={closeEmail} hitSlop={10} style={{ flexShrink: 0, marginLeft: 8 }}>
+                  <Ionicons name="close-circle" size={22} color={C.textSecondary} />
+                </Pressable>
+              </View>
+              <View style={[styles.pwRow, { backgroundColor: C.surface, borderColor: C.border }]}>
+                <TextInput
+                  style={[styles.pwInput, { color: C.text }]}
+                  value={emailInput}
+                  onChangeText={setEmailInput}
+                  placeholder={t('creatorSettings.emailPlaceholder')}
+                  placeholderTextColor={C.textSecondary}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  autoFocus
+                />
+              </View>
+              <Pressable
+                style={[styles.saveBtn, { backgroundColor: C.brinjal1, opacity: (emailInput.trim() && !emailOtpLoading) ? 1 : 0.45 }]}
+                onPress={handleRequestEmailOtp}
+                disabled={emailOtpLoading || !emailInput.trim()}>
+                <Text style={styles.saveBtnText}>{emailOtpLoading ? t('creatorSettings.sendingOtp') : t('creatorSettings.sendVerificationCode')}</Text>
+              </Pressable>
+            </View>
+          )}
+
+          {/* Inline: enter email OTP */}
+          {emailSubPage === 'otp' && (
+            <View style={[styles.inlinePhonePanel, { borderBottomColor: C.border, backgroundColor: C.background }]}>
+              <View style={styles.inlinePhonePanelHeader}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.inlinePhonePanelTitle, { color: C.text }]}>{t('creatorSettings.enterOtpTitle')}</Text>
+                  <Text style={[styles.inlinePhonePanelSub, { color: C.textSecondary }]}>{t('creatorSettings.sentToEmail', { email: emailInput })}</Text>
+                </View>
+                <Pressable onPress={closeEmail} hitSlop={10} style={{ flexShrink: 0, marginLeft: 8 }}>
+                  <Ionicons name="close-circle" size={22} color={C.textSecondary} />
+                </Pressable>
+              </View>
+              <View style={[styles.pwRow, { backgroundColor: C.surface, borderColor: C.border }]}>
+                <TextInput
+                  style={[styles.pwInput, { color: C.text, letterSpacing: 8, fontSize: 18, textAlign: 'center' }]}
+                  value={emailOtp}
+                  onChangeText={(v) => setEmailOtp(v.replace(/[^0-9]/g, '').slice(0, 6))}
+                  placeholder="------"
+                  placeholderTextColor={C.textSecondary}
+                  keyboardType="number-pad"
+                  maxLength={6}
+                  autoFocus
+                />
+              </View>
+              <Pressable
+                style={[styles.saveBtn, { backgroundColor: C.brinjal1, opacity: (emailOtp.length === 6 && !emailOtpLoading) ? 1 : 0.45 }]}
+                onPress={handleVerifyEmailOtp}
+                disabled={emailOtpLoading || emailOtp.length < 6}>
+                <Text style={styles.saveBtnText}>{emailOtpLoading ? t('creatorSettings.verifyingOtp') : t('creatorSettings.verifyBtnLabel')}</Text>
+              </Pressable>
+            </View>
+          )}
 
           {/* Phone row */}
           <Pressable

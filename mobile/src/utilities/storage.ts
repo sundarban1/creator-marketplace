@@ -30,6 +30,14 @@ export const storage = {
     await SecureStore.deleteItemAsync(key);
   },
 
+  // Session-only writes — cache only, never touches SecureStore (used for "Remember me" off)
+  setMemoryOnly(key: string, value: string): void {
+    cache.set(key, value);
+  },
+  setJSONMemoryOnly<T>(key: string, value: T): void {
+    cache.set(key, JSON.stringify(value));
+  },
+
   // Call once on app start to warm the in-memory cache from secure storage
   async hydrate(keys: string[]): Promise<void> {
     await Promise.all(

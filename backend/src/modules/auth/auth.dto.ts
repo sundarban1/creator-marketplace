@@ -8,6 +8,7 @@ export interface UserDto {
   name: string;
   avatar: string | null;
   isEmailVerified: boolean;
+  isPhoneVerified: boolean;
   isOnboarded: boolean;
   createdAt: string;
   updatedAt: string;
@@ -30,6 +31,7 @@ type UserInput = {
   phone: string | null;
   role: Role;
   isEmailVerified: boolean;
+  isPhoneVerified: boolean;
   isOnboarded: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -55,6 +57,7 @@ export function toUserDto(user: UserInput): UserDto {
     phone:           user.phone,
     role:            user.role,
     isEmailVerified: user.isEmailVerified,
+    isPhoneVerified: user.isPhoneVerified,
     isOnboarded:     user.isOnboarded,
     createdAt:       user.createdAt.toISOString(),
     updatedAt:       user.updatedAt.toISOString(),

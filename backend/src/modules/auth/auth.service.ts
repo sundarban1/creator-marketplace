@@ -11,7 +11,7 @@ import {
   signPasswordResetToken,
   verifyPasswordResetToken,
 } from '../../utils/jwt';
-import { sendPasswordResetEmail, sendOtpEmail, sendWelcomeEmail } from '../../utils/email';
+import { sendPasswordResetOtpEmail, sendOtpEmail, sendWelcomeEmail } from '../../utils/email';
 import { AuthRepository } from './auth.repository';
 import { ReferralService } from '../referral/referral.service';
 import { BusinessReferralService } from '../business-referral/business-referral.service';
@@ -24,16 +24,36 @@ import type {
   ResetPasswordInput,
   VerifyOtpInput,
   ResendOtpInput,
-  ForgotPasswordByPhoneInput,
   VerifyResetOtpInput,
   RequestPhoneOtpInput,
   VerifyPhoneOtpInput,
+  RequestEmailOtpInput,
+  VerifyEmailOtpInput,
   GoogleAuthInput,
   FacebookAuthInput,
 } from './auth.schema';
 
+type Channel = 'email' | 'phone';
+
+// There is no SMS gateway wired up yet. Every phone-delivered OTP uses this fixed
+// code so the flow is fully testable end-to-end; swap this for a real generated
+// code + SMS send (e.g. Sparrow SMS for Nepal) once that integration ships.
+const PHONE_OTP_CODE = '123456';
+const PLACEHOLDER_EMAIL_DOMAIN = 'phone.kolab.internal';
+
 function generateOtp(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+function normalizePhone(phone: string): string {
+  return phone.trim();
+}
+
+// Phone-only signups still need a value in the (required) `email` column. This
+// placeholder is never sent to, never shown as a real email in the UI, and is
+// replaced the moment the user adds & verifies a real one (see requestEmailOtp).
+function makePlaceholderEmail(phone: string): string {
+  return `${normalizePhone(phone)}@${PLACEHOLDER_EMAIL_DOMAIN}`;
 }
 
 export class AuthService {
@@ -47,25 +67,44 @@ export class AuthService {
     this.businessReferralService = new BusinessReferralService();
   }
 
+  // Issues + persists an OTP for the given channel, sending it for real on the
+  // email channel and using the fixed stub code on the phone channel.
+  private async issueOtp(userId: string, channel: Channel, destination: string): Promise<void> {
+    const code = channel === 'phone' ? PHONE_OTP_CODE : generateOtp();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+    await this.repo.saveOtp(userId, code, expiresAt);
+
+    if (channel === 'email') {
+      await sendOtpEmail(destination, code);
+    } else if (env.NODE_ENV !== 'production') {
+      logger.debug({ phone: destination, code }, 'Phone OTP issued (SMS stub — not actually sent)');
+    }
+  }
+
   async register(input: RegisterInput, deviceId?: string) {
-    const [existingEmail, existingPhone] = await Promise.all([
-      this.repo.findUserByEmail(input.email),
-      input.phone ? this.repo.findUserByPhone(input.phone) : Promise.resolve(null),
-    ]);
-    if (existingEmail) throw new AppError('An account with this email already exists', 409);
-    if (existingPhone) throw new AppError('An account with this phone number already exists', 409);
+    const channel: Channel = input.email ? 'email' : 'phone';
+
+    if (channel === 'email') {
+      const existing = await this.repo.findUserByEmail(input.email!);
+      if (existing) throw new AppError('An account with this email already exists', 409);
+    } else {
+      const existing = await this.repo.findUserByPhone(normalizePhone(input.phone!));
+      if (existing) throw new AppError('An account with this phone number already exists', 409);
+    }
 
     const hashedPassword = await hashPassword(input.password);
+    const emailForRecord = channel === 'email' ? input.email! : makePlaceholderEmail(input.phone!);
+    const phoneForRecord = channel === 'phone' ? normalizePhone(input.phone!) : undefined;
 
     let user;
     if (input.role === 'CREATOR') {
       user = await this.repo.createUserWithCreatorProfile({
-        email: input.email, phone: input.phone, password: hashedPassword,
+        email: emailForRecord, phone: phoneForRecord, password: hashedPassword,
         role: Role.CREATOR, fullName: input.fullName,
       });
     } else {
       user = await this.repo.createUserWithBusinessProfile({
-        email: input.email, phone: input.phone, password: hashedPassword,
+        email: emailForRecord, phone: phoneForRecord, password: hashedPassword,
         role: Role.BUSINESS, businessName: input.businessName,
       });
     }
@@ -81,24 +120,27 @@ export class AuthService {
     }
     if (deviceId) await this.repo.setDeviceId(user.id, deviceId);
 
-    const code = generateOtp();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
-    await this.repo.saveOtp(user.id, code, expiresAt);
-    await sendOtpEmail(user.email, code);
+    await this.issueOtp(user.id, channel, channel === 'email' ? emailForRecord : phoneForRecord!);
 
-    if (env.NODE_ENV !== 'production') logger.debug({ email: user.email, code }, 'Signup OTP issued');
-    return { email: user.email };
+    return channel === 'email' ? { channel, email: emailForRecord } : { channel, phone: phoneForRecord };
   }
 
   async verifyOtp(input: VerifyOtpInput) {
-    const user = await this.repo.findUserByEmail(input.email);
-    if (!user) throw new AppError('No account found with this email', 404);
-    if (user.isEmailVerified) throw new AppError('This account is already verified', 400);
+    const channel: Channel = input.email ? 'email' : 'phone';
+    const user = channel === 'email'
+      ? await this.repo.findUserByEmail(input.email!)
+      : await this.repo.findUserByPhone(normalizePhone(input.phone!));
+    if (!user) throw new AppError(`No account found with this ${channel === 'email' ? 'email' : 'phone number'}`, 404);
+
+    const alreadyVerified = channel === 'email' ? user.isEmailVerified : user.isPhoneVerified;
+    if (alreadyVerified) throw new AppError('This account is already verified', 400);
 
     const otp = await this.repo.findValidOtp(user.id, input.code);
     if (!otp) throw new AppError('Invalid or expired verification code', 400);
 
-    const verifiedUser = await this.repo.verifyEmail(user.id);
+    const verifiedUser = channel === 'email'
+      ? await this.repo.verifyEmail(user.id)
+      : await this.repo.verifyPhoneFlag(user.id);
     await this.repo.deleteOtpsByUserId(user.id);
 
     const tokenPayload = { id: verifiedUser.id, email: verifiedUser.email, role: verifiedUser.role };
@@ -106,37 +148,46 @@ export class AuthService {
     const refreshToken = signRefreshToken(tokenPayload);
     await this.repo.updateRefreshToken(verifiedUser.id, refreshToken);
 
-    // Fire welcome email without blocking the response
-    const displayName = verifiedUser.creatorProfile?.fullName
-      ?? verifiedUser.businessProfile?.businessName
-      ?? verifiedUser.email.split('@')[0];
-    sendWelcomeEmail(verifiedUser.email, displayName, verifiedUser.role as 'CREATOR' | 'BUSINESS')
-      .catch((err) => logger.error({ err, userId: verifiedUser.id }, 'Welcome email failed'));
+    // Only fire a welcome email when we actually have a real, verified email —
+    // a phone-signup account still holds a placeholder at this point.
+    if (channel === 'email') {
+      const displayName = verifiedUser.creatorProfile?.fullName
+        ?? verifiedUser.businessProfile?.businessName
+        ?? verifiedUser.email.split('@')[0];
+      sendWelcomeEmail(verifiedUser.email, displayName, verifiedUser.role as 'CREATOR' | 'BUSINESS')
+        .catch((err) => logger.error({ err, userId: verifiedUser.id }, 'Welcome email failed'));
+    }
 
     return { user: toUserDto(verifiedUser), accessToken, refreshToken };
   }
 
   async resendOtp(input: ResendOtpInput) {
-    const user = await this.repo.findUserByEmail(input.email);
-    if (!user) throw new AppError('No account found with this email', 404);
-    if (user.isEmailVerified) throw new AppError('This account is already verified', 400);
+    const channel: Channel = input.email ? 'email' : 'phone';
+    const user = channel === 'email'
+      ? await this.repo.findUserByEmail(input.email!)
+      : await this.repo.findUserByPhone(normalizePhone(input.phone!));
+    if (!user) throw new AppError(`No account found with this ${channel === 'email' ? 'email' : 'phone number'}`, 404);
 
-    const code = generateOtp();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
-    await this.repo.saveOtp(user.id, code, expiresAt);
-    await sendOtpEmail(user.email, code);
+    const alreadyVerified = channel === 'email' ? user.isEmailVerified : user.isPhoneVerified;
+    if (alreadyVerified) throw new AppError('This account is already verified', 400);
 
-    if (env.NODE_ENV !== 'production') logger.debug({ email: user.email, code }, 'Resent OTP issued');
-    return { message: 'Verification code resent to your email' };
+    await this.issueOtp(user.id, channel, channel === 'email' ? user.email : normalizePhone(input.phone!));
+
+    return { message: `Verification code resent to your ${channel === 'email' ? 'email' : 'phone number'}` };
   }
 
   async login(input: LoginInput, deviceId?: string) {
-    const user = await this.repo.findUserByEmail(input.email);
-    if (!user) throw new AppError('Invalid email or password', 401);
+    const channel: Channel = input.email ? 'email' : 'phone';
+    const user = channel === 'email'
+      ? await this.repo.findUserByEmail(input.email!)
+      : await this.repo.findUserByPhone(normalizePhone(input.phone!));
+    if (!user) throw new AppError(`Invalid ${channel === 'email' ? 'email' : 'phone number'} or password`, 401);
 
     const isValidPassword = await comparePassword(input.password, user.password);
-    if (!isValidPassword) throw new AppError('Invalid email or password', 401);
-    if (!user.isEmailVerified) throw new AppError('Please verify your email before logging in', 403);
+    if (!isValidPassword) throw new AppError(`Invalid ${channel === 'email' ? 'email' : 'phone number'} or password`, 401);
+
+    const isVerified = channel === 'email' ? user.isEmailVerified : user.isPhoneVerified;
+    if (!isVerified) throw new AppError(`Please verify your ${channel === 'email' ? 'email' : 'phone number'} before logging in`, 403);
 
     // Auto-reactivate deactivated accounts on login
     let activeUser = user;
@@ -196,48 +247,50 @@ export class AuthService {
     return { message: 'Account permanently deleted.' };
   }
 
-  async forgotPasswordByPhone(input: ForgotPasswordByPhoneInput) {
-    const user = await this.repo.findUserByPhone(input.phone);
-    if (!user) {
-      // Return success anyway — don't leak whether phone exists
-      return { message: 'If that phone number is registered, a reset code has been sent' };
-    }
+  // ── Forgot password (email or phone — same logic, different delivery) ───────
 
-    const code = generateOtp();
+  async forgotPassword(input: ForgotPasswordInput) {
+    const channel: Channel = input.email ? 'email' : 'phone';
+    const genericMessage = `If that ${channel === 'email' ? 'email' : 'phone number'} is registered, a reset code has been sent`;
+
+    const user = channel === 'email'
+      ? await this.repo.findUserByEmail(input.email!)
+      : await this.repo.findUserByPhone(normalizePhone(input.phone!));
+    if (!user) return { message: genericMessage }; // don't leak whether the identifier exists
+
+    const code = channel === 'phone' ? PHONE_OTP_CODE : generateOtp();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
     await this.repo.saveOtp(user.id, code, expiresAt);
 
-    // In production: send via SMS. For now log to console.
-    if (env.NODE_ENV !== 'production') logger.debug({ phone: input.phone, code }, 'Password reset OTP issued');
+    if (channel === 'email') {
+      await sendPasswordResetOtpEmail(user.email, code);
+    } else if (env.NODE_ENV !== 'production') {
+      logger.debug({ phone: input.phone, code }, 'Password reset OTP issued (SMS stub — not actually sent)');
+    }
 
-    return { message: 'OTP sent to your phone number' };
+    return { message: genericMessage };
   }
 
   async verifyResetOtp(input: VerifyResetOtpInput) {
-    const user = await this.repo.findUserByPhone(input.phone);
-    if (!user) throw new AppError('No account found with this phone number', 404);
+    const channel: Channel = input.email ? 'email' : 'phone';
+    const user = channel === 'email'
+      ? await this.repo.findUserByEmail(input.email!)
+      : await this.repo.findUserByPhone(normalizePhone(input.phone!));
+    if (!user) throw new AppError(`No account found with this ${channel === 'email' ? 'email' : 'phone number'}`, 404);
 
     const otp = await this.repo.findValidOtp(user.id, input.code);
     if (!otp) throw new AppError('Invalid or expired code', 400);
 
     await this.repo.deleteOtpsByUserId(user.id);
 
-    // Issue a short-lived reset token (reuses the same JWT util as email reset)
     const resetToken = signPasswordResetToken({ id: user.id, email: user.email });
     return { resetToken };
   }
 
-  async forgotPassword(input: ForgotPasswordInput) {
-    const user = await this.repo.findUserByEmail(input.email);
-    if (!user) return { message: 'If that email exists, a reset link has been sent' };
-
-    const resetToken = signPasswordResetToken({ id: user.id, email: user.email });
-    await sendPasswordResetEmail(user.email, resetToken);
-    return { message: 'If that email exists, a reset link has been sent' };
-  }
+  // ── Add & verify a phone number on an existing account ───────────────────────
 
   async requestPhoneOtp(userId: string, input: RequestPhoneOtpInput) {
-    const phone = input.phone.trim();
+    const phone = normalizePhone(input.phone);
     const existing = await this.repo.findUserByPhone(phone);
     if (existing && existing.id !== userId) {
       throw new AppError('This phone number is already in use by another account', 409);
@@ -245,14 +298,7 @@ export class AuthService {
     const user = await this.repo.findUserById(userId);
     if (!user) throw new AppError('User not found', 404);
 
-    const code = generateOtp();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
-    await this.repo.saveOtp(userId, code, expiresAt);
-
-    // In production: integrate an SMS gateway (e.g. Sparrow SMS for Nepal).
-    // For now, log the OTP to the console.
-    if (env.NODE_ENV !== 'production') logger.debug({ phone, code }, 'Phone verification OTP issued');
-
+    await this.issueOtp(userId, 'phone', phone);
     return { message: 'Verification code sent to your phone number' };
   }
 
@@ -264,9 +310,36 @@ export class AuthService {
     if (!otp) throw new AppError('Invalid or expired verification code', 400);
 
     await this.repo.deleteOtpsByUserId(userId);
-    await this.repo.updateUserPhone(userId, input.phone.trim());
+    await this.repo.updateUserPhone(userId, normalizePhone(input.phone));
 
     return { message: 'Phone number verified successfully' };
+  }
+
+  // ── Add & verify a real email on an existing (phone-signup) account ─────────
+
+  async requestEmailOtp(userId: string, input: RequestEmailOtpInput) {
+    const existing = await this.repo.findUserByEmail(input.email);
+    if (existing && existing.id !== userId) {
+      throw new AppError('This email is already in use by another account', 409);
+    }
+    const user = await this.repo.findUserById(userId);
+    if (!user) throw new AppError('User not found', 404);
+
+    await this.issueOtp(userId, 'email', input.email);
+    return { message: 'Verification code sent to your email' };
+  }
+
+  async verifyEmailOtp(userId: string, input: VerifyEmailOtpInput) {
+    const user = await this.repo.findUserById(userId);
+    if (!user) throw new AppError('User not found', 404);
+
+    const otp = await this.repo.findValidOtp(userId, input.code);
+    if (!otp) throw new AppError('Invalid or expired verification code', 400);
+
+    await this.repo.deleteOtpsByUserId(userId);
+    await this.repo.updateUserEmail(userId, input.email);
+
+    return { message: 'Email verified successfully' };
   }
 
   async googleAuth(input: GoogleAuthInput) {

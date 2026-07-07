@@ -14,8 +14,19 @@ function maskPhone(phone: string) {
   return phone.slice(0, -4).replace(/\d/g, '*') + phone.slice(-4);
 }
 
+function maskEmail(email: string) {
+  const [local, domain] = email.split('@');
+  if (!domain) return email;
+  const visible = local.slice(0, Math.min(3, local.length));
+  const stars = '*'.repeat(Math.max(0, local.length - visible.length));
+  return `${visible}${stars}@${domain}`;
+}
+
 export default function ResetOtpScreen() {
-  const { phone } = useLocalSearchParams<{ phone: string }>();
+  const { email, phone } = useLocalSearchParams<{ email?: string; phone?: string }>();
+  const channel: 'email' | 'phone' = phone ? 'phone' : 'email';
+  const identifier = channel === 'email' ? { email: email ?? '' } : { phone: phone ?? '' };
+  const maskedContact = channel === 'email' ? maskEmail(email ?? '') : maskPhone(phone ?? '');
   const C = useAppColors();
 
   const [code, setCode] = useState<string[]>(Array(OTP_LENGTH).fill(''));
@@ -39,7 +50,7 @@ export default function ResetOtpScreen() {
     setLoading(true);
     setError('');
     try {
-      const resetToken = await authService.verifyResetOtp(phone ?? '', fullCode);
+      const resetToken = await authService.verifyResetOtp(identifier, fullCode);
       router.replace({ pathname: '/reset-password', params: { resetToken } });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Verification failed. Please try again.');
@@ -95,7 +106,7 @@ export default function ResetOtpScreen() {
     setResending(true);
     setError('');
     try {
-      await authService.forgotPasswordByPhone(phone ?? '');
+      await authService.forgotPassword(identifier);
       setCode(Array(OTP_LENGTH).fill(''));
       setResendTimer(RESEND_SECONDS);
       setTimeout(() => inputs.current[0]?.focus(), 50);
@@ -121,12 +132,12 @@ export default function ResetOtpScreen() {
           </Pressable>
           <View style={styles.heroContent}>
             <View style={styles.iconWrap}>
-              <Text style={styles.icon}>📱</Text>
+              <Text style={styles.icon}>{channel === 'email' ? '✉️' : '📱'}</Text>
             </View>
             <Text style={styles.heroTitle}>Enter Reset Code</Text>
             <Text style={styles.heroSub}>
               We sent a {OTP_LENGTH}-digit code to{'\n'}
-              <Text style={styles.heroPhone}>{maskPhone(phone ?? '')}</Text>
+              <Text style={styles.heroPhone}>{maskedContact}</Text>
             </Text>
           </View>
         </View>

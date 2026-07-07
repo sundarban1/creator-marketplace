@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useRef, type ReactNode } from 'react';
-import { authService } from '@/services/auth';
+import { authService, type Identifier } from '@/services/auth';
 import { setSessionExpiredHandler, clearSessionExpiredGuard } from '@/lib/api';
 import type { User } from '@/types';
 import { USER_KEY } from '@/utilities/constants';
@@ -9,7 +9,7 @@ import { warmDeviceId } from '@/utilities/deviceId';
 type AuthContextValue = {
   user: User | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (identifier: Identifier, password: string, rememberMe?: boolean) => Promise<void>;
   logout: () => Promise<void>;
   updateUser: (patch: Partial<User>) => void;
   reloadUser: () => Promise<User | null>;
@@ -39,9 +39,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => { setSessionExpiredHandler(() => { /* unmounted */ }); };
   }, []);
 
-  async function login(email: string, password: string) {
+  async function login(identifier: Identifier, password: string, rememberMe = true) {
     clearSessionExpiredGuard(); // reset the once-guard so future expiries fire again
-    const u = await authService.login({ email, password });
+    const u = await authService.login(identifier, password, rememberMe);
     setUser(u);
   }
 

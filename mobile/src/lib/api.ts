@@ -21,10 +21,12 @@ export interface ApiEnvelope<T> {
 export interface ApiAuthUser {
   id:              string;
   email:           string;
+  phone:           string | null;
   role:            'CREATOR' | 'BUSINESS' | 'ADMIN';
   name:            string;
   avatar:          string | null;
   isEmailVerified: boolean;
+  isPhoneVerified: boolean;
   isOnboarded:     boolean;
   createdAt:       string;
 }

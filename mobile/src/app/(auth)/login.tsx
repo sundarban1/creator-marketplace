@@ -61,7 +61,23 @@ const PW_RULES = [
 ];
 
 function isValidEmail(v: string) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()); }
+function isValidPhone(v: string) {
+  const stripped = v.replace(/^\+?977/, '').replace(/[\s\-()]/g, '');
+  return /^\d{7,10}$/.test(stripped);
+}
 const EMAIL_DOMAINS = ['gmail.com', 'yahoo.com'];
+
+// ── Email / Phone identifier detection ───────────────────────────────────────
+
+type IdentifierChannel = 'email' | 'phone';
+
+function identifierChannel(value: string): IdentifierChannel {
+  return value.includes('@') ? 'email' : 'phone';
+}
+function isValidIdentifier(value: string): boolean {
+  return identifierChannel(value) === 'email' ? isValidEmail(value) : isValidPhone(value);
+}
+
 function getPwErrorKey(p: string): string | undefined {
   if (p.length < 8)     return 'auth.signup.pwError8Chars';
   if (!/[A-Z]/.test(p)) return 'auth.signup.pwErrorUppercase';
@@ -174,22 +190,27 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
   const { login } = useAuth();
   const { t }     = useLanguage();
 
-  const [email,     setEmail]     = useState('');
-  const [password,  setPassword]  = useState('');
-  const [submitted, setSubmitted] = useState(false);
-  const [loading,   setLoading]   = useState(false);
-  const [apiError,  setApiError]  = useState('');
+  const [identifierInput, setIdentifierInput] = useState('');
+  const [password,   setPassword]   = useState('');
+  const [rememberMe, setRememberMe] = useState(true);
+  const [submitted,  setSubmitted]  = useState(false);
+  const [loading,    setLoading]    = useState(false);
+  const [apiError,   setApiError]   = useState('');
 
-  const emErr = submitted && !isValidEmail(email) ? t('auth.login.emailInvalid') : undefined;
+  const trimmedIdentifier = identifierInput.trim();
+  const channel = identifierChannel(trimmedIdentifier);
+  const identifierValid = trimmedIdentifier.length > 0 && isValidIdentifier(trimmedIdentifier);
+  const emErr = submitted && !identifierValid ? t('auth.login.identifierInvalid') : undefined;
   const pwErr = submitted && !password ? t('auth.login.passwordRequired') : undefined;
 
   async function handleLogin() {
     setSubmitted(true);
-    if (!isValidEmail(email) || !password) return;
+    if (!identifierValid || !password) return;
     setApiError('');
     setLoading(true);
     try {
-      await login(email.trim(), password);
+      const identifier = channel === 'email' ? { email: trimmedIdentifier } : { phone: trimmedIdentifier };
+      await login(identifier, password, rememberMe);
     } catch (e) {
       setApiError(e instanceof Error ? e.message : t('auth.login.requiredError'));
     } finally {
@@ -214,9 +235,10 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
 
       <View style={s.form}>
         <Field
-          icon="mail-outline" label={t('auth.login.emailLabel')} value={email}
-          onChangeText={(v) => { setEmail(v); setApiError(''); }}
-          placeholder={t('auth.login.emailInputPlaceholder')} keyboardType="email-address" error={emErr}
+          icon={channel === 'email' ? 'mail-outline' : 'call-outline'}
+          label={t('auth.login.identifierLabel')} value={identifierInput}
+          onChangeText={(v) => { setIdentifierInput(v); setApiError(''); }}
+          placeholder={t('auth.login.identifierPlaceholder')} autoCapitalize="none" error={emErr}
         />
         <Field
           icon="lock-closed-outline" label={t('auth.login.password')} value={password}
@@ -229,6 +251,11 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
           }
         />
       </View>
+
+      <Pressable style={s.rememberRow} onPress={() => setRememberMe((v) => !v)} hitSlop={8}>
+        <Ionicons name={rememberMe ? 'checkbox' : 'square-outline'} size={19} color={rememberMe ? P2 : '#9CA3AF'} />
+        <Text style={s.rememberText}>{t('auth.login.rememberMe')}</Text>
+      </Pressable>
 
       <Pressable
         onPress={handleLogin} disabled={loading}
@@ -292,24 +319,33 @@ function SignupForm({ onGooglePress, googleLoading, googleError, onFacebookPress
   const { t } = useLanguage();
 
   const [role,      setRole]      = useState<'CREATOR' | 'BUSINESS'>('CREATOR');
-  const [email,     setEmail]     = useState('');
+  const [identifierInput, setIdentifierInput] = useState('');
   const [password,  setPassword]  = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [loading,   setLoading]   = useState(false);
   const [error,     setError]     = useState('');
 
-  const emErr = submitted && !isValidEmail(email)      ? t('auth.signup.emailInvalid') : undefined;
+  const trimmedIdentifier = identifierInput.trim();
+  const channel = identifierChannel(trimmedIdentifier);
+  const identifierValid = trimmedIdentifier.length > 0 && isValidIdentifier(trimmedIdentifier);
+  const emErr = submitted && !identifierValid ? t('auth.signup.identifierInvalid') : undefined;
   const pwErrKey = submitted ? getPwErrorKey(password) : undefined;
   const pwErr    = pwErrKey ? t(pwErrKey) : undefined;
 
   async function handleCreate() {
     setSubmitted(true);
     setError('');
-    if (!isValidEmail(email) || getPwErrorKey(password)) return;
+    if (!identifierValid || getPwErrorKey(password)) return;
     setLoading(true);
     try {
-      await authService.register({ email: email.trim().toLowerCase(), password, role });
-      router.push({ pathname: '/verify', params: { email: email.trim().toLowerCase() } });
+      if (channel === 'email') {
+        const trimmedEmail = trimmedIdentifier.toLowerCase();
+        await authService.register({ email: trimmedEmail, password, role });
+        router.push({ pathname: '/verify', params: { email: trimmedEmail } });
+      } else {
+        await authService.register({ phone: trimmedIdentifier, password, role });
+        router.push({ pathname: '/verify', params: { phone: trimmedIdentifier } });
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : t('auth.signup.registrationFailed'));
     } finally {
@@ -357,9 +393,10 @@ function SignupForm({ onGooglePress, googleLoading, googleError, onFacebookPress
       {/* Fields */}
       <View style={s.form}>
         <Field
-          icon="mail-outline" label={t('auth.signup.emailLabel')} value={email}
-          onChangeText={(v) => { setEmail(v); setError(''); }}
-          placeholder={t('auth.signup.emailInputPlaceholder')} keyboardType="email-address" error={emErr}
+          icon={channel === 'email' ? 'mail-outline' : 'call-outline'}
+          label={t('auth.signup.identifierLabel')} value={identifierInput}
+          onChangeText={(v) => { setIdentifierInput(v); setError(''); }}
+          placeholder={t('auth.signup.identifierPlaceholder')} autoCapitalize="none" error={emErr}
         />
         <Field
           icon="lock-closed-outline" label={t('auth.signup.password')} value={password}
@@ -777,6 +814,10 @@ const s = StyleSheet.create({
   // Banners
   banner:     { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12, borderRadius: 12, borderWidth: 1, marginBottom: 16 },
   bannerText: { fontSize: 13, flex: 1, fontFamily: F.medium },
+
+  // Remember me
+  rememberRow:  { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 20, marginTop: -4 },
+  rememberText: { fontSize: 13, fontFamily: F.medium, color: '#374151' },
 
   // Form
   form:          { gap: 16, marginBottom: 20 },

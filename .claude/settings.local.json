@@ -194,7 +194,8 @@
       "Bash(node scratch_shot.mjs)",
       "Bash(curl -s http://localhost:5173/)",
       "Bash(node scratch_inspect.mjs)",
-      "Bash(rm -f scratch_inspect.mjs *)"
+      "Bash(rm -f scratch_inspect.mjs *)",
+      "Bash(grep -n \"const { user, logout }\\\\|const toast = useToast\" /Users/sundarban/Documents/projects/marketplace/mobile/src/app/\\\\\\(business\\\\\\)/settings.tsx)"
     ],
     "additionalDirectories": [
       "/private/tmp",

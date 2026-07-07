@@ -68,7 +68,6 @@ export default function OnboardingScreen() {
   // Step 1 — profile basics
   const [fullName,  setFullName]  = useState('');
   const [username,  setUsername]  = useState('');
-  const [phone,     setPhone]     = useState('');
   const [gender,    setGender]    = useState('');
   const [location, setLocation] = useState('');
   const [usernameSuggestions, setUsernameSuggestions] = useState<string[]>([]);
@@ -159,7 +158,6 @@ export default function OnboardingScreen() {
       await profileService.updateCreatorProfile({
         fullName: fullName.trim(),
         username: username.trim(),
-        phone:    phone.trim() || undefined,
         gender:   gender || undefined,
         location: location.trim(),
       });
@@ -309,22 +307,6 @@ export default function OnboardingScreen() {
                     </View>
                   </View>
                 )}
-              </View>
-
-              {/* Phone */}
-              <View style={styles.formGroup}>
-                <View style={styles.labelRow}>
-                  <Text style={[styles.formLabel, { color: C.text }]}>{t('onboarding.phoneLabel')}</Text>
-                  <Text style={[styles.optionalTag, { color: C.textSecondary }]}>{t('onboarding.optional')}</Text>
-                </View>
-                <TextInput
-                  style={[styles.formInput, { backgroundColor: C.surface, borderColor: C.border, color: C.text }]}
-                  value={phone}
-                  onChangeText={setPhone}
-                  placeholder={t('onboarding.phonePlaceholder')}
-                  placeholderTextColor={C.textSecondary}
-                  keyboardType="phone-pad"
-                />
               </View>
 
               {/* Gender */}

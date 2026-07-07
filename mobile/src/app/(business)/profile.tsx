@@ -69,10 +69,10 @@ export default function BusinessProfileScreen() {
   async function handleLogoPress() {
     setLogoUploading(true);
     try {
-      const url = await pickAndUpload('business-logo');
-      if (url) {
-        setProfile((p) => p ? { ...p, logoUrl: url } : p);
-        updateUser({ avatar: url });
+      const result = await pickAndUpload('business-logo');
+      if (result) {
+        setProfile((p) => p ? { ...p, logoUrl: result.url } : p);
+        updateUser({ avatar: result.url });
       }
     } catch {
       toast.error(t('profile.uploadFailed'));

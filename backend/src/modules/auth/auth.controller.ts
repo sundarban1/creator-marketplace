@@ -81,15 +81,6 @@ export class AuthController {
     }
   }
 
-  async forgotPasswordByPhone(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const result = await authService.forgotPasswordByPhone(req.body);
-      success(res, result, result.message);
-    } catch (err) {
-      next(err);
-    }
-  }
-
   async verifyResetOtp(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const result = await authService.verifyResetOtp(req.body);
@@ -156,6 +147,24 @@ export class AuthController {
   async verifyPhoneOtp(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const result = await authService.verifyPhoneOtp(req.user!.id, req.body);
+      success(res, result, result.message);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async requestEmailOtp(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await authService.requestEmailOtp(req.user!.id, req.body);
+      success(res, result, result.message);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async verifyEmailOtp(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await authService.verifyEmailOtp(req.user!.id, req.body);
       success(res, result, result.message);
     } catch (err) {
       next(err);

@@ -74,10 +74,10 @@ export default function CreatorProfileScreen() {
   async function handleAvatarPress() {
     setUploading(true);
     try {
-      const url = await pickAndUpload('creator-avatar');
-      if (url) {
-        setProfile((p) => p ? { ...p, avatarUrl: url } : p);
-        updateUser({ avatar: url });
+      const result = await pickAndUpload('creator-avatar');
+      if (result) {
+        setProfile((p) => p ? { ...p, avatarUrl: result.url } : p);
+        updateUser({ avatar: result.url });
       }
     } catch {
       toast.error(t('profile.uploadFailed'));
