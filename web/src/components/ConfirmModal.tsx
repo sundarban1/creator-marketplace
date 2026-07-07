@@ -1,4 +1,4 @@
-import { AlertTriangle, Trash2, ShieldOff, ShieldCheck, X } from 'lucide-react';
+import {Trash2, ShieldOff, ShieldCheck, X } from 'lucide-react';
 
 type Variant = 'danger' | 'warning' | 'success';
 

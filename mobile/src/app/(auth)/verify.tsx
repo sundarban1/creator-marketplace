@@ -1,4 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -178,6 +179,7 @@ export default function VerifyScreen() {
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: C.brinjal1 }]} edges={['top']}>
+      <StatusBar style="light" />
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
 
         {/* ── Header ─────────────────────────────────────────────────────────── */}

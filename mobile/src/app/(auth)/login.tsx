@@ -1,4 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { useRef, useState, useEffect } from 'react';
@@ -632,6 +633,7 @@ export default function LoginScreen() {
 
   return (
     <View style={[s.root, { backgroundColor: P1 }]}>
+      <StatusBar style="light" />
       <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
 
         {/* ── Gradient hero ── */}

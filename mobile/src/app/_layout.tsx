@@ -1,5 +1,6 @@
 import { DarkTheme, DefaultTheme, ThemeProvider, useRouter, useSegments } from 'expo-router';
 import { Stack } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { View } from 'react-native';
 import {
@@ -66,6 +67,9 @@ function RootLayoutInner() {
       <AuthProvider>
         <NotificationProvider>
           <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
+            {/* Default status bar for plain-background screens — light-headered
+                auth screens override this locally with their own <StatusBar style="light" />. */}
+            <StatusBar style={isDark ? 'light' : 'dark'} />
             <RootNavigator />
           </ThemeProvider>
         </NotificationProvider>

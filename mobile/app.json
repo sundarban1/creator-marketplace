@@ -76,6 +76,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "77b46836-b5cc-408d-abba-c6a908fa3e43"
+      }
+    },
+    "owner": "sundarban"
   }
 }

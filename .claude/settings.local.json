@@ -203,7 +203,10 @@
       "Bash(git check-ignore *)",
       "Bash(curl -s \"https://api.github.com/repos/sundarban1/creator-marketplace/contents/backend/docker-entrypoint.sh?ref=master\")",
       "Bash(curl -s \"https://raw.githubusercontent.com/sundarban1/creator-marketplace/master/backend/Dockerfile\")",
-      "Bash(node -e \"console.log\\(require\\('crypto'\\).randomBytes\\(48\\).toString\\('hex'\\)\\)\")"
+      "Bash(node -e \"console.log\\(require\\('crypto'\\).randomBytes\\(48\\).toString\\('hex'\\)\\)\")",
+      "Bash(npx eas-cli *)",
+      "Bash(node -e \"console.log\\(require\\('./package.json'\\).dependencies.expo\\)\")",
+      "Bash(git ls-files *)"
     ],
     "additionalDirectories": [
       "/private/tmp",

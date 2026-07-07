@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -53,6 +54,7 @@ export default function ForgotPasswordScreen() {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.brinjal1 }]} edges={['top']}>
+      <StatusBar style="light" />
       {/* ── Header ── */}
       <View style={styles.hero}>
         <View style={styles.bubble1} />
