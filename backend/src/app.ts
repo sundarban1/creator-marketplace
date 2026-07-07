@@ -61,6 +61,13 @@ const allowedOrigins = env.FRONTEND_URL
   .map((o) => o.trim())
   .filter(Boolean);
 
+// Always allow the service's own origin — Swagger UI (served by this same app at
+// /api/docs) issues "Try it out" requests with Origin set to Render's auto-injected
+// public URL, which otherwise wouldn't be in FRONTEND_URL's list of client origins.
+if (process.env.RENDER_EXTERNAL_URL) {
+  allowedOrigins.push(process.env.RENDER_EXTERNAL_URL);
+}
+
 app.use(
   cors({
     origin: (origin, callback) => {
