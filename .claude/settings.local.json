@@ -206,7 +206,11 @@
       "Bash(node -e \"console.log\\(require\\('crypto'\\).randomBytes\\(48\\).toString\\('hex'\\)\\)\")",
       "Bash(npx eas-cli *)",
       "Bash(node -e \"console.log\\(require\\('./package.json'\\).dependencies.expo\\)\")",
-      "Bash(git ls-files *)"
+      "Bash(git ls-files *)",
+      "Bash(pg_isready -h localhost -p 5432)",
+      "Bash(docker exec *)",
+      "Read(//Users/sundarban/.expo/**)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(list\\(d.keys\\(\\)\\)\\)\")"
     ],
     "additionalDirectories": [
       "/private/tmp",

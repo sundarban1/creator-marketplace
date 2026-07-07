@@ -4,7 +4,7 @@ import {
   Camera, Briefcase, MessageSquare, BarChart2, Shield, Sparkles,
   Star, ChevronDown, Mail, Globe, AtSign, Rocket, Compass, Handshake,
   ArrowRight, ArrowUpRight, CheckCircle, Users, TrendingUp,
-  DollarSign, Search, Bell, Menu, X,
+  DollarSign, Search, Bell, Menu, X, Share2, UserPlus, Gift,
 } from 'lucide-react';
 
 // ── Animation primitives ─────────────────────────────────────────────────────
@@ -37,8 +37,29 @@ const NAV_LINKS = [
   { label: 'Why kolab', id: 'value' },
   { label: 'How it works', id: 'how-it-works' },
   { label: 'Features', id: 'features' },
+  { label: 'Referrals', id: 'referrals' },
   { label: 'Stories', id: 'stories' },
   { label: 'FAQ', id: 'faq' },
+];
+
+const REFERRAL_STEPS = [
+  { icon: Share2, title: 'Share your code', desc: 'Find your unique referral code in Settings and send it to a friend.' },
+  { icon: UserPlus, title: 'They join & get active', desc: 'Your friend signs up with your code and completes their first campaign.' },
+  { icon: Gift, title: 'You both get paid', desc: 'Rewards are credited automatically once the campaign is confirmed complete.' },
+];
+
+const CREATOR_REFERRAL_STEPS = [
+  'Share your referral code from your Creator settings',
+  'Your friend signs up and links your code',
+  'They complete their first campaign within 90 days',
+  'You earn NPR 500, they earn a NPR 200 bonus',
+];
+
+const BUSINESS_REFERRAL_STEPS = [
+  'Share your referral code from your Business settings',
+  'The brand signs up and links your code',
+  'They fund and run their first campaign within 90 days',
+  "You both earn NPR 500 once it's confirmed",
 ];
 
 const KEYWORDS = [
@@ -652,6 +673,77 @@ export function LandingPage() {
               <p className="text-gray-500 text-sm mb-5">D2C brands, agencies, startups — amplify reach with the right creators.</p>
               <ul className="space-y-3">
                 {['Post campaigns with your goals and budget', 'Browse and filter verified creators', 'Review proposals and pick the best fit', 'Pay only once you approve the results'].map(item => (
+                  <li key={item} className="flex items-start gap-2.5 text-sm text-gray-700">
+                    <CheckCircle size={16} className="text-blue-500 mt-0.5 flex-shrink-0" />{item}
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Referral Program ─────────────────────────────────────────────── */}
+      <section id="referrals" className="py-24 bg-white">
+        <div className="max-w-5xl mx-auto px-5">
+          <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="text-center mb-14">
+            <Eyebrow>Earn together</Eyebrow>
+            <motion.h2 variants={fadeUp} className="text-3xl md:text-4xl font-extrabold text-gray-900 mt-3">Invite someone in your world, get rewarded</motion.h2>
+            <motion.p variants={fadeUp} className="text-gray-500 mt-4 max-w-xl mx-auto">
+              Every creator and every brand gets a personal referral code. Share it with someone like you — when they get their first campaign done, you both earn.
+            </motion.p>
+          </motion.div>
+
+          {/* Shared 3-step flow */}
+          <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="grid sm:grid-cols-3 gap-6 mb-16">
+            {REFERRAL_STEPS.map(({ icon: Icon, title, desc }) => (
+              <motion.div key={title} variants={fadeUp} className="text-center px-4">
+                <div className="w-12 h-12 rounded-2xl bg-violet-600 flex items-center justify-center mx-auto mb-4">
+                  <Icon size={20} className="text-white" />
+                </div>
+                <h4 className="font-bold text-gray-900 mb-1.5">{title}</h4>
+                <p className="text-gray-500 text-sm leading-relaxed">{desc}</p>
+              </motion.div>
+            ))}
+          </motion.div>
+
+          {/* Creator-to-creator / Business-to-business breakdown */}
+          <div className="grid md:grid-cols-2 gap-8">
+            <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={VP} transition={{ duration: 0.6 }} whileHover={{ y: -4 }} className="bg-gradient-to-br from-violet-50 to-white rounded-3xl p-8 border border-violet-100">
+              <div className="flex items-start justify-between mb-5">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-600 to-violet-900 flex items-center justify-center">
+                  <Camera size={24} className="text-white" />
+                </div>
+                <div className="text-right">
+                  <div className="text-2xl font-extrabold text-violet-700">NPR 500</div>
+                  <div className="text-xs text-gray-400 font-medium">+ NPR 200 for them</div>
+                </div>
+              </div>
+              <h3 className="text-xl font-extrabold text-gray-900 mb-1">Creator → Creator</h3>
+              <p className="text-gray-500 text-sm mb-5">Refer a fellow creator to kolab. When they complete their first campaign, you both earn.</p>
+              <ul className="space-y-3">
+                {CREATOR_REFERRAL_STEPS.map(item => (
+                  <li key={item} className="flex items-start gap-2.5 text-sm text-gray-700">
+                    <CheckCircle size={16} className="text-violet-500 mt-0.5 flex-shrink-0" />{item}
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+
+            <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={VP} transition={{ duration: 0.6 }} whileHover={{ y: -4 }} className="bg-gradient-to-br from-blue-50 to-white rounded-3xl p-8 border border-blue-100">
+              <div className="flex items-start justify-between mb-5">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-900 flex items-center justify-center">
+                  <Briefcase size={24} className="text-white" />
+                </div>
+                <div className="text-right">
+                  <div className="text-2xl font-extrabold text-blue-700">NPR 500</div>
+                  <div className="text-xs text-gray-400 font-medium">for both sides</div>
+                </div>
+              </div>
+              <h3 className="text-xl font-extrabold text-gray-900 mb-1">Business → Business</h3>
+              <p className="text-gray-500 text-sm mb-5">Know another brand that could use kolab? Refer them and earn once they're active.</p>
+              <ul className="space-y-3">
+                {BUSINESS_REFERRAL_STEPS.map(item => (
                   <li key={item} className="flex items-start gap-2.5 text-sm text-gray-700">
                     <CheckCircle size={16} className="text-blue-500 mt-0.5 flex-shrink-0" />{item}
                   </li>
