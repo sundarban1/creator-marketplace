@@ -235,7 +235,9 @@
       "Bash(curl -s \"http://localhost:3000/api/campaigns/nearby?lng=85.3240\")",
       "Bash(grep -n \"locationLng: { type: 'number', nullable: true }\" src/config/swagger.ts)",
       "Bash(grep -n \"location: { type: 'string', nullable: true, example: 'Mumbai' }\" src/config/swagger.ts)",
-      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('OK, count:', len\\(d['data']\\)\\)\")"
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('OK, count:', len\\(d['data']\\)\\)\")",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\)['data']; print\\({k:d[k] for k in ['location','locationLat','locationLng','nearbyRadiusKm','nearbyUseHomeLocation']}\\)\")",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('status:', d['status']\\); print\\('lat/lng:', d['results'][0]['geometry']['location']\\)\")"
     ],
     "additionalDirectories": [
       "/private/tmp",

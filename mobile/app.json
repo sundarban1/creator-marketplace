@@ -9,6 +9,9 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "bundleIdentifier": "com.sundarban.kolab",
+      "config": {
+        "googleMapsApiKey": "AIzaSyAJrdBTZyJH0Sxku7uG-_V4x5lSv4xWii0"
+      },
       "infoPlist": {
         "CFBundleURLTypes": [
           {
@@ -34,6 +37,11 @@
         "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.RECORD_AUDIO"
       ],
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyAJrdBTZyJH0Sxku7uG-_V4x5lSv4xWii0"
+        }
+      },
       "package": "com.sundarban.kolab"
     },
     "web": {

@@ -1,10 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import MapView, { PROVIDER_GOOGLE, type Region } from 'react-native-maps';
 import { useAppColors } from '@/context/ThemeContext';
+import { RadiusSlider } from '@/components/RadiusSlider';
 import { F } from '@/utilities/constants';
+import type { LatLng } from '@/utilities/geolocation';
 
-const RADIUS_PRESETS = [5, 10, 25, 50, 100];
+const DEFAULT_DELTA = 0.15; // ~15km-ish span at the equator, close enough for a starting zoom
+const FALLBACK_COORDS: LatLng = { lat: 27.7172, lng: 85.3240 }; // Kathmandu — used only if no location is available at all
 
 export type NearbySource = 'current' | 'home';
 
@@ -14,29 +18,48 @@ type Props = {
   source: NearbySource;
   radiusKm: number;
   homeLabel: string | null;
-  onApply: (source: NearbySource, radiusKm: number) => void;
+  currentCoords: LatLng | null;
+  homeCoords: LatLng | null;
+  onApply: (source: NearbySource, radiusKm: number, coords: LatLng) => void;
 };
 
 /**
- * Radius is a "set once, rarely change" setting, so it lives behind the chip
- * in this sheet rather than inline in the row header.
+ * Facebook-Marketplace-style location picker: a map with a fixed center pin
+ * (drag the map to move the pin, matching how most map pickers behave) and a
+ * radius slider below it — replaces the old radius-pill list entirely.
  */
-export function NearbyLocationSheet({ visible, onClose, source, radiusKm, homeLabel, onApply }: Props) {
+export function NearbyLocationSheet({ visible, onClose, source, radiusKm, homeLabel, currentCoords, homeCoords, onApply }: Props) {
   const C = useAppColors();
+  const mapRef = useRef<MapView>(null);
 
-  // Local draft state so Cancel doesn't mutate the committed setting
   const [draftSource, setDraftSource] = useState<NearbySource>(source);
   const [draftRadius, setDraftRadius] = useState(radiusKm);
+  const [pinCoords, setPinCoords] = useState<LatLng>(currentCoords ?? homeCoords ?? FALLBACK_COORDS);
 
   useEffect(() => {
-    if (visible) {
-      setDraftSource(source);
-      setDraftRadius(radiusKm);
-    }
-  }, [visible, source, radiusKm]);
+    if (!visible) return;
+    setDraftSource(source);
+    setDraftRadius(radiusKm);
+    const start = source === 'current' ? (currentCoords ?? homeCoords) : (homeCoords ?? currentCoords);
+    setPinCoords(start ?? FALLBACK_COORDS);
+  }, [visible, source, radiusKm, currentCoords, homeCoords]);
+
+  function moveTo(coords: LatLng) {
+    setPinCoords(coords);
+    mapRef.current?.animateToRegion({
+      latitude: coords.lat,
+      longitude: coords.lng,
+      latitudeDelta: DEFAULT_DELTA,
+      longitudeDelta: DEFAULT_DELTA,
+    }, 300);
+  }
+
+  function handleRegionChangeComplete(region: Region) {
+    setPinCoords({ lat: region.latitude, lng: region.longitude });
+  }
 
   function handleApply() {
-    onApply(draftSource, draftRadius);
+    onApply(draftSource, draftRadius, pinCoords);
     onClose();
   }
 
@@ -54,53 +77,52 @@ export function NearbyLocationSheet({ visible, onClose, source, radiusKm, homeLa
         </View>
 
         <View style={styles.body}>
-          <Text style={[styles.sectionLabel, { color: C.textSecondary }]}>LOCATION SOURCE</Text>
-          <View style={styles.sourceRow}>
+          <View style={styles.sourceToggleRow}>
             <Pressable
-              style={[
-                styles.sourceCard,
-                { borderColor: draftSource === 'current' ? C.brinjal1 : C.border, backgroundColor: draftSource === 'current' ? C.primaryLight : C.background },
-              ]}
-              onPress={() => setDraftSource('current')}>
-              <Ionicons name="navigate" size={20} color={draftSource === 'current' ? C.brinjal1 : C.textSecondary} />
-              <Text style={[styles.sourceCardTitle, { color: draftSource === 'current' ? C.brinjal1 : C.text }]}>Current Location</Text>
-              <Text style={[styles.sourceCardSub, { color: C.textSecondary }]} numberOfLines={1}>Uses your device's GPS</Text>
+              style={[styles.sourceToggle, { borderColor: draftSource === 'current' ? C.brinjal1 : C.border, backgroundColor: draftSource === 'current' ? C.primaryLight : C.background }]}
+              onPress={() => { setDraftSource('current'); moveTo(currentCoords ?? pinCoords); }}>
+              <Ionicons name="navigate" size={13} color={draftSource === 'current' ? C.brinjal1 : C.textSecondary} />
+              <Text style={[styles.sourceToggleText, { color: draftSource === 'current' ? C.brinjal1 : C.text }]}>Current Location</Text>
             </Pressable>
             <Pressable
               style={[
-                styles.sourceCard,
+                styles.sourceToggle,
                 { borderColor: draftSource === 'home' ? C.brinjal1 : C.border, backgroundColor: draftSource === 'home' ? C.primaryLight : C.background },
-                !homeLabel && { opacity: 0.5 },
+                !homeCoords && { opacity: 0.5 },
               ]}
-              disabled={!homeLabel}
-              onPress={() => setDraftSource('home')}>
-              <Ionicons name="home" size={20} color={draftSource === 'home' ? C.brinjal1 : C.textSecondary} />
-              <Text style={[styles.sourceCardTitle, { color: draftSource === 'home' ? C.brinjal1 : C.text }]} numberOfLines={1}>
-                Home{homeLabel ? ` · ${homeLabel}` : ''}
-              </Text>
-              <Text style={[styles.sourceCardSub, { color: C.textSecondary }]} numberOfLines={1}>
-                {homeLabel ? 'Your saved location' : 'Set a location in your profile'}
+              disabled={!homeCoords}
+              onPress={() => { setDraftSource('home'); moveTo(homeCoords ?? pinCoords); }}>
+              <Ionicons name="home" size={13} color={draftSource === 'home' ? C.brinjal1 : C.textSecondary} />
+              <Text style={[styles.sourceToggleText, { color: draftSource === 'home' ? C.brinjal1 : C.text }]} numberOfLines={1}>
+                {homeLabel ? `Home · ${homeLabel}` : 'Home'}
               </Text>
             </Pressable>
           </View>
 
-          <Text style={[styles.sectionLabel, { color: C.textSecondary, marginTop: 20 }]}>RADIUS</Text>
-          <View style={styles.radiusRow}>
-            {RADIUS_PRESETS.map((r) => {
-              const active = draftRadius === r;
-              return (
-                <Pressable
-                  key={r}
-                  style={[
-                    styles.radiusChip,
-                    { borderColor: active ? C.brinjal1 : C.border, backgroundColor: active ? C.brinjal1 : C.background },
-                  ]}
-                  onPress={() => setDraftRadius(r)}>
-                  <Text style={[styles.radiusChipText, { color: active ? '#fff' : C.text }]}>{r} km</Text>
-                </Pressable>
-              );
-            })}
+          <Text style={[styles.sectionLabel, { color: C.textSecondary }]}>CHANGE LOCATION</Text>
+          <Text style={[styles.sectionHint, { color: C.textSecondary }]}>Drag the map to fine-tune the search point.</Text>
+
+          <View style={styles.mapWrap}>
+            <MapView
+              ref={mapRef}
+              provider={PROVIDER_GOOGLE}
+              style={styles.map}
+              initialRegion={{
+                latitude: pinCoords.lat,
+                longitude: pinCoords.lng,
+                latitudeDelta: DEFAULT_DELTA,
+                longitudeDelta: DEFAULT_DELTA,
+              }}
+              onRegionChangeComplete={handleRegionChangeComplete}
+            />
+            {/* Fixed center pin — the map pans underneath it, matching the
+                Facebook Marketplace "drag map, pin stays put" pattern. */}
+            <View style={styles.pinWrap} pointerEvents="none">
+              <Ionicons name="location" size={36} color={C.brinjal1} />
+            </View>
           </View>
+
+          <RadiusSlider value={draftRadius} onChange={setDraftRadius} min={1} max={100} />
         </View>
 
         <View style={[styles.footer, { borderTopColor: C.border }]}>
@@ -123,16 +145,17 @@ const styles = StyleSheet.create({
   title:    { fontSize: 17, fontWeight: '700', fontFamily: F.bold },
 
   body: { padding: 20, gap: 4 },
+
+  sourceToggleRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
+  sourceToggle: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1.5, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 8 },
+  sourceToggleText: { fontSize: 12, fontWeight: '700', fontFamily: F.bold, flexShrink: 1 },
+
   sectionLabel: { fontSize: 11, fontWeight: '700', letterSpacing: 0.6, fontFamily: F.bold },
+  sectionHint:  { fontSize: 12, fontFamily: F.regular, marginTop: 2, marginBottom: 10 },
 
-  sourceRow:  { flexDirection: 'row', gap: 10, marginTop: 10 },
-  sourceCard: { flex: 1, borderRadius: 14, borderWidth: 1.5, padding: 12, gap: 4 },
-  sourceCardTitle: { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
-  sourceCardSub:   { fontSize: 11, fontFamily: F.regular },
-
-  radiusRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
-  radiusChip: { paddingHorizontal: 16, paddingVertical: 9, borderRadius: 20, borderWidth: 1.5 },
-  radiusChipText: { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
+  mapWrap: { height: 220, borderRadius: 16, overflow: 'hidden', marginBottom: 20 },
+  map: { ...StyleSheet.absoluteFill },
+  pinWrap: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center', marginBottom: 36 },
 
   footer:   { paddingHorizontal: 20, paddingVertical: 16, borderTopWidth: 1 },
   applyBtn: { height: 50, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },

@@ -20,7 +20,7 @@ import { campaignService } from '@/services/campaign';
 import { creatorService } from '@/services/creator';
 import { getSocket } from '@/lib/socket';
 import { storage } from '@/utilities/storage';
-import { getCurrentLocation, type LatLng } from '@/utilities/geolocation';
+import { getCurrentLocation, geocodeAddress, type LatLng } from '@/utilities/geolocation';
 import { ACCESS_TOKEN_KEY, F } from '@/utilities/constants';
 import type { Campaign } from '@/types';
 
@@ -160,18 +160,22 @@ export default function HomeScreen() {
 
   async function initNearby(profile: { nearbyRadiusKm: number; nearbyUseHomeLocation: boolean; location: string | null; locationLat: number | null; locationLng: number | null }) {
     const radius = profile.nearbyRadiusKm ?? 25;
-    const home: LatLng | null = profile.locationLat != null && profile.locationLng != null
-      ? { lat: profile.locationLat, lng: profile.locationLng } : null;
     setNearbyRadiusKm(radius);
     setNearbyHomeLabel(profile.location ?? null);
-    setNearbyHomeCoords(home);
 
-    let preferredSource: NearbySource = profile.nearbyUseHomeLocation ? 'home' : 'current';
-
-    const current = await getCurrentLocation();
+    const [current, home] = await Promise.all([
+      getCurrentLocation(),
+      profile.locationLat != null && profile.locationLng != null
+        ? Promise.resolve<LatLng>({ lat: profile.locationLat, lng: profile.locationLng })
+        // Profiles that only ever saved location as free text (no Places picker used)
+        // have no coordinates — geocode the text so "Home" is still selectable.
+        : profile.location ? geocodeAddress(profile.location) : Promise.resolve(null),
+    ]);
     setNearbyCurrentCoords(current);
+    setNearbyHomeCoords(home);
     setNearbyLocationDenied(current === null);
 
+    let preferredSource: NearbySource = profile.nearbyUseHomeLocation ? 'home' : 'current';
     // Fall back to home if current location was preferred but permission was denied
     if (preferredSource === 'current' && !current) preferredSource = home ? 'home' : 'current';
     setNearbySource(preferredSource);
@@ -181,20 +185,16 @@ export default function HomeScreen() {
     else setNearbyLoading(false);
   }
 
-  async function handleNearbyApply(source: NearbySource, radiusKm: number) {
+  function handleNearbyApply(source: NearbySource, radiusKm: number, coords: LatLng) {
     setNearbySource(source);
     setNearbyRadiusKm(radiusKm);
     creatorService.updateProfile({ nearbyRadiusKm: radiusKm, nearbyUseHomeLocation: source === 'home' }).catch(() => {});
 
-    let coords = source === 'current' ? nearbyCurrentCoords : nearbyHomeCoords;
-    if (source === 'current' && !coords) {
-      const loc = await getCurrentLocation();
-      setNearbyCurrentCoords(loc);
-      setNearbyLocationDenied(loc === null);
-      coords = loc;
-    }
-    if (coords) void fetchNearby(coords, radiusKm);
-    else setNearbyCampaigns([]);
+    // The user may have dragged the map to fine-tune the point — that becomes the
+    // new "current" position for this session (home stays whatever's saved on the profile).
+    if (source === 'current') setNearbyCurrentCoords(coords);
+
+    void fetchNearby(coords, radiusKm);
   }
 
   function handleExpandNearbyRadius() {
@@ -815,6 +815,8 @@ export default function HomeScreen() {
         source={nearbySource}
         radiusKm={nearbyRadiusKm}
         homeLabel={nearbyHomeLabel}
+        currentCoords={nearbyCurrentCoords}
+        homeCoords={nearbyHomeCoords}
         onApply={handleNearbyApply}
       />
     </SafeAreaView>

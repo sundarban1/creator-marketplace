@@ -55,6 +55,7 @@ export type Role = typeof ROLE[keyof typeof ROLE];
 export const GOOGLE_PLACES_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY ?? '';
 export const GOOGLE_PLACES_AUTOCOMPLETE_URL = 'https://maps.googleapis.com/maps/api/place/autocomplete/json';
 export const GOOGLE_PLACES_DETAILS_URL      = 'https://maps.googleapis.com/maps/api/place/details/json';
+export const GOOGLE_GEOCODE_URL             = 'https://maps.googleapis.com/maps/api/geocode/json';
 
 // Nepal-restricted place autocomplete, matching how every screen in this app scopes location search.
 export function buildPlacesAutocompleteUrl(input: string, opts?: { types?: string }): string {
@@ -71,4 +72,9 @@ export function buildPlacesAutocompleteUrl(input: string, opts?: { types?: strin
 export function buildPlaceDetailsUrl(placeId: string, fields = 'geometry'): string {
   const params = new URLSearchParams({ place_id: placeId, fields, key: GOOGLE_PLACES_API_KEY });
   return `${GOOGLE_PLACES_DETAILS_URL}?${params.toString()}`;
+}
+
+export function buildGeocodeUrl(address: string): string {
+  const params = new URLSearchParams({ address, key: GOOGLE_PLACES_API_KEY, region: 'np' });
+  return `${GOOGLE_GEOCODE_URL}?${params.toString()}`;
 }
