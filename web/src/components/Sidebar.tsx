@@ -32,7 +32,7 @@ const navGroups: NavGroup[] = [
       { to: '/users',      label: 'Users',      icon: Users           },
       { to: '/creators',   label: 'Creators',   icon: Star            },
       { to: '/businesses', label: 'Businesses', icon: Briefcase       },
-      { to: '/campaigns',  label: 'Campaigns',  icon: Megaphone       },
+      { to: '/campaigns',  label: 'Events',     icon: Megaphone       },
       { to: '/categories', label: 'Categories', icon: Tag             },
       { to: '/platforms',  label: 'Platforms',  icon: Share2          },
     ],

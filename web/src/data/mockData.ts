@@ -85,10 +85,10 @@ export const dashboardStats = {
 
 export const recentActivity = [
   { id: '1', type: 'new_user', text: 'Alex Rivera joined as Creator', time: '2 min ago', icon: 'user' },
-  { id: '2', type: 'campaign', text: 'StyleCo launched "Summer Collection" campaign', time: '15 min ago', icon: 'campaign' },
+  { id: '2', type: 'campaign', text: 'StyleCo launched "Summer Collection" event', time: '15 min ago', icon: 'campaign' },
   { id: '3', type: 'payment', text: 'Payment of $1,200 released to @fashionista', time: '1 hr ago', icon: 'payment' },
   { id: '4', type: 'report', text: 'New report filed against @spamuser123', time: '2 hr ago', icon: 'report' },
-  { id: '5', type: 'campaign', text: 'TechGadgets campaign marked as completed', time: '3 hr ago', icon: 'campaign' },
+  { id: '5', type: 'campaign', text: 'TechGadgets event marked as completed', time: '3 hr ago', icon: 'campaign' },
   { id: '6', type: 'new_user', text: 'NovaBrands Inc. joined as Business', time: '5 hr ago', icon: 'user' },
   { id: '7', type: 'payment', text: 'Payment of $850 released to @travelblogger', time: '6 hr ago', icon: 'payment' },
 ];
@@ -152,7 +152,7 @@ export const payments: Payment[] = [
 export const reports: Report[] = [
   { id: 'r1', reporter: 'Alex Rivera', reported: 'spamuser123', reason: 'Spam / Fake Account', status: 'open', date: '2024-06-10', description: 'This account is sending unsolicited DMs promoting fake gigs.' },
   { id: 'r2', reporter: 'NovaBrands Inc.', reported: 'Jordan Blake', reason: 'Fraudulent Activity', status: 'reviewing', date: '2024-06-09', description: 'Creator submitted fake engagement stats in the proposal.' },
-  { id: 'r3', reporter: 'Mia Chen', reported: 'AutoParts Pro', reason: 'Misleading Campaign', status: 'resolved', date: '2024-06-07', description: 'Campaign brief was completely different from what was agreed upon.' },
+  { id: 'r3', reporter: 'Mia Chen', reported: 'AutoParts Pro', reason: 'Misleading Event', status: 'resolved', date: '2024-06-07', description: 'Event brief was completely different from what was agreed upon.' },
   { id: 'r4', reporter: 'Priya Sharma', reported: 'fakeinfluencer99', reason: 'Spam / Fake Account', status: 'dismissed', date: '2024-06-05', description: 'Account appears to have purchased followers.' },
   { id: 'r5', reporter: 'FoodieHub Co.', reported: 'Tyler James', reason: 'Content Violation', status: 'open', date: '2024-06-04', description: 'Creator posted content that violated agreed brand guidelines.' },
   { id: 'r6', reporter: 'Sofia Ruiz', reported: 'scambrand2024', reason: 'Payment Fraud', status: 'reviewing', date: '2024-06-03', description: 'Business refused to pay after content was delivered and approved.' },

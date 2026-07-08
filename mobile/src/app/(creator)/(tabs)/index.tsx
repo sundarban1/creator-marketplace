@@ -465,7 +465,7 @@ export default function HomeScreen() {
                     : pendingActions[0]!.type === 'upload_work'
                       ? `Upload deliverables for "${pendingActions[0]!.title}"`
                       : `Submit your content for "${pendingActions[0]!.title}"`
-                  : `${pendingActions.length} campaigns are waiting for your action`}
+                  : `${pendingActions.length} events are waiting for your action`}
               </Text>
             </View>
             <Ionicons name="chevron-forward" size={16} color="#D97706" />
@@ -639,7 +639,7 @@ export default function HomeScreen() {
             {/* ── Campaign list header with count ── */}
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { color: C.text }]}>
-                {activeFilterTab === 'all' ? 'All Campaigns' :
+                {activeFilterTab === 'all' ? 'All Events' :
                  activeFilterTab === 'recommended' ? 'Recommended' :
                  activeFilterTab === 'trending' ? 'Trending' : 'Ending Soon'}
                 {filteredList.length > 0 ? `  ·  ${filteredList.length}` : ''}

@@ -4,7 +4,7 @@ import { PageHeader } from '../components/PageHeader';
 import { api } from '../lib/api';
 import type { HelpArticle } from '../lib/api';
 
-const CATEGORIES = ['General', 'Campaigns', 'Payments', 'Account', 'Content', 'Other'];
+const CATEGORIES = ['General', 'Events', 'Payments', 'Account', 'Content', 'Other'];
 const EMPTY_FORM = { question: '', answer: '', category: 'General', order: 0, published: true };
 
 function DeleteModal({ question, onConfirm, onCancel }: { question: string; onConfirm: () => void; onCancel: () => void }) {

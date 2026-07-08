@@ -169,7 +169,7 @@ export function Conversations() {
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
-            placeholder="Search creator, business or campaign…"
+            placeholder="Search creator, business or event…"
             value={rawSearch}
             onChange={(e) => handleSearch(e.target.value)}
             className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
@@ -217,7 +217,7 @@ export function Conversations() {
                 <tr className="border-b border-gray-100 bg-gray-50">
                   <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Creator</th>
                   <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Business</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Campaign</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Event</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Messages</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Last Activity</th>

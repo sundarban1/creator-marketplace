@@ -213,7 +213,12 @@
       "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(list\\(d.keys\\(\\)\\)\\)\")",
       "Bash(awk 'NR==1305,0' src/app/\\\\\\(creator\\\\\\)/settings.tsx)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:5173/)",
-      "Bash(rm -rf node_modules/.tmp *.tsbuildinfo tsconfig.tsbuildinfo tsconfig.app.tsbuildinfo tsconfig.node.tsbuildinfo 2>/dev/null *)"
+      "Bash(rm -rf node_modules/.tmp *.tsbuildinfo tsconfig.tsbuildinfo tsconfig.app.tsbuildinfo tsconfig.node.tsbuildinfo 2>/dev/null *)",
+      "Bash(awk '/function renderSocialAccounts/,0' \"src/app/\\(creator\\)/settings.tsx\")",
+      "Bash(grep -rn -A1 '<Pressable onPress={[^}]*}>$' src/app/ src/features/)",
+      "Bash(perl -0777 -ne ' *)",
+      "Bash(python3)",
+      "Bash(grep -rn '`[^`]*[Cc]ampaign[^`]*`' src/app/ src/features/ src/components/)"
     ],
     "additionalDirectories": [
       "/private/tmp",

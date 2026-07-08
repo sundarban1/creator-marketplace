@@ -13,7 +13,7 @@ function resolveTitle(pathname: string): string {
     '/users': 'Users',
     '/creators': 'Creators',
     '/businesses': 'Businesses',
-    '/campaigns': 'Campaigns',
+    '/campaigns': 'Events',
     '/categories': 'Categories',
     '/platforms': 'Platforms',
     '/payments':    'Payments',

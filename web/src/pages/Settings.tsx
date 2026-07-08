@@ -101,7 +101,7 @@ const DEFAULTS: PlatformSettings = {
   'platform.name':               'kolab',
   'platform.supportEmail':       'support@collab.com',
   'platform.commission':         '12',
-  'platform.description':        'kolab connects brands with top creators for authentic campaigns.',
+  'platform.description':        'kolab connects brands with top creators for authentic events.',
 };
 
 // ── Main component ─────────────────────────────────────────────────────────────
@@ -216,8 +216,8 @@ export function Settings() {
           <Toggle label="User Registration"     description="Allow new users to sign up on the platform"                      value={bool('registration.enabled')}  onChange={(v) => toggle('registration.enabled', v)} />
           <Toggle label="Creator Onboarding"    description="Enable the creator onboarding flow for new users"                value={bool('creator.onboarding')}    onChange={(v) => toggle('creator.onboarding', v)} />
           <Toggle label="Business Onboarding"   description="Enable business registration and onboarding"                     value={bool('business.onboarding')}   onChange={(v) => toggle('business.onboarding', v)} />
-          <Toggle label="Campaign Auto-Approval" description="Automatically approve campaigns that meet all criteria"         value={bool('campaign.autoApproval')} onChange={(v) => toggle('campaign.autoApproval', v)} />
-          <Toggle label="Payment Escrow"         description="Hold payments in escrow until campaign completion is confirmed"  value={bool('payment.escrow')}        onChange={(v) => toggle('payment.escrow', v)} />
+          <Toggle label="Event Auto-Approval"    description="Automatically approve events that meet all criteria"             value={bool('campaign.autoApproval')} onChange={(v) => toggle('campaign.autoApproval', v)} />
+          <Toggle label="Payment Escrow"         description="Hold payments in escrow until event completion is confirmed"      value={bool('payment.escrow')}        onChange={(v) => toggle('payment.escrow', v)} />
         </SectionCard>
 
         {/* Messaging */}

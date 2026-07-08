@@ -23,7 +23,7 @@ export function NewPlatformPage() {
         </button>
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Add New Platform</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Create a new social media platform for campaigns.</p>
+          <p className="text-sm text-gray-500 mt-0.5">Create a new social media platform for events.</p>
         </div>
       </div>
       <PlatformForm onSubmit={handleSubmit} submitLabel="Create Platform" />

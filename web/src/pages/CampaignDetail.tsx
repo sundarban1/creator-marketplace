@@ -46,7 +46,7 @@ function buildTimeline(campaign: ApiCampaignDetail) {
 
   events.push({
     date:  campaign.createdAt,
-    label: 'Campaign created',
+    label: 'Event created',
     sub:   `by ${campaign.business.businessName}`,
     color: 'bg-indigo-500',
   });
@@ -84,7 +84,7 @@ function buildTimeline(campaign: ApiCampaignDetail) {
   events.push({
     date:  campaign.updatedAt,
     label: `Status: ${campaign.status}`,
-    sub:   'Current campaign status',
+    sub:   'Current event status',
     color: campaign.status === 'ACTIVE' ? 'bg-emerald-500' : campaign.status === 'PAUSED' ? 'bg-orange-400' : 'bg-gray-500',
   });
 
@@ -195,7 +195,7 @@ export function CampaignDetail() {
   if (error || !campaign) {
     return (
       <div className="p-6 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
-        {error ?? 'Campaign not found.'}
+        {error ?? 'Event not found.'}
       </div>
     );
   }
@@ -228,7 +228,7 @@ export function CampaignDetail() {
               )}
               <StatusBadge status={campaign.status.toLowerCase()} />
             </div>
-            <p className="text-sm text-gray-500 mt-0.5">{campaign.business.businessName} · {isEvent ? 'Open Event' : 'Paid Campaign'}</p>
+            <p className="text-sm text-gray-500 mt-0.5">{campaign.business.businessName} · {isEvent ? 'Open Event' : 'Paid Event'}</p>
           </div>
         </div>
 
@@ -256,7 +256,7 @@ export function CampaignDetail() {
           {/* Info card */}
           <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-5">
             <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-              <FileText size={15} className="text-gray-400" /> Campaign Details
+              <FileText size={15} className="text-gray-400" /> Event Details
             </h2>
 
             {/* Key stats */}

@@ -13,7 +13,7 @@ interface HelpArticle {
   createdAt: string;
 }
 
-const CATEGORIES = ['General', 'Campaigns', 'Payments', 'Account', 'Content', 'Other'];
+const CATEGORIES = ['General', 'Events', 'Payments', 'Account', 'Content', 'Other'];
 
 const EMPTY_FORM = { question: '', answer: '', category: 'General', order: 0, published: true };
 
@@ -80,7 +80,7 @@ function ArticleModal({
             <input
               value={form.question}
               onChange={(e) => { setForm((f) => ({ ...f, question: e.target.value })); setErrors((err) => ({ ...err, question: '' })); }}
-              placeholder="e.g. How do campaigns work?"
+              placeholder="e.g. How do events work?"
               className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition ${errors['question'] ? 'border-red-400' : 'border-gray-200'}`}
             />
             {errors['question'] && <p className="text-xs text-red-500 mt-1">{errors['question']}</p>}

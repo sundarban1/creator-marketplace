@@ -266,8 +266,8 @@ function BusinessCard({
           <Ionicons name="megaphone-outline" size={12} color={item._count.campaigns > 0 ? C.brinjal1 : C.textSecondary} />
           <Text style={[styles.campaignBadgeTxt, { color: item._count.campaigns > 0 ? C.brinjal1 : C.textSecondary }]}>
             {item._count.campaigns > 0
-              ? `${item._count.campaigns} campaign${item._count.campaigns !== 1 ? 's' : ''}`
-              : 'No campaigns yet'}
+              ? `${item._count.campaigns} event${item._count.campaigns !== 1 ? 's' : ''}`
+              : 'No events yet'}
           </Text>
         </View>
         <View style={[styles.viewBtn, { backgroundColor: C.brinjal1 }]}>

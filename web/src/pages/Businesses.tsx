@@ -102,7 +102,7 @@ export function Businesses() {
     },
     {
       key:    'campaigns',
-      header: 'Campaigns',
+      header: 'Events',
       render: (row: ApiBusiness) => (
         <span className="font-medium text-gray-800">{row._count.campaigns}</span>
       ),

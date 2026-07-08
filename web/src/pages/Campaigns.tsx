@@ -64,7 +64,7 @@ export function Campaigns() {
   const columns = [
     {
       key:    'title',
-      header: 'Campaign',
+      header: 'Event',
       render: (row: ApiCampaign) => (
         <div className="min-w-0">
           <p className="font-medium text-gray-900 truncate max-w-[220px]">{row.title}</p>
@@ -139,7 +139,7 @@ export function Campaigns() {
   return (
     <div>
       <PageHeader
-        title="Campaigns"
+        title="Events"
         subtitle={
           loading
             ? 'Loading...'

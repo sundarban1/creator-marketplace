@@ -7,7 +7,7 @@ import { reports, type Report } from '../data/mockData';
 const reasonColors: Record<string, string> = {
   'Spam / Fake Account': 'bg-amber-50 text-amber-700',
   'Fraudulent Activity': 'bg-red-50 text-red-700',
-  'Misleading Campaign': 'bg-orange-50 text-orange-700',
+  'Misleading Event': 'bg-orange-50 text-orange-700',
   'Content Violation': 'bg-purple-50 text-purple-700',
   'Payment Fraud': 'bg-red-50 text-red-800',
 };

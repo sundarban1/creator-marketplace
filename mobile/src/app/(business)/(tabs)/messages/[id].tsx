@@ -428,7 +428,7 @@ export default function BusinessChatRoomScreen() {
 
         {/* ── Input bar ── */}
         {status === 'ACCEPTED' && (
-          <View style={[s.inputBar, { backgroundColor: C.surface, borderTopColor: C.border, paddingBottom: 16 + insets.bottom }]}>
+          <View style={[s.inputBar, { backgroundColor: C.surface, borderTopColor: C.border, paddingBottom: insets.bottom + 8 }]}>
             <View style={[s.inputWrap, { borderColor: C.border, backgroundColor: C.background }]}>
               <TextInput
                 ref={inputRef}

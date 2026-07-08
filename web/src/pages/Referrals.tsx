@@ -106,7 +106,7 @@ export function Referrals() {
           <Condition met={row.eligibility.verified} label="Verified badge" />
           <Condition met={row.eligibility.profileComplete} label="Profile complete" />
           {hasFlags(row) ? (
-            <Condition met={row.eligibility.fundedCampaignStable} label="Funded campaign (14d+)" />
+            <Condition met={row.eligibility.fundedCampaignStable} label="Funded event (14d+)" />
           ) : (
             <Condition met={(row as ApiReferral).eligibility.firstEventCompleted} label="First event done" />
           )}

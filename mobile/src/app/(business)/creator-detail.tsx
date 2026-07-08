@@ -348,7 +348,7 @@ export default function CreatorDetailScreen() {
       </ScrollView>
 
       {/* Sticky action bar */}
-      <View style={[msgBtn.bar, { backgroundColor: C.surface, borderTopColor: C.border, paddingBottom: 14 + insets.bottom }]}>
+      <View style={[msgBtn.bar, { backgroundColor: C.surface, borderTopColor: C.border, paddingBottom: Math.max(14, insets.bottom) }]}>
         {convStatus === 'ACCEPTED' ? (
           <Pressable style={[msgBtn.btn, { backgroundColor: C.brinjal1 }]} onPress={openChat}>
             <FontAwesome5 name="comment-dots" size={16} color="#fff" solid />

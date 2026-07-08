@@ -709,7 +709,7 @@ export default function BusinessSettingsScreen() {
     { q: 'What is CreatorMarket for businesses?', a: 'CreatorMarket lets you find and hire local content creators for paid collaborations — video promotions, product reviews, social media marketing, and more.' },
     { q: 'How much does it cost?', a: 'Posting events is free. A 10% platform fee applies on each completed collaboration, deducted from the event budget.' },
     { q: 'How do I find the right creators?', a: 'Browse creator profiles by category, follower count, and platform. Or post an event and let creators apply to you.' },
-    { q: 'What payment methods are supported?', a: 'For Nepal: eSewa, Khalti, and Bank Transfer. For international campaigns: Visa/Mastercard. Stripe support is coming soon.' },
+    { q: 'What payment methods are supported?', a: 'For Nepal: eSewa, Khalti, and Bank Transfer. For international events: Visa/Mastercard. Stripe support is coming soon.' },
     { q: 'Can I run multiple events at once?', a: 'Yes. You can have multiple active events simultaneously and manage all proposals in one place.' },
     { q: 'Is my business information secure?', a: 'Yes. We use industry-standard encryption. Your contact details can be hidden from the public profile in Privacy Settings.' },
   ];

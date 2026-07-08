@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 
 const FEATURES = [
   { icon: Users, text: 'Manage creators & businesses in one place' },
-  { icon: Megaphone, text: 'Monitor campaigns and proposals in real-time' },
+  { icon: Megaphone, text: 'Monitor events and proposals in real-time' },
   { icon: CreditCard, text: 'Track payments and resolve disputes instantly' },
 ];
 
@@ -74,7 +74,7 @@ export function Login() {
             The command center for your creator marketplace
           </h1>
           <p className="text-indigo-200 text-lg leading-relaxed">
-            Manage users, campaigns, and payments — all from one powerful dashboard.
+            Manage users, events, and payments — all from one powerful dashboard.
           </p>
         </div>
 

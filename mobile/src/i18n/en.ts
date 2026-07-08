@@ -338,7 +338,7 @@ const en = {
     step2: '2. They sign up',
     step3: '3. They get the verified business badge',
     step4: '4. They complete their business profile',
-    step5: '5. They publish a funded campaign',
+    step5: '5. They publish a funded event',
     conditionNote: 'All steps must be completed within 3 months of signing up. Once verified by our team, you\'ll earn Rs. {{amount}}.',
     yourCodeLabel: 'Your referral code',
     shareHint: 'Tap the code to share it',
@@ -583,13 +583,13 @@ const en = {
     },
     business: {
       headerTitle: 'Proposals',
-      headerSub: 'Review creator applications by campaign',
+      headerSub: 'Review creator applications by event',
       tabAll: 'All',
       tabPaid: 'Paid',
       tabFree: 'Free',
       tabAccepted: 'Accepted',
       typeFreeEvent: 'Free Event',
-      typePaidCampaign: 'Paid Campaign',
+      typePaidCampaign: 'Paid Event',
       statTotal: 'Total',
       statPending: 'Pending',
       statApproved: 'Approved',
@@ -597,8 +597,8 @@ const en = {
       statDeclined: 'Declined',
       nudge: '{{n}} application(s) awaiting review',
       emptyTitle: 'No proposals yet',
-      emptyAllSub: 'Proposals from creators will appear here when they apply to your campaigns.',
-      emptyPaidSub: 'No paid campaign proposals yet.',
+      emptyAllSub: 'Proposals from creators will appear here when they apply to your events.',
+      emptyPaidSub: 'No paid event proposals yet.',
       emptyFreeSub: 'No free event proposals yet.',
       emptyAcceptedSub: 'No accepted proposals yet. Accept a creator proposal to see it here.',
     },
@@ -782,7 +782,7 @@ const en = {
     sectionPhone: 'Phone',
     sectionIndustries: 'Industries',
     privateTitle: 'This account is private',
-    privateSubtitle: "This business has chosen to keep their profile and campaigns hidden from creators.",
+    privateSubtitle: "This business has chosen to keep their profile and events hidden from creators.",
     openChat: 'Open Chat',
     requestSent: '⏳  Request Sent',
     sendMessage: '✉️  Send Message',
@@ -1332,7 +1332,7 @@ const en = {
       addedToFavorites: 'Added to favorites',
       couldNotRemoveFav: 'Could not remove favorite.',
       couldNotAddFav: 'Could not add favorite.',
-      campaignsBadge: '{{n}} active campaign(s)',
+      campaignsBadge: '{{n}} active event(s)',
       viewHint: 'View',
       exploreCreatorsSub: 'Find the perfect creator for your event',
     },
@@ -1820,7 +1820,7 @@ const en = {
 
   campaignProposalsExtra: {
     alertApproveBody: 'Approve {{name}} for this event?',
-    alertAcceptBody:  "Accept {{name}}'s proposal?\n\nOther pending applicants will be notified that the campaign is closed.",
+    alertAcceptBody:  "Accept {{name}}'s proposal?\n\nOther pending applicants will be notified that the event is closed.",
     alertDeclineBody: "Decline {{name}}'s application?",
   },
 
@@ -1881,7 +1881,7 @@ const en = {
     generateContinueBtn:  'Generate & Continue',
 
     aiPromptLabel:       'What do you want to promote?',
-    aiPromptSub:         "Describe it in a sentence or two — we'll turn it into a complete, editable campaign.",
+    aiPromptSub:         "Describe it in a sentence or two — we'll turn it into a complete, editable event.",
     aiExamplesLabel:     'Try one of these',
     createEventBtn:      'Create Event',
     aiModalGenerating:   'Creating your event…',
@@ -1891,7 +1891,7 @@ const en = {
     descSuggestFailed:     "Couldn't suggest a description. Please try again or write your own.",
 
     secObjectiveTitle:            'Objective',
-    secObjectiveSub:              'What is this campaign meant to achieve?',
+    secObjectiveSub:              'What is this event meant to achieve?',
     secTargetAudienceTitle:       'Target Audience',
     secTargetAudienceSub:         'Comma-separated — who should this content reach?',
     secContentGuidelinesTitle:    'Content Guidelines',
@@ -1901,7 +1901,7 @@ const en = {
     secCallToActionTitle:         'Call to Action',
     secCallToActionSub:           'A short phrase encouraging creators’ audience to act.',
     secAiBudgetTitle:             'Suggested Budget',
-    secAiBudgetSub:               'Estimated budget for this campaign — adjust as needed.',
+    secAiBudgetSub:               'Estimated budget for this event — adjust as needed.',
     aiBudgetMinLabel:             'Minimum (Rs.)',
     aiBudgetMaxLabel:             'Maximum (Rs.)',
 
@@ -2033,18 +2033,18 @@ const en = {
     statusWaitingPayment:   'Waiting Payment',
 
     // Campaign summary card
-    headerFallback:       'Campaign',
-    headerWorkspace:      'Campaign Workspace',
+    headerFallback:       'Event',
+    headerWorkspace:      'Event Workspace',
     footerProposalDate:   'Proposal Date',
     footerPayment:        'Payment',
     footerPaymentPaid:    'Paid ✅',
     footerPaymentPending: 'Pending',
-    footerCampaignId:     'Campaign ID',
+    footerCampaignId:     'Event ID',
     footerCreatorLabel:   'Creator: {{name}}',
     footerBrandLabel:     'by {{name}}',
 
     // Section titles
-    campaignProgress:      'Campaign Progress',
+    campaignProgress:      'Event Progress',
     sectionTimeline:       'Activity Timeline',
     sectionTimelineSub:    'Nepal Time (NPT) • Newest first',
     badgeDone:             'Done',
@@ -2071,15 +2071,15 @@ const en = {
     tlProposalAcceptedDescCreator:     'Business selected your proposal.',
     tlWaitingPayment:                  'Waiting for Payment',
     tlWaitingPaymentDescCreator:       "Business has 24 hours to complete payment. You'll be notified immediately.",
-    tlWaitingPaymentDescBusiness:      'Complete payment to secure the creator and begin the campaign.',
+    tlWaitingPaymentDescBusiness:      'Complete payment to secure the creator and begin the event.',
     tlPaymentSecured:                  'Payment Secured',
     tlPaymentSecuredDescCreator:       "Funds safely held by platform. Tap \"Let's Create Content\" to begin!",
     tlPaymentSecuredDescBusiness:      'Funds safely held by platform. Waiting for creator to start.',
     tlWaitingCreator:                  'Waiting on Creator to Start',
-    tlWaitingCreatorDescCreator:       "Tap \"Let's Create Content\" below to begin working on this campaign.",
+    tlWaitingCreatorDescCreator:       "Tap \"Let's Create Content\" below to begin working on this event.",
     tlWaitingCreatorDescBusiness:      'Creator has been notified. Waiting for them to start.',
     tlWorkStarted:                     'Work Started',
-    tlWorkStartedDescCreator:          'You started working on the campaign.',
+    tlWorkStartedDescCreator:          'You started working on the event.',
     tlWorkStartedDescBusiness:         'Creator began working on deliverables.',
     tlDeliverablesUploaded:            'Deliverables Uploaded',
     tlDeliverablesUploadedDescCreator: 'You submitted work for review.',
@@ -2090,7 +2090,7 @@ const en = {
 
     // Action card states
     acPaymentRequiredTitle:  'Payment Required',
-    acPaymentRequiredSub:    'Complete payment to secure the creator and start the campaign.',
+    acPaymentRequiredSub:    'Complete payment to secure the creator and start the event.',
     acPayNowBtn:             'Pay Now',
     acWaitingPaymentTitle:   'Waiting for Payment',
     acWaitingPaymentSub:     "Business has 24 hours to complete payment. You'll be notified immediately when done.",
@@ -2114,7 +2114,7 @@ const en = {
     acApproveBtn:            'Approve',
     acAwaitingReviewTitle:   'Awaiting Review',
     acAwaitingReviewSub:     'Business is reviewing your work. Auto-approved in 5 days if no response.',
-    acCompletedBizTitle:     'Campaign Completed! 🎉',
+    acCompletedBizTitle:     'Event Completed! 🎉',
     acCompletedBizSub:       "You approved the work. Payment has been released to the creator's wallet.",
     acCompletedCreatorTitle: 'Work Approved! 🎉',
     acCompletedCreatorSub:   'Payment has been released to your wallet.',
@@ -2148,12 +2148,12 @@ const en = {
 
     // Cancel modal
     modalCancelTitle:          'Cancel Event',
-    modalCancelSub:            'Are you sure you want to cancel this campaign?',
+    modalCancelSub:            'Are you sure you want to cancel this event?',
     modalCancelFeeTitle:       '20% Cancellation Fee',
     modalCancelFeeBody:        'Since payment has already been secured, a 20% deduction (NPR {{deduction}}) will be applied. You will receive a refund of NPR {{refund}} within 3–5 business days.',
     modalCancelNoFee:          'No payment has been made, so no deduction will apply.',
     modalCancelCreatorNotified:'The creator will be notified immediately.',
-    modalCancelKeepBtn:        'Keep Campaign',
+    modalCancelKeepBtn:        'Keep Event',
     modalCancelConfirmBtn:     'Yes, Cancel',
 
     // Toast messages
@@ -2161,7 +2161,7 @@ const en = {
     toastWorkSubmitted:      '✅ Work submitted! Business will review within 5 days.',
     toastWorkApproved:       '✅ Work approved! Payment released to creator.',
     toastRevisionRequested:  'Revision requested. Creator has been notified.',
-    toastCampaignCancelled:  'Campaign cancelled. Creator has been notified.',
+    toastCampaignCancelled:  'Event cancelled. Creator has been notified.',
 
     // URL validation
     urlValidationAtLeastOne:  'Please add at least one link.',

@@ -23,7 +23,7 @@ const columns = [
   },
   {
     key: 'campaign',
-    header: 'Campaign',
+    header: 'Event',
     render: (row: Payment) => <span className="text-gray-600 text-xs max-w-[160px] truncate block">{row.campaign}</span>,
   },
   {

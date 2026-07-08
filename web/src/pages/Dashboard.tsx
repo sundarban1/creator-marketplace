@@ -80,14 +80,14 @@ export function Dashboard() {
               iconBg="bg-amber-50"
             />
             <StatCard
-              title="Active Campaigns"
+              title="Active Events"
               value={(stats?.activeCampaigns ?? 0).toLocaleString()}
               icon={Megaphone}
               iconColor="text-emerald-600"
               iconBg="bg-emerald-50"
             />
             <StatCard
-              title="Total Campaigns"
+              title="Total Events"
               value={(stats?.totalCampaigns ?? 0).toLocaleString()}
               icon={TrendingUp}
               iconColor="text-indigo-600"
