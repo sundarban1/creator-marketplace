@@ -10,6 +10,23 @@ import { F } from '@/utilities/constants';
 const CARD_W    = 216;
 const CARD_IMG_H = 148;
 
+function timeAgo(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1)   return 'Just now';
+  if (mins < 60)  return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days === 1) return 'Yesterday';
+  if (days < 7)   return `${days}d ago`;
+  const weeks = Math.floor(days / 7);
+  if (weeks < 5)  return `${weeks}w ago`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return `${months}mo ago`;
+  return `${Math.floor(months / 12)}y ago`;
+}
+
 function expiryLabel(iso: string): { label: string; color: string } {
   const days = Math.ceil((new Date(iso).getTime() - Date.now()) / 86400000);
   if (days < 0)   return { label: 'Expired',           color: '#9CA3AF' };
@@ -29,7 +46,7 @@ function formatDistance(km: number): string {
 export function NearbyCard({ campaign }: { campaign: Campaign }) {
   const C = useAppColors();
   const catMeta   = CATEGORY_META[campaign.category] ?? DEFAULT_META;
-  const cardImage = getTemplateImage(campaign.template, campaign.category);
+  const cardImage = campaign.featureImageUrl ?? getTemplateImage(campaign.template, campaign.category);
 
   function goToDetail() {
     router.push({ pathname: '/campaign-detail', params: { campaignId: campaign.id } });
@@ -105,11 +122,19 @@ export function NearbyCard({ campaign }: { campaign: Campaign }) {
           {(() => {
             const expiry = expiryLabel(campaign.deadline);
             return (
-              <View style={styles.metaItemRow}>
-                <Ionicons name="time-outline" size={11} color={expiry.color} />
-                <Text style={[styles.deadlineText, { color: expiry.color }]} numberOfLines={1}>
-                  {expiry.label}
-                </Text>
+              <View style={styles.metaRow}>
+                <View style={styles.metaItemRow}>
+                  <Ionicons name="calendar-outline" size={11} color={C.textSecondary} />
+                  <Text style={[styles.deadlineText, { color: C.textSecondary }]}>
+                    {timeAgo(campaign.createdAt)}
+                  </Text>
+                </View>
+                <View style={styles.metaItemRow}>
+                  <Ionicons name="time-outline" size={11} color={expiry.color} />
+                  <Text style={[styles.deadlineText, { color: expiry.color }]} numberOfLines={1}>
+                    {expiry.label}
+                  </Text>
+                </View>
               </View>
             );
           })()}

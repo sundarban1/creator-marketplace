@@ -197,6 +197,7 @@ model Campaign {
   title          String
   description    String
   template       String?
+  featureImageUrl String?
   category       String
   goals          Json            @default("[]")
   platform       String

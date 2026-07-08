@@ -45,7 +45,31 @@ export const TEMPLATE_IMAGES: Record<string, string> = {
   Hospitality:    'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400&q=80',
   Clothing:       'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&q=80',
   Coffee:         'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=400&q=80',
+
+  // Creator category picker (matches CREATOR_CATEGORIES labels in filterOptions.ts)
+  Gaming:              'https://images.unsplash.com/photo-1493711662062-fa541adb3fc8?w=400&q=80',
+  Tech:                'https://images.unsplash.com/photo-1498049794561-7780e7231661?w=400&q=80',
+  Education:           'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&q=80',
+  Lifestyle:           'https://images.unsplash.com/photo-1483729558449-99ef09a8c325?w=400&q=80',
+  'Home & Living':     'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=400&q=80',
+  Wellness:            'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=400&q=80',
+  Music:               'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&q=80',
+  'Art & Design':      'https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=400&q=80',
+  Pets:                'https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=400&q=80',
+  Parenting:           'https://images.unsplash.com/photo-1476703993599-0035a21b17a9?w=400&q=80',
+  Automotive:          'https://images.unsplash.com/photo-1502877338535-766e1452684a?w=400&q=80',
+  Finance:             'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&q=80',
+  Sustainability:      'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=400&q=80',
+  Photography:         'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=400&q=80',
+  Sports:              'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=400&q=80',
+  'Film & TV':         'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=400&q=80',
+  Mindfulness:         'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=400&q=80',
+  'Food & Drink':      'https://images.unsplash.com/photo-1544145945-f90425340c7e?w=400&q=80',
 };
+
+// Generic fallback for categories with no specific entry above — always a real
+// photo, never a blank/icon placeholder.
+export const DEFAULT_TEMPLATE_IMAGE = 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&q=80';
 
 export function getTemplateImage(template?: string | null, category?: string | null): string | undefined {
   if (template && TEMPLATE_IMAGES[template]) return TEMPLATE_IMAGES[template];

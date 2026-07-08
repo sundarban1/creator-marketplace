@@ -75,6 +75,7 @@ export function toCampaign(api: ApiCampaign): Campaign {
     budgetRaw:    api.budgetMin,
     budgetMax:    api.budgetMax,
     template:     api.template ?? undefined,
+    featureImageUrl: api.featureImageUrl ?? undefined,
     category:     api.category,
     goals:        Array.isArray(api.goals) ? api.goals : [],
     minFollowers:    formatFollowers(api.minFollowers),
@@ -215,6 +216,7 @@ export const campaignService = {
     title: string;
     description: string;
     template?: string;
+    featureImageUrl?: string;
     category: string;
     goals?: string[];
     platform: string;
@@ -270,6 +272,7 @@ export const campaignService = {
   async update(id: string, data: {
     title?: string;
     description?: string;
+    featureImageUrl?: string | null;
     category?: string;
     goals?: string[];
     platform?: string;

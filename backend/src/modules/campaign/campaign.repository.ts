@@ -7,6 +7,7 @@ export class CampaignRepository {
     title: string;
     description: string;
     template?: string;
+    featureImageUrl?: string;
     category: string;
     goals?: string[];
     platform: string;
@@ -239,6 +240,7 @@ export class CampaignRepository {
     title: string;
     description: string;
     template: string;
+    featureImageUrl: string | null;
     category: string;
     goals: string[];
     platform: string;

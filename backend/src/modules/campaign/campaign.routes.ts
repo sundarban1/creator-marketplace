@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { CampaignController } from './campaign.controller';
 import { authenticate, authorize } from '../../middleware/auth';
 import { validate } from '../../middleware/validate';
+import { uploadImage } from '../../middleware/upload';
 import {
   createCampaignSchema,
   updateCampaignSchema,
@@ -12,6 +13,38 @@ import {
 
 const router = Router();
 const ctrl = new CampaignController();
+
+/**
+ * @swagger
+ * /api/campaigns/feature-image:
+ *   post:
+ *     tags: [Campaign]
+ *     summary: Upload a campaign feature image (BUSINESS only). Not tied to a
+ *       specific campaign — used to pre-upload the image while composing a new
+ *       campaign, before it has an id.
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               image:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       200:
+ *         description: Image uploaded
+ */
+router.post(
+  '/feature-image',
+  authenticate,
+  authorize('BUSINESS'),
+  uploadImage.single('image'),
+  ctrl.uploadFeatureImage.bind(ctrl)
+);
 
 /**
  * @swagger

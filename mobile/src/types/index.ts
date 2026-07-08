@@ -22,6 +22,7 @@ export type Campaign = {
   budgetRaw: number;
   budgetMax?: number;
   template?: string;
+  featureImageUrl?: string;
   category: string;
   goals: string[];
   minFollowers: string;

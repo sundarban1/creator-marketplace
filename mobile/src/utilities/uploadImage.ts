@@ -5,17 +5,18 @@ import { API_BASE } from '@/lib/api';
 import { storage } from '@/utilities/storage';
 import { ACCESS_TOKEN_KEY } from '@/utilities/constants';
 
-export type UploadTarget = 'creator-avatar' | 'business-logo' | 'creator-citizenship' | 'business-pan' | 'business-company-reg';
+export type UploadTarget = 'creator-avatar' | 'business-logo' | 'creator-citizenship' | 'business-pan' | 'business-company-reg' | 'campaign-feature';
 
-const TARGET_CONFIG: Record<UploadTarget, { path: string; field: string; cropSquare: boolean }> = {
-  'creator-avatar':      { path: '/api/creator/avatar',      field: 'avatar',   cropSquare: true  },
-  'business-logo':       { path: '/api/business/logo',       field: 'logo',     cropSquare: true  },
-  'creator-citizenship': { path: '/api/creator/citizenship', field: 'document', cropSquare: false },
-  'business-pan':            { path: '/api/business/documents/pan',         field: 'document', cropSquare: false },
-  'business-company-reg':    { path: '/api/business/documents/company-reg', field: 'document', cropSquare: false },
+const TARGET_CONFIG: Record<UploadTarget, { path: string; field: string; aspect?: [number, number] }> = {
+  'creator-avatar':      { path: '/api/creator/avatar',      field: 'avatar',   aspect: [1, 1]  },
+  'business-logo':       { path: '/api/business/logo',       field: 'logo',     aspect: [1, 1]  },
+  'creator-citizenship': { path: '/api/creator/citizenship', field: 'document' },
+  'business-pan':            { path: '/api/business/documents/pan',         field: 'document' },
+  'business-company-reg':    { path: '/api/business/documents/company-reg', field: 'document' },
+  'campaign-feature':        { path: '/api/campaigns/feature-image',        field: 'image', aspect: [16, 9] },
 };
 
-async function pickFromLibrary(cropSquare: boolean): Promise<ImagePicker.ImagePickerAsset | null> {
+async function pickFromLibrary(aspect?: [number, number]): Promise<ImagePicker.ImagePickerAsset | null> {
   const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (status !== 'granted') {
     Alert.alert('Permission required', 'Please allow access to your photo library in Settings.');
@@ -23,20 +24,20 @@ async function pickFromLibrary(cropSquare: boolean): Promise<ImagePicker.ImagePi
   }
   const result = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ['images'],
-    ...(cropSquare ? { allowsEditing: true, aspect: [1, 1] as [number, number] } : {}),
+    ...(aspect ? { allowsEditing: true, aspect } : {}),
     quality: 0.85,
   });
   return result.canceled ? null : result.assets[0];
 }
 
-async function pickFromCamera(cropSquare: boolean): Promise<ImagePicker.ImagePickerAsset | null> {
+async function pickFromCamera(aspect?: [number, number]): Promise<ImagePicker.ImagePickerAsset | null> {
   const { status } = await ImagePicker.requestCameraPermissionsAsync();
   if (status !== 'granted') {
     Alert.alert('Permission required', 'Please allow camera access in Settings.');
     return null;
   }
   const result = await ImagePicker.launchCameraAsync({
-    ...(cropSquare ? { allowsEditing: true, aspect: [1, 1] as [number, number] } : {}),
+    ...(aspect ? { allowsEditing: true, aspect } : {}),
     quality: 0.85,
   });
   return result.canceled ? null : result.assets[0];
@@ -97,7 +98,7 @@ async function uploadAsset(asset: ImagePicker.ImagePickerAsset, target: UploadTa
   if (!res.ok) throw new Error(json.message ?? 'Upload failed');
 
   return {
-    url: json.data.avatarUrl ?? json.data.logoUrl ?? json.data.docUrl ?? '',
+    url: json.data.avatarUrl ?? json.data.logoUrl ?? json.data.docUrl ?? json.data.imageUrl ?? '',
     // Only document uploads (pan/company-reg/citizenship) return a status —
     // the server, not the client, is the source of truth for review state.
     status: (json.data.panDocStatus ?? json.data.companyRegDocStatus ?? json.data.citizenshipStatus) as DocStatus | undefined,
@@ -108,8 +109,8 @@ export async function pickAndUpload(target: UploadTarget): Promise<UploadResult 
   const source = await promptSource();
   if (!source) return null;
 
-  const { cropSquare } = TARGET_CONFIG[target];
-  const asset = source === 'library' ? await pickFromLibrary(cropSquare) : await pickFromCamera(cropSquare);
+  const { aspect } = TARGET_CONFIG[target];
+  const asset = source === 'library' ? await pickFromLibrary(aspect) : await pickFromCamera(aspect);
   if (!asset) return null;
 
   return uploadAsset(asset, target);

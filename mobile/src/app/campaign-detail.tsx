@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BackButton } from '@/components/BackButton';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -34,29 +34,12 @@ const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov
 const DAY_SHORT = ['Su','Mo','Tu','We','Th','Fr','Sa'];
 
 const PLATFORMS     = ['Instagram','TikTok','YouTube','Twitter / X','LinkedIn'] as const;
-const CATEGORIES    = ['Fashion','Health & Fitness','Food & Drink','Gaming','Education','Travel','Tech','Beauty'];
-const FOLLOWER_RANGES = ['< 1K','1K–10K','10K–50K','50K–100K','100K–500K','500K+'];
 const CONTENT_TYPES = ['Reel / Short Video','Story','Static Post','Blog Article','Podcast Mention'];
-const PAYMENT_TYPES = ['Fixed Fee','Commission','Product Exchange','Hybrid','Negotiable'];
 const STATUS_OPTIONS: { labelKey: string; value: NonNullable<Campaign['status']> }[] = [
   { labelKey: 'campaignDetail.statusActive', value: 'active' },
   { labelKey: 'campaignDetail.statusPaused', value: 'draft'  },
   { labelKey: 'campaignDetail.statusClosed', value: 'closed' },
 ];
-
-const FOLLOWER_MIN_MAP: Record<string, number> = {
-  '< 1K': 0, '1K–10K': 1000, '10K–50K': 10000,
-  '50K–100K': 50000, '100K–500K': 100000, '500K+': 500000,
-};
-
-function followerRangeFromRaw(n: number): string {
-  if (n >= 500000) return '500K+';
-  if (n >= 100000) return '100K–500K';
-  if (n >= 50000)  return '50K–100K';
-  if (n >= 10000)  return '10K–50K';
-  if (n >= 1000)   return '1K–10K';
-  return '< 1K';
-}
 
 // ─── Calendar helpers ─────────────────────────────────────────────────────────
 
@@ -183,12 +166,9 @@ const cal = StyleSheet.create({
 type EditForm = {
   title: string;
   description: string;
-  category: string;
   platform: string;
-  minFollowers: string;
   contentType: string;
   deliverables: string;
-  paymentType: string;
   status: NonNullable<Campaign['status']>;
   budgetMin: string;
   budgetMax: string;
@@ -246,8 +226,8 @@ export default function CampaignDetailScreen() {
   const [calOpen, setCalOpen] = useState(false);
   const [eventCalOpen, setEventCalOpen] = useState(false);
   const [editForm, setEditForm] = useState<EditForm>({
-    title: '', description: '', category: '', platform: '',
-    minFollowers: '', contentType: '', deliverables: '', paymentType: '',
+    title: '', description: '', platform: '',
+    contentType: '', deliverables: '',
     status: 'active', budgetMin: '', budgetMax: '', deadline: null,
     location: '', isFeatured: false,
     eventDate: null, venue: '', capacity: '20', benefits: [],
@@ -266,12 +246,9 @@ export default function CampaignDetailScreen() {
     setEditForm({
       title:        campaign.title,
       description:  campaign.description ?? '',
-      category:     campaign.category,
       platform:     campaign.platform,
-      minFollowers: followerRangeFromRaw(campaign.minFollowersRaw),
       contentType:  campaign.contentType,
       deliverables: campaign.deliverables ?? '',
-      paymentType:  campaign.paymentType,
       status:       campaign.status ?? 'active',
       budgetMin:    String(campaign.budgetRaw ?? ''),
       budgetMax:    String(campaign.budgetMax ?? ''),
@@ -297,7 +274,6 @@ export default function CampaignDetailScreen() {
   function validateEdit(): EditErrors {
     const errs: EditErrors = {};
     if (!editForm.title.trim()) errs.title = t('campaignDetail.errTitleRequired');
-    if (!editForm.category)     errs.category = t('campaignDetail.errCategoryRequired');
     if (!editForm.deadline)     errs.deadline = t('campaignDetail.errDeadlineRequired');
 
     if (isOpenEvent) {
@@ -307,10 +283,9 @@ export default function CampaignDetailScreen() {
       if (!editForm.venue.trim()) errs.venue = t('campaignDetail.errVenueRequired');
     } else {
       if (!editForm.platform)            errs.platform     = t('campaignDetail.errPlatformRequired');
-      if (!editForm.minFollowers)        errs.minFollowers = t('campaignDetail.errFollowersRequired');
       if (!editForm.contentType)         errs.contentType  = t('campaignDetail.errContentTypeRequired');
       if (!editForm.deliverables.trim()) errs.deliverables = t('campaignDetail.errDeliverablesRequired');
-      if (!editForm.paymentType)         errs.paymentType  = t('campaignDetail.errPaymentTypeRequired');
+      if (!editForm.location.trim())     errs.location     = t('campaignDetail.errLocationRequired');
       if (!editForm.budgetMin.trim() || isNaN(Number(editForm.budgetMin))) {
         errs.budgetMin = t('campaignDetail.errMinBudgetRequired');
       }
@@ -332,7 +307,6 @@ export default function CampaignDetailScreen() {
         await campaignService.update(campaign!.id, {
           title:       editForm.title.trim(),
           description: editForm.description.trim() || undefined,
-          category:    editForm.category,
           status:      editForm.status,
           deadline:    editForm.deadline!.toISOString(),
           isFeatured:  editForm.isFeatured,
@@ -345,17 +319,14 @@ export default function CampaignDetailScreen() {
         await campaignService.update(campaign!.id, {
           title:        editForm.title.trim(),
           description:  editForm.description.trim() || undefined,
-          category:     editForm.category,
           platform:     editForm.platform,
-          minFollowers: FOLLOWER_MIN_MAP[editForm.minFollowers] ?? 0,
           contentType:  editForm.contentType,
           deliverables: editForm.deliverables.trim(),
-          paymentType:  editForm.paymentType,
           status:       editForm.status,
           budgetMin:    Number(editForm.budgetMin),
           budgetMax:    Number(editForm.budgetMax),
           deadline:     editForm.deadline!.toISOString(),
-          location:     editForm.location.trim() || null,
+          location:     editForm.location.trim(),
           isFeatured:   editForm.isFeatured,
         });
       }
@@ -556,27 +527,26 @@ export default function CampaignDetailScreen() {
           <Text style={[s.sectionLabel, { color: C.textSecondary }]}>{t('campaignDetail.sectionDetails')}</Text>
           <View style={s.detailsGrid}>
             {isOpenEvent && campaign.eventDate ? (
-              <DetailRow icon="🎪" label="Event Date" value={formatDeadline(campaign.eventDate)} C={C} />
+              <DetailRow icon="calendar-day" label="Event Date" value={formatDeadline(campaign.eventDate)} C={C} />
             ) : null}
-            <DetailRow icon="📅" label={isOpenEvent ? 'Registration Deadline' : t('campaignDetail.detailDeadline')} value={formatDeadline(campaign.deadline)} C={C} />
+            <DetailRow icon="calendar-alt" label={isOpenEvent ? 'Registration Deadline' : t('campaignDetail.detailDeadline')} value={formatDeadline(campaign.deadline)} C={C} />
             {!isOpenEvent && (
               <>
-                <DetailRow icon="💳" label={t('campaignDetail.detailBudget')}  value={campaign.budget} C={C} />
-                <DetailRow icon="💰" label={t('campaignDetail.detailPayment')} value={campaign.paymentType} C={C} />
+                <DetailRow icon="money-bill-wave" label={t('campaignDetail.detailBudget')}  value={campaign.budget} C={C} />
                 {campaign.creatorsNeeded != null && (
-                  <DetailRow icon="👥" label="Creators Needed" value={String(campaign.creatorsNeeded)} C={C} />
+                  <DetailRow icon="users" label="Creators Needed" value={String(campaign.creatorsNeeded)} C={C} />
                 )}
               </>
             )}
             {isOpenEvent && campaign.venue ? (
-              <DetailRow icon="📍" label="Venue" value={campaign.venue} C={C} />
+              <DetailRow icon="map-marker-alt" label="Venue" value={campaign.venue} C={C} />
             ) : (
-              <DetailRow icon="📍" label={t('campaignDetail.detailLocation')} value={campaign.location ?? t('campaignDetail.remoteLocation')} C={C} />
+              <DetailRow icon="map-marker-alt" label={t('campaignDetail.detailLocation')} value={campaign.location ?? t('campaignDetail.remoteLocation')} C={C} />
             )}
             {isOpenEvent && campaign.capacity ? (
-              <DetailRow icon="👥" label="Capacity" value={`${campaign.capacity} creators`} C={C} />
+              <DetailRow icon="users" label="Capacity" value={`${campaign.capacity} creators`} C={C} />
             ) : null}
-            <DetailRow icon="📊" label={t('campaignDetail.detailStatus')} value={campaign.status ? campaign.status.charAt(0).toUpperCase() + campaign.status.slice(1) : t('campaignDetail.statusActive')} C={C} />
+            <DetailRow icon="chart-bar" label={t('campaignDetail.detailStatus')} value={campaign.status ? campaign.status.charAt(0).toUpperCase() + campaign.status.slice(1) : t('campaignDetail.statusActive')} C={C} />
           </View>
         </View>
 
@@ -740,10 +710,6 @@ export default function CampaignDetailScreen() {
                   textAlignVertical="top"
                 />
 
-                {/* ── Category ── */}
-                <Text style={[em.sectionHdr, { color: C.textSecondary, marginTop: 24 }]}>{t('campaignDetail.editSectionCategory')}</Text>
-                <ChipGroup options={CATEGORIES} value={editForm.category} onChange={(v) => updateEdit('category', v)} colors={C} error={editErrors.category} />
-
                 {isOpenEvent ? (
                   <>
                     {/* ── Open Event fields ── */}
@@ -816,10 +782,7 @@ export default function CampaignDetailScreen() {
 
                     <Text style={[em.sectionHdr, { color: C.textSecondary, marginTop: 24 }]}>{t('campaignDetail.editSectionRequirements')}</Text>
 
-                    <Text style={[em.label, { color: C.text }]}>{t('campaignDetail.fieldMinFollowers')} <Text style={{ color: C.brinjal1 }}>*</Text></Text>
-                    <ChipGroup options={FOLLOWER_RANGES} value={editForm.minFollowers} onChange={(v) => updateEdit('minFollowers', v)} colors={C} error={editErrors.minFollowers} />
-
-                    <Text style={[em.label, { color: C.text, marginTop: 16 }]}>{t('campaignDetail.fieldContentType')} <Text style={{ color: C.brinjal1 }}>*</Text></Text>
+                    <Text style={[em.label, { color: C.text }]}>{t('campaignDetail.fieldContentType')} <Text style={{ color: C.brinjal1 }}>*</Text></Text>
                     <ChipGroup options={CONTENT_TYPES} value={editForm.contentType} onChange={(v) => updateEdit('contentType', v)} colors={C} error={editErrors.contentType} />
 
                     <Text style={[em.label, { color: C.text, marginTop: 16 }]}>{t('campaignDetail.fieldDeliverables')} <Text style={{ color: C.brinjal1 }}>*</Text></Text>
@@ -870,9 +833,6 @@ export default function CampaignDetailScreen() {
                       </View>
                     </View>
 
-                    <Text style={[em.label, { color: C.text, marginTop: 16 }]}>{t('campaignDetail.fieldPaymentType')} <Text style={{ color: C.brinjal1 }}>*</Text></Text>
-                    <ChipGroup options={PAYMENT_TYPES} value={editForm.paymentType} onChange={(v) => updateEdit('paymentType', v)} colors={C} error={editErrors.paymentType} />
-
                     <Text style={[em.sectionHdr, { color: C.textSecondary, marginTop: 24 }]}>{t('campaignDetail.editSectionLogistics')}</Text>
 
                     <Text style={[em.label, { color: C.text }]}>{t('campaignDetail.fieldApplicationDeadline')} <Text style={{ color: C.brinjal1 }}>*</Text></Text>
@@ -882,18 +842,19 @@ export default function CampaignDetailScreen() {
                       <Text style={[em.dateTxt, { color: editForm.deadline ? C.text : C.textSecondary }]}>
                         {editForm.deadline ? fmtDate(editForm.deadline) : t('campaignDetail.datePlaceholder')}
                       </Text>
-                      <Text style={{ fontSize: 16 }}>📅</Text>
+                      <FontAwesome5 name="calendar-alt" size={14} color={C.textSecondary} />
                     </Pressable>
                     {editErrors.deadline ? <Text style={em.errTxt}>{editErrors.deadline}</Text> : null}
 
                     <Text style={[em.label, { color: C.text, marginTop: 16 }]}>
-                      {t('campaignDetail.fieldLocation')} <Text style={[em.optional, { color: C.textSecondary }]}>{t('campaignDetail.fieldOptional')}</Text>
+                      {t('campaignDetail.fieldLocation')} <Text style={{ color: C.brinjal1 }}>*</Text>
                     </Text>
                     <PlacesAutocompleteInput
                       value={editForm.location}
                       onChangeText={(v) => updateEdit('location', v)}
                       placeholder="e.g. Kathmandu, New York or Remote"
                       types="geocode"
+                      error={editErrors.location}
                     />
                   </>
                 )}
@@ -1015,7 +976,7 @@ function DetailRow({ icon, label, value, C }: { icon: string; label: string; val
   return (
     <View style={s.detailRow}>
       <View style={[s.detailIcon, { backgroundColor: C.background }]}>
-        <Text style={{ fontSize: 16 }}>{icon}</Text>
+        <FontAwesome5 name={icon} size={14} color={C.brinjal1} />
       </View>
       <View style={s.detailContent}>
         <Text style={[s.detailLabel, { color: C.textSecondary }]}>{label}</Text>

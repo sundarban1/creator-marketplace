@@ -1,10 +1,28 @@
 import { Request, Response, NextFunction } from 'express';
 import { CampaignService } from './campaign.service';
 import { success, paginated } from '../../utils/response';
+import { uploadImage as uploadToCloudinary } from '../../utils/cloudinary';
+import { AppError } from '../../middleware/error';
 
 const campaignService = new CampaignService();
+const FEATURE_IMAGE_TRANSFORMATION = [{ width: 800, height: 450, crop: 'fill' }];
 
 export class CampaignController {
+  async uploadFeatureImage(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.file) throw new AppError('No image file provided', 400);
+      const imageUrl = await uploadToCloudinary(
+        req.file.buffer,
+        'campaigns/features',
+        `feature_${req.user!.id}_${Date.now()}`,
+        FEATURE_IMAGE_TRANSFORMATION,
+      );
+      success(res, { imageUrl }, 'Image uploaded');
+    } catch (err) {
+      next(err);
+    }
+  }
+
   async create(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const campaign = await campaignService.create(req.user!.id, req.body);

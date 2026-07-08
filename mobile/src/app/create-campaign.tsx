@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -23,7 +23,9 @@ import { campaignService } from '@/services/campaign';
 import { categoryService } from '@/services/category';
 import { profileService } from '@/services/profile';
 import { CREATOR_CATEGORIES } from '@/features/creator/data/filterOptions';
+import { getTemplateImage, DEFAULT_TEMPLATE_IMAGE } from '@/features/creator/data/templateImages';
 import { PlacesAutocompleteInput, type PlacePrediction } from '@/components/PlacesAutocompleteInput';
+import { pickAndUpload } from '@/utilities/uploadImage';
 import { F, buildPlaceDetailsUrl } from '@/utilities/constants';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -170,6 +172,7 @@ type FormData = {
   deliverables: Record<string, number>;
   title: string;
   description: string;
+  featureImageUrl: string | null;
   deadline: Date | null;
   isFeatured: boolean;
   // Open Event fields
@@ -688,6 +691,52 @@ function SectionCard({ title, sub, children, colors }: {
   );
 }
 
+// ─── FeatureImagePicker ───────────────────────────────────────────────────────
+
+function FeatureImagePicker({ imageUrl, category, uploading, onPick, onClear, colors }: {
+  imageUrl: string | null; category: string; uploading: boolean; onPick: () => void; onClear: () => void;
+  colors: ReturnType<typeof useAppColors>;
+}) {
+  const C = colors;
+  const previewImage = imageUrl ?? getTemplateImage(category, category) ?? DEFAULT_TEMPLATE_IMAGE;
+
+  return (
+    <View style={fi.wrap}>
+      <View style={fi.preview}>
+        <Image source={{ uri: previewImage }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+        {imageUrl && (
+          <Pressable style={[fi.clearBtn, { opacity: uploading ? 0.5 : 1 }]} onPress={onClear} disabled={uploading}>
+            <Ionicons name="close" size={16} color="#fff" />
+          </Pressable>
+        )}
+        <Pressable
+          style={[fi.cameraBtn, { backgroundColor: C.brinjal1, opacity: uploading ? 0.7 : 1 }]}
+          onPress={onPick}
+          disabled={uploading}>
+          {uploading
+            ? <ActivityIndicator size="small" color="#fff" />
+            : <FontAwesome5 name="camera" size={14} color="#fff" solid />}
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+const fi = StyleSheet.create({
+  wrap:    { alignItems: 'center' },
+  preview: { width: '100%', aspectRatio: 16 / 9, borderRadius: 12, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' },
+  cameraBtn: {
+    position: 'absolute', bottom: 10, right: 10,
+    width: 34, height: 34, borderRadius: 17, justifyContent: 'center', alignItems: 'center',
+    shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 4,
+  },
+  clearBtn: {
+    position: 'absolute', top: 10, right: 10,
+    width: 26, height: 26, borderRadius: 13, justifyContent: 'center', alignItems: 'center',
+    backgroundColor: 'rgba(17,24,39,0.65)',
+  },
+});
+
 const sc = StyleSheet.create({
   card:  { borderRadius: 16, padding: 16, gap: 10, shadowColor: '#000', shadowOpacity: 0.03, shadowRadius: 6, shadowOffset: { width: 0, height: 1 }, elevation: 1 },
   title: { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
@@ -743,6 +792,7 @@ export default function CreateCampaignScreen() {
     deliverables: { ...DEFAULT_DELIVERABLES },
     title: '',
     description: '',
+    featureImageUrl: null,
     deadline: dayStart(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)),
     isFeatured: false,
     // Open Event fields
@@ -776,6 +826,24 @@ export default function CreateCampaignScreen() {
   const [aiLocationError, setAiLocationError] = useState<string | undefined>();
   const [newHashtag, setNewHashtag] = useState('');
   const [descSuggestLoading, setDescSuggestLoading] = useState(false);
+  const [featureImageUploading, setFeatureImageUploading] = useState(false);
+
+  async function handlePickFeatureImage() {
+    if (featureImageUploading) return;
+    setFeatureImageUploading(true);
+    try {
+      const result = await pickAndUpload('campaign-feature');
+      if (result?.url) update('featureImageUrl', result.url);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : t('createEvent.featureImageUploadFailed'), 'error');
+    } finally {
+      setFeatureImageUploading(false);
+    }
+  }
+
+  function handleClearFeatureImage() {
+    update('featureImageUrl', null);
+  }
 
   // Coordinates for the campaign's location/venue — resolved from the selected
   // Places suggestion so "Nearby Events" can compute distance from creators.
@@ -825,6 +893,7 @@ export default function CreateCampaignScreen() {
       deliverables:   { ...DEFAULT_DELIVERABLES },
       title:          '',
       description:    '',
+      featureImageUrl: null,
       deadline:       newType === 'OPEN_EVENT' ? regDeadline : dayStart(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)),
       isFeatured:     false,
       eventType:      newType,
@@ -963,6 +1032,7 @@ export default function CreateCampaignScreen() {
       title:          form.title.trim() || t('createEvent.untitledEvent'),
       description:    form.description.trim(),
       template:       form.template,
+      featureImageUrl: form.featureImageUrl ?? undefined,
       category:       form.template,
       goals:          form.goals,
       platform:       form.platform,
@@ -1046,6 +1116,7 @@ export default function CreateCampaignScreen() {
           title:          form.title.trim(),
           description:    form.description.trim(),
           template:       form.template,
+          featureImageUrl: form.featureImageUrl ?? undefined,
           category:       form.template,
           goals:          ['Event Promotion', 'Brand Awareness'],
           platform:       form.platform || '',
@@ -1289,6 +1360,18 @@ export default function CreateCampaignScreen() {
                       placeholderTextColor={C.textSecondary}
                     />
                     {reviewErrors.title && <Text style={s.errorText}>{reviewErrors.title}</Text>}
+                  </SectionCard>
+
+                  {/* Feature image */}
+                  <SectionCard title={t('createEvent.secFeatureImageTitle')} sub={t('createEvent.secFeatureImageSub')} colors={C}>
+                    <FeatureImagePicker
+                      imageUrl={form.featureImageUrl}
+                      category={form.template}
+                      uploading={featureImageUploading}
+                      onPick={handlePickFeatureImage}
+                      onClear={handleClearFeatureImage}
+                      colors={C}
+                    />
                   </SectionCard>
 
                   {/* Editable description */}
@@ -1592,6 +1675,18 @@ export default function CreateCampaignScreen() {
                       placeholderTextColor={C.textSecondary}
                     />
                     {reviewErrors.title && <Text style={s.errorText}>{reviewErrors.title}</Text>}
+                  </SectionCard>
+
+                  {/* Feature image */}
+                  <SectionCard title={t('createEvent.secFeatureImageTitle')} sub={t('createEvent.secFeatureImageSub')} colors={C}>
+                    <FeatureImagePicker
+                      imageUrl={form.featureImageUrl}
+                      category={form.template}
+                      uploading={featureImageUploading}
+                      onPick={handlePickFeatureImage}
+                      onClear={handleClearFeatureImage}
+                      colors={C}
+                    />
                   </SectionCard>
 
                   {/* Description */}

@@ -54,6 +54,7 @@ export interface ApiCampaign {
   title:         string;
   description:   string;
   template?:     string | null;
+  featureImageUrl?: string | null;
   category:      string;
   goals:         string[];
   platform:      string;

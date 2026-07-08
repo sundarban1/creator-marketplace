@@ -15,6 +15,7 @@ import { NearbyLocationSheet, type NearbySource } from '@/features/creator/compo
 import { FilterModal } from '@/features/creator/components/FilterModal';
 import type { EventTypeFilter, LocationFilter } from '@/features/creator/components/FilterModal';
 import { CATEGORY_META, DEFAULT_META, displayCategory } from '@/features/creator/data/filterOptions';
+import { EmptyState } from '@/components/EmptyState';
 import { TabSlider } from '@/components/TabSlider';
 import { campaignService } from '@/services/campaign';
 import { creatorService } from '@/services/creator';
@@ -147,22 +148,22 @@ export default function HomeScreen() {
     }
   }
 
-  async function fetchNearby(coords: LatLng, radiusKm: number) {
-    setNearbyLoading(true);
+  async function fetchNearby(coords: LatLng, radiusKm: number, silent = false) {
+    if (!silent) setNearbyLoading(true);
     try {
       const { campaigns: data } = await campaignService.nearby({ lat: coords.lat, lng: coords.lng, radiusKm, limit: 10 });
       setNearbyCampaigns(data);
     } catch {
-      setNearbyCampaigns([]);
+      if (!silent) setNearbyCampaigns([]);
     } finally {
-      setNearbyLoading(false);
+      if (!silent) setNearbyLoading(false);
     }
   }
 
   async function initNearby(profile: { nearbyRadiusKm: number; nearbyUseHomeLocation: boolean; location: string | null; locationLat: number | null; locationLng: number | null }) {
     const radius = profile.nearbyRadiusKm ?? 25;
     setNearbyRadiusKm(radius);
-    setNearbyHomeLabel(profile.location ?? null);
+    setNearbyHomeLabel(profile.location?.split(',')[0]?.trim() ?? null);
 
     const [current, home] = await Promise.all([
       getCurrentLocation(),
@@ -240,11 +241,22 @@ export default function HomeScreen() {
   const fetchRef = useRef(fetchCampaigns);
   useEffect(() => { fetchRef.current = fetchCampaigns; });
 
+  const refreshNearbyRef = useRef(() => {});
+  useEffect(() => {
+    refreshNearbyRef.current = () => {
+      const coords = resolveNearbyCoords();
+      if (coords) void fetchNearby(coords, nearbyRadiusKm, true);
+    };
+  });
+
   // Subscribe to real-time campaign updates while this screen is focused
   useFocusEffect(useCallback(() => {
     const socket = getSocket();
     if (!socket) return;
-    const handler = () => { void fetchRef.current({ showLoader: false }); };
+    const handler = () => {
+      void fetchRef.current({ showLoader: false });
+      refreshNearbyRef.current();
+    };
     socket.on('campaign:new', handler);
     return () => { socket.off('campaign:new', handler); };
   }, []));
@@ -407,15 +419,14 @@ export default function HomeScreen() {
         renderItem={({ item }) => <CampaignListItem campaign={item} />}
         ListEmptyComponent={
           !loading && filteredList.length === 0 ? (
-            <View style={styles.emptyWrap}>
-              <Ionicons name="search" size={40} color={C.textSecondary} />
-              <Text style={[styles.emptyTitle, { color: C.text }]}>{t('creator.home.noEventsFound')}</Text>
-              <Text style={[styles.emptyHint, { color: C.textSecondary }]}>
-                {campaigns.length === 0
-                  ? t('creator.home.noActiveEvents')
-                  : t('creator.home.tryAdjustFilters')}
-              </Text>
-            </View>
+            <EmptyState
+              faIcon={campaigns.length === 0 ? 'calendar-times' : 'filter'}
+              title={t('creator.home.noEventsFound')}
+              subtitle={campaigns.length === 0
+                ? t('creator.home.noActiveEvents')
+                : t('creator.home.tryAdjustFilters')}
+              action={campaigns.length > 0 ? { label: t('creator.home.clearFilters'), onPress: resetAllFilters } : undefined}
+            />
           ) : null
         }
         ListFooterComponent={
@@ -943,7 +954,4 @@ const styles = StyleSheet.create({
   // ── Campaign list ──
   listWrap:   { paddingHorizontal: 20, gap: 12 },
   listLoadingMore: { paddingVertical: 16, alignItems: 'center' },
-  emptyWrap:  { alignItems: 'center', paddingVertical: 48, gap: 10 },
-  emptyTitle: { fontSize: 17, fontFamily: F.bold },
-  emptyHint:  { fontSize: 13, fontFamily: F.regular, textAlign: 'center', lineHeight: 20, paddingHorizontal: 24 },
 });

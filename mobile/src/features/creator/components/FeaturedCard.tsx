@@ -42,7 +42,7 @@ function expiryLabel(iso: string): { label: string; color: string } {
 export function FeaturedCard({ campaign }: { campaign: Campaign }) {
   const C = useAppColors();
   const catMeta   = CATEGORY_META[campaign.category] ?? DEFAULT_META;
-  const cardImage = getTemplateImage(campaign.template, campaign.category);
+  const cardImage = campaign.featureImageUrl ?? getTemplateImage(campaign.template, campaign.category);
 
   function goToDetail() {
     router.push({ pathname: '/campaign-detail', params: { campaignId: campaign.id } });

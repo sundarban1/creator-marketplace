@@ -194,6 +194,7 @@ app.use('/api/auth/resend-otp',   otpLimiter);
 // Upload endpoints
 app.use('/api/creator/avatar',  uploadLimiter);
 app.use('/api/business/logo',   uploadLimiter);
+app.use('/api/campaigns/feature-image', uploadLimiter);
 
 // AI generation
 app.use('/api/campaigns/ai/generate', aiGenerateLimiter);

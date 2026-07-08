@@ -1715,7 +1715,10 @@ export default function CreatorSettingsScreen() {
           <Pressable
             style={[styles.row, { borderBottomWidth: 1, borderBottomColor: C.border }]}
             disabled={emailVerified !== false}
-            onPress={() => { if (emailVerified === false && !emailSubPage) setEmailSubPage('input'); }}>
+            onPress={() => {
+              if (emailVerified !== false) return;
+              if (emailSubPage) closeEmail(); else setEmailSubPage('input');
+            }}>
             <View style={[styles.navIonIconWrap, { backgroundColor: '#0891B218' }]}>
               <Ionicons name="mail-outline" size={18} color="#0891B2" />
             </View>
@@ -1801,7 +1804,7 @@ export default function CreatorSettingsScreen() {
           {/* Phone row */}
           <Pressable
             style={[styles.row, { borderBottomWidth: phoneSubPage ? 1 : 1, borderBottomColor: C.border }]}
-            onPress={() => { if (!phoneSubPage) setPhoneSubPage('input'); }}>
+            onPress={() => { if (phoneSubPage) closePhone(); else setPhoneSubPage('input'); }}>
             <View style={[styles.navIonIconWrap, { backgroundColor: '#10B98118' }]}>
               <Ionicons name="call-outline" size={18} color="#10B981" />
             </View>
@@ -2083,8 +2086,6 @@ export default function CreatorSettingsScreen() {
           {!subPage && section === 'security'   && renderSecurity()}
           {!subPage && section === 'support'    && renderSupport()}
           {!subPage && section === 'legal'      && renderLegal()}
-
-          <View style={{ height: 48 }} />
         </ScrollView>
 
 

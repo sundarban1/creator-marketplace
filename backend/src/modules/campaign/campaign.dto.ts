@@ -5,6 +5,7 @@ export interface CampaignDto {
   title: string;
   description: string;
   template: string | null;
+  featureImageUrl: string | null;
   category: string;
   goals: string[];
   platform: string;
@@ -97,6 +98,7 @@ type RawCampaign = {
   title: string;
   description: string;
   template: string | null;
+  featureImageUrl: string | null;
   category: string;
   goals: Prisma.JsonValue;
   platform: string;
@@ -143,6 +145,7 @@ export function toCampaignDto(c: RawCampaign): CampaignDto {
     title:          c.title,
     description:    c.description,
     template:       c.template,
+    featureImageUrl: c.featureImageUrl,
     category:       c.category,
     goals:          (c.goals ?? []) as string[],
     platform:       c.platform,

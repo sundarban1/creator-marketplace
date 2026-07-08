@@ -596,7 +596,7 @@ const styles = StyleSheet.create({
   modalClose: { width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
   modalCloseText: { fontSize: 12, fontWeight: '700', fontFamily: F.bold },
   modalList: { padding: 16, gap: 12, paddingBottom: 40 },
-  modalEmpty: { alignItems: 'center', paddingTop: 40, gap: 10 },
+  modalEmpty: { alignItems: 'center', paddingTop: 40, paddingHorizontal: 24, gap: 10 },
   modalEmptyIcon: { fontSize: 40 },
   modalEmptyText: { fontSize: 14, fontFamily: F.regular },
 
@@ -620,8 +620,8 @@ const styles = StyleSheet.create({
   inviteSuccessText: { fontSize: 18, fontWeight: '700', fontFamily: F.bold },
   inviteSuccessHint: { fontSize: 13, textAlign: 'center', fontFamily: F.regular },
 
-  modalEmptyHint: { fontSize: 12, textAlign: 'center', paddingHorizontal: 24, fontFamily: F.regular },
-  goSaveBtn: { marginTop: 4, borderRadius: 12, paddingHorizontal: 20, paddingVertical: 10 },
+  modalEmptyHint: { fontSize: 12, textAlign: 'center', fontFamily: F.regular },
+  goSaveBtn: { marginTop: 4, maxWidth: '100%', borderRadius: 12, paddingHorizontal: 20, paddingVertical: 10 },
   goSaveBtnText: { color: '#fff', fontSize: 13, fontWeight: '700', fontFamily: F.bold },
 
   selectionBanner: { paddingHorizontal: 16, paddingVertical: 8, marginHorizontal: 16, marginTop: 10, borderRadius: 10 },
