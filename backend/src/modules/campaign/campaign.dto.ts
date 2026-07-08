@@ -47,6 +47,7 @@ export interface CampaignDto {
     description?: string | null;
   };
   _count?: { applications: number };
+  distanceKm?: number;
 }
 
 export interface ApplicationDto {
@@ -133,6 +134,7 @@ type RawCampaign = {
   createdAt: Date;
   business?: { businessName: string | null; logoUrl: string | null; website?: string | null; description?: string | null } | null;
   _count?: { applications: number };
+  distanceKm?: number;
 };
 
 export function toCampaignDto(c: RawCampaign): CampaignDto {
@@ -179,6 +181,7 @@ export function toCampaignDto(c: RawCampaign): CampaignDto {
   };
   if (c.business != null) dto.business = c.business;
   if (c._count  != null) dto._count   = c._count;
+  if (c.distanceKm != null) dto.distanceKm = Math.round(c.distanceKm * 10) / 10;
   return dto;
 }
 

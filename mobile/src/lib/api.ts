@@ -82,6 +82,7 @@ export interface ApiCampaign {
   aiGenerated?:           boolean;
   aiSuggestedCategories?: string[];
   aiSuggestedPlatforms?:  string[];
+  distanceKm?:   number;
   business:      { businessName: string; logoUrl: string | null };
   _count:        { applications: number };
 }

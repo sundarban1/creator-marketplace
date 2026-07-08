@@ -56,6 +56,7 @@ export type Campaign = {
   aiGenerated?:           boolean;
   aiSuggestedCategories?: string[];
   aiSuggestedPlatforms?:  string[];
+  distanceKm?:            number;
 };
 
 export type Proposal = {

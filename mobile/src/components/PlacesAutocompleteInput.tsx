@@ -23,16 +23,18 @@ type Props = {
   autoCapitalize?: 'none' | 'words' | 'sentences' | 'characters';
   autoCorrect?: boolean;
   style?: StyleProp<ViewStyle>;
+  /** Fires alongside onChangeText when a suggestion is tapped, for callers that need the place_id (e.g. to resolve lat/lng). */
+  onSelectPlace?: (place: PlacePrediction) => void;
 };
 
 /**
  * Nepal-restricted Google Places autocomplete text input with a suggestion dropdown.
  * Shared across every screen that just needs to fill a text field with a chosen place
- * (location fields on create/edit forms). Screens that need the place's lat/lng (map
- * pins, city filters) fetch place details themselves and don't use this component.
+ * (location fields on create/edit forms). Pass `onSelectPlace` if the caller also needs
+ * the place_id to resolve lat/lng itself (e.g. geocoding a campaign's location).
  */
 export function PlacesAutocompleteInput({
-  value, onChangeText, placeholder, error, types, autoCapitalize, autoCorrect = true, style,
+  value, onChangeText, placeholder, error, types, autoCapitalize, autoCorrect = true, style, onSelectPlace,
 }: Props) {
   const C = useAppColors();
   const [suggestions, setSuggestions] = useState<PlacePrediction[]>([]);
@@ -71,7 +73,7 @@ export function PlacesAutocompleteInput({
             <Pressable
               key={place.place_id}
               style={[styles.item, i < suggestions.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}
-              onPress={() => { onChangeText(place.description); setSuggestions([]); }}>
+              onPress={() => { onChangeText(place.description); onSelectPlace?.(place); setSuggestions([]); }}>
               <Text style={styles.pin}>📍</Text>
               <Text style={[styles.itemText, { color: C.text }]} numberOfLines={2}>{place.description}</Text>
             </Pressable>

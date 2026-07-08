@@ -19,6 +19,8 @@ export interface CreatorProfileDto {
   location: string | null;
   locationLat: number | null;
   locationLng: number | null;
+  nearbyRadiusKm: number;
+  nearbyUseHomeLocation: boolean;
   avatarUrl: string | null;
   categories: string[];
   socialLinks: Record<string, string>;
@@ -110,6 +112,8 @@ type RawCreatorProfile = {
   location: string | null;
   locationLat: number | null;
   locationLng: number | null;
+  nearbyRadiusKm: number;
+  nearbyUseHomeLocation: boolean;
   avatarUrl: string | null;
   categories: string[];
   socialLinks: Prisma.JsonValue;
@@ -138,6 +142,8 @@ export function toCreatorProfileDto(p: RawCreatorProfile): CreatorProfileDto {
     location:      p.location,
     locationLat:   p.locationLat,
     locationLng:   p.locationLng,
+    nearbyRadiusKm:        p.nearbyRadiusKm,
+    nearbyUseHomeLocation: p.nearbyUseHomeLocation,
     avatarUrl:     p.avatarUrl,
     categories:    p.categories,
     socialLinks:   (p.socialLinks ?? {}) as Record<string, string>,

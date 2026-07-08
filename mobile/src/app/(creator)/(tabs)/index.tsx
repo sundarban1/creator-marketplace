@@ -10,6 +10,8 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { CampaignListItem } from '@/features/creator/components/CampaignListItem';
 import { FeaturedCard } from '@/features/creator/components/FeaturedCard';
+import { NearbyCard } from '@/features/creator/components/NearbyCard';
+import { NearbyLocationSheet, type NearbySource } from '@/features/creator/components/NearbyLocationSheet';
 import { FilterModal } from '@/features/creator/components/FilterModal';
 import type { EventTypeFilter, LocationFilter } from '@/features/creator/components/FilterModal';
 import { CATEGORY_META, DEFAULT_META, displayCategory } from '@/features/creator/data/filterOptions';
@@ -18,8 +20,11 @@ import { campaignService } from '@/services/campaign';
 import { creatorService } from '@/services/creator';
 import { getSocket } from '@/lib/socket';
 import { storage } from '@/utilities/storage';
+import { getCurrentLocation, type LatLng } from '@/utilities/geolocation';
 import { ACCESS_TOKEN_KEY, F } from '@/utilities/constants';
 import type { Campaign } from '@/types';
+
+const RADIUS_PRESETS = [5, 10, 25, 50, 100];
 
 const SLIDER_MAX = 100000;
 
@@ -83,6 +88,17 @@ export default function HomeScreen() {
   const [featuredVisibleCount, setFeaturedVisibleCount] = useState(PAGE_SIZE);
   const [listVisibleCount, setListVisibleCount] = useState(PAGE_SIZE);
 
+  // ── Nearby Events ──
+  const [nearbyCampaigns, setNearbyCampaigns] = useState<Campaign[]>([]);
+  const [nearbyLoading, setNearbyLoading] = useState(true);
+  const [nearbySource, setNearbySource] = useState<NearbySource>('current');
+  const [nearbyRadiusKm, setNearbyRadiusKm] = useState(25);
+  const [nearbyHomeLabel, setNearbyHomeLabel] = useState<string | null>(null);
+  const [nearbyHomeCoords, setNearbyHomeCoords] = useState<LatLng | null>(null);
+  const [nearbyCurrentCoords, setNearbyCurrentCoords] = useState<LatLng | null>(null);
+  const [nearbyLocationDenied, setNearbyLocationDenied] = useState(false);
+  const [nearbySheetOpen, setNearbySheetOpen] = useState(false);
+
   async function fetchCampaigns(
     overrides: {
       search?: string;
@@ -130,6 +146,64 @@ export default function HomeScreen() {
     }
   }
 
+  async function fetchNearby(coords: LatLng, radiusKm: number) {
+    setNearbyLoading(true);
+    try {
+      const { campaigns: data } = await campaignService.nearby({ lat: coords.lat, lng: coords.lng, radiusKm, limit: 10 });
+      setNearbyCampaigns(data);
+    } catch {
+      setNearbyCampaigns([]);
+    } finally {
+      setNearbyLoading(false);
+    }
+  }
+
+  async function initNearby(profile: { nearbyRadiusKm: number; nearbyUseHomeLocation: boolean; location: string | null; locationLat: number | null; locationLng: number | null }) {
+    const radius = profile.nearbyRadiusKm ?? 25;
+    const home: LatLng | null = profile.locationLat != null && profile.locationLng != null
+      ? { lat: profile.locationLat, lng: profile.locationLng } : null;
+    setNearbyRadiusKm(radius);
+    setNearbyHomeLabel(profile.location ?? null);
+    setNearbyHomeCoords(home);
+
+    let preferredSource: NearbySource = profile.nearbyUseHomeLocation ? 'home' : 'current';
+
+    const current = await getCurrentLocation();
+    setNearbyCurrentCoords(current);
+    setNearbyLocationDenied(current === null);
+
+    // Fall back to home if current location was preferred but permission was denied
+    if (preferredSource === 'current' && !current) preferredSource = home ? 'home' : 'current';
+    setNearbySource(preferredSource);
+
+    const coords = preferredSource === 'current' ? current : (home ?? current);
+    if (coords) void fetchNearby(coords, radius);
+    else setNearbyLoading(false);
+  }
+
+  async function handleNearbyApply(source: NearbySource, radiusKm: number) {
+    setNearbySource(source);
+    setNearbyRadiusKm(radiusKm);
+    creatorService.updateProfile({ nearbyRadiusKm: radiusKm, nearbyUseHomeLocation: source === 'home' }).catch(() => {});
+
+    let coords = source === 'current' ? nearbyCurrentCoords : nearbyHomeCoords;
+    if (source === 'current' && !coords) {
+      const loc = await getCurrentLocation();
+      setNearbyCurrentCoords(loc);
+      setNearbyLocationDenied(loc === null);
+      coords = loc;
+    }
+    if (coords) void fetchNearby(coords, radiusKm);
+    else setNearbyCampaigns([]);
+  }
+
+  function handleExpandNearbyRadius() {
+    const next = RADIUS_PRESETS.find((r) => r > nearbyRadiusKm) ?? 100;
+    setNearbyRadiusKm(next);
+    const coords = nearbySource === 'current' ? nearbyCurrentCoords : (nearbyHomeCoords ?? nearbyCurrentCoords);
+    if (coords) void fetchNearby(coords, next);
+  }
+
   useEffect(() => {
     void fetchCampaigns();
     campaignService.getCategories()
@@ -149,8 +223,9 @@ export default function HomeScreen() {
           Object.values(profile.socialLinks).some((v) => !!v);
         if (!hasLink) missing.push('Social links');
         setMissingFields(missing);
+        void initNearby(profile);
       })
-      .catch(() => {});
+      .catch(() => { setNearbyLoading(false); });
   }, [languageVersion]);
 
   // Keep a stable ref to the latest fetch so the socket handler never captures stale state
@@ -622,6 +697,48 @@ export default function HomeScreen() {
               </View>
             )}
 
+            {/* ── Nearby Events ── */}
+            <View style={styles.sectionHeader}>
+              <View style={styles.nearbyTitleRow}>
+                <Text style={[styles.sectionTitle, { color: C.text }]}>Nearby Events</Text>
+                <Pressable
+                  style={[styles.nearbyChip, { backgroundColor: C.primaryLight, borderColor: C.border }]}
+                  onPress={() => setNearbySheetOpen(true)}>
+                  <Ionicons name={nearbySource === 'current' ? 'navigate' : 'home'} size={11} color={C.brinjal1} />
+                  <Text style={[styles.nearbyChipText, { color: C.brinjal1 }]} numberOfLines={1}>
+                    {nearbySource === 'current' ? `Current Location · ${nearbyRadiusKm} km` : `Home${nearbyHomeLabel ? ` · ${nearbyHomeLabel}` : ''} · ${nearbyRadiusKm} km`}
+                  </Text>
+                  <Ionicons name="chevron-down" size={11} color={C.brinjal1} />
+                </Pressable>
+              </View>
+            </View>
+
+            {nearbyLoading ? (
+              <View style={styles.loadingWrap}>
+                <ActivityIndicator size="small" color={C.brinjal1} />
+              </View>
+            ) : nearbyCampaigns.length > 0 ? (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.featuredRow}>
+                {nearbyCampaigns.map((c) => <NearbyCard key={c.id} campaign={c} />)}
+              </ScrollView>
+            ) : nearbyLocationDenied && !nearbyHomeCoords ? (
+              <View style={[styles.featuredEmpty, { backgroundColor: C.surface, borderColor: C.border }]}>
+                <Ionicons name="location-outline" size={32} color={C.textSecondary} />
+                <Text style={[styles.featuredEmptyTitle, { color: C.text }]}>Enable location for nearby events</Text>
+                <Text style={[styles.featuredEmptySub, { color: C.textSecondary }]}>Turn on location access, or set a home location in your profile.</Text>
+              </View>
+            ) : (
+              <View style={[styles.featuredEmpty, { backgroundColor: C.surface, borderColor: C.border }]}>
+                <Ionicons name="navigate-outline" size={32} color={C.textSecondary} />
+                <Text style={[styles.featuredEmptyTitle, { color: C.text }]}>No events within {nearbyRadiusKm} km</Text>
+                {nearbyRadiusKm < 100 && (
+                  <Pressable style={[styles.expandRadiusBtn, { backgroundColor: C.brinjal1 }]} onPress={handleExpandNearbyRadius}>
+                    <Text style={styles.expandRadiusBtnText}>Expand to {RADIUS_PRESETS.find((r) => r > nearbyRadiusKm) ?? 100} km</Text>
+                  </Pressable>
+                )}
+              </View>
+            )}
+
             {/* ── Tab filter ── */}
             <View style={[styles.filterTabsWrap, { backgroundColor: C.surface }]}>
               <TabSlider
@@ -690,6 +807,15 @@ export default function HomeScreen() {
         onApply={applyFilter}
         onReset={resetFilter}
         onClose={() => setFilterOpen(false)}
+      />
+
+      <NearbyLocationSheet
+        visible={nearbySheetOpen}
+        onClose={() => setNearbySheetOpen(false)}
+        source={nearbySource}
+        radiusKm={nearbyRadiusKm}
+        homeLabel={nearbyHomeLabel}
+        onApply={handleNearbyApply}
       />
     </SafeAreaView>
   );
@@ -783,6 +909,13 @@ const styles = StyleSheet.create({
   featuredEmptyTitle:{ fontSize: 14, fontFamily: F.bold, textAlign: 'center' },
   featuredEmptySub:  { fontSize: 12, fontFamily: F.regular, textAlign: 'center', lineHeight: 18 },
   featuredLoadingMore: { width: 60, justifyContent: 'center', alignItems: 'center' },
+
+  // ── Nearby ──
+  nearbyTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 },
+  nearbyChip: { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5, flexShrink: 1 },
+  nearbyChipText: { fontSize: 11, fontWeight: '700', fontFamily: F.bold, flexShrink: 1 },
+  expandRadiusBtn: { borderRadius: 12, paddingHorizontal: 16, paddingVertical: 10, marginTop: 4 },
+  expandRadiusBtnText: { color: '#fff', fontSize: 13, fontWeight: '700', fontFamily: F.bold },
 
   // ── Attention banner ──
   attentionBanner: { flexDirection: 'row', alignItems: 'center', borderRadius: 14, marginHorizontal: 20, marginTop: 12, padding: 14, gap: 12, backgroundColor: '#FFFBEB', borderWidth: 1, borderColor: '#FDE68A' },

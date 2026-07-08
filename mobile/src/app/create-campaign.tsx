@@ -23,8 +23,8 @@ import { campaignService } from '@/services/campaign';
 import { categoryService } from '@/services/category';
 import { profileService } from '@/services/profile';
 import { CREATOR_CATEGORIES } from '@/features/creator/data/filterOptions';
-import { PlacesAutocompleteInput } from '@/components/PlacesAutocompleteInput';
-import { F } from '@/utilities/constants';
+import { PlacesAutocompleteInput, type PlacePrediction } from '@/components/PlacesAutocompleteInput';
+import { F, buildPlaceDetailsUrl } from '@/utilities/constants';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -777,6 +777,22 @@ export default function CreateCampaignScreen() {
   const [newHashtag, setNewHashtag] = useState('');
   const [descSuggestLoading, setDescSuggestLoading] = useState(false);
 
+  // Coordinates for the campaign's location/venue — resolved from the selected
+  // Places suggestion so "Nearby Events" can compute distance from creators.
+  const [locationLat, setLocationLat] = useState<number | null>(null);
+  const [locationLng, setLocationLng] = useState<number | null>(null);
+
+  async function handleLocationSelect(place: PlacePrediction) {
+    try {
+      const res = await fetch(buildPlaceDetailsUrl(place.place_id));
+      const json = await res.json();
+      if (json.status === 'OK') {
+        setLocationLat(json.result.geometry.location.lat);
+        setLocationLng(json.result.geometry.location.lng);
+      }
+    } catch { /* lat/lng just won't be captured — location text still saves fine */ }
+  }
+
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const toastOpacity = useRef(new Animated.Value(0)).current;
 
@@ -951,6 +967,8 @@ export default function CreateCampaignScreen() {
       goals:          form.goals,
       platform:       form.platform,
       location:       form.location.trim() || undefined,
+      locationLat:    locationLat ?? undefined,
+      locationLng:    locationLng ?? undefined,
       minFollowers:   0,
       contentType:    form.goals[0] ?? '',
       deliverables:   form.aiGenerated ? form.aiDeliverables : (() => {
@@ -1032,6 +1050,8 @@ export default function CreateCampaignScreen() {
           goals:          ['Event Promotion', 'Brand Awareness'],
           platform:       form.platform || '',
           location:       form.venue.trim() || undefined,
+          locationLat:    locationLat ?? undefined,
+          locationLng:    locationLng ?? undefined,
           minFollowers:   0,
           contentType:    form.eventContent.join(', ') || 'Event Coverage',
           deliverables:   form.benefits.join(', '),
@@ -1160,7 +1180,8 @@ export default function CreateCampaignScreen() {
                   <SectionCard title={t('createEvent.secLocationTitle')} sub={t('createEvent.secLocationSub')} colors={C}>
                     <PlacesAutocompleteInput
                       value={form.location}
-                      onChangeText={(v) => { update('location', v); if (aiLocationError) setAiLocationError(undefined); }}
+                      onChangeText={(v) => { update('location', v); setLocationLat(null); setLocationLng(null); if (aiLocationError) setAiLocationError(undefined); }}
+                      onSelectPlace={handleLocationSelect}
                       placeholder={t('createEvent.locationPlaceholder')}
                       types="geocode"
                       error={aiLocationError}
@@ -1209,7 +1230,8 @@ export default function CreateCampaignScreen() {
                   <SectionCard title={t('createEvent.secVenueTitle')} sub={t('createEvent.secVenueSub')} colors={C}>
                     <PlacesAutocompleteInput
                       value={form.venue}
-                      onChangeText={(v) => { update('venue', v); if (eventErrors.venue) setEventErrors((e) => ({ ...e, venue: undefined })); }}
+                      onChangeText={(v) => { update('venue', v); setLocationLat(null); setLocationLng(null); if (eventErrors.venue) setEventErrors((e) => ({ ...e, venue: undefined })); }}
+                      onSelectPlace={handleLocationSelect}
                       placeholder={t('createEvent.locationPlaceholder')}
                       types="geocode"
                       error={eventErrors.venue}

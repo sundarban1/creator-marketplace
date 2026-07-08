@@ -106,6 +106,7 @@ export function toCampaign(api: ApiCampaign): Campaign {
     aiGenerated:           api.aiGenerated ?? false,
     aiSuggestedCategories: api.aiSuggestedCategories ?? [],
     aiSuggestedPlatforms:  api.aiSuggestedPlatforms ?? [],
+    distanceKm:            api.distanceKm,
   };
 }
 
@@ -163,6 +164,28 @@ export const campaignService = {
     };
   },
 
+  async nearby(params: {
+    lat: number;
+    lng: number;
+    radiusKm?: number;
+    page?:     number;
+    limit?:    number;
+  }): Promise<{ campaigns: Campaign[]; total: number; page: number; totalPages: number }> {
+    const res = await request<ApiCampaign[]>('GET', '/api/campaigns/nearby', undefined, {
+      lat:      params.lat,
+      lng:      params.lng,
+      radiusKm: params.radiusKm ?? 25,
+      page:     params.page  ?? 1,
+      limit:    params.limit ?? 10,
+    });
+    return {
+      campaigns:  res.data.map(toCampaign),
+      total:      res.pagination?.total      ?? res.data.length,
+      page:       res.pagination?.page       ?? 1,
+      totalPages: res.pagination?.totalPages ?? 1,
+    };
+  },
+
   async getCategories(): Promise<string[]> {
     const res = await request<string[]>('GET', '/api/campaigns/categories');
     return res.data;
@@ -200,6 +223,8 @@ export const campaignService = {
     deliverables: string;
     deadline: string;
     location?: string;
+    locationLat?: number;
+    locationLng?: number;
     budgetMin: number;
     budgetMax: number;
     paymentType: string;

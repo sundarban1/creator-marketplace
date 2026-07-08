@@ -1,6 +1,17 @@
 import { CampaignStatus, WorkStatus, PaymentStatus, Prisma } from '@prisma/client';
 import prisma from '../../prisma';
 
+const EARTH_RADIUS_KM = 6371;
+
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+  return EARTH_RADIUS_KM * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 export class CampaignRepository {
   async create(data: {
     businessId: string;
@@ -15,6 +26,8 @@ export class CampaignRepository {
     deliverables: string;
     deadline: Date;
     location?: string;
+    locationLat?: number;
+    locationLng?: number;
     budgetMin: number;
     budgetMax: number;
     paymentType: string;
@@ -128,6 +141,43 @@ export class CampaignRepository {
     return { campaigns, total };
   }
 
+  /**
+   * Nearby campaigns within radiusKm of (lat, lng), sorted by distance.
+   * Pre-filters with an indexed lat/lng bounding box in Postgres (cheap, uses
+   * the campaigns_locationLat_locationLng_idx index), then computes exact
+   * Haversine distance in application code to trim the box down to a true
+   * circle — avoids requiring the PostGIS extension for a simple radius query.
+   */
+  async findNearby(params: { lat: number; lng: number; radiusKm: number; page: number; limit: number }) {
+    const { lat, lng, radiusKm, page, limit } = params;
+
+    const latDelta = radiusKm / 111; // ~111km per degree of latitude
+    const lngDelta = radiusKm / (111 * Math.cos((lat * Math.PI) / 180) || 1);
+
+    const candidates = await prisma.campaign.findMany({
+      where: {
+        status: 'ACTIVE',
+        locationLat: { gte: lat - latDelta, lte: lat + latDelta },
+        locationLng: { gte: lng - lngDelta, lte: lng + lngDelta },
+      },
+      include: {
+        business: { select: { businessName: true, logoUrl: true } },
+        _count: { select: { applications: true } },
+      },
+    });
+
+    const withDistance = candidates
+      .map((c) => ({ ...c, distanceKm: haversineKm(lat, lng, c.locationLat!, c.locationLng!) }))
+      .filter((c) => c.distanceKm <= radiusKm)
+      .sort((a, b) => a.distanceKm - b.distanceKm);
+
+    const total = withDistance.length;
+    const skip = (page - 1) * limit;
+    const campaigns = withDistance.slice(skip, skip + limit);
+
+    return { campaigns, total };
+  }
+
   async findById(id: string) {
     return prisma.campaign.findUnique({
       where: { id },
@@ -168,6 +218,8 @@ export class CampaignRepository {
     deliverables: string;
     deadline: Date;
     location: string | null;
+    locationLat: number | null;
+    locationLng: number | null;
     budgetMin: number;
     budgetMax: number;
     paymentType: string;

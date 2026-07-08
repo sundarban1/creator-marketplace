@@ -5,10 +5,8 @@ import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { BackButton } from '@/components/BackButton';
 import { creatorService } from '@/services/creator';
 import { authService } from '@/services/auth';
-import { campaignService } from '@/services/campaign';
 import { useLanguage } from '@/context/LanguageContext';
 import { API_BASE, request } from '@/lib/api';
-import { RangeSlider } from '@/components/RangeSlider';
 import {
   ActivityIndicator,
   Animated,
@@ -98,22 +96,6 @@ const PLATFORM_URL_PREFIX: Record<string, string> = {
   twitch:    'https://twitch.tv/',
 };
 
-const FALLBACK_CAT_OPTIONS = [
-  'Food', 'Travel', 'Fashion', 'Beauty', 'Fitness', 'Gaming', 'Tech', 'Education',
-  'Lifestyle', 'Home & Living', 'Wellness', 'Music', 'Art & Design', 'Pets',
-  'Parenting', 'Automotive', 'Finance', 'Sustainability', 'Photography', 'Sports',
-  'Film & TV', 'Mindfulness', 'Food & Drink', 'Entertainment',
-];
-const PLATFORM_OPTIONS = ['Instagram', 'TikTok', 'YouTube', 'Facebook'];
-
-const PLACES_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY ?? '';
-const MAX_PREF_LOCS = 3;
-
-type PlacePrediction = {
-  place_id: string;
-  structured_formatting: { main_text: string; secondary_text: string };
-};
-
 const PAYMENT_METHODS = [
   { id: 'esewa',   icon: '💚', label: 'eSewa',   color: '#60BB46' },
   { id: 'khalti',  icon: '💜', label: 'Khalti',  color: '#5C2D91' },
@@ -128,7 +110,6 @@ const LANGUAGE_OPTIONS = [
 
 const SECTION_TITLES: Record<string, string> = {
   social:      'creatorSettings.sectionSocial',
-  campaigns:   'creatorSettings.sectionCampaigns',
   earnings:    'creatorSettings.sectionEarnings',
   'past-work': 'creatorSettings.sectionPastWork',
   security:    'creatorSettings.sectionSecurity',
@@ -214,189 +195,6 @@ function NavRow({ icon, ionIcon, ionIconColor, label, value, onPress, danger = f
   );
 }
 
-type ChipGroupProps = { options: string[]; selected: string[]; onToggle: (v: string) => void };
-function ChipGroup({ options, selected, onToggle }: ChipGroupProps) {
-  const C = useContext(ColorCtx);
-  return (
-    <View style={styles.chipGroup}>
-      {options.map((opt) => {
-        const active = selected.includes(opt);
-        return (
-          <Pressable
-            key={opt}
-            style={[
-              styles.chip,
-              { borderColor: active ? C.brinjal1 : C.border, backgroundColor: active ? C.primaryLight : C.surface },
-            ]}
-            onPress={() => onToggle(opt)}>
-            <Text style={[styles.chipText, { color: active ? C.brinjal1 : C.text, fontWeight: active ? '700' : '500' }]}>{opt}</Text>
-          </Pressable>
-        );
-      })}
-    </View>
-  );
-}
-
-// ── PrefLocationPicker ────────────────────────────────────────
-
-function PrefLocationPicker({
-  locations,
-  onChange,
-}: {
-  locations: string[];
-  onChange: (locs: string[]) => void;
-}) {
-  const C = useAppColors();
-  const { t } = useLanguage();
-  const [query, setQuery] = useState('');
-  const [predictions, setPredictions] = useState<PlacePrediction[]>([]);
-  const [searching, setSearching] = useState(false);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const remoteSelected = locations.includes('Remote');
-  const nonRemote = locations.filter((l) => l !== 'Remote');
-  const atMax = locations.length >= MAX_PREF_LOCS;
-
-  function toggleRemote() {
-    if (remoteSelected) {
-      onChange(locations.filter((l) => l !== 'Remote'));
-    } else if (!atMax) {
-      onChange([...locations, 'Remote']);
-    }
-  }
-
-  function remove(label: string) {
-    onChange(locations.filter((l) => l !== label));
-  }
-
-  function handleSearchChange(text: string) {
-    setQuery(text);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (!text.trim()) { setPredictions([]); return; }
-    debounceRef.current = setTimeout(() => fetchPredictions(text), 350);
-  }
-
-  async function fetchPredictions(text: string) {
-    if (!PLACES_KEY) return;
-    setSearching(true);
-    try {
-      const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(text)}&key=${PLACES_KEY}&language=en&types=(cities)&components=country:np`;
-      const res = await fetch(url);
-      const data = (await res.json()) as { predictions: PlacePrediction[]; status: string };
-      setPredictions(data.status === 'OK' ? data.predictions : []);
-    } catch {
-      setPredictions([]);
-    } finally {
-      setSearching(false);
-    }
-  }
-
-  function handleSelectPrediction(pred: PlacePrediction) {
-    const label = pred.structured_formatting.main_text;
-    if (locations.includes(label)) return;
-    setQuery('');
-    setPredictions([]);
-    onChange([...locations, label]);
-  }
-
-  return (
-    <View style={pl.container}>
-      {/* Remote — standalone toggle chip */}
-      <Pressable
-        style={[
-          pl.remoteChip,
-          { borderColor: remoteSelected ? C.brinjal1 : C.border, backgroundColor: remoteSelected ? C.primaryLight : C.surface },
-          !remoteSelected && atMax && { opacity: 0.35 },
-        ]}
-        onPress={toggleRemote}
-        disabled={!remoteSelected && atMax}>
-        <Text style={pl.remoteEmoji}>🌐</Text>
-        <Text style={[pl.remoteText, { color: remoteSelected ? C.brinjal1 : C.text, fontWeight: remoteSelected ? '700' : '500' }]}>
-          {t('campaignDetail.remoteLocation')}
-        </Text>
-        {remoteSelected && <Text style={[pl.removeX, { color: C.brinjal1 }]}>✕</Text>}
-      </Pressable>
-
-      {/* Selected city chips */}
-      {nonRemote.length > 0 && (
-        <View style={pl.selectedRow}>
-          {nonRemote.map((loc) => (
-            <View key={loc} style={[pl.selectedChip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
-              <Text style={[pl.selectedText, { color: C.brinjal1 }]}>📍 {loc}</Text>
-              <Pressable onPress={() => remove(loc)} hitSlop={8}>
-                <Text style={[pl.removeX, { color: C.brinjal1 }]}>✕</Text>
-              </Pressable>
-            </View>
-          ))}
-        </View>
-      )}
-
-      {/* Search input — hidden when 3 locations reached */}
-      {!atMax && (
-        <>
-          <View style={[pl.searchRow, { borderColor: C.border, backgroundColor: C.background }]}>
-            <Text style={pl.searchIcon}>🔍</Text>
-            <TextInput
-              style={[pl.searchInput, { color: C.text }]}
-              value={query}
-              onChangeText={handleSearchChange}
-              placeholder={t('creatorSettings.searchCityPlaceholder')}
-              placeholderTextColor={C.textSecondary}
-              returnKeyType="search"
-            />
-            {searching
-              ? <ActivityIndicator size="small" color={C.brinjal1} />
-              : query.length > 0
-              ? <Pressable onPress={() => { setQuery(''); setPredictions([]); }} hitSlop={8}>
-                  <Text style={{ color: C.textSecondary, fontSize: 15 }}>✕</Text>
-                </Pressable>
-              : null}
-          </View>
-
-          {predictions.length > 0 && (
-            <View style={[pl.dropdown, { backgroundColor: C.surface, borderColor: C.border }]}>
-              {predictions.slice(0, 5).map((pred, idx) => (
-                <Pressable
-                  key={pred.place_id}
-                  style={[pl.dropRow, { borderBottomColor: idx < Math.min(predictions.length, 5) - 1 ? C.border : 'transparent' }]}
-                  onPress={() => handleSelectPrediction(pred)}>
-                  <Text style={pl.dropPin}>📍</Text>
-                  <View style={pl.dropTexts}>
-                    <Text style={[pl.dropMain, { color: C.text }]}>{pred.structured_formatting.main_text}</Text>
-                    <Text style={[pl.dropSec, { color: C.textSecondary }]} numberOfLines={1}>
-                      {pred.structured_formatting.secondary_text}
-                    </Text>
-                  </View>
-                </Pressable>
-              ))}
-            </View>
-          )}
-        </>
-      )}
-    </View>
-  );
-}
-
-const pl = StyleSheet.create({
-  container:    { gap: 10 },
-  remoteChip:   { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 12, borderWidth: 1.5 },
-  remoteEmoji:  { fontSize: 14 },
-  remoteText:   { fontSize: 13 },
-  removeX:      { fontSize: 12, fontWeight: '700' },
-  selectedRow:  { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  selectedChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 12, borderWidth: 1.5 },
-  selectedText: { fontSize: 13, fontWeight: '600' },
-  searchRow:    { flexDirection: 'row', alignItems: 'center', borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 12, height: 44, gap: 8 },
-  searchIcon:   { fontSize: 15 },
-  searchInput:  { flex: 1, fontSize: 14 },
-  dropdown:     { borderRadius: 12, borderWidth: 1, overflow: 'hidden' },
-  dropRow:      { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 12, gap: 10, borderBottomWidth: 1 },
-  dropPin:      { fontSize: 16 },
-  dropTexts:    { flex: 1 },
-  dropMain:     { fontSize: 14, fontWeight: '600' },
-  dropSec:      { fontSize: 12, marginTop: 1 },
-});
-
 // ── Main screen ───────────────────────────────────────────────
 
 export default function CreatorSettingsScreen() {
@@ -428,14 +226,6 @@ export default function CreatorSettingsScreen() {
   const [portfolioFormErrors, setPortfolioFormErrors] = useState<Record<string, string>>({});
   const [portfolioLoading, setPortfolioLoading] = useState(false);
   const portfolioSheetAnim = useRef(new Animated.Value(0)).current;
-
-  // Campaign preferences
-  const [prefCats, setPrefCats] = useState<string[]>([]);
-  const [prefPlatforms, setPrefPlatforms] = useState<string[]>([]);
-  const [prefLocations, setPrefLocations] = useState<string[]>([]);
-  const [prefPriceMin, setPrefPriceMin] = useState(500);
-  const [prefPriceMax, setPrefPriceMax] = useState(100000);
-  const prefSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Earnings / payment
   const [paymentMethods, setPaymentMethods] = useState<string[]>([]);
@@ -474,9 +264,6 @@ export default function CreatorSettingsScreen() {
   const langLabelToCode = (label: string): 'en' | 'ne' => label === 'Nepali' ? 'ne' : 'en';
   const langCodeToLabel = (code: string): string => code === 'ne' ? 'Nepali' : 'English';
   const [selectedLang, setSelectedLang] = useState(() => langCodeToLabel(language));
-
-  // Campaign categories from DB
-  const [dbCatOptions, setDbCatOptions] = useState<string[]>([]);
 
   // Email/phone verification
   const [emailVerified, setEmailVerified] = useState<boolean | null>(null);
@@ -537,19 +324,10 @@ export default function CreatorSettingsScreen() {
         setPortfolio(profile.portfolioLinks.map((l) => ({ id: l.id, label: l.label, url: l.url })));
       }
       if (profile.paymentMethods?.length) setPaymentMethods(profile.paymentMethods);
-      if (profile.categories?.length)     setPrefCats(profile.categories);
-      if (profile.prefPlatforms?.length)  setPrefPlatforms(profile.prefPlatforms);
-      if (profile.prefLocations?.length)  setPrefLocations(profile.prefLocations);
-      if (profile.prefBudgetMin != null)  setPrefPriceMin(profile.prefBudgetMin);
-      if (profile.prefBudgetMax != null)  setPrefPriceMax(profile.prefBudgetMax);
       // Email verified status from DB
       if (profile.user?.isEmailVerified != null) setEmailVerified(profile.user.isEmailVerified);
       if (profile.citizenshipStatus) setCitizenshipStatus(profile.citizenshipStatus);
       setCreatorIsVerified(profile.isVerified === true);
-    }).catch(() => {});
-    // Fetch categories for campaign preferences
-    campaignService.getCategories().then((cats) => {
-      if (cats.length > 0) setDbCatOptions(cats);
     }).catch(() => {});
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -615,40 +393,6 @@ export default function CreatorSettingsScreen() {
   }
 
   // ── Helpers ──────────────────────────────────────────────────
-
-  function debounceSaveCampaignPrefs(
-    next: Partial<{ categories: string[]; prefPlatforms: string[]; prefLocations: string[]; prefBudgetMin: number; prefBudgetMax: number }>
-  ) {
-    if (prefSaveTimer.current) clearTimeout(prefSaveTimer.current);
-    prefSaveTimer.current = setTimeout(() => {
-      creatorService.updateCampaignPreferences(next).catch(() => {});
-    }, 700);
-  }
-
-  function toggleCategory(val: string) {
-    setPrefCats((prev) => {
-      const next = prev.includes(val)
-        ? prev.filter((x) => x !== val)
-        : prev.length < 5 ? [...prev, val] : prev;
-      if (next !== prev) debounceSaveCampaignPrefs({ categories: next });
-      return next;
-    });
-  }
-
-  function togglePrefPlatform(val: string) {
-    setPrefPlatforms((prev) => {
-      const next = prev.includes(val) ? prev.filter((x) => x !== val) : [...prev, val];
-      debounceSaveCampaignPrefs({ prefPlatforms: next });
-      return next;
-    });
-  }
-
-
-  function handlePriceChange(min: number, max: number) {
-    setPrefPriceMin(min);
-    setPrefPriceMax(max);
-    debounceSaveCampaignPrefs({ prefBudgetMin: min, prefBudgetMax: max });
-  }
 
   function toggleChip(arr: string[], setArr: (v: string[]) => void, val: string) {
     setArr(arr.includes(val) ? arr.filter((x) => x !== val) : [...arr, val]);
@@ -1009,7 +753,6 @@ export default function CreatorSettingsScreen() {
   function renderContactSupport() {
     return (
       <>
-        <SectionHeader title={t('creatorSettings.getInTouchSection')} />
         <Card>
           <View style={styles.inlineForm}>
             <View style={styles.formField}>
@@ -1060,7 +803,6 @@ export default function CreatorSettingsScreen() {
   function renderReportIssue() {
     return (
       <>
-        <SectionHeader title={t('creatorSettings.reportIssueSection')} />
         <Card>
           <View style={styles.inlineForm}>
             <View style={styles.formField}>
@@ -1604,7 +1346,15 @@ export default function CreatorSettingsScreen() {
                               { borderColor: isSelected ? p.color : C.border, backgroundColor: isSelected ? p.color + '15' : C.background },
                             ]}
                             onPress={() => {
-                              setPortfolioForm((f) => ({ ...f, type: p.id }));
+                              const prefix = PORTFOLIO_URL_PREFIX[p.id] ?? '';
+                              setPortfolioForm((f) => {
+                                // Preserve whatever the user typed after the previous platform's
+                                // prefix, so switching platforms swaps the prefix shown in the box
+                                // instead of leaving the old one stuck in place.
+                                const oldPrefix = PORTFOLIO_URL_PREFIX[f.type] ?? '';
+                                const handle = f.url.startsWith(oldPrefix) ? f.url.slice(oldPrefix.length) : '';
+                                return { ...f, type: p.id, url: prefix + handle };
+                              });
                               setPortfolioFormErrors((e) => ({ ...e, type: '' }));
                             }}>
                             <PlatformIcon iconName={p.iconName} iconLib={p.iconLib} size={24} color={isSelected ? p.color : '#888'} />
@@ -1645,7 +1395,7 @@ export default function CreatorSettingsScreen() {
                       {portfolioFormErrors.url
                         ? <Text style={[styles.sheetFieldError, { color: C.error }]}>{portfolioFormErrors.url}</Text>
                         : portfolioForm.type && PORTFOLIO_URL_PREFIX[portfolioForm.type]
-                          ? <Text style={[styles.sheetFieldHint, { color: C.textSecondary }]}>{t('creatorSettings.linkIdHint', { prefix: PORTFOLIO_URL_PREFIX[portfolioForm.type] })}</Text>
+                          ? <Text style={[styles.sheetFieldHint, { color: C.textSecondary }]}>{t('creatorSettings.linkIdHint')}</Text>
                           : <Text style={[styles.sheetFieldHint, { color: C.textSecondary }]}>{t('creatorSettings.linkUrlHint')}</Text>}
                     </View>
 
@@ -1725,97 +1475,6 @@ export default function CreatorSettingsScreen() {
           onPress={() => openPortfolioSheet()}>
           <Text style={[styles.addSocialBtnText, { color: '#6366F1' }]}>{t('creatorSettings.addPastWorkBtn')}</Text>
         </Pressable>
-      </>
-    );
-  }
-
-  // ── Section: Campaign Preferences ────────────────────────────
-
-  function renderCampaignPreferences() {
-    const catAtMax = prefCats.length >= 5;
-    const catList = dbCatOptions.length > 0 ? dbCatOptions : FALLBACK_CAT_OPTIONS;
-    return (
-      <>
-        <View style={[styles.hintCard, { backgroundColor: C.primaryLight, marginTop: 12 }]}>
-          <Text style={[styles.hintText, { color: C.brinjal1 }]}>{t('creatorSettings.prefHint')}</Text>
-        </View>
-
-        <SectionHeader title={t('creatorSettings.prefCategoriesSection')} />
-        <View style={[styles.hintCard, { backgroundColor: C.primaryLight }]}>
-          <Text style={[styles.hintText, { color: C.brinjal1 }]}>
-            {catAtMax
-              ? t('creatorSettings.prefCategoriesMax', { n: prefCats.length })
-              : t('creatorSettings.prefCategoriesCount', { n: prefCats.length })}
-          </Text>
-        </View>
-        <Card>
-          <View style={styles.chipSection}>
-            <View style={styles.chipGroup}>
-              {catList.map((opt) => {
-                const active = prefCats.includes(opt);
-                const disabled = !active && catAtMax;
-                return (
-                  <Pressable
-                    key={opt}
-                    style={[
-                      styles.chip,
-                      { borderColor: active ? C.brinjal1 : C.border, backgroundColor: active ? C.primaryLight : C.surface, opacity: disabled ? 0.4 : 1 },
-                    ]}
-                    onPress={() => { if (!disabled) toggleCategory(opt); }}>
-                    <Text style={[styles.chipText, { color: active ? C.brinjal1 : C.text, fontWeight: active ? '700' : '500' }]}>{opt}</Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </View>
-        </Card>
-
-        <SectionHeader title={t('creatorSettings.prefPriceSection')} />
-        <View style={[styles.hintCard, { backgroundColor: C.primaryLight }]}>
-          <Text style={[styles.hintText, { color: C.brinjal1 }]}>{t('creatorSettings.prefPriceHint')}</Text>
-        </View>
-        <Card>
-          <View style={styles.sliderSection}>
-            <RangeSlider
-              minVal={prefPriceMin}
-              maxVal={prefPriceMax}
-              onMinChange={(v) => handlePriceChange(v, prefPriceMax)}
-              onMaxChange={(v) => handlePriceChange(prefPriceMin, v)}
-              max={100000}
-              step={500}
-              minGap={5000}
-              currency="Rs"
-            />
-          </View>
-        </Card>
-
-        <SectionHeader title={t('creatorSettings.prefPlatformsSection')} />
-        <Card>
-          <View style={styles.chipSection}>
-            <ChipGroup options={PLATFORM_OPTIONS} selected={prefPlatforms} onToggle={togglePrefPlatform} />
-          </View>
-        </Card>
-
-        <SectionHeader title={t('creatorSettings.prefLocationsSection')} />
-        <View style={[styles.hintCard, { backgroundColor: C.primaryLight }]}>
-          <Text style={[styles.hintText, { color: C.brinjal1 }]}>
-            {prefLocations.length >= 3
-              ? t('creatorSettings.prefLocationsMaxHint')
-              : t('creatorSettings.prefLocationsHint')}
-          </Text>
-        </View>
-        <Card>
-          <View style={styles.chipSection}>
-            <PrefLocationPicker
-              locations={prefLocations}
-              onChange={(locs) => {
-                setPrefLocations(locs);
-                debounceSaveCampaignPrefs({ prefLocations: locs });
-              }}
-            />
-          </View>
-        </Card>
-        <Text style={[styles.saveHint, { color: C.textSecondary }]}>{t('creatorSettings.prefAutoSaved')}</Text>
       </>
     );
   }
@@ -2419,7 +2078,6 @@ export default function CreatorSettingsScreen() {
           {/* Sections (no sub-page) */}
           {!subPage && !section && renderMainSettings()}
           {!subPage && section === 'social'     && renderSocialAccounts()}
-          {!subPage && section === 'campaigns'  && renderCampaignPreferences()}
           {!subPage && section === 'earnings'   && renderEarnings()}
           {!subPage && section === 'past-work'  && renderPastWork()}
           {!subPage && section === 'security'   && renderSecurity()}

@@ -50,6 +50,15 @@ export class CampaignController {
     }
   }
 
+  async nearby(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { campaigns, total, page, limit } = await campaignService.nearby(req.query as any, req.language);
+      paginated(res, campaigns, total, page, limit);
+    } catch (err) {
+      next(err);
+    }
+  }
+
   async getById(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const campaign = await campaignService.getById(req.params.id, req.language);

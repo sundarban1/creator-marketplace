@@ -54,6 +54,8 @@ model CreatorProfile {
   prefBudgetMax      Float              @default(500)
   locationLat        Float?
   locationLng        Float?
+  nearbyRadiusKm     Int                @default(25)
+  nearbyUseHomeLocation Boolean         @default(false)
   referralCode       String?              @unique
   citizenshipDocUrl     String?
   citizenshipStatus     CitizenshipStatus  @default(NONE)
@@ -203,6 +205,8 @@ model Campaign {
   deliverables   String
   deadline       DateTime
   location       String?
+  locationLat    Float?
+  locationLng    Float?
   budgetMin      Float
   budgetMax      Float
   paymentType    String
@@ -242,6 +246,7 @@ model Campaign {
   @@index([createdAt(sort: Desc)])
   @@index([status, createdAt(sort: Desc)])
   @@index([campaignType, status])
+  @@index([locationLat, locationLng])
   @@map("campaigns")
 }
 

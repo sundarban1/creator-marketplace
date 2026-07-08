@@ -7,6 +7,7 @@ import {
   updateCampaignSchema,
   campaignListQuerySchema,
   applyToCampaignSchema,
+  nearbyQuerySchema,
 } from './campaign.schema';
 
 const router = Router();
@@ -160,6 +161,40 @@ router.get('/', validate(campaignListQuerySchema, 'query'), ctrl.list.bind(ctrl)
 router.get('/categories', ctrl.getCategories.bind(ctrl));
 router.get('/master-categories', ctrl.getMasterCategories.bind(ctrl));
 router.get('/platforms', ctrl.getPlatforms.bind(ctrl));
+
+/**
+ * @swagger
+ * /api/campaigns/nearby:
+ *   get:
+ *     tags: [Campaign]
+ *     summary: Active campaigns within a radius of a point, sorted by distance
+ *     parameters:
+ *       - in: query
+ *         name: lat
+ *         required: true
+ *         schema: { type: number }
+ *       - in: query
+ *         name: lng
+ *         required: true
+ *         schema: { type: number }
+ *       - in: query
+ *         name: radiusKm
+ *         schema: { type: number, default: 25 }
+ *       - in: query
+ *         name: page
+ *         schema: { type: integer, default: 1 }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, default: 10 }
+ *     responses:
+ *       200:
+ *         description: Nearby campaigns, each with a distanceKm field
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PaginatedResponse'
+ */
+router.get('/nearby', validate(nearbyQuerySchema, 'query'), ctrl.nearby.bind(ctrl));
 
 /**
  * @swagger

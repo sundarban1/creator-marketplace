@@ -123,6 +123,8 @@ export class CreatorRepository {
     locationLng: number;
     avatarUrl:   string;
     categories:  string[];
+    nearbyRadiusKm:        number;
+    nearbyUseHomeLocation: boolean;
   }>) {
     return prisma.creatorProfile.update({ where: { userId }, data });
   }

@@ -14,6 +14,8 @@ export const updateCreatorProfileSchema = z.object({
   locationLng: z.number().optional(),
   avatarUrl:   z.string().url('Invalid avatar URL').optional(),
   categories:  z.array(z.string()).optional(),
+  nearbyRadiusKm:        z.number().int().min(1).max(200).optional(),
+  nearbyUseHomeLocation: z.boolean().optional(),
 });
 
 export const addPortfolioLinkSchema = z.object({

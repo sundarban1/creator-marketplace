@@ -102,6 +102,8 @@ const options: swaggerJsdoc.Options = {
             location: { type: 'string', nullable: true, example: 'Mumbai, India' },
             locationLat: { type: 'number', nullable: true },
             locationLng: { type: 'number', nullable: true },
+            nearbyRadiusKm: { type: 'integer', example: 25 },
+            nearbyUseHomeLocation: { type: 'boolean', example: false },
             avatarUrl: { type: 'string', format: 'uri', nullable: true },
             categories: { type: 'array', items: { type: 'string' }, example: ['Lifestyle', 'Fashion'] },
             socialLinks: {
@@ -221,6 +223,9 @@ const options: swaggerJsdoc.Options = {
             deadline: { type: 'string', format: 'date-time' },
             eventDate: { type: 'string', format: 'date-time', nullable: true },
             location: { type: 'string', nullable: true, example: 'Mumbai' },
+            locationLat: { type: 'number', nullable: true },
+            locationLng: { type: 'number', nullable: true },
+            distanceKm: { type: 'number', description: 'Only present on /api/campaigns/nearby responses', example: 3.2 },
             budgetMin: { type: 'number', example: 10000 },
             budgetMax: { type: 'number', example: 50000 },
             status: { type: 'string', enum: ['DRAFT', 'ACTIVE', 'PAUSED', 'CLOSED', 'CANCELLED'] },

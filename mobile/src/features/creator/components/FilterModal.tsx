@@ -449,6 +449,9 @@ export function FilterModal({
 
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.body}>
 
+          <Text style={[styles.section, { color: C.textSecondary }]}>Price Range</Text>
+          <RangeSlider minVal={tempPriceMin} maxVal={tempPriceMax} onMinChange={setTempPriceMin} onMaxChange={setTempPriceMax} currency="Rs" max={100000} step={1000} />
+
           <Text style={[styles.section, { color: C.textSecondary }]}>Event Type</Text>
           <View style={styles.eventTypeRow}>
             {EVENT_TYPE_OPTS.map(({ value, label }) => {
@@ -464,17 +467,14 @@ export function FilterModal({
             })}
           </View>
 
-          <Text style={[styles.section, { color: C.textSecondary }]}>Price Range</Text>
-          <RangeSlider minVal={tempPriceMin} maxVal={tempPriceMax} onMinChange={setTempPriceMin} onMaxChange={setTempPriceMax} currency="Rs" max={100000} step={1000} />
+          <Text style={[styles.section, { color: C.textSecondary }]}>Deadline Range</Text>
+          <DateRangePicker dateFrom={tempDateFrom} dateTo={tempDateTo} onFromChange={setTempDateFrom} onToChange={setTempDateTo} />
 
           <View style={styles.sectionRow}>
             <Text style={[styles.section, { color: C.textSecondary, marginBottom: 0 }]}>Location</Text>
             <Text style={[styles.sectionHint, { color: C.textSecondary }]}>{tempLocation.length}/{MAX_LOCS} allowed</Text>
           </View>
           <LocationSearchPicker selected={tempLocation} onSelect={setTempLocation} />
-
-          <Text style={[styles.section, { color: C.textSecondary }]}>Deadline Range</Text>
-          <DateRangePicker dateFrom={tempDateFrom} dateTo={tempDateTo} onFromChange={setTempDateFrom} onToChange={setTempDateTo} />
 
         </ScrollView>
 

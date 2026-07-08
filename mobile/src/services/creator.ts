@@ -12,6 +12,8 @@ export interface ApiCreatorProfile {
   location: string | null;
   locationLat: number | null;
   locationLng: number | null;
+  nearbyRadiusKm: number;
+  nearbyUseHomeLocation: boolean;
   avatarUrl: string | null;
   categories: string[];
   portfolioLinks: { id: string; label: string; url: string }[];
@@ -139,6 +141,8 @@ export const creatorService = {
     locationLat?: number;
     locationLng?: number;
     categories?: string[];
+    nearbyRadiusKm?: number;
+    nearbyUseHomeLocation?: boolean;
   }): Promise<ApiCreatorProfile> {
     const res = await request<ApiCreatorProfile>('PUT', '/api/creator/profile', data);
     return res.data;

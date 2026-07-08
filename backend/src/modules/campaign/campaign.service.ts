@@ -122,6 +122,23 @@ export class CampaignService {
     return { campaigns, total, page, limit: validatedLimit };
   }
 
+  async nearby(query: { lat: number; lng: number; radiusKm: number; page?: number; limit?: number }, lang = 'en') {
+    const page  = query.page ?? 1;
+    const limit = Math.min(query.limit ?? 10, 50);
+
+    const { campaigns: raw, total } = await this.repo.findNearby({
+      lat: query.lat,
+      lng: query.lng,
+      radiusKm: query.radiusKm,
+      page,
+      limit,
+    });
+
+    const dtos = raw.map(toCampaignDto);
+    const campaigns = await translateMany(dtos, [...CAMPAIGN_FIELDS], lang);
+    return { campaigns, total, page, limit };
+  }
+
   async getCategories(): Promise<string[]> {
     return this.repo.getDistinctCategories();
   }
