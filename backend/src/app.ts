@@ -145,7 +145,7 @@ const otpLimiter = rateLimit({
 // General API limiter (prevents abuse but allows normal traffic)
 const apiLimiter = rateLimit({
   windowMs: 60 * 1000,  // 1 minute
-  max: isProd ? 120 : 1000,
+  max: isProd ? 120 : 200000, // TEMP: raised for local load testing, revert before committing
   message: { success: false, message: 'Too many requests. Please slow down.' },
   standardHeaders: true,
   legacyHeaders: false,
