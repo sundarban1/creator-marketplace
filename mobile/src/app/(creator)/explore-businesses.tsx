@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BackButton } from '@/components/BackButton';
 import { useFocusEffect } from 'expo-router';
@@ -32,23 +32,23 @@ type DisplayBusiness = BusinessListItem & { isFavorited: boolean };
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const PLATFORMS = [
-  { label: 'Instagram', emoji: '📸' },
-  { label: 'YouTube',   emoji: '▶️' },
-  { label: 'TikTok',    emoji: '🎵' },
-  { label: 'Facebook',  emoji: '👤' },
-  { label: 'Twitter',   emoji: '🐦' },
+  { label: 'Instagram', icon: 'instagram' },
+  { label: 'YouTube',   icon: 'youtube' },
+  { label: 'TikTok',    icon: 'tiktok' },
+  { label: 'Facebook',  icon: 'facebook' },
+  { label: 'Twitter',   icon: 'twitter' },
 ];
 
 const CATEGORIES = [
-  { label: 'Fashion',       emoji: '👗' },
-  { label: 'Beauty',        emoji: '✨' },
-  { label: 'Tech',          emoji: '💻' },
-  { label: 'Food',          emoji: '🍽️' },
-  { label: 'Travel',        emoji: '✈️' },
-  { label: 'Fitness',       emoji: '💪' },
-  { label: 'Gaming',        emoji: '🎮' },
-  { label: 'Education',     emoji: '📚' },
-  { label: 'Entertainment', emoji: '🎬' },
+  { label: 'Fashion',       icon: 'tshirt' },
+  { label: 'Beauty',        icon: 'spa' },
+  { label: 'Tech',          icon: 'microchip' },
+  { label: 'Food',          icon: 'utensils' },
+  { label: 'Travel',        icon: 'plane' },
+  { label: 'Fitness',       icon: 'dumbbell' },
+  { label: 'Gaming',        icon: 'gamepad' },
+  { label: 'Education',     icon: 'graduation-cap' },
+  { label: 'Entertainment', icon: 'theater-masks' },
 ];
 
 // ─── Filter Modal ─────────────────────────────────────────────────────────────
@@ -111,7 +111,7 @@ function ExploreFilterModal({
                   key={p.label}
                   onPress={() => setTempPlatform(active ? '' : p.label)}
                   style={[fm.filterChip, { borderColor: active ? C.brinjal1 : C.border, backgroundColor: active ? C.brinjal1 : C.background }]}>
-                  <Text style={fm.filterChipEmoji}>{p.emoji}</Text>
+                  <FontAwesome5 name={p.icon} size={12} color={active ? '#fff' : C.textSecondary} />
                   <Text style={[fm.filterChipText, { color: active ? '#fff' : C.text }]}>{p.label}</Text>
                 </Pressable>
               );
@@ -128,7 +128,7 @@ function ExploreFilterModal({
                   key={cat.label}
                   onPress={() => setTempCategory(active ? '' : cat.label)}
                   style={[fm.filterChip, { borderColor: active ? C.brinjal1 : C.border, backgroundColor: active ? C.primaryLight : C.background }]}>
-                  <Text style={fm.filterChipEmoji}>{cat.emoji}</Text>
+                  <FontAwesome5 name={cat.icon} size={12} color={active ? C.brinjal1 : C.textSecondary} />
                   <Text style={[fm.filterChipText, { color: active ? C.brinjal1 : C.text, fontWeight: active ? '700' : '400' }]}>{cat.label}</Text>
                 </Pressable>
               );
@@ -162,7 +162,6 @@ const fm = StyleSheet.create({
   sectionHint:     { fontSize: 11, fontWeight: '600', fontFamily: F.semibold },
   chipGrid:        { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   filterChip:      { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1.5, borderRadius: 22, paddingHorizontal: 14, paddingVertical: 9 },
-  filterChipEmoji: { fontSize: 14 },
   filterChipText:  { fontSize: 13, fontFamily: F.medium },
   footer:          { padding: 20, borderTopWidth: 1 },
   applyBtn:        { borderRadius: 14, height: 52, justifyContent: 'center', alignItems: 'center', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
@@ -244,10 +243,10 @@ function BusinessCard({
       {item.categories.length > 0 && (
         <View style={styles.chips}>
           {item.categories.slice(0, 3).map((cat) => {
-            const emoji = CATEGORIES.find((c) => c.label.toLowerCase() === cat.toLowerCase())?.emoji ?? '🏷️';
+            const icon = CATEGORIES.find((c) => c.label.toLowerCase() === cat.toLowerCase())?.icon ?? 'tag';
             return (
               <View key={cat} style={[styles.chip, { backgroundColor: C.primaryLight, borderColor: 'rgba(79,70,229,0.25)' }]}>
-                <Text style={styles.chipEmoji}>{emoji}</Text>
+                <FontAwesome5 name={icon} size={10} color={C.brinjal1} />
                 <Text style={[styles.chipTxt, { color: C.brinjal1 }]}>{cat}</Text>
               </View>
             );
@@ -458,21 +457,25 @@ export default function ExploreBusinessesScreen() {
                 setLocations(next);
                 void fetchBusinesses({ locations: next, silent: true });
               }}>
-              <Text style={[styles.activePillText, { color: C.brinjal1 }]}>📍 {loc.label} ✕</Text>
+              <Ionicons name="location" size={11} color={C.brinjal1} />
+              <Text style={[styles.activePillText, { color: C.brinjal1 }]}>{loc.label}</Text>
+              <Ionicons name="close" size={12} color={C.brinjal1} />
             </Pressable>
           ))}
           {platform ? (
             <Pressable
               style={[styles.activePill, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}
               onPress={() => { setPlatform(''); void fetchBusinesses({ platform: '', silent: true }); }}>
-              <Text style={[styles.activePillText, { color: C.brinjal1 }]}>{platform} ✕</Text>
+              <Text style={[styles.activePillText, { color: C.brinjal1 }]}>{platform}</Text>
+              <Ionicons name="close" size={12} color={C.brinjal1} />
             </Pressable>
           ) : null}
           {category ? (
             <Pressable
               style={[styles.activePill, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}
               onPress={() => { setCategory(''); void fetchBusinesses({ category: '', silent: true }); }}>
-              <Text style={[styles.activePillText, { color: C.brinjal1 }]}>{category} ✕</Text>
+              <Text style={[styles.activePillText, { color: C.brinjal1 }]}>{category}</Text>
+              <Ionicons name="close" size={12} color={C.brinjal1} />
             </Pressable>
           ) : null}
           <Pressable onPress={clearAll}>
@@ -487,7 +490,7 @@ export default function ExploreBusinessesScreen() {
           <Text style={[styles.loadingText, { color: C.textSecondary }]}>Finding brands…</Text>
         </View>
       ) : error ? (
-        <EmptyState emoji="⚠️" title="Couldn't load businesses" subtitle={error} action={{ label: 'Retry', onPress: () => fetchBusinesses() }} />
+        <EmptyState faIcon="exclamation-triangle" title="Couldn't load businesses" subtitle={error} action={{ label: 'Retry', onPress: () => fetchBusinesses() }} />
       ) : (
         <FlatList
           data={displayItems}
@@ -504,7 +507,7 @@ export default function ExploreBusinessesScreen() {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brinjal1} />}
           ListEmptyComponent={
             <EmptyState
-              emoji="🏢"
+              faIcon="building"
               title="No brands found"
               subtitle={hasFilter ? 'Try adjusting your filters or search term.' : 'No businesses are currently hiring. Check back soon!'}
               action={hasFilter ? { label: 'Clear Filters', onPress: clearAll } : undefined}
@@ -555,7 +558,7 @@ const styles = StyleSheet.create({
 
   // Active filter pills
   activePills:    { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', paddingHorizontal: 16, paddingBottom: 8, gap: 8 },
-  activePill:     { flexDirection: 'row', borderWidth: 1.5, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5 },
+  activePill:     { flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1.5, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5 },
   activePillText: { fontSize: 12, fontWeight: '600', fontFamily: F.semibold },
   clearAllText:   { fontSize: 12, fontWeight: '700', fontFamily: F.bold },
 
@@ -579,7 +582,6 @@ const styles = StyleSheet.create({
 
   chips:          { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   chip:           { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 10, borderWidth: 1, paddingHorizontal: 9, paddingVertical: 4 },
-  chipEmoji:      { fontSize: 12 },
   chipTxt:        { fontSize: 11, fontWeight: '700', fontFamily: F.bold },
 
   // Card footer

@@ -45,21 +45,21 @@ function getPlatformInfo(platform: string): PlatformInfo {
   };
 }
 
-const CATEGORY_META: Record<string, { emoji: string; bg: string }> = {
-  Fashion:    { emoji: '👗', bg: '#F2DCF0' },
-  Food:       { emoji: '🍽️', bg: '#F2E6DC' },
-  Tech:       { emoji: '💻', bg: '#DCE6F2' },
-  Technology: { emoji: '💻', bg: '#DCE6F2' },
-  Beauty:     { emoji: '✨', bg: '#DCF2E6' },
-  Travel:     { emoji: '✈️', bg: '#F2F2DC' },
-  Fitness:    { emoji: '💪', bg: '#DCF2EE' },
-  Lifestyle:  { emoji: '🌿', bg: '#E6F2DC' },
-  Gaming:     { emoji: '🎮', bg: '#E6DCF2' },
-  Music:      { emoji: '🎵', bg: '#F2DCE6' },
-  Education:  { emoji: '📚', bg: '#FDEFD0' },
-  Sports:     { emoji: '⚽', bg: '#E8F4DC' },
-  Wellness:   { emoji: '🧘', bg: '#DCF2EE' },
-  Adventure:  { emoji: '🏕️', bg: '#E8EFD4' },
+const CATEGORY_META: Record<string, { icon: string; bg: string }> = {
+  Fashion:    { icon: 'tshirt',         bg: '#F2DCF0' },
+  Food:       { icon: 'utensils',       bg: '#F2E6DC' },
+  Tech:       { icon: 'microchip',      bg: '#DCE6F2' },
+  Technology: { icon: 'microchip',      bg: '#DCE6F2' },
+  Beauty:     { icon: 'spa',            bg: '#DCF2E6' },
+  Travel:     { icon: 'plane',          bg: '#F2F2DC' },
+  Fitness:    { icon: 'dumbbell',       bg: '#DCF2EE' },
+  Lifestyle:  { icon: 'leaf',           bg: '#E6F2DC' },
+  Gaming:     { icon: 'gamepad',        bg: '#E6DCF2' },
+  Music:      { icon: 'music',          bg: '#F2DCE6' },
+  Education:  { icon: 'graduation-cap', bg: '#FDEFD0' },
+  Sports:     { icon: 'futbol',         bg: '#E8F4DC' },
+  Wellness:   { icon: 'heartbeat',      bg: '#DCF2EE' },
+  Adventure:  { icon: 'mountain',       bg: '#E8EFD4' },
 };
 
 function formatFollowers(n: number) {
@@ -163,7 +163,7 @@ export default function CreatorDetailScreen() {
           <BackButton fallback="/(business)/explore-creators" />
         </View>
         <View style={s.centered}>
-          <Text style={s.errorEmoji}>😕</Text>
+          <FontAwesome5 name="user-slash" size={40} color={C.textSecondary} style={s.errorEmoji} />
           <Text style={[s.errorTitle, { color: C.text }]}>{t('creatorDetailExtra.notFound')}</Text>
           <Text style={[s.errorHint, { color: C.textSecondary }]}>{error || t('creatorDetailExtra.notFoundSub')}</Text>
           <Pressable onPress={() => router.back()} style={[s.retryBtn, { borderColor: C.brinjal1 }]}>
@@ -227,7 +227,10 @@ export default function CreatorDetailScreen() {
               <Text style={[s.username, { color: C.textSecondary }]}>@{profile.username}</Text>
             ) : null}
             {profile.location ? (
-              <Text style={[s.location, { color: C.textSecondary }]}>📍 {profile.location}</Text>
+              <View style={s.locationRow}>
+                <Ionicons name="location" size={11} color={C.textSecondary} />
+                <Text style={[s.location, { color: C.textSecondary }]}>{profile.location}</Text>
+              </View>
             ) : null}
           </View>
         </View>
@@ -249,7 +252,7 @@ export default function CreatorDetailScreen() {
                 const meta = CATEGORY_META[cat];
                 return (
                   <View key={cat} style={[s.catChip, { backgroundColor: C.primaryLight }]}>
-                    {meta && <Text style={s.catEmoji}>{meta.emoji}</Text>}
+                    {meta && <FontAwesome5 name={meta.icon} size={11} color={C.brinjal1} />}
                     <Text style={[s.catChipText, { color: C.brinjal1 }]}>{cat}</Text>
                   </View>
                 );
@@ -295,7 +298,7 @@ export default function CreatorDetailScreen() {
           <View style={[s.section, { backgroundColor: C.surface }]}>
             <SectionTitle label={t('creatorDetailExtra.sectionRatePreference')} color={C.textSecondary} />
             <View style={[s.budgetCard, { backgroundColor: C.primaryLight }]}>
-              <Text style={s.budgetEmoji}>💰</Text>
+              <FontAwesome5 name="wallet" size={22} color={C.brinjal1} />
               <View style={s.budgetInfo}>
                 <Text style={[s.budgetLabel, { color: C.textSecondary }]}>{t('creatorDetailExtra.preferredRange')}</Text>
                 <Text style={[s.budgetValue, { color: C.brinjal1 }]}>
@@ -335,10 +338,10 @@ export default function CreatorDetailScreen() {
                   style={[s.portfolioRow, { borderColor: C.border }]}
                   onPress={() => Linking.openURL(link.url).catch(() => {})}>
                   <View style={[s.portfolioIconWrap, { backgroundColor: C.primaryLight }]}>
-                    <Text style={s.portfolioIcon}>🔗</Text>
+                    <Ionicons name="link" size={16} color={C.brinjal1} />
                   </View>
                   <Text style={[s.portfolioLabel, { color: C.text }]} numberOfLines={1}>{link.label}</Text>
-                  <Text style={[s.portfolioArrow, { color: C.brinjal1 }]}>↗</Text>
+                  <Ionicons name="open-outline" size={15} color={C.brinjal1} />
                 </Pressable>
               ))}
             </View>
@@ -424,6 +427,7 @@ const s = StyleSheet.create({
   verifiedBadge:{ borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3 },
   verifiedText: { fontSize: 11, fontWeight: '700', color: '#2E7D32', fontFamily: F.bold },
   username:     { fontSize: 13, fontFamily: F.regular },
+  locationRow:  { flexDirection: 'row', alignItems: 'center', gap: 4 },
   location:     { fontSize: 13, fontFamily: F.regular },
 
   // Sections
@@ -436,7 +440,6 @@ const s = StyleSheet.create({
   // Chips
   chips:       { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   catChip:     { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 12 },
-  catEmoji:    { fontSize: 14 },
   catChipText: { fontSize: 13, fontWeight: '600', fontFamily: F.semibold },
   platChip:    { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 12, borderWidth: 1.5 },
 
@@ -451,7 +454,6 @@ const s = StyleSheet.create({
 
   // Budget
   budgetCard:  { flexDirection: 'row', alignItems: 'center', borderRadius: 12, padding: 14, gap: 12 },
-  budgetEmoji: { fontSize: 24 },
   budgetInfo:  { flex: 1 },
   budgetLabel: { fontSize: 11, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0, fontFamily: F.semibold },
   budgetValue: { fontSize: 16, fontWeight: '700', marginTop: 2, fontFamily: F.bold },
@@ -460,12 +462,10 @@ const s = StyleSheet.create({
   portfolioList:    { gap: 10 },
   portfolioRow:     { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, borderBottomWidth: 1 },
   portfolioIconWrap:{ width: 36, height: 36, borderRadius: 10, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
-  portfolioIcon:    { fontSize: 16 },
   portfolioLabel:   { flex: 1, fontSize: 14, fontWeight: '600', fontFamily: F.semibold },
-  portfolioArrow:   { fontSize: 18, fontWeight: '600', fontFamily: F.semibold },
 
   // Error state
-  errorEmoji: { fontSize: 48 },
+  errorEmoji: { marginBottom: 4 },
   errorTitle: { fontSize: 18, fontWeight: '700', fontFamily: F.bold },
   errorHint:  { fontSize: 13, textAlign: 'center', lineHeight: 20, fontFamily: F.regular },
   retryBtn:   { borderRadius: 20, borderWidth: 1.5, paddingHorizontal: 20, paddingVertical: 10, marginTop: 4 },

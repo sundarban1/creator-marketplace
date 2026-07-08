@@ -43,7 +43,7 @@ function BusinessCard({ item, onRemove }: { item: BusinessListItem; onRemove: ()
             <Text style={[s.name, { color: C.text }]} numberOfLines={1}>{name}</Text>
             {item.isVerified && (
               <View style={[s.verifiedBadge, { backgroundColor: '#E6F4EA' }]}>
-                <Text style={s.verifiedText}>✓</Text>
+                <Ionicons name="checkmark" size={11} color="#16A34A" />
               </View>
             )}
           </View>
@@ -140,7 +140,7 @@ export default function FavoriteBusinessesScreen() {
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             <View style={s.empty}>
-              <Text style={s.emptyEmoji}>❤️</Text>
+              <Ionicons name="heart-outline" size={48} color={C.textSecondary} style={s.emptyIcon} />
               <Text style={[s.emptyTitle, { color: C.text }]}>{t('favoriteBrands.empty')}</Text>
               <Text style={[s.emptyHint, { color: C.textSecondary }]}>
                 {t('favoriteBrands.emptySub')}
@@ -186,7 +186,7 @@ const s = StyleSheet.create({
   removeText: { fontSize: 13, fontWeight: '600', color: '#EF4444', fontFamily: F.semibold },
 
   empty:      { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40, gap: 12 },
-  emptyEmoji: { fontSize: 52 },
+  emptyIcon:  { marginBottom: 2 },
   emptyTitle: { fontSize: 18, fontWeight: '700', fontFamily: F.bold },
   emptyHint:  { fontSize: 13, textAlign: 'center', lineHeight: 20, fontFamily: F.regular },
   emptyBtn:   { borderRadius: 14, paddingHorizontal: 28, paddingVertical: 12, marginTop: 8 },

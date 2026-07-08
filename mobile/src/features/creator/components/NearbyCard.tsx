@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAppColors } from '@/context/ThemeContext';
@@ -60,7 +60,7 @@ export function NearbyCard({ campaign }: { campaign: Campaign }) {
 
         {/* ── Image ── */}
         <View style={[styles.img, { backgroundColor: catMeta.bg ?? cardBg(campaign.category) }]}>
-          <Text style={styles.imgIcon}>{catMeta.emoji}</Text>
+          <FontAwesome5 name={catMeta.icon} size={44} color="#000" style={styles.imgIcon} />
 
           {cardImage && (
             <Image source={{ uri: cardImage }} style={StyleSheet.absoluteFill} resizeMode="cover" />
@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
   },
   card: { width: CARD_W, borderRadius: 20, overflow: 'hidden' },
   img:  { width: CARD_W, height: CARD_IMG_H, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
-  imgIcon: { fontSize: 52, opacity: 0.75 },
+  imgIcon: { opacity: 0.35 },
   imgOverlay: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.18)' },
 
   badge:     { position: 'absolute', top: 10, left: 10, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },

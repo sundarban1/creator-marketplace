@@ -1,6 +1,6 @@
 import { router, useFocusEffect } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { TabSlider } from '@/components/TabSlider';
@@ -16,21 +16,21 @@ import { notificationService } from '@/services/notifications';
 import { profileService } from '@/services/profile';
 import type { Campaign } from '@/types';
 
-const CATEGORY_META: Record<string, { emoji: string; cardBg: string }> = {
-  Fashion:    { emoji: '👗', cardBg: '#F2DCF0' },
-  Food:       { emoji: '🍽️', cardBg: '#F2E6DC' },
-  Tech:       { emoji: '💻', cardBg: '#DCE6F2' },
-  Beauty:     { emoji: '✨', cardBg: '#DCF2E6' },
-  Travel:     { emoji: '✈️', cardBg: '#F2F2DC' },
-  Fitness:    { emoji: '💪', cardBg: '#DCF2EE' },
-  Lifestyle:  { emoji: '🌿', cardBg: '#E6F2DC' },
-  Gaming:     { emoji: '🎮', cardBg: '#E6DCF2' },
-  Music:      { emoji: '🎵', cardBg: '#F2DCE6' },
-  Education:  { emoji: '📚', cardBg: '#FDEFD0' },
+const CATEGORY_META: Record<string, { icon: string; cardBg: string }> = {
+  Fashion:    { icon: 'tshirt',         cardBg: '#F2DCF0' },
+  Food:       { icon: 'utensils',       cardBg: '#F2E6DC' },
+  Tech:       { icon: 'microchip',      cardBg: '#DCE6F2' },
+  Beauty:     { icon: 'spa',            cardBg: '#DCF2E6' },
+  Travel:     { icon: 'plane',          cardBg: '#F2F2DC' },
+  Fitness:    { icon: 'dumbbell',       cardBg: '#DCF2EE' },
+  Lifestyle:  { icon: 'leaf',           cardBg: '#E6F2DC' },
+  Gaming:     { icon: 'gamepad',        cardBg: '#E6DCF2' },
+  Music:      { icon: 'music',          cardBg: '#F2DCE6' },
+  Education:  { icon: 'graduation-cap', cardBg: '#FDEFD0' },
 };
 
 function getCategoryMeta(category: string) {
-  return CATEGORY_META[category] ?? { emoji: '📣', cardBg: '#F2F0DC' };
+  return CATEGORY_META[category] ?? { icon: 'bullhorn', cardBg: '#F2F0DC' };
 }
 
 const STATUS_STYLE = {
@@ -319,7 +319,7 @@ export default function BusinessHomeScreen() {
                   style={({ pressed }) => [styles.campaignCard, { backgroundColor: C.surface, borderLeftWidth: 4, borderLeftColor: st.color }, pressed && { opacity: 0.9 }]}
                   onPress={() => router.push({ pathname: '/campaign-detail', params: { campaignId: c.id } })}>
                   <View style={[styles.thumb, { backgroundColor: meta.cardBg }]}>
-                    <Text style={styles.thumbEmoji}>{meta.emoji}</Text>
+                    <FontAwesome5 name={meta.icon} size={20} color="#00000066" />
                   </View>
                   <View style={styles.campaignBody}>
                     <View style={styles.campaignTitleRow}>
@@ -426,7 +426,6 @@ const styles = StyleSheet.create({
   campaignList: { paddingHorizontal: 20, gap: 12 },
   campaignCard: { flexDirection: 'row', alignItems: 'center', borderRadius: 14, padding: 14, gap: 12, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 4, overflow: 'hidden' },
   thumb: { width: 72, height: 72, borderRadius: 14, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
-  thumbEmoji: { fontSize: 28 },
   campaignBody: { flex: 1, gap: 5 },
   campaignTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
   campaignTitle: { fontSize: 14, fontWeight: '700', flex: 1, fontFamily: F.bold },

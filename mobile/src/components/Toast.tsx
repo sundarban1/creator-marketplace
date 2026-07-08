@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { F } from '@/utilities/constants';
@@ -24,11 +25,11 @@ type ToastCtx = {
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
-const VARIANT: Record<ToastVariant, { bg: string; border: string; icon: string; textColor: string; titleColor: string }> = {
-  success: { bg: '#F0FDF4', border: '#86EFAC', icon: '✅', textColor: '#166534', titleColor: '#15803D' },
-  error:   { bg: '#FEF2F2', border: '#FCA5A5', icon: '⛔', textColor: '#991B1B', titleColor: '#DC2626' },
-  info:    { bg: '#EEF2FF', border: '#A5B4FC', icon: 'ℹ️', textColor: '#3730A3', titleColor: '#4F46E5' },
-  warning: { bg: '#FFFBEB', border: '#FCD34D', icon: '⚠️', textColor: '#92400E', titleColor: '#D97706' },
+const VARIANT: Record<ToastVariant, { bg: string; border: string; icon: keyof typeof Ionicons.glyphMap; textColor: string; titleColor: string }> = {
+  success: { bg: '#F0FDF4', border: '#86EFAC', icon: 'checkmark-circle', textColor: '#166534', titleColor: '#15803D' },
+  error:   { bg: '#FEF2F2', border: '#FCA5A5', icon: 'close-circle',     textColor: '#991B1B', titleColor: '#DC2626' },
+  info:    { bg: '#EEF2FF', border: '#A5B4FC', icon: 'information-circle', textColor: '#3730A3', titleColor: '#4F46E5' },
+  warning: { bg: '#FFFBEB', border: '#FCD34D', icon: 'warning',         textColor: '#92400E', titleColor: '#D97706' },
 };
 
 // ─── Context ──────────────────────────────────────────────────────────────────
@@ -90,14 +91,14 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           ]}
           pointerEvents="box-none">
           <Pressable style={styles.inner} onPress={dismiss}>
-            <Text style={styles.icon}>{cfg.icon}</Text>
+            <Ionicons name={cfg.icon} size={19} color={cfg.titleColor} style={styles.icon} />
             <View style={styles.texts}>
               {toast.title ? (
                 <Text style={[styles.title, { color: cfg.titleColor }]}>{toast.title}</Text>
               ) : null}
               <Text style={[styles.message, { color: cfg.textColor }]}>{toast.message}</Text>
             </View>
-            <Text style={[styles.dismiss, { color: cfg.textColor }]}>✕</Text>
+            <Ionicons name="close" size={15} color={cfg.textColor} style={styles.dismiss} />
           </Pressable>
         </Animated.View>
       )}
@@ -128,9 +129,9 @@ const styles = StyleSheet.create({
     elevation: 12,
   },
   inner:   { flexDirection: 'row', alignItems: 'flex-start', padding: 14, gap: 10 },
-  icon:    { fontSize: 17, marginTop: 1 },
+  icon:    { marginTop: 1 },
   texts:   { flex: 1 },
   title:   { fontSize: 13, fontWeight: '700', marginBottom: 2, fontFamily: F.bold },
   message: { fontSize: 13, lineHeight: 18, fontFamily: F.regular },
-  dismiss: { fontSize: 12, fontWeight: '700', opacity: 0.6, paddingTop: 2, fontFamily: F.bold },
+  dismiss: { opacity: 0.6, marginTop: 2 },
 });

@@ -1,13 +1,14 @@
 import { useState } from 'react';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { F } from '@/utilities/constants';
 
 const METHOD_META: Record<string, { icon: string; label: string; color: string }> = {
-  esewa:   { icon: '💚', label: 'eSewa',   color: '#60BB46' },
-  khalti:  { icon: '💜', label: 'Khalti',  color: '#5C2D91' },
-  fonepay: { icon: '🔷', label: 'FonePay', color: '#003087' },
+  esewa:   { icon: 'wallet',          label: 'eSewa',   color: '#60BB46' },
+  khalti:  { icon: 'money-check-alt', label: 'Khalti',  color: '#5C2D91' },
+  fonepay: { icon: 'credit-card',     label: 'FonePay', color: '#003087' },
 };
 
 type Props = {
@@ -75,7 +76,7 @@ export function WithdrawModal({ visible, onClose, availableBalance, paymentMetho
               <Text style={[styles.label, { color: C.textSecondary }]}>{t('wallet.selectMethod')}</Text>
               <View style={styles.methodRow}>
                 {paymentMethods.map((m) => {
-                  const meta = METHOD_META[m] ?? { icon: '💳', label: m, color: C.brinjal1 };
+                  const meta = METHOD_META[m] ?? { icon: 'credit-card', label: m, color: C.brinjal1 };
                   const active = method === m;
                   return (
                     <Pressable
@@ -85,7 +86,7 @@ export function WithdrawModal({ visible, onClose, availableBalance, paymentMetho
                         { borderColor: active ? meta.color : C.border, backgroundColor: active ? `${meta.color}15` : C.background },
                       ]}
                       onPress={() => setMethod(m)}>
-                      <Text style={styles.methodIcon}>{meta.icon}</Text>
+                      <FontAwesome5 name={meta.icon} size={16} color={meta.color} />
                       <Text style={[styles.methodLabel, { color: active ? meta.color : C.text }]}>{meta.label}</Text>
                     </Pressable>
                   );
@@ -146,7 +147,6 @@ const styles = StyleSheet.create({
   label: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: F.bold, marginBottom: 8 },
   methodRow: { flexDirection: 'row', gap: 8 },
   methodChip: { flex: 1, alignItems: 'center', gap: 4, borderRadius: 12, borderWidth: 1.5, paddingVertical: 12 },
-  methodIcon: { fontSize: 20 },
   methodLabel: { fontSize: 12, fontWeight: '600', fontFamily: F.semibold },
 
   amountRow: { flexDirection: 'row', alignItems: 'center', borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14, height: 52, gap: 8 },

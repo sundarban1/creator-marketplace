@@ -1,4 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -166,7 +167,7 @@ export default function VerifyScreen() {
               styles.checkCircle,
               { backgroundColor: C.active, shadowColor: C.active, transform: [{ scale: scaleAnim }] },
             ]}>
-            <Text style={styles.checkMark}>✓</Text>
+            <Ionicons name="checkmark" size={44} color="#fff" />
           </Animated.View>
           <Text style={[styles.successTitle, { color: C.text }]}>{t('auth.verify.successTitle')}</Text>
           <Text style={[styles.successSub, { color: C.textSecondary }]}>
@@ -193,7 +194,7 @@ export default function VerifyScreen() {
           </Pressable>
           <View style={styles.heroContent}>
             <View style={styles.emailIconWrap}>
-              <Text style={styles.emailIcon}>{channel === 'email' ? '✉️' : '📱'}</Text>
+              <Ionicons name={channel === 'email' ? 'mail' : 'phone-portrait'} size={26} color="#fff" />
             </View>
             <Text style={styles.heroTitle}>{channel === 'email' ? t('auth.verify.titleEmail') : t('auth.verify.titlePhone')}</Text>
             <Text style={styles.heroSub}>
@@ -238,7 +239,8 @@ export default function VerifyScreen() {
           {/* Error banner */}
           {error ? (
             <View style={[styles.errorBanner, { backgroundColor: '#FEE2E2', borderColor: '#FECACA' }]}>
-              <Text style={[styles.errorText, { color: C.error }]}>⚠️  {error}</Text>
+              <Ionicons name="warning" size={14} color={C.error} />
+              <Text style={[styles.errorText, { color: C.error }]}>{error}</Text>
             </View>
           ) : null}
 
@@ -295,7 +297,6 @@ const styles = StyleSheet.create({
   backArrow: { fontSize: 26, color: '#fff', lineHeight: 30 },
   heroContent: { alignItems: 'center', paddingHorizontal: 24, gap: 10 },
   emailIconWrap: { width: 68, height: 68, borderRadius: 34, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
-  emailIcon: { fontSize: 30 },
   heroTitle: { fontSize: 20, fontWeight: '700', color: '#fff', textAlign: 'center', fontFamily: F.bold },
   heroSub: { fontSize: 14, color: 'rgba(255,255,255,0.78)', textAlign: 'center', lineHeight: 22, fontFamily: F.regular },
   heroEmail: { fontWeight: '700', color: '#fff', fontFamily: F.bold },
@@ -314,7 +315,7 @@ const styles = StyleSheet.create({
     fontFamily: F.bold,
   },
 
-  errorBanner: { width: '100%', borderWidth: 1, borderRadius: 10, padding: 12, marginBottom: 14 },
+  errorBanner: { width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderRadius: 10, padding: 12, marginBottom: 14 },
   errorText: { fontSize: 13, fontWeight: '600', textAlign: 'center', fontFamily: F.semibold },
 
   verifyBtn: {
@@ -361,7 +362,6 @@ const styles = StyleSheet.create({
     elevation: 8,
     marginBottom: 8,
   },
-  checkMark: { fontSize: 48, color: '#fff', fontWeight: '700', lineHeight: 56, fontFamily: F.bold },
   successTitle: { fontSize: 26, fontWeight: '700', fontFamily: F.bold },
   successSub: { fontSize: 15, textAlign: 'center', lineHeight: 24, fontFamily: F.regular },
 });

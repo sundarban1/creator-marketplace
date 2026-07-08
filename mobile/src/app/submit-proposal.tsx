@@ -1,4 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
+import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
 import { BackButton } from '@/components/BackButton';
@@ -198,12 +199,12 @@ export default function SubmitProposalScreen() {
             <Text style={[styles.campaignBrand, { color: C.textSecondary }]}>{brand}</Text>
             {isFreeEvent ? (
               <View style={[styles.budgetPill, { backgroundColor: '#F0FDF4' }]}>
-                <Text style={styles.budgetIcon}>✓</Text>
+                <Ionicons name="checkmark-circle" size={13} color="#059669" />
                 <Text style={[styles.budgetText, { color: '#059669' }]}>Free Event</Text>
               </View>
             ) : !!budget && (
               <View style={[styles.budgetPill, { backgroundColor: C.brinjal1 + '18' }]}>
-                <Text style={styles.budgetIcon}>💰</Text>
+                <FontAwesome5 name="wallet" size={12} color={C.brinjal1} />
                 <Text style={[styles.budgetText, { color: C.brinjal1 }]}>{budget}</Text>
               </View>
             )}
@@ -211,7 +212,7 @@ export default function SubmitProposalScreen() {
 
           {/* Tip card */}
           <View style={[styles.tipCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <Text style={styles.tipEmoji}>💡</Text>
+            <FontAwesome5 name="lightbulb" size={16} color="#D97706" solid />
             <Text style={[styles.tipText, { color: C.textSecondary }]}>
               A strong cover letter that mentions the brand, your experience, and a clear idea performs best.
             </Text>
@@ -229,7 +230,7 @@ export default function SubmitProposalScreen() {
                   style={[styles.regenBtn, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 + '55' }]}
                   onPress={handleRegenerate}
                   hitSlop={8}>
-                  <Text style={styles.regenIcon}>✨</Text>
+                  <FontAwesome5 name="magic" size={11} color={C.brinjal1} />
                   <Text style={[styles.regenText, { color: C.brinjal1 }]}>Regenerate</Text>
                 </Pressable>
               </View>
@@ -251,12 +252,18 @@ export default function SubmitProposalScreen() {
               </View>
               <View style={styles.fieldMeta}>
                 {coverError ? (
-                  <Text style={[styles.fieldError, { color: C.error }]}>⚠ {coverError}</Text>
+                  <>
+                    <Ionicons name="warning" size={12} color={C.error} />
+                    <Text style={[styles.fieldError, { color: C.error }]}>{coverError}</Text>
+                  </>
                 ) : (
-                  <Text style={[styles.charHint, { color: coverLetterLen >= 50 ? C.active : C.textSecondary }]}>
-                    {coverLetterLen >= 50 ? '✓ ' : ''}{coverLetterLen}/800 characters
-                    {coverLetterLen < 50 ? ` — ${50 - coverLetterLen} more needed` : ''}
-                  </Text>
+                  <>
+                    {coverLetterLen >= 50 && <Ionicons name="checkmark" size={12} color={C.active} />}
+                    <Text style={[styles.charHint, { color: coverLetterLen >= 50 ? C.active : C.textSecondary }]}>
+                      {coverLetterLen}/800 characters
+                      {coverLetterLen < 50 ? ` — ${50 - coverLetterLen} more needed` : ''}
+                    </Text>
+                  </>
                 )}
               </View>
             </View>
@@ -287,8 +294,9 @@ export default function SubmitProposalScreen() {
 
             {hasErrors && submitted && (
               <View style={[styles.errorSummary, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}>
-                <Text style={[styles.errorSummaryText, { color: C.error }]}>
-                  ⛔ Please fix the errors above before submitting.
+                <Ionicons name="close-circle" size={16} color={C.error} />
+                <Text style={[styles.errorSummaryText, { color: C.error, flex: 1 }]}>
+                  Please fix the errors above before submitting.
                 </Text>
               </View>
             )}
@@ -313,11 +321,9 @@ const styles = StyleSheet.create({
   campaignTitle:   { fontSize: 16, fontWeight: '700', fontFamily: F.bold },
   campaignBrand:   { fontSize: 13, fontFamily: F.regular },
   budgetPill:      { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20, marginTop: 2 },
-  budgetIcon:      { fontSize: 12 },
   budgetText:      { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
 
   tipCard:         { flexDirection: 'row', borderRadius: 12, borderWidth: 1, padding: 12, gap: 10, alignItems: 'flex-start' },
-  tipEmoji:        { fontSize: 16, marginTop: 1 },
   tipText:         { flex: 1, fontSize: 12, lineHeight: 18, fontFamily: F.regular },
 
   form:            { gap: 18 },
@@ -325,15 +331,14 @@ const styles = StyleSheet.create({
   coverLabelRow:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   fieldLabel:      { fontSize: 13, fontWeight: '600', fontFamily: F.semibold },
   regenBtn:        { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20, borderWidth: 1 },
-  regenIcon:       { fontSize: 12 },
   regenText:       { fontSize: 11, fontWeight: '700', fontFamily: F.bold },
 
   textareaWrap:    { borderWidth: 1.5, borderRadius: 12, overflow: 'hidden' },
   textarea:        { paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, minHeight: 160, fontFamily: F.regular },
-  fieldMeta:       { flexDirection: 'row', justifyContent: 'flex-end' },
+  fieldMeta:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 4 },
   fieldError:      { fontSize: 12, fontWeight: '500', flex: 1, fontFamily: F.medium },
   charHint:        { fontSize: 11, fontFamily: F.regular },
 
-  errorSummary:    { borderWidth: 1, borderRadius: 10, padding: 12 },
+  errorSummary:    { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderRadius: 10, padding: 12 },
   errorSummaryText:{ fontSize: 13, fontWeight: '500', textAlign: 'center', fontFamily: F.medium },
 });

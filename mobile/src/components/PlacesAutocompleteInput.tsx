@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import {
   Pressable,
   StyleSheet,
@@ -74,7 +75,7 @@ export function PlacesAutocompleteInput({
               key={place.place_id}
               style={[styles.item, i < suggestions.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}
               onPress={() => { onChangeText(place.description); onSelectPlace?.(place); setSuggestions([]); }}>
-              <Text style={styles.pin}>📍</Text>
+              <Ionicons name="location" size={14} color={C.textSecondary} />
               <Text style={[styles.itemText, { color: C.text }]} numberOfLines={2}>{place.description}</Text>
             </Pressable>
           ))}
@@ -90,6 +91,5 @@ const styles = StyleSheet.create({
   errorTxt: { fontSize: 12, marginTop: 4, fontFamily: F.regular },
   dropdown: { borderRadius: 12, borderWidth: 1.5, marginTop: 6, overflow: 'hidden', elevation: 10, zIndex: 100 },
   item:     { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, gap: 10 },
-  pin:      { fontSize: 14 },
   itemText: { fontSize: 13, flex: 1, fontFamily: F.regular },
 });

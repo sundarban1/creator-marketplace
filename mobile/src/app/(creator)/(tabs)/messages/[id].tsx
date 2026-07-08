@@ -383,7 +383,12 @@ export default function CreatorChatRoomScreen() {
           {otherTyping
             ? <Text style={[s.headerSub, { color: '#C4B5FD' }]}>typing…</Text>
             : isPending
-            ? <Text style={[s.headerSub, { color: '#FCD34D' }]}>⏳ {t('messages.requestPending')}</Text>
+            ? (
+              <View style={s.headerSubRow}>
+                <Ionicons name="time-outline" size={11} color="#FCD34D" />
+                <Text style={[s.headerSub, { color: '#FCD34D', marginTop: 0 }]}>{t('messages.requestPending')}</Text>
+              </View>
+            )
             : isDeclined
             ? <Text style={[s.headerSub, { color: '#FCA5A5' }]}>{t('messages.requestDeclined')}</Text>
             : <Text style={[s.headerSub, { color: '#86EFAC' }]}>{t('messages.active')}</Text>}
@@ -516,6 +521,7 @@ const s = StyleSheet.create({
   headerAvatar:    { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: 'rgba(255,255,255,0.4)' },
   headerAvatarTxt: { color: '#fff', fontSize: 14, fontFamily: F.bold },
   headerInfo:      { flex: 1 },
+  headerSubRow:    { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 1 },
   headerName:      { color: '#fff', fontSize: 16, fontFamily: F.bold },
   headerSub:       { fontSize: 11, fontFamily: F.medium, marginTop: 1 },
 

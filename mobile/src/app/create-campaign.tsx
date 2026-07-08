@@ -35,7 +35,7 @@ import { F, buildPlaceDetailsUrl } from '@/utilities/constants';
 // Static fallback in case API is slow
 const CATEGORY_FALLBACK = CREATOR_CATEGORIES.map((c) => ({
   label: c.label,
-  emoji: c.emoji,
+  icon: c.icon,
 }));
 
 const CREATOR_TYPES = [
@@ -217,15 +217,18 @@ function fmtDate(d: Date) { return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.g
 // ─── DropdownPicker ───────────────────────────────────────────────────────────
 
 function DropdownPicker({
-  value, onChange, options, placeholder, colors, error, imageFor,
+  value, onChange, options, placeholder, colors, error, imageFor, iconsAreEmoji,
 }: {
   value: string;
   onChange: (v: string) => void;
-  options: readonly { label: string; emoji: string }[];
+  options: readonly { label: string; icon: string }[];
   placeholder: string;
   colors: ReturnType<typeof useAppColors>;
   error?: string;
   imageFor?: (label: string) => string | undefined;
+  /** Fallback options carry FontAwesome5 icon names; admin-configured categories
+   *  fetched from the API carry a freeform emoji picked in the web admin panel. */
+  iconsAreEmoji?: boolean;
 }) {
   const C = colors;
   const [open, setOpen] = useState(false);
@@ -240,7 +243,11 @@ function DropdownPicker({
         {selectedImg ? (
           <Image source={{ uri: selectedImg }} style={dp.triggerThumb} resizeMode="cover" />
         ) : selected ? (
-          <Text style={dp.triggerEmoji}>{selected.emoji}</Text>
+          iconsAreEmoji ? (
+            <Text style={dp.triggerEmoji}>{selected.icon}</Text>
+          ) : (
+            <FontAwesome5 name={selected.icon} size={16} color={C.brinjal1} />
+          )
         ) : (
           <Ionicons name="grid-outline" size={16} color={C.textSecondary} />
         )}
@@ -274,8 +281,10 @@ function DropdownPicker({
                     <View style={[dp.itemThumbWrap, { backgroundColor: C.border, overflow: 'hidden' }]}>
                       {img ? (
                         <Image source={{ uri: img }} style={dp.itemThumb} resizeMode="cover" />
+                      ) : iconsAreEmoji ? (
+                        <Text style={dp.itemEmoji}>{opt.icon}</Text>
                       ) : (
-                        <Text style={dp.itemEmoji}>{opt.emoji}</Text>
+                        <FontAwesome5 name={opt.icon} size={16} color={C.brinjal1} />
                       )}
                     </View>
                     <Text style={[dp.itemLabel, { color: sel ? C.brinjal1 : C.text, fontFamily: sel ? F.semibold : F.regular }]}>{opt.label}</Text>
@@ -763,6 +772,9 @@ export default function CreateCampaignScreen() {
   const [eventErrors, setEventErrors] = useState<EventErrors>({});
   const scrollRef = useRef<ScrollView>(null);
   const [categoryOptions, setCategoryOptions] = useState(CATEGORY_FALLBACK);
+  // Fallback options carry FontAwesome5 icon names; admin-configured categories from
+  // the API carry a freeform emoji picked in the web admin panel — see DropdownPicker.
+  const [categoriesAreEmoji, setCategoriesAreEmoji] = useState(false);
   const [platformOptions, setPlatformOptions] = useState<string[]>(PLATFORM_FALLBACK);
 
   useEffect(() => {
@@ -771,9 +783,10 @@ export default function CreateCampaignScreen() {
         setCategoryOptions(
           cats.map((c) => ({
             label: c.name,
-            emoji: c.icon,
+            icon: c.icon,
           }))
         );
+        setCategoriesAreEmoji(true);
       }
     }).catch(() => { /* keep fallback */ });
 
@@ -1301,6 +1314,7 @@ export default function CreateCampaignScreen() {
                       placeholder={t('createEvent.selectCategoryPlaceholder')}
                       colors={C}
                       error={eventErrors.template}
+                      iconsAreEmoji={categoriesAreEmoji}
                     />
                   </SectionCard>
 
@@ -1605,7 +1619,7 @@ export default function CreateCampaignScreen() {
                   {/* Summary */}
                   <SectionCard title={t('createEvent.secSummaryTitle')} colors={C}>
                     {[
-                      { label: t('createEvent.summaryCategory'), value: selectedTemplate ? `${selectedTemplate.emoji} ${form.template}` : '—' },
+                      { label: t('createEvent.summaryCategory'), value: selectedTemplate ? form.template : '—' },
                       { label: t('createEvent.summaryGoals'),    value: form.goals.join(', ') || '—' },
                       { label: t('createEvent.summaryBudget'),   value: `Rs. ${form.aiBudgetMin.toLocaleString()} – ${form.aiBudgetMax.toLocaleString()}` },
                       { label: t('createEvent.summaryLocation'), value: form.location || t('createEvent.summaryRemote') },
@@ -1622,7 +1636,7 @@ export default function CreateCampaignScreen() {
                     style={[s.featuredToggle, { backgroundColor: form.isFeatured ? '#FFF8E8' : C.surface, borderColor: form.isFeatured ? '#F59E0B' : C.border }]}
                     onPress={() => update('isFeatured', !form.isFeatured)}>
                     <View style={s.featuredLeft}>
-                      <Text style={s.featuredEmoji}>⭐</Text>
+                      <FontAwesome5 name="star" size={18} color="#F59E0B" solid />
                       <View style={{ flex: 1, gap: 3 }}>
                         <Text style={[s.featuredLabel, { color: C.text }]}>{t('createEvent.featuredLabel')}</Text>
                         <Text style={[s.featuredSub, { color: C.textSecondary }]}>{t('createEvent.featuredSub')}</Text>
@@ -1798,7 +1812,7 @@ export default function CreateCampaignScreen() {
                     style={[s.featuredToggle, { backgroundColor: form.isFeatured ? '#FFF8E8' : C.surface, borderColor: form.isFeatured ? '#F59E0B' : C.border }]}
                     onPress={() => update('isFeatured', !form.isFeatured)}>
                     <View style={s.featuredLeft}>
-                      <Text style={s.featuredEmoji}>⭐</Text>
+                      <FontAwesome5 name="star" size={18} color="#F59E0B" solid />
                       <View style={{ flex: 1, gap: 3 }}>
                         <Text style={[s.featuredLabel, { color: C.text }]}>{t('createEvent.featuredLabel')}</Text>
                         <Text style={[s.featuredSub, { color: C.textSecondary }]}>{t('createEvent.featuredSub')}</Text>
@@ -1869,7 +1883,8 @@ export default function CreateCampaignScreen() {
         <Animated.View
           style={[s.toast, { opacity: toastOpacity, backgroundColor: toast.type === 'success' ? '#22C55E' : '#EF4444' }]}
           pointerEvents="none">
-          <Text style={s.toastText}>{toast.type === 'success' ? '✓  ' : '✕  '}{toast.message}</Text>
+          <Ionicons name={toast.type === 'success' ? 'checkmark-circle' : 'close-circle'} size={18} color="#fff" style={{ marginRight: 8 }} />
+          <Text style={s.toastText}>{toast.message}</Text>
         </Animated.View>
       )}
     </SafeAreaView>
@@ -1917,7 +1932,6 @@ const s = StyleSheet.create({
 
   featuredToggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderRadius: 16, padding: 16, borderWidth: 1.5 },
   featuredLeft:   { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
-  featuredEmoji:  { fontSize: 24 },
   featuredLabel:  { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
   featuredSub:    { fontSize: 12, lineHeight: 17, fontFamily: F.regular },
   toggle:         { width: 44, height: 26, borderRadius: 13, position: 'relative' },

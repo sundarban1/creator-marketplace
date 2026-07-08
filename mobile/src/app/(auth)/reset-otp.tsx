@@ -1,4 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -134,7 +135,7 @@ export default function ResetOtpScreen() {
           </Pressable>
           <View style={styles.heroContent}>
             <View style={styles.iconWrap}>
-              <Text style={styles.icon}>{channel === 'email' ? '✉️' : '📱'}</Text>
+              <Ionicons name={channel === 'email' ? 'mail' : 'phone-portrait'} size={26} color="#fff" />
             </View>
             <Text style={styles.heroTitle}>{channel === 'email' ? 'Check your email' : 'Check your phone'}</Text>
             <Text style={styles.heroSub}>
@@ -174,7 +175,8 @@ export default function ResetOtpScreen() {
 
           {error ? (
             <View style={[styles.errorBanner, { backgroundColor: '#FEE2E2', borderColor: '#FECACA' }]}>
-              <Text style={[styles.errorText, { color: C.error }]}>⚠️  {error}</Text>
+              <Ionicons name="warning" size={14} color={C.error} />
+              <Text style={[styles.errorText, { color: C.error }]}>{error}</Text>
             </View>
           ) : null}
 
@@ -224,14 +226,13 @@ const styles = StyleSheet.create({
   backArrow: { fontSize: 26, color: '#fff', lineHeight: 30 },
   heroContent: { alignItems: 'center', paddingHorizontal: 24, gap: 10 },
   iconWrap: { width: 68, height: 68, borderRadius: 34, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
-  icon: { fontSize: 30 },
   heroTitle: { fontSize: 22, fontWeight: '700', color: '#fff', textAlign: 'center', fontFamily: F.bold },
   heroSub: { fontSize: 14, color: 'rgba(255,255,255,0.78)', textAlign: 'center', lineHeight: 22, fontFamily: F.regular },
   heroPhone: { fontWeight: '700', color: '#fff', fontFamily: F.bold },
   card: { flex: 1, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, paddingTop: 36, alignItems: 'center' },
   otpRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
   otpBox: { width: 46, height: 58, borderRadius: 12, borderWidth: 2, textAlign: 'center', fontSize: 22, fontWeight: '700', fontFamily: F.bold },
-  errorBanner: { width: '100%', borderWidth: 1, borderRadius: 10, padding: 12, marginBottom: 14 },
+  errorBanner: { width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderRadius: 10, padding: 12, marginBottom: 14 },
   errorText: { fontSize: 13, fontWeight: '600', textAlign: 'center', fontFamily: F.semibold },
   verifyBtn: { width: '100%', borderRadius: 14, paddingVertical: 15, alignItems: 'center', marginBottom: 20, shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 5 },
   verifyBtnDisabled: { opacity: 0.45 },

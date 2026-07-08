@@ -1,4 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -29,7 +30,8 @@ function Toast({ visible, message }: { visible: boolean; message: string }) {
         styles.toast,
         { backgroundColor: '#166534', opacity: anim, transform: [{ translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] },
       ]}>
-      <Text style={styles.toastText}>✅  {message}</Text>
+      <Ionicons name="checkmark-circle" size={16} color="#fff" />
+      <Text style={styles.toastText}>{message}</Text>
     </Animated.View>
   );
 }
@@ -78,7 +80,7 @@ export default function ResetPasswordScreen() {
         <View style={styles.bubble2} />
         <View style={styles.heroContent}>
           <View style={styles.iconWrap}>
-            <Text style={styles.icon}>🔑</Text>
+            <Ionicons name="key" size={26} color="#fff" />
           </View>
           <Text style={styles.heroTitle}>Set New Password</Text>
           <Text style={styles.heroSub}>
@@ -178,7 +180,7 @@ function PasswordInput({
         autoCorrect={false}
       />
       <Pressable onPress={() => setShow((s) => !s)} style={styles.eyeBtn}>
-        <Text style={[styles.eyeIcon, { color: C.textSecondary }]}>{show ? '🙈' : '👁'}</Text>
+        <Ionicons name={show ? 'eye-off' : 'eye'} size={18} color={C.textSecondary} />
       </Pressable>
     </View>
   );
@@ -187,7 +189,7 @@ function PasswordInput({
 function RuleRow({ met, text }: { met: boolean; text: string }) {
   return (
     <View style={styles.ruleRow}>
-      <Text style={[styles.ruleIcon, { color: met ? '#16a34a' : '#9ca3af' }]}>{met ? '✓' : '○'}</Text>
+      <Ionicons name={met ? 'checkmark-circle' : 'ellipse-outline'} size={14} color={met ? '#16a34a' : '#9ca3af'} />
       <Text style={[styles.ruleText, { color: met ? '#16a34a' : '#9ca3af' }]}>{text}</Text>
     </View>
   );
@@ -203,7 +205,6 @@ const styles = StyleSheet.create({
   bubble2: { position: 'absolute', width: 120, height: 120, borderRadius: 60, backgroundColor: 'rgba(255,255,255,0.06)', bottom: 0, left: -30 },
   heroContent: { alignItems: 'center', paddingHorizontal: 24, gap: 10, paddingTop: 52 },
   iconWrap: { width: 68, height: 68, borderRadius: 34, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
-  icon: { fontSize: 30 },
   heroTitle: { fontSize: 20, fontWeight: '700', color: '#fff', textAlign: 'center', fontFamily: F.bold },
   heroSub: { fontSize: 14, color: 'rgba(255,255,255,0.78)', textAlign: 'center', lineHeight: 22, fontFamily: F.regular },
 
@@ -218,7 +219,6 @@ const styles = StyleSheet.create({
   pwdRow: { flexDirection: 'row', alignItems: 'center', borderRadius: 14, borderWidth: 1.5, paddingHorizontal: 14 },
   pwdInput: { flex: 1, fontSize: 15, paddingVertical: 14, fontFamily: F.regular },
   eyeBtn: { padding: 6 },
-  eyeIcon: { fontSize: 18 },
   btn: { borderRadius: 14, paddingVertical: 15, alignItems: 'center', shadowOpacity: 0.25, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 5, marginBottom: 24 },
   btnDisabled: { opacity: 0.45, shadowOpacity: 0, elevation: 0 },
   btnText: { color: '#fff', fontSize: 16, fontWeight: '700', fontFamily: F.bold },
@@ -226,7 +226,6 @@ const styles = StyleSheet.create({
   spinner: { width: 18, height: 18, borderRadius: 9, borderWidth: 2.5, borderColor: 'rgba(255,255,255,0.35)' },
   rules: { gap: 8 },
   ruleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  ruleIcon: { fontSize: 14, fontWeight: '700', width: 16, fontFamily: F.bold },
   ruleText: { fontSize: 13, fontFamily: F.regular },
 
   toast: {
@@ -234,10 +233,13 @@ const styles = StyleSheet.create({
     bottom: 40,
     left: 20,
     right: 20,
+    flexDirection: 'row',
+    gap: 8,
     borderRadius: 14,
     paddingVertical: 14,
     paddingHorizontal: 18,
     alignItems: 'center',
+    justifyContent: 'center',
     shadowColor: '#000',
     shadowOpacity: 0.25,
     shadowRadius: 10,

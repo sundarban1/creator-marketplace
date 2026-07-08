@@ -45,9 +45,9 @@ const PLATFORMS = ['TikTok', 'Instagram', 'Facebook', 'YouTube'];
 const BUDGET_RANGES = ['Under NPR 5,000', 'NPR 5,000–15,000', 'NPR 15,000–50,000', 'NPR 50,000+'];
 
 const NEPAL_PAYMENTS = [
-  { id: 'esewa',    icon: '💚', label: 'eSewa',         color: '#60BB46' },
-  { id: 'khalti',   icon: '💜', label: 'Khalti',        color: '#5C2D91' },
-  { id: 'bank',     icon: '🏦', label: 'Bank Transfer', color: '#1877F2' },
+  { id: 'esewa',    icon: 'wallet',          label: 'eSewa',         color: '#60BB46' },
+  { id: 'khalti',   icon: 'money-check-alt', label: 'Khalti',        color: '#5C2D91' },
+  { id: 'bank',     icon: 'university',      label: 'Bank Transfer', color: '#1877F2' },
 ];
 const MOCK_SAVED_CREATORS = [
   { id: 's1', name: 'Sarah Johnson',  handle: '@sarahjcreates',  followers: '28.4K', category: 'Lifestyle', avatar: 'SJ', avatarBg: '#EDE9FE', avatarColor: '#4F46E5', notes: '' },
@@ -78,12 +78,19 @@ function HintCard({ children }: { children: React.ReactNode }) {
   return <View style={[styles.hintCard, { backgroundColor: C.primaryLight }]}>{children}</View>;
 }
 
-type SwitchRowProps = { label: string; icon?: string; iconNode?: ReactNode; sub?: string; value: boolean; onChange: () => void; isLast?: boolean };
-function SwitchRow({ label, icon, iconNode, sub, value, onChange, isLast = false }: SwitchRowProps) {
+type SwitchRowProps = { label: string; faIcon?: string; faIconColor?: string; iconNode?: ReactNode; sub?: string; value: boolean; onChange: () => void; isLast?: boolean };
+function SwitchRow({ label, faIcon, faIconColor, iconNode, sub, value, onChange, isLast = false }: SwitchRowProps) {
   const C = useContext(ColorCtx);
+  const iColor = faIconColor ?? C.brinjal1;
   return (
     <View style={[styles.row, !isLast && { borderBottomWidth: 1, borderBottomColor: C.border }]}>
-      {iconNode ? <View style={styles.rowIconNode}>{iconNode}</View> : icon ? <Text style={styles.rowIcon}>{icon}</Text> : null}
+      {iconNode ? (
+        <View style={styles.rowIconNode}>{iconNode}</View>
+      ) : faIcon ? (
+        <View style={[styles.navIonIconWrap, { backgroundColor: iColor + '18' }]}>
+          <FontAwesome5 name={faIcon} size={16} color={iColor} />
+        </View>
+      ) : null}
       <View style={{ flex: 1 }}>
         <Text style={[styles.rowLabel, { color: C.text }]}>{label}</Text>
         {sub ? <Text style={[styles.rowSub, { color: C.textSecondary }]}>{sub}</Text> : null}
@@ -99,21 +106,21 @@ function SwitchRow({ label, icon, iconNode, sub, value, onChange, isLast = false
   );
 }
 
-type NavRowProps = { icon?: string; ionIcon?: keyof typeof Ionicons.glyphMap; faIcon?: string; ionIconColor?: string; label: string; sub?: string; value?: string; badge?: string; onPress: () => void; danger?: boolean; isLast?: boolean };
-function NavRow({ icon, ionIcon, faIcon, ionIconColor, label, sub, value, badge, onPress, danger = false, isLast = false }: NavRowProps) {
+type NavRowProps = { ionIcon?: keyof typeof Ionicons.glyphMap; faIcon?: string; ionIconColor?: string; label: string; sub?: string; value?: string; badge?: string; onPress: () => void; danger?: boolean; isLast?: boolean };
+function NavRow({ ionIcon, faIcon, ionIconColor, label, sub, value, badge, onPress, danger = false, isLast = false }: NavRowProps) {
   const C = useContext(ColorCtx);
   const iColor = ionIconColor ?? C.brinjal1;
   return (
     <Pressable style={[styles.row, !isLast && { borderBottomWidth: 1, borderBottomColor: C.border }]} onPress={onPress}>
       {ionIcon ? (
-        <View style={[styles.navIonIconWrap, { backgroundColor: iColor + '18' }]}>
-          <Ionicons name={ionIcon} size={18} color={iColor} />
+        <View style={[styles.navIonIconWrap, { backgroundColor: (danger ? C.error : iColor) + '18' }]}>
+          <Ionicons name={ionIcon} size={18} color={danger ? C.error : iColor} />
         </View>
       ) : faIcon ? (
-        <View style={[styles.navIonIconWrap, { backgroundColor: iColor + '18' }]}>
-          <FontAwesome5 name={faIcon} size={16} color={iColor} />
+        <View style={[styles.navIonIconWrap, { backgroundColor: (danger ? C.error : iColor) + '18' }]}>
+          <FontAwesome5 name={faIcon} size={16} color={danger ? C.error : iColor} />
         </View>
-      ) : icon ? <Text style={styles.rowIcon}>{icon}</Text> : null}
+      ) : null}
       <View style={{ flex: 1 }}>
         <Text style={[styles.rowLabel, { color: danger ? C.error : C.text }]}>{label}</Text>
         {sub ? <Text style={[styles.rowSub, { color: C.textSecondary }]}>{sub}</Text> : null}
@@ -759,7 +766,7 @@ export default function BusinessSettingsScreen() {
             <View style={styles.formField}>
               <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>{t('businessSettings.businessLogoLabel')}</Text>
               <Pressable style={[styles.logoPicker, { backgroundColor: C.background, borderColor: C.border }]}>
-                <Text style={styles.logoPickerEmoji}>🏢</Text>
+                <FontAwesome5 name="building" size={26} color={C.textSecondary} />
                 <Text style={[styles.logoPickerText, { color: C.brinjal1 }]}>{t('businessSettings.logoUploadHint')}</Text>
                 <Text style={[styles.logoPickerSub, { color: C.textSecondary }]}>{t('businessSettings.logoFormatHint')}</Text>
               </Pressable>
@@ -896,7 +903,9 @@ export default function BusinessSettingsScreen() {
               style={[styles.row, { borderBottomWidth: 1, borderBottomColor: C.border }]}
               onPress={() => { setEmailStage('enter-email'); setEmailInput(''); setEmailError(''); }}
             >
-              <Text style={styles.rowIcon}>✉️</Text>
+              <View style={[styles.navIonIconWrap, { backgroundColor: '#0891B218' }]}>
+                <FontAwesome5 name="envelope" size={16} color="#0891B2" />
+              </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.rowLabel, { color: C.text }]}>{t('businessSettings.emailAddressLabel')}</Text>
                 <Text style={[styles.rowSub, { color: C.textSecondary }]}>{t('businessSettings.addVerifyEmailLabel')}</Text>
@@ -908,7 +917,9 @@ export default function BusinessSettingsScreen() {
           )}
           {emailStage === 'verified' && (
             <View style={[styles.row, { borderBottomWidth: 1, borderBottomColor: C.border }]}>
-              <Text style={styles.rowIcon}>✉️</Text>
+              <View style={[styles.navIonIconWrap, { backgroundColor: '#0891B218' }]}>
+                <FontAwesome5 name="envelope" size={16} color="#0891B2" />
+              </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.rowLabel, { color: C.text }]}>{t('businessSettings.emailAddressLabel')}</Text>
                 <Text style={[styles.rowSub, { color: C.textSecondary }]}>{verifiedEmail || user?.email}</Text>
@@ -922,7 +933,9 @@ export default function BusinessSettingsScreen() {
             <View style={[{ borderBottomWidth: 1, borderBottomColor: C.border, paddingHorizontal: 16, paddingVertical: 14, gap: 10 }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                 <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <Text style={styles.rowIcon}>✉️</Text>
+                  <View style={[styles.navIonIconWrap, { backgroundColor: '#0891B218' }]}>
+                <FontAwesome5 name="envelope" size={16} color="#0891B2" />
+              </View>
                   <Text style={[styles.rowLabel, { color: C.text, flexShrink: 1 }]} numberOfLines={1} ellipsizeMode="tail">{t('businessSettings.verifyEmailTitle')}</Text>
                 </View>
                 <Pressable onPress={() => { setEmailStage('idle'); setEmailInput(''); setEmailError(''); }} hitSlop={10} disabled={emailLoading} style={{ flexShrink: 0, marginLeft: 8 }}>
@@ -952,7 +965,9 @@ export default function BusinessSettingsScreen() {
           {emailStage === 'enter-otp' && (
             <View style={[{ borderBottomWidth: 1, borderBottomColor: C.border, paddingHorizontal: 16, paddingVertical: 14, gap: 10 }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Text style={styles.rowIcon}>✉️</Text>
+                <View style={[styles.navIonIconWrap, { backgroundColor: '#0891B218' }]}>
+                <FontAwesome5 name="envelope" size={16} color="#0891B2" />
+              </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.rowLabel, { color: C.text }]}>{t('businessSettings.enterVerificationCode')}</Text>
                   <Text style={[styles.rowSub, { color: C.textSecondary }]}>{t('businessSettings.sentToEmail', { email: emailInput })}</Text>
@@ -999,7 +1014,9 @@ export default function BusinessSettingsScreen() {
               style={[styles.row, { borderBottomWidth: 1, borderBottomColor: C.border }]}
               onPress={() => { setPhoneStage('enter-phone'); setPhoneInput(''); setPhoneError(''); }}
             >
-              <Text style={styles.rowIcon}>📱</Text>
+              <View style={[styles.navIonIconWrap, { backgroundColor: '#10B98118' }]}>
+                <FontAwesome5 name="phone-alt" size={16} color="#10B981" />
+              </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.rowLabel, { color: C.text }]}>{t('businessSettings.phoneNumberLabel')}</Text>
                 <Text style={[styles.rowSub, { color: C.textSecondary }]}>{t('businessSettings.addVerifyPhoneLabel')}</Text>
@@ -1011,7 +1028,9 @@ export default function BusinessSettingsScreen() {
           )}
           {phoneStage === 'verified' && (
             <View style={[styles.row, { borderBottomWidth: 1, borderBottomColor: C.border }]}>
-              <Text style={styles.rowIcon}>📱</Text>
+              <View style={[styles.navIonIconWrap, { backgroundColor: '#10B98118' }]}>
+                <FontAwesome5 name="phone-alt" size={16} color="#10B981" />
+              </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.rowLabel, { color: C.text }]}>{t('businessSettings.phoneNumberLabel')}</Text>
                 <Text style={[styles.rowSub, { color: C.textSecondary }]}>{verifiedPhone}</Text>
@@ -1025,7 +1044,9 @@ export default function BusinessSettingsScreen() {
             <View style={[{ borderBottomWidth: 1, borderBottomColor: C.border, paddingHorizontal: 16, paddingVertical: 14, gap: 10 }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                 <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <Text style={styles.rowIcon}>📱</Text>
+                  <View style={[styles.navIonIconWrap, { backgroundColor: '#10B98118' }]}>
+                    <FontAwesome5 name="phone-alt" size={16} color="#10B981" />
+                  </View>
                   <Text style={[styles.rowLabel, { color: C.text, flexShrink: 1 }]} numberOfLines={1} ellipsizeMode="tail">{t('businessSettings.verifyPhoneTitle')}</Text>
                 </View>
                 <Pressable onPress={() => { setPhoneStage('idle'); setPhoneInput(''); setPhoneError(''); }} hitSlop={10} disabled={phoneLoading} style={{ flexShrink: 0, marginLeft: 8 }}>
@@ -1053,7 +1074,9 @@ export default function BusinessSettingsScreen() {
           {phoneStage === 'enter-otp' && (
             <View style={[{ borderBottomWidth: 1, borderBottomColor: C.border, paddingHorizontal: 16, paddingVertical: 14, gap: 10 }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Text style={styles.rowIcon}>📱</Text>
+                <View style={[styles.navIonIconWrap, { backgroundColor: '#10B98118' }]}>
+                  <FontAwesome5 name="phone-alt" size={16} color="#10B981" />
+                </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.rowLabel, { color: C.text }]}>{t('businessSettings.enterVerificationCode')}</Text>
                   <Text style={[styles.rowSub, { color: C.textSecondary }]}>{t('businessSettings.sentToPhone', { phone: phoneInput })}</Text>
@@ -1097,7 +1120,9 @@ export default function BusinessSettingsScreen() {
           <Pressable
             style={[styles.row, { borderBottomWidth: 1, borderBottomColor: C.border }]}
             onPress={() => setShowChangePassword((v) => !v)}>
-            <Text style={styles.rowIcon}>🔑</Text>
+            <View style={[styles.navIonIconWrap, { backgroundColor: '#6366F118' }]}>
+              <FontAwesome5 name="key" size={16} color="#6366F1" />
+            </View>
             <Text style={[styles.rowLabel, { color: C.text, flex: 1 }]}>{t('businessSettings.changePasswordLabel')}</Text>
             {!showChangePassword && <Text style={[styles.navArrow, { color: C.textSecondary }]}>›</Text>}
           </Pressable>
@@ -1157,7 +1182,9 @@ export default function BusinessSettingsScreen() {
           )}
 
           <View style={styles.row}>
-            <Text style={styles.rowIcon}>🔐</Text>
+            <View style={[styles.navIonIconWrap, { backgroundColor: '#6366F118' }]}>
+              <FontAwesome5 name="shield-alt" size={16} color="#6366F1" />
+            </View>
             <Text style={[styles.rowLabel, { color: C.text }]}>{t('businessSettings.twoFactorLabel')}</Text>
             <View style={[styles.soonBadge, { backgroundColor: C.primaryLight }]}>
               <Text style={[styles.badgeText, { color: C.brinjal1 }]}>{t('businessSettings.comingSoonBadge')}</Text>
@@ -1167,9 +1194,9 @@ export default function BusinessSettingsScreen() {
 
         <SectionHeader title={t('businessSettings.actionsSection')} />
         <Card>
-          <NavRow icon="📱" label={t('businessSettings.logoutAllDevicesLabel')} onPress={handleLogoutAll} />
-          <NavRow icon="⏸️" label={t('businessSettings.deactivateAccountLabel')} sub={t('businessSettings.deactivateAccountSub')} onPress={handleDeactivateAccount} danger />
-          <NavRow icon="🗑️" label={t('businessSettings.deleteAccountLabel')} sub={t('businessSettings.deleteAccountSub')} onPress={handleDeleteAccount} danger isLast />
+          <NavRow faIcon="mobile-alt" ionIconColor="#6366F1" label={t('businessSettings.logoutAllDevicesLabel')} onPress={handleLogoutAll} />
+          <NavRow faIcon="pause-circle" label={t('businessSettings.deactivateAccountLabel')} sub={t('businessSettings.deactivateAccountSub')} onPress={handleDeactivateAccount} danger />
+          <NavRow faIcon="trash-alt" label={t('businessSettings.deleteAccountLabel')} sub={t('businessSettings.deleteAccountSub')} onPress={handleDeleteAccount} danger isLast />
         </Card>
 
         <HintCard>
@@ -1186,16 +1213,16 @@ export default function BusinessSettingsScreen() {
       <>
         <SectionHeader title={t('businessSettings.pushNotificationsSection')} />
         <Card>
-          <SwitchRow icon="📋" label={t('businessSettings.newApplicationsLabel')} sub={t('businessSettings.newApplicationsSub')} value={notifApplications} onChange={() => setNotifApplications((v) => !v)} />
-          <SwitchRow icon="💬" label={t('businessSettings.newMessagesLabel')} sub={t('businessSettings.newMessagesSub')} value={notifMessages} onChange={() => setNotifMessages((v) => !v)} />
-          <SwitchRow icon="📊" label={t('businessSettings.eventUpdatesLabel')} sub={t('businessSettings.eventUpdatesSub')} value={notifCampaignUpdates} onChange={() => setNotifCampaignUpdates((v) => !v)} />
-          <SwitchRow icon="✅" label={t('businessSettings.creatorAcceptedLabel')} sub={t('businessSettings.creatorAcceptedSub')} value={notifCreatorAccepted} onChange={() => setNotifCreatorAccepted((v) => !v)} isLast />
+          <SwitchRow faIcon="clipboard-list" faIconColor="#6366F1" label={t('businessSettings.newApplicationsLabel')} sub={t('businessSettings.newApplicationsSub')} value={notifApplications} onChange={() => setNotifApplications((v) => !v)} />
+          <SwitchRow faIcon="comment-dots" faIconColor="#0891B2" label={t('businessSettings.newMessagesLabel')} sub={t('businessSettings.newMessagesSub')} value={notifMessages} onChange={() => setNotifMessages((v) => !v)} />
+          <SwitchRow faIcon="chart-bar" faIconColor="#D97706" label={t('businessSettings.eventUpdatesLabel')} sub={t('businessSettings.eventUpdatesSub')} value={notifCampaignUpdates} onChange={() => setNotifCampaignUpdates((v) => !v)} />
+          <SwitchRow faIcon="check-circle" faIconColor="#10B981" label={t('businessSettings.creatorAcceptedLabel')} sub={t('businessSettings.creatorAcceptedSub')} value={notifCreatorAccepted} onChange={() => setNotifCreatorAccepted((v) => !v)} isLast />
         </Card>
 
         <SectionHeader title={t('businessSettings.emailNotificationsSection')} />
         <Card>
-          <SwitchRow icon="📧" label={t('businessSettings.enableEmailsLabel')} sub={t('businessSettings.enableEmailsSub')} value={emailEnabled} onChange={() => setEmailEnabled((v) => !v)} />
-          <SwitchRow icon="📈" label={t('businessSettings.weeklySummaryLabel')} sub={t('businessSettings.weeklySummarySub')} value={emailWeeklySummary} onChange={() => setEmailWeeklySummary((v) => !v)} isLast />
+          <SwitchRow faIcon="envelope" faIconColor="#0891B2" label={t('businessSettings.enableEmailsLabel')} sub={t('businessSettings.enableEmailsSub')} value={emailEnabled} onChange={() => setEmailEnabled((v) => !v)} />
+          <SwitchRow faIcon="chart-line" faIconColor="#10B981" label={t('businessSettings.weeklySummaryLabel')} sub={t('businessSettings.weeklySummarySub')} value={emailWeeklySummary} onChange={() => setEmailWeeklySummary((v) => !v)} isLast />
         </Card>
 
         <HintCard>
@@ -1222,11 +1249,11 @@ export default function BusinessSettingsScreen() {
                 style={[styles.row, idx < NEPAL_PAYMENTS.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}
                 onPress={() => toggleAndSave(nepalPayments, setNepalPayments, m.id, (next) => profileService.updateBusinessProfile({ paymentMethods: next }))}>
                 <View style={[styles.paymentIcon, { backgroundColor: m.color + '18' }]}>
-                  <Text style={styles.paymentEmoji}>{m.icon}</Text>
+                  <FontAwesome5 name={m.icon} size={16} color={m.color} />
                 </View>
                 <Text style={[styles.rowLabel, { color: C.text }]}>{m.label}</Text>
                 <View style={[styles.checkboxOuter, { borderColor: selected ? C.brinjal1 : C.border, backgroundColor: selected ? C.brinjal1 : 'transparent' }]}>
-                  {selected ? <Text style={styles.checkboxTick}>✓</Text> : null}
+                  {selected ? <Ionicons name="checkmark" size={13} color="#fff" /> : null}
                 </View>
               </Pressable>
             );
@@ -1260,8 +1287,8 @@ export default function BusinessSettingsScreen() {
           )}
         </Card>
         <Card>
-          <NavRow icon="🧾" label={t('businessSettings.receiptsLabel')} onPress={() => showToast(t('businessSettings.noReceiptsToast'))} />
-          <NavRow icon="📄" label={t('businessSettings.invoicesLabel')} onPress={() => showToast(t('businessSettings.noInvoicesToast'))} isLast />
+          <NavRow faIcon="receipt" ionIconColor="#6366F1" label={t('businessSettings.receiptsLabel')} onPress={() => showToast(t('businessSettings.noReceiptsToast'))} />
+          <NavRow faIcon="file-invoice" ionIconColor="#6366F1" label={t('businessSettings.invoicesLabel')} onPress={() => showToast(t('businessSettings.noInvoicesToast'))} isLast />
         </Card>
       </>
     );
@@ -1327,7 +1354,7 @@ export default function BusinessSettingsScreen() {
     if (savedCreators.length === 0) {
       return (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyIcon}>🔖</Text>
+          <FontAwesome5 name="bookmark" size={40} color={C.textSecondary} />
           <Text style={[styles.emptyText, { color: C.textSecondary }]}>{t('businessSettings.noSavedCreators')}</Text>
           <Text style={[styles.emptySubText, { color: C.textSecondary }]}>{t('businessSettings.noSavedSub')}</Text>
         </View>
@@ -1357,8 +1384,9 @@ export default function BusinessSettingsScreen() {
               </View>
 
               {creator.notes && !isEditingNote ? (
-                <View style={[styles.noteBubble, { backgroundColor: C.background }]}>
-                  <Text style={[styles.noteText, { color: C.textSecondary }]}>📝 {creator.notes}</Text>
+                <View style={[styles.noteBubble, { backgroundColor: C.background, flexDirection: 'row', alignItems: 'center', gap: 6 }]}>
+                  <FontAwesome5 name="sticky-note" size={12} color={C.textSecondary} />
+                  <Text style={[styles.noteText, { color: C.textSecondary }]}>{creator.notes}</Text>
                 </View>
               ) : null}
 
@@ -1376,7 +1404,7 @@ export default function BusinessSettingsScreen() {
                     <Text style={styles.noteSaveBtnText}>{t('businessSettings.noteSaveBtnLabel')}</Text>
                   </Pressable>
                   <Pressable onPress={() => setEditingNoteId(null)}>
-                    <Text style={[styles.noteCancelText, { color: C.textSecondary }]}>✕</Text>
+                    <Ionicons name="close" size={16} color={C.textSecondary} />
                   </Pressable>
                 </View>
               ) : (
@@ -1407,7 +1435,9 @@ export default function BusinessSettingsScreen() {
         <Card>
           <View style={[styles.row, { justifyContent: 'space-between' }]}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-              <Text style={styles.rowIcon}>🛡️</Text>
+              <View style={[styles.navIonIconWrap, { backgroundColor: '#6366F118' }]}>
+                <FontAwesome5 name="shield-alt" size={16} color="#6366F1" />
+              </View>
               <Text style={[styles.rowLabel, { color: C.text }]}>{t('businessSettings.businessVerificationLabel')}</Text>
             </View>
             <View style={[styles.statusBadge, { backgroundColor: st.bg }]}>
@@ -1423,15 +1453,17 @@ export default function BusinessSettingsScreen() {
         <SectionHeader title={t('businessSettings.uploadDocumentsSection')} />
         <Card>
           {[
-            { label: t('businessSettings.panRegistrationLabel'), icon: '📄', status: panDocStatus, uploading: panUploading, upload: handleUploadPan },
-            { label: t('businessSettings.companyRegLabel'), icon: '🏢', status: companyRegDocStatus, uploading: companyRegUploading, upload: handleUploadCompanyReg },
+            { label: t('businessSettings.panRegistrationLabel'), icon: 'file-invoice', status: panDocStatus, uploading: panUploading, upload: handleUploadPan },
+            { label: t('businessSettings.companyRegLabel'), icon: 'building', status: companyRegDocStatus, uploading: companyRegUploading, upload: handleUploadCompanyReg },
           ].map((doc, idx, arr) => (
             <Pressable
               key={doc.label}
               style={[styles.row, idx < arr.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}
               disabled={doc.uploading || doc.status === 'PENDING' || doc.status === 'APPROVED'}
               onPress={doc.upload}>
-              <Text style={styles.rowIcon}>{doc.icon}</Text>
+              <View style={[styles.navIonIconWrap, { backgroundColor: '#6366F118' }]}>
+                <FontAwesome5 name={doc.icon} size={16} color="#6366F1" />
+              </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.rowLabel, { color: C.text }]}>{doc.label}</Text>
                 <Text style={[styles.rowSub, { color: doc.status === 'APPROVED' ? C.active : C.textSecondary }]}>
@@ -1578,7 +1610,7 @@ export default function BusinessSettingsScreen() {
                   </View>
                 ) : active ? (
                   <View style={[styles.activeLangCheck, { backgroundColor: C.brinjal1 }]}>
-                    <Text style={styles.activeLangCheckText}>✓</Text>
+                    <Ionicons name="checkmark" size={13} color="#fff" />
                   </View>
                 ) : (
                   <View style={[styles.inactiveLangCircle, { borderColor: C.border }]} />
@@ -1590,17 +1622,19 @@ export default function BusinessSettingsScreen() {
 
         <SectionHeader title={t('businessSettings.appearanceSection')} />
         <Card>
-          <SwitchRow icon="🌙" label={t('businessSettings.darkModeLabel')} sub={t('businessSettings.darkModeSub')} value={isDark} onChange={toggleDark} isLast />
+          <SwitchRow faIcon="moon" faIconColor="#6366F1" label={t('businessSettings.darkModeLabel')} sub={t('businessSettings.darkModeSub')} value={isDark} onChange={toggleDark} isLast />
         </Card>
 
         <SectionHeader title={t('businessSettings.aboutSection')} />
         <Card>
           <View style={[styles.row, { borderBottomWidth: 1, borderBottomColor: C.border }]}>
-            <Text style={styles.rowIcon}>ℹ️</Text>
+            <View style={[styles.navIonIconWrap, { backgroundColor: '#6366F118' }]}>
+              <FontAwesome5 name="info-circle" size={16} color="#6366F1" />
+            </View>
             <Text style={[styles.rowLabel, { color: C.text }]}>{t('businessSettings.appVersionLabel')}</Text>
             <Text style={[styles.navValue, { color: C.textSecondary }]}>1.0.0</Text>
           </View>
-          <NavRow icon="👥" label={t('businessSettings.teamMembersLabel')} badge="V1.1" onPress={() => showToast(t('businessSettings.teamMembersToast'))} isLast />
+          <NavRow faIcon="users" ionIconColor="#6366F1" label={t('businessSettings.teamMembersLabel')} badge="V1.1" onPress={() => showToast(t('businessSettings.teamMembersToast'))} isLast />
         </Card>
       </>
     );
@@ -1625,35 +1659,37 @@ export default function BusinessSettingsScreen() {
               <Text style={[styles.editBtnText, { color: C.brinjal1 }]}>{t('businessSettings.editBtnLabel')}</Text>
             </Pressable>
           </View>
-          <NavRow icon="🏢" label={t('businessSettings.businessProfileNav')}  onPress={() => router.push('/(business)/settings?section=profile' as Parameters<typeof router.push>[0])} />
-          <NavRow icon="✅" label={t('businessSettings.verificationNav')}      onPress={() => router.push('/(business)/settings?section=verification' as Parameters<typeof router.push>[0])} />
-          <NavRow icon="🗑️" label={t('businessSettings.deleteAccountNav')}   onPress={handleDeleteAccount} danger isLast />
+          <NavRow faIcon="building" ionIconColor="#6366F1" label={t('businessSettings.businessProfileNav')}  onPress={() => router.push('/(business)/settings?section=profile' as Parameters<typeof router.push>[0])} />
+          <NavRow faIcon="check-circle" ionIconColor="#10B981" label={t('businessSettings.verificationNav')}      onPress={() => router.push('/(business)/settings?section=verification' as Parameters<typeof router.push>[0])} />
+          <NavRow faIcon="trash-alt" label={t('businessSettings.deleteAccountNav')}   onPress={handleDeleteAccount} danger isLast />
         </Card>
 
         <SectionHeader title={t('businessSettings.preferencesSection')} />
         <Card>
-          <NavRow icon="🔔" label={t('businessSettings.notificationsNav')}    onPress={() => router.push('/(business)/settings?section=notifications' as Parameters<typeof router.push>[0])} />
-          <NavRow icon="💳" label={t('businessSettings.paymentSettingsNav')}  onPress={() => router.push('/(business)/settings?section=payment' as Parameters<typeof router.push>[0])} />
-          <NavRow icon="🎯" label={t('businessSettings.eventPreferencesNav')} onPress={() => router.push('/(business)/settings?section=campaigns' as Parameters<typeof router.push>[0])} />
-          <NavRow icon="🔖" label={t('businessSettings.savedCreatorsNav')}    onPress={() => router.push('/(business)/settings?section=saved' as Parameters<typeof router.push>[0])} />
-          <NavRow icon="🔒" label={t('businessSettings.privacySettingsNav')}  onPress={() => router.push('/(business)/settings?section=privacy' as Parameters<typeof router.push>[0])} />
+          <NavRow faIcon="bell" ionIconColor="#D97706" label={t('businessSettings.notificationsNav')}    onPress={() => router.push('/(business)/settings?section=notifications' as Parameters<typeof router.push>[0])} />
+          <NavRow faIcon="credit-card" ionIconColor="#059669" label={t('businessSettings.paymentSettingsNav')}  onPress={() => router.push('/(business)/settings?section=payment' as Parameters<typeof router.push>[0])} />
+          <NavRow faIcon="bullseye" ionIconColor="#DC2626" label={t('businessSettings.eventPreferencesNav')} onPress={() => router.push('/(business)/settings?section=campaigns' as Parameters<typeof router.push>[0])} />
+          <NavRow faIcon="bookmark" ionIconColor="#6366F1" label={t('businessSettings.savedCreatorsNav')}    onPress={() => router.push('/(business)/settings?section=saved' as Parameters<typeof router.push>[0])} />
+          <NavRow faIcon="lock" ionIconColor="#6366F1" label={t('businessSettings.privacySettingsNav')}  onPress={() => router.push('/(business)/settings?section=privacy' as Parameters<typeof router.push>[0])} />
           <NavRow faIcon="shield-alt" label={t('businessSettings.accountSecurityNav')} onPress={() => router.push('/(business)/settings?section=account' as Parameters<typeof router.push>[0])} isLast />
         </Card>
 
         <SectionHeader title={t('businessSettings.appSection')} />
         <Card>
-          <SwitchRow icon="🌙" label={t('businessSettings.darkModeLabel')} value={isDark} onChange={toggleDark} />
+          <SwitchRow faIcon="moon" faIconColor="#6366F1" label={t('businessSettings.darkModeLabel')} value={isDark} onChange={toggleDark} />
           <View style={[styles.row, { borderTopWidth: 0, borderBottomWidth: 1, borderBottomColor: C.border }]}>
-            <Text style={styles.rowIcon}>ℹ️</Text>
+            <View style={[styles.navIonIconWrap, { backgroundColor: '#6366F118' }]}>
+              <FontAwesome5 name="info-circle" size={16} color="#6366F1" />
+            </View>
             <Text style={[styles.rowLabel, { color: C.text }]}>{t('businessSettings.appVersionLabel')}</Text>
             <Text style={[styles.navValue, { color: C.textSecondary }]}>1.0.0</Text>
           </View>
-          <NavRow icon="👥" label={t('businessSettings.teamMembersLabel')} badge="V1.1" onPress={() => showToast(t('businessSettings.teamMembersToast'))} isLast />
+          <NavRow faIcon="users" ionIconColor="#6366F1" label={t('businessSettings.teamMembersLabel')} badge="V1.1" onPress={() => showToast(t('businessSettings.teamMembersToast'))} isLast />
         </Card>
 
         <SectionHeader title={t('businessSettings.helpSection')} />
         <Card>
-          <NavRow icon="❓" label={t('businessSettings.supportNav')} onPress={() => router.push('/(business)/settings?section=support' as Parameters<typeof router.push>[0])} isLast />
+          <NavRow faIcon="question-circle" ionIconColor="#6366F1" label={t('businessSettings.supportNav')} onPress={() => router.push('/(business)/settings?section=support' as Parameters<typeof router.push>[0])} isLast />
         </Card>
       </>
     );
@@ -1748,7 +1784,6 @@ const styles = StyleSheet.create({
   saveHint: { textAlign: 'center', fontSize: 12, marginTop: 8, marginHorizontal: 16, fontFamily: F.regular },
 
   row: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 13, gap: 12 },
-  rowIcon: { fontSize: 18, width: 24, textAlign: 'center' },
   rowIconNode: { width: 24, alignItems: 'center' },
   rowLabel: { flex: 1, fontSize: 15, fontWeight: '500', fontFamily: F.medium },
   rowSub: { fontSize: 12, marginTop: 1, fontFamily: F.regular },
@@ -1762,7 +1797,6 @@ const styles = StyleSheet.create({
   chipText: { fontSize: 13, fontFamily: F.medium },
 
   logoPicker: { borderRadius: 12, borderWidth: 1.5, borderStyle: 'dashed', height: 100, justifyContent: 'center', alignItems: 'center', gap: 4 },
-  logoPickerEmoji: { fontSize: 28 },
   logoPickerText: { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
   logoPickerSub: { fontSize: 11, fontFamily: F.regular },
   labelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
@@ -1789,9 +1823,7 @@ const styles = StyleSheet.create({
   eyeBtn: { padding: 6 },
 
   paymentIcon: { width: 38, height: 38, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
-  paymentEmoji: { fontSize: 20 },
   checkboxOuter: { width: 22, height: 22, borderRadius: 6, borderWidth: 2, justifyContent: 'center', alignItems: 'center' },
-  checkboxTick: { color: '#fff', fontSize: 12, fontWeight: '700', fontFamily: F.bold },
   radioOuter: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, justifyContent: 'center', alignItems: 'center' },
   radioInner: { width: 11, height: 11, borderRadius: 6 },
 
@@ -1832,10 +1864,8 @@ const styles = StyleSheet.create({
   noteInput: { flex: 1, fontSize: 13, borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, fontFamily: F.regular },
   noteSaveBtn: { borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
   noteSaveBtnText: { color: '#fff', fontSize: 12, fontWeight: '700', fontFamily: F.bold },
-  noteCancelText: { fontSize: 16, paddingHorizontal: 4 },
 
   emptyState: { alignItems: 'center', paddingTop: 60, gap: 10 },
-  emptyIcon: { fontSize: 48 },
   emptyText: { fontSize: 16, fontWeight: '600', fontFamily: F.semibold },
   emptySubText: { fontSize: 13, fontFamily: F.regular },
 
@@ -1877,6 +1907,5 @@ const styles = StyleSheet.create({
   langNative: { fontSize: 13, fontFamily: F.regular },
   langDesc: { fontSize: 12, fontFamily: F.regular },
   activeLangCheck: { width: 24, height: 24, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
-  activeLangCheckText: { color: '#fff', fontSize: 13, fontWeight: '700', fontFamily: F.bold },
   inactiveLangCircle: { width: 24, height: 24, borderRadius: 12, borderWidth: 2 },
 });

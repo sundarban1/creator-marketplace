@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useAppColors } from '@/context/ThemeContext';
@@ -91,7 +91,7 @@ export function RecommendedCreatorsModal({ visible, campaignId, category, lat, l
 
         {sent ? (
           <View style={s.center}>
-            <Text style={{ fontSize: 44 }}>🎉</Text>
+            <FontAwesome5 name="paper-plane" size={36} color={C.brinjal1} solid />
             <Text style={[s.sentText, { color: C.text }]}>{t('createEvent.invitesSent')}</Text>
           </View>
         ) : loading ? (

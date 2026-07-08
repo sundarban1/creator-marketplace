@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAppColors } from '@/context/ThemeContext';
 import { CATEGORY_META, DEFAULT_META } from '@/features/creator/data/filterOptions';
@@ -51,7 +51,7 @@ export function CampaignListItem({ campaign }: { campaign: Campaign }) {
       {/* Thumb + type badge below */}
       <View style={styles.thumbWrap}>
         <View style={[styles.listThumb, { backgroundColor: catMeta.bg }]}>
-          <Text style={styles.listThumbIcon}>{catMeta.emoji}</Text>
+          <FontAwesome5 name={catMeta.icon} size={22} color="#00000066" />
         </View>
         {campaign.campaignType === 'OPEN_EVENT' ? (
           <View style={[styles.typeBadge, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}>
@@ -124,7 +124,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center', alignItems: 'center',
     overflow: 'hidden',
   },
-  listThumbIcon: { fontSize: 32 },
   listInfo:     { flex: 1, gap: 4 },
   listBrandRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   listBrandName:{ fontSize: 12, fontFamily: F.semibold, flex: 1 },

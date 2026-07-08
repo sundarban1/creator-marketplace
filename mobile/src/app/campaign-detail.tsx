@@ -390,7 +390,7 @@ export default function CampaignDetailScreen() {
     return (
       <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
         <View style={s.centered}>
-          <Text style={{ fontSize: 48 }}>🔍</Text>
+          <FontAwesome5 name="search" size={40} color={C.textSecondary} />
           <Text style={[{ fontSize: 17, fontWeight: '600' }, { color: C.textSecondary }]}>{error || t('campaignDetail.notFound')}</Text>
           <Pressable style={[s.goBackBtn, { backgroundColor: C.brinjal1 }]} onPress={() => router.back()}>
             <Text style={s.goBackBtnTxt}>{t('campaignDetail.goBack')}</Text>
@@ -418,7 +418,7 @@ export default function CampaignDetailScreen() {
 
         {/* Hero */}
         <View style={[s.hero, { backgroundColor: heroBg }]}>
-          <Text style={s.heroIcon}>{catMeta.emoji}</Text>
+          <FontAwesome5 name={catMeta.icon} size={56} color="#00000033" />
           <View style={[s.heroBadge, { backgroundColor: C.badgeFeatured }]}>
             <Text style={s.heroBadgeTxt}>{campaign.category.toUpperCase()}</Text>
           </View>
@@ -451,7 +451,7 @@ export default function CampaignDetailScreen() {
             </View>
             <Text style={[s.brandName, { color: C.text }]}>{campaign.brand}</Text>
             <View style={[s.verifiedBadge, { backgroundColor: C.active }]}>
-              <Text style={s.verifiedIcon}>✓</Text>
+              <Ionicons name="checkmark" size={10} color="#fff" />
             </View>
             <View style={[s.platformTag, { backgroundColor: C.primaryLight, marginLeft: 'auto' }]}>
               <Text style={[s.platformTagTxt, { color: C.brinjal1 }]}>{campaign.platform}</Text>
@@ -557,7 +557,7 @@ export default function CampaignDetailScreen() {
             <View style={s.benefitsWrap}>
               {campaign.benefits.map((b, i) => (
                 <View key={i} style={[s.benefitChip, { backgroundColor: '#F0FDF4', borderColor: '#A7F3D0' }]}>
-                  <Text style={s.benefitChipIcon}>🎁</Text>
+                  <FontAwesome5 name="gift" size={12} color="#065F46" />
                   <Text style={[s.benefitChipTxt, { color: '#065F46' }]}>{b}</Text>
                 </View>
               ))}
@@ -644,7 +644,7 @@ export default function CampaignDetailScreen() {
         ) : isOpenEvent && applicationStatus === 'accepted' ? (
           <View style={s.invitedCard}>
             <View style={s.invitedIconWrap}>
-              <Text style={s.invitedEmoji}>🎉</Text>
+              <FontAwesome5 name="trophy" size={18} color="#16A34A" solid />
             </View>
             <View style={s.invitedTextBlock}>
               <Text style={s.invitedTitle}>Congrats, You're Invited!</Text>
@@ -722,7 +722,7 @@ export default function CampaignDetailScreen() {
                       <Text style={[em.dateTxt, { color: editForm.eventDate ? C.text : C.textSecondary }]}>
                         {editForm.eventDate ? fmtDate(editForm.eventDate) : t('campaignDetail.eventDatePlaceholder')}
                       </Text>
-                      <Text style={{ fontSize: 16 }}>📅</Text>
+                      <Ionicons name="calendar-outline" size={16} color={C.textSecondary} />
                     </Pressable>
                     {editErrors.eventDate ? <Text style={em.errTxt}>{editErrors.eventDate}</Text> : null}
 
@@ -733,7 +733,7 @@ export default function CampaignDetailScreen() {
                       <Text style={[em.dateTxt, { color: editForm.deadline ? C.text : C.textSecondary }]}>
                         {editForm.deadline ? fmtDate(editForm.deadline) : t('campaignDetail.deadlinePlaceholder')}
                       </Text>
-                      <Text style={{ fontSize: 16 }}>📅</Text>
+                      <Ionicons name="calendar-outline" size={16} color={C.textSecondary} />
                     </Pressable>
                     {editErrors.deadline ? <Text style={em.errTxt}>{editErrors.deadline}</Text> : null}
 
@@ -875,7 +875,7 @@ export default function CampaignDetailScreen() {
                   style={[em.featuredToggle, { backgroundColor: editForm.isFeatured ? '#FFF8E8' : C.background, borderColor: editForm.isFeatured ? '#F59E0B' : C.border, marginTop: 20 }]}
                   onPress={() => updateEdit('isFeatured', !editForm.isFeatured)}>
                   <View style={em.featuredLeft}>
-                    <Text style={{ fontSize: 22 }}>⭐</Text>
+                    <FontAwesome5 name="star" size={18} color="#F59E0B" solid />
                     <View style={{ flex: 1, gap: 2 }}>
                       <Text style={[em.featuredLabel, { color: C.text }]}>{t('campaignDetail.featureEvent')}</Text>
                       <Text style={[em.featuredSub, { color: C.textSecondary }]}>{t('campaignDetail.featureEventSub')}</Text>
@@ -963,7 +963,8 @@ export default function CampaignDetailScreen() {
         <Animated.View
           style={[s.toast, { opacity: toastOpacity, backgroundColor: toast.type === 'success' ? '#22C55E' : '#EF4444' }]}
           pointerEvents="none">
-          <Text style={s.toastTxt}>{toast.type === 'success' ? '✓  ' : '✕  '}{toast.message}</Text>
+          <Ionicons name={toast.type === 'success' ? 'checkmark-circle' : 'close-circle'} size={18} color="#fff" style={{ marginRight: 8 }} />
+          <Text style={s.toastTxt}>{toast.message}</Text>
         </Animated.View>
       )}
     </SafeAreaView>
@@ -1009,7 +1010,6 @@ const s = StyleSheet.create({
   scroll: { paddingBottom: 20 },
 
   hero:         { height: 180, justifyContent: 'center', alignItems: 'center', position: 'relative' },
-  heroIcon:     { fontSize: 60, opacity: 0.75 },
   heroBadge:    { position: 'absolute', top: 14, left: 16, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 },
   heroNewBadge: { position: 'absolute', top: 14, right: 16, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 },
   heroBadgeTxt: { fontSize: 10, fontWeight: '700', color: '#fff', letterSpacing: 0.5, fontFamily: F.bold },
@@ -1024,7 +1024,6 @@ const s = StyleSheet.create({
   brandAvatarTxt:{ fontSize: 12, fontWeight: '700', color: '#fff', fontFamily: F.bold },
   brandName:     { fontSize: 14, fontWeight: '600', fontFamily: F.semibold },
   verifiedBadge: { width: 16, height: 16, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
-  verifiedIcon:  { fontSize: 9, color: '#fff', fontWeight: '700' },
   platformTag:   { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
   platformTagTxt:{ fontSize: 12, fontWeight: '600', fontFamily: F.semibold },
   campaignTitle: { fontSize: 20, fontWeight: '700', lineHeight: 26, fontFamily: F.bold },
@@ -1057,7 +1056,6 @@ const s = StyleSheet.create({
 
   benefitsWrap:  { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   benefitChip:   { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 7 },
-  benefitChipIcon: { fontSize: 14 },
   benefitChipTxt:{ fontSize: 13, fontWeight: '600', fontFamily: F.semibold },
 
   ctaBar:        { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12, borderTopWidth: 1, gap: 16, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 12, shadowOffset: { width: 0, height: -3 }, elevation: 8 },
@@ -1071,7 +1069,6 @@ const s = StyleSheet.create({
 
   invitedCard:      { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#F0FDF4', borderRadius: 16, paddingHorizontal: 14, paddingVertical: 12, borderWidth: 1.5, borderColor: '#6EE7B7' },
   invitedIconWrap:  { width: 44, height: 44, borderRadius: 22, backgroundColor: '#DCFCE7', justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
-  invitedEmoji:     { fontSize: 22 },
   invitedTextBlock: { flex: 1, gap: 2 },
   invitedTitle:     { fontSize: 15, fontWeight: '700', color: '#065F46', fontFamily: F.bold },
   invitedSub:       { fontSize: 12, color: '#047857', fontFamily: F.regular, lineHeight: 17 },

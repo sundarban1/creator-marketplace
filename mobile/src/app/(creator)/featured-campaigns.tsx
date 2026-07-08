@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { BackButton } from '@/components/BackButton';
 import {
   ActivityIndicator,
@@ -91,7 +92,7 @@ export default function FeaturedCampaignsScreen() {
           ItemSeparatorComponent={() => <View style={styles.separator} />}
           ListEmptyComponent={
             <View style={styles.emptyWrap}>
-              <Text style={styles.emptyEmoji}>⭐</Text>
+              <FontAwesome5 name="star" size={44} color={C.textSecondary} solid style={styles.emptyIcon} />
               <Text style={[styles.emptyTitle, { color: C.text }]}>{t('creator.featuredCampaigns.empty')}</Text>
             </View>
           }
@@ -133,7 +134,7 @@ const styles = StyleSheet.create({
   errorText: { color: '#DC2626', fontSize: 14, fontFamily: F.regular },
   retryText: { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
   emptyWrap: { paddingTop: 80, alignItems: 'center', gap: 10 },
-  emptyEmoji: { fontSize: 48 },
+  emptyIcon: { opacity: 0.6 },
   emptyTitle: { fontSize: 16, fontWeight: '700', fontFamily: F.bold },
   loadMoreBtn: {
     marginTop: 20, marginHorizontal: 20, height: 46,

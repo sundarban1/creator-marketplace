@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useState } from 'react';
 import { BackButton } from '@/components/BackButton';
@@ -29,10 +29,10 @@ const SOCIAL_FIELDS: Array<{ id: string; icon: keyof typeof Ionicons.glyphMap; c
 ];
 
 const SERVICES = [
-  { id: 'video',  emoji: '🎬', labelKey: 'presenceGoal.videoPromotion', descKey: 'presenceGoal.videoDesc' },
-  { id: 'review', emoji: '⭐', labelKey: 'presenceGoal.productReview',   descKey: 'presenceGoal.reviewDesc' },
-  { id: 'social', emoji: '📱', labelKey: 'presenceGoal.socialMedia',     descKey: 'presenceGoal.socialDesc' },
-];
+  { id: 'video',  icon: 'video',        labelKey: 'presenceGoal.videoPromotion', descKey: 'presenceGoal.videoDesc' },
+  { id: 'review', icon: 'star',         labelKey: 'presenceGoal.productReview',   descKey: 'presenceGoal.reviewDesc' },
+  { id: 'social', icon: 'mobile-alt',   labelKey: 'presenceGoal.socialMedia',     descKey: 'presenceGoal.socialDesc' },
+] as const;
 
 export default function PresenceGoalScreen() {
   const C = useAppColors();
@@ -168,14 +168,14 @@ export default function PresenceGoalScreen() {
                     ]}
                     onPress={() => toggleService(svc.id)}>
                     <View style={[styles.serviceIconWrap, { backgroundColor: isSelected ? C.brinjal1 : C.background }]}>
-                      <Text style={styles.serviceEmoji}>{svc.emoji}</Text>
+                      <FontAwesome5 name={svc.icon} size={18} color={isSelected ? '#fff' : C.textSecondary} solid />
                     </View>
                     <View style={styles.serviceInfo}>
                       <Text style={[styles.serviceLabel, { color: isSelected ? C.brinjal1 : C.text }]}>{t(svc.labelKey)}</Text>
                       <Text style={[styles.serviceDesc, { color: C.textSecondary }]}>{t(svc.descKey)}</Text>
                     </View>
                     <View style={[styles.serviceCheck, { borderColor: isSelected ? C.brinjal1 : C.border, backgroundColor: isSelected ? C.brinjal1 : 'transparent' }]}>
-                      {isSelected && <Text style={styles.serviceCheckMark}>✓</Text>}
+                      {isSelected && <Ionicons name="checkmark" size={14} color="#fff" />}
                     </View>
                   </Pressable>
                 );
@@ -225,12 +225,10 @@ const styles = StyleSheet.create({
   serviceList:      { gap: 10 },
   serviceCard:      { flexDirection: 'row', alignItems: 'center', gap: 14, borderRadius: 14, borderWidth: 1.5, padding: 14 },
   serviceIconWrap:  { width: 46, height: 46, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
-  serviceEmoji:     { fontSize: 22 },
   serviceInfo:      { flex: 1, gap: 3 },
   serviceLabel:     { fontSize: 15, fontWeight: '700', fontFamily: F.bold },
   serviceDesc:      { fontSize: 12, fontFamily: F.regular },
   serviceCheck:     { width: 22, height: 22, borderRadius: 11, borderWidth: 2, justifyContent: 'center', alignItems: 'center' },
-  serviceCheckMark: { color: '#fff', fontSize: 12, fontWeight: '700', fontFamily: F.bold },
 
   saveBtn:     { borderRadius: 14, paddingVertical: 15, alignItems: 'center', shadowOpacity: 0.25, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 5 },
   saveBtnText: { color: '#fff', fontSize: 16, fontWeight: '700', fontFamily: F.bold },

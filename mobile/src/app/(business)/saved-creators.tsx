@@ -50,12 +50,15 @@ function CreatorCard({ item, onRemove }: { item: SavedCreatorItem; onRemove: () 
             <Text style={[s.name, { color: C.text }]} numberOfLines={1}>{name}</Text>
             {creator.isVerified && (
               <View style={[s.verifiedBadge, { backgroundColor: '#E6F4EA' }]}>
-                <Text style={s.verifiedText}>✓</Text>
+                <Ionicons name="checkmark" size={11} color="#16A34A" />
               </View>
             )}
           </View>
           {creator.location ? (
-            <Text style={[s.location, { color: C.textSecondary }]} numberOfLines={1}>📍 {creator.location}</Text>
+            <View style={s.locationRow}>
+              <Ionicons name="location" size={10} color={C.textSecondary} />
+              <Text style={[s.location, { color: C.textSecondary }]} numberOfLines={1}>{creator.location}</Text>
+            </View>
           ) : null}
           {topAccount ? (
             <Text style={[s.followers, { color: C.textSecondary }]}>
@@ -146,7 +149,7 @@ export default function SavedCreatorsScreen() {
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             <View style={s.empty}>
-              <Text style={s.emptyEmoji}>🔖</Text>
+              <Ionicons name="bookmark-outline" size={48} color={C.textSecondary} style={s.emptyIcon} />
               <Text style={[s.emptyTitle, { color: C.text }]}>{t('savedCreators.empty')}</Text>
               <Text style={[s.emptyHint, { color: C.textSecondary }]}>
                 {t('savedCreators.emptySub')}
@@ -182,7 +185,7 @@ const s = StyleSheet.create({
   nameRow:  { flexDirection: 'row', alignItems: 'center', gap: 6 },
   name:     { fontSize: 15, fontWeight: '700', fontFamily: F.bold, flex: 1 },
   verifiedBadge: { borderRadius: 8, paddingHorizontal: 5, paddingVertical: 1 },
-  verifiedText:  { fontSize: 10, fontWeight: '700', color: '#2E7D32', fontFamily: F.bold },
+  locationRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   location:  { fontSize: 12, fontFamily: F.regular },
   followers: { fontSize: 12, fontFamily: F.regular },
   categories:{ fontSize: 11, fontWeight: '600', fontFamily: F.semibold },
@@ -192,7 +195,7 @@ const s = StyleSheet.create({
   removeText: { fontSize: 13, fontWeight: '600', color: '#EF4444', fontFamily: F.semibold },
 
   empty:      { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40, gap: 12 },
-  emptyEmoji: { fontSize: 52 },
+  emptyIcon:  { marginBottom: 2 },
   emptyTitle: { fontSize: 18, fontWeight: '700', fontFamily: F.bold },
   emptyHint:  { fontSize: 13, textAlign: 'center', lineHeight: 20, fontFamily: F.regular },
   emptyBtn:   { borderRadius: 14, paddingHorizontal: 28, paddingVertical: 12, marginTop: 8 },

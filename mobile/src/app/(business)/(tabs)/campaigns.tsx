@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
   ActivityIndicator,
@@ -270,7 +270,7 @@ export default function CampaignsScreen() {
                       style={({ pressed }) => [styles.cardMain, pressed && { opacity: 0.88 }]}
                       onPress={() => router.push({ pathname: '/campaign-detail', params: { campaignId: c.id } })}>
                       <View style={[styles.thumb, { backgroundColor: bg }]}>
-                        <Text style={styles.thumbEmoji}>{meta.emoji}</Text>
+                        <FontAwesome5 name={meta.icon} size={22} color="#00000066" />
                       </View>
                       <View style={styles.body}>
                         <Text style={[styles.title, { color: C.text }]} numberOfLines={1}>{c.title}</Text>
@@ -311,7 +311,8 @@ export default function CampaignsScreen() {
                             <Pressable
                               style={({ pressed }) => [styles.footerBtn, pressed && { opacity: 0.7 }]}
                               onPress={() => openProposals(c)}>
-                              <Text style={[styles.footerBtnText, { color: C.brinjal1 }]}>{t('campaigns.viewProposals')} →</Text>
+                              <Text style={[styles.footerBtnText, { color: C.brinjal1 }]}>{t('campaigns.viewProposals')}</Text>
+                              <Ionicons name="arrow-forward" size={12} color={C.brinjal1} />
                             </Pressable>
                           )}
                           {c.status === 'active' && (
@@ -364,13 +365,13 @@ export default function CampaignsScreen() {
               </Text>
             </View>
             <Pressable style={[styles.modalClose, { backgroundColor: C.background }]} onPress={() => setInviteCampaign(null)}>
-              <Text style={[styles.modalCloseText, { color: C.textSecondary }]}>✕</Text>
+              <Ionicons name="close" size={16} color={C.textSecondary} />
             </Pressable>
           </View>
 
           {inviteSuccess ? (
             <View style={styles.inviteSuccess}>
-              <Text style={styles.inviteSuccessEmoji}>🎉</Text>
+              <FontAwesome5 name="paper-plane" size={40} color={C.brinjal1} solid />
               <Text style={[styles.inviteSuccessText, { color: C.text }]}>{t('campaigns.invitationSent')}</Text>
               <Text style={[styles.inviteSuccessHint, { color: C.textSecondary }]}>
                 {t('campaigns.invitationSentSub')}
@@ -380,7 +381,7 @@ export default function CampaignsScreen() {
             <View style={styles.center}><ActivityIndicator size="small" color={C.brinjal1} /></View>
           ) : savedCreators.length === 0 ? (
             <View style={styles.modalEmpty}>
-              <Text style={styles.modalEmptyIcon}>🔖</Text>
+              <Ionicons name="bookmark-outline" size={40} color={C.textSecondary} />
               <Text style={[styles.modalEmptyText, { color: C.textSecondary }]}>{t('campaigns.noSavedCreators')}</Text>
               <Text style={[styles.modalEmptyHint, { color: C.textSecondary }]}>
                 {t('campaigns.noSavedCreatorsSub')}
@@ -463,7 +464,7 @@ export default function CampaignsScreen() {
             <Pressable
               style={[styles.modalClose, { backgroundColor: C.background }]}
               onPress={() => setSelectedCampaign(null)}>
-              <Text style={[styles.modalCloseText, { color: C.textSecondary }]}>✕</Text>
+              <Ionicons name="close" size={16} color={C.textSecondary} />
             </Pressable>
           </View>
 
@@ -474,7 +475,7 @@ export default function CampaignsScreen() {
               </View>
             ) : applications.length === 0 ? (
               <View style={styles.modalEmpty}>
-                <Text style={styles.modalEmptyIcon}>📭</Text>
+                <Ionicons name="mail-open-outline" size={40} color={C.textSecondary} />
                 <Text style={[styles.modalEmptyText, { color: C.textSecondary }]}>{t('campaigns.noProposalsYet')}</Text>
               </View>
             ) : (
@@ -494,7 +495,10 @@ export default function CampaignsScreen() {
                         </View>
                       </View>
                       {a.creator.location ? (
-                        <Text style={[styles.proposalSub, { color: C.textSecondary }]}>📍 {a.creator.location}</Text>
+                        <View style={styles.proposalSubRow}>
+                          <Ionicons name="location" size={11} color={C.textSecondary} />
+                          <Text style={[styles.proposalSub, { color: C.textSecondary }]}>{a.creator.location}</Text>
+                        </View>
                       ) : null}
                       <Text style={[styles.proposalRate, { color: C.brinjal1 }]}>{a.proposedRate}</Text>
                     </View>
@@ -558,7 +562,6 @@ const styles = StyleSheet.create({
   cardContent: { flex: 1 },
   cardMain: { flexDirection: 'row', alignItems: 'center', padding: 14, gap: 12 },
   thumb: { width: 60, height: 60, borderRadius: 14, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
-  thumbEmoji: { fontSize: 26 },
   body: { flex: 1, gap: 5 },
   title: { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
@@ -594,10 +597,8 @@ const styles = StyleSheet.create({
   modalTitle: { fontSize: 17, fontWeight: '700', fontFamily: F.bold },
   modalSubtitle: { fontSize: 13, marginTop: 2, fontFamily: F.regular },
   modalClose: { width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
-  modalCloseText: { fontSize: 12, fontWeight: '700', fontFamily: F.bold },
   modalList: { padding: 16, gap: 12, paddingBottom: 40 },
   modalEmpty: { alignItems: 'center', paddingTop: 40, paddingHorizontal: 24, gap: 10 },
-  modalEmptyIcon: { fontSize: 40 },
   modalEmptyText: { fontSize: 14, fontFamily: F.regular },
 
   proposalCard: {
@@ -611,12 +612,12 @@ const styles = StyleSheet.create({
   proposalName: { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
   proposalBadge: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
   proposalBadgeText: { fontSize: 11, fontWeight: '700', fontFamily: F.bold },
+  proposalSubRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   proposalSub: { fontSize: 12, fontFamily: F.regular },
   proposalRate: { fontSize: 13, fontWeight: '700', marginTop: 2, fontFamily: F.bold },
 
   // Invite modal
   inviteSuccess: { alignItems: 'center', paddingVertical: 48, gap: 10 },
-  inviteSuccessEmoji: { fontSize: 52 },
   inviteSuccessText: { fontSize: 18, fontWeight: '700', fontFamily: F.bold },
   inviteSuccessHint: { fontSize: 13, textAlign: 'center', fontFamily: F.regular },
 

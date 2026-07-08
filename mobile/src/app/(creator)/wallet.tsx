@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BackButton } from '@/components/BackButton';
 import { useEffect, useState } from 'react';
@@ -13,9 +13,9 @@ import { WithdrawModal } from '@/features/creator/components/WithdrawModal';
 import { F } from '@/utilities/constants';
 
 const METHOD_META: Record<string, { icon: string; color: string }> = {
-  esewa:   { icon: '💚', color: '#60BB46' },
-  khalti:  { icon: '💜', color: '#5C2D91' },
-  fonepay: { icon: '🔷', color: '#003087' },
+  esewa:   { icon: 'wallet', color: '#60BB46' },
+  khalti:  { icon: 'money-check-alt', color: '#5C2D91' },
+  fonepay: { icon: 'mobile-alt', color: '#003087' },
 };
 
 function formatDate(iso: string): string {
@@ -115,11 +115,11 @@ export default function WalletScreen() {
           ) : (
             <View style={[styles.card, { backgroundColor: C.surface }]}>
               {transactions.map((tx, i) => {
-                const meta = METHOD_META[tx.method] ?? { icon: '💳', color: C.brinjal1 };
+                const meta = METHOD_META[tx.method] ?? { icon: 'credit-card', color: C.brinjal1 };
                 return (
                   <View key={tx.id} style={[styles.txRow, i > 0 && { borderTopWidth: 1, borderTopColor: C.border }]}>
                     <View style={[styles.txIconWrap, { backgroundColor: `${meta.color}18` }]}>
-                      <Text style={styles.txIcon}>{meta.icon}</Text>
+                      <FontAwesome5 name={meta.icon} size={14} color={meta.color} />
                     </View>
                     <View style={styles.txInfo}>
                       <Text style={[styles.txMethod, { color: C.text }]}>{tx.method.charAt(0).toUpperCase() + tx.method.slice(1)}</Text>
@@ -179,7 +179,6 @@ const styles = StyleSheet.create({
 
   txRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12, paddingHorizontal: 14 },
   txIconWrap: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
-  txIcon: { fontSize: 16 },
   txInfo: { flex: 1, gap: 2 },
   txMethod: { fontSize: 13, fontWeight: '600', fontFamily: F.semibold },
   txDate: { fontSize: 11, fontFamily: F.regular },

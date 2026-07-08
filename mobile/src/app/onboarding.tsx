@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -82,12 +83,19 @@ export default function OnboardingScreen() {
   const [step2Submitted, setStep2Submitted] = useState(false);
   const [step2Loading,   setStep2Loading]   = useState(false);
   const [step2Error,     setStep2Error]     = useState('');
-  const [categories, setCategories] = useState<{ emoji: string; label: string }[]>(CREATOR_CATEGORIES);
+  // Fallback list icons are FontAwesome5 names; admin-configured categories from the
+  // API store a freeform emoji picked in the web admin panel, so the two sources render
+  // differently — `categoriesAreEmoji` tracks which shape `categories` currently holds.
+  const [categories, setCategories] = useState<{ icon: string; label: string }[]>(CREATOR_CATEGORIES);
+  const [categoriesAreEmoji, setCategoriesAreEmoji] = useState(false);
 
   useEffect(() => {
     categoryService.getCategories('CREATOR')
       .then((cats) => {
-        if (cats.length > 0) setCategories(cats.map((c) => ({ emoji: c.icon, label: c.name })));
+        if (cats.length > 0) {
+          setCategories(cats.map((c) => ({ icon: c.icon, label: c.name })));
+          setCategoriesAreEmoji(true);
+        }
       })
       .catch(() => { /* keep the fallback default list */ });
   }, []);
@@ -198,7 +206,7 @@ export default function OnboardingScreen() {
       <SafeAreaView style={[styles.successContainer, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
         <Animated.View style={[styles.successContent, { opacity: opacityAnim }]}>
           <Animated.View style={[styles.checkCircle, { backgroundColor: C.active, shadowColor: C.active, transform: [{ scale: scaleAnim }] }]}>
-            <Text style={styles.checkMark}>✓</Text>
+            <Ionicons name="checkmark" size={52} color="#fff" />
           </Animated.View>
           <Text style={[styles.successTitle, { color: C.text }]}>{t('onboarding.successTitle')}</Text>
           <Text style={[styles.successSub, { color: C.textSecondary }]}>
@@ -410,11 +418,15 @@ export default function OnboardingScreen() {
                       isDisabled && styles.categoryChipDisabled,
                     ]}
                     onPress={() => { if (!isDisabled) toggleCategory(cat.label); }}>
-                    <Text style={styles.categoryEmoji}>{cat.emoji}</Text>
+                    {categoriesAreEmoji ? (
+                      <Text style={styles.categoryEmoji}>{cat.icon}</Text>
+                    ) : (
+                      <FontAwesome5 name={cat.icon} size={16} color={isSelected ? C.brinjal1 : C.textSecondary} />
+                    )}
                     <Text style={[styles.categoryLabel, { color: isSelected ? C.brinjal1 : C.text }, isSelected && { fontWeight: '700' }]}>
                       {cat.label}
                     </Text>
-                    {isSelected && <Text style={[styles.categoryCheck, { color: C.brinjal1 }]}>✓</Text>}
+                    {isSelected && <Ionicons name="checkmark-circle" size={16} color={C.brinjal1} />}
                   </Pressable>
                 );
               })}
@@ -495,7 +507,6 @@ const styles = StyleSheet.create({
   categoryChipDisabled: { opacity: 0.35 },
   categoryEmoji: { fontSize: 16 },
   categoryLabel: { fontSize: 13, fontWeight: '500', fontFamily: F.medium },
-  categoryCheck: { fontSize: 11, fontWeight: '700', fontFamily: F.bold },
 
   loadingRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   spinner: { width: 16, height: 16, borderRadius: 8, borderWidth: 2, borderColor: 'rgba(255,255,255,0.35)' },
@@ -507,7 +518,6 @@ const styles = StyleSheet.create({
   successContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 },
   successContent: { alignItems: 'center', gap: 16 },
   checkCircle: { width: 110, height: 110, borderRadius: 55, justifyContent: 'center', alignItems: 'center', shadowOpacity: 0.35, shadowRadius: 20, shadowOffset: { width: 0, height: 8 }, elevation: 10, marginBottom: 8 },
-  checkMark: { fontSize: 52, color: '#fff', fontWeight: '700', lineHeight: 62, fontFamily: F.bold },
   successTitle: { fontSize: 28, fontWeight: '700', fontFamily: F.bold },
   successSub: { fontSize: 15, textAlign: 'center', lineHeight: 24, fontFamily: F.regular },
   goHomeBtn: { marginTop: 16, borderRadius: 14, paddingHorizontal: 48, paddingVertical: 15, shadowOpacity: 0.3, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 6 },

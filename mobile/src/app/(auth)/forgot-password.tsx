@@ -64,7 +64,7 @@ export default function ForgotPasswordScreen() {
         </Pressable>
         <View style={styles.heroContent}>
           <View style={styles.iconWrap}>
-            <Text style={styles.icon}>🔐</Text>
+            <Ionicons name="lock-closed" size={26} color="#fff" />
           </View>
           <Text style={styles.heroTitle}>{t('auth.forgotPassword.title')}</Text>
           <Text style={styles.heroSub}>{t('auth.forgotPassword.subtitle')}</Text>
@@ -164,7 +164,6 @@ const styles = StyleSheet.create({
   backArrow: { fontSize: 26, color: '#fff', lineHeight: 30 },
   heroContent: { alignItems: 'center', paddingHorizontal: 24, gap: 10 },
   iconWrap: { width: 68, height: 68, borderRadius: 34, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
-  icon: { fontSize: 30 },
   heroTitle: { fontSize: 20, fontWeight: '700', color: '#fff', textAlign: 'center', fontFamily: F.bold },
   heroSub: { fontSize: 14, color: 'rgba(255,255,255,0.78)', textAlign: 'center', lineHeight: 22, fontFamily: F.regular },
   card: { flex: 1, borderTopLeftRadius: 24, borderTopRightRadius: 24 },

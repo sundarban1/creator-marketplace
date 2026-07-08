@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
 import {
   Animated,
@@ -20,26 +21,26 @@ import { PlacesAutocompleteInput } from '@/components/PlacesAutocompleteInput';
 import { F } from '@/utilities/constants';
 
 const BUSINESS_CATEGORIES = [
-  { emoji: '🍔', label: 'Food & Beverage' },
-  { emoji: '👗', label: 'Fashion & Apparel' },
-  { emoji: '💄', label: 'Beauty & Cosmetics' },
-  { emoji: '💪', label: 'Health & Fitness' },
-  { emoji: '🏠', label: 'Home & Living' },
-  { emoji: '📱', label: 'Technology' },
-  { emoji: '🎓', label: 'Education' },
-  { emoji: '✈️', label: 'Travel & Tourism' },
-  { emoji: '🌿', label: 'Wellness' },
-  { emoji: '🎮', label: 'Gaming & Entertainment' },
-  { emoji: '🚗', label: 'Automotive' },
-  { emoji: '💰', label: 'Finance & Banking' },
-  { emoji: '🌍', label: 'Sustainability' },
-  { emoji: '🏋️', label: 'Sports' },
-  { emoji: '🍷', label: 'Food & Drink' },
-  { emoji: '🎬', label: 'Media & Film' },
-  { emoji: '🛒', label: 'E-commerce' },
-  { emoji: '🏥', label: 'Healthcare' },
-  { emoji: '🎨', label: 'Art & Design' },
-  { emoji: '📷', label: 'Photography' },
+  { icon: 'utensils',       label: 'Food & Beverage' },
+  { icon: 'tshirt',         label: 'Fashion & Apparel' },
+  { icon: 'spa',            label: 'Beauty & Cosmetics' },
+  { icon: 'dumbbell',       label: 'Health & Fitness' },
+  { icon: 'home',           label: 'Home & Living' },
+  { icon: 'microchip',      label: 'Technology' },
+  { icon: 'graduation-cap', label: 'Education' },
+  { icon: 'plane',          label: 'Travel & Tourism' },
+  { icon: 'heartbeat',      label: 'Wellness' },
+  { icon: 'gamepad',        label: 'Gaming & Entertainment' },
+  { icon: 'car',            label: 'Automotive' },
+  { icon: 'wallet',         label: 'Finance & Banking' },
+  { icon: 'recycle',        label: 'Sustainability' },
+  { icon: 'futbol',         label: 'Sports' },
+  { icon: 'wine-glass-alt', label: 'Food & Drink' },
+  { icon: 'film',           label: 'Media & Film' },
+  { icon: 'shopping-cart',  label: 'E-commerce' },
+  { icon: 'briefcase-medical', label: 'Healthcare' },
+  { icon: 'palette',        label: 'Art & Design' },
+  { icon: 'camera',         label: 'Photography' },
 ];
 
 const TOTAL_STEPS = 2;
@@ -62,12 +63,18 @@ export default function BusinessOnboardingScreen() {
   const [categorySubmitted, setCategorySubmitted] = useState(false);
   const [step2Loading, setStep2Loading] = useState(false);
   const [step2Error, setStep2Error] = useState('');
+  // Fallback list icons are FontAwesome5 names; admin-configured categories from the
+  // API store a freeform emoji picked in the web admin panel — see the render below.
   const [categories, setCategories] = useState(BUSINESS_CATEGORIES);
+  const [categoriesAreEmoji, setCategoriesAreEmoji] = useState(false);
 
   useEffect(() => {
     categoryService.getCategories('BUSINESS')
       .then((cats) => {
-        if (cats.length > 0) setCategories(cats.map((c) => ({ emoji: c.icon, label: c.name })));
+        if (cats.length > 0) {
+          setCategories(cats.map((c) => ({ icon: c.icon, label: c.name })));
+          setCategoriesAreEmoji(true);
+        }
       })
       .catch(() => { /* keep the fallback default list */ });
   }, []);
@@ -140,7 +147,7 @@ export default function BusinessOnboardingScreen() {
       <SafeAreaView style={[styles.successContainer, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
         <Animated.View style={[styles.successContent, { opacity: opacityAnim }]}>
           <Animated.View style={[styles.checkCircle, { backgroundColor: C.active, shadowColor: C.active, transform: [{ scale: scaleAnim }] }]}>
-            <Text style={styles.checkMark}>✓</Text>
+            <Ionicons name="checkmark" size={52} color="#fff" />
           </Animated.View>
           <Text style={[styles.successTitle, { color: C.text }]}>{t('businessOnboarding.successTitle')}</Text>
           <Text style={[styles.successSub, { color: C.textSecondary }]}>
@@ -251,7 +258,10 @@ export default function BusinessOnboardingScreen() {
                   <Text style={styles.primaryBtnText}>Saving…</Text>
                 </View>
               ) : (
-                <Text style={styles.primaryBtnText}>Continue →</Text>
+                <View style={styles.loadingRow}>
+                  <Text style={styles.primaryBtnText}>Continue</Text>
+                  <Ionicons name="arrow-forward" size={16} color="#fff" />
+                </View>
               )}
             </Pressable>
 
@@ -281,7 +291,8 @@ export default function BusinessOnboardingScreen() {
               </View>
               {selectedCategories.length === 3 && (
                 <View style={[styles.maxBanner, { backgroundColor: C.primaryLight }]}>
-                  <Text style={[styles.maxBannerText, { color: C.brinjal1 }]}>✓ Max 3 categories selected</Text>
+                  <Ionicons name="checkmark-circle" size={14} color={C.brinjal1} />
+                  <Text style={[styles.maxBannerText, { color: C.brinjal1 }]}>Max 3 categories selected</Text>
                 </View>
               )}
               {categorySubmitted && selectedCategories.length === 0 && (
@@ -301,11 +312,15 @@ export default function BusinessOnboardingScreen() {
                         isDisabled && styles.chipDisabled,
                       ]}
                       onPress={() => { if (!isDisabled) toggleCategory(cat.label); }}>
-                      <Text style={styles.chipEmoji}>{cat.emoji}</Text>
+                      {categoriesAreEmoji ? (
+                        <Text style={styles.chipEmoji}>{cat.icon}</Text>
+                      ) : (
+                        <FontAwesome5 name={cat.icon} size={14} color={isSelected ? C.brinjal1 : C.textSecondary} />
+                      )}
                       <Text style={[styles.chipLabel, { color: isSelected ? C.brinjal1 : C.text }, isSelected && { fontWeight: '700' }]}>
                         {cat.label}
                       </Text>
-                      {isSelected && <Text style={[styles.chipCheck, { color: C.brinjal1 }]}>✓</Text>}
+                      {isSelected && <Ionicons name="checkmark-circle" size={14} color={C.brinjal1} />}
                     </Pressable>
                   );
                 })}
@@ -322,7 +337,10 @@ export default function BusinessOnboardingScreen() {
                   <Text style={styles.primaryBtnText}>Saving…</Text>
                 </View>
               ) : (
-                <Text style={styles.primaryBtnText}>Complete Setup →</Text>
+                <View style={styles.loadingRow}>
+                  <Text style={styles.primaryBtnText}>Complete Setup</Text>
+                  <Ionicons name="arrow-forward" size={16} color="#fff" />
+                </View>
               )}
             </Pressable>
             <Text style={[styles.finishNote, { color: C.textSecondary }]}>At least 1 category is required</Text>
@@ -365,14 +383,13 @@ const styles = StyleSheet.create({
   charCount: { fontSize: 11, alignSelf: 'flex-end', fontFamily: F.regular },
   countBadge: { borderRadius: 10, paddingHorizontal: 10, paddingVertical: 3 },
   countBadgeText: { fontSize: 12, fontWeight: '700', fontFamily: F.bold },
-  maxBanner: { borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, marginBottom: 10 },
+  maxBanner: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, marginBottom: 10 },
   maxBannerText: { fontSize: 13, fontWeight: '600', fontFamily: F.semibold },
   categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
   categoryChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 9, borderRadius: 22, borderWidth: 1.5 },
   chipDisabled: { opacity: 0.35 },
   chipEmoji: { fontSize: 15 },
   chipLabel: { fontSize: 13, fontWeight: '500', fontFamily: F.medium },
-  chipCheck: { fontSize: 10, fontWeight: '700', fontFamily: F.bold },
   loadingRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   spinner: { width: 16, height: 16, borderRadius: 8, borderWidth: 2, borderColor: 'rgba(255,255,255,0.35)' },
   primaryBtn: { borderRadius: 14, paddingVertical: 15, alignItems: 'center', shadowOpacity: 0.25, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 5, marginBottom: 12 },
@@ -382,7 +399,6 @@ const styles = StyleSheet.create({
   successContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 },
   successContent: { alignItems: 'center', gap: 16 },
   checkCircle: { width: 110, height: 110, borderRadius: 55, justifyContent: 'center', alignItems: 'center', shadowOpacity: 0.35, shadowRadius: 20, shadowOffset: { width: 0, height: 8 }, elevation: 10, marginBottom: 8 },
-  checkMark: { fontSize: 52, color: '#fff', fontWeight: '700', lineHeight: 62, fontFamily: F.bold },
   successTitle: { fontSize: 28, fontWeight: '700', fontFamily: F.bold },
   successSub: { fontSize: 15, textAlign: 'center', lineHeight: 24, fontFamily: F.regular },
   goHomeBtn: { marginTop: 16, borderRadius: 14, paddingHorizontal: 48, paddingVertical: 15, shadowOpacity: 0.3, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 6 },

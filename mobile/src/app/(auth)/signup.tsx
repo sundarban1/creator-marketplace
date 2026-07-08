@@ -177,7 +177,7 @@ export default function SignupScreen() {
 
           {/* Heading */}
           <View style={s.headingWrap}>
-            <Text style={[s.heading, { color: C.text }]}>Create your account ✨</Text>
+            <Text style={[s.heading, { color: C.text }]}>Create your account</Text>
             <Text style={[s.headingSub, { color: '#6B7280' }]}>
               Join kolab and unlock endless collaboration opportunities.
             </Text>

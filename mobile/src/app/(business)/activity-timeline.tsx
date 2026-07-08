@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { BackButton } from '@/components/BackButton';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -857,11 +857,14 @@ export default function CampaignWorkspaceScreen() {
         </View>
         <Text style={sh.sectionLabel}>{t('activityTimeline.modalPayWith')}</Text>
         <View style={{ gap: 8, marginBottom: 16 }}>
-          {([['esewa', '🟢 eSewa'], ['khalti', '🟣 Khalti'], ['fonepay', '📱 Fonepay QR']] as [typeof payMethod, string][]).map(([m, label]) => (
+          {([['esewa', 'wallet', 'eSewa'], ['khalti', 'money-check-alt', 'Khalti'], ['fonepay', 'mobile-alt', 'Fonepay QR']] as [typeof payMethod, string, string][]).map(([m, icon, label]) => (
             <Pressable key={m}
               style={[sh.methodBtn, { borderColor: payMethod === m ? '#7C3AED' : '#E5E7EB', backgroundColor: payMethod === m ? '#EEF2FF' : '#fff' }]}
               onPress={() => setPayMethod(m)}>
-              <Text style={[sh.methodTxt, { color: payMethod === m ? '#7C3AED' : '#374151' }]}>{label}</Text>
+              <View style={sh.methodLeft}>
+                <FontAwesome5 name={icon} size={14} color={payMethod === m ? '#7C3AED' : '#374151'} />
+                <Text style={[sh.methodTxt, { color: payMethod === m ? '#7C3AED' : '#374151' }]}>{label}</Text>
+              </View>
               {payMethod === m && <Ionicons name="checkmark-circle" size={18} color="#7C3AED" />}
             </Pressable>
           ))}
@@ -1202,6 +1205,7 @@ const sh = StyleSheet.create({
   totalValue:   { fontSize: 17, fontFamily: F.bold, color: '#16A34A' },
   divider:      { height: 1, marginVertical: 4 },
   methodBtn:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12 },
+  methodLeft:   { flexDirection: 'row', alignItems: 'center', gap: 10 },
   methodTxt:    { fontSize: 14, fontFamily: F.semibold },
   inputLabel:   { fontSize: 12, fontFamily: F.semibold, color: '#374151', marginBottom: 6 },
   input:        { borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, fontFamily: F.regular, textAlignVertical: 'top' },

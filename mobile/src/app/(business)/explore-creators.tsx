@@ -1,5 +1,5 @@
 import { router, useFocusEffect } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { BackButton } from '@/components/BackButton';
@@ -48,28 +48,28 @@ const PLATFORM_ICON: Record<string, { icon: IoniconName; color: string }> = {
   tiktok:    { icon: 'musical-notes',  color: '#010101' },
 };
 
-const CATEGORY_META: Record<string, { emoji: string; bg: string }> = {
-  Fashion:     { emoji: '👗', bg: '#F2DCF0' },
-  Food:        { emoji: '🍽️', bg: '#F2E6DC' },
-  Tech:        { emoji: '💻', bg: '#DCE6F2' },
-  Technology:  { emoji: '💻', bg: '#DCE6F2' },
-  Beauty:      { emoji: '✨', bg: '#DCF2E6' },
-  Travel:      { emoji: '✈️', bg: '#F2F2DC' },
-  Fitness:     { emoji: '💪', bg: '#DCF2EE' },
-  Lifestyle:   { emoji: '🌿', bg: '#E6F2DC' },
-  Gaming:      { emoji: '🎮', bg: '#E6DCF2' },
-  Music:       { emoji: '🎵', bg: '#F2DCE6' },
-  Education:   { emoji: '📚', bg: '#FDEFD0' },
-  Sports:      { emoji: '⚽', bg: '#E8F4DC' },
-  Wellness:    { emoji: '🧘', bg: '#DCF2EE' },
-  Adventure:   { emoji: '🏕️', bg: '#E8EFD4' },
+const CATEGORY_META: Record<string, { icon: string; bg: string }> = {
+  Fashion:     { icon: 'tshirt',         bg: '#F2DCF0' },
+  Food:        { icon: 'utensils',       bg: '#F2E6DC' },
+  Tech:        { icon: 'microchip',      bg: '#DCE6F2' },
+  Technology:  { icon: 'microchip',      bg: '#DCE6F2' },
+  Beauty:      { icon: 'spa',            bg: '#DCF2E6' },
+  Travel:      { icon: 'plane',          bg: '#F2F2DC' },
+  Fitness:     { icon: 'dumbbell',       bg: '#DCF2EE' },
+  Lifestyle:   { icon: 'leaf',           bg: '#E6F2DC' },
+  Gaming:      { icon: 'gamepad',        bg: '#E6DCF2' },
+  Music:       { icon: 'music',          bg: '#F2DCE6' },
+  Education:   { icon: 'graduation-cap', bg: '#FDEFD0' },
+  Sports:      { icon: 'futbol',         bg: '#E8F4DC' },
+  Wellness:    { icon: 'heartbeat',      bg: '#DCF2EE' },
+  Adventure:   { icon: 'mountain',       bg: '#E8EFD4' },
 };
 
 function getPlatformMeta(p: string) { return PLATFORM_ICON[p.toLowerCase()] ?? { icon: 'phone-portrait-outline' as IoniconName, color: '#6B7280' }; }
 function normalizePlatform(p: string) { return p.charAt(0).toUpperCase() + p.slice(1).toLowerCase(); }
 function getCategoryMeta(cats: string[]) {
   for (const c of cats) { if (CATEGORY_META[c]) return CATEGORY_META[c]; }
-  return { emoji: '🎯', bg: '#F0F0F0' };
+  return { icon: 'bullseye', bg: '#F0F0F0' };
 }
 function formatFollowers(n: number) {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
@@ -171,9 +171,9 @@ function LocationPicker({ selected, onChange }: { selected: LocationEntry[]; onC
         style={[lp.remoteChip, { borderColor: remoteSelected ? C.brinjal1 : C.border, backgroundColor: remoteSelected ? C.primaryLight : C.background }, !remoteSelected && atMax && { opacity: 0.35 }]}
         onPress={toggleRemote}
         disabled={!remoteSelected && atMax}>
-        <Text style={lp.globeEmoji}>🌐</Text>
+        <Ionicons name="globe-outline" size={14} color={remoteSelected ? C.brinjal1 : C.textSecondary} />
         <Text style={[lp.remoteText, { color: remoteSelected ? C.brinjal1 : C.text, fontWeight: remoteSelected ? '700' : '500' }]}>{t('campaignDetail.remoteLocation')}</Text>
-        {remoteSelected && <Text style={[lp.removeX, { color: C.brinjal1 }]}>✕</Text>}
+        {remoteSelected && <Ionicons name="close" size={14} color={C.brinjal1} />}
       </Pressable>
 
       {/* Selected place chips */}
@@ -181,9 +181,10 @@ function LocationPicker({ selected, onChange }: { selected: LocationEntry[]; onC
         <View style={lp.chips}>
           {nonRemote.map((loc) => (
             <View key={loc.label} style={[lp.locChip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
-              <Text style={[lp.locChipText, { color: C.brinjal1 }]}>📍 {loc.label}</Text>
+              <Ionicons name="location" size={12} color={C.brinjal1} />
+              <Text style={[lp.locChipText, { color: C.brinjal1 }]}>{loc.label}</Text>
               <Pressable onPress={() => remove(loc.label)} hitSlop={8}>
-                <Text style={[lp.removeX, { color: C.brinjal1 }]}>✕</Text>
+                <Ionicons name="close" size={13} color={C.brinjal1} />
               </Pressable>
             </View>
           ))}
@@ -194,7 +195,7 @@ function LocationPicker({ selected, onChange }: { selected: LocationEntry[]; onC
       {!atMax && (
         <>
           <View style={[lp.searchRow, { backgroundColor: C.background, borderColor: C.border }]}>
-            <Text style={lp.searchIcon}>🔍</Text>
+            <Ionicons name="search" size={15} color={C.textSecondary} />
             <TextInput
               style={[lp.searchInput, { color: C.text }]}
               value={query}
@@ -206,7 +207,7 @@ function LocationPicker({ selected, onChange }: { selected: LocationEntry[]; onC
             {searching
               ? <ActivityIndicator size="small" color={C.brinjal1} />
               : query.length > 0
-              ? <Pressable onPress={() => { setQuery(''); setPredictions([]); }} hitSlop={8}><Text style={{ color: C.textSecondary, fontSize: 15 }}>✕</Text></Pressable>
+              ? <Pressable onPress={() => { setQuery(''); setPredictions([]); }} hitSlop={8}><Ionicons name="close" size={15} color={C.textSecondary} /></Pressable>
               : null}
           </View>
           {predictions.length > 0 && (
@@ -216,7 +217,7 @@ function LocationPicker({ selected, onChange }: { selected: LocationEntry[]; onC
                   key={pred.place_id}
                   style={[lp.dropRow, { borderBottomColor: idx < Math.min(predictions.length, 5) - 1 ? C.border : 'transparent' }]}
                   onPress={() => selectPrediction(pred)}>
-                  <Text style={lp.dropPin}>📍</Text>
+                  <Ionicons name="location" size={16} color={C.textSecondary} />
                   <View style={lp.dropTexts}>
                     <Text style={[lp.dropMain, { color: C.text }]}>{pred.structured_formatting.main_text}</Text>
                     <Text style={[lp.dropSec, { color: C.textSecondary }]} numberOfLines={1}>{pred.structured_formatting.secondary_text}</Text>
@@ -234,18 +235,14 @@ function LocationPicker({ selected, onChange }: { selected: LocationEntry[]; onC
 const lp = StyleSheet.create({
   wrap:        { gap: 10 },
   remoteChip:  { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 12, borderWidth: 1.5 },
-  globeEmoji:  { fontSize: 14 },
   remoteText:  { fontSize: 13, fontFamily: F.regular },
-  removeX:     { fontSize: 12, fontWeight: '700', fontFamily: F.bold },
   chips:       { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   locChip:     { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 12, borderWidth: 1.5 },
   locChipText: { fontSize: 13, fontWeight: '600', fontFamily: F.semibold },
   searchRow:   { flexDirection: 'row', alignItems: 'center', borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 12, height: 44, gap: 8 },
-  searchIcon:  { fontSize: 15 },
   searchInput: { flex: 1, fontSize: 14, fontFamily: F.regular },
   dropdown:    { borderRadius: 12, borderWidth: 1.5, overflow: 'hidden' },
   dropRow:     { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, gap: 10, borderBottomWidth: 1 },
-  dropPin:     { fontSize: 16 },
   dropTexts:   { flex: 1 },
   dropMain:    { fontSize: 14, fontWeight: '600', fontFamily: F.semibold },
   dropSec:     { fontSize: 11, marginTop: 1, fontFamily: F.regular },
@@ -337,7 +334,7 @@ function ExploreFilterModal({
                       key={cat}
                       onPress={() => set('categories', toggle(temp.categories, cat))}
                       style={[fm.chip, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? C.primaryLight : C.background }]}>
-                      {meta && <Text style={fm.chipEmoji}>{meta.emoji}</Text>}
+                      {meta && <FontAwesome5 name={meta.icon} size={12} color={sel ? C.brinjal1 : C.textSecondary} />}
                       <Text style={[fm.chipText, { color: sel ? C.brinjal1 : C.text, fontWeight: sel ? '700' : '500' }]}>{cat}</Text>
                     </Pressable>
                   );
@@ -373,7 +370,6 @@ const fm = StyleSheet.create({
   sectionHint: { fontSize: 11, fontWeight: '600', fontFamily: F.semibold },
   chips:       { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip:        { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 13, paddingVertical: 8, borderRadius: 12, borderWidth: 1.5 },
-  chipEmoji:   { fontSize: 13 },
   chipText:    { fontSize: 13, fontFamily: F.medium },
   footer:      { padding: 20, borderTopWidth: 1 },
   applyBtn:    { borderRadius: 14, height: 52, justifyContent: 'center', alignItems: 'center' },
@@ -473,7 +469,7 @@ function CreatorCard({ creator, isSaved, onToggleSave }: {
             const m = CATEGORY_META[cat];
             return (
               <View key={cat} style={[s.catChip, { backgroundColor: m?.bg ?? C.primaryLight }]}>
-                {m ? <Text style={s.catEmoji}>{m.emoji}</Text> : null}
+                {m ? <FontAwesome5 name={m.icon} size={9} color={C.brinjal1} /> : null}
                 <Text style={[s.catLabel, { color: C.text }]}>{cat}</Text>
               </View>
             );
@@ -689,23 +685,30 @@ export default function ExploreCreatorsScreen() {
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chipRow}>
           {activeFilter.locations.map((loc) => (
             <Pressable key={loc.label} onPress={() => removeActiveFilter('locations', loc.label)} style={[s.chip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
-              <Text style={[s.chipText, { color: C.brinjal1 }]}>{loc.label === 'Remote' ? '🌐' : '📍'} {loc.label} ✕</Text>
+              <Ionicons name={loc.label === 'Remote' ? 'globe-outline' : 'location'} size={12} color={C.brinjal1} />
+              <Text style={[s.chipText, { color: C.brinjal1 }]}>{loc.label}</Text>
+              <Ionicons name="close" size={12} color={C.brinjal1} />
             </Pressable>
           ))}
           {(activeFilter.priceMin > 0 || activeFilter.priceMax < SLIDER_MAX) && (
             <Pressable onPress={() => removeActiveFilter('priceMin')} style={[s.chip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
-              <Text style={[s.chipText, { color: C.brinjal1 }]}>💰 ${activeFilter.priceMin}–{activeFilter.priceMax >= SLIDER_MAX ? '1K+' : `$${activeFilter.priceMax}`} ✕</Text>
+              <FontAwesome5 name="wallet" size={11} color={C.brinjal1} />
+              <Text style={[s.chipText, { color: C.brinjal1 }]}>${activeFilter.priceMin}–{activeFilter.priceMax >= SLIDER_MAX ? '1K+' : `$${activeFilter.priceMax}`}</Text>
+              <Ionicons name="close" size={12} color={C.brinjal1} />
             </Pressable>
           )}
           {activeFilter.platforms.map((p) => (
             <Pressable key={p} onPress={() => removeActiveFilter('platforms', p)} style={[s.chip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
               <Ionicons name={getPlatformMeta(p).icon} size={12} color={C.brinjal1} />
-              <Text style={[s.chipText, { color: C.brinjal1 }]}>{normalizePlatform(p)} ✕</Text>
+              <Text style={[s.chipText, { color: C.brinjal1 }]}>{normalizePlatform(p)}</Text>
+              <Ionicons name="close" size={12} color={C.brinjal1} />
             </Pressable>
           ))}
           {activeFilter.categories.map((cat) => (
             <Pressable key={cat} onPress={() => removeActiveFilter('categories', cat)} style={[s.chip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
-              <Text style={[s.chipText, { color: C.brinjal1 }]}>{CATEGORY_META[cat]?.emoji} {cat} ✕</Text>
+              {CATEGORY_META[cat] && <FontAwesome5 name={CATEGORY_META[cat].icon} size={11} color={C.brinjal1} />}
+              <Text style={[s.chipText, { color: C.brinjal1 }]}>{cat}</Text>
+              <Ionicons name="close" size={12} color={C.brinjal1} />
             </Pressable>
           ))}
           <Pressable onPress={() => setActiveFilter(DEFAULT_FILTER)} style={[s.chip, { backgroundColor: C.background, borderColor: C.border }]}>
@@ -741,7 +744,7 @@ export default function ExploreCreatorsScreen() {
         </View>
       ) : creators.length === 0 ? (
         <View style={s.centered}>
-          <Text style={s.emptyEmoji}>🧑‍🎨</Text>
+          <FontAwesome5 name="users" size={44} color={C.textSecondary} style={s.emptyIcon} />
           <Text style={[s.emptyTitle, { color: C.text }]}>{t('explore.noCreators')}</Text>
           <Text style={[s.emptyHint, { color: C.textSecondary }]}>
             {filterActive || search ? t('explore.adjustFilters') : t('explore.noCreatorsYet')}
@@ -821,7 +824,7 @@ const s = StyleSheet.create({
   filterDot: { position: 'absolute', top: 8, right: 8, width: 8, height: 8, borderRadius: 4, backgroundColor: '#EF4444' },
 
   chipRow: { paddingHorizontal: 20, paddingBottom: 8, gap: 6, flexDirection: 'row', alignItems: 'center' },
-  chip: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 16, borderWidth: 1.5 },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 16, borderWidth: 1.5 },
   chipText: { fontSize: 12, fontWeight: '600', fontFamily: F.semibold },
 
   countRow: { paddingHorizontal: 20, marginTop: 10, marginBottom: 8, alignItems: 'flex-end' },
@@ -832,7 +835,7 @@ const s = StyleSheet.create({
   loadingText: { fontSize: 14, fontFamily: F.regular },
   errorText: { color: '#DC2626', fontSize: 14, fontFamily: F.regular },
   linkText: { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
-  emptyEmoji: { fontSize: 48 },
+  emptyIcon: { marginBottom: 4 },
   emptyTitle: { fontSize: 18, fontWeight: '700', fontFamily: F.bold },
   emptyHint: { fontSize: 13, textAlign: 'center', lineHeight: 20, fontFamily: F.regular },
   clearBtn: { borderRadius: 20, borderWidth: 1.5, paddingHorizontal: 16, paddingVertical: 8, marginTop: 4 },
@@ -857,7 +860,6 @@ const s = StyleSheet.create({
   cardFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   catRow: { flexDirection: 'row', gap: 5, flexWrap: 'wrap', flex: 1 },
   catChip: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 8 },
-  catEmoji: { fontSize: 11 },
   catLabel: { fontSize: 11, fontWeight: '600', fontFamily: F.semibold },
   budgetPill: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 8, backgroundColor: '#DCFCE7', flexShrink: 0 },
   budgetText: { fontSize: 11, fontWeight: '700', color: '#16A34A', fontFamily: F.bold },

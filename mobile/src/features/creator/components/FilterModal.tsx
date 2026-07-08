@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { RangeSlider } from '@/components/RangeSlider';
 import { useAppColors } from '@/context/ThemeContext';
@@ -153,11 +154,11 @@ export function LocationSearchPicker({
         style={[ls.remoteChip, { borderColor: remoteSelected ? C.brinjal1 : C.border, backgroundColor: remoteSelected ? C.primaryLight : C.background }, !remoteSelected && atMax && { opacity: 0.35 }]}
         onPress={toggleRemote}
         disabled={!remoteSelected && atMax}>
-        <Text style={ls.remoteEmoji}>🌐</Text>
+        <Ionicons name="globe-outline" size={14} color={remoteSelected ? C.brinjal1 : C.textSecondary} />
         <Text style={[ls.remoteText, { color: remoteSelected ? C.brinjal1 : C.text, fontWeight: remoteSelected ? '700' : '500' }]}>
           Remote
         </Text>
-        {remoteSelected && <Text style={[ls.removeX, { color: C.brinjal1 }]}>✕</Text>}
+        {remoteSelected && <Ionicons name="close" size={14} color={C.brinjal1} />}
       </Pressable>
 
       {/* Selected place chips */}
@@ -165,9 +166,10 @@ export function LocationSearchPicker({
         <View style={ls.selectedChips}>
           {nonRemote.map((loc) => (
             <View key={loc.label} style={[ls.selectedChip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
-              <Text style={[ls.selectedChipText, { color: C.brinjal1 }]}>📍 {loc.label}</Text>
+              <Ionicons name="location" size={12} color={C.brinjal1} />
+              <Text style={[ls.selectedChipText, { color: C.brinjal1 }]}>{loc.label}</Text>
               <Pressable onPress={() => remove(loc.label)} hitSlop={8}>
-                <Text style={[ls.removeX, { color: C.brinjal1 }]}>✕</Text>
+                <Ionicons name="close" size={13} color={C.brinjal1} />
               </Pressable>
             </View>
           ))}
@@ -178,7 +180,7 @@ export function LocationSearchPicker({
       {!atMax && (
         <>
           <View style={[ls.searchRow, { backgroundColor: C.background, borderColor: C.border }]}>
-            <Text style={ls.searchIcon}>🔍</Text>
+            <Ionicons name="search" size={15} color={C.textSecondary} />
             <TextInput
               style={[ls.searchInput, { color: C.text }]}
               value={query}
@@ -191,7 +193,7 @@ export function LocationSearchPicker({
               ? <ActivityIndicator size="small" color={C.brinjal1} />
               : query.length > 0
               ? <Pressable onPress={() => { setQuery(''); setPredictions([]); }} hitSlop={8}>
-                  <Text style={{ color: C.textSecondary, fontSize: 15 }}>✕</Text>
+                  <Ionicons name="close" size={15} color={C.textSecondary} />
                 </Pressable>
               : null}
           </View>
@@ -203,7 +205,7 @@ export function LocationSearchPicker({
                   key={pred.place_id}
                   style={[ls.dropRow, { borderBottomColor: idx < Math.min(predictions.length, 5) - 1 ? C.border : 'transparent' }]}
                   onPress={() => handleSelectPrediction(pred)}>
-                  <Text style={ls.dropPin}>📍</Text>
+                  <Ionicons name="location" size={16} color={C.textSecondary} />
                   <View style={ls.dropTexts}>
                     <Text style={[ls.dropMain, { color: C.text }]}>{pred.structured_formatting.main_text}</Text>
                     <Text style={[ls.dropSec, { color: C.textSecondary }]} numberOfLines={1}>{pred.structured_formatting.secondary_text}</Text>
@@ -221,18 +223,14 @@ export function LocationSearchPicker({
 const ls = StyleSheet.create({
   container:       { gap: 10 },
   remoteChip:      { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 22, borderWidth: 1.5 },
-  remoteEmoji:     { fontSize: 14 },
   remoteText:      { fontSize: 13, fontFamily: F.regular },
-  removeX:         { fontSize: 12, fontWeight: '700', fontFamily: F.bold },
   selectedChips:   { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   selectedChip:    { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1.5 },
   selectedChipText:{ fontSize: 13, fontWeight: '600', fontFamily: F.semibold },
   searchRow:       { flexDirection: 'row', alignItems: 'center', borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 12, height: 44, gap: 8 },
-  searchIcon:      { fontSize: 15 },
   searchInput:     { flex: 1, fontSize: 14, fontFamily: F.regular },
   dropdown:        { borderRadius: 12, borderWidth: 1.5, overflow: 'hidden' },
   dropRow:         { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, gap: 10, borderBottomWidth: 1 },
-  dropPin:         { fontSize: 16 },
   dropTexts:       { flex: 1 },
   dropMain:        { fontSize: 14, fontWeight: '600', fontFamily: F.semibold },
   dropSec:         { fontSize: 11, marginTop: 1, fontFamily: F.regular },
@@ -354,7 +352,7 @@ function DateRangePicker({
                   {date ? fmtDate(date) : 'DD MMM YYYY'}
                 </Text>
                 <Pressable onPress={() => togglePicker(field)} hitSlop={8}>
-                  <Text style={[dp.calIcon, { color: active ? C.brinjal1 : C.textSecondary }]}>📅</Text>
+                  <Ionicons name="calendar-outline" size={16} color={active ? C.brinjal1 : C.textSecondary} />
                 </Pressable>
               </View>
             </View>
@@ -365,7 +363,7 @@ function DateRangePicker({
           <Pressable
             style={dp.clearBtn}
             onPress={() => { onFromChange(null); onToChange(null); setActivePicker(null); }}>
-            <Text style={[dp.clearTxt, { color: C.error }]}>✕</Text>
+            <Ionicons name="close" size={16} color={C.error} />
           </Pressable>
         )}
       </View>
@@ -504,9 +502,7 @@ const dp = StyleSheet.create({
   inputLabel:  { fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.6, marginLeft: 2, fontFamily: F.bold },
   inputBox:    { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 9, gap: 6 },
   inputValue:  { flex: 1, fontSize: 13, fontWeight: '600', fontFamily: F.semibold },
-  calIcon:     { fontSize: 16 },
   clearBtn:    { width: 32, height: 40, justifyContent: 'center', alignItems: 'center', borderRadius: 8 },
-  clearTxt:    { fontSize: 16, fontWeight: '700', fontFamily: F.bold },
   // Inline calendar
   cal:         { borderRadius: 14, borderWidth: 1, padding: 12, gap: 8, marginTop: 2 },
   calTitle:    { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.6, textAlign: 'center', fontFamily: F.bold },

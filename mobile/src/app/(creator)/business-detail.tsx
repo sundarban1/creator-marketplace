@@ -89,7 +89,7 @@ function CampaignCard({ campaign, isApplied }: { campaign: BusinessActiveCampaig
         <FontAwesome5 name={platformIcon.iconName as any} size={32} color={platformIcon.color} />
         {campaign.isFeatured && (
           <View style={styles.featuredDot}>
-            <Text style={styles.featuredDotText}>⭐</Text>
+            <FontAwesome5 name="star" size={9} color="#fff" solid />
           </View>
         )}
       </View>
@@ -229,7 +229,7 @@ export default function BusinessDetailScreen() {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
         <NavBar />
-        <EmptyState emoji="⚠️" title={t('businessDetail.loadError')} subtitle={error || t('common.notFound')} action={{ label: t('businessDetail.goBack'), onPress: () => router.back() }} />
+        <EmptyState faIcon="exclamation-triangle" title={t('businessDetail.loadError')} subtitle={error || t('common.notFound')} action={{ label: t('businessDetail.goBack'), onPress: () => router.back() }} />
       </SafeAreaView>
     );
   }
@@ -531,9 +531,7 @@ const styles = StyleSheet.create({
 
   campaignCard:          { flexDirection: 'row', borderRadius: 16, overflow: 'hidden', shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
   campaignThumb:         { width: 72, alignItems: 'center', justifyContent: 'center', flexShrink: 0, position: 'relative' },
-  campaignThumbEmoji:    { fontSize: 26 },
-  featuredDot:           { position: 'absolute', top: 6, right: 4 },
-  featuredDotText:       { fontSize: 10 },
+  featuredDot:           { position: 'absolute', top: 6, right: 4, backgroundColor: '#F59E0B', borderRadius: 8, width: 16, height: 16, alignItems: 'center', justifyContent: 'center' },
   campaignBody:          { flex: 1, padding: 12, gap: 4 },
   campaignTitle:         { fontSize: 14, fontWeight: '700', lineHeight: 20, fontFamily: F.bold },
   campaignMeta:          { fontSize: 11, marginTop: 1, fontFamily: F.regular },

@@ -97,9 +97,9 @@ const PLATFORM_URL_PREFIX: Record<string, string> = {
 };
 
 const PAYMENT_METHODS = [
-  { id: 'esewa',   icon: '💚', label: 'eSewa',   color: '#60BB46' },
-  { id: 'khalti',  icon: '💜', label: 'Khalti',  color: '#5C2D91' },
-  { id: 'fonepay', icon: '🔷', label: 'FonePay', color: '#003087' },
+  { id: 'esewa',   icon: 'wallet',       label: 'eSewa',   color: '#60BB46' },
+  { id: 'khalti',  icon: 'money-check-alt', label: 'Khalti',  color: '#5C2D91' },
+  { id: 'fonepay', icon: 'credit-card',  label: 'FonePay', color: '#003087' },
 ] as const;
 
 const LANGUAGE_OPTIONS = [
@@ -157,12 +157,17 @@ function Divider() {
   return <View style={[styles.subDivider, { backgroundColor: C.border }]} />;
 }
 
-type SwitchRowProps = { label: string; icon?: string; value: boolean; onChange: () => void; isLast?: boolean };
-function SwitchRow({ label, icon, value, onChange, isLast = false }: SwitchRowProps) {
+type SwitchRowProps = { label: string; faIcon?: string; faIconColor?: string; value: boolean; onChange: () => void; isLast?: boolean };
+function SwitchRow({ label, faIcon, faIconColor, value, onChange, isLast = false }: SwitchRowProps) {
   const C = useContext(ColorCtx);
+  const iColor = faIconColor ?? C.brinjal1;
   return (
     <View style={[styles.row, !isLast && { borderBottomWidth: 1, borderBottomColor: C.border }]}>
-      {icon ? <Text style={styles.rowIcon}>{icon}</Text> : null}
+      {faIcon ? (
+        <View style={[styles.navIonIconWrap, { backgroundColor: iColor + '18' }]}>
+          <FontAwesome5 name={faIcon as any} size={16} color={iColor} />
+        </View>
+      ) : null}
       <Text style={[styles.rowLabel, { color: C.text }]}>{label}</Text>
       <Switch
         value={value}
@@ -175,17 +180,21 @@ function SwitchRow({ label, icon, value, onChange, isLast = false }: SwitchRowPr
   );
 }
 
-type NavRowProps = { icon?: string; ionIcon?: keyof typeof Ionicons.glyphMap; ionIconColor?: string; label: string; value?: string; onPress: () => void; danger?: boolean; isLast?: boolean };
-function NavRow({ icon, ionIcon, ionIconColor, label, value, onPress, danger = false, isLast = false }: NavRowProps) {
+type NavRowProps = { faIcon?: string; faIconColor?: string; ionIcon?: keyof typeof Ionicons.glyphMap; ionIconColor?: string; label: string; value?: string; onPress: () => void; danger?: boolean; isLast?: boolean };
+function NavRow({ faIcon, faIconColor, ionIcon, ionIconColor, label, value, onPress, danger = false, isLast = false }: NavRowProps) {
   const C = useContext(ColorCtx);
-  const iColor = ionIconColor ?? C.brinjal1;
+  const iColor = ionIconColor ?? faIconColor ?? C.brinjal1;
   return (
     <Pressable style={[styles.row, !isLast && { borderBottomWidth: 1, borderBottomColor: C.border }]} onPress={onPress}>
       {ionIcon ? (
         <View style={[styles.navIonIconWrap, { backgroundColor: iColor + '18' }]}>
           <Ionicons name={ionIcon} size={18} color={iColor} />
         </View>
-      ) : icon ? <Text style={styles.rowIcon}>{icon}</Text> : null}
+      ) : faIcon ? (
+        <View style={[styles.navIonIconWrap, { backgroundColor: (danger ? C.error : iColor) + '18' }]}>
+          <FontAwesome5 name={faIcon as any} size={16} color={danger ? C.error : iColor} />
+        </View>
+      ) : null}
       <Text style={[styles.rowLabel, { color: danger ? C.error : C.text }]}>{label}</Text>
       <View style={styles.navRight}>
         {value ? <Text style={[styles.navValue, { color: C.textSecondary }]}>{value}</Text> : null}
@@ -703,7 +712,7 @@ export default function CreatorSettingsScreen() {
     if (helpArticles.length === 0) {
       return (
         <View style={[styles.helpEmpty, { backgroundColor: C.surface, borderColor: C.border }]}>
-          <Text style={styles.helpEmptyIcon}>❓</Text>
+          <FontAwesome5 name="question-circle" size={36} color={C.textSecondary} />
           <Text style={[styles.helpEmptyTitle, { color: C.text }]}>{t('creatorSettings.noHelpArticles')}</Text>
           <Text style={[styles.helpEmptySubtitle, { color: C.textSecondary }]}>{t('creatorSettings.noHelpArticlesSub')}</Text>
         </View>
@@ -863,7 +872,7 @@ export default function CreatorSettingsScreen() {
     if (faqArticles.length === 0) {
       return (
         <View style={[styles.helpEmpty, { backgroundColor: C.surface, borderColor: C.border }]}>
-          <Text style={styles.helpEmptyIcon}>💬</Text>
+          <FontAwesome5 name="comments" size={36} color={C.textSecondary} />
           <Text style={[styles.helpEmptyTitle, { color: C.text }]}>{t('creatorSettings.noFaqsTitle')}</Text>
           <Text style={[styles.helpEmptySubtitle, { color: C.textSecondary }]}>{t('creatorSettings.noFaqsSub')}</Text>
         </View>
@@ -1126,7 +1135,7 @@ export default function CreatorSettingsScreen() {
                             ]}>{p.label}</Text>
                             {alreadyAdded && (
                               <View style={[styles.platformGridAddedBadge, { backgroundColor: p.color + '22' }]}>
-                                <Text style={[styles.platformGridAddedText, { color: p.color }]}>✓</Text>
+                                <Ionicons name="checkmark" size={11} color={p.color} />
                               </View>
                             )}
                             {isSelected && (
@@ -1231,7 +1240,7 @@ export default function CreatorSettingsScreen() {
         {/* Empty state */}
         {socialAccounts.length === 0 && (
           <View style={[styles.socialEmptyState, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <Text style={styles.socialEmptyIcon}>📱</Text>
+            <FontAwesome5 name="share-alt" size={32} color={C.textSecondary} style={{ marginBottom: 4 }} />
             <Text style={[styles.socialEmptyTitle, { color: C.text }]}>{t('creatorSettings.noAccountsLinked')}</Text>
             <Text style={[styles.socialEmptySubtitle, { color: C.textSecondary }]}>
               {t('creatorSettings.noAccountsSub')}
@@ -1266,7 +1275,7 @@ export default function CreatorSettingsScreen() {
                       <Text style={[styles.socialEditBtnText, { color: cfg.color }]}>{t('creatorSettings.editBtn')}</Text>
                     </Pressable>
                     <Pressable style={styles.socialDisconnectBtn} onPress={() => deleteSocialAccount(acct)}>
-                      <Text style={[styles.socialDisconnectText, { color: C.error }]}>✕</Text>
+                      <Ionicons name="close" size={14} color={C.error} />
                     </Pressable>
                   </View>
                 </View>
@@ -1432,7 +1441,7 @@ export default function CreatorSettingsScreen() {
         {/* Empty state */}
         {portfolio.length === 0 && (
           <View style={[styles.socialEmptyState, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <Text style={styles.socialEmptyIcon}>🎨</Text>
+            <FontAwesome5 name="images" size={32} color={C.textSecondary} style={{ marginBottom: 4 }} />
             <Text style={[styles.socialEmptyTitle, { color: C.text }]}>{t('creatorSettings.noPastWorkTitle')}</Text>
             <Text style={[styles.socialEmptySubtitle, { color: C.textSecondary }]}>
               {t('creatorSettings.noPastWorkSub')}
@@ -1460,7 +1469,7 @@ export default function CreatorSettingsScreen() {
                       <Text style={[styles.socialEditBtnText, { color: cfg.color }]}>{t('creatorSettings.editBtn')}</Text>
                     </Pressable>
                     <Pressable style={styles.socialDisconnectBtn} onPress={() => deletePortfolio(item)}>
-                      <Text style={[styles.socialDisconnectText, { color: C.error }]}>✕</Text>
+                      <Ionicons name="close" size={14} color={C.error} />
                     </Pressable>
                   </View>
                 </View>
@@ -1527,11 +1536,11 @@ export default function CreatorSettingsScreen() {
                 style={[styles.row, idx < PAYMENT_METHODS.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}
                 onPress={() => togglePayment(m.id)}>
                 <View style={[styles.paymentIcon, { backgroundColor: m.color + '18' }]}>
-                  <Text style={styles.paymentEmoji}>{m.icon}</Text>
+                  <FontAwesome5 name={m.icon} size={16} color={m.color} />
                 </View>
                 <Text style={[styles.rowLabel, { color: C.text }]}>{m.label}</Text>
                 <View style={[styles.checkboxOuter, { borderColor: selected ? C.brinjal1 : C.border, backgroundColor: selected ? C.brinjal1 : 'transparent' }]}>
-                  {selected ? <Text style={styles.checkboxTick}>✓</Text> : null}
+                  {selected ? <Ionicons name="checkmark" size={13} color="#fff" /> : null}
                 </View>
               </Pressable>
             );
@@ -1646,7 +1655,9 @@ export default function CreatorSettingsScreen() {
           <Pressable
             style={[styles.row, { borderBottomWidth: 1, borderBottomColor: C.border }]}
             onPress={() => setShowChangePassword((v) => !v)}>
-            <Text style={styles.rowIcon}>🔑</Text>
+            <View style={[styles.navIonIconWrap, { backgroundColor: C.brinjal1 + '18' }]}>
+              <FontAwesome5 name="key" size={16} color={C.brinjal1} />
+            </View>
             <Text style={[styles.rowLabel, { color: C.text }]}>{t('creatorSettings.subChangePassword')}</Text>
             {!showChangePassword && <Text style={[styles.navArrow, { color: C.textSecondary }]}>›</Text>}
           </Pressable>
@@ -1706,7 +1717,7 @@ export default function CreatorSettingsScreen() {
             </View>
           )}
 
-          <NavRow icon="📱" label={t('creatorSettings.logoutAllDevices')} onPress={handleLogoutAll} isLast />
+          <NavRow faIcon="mobile-alt" faIconColor="#6366F1" label={t('creatorSettings.logoutAllDevices')} onPress={handleLogoutAll} isLast />
         </Card>
 
         <SectionHeader title={t('creatorSettings.verificationSection')} />
@@ -1987,8 +1998,8 @@ export default function CreatorSettingsScreen() {
             </View>
           </View>
           <NavRow ionIcon="create-outline" ionIconColor={C.brinjal1} label={t('creatorSettings.editProfileLabel')} onPress={() => router.push('/(creator)/edit-profile')} />
-          <NavRow icon="⏸️" label={t('creatorSettings.deactivateAccount')} onPress={handleDeactivateAccount} />
-          <NavRow icon="🗑️" label={t('creatorSettings.deleteAccount')} onPress={handleDeleteAccount} danger isLast />
+          <NavRow faIcon="pause-circle" faIconColor="#F59E0B" label={t('creatorSettings.deactivateAccount')} onPress={handleDeactivateAccount} />
+          <NavRow faIcon="trash-alt" label={t('creatorSettings.deleteAccount')} onPress={handleDeleteAccount} danger isLast />
         </Card>
 
         {/* Language */}
@@ -2024,7 +2035,7 @@ export default function CreatorSettingsScreen() {
                   </View>
                 ) : active ? (
                   <View style={[styles.activeLangCheck, { backgroundColor: C.brinjal1 }]}>
-                    <Text style={styles.activeLangCheckText}>✓</Text>
+                    <Ionicons name="checkmark" size={13} color="#fff" />
                   </View>
                 ) : (
                   <View style={[styles.inactiveLangCircle, { borderColor: C.border }]} />
@@ -2037,13 +2048,15 @@ export default function CreatorSettingsScreen() {
         {/* App Settings */}
         <SectionHeader title={t('creatorSettings.appSettingsSection')} />
         <Card>
-          <SwitchRow icon="🌙" label={t('creatorSettings.darkModeLabel')} value={isDark} onChange={toggleDark} />
+          <SwitchRow faIcon="moon" faIconColor="#6366F1" label={t('creatorSettings.darkModeLabel')} value={isDark} onChange={toggleDark} />
           <View style={[styles.row, { borderBottomWidth: 1, borderBottomColor: C.border }]}>
-            <Text style={styles.rowIcon}>ℹ️</Text>
+            <View style={[styles.navIonIconWrap, { backgroundColor: C.brinjal1 + '18' }]}>
+              <FontAwesome5 name="info-circle" size={16} color={C.brinjal1} />
+            </View>
             <Text style={[styles.rowLabel, { color: C.text }]}>{t('creatorSettings.appVersionLabel')}</Text>
             <Text style={[styles.versionText, { color: C.textSecondary }]}>1.0.0</Text>
           </View>
-          <NavRow icon="🌐" label={t('creatorSettings.languageSection')} value={selectedLang} onPress={() => {}} isLast />
+          <NavRow faIcon="globe" faIconColor="#10B981" label={t('creatorSettings.languageSection')} value={selectedLang} onPress={() => {}} isLast />
         </Card>
       </>
     );
@@ -2094,7 +2107,7 @@ export default function CreatorSettingsScreen() {
           <Pressable style={styles.confirmOverlay} onPress={() => { if (!accountActionLoading) setShowDeactivateModal(false); }}>
             <Pressable style={[styles.confirmCard, { backgroundColor: C.surface }]} onPress={() => {}}>
               <View style={[styles.confirmIconWrap, { backgroundColor: '#FFF7ED' }]}>
-                <Text style={styles.confirmIcon}>⏸️</Text>
+                <FontAwesome5 name="pause-circle" size={26} color="#F59E0B" />
               </View>
               <Text style={[styles.confirmTitle, { color: C.text }]}>{t('creatorSettings.deactivateTitle')}</Text>
               <Text style={[styles.confirmBody, { color: C.textSecondary }]}>{t('creatorSettings.deactivateBody')}</Text>
@@ -2121,11 +2134,11 @@ export default function CreatorSettingsScreen() {
           <Pressable style={styles.confirmOverlay} onPress={() => { if (!accountActionLoading) setShowDeleteModal(false); }}>
             <Pressable style={[styles.confirmCard, { backgroundColor: C.surface }]} onPress={() => {}}>
               <View style={[styles.dangerBanner, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}>
-                <Text style={styles.dangerBannerIcon}>⚠️</Text>
+                <FontAwesome5 name="exclamation-triangle" size={14} color="#DC2626" solid />
                 <Text style={[styles.dangerBannerText, { color: '#DC2626' }]}>{t('creatorSettings.deletePermanentWarning')}</Text>
               </View>
               <View style={[styles.confirmIconWrap, { backgroundColor: '#FEF2F2' }]}>
-                <Text style={styles.confirmIcon}>🗑️</Text>
+                <FontAwesome5 name="trash-alt" size={26} color="#DC2626" />
               </View>
               <Text style={[styles.confirmTitle, { color: '#DC2626' }]}>{t('creatorSettings.deleteTitle')}</Text>
               <Text style={[styles.confirmBody, { color: C.textSecondary }]}>
@@ -2199,7 +2212,6 @@ const styles = StyleSheet.create({
   subDivider: { height: 1, marginTop: 4 },
 
   row: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 13, gap: 12 },
-  rowIcon: { fontSize: 18, width: 24, textAlign: 'center' },
   rowLabel: { flex: 1, fontSize: 15, fontWeight: '500', fontFamily: F.medium },
   navRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   navArrow: { fontSize: 18 },
@@ -2239,7 +2251,6 @@ const styles = StyleSheet.create({
   langNative: { fontSize: 13, fontFamily: F.regular },
   langDesc: { fontSize: 12, fontFamily: F.regular },
   activeLangCheck: { width: 24, height: 24, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
-  activeLangCheckText: { color: '#fff', fontSize: 13, fontWeight: '700', fontFamily: F.bold },
   inactiveLangCircle: { width: 24, height: 24, borderRadius: 12, borderWidth: 2 },
   soonBadge: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
   badgeText: { fontSize: 11, fontWeight: '700', fontFamily: F.bold },
@@ -2257,7 +2268,6 @@ const styles = StyleSheet.create({
   socialEditBtn: { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 },
   socialEditBtnText: { fontSize: 12, fontWeight: '700', fontFamily: F.bold },
   socialDisconnectBtn: { width: 28, height: 28, borderRadius: 8, backgroundColor: '#FEE2E2', justifyContent: 'center', alignItems: 'center' },
-  socialDisconnectText: { fontSize: 12, fontWeight: '700', fontFamily: F.bold },
 
   // ── Social sheet modal ──────────────────────────────────────────────────────
   sheetBackdrop: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)' },
@@ -2286,10 +2296,8 @@ const styles = StyleSheet.create({
     alignItems: 'center', gap: 6, position: 'relative', overflow: 'hidden',
   },
   platformGridItemDisabled: { opacity: 0.5 },
-  platformGridEmoji: { fontSize: 24 },
   platformGridLabel: { fontSize: 11, fontWeight: '700', textAlign: 'center', fontFamily: F.bold },
   platformGridAddedBadge: { position: 'absolute', top: 4, right: 4, width: 16, height: 16, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
-  platformGridAddedText: { fontSize: 9, fontWeight: '700', fontFamily: F.bold },
   platformGridSelectedDot: { position: 'absolute', bottom: 6, width: 6, height: 6, borderRadius: 3 },
 
   // Inputs inside sheet
@@ -2314,7 +2322,6 @@ const styles = StyleSheet.create({
 
   // Empty state
   socialEmptyState: { marginHorizontal: 16, marginBottom: 8, borderRadius: 16, borderWidth: 1, padding: 28, alignItems: 'center', gap: 6 },
-  socialEmptyIcon: { fontSize: 36, marginBottom: 4 },
   socialEmptyTitle: { fontSize: 15, fontWeight: '700', fontFamily: F.bold },
   socialEmptySubtitle: { fontSize: 13, textAlign: 'center', lineHeight: 20, fontFamily: F.regular },
 
@@ -2365,9 +2372,7 @@ const styles = StyleSheet.create({
   earningsSkeletonValue: { width: 52, height: 26, borderRadius: 6, marginBottom: 2 },
 
   paymentIcon: { width: 38, height: 38, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
-  paymentEmoji: { fontSize: 20 },
   checkboxOuter: { width: 22, height: 22, borderRadius: 6, borderWidth: 2, justifyContent: 'center', alignItems: 'center' },
-  checkboxTick: { color: '#fff', fontSize: 12, fontWeight: '700', fontFamily: F.bold },
 
   verifiedBadge: { backgroundColor: '#DCFCE7', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
 
@@ -2378,7 +2383,6 @@ const styles = StyleSheet.create({
   helpSkeletonQ: { height: 14, borderRadius: 7, marginBottom: 8, width: '80%' },
   helpSkeletonA: { height: 11, borderRadius: 5, marginBottom: 4, width: '100%' },
   helpEmpty: { margin: 20, borderRadius: 16, borderWidth: 1, padding: 32, alignItems: 'center', gap: 8 },
-  helpEmptyIcon: { fontSize: 36 },
   helpEmptyTitle: { fontSize: 15, fontWeight: '700', textAlign: 'center', fontFamily: F.bold },
   helpEmptySubtitle: { fontSize: 13, textAlign: 'center', lineHeight: 19, fontFamily: F.regular },
   legalDate: { fontSize: 12, marginTop: 12, marginBottom: 4, fontFamily: F.regular },
@@ -2415,7 +2419,6 @@ const styles = StyleSheet.create({
     width: 56, height: 56, borderRadius: 28,
     justifyContent: 'center', alignItems: 'center', marginBottom: 16,
   },
-  confirmIcon: { fontSize: 26 },
   confirmTitle: { fontSize: 20, fontWeight: '700', marginBottom: 10, fontFamily: F.bold },
   confirmBody: { fontSize: 14, lineHeight: 22, marginBottom: 24, fontFamily: F.regular },
   confirmActions: { flexDirection: 'row', gap: 10 },
@@ -2433,6 +2436,5 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 8,
     borderWidth: 1, borderRadius: 10, padding: 10, marginBottom: 20,
   },
-  dangerBannerIcon: { fontSize: 16 },
   dangerBannerText: { fontSize: 12, fontWeight: '700', flex: 1, lineHeight: 18, fontFamily: F.bold },
 });

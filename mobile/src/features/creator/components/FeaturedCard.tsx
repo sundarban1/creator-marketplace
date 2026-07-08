@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAppColors } from '@/context/ThemeContext';
@@ -56,8 +56,8 @@ export function FeaturedCard({ campaign }: { campaign: Campaign }) {
 
         {/* ── Image ── */}
         <View style={[styles.featImg, { backgroundColor: catMeta.bg ?? cardBg(campaign.category) }]}>
-          {/* Category emoji always shown as background */}
-          <Text style={styles.featImgIcon}>{catMeta.emoji}</Text>
+          {/* Category icon always shown as background */}
+          <FontAwesome5 name={catMeta.icon} size={48} color="#000" style={styles.featImgIcon} />
 
           {/* Overlay template image when available */}
           {cardImage && (
@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
   },
   featCard:    { width: CARD_W, borderRadius: 20, overflow: 'hidden' },
   featImg:     { width: CARD_W, height: CARD_IMG_H, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
-  featImgIcon: { fontSize: 52, opacity: 0.75 },
+  featImgIcon: { opacity: 0.35 },
   imgOverlay:  { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.18)' },
 
   badge:     { position: 'absolute', top: 10, left: 10, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },

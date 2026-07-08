@@ -1,6 +1,6 @@
 import { router, useFocusEffect } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -629,7 +629,7 @@ export default function HomeScreen() {
                   setActiveCategories(next);
                   void fetchCampaigns({ category: next });
                 }}>
-                <Text style={styles.catEmoji}>{cat.emoji}</Text>
+                <FontAwesome5 name={cat.icon} size={13} color={isActive ? '#fff' : C.brinjal1} />
                 <Text
                   style={[styles.catLabel, { color: isActive ? '#fff' : C.text }]}
                   numberOfLines={1}>
@@ -890,7 +890,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 2,
   },
-  catEmoji: { fontSize: 16 },
   catLabel: { fontSize: 12, fontFamily: F.semibold, lineHeight: 16 },
 
   // ── Platforms (pills) ──
