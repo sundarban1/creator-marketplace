@@ -10,7 +10,7 @@ import type { LatLng } from '@/utilities/geolocation';
 const DEFAULT_DELTA = 0.15; // ~15km-ish span at the equator, close enough for a starting zoom
 const FALLBACK_COORDS: LatLng = { lat: 27.7172, lng: 85.3240 }; // Kathmandu — used only if no location is available at all
 
-export type NearbySource = 'current' | 'home';
+export type NearbySource = 'current' | 'home' | 'custom';
 
 type Props = {
   visible: boolean;
@@ -20,6 +20,7 @@ type Props = {
   homeLabel: string | null;
   currentCoords: LatLng | null;
   homeCoords: LatLng | null;
+  customCoords: LatLng | null;
   onApply: (source: NearbySource, radiusKm: number, coords: LatLng) => void;
 };
 
@@ -28,7 +29,7 @@ type Props = {
  * (drag the map to move the pin, matching how most map pickers behave) and a
  * radius slider below it — replaces the old radius-pill list entirely.
  */
-export function NearbyLocationSheet({ visible, onClose, source, radiusKm, homeLabel, currentCoords, homeCoords, onApply }: Props) {
+export function NearbyLocationSheet({ visible, onClose, source, radiusKm, homeLabel, currentCoords, homeCoords, customCoords, onApply }: Props) {
   const C = useAppColors();
   const mapRef = useRef<MapView>(null);
 
@@ -36,15 +37,24 @@ export function NearbyLocationSheet({ visible, onClose, source, radiusKm, homeLa
   const [draftRadius, setDraftRadius] = useState(radiusKm);
   const [pinCoords, setPinCoords] = useState<LatLng>(currentCoords ?? homeCoords ?? FALLBACK_COORDS);
 
+  // react-native-maps fires onRegionChangeComplete for BOTH programmatic
+  // animateToRegion calls (tapping Current/Home) AND genuine user drags —
+  // this flag lets us tell them apart so only a real drag switches to "custom".
+  const isProgrammaticMove = useRef(false);
+
   useEffect(() => {
     if (!visible) return;
     setDraftSource(source);
     setDraftRadius(radiusKm);
-    const start = source === 'current' ? (currentCoords ?? homeCoords) : (homeCoords ?? currentCoords);
+    const start =
+      source === 'current' ? (currentCoords ?? homeCoords) :
+      source === 'home'    ? (homeCoords ?? currentCoords) :
+      (customCoords ?? currentCoords ?? homeCoords);
     setPinCoords(start ?? FALLBACK_COORDS);
-  }, [visible, source, radiusKm, currentCoords, homeCoords]);
+  }, [visible, source, radiusKm, currentCoords, homeCoords, customCoords]);
 
   function moveTo(coords: LatLng) {
+    isProgrammaticMove.current = true;
     setPinCoords(coords);
     mapRef.current?.animateToRegion({
       latitude: coords.lat,
@@ -56,6 +66,23 @@ export function NearbyLocationSheet({ visible, onClose, source, radiusKm, homeLa
 
   function handleRegionChangeComplete(region: Region) {
     setPinCoords({ lat: region.latitude, lng: region.longitude });
+    if (isProgrammaticMove.current) {
+      // This change came from moveTo() finishing its animation, not a user drag — consume the flag.
+      isProgrammaticMove.current = false;
+    } else {
+      // A genuine drag — the pin no longer matches Current or Home, so neither stays selected.
+      setDraftSource('custom');
+    }
+  }
+
+  function handleSelectCurrent() {
+    setDraftSource('current');
+    if (currentCoords) moveTo(currentCoords);
+  }
+
+  function handleSelectHome() {
+    setDraftSource('home');
+    if (homeCoords) moveTo(homeCoords);
   }
 
   function handleApply() {
@@ -80,7 +107,7 @@ export function NearbyLocationSheet({ visible, onClose, source, radiusKm, homeLa
           <View style={styles.sourceToggleRow}>
             <Pressable
               style={[styles.sourceToggle, { borderColor: draftSource === 'current' ? C.brinjal1 : C.border, backgroundColor: draftSource === 'current' ? C.primaryLight : C.background }]}
-              onPress={() => { setDraftSource('current'); moveTo(currentCoords ?? pinCoords); }}>
+              onPress={handleSelectCurrent}>
               <Ionicons name="navigate" size={13} color={draftSource === 'current' ? C.brinjal1 : C.textSecondary} />
               <Text style={[styles.sourceToggleText, { color: draftSource === 'current' ? C.brinjal1 : C.text }]}>Current Location</Text>
             </Pressable>
@@ -91,7 +118,7 @@ export function NearbyLocationSheet({ visible, onClose, source, radiusKm, homeLa
                 !homeCoords && { opacity: 0.5 },
               ]}
               disabled={!homeCoords}
-              onPress={() => { setDraftSource('home'); moveTo(homeCoords ?? pinCoords); }}>
+              onPress={handleSelectHome}>
               <Ionicons name="home" size={13} color={draftSource === 'home' ? C.brinjal1 : C.textSecondary} />
               <Text style={[styles.sourceToggleText, { color: draftSource === 'home' ? C.brinjal1 : C.text }]} numberOfLines={1}>
                 {homeLabel ? `Home · ${homeLabel}` : 'Home'}
@@ -100,7 +127,9 @@ export function NearbyLocationSheet({ visible, onClose, source, radiusKm, homeLa
           </View>
 
           <Text style={[styles.sectionLabel, { color: C.textSecondary }]}>CHANGE LOCATION</Text>
-          <Text style={[styles.sectionHint, { color: C.textSecondary }]}>Drag the map to fine-tune the search point.</Text>
+          <Text style={[styles.sectionHint, { color: C.textSecondary }]}>
+            {draftSource === 'custom' ? 'Using a custom point on the map.' : 'Drag the map to fine-tune the search point.'}
+          </Text>
 
           <View style={styles.mapWrap}>
             <MapView

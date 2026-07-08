@@ -2,7 +2,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, FlatList, Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
 import { DrawerContext } from '@/context/DrawerContext';
@@ -96,6 +96,7 @@ export default function HomeScreen() {
   const [nearbyHomeLabel, setNearbyHomeLabel] = useState<string | null>(null);
   const [nearbyHomeCoords, setNearbyHomeCoords] = useState<LatLng | null>(null);
   const [nearbyCurrentCoords, setNearbyCurrentCoords] = useState<LatLng | null>(null);
+  const [nearbyCustomCoords, setNearbyCustomCoords] = useState<LatLng | null>(null);
   const [nearbyLocationDenied, setNearbyLocationDenied] = useState(false);
   const [nearbySheetOpen, setNearbySheetOpen] = useState(false);
 
@@ -190,17 +191,24 @@ export default function HomeScreen() {
     setNearbyRadiusKm(radiusKm);
     creatorService.updateProfile({ nearbyRadiusKm: radiusKm, nearbyUseHomeLocation: source === 'home' }).catch(() => {});
 
-    // The user may have dragged the map to fine-tune the point — that becomes the
-    // new "current" position for this session (home stays whatever's saved on the profile).
-    if (source === 'current') setNearbyCurrentCoords(coords);
+    // Dragging the map to a custom point is remembered for this session so
+    // reopening the sheet starts from where the creator left off — it never
+    // overwrites the real GPS "current" coords, which always stay fresh.
+    if (source === 'custom') setNearbyCustomCoords(coords);
 
     void fetchNearby(coords, radiusKm);
+  }
+
+  function resolveNearbyCoords(): LatLng | null {
+    if (nearbySource === 'home')   return nearbyHomeCoords   ?? nearbyCurrentCoords;
+    if (nearbySource === 'custom') return nearbyCustomCoords ?? nearbyCurrentCoords;
+    return nearbyCurrentCoords;
   }
 
   function handleExpandNearbyRadius() {
     const next = RADIUS_PRESETS.find((r) => r > nearbyRadiusKm) ?? 100;
     setNearbyRadiusKm(next);
-    const coords = nearbySource === 'current' ? nearbyCurrentCoords : (nearbyHomeCoords ?? nearbyCurrentCoords);
+    const coords = resolveNearbyCoords();
     if (coords) void fetchNearby(coords, next);
   }
 
@@ -384,23 +392,41 @@ export default function HomeScreen() {
     }
   }
 
-  function handleListScroll(e: { nativeEvent: { contentOffset: { y: number }; contentSize: { height: number }; layoutMeasurement: { height: number } } }) {
-    const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
-    if (contentOffset.y + layoutMeasurement.height >= contentSize.height - 200) {
-      setListVisibleCount((n) => Math.min(n + PAGE_SIZE, filteredList.length));
-    }
-  }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
-      <ScrollView
+      <FlatList
         style={styles.scroll}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
-        onScroll={handleListScroll}
-        scrollEventThrottle={16}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brinjal1} />}>
-
+        onEndReached={() => setListVisibleCount((n) => Math.min(n + PAGE_SIZE, filteredList.length))}
+        onEndReachedThreshold={0.4}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brinjal1} />}
+        data={loading ? [] : visibleList}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => <CampaignListItem campaign={item} />}
+        ListEmptyComponent={
+          !loading && filteredList.length === 0 ? (
+            <View style={styles.emptyWrap}>
+              <Ionicons name="search" size={40} color={C.textSecondary} />
+              <Text style={[styles.emptyTitle, { color: C.text }]}>{t('creator.home.noEventsFound')}</Text>
+              <Text style={[styles.emptyHint, { color: C.textSecondary }]}>
+                {campaigns.length === 0
+                  ? t('creator.home.noActiveEvents')
+                  : t('creator.home.tryAdjustFilters')}
+              </Text>
+            </View>
+          ) : null
+        }
+        ListFooterComponent={
+          !loading && listVisibleCount < filteredList.length ? (
+            <View style={styles.listLoadingMore}>
+              <ActivityIndicator size="small" color={C.brinjal1} />
+            </View>
+          ) : null
+        }
+        ListHeaderComponent={
+          <>
         {/* ── Gradient header ── */}
         <LinearGradient colors={['#312e81', '#4f46e5', '#8b5cf6']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.gradientHeader}>
 
@@ -704,9 +730,16 @@ export default function HomeScreen() {
                 <Pressable
                   style={[styles.nearbyChip, { backgroundColor: C.primaryLight, borderColor: C.border }]}
                   onPress={() => setNearbySheetOpen(true)}>
-                  <Ionicons name={nearbySource === 'current' ? 'navigate' : 'home'} size={11} color={C.brinjal1} />
+                  <Ionicons
+                    name={nearbySource === 'current' ? 'navigate' : nearbySource === 'home' ? 'home' : 'pin'}
+                    size={11} color={C.brinjal1}
+                  />
                   <Text style={[styles.nearbyChipText, { color: C.brinjal1 }]} numberOfLines={1}>
-                    {nearbySource === 'current' ? `Current Location · ${nearbyRadiusKm} km` : `Home${nearbyHomeLabel ? ` · ${nearbyHomeLabel}` : ''} · ${nearbyRadiusKm} km`}
+                    {nearbySource === 'current'
+                      ? `Current Location · ${nearbyRadiusKm} km`
+                      : nearbySource === 'home'
+                        ? `Home${nearbyHomeLabel ? ` · ${nearbyHomeLabel}` : ''} · ${nearbyRadiusKm} km`
+                        : `Custom Location · ${nearbyRadiusKm} km`}
                   </Text>
                   <Ionicons name="chevron-down" size={11} color={C.brinjal1} />
                 </Pressable>
@@ -762,33 +795,11 @@ export default function HomeScreen() {
                 {filteredList.length > 0 ? `  ·  ${filteredList.length}` : ''}
               </Text>
             </View>
-
-            {/* ── Campaign list ── */}
-            <View style={styles.listWrap}>
-              {filteredList.length === 0 ? (
-                <View style={styles.emptyWrap}>
-                  <Ionicons name="search" size={40} color={C.textSecondary} />
-                  <Text style={[styles.emptyTitle, { color: C.text }]}>{t('creator.home.noEventsFound')}</Text>
-                  <Text style={[styles.emptyHint, { color: C.textSecondary }]}>
-                    {campaigns.length === 0
-                      ? t('creator.home.noActiveEvents')
-                      : t('creator.home.tryAdjustFilters')}
-                  </Text>
-                </View>
-              ) : (
-                <>
-                  {visibleList.map((c) => <CampaignListItem key={c.id} campaign={c} />)}
-                  {listVisibleCount < filteredList.length && (
-                    <View style={styles.listLoadingMore}>
-                      <ActivityIndicator size="small" color={C.brinjal1} />
-                    </View>
-                  )}
-                </>
-              )}
-            </View>
           </>
         )}
-      </ScrollView>
+          </>
+        }
+      />
 
       <FilterModal
         visible={filterOpen}
@@ -817,6 +828,7 @@ export default function HomeScreen() {
         homeLabel={nearbyHomeLabel}
         currentCoords={nearbyCurrentCoords}
         homeCoords={nearbyHomeCoords}
+        customCoords={nearbyCustomCoords}
         onApply={handleNearbyApply}
       />
     </SafeAreaView>
