@@ -74,8 +74,8 @@ export const updateCampaignSchema = z.object({
 
 export const campaignListQuerySchema = z.object({
   search:       z.string().optional(),
-  category:     z.string().optional(),
-  platform:     z.string().optional(),
+  category:     z.string().optional().transform((v) => (v ? v.split(',').map((s) => s.trim()).filter(Boolean) : undefined)),
+  platform:     z.string().optional().transform((v) => (v ? v.split(',').map((s) => s.trim()).filter(Boolean) : undefined)),
   minBudget:    z.string().optional().transform((v) => (v ? parseFloat(v) : undefined)),
   maxBudget:    z.string().optional().transform((v) => (v ? parseFloat(v) : undefined)),
   status:       z.enum(['DRAFT', 'ACTIVE', 'PAUSED', 'CLOSED', 'CANCELLED']).optional(),

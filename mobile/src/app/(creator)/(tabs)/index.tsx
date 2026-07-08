@@ -56,14 +56,14 @@ export default function HomeScreen() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [apiCategories, setApiCategories] = useState<string[]>([]);
   const [apiPlatforms, setApiPlatforms] = useState<string[]>([]);
-  const [activePlatform, setActivePlatform] = useState('All');
+  const [activePlatforms, setActivePlatforms] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [fetchError, setFetchError] = useState('');
 
   const [search, setSearch] = useState('');
   const [activeSearch, setActiveSearch] = useState('');
-  const [activeCategory, setActiveCategory] = useState('All');
+  const [activeCategories, setActiveCategories] = useState<string[]>([]);
   const [activeFilterTab, setActiveFilterTab] = useState('all');
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [missingFields, setMissingFields] = useState<string[]>([]);
@@ -104,8 +104,8 @@ export default function HomeScreen() {
   async function fetchCampaigns(
     overrides: {
       search?: string;
-      category?: string;
-      platform?: string;
+      category?: string[];
+      platform?: string[];
       priceMin?: number;
       priceMax?: number;
       dateFrom?: Date | null;
@@ -119,8 +119,8 @@ export default function HomeScreen() {
     setFetchError('');
 
     const q    = overrides.search    !== undefined ? overrides.search    : activeSearch;
-    const cat   = overrides.category  !== undefined ? overrides.category  : activeCategory;
-    const plat  = overrides.platform  !== undefined ? overrides.platform  : activePlatform;
+    const cat   = overrides.category  !== undefined ? overrides.category  : activeCategories;
+    const plat  = overrides.platform  !== undefined ? overrides.platform  : activePlatforms;
     const pMin  = overrides.priceMin  !== undefined ? overrides.priceMin  : priceMin;
     const pMax  = overrides.priceMax  !== undefined ? overrides.priceMax  : priceMax;
     const df    = overrides.dateFrom  !== undefined ? overrides.dateFrom  : dateFrom;
@@ -129,9 +129,9 @@ export default function HomeScreen() {
 
     try {
       const { campaigns: data } = await campaignService.list({
-        search:       q    || undefined,
-        category:     cat  !== 'All' ? cat  : undefined,
-        platform:     plat !== 'All' ? plat : undefined,
+        search:       q || undefined,
+        category:     cat,
+        platform:     plat,
         minBudget:    pMin > 0 ? pMin : undefined,
         maxBudget:    pMax < SLIDER_MAX ? pMax : undefined,
         dateFrom:     df ?? undefined,
@@ -289,7 +289,7 @@ export default function HomeScreen() {
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     void fetchCampaigns({ showLoader: false });
-  }, [activeCategory, priceMin, priceMax, dateFrom, dateTo]);
+  }, [activeCategories, priceMin, priceMax, dateFrom, dateTo]);
 
   const isFilterActive = eventType !== 'ALL' || priceMin > 0 || priceMax < SLIDER_MAX || locationFilter.length > 0 || !!dateFrom;
 
@@ -348,19 +348,16 @@ export default function HomeScreen() {
     setLocationFilter([]);
     setDateFrom(null);
     setDateTo(null);
-    setActiveCategory('All');
-    setActivePlatform('All');
+    setActiveCategories([]);
+    setActivePlatforms([]);
     setActiveFilterTab('all');
-    void fetchCampaigns({ category: 'All', platform: 'All', priceMin: 0, priceMax: SLIDER_MAX, dateFrom: null, dateTo: null, eventType: 'ALL' });
+    void fetchCampaigns({ category: [], platform: [], priceMin: 0, priceMax: SLIDER_MAX, dateFrom: null, dateTo: null, eventType: 'ALL' });
   }
 
-  const visibleCategories = [
-    { label: 'All', ...(CATEGORY_META['All'] ?? DEFAULT_META) },
-    ...apiCategories.map((label) => ({
-      label,
-      ...(CATEGORY_META[label] ?? DEFAULT_META),
-    })),
-  ];
+  const visibleCategories = apiCategories.map((label) => ({
+    label,
+    ...(CATEGORY_META[label] ?? DEFAULT_META),
+  }));
 
   const featured = campaigns.filter((c) => c.isFeatured);
 
@@ -614,36 +611,27 @@ export default function HomeScreen() {
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoriesRow}>
           {visibleCategories.map((cat) => {
-            const isAll    = cat.label === 'All';
-            const isActive = activeCategory === cat.label;
+            const isActive = activeCategories.includes(cat.label);
             return (
               <Pressable
                 key={cat.label}
                 style={[
                   styles.catPill,
                   {
-                    backgroundColor: isActive ? C.brinjal1 : isAll ? 'transparent' : C.surface,
+                    backgroundColor: isActive ? C.brinjal1 : C.surface,
                     borderColor: isActive ? C.brinjal1 : C.border,
                   },
                 ]}
                 onPress={() => {
-                  setActiveCategory(cat.label);
-                  void fetchCampaigns({ category: cat.label });
+                  const next = activeCategories.includes(cat.label)
+                    ? activeCategories.filter((c) => c !== cat.label)
+                    : [...activeCategories, cat.label];
+                  setActiveCategories(next);
+                  void fetchCampaigns({ category: next });
                 }}>
-                {/* Gradient clipping lives on its own layer — Android's elevation shadow
-                    doesn't composite correctly with overflow:hidden on the same view. */}
-                {isAll && !isActive && (
-                  <View pointerEvents="none" style={styles.catPillGradientClip}>
-                    <LinearGradient
-                      colors={['#7C3AED', '#EC4899', '#F97316']}
-                      start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                      style={StyleSheet.absoluteFill}
-                    />
-                  </View>
-                )}
                 <Text style={styles.catEmoji}>{cat.emoji}</Text>
                 <Text
-                  style={[styles.catLabel, { color: isActive || isAll ? '#fff' : C.text }]}
+                  style={[styles.catLabel, { color: isActive ? '#fff' : C.text }]}
                   numberOfLines={1}>
                   {displayCategory(cat.label)}
                 </Text>
@@ -659,29 +647,21 @@ export default function HomeScreen() {
               <Text style={[styles.sectionTitle, { color: C.text }]}>{t('creator.home.platforms')}</Text>
             </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.platformsRow}>
-              <Pressable
-                style={styles.platCardShadow}
-                onPress={() => { setActivePlatform('All'); void fetchCampaigns({ platform: 'All' }); }}>
-                <View style={[styles.platCard, { backgroundColor: 'transparent' }]}>
-                  <LinearGradient
-                    colors={['#E1306C', '#1877F2', '#FF0000']}
-                    start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                    style={[StyleSheet.absoluteFill, { opacity: activePlatform === 'All' ? 1 : 0.18 }]}
-                  />
-                  <Ionicons name="apps" size={18} color={activePlatform === 'All' ? '#fff' : C.textSecondary} />
-                  <Text style={[styles.platLabel, { color: activePlatform === 'All' ? '#fff' : C.text }]}>All</Text>
-                </View>
-              </Pressable>
-
               {apiPlatforms.map((p) => {
                 const meta = getPlatformMeta(p);
-                const isActive = activePlatform === p;
+                const isActive = activePlatforms.includes(p);
                 const fg = meta.onColor ?? '#fff';
                 return (
                   <Pressable
                     key={p}
                     style={styles.platCardShadow}
-                    onPress={() => { setActivePlatform(p); void fetchCampaigns({ platform: p }); }}>
+                    onPress={() => {
+                      const next = activePlatforms.includes(p)
+                        ? activePlatforms.filter((x) => x !== p)
+                        : [...activePlatforms, p];
+                      setActivePlatforms(next);
+                      void fetchCampaigns({ platform: next });
+                    }}>
                     {/* Tint + clipping live on their own layer — Android's elevation shadow
                         doesn't composite correctly with overflow:hidden + a translucent
                         background on the same view. */}
@@ -910,7 +890,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 2,
   },
-  catPillGradientClip: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 20, overflow: 'hidden' },
   catEmoji: { fontSize: 16 },
   catLabel: { fontSize: 12, fontFamily: F.semibold, lineHeight: 16 },
 

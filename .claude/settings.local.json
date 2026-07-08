@@ -267,7 +267,13 @@
       "Bash(python3 -)",
       "Bash(awk '/^  createEvent: {/,/^  },?$/' /Users/sundarban/Documents/projects/marketplace/mobile/src/i18n/en.ts)",
       "Bash(awk '/^  createEvent: {/,0' /Users/sundarban/Documents/projects/marketplace/mobile/src/i18n/en.ts)",
-      "Bash(grep -n \"^  },$\")"
+      "Bash(grep -n \"^  },$\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:5000/health)",
+      "Bash(curl -s -X POST http://localhost:3000/api/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"admin@creatormarket.com.np\",\"password\":\"Admin@123456\"}')",
+      "Bash(curl -s \"http://localhost:3000/api/campaigns?category=Food,Travel&limit=5\")",
+      "Bash(curl -s \"http://localhost:3000/api/campaigns?platform=TikTok,YouTube&limit=5\")",
+      "Bash(curl -sI \"https://res.cloudinary.com/drpuqrfyn/image/upload/v1783501260/campaigns/features/feature_ee5157c9-8e19-4e01-8a08-682648866875_1783501251885.jpg\")",
+      "Bash(curl -sI \"https://res.cloudinary.com/drpuqrfyn/image/upload/v1783501286/businesses/logos/business_ee5157c9-8e19-4e01-8a08-682648866875.jpg\")"
     ],
     "additionalDirectories": [
       "/private/tmp",

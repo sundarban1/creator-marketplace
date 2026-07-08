@@ -5,6 +5,7 @@ import { StatusBadge }   from '../components/StatusBadge';
 import { Avatar }        from '../components/Avatar';
 import { PageHeader }    from '../components/PageHeader';
 import { ConfirmModal }  from '../components/ConfirmModal';
+import { DetailModal }   from '../components/DetailModal';
 import { api, type ApiCreator } from '../lib/api';
 import { useApi }        from '../lib/useApi';
 
@@ -20,6 +21,7 @@ export function Creators() {
   const [search,          setSearch]          = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [action,  setAction]  = useState<Action | null>(null);
+  const [viewing, setViewing] = useState<ApiCreator | null>(null);
   const [loading, setLoading] = useState(false);
   const [toast,   setToast]   = useState<{ msg: string; ok: boolean } | null>(null);
   const [verifyingId, setVerifyingId] = useState<string | null>(null);
@@ -148,6 +150,11 @@ export function Creators() {
         return (
           <div className="flex items-center gap-2">
             <button
+              className="text-xs text-gray-600 hover:text-gray-900 font-medium"
+              onClick={() => setViewing(row)}>
+              View
+            </button>
+            <button
               className="text-xs text-indigo-600 hover:text-indigo-800 font-medium disabled:opacity-50"
               disabled={verifyingId === row.id}
               onClick={() => handleToggleVerified(row)}>
@@ -233,6 +240,71 @@ export function Creators() {
           loading={loading}
           onConfirm={handleConfirm}
           onCancel={() => setAction(null)}
+        />
+      )}
+
+      {viewing && (
+        <DetailModal
+          open={!!viewing}
+          onClose={() => setViewing(null)}
+          avatar={
+            viewing.avatarUrl
+              ? <img src={viewing.avatarUrl} alt={viewing.fullName ?? ''} className="w-12 h-12 rounded-full object-cover" />
+              : <Avatar initials={(viewing.fullName ?? '?').slice(0, 2).toUpperCase()} size="md" />
+          }
+          title={viewing.fullName ?? '(No name)'}
+          subtitle={viewing.user.email}
+          badges={<StatusBadge status={creatorStatus(viewing)} />}
+          sections={[
+            {
+              heading: 'Profile',
+              fields: [
+                { label: 'Location', value: viewing.location ?? '—' },
+                { label: 'Applications', value: viewing._count.applications },
+                { label: 'Bio', value: viewing.bio ?? '—' },
+                {
+                  label: 'Categories',
+                  value: viewing.categories.length
+                    ? <div className="flex flex-wrap gap-1">{viewing.categories.map((c) => <span key={c} className="text-xs bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full">{c}</span>)}</div>
+                    : '—',
+                },
+              ],
+            },
+            {
+              heading: 'Account',
+              fields: [
+                { label: 'Email verified', value: viewing.user.isEmailVerified ? 'Yes' : 'No' },
+                { label: 'Account active', value: viewing.user.isActive === false ? 'Suspended' : 'Active' },
+                { label: 'Joined', value: new Date(viewing.user.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) },
+              ],
+            },
+            ...(Object.keys(viewing.socialLinks ?? {}).length
+              ? [{
+                  heading: 'Social links',
+                  fields: Object.entries(viewing.socialLinks).map(([platform, url]) => ({
+                    label: platform,
+                    value: <a href={url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">{url}</a>,
+                  })),
+                }]
+              : []),
+            ...(viewing.citizenshipDocUrl
+              ? [{
+                  heading: 'Documents',
+                  fields: [
+                    { label: 'Citizenship', value: <a href={viewing.citizenshipDocUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">View document</a> },
+                    { label: 'Status', value: viewing.citizenshipStatus ?? 'NONE' },
+                  ],
+                }]
+              : []),
+          ]}
+          footer={
+            <button
+              onClick={() => setViewing(null)}
+              className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+            >
+              Close
+            </button>
+          }
         />
       )}
 

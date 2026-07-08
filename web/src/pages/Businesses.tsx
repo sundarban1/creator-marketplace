@@ -3,6 +3,7 @@ import { StatusBadge }   from '../components/StatusBadge';
 import { Avatar }        from '../components/Avatar';
 import { PageHeader }    from '../components/PageHeader';
 import { ConfirmModal }  from '../components/ConfirmModal';
+import { DetailModal }   from '../components/DetailModal';
 import { api, type ApiBusiness } from '../lib/api';
 import { useApi }        from '../lib/useApi';
 import { useState }      from 'react';
@@ -17,6 +18,7 @@ function businessStatus(b: ApiBusiness): string {
 
 export function Businesses() {
   const [action,  setAction]  = useState<Action | null>(null);
+  const [viewing, setViewing] = useState<ApiBusiness | null>(null);
   const [loading, setLoading] = useState(false);
   const [toast,   setToast]   = useState<{ msg: string; ok: boolean } | null>(null);
   const [verifyingId, setVerifyingId] = useState<string | null>(null);
@@ -143,6 +145,11 @@ export function Businesses() {
         return (
           <div className="flex flex-wrap items-center gap-2">
             <button
+              className="text-xs text-gray-600 hover:text-gray-900 font-medium"
+              onClick={() => setViewing(row)}>
+              View
+            </button>
+            <button
               className="text-xs text-indigo-600 hover:text-indigo-800 font-medium disabled:opacity-50"
               disabled={verifyingId === row.id}
               onClick={() => handleToggleVerified(row)}>
@@ -223,6 +230,64 @@ export function Businesses() {
           loading={loading}
           onConfirm={handleConfirm}
           onCancel={() => setAction(null)}
+        />
+      )}
+
+      {viewing && (
+        <DetailModal
+          open={!!viewing}
+          onClose={() => setViewing(null)}
+          avatar={
+            viewing.logoUrl
+              ? <img src={viewing.logoUrl} alt={viewing.businessName} className="w-12 h-12 rounded-lg object-cover" />
+              : <Avatar initials={viewing.businessName.slice(0, 2).toUpperCase()} size="md" />
+          }
+          title={viewing.businessName}
+          subtitle={viewing.user.email}
+          badges={<StatusBadge status={businessStatus(viewing)} />}
+          sections={[
+            {
+              heading: 'Profile',
+              fields: [
+                { label: 'Website', value: viewing.website ? <a href={viewing.website} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">{viewing.website}</a> : '—' },
+                { label: 'Events posted', value: viewing._count.campaigns },
+                { label: 'Description', value: viewing.description ?? '—' },
+                {
+                  label: 'Industry',
+                  value: viewing.categories.length
+                    ? <div className="flex flex-wrap gap-1">{viewing.categories.map((c) => <span key={c} className="text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full">{c}</span>)}</div>
+                    : '—',
+                },
+              ],
+            },
+            {
+              heading: 'Account',
+              fields: [
+                { label: 'Email verified', value: viewing.user.isEmailVerified ? 'Yes' : 'No' },
+                { label: 'Account active', value: viewing.user.isActive === false ? 'Suspended' : 'Active' },
+                { label: 'Joined', value: new Date(viewing.user.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) },
+              ],
+            },
+            ...(viewing.panDocUrl || viewing.companyRegDocUrl
+              ? [{
+                  heading: 'Documents',
+                  fields: [
+                    ...(viewing.panDocUrl ? [{ label: 'PAN', value: <a href={viewing.panDocUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">View document</a> }] : []),
+                    ...(viewing.panDocStatus ? [{ label: 'PAN status', value: viewing.panDocStatus }] : []),
+                    ...(viewing.companyRegDocUrl ? [{ label: 'Company reg.', value: <a href={viewing.companyRegDocUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">View document</a> }] : []),
+                    ...(viewing.companyRegDocStatus ? [{ label: 'Reg. status', value: viewing.companyRegDocStatus }] : []),
+                  ],
+                }]
+              : []),
+          ]}
+          footer={
+            <button
+              onClick={() => setViewing(null)}
+              className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+            >
+              Close
+            </button>
+          }
         />
       )}
 

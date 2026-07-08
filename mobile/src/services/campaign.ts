@@ -133,8 +133,8 @@ export const campaignService = {
 
   async list(params?: {
     search?:       string;
-    category?:     string;
-    platform?:     string;
+    category?:     string[];
+    platform?:     string[];
     minBudget?:    number;
     maxBudget?:    number;
     isFeatured?:   boolean;
@@ -146,8 +146,8 @@ export const campaignService = {
   }): Promise<{ campaigns: Campaign[]; total: number; page: number; totalPages: number }> {
     const res = await request<ApiCampaign[]>('GET', '/api/campaigns', undefined, {
       search:       params?.search   || undefined,
-      category:     params?.category,
-      platform:     params?.platform,
+      category:     params?.category?.length ? params.category.join(',') : undefined,
+      platform:     params?.platform?.length ? params.platform.join(',') : undefined,
       minBudget:    params?.minBudget,
       maxBudget:    params?.maxBudget,
       isFeatured:   params?.isFeatured !== undefined ? String(params.isFeatured) : undefined,

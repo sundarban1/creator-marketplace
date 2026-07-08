@@ -8,7 +8,6 @@ export const ne: Dict = {
     referrals: 'रेफरल',
     stories: 'कथाहरू',
     faq: 'प्रश्नहरू',
-    getStarted: 'सुरु गर्नुहोस्',
   },
   hero: {
     badge: 'नेपालको क्रिएटर × ब्रान्ड मार्केटप्लेस',

@@ -3,7 +3,7 @@ import { motion, AnimatePresence, useMotionValue, useSpring, useTransform, type 
 import {
   Camera, Briefcase, MessageSquare, BarChart2, Shield, Sparkles,
   Star, ChevronDown, Mail, Globe, AtSign, Rocket, Compass, Handshake,
-  ArrowRight, ArrowUpRight, CheckCircle, Users, TrendingUp,
+  ArrowRight, CheckCircle, Users, TrendingUp,
   DollarSign, Search, Bell, Menu, X, Share2, UserPlus, Gift,
 } from 'lucide-react';
 import { LandingLanguageProvider, useLandingLanguage, type Lang } from '../context/LandingLanguageContext';
@@ -159,15 +159,9 @@ function Nav() {
             ))}
           </motion.nav>
 
-          {/* Language switcher + CTA + burger — top-right cluster */}
+          {/* Language switcher + burger — top-right cluster */}
           <div className="flex items-center gap-2">
             <LanguageSwitcher scrolled={scrolled} />
-            <button
-              onClick={() => go('download')}
-              className={`hidden sm:inline-flex items-center gap-1.5 rounded-full px-5 py-2.5 text-sm font-bold shadow-sm transition-colors ${scrolled ? 'bg-violet-700 text-white hover:bg-violet-800' : 'bg-white text-violet-700 hover:bg-violet-50'}`}
-            >
-              {t.nav.getStarted} <ArrowUpRight size={15} />
-            </button>
             <button
               onClick={() => setOpen(v => !v)}
               aria-label="Toggle menu"
@@ -201,13 +195,6 @@ function Nav() {
                   <span className="text-white/30 text-lg align-super mr-3">0{i + 1}</span>{l.label}
                 </motion.button>
               ))}
-              <motion.button
-                variants={fadeUp}
-                onClick={() => go('download')}
-                className="mt-6 w-fit flex items-center gap-2 bg-white text-violet-700 font-bold px-6 py-3.5 rounded-2xl"
-              >
-                {t.nav.getStarted} <ArrowRight size={18} />
-              </motion.button>
             </motion.div>
             <motion.div variants={fadeUp} initial="hidden" animate="show" className="absolute bottom-10 left-8 flex gap-4">
               {[AtSign, Globe, Mail].map((Icon, i) => (

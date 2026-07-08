@@ -62,8 +62,8 @@ export class CampaignRepository {
 
   async findMany(filters: {
     search?: string;
-    category?: string;
-    platform?: string;
+    category?: string[];
+    platform?: string[];
     minBudget?: number;
     maxBudget?: number;
     status?: CampaignStatus;
@@ -83,11 +83,11 @@ export class CampaignRepository {
       ];
     }
 
-    if (filters.category) {
-      where.category = { contains: filters.category, mode: 'insensitive' };
+    if (filters.category?.length) {
+      where.category = { in: filters.category, mode: 'insensitive' };
     }
-    if (filters.platform) {
-      where.platform = { contains: filters.platform, mode: 'insensitive' };
+    if (filters.platform?.length) {
+      where.platform = { in: filters.platform, mode: 'insensitive' };
     }
     if (filters.campaignType) {
       where.campaignType = filters.campaignType;

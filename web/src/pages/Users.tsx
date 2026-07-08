@@ -5,6 +5,7 @@ import { StatusBadge }   from '../components/StatusBadge';
 import { Avatar }        from '../components/Avatar';
 import { PageHeader }    from '../components/PageHeader';
 import { ConfirmModal }  from '../components/ConfirmModal';
+import { DetailModal }   from '../components/DetailModal';
 import { api, type ApiUser } from '../lib/api';
 import { useApi }        from '../lib/useApi';
 
@@ -41,6 +42,7 @@ export function Users() {
   const [search,     setSearch]     = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [action,  setAction]  = useState<Action | null>(null);
+  const [viewing, setViewing] = useState<ApiUser | null>(null);
   const [loading, setLoading] = useState(false);
   const [toast,   setToast]   = useState<{ msg: string; ok: boolean } | null>(null);
 
@@ -137,6 +139,12 @@ export function Users() {
       header: 'Actions',
       render: (row: ApiUser) => (
         <div className="flex gap-2">
+          <button
+            className="text-xs text-gray-600 hover:text-gray-900 font-medium"
+            onClick={() => setViewing(row)}
+          >
+            View
+          </button>
           {row.isActive === false ? (
             <button
               className="text-xs text-green-600 hover:text-green-800 font-medium"
@@ -243,6 +251,54 @@ export function Users() {
           loading={loading}
           onConfirm={handleConfirm}
           onCancel={() => setAction(null)}
+        />
+      )}
+
+      {viewing && (
+        <DetailModal
+          open={!!viewing}
+          onClose={() => setViewing(null)}
+          avatar={<Avatar initials={initials(viewing)} size="md" />}
+          title={displayName(viewing)}
+          subtitle={viewing.email}
+          badges={<StatusBadge status={verifiedStatus(viewing)} />}
+          sections={[
+            {
+              heading: 'Account',
+              fields: [
+                { label: 'Role', value: <span className="capitalize">{viewing.role.toLowerCase()}</span> },
+                { label: 'Email verified', value: viewing.isEmailVerified ? 'Yes' : 'No' },
+                { label: 'Account active', value: viewing.isActive === false ? 'Suspended' : 'Active' },
+                { label: 'Joined', value: new Date(viewing.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) },
+              ],
+            },
+            ...(viewing.creatorProfile
+              ? [{
+                  heading: 'Creator profile',
+                  fields: [
+                    { label: 'Name', value: viewing.creatorProfile.fullName },
+                    { label: 'Verified', value: viewing.creatorProfile.isVerified ? 'Yes' : 'No' },
+                  ],
+                }]
+              : []),
+            ...(viewing.businessProfile
+              ? [{
+                  heading: 'Business profile',
+                  fields: [
+                    { label: 'Business name', value: viewing.businessProfile.businessName },
+                    { label: 'Verified', value: viewing.businessProfile.isVerified ? 'Yes' : 'No' },
+                  ],
+                }]
+              : []),
+          ]}
+          footer={
+            <button
+              onClick={() => setViewing(null)}
+              className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+            >
+              Close
+            </button>
+          }
         />
       )}
 

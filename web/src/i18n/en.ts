@@ -6,7 +6,6 @@ export const en = {
     referrals: 'Referrals',
     stories: 'Stories',
     faq: 'FAQ',
-    getStarted: 'Get Started',
   },
   hero: {
     badge: "Nepal's Creator × Brand Marketplace",
