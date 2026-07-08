@@ -6,7 +6,7 @@
 // Usage:
 //   SEED_ADMIN_EMAIL=you@company.com SEED_ADMIN_PASSWORD='a-strong-password' npx tsx prisma/seed-admin.ts
 import { PrismaClient, Role } from '@prisma/client';
-import bcrypt from 'bcryptjs';
+import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 

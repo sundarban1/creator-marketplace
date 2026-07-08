@@ -1,5 +1,5 @@
 import { PrismaClient, Role } from '@prisma/client';
-import bcrypt from 'bcryptjs';
+import bcrypt from 'bcrypt';
 
 export async function seedUsers(prisma: PrismaClient) {
   const creatorPw = await bcrypt.hash('Creator@123', 12);
