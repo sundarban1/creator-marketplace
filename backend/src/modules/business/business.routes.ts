@@ -19,6 +19,7 @@ router.use(authenticate, authorize('BUSINESS'));
 router.get('/creators/filter-options', creatorCtrl.getCreatorFilterOptions.bind(creatorCtrl));
 router.get('/creators/saved',          savedCtrl.listSaved.bind(savedCtrl));
 router.get('/creators/saved-ids',      savedCtrl.getSavedIds.bind(savedCtrl));
+router.get('/creators/recommended',    creatorCtrl.getRecommendedCreators.bind(creatorCtrl));
 router.get('/creators/:id',            creatorCtrl.getCreatorPublicProfile.bind(creatorCtrl));
 router.get('/creators',                creatorCtrl.listCreators.bind(creatorCtrl));
 router.post('/creators/:id/save',      savedCtrl.toggle.bind(savedCtrl));

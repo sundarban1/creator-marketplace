@@ -2,6 +2,7 @@ import { randomUUID } from 'crypto';
 import { AppError } from '../../middleware/error';
 import { toCreatorProfileDto, toPublicCreatorDto, toCreatorListItemDto, toSocialAccountDto } from './creator.dto';
 import { translateFields, translateMany } from '../../utils/translation';
+import { haversineKm } from '../../utils/geo';
 
 const CREATOR_FIELDS = ['bio', 'location', 'categories'] as const;
 import { CreatorRepository } from './creator.repository';
@@ -41,6 +42,44 @@ export class CreatorService {
     const dtos = raw.map(toCreatorListItemDto);
     const creators = await translateMany(dtos, [...CREATOR_FIELDS], lang);
     return { creators, total, page, limit };
+  }
+
+  /**
+   * Up to `limit` creators matching the campaign's category, for the "recommend
+   * creators to invite" prompt shown right after publishing. When the campaign
+   * has coordinates, nearby matches are ranked first (distance computed in JS —
+   * the ~50-row category-matched candidate pool is small enough that this is
+   * simpler than a DB-side Haversine query, unlike the campaign nearby-search
+   * which has to scale to much larger result sets).
+   */
+  async getRecommendedForCampaign(params: {
+    category: string;
+    lat?: number;
+    lng?: number;
+    limit?: number;
+    lang?: string;
+  }) {
+    const limit = Math.min(params.limit ?? 10, 20);
+    const candidates = await this.repo.findRecommended(params.category);
+
+    const ranked = candidates
+      .map((c) => ({
+        ...c,
+        distanceKm:
+          params.lat != null && params.lng != null && c.locationLat != null && c.locationLng != null
+            ? haversineKm(params.lat, params.lng, c.locationLat, c.locationLng)
+            : undefined,
+      }))
+      .sort((a, b) => {
+        if (a.distanceKm == null && b.distanceKm == null) return 0;
+        if (a.distanceKm == null) return 1;
+        if (b.distanceKm == null) return -1;
+        return a.distanceKm - b.distanceKm;
+      })
+      .slice(0, limit);
+
+    const dtos = ranked.map(toCreatorListItemDto);
+    return translateMany(dtos, [...CREATOR_FIELDS], params.lang ?? 'en');
   }
 
   async getCreatorPublicProfile(creatorId: string, lang = 'en') {

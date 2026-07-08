@@ -1821,6 +1821,18 @@ const en = {
     headerSubSetup:       'Set up your event',
     headerSubReview:      'Review & publish',
 
+    recommendedTitle:        'Invite Creators',
+    recommendedSub:          'Recommended for your event category',
+    noRecommendedCreators:   'No matching creators found yet. You can invite creators anytime from the event page.',
+    selectAll:                'Select All',
+    deselectAll:               'Deselect All',
+    nSelected:                 '{{n}} selected',
+    skipForNow:                'Skip for now',
+    sending:                   'Sending…',
+    inviteSelected:            'Invite ({{n}})',
+    invitesSent:                'Invitations sent!',
+    doneBtn:                    'Done',
+
     eventTypeHeading:     'What type of event?',
     tabPaidEvent:         'Paid Event',
     tabOpenEvent:         'Open Event',

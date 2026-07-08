@@ -26,6 +26,20 @@ export class CreatorController {
     }
   }
 
+  async getRecommendedCreators(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const category = req.query.category as string | undefined;
+      if (!category) throw new AppError('category is required', 400);
+      const lat = req.query.lat ? parseFloat(String(req.query.lat)) : undefined;
+      const lng = req.query.lng ? parseFloat(String(req.query.lng)) : undefined;
+      const limit = req.query.limit ? parseInt(String(req.query.limit), 10) : undefined;
+      const creators = await creatorService.getRecommendedForCampaign({ category, lat, lng, limit, lang: req.language });
+      success(res, creators, 'Recommended creators retrieved');
+    } catch (err) {
+      next(err);
+    }
+  }
+
   async getCreatorPublicProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const profile = await creatorService.getCreatorPublicProfile(req.params.id, req.language);

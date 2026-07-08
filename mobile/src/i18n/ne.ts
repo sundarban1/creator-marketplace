@@ -1821,6 +1821,18 @@ const ne = {
     headerSubSetup:       'आफ्नो इभेन्ट सेट अप गर्नुहोस्',
     headerSubReview:      'समीक्षा र प्रकाशन',
 
+    recommendedTitle:        'क्रिएटरहरूलाई आमन्त्रण गर्नुहोस्',
+    recommendedSub:          'तपाईंको इभेन्ट श्रेणीको लागि सिफारिस गरिएको',
+    noRecommendedCreators:   'अहिलेसम्म मिल्दो क्रिएटर फेला परेन। तपाईं इभेन्ट पेजबाट जुनसुकै बेला क्रिएटरहरूलाई आमन्त्रण गर्न सक्नुहुन्छ।',
+    selectAll:                'सबै छान्नुहोस्',
+    deselectAll:               'सबै हटाउनुहोस्',
+    nSelected:                 '{{n}} छानिएको',
+    skipForNow:                'अहिलेको लागि छोड्नुहोस्',
+    sending:                   'पठाउँदैछ…',
+    inviteSelected:            'आमन्त्रण गर्नुहोस् ({{n}})',
+    invitesSent:                'आमन्त्रणहरू पठाइयो!',
+    doneBtn:                    'सकियो',
+
     eventTypeHeading:     'कस्तो प्रकारको इभेन्ट?',
     tabPaidEvent:         'भुक्तानी इभेन्ट',
     tabOpenEvent:         'खुला इभेन्ट',

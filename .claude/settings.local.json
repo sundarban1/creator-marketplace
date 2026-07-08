@@ -264,7 +264,10 @@
       "Bash(grep -rn \"avatarUrl\\\\|logoUrl\\\\|multer\\\\|cloudinary\\\\|upload\" /Users/sundarban/Documents/projects/marketplace/mobile/../backend/src/modules/business/business.routes.ts /Users/sundarban/Documents/projects/marketplace/backend/src/modules/business/ 2>/dev/null | grep -i logo | head -20)",
       "Read(//Users/sundarban/Documents/projects/marketplace/backend/src/modules/business/**)",
       "Bash(grep -v \"campaign-detail.tsx$\")",
-      "Bash(python3 -)"
+      "Bash(python3 -)",
+      "Bash(awk '/^  createEvent: {/,/^  },?$/' /Users/sundarban/Documents/projects/marketplace/mobile/src/i18n/en.ts)",
+      "Bash(awk '/^  createEvent: {/,0' /Users/sundarban/Documents/projects/marketplace/mobile/src/i18n/en.ts)",
+      "Bash(grep -n \"^  },$\")"
     ],
     "additionalDirectories": [
       "/private/tmp",

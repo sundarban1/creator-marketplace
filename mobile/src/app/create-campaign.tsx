@@ -26,6 +26,7 @@ import { CREATOR_CATEGORIES } from '@/features/creator/data/filterOptions';
 import { getTemplateImage, DEFAULT_TEMPLATE_IMAGE } from '@/features/creator/data/templateImages';
 import { PlacesAutocompleteInput, type PlacePrediction } from '@/components/PlacesAutocompleteInput';
 import { pickAndUpload } from '@/utilities/uploadImage';
+import { RecommendedCreatorsModal } from '@/features/business/components/RecommendedCreatorsModal';
 import { F, buildPlaceDetailsUrl } from '@/utilities/constants';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -752,6 +753,12 @@ export default function CreateCampaignScreen() {
   const [phase, setPhase] = useState<'setup' | 'review'>('setup');
   const [loading, setLoading] = useState(false);
   const [publishWarnVisible, setPublishWarnVisible] = useState(false);
+  const [publishedCampaign, setPublishedCampaign] = useState<{ id: string; category: string; lat: number | null; lng: number | null } | null>(null);
+
+  function handleRecommendedDone() {
+    setPublishedCampaign(null);
+    router.replace('/(business)/');
+  }
   const [reviewErrors, setReviewErrors] = useState<ReviewErrors>({});
   const [eventErrors, setEventErrors] = useState<EventErrors>({});
   const scrollRef = useRef<ScrollView>(null);
@@ -1091,9 +1098,9 @@ export default function CreateCampaignScreen() {
 
       setLoading(true);
       try {
-        await campaignService.create({ ...buildPaidCampaignPayload(), status: 'ACTIVE' });
+        const campaign = await campaignService.create({ ...buildPaidCampaignPayload(), status: 'ACTIVE' });
         showToast(t('createEvent.toastPublished'));
-        setTimeout(() => router.replace('/(business)/'), 500);
+        setPublishedCampaign({ id: campaign.id, category: form.template, lat: locationLat, lng: locationLng });
       } catch (err) {
         showToast(err instanceof Error ? err.message : t('createEvent.toastPublishFailed'), 'error');
       } finally {
@@ -1112,7 +1119,7 @@ export default function CreateCampaignScreen() {
 
       setLoading(true);
       try {
-        await campaignService.create({
+        const campaign = await campaignService.create({
           title:          form.title.trim(),
           description:    form.description.trim(),
           template:       form.template,
@@ -1139,7 +1146,7 @@ export default function CreateCampaignScreen() {
           benefits:       form.benefits,
         });
         showToast(t('createEvent.toastPublished'));
-        setTimeout(() => router.replace('/(business)/'), 500);
+        setPublishedCampaign({ id: campaign.id, category: form.template, lat: locationLat, lng: locationLng });
       } catch (err) {
         showToast(err instanceof Error ? err.message : t('createEvent.toastPublishFailed'), 'error');
       } finally {
@@ -1846,6 +1853,16 @@ export default function CreateCampaignScreen() {
           </Pressable>
         </Pressable>
       </Modal>
+
+      {/* Recommended creators — shown right after publishing */}
+      <RecommendedCreatorsModal
+        visible={!!publishedCampaign}
+        campaignId={publishedCampaign?.id ?? null}
+        category={publishedCampaign?.category ?? ''}
+        lat={publishedCampaign?.lat}
+        lng={publishedCampaign?.lng}
+        onDone={handleRecommendedDone}
+      />
 
       {/* Toast */}
       {toast && (

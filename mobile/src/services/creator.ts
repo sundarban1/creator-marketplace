@@ -65,6 +65,7 @@ export interface ApiCreatorListItem {
   prefBudgetMin: number;
   prefBudgetMax: number;
   socialAccounts: { platform: string; followers: number }[];
+  distanceKm?: number;
 }
 
 export interface ApiCreatorListResponse {
@@ -110,6 +111,16 @@ export const creatorService = {
     if (params?.priceMax !== undefined) query.set('priceMax', String(params.priceMax));
     const qs = query.toString();
     const res = await request<ApiCreatorListResponse>('GET', `/api/business/creators${qs ? `?${qs}` : ''}`);
+    return res.data;
+  },
+
+  async getRecommendedCreators(params: { category: string; lat?: number; lng?: number; limit?: number }): Promise<ApiCreatorListItem[]> {
+    const query = new URLSearchParams();
+    query.set('category', params.category);
+    if (params.lat != null) query.set('lat', String(params.lat));
+    if (params.lng != null) query.set('lng', String(params.lng));
+    if (params.limit != null) query.set('limit', String(params.limit));
+    const res = await request<ApiCreatorListItem[]>('GET', `/api/business/creators/recommended?${query.toString()}`);
     return res.data;
   },
 

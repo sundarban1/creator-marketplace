@@ -53,6 +53,28 @@ export class CreatorRepository {
     return { creators, total };
   }
 
+  /**
+   * Candidate pool for "recommended creators" on a newly-published campaign —
+   * category-matched, capped to a generous pool so the caller can rank by
+   * distance (when the campaign has coordinates) before trimming to the final
+   * on-screen count. Doesn't do the distance math itself since that needs the
+   * campaign's lat/lng, which lives outside this repository.
+   */
+  async findRecommended(category: string) {
+    return prisma.creatorProfile.findMany({
+      where: { categories: { has: category } },
+      take: 50,
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true, fullName: true, bio: true, avatarUrl: true,
+        location: true, categories: true, isVerified: true,
+        locationLat: true, locationLng: true,
+        prefBudgetMin: true, prefBudgetMax: true,
+        socialAccounts: { select: { platform: true, followers: true } },
+      },
+    });
+  }
+
   async getFilterOptions() {
     const [profiles, accounts] = await Promise.all([
       prisma.creatorProfile.findMany({ select: { categories: true } }),

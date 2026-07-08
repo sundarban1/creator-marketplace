@@ -79,6 +79,7 @@ export interface CreatorListItemDto {
   prefBudgetMin: number | null;
   prefBudgetMax: number | null;
   socialAccounts: Array<{ platform: string; followers: number }>;
+  distanceKm?: number;
 }
 
 type RawSocialAccount = {
@@ -212,10 +213,11 @@ type RawCreatorListItem = {
   prefBudgetMin: number | null;
   prefBudgetMax: number | null;
   socialAccounts: Array<{ platform: string; followers: number }>;
+  distanceKm?: number;
 };
 
 export function toCreatorListItemDto(p: RawCreatorListItem): CreatorListItemDto {
-  return {
+  const dto: CreatorListItemDto = {
     id:            p.id,
     fullName:      p.fullName,
     bio:           p.bio,
@@ -227,4 +229,6 @@ export function toCreatorListItemDto(p: RawCreatorListItem): CreatorListItemDto 
     prefBudgetMax: p.prefBudgetMax,
     socialAccounts: p.socialAccounts,
   };
+  if (p.distanceKm != null) dto.distanceKm = Math.round(p.distanceKm * 10) / 10;
+  return dto;
 }
