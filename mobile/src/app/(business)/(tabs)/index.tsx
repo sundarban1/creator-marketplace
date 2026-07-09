@@ -304,7 +304,7 @@ export default function BusinessHomeScreen() {
                   style={({ pressed }) => [styles.campaignCard, { backgroundColor: C.surface, borderLeftWidth: 4, borderLeftColor: st.color }, pressed && { opacity: 0.9 }]}
                   onPress={() => router.push({ pathname: '/campaign-detail', params: { campaignId: c.id } })}>
                   <View style={[styles.thumb, { backgroundColor: meta.bg }]}>
-                    <FontAwesome5 name={meta.icon} size={20} color="#00000066" />
+                    <FontAwesome5 name={meta.icon} size={20} color={meta.color} />
                   </View>
                   <View style={styles.campaignBody}>
                     <View style={styles.campaignTitleRow}>

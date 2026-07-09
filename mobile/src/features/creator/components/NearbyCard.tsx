@@ -62,7 +62,7 @@ export function NearbyCard({ campaign }: { campaign: Campaign }) {
 
         {/* ── Image ── */}
         <View style={[styles.img, { backgroundColor: catMeta.bg }]}>
-          <FontAwesome5 name={catMeta.icon} size={44} color="#000" style={styles.imgIcon} />
+          <FontAwesome5 name={catMeta.icon} size={44} color={catMeta.color} style={styles.imgIcon} />
 
           {cardImage && (
             <Image source={{ uri: cardImage }} style={StyleSheet.absoluteFill} resizeMode="cover" />

@@ -420,7 +420,7 @@ export default function CampaignDetailScreen() {
 
         {/* Hero */}
         <View style={[s.hero, { backgroundColor: heroBg }]}>
-          <FontAwesome5 name={catMeta.icon} size={56} color="#00000033" />
+          <FontAwesome5 name={catMeta.icon} size={56} color={catMeta.color} />
           <View style={[s.heroBadge, { backgroundColor: C.badgeFeatured }]}>
             <Text style={s.heroBadgeTxt}>{campaign.category.toUpperCase()}</Text>
           </View>

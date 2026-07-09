@@ -271,7 +271,7 @@ export default function CampaignsScreen() {
                       style={({ pressed }) => [styles.cardMain, pressed && { opacity: 0.88 }]}
                       onPress={() => router.push({ pathname: '/campaign-detail', params: { campaignId: c.id } })}>
                       <View style={[styles.thumb, { backgroundColor: bg }]}>
-                        <FontAwesome5 name={meta.icon} size={22} color="#00000066" />
+                        <FontAwesome5 name={meta.icon} size={22} color={meta.color} />
                       </View>
                       <View style={styles.body}>
                         <Text style={[styles.title, { color: C.text }]} numberOfLines={1}>{c.title}</Text>

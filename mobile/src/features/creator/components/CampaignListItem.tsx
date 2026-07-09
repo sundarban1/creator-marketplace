@@ -52,7 +52,7 @@ export function CampaignListItem({ campaign }: { campaign: Campaign }) {
       {/* Thumb + type badge below */}
       <View style={styles.thumbWrap}>
         <View style={[styles.listThumb, { backgroundColor: catMeta.bg }]}>
-          <FontAwesome5 name={catMeta.icon} size={22} color="#00000066" />
+          <FontAwesome5 name={catMeta.icon} size={22} color={catMeta.color} />
         </View>
         {campaign.campaignType === 'OPEN_EVENT' ? (
           <View style={[styles.typeBadge, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}>

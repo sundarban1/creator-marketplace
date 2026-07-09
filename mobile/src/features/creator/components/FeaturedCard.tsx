@@ -59,7 +59,7 @@ export function FeaturedCard({ campaign }: { campaign: Campaign }) {
         {/* ── Image ── */}
         <View style={[styles.featImg, { backgroundColor: catMeta.bg }]}>
           {/* Category icon always shown as background */}
-          <FontAwesome5 name={catMeta.icon} size={48} color="#000" style={styles.featImgIcon} />
+          <FontAwesome5 name={catMeta.icon} size={48} color={catMeta.color} style={styles.featImgIcon} />
 
           {/* Overlay template image when available */}
           {cardImage && (
