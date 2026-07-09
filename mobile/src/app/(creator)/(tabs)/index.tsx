@@ -29,7 +29,7 @@ const RADIUS_PRESETS = [5, 10, 25, 50, 100];
 
 const SLIDER_MAX = 100000;
 
-const PLATFORM_ICONS: Record<string, { icon: string; color: string; onColor?: string }> = {
+const PLATFORM_ICONS: Record<string, { icon: string; color: string }> = {
   instagram:     { icon: 'logo-instagram', color: '#E1306C' },
   tiktok:        { icon: 'musical-notes',  color: '#010101' },
   youtube:       { icon: 'logo-youtube',   color: '#FF0000' },
@@ -39,12 +39,12 @@ const PLATFORM_ICONS: Record<string, { icon: string; color: string; onColor?: st
   x:             { icon: 'logo-twitter',   color: '#1DA1F2' },
   linkedin:      { icon: 'logo-linkedin',  color: '#0A66C2' },
   pinterest:     { icon: 'logo-pinterest', color: '#E60023' },
-  snapchat:      { icon: 'logo-snapchat',  color: '#F5C300', onColor: '#1a1a1a' },
+  snapchat:      { icon: 'logo-snapchat',  color: '#F5C300' },
   whatsapp:      { icon: 'logo-whatsapp',  color: '#25D366' },
 };
 
 function getPlatformMeta(name: string) {
-  return PLATFORM_ICONS[name.toLowerCase()] ?? { icon: 'globe-outline', color: '#6B7280', onColor: undefined };
+  return PLATFORM_ICONS[name.toLowerCase()] ?? { icon: 'globe-outline', color: '#6B7280' };
 }
 
 export default function HomeScreen() {
@@ -629,7 +629,7 @@ export default function HomeScreen() {
                   setActiveCategories(next);
                   void fetchCampaigns({ category: next });
                 }}>
-                <FontAwesome5 name={cat.icon} size={13} color={isActive ? '#fff' : C.brinjal1} />
+                <FontAwesome5 name={cat.icon} size={13} color={isActive ? '#fff' : cat.color} />
                 <Text
                   style={[styles.catLabel, { color: isActive ? '#fff' : C.text }]}
                   numberOfLines={1}>
@@ -650,11 +650,16 @@ export default function HomeScreen() {
               {apiPlatforms.map((p) => {
                 const meta = getPlatformMeta(p);
                 const isActive = activePlatforms.includes(p);
-                const fg = meta.onColor ?? '#fff';
                 return (
                   <Pressable
                     key={p}
-                    style={styles.platCardShadow}
+                    style={[
+                      styles.catPill,
+                      {
+                        backgroundColor: isActive ? C.brinjal1 : C.surface,
+                        borderColor: isActive ? C.brinjal1 : C.border,
+                      },
+                    ]}
                     onPress={() => {
                       const next = activePlatforms.includes(p)
                         ? activePlatforms.filter((x) => x !== p)
@@ -662,13 +667,8 @@ export default function HomeScreen() {
                       setActivePlatforms(next);
                       void fetchCampaigns({ platform: next });
                     }}>
-                    {/* Tint + clipping live on their own layer — Android's elevation shadow
-                        doesn't composite correctly with overflow:hidden + a translucent
-                        background on the same view. */}
-                    <View style={[styles.platCard, { backgroundColor: isActive ? meta.color : meta.color + '28' }]}>
-                      <Ionicons name={meta.icon as any} size={18} color={isActive ? fg : meta.color} />
-                      <Text style={[styles.platLabel, { color: isActive ? fg : C.text }]} numberOfLines={1}>{p}</Text>
-                    </View>
+                    <Ionicons name={meta.icon as any} size={14} color={isActive ? '#fff' : meta.color} />
+                    <Text style={[styles.catLabel, { color: isActive ? '#fff' : C.text }]} numberOfLines={1}>{p}</Text>
                   </Pressable>
                 );
               })}
@@ -894,13 +894,6 @@ const styles = StyleSheet.create({
 
   // ── Platforms (pills) ──
   platformsRow: { paddingHorizontal: 20, gap: 8, marginBottom: 0 },
-  platCardShadow: { borderRadius: 20, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
-  platCard: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    height: 38, borderRadius: 20, overflow: 'hidden', paddingHorizontal: 12,
-    borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)',
-  },
-  platLabel: { fontSize: 12, fontFamily: F.medium, lineHeight: 16 },
 
   // ── Loading ──
   loadingWrap: { paddingVertical: 60, alignItems: 'center', gap: 14 },

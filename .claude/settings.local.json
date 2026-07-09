@@ -289,7 +289,12 @@
       "Read(//opt/homebrew/bin/**)",
       "Bash(npx --yes eas-cli@latest --version)",
       "Bash(npx --yes eas-cli@latest build --platform android --profile preview --non-interactive)",
-      "Bash(npx expo-doctor *)"
+      "Bash(npx expo-doctor *)",
+      "Bash(/Users/sundarban/Library/Android/sdk/platform-tools/adb devices *)",
+      "Bash(/Users/sundarban/Library/Android/sdk/platform-tools/adb -s emulator-5554 uninstall com.sundarban.kolab)",
+      "Bash(/Users/sundarban/Library/Android/sdk/platform-tools/adb -s emulator-5554 install -r -d /Users/sundarban/Documents/projects/marketplace/mobile/android/app/build/outputs/apk/debug/app-debug.apk)",
+      "Bash(pod install *)",
+      "Bash(rm -rf Pods Podfile.lock)"
     ],
     "additionalDirectories": [
       "/private/tmp",
