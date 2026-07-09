@@ -88,7 +88,7 @@ export default function FeaturedCampaignsScreen() {
       ) : error ? (
         <View style={styles.errorWrap}>
           <Text style={styles.errorText}>{error}</Text>
-          <Pressable onPress={() => { setLoading(true); fetchPage(1, true).finally(() => setLoading(false)); }}>
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => { setLoading(true); fetchPage(1, true).finally(() => setLoading(false)); }}>
             <Text style={[styles.retryText, { color: C.brinjal1 }]}>{t('creator.featuredCampaigns.retry')}</Text>
           </Pressable>
         </View>
@@ -108,7 +108,7 @@ export default function FeaturedCampaignsScreen() {
           }
           ListFooterComponent={
             page < totalPages ? (
-              <Pressable
+              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                 style={[styles.loadMoreBtn, { backgroundColor: C.primaryLight }]}
                 onPress={loadMore}
                 disabled={loadingMore}>

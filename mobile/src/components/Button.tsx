@@ -28,7 +28,7 @@ export function Button({
 
   if (variant === 'primary') {
     return (
-      <Pressable
+      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
         onPress={onPress}
         disabled={isDisabled}
         style={({ pressed }) => [
@@ -56,7 +56,7 @@ export function Button({
 
   if (variant === 'danger') {
     return (
-      <Pressable
+      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
         onPress={onPress}
         disabled={isDisabled}
         style={({ pressed }) => [
@@ -79,7 +79,7 @@ export function Button({
 
   if (variant === 'secondary') {
     return (
-      <Pressable
+      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
         onPress={onPress}
         disabled={isDisabled}
         style={({ pressed }) => [
@@ -102,7 +102,7 @@ export function Button({
 
   // ghost
   return (
-    <Pressable
+    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
       onPress={onPress}
       disabled={isDisabled}
       style={({ pressed }) => [

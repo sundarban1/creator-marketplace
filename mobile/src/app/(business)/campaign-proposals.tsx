@@ -96,7 +96,7 @@ function ProposalCard({
   const [coverExpanded, setCoverExpanded] = useState(false);
 
   return (
-    <Pressable
+    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
       style={[styles.card, { backgroundColor: C.surface, borderLeftColor: accent }]}
       onPress={() =>
         router.push({ pathname: '/(business)/creator-detail', params: { id: p.creator.id } })
@@ -140,7 +140,7 @@ function ProposalCard({
               {p.coverLetter}
             </Text>
             {p.coverLetter.length > 120 && (
-              <Pressable
+              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                 onPress={(e) => { e.stopPropagation(); setCoverExpanded((v) => !v); }}
                 style={styles.seeMoreBtn}>
                 <Text style={[styles.seeMoreText, { color: accent }]}>
@@ -176,7 +176,7 @@ function ProposalCard({
       {/* Actions for pending */}
       {p.status === 'pending' && (
         <View style={styles.actions}>
-          <Pressable
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
             style={[styles.declineBtn, { borderColor: C.border, backgroundColor: C.background }]}
             disabled={acting}
             onPress={() => onReject(p)}>
@@ -189,7 +189,7 @@ function ProposalCard({
               </>
             )}
           </Pressable>
-          <Pressable
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
             style={[styles.acceptBtn, { backgroundColor: accent }]}
             disabled={acting}
             onPress={() => onAccept(p)}>
@@ -209,7 +209,7 @@ function ProposalCard({
       {p.status === 'accepted' && !isFree && (() => {
         const cfg = projectBtnConfig(p.workStatus, t);
         return (
-          <Pressable
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
             style={({ pressed }) => [styles.startProjectBtn, { backgroundColor: cfg.color, opacity: pressed ? 0.88 : 1 }]}
             onPress={() => onStartProject && onStartProject(p)}>
             <Ionicons name={cfg.icon} size={16} color="#fff" />
@@ -326,13 +326,13 @@ function ConfirmModal({
 
           {/* Actions */}
           <View style={cm.actions}>
-            <Pressable
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
               style={[cm.cancelBtn, { borderColor: C.border, backgroundColor: C.background }]}
               onPress={onCancel}
               disabled={state.loading}>
               <Text style={[cm.cancelText, { color: C.text }]}>Cancel</Text>
             </Pressable>
-            <Pressable
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
               style={[cm.confirmBtn, { backgroundColor: isAccept ? iconColor : '#EF4444', opacity: state.loading ? 0.7 : 1 }]}
               onPress={onConfirm}
               disabled={state.loading}>
@@ -561,7 +561,7 @@ export default function CampaignProposalsScreen() {
           {FILTERS.map((f) => {
             const active = statusFilter === f.key;
             return (
-              <Pressable
+              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                 key={f.key}
                 style={[
                   styles.filterChip,

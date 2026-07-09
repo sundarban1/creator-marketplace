@@ -131,7 +131,7 @@ function RequestCard({ conv, onRespond }: { conv: Conversation; onRespond: () =>
 
       {/* Actions */}
       <View style={s.reqActions}>
-        <Pressable
+        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
           style={[s.declineBtn, { borderColor: C.border, backgroundColor: C.background }]}
           onPress={() => respond('decline')}
           disabled={acting !== null}>
@@ -144,7 +144,7 @@ function RequestCard({ conv, onRespond }: { conv: Conversation; onRespond: () =>
               </>
             )}
         </Pressable>
-        <Pressable
+        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
           style={[s.acceptBtn, { backgroundColor: ACCENT }]}
           onPress={() => respond('accept')}
           disabled={acting !== null}>
@@ -170,7 +170,7 @@ function ChatCard({ conv }: { conv: Conversation }) {
   const hasUnread = conv.unreadCount > 0;
 
   return (
-    <Pressable
+    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
       style={({ pressed }) => [
         s.card,
         { backgroundColor: pressed ? C.surface : C.background },

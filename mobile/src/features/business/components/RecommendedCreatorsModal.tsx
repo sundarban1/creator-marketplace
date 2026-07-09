@@ -75,7 +75,7 @@ export function RecommendedCreatorsModal({ visible, campaignId, category, lat, l
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onDone}>
-      <Pressable style={s.backdrop} onPress={onDone} />
+      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={s.backdrop} onPress={onDone} />
       <View style={[s.sheet, { backgroundColor: C.surface }]}>
         <View style={[s.handle, { backgroundColor: C.border }]} />
 
@@ -84,7 +84,7 @@ export function RecommendedCreatorsModal({ visible, campaignId, category, lat, l
             <Text style={[s.title, { color: C.text }]}>{t('createEvent.recommendedTitle')}</Text>
             <Text style={[s.subtitle, { color: C.textSecondary }]}>{t('createEvent.recommendedSub')}</Text>
           </View>
-          <Pressable style={[s.closeBtn, { backgroundColor: C.background }]} onPress={onDone} hitSlop={8}>
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[s.closeBtn, { backgroundColor: C.background }]} onPress={onDone} hitSlop={8}>
             <Ionicons name="close" size={18} color={C.textSecondary} />
           </Pressable>
         </View>
@@ -102,13 +102,13 @@ export function RecommendedCreatorsModal({ visible, campaignId, category, lat, l
           <View style={s.center}>
             <Ionicons name="people-outline" size={36} color={C.textSecondary} />
             <Text style={[s.emptyText, { color: C.textSecondary }]}>{t('createEvent.noRecommendedCreators')}</Text>
-            <Pressable style={[s.skipBtn, { backgroundColor: C.brinjal1 }]} onPress={onDone}>
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[s.skipBtn, { backgroundColor: C.brinjal1 }]} onPress={onDone}>
               <Text style={s.skipBtnText}>{t('createEvent.doneBtn')}</Text>
             </Pressable>
           </View>
         ) : (
           <>
-            <Pressable style={s.selectAllRow} onPress={toggleAll}>
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={s.selectAllRow} onPress={toggleAll}>
               <View style={[s.checkbox, { borderColor: allSelected ? C.brinjal1 : C.border, backgroundColor: allSelected ? C.brinjal1 : 'transparent' }]}>
                 {allSelected && <Ionicons name="checkmark" size={14} color="#fff" />}
               </View>
@@ -126,7 +126,7 @@ export function RecommendedCreatorsModal({ visible, campaignId, category, lat, l
                 const topAcc = [...creator.socialAccounts].sort((a, b) => b.followers - a.followers)[0];
                 const abbr = (creator.fullName ?? 'C').split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
                 return (
-                  <Pressable
+                  <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                     key={creator.id}
                     style={[s.row, { backgroundColor: sel ? C.primaryLight : C.background, borderColor: sel ? C.brinjal1 : C.border }]}
                     onPress={() => toggle(creator.id)}>
@@ -158,10 +158,10 @@ export function RecommendedCreatorsModal({ visible, campaignId, category, lat, l
             </ScrollView>
 
             <View style={[s.footer, { borderTopColor: C.border }]}>
-              <Pressable style={s.skipLink} onPress={onDone} disabled={sending}>
+              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={s.skipLink} onPress={onDone} disabled={sending}>
                 <Text style={[s.skipLinkText, { color: C.textSecondary }]}>{t('createEvent.skipForNow')}</Text>
               </Pressable>
-              <Pressable
+              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                 style={[s.inviteBtn, { backgroundColor: selected.size > 0 ? C.brinjal1 : C.border }]}
                 onPress={handleInvite}
                 disabled={selected.size === 0 || sending}>

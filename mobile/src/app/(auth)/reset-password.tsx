@@ -131,7 +131,7 @@ export default function ResetPasswordScreen() {
             </View>
           </View>
 
-          <Pressable
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
             style={[styles.btn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }, loading && styles.btnDisabled]}
             onPress={handleReset}
             disabled={loading}>
@@ -179,7 +179,7 @@ function PasswordInput({
         autoCapitalize="none"
         autoCorrect={false}
       />
-      <Pressable onPress={() => setShow((s) => !s)} style={styles.eyeBtn}>
+      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => setShow((s) => !s)} style={styles.eyeBtn}>
         <Ionicons name={show ? 'eye-off' : 'eye'} size={18} color={C.textSecondary} />
       </Pressable>
     </View>

@@ -116,7 +116,7 @@ export default function BusinessOnboardingScreen() {
           <Text style={[styles.successSub, { color: C.textSecondary }]}>
             {t('businessOnboarding.successBody')}
           </Text>
-          <Pressable style={[styles.goHomeBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }]} onPress={goHome}>
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.goHomeBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }]} onPress={goHome}>
             <Text style={styles.goHomeBtnText}>{t('businessOnboarding.exploreBtn')}</Text>
           </Pressable>
         </Animated.View>
@@ -139,7 +139,7 @@ export default function BusinessOnboardingScreen() {
       {/* ── Top bar ── */}
       <View style={styles.topBar}>
         {step > 1 ? (
-          <Pressable style={[styles.backBtn, { backgroundColor: C.surface, borderColor: C.border }]} onPress={() => setStep((s) => s - 1)}>
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.backBtn, { backgroundColor: C.surface, borderColor: C.border }]} onPress={() => setStep((s) => s - 1)}>
             <Text style={[styles.backArrow, { color: C.brinjal1 }]}>‹</Text>
           </Pressable>
         ) : (
@@ -211,7 +211,7 @@ export default function BusinessOnboardingScreen() {
               )}
             </View>
 
-            <Pressable
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
               style={[styles.primaryBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }, step1Loading && styles.primaryBtnDisabled]}
               onPress={handleStep1Continue}
               disabled={step1Loading}>
@@ -266,7 +266,7 @@ export default function BusinessOnboardingScreen() {
                   const isSelected = selectedCategories.includes(cat.name);
                   const isDisabled = !isSelected && selectedCategories.length >= 3;
                   return (
-                    <Pressable
+                    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                       key={cat.id}
                       style={[
                         styles.categoryChip,
@@ -286,7 +286,7 @@ export default function BusinessOnboardingScreen() {
               </View>
             </View>
 
-            <Pressable
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
               style={[styles.primaryBtn, { backgroundColor: C.active, shadowColor: C.active }, step2Loading && styles.primaryBtnDisabled]}
               onPress={handleFinish}
               disabled={step2Loading}>

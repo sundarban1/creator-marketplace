@@ -1,4 +1,5 @@
-import { Image, StyleSheet, View } from 'react-native';
+import { Image } from 'expo-image';
+import { StyleSheet, View } from 'react-native';
 
 export function AppLogo() {
   return (
@@ -6,7 +7,7 @@ export function AppLogo() {
       <Image
         source={require('@/assets/images/app-icon.png')}
         style={styles.image}
-        resizeMode="contain"
+        contentFit="contain"
       />
     </View>
   );

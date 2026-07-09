@@ -59,7 +59,7 @@ export function TextInputWithLabel({
           {...rest}
         />
         {secureToggle && (
-          <Pressable onPress={() => setHidden((v) => !v)} hitSlop={10} style={styles.eyeBtn}>
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => setHidden((v) => !v)} hitSlop={10} style={styles.eyeBtn}>
             <Ionicons
               name={hidden ? 'eye-outline' : 'eye-off-outline'}
               size={19}

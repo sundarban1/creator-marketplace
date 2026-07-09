@@ -157,7 +157,7 @@ function LocationPicker({ selected, onChange }: { selected: LocationEntry[]; onC
   return (
     <View style={lp.wrap}>
       {/* Remote chip */}
-      <Pressable
+      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
         style={[lp.remoteChip, { borderColor: remoteSelected ? C.brinjal1 : C.border, backgroundColor: remoteSelected ? C.primaryLight : C.background }, !remoteSelected && atMax && { opacity: 0.35 }]}
         onPress={toggleRemote}
         disabled={!remoteSelected && atMax}>
@@ -173,7 +173,7 @@ function LocationPicker({ selected, onChange }: { selected: LocationEntry[]; onC
             <View key={loc.label} style={[lp.locChip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
               <Ionicons name="location" size={12} color={C.brinjal1} />
               <Text style={[lp.locChipText, { color: C.brinjal1 }]}>{loc.label}</Text>
-              <Pressable onPress={() => remove(loc.label)} hitSlop={8}>
+              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => remove(loc.label)} hitSlop={8}>
                 <Ionicons name="close" size={13} color={C.brinjal1} />
               </Pressable>
             </View>
@@ -197,13 +197,13 @@ function LocationPicker({ selected, onChange }: { selected: LocationEntry[]; onC
             {searching
               ? <ActivityIndicator size="small" color={C.brinjal1} />
               : query.length > 0
-              ? <Pressable onPress={() => { setQuery(''); setPredictions([]); }} hitSlop={8}><Ionicons name="close" size={15} color={C.textSecondary} /></Pressable>
+              ? <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => { setQuery(''); setPredictions([]); }} hitSlop={8}><Ionicons name="close" size={15} color={C.textSecondary} /></Pressable>
               : null}
           </View>
           {predictions.length > 0 && (
             <View style={[lp.dropdown, { backgroundColor: C.surface, borderColor: C.border }]}>
               {predictions.slice(0, 5).map((pred, idx) => (
-                <Pressable
+                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                   key={pred.place_id}
                   style={[lp.dropRow, { borderBottomColor: idx < Math.min(predictions.length, 5) - 1 ? C.border : 'transparent' }]}
                   onPress={() => selectPrediction(pred)}>
@@ -263,12 +263,12 @@ function ExploreFilterModal({
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={fm.backdrop} onPress={onClose} />
+      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={fm.backdrop} onPress={onClose} />
       <View style={[fm.sheet, { backgroundColor: C.surface }]}>
         <View style={[fm.handle, { backgroundColor: C.border }]} />
         <View style={[fm.header, { borderBottomColor: C.border }]}>
           <Text style={[fm.title, { color: C.text }]}>{t('explore.filterCreators')}</Text>
-          <Pressable onPress={onReset}>
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={onReset}>
             <Text style={[fm.reset, { color: C.brinjal1 }]}>{t('explore.resetAll')}</Text>
           </Pressable>
         </View>
@@ -300,7 +300,7 @@ function ExploreFilterModal({
                 {availablePlatforms.map((p) => {
                   const sel = temp.platforms.includes(p);
                   return (
-                    <Pressable
+                    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                       key={p}
                       onPress={() => set('platforms', toggle(temp.platforms, p))}
                       style={[fm.chip, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? C.primaryLight : C.background }]}>
@@ -322,7 +322,7 @@ function ExploreFilterModal({
                   const meta = getCategoryMeta(allCategories, cat);
                   const sel = temp.categories.includes(cat);
                   return (
-                    <Pressable
+                    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                       key={cat}
                       onPress={() => set('categories', toggle(temp.categories, cat))}
                       style={[fm.chip, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? C.primaryLight : C.background }]}>
@@ -338,7 +338,7 @@ function ExploreFilterModal({
         </ScrollView>
 
         <View style={[fm.footer, { borderTopColor: C.border }]}>
-          <Pressable
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
             style={({ pressed }) => [fm.applyBtn, { backgroundColor: C.brinjal1 }, pressed && { opacity: 0.88 }]}
             onPress={onApply}>
             <Text style={fm.applyTxt}>{t('explore.applyFilters')}</Text>
@@ -404,7 +404,7 @@ function CreatorCard({ creator, isSaved, onToggleSave }: {
   const topPlatforms = creator.socialAccounts.slice(0, 3);
 
   return (
-    <Pressable
+    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
       style={({ pressed }) => [s.card, { backgroundColor: C.surface, borderColor: C.border }, pressed && { opacity: 0.92 }]}
       onPress={() => router.push({ pathname: '/(business)/creator-detail', params: { id: creator.id } })}>
 
@@ -442,7 +442,7 @@ function CreatorCard({ creator, isSaved, onToggleSave }: {
           ) : null}
         </View>
 
-        <Pressable
+        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
           style={[s.saveBtn, { backgroundColor: isSaved ? C.primaryLight : C.background, borderColor: isSaved ? C.brinjal1 : C.border }]}
           onPress={onToggleSave}
           hitSlop={8}>
@@ -648,7 +648,7 @@ export default function ExploreCreatorsScreen() {
             <Text style={[s.headerTitle, { color: '#fff' }]}>{t('explore.exploreCreators')}</Text>
             <Text style={s.headerSub}>{t('explore.businesses.exploreCreatorsSub')}</Text>
           </View>
-          <Pressable
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
             style={s.savedLink}
             onPress={() => router.push('/(business)/saved-creators' as Parameters<typeof router.push>[0])}>
             <Ionicons name="bookmark" size={14} color="#fff" />
@@ -671,12 +671,12 @@ export default function ExploreCreatorsScreen() {
             autoCorrect={false}
           />
           {search.length > 0 && (
-            <Pressable onPress={() => setSearch('')} hitSlop={10}>
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => setSearch('')} hitSlop={10}>
               <Ionicons name="close-circle" size={18} color={C.textSecondary} />
             </Pressable>
           )}
         </View>
-        <Pressable
+        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
           style={[s.filterBtn, { backgroundColor: filterActive ? C.brinjal1 : C.surface, borderColor: filterActive ? C.brinjal1 : C.border }]}
           onPress={openFilter}>
           <Ionicons name="options-outline" size={20} color={filterActive ? '#fff' : C.brinjal1} />
@@ -688,21 +688,21 @@ export default function ExploreCreatorsScreen() {
       {filterActive && (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chipRow}>
           {activeFilter.locations.map((loc) => (
-            <Pressable key={loc.label} onPress={() => removeActiveFilter('locations', loc.label)} style={[s.chip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} key={loc.label} onPress={() => removeActiveFilter('locations', loc.label)} style={[s.chip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
               <Ionicons name={loc.label === 'Remote' ? 'globe-outline' : 'location'} size={12} color={C.brinjal1} />
               <Text style={[s.chipText, { color: C.brinjal1 }]}>{loc.label}</Text>
               <Ionicons name="close" size={12} color={C.brinjal1} />
             </Pressable>
           ))}
           {(activeFilter.priceMin > 0 || activeFilter.priceMax < SLIDER_MAX) && (
-            <Pressable onPress={() => removeActiveFilter('priceMin')} style={[s.chip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => removeActiveFilter('priceMin')} style={[s.chip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
               <FontAwesome5 name="wallet" size={11} color={getIconColor('wallet')} />
               <Text style={[s.chipText, { color: C.brinjal1 }]}>Rs {activeFilter.priceMin}–{activeFilter.priceMax >= SLIDER_MAX ? '1K+' : `Rs ${activeFilter.priceMax}`}</Text>
               <Ionicons name="close" size={12} color={C.brinjal1} />
             </Pressable>
           )}
           {activeFilter.platforms.map((p) => (
-            <Pressable key={p} onPress={() => removeActiveFilter('platforms', p)} style={[s.chip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} key={p} onPress={() => removeActiveFilter('platforms', p)} style={[s.chip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
               <Ionicons name={getPlatformMeta(p).icon} size={12} color={getPlatformMeta(p).color} />
               <Text style={[s.chipText, { color: C.brinjal1 }]}>{normalizePlatform(p)}</Text>
               <Ionicons name="close" size={12} color={C.brinjal1} />
@@ -711,14 +711,14 @@ export default function ExploreCreatorsScreen() {
           {activeFilter.categories.map((cat) => {
             const meta = getCategoryMeta(allCategories, cat);
             return (
-              <Pressable key={cat} onPress={() => removeActiveFilter('categories', cat)} style={[s.chip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
+              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} key={cat} onPress={() => removeActiveFilter('categories', cat)} style={[s.chip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
                 <FontAwesome5 name={meta.icon} size={11} color={meta.color} />
                 <Text style={[s.chipText, { color: C.brinjal1 }]}>{cat}</Text>
                 <Ionicons name="close" size={12} color={C.brinjal1} />
               </Pressable>
             );
           })}
-          <Pressable onPress={() => setActiveFilter(DEFAULT_FILTER)} style={[s.chip, { backgroundColor: C.background, borderColor: C.border }]}>
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => setActiveFilter(DEFAULT_FILTER)} style={[s.chip, { backgroundColor: C.background, borderColor: C.border }]}>
             <Text style={[s.chipText, { color: C.textSecondary }]}>{t('common.clearAll')}</Text>
           </Pressable>
         </ScrollView>
@@ -745,7 +745,7 @@ export default function ExploreCreatorsScreen() {
       ) : error ? (
         <View style={s.centered}>
           <Text style={s.errorText}>{error}</Text>
-          <Pressable onPress={() => fetchCreators(1, true, activeFilter, searchDebounced)}>
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => fetchCreators(1, true, activeFilter, searchDebounced)}>
             <Text style={[s.linkText, { color: C.brinjal1 }]}>{t('common.retry')}</Text>
           </Pressable>
         </View>
@@ -757,7 +757,7 @@ export default function ExploreCreatorsScreen() {
             {filterActive || search ? t('explore.adjustFilters') : t('explore.noCreatorsYet')}
           </Text>
           {(filterActive || search) && (
-            <Pressable onPress={() => { setSearch(''); setActiveFilter(DEFAULT_FILTER); }} style={[s.clearBtn, { borderColor: C.brinjal1 }]}>
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => { setSearch(''); setActiveFilter(DEFAULT_FILTER); }} style={[s.clearBtn, { borderColor: C.brinjal1 }]}>
               <Text style={[s.linkText, { color: C.brinjal1 }]}>{t('explore.clearFilters')}</Text>
             </Pressable>
           )}

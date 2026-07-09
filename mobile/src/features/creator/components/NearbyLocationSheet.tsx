@@ -99,20 +99,20 @@ export function NearbyLocationSheet({ visible, onClose, source, radiusKm, homeLa
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose} />
+      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.backdrop} onPress={onClose} />
       <View style={[styles.sheet, { backgroundColor: C.surface }]}>
         <View style={[styles.handle, { backgroundColor: C.border }]} />
 
         <View style={[styles.header, { borderBottomColor: C.border }]}>
           <Text style={[styles.title, { color: C.text }]}>Nearby Events</Text>
-          <Pressable onPress={onClose} hitSlop={10}>
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={onClose} hitSlop={10}>
             <Ionicons name="close" size={22} color={C.textSecondary} />
           </Pressable>
         </View>
 
         <View style={styles.body}>
           <View style={styles.sourceToggleRow}>
-            <Pressable
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
               style={[styles.sourceToggle, { borderColor: draftSource === 'current' ? C.brinjal1 : C.border, backgroundColor: draftSource === 'current' ? C.primaryLight : C.background }]}
               disabled={locatingCurrent}
               onPress={() => void handleSelectCurrent()}>
@@ -123,7 +123,7 @@ export function NearbyLocationSheet({ visible, onClose, source, radiusKm, homeLa
               )}
               <Text style={[styles.sourceToggleText, { color: draftSource === 'current' ? C.brinjal1 : C.text }]}>Current Location</Text>
             </Pressable>
-            <Pressable
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
               style={[
                 styles.sourceToggle,
                 { borderColor: draftSource === 'home' ? C.brinjal1 : C.border, backgroundColor: draftSource === 'home' ? C.primaryLight : C.background },
@@ -167,7 +167,7 @@ export function NearbyLocationSheet({ visible, onClose, source, radiusKm, homeLa
         </View>
 
         <View style={[styles.footer, { borderTopColor: C.border }]}>
-          <Pressable
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
             style={({ pressed }) => [styles.applyBtn, { backgroundColor: C.brinjal1 }, (pressed || locatingCurrent) && { opacity: 0.88 }]}
             disabled={locatingCurrent}
             onPress={handleApply}>

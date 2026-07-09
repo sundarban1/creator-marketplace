@@ -346,7 +346,7 @@ export default function BusinessChatRoomScreen() {
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
       {/* ── Header ── */}
       <LinearGradient colors={['#4c1d95', '#6d28d9', '#7c3aed']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.header}>
-        <Pressable style={s.backBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/(business)/messages' as never)}>
+        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={s.backBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/(business)/messages' as never)}>
           <Ionicons name="chevron-back" size={22} color="#fff" />
         </Pressable>
         <View style={[s.headerAvatar, { backgroundColor: personColor }]}>
@@ -450,7 +450,7 @@ export default function BusinessChatRoomScreen() {
                 <Text style={[s.charCount, { color: C.textSecondary }]}>{1000 - text.length}</Text>
               )}
             </View>
-            <Pressable
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
               style={[s.sendBtn, { backgroundColor: text.trim() ? C.brinjal1 : C.border }]}
               onPress={handleSend}
               disabled={!text.trim()}>

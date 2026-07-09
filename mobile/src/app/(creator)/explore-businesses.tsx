@@ -71,13 +71,13 @@ function ExploreFilterModal({
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={fm.backdrop} onPress={onClose} />
+      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={fm.backdrop} onPress={onClose} />
       <View style={[fm.sheet, { backgroundColor: C.surface }]}>
         <View style={[fm.handle, { backgroundColor: C.border }]} />
 
         <View style={[fm.header, { borderBottomColor: C.border }]}>
           <Text style={[fm.title, { color: C.text }]}>{t('explore.businesses.filterTitle')}</Text>
-          <Pressable onPress={onReset}>
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={onReset}>
             <Text style={[fm.reset, { color: C.brinjal1 }]}>{t('explore.businesses.filterResetAll')}</Text>
           </Pressable>
         </View>
@@ -97,7 +97,7 @@ function ExploreFilterModal({
             {PLATFORMS.map((p) => {
               const active = tempPlatform === p.label;
               return (
-                <Pressable
+                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                   key={p.label}
                   onPress={() => setTempPlatform(active ? '' : p.label)}
                   style={[fm.filterChip, { borderColor: active ? C.brinjal1 : C.border, backgroundColor: active ? C.brinjal1 : C.background }]}>
@@ -114,7 +114,7 @@ function ExploreFilterModal({
             {businessCategories.map((cat) => {
               const active = tempCategory === cat.name;
               return (
-                <Pressable
+                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                   key={cat.id}
                   onPress={() => setTempCategory(active ? '' : cat.name)}
                   style={[fm.filterChip, { borderColor: active ? C.brinjal1 : C.border, backgroundColor: active ? C.primaryLight : C.background }]}>
@@ -128,7 +128,7 @@ function ExploreFilterModal({
         </ScrollView>
 
         <View style={[fm.footer, { borderTopColor: C.border }]}>
-          <Pressable
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
             style={({ pressed }) => [fm.applyBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }, pressed && { opacity: 0.88 }]}
             onPress={onApply}>
             <Text style={fm.applyTxt}>{t('explore.businesses.filterApplyBtn')}</Text>
@@ -188,7 +188,7 @@ function BusinessCard({
   const { categories: businessCategories } = useCategories('BUSINESS');
 
   return (
-    <Pressable
+    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
       style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}
       onPress={() => router.push({ pathname: '/(creator)/business-detail', params: { id: item.id } } as never)}>
 
@@ -218,7 +218,7 @@ function BusinessCard({
         </View>
 
         {/* Heart */}
-        <Pressable
+        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
           style={[styles.heartBtn, { backgroundColor: isFavorited ? '#FEE2E2' : C.background }]}
           onPress={(e) => { e.stopPropagation(); onToggleFavorite(); }}
           hitSlop={10}>
@@ -390,7 +390,7 @@ export default function ExploreBusinessesScreen() {
             <Text style={[styles.heading, { color: '#fff' }]}>Explore Brands</Text>
             <Text style={[styles.headingSub, { color: 'rgba(255,255,255,0.82)' }]}>Find businesses hiring creators</Text>
           </View>
-          <Pressable
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
             style={styles.favLink}
             onPress={() => router.push('/(creator)/favorite-businesses' as Parameters<typeof router.push>[0])}>
             <Ionicons name="heart" size={15} color="#fff" />
@@ -413,12 +413,12 @@ export default function ExploreBusinessesScreen() {
             autoCapitalize="none"
           />
           {search.length > 0 && (
-            <Pressable onPress={() => { setSearch(''); void fetchBusinesses({ search: '', silent: true }); }} hitSlop={10}>
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => { setSearch(''); void fetchBusinesses({ search: '', silent: true }); }} hitSlop={10}>
               <Ionicons name="close-circle" size={18} color={C.textSecondary} />
             </Pressable>
           )}
         </View>
-        <Pressable
+        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
           style={[styles.filterBtn, { backgroundColor: isFilterActive ? C.brinjal1 : C.surface, borderColor: isFilterActive ? C.brinjal1 : C.border }]}
           onPress={openFilter}>
           <Ionicons name="options-outline" size={20} color={isFilterActive ? '#fff' : C.brinjal1} />
@@ -440,7 +440,7 @@ export default function ExploreBusinessesScreen() {
       {isFilterActive && (
         <View style={styles.activePills}>
           {locations.map((loc) => (
-            <Pressable
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
               key={loc.label}
               style={[styles.activePill, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}
               onPress={() => {
@@ -454,7 +454,7 @@ export default function ExploreBusinessesScreen() {
             </Pressable>
           ))}
           {platform ? (
-            <Pressable
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
               style={[styles.activePill, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}
               onPress={() => { setPlatform(''); void fetchBusinesses({ platform: '', silent: true }); }}>
               <Text style={[styles.activePillText, { color: C.brinjal1 }]}>{platform}</Text>
@@ -462,14 +462,14 @@ export default function ExploreBusinessesScreen() {
             </Pressable>
           ) : null}
           {category ? (
-            <Pressable
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
               style={[styles.activePill, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}
               onPress={() => { setCategory(''); void fetchBusinesses({ category: '', silent: true }); }}>
               <Text style={[styles.activePillText, { color: C.brinjal1 }]}>{category}</Text>
               <Ionicons name="close" size={12} color={C.brinjal1} />
             </Pressable>
           ) : null}
-          <Pressable onPress={clearAll}>
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={clearAll}>
             <Text style={[styles.clearAllText, { color: C.error }]}>Clear all</Text>
           </Pressable>
         </View>

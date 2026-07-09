@@ -1,6 +1,7 @@
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image } from 'expo-image';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAppColors } from '@/context/ThemeContext';
 import { displayCategory } from '@/features/creator/data/filterOptions';
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
@@ -51,7 +52,7 @@ export function FeaturedCard({ campaign }: { campaign: Campaign }) {
   }
 
   return (
-    <Pressable
+    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
       style={({ pressed }) => [styles.featCardWrap, pressed && { opacity: 0.88 }]}
       onPress={goToDetail}>
       <View style={[styles.featCard, { backgroundColor: C.surface }]}>
@@ -63,7 +64,7 @@ export function FeaturedCard({ campaign }: { campaign: Campaign }) {
 
           {/* Overlay template image when available */}
           {cardImage && (
-            <Image source={{ uri: cardImage }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+            <Image source={{ uri: cardImage }} style={StyleSheet.absoluteFill} contentFit="cover" />
           )}
           {cardImage && <View style={styles.imgOverlay} />}
 

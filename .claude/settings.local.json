@@ -323,7 +323,15 @@
       "Bash(grep -n \"^  if\\\\|return null;\\\\|return;$\")",
       "Bash(tee /tmp/tsc_out.txt)",
       "Bash(curl -s \"http://localhost:3000/api/categories?scope=CREATOR\")",
-      "Bash(docker compose *)"
+      "Bash(docker compose *)",
+      "Bash(find . -path ./node_modules -prune -o -name \"build.gradle\" -print)",
+      "Bash(find . -path ./node_modules -prune -o -name \"AndroidManifest.xml\" -print)",
+      "Bash(grep -n -E \"newArch|jsEngine|hermes\" app.json android/gradle.properties)",
+      "Bash(grep -n -i \"hermes\" android/app/build.gradle android/build.gradle)",
+      "Bash(cp \"src/app/\\(creator\\)/\\(tabs\\)/proposals.tsx\" /tmp/proposals_test.tsx)",
+      "Bash(cp \"src/app/\\(creator\\)/\\(tabs\\)/_layout.tsx\" /tmp/layout_test.tsx)",
+      "Bash(python3 /private/tmp/claude-501/-Users-sundarban-Documents-projects-marketplace/f4dadbd6-ef73-4bff-b8ee-f2b326c42e8f/scratchpad/add_ripple.py)",
+      "Bash(grep -rn \"^import.*{ *Image[,}]\" src/)"
     ],
     "additionalDirectories": [
       "/private/tmp",

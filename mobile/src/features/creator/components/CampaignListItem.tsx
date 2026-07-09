@@ -45,7 +45,7 @@ export function CampaignListItem({ campaign }: { campaign: Campaign }) {
   }
 
   return (
-    <Pressable
+    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
       style={({ pressed }) => [styles.listCard, { backgroundColor: C.surface }, pressed && { opacity: 0.88 }]}
       onPress={goToDetail}>
 
@@ -97,7 +97,7 @@ export function CampaignListItem({ campaign }: { campaign: Campaign }) {
       </View>
 
       {/* Apply button */}
-      <Pressable style={[styles.applyBtn, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]} onPress={goToDetail}>
+      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.applyBtn, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]} onPress={goToDetail}>
         <Text style={[styles.applyBtnText, { color: C.brinjal1 }]}>Apply</Text>
       </Pressable>
     </Pressable>

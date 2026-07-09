@@ -71,7 +71,7 @@ export function PlacesAutocompleteInput({
       {suggestions.length > 0 && (
         <View style={[styles.dropdown, { backgroundColor: C.surface, borderColor: C.border }]}>
           {suggestions.map((place, i) => (
-            <Pressable
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
               key={place.place_id}
               style={[styles.item, i < suggestions.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}
               onPress={() => { onChangeText(place.description); onSelectPlace?.(place); setSuggestions([]); }}>

@@ -209,9 +209,9 @@ function Sheet({ visible, onClose, title, children }: {
 }) {
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={sh.overlay} onPress={onClose}>
+      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={sh.overlay} onPress={onClose}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={sh.kav}>
-          <Pressable style={sh.sheet} onPress={e => e.stopPropagation()}>
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={sh.sheet} onPress={e => e.stopPropagation()}>
             <View style={sh.handle} />
             <Text style={sh.title}>{title}</Text>
             {children}
@@ -275,7 +275,7 @@ function ActionCard({ ws, paid, isCreator, isFree, submitting, onPay, onStartWor
       <View style={[ac.iconBg, { backgroundColor: '#FEF2F2' }]}><Ionicons name="card-outline" size={26} color="#EF4444" /></View>
       <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acPaymentRequiredTitle')}</Text>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acPaymentRequiredSub')}</Text>
-      <Pressable style={[ac.btn, { backgroundColor: '#EF4444' }]} onPress={onPay}>
+      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[ac.btn, { backgroundColor: '#EF4444' }]} onPress={onPay}>
         <Ionicons name="card-outline" size={16} color="#fff" />
         <Text style={ac.btnTxt}>{t('activityTimeline.acPayNowBtn')}</Text>
       </Pressable>
@@ -306,7 +306,7 @@ function ActionCard({ ws, paid, isCreator, isFree, submitting, onPay, onStartWor
       <View style={[ac.iconBg, { backgroundColor: '#EEF2FF' }]}><Ionicons name="rocket-outline" size={26} color="#7C3AED" /></View>
       <Text style={[ac.heading, { color: C.text }]}>{isFree ? t('activityTimeline.acReadyFreeTitle') : t('activityTimeline.acReadyPaidTitle')}</Text>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{isFree ? t('activityTimeline.acReadyFreeSub') : t('activityTimeline.acReadyPaidSub')}</Text>
-      <Pressable style={[ac.btn, { backgroundColor: '#7C3AED', opacity: submitting ? 0.75 : 1 }]} onPress={onStartWork} disabled={submitting}>
+      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[ac.btn, { backgroundColor: '#7C3AED', opacity: submitting ? 0.75 : 1 }]} onPress={onStartWork} disabled={submitting}>
         {submitting
           ? <ActivityIndicator size="small" color="#fff" />
           : <><Ionicons name="rocket-outline" size={16} color="#fff" /><Text style={ac.btnTxt}>{t('activityTimeline.acStartBtn')}</Text></>}
@@ -329,7 +329,7 @@ function ActionCard({ ws, paid, isCreator, isFree, submitting, onPay, onStartWor
       <View style={[ac.iconBg, { backgroundColor: '#EEF2FF' }]}><Ionicons name="cloud-upload-outline" size={26} color="#7C3AED" /></View>
       <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acUploadTitle')}</Text>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acUploadSub')}</Text>
-      <Pressable style={[ac.btn, { backgroundColor: '#7C3AED' }]} onPress={onUpload}>
+      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[ac.btn, { backgroundColor: '#7C3AED' }]} onPress={onUpload}>
         <Ionicons name="cloud-upload-outline" size={16} color="#fff" />
         <Text style={ac.btnTxt}>{t('activityTimeline.acUploadBtn')}</Text>
       </Pressable>
@@ -342,16 +342,16 @@ function ActionCard({ ws, paid, isCreator, isFree, submitting, onPay, onStartWor
       <View style={[ac.iconBg, { backgroundColor: '#FFF7ED' }]}><Ionicons name="eye-outline" size={26} color="#D97706" /></View>
       <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acSubmittedTitle')}</Text>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acSubmittedSub')}</Text>
-      <Pressable style={[ac.btn, { backgroundColor: '#D97706' }]} onPress={onReview}>
+      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[ac.btn, { backgroundColor: '#D97706' }]} onPress={onReview}>
         <Ionicons name="eye-outline" size={16} color="#fff" />
         <Text style={ac.btnTxt}>{t('activityTimeline.acReviewBtn')}</Text>
       </Pressable>
       <View style={ac.btnRow}>
-        <Pressable style={[ac.btn, { flex: 1, backgroundColor: '#EF4444' }]} onPress={onRevision}>
+        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[ac.btn, { flex: 1, backgroundColor: '#EF4444' }]} onPress={onRevision}>
           <Ionicons name="create-outline" size={15} color="#fff" />
           <Text style={ac.btnTxt}>{t('activityTimeline.acRevisionBtn')}</Text>
         </Pressable>
-        <Pressable style={[ac.btn, { flex: 1, backgroundColor: '#16A34A', opacity: submitting ? 0.75 : 1 }]} onPress={onApprove} disabled={submitting}>
+        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[ac.btn, { flex: 1, backgroundColor: '#16A34A', opacity: submitting ? 0.75 : 1 }]} onPress={onApprove} disabled={submitting}>
           {submitting ? <ActivityIndicator size="small" color="#fff" /> : <>
             <Ionicons name="checkmark-done-outline" size={15} color="#fff" />
             <Text style={ac.btnTxt}>{t('activityTimeline.acApproveBtn')}</Text>
@@ -658,7 +658,7 @@ export default function CampaignWorkspaceScreen() {
           </View>
         </View>
         {/* Only message icon — no three dots */}
-        <Pressable style={s.iconBtn} onPress={handleMessage} hitSlop={6}>
+        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={s.iconBtn} onPress={handleMessage} hitSlop={6}>
           <Ionicons name="chatbubble-outline" size={22} color="#7C3AED" />
         </Pressable>
       </View>
@@ -675,7 +675,7 @@ export default function CampaignWorkspaceScreen() {
               <Text style={[s.summaryTitle, { color: C.text }]} numberOfLines={2}>
                 {campaign?.title ?? campaignTitle}
               </Text>
-              <Pressable
+              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                 onPress={() => {
                   if (!app) return;
                   if (isCreator) {
@@ -820,7 +820,7 @@ export default function CampaignWorkspaceScreen() {
 
         {/* ── Cancel Event button (business only) ── */}
         {!isCreator && ws !== 'APPROVED' && (
-          <Pressable
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
             style={[s.cancelBtn, { borderColor: '#FECACA', backgroundColor: '#FEF2F2' }]}
             onPress={() => setShowCancel(true)}
           >
@@ -858,7 +858,7 @@ export default function CampaignWorkspaceScreen() {
         <Text style={sh.sectionLabel}>{t('activityTimeline.modalPayWith')}</Text>
         <View style={{ gap: 8, marginBottom: 16 }}>
           {([['esewa', 'wallet', 'eSewa'], ['khalti', 'money-check-alt', 'Khalti'], ['fonepay', 'mobile-alt', 'Fonepay QR']] as [typeof payMethod, string, string][]).map(([m, icon, label]) => (
-            <Pressable key={m}
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} key={m}
               style={[sh.methodBtn, { borderColor: payMethod === m ? '#7C3AED' : '#E5E7EB', backgroundColor: payMethod === m ? '#EEF2FF' : '#fff' }]}
               onPress={() => setPayMethod(m)}>
               <View style={sh.methodLeft}>
@@ -869,7 +869,7 @@ export default function CampaignWorkspaceScreen() {
             </Pressable>
           ))}
         </View>
-        <Pressable style={[sh.primaryBtn, { backgroundColor: '#7C3AED', opacity: submitting ? 0.75 : 1 }]} onPress={handlePay} disabled={submitting}>
+        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[sh.primaryBtn, { backgroundColor: '#7C3AED', opacity: submitting ? 0.75 : 1 }]} onPress={handlePay} disabled={submitting}>
           {submitting ? <ActivityIndicator size="small" color="#fff" /> : <Text style={sh.primaryBtnTxt}>{t('activityTimeline.modalPayConfirmBtn', { amount: total.toLocaleString() })}</Text>}
         </Pressable>
       </Sheet>
@@ -925,7 +925,7 @@ export default function CampaignWorkspaceScreen() {
             />
           </View>
         </View>
-        <Pressable style={[sh.primaryBtn, { backgroundColor: '#7C3AED', opacity: submitting ? 0.75 : 1 }]} onPress={handleSubmitWork} disabled={submitting}>
+        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[sh.primaryBtn, { backgroundColor: '#7C3AED', opacity: submitting ? 0.75 : 1 }]} onPress={handleSubmitWork} disabled={submitting}>
           {submitting ? <ActivityIndicator size="small" color="#fff" /> : <><Ionicons name="cloud-upload-outline" size={17} color="#fff" /><Text style={sh.primaryBtnTxt}>{t('activityTimeline.modalUploadSubmitBtn')}</Text></>}
         </Pressable>
       </Sheet>
@@ -944,7 +944,7 @@ export default function CampaignWorkspaceScreen() {
           {submittedUrls.length > 0 ? (
             <View style={{ gap: 8 }}>
               {submittedUrls.map((url, idx) => (
-                <Pressable
+                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                   key={idx}
                   style={rv.linkRow}
                   onPress={() => Linking.openURL(url).catch(() => {})}>
@@ -986,13 +986,13 @@ export default function CampaignWorkspaceScreen() {
 
         {/* Action buttons */}
         <View style={{ flexDirection: 'row', gap: 10, marginTop: 20 }}>
-          <Pressable
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
             style={[sh.primaryBtn, { flex: 1, backgroundColor: '#D97706' }]}
             onPress={() => { setShowReview(false); setTimeout(() => setShowRevision(true), 200); }}>
             <Ionicons name="create-outline" size={15} color="#fff" />
             <Text style={sh.primaryBtnTxt}>{t('activityTimeline.acRevisionBtn')}</Text>
           </Pressable>
-          <Pressable
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
             style={[sh.primaryBtn, { flex: 1, backgroundColor: '#16A34A', opacity: submitting ? 0.75 : 1 }]}
             disabled={submitting}
             onPress={() => { setShowReview(false); handleApprove(); }}>
@@ -1017,7 +1017,7 @@ export default function CampaignWorkspaceScreen() {
             multiline
           />
         </View>
-        <Pressable style={[sh.primaryBtn, { backgroundColor: '#D97706', opacity: submitting ? 0.75 : 1 }]} onPress={handleRevision} disabled={submitting}>
+        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[sh.primaryBtn, { backgroundColor: '#D97706', opacity: submitting ? 0.75 : 1 }]} onPress={handleRevision} disabled={submitting}>
           {submitting ? <ActivityIndicator size="small" color="#fff" /> : <Text style={sh.primaryBtnTxt}>{t('activityTimeline.modalRevisionSendBtn')}</Text>}
         </Pressable>
       </Sheet>
@@ -1051,13 +1051,13 @@ export default function CampaignWorkspaceScreen() {
         <Text style={[sh.sub, { marginTop: 12 }]}>{t('activityTimeline.modalCancelCreatorNotified')}</Text>
 
         <View style={{ flexDirection: 'row', gap: 10, marginTop: 16 }}>
-          <Pressable
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
             style={[sh.primaryBtn, { flex: 1, backgroundColor: '#F3F4F6' }]}
             onPress={() => setShowCancel(false)}
           >
             <Text style={[sh.primaryBtnTxt, { color: '#374151' }]}>{t('activityTimeline.modalCancelKeepBtn')}</Text>
           </Pressable>
-          <Pressable
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
             style={[sh.primaryBtn, { flex: 1, backgroundColor: '#EF4444', opacity: submitting ? 0.75 : 1 }]}
             onPress={handleCancelEvent}
             disabled={submitting}

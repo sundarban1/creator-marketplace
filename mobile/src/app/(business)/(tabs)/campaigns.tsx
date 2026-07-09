@@ -188,7 +188,7 @@ export default function CampaignsScreen() {
             <Text style={[styles.pageTitle, { color: '#fff' }]}>{t('campaigns.title')}</Text>
             <Text style={[styles.pageSub, { color: 'rgba(255,255,255,0.75)' }]}>{t('campaigns.subtitle')}</Text>
           </View>
-          <Pressable
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
             style={[styles.newBtn, { backgroundColor: 'rgba(255,255,255,0.22)' }]}
             onPress={() => router.push('/create-campaign')}>
             <Text style={[styles.newBtnText, { color: '#fff' }]}>{t('business.newBtn')}</Text>
@@ -241,7 +241,7 @@ export default function CampaignsScreen() {
 
                 {/* Create button */}
                 {EMPTY_CFG[activeFilter].showCreate && (
-                  <Pressable
+                  <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                     style={[styles.emptyCreateBtn, { backgroundColor: EMPTY_CFG[activeFilter].iconColor }]}
                     onPress={() => router.push('/create-campaign')}>
                     <Ionicons name="add-circle-outline" size={16} color="#fff" />
@@ -251,7 +251,7 @@ export default function CampaignsScreen() {
 
                 {/* Or switch tab hint for non-All filters */}
                 {activeFilter !== 'All' && (
-                  <Pressable onPress={() => setActiveFilter('All')} style={styles.emptySwitchRow}>
+                  <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => setActiveFilter('All')} style={styles.emptySwitchRow}>
                     <Text style={[styles.emptySwitchText, { color: C.textSecondary }]}>{t('campaigns.viewAllEvents')}  </Text>
                     <Text style={[styles.emptySwitchLink, { color: C.brinjal1 }]}>{t('campaigns.seeAll')}</Text>
                   </Pressable>
@@ -267,7 +267,7 @@ export default function CampaignsScreen() {
                 <View key={c.id} style={[styles.card, { backgroundColor: C.surface }]}>
                   <View style={[styles.cardAccent, { backgroundColor: st.color }]} />
                   <View style={styles.cardContent}>
-                    <Pressable
+                    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                       style={({ pressed }) => [styles.cardMain, pressed && { opacity: 0.88 }]}
                       onPress={() => router.push({ pathname: '/campaign-detail', params: { campaignId: c.id } })}>
                       <View style={[styles.thumb, { backgroundColor: bg }]}>
@@ -309,7 +309,7 @@ export default function CampaignsScreen() {
                         <View style={[styles.footerDivider, { backgroundColor: C.border }]} />
                         <View style={styles.footerRow}>
                           {c.proposals > 0 && (
-                            <Pressable
+                            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                               style={({ pressed }) => [styles.footerBtn, pressed && { opacity: 0.7 }]}
                               onPress={() => openProposals(c)}>
                               <Text style={[styles.footerBtnText, { color: C.brinjal1 }]}>{t('campaigns.viewProposals')}</Text>
@@ -317,7 +317,7 @@ export default function CampaignsScreen() {
                             </Pressable>
                           )}
                           {c.status === 'active' && (
-                            <Pressable
+                            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                               style={({ pressed }) => [styles.inviteBtn, { backgroundColor: C.primaryLight }, pressed && { opacity: 0.7 }]}
                               onPress={() => openInvite(c)}>
                               <Ionicons name="person-add-outline" size={13} color={C.brinjal1} />
@@ -325,7 +325,7 @@ export default function CampaignsScreen() {
                             </Pressable>
                           )}
                           {c.status === 'draft' && (
-                            <Pressable
+                            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                               style={({ pressed }) => [styles.inviteBtn, { backgroundColor: C.primaryLight, opacity: publishingId === c.id ? 0.6 : 1 }, pressed && { opacity: 0.7 }]}
                               disabled={publishingId === c.id}
                               onPress={() => handlePublishDraft(c)}>
@@ -354,7 +354,7 @@ export default function CampaignsScreen() {
         transparent
         animationType="slide"
         onRequestClose={() => setInviteCampaign(null)}>
-        <Pressable style={styles.modalBackdrop} onPress={() => setInviteCampaign(null)} />
+        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.modalBackdrop} onPress={() => setInviteCampaign(null)} />
         <View style={[styles.modalSheet, { backgroundColor: C.surface }]}>
           <View style={[styles.modalHandle, { backgroundColor: C.border }]} />
 
@@ -365,7 +365,7 @@ export default function CampaignsScreen() {
                 {inviteCampaign?.title}
               </Text>
             </View>
-            <Pressable style={[styles.modalClose, { backgroundColor: C.background }]} onPress={() => setInviteCampaign(null)}>
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.modalClose, { backgroundColor: C.background }]} onPress={() => setInviteCampaign(null)}>
               <Ionicons name="close" size={16} color={C.textSecondary} />
             </Pressable>
           </View>
@@ -387,7 +387,7 @@ export default function CampaignsScreen() {
               <Text style={[styles.modalEmptyHint, { color: C.textSecondary }]}>
                 {t('campaigns.noSavedCreatorsSub')}
               </Text>
-              <Pressable
+              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                 style={[styles.goSaveBtn, { backgroundColor: C.brinjal1 }]}
                 onPress={() => { setInviteCampaign(null); router.push('/(business)/saved-creators'); }}>
                 <Text style={styles.goSaveBtnText}>{t('campaigns.viewSavedCreators')}</Text>
@@ -408,7 +408,7 @@ export default function CampaignsScreen() {
                   const topAcc = creator.socialAccounts?.sort((a, b) => b.followers - a.followers)[0];
                   const abbr = (creator.fullName ?? 'C').split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
                   return (
-                    <Pressable
+                    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                       key={creator.id}
                       style={[styles.creatorPickRow, { backgroundColor: sel ? C.primaryLight : C.background, borderColor: sel ? C.brinjal1 : C.border }]}
                       onPress={() => toggleCreator(creator.id)}>
@@ -431,7 +431,7 @@ export default function CampaignsScreen() {
                 })}
               </ScrollView>
               <View style={[styles.inviteFooter, { borderTopColor: C.border }]}>
-                <Pressable
+                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                   style={[styles.sendInviteBtn, { backgroundColor: selectedCreators.size > 0 ? C.brinjal1 : C.border }]}
                   onPress={handleSendInvites}
                   disabled={selectedCreators.size === 0 || inviteSending}>
@@ -451,7 +451,7 @@ export default function CampaignsScreen() {
         transparent
         animationType="slide"
         onRequestClose={() => setSelectedCampaign(null)}>
-        <Pressable style={styles.modalBackdrop} onPress={() => setSelectedCampaign(null)} />
+        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.modalBackdrop} onPress={() => setSelectedCampaign(null)} />
         <View style={[styles.modalSheet, { backgroundColor: C.surface }]}>
           <View style={[styles.modalHandle, { backgroundColor: C.border }]} />
 
@@ -462,7 +462,7 @@ export default function CampaignsScreen() {
                 {selectedCampaign?.title}
               </Text>
             </View>
-            <Pressable
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
               style={[styles.modalClose, { backgroundColor: C.background }]}
               onPress={() => setSelectedCampaign(null)}>
               <Ionicons name="close" size={16} color={C.textSecondary} />

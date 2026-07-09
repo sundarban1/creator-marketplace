@@ -196,7 +196,7 @@ export default function OnboardingScreen() {
           <Text style={[styles.successSub, { color: C.textSecondary }]}>
             {t('onboarding.successBody')}
           </Text>
-          <Pressable style={[styles.goHomeBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }]} onPress={goHome}>
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.goHomeBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }]} onPress={goHome}>
             <Text style={styles.goHomeBtnText}>{t('onboarding.successBtn')}</Text>
           </Pressable>
         </Animated.View>
@@ -216,7 +216,7 @@ export default function OnboardingScreen() {
       {/* ── Top bar ── */}
       <View style={styles.topBar}>
         {step > 1 ? (
-          <Pressable style={[styles.backBtn, { backgroundColor: C.surface, borderColor: C.border }]} onPress={() => setStep((s) => s - 1)}>
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.backBtn, { backgroundColor: C.surface, borderColor: C.border }]} onPress={() => setStep((s) => s - 1)}>
             <Text style={[styles.backArrow, { color: C.brinjal1 }]}>‹</Text>
           </Pressable>
         ) : (
@@ -289,7 +289,7 @@ export default function OnboardingScreen() {
                     <Text style={[styles.suggestionLabel, { color: C.textSecondary }]}>{t('onboarding.usernameSuggestions')}</Text>
                     <View style={styles.suggestionRow}>
                       {usernameSuggestions.map((s) => (
-                        <Pressable
+                        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                           key={s}
                           style={[styles.suggestionChip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}
                           onPress={() => setUsername(s)}>
@@ -308,7 +308,7 @@ export default function OnboardingScreen() {
                   {GENDER_KEYS.map((g) => {
                     const selected = gender === g;
                     return (
-                      <Pressable
+                      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                         key={g}
                         style={[styles.genderChip, { borderColor: selected ? C.brinjal1 : genderError ? C.error : C.border, backgroundColor: selected ? C.primaryLight : C.surface }]}
                         onPress={() => { setGender(selected ? '' : g); setStep1Error(''); }}>
@@ -340,7 +340,7 @@ export default function OnboardingScreen() {
 
             </View>
 
-            <Pressable
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
               style={[styles.primaryBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 },
                 (!step1Valid || step1Loading) && styles.primaryBtnDisabled]}
               onPress={handleStep1Continue}
@@ -393,7 +393,7 @@ export default function OnboardingScreen() {
                 const isSelected = selectedCategories.includes(cat.name);
                 const isDisabled = !isSelected && selectedCategories.length >= 5;
                 return (
-                  <Pressable
+                  <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                     key={cat.id}
                     style={[
                       styles.categoryChip,
@@ -412,7 +412,7 @@ export default function OnboardingScreen() {
               })}
             </View>
 
-            <Pressable
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
               style={[styles.primaryBtn, { backgroundColor: C.active, shadowColor: C.active },
                 (selectedCategories.length === 0 || step2Loading) && styles.primaryBtnDisabled]}
               onPress={handleStep2Finish}

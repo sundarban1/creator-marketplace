@@ -15,7 +15,7 @@ export function Button({ label, onPress, loading = false, disabled = false, vari
   const isDisabled = disabled || loading;
 
   return (
-    <Pressable
+    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
       style={({ pressed }) => [
         styles.base,
         variant === 'primary' && { backgroundColor: C.brinjal1 },

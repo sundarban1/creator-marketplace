@@ -187,7 +187,7 @@ export default function VerifyScreen() {
         <View style={styles.hero}>
           <View style={styles.heroBubble1} />
           <View style={styles.heroBubble2} />
-          <Pressable
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
             style={styles.back}
             onPress={() => (router.canGoBack() ? router.back() : router.replace('/signup'))}>
             <Text style={styles.backArrow}>‹</Text>
@@ -245,7 +245,7 @@ export default function VerifyScreen() {
           ) : null}
 
           {/* Verify button — shown while idle; shows loading indicator while verifying */}
-          <Pressable
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
             style={[
               styles.verifyBtn,
               { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 },
@@ -269,7 +269,7 @@ export default function VerifyScreen() {
             {resendTimer > 0 ? (
               <Text style={[styles.resendTimer, { color: C.textSecondary }]}>{t('auth.verify.resendCountdown', { n: resendTimer })}</Text>
             ) : (
-              <Pressable onPress={handleResend} disabled={resending}>
+              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={handleResend} disabled={resending}>
                 <Text style={[styles.resendLink, { color: resending ? C.textSecondary : C.brinjal1 }]}>
                   {resending ? t('auth.verify.resending') : t('auth.verify.resendBtn')}
                 </Text>

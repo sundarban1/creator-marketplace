@@ -89,7 +89,7 @@ function Field({
           onBlur={()  => { setTimeout(() => { setFocused(false); Animated.timing(anim, { toValue: 0, duration: 180, useNativeDriver: false }).start(); }, 150); }}
         />
         {secureTextEntry && (
-          <Pressable onPress={() => setHidden(h => !h)} hitSlop={8} style={s.eyeBtn}>
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => setHidden(h => !h)} hitSlop={8} style={s.eyeBtn}>
             <Ionicons name={hidden ? 'eye-outline' : 'eye-off-outline'} size={17} color="#9CA3AF" />
           </Pressable>
         )}
@@ -105,7 +105,7 @@ function Field({
         return (
           <View style={[s.domainSuggestBox, { backgroundColor: C.surface }]}>
             {suggestions.map((domain) => (
-              <Pressable
+              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                 key={domain}
                 style={s.domainSuggestItem}
                 onPress={() => onChangeText(`${localPart}@${domain}`)}>
@@ -168,7 +168,7 @@ export default function SignupScreen() {
             <View style={s.appHeaderLeft}>
               <Image source={require('@/assets/images/logo.png')} style={s.logoImage} resizeMode="contain" />
             </View>
-            <Pressable
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
               style={[s.backBtn, { borderColor: '#E5E7EB', backgroundColor: C.surface }]}
               onPress={() => (router.canGoBack() ? router.back() : router.replace('/login'))}>
               <Ionicons name="chevron-back" size={18} color={C.text} />
@@ -185,7 +185,7 @@ export default function SignupScreen() {
 
           {/* Tab bar */}
           <View style={[s.tabBar, { backgroundColor: '#F3F4F6' }]}>
-            <Pressable style={s.tabBtn} onPress={() => router.replace('/login')}>
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={s.tabBtn} onPress={() => router.replace('/login')}>
               <Text style={[s.tabBtnText, { color: '#6B7280' }]}>Log in</Text>
             </Pressable>
             <View style={[s.tabBtn, s.tabBtnActive]}>
@@ -199,7 +199,7 @@ export default function SignupScreen() {
             {ROLES.map((r) => {
               const active = role === r.key;
               return (
-                <Pressable
+                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                   key={r.key}
                   style={[
                     s.roleCard,
@@ -269,7 +269,7 @@ export default function SignupScreen() {
           </View>
 
           {/* Submit */}
-          <Pressable
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
             onPress={handleCreate}
             disabled={loading}
             style={({ pressed }) => [s.primaryBtn, { backgroundColor: PRIMARY, opacity: pressed ? 0.88 : 1 }]}>
@@ -286,7 +286,7 @@ export default function SignupScreen() {
           </View>
 
           {/* Google */}
-          <Pressable
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
             style={[s.socialBtn, { borderColor: '#E5E7EB', backgroundColor: C.surface }]}
             onPress={() => setApiError('Google sign-in is not available yet.')}>
             <View style={s.googleBadge}><Text style={s.googleG}>G</Text></View>
@@ -304,7 +304,7 @@ export default function SignupScreen() {
           {/* Login link */}
           <View style={s.switchRow}>
             <Text style={[s.switchText, { color: '#6B7280' }]}>Already have an account?</Text>
-            <Pressable onPress={() => router.replace('/login')}>
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => router.replace('/login')}>
               <Text style={[s.switchLink, { color: PRIMARY }]}>Log in</Text>
             </Pressable>
           </View>

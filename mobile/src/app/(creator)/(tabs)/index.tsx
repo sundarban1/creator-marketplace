@@ -441,7 +441,7 @@ export default function HomeScreen() {
 
           <View style={styles.header}>
             <View style={styles.headerLeft}>
-              <Pressable style={styles.menuBtn} onPress={openDrawer} hitSlop={6}>
+              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.menuBtn} onPress={openDrawer} hitSlop={6}>
                 <View style={styles.menuBtnInner}>
                   <Ionicons name="menu" size={22} color="#fff" />
                 </View>
@@ -453,7 +453,7 @@ export default function HomeScreen() {
             </View>
 
             <View style={styles.headerRight}>
-              <Pressable
+              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                 style={[styles.avatarCircle, { borderColor: 'rgba(255,255,255,0.5)', borderWidth: 2.5 }]}
                 onPress={() => router.push('/(creator)/profile')}>
                 {/* Clipping lives on its own layer — Android's elevation shadow doesn't
@@ -481,7 +481,7 @@ export default function HomeScreen() {
             { icon: 'chatbubbles-outline',   label: 'Messages',  bg: '#DBEAFE', color: '#2563EB', route: '/(creator)/(tabs)/messages' },
             { icon: 'heart-outline',         label: 'Saved',     bg: '#FEE2E2', color: '#DC2626', route: '/(creator)/favorite-businesses' },
           ] as const).map(({ icon, label, bg, color, route }) => (
-            <Pressable
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
               key={label}
               style={[styles.quickAction, { backgroundColor: C.surface, borderColor: C.border }]}
               onPress={() => router.push(route as never)}>
@@ -495,7 +495,7 @@ export default function HomeScreen() {
 
         {/* ── Profile completion banner ── */}
         {!bannerDismissed && missingFields.length > 0 && (
-          <Pressable
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
             style={[styles.banner, { backgroundColor: C.surface, borderLeftColor: C.brinjal1 }]}
             onPress={() => router.push('/(creator)/profile')}>
             <View style={[styles.bannerIconBox, { backgroundColor: C.primaryLight }]}>
@@ -507,7 +507,7 @@ export default function HomeScreen() {
                 Missing: {missingFields.join(' · ')}
               </Text>
             </View>
-            <Pressable style={styles.bannerClose} onPress={() => setBannerDismissed(true)} hitSlop={10}>
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.bannerClose} onPress={() => setBannerDismissed(true)} hitSlop={10}>
               <Ionicons name="close" size={16} color={C.textSecondary} />
             </Pressable>
           </Pressable>
@@ -515,7 +515,7 @@ export default function HomeScreen() {
 
         {/* ── Pending action attention banner ── */}
         {pendingActions.length > 0 && (
-          <Pressable
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
             style={styles.attentionBanner}
             onPress={() => router.push('/(creator)/(tabs)/proposals')}>
             <View style={styles.attentionIconWrap}>
@@ -538,7 +538,7 @@ export default function HomeScreen() {
         )}
 
         {/* ── Refer a friend banner ── */}
-        <Pressable
+        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
           style={[styles.banner, { backgroundColor: C.surface, borderLeftColor: '#EC4899' }]}
           onPress={() => router.push('/(creator)/referral')}>
           <View style={[styles.bannerIconBox, { backgroundColor: '#FCE7F3' }]}>
@@ -550,12 +550,13 @@ export default function HomeScreen() {
           </View>
           <Ionicons name="chevron-forward" size={16} color={C.textSecondary} />
         </Pressable>
+        <View style={[styles.rowSeparator, { backgroundColor: C.border }]} />
 
         {/* ── Error ── */}
         {fetchError ? (
           <View style={[styles.errorCard, { backgroundColor: '#FEE2E2' }]}>
             <Text style={styles.errorText}>{fetchError}</Text>
-            <Pressable onPress={() => fetchCampaigns()}>
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => fetchCampaigns()}>
               <Text style={[styles.retryText, { color: C.brinjal1 }]}>{t('creator.home.retry')}</Text>
             </Pressable>
           </View>
@@ -563,7 +564,7 @@ export default function HomeScreen() {
 
         {/* ── Search bar ── */}
         <View style={styles.searchRow}>
-          <Pressable
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
             style={[styles.searchCard, { backgroundColor: C.surface, borderColor: C.border }, searchFocused && styles.searchCardFocused]}
             onPress={() => searchInputRef.current?.focus()}>
             <Ionicons name="search-outline" size={18} color={searchFocused ? C.brinjal1 : C.textSecondary} style={styles.searchIcon} />
@@ -596,7 +597,7 @@ export default function HomeScreen() {
                 void fetchCampaigns({ search });
               }}
             />
-            <Pressable
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
               style={[styles.filterBtn, { backgroundColor: isFilterActive ? C.brinjal1 : C.primaryLight }]}
               onPress={openFilter}
               hitSlop={6}>
@@ -607,14 +608,14 @@ export default function HomeScreen() {
         </View>
 
         {/* ── Categories ── */}
-        <View style={styles.sectionHeader}>
+        <View style={[styles.sectionHeader, { marginTop: 6 }]}>
           <Text style={[styles.sectionTitle, { color: C.text }]}>{t('creator.home.categories')}</Text>
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoriesRow}>
           {visibleCategories.map((cat) => {
             const isActive = activeCategories.includes(cat.label);
             return (
-              <Pressable
+              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                 key={cat.label}
                 style={[
                   styles.catPill,
@@ -652,7 +653,7 @@ export default function HomeScreen() {
                 const meta = getPlatformMeta(p);
                 const isActive = activePlatforms.includes(p);
                 return (
-                  <Pressable
+                  <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                     key={p}
                     style={[
                       styles.catPill,
@@ -688,7 +689,7 @@ export default function HomeScreen() {
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { color: C.text }]}>{t('creator.home.featuredEvents')}</Text>
               {featured.length > 0 && (
-                <Pressable onPress={() => router.push('/(creator)/featured-campaigns')}>
+                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => router.push('/(creator)/featured-campaigns')}>
                   <Text style={[styles.seeAll, { color: C.brinjal1 }]}>{t('creator.home.seeAll')}</Text>
                 </Pressable>
               )}
@@ -719,7 +720,7 @@ export default function HomeScreen() {
             <View style={styles.sectionHeader}>
               <View style={styles.nearbyTitleRow}>
                 <Text style={[styles.sectionTitle, { color: C.text }]}>Nearby Events</Text>
-                <Pressable
+                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                   style={[styles.nearbyChip, { backgroundColor: C.primaryLight, borderColor: C.border }]}
                   onPress={() => setNearbySheetOpen(true)}>
                   <Ionicons
@@ -757,7 +758,7 @@ export default function HomeScreen() {
                 <Ionicons name="navigate-outline" size={32} color={C.textSecondary} />
                 <Text style={[styles.featuredEmptyTitle, { color: C.text }]}>No events within {nearbyRadiusKm} km</Text>
                 {nearbyRadiusKm < 100 && (
-                  <Pressable style={[styles.expandRadiusBtn, { backgroundColor: C.brinjal1 }]} onPress={handleExpandNearbyRadius}>
+                  <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.expandRadiusBtn, { backgroundColor: C.brinjal1 }]} onPress={handleExpandNearbyRadius}>
                     <Text style={styles.expandRadiusBtnText}>Expand to {RADIUS_PRESETS.find((r) => r > nearbyRadiusKm) ?? 100} km</Text>
                   </Pressable>
                 )}
@@ -849,6 +850,7 @@ const styles = StyleSheet.create({
 
   // ── Search ──
   searchRow: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 4 },
+  rowSeparator: { height: 1, marginHorizontal: 20, marginTop: 14 },
   searchCard: { flexDirection: 'row', alignItems: 'center', borderRadius: 16, paddingHorizontal: 14, height: 52, borderWidth: 1.5 },
   searchCardFocused: {
     borderColor: '#7C3AED', borderWidth: 2,

@@ -139,7 +139,7 @@ export default function PresenceGoalScreen() {
                     keyboardType="default"
                   />
                   {handles[field.id] !== field.prefix && (
-                    <Pressable onPress={() => setHandles((prev) => ({ ...prev, [field.id]: field.prefix }))} hitSlop={8}>
+                    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => setHandles((prev) => ({ ...prev, [field.id]: field.prefix }))} hitSlop={8}>
                       <Ionicons name="close-circle" size={18} color={C.textSecondary} />
                     </Pressable>
                   )}
@@ -159,7 +159,7 @@ export default function PresenceGoalScreen() {
               {SERVICES.map((svc) => {
                 const isSelected = selectedServices.includes(svc.id);
                 return (
-                  <Pressable
+                  <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                     key={svc.id}
                     style={[
                       styles.serviceCard,
@@ -183,7 +183,7 @@ export default function PresenceGoalScreen() {
             </View>
           </View>
 
-          <Pressable
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
             style={[styles.saveBtn, { backgroundColor: saved ? C.active : C.brinjal1, shadowColor: C.brinjal1 }]}
             disabled={saving}
             onPress={handleSave}>

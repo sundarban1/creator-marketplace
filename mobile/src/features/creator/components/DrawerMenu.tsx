@@ -65,7 +65,7 @@ export function DrawerMenu({ visible, user, onClose, onLogout }: Props) {
 
   return (
     <View style={StyleSheet.absoluteFill}>
-      <Pressable style={StyleSheet.absoluteFill} onPress={onClose}>
+      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={StyleSheet.absoluteFill} onPress={onClose}>
         <Animated.View style={[styles.backdrop, { opacity: backdropOpacity, flex: 1 }]} />
       </Pressable>
 
@@ -87,7 +87,7 @@ export function DrawerMenu({ visible, user, onClose, onLogout }: Props) {
         <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
           <View style={[styles.navGroup, { backgroundColor: C.surface, borderColor: C.border }]}>
             {ACCOUNT_ITEMS.map(({ iconName, labelKey, route, color }, idx) => (
-              <Pressable
+              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                 key={labelKey}
                 style={[styles.navItem, idx < ACCOUNT_ITEMS.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}
                 onPress={() => { onClose(); router.push(route as Parameters<typeof router.push>[0]); }}>
@@ -102,7 +102,7 @@ export function DrawerMenu({ visible, user, onClose, onLogout }: Props) {
         </ScrollView>
 
         {/* Logout */}
-        <Pressable
+        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
           style={[styles.logout, { borderTopColor: C.border, paddingBottom: insets.bottom + 12 }]}
           onPress={onLogout}>
           <Ionicons name="log-out" size={20} color={C.error} />

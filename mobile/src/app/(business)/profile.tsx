@@ -38,7 +38,7 @@ function BusinessAvatar({ name, logoUrl, size = 88, uploading, onPress }: {
   const letter = (name?.[0] ?? '?').toUpperCase();
   const radius = size / 2;
   return (
-    <Pressable onPress={onPress} disabled={uploading} style={{ position: 'relative' }}>
+    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={onPress} disabled={uploading} style={{ position: 'relative' }}>
       <View style={{ width: size, height: size, borderRadius: radius, backgroundColor: 'rgba(255,255,255,0.25)', alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: '#fff', overflow: 'hidden' }}>
         {logoUrl ? (
           <Image source={{ uri: logoUrl }} style={{ width: size, height: size, borderRadius: radius }} />
@@ -119,7 +119,7 @@ export default function BusinessProfileScreen() {
       <View style={[styles.navBar, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
         <BackButton fallback="/(business)/" />
         <Text style={[styles.navTitle, { color: C.text }]} numberOfLines={1}>{name}</Text>
-        <Pressable style={[styles.editNavBtn, { backgroundColor: C.primaryLight }]} onPress={() => router.push('/(business)/edit-profile' as never)}>
+        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.editNavBtn, { backgroundColor: C.primaryLight }]} onPress={() => router.push('/(business)/edit-profile' as never)}>
           <Text style={[styles.editNavText, { color: C.brinjal1 }]}>{t('common.edit')}</Text>
         </Pressable>
       </View>
@@ -171,7 +171,7 @@ export default function BusinessProfileScreen() {
 
         <View style={styles.body}>
           {/* Edit Profile CTA */}
-          <Pressable
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
             style={[styles.editCta, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 + '33' }]}
             onPress={() => router.push('/(business)/edit-profile' as never)}>
             <Ionicons name="create" size={22} color={C.brinjal1} />
@@ -192,7 +192,7 @@ export default function BusinessProfileScreen() {
               <Text style={[styles.aboutText, { color: C.text }]}>{profile.description}</Text>
             </View>
           ) : (
-            <Pressable
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
               style={[styles.emptyField, { backgroundColor: C.surface, borderColor: C.border }]}
               onPress={() => router.push('/(business)/edit-profile' as never)}>
               <Text style={[styles.emptyFieldText, { color: C.textSecondary }]}>{t('profile.addDescription')}</Text>
@@ -210,7 +210,7 @@ export default function BusinessProfileScreen() {
 
           {/* Website */}
           {profile?.website ? (
-            <Pressable
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
               style={[styles.websiteCard, { backgroundColor: C.surface, borderColor: C.border }]}
               onPress={() => Linking.openURL(profile.website!)}>
               <View style={[styles.websiteIconBox, { backgroundColor: C.primaryLight }]}>
@@ -225,7 +225,7 @@ export default function BusinessProfileScreen() {
               <Ionicons name="open-outline" size={18} color={C.textSecondary} />
             </Pressable>
           ) : (
-            <Pressable
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
               style={[styles.emptyField, { backgroundColor: C.surface, borderColor: C.border }]}
               onPress={() => router.push('/(business)/edit-profile' as never)}>
               <Text style={[styles.emptyFieldText, { color: C.textSecondary }]}>{t('profile.addWebsite')}</Text>
@@ -248,7 +248,7 @@ export default function BusinessProfileScreen() {
               </View>
             </View>
           ) : (
-            <Pressable
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
               style={[styles.emptyField, { backgroundColor: C.surface, borderColor: C.border }]}
               onPress={() => router.push('/(business)/edit-profile' as never)}>
               <Text style={[styles.emptyFieldText, { color: C.textSecondary }]}>{t('profile.addCategories')}</Text>

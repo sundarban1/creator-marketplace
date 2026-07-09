@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { Image } from 'expo-image';
+import { StyleSheet, Text, View } from 'react-native';
 import Animated, { Easing, Keyframe } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
@@ -54,7 +55,7 @@ export function SplashScreen() {
       {/* Logo */}
       <Animated.View entering={logoKf.duration(TOTAL)} style={styles.logoOuter}>
         <View style={styles.logoCard}>
-          <Image source={require('@/assets/images/logo.png')} style={styles.logoImage} resizeMode="contain" />
+          <Image source={require('@/assets/images/logo.png')} style={styles.logoImage} contentFit="contain" />
         </View>
       </Animated.View>
 

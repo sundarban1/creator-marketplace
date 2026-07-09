@@ -120,7 +120,7 @@ function TabSlider({ tabs, active, onChange }: {
         {tabs.map((tab, idx) => {
           const isActive = tab.key === active;
           return (
-            <Pressable
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
               key={tab.key}
               onLayout={(e) => handleLayout(idx, e)}
               onPress={() => handlePress(tab, idx)}
@@ -176,7 +176,7 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
   const accentColor = cfg.color;
 
   return (
-    <Pressable
+    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
       style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}
       onPress={() => router.push({ pathname: '/campaign-detail', params: { campaignId: proposal.campaignId } } as never)}>
 
@@ -209,7 +209,7 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
                 {proposal.coverLetter}
               </Text>
               {proposal.coverLetter.length > 100 && (
-                <Pressable onPress={(e) => { e.stopPropagation(); setExpanded((v) => !v); }}>
+                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={(e) => { e.stopPropagation(); setExpanded((v) => !v); }}>
                   <Text style={[styles.seeMore, { color: accentColor }]}>
                     {expanded ? 'See less' : 'See more'}
                   </Text>
@@ -248,7 +248,7 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
               </View>
             </View>
           ) : (
-            <Pressable
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
               style={[styles.trackBtn, { backgroundColor: trackCfg.color }]}
               onPress={(e) => {
                 e.stopPropagation();

@@ -82,7 +82,7 @@ export default function EditCategoriesScreen() {
         <View style={s.topBar}>
           <BackButton fallback="/(creator)/profile" />
           <Text style={[s.topTitle, { color: '#fff' }]}>{t('editCategories.title')}</Text>
-          <Pressable
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
             style={[s.saveBtn, { backgroundColor: saving ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.25)' }]}
             onPress={handleSave}
             disabled={saving}>
@@ -112,7 +112,7 @@ export default function EditCategoriesScreen() {
             const disabled = !active && categories.length >= MAX;
             const meta = catOptions.find((c) => c.name === cat);
             return (
-              <Pressable
+              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                 key={cat}
                 onPress={() => toggle(cat)}
                 disabled={disabled}

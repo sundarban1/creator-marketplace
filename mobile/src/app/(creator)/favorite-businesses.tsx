@@ -34,7 +34,7 @@ function BusinessCard({ item, onRemove }: { item: BusinessListItem; onRemove: ()
 
   return (
     <View style={[s.card, { backgroundColor: C.surface, borderColor: C.border }]}>
-      <Pressable
+      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
         style={s.cardMain}
         onPress={() => router.push({ pathname: '/(creator)/business-detail', params: { id: item.id } })}>
         <Avatar name={name} C={C} />
@@ -66,7 +66,7 @@ function BusinessCard({ item, onRemove }: { item: BusinessListItem; onRemove: ()
 
       <View style={[s.divider, { backgroundColor: C.border }]} />
 
-      <Pressable style={s.removeRow} onPress={onRemove}>
+      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={s.removeRow} onPress={onRemove}>
         <Ionicons name="heart-outline" size={15} color="#EF4444" />
         <Text style={s.removeText}>{t('favoriteBrands.removeConfirm')}</Text>
       </Pressable>
@@ -108,7 +108,7 @@ export default function FavoriteBusinessesScreen() {
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
       <LinearGradient colors={['#312e81', '#4f46e5', '#8b5cf6']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.gradientHeader}>
         <View style={s.header}>
-          <Pressable style={s.backBtn} onPress={() => router.back()}>
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={s.backBtn} onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={22} color="#fff" />
           </Pressable>
           <View style={{ alignItems: 'center', gap: 2 }}>
@@ -145,7 +145,7 @@ export default function FavoriteBusinessesScreen() {
               <Text style={[s.emptyHint, { color: C.textSecondary }]}>
                 {t('favoriteBrands.emptySub')}
               </Text>
-              <Pressable
+              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                 style={[s.emptyBtn, { backgroundColor: '#F97316' }]}
                 onPress={() => router.push('/(creator)/explore-businesses')}>
                 <Text style={s.emptyBtnText}>{t('favoriteBrands.browseCTA')}</Text>

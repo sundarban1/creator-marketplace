@@ -154,7 +154,7 @@ export default function CreatorDetailScreen() {
           <FontAwesome5 name="user-slash" size={40} color={C.textSecondary} style={s.errorEmoji} />
           <Text style={[s.errorTitle, { color: C.text }]}>{t('creatorDetailExtra.notFound')}</Text>
           <Text style={[s.errorHint, { color: C.textSecondary }]}>{error || t('creatorDetailExtra.notFoundSub')}</Text>
-          <Pressable onPress={() => router.back()} style={[s.retryBtn, { borderColor: C.brinjal1 }]}>
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => router.back()} style={[s.retryBtn, { borderColor: C.brinjal1 }]}>
             <Text style={[s.retryText, { color: C.brinjal1 }]}>{t('creatorDetailExtra.goBack')}</Text>
           </Pressable>
         </View>
@@ -258,7 +258,7 @@ export default function CreatorDetailScreen() {
                 const canOpen = !!p.profileUrl;
                 const info = getPlatformInfo(p.platform);
                 return (
-                  <Pressable
+                  <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                     key={p.key}
                     style={[s.socialRow, { borderColor: C.border }]}
                     onPress={() => canOpen ? Linking.openURL(p.profileUrl!).catch(() => {}) : null}>
@@ -321,7 +321,7 @@ export default function CreatorDetailScreen() {
             <SectionTitle label={t('creatorDetailExtra.sectionPortfolio')} color={C.textSecondary} />
             <View style={s.portfolioList}>
               {portfolioLinks.map((link) => (
-                <Pressable
+                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                   key={link.id}
                   style={[s.portfolioRow, { borderColor: C.border }]}
                   onPress={() => Linking.openURL(link.url).catch(() => {})}>
@@ -341,7 +341,7 @@ export default function CreatorDetailScreen() {
       {/* Sticky action bar */}
       <View style={[msgBtn.bar, { backgroundColor: C.surface, borderTopColor: C.border, paddingBottom: Math.max(14, insets.bottom) }]}>
         {convStatus === 'ACCEPTED' ? (
-          <Pressable style={[msgBtn.btn, { backgroundColor: C.brinjal1 }]} onPress={openChat}>
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[msgBtn.btn, { backgroundColor: C.brinjal1 }]} onPress={openChat}>
             <FontAwesome5 name="comment-dots" size={16} color="#fff" solid />
             <Text style={msgBtn.txt}>{t('creatorDetailExtra.openChat')}</Text>
           </Pressable>
@@ -350,7 +350,7 @@ export default function CreatorDetailScreen() {
             <Text style={[msgBtn.txt, { color: '#fff' }]}>{t('creatorDetailExtra.requestSent')}</Text>
           </View>
         ) : (
-          <Pressable style={[msgBtn.btn, { backgroundColor: C.brinjal1 }]} onPress={() => setShowModal(true)}>
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[msgBtn.btn, { backgroundColor: C.brinjal1 }]} onPress={() => setShowModal(true)}>
             <Text style={msgBtn.txt}>{t('creatorDetailExtra.sendMessage')}</Text>
           </Pressable>
         )}
@@ -359,12 +359,12 @@ export default function CreatorDetailScreen() {
       {/* Request message modal */}
       <Modal visible={showModal} transparent animationType="slide" onRequestClose={() => setShowModal(false)}>
         <View style={rm.overlay}>
-          <Pressable style={rm.scrim} onPress={() => setShowModal(false)} />
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={rm.scrim} onPress={() => setShowModal(false)} />
           <View style={[rm.sheet, { backgroundColor: C.surface }]}>
             <View style={[rm.handle, { backgroundColor: C.border }]} />
             <View style={rm.titleRow}>
               <Text style={[rm.title, { color: C.text }]}>{t('creatorDetailExtra.messageRequestTitle')}</Text>
-              <Pressable style={[rm.closeBtn, { backgroundColor: C.background }]} onPress={() => setShowModal(false)} hitSlop={8}>
+              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[rm.closeBtn, { backgroundColor: C.background }]} onPress={() => setShowModal(false)} hitSlop={8}>
                 <Ionicons name="close" size={18} color={C.textSecondary} />
               </Pressable>
             </View>
@@ -381,7 +381,7 @@ export default function CreatorDetailScreen() {
               maxLength={500}
             />
             <Text style={[rm.counter, { color: C.textSecondary }]}>{requestMsg.length}/500</Text>
-            <Pressable
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
               style={[rm.sendBtn, { backgroundColor: sending ? C.border : C.brinjal1 }]}
               onPress={handleSendRequest}
               disabled={sending}>

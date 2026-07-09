@@ -75,7 +75,7 @@ export function BusinessDrawerMenu({ visible, user, onClose, onLogout }: Props) 
 
   return (
     <View style={StyleSheet.absoluteFill}>
-      <Pressable style={StyleSheet.absoluteFill} onPress={onClose}>
+      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={StyleSheet.absoluteFill} onPress={onClose}>
         <Animated.View style={[styles.backdrop, { opacity: backdropOpacity, flex: 1 }]} />
       </Pressable>
 
@@ -99,7 +99,7 @@ export function BusinessDrawerMenu({ visible, user, onClose, onLogout }: Props) 
             <View key={group.labelKey}>
               <View style={[styles.navGroup, { backgroundColor: C.surface, borderColor: C.border }]}>
                 {group.items.map(({ iconName, labelKey, route, color }, idx) => (
-                  <Pressable
+                  <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                     key={labelKey}
                     style={[
                       styles.navItem,
@@ -119,7 +119,7 @@ export function BusinessDrawerMenu({ visible, user, onClose, onLogout }: Props) 
         </ScrollView>
 
         {/* Logout */}
-        <Pressable
+        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
           style={[styles.logout, { borderTopColor: C.border, paddingBottom: insets.bottom + 12 }]}
           onPress={onLogout}>
           <Ionicons name="log-out" size={20} color={C.error} />

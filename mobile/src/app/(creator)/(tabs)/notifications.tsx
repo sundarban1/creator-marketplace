@@ -64,7 +64,7 @@ function NotificationItem({ item, onPress }: { item: AppNotification; onPress: (
   const cfg = TYPE_CONFIG[item.type] ?? FALLBACK;
 
   return (
-    <Pressable
+    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
       style={[
         styles.item,
         { backgroundColor: item.isRead ? C.surface : C.primaryLight, borderBottomColor: C.border },
@@ -226,7 +226,7 @@ export default function NotificationsScreen() {
             </Text>
           </View>
           {unreadCount > 0 && (
-            <Pressable onPress={handleMarkAll} style={[styles.markAllBtn, { borderColor: 'rgba(255,255,255,0.5)' }]}>
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={handleMarkAll} style={[styles.markAllBtn, { borderColor: 'rgba(255,255,255,0.5)' }]}>
               <Text style={styles.markAllText}>{t('notifications.markAllRead')}</Text>
             </Pressable>
           )}

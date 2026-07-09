@@ -42,7 +42,7 @@ function CreatorCard({ item, onRemove }: { item: SavedCreatorItem; onRemove: () 
 
   return (
     <View style={[s.card, { backgroundColor: C.surface, borderColor: C.border }]}>
-      <Pressable
+      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
         style={s.cardMain}
         onPress={() => router.push({ pathname: '/(business)/creator-detail', params: { id: creator.id } })}>
         <Avatar name={name} C={C} />
@@ -77,7 +77,7 @@ function CreatorCard({ item, onRemove }: { item: SavedCreatorItem; onRemove: () 
 
       <View style={[s.divider, { backgroundColor: C.border }]} />
 
-      <Pressable style={s.removeRow} onPress={onRemove}>
+      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={s.removeRow} onPress={onRemove}>
         <Ionicons name="bookmark-outline" size={15} color="#EF4444" />
         <Text style={s.removeText}>{t('savedCreators.removeFromSaved')}</Text>
       </Pressable>
@@ -118,7 +118,7 @@ export default function SavedCreatorsScreen() {
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
       <LinearGradient colors={['#1e1b4b', '#4338ca', '#7c3aed']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.gradientHeader}>
         <View style={s.header}>
-          <Pressable style={s.backBtn} onPress={() => router.back()}>
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={s.backBtn} onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={22} color="#fff" />
           </Pressable>
           <View style={{ alignItems: 'center', gap: 2 }}>

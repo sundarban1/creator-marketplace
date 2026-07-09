@@ -90,7 +90,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             { top: insets.top + 10, backgroundColor: cfg.bg, borderColor: cfg.border, opacity, transform: [{ translateY }] },
           ]}
           pointerEvents="box-none">
-          <Pressable style={styles.inner} onPress={dismiss}>
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.inner} onPress={dismiss}>
             <Ionicons name={cfg.icon} size={19} color={cfg.titleColor} style={styles.icon} />
             <View style={styles.texts}>
               {toast.title ? (

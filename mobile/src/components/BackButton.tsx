@@ -18,7 +18,7 @@ export function BackButton({ onPress, fallback = '/' }: Props) {
   }
 
   return (
-    <Pressable
+    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
       style={({ pressed }) => [
         styles.btn,
         { backgroundColor: C.surface, borderColor: C.border, opacity: pressed ? 0.7 : 1 },

@@ -54,7 +54,7 @@ export function TabSlider({ tabs, active, onChange, justify = false }: Props) {
     const isActive = tab.key === active;
     const tabColor = tab.color ?? '#4F46E5';
     return (
-      <Pressable
+      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
         key={tab.key}
         onLayout={(e) => handleLayout(idx, e)}
         onPress={() => handlePress(tab, idx)}

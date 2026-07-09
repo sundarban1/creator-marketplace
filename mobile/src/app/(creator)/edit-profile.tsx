@@ -116,7 +116,7 @@ function LocationSearchModal({
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
       <SafeAreaView style={[lsm.container, { backgroundColor: C.background }]} edges={['top']}>
         <View style={[lsm.topBar, { borderBottomColor: C.border, backgroundColor: C.background }]}>
-          <Pressable onPress={onClose}>
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={onClose}>
             <Text style={[lsm.cancelTxt, { color: C.brinjal1 }]}>{t('profile.editCreator.locationModalCancel')}</Text>
           </Pressable>
           <Text style={[lsm.title, { color: C.text }]}>{t('profile.editCreator.locationModalTitle')}</Text>
@@ -143,7 +143,7 @@ function LocationSearchModal({
           keyExtractor={(item) => item.place_id}
           keyboardShouldPersistTaps="handled"
           renderItem={({ item }) => (
-            <Pressable
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
               style={[lsm.row, { borderBottomColor: C.border }]}
               onPress={() => handleSelectPrediction(item)}>
               <Ionicons name="location" size={18} color="#9CA3AF" />
@@ -390,7 +390,7 @@ export default function EditProfileScreen() {
 
           <View style={styles.field}>
             <Text style={[styles.label, { color: C.textSecondary }]}>LOCATION</Text>
-            <Pressable
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
               style={[styles.locationBtn, { backgroundColor: C.background, borderColor: C.border }]}
               onPress={() => setLocationModalOpen(true)}>
               <Text style={[styles.locationBtnTxt, { color: location ? C.text : C.textSecondary }]} numberOfLines={2}>
@@ -399,7 +399,7 @@ export default function EditProfileScreen() {
               <Text style={styles.locationArrow}>›</Text>
             </Pressable>
             {location ? (
-              <Pressable onPress={() => { setLocation(''); setLocationLat(null); setLocationLng(null); }}>
+              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => { setLocation(''); setLocationLat(null); setLocationLng(null); }}>
                 <Text style={[styles.clearLocation, { color: C.error ?? '#EF4444' }]}>Clear location</Text>
               </Pressable>
             ) : null}
@@ -418,7 +418,7 @@ export default function EditProfileScreen() {
                   {allCategories.map(({ emoji, label }) => {
                     const selected = categories.includes(label);
                     return (
-                      <Pressable
+                      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                         key={label}
                         style={[
                           styles.chip,
@@ -441,7 +441,7 @@ export default function EditProfileScreen() {
           </>
         )}
 
-        <Pressable
+        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
           style={[styles.saveBtn, { backgroundColor: saving ? C.border : C.brinjal1 }]}
           onPress={handleSave}
           disabled={saving}>

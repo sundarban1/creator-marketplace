@@ -122,7 +122,7 @@ export default function CreatorProfileScreen() {
 
           {/* Top bar */}
           <View style={s.topBar}>
-            <Pressable style={s.topIconBtn} onPress={() => router.back()}>
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={s.topIconBtn} onPress={() => router.back()}>
               <Ionicons name="chevron-back" size={22} color="#fff" />
             </Pressable>
             <Text style={s.topTitle}>{t('profile.myProfile')}</Text>
@@ -134,7 +134,7 @@ export default function CreatorProfileScreen() {
         <View style={[s.profileCard, { backgroundColor: C.surface }]}>
           {/* Avatar */}
           <View style={s.avatarArea}>
-            <Pressable onPress={handleAvatarPress} disabled={avatarUploading} style={s.avatarPressable}>
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={handleAvatarPress} disabled={avatarUploading} style={s.avatarPressable}>
               {displayAvatar ? (
                 <Image source={{ uri: displayAvatar }} style={s.avatar} />
               ) : (
@@ -166,7 +166,7 @@ export default function CreatorProfileScreen() {
           ) : null}
 
           {/* Edit profile button */}
-          <Pressable
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
             style={[s.editBtn, { borderColor: C.brinjal1 }]}
             onPress={() => router.push('/(creator)/edit-profile')}>
             <Ionicons name="create-outline" size={15} color={C.brinjal1} />
@@ -226,7 +226,7 @@ export default function CreatorProfileScreen() {
           {richAccounts.length > 0 ? (
             <View style={s.cardList}>
               {richAccounts.map((acc) => (
-                <Pressable
+                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                   key={acc.platform}
                   style={[s.socialRow, { backgroundColor: C.background, borderColor: C.border }]}
                   onPress={() => Linking.openURL(acc.url).catch(() => {})}>
@@ -268,7 +268,7 @@ export default function CreatorProfileScreen() {
               {portfolioLinks.map((item) => {
                 const plat = detectPlatform(item.url);
                 return (
-                  <Pressable
+                  <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                     key={item.id}
                     style={[s.socialRow, { backgroundColor: C.background, borderColor: C.border }]}
                     onPress={() => Linking.openURL(item.url).catch(() => {})}>
@@ -283,7 +283,7 @@ export default function CreatorProfileScreen() {
                   </Pressable>
                 );
               })}
-              <Pressable
+              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                 style={[s.addMoreRow, { borderColor: C.brinjal1 + '55' }]}
                 onPress={() => router.push('/(creator)/settings?section=past-work' as never)}>
                 <Ionicons name="add-circle-outline" size={16} color={C.brinjal1} />
@@ -320,7 +320,7 @@ function SectionCard({
     <View style={[s.sectionCard, { backgroundColor: C.surface }]}>
       <View style={s.sectionHeader}>
         <Text style={[s.sectionTitle, { color: C.text }]}>{title}</Text>
-        <Pressable onPress={action.onPress} hitSlop={8}>
+        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={action.onPress} hitSlop={8}>
           <Text style={[s.sectionAction, { color: C.brinjal1 }]}>{action.label}</Text>
         </Pressable>
       </View>
@@ -341,7 +341,7 @@ function EmptyState({
       <Ionicons name={icon as never} size={32} color={C.border} />
       <Text style={[s.emptyTitle, { color: C.text }]}>{title}</Text>
       <Text style={[s.emptyHint, { color: C.textSecondary }]}>{hint}</Text>
-      <Pressable style={[s.emptyCta, { backgroundColor: C.brinjal1 }]} onPress={onPress}>
+      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[s.emptyCta, { backgroundColor: C.brinjal1 }]} onPress={onPress}>
         <Text style={s.emptyCtaText}>{cta}</Text>
       </Pressable>
     </View>

@@ -36,7 +36,7 @@ export function EmptyState({ emoji, icon = 'cube-outline', faIcon, title, subtit
         <Text style={[styles.subtitle, { color: C.textSecondary, fontFamily: F.regular }]}>{subtitle}</Text>
       ) : null}
       {action ? (
-        <Pressable onPress={action.onPress} style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1, marginTop: 6 })}>
+        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={action.onPress} style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1, marginTop: 6 })}>
           <LinearGradient
             colors={[C.brinjal1, '#7C3AED']}
             start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}

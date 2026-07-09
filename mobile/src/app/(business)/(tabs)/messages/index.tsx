@@ -128,7 +128,7 @@ function ChatCard({ conv }: { conv: Conversation }) {
   const hasUnread = conv.unreadCount > 0;
 
   return (
-    <Pressable
+    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
       style={({ pressed }) => [
         s.card,
         { backgroundColor: pressed ? C.surface : C.background },

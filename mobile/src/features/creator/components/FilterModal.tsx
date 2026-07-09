@@ -150,7 +150,7 @@ export function LocationSearchPicker({
   return (
     <View style={ls.container}>
       {/* Remote — separate standalone chip */}
-      <Pressable
+      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
         style={[ls.remoteChip, { borderColor: remoteSelected ? C.brinjal1 : C.border, backgroundColor: remoteSelected ? C.primaryLight : C.background }, !remoteSelected && atMax && { opacity: 0.35 }]}
         onPress={toggleRemote}
         disabled={!remoteSelected && atMax}>
@@ -168,7 +168,7 @@ export function LocationSearchPicker({
             <View key={loc.label} style={[ls.selectedChip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
               <Ionicons name="location" size={12} color={C.brinjal1} />
               <Text style={[ls.selectedChipText, { color: C.brinjal1 }]}>{loc.label}</Text>
-              <Pressable onPress={() => remove(loc.label)} hitSlop={8}>
+              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => remove(loc.label)} hitSlop={8}>
                 <Ionicons name="close" size={13} color={C.brinjal1} />
               </Pressable>
             </View>
@@ -192,7 +192,7 @@ export function LocationSearchPicker({
             {searching
               ? <ActivityIndicator size="small" color={C.brinjal1} />
               : query.length > 0
-              ? <Pressable onPress={() => { setQuery(''); setPredictions([]); }} hitSlop={8}>
+              ? <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => { setQuery(''); setPredictions([]); }} hitSlop={8}>
                   <Ionicons name="close" size={15} color={C.textSecondary} />
                 </Pressable>
               : null}
@@ -201,7 +201,7 @@ export function LocationSearchPicker({
           {predictions.length > 0 && (
             <View style={[ls.dropdown, { backgroundColor: C.surface, borderColor: C.border }]}>
               {predictions.slice(0, 5).map((pred, idx) => (
-                <Pressable
+                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                   key={pred.place_id}
                   style={[ls.dropRow, { borderBottomColor: idx < Math.min(predictions.length, 5) - 1 ? C.border : 'transparent' }]}
                   onPress={() => handleSelectPrediction(pred)}>
@@ -325,7 +325,7 @@ function DateRangePicker({
         {PRESETS.map((p) => {
           const active = isPresetActive(p.days);
           return (
-            <Pressable
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
               key={p.label}
               style={[dp.preset, { borderColor: active ? C.brinjal1 : C.border, backgroundColor: active ? C.primaryLight : C.background }]}
               onPress={() => applyPreset(p.days)}>
@@ -351,7 +351,7 @@ function DateRangePicker({
                 <Text style={[dp.inputValue, { color: date ? C.text : C.textSecondary }]} numberOfLines={1}>
                   {date ? fmtDate(date) : 'DD MMM YYYY'}
                 </Text>
-                <Pressable onPress={() => togglePicker(field)} hitSlop={8}>
+                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => togglePicker(field)} hitSlop={8}>
                   <Ionicons name="calendar-outline" size={16} color={active ? C.brinjal1 : C.textSecondary} />
                 </Pressable>
               </View>
@@ -360,7 +360,7 @@ function DateRangePicker({
         })}
 
         {(dateFrom || dateTo) && (
-          <Pressable
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
             style={dp.clearBtn}
             onPress={() => { onFromChange(null); onToChange(null); setActivePicker(null); }}>
             <Ionicons name="close" size={16} color={C.error} />
@@ -376,11 +376,11 @@ function DateRangePicker({
           </Text>
 
           <View style={dp.monthNav}>
-            <Pressable style={dp.navBtn} onPress={prevMonth}>
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={dp.navBtn} onPress={prevMonth}>
               <Text style={[dp.navBtnTxt, { color: C.brinjal1 }]}>‹</Text>
             </Pressable>
             <Text style={[dp.monthTitle, { color: C.text }]}>{MONTHS[calMonth]} {calYear}</Text>
-            <Pressable style={dp.navBtn} onPress={nextMonth}>
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={dp.navBtn} onPress={nextMonth}>
               <Text style={[dp.navBtnTxt, { color: C.brinjal1 }]}>›</Text>
             </Pressable>
           </View>
@@ -397,7 +397,7 @@ function DateRangePicker({
               const st = dayStatus(day);
               const isEnd = st === 'from' || st === 'to';
               return (
-                <Pressable
+                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                   key={`d${day}`}
                   style={[dp.cell, (st === 'range' || isEnd) && { backgroundColor: C.primaryLight }]}
                   onPress={() => handleDayTap(day)}>
@@ -434,13 +434,13 @@ export function FilterModal({
   const C = useAppColors();
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose} />
+      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.backdrop} onPress={onClose} />
       <View style={[styles.sheet, { backgroundColor: C.surface }]}>
         <View style={[styles.handle, { backgroundColor: C.border }]} />
 
         <View style={[styles.header, { borderBottomColor: C.border }]}>
           <Text style={[styles.title, { color: C.text }]}>Filters</Text>
-          <Pressable onPress={onReset}>
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={onReset}>
             <Text style={[styles.reset, { color: C.brinjal1 }]}>Reset all</Text>
           </Pressable>
         </View>
@@ -455,7 +455,7 @@ export function FilterModal({
             {EVENT_TYPE_OPTS.map(({ value, label }) => {
               const sel = tempEventType === value;
               return (
-                <Pressable
+                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                   key={value}
                   style={[styles.eventChip, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? C.primaryLight : C.background }]}
                   onPress={() => setTempEventType(value)}>
@@ -477,7 +477,7 @@ export function FilterModal({
         </ScrollView>
 
         <View style={[styles.footer, { borderTopColor: C.border }]}>
-          <Pressable
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
             style={({ pressed }) => [styles.applyBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }, pressed && { opacity: 0.88 }]}
             onPress={onApply}>
             <Text style={styles.applyTxt}>Apply Filters</Text>

@@ -24,7 +24,7 @@ export function TextInputWithLabel({ label, error, secureToggle, secureTextEntry
           {...rest}
         />
         {secureToggle && (
-          <Pressable onPress={() => setHidden((v) => !v)} style={styles.toggle}>
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => setHidden((v) => !v)} style={styles.toggle}>
             <Text style={[styles.toggleText, { color: C.brinjal1 }]}>{hidden ? 'Show' : 'Hide'}</Text>
           </Pressable>
         )}

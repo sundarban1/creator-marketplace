@@ -55,7 +55,7 @@ export function WithdrawModal({ visible, onClose, availableBalance, paymentMetho
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={handleClose}>
-      <Pressable style={styles.backdrop} onPress={handleClose} />
+      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.backdrop} onPress={handleClose} />
       <View style={[styles.sheet, { backgroundColor: C.surface }]}>
         <View style={[styles.handle, { backgroundColor: C.border }]} />
 
@@ -67,7 +67,7 @@ export function WithdrawModal({ visible, onClose, availableBalance, paymentMetho
           {paymentMethods.length === 0 ? (
             <View style={styles.emptyMethods}>
               <Text style={[styles.emptyMethodsText, { color: C.textSecondary }]}>{t('wallet.noPaymentMethodsHint')}</Text>
-              <Pressable onPress={() => { handleClose(); onManageMethods(); }}>
+              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => { handleClose(); onManageMethods(); }}>
                 <Text style={[styles.manageLink, { color: C.brinjal1 }]}>{t('wallet.managePaymentMethods')}</Text>
               </Pressable>
             </View>
@@ -79,7 +79,7 @@ export function WithdrawModal({ visible, onClose, availableBalance, paymentMetho
                   const meta = METHOD_META[m] ?? { icon: 'credit-card', label: m, color: C.brinjal1 };
                   const active = method === m;
                   return (
-                    <Pressable
+                    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                       key={m}
                       style={[
                         styles.methodChip,
@@ -116,7 +116,7 @@ export function WithdrawModal({ visible, onClose, availableBalance, paymentMetho
 
         {paymentMethods.length > 0 && (
           <View style={[styles.footer, { borderTopColor: C.border }]}>
-            <Pressable
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
               style={({ pressed }) => [
                 styles.submitBtn,
                 { backgroundColor: C.brinjal1, shadowColor: C.brinjal1, opacity: submitting ? 0.7 : 1 },

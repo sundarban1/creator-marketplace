@@ -82,7 +82,7 @@ export default function LegalScreen() {
         <View style={styles.centered}>
           <Ionicons name="cloud-offline-outline" size={48} color={C.textSecondary} />
           <Text style={[styles.errorText, { color: C.textSecondary }]}>{error}</Text>
-          <Pressable style={[styles.retryBtn, { backgroundColor: C.brinjal1 }]} onPress={loadDoc}>
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.retryBtn, { backgroundColor: C.brinjal1 }]} onPress={loadDoc}>
             <Text style={styles.retryBtnText}>Try Again</Text>
           </Pressable>
         </View>
@@ -112,7 +112,7 @@ export default function LegalScreen() {
               const open = expandedIds.has(section.id);
               return (
                 <View key={section.id} style={[styles.accordionCard, { backgroundColor: C.surface, borderColor: open ? C.brinjal1 : C.border }]}>
-                  <Pressable style={styles.accordionHeader} onPress={() => toggleSection(section.id)}>
+                  <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.accordionHeader} onPress={() => toggleSection(section.id)}>
                     <View style={[styles.indexBadge, { backgroundColor: `${C.brinjal1}18` }]}>
                       <Text style={[styles.indexText, { color: C.brinjal1 }]}>{i + 1}</Text>
                     </View>

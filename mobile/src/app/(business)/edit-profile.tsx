@@ -145,7 +145,7 @@ export default function EditBusinessProfileScreen() {
             <View style={styles.labelRow}>
               <Text style={[styles.label, { color: C.textSecondary }]}>{t('profile.editBusiness.descriptionLabel')}</Text>
               {categories.length > 0 && (
-                <Pressable onPress={handleRegenerateDescription} style={[styles.regenerateBtn, { backgroundColor: C.primaryLight }]}>
+                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={handleRegenerateDescription} style={[styles.regenerateBtn, { backgroundColor: C.primaryLight }]}>
                   <Text style={[styles.regenerateBtnText, { color: C.brinjal1 }]}>{t('profile.editBusiness.regenerateBtn')}</Text>
                 </Pressable>
               )}
@@ -205,7 +205,7 @@ export default function EditBusinessProfileScreen() {
               {allCategories.map(({ emoji, label }) => {
                 const selected = categories.includes(label);
                 return (
-                  <Pressable
+                  <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                     key={label}
                     style={[
                       styles.chip,
@@ -223,7 +223,7 @@ export default function EditBusinessProfileScreen() {
         </View>
 
         {/* ── Save ── */}
-        <Pressable
+        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
           style={[styles.saveBtn, { backgroundColor: saving ? C.border : C.brinjal1 }]}
           onPress={handleSave}
           disabled={saving}>
