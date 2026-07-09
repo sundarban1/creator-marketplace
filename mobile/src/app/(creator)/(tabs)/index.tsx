@@ -14,7 +14,8 @@ import { NearbyCard } from '@/features/creator/components/NearbyCard';
 import { NearbyLocationSheet, type NearbySource } from '@/features/creator/components/NearbyLocationSheet';
 import { FilterModal } from '@/features/creator/components/FilterModal';
 import type { EventTypeFilter, LocationFilter } from '@/features/creator/components/FilterModal';
-import { CATEGORY_META, DEFAULT_META, displayCategory } from '@/features/creator/data/filterOptions';
+import { displayCategory } from '@/features/creator/data/filterOptions';
+import { useCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { EmptyState } from '@/components/EmptyState';
 import { TabSlider } from '@/components/TabSlider';
 import { campaignService } from '@/services/campaign';
@@ -53,8 +54,8 @@ export default function HomeScreen() {
   const { t, languageVersion } = useLanguage();
   const C = useAppColors();
 
+  const { categories: adminCategories } = useCategories('CREATOR');
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-  const [apiCategories, setApiCategories] = useState<string[]>([]);
   const [apiPlatforms, setApiPlatforms] = useState<string[]>([]);
   const [activePlatforms, setActivePlatforms] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -218,9 +219,6 @@ export default function HomeScreen() {
 
   useEffect(() => {
     void fetchCampaigns();
-    campaignService.getCategories()
-      .then((cats) => { if (cats.length > 0) setApiCategories(cats); })
-      .catch(() => {});
     campaignService.getPlatforms()
       .then((plats) => { if (plats.length > 0) setApiPlatforms(plats); })
       .catch(() => {});
@@ -357,9 +355,9 @@ export default function HomeScreen() {
     void fetchCampaigns({ category: [], platform: [], priceMin: 0, priceMax: SLIDER_MAX, dateFrom: null, dateTo: null, eventType: 'ALL' });
   }
 
-  const visibleCategories = apiCategories.map((label) => ({
-    label,
-    ...(CATEGORY_META[label] ?? DEFAULT_META),
+  const visibleCategories = adminCategories.map((cat) => ({
+    label: cat.name,
+    ...getCategoryMeta(adminCategories, cat.name),
   }));
 
   const featured = campaigns.filter((c) => c.isFeatured);

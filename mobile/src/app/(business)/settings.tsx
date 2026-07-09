@@ -25,20 +25,12 @@ import { profileService, type SocialLinks } from '@/services/profile';
 import { COLORS, F } from '@/utilities/constants';
 import { request } from '@/lib/api';
 import { pickAndUpload } from '@/utilities/uploadImage';
+import { useCategories } from '@/hooks/useCategories';
 
 type ColorsType = typeof COLORS;
 const ColorCtx = createContext<ColorsType>(COLORS);
 
 // ── Data ──────────────────────────────────────────────────────────────────────
-
-const BUSINESS_CATEGORIES = [
-  'Food & Beverage', 'Fashion & Apparel', 'Beauty & Cosmetics', 'Health & Fitness',
-  'Home & Living', 'Technology', 'Education', 'Travel & Tourism', 'Wellness',
-  'Gaming & Entertainment', 'Automotive', 'Finance & Banking', 'E-commerce',
-  'Healthcare', 'Art & Design', 'Photography', 'Media & Film', 'Sustainability',
-];
-
-const CREATOR_CATEGORIES = ['Food', 'Travel', 'Fashion', 'Lifestyle', 'Tech', 'Fitness', 'Beauty', 'Gaming'];
 
 const PLATFORMS = ['TikTok', 'Instagram', 'Facebook', 'YouTube'];
 
@@ -167,6 +159,8 @@ export default function BusinessSettingsScreen() {
   const C: ColorsType = useAppColors();
   const toast = useToast();
   const { language, setLanguage, t } = useLanguage();
+  const { categories: businessCategoryOptions } = useCategories('BUSINESS');
+  const { categories: creatorCategoryOptions } = useCategories('CREATOR');
 
   const langLabelToCode = (label: string): 'en' | 'ne' => label === 'Nepali' ? 'ne' : 'en';
   const langCodeToLabel = (code: string): string => code === 'ne' ? 'Nepali' : 'English';
@@ -777,7 +771,7 @@ export default function BusinessSettingsScreen() {
                 <Text style={[styles.optionalTag, { color: C.textSecondary }]}>{bizCategory.length}/3</Text>
               </View>
               <View style={styles.chipGroup}>
-                {BUSINESS_CATEGORIES.map((cat) => {
+                {businessCategoryOptions.map(({ name: cat }) => {
                   const active = bizCategory.includes(cat);
                   const disabled = !active && bizCategory.length >= 3;
                   return (
@@ -1318,7 +1312,7 @@ export default function BusinessSettingsScreen() {
         <Card>
           <View style={styles.chipSection}>
             <ChipGroup
-              options={CREATOR_CATEGORIES}
+              options={creatorCategoryOptions.map((c) => c.name)}
               selected={prefCreatorCats}
               onToggle={(v) => toggleAndSave(prefCreatorCats, setPrefCreatorCats, v, (next) => profileService.updateBusinessProfile({ defaultCreatorCategories: next }))}
             />

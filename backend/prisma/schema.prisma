@@ -536,6 +536,7 @@ model Category {
   id        String         @id @default(cuid())
   icon      String
   iconBg    String
+  color     String         @default("#6B7280")
   name      String
   key       String         @unique
   scope     CategoryScope  @default(BOTH)

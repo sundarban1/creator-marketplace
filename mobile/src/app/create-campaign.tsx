@@ -20,9 +20,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { campaignService } from '@/services/campaign';
-import { categoryService } from '@/services/category';
 import { profileService } from '@/services/profile';
-import { CREATOR_CATEGORIES, getIconColor } from '@/features/creator/data/filterOptions';
+import { useCategories } from '@/hooks/useCategories';
 import { getTemplateImage, DEFAULT_TEMPLATE_IMAGE } from '@/features/creator/data/templateImages';
 import { PlacesAutocompleteInput, type PlacePrediction } from '@/components/PlacesAutocompleteInput';
 import { pickAndUpload } from '@/utilities/uploadImage';
@@ -30,13 +29,6 @@ import { RecommendedCreatorsModal } from '@/features/business/components/Recomme
 import { F, buildPlaceDetailsUrl } from '@/utilities/constants';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-
-// Categories are fetched from API on mount (same list as creator onboarding)
-// Static fallback in case API is slow
-const CATEGORY_FALLBACK = CREATOR_CATEGORIES.map((c) => ({
-  label: c.label,
-  icon: c.icon,
-}));
 
 const CREATOR_TYPES = [
   'Food Creator',
@@ -217,18 +209,15 @@ function fmtDate(d: Date) { return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.g
 // ─── DropdownPicker ───────────────────────────────────────────────────────────
 
 function DropdownPicker({
-  value, onChange, options, placeholder, colors, error, imageFor, iconsAreEmoji,
+  value, onChange, options, placeholder, colors, error, imageFor,
 }: {
   value: string;
   onChange: (v: string) => void;
-  options: readonly { label: string; icon: string }[];
+  options: readonly { label: string; icon: string; color: string }[];
   placeholder: string;
   colors: ReturnType<typeof useAppColors>;
   error?: string;
   imageFor?: (label: string) => string | undefined;
-  /** Fallback options carry FontAwesome5 icon names; admin-configured categories
-   *  fetched from the API carry a freeform emoji picked in the web admin panel. */
-  iconsAreEmoji?: boolean;
 }) {
   const C = colors;
   const [open, setOpen] = useState(false);
@@ -243,11 +232,7 @@ function DropdownPicker({
         {selectedImg ? (
           <Image source={{ uri: selectedImg }} style={dp.triggerThumb} resizeMode="cover" />
         ) : selected ? (
-          iconsAreEmoji ? (
-            <Text style={dp.triggerEmoji}>{selected.icon}</Text>
-          ) : (
-            <FontAwesome5 name={selected.icon} size={16} color={getIconColor(selected.icon)} />
-          )
+          <FontAwesome5 name={selected.icon} size={16} color={selected.color} />
         ) : (
           <Ionicons name="grid-outline" size={16} color={C.textSecondary} />
         )}
@@ -281,10 +266,8 @@ function DropdownPicker({
                     <View style={[dp.itemThumbWrap, { backgroundColor: C.border, overflow: 'hidden' }]}>
                       {img ? (
                         <Image source={{ uri: img }} style={dp.itemThumb} resizeMode="cover" />
-                      ) : iconsAreEmoji ? (
-                        <Text style={dp.itemEmoji}>{opt.icon}</Text>
                       ) : (
-                        <FontAwesome5 name={opt.icon} size={16} color={getIconColor(opt.icon)} />
+                        <FontAwesome5 name={opt.icon} size={16} color={opt.color} />
                       )}
                     </View>
                     <Text style={[dp.itemLabel, { color: sel ? C.brinjal1 : C.text, fontFamily: sel ? F.semibold : F.regular }]}>{opt.label}</Text>
@@ -303,7 +286,6 @@ function DropdownPicker({
 const dp = StyleSheet.create({
   trigger:      { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14, height: 50 },
   triggerThumb: { width: 30, height: 30, borderRadius: 8 },
-  triggerEmoji: { fontSize: 18 },
   triggerText:  { flex: 1, fontSize: 14, fontFamily: F.medium },
   error:        { fontSize: 12, color: ERROR_RED, fontFamily: F.regular, marginTop: 4 },
   modalWrap:  { flex: 1, justifyContent: 'flex-end' },
@@ -315,7 +297,6 @@ const dp = StyleSheet.create({
   item:         { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 12, marginBottom: 4 },
   itemThumbWrap:{ width: 44, height: 44, borderRadius: 10, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   itemThumb:    { width: 44, height: 44 },
-  itemEmoji:    { fontSize: 20 },
   itemLabel:    { flex: 1, fontSize: 14 },
 });
 
@@ -771,25 +752,11 @@ export default function CreateCampaignScreen() {
   const [reviewErrors, setReviewErrors] = useState<ReviewErrors>({});
   const [eventErrors, setEventErrors] = useState<EventErrors>({});
   const scrollRef = useRef<ScrollView>(null);
-  const [categoryOptions, setCategoryOptions] = useState(CATEGORY_FALLBACK);
-  // Fallback options carry FontAwesome5 icon names; admin-configured categories from
-  // the API carry a freeform emoji picked in the web admin panel — see DropdownPicker.
-  const [categoriesAreEmoji, setCategoriesAreEmoji] = useState(false);
+  const { categories: liveCategories } = useCategories('BUSINESS');
+  const categoryOptions = liveCategories.map((c) => ({ label: c.name, icon: c.icon, color: c.color }));
   const [platformOptions, setPlatformOptions] = useState<string[]>(PLATFORM_FALLBACK);
 
   useEffect(() => {
-    categoryService.getCategories('BUSINESS').then((cats) => {
-      if (cats.length > 0) {
-        setCategoryOptions(
-          cats.map((c) => ({
-            label: c.name,
-            icon: c.icon,
-          }))
-        );
-        setCategoriesAreEmoji(true);
-      }
-    }).catch(() => { /* keep fallback */ });
-
     campaignService.getPlatforms().then((plats) => {
       if (plats.length > 0) setPlatformOptions(plats);
     }).catch(() => { /* keep fallback */ });
@@ -1314,7 +1281,6 @@ export default function CreateCampaignScreen() {
                       placeholder={t('createEvent.selectCategoryPlaceholder')}
                       colors={C}
                       error={eventErrors.template}
-                      iconsAreEmoji={categoriesAreEmoji}
                     />
                   </SectionCard>
 

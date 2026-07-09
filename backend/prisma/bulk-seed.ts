@@ -19,15 +19,6 @@ import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
-// Matches CREATOR_CATEGORIES in mobile/src/features/creator/data/filterOptions.ts —
-// the taxonomy the app actually falls back to while the `categories` table is empty.
-const CATEGORIES = [
-  'Food', 'Travel', 'Fashion', 'Beauty', 'Fitness', 'Gaming', 'Tech', 'Education', 'Lifestyle',
-  'Home & Living', 'Wellness', 'Music', 'Art & Design', 'Pets', 'Parenting', 'Automotive',
-  'Finance', 'Sustainability', 'Photography', 'Sports', 'Film & TV', 'Mindfulness', 'Food & Drink', 'Entertainment',
-] as const;
-type Category = typeof CATEGORIES[number];
-
 const PLATFORMS = ['Instagram', 'TikTok', 'YouTube', 'Twitter / X', 'LinkedIn'];
 const CONTENT_TYPES = ['Reel / Short Video', 'Story', 'Static Post', 'Blog Article', 'Podcast Mention'];
 const CITIES = ['Kathmandu', 'Pokhara', 'Lalitpur', 'Bhaktapur', 'Biratnagar', 'Butwal', 'Dharan', 'Nepalgunj', 'Hetauda', 'Itahari', 'Birgunj', 'Janakpur'];
@@ -86,36 +77,45 @@ const CREATOR_BIO_TEMPLATES = [
 
 // ── Business names ───────────────────────────────────────────────────────────
 
-const BUSINESS_NOUNS: Record<Category, string[]> = {
-  Food: ['Kitchen', 'Bistro', 'Diner', 'Eatery', 'Food Co.', 'Kitchenette'],
-  Travel: ['Treks', 'Travels', 'Expeditions', 'Journeys', 'Getaways', 'Tours'],
-  Fashion: ['Apparel', 'Couture', 'Wardrobe', 'Threads', 'Boutique', 'Collective'],
-  Beauty: ['Beauty Bar', 'Cosmetics', 'Salon', 'Glow Studio', 'Skincare Co.'],
-  Fitness: ['Fitness Studio', 'Gym', 'Wellness Club', 'Training Co.', 'Strength Lab'],
-  Gaming: ['Gaming House', 'Esports', 'Arcade', 'Gaming Lounge', 'Studios'],
-  Tech: ['Technologies', 'Labs', 'Systems', 'Solutions', 'Innovations'],
-  Education: ['Academy', 'Learning Hub', 'Institute', 'Classes', 'Education Center'],
-  Lifestyle: ['Lifestyle Co.', 'Living', 'Collective', 'Studio', 'House'],
-  'Home & Living': ['Home Decor', 'Furnishings', 'Living Co.', 'Interiors', 'Home Studio'],
-  Wellness: ['Wellness Center', 'Spa', 'Retreat', 'Healing Studio', 'Wellness Co.'],
-  Music: ['Music Studio', 'Records', 'Sound House', 'Music Academy', 'Live Lounge'],
-  'Art & Design': ['Design Studio', 'Art House', 'Gallery', 'Creative Studio', 'Design Co.'],
-  Pets: ['Pet Care', 'Pet Store', 'Grooming Studio', 'Pet Clinic', 'Pet Co.'],
-  Parenting: ['Family Co.', 'Kids Studio', 'Parenting Hub', 'Family Center'],
-  Automotive: ['Motors', 'Auto Garage', 'Auto Works', 'Car Studio', 'Auto Care'],
-  Finance: ['Finance Group', 'Capital', 'Advisory', 'Financial Services'],
-  Sustainability: ['Eco Store', 'Sustainable Co.', 'Green Living', 'Eco Collective'],
-  Photography: ['Photography Studio', 'Photo Co.', 'Studio', 'Lens House'],
-  Sports: ['Sports Club', 'Sports Academy', 'Athletics Co.', 'Sports Arena'],
-  'Film & TV': ['Films', 'Studios', 'Productions', 'Media House'],
-  Mindfulness: ['Meditation Studio', 'Mindfulness Co.', 'Retreat Center'],
-  'Food & Drink': ['Cafe', 'Coffee House', 'Brewery', 'Juice Bar', 'Bakery'],
-  Entertainment: ['Entertainment Co.', 'Events House', 'Productions', 'Live Co.'],
-};
+// Keyword → business-noun bank, matched against whatever category names the
+// admin has actually defined in the `categories` table (so this stays useful
+// no matter how admin category names are worded), with a generic fallback.
+const BUSINESS_NOUN_BANK: { keywords: string[]; nouns: string[] }[] = [
+  { keywords: ['food', 'restaurant', 'cafe', 'coffee', 'drink', 'kitchen'], nouns: ['Kitchen', 'Bistro', 'Diner', 'Eatery', 'Food Co.', 'Cafe', 'Bakery'] },
+  { keywords: ['travel', 'tour', 'adventure'], nouns: ['Treks', 'Travels', 'Expeditions', 'Journeys', 'Getaways', 'Tours'] },
+  { keywords: ['fashion', 'apparel', 'cloth'], nouns: ['Apparel', 'Couture', 'Wardrobe', 'Threads', 'Boutique', 'Collective'] },
+  { keywords: ['beauty', 'cosmetic', 'skincare'], nouns: ['Beauty Bar', 'Cosmetics', 'Salon', 'Glow Studio', 'Skincare Co.'] },
+  { keywords: ['fitness', 'health', 'gym'], nouns: ['Fitness Studio', 'Gym', 'Wellness Club', 'Training Co.', 'Strength Lab'] },
+  { keywords: ['gaming', 'game', 'esport'], nouns: ['Gaming House', 'Esports', 'Arcade', 'Gaming Lounge', 'Studios'] },
+  { keywords: ['tech', 'gadget'], nouns: ['Technologies', 'Labs', 'Systems', 'Solutions', 'Innovations'] },
+  { keywords: ['education', 'course', 'learn'], nouns: ['Academy', 'Learning Hub', 'Institute', 'Classes', 'Education Center'] },
+  { keywords: ['home', 'living', 'furnish', 'estate'], nouns: ['Home Decor', 'Furnishings', 'Living Co.', 'Interiors', 'Home Studio'] },
+  { keywords: ['wellness', 'mindful', 'meditat'], nouns: ['Wellness Center', 'Spa', 'Retreat', 'Healing Studio', 'Wellness Co.'] },
+  { keywords: ['music'], nouns: ['Music Studio', 'Records', 'Sound House', 'Music Academy', 'Live Lounge'] },
+  { keywords: ['art', 'design'], nouns: ['Design Studio', 'Art House', 'Gallery', 'Creative Studio', 'Design Co.'] },
+  { keywords: ['pet'], nouns: ['Pet Care', 'Pet Store', 'Grooming Studio', 'Pet Clinic', 'Pet Co.'] },
+  { keywords: ['parent', 'family', 'baby', 'kid'], nouns: ['Family Co.', 'Kids Studio', 'Parenting Hub', 'Family Center'] },
+  { keywords: ['auto', 'car', 'motor'], nouns: ['Motors', 'Auto Garage', 'Auto Works', 'Car Studio', 'Auto Care'] },
+  { keywords: ['finance', 'bank'], nouns: ['Finance Group', 'Capital', 'Advisory', 'Financial Services'] },
+  { keywords: ['sustain', 'eco', 'green', 'recycle'], nouns: ['Eco Store', 'Sustainable Co.', 'Green Living', 'Eco Collective'] },
+  { keywords: ['photo'], nouns: ['Photography Studio', 'Photo Co.', 'Studio', 'Lens House'] },
+  { keywords: ['sport', 'athlet'], nouns: ['Sports Club', 'Sports Academy', 'Athletics Co.', 'Sports Arena'] },
+  { keywords: ['film', 'tv', 'media', 'entertain'], nouns: ['Films', 'Studios', 'Productions', 'Media House'] },
+  { keywords: ['retail', 'ecommerce', 'e-commerce', 'shop'], nouns: ['Retail Co.', 'Store', 'Marketplace', 'Shop'] },
+  { keywords: ['event', 'hospitality', 'hotel'], nouns: ['Events House', 'Hospitality Group', 'Hotel', 'Resort'] },
+  { keywords: ['healthcare', 'medical', 'clinic'], nouns: ['Clinic', 'Health Center', 'Medical Group'] },
+];
+const GENERIC_BUSINESS_NOUNS = ['Co.', 'Studio', 'Ventures', 'Group', 'Enterprises', 'Collective'];
 const BUSINESS_PREFIXES = ['Himalayan', 'Everest', 'Golden', 'Royal', 'Urban', 'Namaste', 'Annapurna', 'Sagarmatha', 'Metro', 'Pashupati', 'Bagmati', 'Gandaki'];
 
-function businessName(category: Category): string {
-  const nouns = BUSINESS_NOUNS[category];
+function businessNounsFor(category: string): string[] {
+  const lower = category.toLowerCase();
+  const bank = BUSINESS_NOUN_BANK.find((b) => b.keywords.some((k) => lower.includes(k)));
+  return bank?.nouns ?? GENERIC_BUSINESS_NOUNS;
+}
+
+function businessName(category: string): string {
+  const nouns = businessNounsFor(category);
   const prefix = Math.random() < 0.5 ? rand(BUSINESS_PREFIXES) : rand(CITIES);
   return `${prefix} ${rand(nouns)}`;
 }
@@ -128,32 +128,26 @@ const BUSINESS_DESC_TEMPLATES = [
 
 // ── Event copy ───────────────────────────────────────────────────────────────
 
-const OPEN_EVENT_TEMPLATES: Record<Category, { title: string; desc: string }> = {
-  Food:            { title: 'Exclusive Food Creator Night – Dine, Discover & Create', desc: 'An exclusive creator night featuring our signature dishes, a meet-the-chef session, and a curated menu built for content creation.' },
-  Travel:          { title: 'Travel Creator Experience – Explore & Document', desc: 'Join us for a curated travel experience with complimentary access and the freedom to document an authentic journey.' },
-  Fashion:         { title: 'Fashion Creator Showcase – Style Night', desc: 'First access to our latest collection, professional styling support, and a curated backdrop for standout fashion content.' },
-  Beauty:          { title: 'Beauty Creator Event – Glow, Create & Connect', desc: 'Complimentary treatments, live product demos, and a beautiful space to create authentic beauty content.' },
-  Fitness:         { title: 'Fitness Creator Invite – Train, Create & Inspire', desc: 'A complimentary workout session, facility tour, and content day for fitness creators.' },
-  Gaming:          { title: 'Gaming Creator Night – Play, Review & Create', desc: 'Early access to our latest games and setup, with space to create honest gameplay content.' },
-  Tech:            { title: 'Tech Creator Showcase – Experience & Review', desc: 'Hands-on access to our newest products before public launch, with space to create in-depth review content.' },
-  Education:       { title: 'Education Creator Event – Learn, Explore & Share', desc: 'A live session and behind-the-scenes access designed for creators who inspire their audience to learn.' },
-  Lifestyle:       { title: 'Lifestyle Creator Invite – Experience & Create', desc: 'An exclusive lifestyle brand experience in a setting designed for beautiful, authentic content.' },
-  'Home & Living': { title: 'Home Creator Experience – Style, Shoot & Share', desc: 'Explore our collection in a styled setting with expert tips for stunning home content.' },
-  Wellness:        { title: 'Wellness Creator Retreat – Relax, Restore & Create', desc: 'Complimentary treatments and sessions in a serene setting perfect for well-being content.' },
-  Music:           { title: 'Music Creator Event – Live, Exclusive & Immersive', desc: 'Live performances and backstage access for creators who love sharing immersive audio-visual moments.' },
-  'Art & Design':  { title: 'Art Creator Experience – Create, Collaborate & Showcase', desc: 'Meet our artists and explore a space built for visual storytelling.' },
-  Pets:            { title: 'Pet Creator Day – Fun, Play & Create', desc: 'Bring your furry friends for a pet-friendly creator day full of content opportunities.' },
-  Parenting:       { title: 'Family Creator Event – Fun Day for Parents & Kids', desc: 'Family-friendly activities and an authentic setting for parenting content.' },
-  Automotive:      { title: 'Auto Creator Drive Day – Experience & Review', desc: 'A test drive, facility tour, and content day to experience performance and design firsthand.' },
-  Finance:         { title: 'Finance Creator Workshop – Learn, Experience & Share', desc: 'Expert insights and hands-on tools for creators making financial content that helps their audience.' },
-  Sustainability:  { title: 'Eco Creator Event – Sustainable, Beautiful & Impactful', desc: 'Explore our sustainability initiatives and create content that inspires conscious choices.' },
-  Photography:     { title: 'Photography Creator Shoot – Exclusive Access & Collaboration', desc: 'Stunning locations and expert guidance to create breathtaking visual content.' },
-  Sports:          { title: 'Sports Creator Day – Play, Train & Create', desc: 'Experience our facility and equipment firsthand for high-energy sports content.' },
-  'Film & TV':     { title: 'Entertainment Creator Premiere – Exclusive & Immersive', desc: 'Early access and behind-the-scenes moments to build anticipation with your audience.' },
-  Mindfulness:     { title: 'Mindfulness Creator Experience – Find Peace, Create Content', desc: 'A calming retreat setting perfect for well-being focused content.' },
-  'Food & Drink':  { title: 'Food & Drink Creator Night – Taste, Experience & Create', desc: 'Curated tastings and a behind-the-scenes look at the flavors, for beautiful food & drink content.' },
-  Entertainment:   { title: 'Entertainment Creator Event – Live, Exclusive & Unforgettable', desc: 'An immersive live event experience designed for creators who capture energy and excitement.' },
-};
+// Generic per-category copy generator — works for any admin-defined category
+// name rather than requiring an exact hardcoded lookup entry per category.
+const OPEN_EVENT_TITLE_TEMPLATES = [
+  (cat: string) => `Exclusive ${cat} Creator Night – Discover & Create`,
+  (cat: string) => `${cat} Creator Experience – Explore & Document`,
+  (cat: string) => `${cat} Creator Showcase – Exclusive Access`,
+  (cat: string) => `${cat} Creator Invite – Experience & Create`,
+  (cat: string) => `${cat} Creator Day – Content & Collaboration`,
+];
+const OPEN_EVENT_DESC_TEMPLATES = [
+  (cat: string) => `An exclusive creator event centered on ${cat.toLowerCase()}, with complimentary access and a curated setting built for authentic content creation.`,
+  (cat: string) => `Join us for a hands-on ${cat.toLowerCase()} experience — first access, expert support, and space designed for standout creator content.`,
+  (cat: string) => `A behind-the-scenes ${cat.toLowerCase()} experience with complimentary access, built for creators who want to share something genuine with their audience.`,
+];
+function openEventCopy(category: string): { title: string; desc: string } {
+  return {
+    title: rand(OPEN_EVENT_TITLE_TEMPLATES)(category),
+    desc: rand(OPEN_EVENT_DESC_TEMPLATES)(category),
+  };
+}
 
 const PAID_CAMPAIGN_TITLE_TEMPLATES = [
   (brand: string, cat: string) => `${brand} ${cat} Collaboration`,
@@ -172,7 +166,23 @@ const PAID_CAMPAIGN_DESC_TEMPLATES = [
 async function main() {
   const N = parseInt(process.argv[2] ?? '1000', 10);
   const runTag = Date.now();
+
+  // Categories are admin-owned (see backend/prisma/seeds/categories.ts and the
+  // web admin's Categories page) — pull the live, active set instead of a
+  // hardcoded taxonomy so seeded data always lines up with what the app shows.
+  const dbCategories = await prisma.category.findMany({ where: { status: 'ACTIVE' } });
+  const creatorCategories = dbCategories
+    .filter((c) => c.scope === 'CREATOR' || c.scope === 'BOTH')
+    .map((c) => c.name);
+  const businessCategories = dbCategories
+    .filter((c) => c.scope === 'BUSINESS' || c.scope === 'BOTH')
+    .map((c) => c.name);
+  if (creatorCategories.length === 0 || businessCategories.length === 0) {
+    throw new Error('No active categories found — seed the categories table first (npx tsx prisma/seeds/categories.ts).');
+  }
+
   console.log(`Bulk-seeding ${N} creators, ${N} businesses, ${N} events (run ${runTag})...`);
+  console.log(`Using ${creatorCategories.length} creator-facing and ${businessCategories.length} business-facing categories from the database.`);
 
   const creatorPw  = await bcrypt.hash('Creator@123', 12);
   const businessPw = await bcrypt.hash('Business@123', 12);
@@ -203,7 +213,7 @@ async function main() {
   const creatorProfiles = creatorUsers.map((u, i) => {
     const hasCoords = Math.random() < 0.7;
     const city = rand(CITIES);
-    const categories = pickSubset(CATEGORIES, randInt(1, 3));
+    const categories = pickSubset(creatorCategories, randInt(1, 3));
     return {
       id: randomUUID(),
       userId: u.id,
@@ -222,7 +232,7 @@ async function main() {
 
   // ── Businesses ────────────────────────────────────────────────────────────
   console.log('Creating business users...');
-  const businessCategoryPicks = Array.from({ length: N }, () => rand(CATEGORIES));
+  const businessCategoryPicks = Array.from({ length: N }, () => rand(businessCategories));
   const businessNames = businessCategoryPicks.map((cat) => businessName(cat));
   const businessUsers = businessNames.map((name, i) => ({
     id: randomUUID(),
@@ -247,7 +257,7 @@ async function main() {
       businessName: name,
       description: rand(BUSINESS_DESC_TEMPLATES)(name, category, city),
       location: hasCoords ? `${city}, Nepal` : null,
-      categories: pickSubset(CATEGORIES.filter((c) => c !== category), randInt(0, 1)).concat(category),
+      categories: pickSubset(businessCategories.filter((c) => c !== category), randInt(0, 1)).concat(category),
       isVerified: Math.random() < 0.3,
     };
   });
@@ -282,7 +292,7 @@ async function main() {
     };
 
     if (isOpenEvent) {
-      const tpl = OPEN_EVENT_TEMPLATES[category];
+      const tpl = openEventCopy(category);
       return {
         ...base,
         title: tpl.title,

@@ -4,6 +4,7 @@ import { Plus, Pencil, Trash2, ToggleLeft, ToggleRight, Search } from 'lucide-re
 import { useCategories } from '../../context/CategoriesContext';
 import { StatusBadge } from '../../components/StatusBadge';
 import { PageHeader } from '../../components/PageHeader';
+import { getIconOption } from './iconOptions';
 
 function DeleteModal({ name, onConfirm, onCancel }: { name: string; onConfirm: () => void; onCancel: () => void }) {
   return (
@@ -106,10 +107,13 @@ export function CategoriesPage() {
                 {/* Icon */}
                 <td className="px-4 py-3">
                   <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center text-xl select-none"
+                    className="w-10 h-10 rounded-xl flex items-center justify-center select-none"
                     style={{ backgroundColor: cat.iconBg }}
                   >
-                    {cat.icon}
+                    {(() => {
+                      const opt = getIconOption(cat.icon);
+                      return opt ? <opt.Icon size={16} color={cat.color} /> : null;
+                    })()}
                   </div>
                 </td>
 

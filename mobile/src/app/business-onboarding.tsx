@@ -16,33 +16,9 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { authService } from '@/services/auth';
 import { profileService } from '@/services/profile';
-import { categoryService } from '@/services/category';
-import { getIconColor } from '@/features/creator/data/filterOptions';
+import { useCategories } from '@/hooks/useCategories';
 import { PlacesAutocompleteInput } from '@/components/PlacesAutocompleteInput';
 import { F } from '@/utilities/constants';
-
-const BUSINESS_CATEGORIES = [
-  { icon: 'utensils',       label: 'Food & Beverage' },
-  { icon: 'tshirt',         label: 'Fashion & Apparel' },
-  { icon: 'spa',            label: 'Beauty & Cosmetics' },
-  { icon: 'dumbbell',       label: 'Health & Fitness' },
-  { icon: 'home',           label: 'Home & Living' },
-  { icon: 'microchip',      label: 'Technology' },
-  { icon: 'graduation-cap', label: 'Education' },
-  { icon: 'plane',          label: 'Travel & Tourism' },
-  { icon: 'heartbeat',      label: 'Wellness' },
-  { icon: 'gamepad',        label: 'Gaming & Entertainment' },
-  { icon: 'car',            label: 'Automotive' },
-  { icon: 'wallet',         label: 'Finance & Banking' },
-  { icon: 'recycle',        label: 'Sustainability' },
-  { icon: 'futbol',         label: 'Sports' },
-  { icon: 'wine-glass-alt', label: 'Food & Drink' },
-  { icon: 'film',           label: 'Media & Film' },
-  { icon: 'shopping-cart',  label: 'E-commerce' },
-  { icon: 'briefcase-medical', label: 'Healthcare' },
-  { icon: 'palette',        label: 'Art & Design' },
-  { icon: 'camera',         label: 'Photography' },
-];
 
 const TOTAL_STEPS = 2;
 
@@ -64,21 +40,7 @@ export default function BusinessOnboardingScreen() {
   const [categorySubmitted, setCategorySubmitted] = useState(false);
   const [step2Loading, setStep2Loading] = useState(false);
   const [step2Error, setStep2Error] = useState('');
-  // Fallback list icons are FontAwesome5 names; admin-configured categories from the
-  // API store a freeform emoji picked in the web admin panel — see the render below.
-  const [categories, setCategories] = useState(BUSINESS_CATEGORIES);
-  const [categoriesAreEmoji, setCategoriesAreEmoji] = useState(false);
-
-  useEffect(() => {
-    categoryService.getCategories('BUSINESS')
-      .then((cats) => {
-        if (cats.length > 0) {
-          setCategories(cats.map((c) => ({ icon: c.icon, label: c.name })));
-          setCategoriesAreEmoji(true);
-        }
-      })
-      .catch(() => { /* keep the fallback default list */ });
-  }, []);
+  const { categories } = useCategories('BUSINESS');
 
   const scaleAnim   = useRef(new Animated.Value(0)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
@@ -301,25 +263,21 @@ export default function BusinessOnboardingScreen() {
               )}
               <View style={styles.categoryGrid}>
                 {categories.map((cat) => {
-                  const isSelected = selectedCategories.includes(cat.label);
+                  const isSelected = selectedCategories.includes(cat.name);
                   const isDisabled = !isSelected && selectedCategories.length >= 3;
                   return (
                     <Pressable
-                      key={cat.label}
+                      key={cat.id}
                       style={[
                         styles.categoryChip,
                         { borderColor: C.border, backgroundColor: C.surface },
                         isSelected && { borderColor: C.brinjal1, backgroundColor: C.primaryLight },
                         isDisabled && styles.chipDisabled,
                       ]}
-                      onPress={() => { if (!isDisabled) toggleCategory(cat.label); }}>
-                      {categoriesAreEmoji ? (
-                        <Text style={styles.chipEmoji}>{cat.icon}</Text>
-                      ) : (
-                        <FontAwesome5 name={cat.icon} size={14} color={isSelected ? getIconColor(cat.icon) : C.textSecondary} />
-                      )}
+                      onPress={() => { if (!isDisabled) toggleCategory(cat.name); }}>
+                      <FontAwesome5 name={cat.icon} size={14} color={isSelected ? cat.color : C.textSecondary} />
                       <Text style={[styles.chipLabel, { color: isSelected ? C.brinjal1 : C.text }, isSelected && { fontWeight: '700' }]}>
-                        {cat.label}
+                        {cat.name}
                       </Text>
                       {isSelected && <Ionicons name="checkmark-circle" size={14} color={C.brinjal1} />}
                     </Pressable>
@@ -389,7 +347,6 @@ const styles = StyleSheet.create({
   categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
   categoryChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 9, borderRadius: 22, borderWidth: 1.5 },
   chipDisabled: { opacity: 0.35 },
-  chipEmoji: { fontSize: 15 },
   chipLabel: { fontSize: 13, fontWeight: '500', fontFamily: F.medium },
   loadingRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   spinner: { width: 16, height: 16, borderRadius: 8, borderWidth: 2, borderColor: 'rgba(255,255,255,0.35)' },

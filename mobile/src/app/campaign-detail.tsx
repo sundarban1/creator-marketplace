@@ -20,7 +20,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
-import { CATEGORY_META, DEFAULT_META, cardBg, getIconColor } from '@/features/creator/data/filterOptions';
+import { getIconColor } from '@/features/creator/data/filterOptions';
+import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { PlacesAutocompleteInput } from '@/components/PlacesAutocompleteInput';
 import { campaignService } from '@/services/campaign';
 import type { Campaign } from '@/types';
@@ -201,6 +202,7 @@ export default function CampaignDetailScreen() {
   const { t, languageVersion } = useLanguage();
   const C = useAppColors();
   const isBusiness = user?.role === 'BUSINESS';
+  const { categories: allCategories } = useAllCategories();
 
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [hasApplied, setHasApplied]           = useState(false);
@@ -400,8 +402,8 @@ export default function CampaignDetailScreen() {
     );
   }
 
-  const heroBg  = cardBg(campaign.category);
-  const catMeta = CATEGORY_META[campaign.category] ?? DEFAULT_META;
+  const catMeta = getCategoryMeta(allCategories, campaign.category);
+  const heroBg  = catMeta.bg;
   const posted  = daysAgo(campaign.createdAt);
 
   return (

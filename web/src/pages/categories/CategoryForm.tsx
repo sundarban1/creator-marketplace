@@ -1,6 +1,7 @@
-import { useState, useEffect, type FormEvent } from 'react';
+import { useState, useEffect, useMemo, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Category, CategoryStatus, CategoryScope } from '../../context/CategoriesContext';
+import { ICON_OPTIONS, getIconOption } from './iconOptions';
 
 const BG_COLORS = [
   { hex: '#f3e8ff', label: 'Purple' },
@@ -13,6 +14,21 @@ const BG_COLORS = [
   { hex: '#ede9fe', label: 'Violet' },
   { hex: '#fee2e2', label: 'Red' },
   { hex: '#d1fae5', label: 'Emerald' },
+];
+
+const ICON_COLORS = [
+  { hex: '#F97316', label: 'Orange' },
+  { hex: '#EC4899', label: 'Pink' },
+  { hex: '#8B5CF6', label: 'Violet' },
+  { hex: '#3B82F6', label: 'Blue' },
+  { hex: '#0EA5E9', label: 'Sky' },
+  { hex: '#16A34A', label: 'Green' },
+  { hex: '#059669', label: 'Emerald' },
+  { hex: '#F59E0B', label: 'Amber' },
+  { hex: '#DC2626', label: 'Red' },
+  { hex: '#C026D3', label: 'Fuchsia' },
+  { hex: '#6366F1', label: 'Indigo' },
+  { hex: '#6B7280', label: 'Gray' },
 ];
 
 function slugify(str: string) {
@@ -35,12 +51,22 @@ export function CategoryForm({ initial, onSubmit, submitLabel }: CategoryFormPro
 
   const [icon, setIcon] = useState(initial?.icon ?? '');
   const [iconBg, setIconBg] = useState(initial?.iconBg ?? BG_COLORS[0].hex);
+  const [color, setColor] = useState(initial?.color ?? ICON_COLORS[0].hex);
+  const [iconSearch, setIconSearch] = useState('');
   const [name, setName] = useState(initial?.name ?? '');
   const [key, setKey] = useState(initial?.key ?? '');
   const [status, setStatus] = useState<CategoryStatus>(initial?.status ?? 'active');
   const [scope, setScope] = useState<CategoryScope>(initial?.scope ?? 'both');
   const [keyTouched, setKeyTouched] = useState(!!initial);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const filteredIcons = useMemo(() => {
+    const q = iconSearch.trim().toLowerCase();
+    if (!q) return ICON_OPTIONS;
+    return ICON_OPTIONS.filter((o) => o.label.toLowerCase().includes(q) || o.slug.includes(q));
+  }, [iconSearch]);
+
+  const selectedIcon = getIconOption(icon);
 
   useEffect(() => {
     if (!keyTouched) {
@@ -61,7 +87,7 @@ export function CategoryForm({ initial, onSubmit, submitLabel }: CategoryFormPro
     e.preventDefault();
     const e2 = validate();
     if (Object.keys(e2).length) { setErrors(e2); return; }
-    onSubmit({ icon: icon.trim(), iconBg, name: name.trim(), key: key.trim(), status, scope });
+    onSubmit({ icon: icon.trim(), iconBg, color, name: name.trim(), key: key.trim(), status, scope });
   }
 
   return (
@@ -75,31 +101,18 @@ export function CategoryForm({ initial, onSubmit, submitLabel }: CategoryFormPro
           <div className="bg-white rounded-xl border border-gray-200 p-5">
             <h3 className="text-sm font-semibold text-gray-800 mb-4">Icon & Appearance</h3>
 
-            <div className="flex items-start gap-5">
+            <div className="flex items-start gap-5 mb-4">
               {/* Preview */}
               <div
-                className="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0 select-none"
+                className="w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0 select-none"
                 style={{ backgroundColor: iconBg }}
               >
-                {icon || <span className="text-gray-300 text-base">?</span>}
+                {selectedIcon
+                  ? <selectedIcon.Icon size={26} color={color} />
+                  : <span className="text-gray-300 text-base">?</span>}
               </div>
 
               <div className="flex-1 space-y-3">
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1.5">
-                    Icon <span className="text-gray-400 font-normal">(paste an emoji)</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={icon}
-                    onChange={(e) => { setIcon(e.target.value); setErrors((p) => ({ ...p, icon: '' })); }}
-                    placeholder="e.g. 👗"
-                    maxLength={4}
-                    className={`w-full px-3 py-2 text-lg border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition ${errors.icon ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}
-                  />
-                  {errors.icon && <p className="text-xs text-red-500 mt-1">{errors.icon}</p>}
-                </div>
-
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1.5">Background color</label>
                   <div className="flex flex-wrap gap-2">
@@ -115,6 +128,53 @@ export function CategoryForm({ initial, onSubmit, submitLabel }: CategoryFormPro
                     ))}
                   </div>
                 </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1.5">Icon color</label>
+                  <div className="flex flex-wrap gap-2">
+                    {ICON_COLORS.map((c) => (
+                      <button
+                        key={c.hex}
+                        type="button"
+                        title={c.label}
+                        onClick={() => setColor(c.hex)}
+                        className={`w-7 h-7 rounded-lg border-2 transition-all ${color === c.hex ? 'border-indigo-500 scale-110' : 'border-transparent hover:border-gray-300'}`}
+                        style={{ backgroundColor: c.hex }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                Icon <span className="text-red-400">*</span>
+                {selectedIcon && <span className="text-gray-400 font-normal ml-1">— {selectedIcon.label}</span>}
+              </label>
+              <input
+                type="text"
+                value={iconSearch}
+                onChange={(e) => setIconSearch(e.target.value)}
+                placeholder="Search icons, e.g. food, travel, fashion…"
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition mb-2"
+              />
+              {errors.icon && <p className="text-xs text-red-500 mb-2">{errors.icon}</p>}
+              <div className={`grid grid-cols-8 gap-1.5 max-h-48 overflow-y-auto p-2 border rounded-xl ${errors.icon ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}>
+                {filteredIcons.map((o) => (
+                  <button
+                    key={o.slug}
+                    type="button"
+                    title={o.label}
+                    onClick={() => { setIcon(o.slug); setErrors((p) => ({ ...p, icon: '' })); }}
+                    className={`aspect-square rounded-lg flex items-center justify-center transition-all ${icon === o.slug ? 'bg-indigo-100 ring-2 ring-indigo-500' : 'hover:bg-gray-100'}`}
+                  >
+                    <o.Icon size={16} color={icon === o.slug ? color : '#6B7280'} />
+                  </button>
+                ))}
+                {filteredIcons.length === 0 && (
+                  <p className="col-span-8 text-xs text-gray-400 text-center py-4">No icons match "{iconSearch}".</p>
+                )}
               </div>
             </div>
           </div>

@@ -9,8 +9,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { authService } from '@/services/auth';
 import { creatorService } from '@/services/creator';
 import { profileService } from '@/services/profile';
-import { categoryService } from '@/services/category';
-import { CREATOR_CATEGORIES } from '@/features/creator/data/filterOptions';
+import { useCategories } from '@/hooks/useCategories';
 import { PlacesAutocompleteInput } from '@/components/PlacesAutocompleteInput';
 import { F } from '@/utilities/constants';
 
@@ -83,22 +82,7 @@ export default function OnboardingScreen() {
   const [step2Submitted, setStep2Submitted] = useState(false);
   const [step2Loading,   setStep2Loading]   = useState(false);
   const [step2Error,     setStep2Error]     = useState('');
-  // Fallback list icons are FontAwesome5 names; admin-configured categories from the
-  // API store a freeform emoji picked in the web admin panel, so the two sources render
-  // differently — `categoriesAreEmoji` tracks which shape `categories` currently holds.
-  const [categories, setCategories] = useState<{ icon: string; label: string; color?: string }[]>(CREATOR_CATEGORIES);
-  const [categoriesAreEmoji, setCategoriesAreEmoji] = useState(false);
-
-  useEffect(() => {
-    categoryService.getCategories('CREATOR')
-      .then((cats) => {
-        if (cats.length > 0) {
-          setCategories(cats.map((c) => ({ icon: c.icon, label: c.name })));
-          setCategoriesAreEmoji(true);
-        }
-      })
-      .catch(() => { /* keep the fallback default list */ });
-  }, []);
+  const { categories } = useCategories('CREATOR');
 
   const scaleAnim   = useRef(new Animated.Value(0)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
@@ -406,25 +390,21 @@ export default function OnboardingScreen() {
 
             <View style={styles.categoryGrid}>
               {categories.map((cat) => {
-                const isSelected = selectedCategories.includes(cat.label);
+                const isSelected = selectedCategories.includes(cat.name);
                 const isDisabled = !isSelected && selectedCategories.length >= 5;
                 return (
                   <Pressable
-                    key={cat.label}
+                    key={cat.id}
                     style={[
                       styles.categoryChip,
                       { borderColor: C.border, backgroundColor: C.surface },
                       isSelected && { borderColor: C.brinjal1, backgroundColor: C.primaryLight },
                       isDisabled && styles.categoryChipDisabled,
                     ]}
-                    onPress={() => { if (!isDisabled) toggleCategory(cat.label); }}>
-                    {categoriesAreEmoji ? (
-                      <Text style={styles.categoryEmoji}>{cat.icon}</Text>
-                    ) : (
-                      <FontAwesome5 name={cat.icon} size={16} color={isSelected ? (cat.color ?? C.brinjal1) : C.textSecondary} />
-                    )}
+                    onPress={() => { if (!isDisabled) toggleCategory(cat.name); }}>
+                    <FontAwesome5 name={cat.icon} size={16} color={isSelected ? cat.color : C.textSecondary} />
                     <Text style={[styles.categoryLabel, { color: isSelected ? C.brinjal1 : C.text }, isSelected && { fontWeight: '700' }]}>
-                      {cat.label}
+                      {cat.name}
                     </Text>
                     {isSelected && <Ionicons name="checkmark-circle" size={16} color={C.brinjal1} />}
                   </Pressable>
@@ -505,7 +485,6 @@ const styles = StyleSheet.create({
   categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 28 },
   categoryChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12, borderWidth: 1.5 },
   categoryChipDisabled: { opacity: 0.35 },
-  categoryEmoji: { fontSize: 16 },
   categoryLabel: { fontSize: 13, fontWeight: '500', fontFamily: F.medium },
 
   loadingRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },

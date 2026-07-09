@@ -15,23 +15,7 @@ import { useNotificationBadge } from '@/context/NotificationContext';
 import { notificationService } from '@/services/notifications';
 import { profileService } from '@/services/profile';
 import type { Campaign } from '@/types';
-
-const CATEGORY_META: Record<string, { icon: string; cardBg: string }> = {
-  Fashion:    { icon: 'tshirt',         cardBg: '#F2DCF0' },
-  Food:       { icon: 'utensils',       cardBg: '#F2E6DC' },
-  Tech:       { icon: 'microchip',      cardBg: '#DCE6F2' },
-  Beauty:     { icon: 'spa',            cardBg: '#DCF2E6' },
-  Travel:     { icon: 'plane',          cardBg: '#F2F2DC' },
-  Fitness:    { icon: 'dumbbell',       cardBg: '#DCF2EE' },
-  Lifestyle:  { icon: 'leaf',           cardBg: '#E6F2DC' },
-  Gaming:     { icon: 'gamepad',        cardBg: '#E6DCF2' },
-  Music:      { icon: 'music',          cardBg: '#F2DCE6' },
-  Education:  { icon: 'graduation-cap', cardBg: '#FDEFD0' },
-};
-
-function getCategoryMeta(category: string) {
-  return CATEGORY_META[category] ?? { icon: 'bullhorn', cardBg: '#F2F0DC' };
-}
+import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
 
 const STATUS_STYLE = {
   active: { bg: '#DCFCE7', color: '#16A34A',  statusKey: 'business.home.statusActive' as const },
@@ -44,6 +28,7 @@ export default function BusinessHomeScreen() {
   const { openDrawer } = useDrawer();
   const { t, languageVersion } = useLanguage();
   const C = useAppColors();
+  const { categories: allCategories } = useAllCategories();
   const name = user?.name?.split(' ')[0] ?? 'there';
 
   function getGreeting() {
@@ -311,14 +296,14 @@ export default function BusinessHomeScreen() {
         ) : (
           <View style={styles.campaignList}>
             {recent.map((c) => {
-              const meta = getCategoryMeta(c.category);
+              const meta = getCategoryMeta(allCategories, c.category);
               const st = STATUS_STYLE[c.status ?? 'draft'] ?? STATUS_STYLE.draft;
               return (
                 <Pressable
                   key={c.id}
                   style={({ pressed }) => [styles.campaignCard, { backgroundColor: C.surface, borderLeftWidth: 4, borderLeftColor: st.color }, pressed && { opacity: 0.9 }]}
                   onPress={() => router.push({ pathname: '/campaign-detail', params: { campaignId: c.id } })}>
-                  <View style={[styles.thumb, { backgroundColor: meta.cardBg }]}>
+                  <View style={[styles.thumb, { backgroundColor: meta.bg }]}>
                     <FontAwesome5 name={meta.icon} size={20} color="#00000066" />
                   </View>
                   <View style={styles.campaignBody}>

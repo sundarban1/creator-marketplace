@@ -8,6 +8,7 @@ export interface Category {
   id: string;
   icon: string;
   iconBg: string;
+  color: string;
   name: string;
   key: string;
   scope: CategoryScope;
@@ -53,6 +54,7 @@ export function CategoriesProvider({ children }: { children: ReactNode }) {
       id: c.id,
       icon: c.icon,
       iconBg: c.iconBg,
+      color: c.color,
       name: c.name,
       key: c.key,
       scope: fromScopeApi(c.scope),
@@ -69,7 +71,7 @@ export function CategoriesProvider({ children }: { children: ReactNode }) {
 
   async function addCategory(data: CategoryInput) {
     await api.admin.createCategory({
-      icon: data.icon, iconBg: data.iconBg, name: data.name, key: data.key,
+      icon: data.icon, iconBg: data.iconBg, color: data.color, name: data.name, key: data.key,
       scope: toScopeApi(data.scope), status: toStatusApi(data.status),
     });
     await refetch();
@@ -77,7 +79,7 @@ export function CategoriesProvider({ children }: { children: ReactNode }) {
 
   async function updateCategory(id: string, data: CategoryInput) {
     await api.admin.updateCategory(id, {
-      icon: data.icon, iconBg: data.iconBg, name: data.name, key: data.key,
+      icon: data.icon, iconBg: data.iconBg, color: data.color, name: data.name, key: data.key,
       scope: toScopeApi(data.scope), status: toStatusApi(data.status),
     });
     await refetch();

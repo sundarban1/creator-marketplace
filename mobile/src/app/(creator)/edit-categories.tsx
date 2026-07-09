@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useState } from 'react';
 import { BackButton } from '@/components/BackButton';
@@ -15,15 +16,8 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { useToast } from '@/components/Toast';
 import { creatorService } from '@/services/creator';
+import { useCategories } from '@/hooks/useCategories';
 import { F } from '@/utilities/constants';
-
-const CAT_OPTIONS = [
-  'Food', 'Travel', 'Fashion', 'Lifestyle', 'Beauty',
-  'Fitness', 'Tech', 'Gaming', 'Education', 'Wellness',
-  'Music', 'Photography', 'Sports', 'Film & TV',
-  'Automotive', 'Finance', 'Parenting', 'Pets',
-  'Sustainability', 'Mindfulness', 'Entertainment',
-];
 
 const MAX = 5;
 
@@ -31,6 +25,7 @@ export default function EditCategoriesScreen() {
   const C = useAppColors();
   const { t } = useLanguage();
   const toast = useToast();
+  const { categories: catOptions } = useCategories('CREATOR');
   const [categories, setCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -112,9 +107,10 @@ export default function EditCategoriesScreen() {
         </View>
 
         <View style={s.chips}>
-          {Array.from(new Set([...CAT_OPTIONS, ...categories])).map((cat) => {
+          {Array.from(new Set([...catOptions.map((c) => c.name), ...categories])).map((cat) => {
             const active = categories.includes(cat);
             const disabled = !active && categories.length >= MAX;
+            const meta = catOptions.find((c) => c.name === cat);
             return (
               <Pressable
                 key={cat}
@@ -125,6 +121,7 @@ export default function EditCategoriesScreen() {
                   { borderColor: active ? C.brinjal1 : C.border, backgroundColor: active ? C.primaryLight : C.surface },
                   disabled && { opacity: 0.35 },
                 ]}>
+                {meta && <FontAwesome5 name={meta.icon} size={12} color={active ? meta.color : C.textSecondary} />}
                 <Text style={[s.chipTxt, { color: active ? C.brinjal1 : C.text, fontWeight: active ? '700' : '500' }]}>
                   {cat}
                 </Text>
@@ -150,6 +147,6 @@ const s = StyleSheet.create({
   hintTxt:   { fontSize: 13, flex: 1, fontFamily: F.regular },
   counter:   { fontSize: 13, fontWeight: '700', marginLeft: 8, fontFamily: F.bold },
   chips:     { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  chip:      { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1.5 },
+  chip:      { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1.5 },
   chipTxt:   { fontSize: 14, fontFamily: F.medium },
 });

@@ -46,7 +46,7 @@ export const TEMPLATE_IMAGES: Record<string, string> = {
   Clothing:       'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&q=80',
   Coffee:         'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=400&q=80',
 
-  // Creator category picker (matches CREATOR_CATEGORIES labels in filterOptions.ts)
+  // Creator category picker (matches admin-defined Category names)
   Gaming:              'https://images.unsplash.com/photo-1493711662062-fa541adb3fc8?w=400&q=80',
   Tech:                'https://images.unsplash.com/photo-1498049794561-7780e7231661?w=400&q=80',
   Education:           'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&q=80',

@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAppColors } from '@/context/ThemeContext';
-import { CATEGORY_META, DEFAULT_META } from '@/features/creator/data/filterOptions';
+import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
 import type { Campaign } from '@/types';
 import { F } from '@/utilities/constants';
 
@@ -37,7 +37,8 @@ function expiryLabel(iso: string): { label: string; color: string } {
 
 export function CampaignListItem({ campaign }: { campaign: Campaign }) {
   const C = useAppColors();
-  const catMeta  = CATEGORY_META[campaign.category] ?? DEFAULT_META;
+  const { categories } = useAllCategories();
+  const catMeta = getCategoryMeta(categories, campaign.category);
 
   function goToDetail() {
     router.push({ pathname: '/campaign-detail', params: { campaignId: campaign.id } });
@@ -59,7 +60,7 @@ export function CampaignListItem({ campaign }: { campaign: Campaign }) {
           </View>
         ) : (
           <View style={[styles.typeBadge, { backgroundColor: '#EEF2FF', borderColor: '#C7D2FE' }]}>
-            <Text style={[styles.typeBadgeText, { color: '#4F46E5' }]}>$ Paid</Text>
+            <Text style={[styles.typeBadgeText, { color: '#4F46E5' }]}>Rs Paid</Text>
           </View>
         )}
       </View>

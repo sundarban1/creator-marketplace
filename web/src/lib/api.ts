@@ -142,6 +142,7 @@ export interface ApiCategory {
   id: string;
   icon: string;
   iconBg: string;
+  color: string;
   name: string;
   key: string;
   scope: 'CREATOR' | 'BUSINESS' | 'BOTH';
@@ -455,10 +456,10 @@ export const api = {
     categories: () =>
       request<ApiCategory[]>('GET', '/api/admin/categories'),
 
-    createCategory: (data: { icon: string; iconBg: string; name: string; key: string; scope: string; status: string }) =>
+    createCategory: (data: { icon: string; iconBg: string; color: string; name: string; key: string; scope: string; status: string }) =>
       request<ApiCategory>('POST', '/api/admin/categories', data),
 
-    updateCategory: (id: string, data: { icon: string; iconBg: string; name: string; key: string; scope: string; status: string }) =>
+    updateCategory: (id: string, data: { icon: string; iconBg: string; color: string; name: string; key: string; scope: string; status: string }) =>
       request<ApiCategory>('PUT', `/api/admin/categories/${id}`, data),
 
     toggleCategoryStatus: (id: string, status: string) =>

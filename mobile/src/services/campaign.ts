@@ -187,11 +187,6 @@ export const campaignService = {
     };
   },
 
-  async getCategories(): Promise<string[]> {
-    const res = await request<string[]>('GET', '/api/campaigns/categories');
-    return res.data;
-  },
-
   async getPlatforms(): Promise<string[]> {
     const res = await request<string[]>('GET', '/api/campaigns/platforms');
     return res.data;

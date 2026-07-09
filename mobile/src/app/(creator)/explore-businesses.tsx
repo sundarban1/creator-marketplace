@@ -26,7 +26,7 @@ import { businessService, type BusinessListItem } from '@/services/business';
 import { useFavoriteBusinesses } from '@/hooks/useFavoriteBusinesses';
 import { useToast } from '@/components/Toast';
 import { F } from '@/utilities/constants';
-import { getIconColor } from '@/features/creator/data/filterOptions';
+import { useCategories, getCategoryMeta } from '@/hooks/useCategories';
 
 type DisplayBusiness = BusinessListItem & { isFavorited: boolean };
 
@@ -38,18 +38,6 @@ const PLATFORMS = [
   { label: 'TikTok',    icon: 'tiktok' },
   { label: 'Facebook',  icon: 'facebook' },
   { label: 'Twitter',   icon: 'twitter' },
-];
-
-const CATEGORIES = [
-  { label: 'Fashion',       icon: 'tshirt' },
-  { label: 'Beauty',        icon: 'spa' },
-  { label: 'Tech',          icon: 'microchip' },
-  { label: 'Food',          icon: 'utensils' },
-  { label: 'Travel',        icon: 'plane' },
-  { label: 'Fitness',       icon: 'dumbbell' },
-  { label: 'Gaming',        icon: 'gamepad' },
-  { label: 'Education',     icon: 'graduation-cap' },
-  { label: 'Entertainment', icon: 'theater-masks' },
 ];
 
 // ─── Filter Modal ─────────────────────────────────────────────────────────────
@@ -79,6 +67,7 @@ function ExploreFilterModal({
 }) {
   const C = useAppColors();
   const { t } = useLanguage();
+  const { categories: businessCategories } = useCategories('BUSINESS');
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -122,15 +111,15 @@ function ExploreFilterModal({
           {/* Category */}
           <Text style={[fm.section, { color: C.textSecondary }]}>{t('explore.businesses.filterCategory')}</Text>
           <View style={fm.chipGrid}>
-            {CATEGORIES.map((cat) => {
-              const active = tempCategory === cat.label;
+            {businessCategories.map((cat) => {
+              const active = tempCategory === cat.name;
               return (
                 <Pressable
-                  key={cat.label}
-                  onPress={() => setTempCategory(active ? '' : cat.label)}
+                  key={cat.id}
+                  onPress={() => setTempCategory(active ? '' : cat.name)}
                   style={[fm.filterChip, { borderColor: active ? C.brinjal1 : C.border, backgroundColor: active ? C.primaryLight : C.background }]}>
-                  <FontAwesome5 name={cat.icon} size={12} color={active ? getIconColor(cat.icon) : C.textSecondary} />
-                  <Text style={[fm.filterChipText, { color: active ? C.brinjal1 : C.text, fontWeight: active ? '700' : '400' }]}>{cat.label}</Text>
+                  <FontAwesome5 name={cat.icon} size={12} color={active ? cat.color : C.textSecondary} />
+                  <Text style={[fm.filterChipText, { color: active ? C.brinjal1 : C.text, fontWeight: active ? '700' : '400' }]}>{cat.name}</Text>
                 </Pressable>
               );
             })}
@@ -196,6 +185,7 @@ function BusinessCard({
   onToggleFavorite: () => void;
 }) {
   const C = useAppColors();
+  const { categories: businessCategories } = useCategories('BUSINESS');
 
   return (
     <Pressable
@@ -244,10 +234,10 @@ function BusinessCard({
       {item.categories.length > 0 && (
         <View style={styles.chips}>
           {item.categories.slice(0, 3).map((cat) => {
-            const icon = CATEGORIES.find((c) => c.label.toLowerCase() === cat.toLowerCase())?.icon ?? 'tag';
+            const meta = getCategoryMeta(businessCategories, cat);
             return (
               <View key={cat} style={[styles.chip, { backgroundColor: C.primaryLight, borderColor: 'rgba(79,70,229,0.25)' }]}>
-                <FontAwesome5 name={icon} size={10} color={getIconColor(icon)} />
+                <FontAwesome5 name={meta.icon} size={10} color={meta.color} />
                 <Text style={[styles.chipTxt, { color: C.brinjal1 }]}>{cat}</Text>
               </View>
             );

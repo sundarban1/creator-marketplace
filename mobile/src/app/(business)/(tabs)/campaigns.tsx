@@ -19,7 +19,7 @@ import { TabSlider } from '@/components/TabSlider';
 import { useToast } from '@/components/Toast';
 import { campaignService } from '@/services/campaign';
 import { creatorService, type SavedCreatorItem } from '@/services/creator';
-import { CATEGORY_META, DEFAULT_META, cardBg } from '@/features/creator/data/filterOptions';
+import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
 import type { Campaign } from '@/types';
 import { F } from '@/utilities/constants';
 
@@ -63,6 +63,7 @@ function initials(name: string) {
 export default function CampaignsScreen() {
   const C = useAppColors();
   const { t } = useLanguage();
+  const { categories: allCategories } = useAllCategories();
   const toast = useToast();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
@@ -260,8 +261,8 @@ export default function CampaignsScreen() {
           ) : (
             shown.map((c) => {
               const st = STATUS_CFG[c.status ?? 'draft'];
-              const meta = CATEGORY_META[c.category] ?? DEFAULT_META;
-              const bg = cardBg(c.category);
+              const meta = getCategoryMeta(allCategories, c.category);
+              const bg = meta.bg;
               return (
                 <View key={c.id} style={[styles.card, { backgroundColor: C.surface }]}>
                   <View style={[styles.cardAccent, { backgroundColor: st.color }]} />

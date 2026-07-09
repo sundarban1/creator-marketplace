@@ -23,6 +23,8 @@ import { useLanguage } from '@/context/LanguageContext';
 import { creatorService, type ApiCreatorListItem } from '@/services/creator';
 import { F } from '@/utilities/constants';
 import { getIconColor } from '@/features/creator/data/filterOptions';
+import { useAllCategories, useCategories, getCategoryMeta } from '@/hooks/useCategories';
+import type { ApiCategory } from '@/services/category';
 
 const PAGE_SIZE = 10;
 const SLIDER_MAX = 1000;
@@ -49,28 +51,15 @@ const PLATFORM_ICON: Record<string, { icon: IoniconName; color: string }> = {
   tiktok:    { icon: 'musical-notes',  color: '#010101' },
 };
 
-const CATEGORY_META: Record<string, { icon: string; bg: string }> = {
-  Fashion:     { icon: 'tshirt',         bg: '#F2DCF0' },
-  Food:        { icon: 'utensils',       bg: '#F2E6DC' },
-  Tech:        { icon: 'microchip',      bg: '#DCE6F2' },
-  Technology:  { icon: 'microchip',      bg: '#DCE6F2' },
-  Beauty:      { icon: 'spa',            bg: '#DCF2E6' },
-  Travel:      { icon: 'plane',          bg: '#F2F2DC' },
-  Fitness:     { icon: 'dumbbell',       bg: '#DCF2EE' },
-  Lifestyle:   { icon: 'leaf',           bg: '#E6F2DC' },
-  Gaming:      { icon: 'gamepad',        bg: '#E6DCF2' },
-  Music:       { icon: 'music',          bg: '#F2DCE6' },
-  Education:   { icon: 'graduation-cap', bg: '#FDEFD0' },
-  Sports:      { icon: 'futbol',         bg: '#E8F4DC' },
-  Wellness:    { icon: 'heartbeat',      bg: '#DCF2EE' },
-  Adventure:   { icon: 'mountain',       bg: '#E8EFD4' },
-};
-
 function getPlatformMeta(p: string) { return PLATFORM_ICON[p.toLowerCase()] ?? { icon: 'phone-portrait-outline' as IoniconName, color: '#6B7280' }; }
 function normalizePlatform(p: string) { return p.charAt(0).toUpperCase() + p.slice(1).toLowerCase(); }
-function getCategoryMeta(cats: string[]) {
-  for (const c of cats) { if (CATEGORY_META[c]) return CATEGORY_META[c]; }
-  return { icon: 'bullseye', bg: '#F0F0F0' };
+/** First admin category (in order) that matches one of a creator's category labels. */
+function firstCategoryMeta(categories: ApiCategory[], creatorCats: string[]) {
+  for (const name of creatorCats) {
+    const match = categories.find((c) => c.name === name);
+    if (match) return { icon: match.icon, bg: match.iconBg, color: match.color };
+  }
+  return { icon: 'bullseye', bg: '#F0F0F0', color: '#6B7280' };
 }
 function formatFollowers(n: number) {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
@@ -266,6 +255,7 @@ function ExploreFilterModal({
 }) {
   const C = useAppColors();
   const { t } = useLanguage();
+  const { categories: allCategories } = useAllCategories();
 
   function set<K extends keyof FilterState>(key: K, val: FilterState[K]) {
     setTemp({ ...temp, [key]: val });
@@ -329,14 +319,14 @@ function ExploreFilterModal({
               <Text style={[fm.sectionLabel, { color: C.textSecondary }]}>{t('explore.category')}</Text>
               <View style={fm.chips}>
                 {availableCategories.map((cat) => {
-                  const meta = CATEGORY_META[cat];
+                  const meta = getCategoryMeta(allCategories, cat);
                   const sel = temp.categories.includes(cat);
                   return (
                     <Pressable
                       key={cat}
                       onPress={() => set('categories', toggle(temp.categories, cat))}
                       style={[fm.chip, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? C.primaryLight : C.background }]}>
-                      {meta && <FontAwesome5 name={meta.icon} size={12} color={sel ? getIconColor(meta.icon) : C.textSecondary} />}
+                      <FontAwesome5 name={meta.icon} size={12} color={sel ? meta.color : C.textSecondary} />
                       <Text style={[fm.chipText, { color: sel ? C.brinjal1 : C.text, fontWeight: sel ? '700' : '500' }]}>{cat}</Text>
                     </Pressable>
                   );
@@ -408,7 +398,8 @@ function CreatorCard({ creator, isSaved, onToggleSave }: {
   onToggleSave: () => void;
 }) {
   const C = useAppColors();
-  const meta = getCategoryMeta(creator.categories);
+  const { categories: allCategories } = useAllCategories();
+  const meta = firstCategoryMeta(allCategories, creator.categories);
   const hasBudget = creator.prefBudgetMin > 0 || creator.prefBudgetMax > 0;
   const topPlatforms = creator.socialAccounts.slice(0, 3);
 
@@ -468,10 +459,10 @@ function CreatorCard({ creator, isSaved, onToggleSave }: {
       <View style={s.cardFooter}>
         <View style={s.catRow}>
           {creator.categories.slice(0, 3).map((cat) => {
-            const m = CATEGORY_META[cat];
+            const m = getCategoryMeta(allCategories, cat);
             return (
-              <View key={cat} style={[s.catChip, { backgroundColor: m?.bg ?? C.primaryLight }]}>
-                {m ? <FontAwesome5 name={m.icon} size={9} color={getIconColor(m.icon)} /> : null}
+              <View key={cat} style={[s.catChip, { backgroundColor: m.bg }]}>
+                <FontAwesome5 name={m.icon} size={9} color={m.color} />
                 <Text style={[s.catLabel, { color: C.text }]}>{cat}</Text>
               </View>
             );
@@ -498,6 +489,7 @@ function CreatorCard({ creator, isSaved, onToggleSave }: {
 export default function ExploreCreatorsScreen() {
   const C = useAppColors();
   const { t } = useLanguage();
+  const { categories: allCategories } = useAllCategories();
 
   const [creators, setCreators] = useState<ApiCreatorListItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -514,7 +506,8 @@ export default function ExploreCreatorsScreen() {
   const [filterVisible, setFilterVisible] = useState(false);
   const [activeFilter, setActiveFilter] = useState<FilterState>(DEFAULT_FILTER);
   const [tempFilter, setTempFilter] = useState<FilterState>(DEFAULT_FILTER);
-  const [availableCategories, setAvailableCategories] = useState<string[]>([]);
+  const { categories: adminCategories } = useCategories('CREATOR');
+  const availableCategories = adminCategories.map((c) => c.name);
   const [availablePlatforms, setAvailablePlatforms] = useState<string[]>([]);
 
   const filterActive = isFilterActive(activeFilter);
@@ -559,8 +552,7 @@ export default function ExploreCreatorsScreen() {
   // Load filter options once
   useEffect(() => {
     creatorService.getCreatorFilterOptions()
-      .then(({ categories, platforms }) => {
-        setAvailableCategories(categories);
+      .then(({ platforms }) => {
         setAvailablePlatforms(platforms);
       })
       .catch(() => {});
@@ -716,13 +708,16 @@ export default function ExploreCreatorsScreen() {
               <Ionicons name="close" size={12} color={C.brinjal1} />
             </Pressable>
           ))}
-          {activeFilter.categories.map((cat) => (
-            <Pressable key={cat} onPress={() => removeActiveFilter('categories', cat)} style={[s.chip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
-              {CATEGORY_META[cat] && <FontAwesome5 name={CATEGORY_META[cat].icon} size={11} color={getIconColor(CATEGORY_META[cat].icon)} />}
-              <Text style={[s.chipText, { color: C.brinjal1 }]}>{cat}</Text>
-              <Ionicons name="close" size={12} color={C.brinjal1} />
-            </Pressable>
-          ))}
+          {activeFilter.categories.map((cat) => {
+            const meta = getCategoryMeta(allCategories, cat);
+            return (
+              <Pressable key={cat} onPress={() => removeActiveFilter('categories', cat)} style={[s.chip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
+                <FontAwesome5 name={meta.icon} size={11} color={meta.color} />
+                <Text style={[s.chipText, { color: C.brinjal1 }]}>{cat}</Text>
+                <Ionicons name="close" size={12} color={C.brinjal1} />
+              </Pressable>
+            );
+          })}
           <Pressable onPress={() => setActiveFilter(DEFAULT_FILTER)} style={[s.chip, { backgroundColor: C.background, borderColor: C.border }]}>
             <Text style={[s.chipText, { color: C.textSecondary }]}>{t('common.clearAll')}</Text>
           </Pressable>

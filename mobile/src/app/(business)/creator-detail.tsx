@@ -20,6 +20,8 @@ import { creatorService, type ApiCreatorPublicProfile } from '@/services/creator
 import { chatService } from '@/services/chat';
 import { F } from '@/utilities/constants';
 import { getIconColor } from '@/features/creator/data/filterOptions';
+import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
+import type { ApiCategory } from '@/services/category';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -46,32 +48,16 @@ function getPlatformInfo(platform: string): PlatformInfo {
   };
 }
 
-const CATEGORY_META: Record<string, { icon: string; bg: string }> = {
-  Fashion:    { icon: 'tshirt',         bg: '#F2DCF0' },
-  Food:       { icon: 'utensils',       bg: '#F2E6DC' },
-  Tech:       { icon: 'microchip',      bg: '#DCE6F2' },
-  Technology: { icon: 'microchip',      bg: '#DCE6F2' },
-  Beauty:     { icon: 'spa',            bg: '#DCF2E6' },
-  Travel:     { icon: 'plane',          bg: '#F2F2DC' },
-  Fitness:    { icon: 'dumbbell',       bg: '#DCF2EE' },
-  Lifestyle:  { icon: 'leaf',           bg: '#E6F2DC' },
-  Gaming:     { icon: 'gamepad',        bg: '#E6DCF2' },
-  Music:      { icon: 'music',          bg: '#F2DCE6' },
-  Education:  { icon: 'graduation-cap', bg: '#FDEFD0' },
-  Sports:     { icon: 'futbol',         bg: '#E8F4DC' },
-  Wellness:   { icon: 'heartbeat',      bg: '#DCF2EE' },
-  Adventure:  { icon: 'mountain',       bg: '#E8EFD4' },
-};
-
 function formatFollowers(n: number) {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K`;
   return String(n);
 }
 
-function getAvatarBg(categories: string[]) {
+function getAvatarBg(allCategories: ApiCategory[], categories: string[]) {
   for (const c of categories) {
-    if (CATEGORY_META[c]) return CATEGORY_META[c].bg;
+    const match = allCategories.find((cat) => cat.name === c);
+    if (match) return match.iconBg;
   }
   return '#E8EAF6';
 }
@@ -89,6 +75,7 @@ export default function CreatorDetailScreen() {
   const C = useAppColors();
   const insets = useSafeAreaInsets();
   const { t } = useLanguage();
+  const { categories: allCategories } = useAllCategories();
 
   const [profile, setProfile]     = useState<ApiCreatorPublicProfile | null>(null);
   const [loading, setLoading]     = useState(true);
@@ -176,7 +163,7 @@ export default function CreatorDetailScreen() {
   }
 
   const initials = (profile.fullName ?? 'C').split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2);
-  const avatarBg = getAvatarBg(profile.categories);
+  const avatarBg = getAvatarBg(allCategories, profile.categories);
   const hasBudget = profile.prefBudgetMin > 0 || profile.prefBudgetMax > 0;
   const portfolioLinks = (profile.portfolioLinks ?? []) as { id: string; label: string; url: string }[];
 
@@ -250,10 +237,10 @@ export default function CreatorDetailScreen() {
             <SectionTitle label={t('creatorDetailExtra.sectionCategories')} color={C.textSecondary} />
             <View style={s.chips}>
               {profile.categories.map((cat) => {
-                const meta = CATEGORY_META[cat];
+                const meta = getCategoryMeta(allCategories, cat);
                 return (
                   <View key={cat} style={[s.catChip, { backgroundColor: C.primaryLight }]}>
-                    {meta && <FontAwesome5 name={meta.icon} size={11} color={getIconColor(meta.icon)} />}
+                    <FontAwesome5 name={meta.icon} size={11} color={meta.color} />
                     <Text style={[s.catChipText, { color: C.brinjal1 }]}>{cat}</Text>
                   </View>
                 );

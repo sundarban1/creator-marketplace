@@ -2,7 +2,8 @@ import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAppColors } from '@/context/ThemeContext';
-import { CATEGORY_META, DEFAULT_META, cardBg, displayCategory } from '@/features/creator/data/filterOptions';
+import { displayCategory } from '@/features/creator/data/filterOptions';
+import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { getTemplateImage } from '@/features/creator/data/templateImages';
 import type { Campaign } from '@/types';
 import { F } from '@/utilities/constants';
@@ -45,7 +46,8 @@ function formatDistance(km: number): string {
 
 export function NearbyCard({ campaign }: { campaign: Campaign }) {
   const C = useAppColors();
-  const catMeta   = CATEGORY_META[campaign.category] ?? DEFAULT_META;
+  const { categories } = useAllCategories();
+  const catMeta   = getCategoryMeta(categories, campaign.category);
   const cardImage = campaign.featureImageUrl ?? getTemplateImage(campaign.template, campaign.category);
 
   function goToDetail() {
@@ -59,7 +61,7 @@ export function NearbyCard({ campaign }: { campaign: Campaign }) {
       <View style={[styles.card, { backgroundColor: C.surface }]}>
 
         {/* ── Image ── */}
-        <View style={[styles.img, { backgroundColor: catMeta.bg ?? cardBg(campaign.category) }]}>
+        <View style={[styles.img, { backgroundColor: catMeta.bg }]}>
           <FontAwesome5 name={catMeta.icon} size={44} color="#000" style={styles.imgIcon} />
 
           {cardImage && (
@@ -114,7 +116,7 @@ export function NearbyCard({ campaign }: { campaign: Campaign }) {
               </View>
             ) : (
               <View style={[styles.typePill, { backgroundColor: '#EEF2FF', borderColor: '#C7D2FE' }]}>
-                <Text style={[styles.typePillText, { color: '#4F46E5' }]}>$ Paid</Text>
+                <Text style={[styles.typePillText, { color: '#4F46E5' }]}>Rs Paid</Text>
               </View>
             )}
           </View>

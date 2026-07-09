@@ -318,7 +318,10 @@
       "Bash(grep -c '\\\\${' src/data/mockData.ts)",
       "Bash(grep -rn \"'\\\\\\\\\\\\$'\\\\|\\\\\"\\\\\\\\\\\\$\\\\\"\\\\|>\\\\\\\\\\\\$<\\\\|USD\" src/)",
       "Bash(grep -rB2 'faIcon=\"' src/)",
-      "Bash(grep -n \"^\\\\s*empty:\\\\s*{\\\\|styles\\\\.empty[,}]\\\\|styles\\\\.empty \" \"src/app/\\(business\\)/\\(tabs\\)/proposals.tsx\")"
+      "Bash(grep -n \"^\\\\s*empty:\\\\s*{\\\\|styles\\\\.empty[,}]\\\\|styles\\\\.empty \" \"src/app/\\(business\\)/\\(tabs\\)/proposals.tsx\")",
+      "Bash(grep -iE \"^Fa\\(Utensils|Tshirt|Spa|Dumbbell|Gamepad|Microchip|GraduationCap|Leaf|Home$|Heartbeat|Music$|Palette|Paw|Baby|Car$|Wallet|Recycle|Camera$|Futbol|Film$|Brain|WineGlassAlt|TheaterMasks|Rocket|ShoppingCart|Store|Box$|Tag$|Tags$|Gift$|CalendarAlt|Motorcycle|Plane$|Mountain|Hotel|ConciergeBell|MobileAlt|Coffee|Hamburger|Instagram|Tiktok|Youtube|Twitter|Facebook|Star$|Key$|InfoCircle|ExclamationTriangle|CommentDots|EnvelopeOpen|PaperPlane|Bookmark|Users$|Trophy|BriefcaseMedical|ClipboardList|CalendarDay|MoneyBillWave|MapMarkerAlt|ChartBar|CalendarTimes|Filter$|Inbox$|HourglassHalf|CheckCircle|TimesCircle|Bullseye|Building$\\)$\")",
+      "Bash(grep -n \"^  if\\\\|return null;\\\\|return;$\")",
+      "Bash(tee /tmp/tsc_out.txt)"
     ],
     "additionalDirectories": [
       "/private/tmp",
