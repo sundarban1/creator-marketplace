@@ -262,7 +262,7 @@ export class AdminRepository {
   async updateUserActiveStatus(userId: string, isActive: boolean) {
     return prisma.user.update({
       where:  { id: userId },
-      data:   { isActive },
+      data:   { isActive, suspendedAt: isActive ? null : new Date() },
       select: { id: true, email: true, isActive: true },
     });
   }

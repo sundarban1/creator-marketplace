@@ -3,17 +3,22 @@ import { Rocket, Users, ThumbsUp, Wallet, ShieldCheck } from 'lucide-react';
 import { fadeUp, stagger, VP } from '../lib/motion';
 import { SECTION_IDS } from '../constants';
 import { useAutoScroll } from '../hooks/useAutoScroll';
+import { useLandingLanguage } from '../context/LanguageContext';
 
-const CARDS = [
-  { icon: Rocket, title: 'Create a Campaign', desc: 'Post a paid campaign or a free open event in minutes — AI can even draft it for you.', color: '#4F46E5' },
-  { icon: Users, title: 'Shortlist Creators', desc: 'Browse verified creators by category, engagement, and location — save your favorites.', color: '#F97316' },
-  { icon: ThumbsUp, title: 'Approve Proposals', desc: 'Review pitches, negotiate in-app, and accept the creators who fit your brand best.', color: '#EC4899' },
-  { icon: Wallet, title: 'Track Your Budget', desc: 'See exactly where every rupee goes across every active campaign, in real time.', color: '#0EA5E9' },
-  { icon: ShieldCheck, title: 'Payment Protection', desc: 'Funds sit in escrow until you approve delivered content — zero risk, either side.', color: '#16A34A' },
+// Icons/colors only — title/desc come from the translation dictionary
+// (brands.cards), matched by array index.
+const CARD_META = [
+  { icon: Rocket, color: '#4F46E5' },
+  { icon: Users, color: '#F97316' },
+  { icon: ThumbsUp, color: '#EC4899' },
+  { icon: Wallet, color: '#0EA5E9' },
+  { icon: ShieldCheck, color: '#16A34A' },
 ];
 
 export function BrandShowcase() {
+  const { d } = useLandingLanguage();
   const scrollRef = useAutoScroll<HTMLDivElement>(0.4);
+  const CARDS = CARD_META.map((m, i) => ({ ...m, ...d.brands.cards[i]! }));
   // Rendered twice back-to-back so useAutoScroll can loop seamlessly.
   const LOOPED = [...CARDS, ...CARDS];
 
@@ -21,8 +26,8 @@ export function BrandShowcase() {
     <section id={SECTION_IDS.brands} className="py-24 bg-white">
       <div className="max-w-5xl mx-auto px-5">
         <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="text-center mb-14">
-          <motion.span variants={fadeUp} className="text-brand-indigo font-bold text-xs uppercase tracking-widest">For Brands</motion.span>
-          <motion.h2 variants={fadeUp} className="text-3xl md:text-4xl font-extrabold text-gray-900 mt-3">Everything you need to run a campaign</motion.h2>
+          <motion.span variants={fadeUp} className="text-brand-indigo font-bold text-xs uppercase tracking-widest">{d.brands.eyebrow}</motion.span>
+          <motion.h2 variants={fadeUp} className="text-3xl md:text-4xl font-extrabold text-gray-900 mt-3">{d.brands.heading}</motion.h2>
         </motion.div>
         <div ref={scrollRef} className="flex gap-5 overflow-x-auto pb-4 px-1 scrollbar-hide">
           {LOOPED.map(({ icon: Icon, title, desc, color }, i) => (

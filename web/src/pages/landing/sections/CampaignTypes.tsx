@@ -1,38 +1,26 @@
 import { motion } from 'framer-motion';
 import { Wallet, Gift, Check } from 'lucide-react';
 import { fadeUp, stagger, VP } from '../lib/motion';
+import { useLandingLanguage } from '../context/LanguageContext';
 
-const TYPES = [
-  {
-    icon: Wallet,
-    tag: 'Paid Campaign',
-    color: '#4F46E5',
-    bg: '#EEF2FF',
-    title: 'Creators get paid for content',
-    desc: 'Set a budget and deliverables — creators apply, you approve, and payment sits in secure escrow until the content is delivered and accepted.',
-    points: ['Escrow-protected payout', 'Deliverables & timeline defined upfront', 'Released only once you approve the work'],
-  },
-  {
-    icon: Gift,
-    tag: 'Free / Open Event',
-    color: '#F97316',
-    bg: '#FFF7ED',
-    title: 'Creators visit — no cash payout',
-    desc: "Invite creators to experience your place or event in person. There's no direct payment, but you can offer free food, drinks, and hampers in exchange for their visit and coverage.",
-    points: ['No budget required to get started', 'Great for launches, tastings & pop-ups', 'Reward with food, drinks & hampers instead of cash'],
-  },
+// Icons/colors only — copy comes from the translation dictionary
+// (campaignTypes.types), matched by array index.
+const TYPE_META = [
+  { icon: Wallet, color: '#4F46E5', bg: '#EEF2FF' },
+  { icon: Gift, color: '#F97316', bg: '#FFF7ED' },
 ];
 
 export function CampaignTypes() {
+  const { d } = useLandingLanguage();
+  const TYPES = TYPE_META.map((m, i) => ({ ...m, ...d.campaignTypes.types[i]! }));
+
   return (
     <section className="py-24 bg-gray-50">
       <div className="max-w-5xl mx-auto px-5">
         <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="text-center mb-14">
-          <motion.span variants={fadeUp} className="text-brand-indigo font-bold text-xs uppercase tracking-widest">Two Ways to Collaborate</motion.span>
-          <motion.h2 variants={fadeUp} className="text-3xl md:text-4xl font-extrabold text-gray-900 mt-3">Choose the campaign that fits your goal</motion.h2>
-          <motion.p variants={fadeUp} className="text-gray-500 text-base max-w-lg mx-auto mt-4">
-            Every campaign you create on Kolab is either a paid collaboration or a free, open event — pick whichever fits your budget and goal.
-          </motion.p>
+          <motion.span variants={fadeUp} className="text-brand-indigo font-bold text-xs uppercase tracking-widest">{d.campaignTypes.eyebrow}</motion.span>
+          <motion.h2 variants={fadeUp} className="text-3xl md:text-4xl font-extrabold text-gray-900 mt-3">{d.campaignTypes.heading}</motion.h2>
+          <motion.p variants={fadeUp} className="text-gray-500 text-base max-w-lg mx-auto mt-4">{d.campaignTypes.sub}</motion.p>
         </motion.div>
 
         <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="grid md:grid-cols-2 gap-6">

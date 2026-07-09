@@ -79,6 +79,10 @@ const ne = {
       roleModalCancel: 'रद्द गर्नुहोस्',
       googleFailed: 'Google साइन-इन असफल। पुनः प्रयास गर्नुहोस्।',
       facebookFailed: 'Facebook साइन-इन असफल। पुनः प्रयास गर्नुहोस्।',
+      suspendedTitle: 'खाता निलम्बित',
+      suspendedMessage: 'तपाईंको खाता एडमिनद्वारा निलम्बित गरिएको छ। यदि तपाईंलाई लाग्छ कि यो गल्ती हो भने कृपया सहायता टोलीलाई सम्पर्क गर्नुहोस्।',
+      suspendedContactBtn: 'एडमिनलाई सम्पर्क गर्नुहोस्',
+      suspendedClose: 'बन्द गर्नुहोस्',
     },
     signup: {
       title: 'खाता बनाउनुहोस्',

@@ -3,6 +3,7 @@ import { motion, type Variants } from 'framer-motion';
 import { ArrowRight, PlayCircle, Sparkles } from 'lucide-react';
 import { PhoneFrame } from '../phone/PhoneFrame';
 import { SECTION_IDS } from '../constants';
+import { useLandingLanguage } from '../context/LanguageContext';
 
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 24 },
@@ -10,10 +11,8 @@ const fadeUp: Variants = {
 };
 const stagger: Variants = { hidden: {}, show: { transition: { staggerChildren: 0.09 } } };
 
-interface FloatCard {
+interface FloatCardPos {
   icon: string;
-  label: string;
-  sub: string;
   top: number;
   left?: number;
   right?: number;
@@ -23,15 +22,16 @@ interface FloatCard {
 
 // Positioned in pixels against the fixed-size canvas below (not percentages
 // of the phone itself) so they land predictably outside the phone's bounds
-// regardless of how the phone is scaled.
-const FLOAT_CARDS: FloatCard[] = [
-  { icon: '✅', label: 'Campaign Accepted', sub: 'Himalayan Brew', top: 30, left: 0, delay: 0, duration: 5.5 },
-  { icon: '🤝', label: 'New Collaboration', sub: 'Dhaka Threads', top: 130, right: 0, delay: 0.6, duration: 6.2 },
-  { icon: '🔒', label: 'Payment Secured', sub: 'Escrow protected', top: 400, left: 0, delay: 1.1, duration: 5.8 },
-  { icon: '✨', label: 'AI Campaign Ready', sub: 'Generated in 4s', top: 470, right: 0, delay: 0.3, duration: 6.5 },
+// regardless of how the phone is scaled. Label/sub copy comes from the
+// translation dictionary (see hero.floatCards), matched by array index.
+const FLOAT_POS: FloatCardPos[] = [
+  { icon: '✅', top: 30, left: 0, delay: 0, duration: 5.5 },
+  { icon: '🤝', top: 130, right: 0, delay: 0.6, duration: 6.2 },
+  { icon: '🔒', top: 400, left: 0, delay: 1.1, duration: 5.8 },
+  { icon: '✨', top: 470, right: 0, delay: 0.3, duration: 6.5 },
 ];
 
-function FloatingCard({ card }: { card: FloatCard }) {
+function FloatingCard({ card, label, sub }: { card: FloatCardPos; label: string; sub: string }) {
   return (
     <motion.div
       className="absolute hidden md:block rounded-2xl px-3.5 py-3 backdrop-blur-xl border border-white/15 shadow-2xl z-10"
@@ -57,8 +57,8 @@ function FloatingCard({ card }: { card: FloatCard }) {
       <div className="flex items-center gap-2">
         <span className="text-base leading-none flex-shrink-0">{card.icon}</span>
         <div className="min-w-0">
-          <div className="text-white text-[11px] font-bold leading-tight">{card.label}</div>
-          <div className="text-white/45 text-[9.5px] leading-tight mt-0.5">{card.sub}</div>
+          <div className="text-white text-[11px] font-bold leading-tight">{label}</div>
+          <div className="text-white/45 text-[9.5px] leading-tight mt-0.5">{sub}</div>
         </div>
       </div>
     </motion.div>
@@ -67,6 +67,7 @@ function FloatingCard({ card }: { card: FloatCard }) {
 
 export function Hero() {
   const navigate = useNavigate();
+  const { d } = useLandingLanguage();
 
   return (
     <section
@@ -91,17 +92,17 @@ export function Hero() {
       <div className="relative max-w-6xl mx-auto px-5 grid lg:grid-cols-[1.05fr_0.95fr] gap-14 lg:gap-6 items-center w-full">
         <motion.div initial="hidden" animate="show" variants={stagger}>
           <motion.div variants={fadeUp} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 text-white/85 text-xs font-semibold mb-6 ring-1 ring-white/15">
-            <Sparkles size={12} className="text-orange-300" /> Nepal's premium creator marketplace
+            <Sparkles size={12} className="text-orange-300" /> {d.hero.badge}
           </motion.div>
 
           <h1 className="text-[2.6rem] leading-[1.08] sm:text-6xl sm:leading-[1.04] font-extrabold text-white mb-6">
-            Nepal's Creator Marketplace.
+            {d.hero.headline1}
             <br />
-            <span className="bg-gradient-to-r from-indigo-300 to-orange-300 bg-clip-text text-transparent">Where Brands Meet Creators.</span>
+            <span className="bg-gradient-to-r from-indigo-300 to-orange-300 bg-clip-text text-transparent">{d.hero.headline2}</span>
           </h1>
 
           <motion.p variants={fadeUp} className="text-white/60 text-lg max-w-md mb-9 leading-relaxed">
-            Discover, collaborate, and get paid securely — Kolab connects Nepali brands with creators through AI-assisted campaigns and escrow-protected payments.
+            {d.hero.sub}
           </motion.p>
 
           <motion.div variants={fadeUp} className="flex flex-wrap gap-3 mb-10">
@@ -110,28 +111,28 @@ export function Hero() {
               onClick={() => navigate('/login')}
               className="px-6 py-3.5 rounded-2xl bg-brand-indigo text-white font-bold text-sm shadow-lg flex items-center gap-2"
             >
-              Join as Creator <ArrowRight size={16} />
+              {d.hero.ctaCreator} <ArrowRight size={16} />
             </motion.button>
             <motion.button
               whileHover={{ y: -2, backgroundColor: 'rgba(255,255,255,0.14)' }}
               onClick={() => navigate('/login')}
               className="px-6 py-3.5 rounded-2xl bg-white/8 text-white font-bold text-sm ring-1 ring-white/20 transition-colors"
             >
-              Find Creators
+              {d.hero.ctaFind}
             </motion.button>
             <motion.button
               whileHover={{ y: -2 }}
               className="px-5 py-3.5 rounded-2xl text-white/70 hover:text-white font-semibold text-sm flex items-center gap-2 transition-colors"
             >
-              <PlayCircle size={18} /> Watch Demo
+              <PlayCircle size={18} /> {d.hero.ctaDemo}
             </motion.button>
           </motion.div>
 
           <motion.div variants={fadeUp} className="flex gap-8">
-            {[['1,000+', 'Verified Creators'], ['250+', 'Active Brands'], ['3,200+', 'Campaigns']].map(([v, l]) => (
-              <div key={l}>
-                <div className="text-white font-extrabold text-2xl">{v}</div>
-                <div className="text-white/45 text-xs">{l}</div>
+            {d.hero.stats.map((s) => (
+              <div key={s.label}>
+                <div className="text-white font-extrabold text-2xl">{s.value}</div>
+                <div className="text-white/45 text-xs">{s.label}</div>
               </div>
             ))}
           </motion.div>
@@ -140,7 +141,9 @@ export function Hero() {
         {/* Giant floating phone + activity cards — fixed-size canvas so the
             cards' pixel offsets stay predictable regardless of phone scale. */}
         <div className="relative mx-auto" style={{ width: 360, height: 600 }}>
-          {FLOAT_CARDS.map((c) => <FloatingCard key={c.label} card={c} />)}
+          {FLOAT_POS.map((c, i) => (
+            <FloatingCard key={i} card={c} label={d.hero.floatCards[i]!.label} sub={d.hero.floatCards[i]!.sub} />
+          ))}
           <motion.div
             className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
             initial={{ opacity: 0, y: 40, scale: 0.94 }}

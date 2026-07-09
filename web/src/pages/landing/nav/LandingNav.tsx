@@ -1,13 +1,34 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
 import { NAV_LINKS } from '../constants';
 import { useLenisScroll } from '../hooks/useLenis';
+import { useLandingLanguage } from '../context/LanguageContext';
+
+function LanguageSwitch({ scrolled }: { scrolled: boolean }) {
+  const { lang, setLang } = useLandingLanguage();
+  return (
+    <div className={`flex items-center rounded-full p-0.5 text-xs font-bold transition-colors ${scrolled ? 'bg-gray-100' : 'bg-white/15'}`}>
+      {(['en', 'ne'] as const).map((l) => (
+        <button
+          key={l}
+          onClick={() => setLang(l)}
+          className={`px-2.5 py-1.5 rounded-full transition-colors ${
+            lang === l
+              ? 'bg-brand-indigo text-white'
+              : scrolled ? 'text-gray-500 hover:text-gray-800' : 'text-white/70 hover:text-white'
+          }`}
+        >
+          {l === 'en' ? 'EN' : 'ने'}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 export function LandingNav() {
-  const navigate = useNavigate();
   const { scrollTo } = useLenisScroll();
+  const { d } = useLandingLanguage();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -47,24 +68,13 @@ export function LandingNav() {
                 onClick={() => go(l.id)}
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${scrolled ? 'text-gray-600 hover:text-brand-indigo hover:bg-indigo-50' : 'text-white/85 hover:text-white hover:bg-white/10'}`}
               >
-                {l.label}
+                {d.nav.links[l.id as keyof typeof d.nav.links]}
               </button>
             ))}
           </motion.nav>
 
-          <div className="hidden lg:flex items-center gap-2">
-            <button
-              onClick={() => navigate('/login')}
-              className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors ${scrolled ? 'text-gray-700 hover:text-brand-indigo' : 'text-white/85 hover:text-white'}`}
-            >
-              Login
-            </button>
-            <button
-              onClick={() => navigate('/login')}
-              className="px-4 py-2 rounded-full text-sm font-bold bg-brand-indigo text-white hover:bg-brand-indigo-dark transition-colors shadow-sm"
-            >
-              Get Started
-            </button>
+          <div className="hidden lg:flex items-center">
+            <LanguageSwitch scrolled={scrolled} />
           </div>
 
           <button
@@ -94,12 +104,12 @@ export function LandingNav() {
                   onClick={() => go(l.id)}
                   className="text-left text-4xl font-extrabold text-white/90 hover:text-white py-2 tracking-tight"
                 >
-                  <span className="text-white/30 text-lg align-super mr-3">0{i + 1}</span>{l.label}
+                  <span className="text-white/30 text-lg align-super mr-3">0{i + 1}</span>{d.nav.links[l.id as keyof typeof d.nav.links]}
                 </button>
               ))}
-              <button onClick={() => navigate('/login')} className="text-left text-4xl font-extrabold text-orange-400 py-2 tracking-tight mt-2">
-                Get Started
-              </button>
+              <div className="mt-6">
+                <LanguageSwitch scrolled={false} />
+              </div>
             </div>
           </motion.div>
         )}

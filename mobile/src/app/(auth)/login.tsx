@@ -7,6 +7,7 @@ import {
   Animated,
   Image,
   KeyboardAvoidingView,
+  Linking,
   Modal,
   Platform,
   Pressable,
@@ -197,6 +198,7 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
   const [submitted,  setSubmitted]  = useState(false);
   const [loading,    setLoading]    = useState(false);
   const [apiError,   setApiError]   = useState('');
+  const [suspendedModal, setSuspendedModal] = useState(false);
 
   const trimmedIdentifier = identifierInput.trim();
   const channel = identifierChannel(trimmedIdentifier);
@@ -213,7 +215,12 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
       const identifier = channel === 'email' ? { email: trimmedIdentifier } : { phone: trimmedIdentifier };
       await login(identifier, password, rememberMe);
     } catch (e) {
-      setApiError(e instanceof Error ? e.message : t('auth.login.requiredError'));
+      const message = e instanceof Error ? e.message : t('auth.login.requiredError');
+      if (/suspended/i.test(message)) {
+        setSuspendedModal(true);
+      } else {
+        setApiError(message);
+      }
     } finally {
       setLoading(false);
     }
@@ -302,6 +309,29 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
           <Text style={[s.bannerText, { color: '#EF4444' }]}>{googleError}</Text>
         </View>
       )}
+
+      {/* Suspended-account modal — shown instead of the inline banner when the
+          backend blocks login because an admin suspended this account. */}
+      <Modal visible={suspendedModal} transparent animationType="fade" onRequestClose={() => setSuspendedModal(false)}>
+        <View style={s.modalOverlay}>
+          <View style={[s.modalSheet, s.suspendedSheet]}>
+            <View style={s.suspendedIconWrap}>
+              <Ionicons name="lock-closed" size={26} color="#EF4444" />
+            </View>
+            <Text style={s.modalTitle}>{t('auth.login.suspendedTitle')}</Text>
+            <Text style={s.modalSub}>{t('auth.login.suspendedMessage')}</Text>
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+              style={s.suspendedContactBtn}
+              onPress={() => Linking.openURL('mailto:support@creatormarket.com')}>
+              <Ionicons name="mail-outline" size={16} color="#fff" />
+              <Text style={s.suspendedContactBtnText}>{t('auth.login.suspendedContactBtn')}</Text>
+            </Pressable>
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={s.modalCancel} onPress={() => setSuspendedModal(false)}>
+              <Text style={s.modalCancelText}>{t('auth.login.suspendedClose')}</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -888,6 +918,12 @@ const s = StyleSheet.create({
   modalSub:        { fontSize: 14, fontFamily: F.regular, color: '#6B7280', textAlign: 'center', marginBottom: 20 },
   modalCancel:     { marginTop: 16, alignItems: 'center', padding: 12 },
   modalCancelText: { fontSize: 15, fontFamily: F.semibold, color: '#9CA3AF' },
+
+  // Suspended-account modal
+  suspendedSheet:          { alignItems: 'center', paddingTop: 8 },
+  suspendedIconWrap:       { width: 56, height: 56, borderRadius: 28, backgroundColor: '#FEF2F2', justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
+  suspendedContactBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: P2, borderRadius: 14, paddingVertical: 14, paddingHorizontal: 20, width: '100%', marginTop: 4 },
+  suspendedContactBtnText: { fontSize: 15, fontFamily: F.semibold, color: '#fff' },
 
   terms:  { fontSize: 12, color: '#9CA3AF', lineHeight: 18, textAlign: 'center', fontFamily: F.regular, marginBottom: 8 },
 

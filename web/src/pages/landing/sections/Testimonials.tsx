@@ -2,21 +2,27 @@ import { motion } from 'framer-motion';
 import { Star, AtSign } from 'lucide-react';
 import { fadeUp, stagger, VP } from '../lib/motion';
 import { SECTION_IDS } from '../constants';
+import { useLandingLanguage } from '../context/LanguageContext';
 
-const TESTIMONIALS = [
-  { name: 'Priya Sharma', handle: 'priya.creates', role: null, avatar: 'PS', grad: ['#4F46E5', '#3730A3'], quote: 'Kolab replaced three different spreadsheets and a dozen DMs. I find campaigns, chat with brands, and get paid — all without leaving the app.' },
-  { name: 'Himalaya Brew', handle: null, role: 'Cafe chain, Kathmandu', avatar: 'HB', grad: ['#F97316', '#C2410C'], quote: 'We ran our first AI-generated campaign in under 10 minutes and had 14 proposals by evening. The escrow payment made trusting new creators easy.' },
-  { name: 'Aditya Verma', handle: 'adityaverma.tech', role: null, avatar: 'AV', grad: ['#0EA5E9', '#0369A1'], quote: 'The analytics dashboard alone is worth it — I finally know which content actually drives engagement instead of guessing.' },
-  { name: 'Dhaka Threads', handle: null, role: 'Fashion brand, Lalitpur', avatar: 'DT', grad: ['#EC4899', '#BE185D'], quote: "Payment protection changed how we work with new creators. We're no longer nervous about paying upfront." },
+// Names/handles/avatars/gradients stay fixed — role/quote come from the
+// translation dictionary (testimonials.items), matched by array index.
+const PEOPLE = [
+  { name: 'Priya Sharma', handle: 'priya.creates', avatar: 'PS', grad: ['#4F46E5', '#3730A3'] },
+  { name: 'Himalaya Brew', handle: null, avatar: 'HB', grad: ['#F97316', '#C2410C'] },
+  { name: 'Aditya Verma', handle: 'adityaverma.tech', avatar: 'AV', grad: ['#0EA5E9', '#0369A1'] },
+  { name: 'Dhaka Threads', handle: null, avatar: 'DT', grad: ['#EC4899', '#BE185D'] },
 ];
 
 export function Testimonials() {
+  const { d } = useLandingLanguage();
+  const TESTIMONIALS = PEOPLE.map((p, i) => ({ ...p, ...d.testimonials.items[i]! }));
+
   return (
     <section id={SECTION_IDS.stories} className="py-24 bg-gray-50">
       <div className="max-w-5xl mx-auto px-5">
         <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="text-center mb-14">
-          <motion.span variants={fadeUp} className="text-brand-indigo font-bold text-xs uppercase tracking-widest">Stories</motion.span>
-          <motion.h2 variants={fadeUp} className="text-3xl md:text-4xl font-extrabold text-gray-900 mt-3">Loved by creators and brands</motion.h2>
+          <motion.span variants={fadeUp} className="text-brand-indigo font-bold text-xs uppercase tracking-widest">{d.testimonials.eyebrow}</motion.span>
+          <motion.h2 variants={fadeUp} className="text-3xl md:text-4xl font-extrabold text-gray-900 mt-3">{d.testimonials.heading}</motion.h2>
         </motion.div>
         <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="grid sm:grid-cols-2 md:grid-cols-4 gap-6">
           {TESTIMONIALS.map(({ name, handle, role, avatar, grad, quote }) => (

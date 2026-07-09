@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Eye, EyeOff, Lock, Mail, AlertCircle, Users, Megaphone, CreditCard } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, AlertCircle, Users, Megaphone, CreditCard, ShieldOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const FEATURES = [
@@ -32,6 +32,7 @@ export function Login() {
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [suspendedModal, setSuspendedModal] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -45,7 +46,12 @@ export function Login() {
       await login(email.trim(), password);
       navigate(from, { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong.');
+      const message = err instanceof Error ? err.message : 'Something went wrong.';
+      if (/suspended/i.test(message)) {
+        setSuspendedModal(true);
+      } else {
+        setError(message);
+      }
     } finally {
       setLoading(false);
     }
@@ -222,6 +228,35 @@ export function Login() {
           </p>
         </div>
       </div>
+
+      {/* Suspended-account modal — shown instead of the inline banner when the
+          backend blocks login because this account has been suspended. */}
+      {suspendedModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-sm bg-white rounded-2xl p-6 text-center shadow-xl">
+            <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-red-50 flex items-center justify-center">
+              <ShieldOff size={26} className="text-red-500" />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 mb-2">Account Suspended</h3>
+            <p className="text-sm text-gray-500 leading-relaxed mb-6">
+              Your account has been suspended by an admin. Please contact support if you believe this is a mistake.
+            </p>
+            <a
+              href="mailto:support@creatormarket.com"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl transition-colors mb-3"
+            >
+              <Mail size={16} /> Contact Admin
+            </a>
+            <button
+              type="button"
+              onClick={() => setSuspendedModal(false)}
+              className="text-sm font-semibold text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

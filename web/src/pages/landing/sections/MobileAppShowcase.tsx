@@ -2,39 +2,31 @@ import { motion } from 'framer-motion';
 import { Smartphone, Users, Building2, MessageCircle, BarChart3, Wallet } from 'lucide-react';
 import { fadeUp, stagger, VP } from '../lib/motion';
 import { SECTION_IDS } from '../constants';
+import { useLandingLanguage } from '../context/LanguageContext';
 
-const SIDES = [
-  {
-    icon: Users,
-    label: 'For Creators',
-    color: '#4F46E5',
-    bg: '#EEF2FF',
-    points: [
-      { icon: MessageCircle, text: 'Discover campaigns and chat with brands in real time' },
-      { icon: Wallet, text: 'Get paid securely through escrow-protected payments' },
-    ],
-  },
-  {
-    icon: Building2,
-    label: 'For Brands',
-    color: '#F97316',
-    bg: '#FFF7ED',
-    points: [
-      { icon: BarChart3, text: 'Track every campaign and creator in one dashboard' },
-      { icon: Wallet, text: 'Manage budgets and approvals without leaving the app' },
-    ],
-  },
+// Icons/colors only — label/points come from the translation dictionary
+// (app.sides), matched by array index.
+const SIDE_META = [
+  { icon: Users, color: '#4F46E5', bg: '#EEF2FF', pointIcons: [MessageCircle, Wallet] },
+  { icon: Building2, color: '#F97316', bg: '#FFF7ED', pointIcons: [BarChart3, Wallet] },
 ];
 
 export function MobileAppShowcase() {
+  const { d } = useLandingLanguage();
+  const SIDES = SIDE_META.map((m, i) => ({
+    ...m,
+    label: d.app.sides[i]!.label,
+    points: d.app.sides[i]!.points.map((text, j) => ({ icon: m.pointIcons[j]!, text })),
+  }));
+
   return (
     <section id={SECTION_IDS.app} className="py-28 overflow-hidden" style={{ background: 'linear-gradient(150deg, #0B0B1F 0%, #151537 55%, #3730A3 100%)' }}>
       <div className="max-w-5xl mx-auto px-5">
         <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="text-center mb-16">
           <motion.span variants={fadeUp} className="text-orange-300 font-bold text-xs uppercase tracking-widest inline-flex items-center gap-2">
-            <Smartphone size={13} /> One App, Both Sides
+            <Smartphone size={13} /> {d.app.eyebrow}
           </motion.span>
-          <motion.h2 variants={fadeUp} className="text-3xl md:text-4xl font-extrabold text-white mt-3">Built for creators and brands alike</motion.h2>
+          <motion.h2 variants={fadeUp} className="text-3xl md:text-4xl font-extrabold text-white mt-3">{d.app.heading}</motion.h2>
         </motion.div>
 
         <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="grid sm:grid-cols-2 gap-6">

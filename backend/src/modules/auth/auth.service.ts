@@ -189,10 +189,15 @@ export class AuthService {
     const isVerified = channel === 'email' ? user.isEmailVerified : user.isPhoneVerified;
     if (!isVerified) throw new AppError(`Please verify your ${channel === 'email' ? 'email' : 'phone number'} before logging in`, 403);
 
-    // Auto-reactivate deactivated accounts on login
+    // Admin-suspended accounts are blocked outright — never silently
+    // reactivated. Self-deactivated accounts (suspendedAt null) still
+    // auto-reactivate on next login, per deactivateAccount()'s promise.
     let activeUser = user;
     let reactivated = false;
     if (!user.isActive) {
+      if (user.suspendedAt) {
+        throw new AppError('Your account has been suspended. Please contact admin support.', 403);
+      }
       activeUser = await this.repo.reactivateAccount(user.id);
       reactivated = true;
     }
@@ -354,7 +359,12 @@ export class AuthService {
     const existing = await this.repo.findUserByEmail(gUser.email);
 
     if (existing) {
-      if (!existing.isActive) await this.repo.reactivateAccount(existing.id);
+      if (!existing.isActive) {
+        if (existing.suspendedAt) {
+          throw new AppError('Your account has been suspended. Please contact admin support.', 403);
+        }
+        await this.repo.reactivateAccount(existing.id);
+      }
       const user = await this.repo.findUserById(existing.id);
       const payload = { id: user!.id, email: user!.email, role: user!.role };
       const accessToken  = signAccessToken(payload);
@@ -403,7 +413,12 @@ export class AuthService {
     const existing = await this.repo.findUserByEmail(fbUser.email);
 
     if (existing) {
-      if (!existing.isActive) await this.repo.reactivateAccount(existing.id);
+      if (!existing.isActive) {
+        if (existing.suspendedAt) {
+          throw new AppError('Your account has been suspended. Please contact admin support.', 403);
+        }
+        await this.repo.reactivateAccount(existing.id);
+      }
       const user = await this.repo.findUserById(existing.id);
       const payload = { id: user!.id, email: user!.email, role: user!.role };
       const accessToken  = signAccessToken(payload);

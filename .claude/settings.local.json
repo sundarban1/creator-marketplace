@@ -353,7 +353,14 @@
       "Bash(node verify_sliders.mjs)",
       "Bash(node verify_autoscroll.mjs)",
       "Bash(node debug_autoscroll.mjs)",
-      "Bash(node verify_autoscroll2.mjs)"
+      "Bash(node verify_autoscroll2.mjs)",
+      "Bash(node verify_all.mjs)",
+      "Bash(node verify_ne_full.mjs)",
+      "Bash(node verify_ai.mjs)",
+      "Bash(node verify_ai_loop.mjs)",
+      "Bash(lsof -i :4000 -sTCP:LISTEN)",
+      "Bash(curl -s http://localhost:4000/health)",
+      "Bash(node test_suspend.mjs)"
     ],
     "additionalDirectories": [
       "/private/tmp",

@@ -2,19 +2,24 @@ import { motion } from 'framer-motion';
 import { CheckCircle, Star } from 'lucide-react';
 import { fadeUp, stagger, VP } from '../lib/motion';
 import { SECTION_IDS } from '../constants';
+import { useAutoScroll } from '../hooks/useAutoScroll';
+import { useLandingLanguage } from '../context/LanguageContext';
 
-const CREATORS = [
-  { name: 'Priya Sharma', initials: 'PS', category: 'Food & Lifestyle', followers: '42K', engagement: '6.4%', campaigns: 31, rating: '4.8', color: '#4F46E5' },
-  { name: 'Aditya Verma', initials: 'AV', category: 'Tech Reviews', followers: '68K', engagement: '5.1%', campaigns: 24, rating: '4.9', color: '#F97316' },
-  { name: 'Sunita Rai', initials: 'SR', category: 'Travel & Adventure', followers: '35K', engagement: '7.2%', campaigns: 19, rating: '4.7', color: '#EC4899' },
-  { name: 'Bikash Thapa', initials: 'BT', category: 'Fitness', followers: '51K', engagement: '5.8%', campaigns: 27, rating: '4.9', color: '#16A34A' },
-  { name: 'Kripa Gurung', initials: 'KG', category: 'Fashion', followers: '89K', engagement: '4.6%', campaigns: 42, rating: '4.8', color: '#0EA5E9' },
+// Stats/colors stay fixed — name/category come from the translation
+// dictionary (creators.list), matched by array index.
+const CREATOR_STATS = [
+  { initials: 'PS', followers: '42K', engagement: '6.4%', campaigns: 31, rating: '4.8', color: '#4F46E5' },
+  { initials: 'AV', followers: '68K', engagement: '5.1%', campaigns: 24, rating: '4.9', color: '#F97316' },
+  { initials: 'SR', followers: '35K', engagement: '7.2%', campaigns: 19, rating: '4.7', color: '#EC4899' },
+  { initials: 'BT', followers: '51K', engagement: '5.8%', campaigns: 27, rating: '4.9', color: '#16A34A' },
+  { initials: 'KG', followers: '89K', engagement: '4.6%', campaigns: 42, rating: '4.8', color: '#0EA5E9' },
 ];
 
-function CreatorCard({ c }: { c: (typeof CREATORS)[number] }) {
+type Creator = (typeof CREATOR_STATS)[number] & { name: string; category: string };
+
+function CreatorCard({ c, labels }: { c: Creator; labels: { followers: string; engagement: string; campaigns: string } }) {
   return (
     <motion.div
-      variants={fadeUp}
       whileHover={{ y: -8, scale: 1.03 }}
       transition={{ type: 'spring', stiffness: 300, damping: 22 }}
       className="flex-shrink-0 w-56 bg-white rounded-3xl p-6 border border-gray-100 shadow-sm hover:shadow-xl transition-shadow"
@@ -32,15 +37,15 @@ function CreatorCard({ c }: { c: (typeof CREATORS)[number] }) {
       <div className="grid grid-cols-2 gap-2 mb-3">
         <div className="bg-gray-50 rounded-xl p-2.5 text-center">
           <div className="font-extrabold text-gray-900 text-sm">{c.followers}</div>
-          <div className="text-gray-400 text-[10px]">Followers</div>
+          <div className="text-gray-400 text-[10px]">{labels.followers}</div>
         </div>
         <div className="bg-gray-50 rounded-xl p-2.5 text-center">
           <div className="font-extrabold text-gray-900 text-sm">{c.engagement}</div>
-          <div className="text-gray-400 text-[10px]">Engagement</div>
+          <div className="text-gray-400 text-[10px]">{labels.engagement}</div>
         </div>
       </div>
       <div className="flex items-center justify-between text-xs text-gray-500">
-        <span>{c.campaigns} campaigns</span>
+        <span>{c.campaigns} {labels.campaigns}</span>
         <span className="flex items-center gap-1 font-semibold text-gray-700"><Star size={12} className="text-yellow-400 fill-yellow-400" />{c.rating}</span>
       </div>
     </motion.div>
@@ -48,19 +53,23 @@ function CreatorCard({ c }: { c: (typeof CREATORS)[number] }) {
 }
 
 export function CreatorShowcase() {
+  const { d } = useLandingLanguage();
+  const scrollRef = useAutoScroll<HTMLDivElement>(0.4);
+  const CREATORS: Creator[] = CREATOR_STATS.map((s, i) => ({ ...s, ...d.creators.list[i]! }));
+  // Rendered twice back-to-back so useAutoScroll can loop seamlessly.
+  const LOOPED = [...CREATORS, ...CREATORS];
+  const labels = { followers: d.creators.followers, engagement: d.creators.engagement, campaigns: d.creators.campaigns };
+
   return (
     <section id={SECTION_IDS.creators} className="py-24 bg-gray-50 overflow-hidden">
       <div className="max-w-6xl mx-auto px-5">
         <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="text-center mb-14">
-          <motion.span variants={fadeUp} className="text-brand-indigo font-bold text-xs uppercase tracking-widest">Discover Creators</motion.span>
-          <motion.h2 variants={fadeUp} className="text-3xl md:text-4xl font-extrabold text-gray-900 mt-3">Meet Nepal's top creators</motion.h2>
+          <motion.span variants={fadeUp} className="text-brand-indigo font-bold text-xs uppercase tracking-widest">{d.creators.eyebrow}</motion.span>
+          <motion.h2 variants={fadeUp} className="text-3xl md:text-4xl font-extrabold text-gray-900 mt-3">{d.creators.heading}</motion.h2>
         </motion.div>
-        <motion.div
-          initial="hidden" whileInView="show" viewport={VP} variants={stagger()}
-          className="flex gap-5 overflow-x-auto pb-4 px-1 snap-x scrollbar-hide"
-        >
-          {CREATORS.map((c) => <CreatorCard key={c.name} c={c} />)}
-        </motion.div>
+        <div ref={scrollRef} className="flex gap-5 overflow-x-auto pb-4 px-1 scrollbar-hide">
+          {LOOPED.map((c, i) => <CreatorCard key={`${c.name}-${i}`} c={c} labels={labels} />)}
+        </div>
       </div>
     </section>
   );

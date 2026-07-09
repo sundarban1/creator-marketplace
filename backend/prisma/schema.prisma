@@ -20,6 +20,11 @@ model User {
   phone            String?           @unique
   isOnboarded      Boolean           @default(false)
   isActive         Boolean           @default(true)
+  // Set only when an admin suspends this account (distinct from a user's own
+  // self-deactivation, which also flips isActive false but leaves this null).
+  // Login blocks outright when this is set; self-deactivated accounts still
+  // auto-reactivate on next login.
+  suspendedAt      DateTime?
   pushToken        String?
   deviceId         String?
   businessProfile  BusinessProfile?

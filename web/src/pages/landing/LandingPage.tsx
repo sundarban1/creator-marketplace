@@ -1,4 +1,5 @@
 import { LenisProvider } from './hooks/useLenis';
+import { LandingLanguageProvider } from './context/LanguageContext';
 import { LandingNav } from './nav/LandingNav';
 import { LandingFooter } from './nav/LandingFooter';
 import { Hero } from './sections/Hero';
@@ -21,9 +22,9 @@ function LandingPageInner() {
       <ProductHighlights />
       <CreatorShowcase />
       <BrandShowcase />
+      <AIExperience />
       <CampaignTypes />
       <MarketplaceWorkflow />
-      <AIExperience />
       <TrustStats />
       <Testimonials />
       <MobileAppShowcase />
@@ -35,8 +36,10 @@ function LandingPageInner() {
 
 export function LandingPage() {
   return (
-    <LenisProvider>
-      <LandingPageInner />
-    </LenisProvider>
+    <LandingLanguageProvider>
+      <LenisProvider>
+        <LandingPageInner />
+      </LenisProvider>
+    </LandingLanguageProvider>
   );
 }

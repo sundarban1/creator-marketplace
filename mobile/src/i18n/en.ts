@@ -79,6 +79,10 @@ const en = {
       roleModalCancel: 'Cancel',
       googleFailed: 'Google sign-in failed. Please try again.',
       facebookFailed: 'Facebook sign-in failed. Please try again.',
+      suspendedTitle: 'Account Suspended',
+      suspendedMessage: 'Your account has been suspended by an admin. Please contact support if you believe this is a mistake.',
+      suspendedContactBtn: 'Contact Admin',
+      suspendedClose: 'Close',
     },
     signup: {
       title: 'Create account',

@@ -97,7 +97,7 @@ export class AuthRepository {
   async reactivateAccount(userId: string) {
     return prisma.user.update({
       where: { id: userId },
-      data: { isActive: true },
+      data: { isActive: true, suspendedAt: null },
       include: profileSelect,
     });
   }
