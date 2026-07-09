@@ -1,9 +1,9 @@
-import { useState }           from 'react';
+import { useState, type MouseEvent }           from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Building2, MapPin, Calendar, Users, DollarSign,
   Target, Clock, CheckCircle2, XCircle, Hourglass, Star,
-  FileText, Activity,
+  FileText, Activity, Wallet,
 } from 'lucide-react';
 import { StatusBadge }  from '../components/StatusBadge';
 import { Avatar }       from '../components/Avatar';
@@ -95,10 +95,30 @@ function buildTimeline(campaign: ApiCampaignDetail) {
 
 // ── Application row ───────────────────────────────────────────────────────────
 
-function ApplicationRow({ app }: { app: ApiApplication }) {
+function ApplicationRow({ app, onReleased, showToast }: {
+  app: ApiApplication;
+  onReleased: () => void;
+  showToast: (msg: string, ok?: boolean) => void;
+}) {
   const [expanded, setExpanded] = useState(false);
+  const [releasing, setReleasing] = useState(false);
   const name = app.creator.fullName ?? app.creator.user.email;
   const initials = name.slice(0, 2).toUpperCase();
+  const canRelease = app.workStatus === 'APPROVED' && app.paymentStatus === 'PAID';
+
+  async function handleRelease(e: MouseEvent) {
+    e.stopPropagation();
+    setReleasing(true);
+    try {
+      await api.admin.releasePayment(app.id);
+      showToast(`Payment released to ${name}`);
+      onReleased();
+    } catch (err) {
+      showToast((err as Error).message ?? 'Failed to release payment.', false);
+    } finally {
+      setReleasing(false);
+    }
+  }
 
   return (
     <div className="border border-gray-100 rounded-xl overflow-hidden">
@@ -121,6 +141,20 @@ function ApplicationRow({ app }: { app: ApiApplication }) {
             {appStatusIcon(app.status)}
             <StatusBadge status={appStatusBadge(app.status)} />
           </div>
+          {canRelease && (
+            <button
+              onClick={handleRelease}
+              disabled={releasing}
+              className="flex items-center gap-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white px-2.5 py-1.5 rounded-lg transition-colors"
+            >
+              <Wallet size={12} /> {releasing ? 'Releasing…' : 'Release Payment'}
+            </button>
+          )}
+          {app.paymentStatus === 'RELEASED' && (
+            <span className="flex items-center gap-1 text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200">
+              <CheckCircle2 size={12} /> Paid
+            </span>
+          )}
           <span className="text-xs text-gray-400">{fmt(app.createdAt)}</span>
         </div>
       </div>
@@ -146,6 +180,10 @@ function ApplicationRow({ app }: { app: ApiApplication }) {
               ))}
             </div>
           )}
+          <div className="flex flex-wrap gap-4 text-xs text-gray-500 pt-1 border-t border-gray-200">
+            <span><span className="font-medium text-gray-700">Work status:</span> {app.workStatus}</span>
+            <span><span className="font-medium text-gray-700">Payment status:</span> {app.paymentStatus}</span>
+          </div>
         </div>
       )}
     </div>
@@ -449,7 +487,7 @@ export function CampaignDetail() {
             ) : (
               <div className="space-y-2">
                 {campaign.applications.map((app) => (
-                  <ApplicationRow key={app.id} app={app} />
+                  <ApplicationRow key={app.id} app={app} onReleased={refetch} showToast={showToast} />
                 ))}
               </div>
             )}

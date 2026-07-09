@@ -553,7 +553,7 @@ export default function CampaignWorkspaceScreen() {
     setSubmitting(true);
     try {
       await campaignService.approveWork(app.id);
-      setApp(a => a ? { ...a, workStatus: 'APPROVED', paymentStatus: 'RELEASED' } : a);
+      setApp(a => a ? { ...a, workStatus: 'APPROVED' } : a);
       showToast(t('activityTimeline.toastWorkApproved'));
     } catch (e: any) {
       showToast(e?.message ?? 'Approval failed. Please try again.');

@@ -19,6 +19,7 @@ import {
   deleteConversation,
   getReferrals,
   releaseReferral,
+  releasePayment,
   verifyCreator,
   verifyBusiness,
   getBusinessReferrals,
@@ -47,6 +48,7 @@ router.patch('/businesses/:id/verify', verifyBusiness);
 router.get('/campaigns', getCampaigns);
 router.get('/campaigns/:id', getCampaignDetail);
 router.patch('/campaigns/:id/status', updateCampaignStatus);
+router.patch('/applications/:id/release-payment', releasePayment);
 
 // ── Platform Settings ───────────────────────────────────────────────────────────
 

@@ -453,6 +453,9 @@ export const api = {
     releaseBusinessReferral: (id: string) =>
       request<ApiBusinessReferral>('PATCH', `/api/admin/business-referrals/${id}/release`),
 
+    releasePayment: (applicationId: string) =>
+      request<ApiApplication>('PATCH', `/api/admin/applications/${applicationId}/release-payment`),
+
     categories: () =>
       request<ApiCategory[]>('GET', '/api/admin/categories'),
 

@@ -272,6 +272,10 @@ model Application {
   deliverableUrls String?
   paymentStatus   PaymentStatus     @default(UNPAID)
   paidAt          DateTime?
+  // Set only when an admin manually releases the held escrow payment —
+  // brand approval no longer releases funds automatically, see approveWork().
+  releasedAt         DateTime?
+  releasedByAdminId  String?
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
   campaign        Campaign          @relation(fields: [campaignId], references: [id], onDelete: Cascade)

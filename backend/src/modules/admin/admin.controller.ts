@@ -237,6 +237,17 @@ export async function releaseReferral(req: Request, res: Response, next: NextFun
   }
 }
 
+// PATCH /api/admin/applications/:id/release-payment
+export async function releasePayment(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { id } = req.params;
+    const updated = await service.releasePayment(id!, req.user!.id);
+    return success(res, updated, 'Payment released');
+  } catch (err) {
+    next(err);
+  }
+}
+
 // PATCH /api/admin/creators/:id/verify
 export async function verifyCreator(req: Request, res: Response, next: NextFunction) {
   try {

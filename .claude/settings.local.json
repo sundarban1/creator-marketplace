@@ -368,7 +368,8 @@
       "Bash(awk 'NR==1056,NR==1300 {print NR\": \"$0}' /Users/sundarban/Documents/projects/marketplace/mobile/src/app/\\\\\\(creator\\\\\\)/settings.tsx)",
       "Bash(awk 'NR==1304,NR==1600 {print NR\": \"$0}' /Users/sundarban/Documents/projects/marketplace/mobile/src/app/\\\\\\(creator\\\\\\)/settings.tsx)",
       "Bash(grep -n \"</Animated.View>\\\\s*$\" /Users/sundarban/Documents/projects/marketplace/mobile/src/app/\\\\\\(creator\\\\\\)/settings.tsx)",
-      "Bash(grep -rn \"router.push\\(['\\\\\"]\\\\/\\(creator\\)\\\\/settings\\\\|router.push\\(\\\\`/\\(creator\\)/settings\\\\|section=.social\\\\|openSocial\\\\|'social'\" /Users/sundarban/Documents/projects/marketplace/mobile/src/app)"
+      "Bash(grep -rn \"router.push\\(['\\\\\"]\\\\/\\(creator\\)\\\\/settings\\\\|router.push\\(\\\\`/\\(creator\\)/settings\\\\|section=.social\\\\|openSocial\\\\|'social'\" /Users/sundarban/Documents/projects/marketplace/mobile/src/app)",
+      "Bash(node test_payment_release.mjs)"
     ],
     "additionalDirectories": [
       "/private/tmp",

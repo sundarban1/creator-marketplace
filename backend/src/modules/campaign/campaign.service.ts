@@ -634,15 +634,23 @@ export class CampaignService {
     if (app.workStatus !== 'SUBMITTED') throw new AppError('Work has not been submitted yet', 400);
 
     const updated = await this.repo.approveWork(appId);
-    // Mark the application payment as released
-    this.repo.releaseApplicationPayment(appId).catch(() => {});
+    // Payment is no longer auto-released on approval — an admin must
+    // manually release the held escrow amount (see admin.service.releasePayment).
 
     const creatorUserId = app.creator.userId;
     notificationService.create({
       userId:  creatorUserId,
-      type:    'payment_released',
-      title:   '🎉 Work Approved! Payment Released.',
-      body:    `${business.businessName} approved your work for "${app.campaign.title}". Check your wallet!`,
+      type:    'work_approved',
+      title:   '🎉 Your project has been approved!',
+      body:    `${business.businessName} approved your work for "${app.campaign.title}". Admin will release the payment.`,
+      refId:   app.campaignId,
+      refType: 'campaign',
+    }).catch(() => {});
+
+    notificationService.createForAdmins({
+      type:    'payment_release_pending',
+      title:   '💰 Payment release needed',
+      body:    `${business.businessName} approved ${app.creator.fullName ?? 'a creator'}'s work for "${app.campaign.title}" — release the payment when ready.`,
       refId:   app.campaignId,
       refType: 'campaign',
     }).catch(() => {});

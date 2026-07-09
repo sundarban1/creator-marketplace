@@ -4,17 +4,21 @@ import { ReferralRepository } from '../referral/referral.repository';
 import { isCreatorProfileComplete } from '../referral/referral.service';
 import { BusinessReferralRepository } from '../business-referral/business-referral.repository';
 import { isBusinessProfileComplete, REFERRAL_HOLD_DAYS } from '../business-referral/business-referral.service';
+import { CampaignRepository } from '../campaign/campaign.repository';
+import { notificationService } from '../notifications/notification.service';
 import { AppError } from '../../middleware/error';
 
 export class AdminService {
   private repo: AdminRepository;
   private referralRepo: ReferralRepository;
   private businessReferralRepo: BusinessReferralRepository;
+  private campaignRepo: CampaignRepository;
 
   constructor() {
     this.repo = new AdminRepository();
     this.referralRepo = new ReferralRepository();
     this.businessReferralRepo = new BusinessReferralRepository();
+    this.campaignRepo = new CampaignRepository();
   }
 
   getStats() {
@@ -145,6 +149,27 @@ export class AdminService {
       completedAt: new Date(),
       reviewedBy: adminUserId,
     });
+  }
+
+  async releasePayment(appId: string, adminUserId: string) {
+    const app = await this.campaignRepo.findApplicationById(appId);
+    if (!app) throw new AppError('Application not found', 404);
+    if (app.workStatus !== 'APPROVED') throw new AppError('Work has not been approved by the brand yet', 400);
+    if (app.paymentStatus === 'RELEASED') throw new AppError('Payment has already been released', 400);
+    if (app.paymentStatus !== 'PAID') throw new AppError('No escrow payment is held for this application', 400);
+
+    const updated = await this.campaignRepo.releaseApplicationPayment(appId, adminUserId);
+
+    notificationService.create({
+      userId:  app.creator.userId,
+      type:    'payment_released',
+      title:   '💸 Payment Released!',
+      body:    `Your payment for "${app.campaign.title}" has been released. Check your wallet!`,
+      refId:   app.campaignId,
+      refType: 'campaign',
+    }).catch(() => {});
+
+    return updated;
   }
 
   setCreatorVerified(creatorId: string, verified: boolean) {

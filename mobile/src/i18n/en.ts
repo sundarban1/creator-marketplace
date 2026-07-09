@@ -2082,8 +2082,8 @@ const en = {
     tlDeliverablesUploadedDescCreator: 'You submitted work for review.',
     tlDeliverablesUploadedDescBusiness:'Creator submitted deliverables. Please review.',
     tlWorkApproved:                    'Work Approved',
-    tlWorkApprovedDescCreator:         'Business approved your work! Payment released to your wallet.',
-    tlWorkApprovedDescBusiness:        'You approved the deliverables. Payment released to creator.',
+    tlWorkApprovedDescCreator:         'Business approved your work! Admin will release the payment.',
+    tlWorkApprovedDescBusiness:        'You approved the deliverables. Admin will release the payment to the creator.',
 
     // Action card states
     acPaymentRequiredTitle:  'Payment Required',
@@ -2156,7 +2156,7 @@ const en = {
     // Toast messages
     toastPaySuccess:         '✅ Payment successful! Creator has been notified.',
     toastWorkSubmitted:      '✅ Work submitted! Business will review within 5 days.',
-    toastWorkApproved:       '✅ Work approved! Payment released to creator.',
+    toastWorkApproved:       '✅ Work approved! Admin will release the payment to the creator.',
     toastRevisionRequested:  'Revision requested. Creator has been notified.',
     toastCampaignCancelled:  'Event cancelled. Creator has been notified.',
 

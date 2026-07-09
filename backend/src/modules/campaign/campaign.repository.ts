@@ -511,10 +511,10 @@ export class CampaignRepository {
     });
   }
 
-  async releaseApplicationPayment(appId: string) {
+  async releaseApplicationPayment(appId: string, adminId: string) {
     return prisma.application.update({
       where: { id: appId },
-      data: { paymentStatus: 'RELEASED' },
+      data: { paymentStatus: 'RELEASED', releasedAt: new Date(), releasedByAdminId: adminId },
     });
   }
 

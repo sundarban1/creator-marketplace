@@ -40,6 +40,7 @@ type Proposal = {
   proposedRateRaw: number;
   workStatus:      WS;
   campaignType:    'PAID_CAMPAIGN' | 'OPEN_EVENT';
+  paymentStatus:   'UNPAID' | 'PAID' | 'RELEASED';
 };
 
 // ─── Config ───────────────────────────────────────────────────────────────────
@@ -54,6 +55,9 @@ const TRACK_CFG: Record<WS, { label: string; icon: keyof typeof Ionicons.glyphMa
   NONE:        { label: 'Track Project',    icon: 'navigate',   color: '#C2410C', sub: 'Waiting to start'          },
   IN_PROGRESS: { label: 'View My Work',     icon: 'brush',      color: '#C2410C', sub: 'Work in progress'          },
   SUBMITTED:   { label: 'Awaiting Review',  icon: 'hourglass',  color: '#B45309', sub: 'Brand reviewing your work' },
+  // Approval no longer releases payment automatically — an admin releases it
+  // manually, so this default "sub" only applies once that's actually happened
+  // (see ProposalCard, which overrides it while paymentStatus !== 'RELEASED').
   APPROVED:    { label: 'Project Complete', icon: 'trophy',     color: '#16A34A', sub: 'Payment released!'         },
 };
 
@@ -171,7 +175,9 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
   const { t } = useLanguage();
   const [expanded, setExpanded] = useState(false);
   const cfg        = STATUS_CFG[proposal.status];
-  const trackCfg   = TRACK_CFG[proposal.workStatus];
+  const trackCfg   = proposal.workStatus === 'APPROVED' && proposal.paymentStatus !== 'RELEASED'
+    ? { ...TRACK_CFG.APPROVED, sub: 'Approved — admin will release payment' }
+    : TRACK_CFG[proposal.workStatus];
   const isFree     = proposal.campaignType === 'OPEN_EVENT';
   const accentColor = cfg.color;
 

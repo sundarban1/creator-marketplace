@@ -99,4 +99,17 @@ export const notificationService = {
     }
     return result;
   },
+
+  // Fans a single notification out to every admin user — used for things
+  // like "payment release needed" that any admin should be able to act on.
+  async createForAdmins(data: {
+    type: string;
+    title: string;
+    body: string;
+    refId?: string;
+    refType?: string;
+  }) {
+    const admins = await prisma.user.findMany({ where: { role: 'ADMIN' }, select: { id: true } });
+    return this.createMany(admins.map((a) => ({ ...data, userId: a.id })));
+  },
 };

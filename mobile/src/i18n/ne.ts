@@ -2082,8 +2082,8 @@ const ne = {
     tlDeliverablesUploadedDescCreator:  'तपाईंले समीक्षाका लागि काम पेश गर्नुभयो।',
     tlDeliverablesUploadedDescBusiness: 'सिर्जनकर्ताले डेलिभरेबल पेश गर्यो। कृपया समीक्षा गर्नुहोस्।',
     tlWorkApproved:                     'काम अनुमोदित',
-    tlWorkApprovedDescCreator:          'व्यवसायले तपाईंको काम अनुमोदित गर्यो! भुक्तानी तपाईंको वालेटमा जारी भयो।',
-    tlWorkApprovedDescBusiness:         'तपाईंले डेलिभरेबल अनुमोदित गर्नुभयो। भुक्तानी सिर्जनकर्तालाई जारी भयो।',
+    tlWorkApprovedDescCreator:          'व्यवसायले तपाईंको काम अनुमोदित गर्यो! एडमिनले भुक्तानी जारी गर्नेछ।',
+    tlWorkApprovedDescBusiness:         'तपाईंले डेलिभरेबल अनुमोदित गर्नुभयो। एडमिनले सिर्जनकर्तालाई भुक्तानी जारी गर्नेछ।',
 
     // Action card states
     acPaymentRequiredTitle:  'भुक्तानी आवश्यक छ',
@@ -2156,7 +2156,7 @@ const ne = {
     // Toast messages
     toastPaySuccess:        '✅ भुक्तानी सफल! सिर्जनकर्तालाई सूचित गरिएको छ।',
     toastWorkSubmitted:     '✅ काम पेश भयो! व्यवसायले ५ दिनभित्र समीक्षा गर्नेछ।',
-    toastWorkApproved:      '✅ काम अनुमोदित! सिर्जनकर्तालाई भुक्तानी जारी भयो।',
+    toastWorkApproved:      '✅ काम अनुमोदित! एडमिनले सिर्जनकर्तालाई भुक्तानी जारी गर्नेछ।',
     toastRevisionRequested: 'संशोधन अनुरोध भयो। सिर्जनकर्तालाई सूचित गरिएको छ।',
     toastCampaignCancelled: 'अभियान रद्द भयो। सिर्जनकर्तालाई सूचित गरिएको छ।',
 
