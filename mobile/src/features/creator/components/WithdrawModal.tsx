@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { FontAwesome5 } from '@expo/vector-icons';
 import {
   ActivityIndicator,
+  Animated,
   InputAccessoryView,
   Keyboard,
-  KeyboardAvoidingView,
   Modal,
   Platform,
   Pressable,
@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { useKeyboardOffset } from '@/hooks/useKeyboardOffset';
 import { F } from '@/utilities/constants';
 
 const METHOD_META: Record<string, { icon: string; label: string; color: string }> = {
@@ -44,6 +45,7 @@ export function WithdrawModal({ visible, onClose, availableBalance, paymentMetho
   const [amountText, setAmountText] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const keyboardOffset = useKeyboardOffset();
 
   function handleClose() {
     Keyboard.dismiss();
@@ -75,11 +77,7 @@ export function WithdrawModal({ visible, onClose, availableBalance, paymentMetho
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={handleClose}>
       <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.backdrop} onPress={handleClose} />
-      <KeyboardAvoidingView
-        style={styles.kav}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        pointerEvents="box-none">
-      <View style={[styles.sheet, { backgroundColor: C.surface }]}>
+      <Animated.View style={[styles.sheet, { backgroundColor: C.surface, transform: [{ translateY: keyboardOffset }] }]}>
         <View style={[styles.handle, { backgroundColor: C.border }]} />
 
         <View style={[styles.header, { borderBottomColor: C.border }]}>
@@ -168,15 +166,13 @@ export function WithdrawModal({ visible, onClose, availableBalance, paymentMetho
             </Pressable>
           </View>
         )}
-      </View>
-      </KeyboardAvoidingView>
+      </Animated.View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
   backdrop: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)' },
-  kav:      { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   sheet:    { position: 'absolute', left: 0, right: 0, bottom: 0, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '80%', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 20, shadowOffset: { width: 0, height: -4 }, elevation: 20 },
   handle:   { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginTop: 12, marginBottom: 4 },
   header:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1 },

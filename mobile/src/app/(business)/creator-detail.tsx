@@ -4,10 +4,9 @@ import { BackButton } from '@/components/BackButton';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import {
   ActivityIndicator,
-  KeyboardAvoidingView,
+  Animated,
   Linking,
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -18,6 +17,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { useKeyboardOffset } from '@/hooks/useKeyboardOffset';
 import { creatorService, type ApiCreatorPublicProfile } from '@/services/creator';
 import { chatService } from '@/services/chat';
 import { F } from '@/utilities/constants';
@@ -87,6 +87,7 @@ export default function CreatorDetailScreen() {
   const [convId, setConvId]       = useState<string | null>(null);
   const [convStatus, setConvStatus] = useState<'PENDING' | 'ACCEPTED' | 'DECLINED' | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const keyboardOffset = useKeyboardOffset();
   const [requestMsg, setRequestMsg] = useState('');
   const [sending, setSending]     = useState(false);
 
@@ -360,9 +361,9 @@ export default function CreatorDetailScreen() {
 
       {/* Request message modal */}
       <Modal visible={showModal} transparent animationType="slide" onRequestClose={() => setShowModal(false)}>
-        <KeyboardAvoidingView style={rm.overlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <View style={rm.overlay}>
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={rm.scrim} onPress={() => setShowModal(false)} />
-          <View style={[rm.sheet, { backgroundColor: C.surface }]}>
+          <Animated.View style={[rm.sheet, { backgroundColor: C.surface, transform: [{ translateY: keyboardOffset }] }]}>
             <View style={[rm.handle, { backgroundColor: C.border }]} />
             <View style={rm.titleRow}>
               <Text style={[rm.title, { color: C.text }]}>{t('creatorDetailExtra.messageRequestTitle')}</Text>
@@ -389,8 +390,8 @@ export default function CreatorDetailScreen() {
               disabled={sending}>
               <Text style={rm.sendTxt}>{sending ? t('creatorDetailExtra.sendingLabel') : t('creatorDetailExtra.sendRequestBtn')}</Text>
             </Pressable>
-          </View>
-        </KeyboardAvoidingView>
+          </Animated.View>
+        </View>
       </Modal>
     </SafeAreaView>
   );

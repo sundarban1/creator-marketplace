@@ -5,11 +5,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { BackButton } from '@/components/BackButton';
 import {
   ActivityIndicator,
+  Animated,
   FlatList,
   Image,
-  KeyboardAvoidingView,
   Modal,
-  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -23,6 +22,7 @@ import { RangeSlider } from '@/components/RangeSlider';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { creatorService, type ApiCreatorListItem } from '@/services/creator';
+import { useKeyboardOffset } from '@/hooks/useKeyboardOffset';
 import { F } from '@/utilities/constants';
 import { getIconColor } from '@/features/creator/data/filterOptions';
 import { useAllCategories, useCategories, getCategoryMeta } from '@/hooks/useCategories';
@@ -258,6 +258,7 @@ function ExploreFilterModal({
   const C = useAppColors();
   const { t } = useLanguage();
   const { categories: allCategories } = useAllCategories();
+  const keyboardOffset = useKeyboardOffset();
 
   function set<K extends keyof FilterState>(key: K, val: FilterState[K]) {
     setTemp({ ...temp, [key]: val });
@@ -266,8 +267,7 @@ function ExploreFilterModal({
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={fm.backdrop} onPress={onClose} />
-      <KeyboardAvoidingView style={fm.kav} behavior={Platform.OS === 'ios' ? 'padding' : undefined} pointerEvents="box-none">
-      <View style={[fm.sheet, { backgroundColor: C.surface }]}>
+      <Animated.View style={[fm.sheet, { backgroundColor: C.surface, transform: [{ translateY: keyboardOffset }] }]}>
         <View style={[fm.handle, { backgroundColor: C.border }]} />
         <View style={[fm.header, { borderBottomColor: C.border }]}>
           <Text style={[fm.title, { color: C.text }]}>{t('explore.filterCreators')}</Text>
@@ -347,15 +347,13 @@ function ExploreFilterModal({
             <Text style={fm.applyTxt}>{t('explore.applyFilters')}</Text>
           </Pressable>
         </View>
-      </View>
-      </KeyboardAvoidingView>
+      </Animated.View>
     </Modal>
   );
 }
 
 const fm = StyleSheet.create({
   backdrop:    { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)' },
-  kav:         { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   sheet:       { position: 'absolute', left: 0, right: 0, bottom: 0, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '92%', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 20, shadowOffset: { width: 0, height: -4 }, elevation: 20 },
   handle:      { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginTop: 12, marginBottom: 4 },
   header:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1 },

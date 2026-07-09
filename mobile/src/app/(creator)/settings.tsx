@@ -10,9 +10,7 @@ import { API_BASE, request } from '@/lib/api';
 import {
   ActivityIndicator,
   Animated,
-  KeyboardAvoidingView,
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -23,6 +21,7 @@ import {
 } from 'react-native';
 import { AppModal } from '@/components/AppModal';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useKeyboardOffset } from '@/hooks/useKeyboardOffset';
 import { useAppColors, useIsDark } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/components/Toast';
@@ -227,6 +226,7 @@ export default function CreatorSettingsScreen() {
   const [socialForm, setSocialForm] = useState({ platform: '', profileUrl: '', followers: '' });
   const [socialFormErrors, setSocialFormErrors] = useState<Record<string, string>>({});
   const socialSheetAnim = useRef(new Animated.Value(0)).current;
+  const keyboardOffset = useKeyboardOffset();
 
   // Portfolio (in Social section)
   type PortfolioItem = { id: string; label: string; url: string };
@@ -1057,11 +1057,10 @@ export default function CreatorSettingsScreen() {
         {/* ── Bottom-sheet modal ─────────────────────────────────────── */}
         <Modal visible={showAddSocial} transparent animationType="none" onRequestClose={resetSocialForm}>
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.sheetBackdrop} onPress={resetSocialForm} />
-          <KeyboardAvoidingView style={styles.sheetKav} behavior={Platform.OS === 'ios' ? 'padding' : undefined} pointerEvents="box-none">
           <Animated.View
             style={[
               styles.socialSheet,
-              { backgroundColor: C.surface, transform: [{ translateY: sheetTranslateY }] },
+              { backgroundColor: C.surface, transform: [{ translateY: sheetTranslateY }, { translateY: keyboardOffset }] },
             ]}>
 
             {/* Sheet header — changes colour when platform is chosen */}
@@ -1238,7 +1237,6 @@ export default function CreatorSettingsScreen() {
               </View>
             </ScrollView>
           </Animated.View>
-          </KeyboardAvoidingView>
         </Modal>
 
         {/* Empty state */}
@@ -1307,10 +1305,15 @@ export default function CreatorSettingsScreen() {
         {/* Portfolio bottom-sheet modal */}
         <Modal visible={showPortfolioSheet} transparent animationType="none" onRequestClose={resetPortfolioSheet}>
           <Pressable style={styles.sheetBackdrop} onPress={resetPortfolioSheet} />
-          <KeyboardAvoidingView style={styles.sheetKav} behavior={Platform.OS === 'ios' ? 'padding' : undefined} pointerEvents="box-none">
           <Animated.View style={[
             styles.socialSheet,
-            { backgroundColor: C.surface, transform: [{ translateY: portfolioSheetAnim.interpolate({ inputRange: [0, 1], outputRange: [500, 0] }) }] },
+            {
+              backgroundColor: C.surface,
+              transform: [
+                { translateY: portfolioSheetAnim.interpolate({ inputRange: [0, 1], outputRange: [500, 0] }) },
+                { translateY: keyboardOffset },
+              ],
+            },
           ]}>
             {/* Header */}
             <View style={[
@@ -1441,7 +1444,6 @@ export default function CreatorSettingsScreen() {
               </View>
             </ScrollView>
           </Animated.View>
-          </KeyboardAvoidingView>
         </Modal>
 
         {/* Empty state */}
@@ -2277,7 +2279,6 @@ const styles = StyleSheet.create({
 
   // ── Social sheet modal ──────────────────────────────────────────────────────
   sheetBackdrop: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)' },
-  sheetKav:      { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   socialSheet: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
     borderTopLeftRadius: 24, borderTopRightRadius: 24,

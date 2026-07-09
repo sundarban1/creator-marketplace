@@ -4,11 +4,10 @@ import { BackButton } from '@/components/BackButton';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Animated,
   Image,
-  KeyboardAvoidingView,
   Linking,
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -18,6 +17,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { EmptyState } from '@/components/EmptyState';
+import { useKeyboardOffset } from '@/hooks/useKeyboardOffset';
 import { useAppColors } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
@@ -157,6 +157,7 @@ export default function BusinessDetailScreen() {
   const [convId, setConvId]         = useState<string | null>(null);
   const [convStatus, setConvStatus] = useState<'PENDING' | 'ACCEPTED' | 'DECLINED' | null>(null);
   const [showMsgModal, setShowMsgModal] = useState(false);
+  const keyboardOffset = useKeyboardOffset();
   const [requestMsg, setRequestMsg]     = useState('');
   const [sendingMsg, setSendingMsg]     = useState(false);
 
@@ -447,9 +448,9 @@ export default function BusinessDetailScreen() {
 
       {/* Request message modal */}
       <Modal visible={showMsgModal} transparent animationType="slide" onRequestClose={() => setShowMsgModal(false)}>
-        <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <View style={styles.modalOverlay}>
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.modalScrim} onPress={() => setShowMsgModal(false)} />
-          <View style={[styles.modalSheet, { backgroundColor: C.surface }]}>
+          <Animated.View style={[styles.modalSheet, { backgroundColor: C.surface, transform: [{ translateY: keyboardOffset }] }]}>
             <View style={[styles.modalHandle, { backgroundColor: C.border }]} />
             <View style={styles.modalTitleRow}>
               <Text style={[styles.modalTitle, { color: C.text }]}>{t('businessDetail.messageRequestTitle')}</Text>
@@ -476,8 +477,8 @@ export default function BusinessDetailScreen() {
               disabled={sendingMsg}>
               <Text style={styles.modalSendText}>{sendingMsg ? t('businessDetail.sendingLabel') : t('businessDetail.sendRequestBtn')}</Text>
             </Pressable>
-          </View>
-        </KeyboardAvoidingView>
+          </Animated.View>
+        </View>
       </Modal>
     </SafeAreaView>
   );
