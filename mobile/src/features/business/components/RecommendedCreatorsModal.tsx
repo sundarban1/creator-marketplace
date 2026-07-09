@@ -91,7 +91,7 @@ export function RecommendedCreatorsModal({ visible, campaignId, category, lat, l
 
         {sent ? (
           <View style={s.center}>
-            <FontAwesome5 name="paper-plane" size={36} color={C.brinjal1} solid />
+            <FontAwesome5 name="paper-plane" size={36} color="#3B82F6" solid />
             <Text style={[s.sentText, { color: C.text }]}>{t('createEvent.invitesSent')}</Text>
           </View>
         ) : loading ? (

@@ -15,6 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { BackButton } from '@/components/BackButton';
+import { EmptyState } from '@/components/EmptyState';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { campaignService } from '@/services/campaign';
@@ -619,19 +620,19 @@ export default function CampaignProposalsScreen() {
           )}
           ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
           ListEmptyComponent={
-            <View style={styles.empty}>
-              <Ionicons name="people-outline" size={56} color={C.textSecondary} />
-              <Text style={[styles.emptyTitle, { color: C.text }]}>
-                {statusFilter === 'all'
+            <EmptyState
+              faIcon="users"
+              title={
+                statusFilter === 'all'
                   ? t('campaignProposals.emptyNoApplications')
-                  : t('campaignProposals.emptyNoFiltered', { filter: FILTERS.find((f) => f.key === statusFilter)?.label ?? statusFilter })}
-              </Text>
-              <Text style={[styles.emptySub, { color: C.textSecondary }]}>
-                {statusFilter === 'all'
+                  : t('campaignProposals.emptyNoFiltered', { filter: FILTERS.find((f) => f.key === statusFilter)?.label ?? statusFilter })
+              }
+              subtitle={
+                statusFilter === 'all'
                   ? t('campaignProposals.emptyAllHint')
-                  : t('campaignProposals.emptyFilterHint')}
-              </Text>
-            </View>
+                  : t('campaignProposals.emptyFilterHint')
+              }
+            />
           }
         />
       )}
@@ -751,8 +752,4 @@ const styles = StyleSheet.create({
   startProjectBtn:    { flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 12, paddingVertical: 11, paddingHorizontal: 14, marginTop: 10 },
   startProjectBtnTxt: { fontSize: 13, fontWeight: '700', color: '#fff', fontFamily: F.bold },
 
-  // ── Empty state ───────────────────────────────────────────────────────────────
-  empty:      { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 10, paddingHorizontal: 32, paddingTop: 60 },
-  emptyTitle: { fontSize: 17, fontWeight: '700', textAlign: 'center', fontFamily: F.bold },
-  emptySub:   { fontSize: 13, textAlign: 'center', lineHeight: 20, fontFamily: F.regular },
 });

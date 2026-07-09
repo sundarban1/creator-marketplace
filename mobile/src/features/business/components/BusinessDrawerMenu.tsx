@@ -22,7 +22,6 @@ const NAV_GROUPS: { labelKey: string; items: NavItem[] }[] = [
     items: [
       { iconName: 'checkmark-circle-outline', labelKey: 'drawer.verification',      route: '/(business)/settings?section=verification', color: '#16A34A' },
       { iconName: 'wallet-outline',           labelKey: 'drawer.payment',           route: '/(business)/settings?section=payment',       color: '#3B82F6' },
-      { iconName: 'megaphone-outline',        labelKey: 'drawer.eventPreferences',  route: '/(business)/settings?section=campaigns',     color: '#7C3AED' },
       { iconName: 'shield-outline',           labelKey: 'drawer.privacy',           route: '/(business)/settings?section=privacy',       color: '#4F46E5' },
       { iconName: 'lock-closed-outline',      labelKey: 'drawer.accountSecurity',   route: '/(business)/settings?section=account',       color: '#6B7280' },
       { iconName: 'globe-outline',            labelKey: 'drawer.presenceGoal',      route: '/(business)/presence-goal',                  color: '#F59E0B' },

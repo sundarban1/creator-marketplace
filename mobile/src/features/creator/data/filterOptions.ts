@@ -1,28 +1,57 @@
-export const CREATOR_CATEGORIES: { icon: string; label: string }[] = [
-  { icon: 'utensils',       label: 'Food' },
-  { icon: 'plane',          label: 'Travel' },
-  { icon: 'tshirt',         label: 'Fashion' },
-  { icon: 'spa',            label: 'Beauty' },
-  { icon: 'dumbbell',       label: 'Fitness' },
-  { icon: 'gamepad',        label: 'Gaming' },
-  { icon: 'microchip',      label: 'Tech' },
-  { icon: 'graduation-cap', label: 'Education' },
-  { icon: 'leaf',           label: 'Lifestyle' },
-  { icon: 'home',           label: 'Home & Living' },
-  { icon: 'heartbeat',      label: 'Wellness' },
-  { icon: 'music',          label: 'Music' },
-  { icon: 'palette',        label: 'Art & Design' },
-  { icon: 'paw',            label: 'Pets' },
-  { icon: 'baby',           label: 'Parenting' },
-  { icon: 'car',            label: 'Automotive' },
-  { icon: 'wallet',         label: 'Finance' },
-  { icon: 'recycle',        label: 'Sustainability' },
-  { icon: 'camera',         label: 'Photography' },
-  { icon: 'futbol',         label: 'Sports' },
-  { icon: 'film',           label: 'Film & TV' },
-  { icon: 'brain',          label: 'Mindfulness' },
-  { icon: 'wine-glass-alt', label: 'Food & Drink' },
-  { icon: 'theater-masks',  label: 'Entertainment' },
+// Icon → accent color, shared by every screen that renders a FontAwesome5
+// icon so the same glyph always gets the same thematic color instead of a
+// uniform brand-purple everywhere.
+export const ICON_COLORS: Record<string, string> = {
+  utensils: '#F97316', coffee: '#92400E', hamburger: '#EA580C', 'wine-glass-alt': '#BE185D',
+  motorcycle: '#DC2626', plane: '#0EA5E9', mountain: '#0891B2', hotel: '#6366F1',
+  'concierge-bell': '#4F46E5', tshirt: '#EC4899', spa: '#D946EF', magic: '#A855F7',
+  dumbbell: '#16A34A', gamepad: '#8B5CF6', microchip: '#3B82F6', 'mobile-alt': '#38BDF8',
+  'graduation-cap': '#F59E0B', leaf: '#22C55E', home: '#0D9488', heartbeat: '#EF4444',
+  music: '#A78BFA', palette: '#F472B6', paw: '#CA8A04', baby: '#FB7185', car: '#2563EB',
+  wallet: '#059669', recycle: '#10B981', camera: '#334155', futbol: '#0D9488',
+  film: '#6D28D9', brain: '#7C3AED', 'theater-masks': '#C026D3', rocket: '#4338CA',
+  'shopping-cart': '#D97706', store: '#B45309', box: '#78716C', tag: '#6B7280',
+  tags: '#FB923C', gift: '#DB2777', 'calendar-alt': '#F59E0B', star: '#FBBF24',
+  instagram: '#E1306C', tiktok: '#010101', youtube: '#FF0000', twitter: '#1DA1F2',
+  facebook: '#1877F2', 'briefcase-medical': '#0891B2', 'paper-plane': '#3B82F6',
+  key: '#D97706', 'info-circle': '#3B82F6', 'exclamation-triangle': '#F59E0B',
+  users: '#3B82F6', bookmark: '#EF4444', trophy: '#F59E0B', 'user-slash': '#EF4444',
+  building: '#6366F1', bullseye: '#DC2626', 'calendar-day': '#F59E0B',
+  'money-bill-wave': '#059669', 'map-marker-alt': '#DC2626', 'chart-bar': '#6366F1',
+  'calendar-times': '#DC2626', filter: '#6366F1', inbox: '#6B7280',
+  'hourglass-half': '#D97706', 'check-circle': '#16A34A', 'times-circle': '#DC2626',
+  'clipboard-list': '#7C3AED', 'comment-dots': '#0EA5E9', 'envelope-open': '#3B82F6',
+};
+
+export function getIconColor(icon: string, fallback = '#6B7280'): string {
+  return ICON_COLORS[icon] ?? fallback;
+}
+
+export const CREATOR_CATEGORIES: { icon: string; label: string; color: string }[] = [
+  { icon: 'utensils',       label: 'Food',          color: ICON_COLORS.utensils },
+  { icon: 'plane',          label: 'Travel',        color: ICON_COLORS.plane },
+  { icon: 'tshirt',         label: 'Fashion',       color: ICON_COLORS.tshirt },
+  { icon: 'spa',            label: 'Beauty',        color: ICON_COLORS.spa },
+  { icon: 'dumbbell',       label: 'Fitness',       color: ICON_COLORS.dumbbell },
+  { icon: 'gamepad',        label: 'Gaming',        color: ICON_COLORS.gamepad },
+  { icon: 'microchip',      label: 'Tech',          color: ICON_COLORS.microchip },
+  { icon: 'graduation-cap', label: 'Education',     color: ICON_COLORS['graduation-cap'] },
+  { icon: 'leaf',           label: 'Lifestyle',     color: ICON_COLORS.leaf },
+  { icon: 'home',           label: 'Home & Living', color: ICON_COLORS.home },
+  { icon: 'heartbeat',      label: 'Wellness',      color: ICON_COLORS.heartbeat },
+  { icon: 'music',          label: 'Music',         color: ICON_COLORS.music },
+  { icon: 'palette',        label: 'Art & Design',  color: ICON_COLORS.palette },
+  { icon: 'paw',            label: 'Pets',          color: ICON_COLORS.paw },
+  { icon: 'baby',           label: 'Parenting',     color: ICON_COLORS.baby },
+  { icon: 'car',            label: 'Automotive',    color: ICON_COLORS.car },
+  { icon: 'wallet',         label: 'Finance',       color: ICON_COLORS.wallet },
+  { icon: 'recycle',        label: 'Sustainability',color: ICON_COLORS.recycle },
+  { icon: 'camera',         label: 'Photography',   color: ICON_COLORS.camera },
+  { icon: 'futbol',         label: 'Sports',        color: ICON_COLORS.futbol },
+  { icon: 'film',           label: 'Film & TV',     color: ICON_COLORS.film },
+  { icon: 'brain',          label: 'Mindfulness',   color: ICON_COLORS.brain },
+  { icon: 'wine-glass-alt', label: 'Food & Drink',  color: ICON_COLORS['wine-glass-alt'] },
+  { icon: 'theater-masks',  label: 'Entertainment', color: ICON_COLORS['theater-masks'] },
 ];
 
 export const CATEGORY_META: Record<string, { icon: string; bg: string; color: string }> = {
@@ -114,13 +143,6 @@ export const NEPAL_LOCATIONS = [
 ];
 
 export const FILTER_TABS = ['New', 'Recommended', 'Trending', 'Ending Soon'];
-
-export const PRICE_OPTIONS = [
-  { key: 'any',      label: 'Any' },
-  { key: 'under150', label: 'Under $150' },
-  { key: '150to300', label: '$150 – $300' },
-  { key: '300plus',  label: '$300+' },
-];
 
 export const TIME_OPTIONS = [
   { key: 'any', label: 'Any Time' },

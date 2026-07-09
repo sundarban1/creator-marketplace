@@ -16,6 +16,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { campaignService } from '@/services/campaign';
 import { TabSlider } from '@/components/TabSlider';
+import { EmptyState } from '@/components/EmptyState';
 import { F } from '@/utilities/constants';
 
 type WS = 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED';
@@ -246,7 +247,7 @@ export default function ProposalsScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
       <LinearGradient
-        colors={['#1e1b4b', '#4338ca', '#7c3aed']}
+        colors={['#312e81', '#4f46e5', '#8b5cf6']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.gradientHeader}>
@@ -279,33 +280,19 @@ export default function ProposalsScreen() {
           renderItem={({ item }) => <CampaignEventCard item={item} />}
           ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
           ListEmptyComponent={
-            <View style={styles.empty}>
-              <View style={[styles.emptyIconCircle, {
-                backgroundColor: activeTab === 'accepted' ? '#EEF9F3' :
-                                 activeTab === 'paid'     ? PAID_LIGHT :
-                                 activeTab === 'free'     ? FREE_LIGHT :
-                                 '#F5F3FF',
-              }]}>
-                <Ionicons
-                  name={activeTab === 'accepted' ? 'checkmark-circle-outline' :
-                        activeTab === 'paid'     ? 'cash-outline'             :
-                        activeTab === 'free'     ? 'gift-outline'             :
-                        'document-text-outline'}
-                  size={36}
-                  color={activeTab === 'accepted' ? '#16A34A' :
-                         activeTab === 'paid'     ? PAID_ACCENT :
-                         activeTab === 'free'     ? FREE_ACCENT :
-                         '#7C3AED'}
-                />
-              </View>
-              <Text style={[styles.emptyTitle, { color: C.text }]}>{t('proposal.business.emptyTitle')}</Text>
-              <Text style={[styles.emptySub, { color: C.textSecondary }]}>
-                {activeTab === 'paid'     ? t('proposal.business.emptyPaidSub')     :
-                 activeTab === 'free'     ? t('proposal.business.emptyFreeSub')     :
-                 activeTab === 'accepted' ? t('proposal.business.emptyAcceptedSub') :
-                 t('proposal.business.emptyAllSub')}
-              </Text>
-            </View>
+            <EmptyState
+              faIcon={activeTab === 'accepted' ? 'check-circle' :
+                      activeTab === 'paid'     ? 'money-bill-wave' :
+                      activeTab === 'free'     ? 'gift' :
+                      'clipboard-list'}
+              title={t('proposal.business.emptyTitle')}
+              subtitle={
+                activeTab === 'paid'     ? t('proposal.business.emptyPaidSub')     :
+                activeTab === 'free'     ? t('proposal.business.emptyFreeSub')     :
+                activeTab === 'accepted' ? t('proposal.business.emptyAcceptedSub') :
+                t('proposal.business.emptyAllSub')
+              }
+            />
           }
         />
       )}
@@ -318,9 +305,9 @@ const styles = StyleSheet.create({
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
   gradientHeader: { borderBottomLeftRadius: 16, borderBottomRightRadius: 16, overflow: 'hidden' },
-  headerContent:  { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 16, gap: 4 },
+  headerContent:  { paddingHorizontal: 20, paddingTop: 14, paddingBottom: 14 },
   pageTitle:      { fontSize: 20, fontWeight: '700', color: '#fff', fontFamily: F.bold, lineHeight: 24 },
-  pageSub:        { fontSize: 13, color: 'rgba(255,255,255,0.75)', fontFamily: F.regular },
+  pageSub:        { fontSize: 13, color: 'rgba(255,255,255,0.75)', fontFamily: F.regular, marginTop: 2 },
 
   filterRow: { shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
 
@@ -362,8 +349,4 @@ const styles = StyleSheet.create({
   startWorkBtnSub:  { fontSize: 11, color: 'rgba(255,255,255,0.75)', fontFamily: F.regular },
   btnArrow:         { width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
 
-  empty:           { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 10, paddingHorizontal: 32, paddingTop: 60 },
-  emptyIconCircle: { width: 80, height: 80, borderRadius: 40, justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
-  emptyTitle: { fontSize: 17, fontWeight: '700', textAlign: 'center', fontFamily: F.bold },
-  emptySub:   { fontSize: 13, textAlign: 'center', lineHeight: 20, fontFamily: F.regular },
 });

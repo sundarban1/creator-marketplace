@@ -1655,8 +1655,8 @@ export default function CreatorSettingsScreen() {
           <Pressable
             style={[styles.row, { borderBottomWidth: 1, borderBottomColor: C.border }]}
             onPress={() => setShowChangePassword((v) => !v)}>
-            <View style={[styles.navIonIconWrap, { backgroundColor: C.brinjal1 + '18' }]}>
-              <FontAwesome5 name="key" size={16} color={C.brinjal1} />
+            <View style={[styles.navIonIconWrap, { backgroundColor: '#D9770618' }]}>
+              <FontAwesome5 name="key" size={16} color="#D97706" />
             </View>
             <Text style={[styles.rowLabel, { color: C.text }]}>{t('creatorSettings.subChangePassword')}</Text>
             {!showChangePassword && <Text style={[styles.navArrow, { color: C.textSecondary }]}>›</Text>}
@@ -2050,8 +2050,8 @@ export default function CreatorSettingsScreen() {
         <Card>
           <SwitchRow faIcon="moon" faIconColor="#6366F1" label={t('creatorSettings.darkModeLabel')} value={isDark} onChange={toggleDark} />
           <View style={[styles.row, { borderBottomWidth: 1, borderBottomColor: C.border }]}>
-            <View style={[styles.navIonIconWrap, { backgroundColor: C.brinjal1 + '18' }]}>
-              <FontAwesome5 name="info-circle" size={16} color={C.brinjal1} />
+            <View style={[styles.navIonIconWrap, { backgroundColor: '#3B82F618' }]}>
+              <FontAwesome5 name="info-circle" size={16} color="#3B82F6" />
             </View>
             <Text style={[styles.rowLabel, { color: C.text }]}>{t('creatorSettings.appVersionLabel')}</Text>
             <Text style={[styles.versionText, { color: C.textSecondary }]}>1.0.0</Text>

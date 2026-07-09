@@ -203,9 +203,9 @@ export default function SubmitProposalScreen() {
                 <Text style={[styles.budgetText, { color: '#059669' }]}>Free Event</Text>
               </View>
             ) : !!budget && (
-              <View style={[styles.budgetPill, { backgroundColor: C.brinjal1 + '18' }]}>
-                <FontAwesome5 name="wallet" size={12} color={C.brinjal1} />
-                <Text style={[styles.budgetText, { color: C.brinjal1 }]}>{budget}</Text>
+              <View style={[styles.budgetPill, { backgroundColor: '#05966918' }]}>
+                <FontAwesome5 name="wallet" size={12} color="#059669" />
+                <Text style={[styles.budgetText, { color: '#059669' }]}>{budget}</Text>
               </View>
             )}
           </View>

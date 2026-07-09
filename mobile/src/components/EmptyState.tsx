@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { useAppColors } from '@/context/ThemeContext';
+import { getIconColor } from '@/features/creator/data/filterOptions';
 import { F } from '@/utilities/constants';
 
 type Props = {
@@ -17,12 +18,13 @@ type Props = {
 
 export function EmptyState({ emoji, icon = 'cube-outline', faIcon, title, subtitle, action, children }: Props) {
   const C = useAppColors();
+  const faIconColor = faIcon ? getIconColor(faIcon, C.brinjal1) : C.brinjal1;
 
   return (
     <View style={styles.container}>
-      <View style={[styles.iconWrap, { backgroundColor: C.surface, shadowColor: C.brinjal1 }]}>
+      <View style={[styles.iconWrap, { backgroundColor: C.surface, shadowColor: faIconColor }]}>
         {faIcon ? (
-          <FontAwesome5 name={faIcon as any} size={34} color={C.brinjal1} />
+          <FontAwesome5 name={faIcon as any} size={34} color={faIconColor} />
         ) : emoji ? (
           <Text style={styles.emoji}>{emoji}</Text>
         ) : (
@@ -49,7 +51,11 @@ export function EmptyState({ emoji, icon = 'cube-outline', faIcon, title, subtit
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40, paddingVertical: 60, gap: 12 },
+  // Anchored from the top (not centered) so the icon/title sit at the same
+  // spot regardless of whether trailing content (e.g. an optional action
+  // button) is rendered below — centering the whole variable-height block
+  // would shift the icon up or down depending on what follows it.
+  container: { flex: 1, alignItems: 'center', paddingHorizontal: 40, paddingTop: 72, paddingBottom: 60, gap: 12 },
   iconWrap:  { width: 88, height: 88, borderRadius: 28, justifyContent: 'center', alignItems: 'center', marginBottom: 6, shadowOpacity: 0.10, shadowRadius: 16, shadowOffset: { width: 0, height: 6 }, elevation: 5 },
   emoji:     { fontSize: 40 },
   title:     { fontSize: 18, textAlign: 'center' },

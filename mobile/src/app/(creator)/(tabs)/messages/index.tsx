@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { TabSlider } from '@/components/TabSlider';
+import { EmptyState } from '@/components/EmptyState';
 import {
   ActivityIndicator,
   FlatList,
@@ -347,13 +348,11 @@ export default function CreatorMessagesScreen() {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={ACCENT} />}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
-            <View style={s.empty}>
-              <View style={[s.emptyIcon, { backgroundColor: '#E0F2FE' }]}>
-                <Ionicons name="mail-open-outline" size={34} color={ACCENT} />
-              </View>
-              <Text style={[s.emptyTitle, { color: C.text }]}>{t('messages.noRequestsYet')}</Text>
-              <Text style={[s.emptyHint, { color: C.textSecondary }]}>{t('messages.requestsFromBusinesses')}</Text>
-            </View>
+            <EmptyState
+              faIcon="envelope-open"
+              title={t('messages.noRequestsYet')}
+              subtitle={t('messages.requestsFromBusinesses')}
+            />
           }
         />
       ) : (
@@ -366,13 +365,11 @@ export default function CreatorMessagesScreen() {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={ACCENT} />}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
-            <View style={s.empty}>
-              <View style={[s.emptyIcon, { backgroundColor: '#E0F2FE' }]}>
-                <Ionicons name="chatbubbles-outline" size={34} color={ACCENT} />
-              </View>
-              <Text style={[s.emptyTitle, { color: C.text }]}>{t('messages.noConversationsYet')}</Text>
-              <Text style={[s.emptyHint, { color: C.textSecondary }]}>{t('messages.acceptedRequestsHere')}</Text>
-            </View>
+            <EmptyState
+              faIcon="comment-dots"
+              title={t('messages.noConversationsYet')}
+              subtitle={t('messages.acceptedRequestsHere')}
+            />
           }
         />
       )}
@@ -386,7 +383,7 @@ const s = StyleSheet.create({
 
   // Header
   gradientHeader: { borderBottomLeftRadius: 16, borderBottomRightRadius: 16, overflow: 'hidden' },
-  header:         { paddingHorizontal: 20, paddingTop: 14, paddingBottom: 10 },
+  header:         { paddingHorizontal: 20, paddingTop: 14, paddingBottom: 14 },
   heading:        { fontSize: 20, fontWeight: '700', fontFamily: F.bold, color: '#fff', lineHeight: 24 },
   headingSub:     { fontSize: 13, fontFamily: F.regular, color: 'rgba(255,255,255,0.75)', marginTop: 2 },
 
@@ -442,9 +439,4 @@ const s = StyleSheet.create({
   preview:     { flex: 1, fontSize: 13, fontFamily: F.regular },
   previewUnread: { fontFamily: F.medium },
 
-  // Empty
-  empty:      { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 60, paddingHorizontal: 40, gap: 12 },
-  emptyIcon:  { width: 72, height: 72, borderRadius: 36, justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
-  emptyTitle: { fontSize: 16, fontWeight: '700', fontFamily: F.bold, textAlign: 'center' },
-  emptyHint:  { fontSize: 13, textAlign: 'center', lineHeight: 20, fontFamily: F.regular },
 });

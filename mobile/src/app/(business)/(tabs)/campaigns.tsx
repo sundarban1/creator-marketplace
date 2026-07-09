@@ -371,7 +371,7 @@ export default function CampaignsScreen() {
 
           {inviteSuccess ? (
             <View style={styles.inviteSuccess}>
-              <FontAwesome5 name="paper-plane" size={40} color={C.brinjal1} solid />
+              <FontAwesome5 name="paper-plane" size={40} color="#3B82F6" solid />
               <Text style={[styles.inviteSuccessText, { color: C.text }]}>{t('campaigns.invitationSent')}</Text>
               <Text style={[styles.inviteSuccessHint, { color: C.textSecondary }]}>
                 {t('campaigns.invitationSentSub')}

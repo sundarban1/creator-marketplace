@@ -20,7 +20,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
-import { CATEGORY_META, DEFAULT_META, cardBg } from '@/features/creator/data/filterOptions';
+import { CATEGORY_META, DEFAULT_META, cardBg, getIconColor } from '@/features/creator/data/filterOptions';
 import { PlacesAutocompleteInput } from '@/components/PlacesAutocompleteInput';
 import { campaignService } from '@/services/campaign';
 import type { Campaign } from '@/types';
@@ -977,7 +977,7 @@ function DetailRow({ icon, label, value, C }: { icon: string; label: string; val
   return (
     <View style={s.detailRow}>
       <View style={[s.detailIcon, { backgroundColor: C.background }]}>
-        <FontAwesome5 name={icon} size={14} color={C.brinjal1} />
+        <FontAwesome5 name={icon} size={14} color={getIconColor(icon)} />
       </View>
       <View style={s.detailContent}>
         <Text style={[s.detailLabel, { color: C.textSecondary }]}>{label}</Text>

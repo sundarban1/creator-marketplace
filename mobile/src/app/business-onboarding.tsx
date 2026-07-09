@@ -17,6 +17,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { authService } from '@/services/auth';
 import { profileService } from '@/services/profile';
 import { categoryService } from '@/services/category';
+import { getIconColor } from '@/features/creator/data/filterOptions';
 import { PlacesAutocompleteInput } from '@/components/PlacesAutocompleteInput';
 import { F } from '@/utilities/constants';
 
@@ -315,7 +316,7 @@ export default function BusinessOnboardingScreen() {
                       {categoriesAreEmoji ? (
                         <Text style={styles.chipEmoji}>{cat.icon}</Text>
                       ) : (
-                        <FontAwesome5 name={cat.icon} size={14} color={isSelected ? C.brinjal1 : C.textSecondary} />
+                        <FontAwesome5 name={cat.icon} size={14} color={isSelected ? getIconColor(cat.icon) : C.textSecondary} />
                       )}
                       <Text style={[styles.chipLabel, { color: isSelected ? C.brinjal1 : C.text }, isSelected && { fontWeight: '700' }]}>
                         {cat.label}

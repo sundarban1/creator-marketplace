@@ -403,9 +403,9 @@ const styles = StyleSheet.create({
 
   // Header
   gradientHeader: { borderBottomLeftRadius: 16, borderBottomRightRadius: 16, overflow: 'hidden' },
-  headerContent:  { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 12, gap: 3 },
+  headerContent:  { paddingHorizontal: 20, paddingTop: 14, paddingBottom: 14 },
   heading:        { fontSize: 20, fontWeight: '700', fontFamily: F.bold, color: '#fff', lineHeight: 24 },
-  subheading:     { fontSize: 13, fontFamily: F.regular, color: 'rgba(255,255,255,0.75)' },
+  subheading:     { fontSize: 13, fontFamily: F.regular, color: 'rgba(255,255,255,0.75)', marginTop: 2 },
 
   // Tab bar
   tabBar: { shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 3 },

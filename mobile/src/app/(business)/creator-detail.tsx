@@ -19,6 +19,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { creatorService, type ApiCreatorPublicProfile } from '@/services/creator';
 import { chatService } from '@/services/chat';
 import { F } from '@/utilities/constants';
+import { getIconColor } from '@/features/creator/data/filterOptions';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -252,7 +253,7 @@ export default function CreatorDetailScreen() {
                 const meta = CATEGORY_META[cat];
                 return (
                   <View key={cat} style={[s.catChip, { backgroundColor: C.primaryLight }]}>
-                    {meta && <FontAwesome5 name={meta.icon} size={11} color={C.brinjal1} />}
+                    {meta && <FontAwesome5 name={meta.icon} size={11} color={getIconColor(meta.icon)} />}
                     <Text style={[s.catChipText, { color: C.brinjal1 }]}>{cat}</Text>
                   </View>
                 );
@@ -298,7 +299,7 @@ export default function CreatorDetailScreen() {
           <View style={[s.section, { backgroundColor: C.surface }]}>
             <SectionTitle label={t('creatorDetailExtra.sectionRatePreference')} color={C.textSecondary} />
             <View style={[s.budgetCard, { backgroundColor: C.primaryLight }]}>
-              <FontAwesome5 name="wallet" size={22} color={C.brinjal1} />
+              <FontAwesome5 name="wallet" size={22} color={getIconColor('wallet')} />
               <View style={s.budgetInfo}>
                 <Text style={[s.budgetLabel, { color: C.textSecondary }]}>{t('creatorDetailExtra.preferredRange')}</Text>
                 <Text style={[s.budgetValue, { color: C.brinjal1 }]}>

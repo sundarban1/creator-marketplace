@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { BackButton } from '@/components/BackButton';
 import {
@@ -31,12 +31,20 @@ export default function FeaturedCampaignsScreen() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
+  // Ref (not state) so the guard is synchronous — a fast double-tap of "Load
+  // more" can fire before a state update commits, otherwise triggering the
+  // same page fetch twice and appending duplicate campaigns (duplicate keys).
+  const loadingMoreRef = useRef(false);
 
   async function fetchPage(pageNum: number, replace = false) {
     setError('');
     try {
       const res = await campaignService.list({ isFeatured: true, page: pageNum, limit: PAGE_SIZE });
-      setCampaigns((prev) => replace ? res.campaigns : [...prev, ...res.campaigns]);
+      setCampaigns((prev) => {
+        if (replace) return res.campaigns;
+        const seen = new Set(prev.map((c) => c.id));
+        return [...prev, ...res.campaigns.filter((c) => !seen.has(c.id))];
+      });
       setPage(pageNum);
       setTotalPages(res.totalPages);
     } catch (e) {
@@ -55,10 +63,12 @@ export default function FeaturedCampaignsScreen() {
   }, []);
 
   async function loadMore() {
-    if (loadingMore || page >= totalPages) return;
+    if (loadingMoreRef.current || page >= totalPages) return;
+    loadingMoreRef.current = true;
     setLoadingMore(true);
     await fetchPage(page + 1, false);
     setLoadingMore(false);
+    loadingMoreRef.current = false;
   }
 
   return (

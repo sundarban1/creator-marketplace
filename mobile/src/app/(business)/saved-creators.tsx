@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { creatorService, type SavedCreatorItem } from '@/services/creator';
+import { EmptyState } from '@/components/EmptyState';
 import { F } from '@/utilities/constants';
 
 function Avatar({ name, size = 48, C }: { name: string; size?: number; C: ReturnType<typeof useAppColors> }) {
@@ -148,18 +149,12 @@ export default function SavedCreatorsScreen() {
           contentContainerStyle={[s.list, items.length === 0 && s.listEmpty]}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
-            <View style={s.empty}>
-              <Ionicons name="bookmark-outline" size={48} color={C.textSecondary} style={s.emptyIcon} />
-              <Text style={[s.emptyTitle, { color: C.text }]}>{t('savedCreators.empty')}</Text>
-              <Text style={[s.emptyHint, { color: C.textSecondary }]}>
-                {t('savedCreators.emptySub')}
-              </Text>
-              <Pressable
-                style={[s.emptyBtn, { backgroundColor: C.brinjal1 }]}
-                onPress={() => router.push('/(business)/explore-creators')}>
-                <Text style={s.emptyBtnText}>{t('savedCreators.browseCTA')}</Text>
-              </Pressable>
-            </View>
+            <EmptyState
+              faIcon="bookmark"
+              title={t('savedCreators.empty')}
+              subtitle={t('savedCreators.emptySub')}
+              action={{ label: t('savedCreators.browseCTA'), onPress: () => router.push('/(business)/explore-creators') }}
+            />
           }
         />
       )}
@@ -194,10 +189,4 @@ const s = StyleSheet.create({
   removeRow:  { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 12 },
   removeText: { fontSize: 13, fontWeight: '600', color: '#EF4444', fontFamily: F.semibold },
 
-  empty:      { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40, gap: 12 },
-  emptyIcon:  { marginBottom: 2 },
-  emptyTitle: { fontSize: 18, fontWeight: '700', fontFamily: F.bold },
-  emptyHint:  { fontSize: 13, textAlign: 'center', lineHeight: 20, fontFamily: F.regular },
-  emptyBtn:   { borderRadius: 14, paddingHorizontal: 28, paddingVertical: 12, marginTop: 8 },
-  emptyBtnText: { color: '#fff', fontSize: 14, fontWeight: '700', fontFamily: F.bold },
 });

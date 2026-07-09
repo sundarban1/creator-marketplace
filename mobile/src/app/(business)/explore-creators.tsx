@@ -22,6 +22,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { creatorService, type ApiCreatorListItem } from '@/services/creator';
 import { F } from '@/utilities/constants';
+import { getIconColor } from '@/features/creator/data/filterOptions';
 
 const PAGE_SIZE = 10;
 const SLIDER_MAX = 1000;
@@ -298,6 +299,7 @@ function ExploreFilterModal({
             maxVal={temp.priceMax}
             onMinChange={(v) => set('priceMin', v)}
             onMaxChange={(v) => set('priceMax', v)}
+            currency="Rs"
           />
 
           {/* Platform */}
@@ -334,7 +336,7 @@ function ExploreFilterModal({
                       key={cat}
                       onPress={() => set('categories', toggle(temp.categories, cat))}
                       style={[fm.chip, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? C.primaryLight : C.background }]}>
-                      {meta && <FontAwesome5 name={meta.icon} size={12} color={sel ? C.brinjal1 : C.textSecondary} />}
+                      {meta && <FontAwesome5 name={meta.icon} size={12} color={sel ? getIconColor(meta.icon) : C.textSecondary} />}
                       <Text style={[fm.chipText, { color: sel ? C.brinjal1 : C.text, fontWeight: sel ? '700' : '500' }]}>{cat}</Text>
                     </Pressable>
                   );
@@ -469,7 +471,7 @@ function CreatorCard({ creator, isSaved, onToggleSave }: {
             const m = CATEGORY_META[cat];
             return (
               <View key={cat} style={[s.catChip, { backgroundColor: m?.bg ?? C.primaryLight }]}>
-                {m ? <FontAwesome5 name={m.icon} size={9} color={C.brinjal1} /> : null}
+                {m ? <FontAwesome5 name={m.icon} size={9} color={getIconColor(m.icon)} /> : null}
                 <Text style={[s.catLabel, { color: C.text }]}>{cat}</Text>
               </View>
             );
@@ -518,6 +520,10 @@ export default function ExploreCreatorsScreen() {
   const filterActive = isFilterActive(activeFilter);
 
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
+  // Ref (not state) so the guard is synchronous — FlatList's onEndReached can
+  // fire multiple times before a state update commits, otherwise triggering
+  // the same page fetch twice and appending duplicate creators (duplicate keys).
+  const loadingMoreRef = useRef(false);
 
   useFocusEffect(useCallback(() => {
     creatorService.getSavedCreatorIds()
@@ -580,13 +586,18 @@ export default function ExploreCreatorsScreen() {
         priceMax: filter.priceMax < SLIDER_MAX ? filter.priceMax : undefined,
       });
       setTotal(res.total);
-      setCreators((prev) => replace ? res.creators : [...prev, ...res.creators]);
+      setCreators((prev) => {
+        if (replace) return res.creators;
+        const seen = new Set(prev.map((c) => c.id));
+        return [...prev, ...res.creators.filter((c) => !seen.has(c.id))];
+      });
       setPage(p);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load creators');
     } finally {
       setLoading(false);
       setLoadingMore(false);
+      loadingMoreRef.current = false;
       setRefreshing(false);
     }
   }
@@ -601,9 +612,10 @@ export default function ExploreCreatorsScreen() {
   }, [searchDebounced, activeFilter]);
 
   function loadMore() {
-    if (!loadingMore && page < Math.ceil(total / PAGE_SIZE)) {
-      void fetchCreators(page + 1, false, activeFilter, searchDebounced);
-    }
+    if (loadingMoreRef.current || page >= Math.ceil(total / PAGE_SIZE)) return;
+    loadingMoreRef.current = true;
+    setLoadingMore(true);
+    void fetchCreators(page + 1, false, activeFilter, searchDebounced);
   }
 
   function openFilter() {
@@ -692,21 +704,21 @@ export default function ExploreCreatorsScreen() {
           ))}
           {(activeFilter.priceMin > 0 || activeFilter.priceMax < SLIDER_MAX) && (
             <Pressable onPress={() => removeActiveFilter('priceMin')} style={[s.chip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
-              <FontAwesome5 name="wallet" size={11} color={C.brinjal1} />
-              <Text style={[s.chipText, { color: C.brinjal1 }]}>${activeFilter.priceMin}–{activeFilter.priceMax >= SLIDER_MAX ? '1K+' : `$${activeFilter.priceMax}`}</Text>
+              <FontAwesome5 name="wallet" size={11} color={getIconColor('wallet')} />
+              <Text style={[s.chipText, { color: C.brinjal1 }]}>Rs {activeFilter.priceMin}–{activeFilter.priceMax >= SLIDER_MAX ? '1K+' : `Rs ${activeFilter.priceMax}`}</Text>
               <Ionicons name="close" size={12} color={C.brinjal1} />
             </Pressable>
           )}
           {activeFilter.platforms.map((p) => (
             <Pressable key={p} onPress={() => removeActiveFilter('platforms', p)} style={[s.chip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
-              <Ionicons name={getPlatformMeta(p).icon} size={12} color={C.brinjal1} />
+              <Ionicons name={getPlatformMeta(p).icon} size={12} color={getPlatformMeta(p).color} />
               <Text style={[s.chipText, { color: C.brinjal1 }]}>{normalizePlatform(p)}</Text>
               <Ionicons name="close" size={12} color={C.brinjal1} />
             </Pressable>
           ))}
           {activeFilter.categories.map((cat) => (
             <Pressable key={cat} onPress={() => removeActiveFilter('categories', cat)} style={[s.chip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
-              {CATEGORY_META[cat] && <FontAwesome5 name={CATEGORY_META[cat].icon} size={11} color={C.brinjal1} />}
+              {CATEGORY_META[cat] && <FontAwesome5 name={CATEGORY_META[cat].icon} size={11} color={getIconColor(CATEGORY_META[cat].icon)} />}
               <Text style={[s.chipText, { color: C.brinjal1 }]}>{cat}</Text>
               <Ionicons name="close" size={12} color={C.brinjal1} />
             </Pressable>

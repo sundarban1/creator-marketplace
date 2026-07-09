@@ -158,7 +158,7 @@ export default function BusinessHomeScreen() {
                   <Image source={{ uri: user.avatar }} style={styles.avatarImage} resizeMode="cover" />
                 ) : (
                   <View style={[styles.avatarFallback, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
-                    <Ionicons name="person" size={24} color="#fff" />
+                    <Ionicons name="business-outline" size={22} color="#fff" />
                   </View>
                 )}
               </View>

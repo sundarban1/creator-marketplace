@@ -196,6 +196,9 @@ export default function HomeScreen() {
     // reopening the sheet starts from where the creator left off — it never
     // overwrites the real GPS "current" coords, which always stay fresh.
     if (source === 'custom') setNearbyCustomCoords(coords);
+    // The sheet re-requests a fresh GPS fix when "Current Location" is tapped —
+    // propagate it here so later actions (radius expand, socket refresh) use it too.
+    if (source === 'current') setNearbyCurrentCoords(coords);
 
     void fetchNearby(coords, radiusKm);
   }
@@ -472,51 +475,6 @@ export default function HomeScreen() {
           </View>
         </LinearGradient>
 
-        {/* ── Search bar ── */}
-        <View style={styles.searchRow}>
-          <Pressable
-            style={[styles.searchCard, { backgroundColor: C.surface, borderColor: C.border }, searchFocused && styles.searchCardFocused]}
-            onPress={() => searchInputRef.current?.focus()}>
-            <Ionicons name="search-outline" size={18} color={searchFocused ? C.brinjal1 : C.textSecondary} style={styles.searchIcon} />
-            <TextInput
-              ref={searchInputRef}
-              style={[styles.searchInput, { color: C.text }]}
-              placeholder={t('creator.browse.searchPlaceholder')}
-              placeholderTextColor={C.textSecondary}
-              value={search}
-              onChangeText={(text) => {
-                setSearch(text);
-                if (searchDebounce.current) clearTimeout(searchDebounce.current);
-                if (text.length >= 3) {
-                  searchDebounce.current = setTimeout(() => {
-                    setActiveSearch(text);
-                    void fetchCampaigns({ search: text });
-                  }, 400);
-                } else if (!text && activeSearch) {
-                  setActiveSearch('');
-                  void fetchCampaigns({ search: '' });
-                }
-              }}
-              onFocus={() => setSearchFocused(true)}
-              onBlur={() => setSearchFocused(false)}
-              returnKeyType="search"
-              onSubmitEditing={() => {
-                searchInputRef.current?.blur();
-                if (searchDebounce.current) clearTimeout(searchDebounce.current);
-                setActiveSearch(search);
-                void fetchCampaigns({ search });
-              }}
-            />
-            <Pressable
-              style={[styles.filterBtn, { backgroundColor: isFilterActive ? C.brinjal1 : C.primaryLight }]}
-              onPress={openFilter}
-              hitSlop={6}>
-              <Ionicons name="options-outline" size={18} color={isFilterActive ? '#fff' : C.brinjal1} />
-              {isFilterActive && <View style={styles.filterActiveDot} />}
-            </Pressable>
-          </Pressable>
-        </View>
-
         {/* ── Quick Actions ── */}
         <View style={styles.quickActionsRow}>
           {([
@@ -604,6 +562,51 @@ export default function HomeScreen() {
             </Pressable>
           </View>
         ) : null}
+
+        {/* ── Search bar ── */}
+        <View style={styles.searchRow}>
+          <Pressable
+            style={[styles.searchCard, { backgroundColor: C.surface, borderColor: C.border }, searchFocused && styles.searchCardFocused]}
+            onPress={() => searchInputRef.current?.focus()}>
+            <Ionicons name="search-outline" size={18} color={searchFocused ? C.brinjal1 : C.textSecondary} style={styles.searchIcon} />
+            <TextInput
+              ref={searchInputRef}
+              style={[styles.searchInput, { color: C.text }]}
+              placeholder={t('creator.browse.searchPlaceholder')}
+              placeholderTextColor={C.textSecondary}
+              value={search}
+              onChangeText={(text) => {
+                setSearch(text);
+                if (searchDebounce.current) clearTimeout(searchDebounce.current);
+                if (text.length >= 3) {
+                  searchDebounce.current = setTimeout(() => {
+                    setActiveSearch(text);
+                    void fetchCampaigns({ search: text });
+                  }, 400);
+                } else if (!text && activeSearch) {
+                  setActiveSearch('');
+                  void fetchCampaigns({ search: '' });
+                }
+              }}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setSearchFocused(false)}
+              returnKeyType="search"
+              onSubmitEditing={() => {
+                searchInputRef.current?.blur();
+                if (searchDebounce.current) clearTimeout(searchDebounce.current);
+                setActiveSearch(search);
+                void fetchCampaigns({ search });
+              }}
+            />
+            <Pressable
+              style={[styles.filterBtn, { backgroundColor: isFilterActive ? C.brinjal1 : C.primaryLight }]}
+              onPress={openFilter}
+              hitSlop={6}>
+              <Ionicons name="options-outline" size={18} color={isFilterActive ? '#fff' : C.brinjal1} />
+              {isFilterActive && <View style={styles.filterActiveDot} />}
+            </Pressable>
+          </Pressable>
+        </View>
 
         {/* ── Categories ── */}
         <View style={styles.sectionHeader}>

@@ -26,6 +26,7 @@ import { businessService, type BusinessListItem } from '@/services/business';
 import { useFavoriteBusinesses } from '@/hooks/useFavoriteBusinesses';
 import { useToast } from '@/components/Toast';
 import { F } from '@/utilities/constants';
+import { getIconColor } from '@/features/creator/data/filterOptions';
 
 type DisplayBusiness = BusinessListItem & { isFavorited: boolean };
 
@@ -128,7 +129,7 @@ function ExploreFilterModal({
                   key={cat.label}
                   onPress={() => setTempCategory(active ? '' : cat.label)}
                   style={[fm.filterChip, { borderColor: active ? C.brinjal1 : C.border, backgroundColor: active ? C.primaryLight : C.background }]}>
-                  <FontAwesome5 name={cat.icon} size={12} color={active ? C.brinjal1 : C.textSecondary} />
+                  <FontAwesome5 name={cat.icon} size={12} color={active ? getIconColor(cat.icon) : C.textSecondary} />
                   <Text style={[fm.filterChipText, { color: active ? C.brinjal1 : C.text, fontWeight: active ? '700' : '400' }]}>{cat.label}</Text>
                 </Pressable>
               );
@@ -246,7 +247,7 @@ function BusinessCard({
             const icon = CATEGORIES.find((c) => c.label.toLowerCase() === cat.toLowerCase())?.icon ?? 'tag';
             return (
               <View key={cat} style={[styles.chip, { backgroundColor: C.primaryLight, borderColor: 'rgba(79,70,229,0.25)' }]}>
-                <FontAwesome5 name={icon} size={10} color={C.brinjal1} />
+                <FontAwesome5 name={icon} size={10} color={getIconColor(icon)} />
                 <Text style={[styles.chipTxt, { color: C.brinjal1 }]}>{cat}</Text>
               </View>
             );

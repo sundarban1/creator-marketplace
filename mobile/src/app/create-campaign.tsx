@@ -22,7 +22,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { campaignService } from '@/services/campaign';
 import { categoryService } from '@/services/category';
 import { profileService } from '@/services/profile';
-import { CREATOR_CATEGORIES } from '@/features/creator/data/filterOptions';
+import { CREATOR_CATEGORIES, getIconColor } from '@/features/creator/data/filterOptions';
 import { getTemplateImage, DEFAULT_TEMPLATE_IMAGE } from '@/features/creator/data/templateImages';
 import { PlacesAutocompleteInput, type PlacePrediction } from '@/components/PlacesAutocompleteInput';
 import { pickAndUpload } from '@/utilities/uploadImage';
@@ -246,7 +246,7 @@ function DropdownPicker({
           iconsAreEmoji ? (
             <Text style={dp.triggerEmoji}>{selected.icon}</Text>
           ) : (
-            <FontAwesome5 name={selected.icon} size={16} color={C.brinjal1} />
+            <FontAwesome5 name={selected.icon} size={16} color={getIconColor(selected.icon)} />
           )
         ) : (
           <Ionicons name="grid-outline" size={16} color={C.textSecondary} />
@@ -284,7 +284,7 @@ function DropdownPicker({
                       ) : iconsAreEmoji ? (
                         <Text style={dp.itemEmoji}>{opt.icon}</Text>
                       ) : (
-                        <FontAwesome5 name={opt.icon} size={16} color={C.brinjal1} />
+                        <FontAwesome5 name={opt.icon} size={16} color={getIconColor(opt.icon)} />
                       )}
                     </View>
                     <Text style={[dp.itemLabel, { color: sel ? C.brinjal1 : C.text, fontFamily: sel ? F.semibold : F.regular }]}>{opt.label}</Text>

@@ -35,7 +35,7 @@ type Props = {
 
 export function RangeSlider({
   minVal, maxVal, onMinChange, onMaxChange,
-  max = DEFAULT_MAX, step = DEFAULT_STEP, minGap = DEFAULT_GAP, currency = '$',
+  max = DEFAULT_MAX, step = DEFAULT_STEP, minGap = DEFAULT_GAP, currency = 'Rs',
 }: Props) {
   const C = useAppColors();
   const [dispMin, setDispMin] = useState(minVal);

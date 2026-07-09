@@ -1,11 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import MapView, { PROVIDER_GOOGLE, type Region } from 'react-native-maps';
 import { useAppColors } from '@/context/ThemeContext';
 import { RadiusSlider } from '@/components/RadiusSlider';
 import { F } from '@/utilities/constants';
-import type { LatLng } from '@/utilities/geolocation';
+import { getCurrentLocation, type LatLng } from '@/utilities/geolocation';
 
 const DEFAULT_DELTA = 0.15; // ~15km-ish span at the equator, close enough for a starting zoom
 const FALLBACK_COORDS: LatLng = { lat: 27.7172, lng: 85.3240 }; // Kathmandu — used only if no location is available at all
@@ -36,6 +36,7 @@ export function NearbyLocationSheet({ visible, onClose, source, radiusKm, homeLa
   const [draftSource, setDraftSource] = useState<NearbySource>(source);
   const [draftRadius, setDraftRadius] = useState(radiusKm);
   const [pinCoords, setPinCoords] = useState<LatLng>(currentCoords ?? homeCoords ?? FALLBACK_COORDS);
+  const [locatingCurrent, setLocatingCurrent] = useState(false);
 
   // react-native-maps fires onRegionChangeComplete for BOTH programmatic
   // animateToRegion calls (tapping Current/Home) AND genuine user drags —
@@ -75,9 +76,15 @@ export function NearbyLocationSheet({ visible, onClose, source, radiusKm, homeLa
     }
   }
 
-  function handleSelectCurrent() {
+  async function handleSelectCurrent() {
     setDraftSource('current');
-    if (currentCoords) moveTo(currentCoords);
+    // Re-request a fresh GPS fix rather than trusting the coords captured when
+    // the screen first mounted — the creator may have moved since then.
+    setLocatingCurrent(true);
+    const fresh = await getCurrentLocation();
+    setLocatingCurrent(false);
+    const coords = fresh ?? currentCoords;
+    if (coords) moveTo(coords);
   }
 
   function handleSelectHome() {
@@ -107,8 +114,13 @@ export function NearbyLocationSheet({ visible, onClose, source, radiusKm, homeLa
           <View style={styles.sourceToggleRow}>
             <Pressable
               style={[styles.sourceToggle, { borderColor: draftSource === 'current' ? C.brinjal1 : C.border, backgroundColor: draftSource === 'current' ? C.primaryLight : C.background }]}
-              onPress={handleSelectCurrent}>
-              <Ionicons name="navigate" size={13} color={draftSource === 'current' ? C.brinjal1 : C.textSecondary} />
+              disabled={locatingCurrent}
+              onPress={() => void handleSelectCurrent()}>
+              {locatingCurrent ? (
+                <ActivityIndicator size="small" color={C.brinjal1} />
+              ) : (
+                <Ionicons name="navigate" size={13} color={draftSource === 'current' ? C.brinjal1 : C.textSecondary} />
+              )}
               <Text style={[styles.sourceToggleText, { color: draftSource === 'current' ? C.brinjal1 : C.text }]}>Current Location</Text>
             </Pressable>
             <Pressable
@@ -156,7 +168,8 @@ export function NearbyLocationSheet({ visible, onClose, source, radiusKm, homeLa
 
         <View style={[styles.footer, { borderTopColor: C.border }]}>
           <Pressable
-            style={({ pressed }) => [styles.applyBtn, { backgroundColor: C.brinjal1 }, pressed && { opacity: 0.88 }]}
+            style={({ pressed }) => [styles.applyBtn, { backgroundColor: C.brinjal1 }, (pressed || locatingCurrent) && { opacity: 0.88 }]}
+            disabled={locatingCurrent}
             onPress={handleApply}>
             <Text style={styles.applyBtnText}>Apply</Text>
           </Pressable>

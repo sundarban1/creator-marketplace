@@ -86,7 +86,7 @@ export default function OnboardingScreen() {
   // Fallback list icons are FontAwesome5 names; admin-configured categories from the
   // API store a freeform emoji picked in the web admin panel, so the two sources render
   // differently — `categoriesAreEmoji` tracks which shape `categories` currently holds.
-  const [categories, setCategories] = useState<{ icon: string; label: string }[]>(CREATOR_CATEGORIES);
+  const [categories, setCategories] = useState<{ icon: string; label: string; color?: string }[]>(CREATOR_CATEGORIES);
   const [categoriesAreEmoji, setCategoriesAreEmoji] = useState(false);
 
   useEffect(() => {
@@ -421,7 +421,7 @@ export default function OnboardingScreen() {
                     {categoriesAreEmoji ? (
                       <Text style={styles.categoryEmoji}>{cat.icon}</Text>
                     ) : (
-                      <FontAwesome5 name={cat.icon} size={16} color={isSelected ? C.brinjal1 : C.textSecondary} />
+                      <FontAwesome5 name={cat.icon} size={16} color={isSelected ? (cat.color ?? C.brinjal1) : C.textSecondary} />
                     )}
                     <Text style={[styles.categoryLabel, { color: isSelected ? C.brinjal1 : C.text }, isSelected && { fontWeight: '700' }]}>
                       {cat.label}
