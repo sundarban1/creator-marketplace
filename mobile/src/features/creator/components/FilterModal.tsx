@@ -48,7 +48,7 @@ export type EventTypeFilter = 'ALL' | 'PAID_CAMPAIGN' | 'OPEN_EVENT';
 
 const EVENT_TYPE_OPTS: { value: EventTypeFilter; label: string }[] = [
   { value: 'ALL',           label: 'All'    },
-  { value: 'PAID_CAMPAIGN', label: 'Rs Paid' },
+  { value: 'PAID_CAMPAIGN', label: 'Paid' },
   { value: 'OPEN_EVENT',    label: 'Free'   },
 ];
 

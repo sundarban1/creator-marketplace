@@ -115,7 +115,7 @@ export function FeaturedCard({ campaign }: { campaign: Campaign }) {
               </View>
             ) : (
               <View style={[styles.typePill, { backgroundColor: '#EEF2FF', borderColor: '#C7D2FE' }]}>
-                <Text style={[styles.typePillText, { color: '#4F46E5' }]}>Rs Paid</Text>
+                <Text style={[styles.typePillText, { color: '#4F46E5' }]}>Paid</Text>
               </View>
             )}
           </View>

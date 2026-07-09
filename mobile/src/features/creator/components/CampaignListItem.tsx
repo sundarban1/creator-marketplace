@@ -60,7 +60,7 @@ export function CampaignListItem({ campaign }: { campaign: Campaign }) {
           </View>
         ) : (
           <View style={[styles.typeBadge, { backgroundColor: '#EEF2FF', borderColor: '#C7D2FE' }]}>
-            <Text style={[styles.typeBadgeText, { color: '#4F46E5' }]}>Rs Paid</Text>
+            <Text style={[styles.typeBadgeText, { color: '#4F46E5' }]}>Paid</Text>
           </View>
         )}
       </View>

@@ -1041,11 +1041,11 @@ export default function CreateCampaignScreen() {
       creatorsNeeded: form.creatorsNeeded,
       isFeatured:     form.isFeatured,
       campaignType:   'PAID_CAMPAIGN' as const,
-      objective:            form.aiGenerated ? form.objective : undefined,
-      contentGuidelines:    form.aiGenerated ? form.contentGuidelines : undefined,
-      targetAudience:       form.aiGenerated ? form.targetAudience : undefined,
-      hashtags:             form.aiGenerated ? form.hashtags : undefined,
-      callToAction:         form.aiGenerated ? form.callToAction : undefined,
+      objective:            form.objective || undefined,
+      contentGuidelines:    form.contentGuidelines,
+      targetAudience:       form.targetAudience,
+      hashtags:             form.hashtags,
+      callToAction:         form.callToAction || undefined,
       aiGenerated:           form.aiGenerated,
       aiPrompt:              form.aiGenerated ? form.aiPrompt : undefined,
       aiSuggestedCategories: form.aiGenerated ? form.aiSuggestedCategories : undefined,
@@ -1382,31 +1382,27 @@ export default function CreateCampaignScreen() {
                     />
                   </SectionCard>
 
-                  {/* AI-only: Objective */}
-                  {form.aiGenerated && (
-                    <SectionCard title={t('createEvent.secObjectiveTitle')} sub={t('createEvent.secObjectiveSub')} colors={C}>
-                      <TextInput
-                        style={[s.textarea, { backgroundColor: C.background, borderColor: C.border, color: C.text, minHeight: 70 }]}
-                        value={form.objective}
-                        onChangeText={(v) => update('objective', v)}
-                        multiline
-                        placeholderTextColor={C.textSecondary}
-                      />
-                    </SectionCard>
-                  )}
+                  {/* Objective */}
+                  <SectionCard title={t('createEvent.secObjectiveTitle')} sub={t('createEvent.secObjectiveSub')} colors={C}>
+                    <TextInput
+                      style={[s.textarea, { backgroundColor: C.background, borderColor: C.border, color: C.text, minHeight: 70 }]}
+                      value={form.objective}
+                      onChangeText={(v) => update('objective', v)}
+                      multiline
+                      placeholderTextColor={C.textSecondary}
+                    />
+                  </SectionCard>
 
-                  {/* AI-only: Target Audience */}
-                  {form.aiGenerated && (
-                    <SectionCard title={t('createEvent.secTargetAudienceTitle')} sub={t('createEvent.secTargetAudienceSub')} colors={C}>
-                      <TextInput
-                        style={[s.textarea, { backgroundColor: C.background, borderColor: C.border, color: C.text, minHeight: 70 }]}
-                        value={form.targetAudience.join(', ')}
-                        onChangeText={(v) => update('targetAudience', v.split(',').map((x) => x.trim()).filter(Boolean))}
-                        multiline
-                        placeholderTextColor={C.textSecondary}
-                      />
-                    </SectionCard>
-                  )}
+                  {/* Target Audience */}
+                  <SectionCard title={t('createEvent.secTargetAudienceTitle')} sub={t('createEvent.secTargetAudienceSub')} colors={C}>
+                    <TextInput
+                      style={[s.textarea, { backgroundColor: C.background, borderColor: C.border, color: C.text, minHeight: 70 }]}
+                      value={form.targetAudience.join(', ')}
+                      onChangeText={(v) => update('targetAudience', v.split(',').map((x) => x.trim()).filter(Boolean))}
+                      multiline
+                      placeholderTextColor={C.textSecondary}
+                    />
+                  </SectionCard>
 
                   {/* Platform */}
                   <SectionCard title={t('createEvent.secPlatformTitle')} sub={t('createEvent.secPlatformSub')} colors={C}>
@@ -1471,72 +1467,66 @@ export default function CreateCampaignScreen() {
                     </SectionCard>
                   )}
 
-                  {/* AI-only: Content Guidelines */}
-                  {form.aiGenerated && (
-                    <SectionCard title={t('createEvent.secContentGuidelinesTitle')} sub={t('createEvent.secContentGuidelinesSub')} colors={C}>
-                      <TextInput
-                        style={[s.textarea, { backgroundColor: C.background, borderColor: C.border, color: C.text, minHeight: 90 }]}
-                        value={form.contentGuidelines.join('\n')}
-                        onChangeText={(v) => update('contentGuidelines', v.split('\n').map((x) => x.trim()).filter(Boolean))}
-                        multiline
-                        placeholderTextColor={C.textSecondary}
-                      />
-                    </SectionCard>
-                  )}
+                  {/* Content Guidelines */}
+                  <SectionCard title={t('createEvent.secContentGuidelinesTitle')} sub={t('createEvent.secContentGuidelinesSub')} colors={C}>
+                    <TextInput
+                      style={[s.textarea, { backgroundColor: C.background, borderColor: C.border, color: C.text, minHeight: 90 }]}
+                      value={form.contentGuidelines.join('\n')}
+                      onChangeText={(v) => update('contentGuidelines', v.split('\n').map((x) => x.trim()).filter(Boolean))}
+                      multiline
+                      placeholderTextColor={C.textSecondary}
+                    />
+                  </SectionCard>
 
-                  {/* AI-only: Hashtags */}
-                  {form.aiGenerated && (
-                    <SectionCard title={t('createEvent.secHashtagsTitle')} colors={C}>
-                      <View style={ai.chipWrap}>
-                        {form.hashtags.map((tag) => (
-                          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                            key={tag}
-                            style={[ai.hashtagChip, { borderColor: C.brinjal1, backgroundColor: C.primaryLight }]}
-                            onPress={() => update('hashtags', form.hashtags.filter((h) => h !== tag))}>
-                            <Text style={[ai.hashtagChipText, { color: C.brinjal1 }]}>#{tag.replace(/^#/, '')}</Text>
-                            <Ionicons name="close" size={13} color={C.brinjal1} />
-                          </Pressable>
-                        ))}
-                      </View>
-                      <View style={ai.addChip}>
-                        <TextInput
-                          style={[ai.addChipInput, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
-                          value={newHashtag}
-                          onChangeText={setNewHashtag}
-                          placeholder={t('createEvent.addHashtagPlaceholder')}
-                          placeholderTextColor={C.textSecondary}
-                          autoCapitalize="none"
-                          onSubmitEditing={() => {
-                            const v = newHashtag.trim().replace(/^#/, '');
-                            if (v && !form.hashtags.includes(v)) update('hashtags', [...form.hashtags, v]);
-                            setNewHashtag('');
-                          }}
-                        />
+                  {/* Hashtags */}
+                  <SectionCard title={t('createEvent.secHashtagsTitle')} colors={C}>
+                    <View style={ai.chipWrap}>
+                      {form.hashtags.map((tag) => (
                         <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                          style={[ai.addChipBtn, { backgroundColor: C.brinjal1 }]}
-                          onPress={() => {
-                            const v = newHashtag.trim().replace(/^#/, '');
-                            if (v && !form.hashtags.includes(v)) update('hashtags', [...form.hashtags, v]);
-                            setNewHashtag('');
-                          }}>
-                          <Ionicons name="add" size={20} color="#fff" />
+                          key={tag}
+                          style={[ai.hashtagChip, { borderColor: C.brinjal1, backgroundColor: C.primaryLight }]}
+                          onPress={() => update('hashtags', form.hashtags.filter((h) => h !== tag))}>
+                          <Text style={[ai.hashtagChipText, { color: C.brinjal1 }]}>#{tag.replace(/^#/, '')}</Text>
+                          <Ionicons name="close" size={13} color={C.brinjal1} />
                         </Pressable>
-                      </View>
-                    </SectionCard>
-                  )}
-
-                  {/* AI-only: Call to Action */}
-                  {form.aiGenerated && (
-                    <SectionCard title={t('createEvent.secCallToActionTitle')} sub={t('createEvent.secCallToActionSub')} colors={C}>
+                      ))}
+                    </View>
+                    <View style={ai.addChip}>
                       <TextInput
-                        style={[s.textarea, { backgroundColor: C.background, borderColor: C.border, color: C.text, minHeight: 70 }]}
-                        value={form.callToAction}
-                        onChangeText={(v) => update('callToAction', v)}
-                        multiline
+                        style={[ai.addChipInput, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
+                        value={newHashtag}
+                        onChangeText={setNewHashtag}
+                        placeholder={t('createEvent.addHashtagPlaceholder')}
                         placeholderTextColor={C.textSecondary}
+                        autoCapitalize="none"
+                        onSubmitEditing={() => {
+                          const v = newHashtag.trim().replace(/^#/, '');
+                          if (v && !form.hashtags.includes(v)) update('hashtags', [...form.hashtags, v]);
+                          setNewHashtag('');
+                        }}
                       />
-                    </SectionCard>
-                  )}
+                      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                        style={[ai.addChipBtn, { backgroundColor: C.brinjal1 }]}
+                        onPress={() => {
+                          const v = newHashtag.trim().replace(/^#/, '');
+                          if (v && !form.hashtags.includes(v)) update('hashtags', [...form.hashtags, v]);
+                          setNewHashtag('');
+                        }}>
+                        <Ionicons name="add" size={20} color="#fff" />
+                      </Pressable>
+                    </View>
+                  </SectionCard>
+
+                  {/* Call to Action */}
+                  <SectionCard title={t('createEvent.secCallToActionTitle')} sub={t('createEvent.secCallToActionSub')} colors={C}>
+                    <TextInput
+                      style={[s.textarea, { backgroundColor: C.background, borderColor: C.border, color: C.text, minHeight: 70 }]}
+                      value={form.callToAction}
+                      onChangeText={(v) => update('callToAction', v)}
+                      multiline
+                      placeholderTextColor={C.textSecondary}
+                    />
+                  </SectionCard>
 
                   {/* AI-only: Budget (raw editable range, replaces preset chips) */}
                   {form.aiGenerated && (

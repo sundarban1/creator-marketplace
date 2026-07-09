@@ -4,7 +4,7 @@ import { CategoriesProvider } from './context/CategoriesContext';
 import { PlatformsProvider } from './context/PlatformsContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { DashboardLayout } from './layouts/DashboardLayout';
-import { LandingPage } from './pages/LandingPage';
+import { LandingPage } from './pages/landing/LandingPage';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
 import { Users } from './pages/Users';

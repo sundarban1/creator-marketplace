@@ -472,11 +472,27 @@ export default function CampaignDetailScreen() {
           </View>
         </View>
 
-        {/* Template badge + Goals */}
-        {(campaign.template || campaign.goals.length > 0) && (
+        {/* 1. About the Event */}
+        <View style={[s.card, { backgroundColor: C.surface }]}>
+          <Text style={[s.sectionLabel, { color: C.textSecondary }]}>{t('campaignDetail.sectionAbout')}</Text>
+          <Text style={[s.description, { color: C.text }]}>{campaign.description}</Text>
+        </View>
+
+        {/* 2. Objectives — merged Objective + Event Goals content into one card */}
+        {(campaign.template || campaign.objective || campaign.goals.length > 0 || (campaign.targetAudience && campaign.targetAudience.length > 0)) && (
           <View style={[s.card, { backgroundColor: C.surface }]}>
+            <Text style={[s.sectionLabel, { color: C.textSecondary }]}>Objectives</Text>
+            {campaign.goals.length > 0 && (
+              <View style={s.goalChips}>
+                {campaign.goals.map((g) => (
+                  <View key={g} style={[s.goalChip, { backgroundColor: C.primaryLight }]}>
+                    <Text style={[s.goalChipTxt, { color: C.brinjal1 }]}>{g}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
             {campaign.template && (
-              <View style={s.templateRow}>
+              <View style={[s.templateRow, { marginTop: campaign.goals.length > 0 ? 12 : 0 }]}>
                 <View style={[s.templateBadge, { backgroundColor: C.primaryLight }]}>
                   <Text style={[s.templateTxt, { color: C.brinjal1 }]}>{campaign.template}</Text>
                 </View>
@@ -485,33 +501,12 @@ export default function CampaignDetailScreen() {
             {!!campaign.aiSuggestedCategories?.length && (
               <Text style={[s.aiAlsoRelevant, { color: C.textSecondary }]}>Also relevant: {campaign.aiSuggestedCategories.join(', ')}</Text>
             )}
-            {campaign.goals.length > 0 && (
-              <>
-                <Text style={[s.sectionLabel, { color: C.textSecondary }]}>{t('campaignDetail.sectionGoals')}</Text>
-                <View style={s.goalChips}>
-                  {campaign.goals.map((g) => (
-                    <View key={g} style={[s.goalChip, { backgroundColor: C.primaryLight }]}>
-                      <Text style={[s.goalChipTxt, { color: C.brinjal1 }]}>{g}</Text>
-                    </View>
-                  ))}
-                </View>
-              </>
-            )}
-          </View>
-        )}
-
-        {/* Objective + Target Audience */}
-        {(campaign.objective || (campaign.targetAudience && campaign.targetAudience.length > 0)) && (
-          <View style={[s.card, { backgroundColor: C.surface }]}>
             {campaign.objective && (
-              <>
-                <Text style={[s.sectionLabel, { color: C.textSecondary }]}>Objective</Text>
-                <Text style={[s.description, { color: C.text }]}>{campaign.objective}</Text>
-              </>
+              <Text style={[s.description, { color: C.text, marginTop: campaign.template || campaign.goals.length > 0 ? 12 : 0 }]}>{campaign.objective}</Text>
             )}
             {campaign.targetAudience && campaign.targetAudience.length > 0 && (
               <>
-                <Text style={[s.sectionLabel, { color: C.textSecondary, marginTop: campaign.objective ? 12 : 0 }]}>Target Audience</Text>
+                <Text style={[s.sectionLabel, { color: C.textSecondary, marginTop: 12 }]}>Target Audience</Text>
                 <View style={s.goalChips}>
                   {campaign.targetAudience.map((aud) => (
                     <View key={aud} style={[s.goalChip, { backgroundColor: C.primaryLight }]}>
@@ -524,7 +519,7 @@ export default function CampaignDetailScreen() {
           </View>
         )}
 
-        {/* Details grid */}
+        {/* 3. Event Details */}
         <View style={[s.card, { backgroundColor: C.surface }]}>
           <Text style={[s.sectionLabel, { color: C.textSecondary }]}>{t('campaignDetail.sectionDetails')}</Text>
           <View style={s.detailsGrid}>
@@ -567,23 +562,7 @@ export default function CampaignDetailScreen() {
           </View>
         ) : null}
 
-        {/* Content Guidelines */}
-        {campaign.contentGuidelines && campaign.contentGuidelines.length > 0 && (
-          <View style={[s.card, { backgroundColor: C.surface }]}>
-            <Text style={[s.sectionLabel, { color: C.textSecondary }]}>Content Guidelines</Text>
-            {campaign.contentGuidelines.map((g, i) => (
-              <ReqItem key={i} text={g} C={C} />
-            ))}
-          </View>
-        )}
-
-        {/* Description */}
-        <View style={[s.card, { backgroundColor: C.surface }]}>
-          <Text style={[s.sectionLabel, { color: C.textSecondary }]}>{t('campaignDetail.sectionAbout')}</Text>
-          <Text style={[s.description, { color: C.text }]}>{campaign.description}</Text>
-        </View>
-
-        {/* Deliverables */}
+        {/* 4. Deliverables */}
         {campaign.deliverables ? (
           <View style={[s.card, { backgroundColor: C.surface }]}>
             <Text style={[s.sectionLabel, { color: C.textSecondary }]}>{t('campaignDetail.sectionDeliverables')}</Text>
@@ -593,7 +572,17 @@ export default function CampaignDetailScreen() {
           </View>
         ) : null}
 
-        {/* Hashtags */}
+        {/* 5. Content Guidelines */}
+        {campaign.contentGuidelines && campaign.contentGuidelines.length > 0 && (
+          <View style={[s.card, { backgroundColor: C.surface }]}>
+            <Text style={[s.sectionLabel, { color: C.textSecondary }]}>Content Guidelines</Text>
+            {campaign.contentGuidelines.map((g, i) => (
+              <ReqItem key={i} text={g} C={C} />
+            ))}
+          </View>
+        )}
+
+        {/* 6. Hashtags */}
         {campaign.hashtags && campaign.hashtags.length > 0 && (
           <View style={[s.card, { backgroundColor: C.surface }]}>
             <Text style={[s.sectionLabel, { color: C.textSecondary }]}>Hashtags</Text>
@@ -615,7 +604,7 @@ export default function CampaignDetailScreen() {
           </View>
         )}
 
-        {/* Call to Action */}
+        {/* 7. Call to Action */}
         {campaign.callToAction && (
           <View style={[s.card, { backgroundColor: C.surface }]}>
             <Text style={[s.sectionLabel, { color: C.textSecondary }]}>Call to Action</Text>
