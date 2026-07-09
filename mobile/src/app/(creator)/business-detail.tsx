@@ -5,8 +5,10 @@ import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
+  KeyboardAvoidingView,
   Linking,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -445,7 +447,7 @@ export default function BusinessDetailScreen() {
 
       {/* Request message modal */}
       <Modal visible={showMsgModal} transparent animationType="slide" onRequestClose={() => setShowMsgModal(false)}>
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.modalScrim} onPress={() => setShowMsgModal(false)} />
           <View style={[styles.modalSheet, { backgroundColor: C.surface }]}>
             <View style={[styles.modalHandle, { backgroundColor: C.border }]} />
@@ -475,7 +477,7 @@ export default function BusinessDetailScreen() {
               <Text style={styles.modalSendText}>{sendingMsg ? t('businessDetail.sendingLabel') : t('businessDetail.sendRequestBtn')}</Text>
             </Pressable>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );

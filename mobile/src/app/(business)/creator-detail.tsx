@@ -4,8 +4,10 @@ import { BackButton } from '@/components/BackButton';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
   Linking,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -358,7 +360,7 @@ export default function CreatorDetailScreen() {
 
       {/* Request message modal */}
       <Modal visible={showModal} transparent animationType="slide" onRequestClose={() => setShowModal(false)}>
-        <View style={rm.overlay}>
+        <KeyboardAvoidingView style={rm.overlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={rm.scrim} onPress={() => setShowModal(false)} />
           <View style={[rm.sheet, { backgroundColor: C.surface }]}>
             <View style={[rm.handle, { backgroundColor: C.border }]} />
@@ -388,7 +390,7 @@ export default function CreatorDetailScreen() {
               <Text style={rm.sendTxt}>{sending ? t('creatorDetailExtra.sendingLabel') : t('creatorDetailExtra.sendRequestBtn')}</Text>
             </Pressable>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );

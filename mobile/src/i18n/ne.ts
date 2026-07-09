@@ -382,6 +382,7 @@ const ne = {
     selectMethod: 'भुक्तानी विधि छान्नुहोस्',
     amountLabel: 'रकम',
     amountPlaceholder: 'रकम प्रविष्ट गर्नुहोस्',
+    keyboardDone: 'सम्पन्न',
     availableHint: 'उपलब्ध: रु. {{amount}}',
     withdrawBtn: 'रु. {{amount}} झिक्नुहोस्',
     errorNoMethod: 'कृपया भुक्तानी विधि छान्नुहोस्',

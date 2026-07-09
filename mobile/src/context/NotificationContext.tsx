@@ -92,10 +92,17 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     const unsubMessaging = messagingEvents.subscribe(refreshChatBadge);
 
     // ── App foreground refresh ───────────────────────────────────────────────
+    // Also re-attempts push token registration here: if the user denied the
+    // permission prompt at first launch then granted it later via system
+    // Settings, registerPushToken() was otherwise never called again and
+    // User.pushToken stayed null forever — pushes silently no-op for that
+    // user indefinitely. Re-checking on every foreground fixes that cheaply
+    // (the call is a no-op if the token/permission state hasn't changed).
     const handleAppState = (next: AppStateStatus) => {
       if (next === 'active') {
         refreshBadge();
         refreshChatBadge();
+        notificationService.registerPushToken().catch(() => {});
       }
     };
     const sub = AppState.addEventListener('change', handleAppState);

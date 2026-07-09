@@ -3,6 +3,7 @@ import { NotificationRepository } from './notification.repository';
 import { toNotificationDto } from './notification.dto';
 import { emitToUser } from '../../socket';
 import { translateMany } from '../../utils/translation';
+import { logger } from '../../config/logger';
 import prisma from '../../prisma';
 
 const expo = new Expo();
@@ -14,12 +15,24 @@ export async function sendExpoPush(userId: string, title: string, body: string) 
   try {
     const user = await prisma.user.findUnique({ where: { id: userId }, select: { pushToken: true } });
     const token = user?.pushToken;
-    if (!token || !Expo.isExpoPushToken(token)) return;
+    if (!token) {
+      logger.debug({ userId }, 'Push skipped — no pushToken on record for user');
+      return;
+    }
+    if (!Expo.isExpoPushToken(token)) {
+      logger.warn({ userId, token }, 'Push skipped — stored pushToken is not a valid Expo push token');
+      return;
+    }
 
     const message: ExpoPushMessage = { to: token, title, body, sound: 'default', badge: 1, channelId: 'default' };
-    await expo.sendPushNotificationsAsync([message]);
-  } catch {
-    // non-critical — don't let push failure break the notification flow
+    const [ticket] = await expo.sendPushNotificationsAsync([message]);
+    if (ticket?.status === 'error') {
+      logger.warn({ userId, ticket }, 'Expo push ticket returned an error');
+    }
+  } catch (err) {
+    // Non-critical — don't let push failure break the notification flow,
+    // but it must be logged or delivery failures are undiagnosable.
+    logger.error({ err, userId }, 'Failed to send push notification');
   }
 }
 

@@ -11,7 +11,11 @@ export function connectSocket(token: string): Socket {
 
   _socket = io(API_BASE, {
     auth: { token },
-    transports: ['websocket'],
+    // Falls back to HTTP long-polling when a raw WebSocket upgrade is
+    // blocked (common on cellular/carrier NAT or restrictive WiFi) — without
+    // this a physical device can silently fail to connect at all, so chat
+    // never receives in real time even though sending still works via REST.
+    transports: ['websocket', 'polling'],
     reconnection: true,
     reconnectionDelay: 2000,
     reconnectionAttempts: Infinity,

@@ -360,7 +360,15 @@
       "Bash(node verify_ai_loop.mjs)",
       "Bash(lsof -i :4000 -sTCP:LISTEN)",
       "Bash(curl -s http://localhost:4000/health)",
-      "Bash(node test_suspend.mjs)"
+      "Bash(node test_suspend.mjs)",
+      "Bash(node test_self_deactivate.mjs)",
+      "Bash(kill 71769)",
+      "Bash(node test_socket.mjs)",
+      "Bash(grep -n \"modalOverlay:\\\\|modalScrim:\\\\|<Modal\\\\|</Modal>\\\\|</View>$\" /Users/sundarban/Documents/projects/marketplace/mobile/src/app/\\\\\\(business\\\\\\)/creator-detail.tsx)",
+      "Bash(awk 'NR==1056,NR==1300 {print NR\": \"$0}' /Users/sundarban/Documents/projects/marketplace/mobile/src/app/\\\\\\(creator\\\\\\)/settings.tsx)",
+      "Bash(awk 'NR==1304,NR==1600 {print NR\": \"$0}' /Users/sundarban/Documents/projects/marketplace/mobile/src/app/\\\\\\(creator\\\\\\)/settings.tsx)",
+      "Bash(grep -n \"</Animated.View>\\\\s*$\" /Users/sundarban/Documents/projects/marketplace/mobile/src/app/\\\\\\(creator\\\\\\)/settings.tsx)",
+      "Bash(grep -rn \"router.push\\(['\\\\\"]\\\\/\\(creator\\)\\\\/settings\\\\|router.push\\(\\\\`/\\(creator\\)/settings\\\\|section=.social\\\\|openSocial\\\\|'social'\" /Users/sundarban/Documents/projects/marketplace/mobile/src/app)"
     ],
     "additionalDirectories": [
       "/private/tmp",

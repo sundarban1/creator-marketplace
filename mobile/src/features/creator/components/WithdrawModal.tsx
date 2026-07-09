@@ -1,6 +1,19 @@
 import { useState } from 'react';
 import { FontAwesome5 } from '@expo/vector-icons';
-import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  ActivityIndicator,
+  InputAccessoryView,
+  Keyboard,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableWithoutFeedback,
+  View,
+} from 'react-native';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { F } from '@/utilities/constants';
@@ -10,6 +23,10 @@ const METHOD_META: Record<string, { icon: string; label: string; color: string }
   khalti:  { icon: 'money-check-alt', label: 'Khalti',  color: '#5C2D91' },
   fonepay: { icon: 'credit-card',     label: 'FonePay', color: '#003087' },
 };
+
+// decimal-pad has no "Done" key on iOS at all, so the keyboard has no way to
+// dismiss itself without this accessory toolbar.
+const AMOUNT_ACCESSORY_ID = 'withdraw-amount-done';
 
 type Props = {
   visible: boolean;
@@ -29,6 +46,7 @@ export function WithdrawModal({ visible, onClose, availableBalance, paymentMetho
   const [submitting, setSubmitting] = useState(false);
 
   function handleClose() {
+    Keyboard.dismiss();
     setMethod(null);
     setAmountText('');
     setError('');
@@ -36,6 +54,7 @@ export function WithdrawModal({ visible, onClose, availableBalance, paymentMetho
   }
 
   async function handleSubmit() {
+    Keyboard.dismiss();
     const amount = parseFloat(amountText);
     if (!method) { setError(t('wallet.errorNoMethod')); return; }
     if (!amountText || isNaN(amount) || amount <= 0) { setError(t('wallet.errorInvalidAmount')); return; }
@@ -56,6 +75,10 @@ export function WithdrawModal({ visible, onClose, availableBalance, paymentMetho
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={handleClose}>
       <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.backdrop} onPress={handleClose} />
+      <KeyboardAvoidingView
+        style={styles.kav}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        pointerEvents="box-none">
       <View style={[styles.sheet, { backgroundColor: C.surface }]}>
         <View style={[styles.handle, { backgroundColor: C.border }]} />
 
@@ -63,6 +86,7 @@ export function WithdrawModal({ visible, onClose, availableBalance, paymentMetho
           <Text style={[styles.title, { color: C.text }]}>{t('wallet.modalTitle')}</Text>
         </View>
 
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={styles.body}>
           {paymentMethods.length === 0 ? (
             <View style={styles.emptyMethods}>
@@ -103,6 +127,9 @@ export function WithdrawModal({ visible, onClose, availableBalance, paymentMetho
                   placeholder={t('wallet.amountPlaceholder')}
                   placeholderTextColor={C.textSecondary}
                   keyboardType="decimal-pad"
+                  returnKeyType="done"
+                  onSubmitEditing={() => Keyboard.dismiss()}
+                  inputAccessoryViewID={Platform.OS === 'ios' ? AMOUNT_ACCESSORY_ID : undefined}
                 />
               </View>
               <Text style={[styles.availableHint, { color: C.textSecondary }]}>
@@ -113,6 +140,17 @@ export function WithdrawModal({ visible, onClose, availableBalance, paymentMetho
             </>
           )}
         </View>
+        </TouchableWithoutFeedback>
+
+        {Platform.OS === 'ios' && (
+          <InputAccessoryView nativeID={AMOUNT_ACCESSORY_ID}>
+            <View style={[styles.accessoryBar, { backgroundColor: C.surface, borderTopColor: C.border }]}>
+              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => Keyboard.dismiss()} hitSlop={8}>
+                <Text style={[styles.accessoryDoneText, { color: C.brinjal1 }]}>{t('wallet.keyboardDone')}</Text>
+              </Pressable>
+            </View>
+          </InputAccessoryView>
+        )}
 
         {paymentMethods.length > 0 && (
           <View style={[styles.footer, { borderTopColor: C.border }]}>
@@ -131,12 +169,14 @@ export function WithdrawModal({ visible, onClose, availableBalance, paymentMetho
           </View>
         )}
       </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
   backdrop: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)' },
+  kav:      { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   sheet:    { position: 'absolute', left: 0, right: 0, bottom: 0, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '80%', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 20, shadowOffset: { width: 0, height: -4 }, elevation: 20 },
   handle:   { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginTop: 12, marginBottom: 4 },
   header:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1 },
@@ -161,4 +201,7 @@ const styles = StyleSheet.create({
 
   submitBtn: { borderRadius: 14, height: 52, justifyContent: 'center', alignItems: 'center', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
   submitBtnText: { color: '#fff', fontSize: 15, fontWeight: '700', fontFamily: F.bold },
+
+  accessoryBar: { flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 16, paddingVertical: 8, borderTopWidth: StyleSheet.hairlineWidth },
+  accessoryDoneText: { fontSize: 15, fontWeight: '700', fontFamily: F.semibold },
 });

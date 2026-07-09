@@ -758,7 +758,11 @@ export default function CreateCampaignScreen() {
 
   useEffect(() => {
     campaignService.getPlatforms().then((plats) => {
-      if (plats.length > 0) setPlatformOptions(plats);
+      // Merge rather than replace — getPlatforms() only returns platforms
+      // already used by an existing campaign, so a platform nobody has
+      // picked yet (e.g. Facebook) would otherwise silently disappear from
+      // the picker and could never be selected for a new campaign either.
+      setPlatformOptions(Array.from(new Set([...PLATFORM_FALLBACK, ...plats])));
     }).catch(() => { /* keep fallback */ });
 
     profileService.getBusinessProfile().then((profile) => {

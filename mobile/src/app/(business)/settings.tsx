@@ -5,6 +5,8 @@ import { createContext, useContext, useEffect, useRef, useState, type ReactNode 
 import {
   ActivityIndicator,
   Animated,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -1705,6 +1707,7 @@ export default function BusinessSettingsScreen() {
           </View>
         </LinearGradient>
 
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
           style={styles.scroll}
           showsVerticalScrollIndicator={false}
@@ -1732,6 +1735,7 @@ export default function BusinessSettingsScreen() {
 
           <View style={{ height: 48 }} />
         </ScrollView>
+        </KeyboardAvoidingView>
 
         <AppModal
           visible={appModal.visible}

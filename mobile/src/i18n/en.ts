@@ -382,6 +382,7 @@ const en = {
     selectMethod: 'Select payment method',
     amountLabel: 'Amount',
     amountPlaceholder: 'Enter amount',
+    keyboardDone: 'Done',
     availableHint: 'Available: Rs. {{amount}}',
     withdrawBtn: 'Withdraw Rs. {{amount}}',
     errorNoMethod: 'Please select a payment method',

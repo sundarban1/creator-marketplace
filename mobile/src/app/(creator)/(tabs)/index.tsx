@@ -48,6 +48,12 @@ function getPlatformMeta(name: string) {
   return PLATFORM_ICONS[name.toLowerCase()] ?? { icon: 'globe-outline', color: '#6B7280' };
 }
 
+// Always-filterable baseline — /api/campaigns/platforms only returns
+// platforms already used by an ACTIVE campaign, so a platform nobody has
+// picked yet (e.g. Facebook) would otherwise never appear in this filter at
+// all. Merged with the live list rather than replaced by it.
+const DEFAULT_PLATFORMS = ['Instagram', 'TikTok', 'YouTube', 'Facebook'];
+
 export default function HomeScreen() {
   const { user } = useAuth();
   const { openDrawer } = useContext(DrawerContext);
@@ -56,7 +62,7 @@ export default function HomeScreen() {
 
   const { categories: adminCategories } = useCategories('CREATOR');
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-  const [apiPlatforms, setApiPlatforms] = useState<string[]>([]);
+  const [apiPlatforms, setApiPlatforms] = useState<string[]>(DEFAULT_PLATFORMS);
   const [activePlatforms, setActivePlatforms] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -220,7 +226,7 @@ export default function HomeScreen() {
   useEffect(() => {
     void fetchCampaigns();
     campaignService.getPlatforms()
-      .then((plats) => { if (plats.length > 0) setApiPlatforms(plats); })
+      .then((plats) => { setApiPlatforms(Array.from(new Set([...DEFAULT_PLATFORMS, ...plats]))); })
       .catch(() => {});
     creatorService.getProfile()
       .then((profile) => {
@@ -473,6 +479,51 @@ export default function HomeScreen() {
           </View>
         </LinearGradient>
 
+        {/* ── Search bar ── */}
+        <View style={styles.searchRow}>
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            style={[styles.searchCard, { backgroundColor: C.surface, borderColor: C.border }, searchFocused && styles.searchCardFocused]}
+            onPress={() => searchInputRef.current?.focus()}>
+            <Ionicons name="search-outline" size={18} color={searchFocused ? C.brinjal1 : C.textSecondary} style={styles.searchIcon} />
+            <TextInput
+              ref={searchInputRef}
+              style={[styles.searchInput, { color: C.text }]}
+              placeholder={t('creator.browse.searchPlaceholder')}
+              placeholderTextColor={C.textSecondary}
+              value={search}
+              onChangeText={(text) => {
+                setSearch(text);
+                if (searchDebounce.current) clearTimeout(searchDebounce.current);
+                if (text.length >= 3) {
+                  searchDebounce.current = setTimeout(() => {
+                    setActiveSearch(text);
+                    void fetchCampaigns({ search: text });
+                  }, 400);
+                } else if (!text && activeSearch) {
+                  setActiveSearch('');
+                  void fetchCampaigns({ search: '' });
+                }
+              }}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setSearchFocused(false)}
+              returnKeyType="search"
+              onSubmitEditing={() => {
+                searchInputRef.current?.blur();
+                if (searchDebounce.current) clearTimeout(searchDebounce.current);
+                setActiveSearch(search);
+                void fetchCampaigns({ search });
+              }}
+            />
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+              style={[styles.filterBtn, { backgroundColor: isFilterActive ? C.brinjal1 : C.primaryLight }]}
+              onPress={openFilter}
+              hitSlop={6}>
+              <Ionicons name="options-outline" size={18} color={isFilterActive ? '#fff' : C.brinjal1} />
+              {isFilterActive && <View style={styles.filterActiveDot} />}
+            </Pressable>
+          </Pressable>
+        </View>
+
         {/* ── Quick Actions ── */}
         <View style={styles.quickActionsRow}>
           {([
@@ -561,51 +612,6 @@ export default function HomeScreen() {
             </Pressable>
           </View>
         ) : null}
-
-        {/* ── Search bar ── */}
-        <View style={styles.searchRow}>
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-            style={[styles.searchCard, { backgroundColor: C.surface, borderColor: C.border }, searchFocused && styles.searchCardFocused]}
-            onPress={() => searchInputRef.current?.focus()}>
-            <Ionicons name="search-outline" size={18} color={searchFocused ? C.brinjal1 : C.textSecondary} style={styles.searchIcon} />
-            <TextInput
-              ref={searchInputRef}
-              style={[styles.searchInput, { color: C.text }]}
-              placeholder={t('creator.browse.searchPlaceholder')}
-              placeholderTextColor={C.textSecondary}
-              value={search}
-              onChangeText={(text) => {
-                setSearch(text);
-                if (searchDebounce.current) clearTimeout(searchDebounce.current);
-                if (text.length >= 3) {
-                  searchDebounce.current = setTimeout(() => {
-                    setActiveSearch(text);
-                    void fetchCampaigns({ search: text });
-                  }, 400);
-                } else if (!text && activeSearch) {
-                  setActiveSearch('');
-                  void fetchCampaigns({ search: '' });
-                }
-              }}
-              onFocus={() => setSearchFocused(true)}
-              onBlur={() => setSearchFocused(false)}
-              returnKeyType="search"
-              onSubmitEditing={() => {
-                searchInputRef.current?.blur();
-                if (searchDebounce.current) clearTimeout(searchDebounce.current);
-                setActiveSearch(search);
-                void fetchCampaigns({ search });
-              }}
-            />
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-              style={[styles.filterBtn, { backgroundColor: isFilterActive ? C.brinjal1 : C.primaryLight }]}
-              onPress={openFilter}
-              hitSlop={6}>
-              <Ionicons name="options-outline" size={18} color={isFilterActive ? '#fff' : C.brinjal1} />
-              {isFilterActive && <View style={styles.filterActiveDot} />}
-            </Pressable>
-          </Pressable>
-        </View>
 
         {/* ── Categories ── */}
         <View style={[styles.sectionHeader, { marginTop: 6 }]}>

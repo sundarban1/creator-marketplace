@@ -11,7 +11,11 @@ let io: Server | null = null;
 export function initSocket(httpServer: HttpServer): Server {
   io = new Server(httpServer, {
     cors: { origin: '*', credentials: true },
-    transports: ['websocket'],
+    // Polling fallback matters on physical devices — a raw WebSocket upgrade
+    // is commonly blocked by mobile-carrier NAT/firewalls or restrictive
+    // WiFi, and without this the client silently never connects (chat then
+    // only "works" via the REST send fallback, never receiving in real time).
+    transports: ['websocket', 'polling'],
   });
 
   io.use((socket, next) => {

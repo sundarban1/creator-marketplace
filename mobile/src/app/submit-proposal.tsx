@@ -14,13 +14,19 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { AppModal } from '@/components/AppModal';
 import { Button } from '@/components/Button';
 import { TextInputWithLabel } from '@/components/TextInputWithLabel';
 import { useToast } from '@/components/Toast';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { campaignService } from '@/services/campaign';
+import { creatorService } from '@/services/creator';
 import { F } from '@/utilities/constants';
+
+// At least one of these must be present before a creator can apply — brands
+// evaluating a proposal need to see the creator's actual content somewhere.
+const REQUIRED_SOCIAL_PLATFORMS = ['facebook', 'instagram', 'tiktok'];
 
 function isValidUrl(v: string) {
   try { new URL(v); return true; } catch { return false; }
@@ -123,6 +129,7 @@ export default function SubmitProposalScreen() {
   const [portfolio, setPortfolio] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading]     = useState(false);
+  const [showSocialModal, setShowSocialModal] = useState(false);
 
   const coverLetterLen = coverLetter.trim().length;
   const proposedRate   = isFreeEvent ? 0 : parseFloat(rate.replace(/[^0-9.]/g, ''));
@@ -162,6 +169,15 @@ export default function SubmitProposalScreen() {
 
     setLoading(true);
     try {
+      // Checked fresh at submit-time (not cached from mount) so a link added
+      // moments ago in another screen/session is picked up correctly.
+      const accounts = await creatorService.getSocialAccounts();
+      const hasRequiredSocial = accounts.some((a) => REQUIRED_SOCIAL_PLATFORMS.includes(a.platform.toLowerCase()));
+      if (!hasRequiredSocial) {
+        setShowSocialModal(true);
+        return;
+      }
+
       await campaignService.apply(campaignId, {
         coverLetter:  coverLetter.trim(),
         proposedRate,
@@ -305,6 +321,21 @@ export default function SubmitProposalScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <AppModal
+        visible={showSocialModal}
+        type="info"
+        icon="link-outline"
+        title="Add a Social Link First"
+        body="Brands want to see your work before accepting a proposal. Add at least one Facebook, Instagram, or TikTok profile to your account, then come back and submit."
+        confirmLabel="Add Social Link"
+        cancelLabel="Not Now"
+        onConfirm={() => {
+          setShowSocialModal(false);
+          router.push('/(creator)/settings?section=social' as never);
+        }}
+        onCancel={() => setShowSocialModal(false)}
+      />
     </SafeAreaView>
   );
 }
