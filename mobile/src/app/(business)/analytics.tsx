@@ -1,10 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BackButton } from '@/components/BackButton';
+import { RangeDropdown } from '@/components/RangeDropdown';
 import { useCallback, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
 import {
-  ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View,
+  ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
@@ -42,9 +43,9 @@ function StatTile({ icon, label, value, C }: {
   C: ReturnType<typeof useAppColors>;
 }) {
   return (
-    <View style={[s.tile, { backgroundColor: C.surface }]}>
+    <View style={[s.tile, { backgroundColor: C.surface, borderColor: C.border }]}>
       <View style={[s.tileIconWrap, { backgroundColor: C.primaryLight }]}>
-        <Ionicons name={icon as never} size={16} color={C.brinjal1} />
+        <Ionicons name={icon as never} size={17} color={C.brinjal1} />
       </View>
       <Text style={[s.tileValue, { color: C.text }]} numberOfLines={1}>{value}</Text>
       <Text style={[s.tileLabel, { color: C.textSecondary }]} numberOfLines={1}>{label}</Text>
@@ -99,19 +100,11 @@ export default function BusinessAnalyticsScreen() {
       </LinearGradient>
 
       <View style={s.rangeRow}>
-        {RANGES.map((r) => {
-          const active = range === r.value;
-          return (
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-              key={r.value}
-              style={[s.rangeChip, { borderColor: active ? C.brinjal1 : C.border, backgroundColor: active ? C.primaryLight : C.surface }]}
-              onPress={() => handleRangeChange(r.value)}>
-              <Text style={[s.rangeChipText, { color: active ? C.brinjal1 : C.textSecondary, fontWeight: active ? '700' : '500' }]}>
-                {t(r.labelKey)}
-              </Text>
-            </Pressable>
-          );
-        })}
+        <RangeDropdown
+          value={range}
+          options={RANGES.map((r) => ({ value: r.value, label: t(r.labelKey) }))}
+          onChange={handleRangeChange}
+        />
       </View>
 
       {loading || !data || !totals || !status ? (
@@ -166,18 +159,16 @@ const s = StyleSheet.create({
   topBar:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
   topTitle:  { fontSize: 16, fontWeight: '700', fontFamily: F.bold },
 
-  rangeRow:      { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 16, paddingVertical: 12 },
-  rangeChip:     { paddingHorizontal: 13, paddingVertical: 7, borderRadius: 20, borderWidth: 1.5 },
-  rangeChipText: { fontSize: 12, fontFamily: F.regular },
+  rangeRow: { flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 16, paddingVertical: 14 },
 
-  content: { padding: 16, paddingTop: 0, paddingBottom: 32, gap: 12 },
+  content: { padding: 16, paddingTop: 0, paddingBottom: 32, gap: 16 },
 
-  grid:        { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  tile:        { width: '47%', borderRadius: 14, padding: 12, gap: 4, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
-  tileIconWrap:{ width: 30, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center', marginBottom: 2 },
-  tileValue:   { fontSize: 17, fontWeight: '700', fontFamily: F.bold },
+  grid:        { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  tile:        { width: '47%', borderRadius: 18, borderWidth: 1, padding: 14, gap: 6, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
+  tileIconWrap:{ width: 34, height: 34, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginBottom: 2 },
+  tileValue:   { fontSize: 19, fontWeight: '700', fontFamily: F.bold },
   tileLabel:   { fontSize: 11, fontFamily: F.medium },
 
-  card:      { borderRadius: 16, padding: 16, gap: 14, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
+  card:      { borderRadius: 18, padding: 18, gap: 16, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
   cardTitle: { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
 });

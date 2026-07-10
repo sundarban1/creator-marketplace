@@ -1,10 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BackButton } from '@/components/BackButton';
+import { RangeDropdown } from '@/components/RangeDropdown';
 import { useCallback, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
 import {
-  ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View,
+  ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
@@ -36,18 +37,25 @@ function fmtBucket(bucket: string): string {
   return new Date(Number(y), Number(m) - 1, 1).toLocaleDateString(undefined, { month: 'short' });
 }
 
-function StatTile({ icon, label, value, sub, C }: {
-  icon: string; label: string; value: string; sub?: string;
+function StatTile({ icon, label, value, sub, subPositive, C }: {
+  icon: string; label: string; value: string; sub?: string; subPositive?: boolean;
   C: ReturnType<typeof useAppColors>;
 }) {
+  const trendColor = subPositive ? C.active : C.error;
   return (
-    <View style={[s.tile, { backgroundColor: C.surface }]}>
-      <View style={[s.tileIconWrap, { backgroundColor: C.primaryLight }]}>
-        <Ionicons name={icon as never} size={16} color={C.brinjal1} />
+    <View style={[s.tile, { backgroundColor: C.surface, borderColor: C.border }]}>
+      <View style={s.tileHeader}>
+        <View style={[s.tileIconWrap, { backgroundColor: C.primaryLight }]}>
+          <Ionicons name={icon as never} size={17} color={C.brinjal1} />
+        </View>
+        {sub ? (
+          <View style={[s.tileTrend, { backgroundColor: `${trendColor}1A` }]}>
+            <Text style={[s.tileTrendText, { color: trendColor }]}>{sub}</Text>
+          </View>
+        ) : null}
       </View>
       <Text style={[s.tileValue, { color: C.text }]} numberOfLines={1}>{value}</Text>
       <Text style={[s.tileLabel, { color: C.textSecondary }]} numberOfLines={1}>{label}</Text>
-      {sub ? <Text style={[s.tileSub, { color: C.active }]}>{sub}</Text> : null}
     </View>
   );
 }
@@ -99,19 +107,11 @@ export default function CreatorAnalyticsScreen() {
       </LinearGradient>
 
       <View style={s.rangeRow}>
-        {RANGES.map((r) => {
-          const active = range === r.value;
-          return (
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-              key={r.value}
-              style={[s.rangeChip, { borderColor: active ? C.brinjal1 : C.border, backgroundColor: active ? C.primaryLight : C.surface }]}
-              onPress={() => handleRangeChange(r.value)}>
-              <Text style={[s.rangeChipText, { color: active ? C.brinjal1 : C.textSecondary, fontWeight: active ? '700' : '500' }]}>
-                {t(r.labelKey)}
-              </Text>
-            </Pressable>
-          );
-        })}
+        <RangeDropdown
+          value={range}
+          options={RANGES.map((r) => ({ value: r.value, label: t(r.labelKey) }))}
+          onChange={handleRangeChange}
+        />
       </View>
 
       {loading || !data || !totals || !breakdown || !referrals ? (
@@ -133,6 +133,7 @@ export default function CreatorAnalyticsScreen() {
               label={t('analytics.profileViews')}
               value={totals.profileViewsLast30Days.toLocaleString()}
               sub={`${totals.profileViewsTrendPct >= 0 ? '+' : ''}${totals.profileViewsTrendPct}%`}
+              subPositive={totals.profileViewsTrendPct >= 0}
               C={C}
             />
             <StatTile icon="checkmark-circle-outline" label={t('analytics.profileCompletion')} value={`${totals.profileCompletion.percent}%`} C={C} />
@@ -158,19 +159,19 @@ export default function CreatorAnalyticsScreen() {
           <View style={[s.card, { backgroundColor: C.surface }]}>
             <Text style={[s.cardTitle, { color: C.text }]}>{t('analytics.referralProgram')}</Text>
             <View style={s.referralGrid}>
-              <View style={s.referralItem}>
+              <View style={[s.referralItem, { backgroundColor: C.background, borderColor: C.border }]}>
                 <Text style={[s.referralValue, { color: C.text }]}>{referrals.totalInvites}</Text>
                 <Text style={[s.referralLabel, { color: C.textSecondary }]}>{t('analytics.totalInvites')}</Text>
               </View>
-              <View style={s.referralItem}>
+              <View style={[s.referralItem, { backgroundColor: C.background, borderColor: C.border }]}>
                 <Text style={[s.referralValue, { color: C.text }]}>{referrals.successfulReferrals}</Text>
                 <Text style={[s.referralLabel, { color: C.textSecondary }]}>{t('analytics.successfulReferrals')}</Text>
               </View>
-              <View style={s.referralItem}>
+              <View style={[s.referralItem, { backgroundColor: C.background, borderColor: C.border }]}>
                 <Text style={[s.referralValue, { color: C.text }]}>{referrals.pendingRewards}</Text>
                 <Text style={[s.referralLabel, { color: C.textSecondary }]}>{t('analytics.pendingRewards')}</Text>
               </View>
-              <View style={s.referralItem}>
+              <View style={[s.referralItem, { backgroundColor: C.background, borderColor: C.border }]}>
                 <Text style={[s.referralValue, { color: C.text }]}>{fmtCurrency(referrals.rewardsEarned)}</Text>
                 <Text style={[s.referralLabel, { color: C.textSecondary }]}>{t('analytics.rewardsEarned')}</Text>
               </View>
@@ -202,24 +203,24 @@ const s = StyleSheet.create({
   topBar:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
   topTitle:  { fontSize: 16, fontWeight: '700', fontFamily: F.bold },
 
-  rangeRow:      { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 16, paddingVertical: 12 },
-  rangeChip:     { paddingHorizontal: 13, paddingVertical: 7, borderRadius: 20, borderWidth: 1.5 },
-  rangeChipText: { fontSize: 12, fontFamily: F.regular },
+  rangeRow: { flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 16, paddingVertical: 14 },
 
-  content: { padding: 16, paddingTop: 0, paddingBottom: 32, gap: 12 },
+  content: { padding: 16, paddingTop: 0, paddingBottom: 32, gap: 16 },
 
-  grid:        { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  tile:        { width: '47%', borderRadius: 14, padding: 12, gap: 4, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
-  tileIconWrap:{ width: 30, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center', marginBottom: 2 },
-  tileValue:   { fontSize: 17, fontWeight: '700', fontFamily: F.bold },
+  grid:        { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  tile:        { width: '47%', borderRadius: 18, borderWidth: 1, padding: 14, gap: 6, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
+  tileHeader:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  tileIconWrap:{ width: 34, height: 34, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+  tileTrend:     { paddingHorizontal: 7, paddingVertical: 3, borderRadius: 20 },
+  tileTrendText: { fontSize: 10, fontWeight: '700', fontFamily: F.bold },
+  tileValue:   { fontSize: 19, fontWeight: '700', fontFamily: F.bold, marginTop: 2 },
   tileLabel:   { fontSize: 11, fontFamily: F.medium },
-  tileSub:     { fontSize: 11, fontWeight: '700', fontFamily: F.bold },
 
-  card:      { borderRadius: 16, padding: 16, gap: 14, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
+  card:      { borderRadius: 18, padding: 18, gap: 16, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
   cardTitle: { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
 
   referralGrid:  { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  referralItem:  { width: '47%', gap: 2 },
+  referralItem:  { width: '47%', gap: 4, borderRadius: 14, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 14 },
   referralValue: { fontSize: 16, fontWeight: '700', fontFamily: F.bold },
   referralLabel: { fontSize: 11, fontFamily: F.medium },
 
