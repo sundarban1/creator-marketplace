@@ -14,7 +14,7 @@ export type BusinessListItem = {
 export type BusinessActiveCampaign = {
   id:          string;
   title:       string;
-  platform:    string;
+  platforms:   string[];
   category:    string;
   budgetMin:   number;
   budgetMax:   number;
@@ -25,6 +25,12 @@ export type BusinessActiveCampaign = {
   _count:      { applications: number };
 };
 
+export type BusinessPublicStats = {
+  averageRatingGiven:  number;
+  ratingsGivenCount:   number;
+  responseTimeAvgMins: number;
+};
+
 export type BusinessDetail = BusinessListItem & {
   createdAt:           string;
   userId:              string;
@@ -33,6 +39,7 @@ export type BusinessDetail = BusinessListItem & {
   showPublicProfile:   boolean;
   hideContactDetails:  boolean;
   allowDirectMessages: boolean;
+  stats:               BusinessPublicStats | null;
   isPrivate?:          false;
 };
 

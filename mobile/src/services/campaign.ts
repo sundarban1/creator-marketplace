@@ -7,7 +7,7 @@ export interface AiCampaignDraft {
   description: string;
   objective: string;
   category: string;
-  platform: string;
+  platforms: string[];
   contentGuidelines: string[];
   targetAudience: string[];
   suggestedDurationDays: number;
@@ -69,8 +69,8 @@ export function toCampaign(api: ApiCampaign): Campaign {
     deliverables: api.deliverables,
     paymentType:  api.paymentType,
     brand:        api.business.businessName,
-    platform:     api.platform as Campaign['platform'],
-    platformIcon: PLATFORM_ICONS[api.platform] ?? '📱',
+    platforms:     api.platforms,
+    platformIcons: api.platforms.map((p) => PLATFORM_ICONS[p] ?? '📱'),
     budget:       formatBudget(api.budgetMin, api.budgetMax, api.paymentType),
     budgetRaw:    api.budgetMin,
     budgetMax:    api.budgetMax,
@@ -214,7 +214,7 @@ export const campaignService = {
     featureImageUrl?: string;
     category: string;
     goals?: string[];
-    platform: string;
+    platforms: string[];
     minFollowers: number;
     contentType: string;
     deliverables: string;
@@ -270,7 +270,7 @@ export const campaignService = {
     featureImageUrl?: string | null;
     category?: string;
     goals?: string[];
-    platform?: string;
+    platforms?: string[];
     minFollowers?: number;
     contentType?: string;
     deliverables?: string;
@@ -299,12 +299,12 @@ export const campaignService = {
     proposals: Array<{
       id: string;
       status: 'pending' | 'accepted' | 'rejected';
-      workStatus: 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED';
+      workStatus: 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED';
       proposedRate: string;
       coverLetter: string;
       createdAt: string;
       campaign: {
-        id: string; title: string; platform: string;
+        id: string; title: string; platforms: string[];
         campaignType: 'PAID_CAMPAIGN' | 'OPEN_EVENT';
         paymentStatus: 'UNPAID' | 'PAID' | 'RELEASED';
       };
@@ -315,7 +315,7 @@ export const campaignService = {
     const res = await request<Array<{
       id: string; status: string; proposedRate: number; coverLetter: string; createdAt: string;
       workStatus?: string;
-      campaign: { id: string; title: string; platform: string; campaignType?: string; paymentStatus?: string };
+      campaign: { id: string; title: string; platforms: string[]; campaignType?: string; paymentStatus?: string };
       creator: { id: string; fullName: string; avatarUrl: string | null; location: string | null };
     }>>('GET', '/api/campaigns/applications/business', undefined, {
       page: params?.page ?? 1,
@@ -325,14 +325,14 @@ export const campaignService = {
       proposals: res.data.map((a) => ({
         id: a.id,
         status: a.status.toLowerCase() as 'pending' | 'accepted' | 'rejected',
-        workStatus: (a.workStatus ?? 'NONE') as 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED',
+        workStatus: (a.workStatus ?? 'NONE') as 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED',
         proposedRate: `Rs. ${a.proposedRate.toLocaleString()}`,
         coverLetter: a.coverLetter ?? '',
         createdAt: a.createdAt,
         campaign: {
           id: a.campaign.id,
           title: a.campaign.title,
-          platform: a.campaign.platform,
+          platforms: a.campaign.platforms,
           campaignType: (a.campaign.campaignType ?? 'PAID_CAMPAIGN') as 'PAID_CAMPAIGN' | 'OPEN_EVENT',
           paymentStatus: (a.campaign.paymentStatus ?? 'UNPAID') as 'UNPAID' | 'PAID' | 'RELEASED',
         },
@@ -356,6 +356,10 @@ export const campaignService = {
 
   async approveWork(appId: string): Promise<void> {
     await request('PUT', `/api/campaigns/applications/${appId}/approve`);
+  },
+
+  async completeProject(appId: string): Promise<void> {
+    await request('PUT', `/api/campaigns/applications/${appId}/complete`);
   },
 
   async requestRevision(appId: string, note: string): Promise<void> {
@@ -385,7 +389,7 @@ export const campaignService = {
     proposedRateRaw: number;
     coverLetter:     string;
     createdAt:       string;
-    workStatus:      'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED';
+    workStatus:      'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED';
     submittedAt:     string | null;
     deliverableUrls: string | null;
     paymentStatus:   'UNPAID' | 'PAID' | 'RELEASED';
@@ -405,7 +409,7 @@ export const campaignService = {
       proposedRateRaw: a.proposedRate,
       coverLetter:     a.coverLetter ?? '',
       createdAt:       a.createdAt,
-      workStatus:      (a.workStatus ?? 'NONE') as 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED',
+      workStatus:      (a.workStatus ?? 'NONE') as 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED',
       submittedAt:     a.submittedAt ?? null,
       deliverableUrls: a.deliverableUrls ?? null,
       paymentStatus:   (a.paymentStatus ?? 'UNPAID') as 'UNPAID' | 'PAID' | 'RELEASED',
@@ -426,7 +430,7 @@ export const campaignService = {
     coverLetter:      string;
     proposedRate:     string;
     proposedRateRaw:  number;
-    workStatus:       'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED';
+    workStatus:       'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED';
     campaignType:     'PAID_CAMPAIGN' | 'OPEN_EVENT';
     paymentStatus:    'UNPAID' | 'PAID' | 'RELEASED';
     paidAt:           string | null;
@@ -460,7 +464,7 @@ export const campaignService = {
       coverLetter:     a.coverLetter,
       proposedRate:    `Rs. ${a.proposedRate.toLocaleString()}`,
       proposedRateRaw: a.proposedRate,
-      workStatus:      (a.workStatus ?? 'NONE') as 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED',
+      workStatus:      (a.workStatus ?? 'NONE') as 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED',
       campaignType:    (a.campaign.campaignType ?? 'PAID_CAMPAIGN') as 'PAID_CAMPAIGN' | 'OPEN_EVENT',
       paymentStatus:   (a.paymentStatus ?? a.campaign.paymentStatus ?? 'UNPAID') as 'UNPAID' | 'PAID' | 'RELEASED',
       paidAt:          a.paidAt ?? a.campaign.paidAt ?? null,

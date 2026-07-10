@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { CreatorService } from './creator.service';
+import { analyticsService } from '../analytics/analytics.service';
 import { success } from '../../utils/response';
 import { uploadImage as uploadToCloudinary } from '../../utils/cloudinary';
 import { AppError } from '../../middleware/error';
@@ -42,7 +43,7 @@ export class CreatorController {
 
   async getCreatorPublicProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const profile = await creatorService.getCreatorPublicProfile(req.params.id, req.language);
+      const profile = await creatorService.getCreatorPublicProfile(req.params.id, req.language, req.user?.id);
       success(res, profile, 'Creator profile retrieved');
     } catch (err) {
       next(err);
@@ -209,6 +210,15 @@ export class CreatorController {
       );
       const profile = await creatorService.uploadCitizenship(req.user!.id, docUrl);
       success(res, { docUrl: profile.citizenshipDocUrl, citizenshipStatus: profile.citizenshipStatus }, 'Citizenship document uploaded');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async getMyAnalytics(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await analyticsService.getCreatorAnalytics(req.user!.id, req.query['range']);
+      success(res, result, 'Analytics retrieved');
     } catch (err) {
       next(err);
     }

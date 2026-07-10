@@ -342,6 +342,33 @@ export default function BusinessDetailScreen() {
             </View>
           ) : null}
 
+          {/* Performance stats */}
+          {business.stats && (
+            <View style={[styles.infoCard, { backgroundColor: C.surface }]}>
+              <View style={styles.infoCardHeader}>
+                <View style={[styles.infoIconBox, { backgroundColor: C.primaryLight }]}>
+                  <Ionicons name="stats-chart-outline" size={15} color={C.brinjal1} />
+                </View>
+                <Text style={[styles.infoCardTitle, { color: C.text }]}>{t('businessDetail.sectionPerformance')}</Text>
+              </View>
+              <View style={styles.statsRow}>
+                <View style={styles.statItem}>
+                  <Text style={[styles.statValue, { color: C.text }]}>
+                    {business.stats.averageRatingGiven.toFixed(1)}
+                  </Text>
+                  <Text style={[styles.statLabel, { color: C.textSecondary }]}>{t('analytics.avgRatingGiven')}</Text>
+                </View>
+                <View style={[styles.statDivider, { backgroundColor: C.border }]} />
+                <View style={styles.statItem}>
+                  <Text style={[styles.statValue, { color: C.text }]}>
+                    {business.stats.responseTimeAvgMins} min
+                  </Text>
+                  <Text style={[styles.statLabel, { color: C.textSecondary }]}>{t('analytics.responseTime')}</Text>
+                </View>
+              </View>
+            </View>
+          )}
+
           {/* Website — hidden when business has hideContactDetails on */}
           {business.website && !business.hideContactDetails ? (
             <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
@@ -510,6 +537,12 @@ const styles = StyleSheet.create({
   infoIconBox:           { width: 32, height: 32, borderRadius: 9, justifyContent: 'center', alignItems: 'center' },
   infoCardTitle:         { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
   aboutText:             { fontSize: 14, lineHeight: 22, fontFamily: F.regular },
+
+  statsRow:              { flexDirection: 'row', alignItems: 'center', gap: 16 },
+  statItem:              { flex: 1, gap: 2 },
+  statValue:             { fontSize: 16, fontWeight: '700', fontFamily: F.bold },
+  statLabel:             { fontSize: 11, fontFamily: F.medium },
+  statDivider:           { width: 1, height: 30 },
 
   websiteCard:           { flexDirection: 'row', alignItems: 'center', borderRadius: 16, padding: 14, gap: 12, borderWidth: 1 },
   websiteIconBox:        { width: 44, height: 44, borderRadius: 12, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },

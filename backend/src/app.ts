@@ -17,6 +17,7 @@ import { timezoneMiddleware } from './middleware/timezone';
 import { languageMiddleware } from './middleware/language';
 import prisma from './prisma';
 import { initSocket } from './socket';
+import { startCampaignExpiryJob } from './jobs/expireCampaigns';
 
 // Route imports
 import authRoutes from './modules/auth/auth.routes';
@@ -180,6 +181,15 @@ const aiGenerateLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// Public, unauthenticated contact form — tight limit to deter spam
+const publicContactLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: isProd ? 5 : 50,
+  message: { success: false, message: 'Too many messages sent. Please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // Apply general limiter to all /api/* routes (messaging is excluded via skip above)
 app.use('/api/', apiLimiter);
 app.use('/api/messaging/', messagingLimiter);
@@ -199,6 +209,9 @@ app.use('/api/campaigns/feature-image', uploadLimiter);
 // AI generation
 app.use('/api/campaigns/ai/generate', aiGenerateLimiter);
 app.use('/api/campaigns/ai/suggest-description', aiGenerateLimiter);
+
+// Public contact form
+app.use('/api/support/contact-public', publicContactLimiter);
 
 // ── Health check ─────────────────────────────────────────────────────────────
 /**
@@ -299,6 +312,7 @@ async function bootstrap() {
 
     const httpServer = createServer(app);
     initSocket(httpServer);
+    startCampaignExpiryJob();
 
     httpServer.listen(PORT, () => {
       logger.info(`Server running on http://localhost:${PORT}`);

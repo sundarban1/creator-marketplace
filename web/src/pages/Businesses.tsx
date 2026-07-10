@@ -4,9 +4,13 @@ import { Avatar }        from '../components/Avatar';
 import { PageHeader }    from '../components/PageHeader';
 import { ConfirmModal }  from '../components/ConfirmModal';
 import { DetailModal }   from '../components/DetailModal';
+import { Pagination }    from '../components/Pagination';
 import { api, type ApiBusiness } from '../lib/api';
 import { useApi }        from '../lib/useApi';
-import { useState }      from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+
+const PAGE_SIZE = 10;
 
 type Action = { type: 'suspend' | 'activate' | 'delete'; business: ApiBusiness };
 
@@ -17,15 +21,20 @@ function businessStatus(b: ApiBusiness): string {
 }
 
 export function Businesses() {
+  const navigate = useNavigate();
   const [action,  setAction]  = useState<Action | null>(null);
   const [viewing, setViewing] = useState<ApiBusiness | null>(null);
   const [loading, setLoading] = useState(false);
   const [toast,   setToast]   = useState<{ msg: string; ok: boolean } | null>(null);
   const [verifyingId, setVerifyingId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
 
-  const { data, loading: fetching, error, refetch } = useApi(() => api.admin.businesses({ limit: 50 }));
+  const { data, loading: fetching, error, refetch } = useApi(() => api.admin.businesses({ page, limit: PAGE_SIZE }));
+  useEffect(() => { refetch(); }, [page]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const businesses = data?.data ?? [];
   const total      = data?.pagination?.total ?? businesses.length;
+  const totalPages = data?.pagination?.totalPages ?? 1;
 
   function showToast(msg: string, ok = true) {
     setToast({ msg, ok });
@@ -150,6 +159,11 @@ export function Businesses() {
               View
             </button>
             <button
+              className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+              onClick={() => navigate(`/analytics/${row.user.id}`, { state: { name: row.businessName, email: row.user.email } })}>
+              Analytics
+            </button>
+            <button
               className="text-xs text-indigo-600 hover:text-indigo-800 font-medium disabled:opacity-50"
               disabled={verifyingId === row.id}
               onClick={() => handleToggleVerified(row)}>
@@ -217,7 +231,10 @@ export function Businesses() {
           ))}
         </div>
       ) : (
-        <DataTable columns={columns} data={businesses} keyField="id" />
+        <>
+          <DataTable columns={columns} data={businesses} keyField="id" />
+          <Pagination page={page} totalPages={totalPages} total={total} limit={PAGE_SIZE} onChange={setPage} />
+        </>
       )}
 
       {modalCfg && (

@@ -1,11 +1,10 @@
 import { AtSign, Globe, Mail } from 'lucide-react';
-import { SECTION_IDS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
 
 export function LandingFooter() {
   const { d } = useLandingLanguage();
   return (
-    <footer id={SECTION_IDS.contact} className="bg-[#0B0B1F] text-white py-14">
+    <footer className="bg-[#0B0B1F] text-white py-14">
       <div className="max-w-6xl mx-auto px-5">
         <div className="grid md:grid-cols-6 gap-8 mb-10">
           <div className="md:col-span-2">

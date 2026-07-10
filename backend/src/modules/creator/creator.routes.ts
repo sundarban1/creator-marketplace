@@ -235,6 +235,7 @@ router.put('/social-accounts/:id',         validate(updateSocialAccountSchema), 
 router.delete('/social-accounts/:id',      ctrl.deleteSocialAccount.bind(ctrl));
 
 router.get('/earnings',                    ctrl.getEarnings.bind(ctrl));
+router.get('/analytics',                   ctrl.getMyAnalytics.bind(ctrl));
 router.put('/payment-methods',             validate(updatePaymentMethodsSchema),  ctrl.updatePaymentMethods.bind(ctrl));
 router.put('/campaign-preferences',        validate(updateCampaignPrefsSchema),   ctrl.updateCampaignPrefs.bind(ctrl));
 

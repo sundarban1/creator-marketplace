@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { CampaignStatus, ReferralStatus } from '@prisma/client';
 import { AdminService } from './admin.service';
+import { analyticsService } from '../analytics/analytics.service';
 import { success, paginated } from '../../utils/response';
 import { AppError } from '../../middleware/error';
 import {
@@ -243,6 +244,16 @@ export async function releasePayment(req: Request, res: Response, next: NextFunc
     const { id } = req.params;
     const updated = await service.releasePayment(id!, req.user!.id);
     return success(res, updated, 'Payment released');
+  } catch (err) {
+    next(err);
+  }
+}
+
+// GET /api/admin/analytics/:userId
+export async function getUserAnalytics(req: Request, res: Response, next: NextFunction) {
+  try {
+    const result = await analyticsService.getAnalyticsForUser(req.params.userId!, req.query['range']);
+    return success(res, result, 'Analytics retrieved');
   } catch (err) {
     next(err);
   }

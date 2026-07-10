@@ -7,12 +7,20 @@ import { success, paginated } from '../../utils/response';
 import { sendSupportNotification, sendReportNotification } from '../../utils/email';
 import { env } from '../../config/env';
 import prisma from '../../prisma';
+import { notificationService } from '../notifications/notification.service';
 
 const ADMIN_EMAIL = env.ADMIN_EMAIL ?? env.EMAIL_USERNAME ?? 'admin@creatormarket.com';
 
 const router = Router();
 
 const contactSchema = z.object({
+  topic:   z.string().min(1, 'Topic is required'),
+  message: z.string().min(10, 'Message must be at least 10 characters'),
+});
+
+const publicContactSchema = z.object({
+  name:    z.string().min(1, 'Name is required'),
+  email:   z.string().email('A valid email is required'),
   topic:   z.string().min(1, 'Topic is required'),
   message: z.string().min(10, 'Message must be at least 10 characters'),
 });
@@ -44,6 +52,31 @@ router.post('/contact', authenticate, validate(contactSchema), async (req: Reque
   } catch (err) { next(err); }
 });
 
+// ── Public: landing-page contact form (no auth — anonymous visitor) ─────────
+
+router.post('/contact-public', validate(publicContactSchema), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { name, email, topic, message } = req.body;
+    const supportRequest = await prisma.supportRequest.create({
+      data: { guestName: name, guestEmail: email, topic, message },
+    });
+    sendSupportNotification({
+      adminEmail: ADMIN_EMAIL,
+      userEmail:  email,
+      topic,
+      message,
+    }).catch(() => {});
+    notificationService.createForAdmins({
+      type:    'contact_message',
+      title:   '✉️ New Contact Message',
+      body:    `${name} (${email}) sent a message: "${topic}"`,
+      refId:   supportRequest.id,
+      refType: 'support_request',
+    }).catch(() => {});
+    success(res, supportRequest, 'Message sent', 201);
+  } catch (err) { next(err); }
+});
+
 // ── Creator: submit issue report ─────────────────────────────────────────────
 
 router.post('/report', authenticate, validate(reportSchema), async (req: Request, res: Response, next: NextFunction) => {
@@ -57,6 +90,13 @@ router.post('/report', authenticate, validate(reportSchema), async (req: Request
       userEmail:   (report as any).user?.email ?? req.user!.email,
       type:        req.body.type,
       description: req.body.description,
+    }).catch(() => {});
+    notificationService.createForAdmins({
+      type:    'issue_reported',
+      title:   '⚠️ Issue Reported',
+      body:    `${(report as any).user?.email ?? req.user!.email} reported a ${req.body.type} issue.`,
+      refId:   report.id,
+      refType: 'issue_report',
     }).catch(() => {});
     success(res, report, 'Issue reported', 201);
   } catch (err) { next(err); }

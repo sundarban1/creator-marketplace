@@ -5,6 +5,7 @@ import { CreatorRepository } from '../creator/creator.repository';
 import { CampaignRepository } from './campaign.repository';
 import { FavoriteRepository } from '../creator/favorite.repository';
 import { notificationService } from '../notifications/notification.service';
+import { analyticsService } from '../analytics/analytics.service';
 import { emitToRole } from '../../socket';
 import { translateFields, translateMany } from '../../utils/translation';
 import {
@@ -17,7 +18,7 @@ import {
   sendCampaignCancelledEmail,
 } from '../../utils/email';
 
-const CAMPAIGN_FIELDS = ['title', 'description', 'category', 'goals', 'platform', 'contentType', 'deliverables', 'paymentType', 'location', 'venue', 'benefits'] as const;
+const CAMPAIGN_FIELDS = ['title', 'description', 'category', 'goals', 'platforms', 'contentType', 'deliverables', 'paymentType', 'location', 'venue', 'benefits'] as const;
 
 export const MASTER_CATEGORIES: { emoji: string; label: string }[] = [
   { emoji: '🍔', label: 'Food' },
@@ -85,7 +86,17 @@ export class CampaignService {
     });
     const campaign = toCampaignDto(raw);
 
+    notificationService.createForAdmins({
+      type:    'campaign_created',
+      title:   '📢 New Event Created',
+      body:    `${business.businessName} created "${raw.title}".`,
+      refId:   raw.id,
+      refType: 'campaign',
+    }).catch(() => {});
+
     if (raw.status === 'ACTIVE') {
+      analyticsService.incrCampaignPublished(userId);
+
       // Broadcast new active campaign to all connected creators in real time
       emitToRole('CREATOR', 'campaign:new', campaign);
 
@@ -277,6 +288,7 @@ export class CampaignService {
     const isFreeEvent = (campaign as any).campaignType === 'OPEN_EVENT';
     this.businessRepo.findById(campaign.businessId).then((business) => {
       if (!business) return;
+      analyticsService.incrProposalSubmitted(userId, business.userId);
       return notificationService.create({
         userId:  business.userId,
         type:    'proposal_received',
@@ -289,6 +301,14 @@ export class CampaignService {
         refId:   campaign.id,
         refType: isFreeEvent ? 'event' : 'campaign',
       });
+    }).catch(() => {});
+
+    notificationService.createForAdmins({
+      type:    'proposal_submitted',
+      title:   '📝 New Proposal Submitted',
+      body:    `${creator.fullName ?? 'A creator'} applied to "${campaign.title}".`,
+      refId:   campaign.id,
+      refType: isFreeEvent ? 'event' : 'campaign',
     }).catch(() => {});
 
     return application;
@@ -403,6 +423,14 @@ export class CampaignService {
 
     const isFreeEvent = (campaign as any).campaignType === 'OPEN_EVENT';
     const creatorUserId = application.creator?.userId as string | undefined;
+
+    if (creatorUserId) {
+      if (status === 'ACCEPTED') {
+        analyticsService.incrProposalAccepted(creatorUserId, application.creatorId, business.userId, business.id, appId);
+      } else {
+        analyticsService.incrProposalRejected(creatorUserId);
+      }
+    }
 
     if (isFreeEvent) {
       // Free event: only notify + email on ACCEPTED; silently decline
@@ -547,6 +575,7 @@ export class CampaignService {
     // Notify creator
     const creatorUserId = (application.creator as any)?.userId as string | undefined;
     if (creatorUserId) {
+      analyticsService.incrPaymentPaid(creatorUserId, application.proposedRate);
       notificationService.create({
         userId:  creatorUserId,
         type:    'payment_released',
@@ -571,6 +600,7 @@ export class CampaignService {
     if ((app as any).paymentStatus !== 'PAID') throw new AppError('Payment not yet secured', 400);
 
     const updated = await this.repo.startWork(appId);
+    analyticsService.incrCampaignStarted(userId);
 
     // Notify + email business
     const businessUserId = app.campaign.business.userId;
@@ -642,7 +672,7 @@ export class CampaignService {
       userId:  creatorUserId,
       type:    'work_approved',
       title:   '🎉 Your project has been approved!',
-      body:    `${business.businessName} approved your work for "${app.campaign.title}". Admin will release the payment.`,
+      body:    `${business.businessName} approved your work for "${app.campaign.title}". Payment will be released by admin now on your wallet.`,
       refId:   app.campaignId,
       refType: 'campaign',
     }).catch(() => {});
@@ -660,6 +690,35 @@ export class CampaignService {
       if (email) {
         sendWorkApprovedEmail(email, app.creator.fullName ?? 'Creator', app.campaign.title, app.proposedRate).catch(() => {});
       }
+    }).catch(() => {});
+
+    return toApplicationDto(updated);
+  }
+
+  // Creator confirms they've received the released payment — the final step
+  // that closes out the project. Only the applying creator may do this, and
+  // only once an admin has actually released the escrow amount.
+  async completeProject(appId: string, userId: string) {
+    const creator = await this.creatorRepo.findByUserId(userId);
+    if (!creator) throw new AppError('Creator profile not found', 404);
+
+    const app = await this.repo.findApplicationById(appId);
+    if (!app) throw new AppError('Application not found', 404);
+    if (app.creator.id !== creator.id) throw new AppError('Not authorized', 403);
+    if (app.workStatus !== 'APPROVED') throw new AppError('Work has not been approved yet', 400);
+    if (app.paymentStatus !== 'RELEASED') throw new AppError('Payment has not been released yet', 400);
+
+    const updated = await this.repo.completeProject(appId);
+
+    const businessUserId = app.campaign.business.userId;
+    analyticsService.incrCampaignCompleted(userId, businessUserId);
+    notificationService.create({
+      userId:  businessUserId,
+      type:    'project_completed',
+      title:   '✅ Project Complete',
+      body:    `${app.creator.fullName ?? 'The creator'} verified payment for "${app.campaign.title}" — the project is now complete.`,
+      refId:   app.campaignId,
+      refType: 'campaign',
     }).catch(() => {});
 
     return toApplicationDto(updated);

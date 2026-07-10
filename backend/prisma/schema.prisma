@@ -34,6 +34,8 @@ model User {
   notifications    Notification[]
   otpVerifications OtpVerification[]
   supportRequests  SupportRequest[]
+  reviewsGiven     Review[]          @relation("ReviewFrom")
+  reviewsReceived  Review[]          @relation("ReviewTo")
 
   @@map("users")
 }
@@ -75,6 +77,7 @@ model CreatorProfile {
   referralsMade        Referral[]           @relation("ReferralsMade")
   referralsReceived    Referral?            @relation("ReferralsReceived")
   withdrawals          Withdrawal[]
+  profileViews         ProfileView[]
 
   @@map("creator_profiles")
 }
@@ -133,6 +136,22 @@ model SocialAccount {
   @@map("social_accounts")
 }
 
+// Tracks distinct brand views of a creator profile — capped to one row per
+// business per creator per 24h at the service layer (see analytics.service.ts
+// recordProfileView), not a DB constraint, since the window is time-based.
+model ProfileView {
+  id         String          @id @default(cuid())
+  creatorId  String
+  businessId String
+  viewedAt   DateTime        @default(now())
+  creator    CreatorProfile  @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  business   BusinessProfile @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([creatorId, viewedAt])
+  @@index([creatorId, businessId, viewedAt])
+  @@map("profile_views")
+}
+
 model BusinessProfile {
   id                  String               @id @default(cuid())
   userId              String               @unique
@@ -171,6 +190,7 @@ model BusinessProfile {
   sentInvitations     CampaignInvitation[]
   referralsMade       BusinessReferral[]   @relation("BizReferralsMade")
   referralsReceived   BusinessReferral?    @relation("BizReferralsReceived")
+  profileViews        ProfileView[]
 
   @@map("business_profiles")
 }
@@ -205,7 +225,7 @@ model Campaign {
   featureImageUrl String?
   category       String
   goals          Json            @default("[]")
-  platform       String
+  platforms      String[]        @default([])
   minFollowers   Int             @default(0)
   contentType    String
   deliverables   String
@@ -280,12 +300,33 @@ model Application {
   updatedAt       DateTime          @updatedAt
   campaign        Campaign          @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   creator       CreatorProfile    @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  reviews         Review[]
 
   @@unique([campaignId, creatorId])
   @@index([creatorId])
   @@index([creatorId, createdAt(sort: Desc)])
   @@index([campaignId, status])
   @@map("applications")
+}
+
+// One row per rater per completed application — a creator and a business can
+// each leave one review of the other once work is fully COMPLETED (see
+// completeProject() in campaign.service.ts, the terminal workStatus).
+model Review {
+  id            String      @id @default(cuid())
+  applicationId String
+  fromUserId    String
+  toUserId      String
+  rating        Int
+  comment       String?
+  createdAt     DateTime    @default(now())
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  fromUser      User        @relation("ReviewFrom", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser        User        @relation("ReviewTo", fields: [toUserId], references: [id], onDelete: Cascade)
+
+  @@unique([applicationId, fromUserId])
+  @@index([toUserId])
+  @@map("reviews")
 }
 
 model Conversation {
@@ -353,6 +394,10 @@ model FaqArticle {
 model SupportRequest {
   id        String   @id @default(cuid())
   userId    String?
+  // Set only for anonymous submissions (e.g. the public landing-page contact
+  // form) — logged-in submissions identify the sender via `user` instead.
+  guestName  String?
+  guestEmail String?
   topic     String
   message   String
   status    String   @default("OPEN")
@@ -457,6 +502,49 @@ model CampaignInvitation {
   @@map("campaign_invitations")
 }
 
+// Aggregated, incrementally-updated stats — kept in sync by analytics.service.ts
+// at the exact point each underlying event already happens elsewhere in the
+// codebase, so the analytics dashboard never has to re-aggregate raw
+// Application/Campaign/Withdrawal rows on every request. profileCompletion
+// and referral stats are intentionally NOT stored here — they're cheap to
+// compute live (see analytics.service.ts) and storing them risks drift.
+model CreatorAnalytics {
+  userId                String   @id
+  totalProfileViews     Int      @default(0)
+  totalEarnings         Float    @default(0)
+  pendingEarnings       Float    @default(0)
+  invitationsReceived   Int      @default(0)
+  applicationsSubmitted Int      @default(0)
+  applicationsAccepted  Int      @default(0)
+  applicationsRejected  Int      @default(0)
+  activeCampaigns       Int      @default(0)
+  completedCampaigns    Int      @default(0)
+  averageRating         Float    @default(0)
+  reviewCount           Int      @default(0)
+  responseTimeAvgMins   Float    @default(0)
+  responseTimeSamples   Int      @default(0)
+  updatedAt             DateTime @updatedAt
+
+  @@map("creator_analytics")
+}
+
+model BrandAnalytics {
+  userId              String   @id
+  campaignsCreated    Int      @default(0)
+  activeCampaigns     Int      @default(0)
+  completedCampaigns  Int      @default(0)
+  totalSpend          Float    @default(0)
+  applicationsReceived Int     @default(0)
+  creatorsHired       Int      @default(0)
+  averageRatingGiven  Float    @default(0)
+  ratingsGivenCount   Int      @default(0)
+  responseTimeAvgMins Float    @default(0)
+  responseTimeSamples Int      @default(0)
+  updatedAt           DateTime @updatedAt
+
+  @@map("brand_analytics")
+}
+
 model PlatformSetting {
   key       String   @id
   value     String
@@ -507,6 +595,7 @@ enum WorkStatus {
   IN_PROGRESS
   SUBMITTED
   APPROVED
+  COMPLETED
 }
 
 enum PaymentStatus {

@@ -165,13 +165,21 @@ export default function CreatorProfileScreen() {
             <Text style={[s.bio, { color: C.textSecondary }]}>{displayBio}</Text>
           ) : null}
 
-          {/* Edit profile button */}
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-            style={[s.editBtn, { borderColor: C.brinjal1 }]}
-            onPress={() => router.push('/(creator)/edit-profile')}>
-            <Ionicons name="create-outline" size={15} color={C.brinjal1} />
-            <Text style={[s.editBtnText, { color: C.brinjal1 }]}>{t('profile.editProfile')}</Text>
-          </Pressable>
+          {/* Edit profile / Analytics buttons */}
+          <View style={s.actionRow}>
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+              style={[s.editBtn, { borderColor: C.brinjal1 }]}
+              onPress={() => router.push('/(creator)/edit-profile')}>
+              <Ionicons name="create-outline" size={15} color={C.brinjal1} />
+              <Text style={[s.editBtnText, { color: C.brinjal1 }]}>{t('profile.editProfile')}</Text>
+            </Pressable>
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+              style={[s.editBtn, { borderColor: C.brinjal1 }]}
+              onPress={() => router.push('/(creator)/analytics' as never)}>
+              <Ionicons name="stats-chart-outline" size={15} color={C.brinjal1} />
+              <Text style={[s.editBtnText, { color: C.brinjal1 }]}>{t('analytics.headerTitle')}</Text>
+            </Pressable>
+          </View>
 
           {/* Stats strip */}
           <View style={[s.statsStrip, { borderTopColor: C.border }]}>
@@ -383,8 +391,9 @@ const s = StyleSheet.create({
   location:    { fontSize: 13, fontFamily: F.regular },
   bio:         { fontSize: 13, textAlign: 'center', lineHeight: 20, paddingHorizontal: 8, fontFamily: F.regular },
 
-  editBtn:     { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6,
-                 borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 20, paddingVertical: 8 },
+  actionRow:   { flexDirection: 'row', gap: 10, marginTop: 6 },
+  editBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+                 borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 8 },
   editBtnText: { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
 
   // Stats strip

@@ -7,7 +7,7 @@ export const createCampaignSchema = z.object({
   featureImageUrl: z.string().url().optional(),
   category: z.string().min(1, 'Category is required'),
   goals: z.array(z.string()).default([]),
-  platform: z.string().default(''),
+  platforms: z.array(z.string()).max(3, 'You can select up to 3 platforms').default([]),
   minFollowers: z.number().int().min(0).default(0),
   contentType: z.string().default(''),
   deliverables: z.string().default(''),
@@ -50,7 +50,7 @@ export const updateCampaignSchema = z.object({
   featureImageUrl: z.string().url().optional().nullable(),
   category: z.string().optional(),
   goals: z.array(z.string()).optional(),
-  platform: z.string().optional(),
+  platforms: z.array(z.string()).max(3, 'You can select up to 3 platforms').optional(),
   minFollowers: z.number().int().min(0).optional(),
   contentType: z.string().optional(),
   deliverables: z.string().optional(),
@@ -115,8 +115,14 @@ export const applyToCampaignSchema = z.object({
   portfolioUrl: z.string().url('Invalid portfolio URL').optional(),
 });
 
+export const submitReviewSchema = z.object({
+  rating: z.number().int().min(1, 'Rating must be at least 1').max(5, 'Rating must be at most 5'),
+  comment: z.string().max(1000).optional(),
+});
+
 export type CreateCampaignInput = z.infer<typeof createCampaignSchema>;
 export type UpdateCampaignInput = z.infer<typeof updateCampaignSchema>;
 export type CampaignListQuery = z.infer<typeof campaignListQuerySchema>;
 export type NearbyQuery = z.infer<typeof nearbyQuerySchema>;
 export type ApplyToCampaignInput = z.infer<typeof applyToCampaignSchema>;
+export type SubmitReviewInput = z.infer<typeof submitReviewSchema>;

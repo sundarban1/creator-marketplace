@@ -3,8 +3,11 @@ import { Check, X as XIcon } from 'lucide-react';
 import { DataTable } from '../components/DataTable';
 import { StatusBadge } from '../components/StatusBadge';
 import { PageHeader } from '../components/PageHeader';
+import { Pagination } from '../components/Pagination';
 import { api, type ApiReferral, type ApiBusinessReferral, type ApiResponse } from '../lib/api';
 import { useApi } from '../lib/useApi';
+
+const PAGE_SIZE = 10;
 
 const STATUS_TABS = ['PENDING', 'COMPLETED', 'EXPIRED'] as const;
 const AUDIENCES = ['CREATOR', 'BUSINESS'] as const;
@@ -38,11 +41,14 @@ export function Referrals() {
   const [statusFilter, setStatusFilter] = useState<typeof STATUS_TABS[number]>('PENDING');
   const [releasingId, setReleasingId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
+  const [page, setPage] = useState(1);
 
   const { data, loading, error, refetch } = useApi(() =>
     (audience === 'CREATOR' ? api.admin.referrals(statusFilter) : api.admin.businessReferrals(statusFilter)) as Promise<ApiResponse<ReferralRow[]>>
   );
   const referrals = data?.data ?? [];
+  const totalPages = Math.max(1, Math.ceil(referrals.length / PAGE_SIZE));
+  const pageReferrals = referrals.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   function showToast(msg: string, ok = true) {
     setToast({ msg, ok });
@@ -51,11 +57,13 @@ export function Referrals() {
 
   function switchAudience(a: Audience) {
     setAudience(a);
+    setPage(1);
     refetch();
   }
 
   function switchStatus(s: typeof STATUS_TABS[number]) {
     setStatusFilter(s);
+    setPage(1);
     refetch();
   }
 
@@ -206,7 +214,10 @@ export function Referrals() {
           No {statusFilter.toLowerCase()} referrals.
         </div>
       ) : (
-        <DataTable columns={columns} data={referrals} keyField="id" />
+        <>
+          <DataTable columns={columns} data={pageReferrals} keyField="id" />
+          <Pagination page={page} totalPages={totalPages} total={referrals.length} limit={PAGE_SIZE} onChange={setPage} />
+        </>
       )}
 
       {toast && (

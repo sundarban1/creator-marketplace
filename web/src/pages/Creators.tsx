@@ -1,13 +1,17 @@
-import { useState }      from 'react';
+import { useState, useEffect }      from 'react';
 import { Search }        from 'lucide-react';
+import { useNavigate }   from 'react-router-dom';
 import { DataTable }     from '../components/DataTable';
 import { StatusBadge }   from '../components/StatusBadge';
 import { Avatar }        from '../components/Avatar';
 import { PageHeader }    from '../components/PageHeader';
 import { ConfirmModal }  from '../components/ConfirmModal';
 import { DetailModal }   from '../components/DetailModal';
+import { Pagination }    from '../components/Pagination';
 import { api, type ApiCreator } from '../lib/api';
 import { useApi }        from '../lib/useApi';
+
+const PAGE_SIZE = 10;
 
 type Action = { type: 'suspend' | 'activate' | 'delete'; creator: ApiCreator };
 
@@ -18,6 +22,7 @@ function creatorStatus(c: ApiCreator): string {
 }
 
 export function Creators() {
+  const navigate = useNavigate();
   const [search,          setSearch]          = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [action,  setAction]  = useState<Action | null>(null);
@@ -25,13 +30,16 @@ export function Creators() {
   const [loading, setLoading] = useState(false);
   const [toast,   setToast]   = useState<{ msg: string; ok: boolean } | null>(null);
   const [verifyingId, setVerifyingId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
 
   const { data, loading: fetching, error, refetch } = useApi(() =>
-    api.admin.creators({ limit: 50, search: debouncedSearch || undefined })
+    api.admin.creators({ page, limit: PAGE_SIZE, search: debouncedSearch || undefined })
   );
+  useEffect(() => { refetch(); }, [page]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const creators = data?.data ?? [];
   const total    = data?.pagination?.total ?? creators.length;
+  const totalPages = data?.pagination?.totalPages ?? 1;
 
   function showToast(msg: string, ok = true) {
     setToast({ msg, ok });
@@ -43,6 +51,7 @@ export function Creators() {
     clearTimeout((window as { _ct?: ReturnType<typeof setTimeout> })._ct);
     (window as { _ct?: ReturnType<typeof setTimeout> })._ct = setTimeout(() => {
       setDebouncedSearch(val);
+      setPage(1);
       refetch();
     }, 400);
   }
@@ -155,6 +164,11 @@ export function Creators() {
               View
             </button>
             <button
+              className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+              onClick={() => navigate(`/analytics/${row.user.id}`, { state: { name: row.fullName ?? row.user.email, email: row.user.email } })}>
+              Analytics
+            </button>
+            <button
               className="text-xs text-indigo-600 hover:text-indigo-800 font-medium disabled:opacity-50"
               disabled={verifyingId === row.id}
               onClick={() => handleToggleVerified(row)}>
@@ -227,7 +241,10 @@ export function Creators() {
           ))}
         </div>
       ) : (
-        <DataTable columns={columns} data={creators} keyField="id" />
+        <>
+          <DataTable columns={columns} data={creators} keyField="id" />
+          <Pagination page={page} totalPages={totalPages} total={total} limit={PAGE_SIZE} onChange={setPage} />
+        </>
       )}
 
       {modalCfg && (

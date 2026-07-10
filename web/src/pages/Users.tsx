@@ -1,13 +1,17 @@
-import { useState }      from 'react';
+import { useState, useEffect }      from 'react';
 import { Search }        from 'lucide-react';
+import { useNavigate }   from 'react-router-dom';
 import { DataTable }     from '../components/DataTable';
 import { StatusBadge }   from '../components/StatusBadge';
 import { Avatar }        from '../components/Avatar';
 import { PageHeader }    from '../components/PageHeader';
 import { ConfirmModal }  from '../components/ConfirmModal';
 import { DetailModal }   from '../components/DetailModal';
+import { Pagination }    from '../components/Pagination';
 import { api, type ApiUser } from '../lib/api';
 import { useApi }        from '../lib/useApi';
+
+const PAGE_SIZE = 10;
 
 const ROLE_FILTERS = ['All', 'CREATOR', 'BUSINESS', 'ADMIN'] as const;
 
@@ -38,9 +42,11 @@ function verifiedStatus(u: ApiUser): string {
 }
 
 export function Users() {
+  const navigate = useNavigate();
   const [roleFilter, setRoleFilter] = useState<string>('All');
   const [search,     setSearch]     = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [page,    setPage]    = useState(1);
   const [action,  setAction]  = useState<Action | null>(null);
   const [viewing, setViewing] = useState<ApiUser | null>(null);
   const [loading, setLoading] = useState(false);
@@ -48,14 +54,18 @@ export function Users() {
 
   const { data, loading: fetching, error, refetch } = useApi(() =>
     api.admin.users({
-      limit:  50,
+      page,
+      limit:  PAGE_SIZE,
       role:   roleFilter === 'All' ? undefined : roleFilter,
       search: debouncedSearch || undefined,
     })
   );
 
+  useEffect(() => { refetch(); }, [page]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const users = data?.data ?? [];
   const total = data?.pagination?.total ?? users.length;
+  const totalPages = data?.pagination?.totalPages ?? 1;
 
   function showToast(msg: string, ok = true) {
     setToast({ msg, ok });
@@ -67,12 +77,14 @@ export function Users() {
     clearTimeout((window as { _st?: ReturnType<typeof setTimeout> })._st);
     (window as { _st?: ReturnType<typeof setTimeout> })._st = setTimeout(() => {
       setDebouncedSearch(val);
+      setPage(1);
       refetch();
     }, 400);
   }
 
   function handleRoleChange(role: string) {
     setRoleFilter(role);
+    setPage(1);
     setTimeout(() => refetch(), 0);
   }
 
@@ -145,6 +157,14 @@ export function Users() {
           >
             View
           </button>
+          {(row.role === 'CREATOR' || row.role === 'BUSINESS') && (
+            <button
+              className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+              onClick={() => navigate(`/analytics/${row.id}`, { state: { name: displayName(row), email: row.email } })}
+            >
+              Analytics
+            </button>
+          )}
           {row.isActive === false ? (
             <button
               className="text-xs text-green-600 hover:text-green-800 font-medium"
@@ -238,7 +258,10 @@ export function Users() {
           ))}
         </div>
       ) : (
-        <DataTable columns={columns} data={users} keyField="id" />
+        <>
+          <DataTable columns={columns} data={users} keyField="id" />
+          <Pagination page={page} totalPages={totalPages} total={total} limit={PAGE_SIZE} onChange={setPage} />
+        </>
       )}
 
       {modalCfg && (

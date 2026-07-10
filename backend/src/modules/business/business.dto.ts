@@ -54,7 +54,7 @@ export interface PublicBusinessDto {
   campaigns: Array<{
     id: string;
     title: string;
-    platform: string;
+    platforms: string[];
     category: string;
     budgetMin: number;
     budgetMax: number;
@@ -157,7 +157,7 @@ type RawPublicBusiness = {
   campaigns: Array<{
     id: string;
     title: string;
-    platform: string;
+    platforms: string[];
     category: string;
     budgetMin: number;
     budgetMax: number;

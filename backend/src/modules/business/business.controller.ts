@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { BusinessService } from './business.service';
+import { analyticsService } from '../analytics/analytics.service';
 import { success } from '../../utils/response';
 import { uploadImage as uploadToCloudinary } from '../../utils/cloudinary';
 import { AppError } from '../../middleware/error';
@@ -106,6 +107,15 @@ export class BusinessController {
     try {
       const history = await businessService.getPaymentHistory(req.user!.id);
       success(res, history, 'Payment history retrieved successfully');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async getMyAnalytics(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await analyticsService.getBrandAnalytics(req.user!.id, req.query['range']);
+      success(res, result, 'Analytics retrieved');
     } catch (err) {
       next(err);
     }

@@ -16,8 +16,8 @@ export type Campaign = {
   id: string;
   title: string;
   brand: string;
-  platform: string;
-  platformIcon: string;
+  platforms: string[];
+  platformIcons: string[];
   budget: string;
   budgetRaw: number;
   budgetMax?: number;
@@ -106,6 +106,7 @@ export type AppNotification = {
     | 'campaign_deadline'
     | 'campaign_closed'
     | 'new_campaign'
+    | 'work_approved'
     | 'payment_released'
     | 'message_request_accepted'
     | 'business_favorited'

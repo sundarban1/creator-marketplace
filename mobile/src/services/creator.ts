@@ -36,6 +36,14 @@ export interface ApiEarningsSummary {
   totalApplications: number;
 }
 
+export interface ApiCreatorPublicStats {
+  profileCompletion: number;
+  averageRating: number;
+  reviewCount: number;
+  responseTimeAvgMins: number;
+  completionRate: number;
+}
+
 export interface ApiCreatorPublicProfile {
   id: string;
   userId: string;
@@ -52,6 +60,7 @@ export interface ApiCreatorPublicProfile {
   portfolioLinks: { id: string; label: string; url: string }[];
   socialLinks: Record<string, string | null> | null;
   socialAccounts: { id: string; platform: string; followers: number; profileUrl: string }[];
+  stats: ApiCreatorPublicStats | null;
 }
 
 export interface ApiCreatorListItem {

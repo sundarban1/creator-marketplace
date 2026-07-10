@@ -1,8 +1,12 @@
+import { useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { StatusBadge } from '../components/StatusBadge';
 import { Avatar } from '../components/Avatar';
 import { PageHeader } from '../components/PageHeader';
+import { Pagination } from '../components/Pagination';
 import { reports, type Report } from '../data/mockData';
+
+const PAGE_SIZE = 10;
 
 const reasonColors: Record<string, string> = {
   'Spam / Fake Account': 'bg-amber-50 text-amber-700',
@@ -63,15 +67,19 @@ function ReportCard({ report }: { report: Report }) {
 }
 
 export function Reports() {
+  const [page, setPage] = useState(1);
   const open = reports.filter((r) => r.status === 'open').length;
+  const totalPages = Math.max(1, Math.ceil(reports.length / PAGE_SIZE));
+  const pageReports = reports.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   return (
     <div>
       <PageHeader title="Reports" subtitle={`${reports.length} total · ${open} open`} />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {reports.map((report) => (
+        {pageReports.map((report) => (
           <ReportCard key={report.id} report={report} />
         ))}
       </div>
+      <Pagination page={page} totalPages={totalPages} total={reports.length} limit={PAGE_SIZE} onChange={setPage} />
     </div>
   );
 }

@@ -218,7 +218,7 @@ export default function VerifyScreen() {
                   digit && !error
                     ? { borderColor: C.brinjal1, backgroundColor: C.primaryLight, color: C.brinjal1 }
                     : null,
-                  error ? { borderColor: C.error, backgroundColor: '#FEF2F2' } : null,
+                  error ? { borderColor: C.error, backgroundColor: '#FEF2F2', color: '#DC2626' } : null,
                 ]}
                 value={digit}
                 onChangeText={(t) => handleChange(t, i)}

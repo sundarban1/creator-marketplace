@@ -1,8 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
 import { CampaignService } from './campaign.service';
+import { analyticsService } from '../analytics/analytics.service';
 import { success, paginated } from '../../utils/response';
 import { uploadImage as uploadToCloudinary } from '../../utils/cloudinary';
 import { AppError } from '../../middleware/error';
+import type { SubmitReviewInput } from './campaign.schema';
 
 const campaignService = new CampaignService();
 const FEATURE_IMAGE_TRANSFORMATION = [{ width: 800, height: 450, crop: 'fill' }];
@@ -230,6 +232,15 @@ export class CampaignController {
     }
   }
 
+  async completeProject(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await campaignService.completeProject(req.params.appId, req.user!.id);
+      success(res, result, 'Project marked complete');
+    } catch (err) {
+      next(err);
+    }
+  }
+
   async requestRevision(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { note } = req.body as { note?: string };
@@ -264,6 +275,16 @@ export class CampaignController {
     try {
       const result = await campaignService.cancelCampaign(req.params.id, req.user!.id);
       success(res, result, 'Campaign cancelled');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async submitReview(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { rating, comment } = req.body as SubmitReviewInput;
+      const result = await analyticsService.submitReview(req.params.appId, req.user!.id, rating, comment);
+      success(res, result, 'Review submitted', 201);
     } catch (err) {
       next(err);
     }

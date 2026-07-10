@@ -24,6 +24,7 @@ import {
   verifyBusiness,
   getBusinessReferrals,
   releaseBusinessReferral,
+  getUserAnalytics,
 } from './admin.controller';
 
 const router = Router();
@@ -49,6 +50,8 @@ router.get('/campaigns', getCampaigns);
 router.get('/campaigns/:id', getCampaignDetail);
 router.patch('/campaigns/:id/status', updateCampaignStatus);
 router.patch('/applications/:id/release-payment', releasePayment);
+
+router.get('/analytics/:userId', getUserAnalytics);
 
 // ── Platform Settings ───────────────────────────────────────────────────────────
 

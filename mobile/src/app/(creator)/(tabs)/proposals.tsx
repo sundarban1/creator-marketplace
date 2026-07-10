@@ -23,7 +23,7 @@ import { F } from '@/utilities/constants';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-type WS = 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED';
+type WS = 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED';
 type AppStatus = 'pending' | 'accepted' | 'rejected';
 type TabKey = 'all' | AppStatus;
 
@@ -56,9 +56,10 @@ const TRACK_CFG: Record<WS, { label: string; icon: keyof typeof Ionicons.glyphMa
   IN_PROGRESS: { label: 'View My Work',     icon: 'brush',      color: '#C2410C', sub: 'Work in progress'          },
   SUBMITTED:   { label: 'Awaiting Review',  icon: 'hourglass',  color: '#B45309', sub: 'Brand reviewing your work' },
   // Approval no longer releases payment automatically — an admin releases it
-  // manually, so this default "sub" only applies once that's actually happened
-  // (see ProposalCard, which overrides it while paymentStatus !== 'RELEASED').
-  APPROVED:    { label: 'Project Complete', icon: 'trophy',     color: '#16A34A', sub: 'Payment released!'         },
+  // manually, so ProposalCard overrides this "sub" based on paymentStatus
+  // (pending release, awaiting verification, or fully complete).
+  APPROVED:    { label: 'Verify Payment',   icon: 'trophy',     color: '#16A34A', sub: 'Payment released!'         },
+  COMPLETED:   { label: 'Project Complete', icon: 'checkmark-done', color: '#16A34A', sub: 'This collaboration is complete' },
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -175,8 +176,10 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
   const { t } = useLanguage();
   const [expanded, setExpanded] = useState(false);
   const cfg        = STATUS_CFG[proposal.status];
-  const trackCfg   = proposal.workStatus === 'APPROVED' && proposal.paymentStatus !== 'RELEASED'
-    ? { ...TRACK_CFG.APPROVED, sub: 'Approved — admin will release payment' }
+  const trackCfg   = proposal.workStatus === 'APPROVED' && proposal.paymentStatus === 'RELEASED'
+    ? { ...TRACK_CFG.APPROVED, label: 'Verify Payment', sub: 'Verify your payment to complete the project' }
+    : proposal.workStatus === 'APPROVED'
+    ? { ...TRACK_CFG.APPROVED, label: 'Project Approved', sub: 'Approved — admin will release payment' }
     : TRACK_CFG[proposal.workStatus];
   const isFree     = proposal.campaignType === 'OPEN_EVENT';
   const accentColor = cfg.color;

@@ -135,6 +135,17 @@ export class MessagingRepository {
     return { messages: messages.reverse(), total };
   }
 
+  /** The single most recent message in this conversation, if any — used to
+   *  detect whether a new message is a "reply" to the other party (for
+   *  response-time analytics) before the new message itself is inserted. */
+  async findLastMessage(conversationId: string) {
+    return prisma.message.findFirst({
+      where: { conversationId },
+      orderBy: { createdAt: 'desc' },
+      select: { senderId: true, createdAt: true },
+    });
+  }
+
   async createMessage(data: { conversationId: string; senderId: string; content: string }) {
     const msg = await prisma.message.create({
       data,

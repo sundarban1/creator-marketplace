@@ -9,6 +9,7 @@ import {
   campaignListQuerySchema,
   applyToCampaignSchema,
   nearbyQuerySchema,
+  submitReviewSchema,
 } from './campaign.schema';
 
 const router = Router();
@@ -64,7 +65,6 @@ router.post(
  *               - title
  *               - description
  *               - category
- *               - platform
  *               - contentType
  *               - deliverables
  *               - deadline
@@ -81,9 +81,13 @@ router.post(
  *               category:
  *                 type: string
  *                 example: Fashion
- *               platform:
- *                 type: string
- *                 example: Instagram
+ *               platforms:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 minItems: 1
+ *                 maxItems: 3
+ *                 example: ["Instagram", "TikTok"]
  *               minFollowers:
  *                 type: integer
  *                 default: 0
@@ -325,6 +329,21 @@ router.put(
   authenticate,
   authorize('BUSINESS'),
   ctrl.requestRevision.bind(ctrl)
+);
+
+router.put(
+  '/applications/:appId/complete',
+  authenticate,
+  authorize('CREATOR'),
+  ctrl.completeProject.bind(ctrl)
+);
+
+router.post(
+  '/applications/:appId/review',
+  authenticate,
+  authorize('CREATOR', 'BUSINESS'),
+  validate(submitReviewSchema),
+  ctrl.submitReview.bind(ctrl)
 );
 
 router.put(

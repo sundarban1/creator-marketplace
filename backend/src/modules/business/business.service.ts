@@ -3,6 +3,7 @@ import { toBusinessProfileDto, toPublicBusinessDto, toBusinessListItemDto, toPri
 import { BusinessRepository } from './business.repository';
 import type { UpdateBusinessProfileInput } from './business.schema';
 import { translateFields, translateMany } from '../../utils/translation';
+import { analyticsService } from '../analytics/analytics.service';
 
 const BUSINESS_FIELDS = ['description', 'location', 'categories'] as const;
 
@@ -51,7 +52,9 @@ export class BusinessService {
     if (!business) throw new AppError('Business not found', 404);
     if (!business.showPublicProfile) return toPrivateBusinessDto(business);
     const dto = toPublicBusinessDto(business);
-    return translateFields(dto, [...BUSINESS_FIELDS], lang);
+    const translated = await translateFields(dto, [...BUSINESS_FIELDS], lang);
+    const stats = await analyticsService.getBrandPublicStats(business.userId).catch(() => null);
+    return { ...translated, stats };
   }
 
   async uploadPanDoc(userId: string, docUrl: string) {

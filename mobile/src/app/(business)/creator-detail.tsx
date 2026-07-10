@@ -226,6 +226,39 @@ export default function CreatorDetailScreen() {
           </View>
         </View>
 
+        {/* ── Stats ── */}
+        {profile.stats && (
+          <View style={[s.section, { backgroundColor: C.surface }]}>
+            <SectionTitle label={t('creatorDetailExtra.sectionStats')} color={C.textSecondary} />
+            <View style={s.statsGrid}>
+              <View style={[s.statTile, { backgroundColor: C.background }]}>
+                <Ionicons name="checkmark-circle-outline" size={16} color={C.brinjal1} />
+                <Text style={[s.statValue, { color: C.text }]}>{profile.stats.profileCompletion}%</Text>
+                <Text style={[s.statLabel, { color: C.textSecondary }]}>{t('analytics.profileCompletion')}</Text>
+              </View>
+              <View style={[s.statTile, { backgroundColor: C.background }]}>
+                <Ionicons name="star-outline" size={16} color={C.brinjal1} />
+                <Text style={[s.statValue, { color: C.text }]}>
+                  {profile.stats.averageRating.toFixed(1)}
+                </Text>
+                <Text style={[s.statLabel, { color: C.textSecondary }]}>{t('analytics.averageRating')}</Text>
+              </View>
+              <View style={[s.statTile, { backgroundColor: C.background }]}>
+                <Ionicons name="time-outline" size={16} color={C.brinjal1} />
+                <Text style={[s.statValue, { color: C.text }]}>
+                  {profile.stats.responseTimeAvgMins} min
+                </Text>
+                <Text style={[s.statLabel, { color: C.textSecondary }]}>{t('analytics.responseTime')}</Text>
+              </View>
+              <View style={[s.statTile, { backgroundColor: C.background }]}>
+                <Ionicons name="trending-up-outline" size={16} color={C.brinjal1} />
+                <Text style={[s.statValue, { color: C.text }]}>{profile.stats.completionRate}%</Text>
+                <Text style={[s.statLabel, { color: C.textSecondary }]}>{t('analytics.completionRate')}</Text>
+              </View>
+            </View>
+          </View>
+        )}
+
         {/* ── Bio ── */}
         {profile.bio ? (
           <View style={[s.section, { backgroundColor: C.surface }]}>
@@ -442,6 +475,12 @@ const s = StyleSheet.create({
   socialPlatform:  { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
   socialSub:       { fontSize: 12, marginTop: 1, fontFamily: F.regular },
   socialLink:      { fontSize: 18, fontWeight: '600', fontFamily: F.semibold },
+
+  // Stats
+  statsGrid:  { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  statTile:   { width: '47%', borderRadius: 12, padding: 12, gap: 4, alignItems: 'flex-start' },
+  statValue:  { fontSize: 16, fontWeight: '700', fontFamily: F.bold },
+  statLabel:  { fontSize: 11, fontFamily: F.medium },
 
   // Budget
   budgetCard:  { flexDirection: 'row', alignItems: 'center', borderRadius: 12, padding: 14, gap: 12 },

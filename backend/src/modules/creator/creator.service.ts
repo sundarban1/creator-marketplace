@@ -6,6 +6,8 @@ import { haversineKm } from '../../utils/geo';
 
 const CREATOR_FIELDS = ['bio', 'location', 'categories'] as const;
 import { CreatorRepository } from './creator.repository';
+import { BusinessRepository } from '../business/business.repository';
+import { analyticsService } from '../analytics/analytics.service';
 import type {
   UpdateCreatorProfileInput,
   AddPortfolioLinkInput,
@@ -18,9 +20,11 @@ import type {
 
 export class CreatorService {
   private repo: CreatorRepository;
+  private businessRepo: BusinessRepository;
 
   constructor() {
     this.repo = new CreatorRepository();
+    this.businessRepo = new BusinessRepository();
   }
 
   async listCreators(params: {
@@ -82,11 +86,24 @@ export class CreatorService {
     return translateMany(dtos, [...CREATOR_FIELDS], params.lang ?? 'en');
   }
 
-  async getCreatorPublicProfile(creatorId: string, lang = 'en') {
+  async getCreatorPublicProfile(creatorId: string, lang = 'en', viewerUserId?: string) {
     const profile = await this.repo.findByIdPublic(creatorId);
     if (!profile) throw new AppError('Creator not found', 404);
+
+    // Fire-and-forget — only authenticated brands reach this route at all
+    // (business.routes.ts gates the whole file on authorize('BUSINESS')), so
+    // the "ignore own profile"/"authenticated brands only" PRD rules are
+    // already satisfied by the route itself.
+    if (viewerUserId) {
+      this.businessRepo.findByUserId(viewerUserId).then((business) => {
+        if (business) analyticsService.recordProfileView(profile.id, business.id, profile.userId);
+      }).catch(() => {});
+    }
+
     const dto = toPublicCreatorDto(profile);
-    return translateFields(dto, [...CREATOR_FIELDS], lang);
+    const translated = await translateFields(dto, [...CREATOR_FIELDS], lang);
+    const stats = await analyticsService.getCreatorPublicStats(profile.userId).catch(() => null);
+    return { ...translated, stats };
   }
 
   async getFilterOptions() {

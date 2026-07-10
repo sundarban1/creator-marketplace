@@ -86,7 +86,7 @@ export function Conversations() {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [toDelete, setToDelete] = useState<ApiConversationAdmin | null>(null);
 
-  const LIMIT = 20;
+  const LIMIT = 10;
 
   const [stats,         setStats]         = useState<ConversationStats | null>(null);
   const [conversations, setConversations] = useState<ApiConversationAdmin[]>([]);

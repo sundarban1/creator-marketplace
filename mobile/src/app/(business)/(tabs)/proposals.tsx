@@ -19,7 +19,7 @@ import { TabSlider } from '@/components/TabSlider';
 import { EmptyState } from '@/components/EmptyState';
 import { F } from '@/utilities/constants';
 
-type WS = 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED';
+type WS = 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED';
 
 type Proposal = {
   id: string;

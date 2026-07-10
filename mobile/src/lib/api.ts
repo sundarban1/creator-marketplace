@@ -57,7 +57,7 @@ export interface ApiCampaign {
   featureImageUrl?: string | null;
   category:      string;
   goals:         string[];
-  platform:      string;
+  platforms:     string[];
   minFollowers:  number;
   contentType:   string;
   deliverables:  string;

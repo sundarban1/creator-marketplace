@@ -122,7 +122,7 @@ function Field({
       </View>
       <Animated.View style={[
         s.field,
-        { borderColor: border, backgroundColor: focused ? '#FAFAFE' : C.surface },
+        { borderColor: border, backgroundColor: C.surface },
         focused && s.fieldFocused,
       ]}>
         <View style={[s.fieldIconWrap, { backgroundColor: focused ? `${P2}15` : '#F3F4F6' }]}>

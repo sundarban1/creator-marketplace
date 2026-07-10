@@ -303,7 +303,7 @@ export function CampaignDetail() {
                 { icon: DollarSign, label: 'Budget',   value: formatBudget(campaign.budgetMin, campaign.budgetMax) },
                 { icon: Calendar,   label: 'Deadline', value: fmt(campaign.deadline) },
                 { icon: Users,      label: 'Needed',   value: `${campaign.creatorsNeeded} creator${campaign.creatorsNeeded !== 1 ? 's' : ''}` },
-                { icon: Target,     label: 'Platform', value: campaign.platform || '—' },
+                { icon: Target,     label: 'Platform', value: campaign.platforms.length ? campaign.platforms.join(', ') : '—' },
               ].map(({ icon: Icon, label, value }) => (
                 <div key={label} className="bg-gray-50 rounded-lg px-3 py-3">
                   <div className="flex items-center gap-1.5 text-gray-400 mb-1">

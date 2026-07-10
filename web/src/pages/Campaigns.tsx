@@ -4,8 +4,11 @@ import { ChevronDown }       from 'lucide-react';
 import { DataTable }    from '../components/DataTable';
 import { StatusBadge }  from '../components/StatusBadge';
 import { PageHeader }   from '../components/PageHeader';
+import { Pagination }   from '../components/Pagination';
 import { api, type ApiCampaign } from '../lib/api';
 import { useApi }       from '../lib/useApi';
+
+const PAGE_SIZE = 10;
 
 const PLATFORM_COLORS: Record<string, string> = {
   Instagram: 'text-pink-600 bg-pink-50',
@@ -30,6 +33,7 @@ export function Campaigns() {
   const navigate = useNavigate();
   const [statusFilter,   setStatusFilter]   = useState<string>('All');
   const [businessFilter, setBusinessFilter] = useState<string>('All');
+  const [page, setPage] = useState(1);
 
   const { data, loading, error, refetch } = useApi(() =>
     api.admin.campaigns({
@@ -54,11 +58,22 @@ export function Campaigns() {
 
   const total     = campaigns.length;
   const activeCnt = campaigns.filter((c) => c.status === 'ACTIVE').length;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const pageCampaigns = useMemo(() =>
+    campaigns.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [campaigns, page]
+  );
 
   function handleStatusChange(s: string) {
     setStatusFilter(s);
     setBusinessFilter('All');
+    setPage(1);
     setTimeout(() => refetch(), 0);
+  }
+
+  function handleBusinessChange(name: string) {
+    setBusinessFilter(name);
+    setPage(1);
   }
 
   const columns = [
@@ -76,13 +91,18 @@ export function Campaigns() {
       key:    'platform',
       header: 'Platform',
       render: (row: ApiCampaign) => (
-        <span
-          className={`text-xs font-medium px-2.5 py-1 rounded-full ${
-            PLATFORM_COLORS[row.platform] ?? 'bg-gray-100 text-gray-700'
-          }`}
-        >
-          {row.platform}
-        </span>
+        <div className="flex flex-wrap gap-1">
+          {row.platforms.map((p) => (
+            <span
+              key={p}
+              className={`text-xs font-medium px-2.5 py-1 rounded-full ${
+                PLATFORM_COLORS[p] ?? 'bg-gray-100 text-gray-700'
+              }`}
+            >
+              {p}
+            </span>
+          ))}
+        </div>
       ),
     },
     {
@@ -170,7 +190,7 @@ export function Campaigns() {
         <div className="relative">
           <select
             value={businessFilter}
-            onChange={(e) => setBusinessFilter(e.target.value)}
+            onChange={(e) => handleBusinessChange(e.target.value)}
             className="appearance-none pl-3 pr-8 py-1.5 text-xs font-medium border border-gray-200 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
           >
             <option value="All">All Companies</option>
@@ -195,7 +215,10 @@ export function Campaigns() {
           ))}
         </div>
       ) : (
-        <DataTable columns={columns} data={campaigns} keyField="id" />
+        <>
+          <DataTable columns={columns} data={pageCampaigns} keyField="id" />
+          <Pagination page={page} totalPages={totalPages} total={total} limit={PAGE_SIZE} onChange={setPage} />
+        </>
       )}
     </div>
   );

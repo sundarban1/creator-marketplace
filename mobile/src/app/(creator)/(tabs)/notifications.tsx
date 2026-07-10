@@ -32,6 +32,7 @@ const TYPE_CONFIG: Record<AppNotification['type'], TypeConfig> = {
   campaign_deadline:        { icon: 'time',                 iconColor: '#F59E0B', iconBg: '#FFFBEB', accentColor: '#F59E0B', labelKey: 'notifications.typeDeadline'      },
   campaign_closed:          { icon: 'lock-closed',          iconColor: '#6B7280', iconBg: '#F3F4F6', accentColor: '#6B7280', labelKey: 'notifications.typeClosed'        },
   new_campaign:             { icon: 'megaphone',            iconColor: '#8B5CF6', iconBg: '#F5F3FF', accentColor: '#8B5CF6', labelKey: 'notifications.typeNewEvent'     },
+  work_approved:            { icon: 'trophy',               iconColor: '#10B981', iconBg: '#ECFDF5', accentColor: '#10B981', labelKey: 'notifications.typeWorkApproved'  },
   payment_released:         { icon: 'cash',                 iconColor: '#10B981', iconBg: '#ECFDF5', accentColor: '#10B981', labelKey: 'notifications.typePayment'       },
   message_request_accepted: { icon: 'chatbubble-ellipses', iconColor: '#3B82F6', iconBg: '#EFF6FF', accentColor: '#3B82F6', labelKey: 'notifications.typeConnected'     },
   business_favorited:       { icon: 'heart',               iconColor: '#EF4444', iconBg: '#FFF1F2', accentColor: '#EF4444', labelKey: 'notifications.typeFavorited'     },
@@ -173,7 +174,7 @@ export default function NotificationsScreen() {
 
     // workspace status notifications → activity timeline
     if (n.refType === 'campaign' && n.refId &&
-      ['payment_released', 'campaign_closed'].includes(n.type)) {
+      ['work_approved', 'payment_released', 'campaign_closed'].includes(n.type)) {
       router.push({
         pathname: '/(business)/activity-timeline',
         params: {
@@ -196,7 +197,7 @@ export default function NotificationsScreen() {
       }
     } else if (n.type === 'new_campaign') {
       if (n.refId) {
-        router.push({ pathname: '/campaign-detail', params: { id: n.refId } });
+        router.push({ pathname: '/campaign-detail', params: { campaignId: n.refId } });
       } else if (isCreator) {
         router.push('/(creator)/');
       }

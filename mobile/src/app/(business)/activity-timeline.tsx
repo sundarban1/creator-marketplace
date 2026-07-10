@@ -26,7 +26,8 @@ import { F } from '@/utilities/constants';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
-type WS = 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED';
+type WS = 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED';
+type PS = 'UNPAID' | 'PAID' | 'RELEASED';
 
 type AppInfo = {
   id: string;
@@ -62,7 +63,9 @@ function getProgressLabels(t: TFn): string[] {
   ];
 }
 
-function progressIdx(ws: WS, paid: boolean): number {
+function progressIdx(ws: WS, paid: boolean, paymentStatus?: PS): number {
+  if (ws === 'COMPLETED')  return 9;
+  if (ws === 'APPROVED' && paymentStatus === 'RELEASED') return 8;
   if (ws === 'APPROVED')   return 7;
   if (ws === 'SUBMITTED')  return 5;
   if (ws === 'IN_PROGRESS') return 4;
@@ -113,15 +116,19 @@ function validateUrls(raw: string, t: TFn): string {
   return '';
 }
 
-function statusLabel(ws: WS, paid: boolean, t: TFn) {
-  if (ws === 'APPROVED')    return t('activityTimeline.statusCompleted');
+function statusLabel(ws: WS, paid: boolean, t: TFn, paymentStatus?: PS) {
+  if (ws === 'COMPLETED')   return t('activityTimeline.statusCompleted');
+  if (ws === 'APPROVED' && paymentStatus === 'RELEASED') return t('activityTimeline.statusReleased');
+  if (ws === 'APPROVED')    return t('activityTimeline.statusApproved');
   if (ws === 'SUBMITTED')   return t('activityTimeline.statusUnderReview');
   if (ws === 'IN_PROGRESS') return t('activityTimeline.statusInProgress');
   if (paid)                 return t('activityTimeline.statusWaitingOnCreator');
   return t('activityTimeline.statusWaitingPayment');
 }
-function statusColor(ws: WS, paid: boolean) {
-  if (ws === 'APPROVED')    return '#16A34A';
+function statusColor(ws: WS, paid: boolean, paymentStatus?: PS) {
+  if (ws === 'COMPLETED')   return '#16A34A';
+  if (ws === 'APPROVED' && paymentStatus === 'RELEASED') return '#0EA5E9';
+  if (ws === 'APPROVED')    return '#65A30D';
   if (ws === 'SUBMITTED')   return '#D97706';
   if (ws === 'IN_PROGRESS') return '#7C3AED';
   if (paid)                 return '#0EA5E9';
@@ -261,10 +268,10 @@ function ProgressTracker({ current, scrollRef, labels }: { current: number; scro
 
 // ─── Action Card ──────────────────────────────────────────────────────────────
 
-function ActionCard({ ws, paid, isCreator, isFree, submitting, onPay, onStartWork, onUpload, onReview, onApprove, onRevision }: {
-  ws: WS; paid: boolean; isCreator: boolean; isFree: boolean; submitting: boolean;
+function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, onPay, onStartWork, onUpload, onReview, onApprove, onRevision, onCompleteProject }: {
+  ws: WS; paid: boolean; paymentStatus: PS; isCreator: boolean; isFree: boolean; submitting: boolean;
   onPay: () => void; onStartWork: () => void; onUpload: () => void;
-  onReview: () => void; onApprove: () => void; onRevision: () => void;
+  onReview: () => void; onApprove: () => void; onRevision: () => void; onCompleteProject: () => void;
 }) {
   const C = useAppColors();
   const { t } = useLanguage();
@@ -370,21 +377,53 @@ function ActionCard({ ws, paid, isCreator, isFree, submitting, onPay, onStartWor
     </View>
   );
 
-  // APPROVED — business
-  if (!isCreator) return (
+  // Project fully complete — both roles
+  if (ws === 'COMPLETED') return (
     <View style={[ac.card, { backgroundColor: '#fff', borderLeftColor: '#16A34A' }]}>
       <View style={[ac.iconBg, { backgroundColor: '#DCFCE7' }]}><Ionicons name="checkmark-done-circle-outline" size={26} color="#16A34A" /></View>
-      <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acCompletedBizTitle')}</Text>
-      <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acCompletedBizSub')}</Text>
+      <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acProjectCompleteTitle')}</Text>
+      <Text style={[ac.sub, { color: C.textSecondary }]}>{isCreator ? t('activityTimeline.acProjectCompleteCreatorSub') : t('activityTimeline.acProjectCompleteBizSub')}</Text>
     </View>
   );
 
-  // APPROVED — creator
+  // APPROVED, payment released — business: waiting on creator to confirm
+  if (!isCreator && paymentStatus === 'RELEASED') return (
+    <View style={[ac.card, { backgroundColor: '#fff', borderLeftColor: '#0EA5E9' }]}>
+      <View style={[ac.iconBg, { backgroundColor: '#E0F2FE' }]}><Ionicons name="cash-outline" size={26} color="#0EA5E9" /></View>
+      <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acReleasedBizTitle')}</Text>
+      <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acReleasedBizSub')}</Text>
+    </View>
+  );
+
+  // APPROVED, payment still held — business: admin will release it
+  if (!isCreator) return (
+    <View style={[ac.card, { backgroundColor: '#fff', borderLeftColor: '#16A34A' }]}>
+      <View style={[ac.iconBg, { backgroundColor: '#DCFCE7' }]}><Ionicons name="checkmark-done-circle-outline" size={26} color="#16A34A" /></View>
+      <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acApprovedBizTitle')}</Text>
+      <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acApprovedBizSub')}</Text>
+    </View>
+  );
+
+  // APPROVED, payment released — creator: verify + complete
+  if (paymentStatus === 'RELEASED') return (
+    <View style={[ac.card, { backgroundColor: '#fff', borderLeftColor: '#0EA5E9' }]}>
+      <View style={[ac.iconBg, { backgroundColor: '#E0F2FE' }]}><Ionicons name="wallet-outline" size={26} color="#0EA5E9" /></View>
+      <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acReleasedCreatorTitle')}</Text>
+      <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acReleasedCreatorSub')}</Text>
+      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[ac.btn, { backgroundColor: '#0EA5E9', opacity: submitting ? 0.75 : 1 }]} onPress={onCompleteProject} disabled={submitting}>
+        {submitting
+          ? <ActivityIndicator size="small" color="#fff" />
+          : <><Ionicons name="checkmark-circle-outline" size={16} color="#fff" /><Text style={ac.btnTxt}>{t('activityTimeline.acReleasedCreatorBtn')}</Text></>}
+      </Pressable>
+    </View>
+  );
+
+  // APPROVED, payment still held — creator: admin will release it
   return (
     <View style={[ac.card, { backgroundColor: '#fff', borderLeftColor: '#16A34A' }]}>
       <View style={[ac.iconBg, { backgroundColor: '#DCFCE7' }]}><Ionicons name="trophy-outline" size={26} color="#16A34A" /></View>
-      <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acCompletedCreatorTitle')}</Text>
-      <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acCompletedCreatorSub')}</Text>
+      <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acApprovedCreatorTitle')}</Text>
+      <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acApprovedCreatorSub')}</Text>
     </View>
   );
 }
@@ -494,7 +533,7 @@ export default function CampaignWorkspaceScreen() {
     if (!loading && progressScrollRef.current) {
       const ws   = app?.workStatus ?? 'NONE';
       const paid = campaign?.campaignType === 'OPEN_EVENT' || campaign?.paymentStatus === 'PAID' || campaign?.paymentStatus === 'RELEASED';
-      const idx  = progressIdx(ws, paid);
+      const idx  = progressIdx(ws, paid, app?.paymentStatus);
       const x    = Math.max(0, idx * STEP_W - 120);
       setTimeout(() => progressScrollRef.current?.scrollTo({ x, animated: true }), 150);
     }
@@ -557,6 +596,20 @@ export default function CampaignWorkspaceScreen() {
       showToast(t('activityTimeline.toastWorkApproved'));
     } catch (e: any) {
       showToast(e?.message ?? 'Approval failed. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleCompleteProject() {
+    if (!app) return;
+    setSubmitting(true);
+    try {
+      await campaignService.completeProject(app.id);
+      setApp(a => a ? { ...a, workStatus: 'COMPLETED' } : a);
+      showToast(t('activityTimeline.toastProjectCompleted'));
+    } catch (e: any) {
+      showToast(e?.message ?? 'Failed to complete project. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -628,9 +681,9 @@ export default function CampaignWorkspaceScreen() {
   const ws   = app?.workStatus ?? 'NONE';
   const isFreeEvent = campaign?.campaignType === 'OPEN_EVENT';
   const paid = isFreeEvent || app?.paymentStatus === 'PAID' || app?.paymentStatus === 'RELEASED';
-  const pIdx = progressIdx(ws, paid);
-  const sLbl = statusLabel(ws, paid, t);
-  const sClr = statusColor(ws, paid);
+  const pIdx = progressIdx(ws, paid, app?.paymentStatus);
+  const sLbl = statusLabel(ws, paid, t, app?.paymentStatus);
+  const sClr = statusColor(ws, paid, app?.paymentStatus);
   const progressLabels = getProgressLabels(t);
 
   const crFee = app?.proposedRateRaw ?? 0;
@@ -728,13 +781,14 @@ export default function CampaignWorkspaceScreen() {
 
         {/* ── Current Action Card ── */}
         <ActionCard
-          ws={ws} paid={paid} isCreator={isCreator} isFree={isFreeEvent} submitting={submitting}
+          ws={ws} paid={paid} paymentStatus={app?.paymentStatus ?? 'UNPAID'} isCreator={isCreator} isFree={isFreeEvent} submitting={submitting}
           onPay={() => setShowPay(true)}
           onStartWork={handleStartWork}
           onUpload={() => setShowUpload(true)}
           onReview={() => setShowReview(true)}
           onApprove={handleApprove}
           onRevision={() => setShowRevision(true)}
+          onCompleteProject={handleCompleteProject}
         />
 
         {/* ── Activity Timeline ── */}
@@ -802,12 +856,12 @@ export default function CampaignWorkspaceScreen() {
             <View style={py.row}>
               <Text style={[py.label, { color: C.textSecondary }]}>{t('activityTimeline.paymentStatus')}</Text>
               <View style={[py.statusChip, {
-                backgroundColor: ws === 'APPROVED' ? '#DCFCE7' : paid ? '#E0F2FE' : '#FEF2F2',
+                backgroundColor: app?.paymentStatus === 'RELEASED' ? '#DCFCE7' : paid ? '#E0F2FE' : '#FEF2F2',
               }]}>
                 <Text style={[py.statusChipTxt, {
-                  color: ws === 'APPROVED' ? '#16A34A' : paid ? '#0EA5E9' : '#EF4444',
+                  color: app?.paymentStatus === 'RELEASED' ? '#16A34A' : paid ? '#0EA5E9' : '#EF4444',
                 }]}>
-                  {ws === 'APPROVED' ? t('activityTimeline.paymentStatusReleased') : paid ? t('activityTimeline.paymentStatusHeld') : t('activityTimeline.paymentStatusWaiting')}
+                  {app?.paymentStatus === 'RELEASED' ? t('activityTimeline.paymentStatusReleased') : paid ? t('activityTimeline.paymentStatusHeld') : t('activityTimeline.paymentStatusWaiting')}
                 </Text>
               </View>
             </View>
@@ -819,7 +873,7 @@ export default function CampaignWorkspaceScreen() {
         </View>
 
         {/* ── Cancel Event button (business only) ── */}
-        {!isCreator && ws !== 'APPROVED' && (
+        {!isCreator && ws !== 'APPROVED' && ws !== 'COMPLETED' && (
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
             style={[s.cancelBtn, { borderColor: '#FECACA', backgroundColor: '#FEF2F2' }]}
             onPress={() => setShowCancel(true)}

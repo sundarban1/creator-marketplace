@@ -182,6 +182,18 @@ export default function BusinessProfileScreen() {
             <Ionicons name="chevron-forward" size={22} color={C.brinjal1} />
           </Pressable>
 
+          {/* Analytics CTA */}
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            style={[styles.editCta, { backgroundColor: C.surface, borderColor: C.border }]}
+            onPress={() => router.push('/(business)/analytics' as never)}>
+            <Ionicons name="stats-chart" size={22} color={C.brinjal1} />
+            <View style={styles.editCtaText}>
+              <Text style={[styles.editCtaTitle, { color: C.text }]}>{t('analytics.headerTitle')}</Text>
+              <Text style={[styles.editCtaSub, { color: C.textSecondary }]}>{t('analytics.viewInsights')}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={22} color={C.brinjal1} />
+          </Pressable>
+
           {/* About */}
           {profile?.description ? (
             <View style={[styles.infoCard, { backgroundColor: C.surface }]}>

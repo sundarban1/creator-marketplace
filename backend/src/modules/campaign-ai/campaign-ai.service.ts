@@ -112,7 +112,7 @@ export class CampaignAiService {
     }
   }
 
-  async generateDraft(prompt: string): Promise<AiCampaignDraft & { aiSuggestedCategories: string[]; aiSuggestedPlatforms: string[] }> {
+  async generateDraft(prompt: string): Promise<AiCampaignDraft & { aiSuggestedCategories: string[]; aiSuggestedPlatforms: string[]; platforms: string[] }> {
     const realCategories = await this.categoryRepo.findManyPublic(CategoryScope.BUSINESS);
     const categoryNames = realCategories.map((c) => c.name);
 
@@ -163,7 +163,7 @@ export class CampaignAiService {
   private matchToRealTaxonomy(
     draft: AiCampaignDraft,
     realCategories: string[],
-  ): AiCampaignDraft & { aiSuggestedCategories: string[]; aiSuggestedPlatforms: string[] } {
+  ): AiCampaignDraft & { aiSuggestedCategories: string[]; aiSuggestedPlatforms: string[]; platforms: string[] } {
     const matchedCategory = fuzzyMatch(draft.category, realCategories) ?? realCategories[0] ?? draft.category;
     if (matchedCategory !== draft.category && !realCategories.some((c) => c === draft.category)) {
       logger.warn({ guess: draft.category, matched: matchedCategory }, 'AI category guess did not match real taxonomy, falling back');
@@ -183,6 +183,7 @@ export class CampaignAiService {
       ...draft,
       category: matchedCategory,
       platform: matchedPlatform,
+      platforms: [matchedPlatform],
       aiSuggestedCategories,
       aiSuggestedPlatforms,
     };

@@ -12,6 +12,7 @@ import { AIExperience } from './sections/AIExperience';
 import { TrustStats } from './sections/TrustStats';
 import { Testimonials } from './sections/Testimonials';
 import { MobileAppShowcase } from './sections/MobileAppShowcase';
+import { ContactSection } from './sections/ContactSection';
 import { FinalCTA } from './sections/FinalCTA';
 
 function LandingPageInner() {
@@ -28,6 +29,7 @@ function LandingPageInner() {
       <TrustStats />
       <Testimonials />
       <MobileAppShowcase />
+      <ContactSection />
       <FinalCTA />
       <LandingFooter />
     </div>

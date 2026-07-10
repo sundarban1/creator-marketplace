@@ -5,6 +5,7 @@ import { CreatorRepository } from '../creator/creator.repository';
 import { BusinessRepository } from '../business/business.repository';
 import { MessagingRepository } from './messaging.repository';
 import { notificationService, sendExpoPush } from '../notifications/notification.service';
+import { analyticsService } from '../analytics/analytics.service';
 import { emitToUser } from '../../socket';
 import type { StartConversationInput, SendMessageInput } from './messaging.schema';
 
@@ -182,6 +183,15 @@ export class MessagingService {
     }
     if (conversation.status === 'DECLINED') {
       throw new AppError('This conversation request was declined', 403);
+    }
+
+    // Response-time analytics: only counts as a "response" if the immediately
+    // preceding message came from the OTHER party — two consecutive messages
+    // from the same sender aren't a reply to anything.
+    const lastMessage = await this.repo.findLastMessage(conversationId);
+    if (lastMessage && lastMessage.senderId !== userId && (role === 'CREATOR' || role === 'BUSINESS')) {
+      const minutes = (Date.now() - lastMessage.createdAt.getTime()) / 60000;
+      analyticsService.recordResponseTime(userId, role, minutes);
     }
 
     const raw     = await this.repo.createMessage({ conversationId, senderId: userId, content: input.content });

@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { SavedCreatorRepository } from './saved-creator.repository';
 import { BusinessRepository } from './business.repository';
 import { notificationService } from '../notifications/notification.service';
+import { analyticsService } from '../analytics/analytics.service';
 import { AppError } from '../../middleware/error';
 import prisma from '../../prisma';
 
@@ -93,6 +94,7 @@ export class SavedCreatorController {
             select: { userId: true },
           });
           if (creator) {
+            analyticsService.incrInvitationReceived(creator.userId);
             notificationService.create({
               userId:  creator.userId,
               type:    'campaign_invitation',

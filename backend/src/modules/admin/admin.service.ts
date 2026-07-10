@@ -6,6 +6,7 @@ import { BusinessReferralRepository } from '../business-referral/business-referr
 import { isBusinessProfileComplete, REFERRAL_HOLD_DAYS } from '../business-referral/business-referral.service';
 import { CampaignRepository } from '../campaign/campaign.repository';
 import { notificationService } from '../notifications/notification.service';
+import { analyticsService } from '../analytics/analytics.service';
 import { AppError } from '../../middleware/error';
 
 export class AdminService {
@@ -159,6 +160,7 @@ export class AdminService {
     if (app.paymentStatus !== 'PAID') throw new AppError('No escrow payment is held for this application', 400);
 
     const updated = await this.campaignRepo.releaseApplicationPayment(appId, adminUserId);
+    analyticsService.incrPaymentReleased(app.creator.userId, app.campaign.business.userId, app.proposedRate);
 
     notificationService.create({
       userId:  app.creator.userId,

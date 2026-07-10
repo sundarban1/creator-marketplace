@@ -21,7 +21,7 @@ export class BusinessRepository {
 
     if (params.platform || (params.locations && params.locations.length > 0)) {
       const campaignWhere: Prisma.CampaignWhereInput = { status: 'ACTIVE' };
-      if (params.platform) campaignWhere.platform = params.platform;
+      if (params.platform) campaignWhere.platforms = { has: params.platform };
       if (params.locations && params.locations.length > 0) {
         campaignWhere.OR = params.locations.map((loc) => ({
           location: { contains: loc, mode: 'insensitive' as const },
@@ -77,7 +77,7 @@ export class BusinessRepository {
           select: {
             id:          true,
             title:       true,
-            platform:    true,
+            platforms:   true,
             category:    true,
             budgetMin:   true,
             budgetMax:   true,

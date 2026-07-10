@@ -1,6 +1,7 @@
 import { AppError } from '../../middleware/error';
 import { WalletRepository } from './wallet.repository';
 import { REFERRED_FIRST_EVENT_BONUS } from '../referral/referral.service';
+import { notificationService } from '../notifications/notification.service';
 import type { WithdrawInput } from './wallet.schema';
 
 export class WalletService {
@@ -50,6 +51,15 @@ export class WalletService {
 
     await this.repo.createWithdrawal(profile.id, input.amount, input.method);
     const balances = await this.computeBalances(profile.id);
+
+    notificationService.createForAdmins({
+      type:    'money_withdrawn',
+      title:   '💵 Withdrawal Requested',
+      body:    `${profile.fullName ?? 'A creator'} withdrew Rs. ${input.amount.toLocaleString()} via ${input.method}.`,
+      refId:   profile.id,
+      refType: 'creator',
+    }).catch(() => {});
+
     return { ...balances, paymentMethods: profile.paymentMethods };
   }
 

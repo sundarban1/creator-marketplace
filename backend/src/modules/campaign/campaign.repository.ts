@@ -10,7 +10,7 @@ export class CampaignRepository {
     featureImageUrl?: string;
     category: string;
     goals?: string[];
-    platform: string;
+    platforms: string[];
     minFollowers: number;
     contentType: string;
     deliverables: string;
@@ -87,7 +87,7 @@ export class CampaignRepository {
       where.category = { in: filters.category, mode: 'insensitive' };
     }
     if (filters.platform?.length) {
-      where.platform = { in: filters.platform, mode: 'insensitive' };
+      where.platforms = { hasSome: filters.platform };
     }
     if (filters.campaignType) {
       where.campaignType = filters.campaignType;
@@ -243,7 +243,7 @@ export class CampaignRepository {
     featureImageUrl: string | null;
     category: string;
     goals: string[];
-    platform: string;
+    platforms: string[];
     minFollowers: number;
     contentType: string;
     deliverables: string;
@@ -285,12 +285,13 @@ export class CampaignRepository {
   }
 
   async getDistinctPlatforms(): Promise<string[]> {
-    const rows = await prisma.campaign.findMany({
-      where: { status: 'ACTIVE' },
-      select: { platform: true },
-      distinct: ['platform'],
-      orderBy: { platform: 'asc' },
-    });
+    // `distinct` can't target an array column — flatten with unnest() instead.
+    const rows = await prisma.$queryRaw<{ platform: string }[]>`
+      SELECT DISTINCT unnest(platforms) AS platform
+      FROM campaigns
+      WHERE status = 'ACTIVE'
+      ORDER BY platform ASC
+    `;
     return rows.map((r) => r.platform).filter(Boolean);
   }
 
@@ -379,7 +380,7 @@ export class CampaignRepository {
             select: { id: true, fullName: true, avatarUrl: true, location: true },
           },
           campaign: {
-            select: { id: true, title: true, platform: true, campaignType: true, paymentStatus: true },
+            select: { id: true, title: true, platforms: true, campaignType: true, paymentStatus: true },
           },
         },
       }),
@@ -441,7 +442,7 @@ export class CampaignRepository {
               id: true,
               title: true,
               category: true,
-              platform: true,
+              platforms: true,
               budgetMin: true,
               budgetMax: true,
               deadline: true,
@@ -494,6 +495,13 @@ export class CampaignRepository {
     return prisma.application.update({
       where: { id: appId },
       data: { workStatus: WorkStatus.APPROVED },
+    });
+  }
+
+  async completeProject(appId: string) {
+    return prisma.application.update({
+      where: { id: appId },
+      data: { workStatus: WorkStatus.COMPLETED },
     });
   }
 

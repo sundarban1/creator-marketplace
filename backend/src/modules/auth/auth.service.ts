@@ -15,6 +15,7 @@ import { sendPasswordResetOtpEmail, sendOtpEmail, sendWelcomeEmail } from '../..
 import { AuthRepository } from './auth.repository';
 import { ReferralService } from '../referral/referral.service';
 import { BusinessReferralService } from '../business-referral/business-referral.service';
+import { notificationService } from '../notifications/notification.service';
 import { toUserDto } from './auth.dto';
 import type {
   RegisterInput,
@@ -122,6 +123,15 @@ export class AuthService {
 
     await this.issueOtp(user.id, channel, channel === 'email' ? emailForRecord : phoneForRecord!);
 
+    const joinedName = input.role === 'CREATOR' ? input.fullName : input.businessName;
+    notificationService.createForAdmins({
+      type:    input.role === 'CREATOR' ? 'creator_joined' : 'business_joined',
+      title:   input.role === 'CREATOR' ? '👤 New Creator Joined' : '🏢 New Brand Joined',
+      body:    `${joinedName ?? emailForRecord} just signed up as a ${input.role === 'CREATOR' ? 'creator' : 'brand'}.`,
+      refId:   user.id,
+      refType: 'user',
+    }).catch(() => {});
+
     return channel === 'email' ? { channel, email: emailForRecord } : { channel, phone: phoneForRecord };
   }
 
@@ -148,15 +158,24 @@ export class AuthService {
     const refreshToken = signRefreshToken(tokenPayload);
     await this.repo.updateRefreshToken(verifiedUser.id, refreshToken);
 
+    const verifiedDisplayName = verifiedUser.creatorProfile?.fullName
+      ?? verifiedUser.businessProfile?.businessName
+      ?? verifiedUser.email.split('@')[0];
+
     // Only fire a welcome email when we actually have a real, verified email —
     // a phone-signup account still holds a placeholder at this point.
     if (channel === 'email') {
-      const displayName = verifiedUser.creatorProfile?.fullName
-        ?? verifiedUser.businessProfile?.businessName
-        ?? verifiedUser.email.split('@')[0];
-      sendWelcomeEmail(verifiedUser.email, displayName, verifiedUser.role as 'CREATOR' | 'BUSINESS')
+      sendWelcomeEmail(verifiedUser.email, verifiedDisplayName, verifiedUser.role as 'CREATOR' | 'BUSINESS')
         .catch((err) => logger.error({ err, userId: verifiedUser.id }, 'Welcome email failed'));
     }
+
+    notificationService.createForAdmins({
+      type:    'account_verified',
+      title:   '✅ Account Verified',
+      body:    `${verifiedDisplayName} verified their ${channel === 'email' ? 'email' : 'phone number'}.`,
+      refId:   verifiedUser.id,
+      refType: 'user',
+    }).catch(() => {});
 
     return { user: toUserDto(verifiedUser), accessToken, refreshToken };
   }
@@ -242,6 +261,15 @@ export class AuthService {
     const user = await this.repo.findUserById(userId);
     if (!user) throw new AppError('User not found', 404);
     await this.repo.deactivateAccount(userId);
+
+    notificationService.createForAdmins({
+      type:    'account_deactivated',
+      title:   '⏸️ Account Deactivated',
+      body:    `${user.email} deactivated their account.`,
+      refId:   user.id,
+      refType: 'user',
+    }).catch(() => {});
+
     return { message: 'Account deactivated. Log in at any time to reactivate.' };
   }
 
@@ -249,6 +277,13 @@ export class AuthService {
     const user = await this.repo.findUserById(userId);
     if (!user) throw new AppError('User not found', 404);
     await this.repo.deleteAccount(userId);
+
+    notificationService.createForAdmins({
+      type:    'account_deleted',
+      title:   '🗑️ Account Deleted',
+      body:    `${user.email} permanently deleted their account.`,
+    }).catch(() => {});
+
     return { message: 'Account permanently deleted.' };
   }
 

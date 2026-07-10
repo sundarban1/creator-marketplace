@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom
 import { AuthProvider } from './context/AuthContext';
 import { CategoriesProvider } from './context/CategoriesContext';
 import { PlatformsProvider } from './context/PlatformsContext';
+import { NotificationProvider } from './context/NotificationContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { DashboardLayout } from './layouts/DashboardLayout';
 import { LandingPage } from './pages/landing/LandingPage';
@@ -21,6 +22,7 @@ import { SupportInbox } from './pages/SupportInbox';
 import { LegalEditor } from './pages/LegalEditor';
 import { Conversations } from './pages/Conversations';
 import { CampaignDetail } from './pages/CampaignDetail';
+import { UserAnalytics } from './pages/UserAnalytics';
 import { CategoriesPage } from './pages/categories/CategoriesPage';
 import { NewCategoryPage } from './pages/categories/NewCategoryPage';
 import { EditCategoryPage } from './pages/categories/EditCategoryPage';
@@ -34,7 +36,9 @@ function AdminProviders() {
   return (
     <CategoriesProvider>
       <PlatformsProvider>
-        <Outlet />
+        <NotificationProvider>
+          <Outlet />
+        </NotificationProvider>
       </PlatformsProvider>
     </CategoriesProvider>
   );
@@ -57,6 +61,7 @@ export default function App() {
                 <Route path="/businesses" element={<Businesses />} />
                 <Route path="/campaigns" element={<Campaigns />} />
                 <Route path="/campaigns/:id" element={<CampaignDetail />} />
+                <Route path="/analytics/:userId" element={<UserAnalytics />} />
                 <Route path="/categories" element={<CategoriesPage />} />
                 <Route path="/categories/new" element={<NewCategoryPage />} />
                 <Route path="/categories/edit/:id" element={<EditCategoryPage />} />

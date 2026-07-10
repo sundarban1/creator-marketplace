@@ -8,7 +8,7 @@ export interface CampaignDto {
   featureImageUrl: string | null;
   category: string;
   goals: string[];
-  platform: string;
+  platforms: string[];
   minFollowers: number;
   contentType: string;
   deliverables: string;
@@ -71,7 +71,7 @@ export interface ApplicationDto {
     id?: string;
     title: string;
     category?: string;
-    platform?: string;
+    platforms?: string[];
     budgetMin?: number;
     budgetMax?: number;
     deadline?: string;
@@ -101,7 +101,7 @@ type RawCampaign = {
   featureImageUrl: string | null;
   category: string;
   goals: Prisma.JsonValue;
-  platform: string;
+  platforms: string[];
   minFollowers: number;
   contentType: string;
   deliverables: string;
@@ -148,7 +148,7 @@ export function toCampaignDto(c: RawCampaign): CampaignDto {
     featureImageUrl: c.featureImageUrl,
     category:       c.category,
     goals:          (c.goals ?? []) as string[],
-    platform:       c.platform,
+    platforms:      c.platforms,
     minFollowers:   c.minFollowers,
     contentType:    c.contentType,
     deliverables:   c.deliverables,
@@ -208,7 +208,7 @@ type RawApplication = {
     id?: string;
     title: string;
     category?: string;
-    platform?: string;
+    platforms?: string[];
     budgetMin?: number;
     budgetMax?: number;
     deadline?: Date;

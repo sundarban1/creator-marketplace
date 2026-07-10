@@ -196,7 +196,7 @@ export interface ApiCampaign {
   id:        string;
   title:     string;
   category:  string;
-  platform:  string;
+  platforms: string[];
   budgetMin: number;
   budgetMax: number;
   status:    string;
@@ -204,6 +204,18 @@ export interface ApiCampaign {
   createdAt: string;
   business:  { businessName: string; logoUrl?: string | null };
   _count:    { applications: number };
+}
+
+export interface ApiNotification {
+  id:        string;
+  userId:    string;
+  type:      string;
+  title:     string;
+  body:      string;
+  isRead:    boolean;
+  refId?:    string | null;
+  refType?:  string | null;
+  createdAt: string;
 }
 
 export interface ApiApplication {
@@ -232,7 +244,7 @@ export interface ApiCampaignDetail {
   title:          string;
   description:    string;
   category:       string;
-  platform:       string;
+  platforms:      string[];
   budgetMin:      number;
   budgetMax:      number;
   paymentType:    string;
@@ -272,6 +284,74 @@ export interface ApiCampaignDetail {
   applications:   ApiApplication[];
   _count:         { applications: number };
 }
+
+export type AnalyticsRange = '7d' | '30d' | '90d' | '12mo' | 'all';
+
+export interface ApiCreatorAnalytics {
+  range: AnalyticsRange;
+  totals: {
+    totalProfileViews:      number;
+    profileViewsInRange:    number;
+    profileViewsLast30Days: number;
+    profileViewsTrendPct:   number;
+    totalEarnings:          number;
+    pendingEarnings:        number;
+    invitationsReceived:    number;
+    applicationsSubmitted:  number;
+    applicationsAccepted:   number;
+    applicationsRejected:   number;
+    activeCampaigns:        number;
+    completedCampaigns:     number;
+    averageRating:          number;
+    reviewCount:            number;
+    responseTimeAvgMins:    number;
+    completionRate:         number;
+    profileCompletion:      { percent: number; missing: string[] };
+  };
+  campaignBreakdown: {
+    invitationsReceived:   number;
+    applicationsSubmitted: number;
+    accepted:  number;
+    rejected:  number;
+    active:    number;
+    completed: number;
+  };
+  referrals: {
+    totalInvites:        number;
+    successfulReferrals: number;
+    pendingRewards:      number;
+    rewardsEarned:       number;
+  };
+  charts: {
+    earningsTrend: { bucket: string; amount: number }[];
+  };
+}
+
+export interface ApiBrandAnalytics {
+  range: AnalyticsRange;
+  totals: {
+    campaignsCreated:     number;
+    activeCampaigns:      number;
+    completedCampaigns:   number;
+    totalSpend:           number;
+    applicationsReceived: number;
+    creatorsHired:        number;
+    averageRatingGiven:   number;
+    ratingsGivenCount:    number;
+    responseTimeAvgMins:  number;
+  };
+  campaignStatus: {
+    draft: number; active: number; paused: number; closed: number; cancelled: number;
+  };
+  charts: {
+    monthlySpending:       { bucket: string; amount: number }[];
+    applicationsReceived:  { bucket: string; count: number }[];
+  };
+}
+
+export type ApiUserAnalytics =
+  | ({ role: 'CREATOR' } & ApiCreatorAnalytics)
+  | ({ role: 'BUSINESS' } & ApiBrandAnalytics);
 
 export type PlatformSettings = Record<string, boolean | string | number>;
 
@@ -384,6 +464,20 @@ export const api = {
     logout: () => request<null>('POST', '/api/auth/logout'),
   },
 
+  notifications: {
+    list: () =>
+      request<ApiNotification[]>('GET', '/api/notifications'),
+
+    badge: () =>
+      request<{ count: number }>('GET', '/api/notifications/badge'),
+
+    markRead: (id: string) =>
+      request<unknown>('PATCH', `/api/notifications/${id}/read`),
+
+    markAllRead: () =>
+      request<unknown>('PATCH', '/api/notifications/read-all'),
+  },
+
   admin: {
     stats: () =>
       request<ApiStats>('GET', '/api/admin/stats'),
@@ -456,6 +550,9 @@ export const api = {
     releasePayment: (applicationId: string) =>
       request<ApiApplication>('PATCH', `/api/admin/applications/${applicationId}/release-payment`),
 
+    analytics: (userId: string, range?: AnalyticsRange) =>
+      request<ApiUserAnalytics>('GET', `/api/admin/analytics/${userId}`, undefined, range ? { range } : undefined),
+
     categories: () =>
       request<ApiCategory[]>('GET', '/api/admin/categories'),
 
@@ -518,6 +615,9 @@ export const api = {
 
     updateReportStatus: (id: string, status: string) =>
       request<unknown>('PATCH', `/api/support/reports/${id}/status`, { status }),
+
+    submitPublicContact: (data: { name: string; email: string; topic: string; message: string }) =>
+      request<unknown>('POST', '/api/support/contact-public', data),
   },
 
   legal: {
