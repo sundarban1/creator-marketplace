@@ -159,7 +159,7 @@ type FormData = {
   goals: string[];
   budget: string;
   creatorType: string[];
-  platform: string;
+  platforms: string[];
   location: string;
   creatorsNeeded: number;
   deliverables: Record<string, number>;
@@ -501,6 +501,50 @@ function ChipGroup({
   );
 }
 
+// ─── PlatformChipGroup (multi-select, capped) ──────────────────────────────────
+
+function PlatformChipGroup({
+  options, values, onChange, colors, error, max,
+}: {
+  options: readonly string[];
+  values: string[];
+  onChange: (v: string[]) => void;
+  colors: ReturnType<typeof useAppColors>;
+  error?: string;
+  max: number;
+}) {
+  const C = colors;
+  function toggle(opt: string) {
+    if (values.includes(opt)) { onChange(values.filter((v) => v !== opt)); return; }
+    if (values.length >= max) return;
+    onChange([...values, opt]);
+  }
+  return (
+    <View style={{ gap: 6 }}>
+      <View style={cg.wrap}>
+        {options.map((opt) => {
+          const sel = values.includes(opt);
+          const disabled = !sel && values.length >= max;
+          return (
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+              key={opt}
+              disabled={disabled}
+              style={[cg.chip, {
+                borderColor: sel ? C.brinjal1 : C.border,
+                backgroundColor: sel ? C.primaryLight : C.surface,
+                opacity: disabled ? 0.4 : 1,
+              }]}
+              onPress={() => toggle(opt)}>
+              <Text style={[cg.chipText, { color: sel ? C.brinjal1 : C.textSecondary, fontWeight: sel ? '700' : '500' }]}>{opt}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
+      {error && <Text style={cg.error}>{error}</Text>}
+    </View>
+  );
+}
+
 // ─── CalendarGrid ─────────────────────────────────────────────────────────────
 
 function CalendarGrid({ value, onChange, colors }: {
@@ -777,7 +821,7 @@ export default function CreateCampaignScreen() {
     goals: [],
     budget: '',
     creatorType: [],
-    platform: 'Instagram',
+    platforms: ['Instagram'],
     location: '',
     creatorsNeeded: 1,
     deliverables: { ...DEFAULT_DELIVERABLES },
@@ -878,7 +922,7 @@ export default function CreateCampaignScreen() {
       goals:          [],
       budget:         '',
       creatorType:    [],
-      platform:       'Instagram',
+      platforms:      ['Instagram'],
       location:       prev.location,
       creatorsNeeded: 1,
       deliverables:   { ...DEFAULT_DELIVERABLES },
@@ -927,7 +971,7 @@ export default function CreateCampaignScreen() {
       setForm((prev) => ({
         ...prev,
         template:    draft.category,
-        platform:    draft.platform,
+        platforms:   draft.platforms.slice(0, 3),
         title:       draft.title,
         description: draft.description,
         goals:       prev.goals.length > 0 ? prev.goals : ['Brand Awareness'],
@@ -974,7 +1018,7 @@ export default function CreateCampaignScreen() {
       const description = await campaignService.suggestDescription({
         title:        form.title.trim() || undefined,
         category:     form.template || undefined,
-        platform:     form.platform || undefined,
+        platform:     form.platforms.length > 0 ? form.platforms.join(', ') : undefined,
         deliverables: deliverables || undefined,
       });
       update('description', description);
@@ -1026,7 +1070,7 @@ export default function CreateCampaignScreen() {
       featureImageUrl: form.featureImageUrl ?? undefined,
       category:       form.template,
       goals:          form.goals,
-      platform:       form.platform,
+      platforms:      form.platforms,
       location:       form.location.trim() || undefined,
       locationLat:    locationLat ?? undefined,
       locationLng:    locationLng ?? undefined,
@@ -1074,8 +1118,9 @@ export default function CreateCampaignScreen() {
   async function handlePublish() {
     if (form.eventType === 'PAID_CAMPAIGN') {
       const errs: ReviewErrors = {};
-      if (!form.title.trim()) errs.title    = t('createEvent.errNoTitle');
-      if (!form.platform)     errs.platform = t('createEvent.errNoPlatform');
+      if (!form.title.trim())        errs.title    = t('createEvent.errNoTitle');
+      if (form.platforms.length < 1) errs.platform = t('createEvent.errNoPlatform');
+      else if (form.platforms.length > 3) errs.platform = t('createEvent.errMaxPlatform');
       if (!form.deadline)     errs.deadline = t('createEvent.errNoDeadline');
       if (Object.keys(errs).length > 0) { setReviewErrors(errs); return; }
       setReviewErrors({});
@@ -1110,7 +1155,7 @@ export default function CreateCampaignScreen() {
           featureImageUrl: form.featureImageUrl ?? undefined,
           category:       form.template,
           goals:          ['Event Promotion', 'Brand Awareness'],
-          platform:       form.platform || '',
+          platforms:      form.platforms,
           location:       form.venue.trim() || undefined,
           locationLat:    locationLat ?? undefined,
           locationLng:    locationLng ?? undefined,
@@ -1410,15 +1455,16 @@ export default function CreateCampaignScreen() {
 
                   {/* Platform */}
                   <SectionCard title={t('createEvent.secPlatformTitle')} sub={t('createEvent.secPlatformSub')} colors={C}>
-                    <ChipGroup
+                    <PlatformChipGroup
                       options={platformOptions}
-                      value={form.platform}
+                      values={form.platforms}
                       onChange={(v) => {
-                        update('platform', v);
+                        update('platforms', v);
                         if (reviewErrors.platform) setReviewErrors((e) => ({ ...e, platform: undefined }));
                       }}
                       colors={C}
                       error={reviewErrors.platform}
+                      max={3}
                     />
                   </SectionCard>
 
@@ -1717,8 +1763,8 @@ export default function CreateCampaignScreen() {
                   <SectionCard title={t('createEvent.secPlatformOptTitle')} sub={t('createEvent.secPlatformOptSub')} colors={C}>
                     <ChipGroup
                       options={['Instagram', 'TikTok', 'YouTube', 'Facebook', notRequiredLabel]}
-                      value={form.platform || notRequiredLabel}
-                      onChange={(v) => update('platform', v === notRequiredLabel ? '' : v)}
+                      value={form.platforms[0] ?? notRequiredLabel}
+                      onChange={(v) => update('platforms', v === notRequiredLabel ? [] : [v])}
                       colors={C}
                     />
                   </SectionCard>
