@@ -24,6 +24,7 @@ import {
 import { AppModal } from '@/components/AppModal';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useKeyboardOffset } from '@/hooks/useKeyboardOffset';
+import { useGoogleAccessToken } from '@/hooks/useGoogleAccessToken';
 import { useAppColors, useIsDark } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/components/Toast';
@@ -35,11 +36,22 @@ const ColorCtx = createContext<ColorsType>(COLORS);
 
 // ── Static config ─────────────────────────────────────────────
 
-const ALL_SOCIAL_PLATFORMS: { id: string; label: string; iconName: string; color: string; followersLabel: string }[] = [
-  { id: 'instagram', label: 'Instagram',  iconName: 'instagram', color: '#E1306C', followersLabel: 'Followers' },
+// Platforms with a real "Connect Account" OAuth flow (pulls profile URL + follower/
+// subscriber count directly from the platform — no manual entry). Only YouTube is
+// actually wired up today; the rest need their own developer-app approval first
+// (Meta App Review for Instagram/Facebook, TikTok for Developers review) before they
+// can go from "Coming soon" to functional.
+const CONNECTABLE_SOCIAL_PLATFORMS: { id: string; label: string; iconName: string; color: string; followersLabel: string }[] = [
   { id: 'tiktok',    label: 'TikTok',     iconName: 'tiktok',    color: '#010101', followersLabel: 'Followers' },
-  { id: 'youtube',   label: 'YouTube',    iconName: 'youtube',   color: '#FF0000', followersLabel: 'Subscribers' },
   { id: 'facebook',  label: 'Facebook',   iconName: 'facebook',  color: '#1877F2', followersLabel: 'Followers' },
+  { id: 'instagram', label: 'Instagram',  iconName: 'instagram', color: '#E1306C', followersLabel: 'Followers' },
+  { id: 'youtube',   label: 'YouTube',    iconName: 'youtube',   color: '#FF0000', followersLabel: 'Subscribers' },
+];
+const OAUTH_LIVE_PLATFORM_IDS = new Set(['youtube']);
+
+// Remaining platforms still use manual entry (no OAuth data-access app for these is
+// in scope right now).
+const ALL_SOCIAL_PLATFORMS: { id: string; label: string; iconName: string; color: string; followersLabel: string }[] = [
   { id: 'twitter',   label: 'X (Twitter)', iconName: 'twitter',  color: '#1DA1F2', followersLabel: 'Followers' },
   { id: 'linkedin',  label: 'LinkedIn',   iconName: 'linkedin',  color: '#0A66C2', followersLabel: 'Connections' },
   { id: 'pinterest', label: 'Pinterest',  iconName: 'pinterest', color: '#E60023', followersLabel: 'Followers' },
@@ -47,8 +59,10 @@ const ALL_SOCIAL_PLATFORMS: { id: string; label: string; iconName: string; color
   { id: 'twitch',    label: 'Twitch',     iconName: 'twitch',    color: '#9146FF', followersLabel: 'Followers' },
 ];
 
+// Union of both — used to look up label/icon/color for ANY existing account
+// (including ones from before this redesign, e.g. a manually-added Instagram row).
 const PLATFORM_CONFIG: Record<string, { id: string; label: string; iconName: string; color: string; followersLabel: string }> =
-  Object.fromEntries(ALL_SOCIAL_PLATFORMS.map((p) => [p.id, p]));
+  Object.fromEntries([...CONNECTABLE_SOCIAL_PLATFORMS, ...ALL_SOCIAL_PLATFORMS].map((p) => [p.id, p]));
 
 const PORTFOLIO_TYPES: { id: string; label: string; iconName: string; iconLib: 'fa5' | 'ion'; color: string; urlHint: string }[] = [
   { id: 'instagram', label: 'Instagram',   iconName: 'logo-instagram',    iconLib: 'ion', color: '#E1306C', urlHint: 'e.g. CxYz1AbC2d' },
@@ -220,15 +234,17 @@ export default function CreatorSettingsScreen() {
   const [subPage, setSubPage] = useState<string | null>(null);
 
   // Social accounts state (API-driven)
-  type SocialAccount = { id: string; platform: string; profileUrl: string; followers: number };
+  type SocialAccount = { id: string; platform: string; profileUrl: string; followers: number; connectedViaOAuth?: boolean };
   const [socialAccounts, setSocialAccounts] = useState<SocialAccount[]>([]);
   const [socialLoading, setSocialLoading] = useState(false);
+  const [connectingPlatform, setConnectingPlatform] = useState<string | null>(null);
   const [showAddSocial, setShowAddSocial] = useState(false);
   const [editingSocialId, setEditingSocialId] = useState<string | null>(null);
   const [socialForm, setSocialForm] = useState({ platform: '', profileUrl: '', followers: '' });
   const [socialFormErrors, setSocialFormErrors] = useState<Record<string, string>>({});
   const socialSheetAnim = useRef(new Animated.Value(0)).current;
   const keyboardOffset = useKeyboardOffset();
+  const youtubeAuth = useGoogleAccessToken(['https://www.googleapis.com/auth/youtube.readonly']);
 
   // Portfolio (in Social section)
   type PortfolioItem = { id: string; label: string; url: string };
@@ -489,6 +505,30 @@ export default function CreatorSettingsScreen() {
       setSocialLoading(false);
     }
   }
+
+  function handleConnectYoutube() {
+    setConnectingPlatform('youtube');
+    youtubeAuth.prompt((accessToken) => {
+      creatorService.connectYoutubeAccount(accessToken)
+        .then((account) => {
+          setSocialAccounts((prev) => {
+            const without = prev.filter((a) => a.platform !== 'youtube');
+            return [...without, { id: account.id, platform: account.platform, profileUrl: account.profileUrl, followers: account.followers, connectedViaOAuth: account.connectedViaOAuth }];
+          });
+          showToast(t('creatorSettings.socialAddedToast'));
+        })
+        .catch((e) => showToast(e instanceof Error ? e.message : t('creatorSettings.socialSaveFailed'), true))
+        .finally(() => setConnectingPlatform(null));
+    });
+  }
+
+  useEffect(() => {
+    if (youtubeAuth.error) {
+      showToast(youtubeAuth.error, true);
+      setConnectingPlatform(null);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [youtubeAuth.error]);
 
   function deleteSocialAccount(acct: SocialAccount) {
     const cfg = PLATFORM_CONFIG[acct.platform];
@@ -1048,7 +1088,10 @@ export default function CreatorSettingsScreen() {
   // ── Section: Social Accounts ──────────────────────────────────
 
   function renderSocialAccounts() {
-    const addedPlatforms = new Set(socialAccounts.map((a) => a.platform));
+    const connectablePlatformIds = new Set(CONNECTABLE_SOCIAL_PLATFORMS.map((p) => p.id));
+    const connectedByPlatform = new Map(socialAccounts.filter((a) => connectablePlatformIds.has(a.platform)).map((a) => [a.platform, a]));
+    const manualAccounts = socialAccounts.filter((a) => !connectablePlatformIds.has(a.platform));
+    const addedPlatforms = new Set(manualAccounts.map((a) => a.platform));
     const isEditing = !!editingSocialId;
     const selectedPlatform = ALL_SOCIAL_PLATFORMS.find((p) => p.id === socialForm.platform);
     const followersPreview = socialForm.followers ? fmt(socialForm.followers) : null;
@@ -1241,23 +1284,90 @@ export default function CreatorSettingsScreen() {
           </Animated.View>
         </Modal>
 
+        {/* ── Connect Accounts: TikTok, Facebook, Instagram, YouTube ──────
+            Pulls profile URL + follower/subscriber count straight from the
+            platform via OAuth — nothing to type in. ── */}
+        <SectionHeader title={t('creatorSettings.connectAccountsHeading')} />
+        <Card>
+          {CONNECTABLE_SOCIAL_PLATFORMS.map((p, idx) => {
+            const acct = connectedByPlatform.get(p.id);
+            const isLive = OAUTH_LIVE_PLATFORM_IDS.has(p.id);
+            const isConnecting = connectingPlatform === p.id;
+            const isLast = idx === CONNECTABLE_SOCIAL_PLATFORMS.length - 1;
+            return (
+              <View key={p.id} style={[styles.row, styles.socialRow, !isLast && { borderBottomWidth: 1, borderBottomColor: C.border }]}>
+                <View style={[styles.socialIconWrap, { backgroundColor: p.color + '18' }]}>
+                  <PlatformIcon iconName={p.iconName} size={20} color={p.color} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <View style={styles.connectPlatformNameRow}>
+                    <Text style={[styles.socialPlatformName, { color: C.text }]}>{p.label}</Text>
+                    {acct?.connectedViaOAuth && (
+                      <Ionicons name="checkmark-circle" size={14} color="#16A34A" />
+                    )}
+                  </View>
+                  {acct ? (
+                    <>
+                      <View style={styles.socialMetaRow}>
+                        <View style={[styles.socialFollowerBadge, { backgroundColor: p.color + '15' }]}>
+                          <Text style={[styles.socialFollowerBadgeText, { color: p.color }]}>
+                            {fmt(String(acct.followers))} {p.followersLabel.toLowerCase()}
+                          </Text>
+                        </View>
+                      </View>
+                      <Text style={[styles.socialUrl, { color: C.textSecondary }]} numberOfLines={1}>{acct.profileUrl}</Text>
+                    </>
+                  ) : (
+                    <Text style={[styles.connectPlatformHint, { color: C.textSecondary }]}>
+                      {isLive ? t('creatorSettings.connectHint') : t('creatorSettings.comingSoonHint')}
+                    </Text>
+                  )}
+                </View>
+                <View style={styles.socialActions}>
+                  {acct ? (
+                    <Pressable style={styles.socialDisconnectBtn} onPress={() => deleteSocialAccount(acct)}>
+                      <Ionicons name="close" size={14} color={C.error} />
+                    </Pressable>
+                  ) : isLive ? (
+                    <Pressable
+                      style={[styles.connectBtn, { backgroundColor: p.color, opacity: isConnecting ? 0.7 : 1 }]}
+                      disabled={isConnecting}
+                      onPress={() => { if (p.id === 'youtube') handleConnectYoutube(); }}>
+                      {isConnecting
+                        ? <ActivityIndicator size="small" color="#fff" />
+                        : <Text style={styles.connectBtnText}>{t('creatorSettings.connectBtn')}</Text>}
+                    </Pressable>
+                  ) : (
+                    <View style={[styles.comingSoonBtn, { borderColor: C.border }]}>
+                      <Text style={[styles.comingSoonBtnText, { color: C.textSecondary }]}>{t('creatorSettings.comingSoonBtn')}</Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+            );
+          })}
+        </Card>
+
+        {/* ── Other platforms: still manual entry (Twitter/X, LinkedIn, Pinterest, Snapchat, Twitch) ── */}
+        <SectionHeader title={t('creatorSettings.otherPlatformsHeading')} />
+
         {/* Empty state */}
-        {socialAccounts.length === 0 && (
+        {manualAccounts.length === 0 && (
           <View style={[styles.socialEmptyState, { backgroundColor: C.surface, borderColor: C.border }]}>
             <FontAwesome5 name="share-alt" size={32} color={C.textSecondary} style={{ marginBottom: 4 }} />
-            <Text style={[styles.socialEmptyTitle, { color: C.text }]}>{t('creatorSettings.noAccountsLinked')}</Text>
+            <Text style={[styles.socialEmptyTitle, { color: C.text }]}>{t('creatorSettings.noOtherAccountsLinked')}</Text>
             <Text style={[styles.socialEmptySubtitle, { color: C.textSecondary }]}>
-              {t('creatorSettings.noAccountsSub')}
+              {t('creatorSettings.noOtherAccountsSub')}
             </Text>
           </View>
         )}
 
         {/* Added accounts list */}
-        {socialAccounts.length > 0 && (
+        {manualAccounts.length > 0 && (
           <Card>
-            {socialAccounts.map((acct, idx) => {
+            {manualAccounts.map((acct, idx) => {
               const cfg = PLATFORM_CONFIG[acct.platform] ?? { id: acct.platform, iconName: 'link', label: acct.platform, color: '#6366f1', followersLabel: 'Followers' };
-              const isLast = idx === socialAccounts.length - 1;
+              const isLast = idx === manualAccounts.length - 1;
               return (
                 <View key={acct.id} style={[styles.row, styles.socialRow, !isLast && { borderBottomWidth: 1, borderBottomColor: C.border }]}>
                   <View style={[styles.socialIconWrap, { backgroundColor: cfg.color + '18' }]}>
@@ -2283,6 +2393,14 @@ const styles = StyleSheet.create({
   socialEditBtnText: { fontSize: 12, fontWeight: '700', fontFamily: F.bold },
   socialDisconnectBtn: { width: 28, height: 28, borderRadius: 8, backgroundColor: '#FEE2E2', justifyContent: 'center', alignItems: 'center' },
 
+  // ── Connect Accounts (OAuth) ─────────────────────────────────────────────────
+  connectPlatformNameRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  connectPlatformHint:    { fontSize: 11, marginTop: 2, fontFamily: F.regular },
+  connectBtn:     { borderRadius: 8, paddingHorizontal: 14, height: 32, justifyContent: 'center', alignItems: 'center', minWidth: 84 },
+  connectBtnText: { fontSize: 12, fontWeight: '700', fontFamily: F.bold, color: '#fff' },
+  comingSoonBtn:  { borderRadius: 8, paddingHorizontal: 10, height: 32, justifyContent: 'center', alignItems: 'center', borderWidth: 1 },
+  comingSoonBtnText: { fontSize: 11, fontWeight: '600', fontFamily: F.semibold },
+
   // ── Social sheet modal ──────────────────────────────────────────────────────
   sheetBackdrop: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)' },
   socialSheet: {
@@ -2346,8 +2464,6 @@ const styles = StyleSheet.create({
 
   // Form section title (kept for other uses)
   formSectionTitle: { fontSize: 15, fontWeight: '700', marginBottom: 16, fontFamily: F.bold },
-  connectBtn: { borderRadius: 8, paddingHorizontal: 12, paddingVertical: 5 },
-  connectBtnText: { fontSize: 12, fontWeight: '700', color: '#fff', fontFamily: F.bold },
 
   inlineForm: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 14, gap: 12 },
   formField: { gap: 4 },

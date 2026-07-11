@@ -151,6 +151,15 @@ export class CreatorController {
     }
   }
 
+  async connectYoutubeAccount(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const account = await creatorService.connectYoutubeAccount(req.user!.id, req.body.accessToken);
+      success(res, account, 'YouTube account connected', 201);
+    } catch (err) {
+      next(err);
+    }
+  }
+
   async getEarnings(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const summary = await creatorService.getEarningsSummary(req.user!.id);

@@ -118,7 +118,7 @@ export class CreatorRepository {
         portfolioLinks: true,
         socialLinks: true,
         socialAccounts: {
-          select: { id: true, platform: true, followers: true, profileUrl: true },
+          select: { id: true, platform: true, followers: true, profileUrl: true, connectedViaOAuth: true },
           orderBy: { followers: 'desc' },
         },
       },
@@ -206,6 +206,20 @@ export class CreatorRepository {
 
   async findSocialAccountByPlatform(creatorProfileId: string, platform: string) {
     return prisma.socialAccount.findUnique({ where: { creatorProfileId_platform: { creatorProfileId, platform } } });
+  }
+
+  // Used by OAuth-connect flows (e.g. YouTube) — creates the row on first connect,
+  // or refreshes profileUrl/followers/avatar on a reconnect.
+  async upsertOAuthSocialAccount(
+    creatorProfileId: string,
+    platform: string,
+    data: { profileUrl: string; followers: number; platformUserId: string; avatarUrl?: string },
+  ) {
+    return prisma.socialAccount.upsert({
+      where: { creatorProfileId_platform: { creatorProfileId, platform } },
+      create: { creatorProfileId, platform, connectedViaOAuth: true, ...data },
+      update: { connectedViaOAuth: true, ...data, updatedAt: new Date() },
+    });
   }
 
   // ── Payment Methods ──────────────────────────────────────────────────────────

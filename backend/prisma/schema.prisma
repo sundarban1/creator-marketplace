@@ -128,6 +128,13 @@ model SocialAccount {
   platform         String
   profileUrl       String
   followers        Int            @default(0)
+  // True once profileUrl/followers were pulled directly from the platform's API via
+  // OAuth (e.g. YouTube) rather than typed in by the creator.
+  connectedViaOAuth Boolean       @default(false)
+  // The platform's own user/channel id — lets a reconnect find and update the same
+  // row instead of erroring on the creatorProfileId+platform unique constraint.
+  platformUserId   String?
+  avatarUrl        String?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
   creatorProfile   CreatorProfile @relation(fields: [creatorProfileId], references: [id], onDelete: Cascade)

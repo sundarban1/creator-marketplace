@@ -41,6 +41,10 @@ export const updateSocialAccountSchema = z.object({
   followers:  z.number().int('Must be a whole number').min(0, 'Cannot be negative').optional(),
 });
 
+export const connectYoutubeAccountSchema = z.object({
+  accessToken: z.string().min(1, 'Access token is required'),
+});
+
 const VALID_PAYMENT_METHODS = ['esewa', 'khalti', 'fonepay'] as const;
 
 export const updatePaymentMethodsSchema = z.object({
@@ -63,5 +67,6 @@ export type AddPortfolioLinkInput      = z.infer<typeof addPortfolioLinkSchema>;
 export type UpdateSocialLinksInput     = z.infer<typeof updateSocialLinksSchema>;
 export type AddSocialAccountInput      = z.infer<typeof addSocialAccountSchema>;
 export type UpdateSocialAccountInput   = z.infer<typeof updateSocialAccountSchema>;
+export type ConnectYoutubeAccountInput = z.infer<typeof connectYoutubeAccountSchema>;
 export type UpdatePaymentMethodsInput  = z.infer<typeof updatePaymentMethodsSchema>;
 export type UpdateCampaignPrefsInput   = z.infer<typeof updateCampaignPrefsSchema>;

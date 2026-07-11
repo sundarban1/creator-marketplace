@@ -6,6 +6,8 @@ export interface SocialAccountDto {
   platform: string;
   profileUrl: string;
   followers: number;
+  connectedViaOAuth: boolean;
+  avatarUrl: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -65,6 +67,7 @@ export interface PublicCreatorDto {
     platform: string;
     followers: number;
     profileUrl: string;
+    connectedViaOAuth: boolean;
   }>;
 }
 
@@ -88,6 +91,8 @@ type RawSocialAccount = {
   platform: string;
   profileUrl: string;
   followers: number;
+  connectedViaOAuth?: boolean;
+  avatarUrl?: string | null;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -99,6 +104,8 @@ export function toSocialAccountDto(a: RawSocialAccount): SocialAccountDto {
     platform:         a.platform,
     profileUrl:       a.profileUrl,
     followers:        a.followers,
+    connectedViaOAuth: a.connectedViaOAuth ?? false,
+    avatarUrl:        a.avatarUrl ?? null,
     createdAt:        a.createdAt.toISOString(),
     updatedAt:        a.updatedAt.toISOString(),
   };
@@ -179,7 +186,7 @@ type RawPublicCreator = {
   prefPlatforms: string[];
   socialLinks: Prisma.JsonValue;
   portfolioLinks: Prisma.JsonValue;
-  socialAccounts: Array<{ id: string; platform: string; followers: number; profileUrl: string }>;
+  socialAccounts: Array<{ id: string; platform: string; followers: number; profileUrl: string; connectedViaOAuth?: boolean }>;
 };
 
 export function toPublicCreatorDto(p: RawPublicCreator): PublicCreatorDto {
@@ -198,7 +205,7 @@ export function toPublicCreatorDto(p: RawPublicCreator): PublicCreatorDto {
     prefPlatforms: p.prefPlatforms,
     socialLinks:   (p.socialLinks ?? {}) as Record<string, string>,
     portfolioLinks: (p.portfolioLinks ?? []) as Array<{ id: string; label: string; url: string }>,
-    socialAccounts: p.socialAccounts,
+    socialAccounts: p.socialAccounts.map((a) => ({ ...a, connectedViaOAuth: a.connectedViaOAuth ?? false })),
   };
 }
 

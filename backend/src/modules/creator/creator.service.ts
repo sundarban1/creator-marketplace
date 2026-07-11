@@ -18,6 +18,14 @@ import type {
   UpdateCampaignPrefsInput,
 } from './creator.schema';
 
+interface YoutubeChannelResponse {
+  items?: Array<{
+    id: string;
+    snippet?: { title?: string; customUrl?: string; thumbnails?: { default?: { url?: string } } };
+    statistics?: { subscriberCount?: string; hiddenSubscriberCount?: boolean };
+  }>;
+}
+
 export class CreatorService {
   private repo: CreatorRepository;
   private businessRepo: BusinessRepository;
@@ -199,6 +207,43 @@ export class CreatorService {
     if (!account || account.creatorProfileId !== profile.id) throw new AppError('Social account not found', 404);
 
     await this.repo.deleteSocialAccount(accountId);
+  }
+
+  // Exchanges a Google access token (obtained client-side with the youtube.readonly
+  // scope) for the creator's own channel data, and saves it — no manual URL/follower
+  // entry needed. Safe to call again later to refresh the subscriber count.
+  async connectYoutubeAccount(userId: string, accessToken: string) {
+    const profile = await this.repo.findByUserId(userId);
+    if (!profile) throw new AppError('Creator profile not found', 404);
+
+    const res = await fetch(
+      'https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&mine=true',
+      { headers: { Authorization: `Bearer ${accessToken}` } },
+    );
+    if (!res.ok) {
+      throw new AppError(
+        res.status === 401 ? 'Google session expired — please reconnect' : 'Could not reach YouTube',
+        res.status === 401 ? 401 : 502,
+      );
+    }
+    const data = (await res.json()) as YoutubeChannelResponse;
+    const channel = data.items?.[0];
+    if (!channel) throw new AppError('No YouTube channel found for this Google account', 404);
+
+    const profileUrl = channel.snippet?.customUrl
+      ? `https://www.youtube.com/${channel.snippet.customUrl}`
+      : `https://www.youtube.com/channel/${channel.id}`;
+    const followers = channel.statistics?.hiddenSubscriberCount
+      ? 0
+      : parseInt(channel.statistics?.subscriberCount ?? '0', 10);
+
+    const account = await this.repo.upsertOAuthSocialAccount(profile.id, 'youtube', {
+      profileUrl,
+      followers,
+      platformUserId: channel.id,
+      avatarUrl: channel.snippet?.thumbnails?.default?.url,
+    });
+    return toSocialAccountDto(account);
   }
 
   // ── Payment Methods ────────────────────────────────────────────────────────

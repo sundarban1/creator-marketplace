@@ -59,7 +59,7 @@ export interface ApiCreatorPublicProfile {
   prefPlatforms: string[];
   portfolioLinks: { id: string; label: string; url: string }[];
   socialLinks: Record<string, string | null> | null;
-  socialAccounts: { id: string; platform: string; followers: number; profileUrl: string }[];
+  socialAccounts: { id: string; platform: string; followers: number; profileUrl: string; connectedViaOAuth: boolean }[];
   stats: ApiCreatorPublicStats | null;
 }
 
@@ -202,6 +202,11 @@ export const creatorService = {
 
   async deleteSocialAccount(id: string): Promise<void> {
     await request('DELETE', `/api/creator/social-accounts/${id}`);
+  },
+
+  async connectYoutubeAccount(accessToken: string): Promise<ApiSocialAccount> {
+    const res = await request<ApiSocialAccount>('POST', '/api/creator/social-accounts/youtube/connect', { accessToken });
+    return res.data;
   },
 
   // ── Business: save/unsave creators ─────────────────────────────────────────

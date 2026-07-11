@@ -172,19 +172,19 @@ export default function CreatorDetailScreen() {
 
   // Merge socialLinks (JSON handles) + socialAccounts (structured with followers)
   const socialLinksMap = (profile.socialLinks ?? {}) as Record<string, string | null>;
-  type MergedPlatform = { key: string; platform: string; handle: string | null; followers: number | null; profileUrl: string | null };
+  type MergedPlatform = { key: string; platform: string; handle: string | null; followers: number | null; profileUrl: string | null; verified: boolean };
   const mergedPlatforms: MergedPlatform[] = [];
   const coveredPlatforms = new Set<string>();
 
   // First: structured social accounts (have followers)
   for (const acc of profile.socialAccounts) {
-    mergedPlatforms.push({ key: acc.id, platform: acc.platform, handle: null, followers: acc.followers, profileUrl: acc.profileUrl });
+    mergedPlatforms.push({ key: acc.id, platform: acc.platform, handle: null, followers: acc.followers, profileUrl: acc.profileUrl, verified: acc.connectedViaOAuth });
     coveredPlatforms.add(acc.platform.toLowerCase());
   }
   // Then: socialLinks entries not already covered
   for (const [platform, handle] of Object.entries(socialLinksMap)) {
     if (handle && !coveredPlatforms.has(platform.toLowerCase())) {
-      mergedPlatforms.push({ key: platform, platform, handle, followers: null, profileUrl: null });
+      mergedPlatforms.push({ key: platform, platform, handle, followers: null, profileUrl: null, verified: false });
     }
   }
 
@@ -302,7 +302,10 @@ export default function CreatorDetailScreen() {
                       <FontAwesome5 name={info.iconName} size={18} color="#fff" />
                     </View>
                     <View style={s.socialInfo}>
-                      <Text style={[s.socialPlatform, { color: C.text }]}>{info.label}</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <Text style={[s.socialPlatform, { color: C.text }]}>{info.label}</Text>
+                        {p.verified && <Ionicons name="checkmark-circle" size={13} color="#16A34A" />}
+                      </View>
                       {p.followers !== null ? (
                         <Text style={[s.socialSub, { color: C.textSecondary }]}>{formatFollowers(p.followers)} {t('creatorDetailExtra.followersSuffix')}</Text>
                       ) : p.handle ? (

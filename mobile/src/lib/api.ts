@@ -44,6 +44,8 @@ export interface ApiSocialAccount {
   platform:         string;
   profileUrl:       string;
   followers:        number;
+  connectedViaOAuth: boolean;
+  avatarUrl:        string | null;
   createdAt:        string;
   updatedAt:        string;
 }
