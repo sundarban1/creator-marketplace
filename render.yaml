@@ -68,3 +68,13 @@ services:
       # ── AI campaign generator — fill in via dashboard ────────────────────────
       - key: ANTHROPIC_API_KEY
         sync: false
+
+      # ── TikTok Login Kit (creator social-account OAuth connect) ─────────────
+      - key: TIKTOK_CLIENT_KEY
+        sync: false
+      - key: TIKTOK_CLIENT_SECRET
+        sync: false
+      - key: TIKTOK_REDIRECT_URI
+        value: https://creator-marketplace-api.onrender.com/api/creator/social-accounts/tiktok/callback
+      - key: APP_SCHEME
+        value: kolab

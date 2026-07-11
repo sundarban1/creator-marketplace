@@ -1,6 +1,8 @@
-import { randomUUID } from 'crypto';
+import { randomUUID, randomBytes, createHash } from 'crypto';
 import { AppError } from '../../middleware/error';
 import { logger } from '../../config/logger';
+import { env } from '../../config/env';
+import { signOAuthState, verifyOAuthState } from '../../utils/jwt';
 import { toCreatorProfileDto, toPublicCreatorDto, toCreatorListItemDto, toSocialAccountDto } from './creator.dto';
 import { translateFields, translateMany } from '../../utils/translation';
 import { haversineKm } from '../../utils/geo';
@@ -25,6 +27,24 @@ interface YoutubeChannelResponse {
     snippet?: { title?: string; customUrl?: string; thumbnails?: { default?: { url?: string } } };
     statistics?: { subscriberCount?: string; hiddenSubscriberCount?: boolean };
   }>;
+}
+
+interface TiktokTokenResponse {
+  access_token?: string;
+  open_id?: string;
+  error?: string;
+  error_description?: string;
+}
+
+interface TiktokUserInfoResponse {
+  data?: {
+    user?: {
+      open_id?: string;
+      display_name?: string;
+      avatar_url?: string;
+    };
+  };
+  error?: { code?: string; message?: string };
 }
 
 export class CreatorService {
@@ -251,6 +271,86 @@ export class CreatorService {
       followers,
       platformUserId: channel.id,
       avatarUrl: channel.snippet?.thumbnails?.default?.url,
+    });
+    return toSocialAccountDto(account);
+  }
+
+  // TikTok's OAuth requires an HTTPS redirect URI verified in the Developer Portal —
+  // no custom app-scheme redirects like Google/Facebook — so the code exchange has to
+  // happen here on the backend rather than on-device. The mobile app opens this URL in
+  // a browser; TikTok redirects back to our /callback route (below), which then 302s
+  // into the app via the custom scheme once the exchange + save is done.
+  getTiktokAuthorizeUrl(userId: string): string {
+    if (!env.TIKTOK_CLIENT_KEY || !env.TIKTOK_REDIRECT_URI) {
+      throw new AppError('TikTok login is not configured', 500);
+    }
+    const codeVerifier = randomBytes(32).toString('base64url');
+    const codeChallenge = createHash('sha256').update(codeVerifier).digest('base64url');
+    const state = signOAuthState({ userId, codeVerifier });
+
+    const url = new URL('https://www.tiktok.com/v2/auth/authorize/');
+    url.searchParams.set('client_key', env.TIKTOK_CLIENT_KEY);
+    // Only the scope actually enabled on the TikTok app right now — requesting an
+    // unconfigured scope makes TikTok reject the whole authorize request.
+    url.searchParams.set('scope', 'user.info.basic');
+    url.searchParams.set('response_type', 'code');
+    url.searchParams.set('redirect_uri', env.TIKTOK_REDIRECT_URI);
+    url.searchParams.set('state', state);
+    url.searchParams.set('code_challenge', codeChallenge);
+    url.searchParams.set('code_challenge_method', 'S256');
+    return url.toString();
+  }
+
+  async handleTiktokCallback(code: string, state: string) {
+    let statePayload: { userId: string; codeVerifier: string };
+    try {
+      statePayload = verifyOAuthState(state);
+    } catch {
+      throw new AppError('TikTok authorization expired — please try again', 400);
+    }
+    const { userId, codeVerifier } = statePayload;
+
+    const profile = await this.repo.findByUserId(userId);
+    if (!profile) throw new AppError('Creator profile not found', 404);
+
+    const tokenRes = await fetch('https://open.tiktokapis.com/v2/oauth/token/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Cache-Control': 'no-cache' },
+      body: new URLSearchParams({
+        client_key: env.TIKTOK_CLIENT_KEY!,
+        client_secret: env.TIKTOK_CLIENT_SECRET!,
+        code,
+        grant_type: 'authorization_code',
+        redirect_uri: env.TIKTOK_REDIRECT_URI!,
+        code_verifier: codeVerifier,
+      }),
+    });
+    const tokenData = (await tokenRes.json()) as TiktokTokenResponse;
+    if (!tokenRes.ok || !tokenData.access_token) {
+      logger.error({ status: tokenRes.status, tokenData }, 'TikTok token exchange failed');
+      throw new AppError(tokenData.error_description ?? 'Could not connect TikTok account', 502);
+    }
+
+    const infoRes = await fetch('https://open.tiktokapis.com/v2/user/info/?fields=open_id,display_name,avatar_url', {
+      headers: { Authorization: `Bearer ${tokenData.access_token}` },
+    });
+    const infoData = (await infoRes.json()) as TiktokUserInfoResponse;
+    const tiktokUser = infoData.data?.user;
+    if (!infoRes.ok || !tiktokUser) {
+      logger.error({ status: infoRes.status, infoData }, 'TikTok user info request failed');
+      throw new AppError('Could not read TikTok profile', 502);
+    }
+
+    // TikTok only returns the real @handle / profile_deep_link under the
+    // user.info.profile scope, which isn't enabled on this app yet — fall back to a
+    // best-effort link from display_name until that scope is added and approved.
+    const profileUrl = `https://www.tiktok.com/@${encodeURIComponent(tiktokUser.display_name ?? tiktokUser.open_id ?? '')}`;
+
+    const account = await this.repo.upsertOAuthSocialAccount(profile.id, 'tiktok', {
+      profileUrl,
+      followers: 0,
+      platformUserId: tiktokUser.open_id ?? profile.id,
+      avatarUrl: tiktokUser.avatar_url,
     });
     return toSocialAccountDto(account);
   }

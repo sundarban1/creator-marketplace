@@ -33,6 +33,12 @@ const envSchema = z.object({
   FRONTEND_URL: z.string().default('http://localhost:3000'),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).optional(),
   ANTHROPIC_API_KEY: z.string().optional(),
+  // TikTok Login Kit (creator social-account OAuth connect)
+  TIKTOK_CLIENT_KEY: z.string().optional(),
+  TIKTOK_CLIENT_SECRET: z.string().optional(),
+  TIKTOK_REDIRECT_URI: z.string().optional(),
+  // Custom URL scheme the TikTok callback redirects back into on mobile (see app.json "scheme")
+  APP_SCHEME: z.string().default('kolab'),
 });
 
 const parsed = envSchema.safeParse(process.env);

@@ -403,7 +403,13 @@
       "Bash(npm view *)",
       "Bash(node scripts/fix-ios-podfile.js)",
       "Bash(ls -la assets/images/payments/)",
-      "Bash(grep -rn \"payments/esewa\\\\|payments/khalti\\\\|payments/fonepay\" src/)"
+      "Bash(grep -rn \"payments/esewa\\\\|payments/khalti\\\\|payments/fonepay\" src/)",
+      "Bash(keytool -list -v -keystore android/app/debug.keystore -alias androiddebugkey -storepass android -keypass android)",
+      "Bash(eas credentials *)",
+      "Bash(npx eas-cli@latest credentials -p android)",
+      "Bash(npx eas-cli@latest whoami)",
+      "Bash(npx eas-cli@latest credentials -p android --profile production --non-interactive)",
+      "Bash(npx eas-cli@latest credentials --help)"
     ],
     "additionalDirectories": [
       "/private/tmp",

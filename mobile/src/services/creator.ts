@@ -209,6 +209,11 @@ export const creatorService = {
     return res.data;
   },
 
+  async getTiktokAuthorizeUrl(): Promise<string> {
+    const res = await request<{ url: string }>('GET', '/api/creator/social-accounts/tiktok/authorize');
+    return res.data.url;
+  },
+
   // ── Business: save/unsave creators ─────────────────────────────────────────
 
   async toggleSaveCreator(creatorId: string): Promise<{ isSaved: boolean }> {

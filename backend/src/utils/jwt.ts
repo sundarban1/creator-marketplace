@@ -37,3 +37,19 @@ export function signPasswordResetToken(payload: { id: string; email: string }): 
 export function verifyPasswordResetToken(token: string): { id: string; email: string } & JwtPayload {
   return jwt.verify(token, env.JWT_ACCESS_SECRET + '_reset') as { id: string; email: string } & JwtPayload;
 }
+
+// Carries the requesting user + PKCE code_verifier across the redirect to a third-party
+// OAuth provider (e.g. TikTok) and back to our callback, since that round trip happens
+// in a browser with no Authorization header we control.
+export interface OAuthStatePayload {
+  userId: string;
+  codeVerifier: string;
+}
+
+export function signOAuthState(payload: OAuthStatePayload): string {
+  return jwt.sign(payload, env.JWT_ACCESS_SECRET + '_oauth_state', { expiresIn: '10m' });
+}
+
+export function verifyOAuthState(token: string): OAuthStatePayload & JwtPayload {
+  return jwt.verify(token, env.JWT_ACCESS_SECRET + '_oauth_state') as OAuthStatePayload & JwtPayload;
+}

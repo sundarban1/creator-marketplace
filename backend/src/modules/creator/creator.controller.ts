@@ -4,6 +4,7 @@ import { analyticsService } from '../analytics/analytics.service';
 import { success } from '../../utils/response';
 import { uploadImage as uploadToCloudinary } from '../../utils/cloudinary';
 import { AppError } from '../../middleware/error';
+import { env } from '../../config/env';
 
 const creatorService = new CreatorService();
 
@@ -157,6 +158,35 @@ export class CreatorController {
       success(res, account, 'YouTube account connected', 201);
     } catch (err) {
       next(err);
+    }
+  }
+
+  async getTiktokAuthorizeUrl(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const url = creatorService.getTiktokAuthorizeUrl(req.user!.id);
+      success(res, { url }, 'TikTok authorize URL generated');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // Public — TikTok's browser redirect lands here (no auth header), so unlike every
+  // other handler in this file, failures are reported back as a 302 to the app's
+  // custom URL scheme instead of a JSON error response.
+  async tiktokCallback(req: Request, res: Response): Promise<void> {
+    const { code, state, error } = req.query as { code?: string; state?: string; error?: string };
+    const redirectBase = `${env.APP_SCHEME}://tiktok-callback`;
+
+    if (error || !code || !state) {
+      res.redirect(`${redirectBase}?success=false&error=${encodeURIComponent(error ?? 'missing_code')}`);
+      return;
+    }
+    try {
+      await creatorService.handleTiktokCallback(code, state);
+      res.redirect(`${redirectBase}?success=true`);
+    } catch (err) {
+      const message = err instanceof AppError ? err.message : 'Could not connect TikTok account';
+      res.redirect(`${redirectBase}?success=false&error=${encodeURIComponent(message)}`);
     }
   }
 

@@ -25,6 +25,7 @@ import { AppModal } from '@/components/AppModal';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useKeyboardOffset } from '@/hooks/useKeyboardOffset';
 import { useGoogleAccessToken } from '@/hooks/useGoogleAccessToken';
+import * as WebBrowser from 'expo-web-browser';
 import { useAppColors, useIsDark } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/components/Toast';
@@ -37,17 +38,17 @@ const ColorCtx = createContext<ColorsType>(COLORS);
 // ── Static config ─────────────────────────────────────────────
 
 // Platforms with a real "Connect Account" OAuth flow (pulls profile URL + follower/
-// subscriber count directly from the platform — no manual entry). Only YouTube is
-// actually wired up today; the rest need their own developer-app approval first
-// (Meta App Review for Instagram/Facebook, TikTok for Developers review) before they
-// can go from "Coming soon" to functional.
+// subscriber count directly from the platform — no manual entry). YouTube and TikTok
+// are wired up; Facebook/Instagram need Meta App Review first before they can go from
+// "Coming soon" to functional. TikTok's follower count stays 0 until the app's
+// user.info.stats scope passes TikTok's review — only user.info.basic is live today.
 const CONNECTABLE_SOCIAL_PLATFORMS: { id: string; label: string; iconName: string; color: string; followersLabel: string }[] = [
   { id: 'tiktok',    label: 'TikTok',     iconName: 'tiktok',    color: '#010101', followersLabel: 'Followers' },
   { id: 'facebook',  label: 'Facebook',   iconName: 'facebook',  color: '#1877F2', followersLabel: 'Followers' },
   { id: 'instagram', label: 'Instagram',  iconName: 'instagram', color: '#E1306C', followersLabel: 'Followers' },
   { id: 'youtube',   label: 'YouTube',    iconName: 'youtube',   color: '#FF0000', followersLabel: 'Subscribers' },
 ];
-const OAUTH_LIVE_PLATFORM_IDS = new Set(['youtube']);
+const OAUTH_LIVE_PLATFORM_IDS = new Set(['youtube', 'tiktok']);
 
 // Remaining platforms still use manual entry (no OAuth data-access app for these is
 // in scope right now).
@@ -529,6 +530,34 @@ export default function CreatorSettingsScreen() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [youtubeAuth.error]);
+
+  // TikTok requires an HTTPS redirect URI (no custom app-scheme redirects), so unlike
+  // YouTube the code exchange happens server-side: the backend hands back a TikTok
+  // authorize URL, we open it in a browser, and TikTok's redirect lands on our API,
+  // which saves the account and then 302s back into the app via the kolab:// scheme.
+  async function handleConnectTiktok() {
+    setConnectingPlatform('tiktok');
+    try {
+      const url = await creatorService.getTiktokAuthorizeUrl();
+      const result = await WebBrowser.openAuthSessionAsync(url, 'kolab://tiktok-callback');
+      if (result.type === 'success' && result.url) {
+        const parsed = new URL(result.url);
+        const success = parsed.searchParams.get('success') === 'true';
+        if (success) {
+          const accounts = await creatorService.getSocialAccounts();
+          setSocialAccounts(accounts);
+          showToast(t('creatorSettings.socialAddedToast'));
+        } else {
+          const error = parsed.searchParams.get('error') ?? t('creatorSettings.socialSaveFailed');
+          showToast(error, true);
+        }
+      }
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : t('creatorSettings.socialSaveFailed'), true);
+    } finally {
+      setConnectingPlatform(null);
+    }
+  }
 
   function deleteSocialAccount(acct: SocialAccount) {
     const cfg = PLATFORM_CONFIG[acct.platform];
@@ -1332,7 +1361,10 @@ export default function CreatorSettingsScreen() {
                     <Pressable
                       style={[styles.connectBtn, { backgroundColor: p.color, opacity: isConnecting ? 0.7 : 1 }]}
                       disabled={isConnecting}
-                      onPress={() => { if (p.id === 'youtube') handleConnectYoutube(); }}>
+                      onPress={() => {
+                        if (p.id === 'youtube') handleConnectYoutube();
+                        else if (p.id === 'tiktok') void handleConnectTiktok();
+                      }}>
                       {isConnecting
                         ? <ActivityIndicator size="small" color="#fff" />
                         : <Text style={styles.connectBtnText}>{t('creatorSettings.connectBtn')}</Text>}

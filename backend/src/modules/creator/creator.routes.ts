@@ -235,6 +235,7 @@ router.post('/social-accounts',            validate(addSocialAccountSchema),    
 router.put('/social-accounts/:id',         validate(updateSocialAccountSchema), ctrl.updateSocialAccount.bind(ctrl));
 router.delete('/social-accounts/:id',      ctrl.deleteSocialAccount.bind(ctrl));
 router.post('/social-accounts/youtube/connect', validate(connectYoutubeAccountSchema), ctrl.connectYoutubeAccount.bind(ctrl));
+router.get('/social-accounts/tiktok/authorize', ctrl.getTiktokAuthorizeUrl.bind(ctrl));
 
 router.get('/earnings',                    ctrl.getEarnings.bind(ctrl));
 router.get('/analytics',                   ctrl.getMyAnalytics.bind(ctrl));
