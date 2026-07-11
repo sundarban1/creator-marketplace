@@ -432,8 +432,10 @@ export class CampaignService {
         analyticsService.incrProposalAccepted(creatorUserId, application.creatorId, business.userId, business.id, appId);
 
         // Auto-start (or resume) the chat with a greeting — the creator never has to send a request.
+        // Always sent, even if the two were already chatting, so the creator gets a clear
+        // heads-up for this specific proposal/event.
         const greetingName = application.creator?.fullName ?? 'there';
-        const greeting = `Hello ${greetingName}, your proposal has been accepted. You can message me here for more information or if you have any questions. It will be great working with you. Thank you!`;
+        const greeting = `Hello ${greetingName}, your proposal for "${campaign.title}" has been accepted. You can message me here for more information or if you have any questions. It will be great working with you. Thank you!`;
         messagingService
           .sendProposalAcceptedMessage(application.creatorId, business.id, campaignId, business.userId, greeting)
           .catch(() => {});

@@ -276,9 +276,10 @@ export class MessagingService {
   // ── Automated proposal-accept / project-completion transitions ────────────
 
   // Called when a business accepts a creator's proposal — no message request/accept
-  // step is needed, so the conversation is established as ACCEPTED directly and
-  // seeded with a system greeting sent on the business's behalf. If the two were
-  // already genuinely chatting, it's left alone — no greeting is injected.
+  // step is needed, so the conversation is established as ACCEPTED directly (or left
+  // as-is if the two were already genuinely chatting) and the greeting is always
+  // sent on the business's behalf, so the creator gets a clear "let's talk" prompt
+  // for this specific proposal even if they already had an open conversation.
   async sendProposalAcceptedMessage(
     creatorId: string,
     businessId: string,
@@ -286,8 +287,7 @@ export class MessagingService {
     businessUserId: string,
     content: string,
   ) {
-    const { conversation, activated } = await this.repo.findOrCreateAcceptedConversation(creatorId, businessId, campaignId);
-    if (!activated) return null;
+    const { conversation } = await this.repo.findOrCreateAcceptedConversation(creatorId, businessId, campaignId);
     return this.persistAndBroadcast(conversation, businessUserId, 'BUSINESS', { content }, content);
   }
 
