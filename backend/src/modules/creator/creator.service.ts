@@ -1,5 +1,6 @@
 import { randomUUID } from 'crypto';
 import { AppError } from '../../middleware/error';
+import { logger } from '../../config/logger';
 import { toCreatorProfileDto, toPublicCreatorDto, toCreatorListItemDto, toSocialAccountDto } from './creator.dto';
 import { translateFields, translateMany } from '../../utils/translation';
 import { haversineKm } from '../../utils/geo';
@@ -221,10 +222,18 @@ export class CreatorService {
       { headers: { Authorization: `Bearer ${accessToken}` } },
     );
     if (!res.ok) {
-      throw new AppError(
-        res.status === 401 ? 'Google session expired — please reconnect' : 'Could not reach YouTube',
-        res.status === 401 ? 401 : 502,
-      );
+      const body = await res.text().catch(() => '');
+      logger.error({ status: res.status, body }, 'YouTube Data API request failed');
+      const reason = (() => { try { return JSON.parse(body)?.error?.errors?.[0]?.reason; } catch { return undefined; } })();
+
+      if (res.status === 401) throw new AppError('Google session expired — please reconnect', 401);
+      if (reason === 'accessNotConfigured') {
+        throw new AppError('YouTube Data API v3 is not enabled for this app yet — enable it in Google Cloud Console and try again', 502);
+      }
+      if (res.status === 403) {
+        throw new AppError('Google denied access to YouTube data — check the youtube.readonly scope is added to the OAuth consent screen', 403);
+      }
+      throw new AppError(`Could not reach YouTube (${res.status})`, 502);
     }
     const data = (await res.json()) as YoutubeChannelResponse;
     const channel = data.items?.[0];
