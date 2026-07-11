@@ -47,13 +47,16 @@
     "@types/react": "~19.2.2",
     "eslint": "^9.0.0",
     "eslint-config-expo": "~56.0.4",
+    "plist": "^3.1.1",
     "typescript": "~6.0.3"
   },
   "scripts": {
     "start": "expo start",
     "reset-project": "node ./scripts/reset-project.js",
-    "android": "expo run:android",
-    "ios": "expo run:ios",
+    "prebuild": "expo prebuild",
+    "postprebuild": "node ./scripts/strip-push-entitlement.js && node ./scripts/fix-ios-podfile.js",
+    "android": "npm run prebuild && expo run:android",
+    "ios": "npm run prebuild && expo run:ios",
     "web": "expo start --web",
     "lint": "expo lint"
   },

@@ -390,7 +390,20 @@
       "Bash(node public-stats-check.mjs)",
       "Bash(grep -iE \"^expo-document-picker$|^expo-image-picker$|emoji\")",
       "Bash(./node_modules/.bin/eslint \"src/app/\\(business\\)/campaign-proposals.tsx\" \"src/app/\\(business\\)/\\(tabs\\)/proposals.tsx\" \"src/services/campaign.ts\")",
-      "Bash(lsof -nP -iTCP:3000 -sTCP:LISTEN)"
+      "Bash(lsof -nP -iTCP:3000 -sTCP:LISTEN)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d['expo'].get\\('icon'\\)\\), json.dumps\\(d['expo'].get\\('splash'\\)\\), json.dumps\\(d['expo'].get\\('android'\\)\\), json.dumps\\(d['expo'].get\\('ios'\\).get\\('icon'\\) if 'icon' in d['expo'].get\\('ios',{}\\) else None\\)\\)\")",
+      "Bash(grep -iE \"^sharp$|svg\")",
+      "Bash(npx --yes sharp-cli --version)",
+      "Bash(npx --yes sharp-cli --help)",
+      "Bash(mkdir -p /private/tmp/claude-501/-Users-sundarban-Documents-projects-marketplace/f965d7e4-8c8e-4d73-aeaa-2962d6ae5b58/scratchpad/svgtools)",
+      "Bash(npm init *)",
+      "Bash(node generate.js)",
+      "Bash(python3 -c \"import json; d = json.load\\(open\\('app.json'\\)\\); print\\(json.dumps\\(d['expo']['plugins'], indent=2\\)\\)\")",
+      "Bash(node scripts/strip-push-entitlement.js)",
+      "Bash(npm view *)",
+      "Bash(node scripts/fix-ios-podfile.js)",
+      "Bash(ls -la assets/images/payments/)",
+      "Bash(grep -rn \"payments/esewa\\\\|payments/khalti\\\\|payments/fonepay\" src/)"
     ],
     "additionalDirectories": [
       "/private/tmp",

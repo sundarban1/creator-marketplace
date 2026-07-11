@@ -1,6 +1,8 @@
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
-import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { BackButton } from '@/components/BackButton';
+import { PaymentMethodIcon } from '@/components/PaymentMethodIcon';
+import { isPaymentMethodId } from '@/utilities/paymentMethods';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -911,12 +913,12 @@ export default function CampaignWorkspaceScreen() {
         </View>
         <Text style={sh.sectionLabel}>{t('activityTimeline.modalPayWith')}</Text>
         <View style={{ gap: 8, marginBottom: 16 }}>
-          {([['esewa', 'wallet', 'eSewa'], ['khalti', 'money-check-alt', 'Khalti'], ['fonepay', 'mobile-alt', 'Fonepay QR']] as [typeof payMethod, string, string][]).map(([m, icon, label]) => (
+          {([['esewa', 'eSewa'], ['khalti', 'Khalti'], ['fonepay', 'Fonepay QR']] as [typeof payMethod, string][]).map(([m, label]) => (
             <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} key={m}
               style={[sh.methodBtn, { borderColor: payMethod === m ? '#7C3AED' : '#E5E7EB', backgroundColor: payMethod === m ? '#EEF2FF' : '#fff' }]}
               onPress={() => setPayMethod(m)}>
               <View style={sh.methodLeft}>
-                <FontAwesome5 name={icon} size={14} color={payMethod === m ? '#7C3AED' : '#374151'} />
+                <PaymentMethodIcon method={m} size={22} />
                 <Text style={[sh.methodTxt, { color: payMethod === m ? '#7C3AED' : '#374151' }]}>{label}</Text>
               </View>
               {payMethod === m && <Ionicons name="checkmark-circle" size={18} color="#7C3AED" />}

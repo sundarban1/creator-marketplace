@@ -328,7 +328,7 @@ const s = StyleSheet.create({
 
   appHeader:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 },
   appHeaderLeft:{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
-  logoImage:    { width: 120, height: 120 / (2141 / 576) },
+  logoImage:    { width: 120, height: 120 / (520 / 210) },
   backBtn:      { width: 34, height: 34, borderRadius: 10, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center' },
 
   tabBar:      { flexDirection: 'row', borderRadius: 12, padding: 4, marginBottom: 20, gap: 2 },

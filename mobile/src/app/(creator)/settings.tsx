@@ -1,5 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
+import { PaymentMethodIcon } from '@/components/PaymentMethodIcon';
+import { isPaymentMethodId } from '@/utilities/paymentMethods';
 import { LinearGradient } from 'expo-linear-gradient';
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { BackButton } from '@/components/BackButton';
@@ -1543,9 +1545,13 @@ export default function CreatorSettingsScreen() {
                 key={m.id}
                 style={[styles.row, idx < PAYMENT_METHODS.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}
                 onPress={() => togglePayment(m.id)}>
-                <View style={[styles.paymentIcon, { backgroundColor: m.color + '18' }]}>
-                  <FontAwesome5 name={m.icon} size={16} color={m.color} />
-                </View>
+                {isPaymentMethodId(m.id) ? (
+                  <PaymentMethodIcon method={m.id} size={38} />
+                ) : (
+                  <View style={[styles.paymentIcon, { backgroundColor: m.color + '18' }]}>
+                    <FontAwesome5 name={m.icon} size={16} color={m.color} />
+                  </View>
+                )}
                 <Text style={[styles.rowLabel, { color: C.text }]}>{m.label}</Text>
                 <View style={[styles.checkboxOuter, { borderColor: selected ? C.brinjal1 : C.border, backgroundColor: selected ? C.brinjal1 : 'transparent' }]}>
                   {selected ? <Ionicons name="checkmark" size={13} color="#fff" /> : null}

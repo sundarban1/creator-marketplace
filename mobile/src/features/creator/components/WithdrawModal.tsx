@@ -17,6 +17,8 @@ import {
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useKeyboardOffset } from '@/hooks/useKeyboardOffset';
+import { PaymentMethodIcon } from '@/components/PaymentMethodIcon';
+import { isPaymentMethodId } from '@/utilities/paymentMethods';
 import { F } from '@/utilities/constants';
 
 const METHOD_META: Record<string, { icon: string; label: string; color: string }> = {
@@ -108,7 +110,11 @@ export function WithdrawModal({ visible, onClose, availableBalance, paymentMetho
                         { borderColor: active ? meta.color : C.border, backgroundColor: active ? `${meta.color}15` : C.background },
                       ]}
                       onPress={() => setMethod(m)}>
-                      <FontAwesome5 name={meta.icon} size={16} color={meta.color} />
+                      {isPaymentMethodId(m) ? (
+                        <PaymentMethodIcon method={m} size={26} />
+                      ) : (
+                        <FontAwesome5 name={meta.icon} size={16} color={meta.color} />
+                      )}
                       <Text style={[styles.methodLabel, { color: active ? meta.color : C.text }]}>{meta.label}</Text>
                     </Pressable>
                   );

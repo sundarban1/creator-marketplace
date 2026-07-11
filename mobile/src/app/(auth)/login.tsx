@@ -19,6 +19,7 @@ import {
 } from 'react-native';
 import * as Google from 'expo-auth-session/providers/google';
 import * as Facebook from 'expo-auth-session/providers/facebook';
+import { exchangeCodeAsync } from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
@@ -545,12 +546,23 @@ export default function LoginScreen() {
   const [pendingToken,    setPendingToken]    = useState('');
   const [pendingProvider, setPendingProvider] = useState<'google' | 'facebook'>('google');
 
+  // Google's iOS OAuth client validates the redirect URI against the *reversed client ID*
+  // scheme (this is why native Google Sign-In SDKs require a REVERSED_CLIENT_ID URL type in
+  // Info.plist) — expo-auth-session's default (bundle-ID scheme) doesn't match that and Google
+  // rejects it with "redirect_uri_mismatch". Android's OAuth client type verifies the app via
+  // package name instead, so the library's default there is correct and left alone.
+  const googleIosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? 'unset';
+  const googleIosRedirectUri = Platform.OS === 'ios'
+    ? `com.googleusercontent.apps.${googleIosClientId.replace('.apps.googleusercontent.com', '')}:/oauthredirect`
+    : undefined;
+
   // Fallback to 'unset' prevents the hook crashing with "undefined" — we guard in handleGooglePress/handleFacebookPress
-  const [, googleResponse, googlePromptAsync] = Google.useAuthRequest({
+  const [googleRequest, googleResponse, googlePromptAsync] = Google.useAuthRequest({
     clientId:        process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID     ?? 'unset',
     webClientId:     process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID     ?? 'unset',
-    iosClientId:     process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID     ?? 'unset',
+    iosClientId:     googleIosClientId,
     androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ?? 'unset',
+    redirectUri:     googleIosRedirectUri,
   });
 
   const [, facebookResponse, facebookPromptAsync] = Facebook.useAuthRequest({
@@ -563,7 +575,30 @@ export default function LoginScreen() {
   useEffect(() => {
     if (!googleResponse) return;
     if (googleResponse.type === 'success' && googleResponse.authentication?.accessToken) {
+      // Implicit flow (web) — token comes back directly.
       void handleGoogleToken(googleResponse.authentication.accessToken);
+    } else if (googleResponse.type === 'success' && googleResponse.params?.code) {
+      // Authorization Code flow (native default on iOS/Android) — exchange the code
+      // for an access token ourselves; expo-auth-session doesn't do this automatically.
+      const clientId = Platform.select({
+        ios:     process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+        android: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
+        default: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+      }) ?? 'unset';
+      exchangeCodeAsync(
+        {
+          clientId,
+          code:         googleResponse.params.code,
+          redirectUri:  googleRequest?.redirectUri ?? '',
+          extraParams:  googleRequest?.codeVerifier ? { code_verifier: googleRequest.codeVerifier } : undefined,
+        },
+        Google.discovery,
+      )
+        .then((token) => {
+          if (token.accessToken) void handleGoogleToken(token.accessToken);
+          else { setGoogleError(t('auth.login.googleFailed')); setGoogleLoading(false); }
+        })
+        .catch(() => { setGoogleError(t('auth.login.googleFailed')); setGoogleLoading(false); });
     } else if (googleResponse.type === 'error') {
       setGoogleError(t('auth.login.googleFailed'));
       setGoogleLoading(false);
@@ -689,31 +724,24 @@ export default function LoginScreen() {
             ))}
           </View>
 
-          {/* Top row: logo centered, lang switcher pinned to the right */}
-          <View style={s.heroTop}>
+          {/* Lang switcher pinned to the top-right */}
+          <View style={[s.langRow, { top: insets.top + 12 }]}>
+            {LANG_OPTIONS.map(({ lang, flag }) => (
+              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                key={lang}
+                style={[s.langBtn, language === lang && s.langBtnActive]}
+                onPress={() => setLanguage(lang)}>
+                <Text style={s.langFlag}>{flag}</Text>
+              </Pressable>
+            ))}
+          </View>
+
+          {/* Logo, centered, with tagline below */}
+          <View style={s.heroCenter}>
             <View style={s.logoBadgeCard}>
               <Image source={require('@/assets/images/logo.png')} style={s.logoImage} resizeMode="contain" />
             </View>
-            <View style={s.langRow}>
-              {LANG_OPTIONS.map(({ lang, flag }) => (
-                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                  key={lang}
-                  style={[s.langBtn, language === lang && s.langBtnActive]}
-                  onPress={() => setLanguage(lang)}>
-                  <Text style={s.langFlag}>{flag}</Text>
-                </Pressable>
-              ))}
-            </View>
-          </View>
-
-          {/* Hero heading */}
-          <View style={s.heroBody}>
-            <Text style={s.heroTitle}>
-              {tab === 'login' ? t('auth.login.heroTitleLogin') : t('auth.login.heroTitleSignup')}
-            </Text>
-            <Text style={s.heroSub}>
-              {tab === 'login' ? t('auth.login.heroSubLogin') : t('auth.login.heroSubSignup')}
-            </Text>
+            <Text style={s.heroTagline}>{t('auth.login.heroTagline')}</Text>
           </View>
         </LinearGradient>
 
@@ -815,7 +843,7 @@ const s = StyleSheet.create({
   flex: { flex: 1 },
 
   // Hero
-  hero:    { paddingHorizontal: 24, paddingBottom: 52, overflow: 'hidden' },
+  hero:    { paddingHorizontal: 24, paddingBottom: 64, overflow: 'hidden' },
   blob1:   { position: 'absolute', width: 240, height: 240, borderRadius: 120, backgroundColor: 'rgba(255,255,255,0.03)', top: -60, right: -60 },
   blob2:   { position: 'absolute', width: 160, height: 160, borderRadius: 80,  backgroundColor: 'rgba(255,255,255,0.03)', bottom: 20, left: -50 },
   blob3:   { position: 'absolute', width: 100, height: 100, borderRadius: 50,  backgroundColor: 'rgba(255,255,255,0.03)', top: 40, left: 80 },
@@ -823,17 +851,15 @@ const s = StyleSheet.create({
   bgIconLayer: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   bgIcon:      { position: 'absolute', opacity: 0.14 },
 
-  heroTop:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 28, position: 'relative' },
-  logoBadgeCard: { backgroundColor: '#fff', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6 },
-  logoImage: { width: 88, height: 88 / (2141 / 576) },
-  langRow:  { flexDirection: 'row', gap: 6, position: 'absolute', right: 0, top: '50%', transform: [{ translateY: -17 }] },
+  logoBadgeCard: { backgroundColor: '#fff', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8 },
+  logoImage: { width: 108, height: 108 / (520 / 210) },
+  langRow:  { flexDirection: 'row', gap: 6, position: 'absolute', right: 24 },
   langBtn:  { width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(255,255,255,0.12)', justifyContent: 'center', alignItems: 'center' },
   langBtnActive: { backgroundColor: 'rgba(255,255,255,0.28)', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.5)' },
   langFlag: { fontSize: 15 },
 
-  heroBody:  { gap: 8 },
-  heroTitle: { fontSize: 28, fontWeight: '700', color: '#fff', fontFamily: F.bold, lineHeight: 34 },
-  heroSub:   { fontSize: 14, color: 'rgba(255,255,255,0.72)', fontFamily: F.regular, lineHeight: 20 },
+  heroCenter:  { alignItems: 'center', marginTop: 20, gap: 16 },
+  heroTagline: { fontSize: 18, color: 'rgba(255,255,255,0.9)', fontFamily: F.semibold, textAlign: 'center', letterSpacing: 0.3 },
 
   // Card
   card:       { flex: 1, backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, marginTop: -28, overflow: 'hidden' },

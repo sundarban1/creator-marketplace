@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
   chipText:    { fontSize: 12, fontWeight: '700', letterSpacing: 0.3, fontFamily: F.bold },
   chipDivider: { width: 1, height: 14, backgroundColor: 'rgba(0,0,0,0.12)' },
 
-  logoImage: { width: 220, height: 220 / (2141 / 576) },
+  logoImage: { width: 220, height: 220 / (520 / 210) },
 
   tagline:  { fontSize: 14, color: '#888', marginTop: 8, letterSpacing: 0.4, fontWeight: '500', fontFamily: F.medium },
 

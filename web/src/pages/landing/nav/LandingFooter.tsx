@@ -9,7 +9,7 @@ export function LandingFooter() {
         <div className="grid md:grid-cols-6 gap-8 mb-10">
           <div className="md:col-span-2">
             <div className="flex items-center gap-2 bg-white rounded-full pl-2 pr-4 py-2 mb-3 w-fit">
-              <img src="/logo.png" alt="kolab" className="h-5 w-5 rounded-full object-cover" />
+              <img src="/icon.png" alt="kolab" className="h-5 w-5 rounded-full object-cover" />
               <span className="font-extrabold text-gray-900 text-sm">kolab</span>
             </div>
             <p className="text-white/50 text-sm leading-relaxed max-w-xs">

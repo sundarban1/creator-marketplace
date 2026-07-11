@@ -18,6 +18,11 @@
             "CFBundleURLSchemes": [
               "fb27739673972329504"
             ]
+          },
+          {
+            "CFBundleURLSchemes": [
+              "com.googleusercontent.apps.543768819635-fuslrtr8mt6bmi2jslc3h3hcqg4drhdk"
+            ]
           }
         ],
         "FacebookAppID": "27739673972329504",

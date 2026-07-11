@@ -2,6 +2,8 @@ import { router } from 'expo-router';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BackButton } from '@/components/BackButton';
+import { PaymentMethodIcon } from '@/components/PaymentMethodIcon';
+import { isPaymentMethodId } from '@/utilities/paymentMethods';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -118,9 +120,13 @@ export default function WalletScreen() {
                 const meta = METHOD_META[tx.method] ?? { icon: 'credit-card', color: C.brinjal1 };
                 return (
                   <View key={tx.id} style={[styles.txRow, i > 0 && { borderTopWidth: 1, borderTopColor: C.border }]}>
-                    <View style={[styles.txIconWrap, { backgroundColor: `${meta.color}18` }]}>
-                      <FontAwesome5 name={meta.icon} size={14} color={meta.color} />
-                    </View>
+                    {isPaymentMethodId(tx.method) ? (
+                      <PaymentMethodIcon method={tx.method} size={36} />
+                    ) : (
+                      <View style={[styles.txIconWrap, { backgroundColor: `${meta.color}18` }]}>
+                        <FontAwesome5 name={meta.icon} size={14} color={meta.color} />
+                      </View>
+                    )}
                     <View style={styles.txInfo}>
                       <Text style={[styles.txMethod, { color: C.text }]}>{tx.method.charAt(0).toUpperCase() + tx.method.slice(1)}</Text>
                       <Text style={[styles.txDate, { color: C.textSecondary }]}>{formatDate(tx.createdAt)}</Text>
