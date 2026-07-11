@@ -1,6 +1,8 @@
-import { request }                          from '@/lib/api';
+import { request, API_BASE }                from '@/lib/api';
 import type { ApiConversation, ApiMessage } from '@/lib/api';
 import type { Conversation, Message }       from '@/types';
+import { storage }           from '@/utilities/storage';
+import { ACCESS_TOKEN_KEY }  from '@/utilities/constants';
 
 // ── Transformers ────────────────────────────────────────────────────────────────
 
@@ -39,6 +41,9 @@ export function toMessage(api: ApiMessage): Message {
     text:           api.content,
     timestamp:      api.createdAt,
     status:         'sent',
+    type:           api.type ?? 'TEXT',
+    attachmentUrl:  api.attachmentUrl,
+    attachmentName: api.attachmentName,
   };
 }
 
@@ -98,6 +103,26 @@ export const chatService = {
       { content: text },
     );
     return toMessage(res.data);
+  },
+
+  async sendAttachment(
+    conversationId: string,
+    file: { uri: string; name: string; mimeType: string },
+    caption?: string,
+  ): Promise<Message> {
+    const token = storage.get(ACCESS_TOKEN_KEY) ?? '';
+    const form  = new FormData();
+    form.append('file', { uri: file.uri, name: file.name, type: file.mimeType } as unknown as Blob);
+    if (caption?.trim()) form.append('caption', caption.trim());
+
+    const res  = await fetch(`${API_BASE}/api/messaging/conversations/${conversationId}/attachments`, {
+      method:  'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body:    form,
+    });
+    const json = await res.json() as { success: boolean; data: ApiMessage; message?: string };
+    if (!res.ok) throw new Error(json.message ?? 'Failed to send attachment');
+    return toMessage(json.data);
   },
 
   async markSeen(conversationId: string): Promise<void> {

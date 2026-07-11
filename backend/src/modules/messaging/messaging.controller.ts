@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { ConversationStatus } from '@prisma/client';
 import { MessagingService } from './messaging.service';
 import { success, paginated } from '../../utils/response';
+import { AppError } from '../../middleware/error';
 
 const messagingService = new MessagingService();
 
@@ -57,6 +58,16 @@ export class MessagingController {
         req.params.id, req.user!.id, req.user!.role, req.body,
       );
       success(res, message, 'Message sent', 201);
+    } catch (err) { next(err); }
+  }
+
+  async sendAttachment(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.file) throw new AppError('No file provided', 400);
+      const message = await messagingService.sendAttachment(
+        req.params.id, req.user!.id, req.user!.role, req.file, req.body?.caption,
+      );
+      success(res, message, 'Attachment sent', 201);
     } catch (err) { next(err); }
   }
 

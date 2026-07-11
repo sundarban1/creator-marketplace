@@ -7,7 +7,10 @@ import { MessagingRepository } from './messaging.repository';
 import { notificationService, sendExpoPush } from '../notifications/notification.service';
 import { analyticsService } from '../analytics/analytics.service';
 import { emitToUser } from '../../socket';
+import { uploadImage as uploadToCloudinary, uploadRawFile } from '../../utils/cloudinary';
 import type { StartConversationInput, SendMessageInput } from './messaging.schema';
+
+const ATTACHMENT_IMAGE_TRANSFORMATION = [{ width: 1600, crop: 'limit' }];
 
 export class MessagingService {
   private repo:         MessagingRepository;
@@ -173,7 +176,7 @@ export class MessagingService {
     return { messages: raw.map(toMessageDto), total, page, limit };
   }
 
-  async sendMessage(conversationId: string, userId: string, role: Role, input: SendMessageInput) {
+  private async prepareSend(conversationId: string, userId: string, role: Role) {
     const conversation = await this.repo.findConversationById(conversationId);
     if (!conversation) throw new AppError('Conversation not found', 404);
     await this.verifyConversationAccess(conversation, userId, role);
@@ -194,7 +197,18 @@ export class MessagingService {
       analyticsService.recordResponseTime(userId, role, minutes);
     }
 
-    const raw     = await this.repo.createMessage({ conversationId, senderId: userId, content: input.content });
+    return conversation;
+  }
+
+  private async persistAndBroadcast(
+    conversation: NonNullable<Awaited<ReturnType<MessagingRepository['findConversationById']>>>,
+    userId: string,
+    role: Role,
+    data: { content: string; type?: 'TEXT' | 'IMAGE' | 'FILE'; attachmentUrl?: string; attachmentName?: string },
+    pushBody: string,
+  ) {
+    const conversationId = conversation.id;
+    const raw     = await this.repo.createMessage({ conversationId, senderId: userId, ...data });
     const message = toMessageDto(raw);
 
     // Mark the conversation as seen for the sender immediately so their own
@@ -220,9 +234,43 @@ export class MessagingService {
     const senderName = userId === conversation.creator.userId
       ? (conversation.creator.fullName ?? 'Creator')
       : (conversation.business.businessName ?? 'Business');
-    sendExpoPush(recipientUserId, senderName, input.content.slice(0, 100)).catch(() => {});
+    sendExpoPush(recipientUserId, senderName, pushBody.slice(0, 100)).catch(() => {});
 
     return message;
+  }
+
+  async sendMessage(conversationId: string, userId: string, role: Role, input: SendMessageInput) {
+    const conversation = await this.prepareSend(conversationId, userId, role);
+    return this.persistAndBroadcast(conversation, userId, role, { content: input.content }, input.content);
+  }
+
+  // Images/files are uploaded via multipart REST (not the socket) and stored on Cloudinary;
+  // the resulting message is still broadcast over the socket like a normal text message.
+  async sendAttachment(
+    conversationId: string,
+    userId: string,
+    role: Role,
+    file: Express.Multer.File,
+    caption?: string,
+  ) {
+    const conversation = await this.prepareSend(conversationId, userId, role);
+
+    const isImage  = file.mimetype.startsWith('image/');
+    const type: 'IMAGE' | 'FILE' = isImage ? 'IMAGE' : 'FILE';
+    const publicId = `${type.toLowerCase()}_${conversationId}_${Date.now()}`;
+    const url = isImage
+      ? await uploadToCloudinary(file.buffer, 'messages/attachments', publicId, ATTACHMENT_IMAGE_TRANSFORMATION)
+      : await uploadRawFile(file.buffer, 'messages/attachments', publicId);
+
+    const content  = caption?.trim() ?? '';
+    const pushBody = content || (isImage ? '📷 Photo' : `📎 ${file.originalname}`);
+
+    return this.persistAndBroadcast(conversation, userId, role, {
+      content,
+      type,
+      attachmentUrl:  url,
+      attachmentName: file.originalname,
+    }, pushBody);
   }
 
   // ── Seen / badge ───────────────────────────────────────────────────────────

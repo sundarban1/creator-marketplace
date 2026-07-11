@@ -17,15 +17,24 @@ type IoniconName = keyof typeof Ionicons.glyphMap;
 
 // ── Tab config ────────────────────────────────────────────────────────────────
 
-const TAB_CONFIG: Record<string, { icon: IoniconName; iconActive: IoniconName; label: string }> = {
+// `color` is omitted for `index` (Home) — it uses the theme's brinjal accent instead, resolved at render time.
+const TAB_CONFIG: Record<string, { icon: IoniconName; iconActive: IoniconName; label: string; color?: string }> = {
   index:         { icon: 'home-outline',          iconActive: 'home',          label: 'Home' },
-  campaigns:     { icon: 'briefcase-outline',     iconActive: 'briefcase',     label: 'Events' },
-  proposals:     { icon: 'document-text-outline', iconActive: 'document-text', label: 'Proposals' },
-  messages:      { icon: 'chatbubble-outline',    iconActive: 'chatbubble',    label: 'Messages' },
-  notifications: { icon: 'notifications-outline', iconActive: 'notifications', label: 'Activity' },
+  campaigns:     { icon: 'briefcase-outline',     iconActive: 'briefcase',     label: 'Events',    color: '#059669' },
+  proposals:     { icon: 'document-text-outline', iconActive: 'document-text', label: 'Proposals', color: '#7C3AED' },
+  messages:      { icon: 'chatbubble-outline',    iconActive: 'chatbubble',    label: 'Messages',  color: '#2563EB' },
+  notifications: { icon: 'notifications-outline', iconActive: 'notifications', label: 'Activity',  color: '#D97706' },
 };
 
 // ── Custom tab bar ────────────────────────────────────────────────────────────
+
+// Hides the tab bar while a chat conversation ([id]) is open inside the
+// messages stack, so the chat input isn't followed by a strip of dead tab-bar space.
+function isChatRoomFocused(state: any): boolean {
+  const focused = state.routes[state.index];
+  if (focused?.name !== 'messages' || !focused.state) return false;
+  return focused.state.routes[focused.state.index]?.name === '[id]';
+}
 
 function CustomTabBar({
   state,
@@ -40,6 +49,8 @@ function CustomTabBar({
 }) {
   const C = useAppColors();
   const { t } = useLanguage();
+
+  if (isChatRoomFocused(state)) return null;
 
   const labelMap: Record<string, string> = {
     index:         t('business.tab.home'),
@@ -63,6 +74,7 @@ function CustomTabBar({
         const cfg     = TAB_CONFIG[route.name]!;
         const label   = labelMap[route.name] ?? cfg.label;
         const badge   = badgeMap[route.name] ?? 0;
+        const color   = cfg.color ?? C.brinjal1;
 
         function onPress() {
           if (route.name === 'messages') {
@@ -83,13 +95,13 @@ function CustomTabBar({
             <View
               style={[
                 tabS.bubble,
-                focused && { backgroundColor: `${C.brinjal1}18` },
+                focused && { backgroundColor: `${color}18` },
               ]}
             >
               <Ionicons
                 name={focused ? cfg.iconActive : cfg.icon}
                 size={21}
-                color={focused ? C.brinjal1 : '#ABABBB'}
+                color={focused ? color : '#ABABBB'}
               />
               {/* Badge dot */}
               {badge > 0 && (
@@ -103,7 +115,7 @@ function CustomTabBar({
             <Text
               style={[
                 tabS.label,
-                { color: focused ? C.brinjal1 : '#ABABBB', fontWeight: focused ? '700' : '500' },
+                { color: focused ? color : '#ABABBB', fontWeight: focused ? '700' : '500' },
               ]}
               numberOfLines={1}
             >
@@ -111,7 +123,7 @@ function CustomTabBar({
             </Text>
 
             {/* Active underline dot */}
-            {focused && <View style={[tabS.dot, { backgroundColor: C.brinjal1 }]} />}
+            {focused && <View style={[tabS.dot, { backgroundColor: color }]} />}
           </Pressable>
         );
       })}

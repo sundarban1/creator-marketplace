@@ -421,6 +421,7 @@ export default function HomeScreen() {
         data={loading ? [] : visibleList}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => <CampaignListItem campaign={item} />}
+        ItemSeparatorComponent={() => <View style={styles.eventSeparator} />}
         ListEmptyComponent={
           !loading && filteredList.length === 0 ? (
             <EmptyState
@@ -601,7 +602,6 @@ export default function HomeScreen() {
           </View>
           <Ionicons name="chevron-forward" size={16} color={C.textSecondary} />
         </Pressable>
-        <View style={[styles.rowSeparator, { backgroundColor: C.border }]} />
 
         {/* ── Error ── */}
         {fetchError ? (
@@ -856,7 +856,6 @@ const styles = StyleSheet.create({
 
   // ── Search ──
   searchRow: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 4 },
-  rowSeparator: { height: 1, marginHorizontal: 20, marginTop: 14 },
   searchCard: { flexDirection: 'row', alignItems: 'center', borderRadius: 16, paddingHorizontal: 14, height: 52, borderWidth: 1.5 },
   searchCardFocused: {
     borderColor: '#7C3AED', borderWidth: 2,
@@ -932,6 +931,6 @@ const styles = StyleSheet.create({
   filterTabsWrap: { marginTop: 8, marginBottom: 4, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
 
   // ── Campaign list ──
-  listWrap:   { paddingHorizontal: 20, gap: 12 },
+  eventSeparator: { height: 6 },
   listLoadingMore: { paddingVertical: 16, alignItems: 'center' },
 });

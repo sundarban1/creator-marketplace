@@ -93,7 +93,9 @@ export type Message = {
   text: string;
   timestamp: string;
   status: 'sending' | 'sent' | 'delivered' | 'read';
-  attachmentUrl?: string;
+  type: 'TEXT' | 'IMAGE' | 'FILE';
+  attachmentUrl?: string | null;
+  attachmentName?: string | null;
 };
 
 export type AppNotification = {

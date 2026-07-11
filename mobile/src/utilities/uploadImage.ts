@@ -41,7 +41,7 @@ async function renderAt(uri: string, width: number, height: number, quality: num
   return rendered.saveAsync({ compress: quality, format: SaveFormat.JPEG });
 }
 
-async function compressImage(
+export async function compressImage(
   asset: ImagePicker.ImagePickerAsset,
   isDocument: boolean,
 ): Promise<{ uri: string; mimeType: string }> {

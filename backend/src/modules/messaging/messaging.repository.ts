@@ -146,7 +146,14 @@ export class MessagingRepository {
     });
   }
 
-  async createMessage(data: { conversationId: string; senderId: string; content: string }) {
+  async createMessage(data: {
+    conversationId: string;
+    senderId: string;
+    content: string;
+    type?: 'TEXT' | 'IMAGE' | 'FILE';
+    attachmentUrl?: string;
+    attachmentName?: string;
+  }) {
     const msg = await prisma.message.create({
       data,
       include: { sender: { select: { id: true, email: true, role: true } } },

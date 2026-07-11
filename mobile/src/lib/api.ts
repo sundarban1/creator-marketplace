@@ -110,6 +110,9 @@ export interface ApiMessage {
   conversationId: string;
   senderId:       string;
   content:        string;
+  type:           'TEXT' | 'IMAGE' | 'FILE';
+  attachmentUrl:  string | null;
+  attachmentName: string | null;
   createdAt:      string;
   sender:         { id: string; email: string; role: string };
 }

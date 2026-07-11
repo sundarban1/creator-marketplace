@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { MessagingController } from './messaging.controller';
 import { authenticate } from '../../middleware/auth';
 import { validate } from '../../middleware/validate';
+import { uploadChatFile } from '../../middleware/upload';
 import { startConversationSchema, sendMessageSchema } from './messaging.schema';
 
 const router = Router();
@@ -23,5 +24,7 @@ router.post('/conversations/:id/:action(accept|decline)', ctrl.respondToRequest.
 router.put('/conversations/:id/seen',                ctrl.markSeen.bind(ctrl));
 router.get('/conversations/:id/messages',            ctrl.getMessages.bind(ctrl));
 router.post('/conversations/:id/messages',           validate(sendMessageSchema), ctrl.sendMessage.bind(ctrl));
+// Image / file attachment — multipart upload, field name "file", optional "caption" text field
+router.post('/conversations/:id/attachments',        uploadChatFile.single('file'), ctrl.sendAttachment.bind(ctrl));
 
 export default router;

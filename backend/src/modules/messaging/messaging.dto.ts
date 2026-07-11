@@ -3,6 +3,9 @@ export interface MessageDto {
   conversationId: string;
   senderId: string;
   content: string;
+  type: 'TEXT' | 'IMAGE' | 'FILE';
+  attachmentUrl: string | null;
+  attachmentName: string | null;
   createdAt: string;
   sender?: { id: string; email: string; role: string };
 }
@@ -28,6 +31,9 @@ type RawMessage = {
   conversationId: string;
   senderId: string;
   content: string;
+  type: 'TEXT' | 'IMAGE' | 'FILE';
+  attachmentUrl: string | null;
+  attachmentName: string | null;
   createdAt: Date;
   sender?: { id: string; email: string; role: string };
 };
@@ -38,6 +44,9 @@ export function toMessageDto(m: RawMessage): MessageDto {
     conversationId: m.conversationId,
     senderId:       m.senderId,
     content:        m.content,
+    type:           m.type,
+    attachmentUrl:  m.attachmentUrl,
+    attachmentName: m.attachmentName,
     createdAt:      m.createdAt.toISOString(),
   };
   if (m.sender) dto.sender = m.sender;

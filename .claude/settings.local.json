@@ -387,7 +387,8 @@
       "Bash(awk '/^model Campaign /,/^}/' prisma/schema.prisma)",
       "Bash(node analytics-regression.mjs)",
       "Bash(echo \"---exit $?\")",
-      "Bash(node public-stats-check.mjs)"
+      "Bash(node public-stats-check.mjs)",
+      "Bash(grep -iE \"^expo-document-picker$|^expo-image-picker$|emoji\")"
     ],
     "additionalDirectories": [
       "/private/tmp",

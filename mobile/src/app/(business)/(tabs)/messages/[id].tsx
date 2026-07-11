@@ -4,10 +4,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useRef, useState } from 'react';
 import {
+  Alert,
   Animated,
   ActivityIndicator,
   FlatList,
+  Image,
+  Keyboard,
   KeyboardAvoidingView,
+  Linking,
   Platform,
   Pressable,
   StyleSheet,
@@ -23,6 +27,11 @@ import { chatService, toMessage } from '@/services/chat';
 import { getSocket } from '@/lib/socket';
 import { incomingMessageEvents } from '@/lib/incomingMessageEvents';
 import { F } from '@/utilities/constants';
+import { CHAT_EMOJIS } from '@/utilities/chatEmojis';
+import {
+  pickImageFromLibrary, pickImageFromCamera, pickDocumentAttachment, promptAttachmentChoice,
+  type PickedAttachment,
+} from '@/utilities/chatAttachments';
 import type { Message } from '@/types';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -146,6 +155,8 @@ function MessageBubble({
 }) {
   const C = useAppColors();
   const isPending = msg.id.startsWith('temp-');
+  const isImage   = msg.type === 'IMAGE' && !!msg.attachmentUrl;
+  const isFile    = msg.type === 'FILE'  && !!msg.attachmentUrl;
 
   return (
     <View style={[s.bubbleRow, isSent ? s.bubbleRowSent : s.bubbleRowReceived]}>
@@ -157,14 +168,52 @@ function MessageBubble({
           : <View style={s.avatarSpacer} />
       )}
       <View style={[s.bubbleWrap, isSent ? s.bubbleWrapSent : s.bubbleWrapReceived]}>
-        <View style={[
-          s.bubble,
-          isSent
-            ? [s.bubbleSent, { backgroundColor: C.brinjal1, opacity: isPending ? 0.65 : 1 }]
-            : [s.bubbleReceived, { backgroundColor: C.surface, borderColor: C.border }],
-        ]}>
-          <Text style={[s.bubbleTxt, { color: isSent ? '#fff' : C.text }]}>{msg.text}</Text>
-        </View>
+        {isImage ? (
+          <Pressable onPress={() => msg.attachmentUrl && !isPending && Linking.openURL(msg.attachmentUrl)}>
+            <View style={s.imageBubble}>
+              <Image source={{ uri: msg.attachmentUrl! }} style={s.attachmentImage} resizeMode="cover" />
+              {isPending && (
+                <View style={s.imageUploadingOverlay}>
+                  <ActivityIndicator size="small" color="#fff" />
+                </View>
+              )}
+            </View>
+            {!!msg.text && (
+              <View style={[
+                s.bubble, s.captionBubble,
+                isSent
+                  ? [s.bubbleSent, { backgroundColor: C.brinjal1 }]
+                  : [s.bubbleReceived, { backgroundColor: C.surface, borderColor: C.border }],
+              ]}>
+                <Text style={[s.bubbleTxt, { color: isSent ? '#fff' : C.text }]}>{msg.text}</Text>
+              </View>
+            )}
+          </Pressable>
+        ) : isFile ? (
+          <Pressable
+            onPress={() => msg.attachmentUrl && !isPending && Linking.openURL(msg.attachmentUrl)}
+            style={[
+              s.fileBubble,
+              isSent
+                ? { backgroundColor: C.brinjal1 }
+                : { backgroundColor: C.surface, borderColor: C.border, borderWidth: StyleSheet.hairlineWidth },
+            ]}>
+            <Ionicons name="document-text-outline" size={22} color={isSent ? '#fff' : C.brinjal1} />
+            <Text numberOfLines={1} style={[s.fileNameTxt, { color: isSent ? '#fff' : C.text }]}>
+              {msg.attachmentName ?? 'File'}
+            </Text>
+            {isPending && <ActivityIndicator size="small" color={isSent ? '#fff' : C.brinjal1} />}
+          </Pressable>
+        ) : (
+          <View style={[
+            s.bubble,
+            isSent
+              ? [s.bubbleSent, { backgroundColor: C.brinjal1, opacity: isPending ? 0.65 : 1 }]
+              : [s.bubbleReceived, { backgroundColor: C.surface, borderColor: C.border }],
+          ]}>
+            <Text style={[s.bubbleTxt, { color: isSent ? '#fff' : C.text }]}>{msg.text}</Text>
+          </View>
+        )}
         <View style={s.bubbleMeta}>
           <Text style={[s.bubbleTime, { color: C.textSecondary }]}>{formatTime(msg.timestamp)}</Text>
           {isSent && (
@@ -197,6 +246,7 @@ export default function BusinessChatRoomScreen() {
   );
   const [text, setText]               = useState('');
   const [otherTyping, setOtherTyping] = useState(false);
+  const [emojiOpen, setEmojiOpen]     = useState(false);
   const listRef         = useRef<FlatList>(null);
   const inputRef        = useRef<TextInput>(null);
   const isSending       = useRef(false);
@@ -315,6 +365,7 @@ export default function BusinessChatRoomScreen() {
       id: tempId, conversationId: id,
       senderId: user?.id ?? '', text: content,
       timestamp: new Date().toISOString(), status: 'sending',
+      type: 'TEXT',
     };
     setMessages((prev) => [...prev, optimistic]);
     setText('');
@@ -336,6 +387,68 @@ export default function BusinessChatRoomScreen() {
         })
         .finally(() => { isSending.current = false; });
     }
+  }
+
+  async function handleSendAttachment(file: PickedAttachment, type: 'IMAGE' | 'FILE') {
+    if (isSending.current) return;
+    isSending.current = true;
+    const caption = text.trim();
+
+    const socket = getSocket();
+    if (socket && isTypingEmitted.current) {
+      socket.emit('typing:stop', { conversationId: id });
+      isTypingEmitted.current = false;
+    }
+    if (typingTimer.current) clearTimeout(typingTimer.current);
+
+    const tempId = `temp-${Date.now()}`;
+    const optimistic: Message = {
+      id: tempId, conversationId: id,
+      senderId: user?.id ?? '', text: caption,
+      timestamp: new Date().toISOString(), status: 'sending',
+      type, attachmentUrl: file.uri, attachmentName: file.name,
+    };
+    setMessages((prev) => [...prev, optimistic]);
+    setText('');
+    scrollToBottom();
+
+    try {
+      const msg = await chatService.sendAttachment(id, file, caption);
+      setMessages((prev) => {
+        const without = prev.filter((m) => m.id !== tempId);
+        return without.some((m) => m.id === msg.id) ? without : [...without, msg];
+      });
+    } catch (e) {
+      setMessages((prev) => prev.filter((m) => m.id !== tempId));
+      Alert.alert('Failed to send', e instanceof Error ? e.message : 'Please try again.');
+    } finally {
+      isSending.current = false;
+    }
+  }
+
+  async function handleCameraPress() {
+    const file = await pickImageFromCamera();
+    if (file) void handleSendAttachment(file, 'IMAGE');
+  }
+
+  async function handleAttachmentPress() {
+    const choice = await promptAttachmentChoice();
+    if (choice === 'gallery') {
+      const file = await pickImageFromLibrary();
+      if (file) void handleSendAttachment(file, 'IMAGE');
+    } else if (choice === 'document') {
+      const file = await pickDocumentAttachment();
+      if (file) void handleSendAttachment(file, file.mimeType.startsWith('image/') ? 'IMAGE' : 'FILE');
+    }
+  }
+
+  function toggleEmojiPanel() {
+    if (!emojiOpen) Keyboard.dismiss();
+    setEmojiOpen((v) => !v);
+  }
+
+  function insertEmoji(emoji: string) {
+    handleTextChange(text + emoji);
   }
 
   const isPending  = status === 'PENDING';
@@ -433,30 +546,58 @@ export default function BusinessChatRoomScreen() {
 
         {/* ── Input bar ── */}
         {status === 'ACCEPTED' && (
-          <View style={[s.inputBar, { backgroundColor: C.surface, borderTopColor: C.border, paddingBottom: insets.bottom + 8 }]}>
-            <View style={[s.inputWrap, { borderColor: C.border, backgroundColor: C.background }]}>
-              <TextInput
-                ref={inputRef}
-                style={[s.input, { color: C.text }]}
-                value={text}
-                onChangeText={handleTextChange}
-                placeholder={t('messages.typePlaceholder')}
-                placeholderTextColor={C.textSecondary}
-                multiline
-                maxLength={1000}
-                returnKeyType="default"
-              />
-              {text.length > 900 && (
-                <Text style={[s.charCount, { color: C.textSecondary }]}>{1000 - text.length}</Text>
-              )}
+          <>
+            <View style={[s.inputBar, { backgroundColor: C.surface, borderTopColor: C.border, paddingBottom: emojiOpen ? 8 : insets.bottom + 8 }]}>
+              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={s.iconBtn} onPress={handleCameraPress} hitSlop={4}>
+                <Ionicons name="camera-outline" size={24} color={C.brinjal1} />
+              </Pressable>
+              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={s.iconBtn} onPress={handleAttachmentPress} hitSlop={4}>
+                <Ionicons name="images-outline" size={24} color={C.brinjal1} />
+              </Pressable>
+              <View style={[s.inputWrap, { borderColor: C.border, backgroundColor: C.background }]}>
+                <Pressable onPress={toggleEmojiPanel} hitSlop={4}>
+                  <Ionicons name={emojiOpen ? 'happy' : 'happy-outline'} size={20} color={C.textSecondary} />
+                </Pressable>
+                <TextInput
+                  ref={inputRef}
+                  style={[s.input, { color: C.text }]}
+                  value={text}
+                  onChangeText={handleTextChange}
+                  onFocus={() => setEmojiOpen(false)}
+                  placeholder={t('messages.typePlaceholder')}
+                  placeholderTextColor={C.textSecondary}
+                  multiline
+                  maxLength={1000}
+                  returnKeyType="default"
+                />
+                {text.length > 900 && (
+                  <Text style={[s.charCount, { color: C.textSecondary }]}>{1000 - text.length}</Text>
+                )}
+              </View>
+              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                style={[s.sendBtn, { backgroundColor: text.trim() ? C.brinjal1 : C.border }]}
+                onPress={handleSend}
+                disabled={!text.trim()}>
+                <Ionicons name="send" size={18} color="#fff" />
+              </Pressable>
             </View>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-              style={[s.sendBtn, { backgroundColor: text.trim() ? C.brinjal1 : C.border }]}
-              onPress={handleSend}
-              disabled={!text.trim()}>
-              <Ionicons name="send" size={18} color="#fff" />
-            </Pressable>
-          </View>
+
+            {/* ── Emoji panel (replaces the system keyboard when open) ── */}
+            {emojiOpen && (
+              <View style={[s.emojiPanel, { backgroundColor: C.surface, borderTopColor: C.border, paddingBottom: insets.bottom }]}>
+                <FlatList
+                  data={CHAT_EMOJIS}
+                  keyExtractor={(e) => e}
+                  numColumns={8}
+                  renderItem={({ item }) => (
+                    <Pressable style={s.emojiItem} onPress={() => insertEmoji(item)}>
+                      <Text style={s.emojiTxt}>{item}</Text>
+                    </Pressable>
+                  )}
+                />
+              </View>
+            )}
+          </>
         )}
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -511,6 +652,14 @@ const s = StyleSheet.create({
   bubbleMeta: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 3, paddingHorizontal: 2 },
   bubbleTime: { fontSize: 10, fontFamily: F.regular },
 
+  // Attachments
+  imageBubble:          { width: 210, height: 210, borderRadius: 16, overflow: 'hidden' },
+  attachmentImage:      { width: '100%', height: '100%' },
+  imageUploadingOverlay:{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'center', alignItems: 'center' },
+  captionBubble:        { marginTop: 4 },
+  fileBubble:           { flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 12, maxWidth: 220 },
+  fileNameTxt:          { flex: 1, fontSize: 13, fontFamily: F.medium },
+
   // Empty
   emptyWrap:  { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10, paddingHorizontal: 32, paddingVertical: 80 },
   emptyIcon:  { width: 72, height: 72, borderRadius: 36, justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
@@ -518,9 +667,15 @@ const s = StyleSheet.create({
   emptyHint:  { fontSize: 13, fontFamily: F.regular, textAlign: 'center', lineHeight: 19 },
 
   // Input
-  inputBar:  { flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: 12, paddingVertical: 10, paddingBottom: 16, borderTopWidth: StyleSheet.hairlineWidth, gap: 8 },
-  inputWrap: { flex: 1, minHeight: 44, maxHeight: 120, borderWidth: 1.5, borderRadius: 22, paddingHorizontal: 16, paddingVertical: 8, justifyContent: 'center' },
-  input:     { fontSize: 15, fontFamily: F.regular, paddingVertical: 2 },
-  charCount: { fontSize: 10, fontFamily: F.regular, textAlign: 'right', marginTop: 2 },
+  inputBar:  { flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: 10, paddingVertical: 10, paddingBottom: 16, borderTopWidth: StyleSheet.hairlineWidth, gap: 6 },
+  iconBtn:   { width: 36, height: 44, justifyContent: 'center', alignItems: 'center' },
+  inputWrap: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 44, maxHeight: 120, borderWidth: 1.5, borderRadius: 22, paddingHorizontal: 12, paddingVertical: 8 },
+  input:     { flex: 1, fontSize: 15, fontFamily: F.regular, paddingVertical: 2 },
+  charCount: { fontSize: 10, fontFamily: F.regular },
   sendBtn:   { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center' },
+
+  // Emoji panel
+  emojiPanel: { height: 260, borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: 8, paddingTop: 8 },
+  emojiItem:  { width: `${100 / 8}%`, aspectRatio: 1, justifyContent: 'center', alignItems: 'center' },
+  emojiTxt:   { fontSize: 26 },
 });
