@@ -743,10 +743,12 @@ const en = {
     statusAccepted: 'Accepted',
     statusRejected: 'Rejected',
     applicationCount: '{{n}} application(s)',
-    projectCompleted:   'Project Completed',
-    reviewDeliverables: 'Review Deliverables',
-    creatorIsWorking:   'Creator is Working',
-    startTheProject:    'Start the Project',
+    projectCompleted:       'Project Completed',
+    paymentReleased:        'Payment Released',
+    awaitingPaymentRelease: 'Awaiting Payment Release',
+    reviewDeliverables:     'Review Deliverables',
+    creatorIsWorking:       'Creator is Working',
+    startTheProject:        'Start the Project',
   },
 
   // ── Creator Detail (business view) ───────────────────────────

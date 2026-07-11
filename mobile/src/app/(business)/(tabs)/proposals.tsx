@@ -20,18 +20,22 @@ import { EmptyState } from '@/components/EmptyState';
 import { F } from '@/utilities/constants';
 
 type WS = 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED';
+type PS = 'UNPAID' | 'PAID' | 'RELEASED';
 
 type Proposal = {
   id: string;
   status: 'pending' | 'accepted' | 'rejected';
   workStatus: WS;
+  // The application's own payment status — distinct from campaign.paymentStatus below,
+  // which tracks the campaign record and is never updated by the pay/release flow.
+  paymentStatus: PS;
   proposedRate: string;
   coverLetter: string;
   createdAt: string;
   campaign: {
     id: string; title: string; platform: string;
     campaignType: 'PAID_CAMPAIGN' | 'OPEN_EVENT';
-    paymentStatus: 'UNPAID' | 'PAID' | 'RELEASED';
+    paymentStatus: PS;
   };
   creator: { id: string; fullName: string; avatarUrl: string | null; location: string | null };
 };
@@ -47,6 +51,7 @@ type CampaignCard = {
   rejected: number;
   latestAt: string;
   acceptedWorkStatus: WS | null;
+  acceptedPaymentStatus: PS;
   campaignPaid: boolean;
 };
 
@@ -67,6 +72,7 @@ function buildCampaignCards(proposals: Proposal[]): CampaignCard[] {
         total: 0, pending: 0, accepted: 0, rejected: 0,
         latestAt: p.createdAt,
         acceptedWorkStatus: null,
+        acceptedPaymentStatus: 'UNPAID',
         campaignPaid: paymentStatus === 'PAID' || paymentStatus === 'RELEASED',
       });
     }
@@ -76,14 +82,21 @@ function buildCampaignCards(proposals: Proposal[]): CampaignCard[] {
     if (p.createdAt > c.latestAt) c.latestAt = p.createdAt;
     if (p.status === 'accepted') {
       c.acceptedWorkStatus = p.workStatus;
+      c.acceptedPaymentStatus = p.paymentStatus;
       c.campaignPaid = paymentStatus === 'PAID' || paymentStatus === 'RELEASED';
     }
   }
   return Array.from(map.values()).sort((a, b) => b.latestAt.localeCompare(a.latestAt));
 }
 
-function workspaceBtnConfig(ws: WS | null) {
-  if (ws === 'APPROVED') return { label: 'Project Completed', sub: 'Work approved & payment released', color: '#16A34A', icon: 'checkmark-done-circle' as const };
+// Mirrors the stage logic in activity-timeline.tsx so the card's status always
+// agrees with the timeline (workStatus alone isn't enough — APPROVED needs
+// paymentStatus to tell "awaiting release" from "released" from "completed").
+function workspaceBtnConfig(ws: WS | null, paymentStatus: PS) {
+  if (ws === 'COMPLETED') return { label: 'Project Completed', sub: 'Creator confirmed payment received', color: '#16A34A', icon: 'checkmark-done-circle' as const };
+  if (ws === 'APPROVED' && paymentStatus === 'RELEASED')
+                          return { label: 'Payment Released', sub: 'Awaiting creator to confirm completion', color: '#0EA5E9', icon: 'cash' as const };
+  if (ws === 'APPROVED') return { label: 'Awaiting Payment Release', sub: 'Work approved — release payment to proceed', color: '#EA580C', icon: 'hourglass-outline' as const };
   if (ws === 'SUBMITTED') return { label: 'Review Deliverables', sub: 'Creator has submitted their work', color: '#D97706', icon: 'eye' as const };
   if (ws === 'IN_PROGRESS') return { label: 'Creator is Working', sub: 'Content creation in progress', color: '#7C3AED', icon: 'brush' as const };
   return { label: 'Track the project status', sub: '', color: '#6366F1', icon: 'folder-open' as const };
@@ -169,7 +182,7 @@ function CampaignEventCard({ item }: { item: CampaignCard }) {
 
       {/* Dynamic project status button for accepted campaigns */}
       {item.accepted > 0 && (() => {
-        const cfg = workspaceBtnConfig(item.acceptedWorkStatus);
+        const cfg = workspaceBtnConfig(item.acceptedWorkStatus, item.acceptedPaymentStatus);
         return (
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
             style={({ pressed }) => [styles.startWorkBtn, { backgroundColor: cfg.color, opacity: pressed ? 0.88 : 1 }]}

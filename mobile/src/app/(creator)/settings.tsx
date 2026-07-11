@@ -1851,7 +1851,7 @@ export default function CreatorSettingsScreen() {
                 <TextInput
                   style={[styles.pwInput, { color: C.text }]}
                   value={phoneNumber}
-                  onChangeText={setPhoneNumber}
+                  onChangeText={(text) => setPhoneNumber(text.replace(/[^0-9+]/g, ''))}
                   placeholder={t('creatorSettings.phonePlaceholder')}
                   placeholderTextColor={C.textSecondary}
                   keyboardType="phone-pad"

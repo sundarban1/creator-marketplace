@@ -134,6 +134,10 @@ export default function SubmitProposalScreen() {
   const coverLetterLen = coverLetter.trim().length;
   const proposedRate   = isFreeEvent ? 0 : parseFloat(rate.replace(/[^0-9.]/g, ''));
 
+  function handleRateChange(text: string) {
+    setRate(text.replace(/[^0-9.]/g, ''));
+  }
+
   const budgetMinNum   = parseFloat(budgetMin ?? '') || 0;
   const budgetMaxNum   = parseFloat(budgetMax ?? '') || 0;
   const hasBudgetRange = !isFreeEvent && budgetMaxNum > 0;
@@ -289,7 +293,7 @@ export default function SubmitProposalScreen() {
               <TextInputWithLabel
                 label="Proposed Rate (Rs.) *"
                 value={rate}
-                onChangeText={setRate}
+                onChangeText={handleRateChange}
                 placeholder="e.g. 5000"
                 keyboardType="numeric"
                 error={rateError}

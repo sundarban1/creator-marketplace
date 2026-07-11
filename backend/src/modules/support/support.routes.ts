@@ -48,6 +48,13 @@ router.post('/contact', authenticate, validate(contactSchema), async (req: Reque
       topic:       req.body.topic,
       message:     req.body.message,
     }).catch(() => {});
+    notificationService.createForAdmins({
+      type:    'contact_message',
+      title:   '✉️ New Contact Message',
+      body:    `${(supportRequest as any).user?.email ?? req.user!.email} sent a message: "${req.body.topic}"`,
+      refId:   supportRequest.id,
+      refType: 'support_request',
+    }).catch(() => {});
     success(res, supportRequest, 'Support request submitted', 201);
   } catch (err) { next(err); }
 });

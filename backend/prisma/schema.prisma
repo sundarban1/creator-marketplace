@@ -336,6 +336,10 @@ model Conversation {
   campaignId     String?
   createdAt      DateTime           @default(now())
   status         ConversationStatus @default(PENDING)
+  // True when ACCEPTED was set automatically by a proposal-accept (no real chat
+  // request/accept happened) — such conversations revert to PENDING once the
+  // project completes, rather than staying open indefinitely.
+  autoAccepted   Boolean            @default(false)
   requestMessage String?
   lastMessageAt  DateTime?
   businessSeenAt DateTime?

@@ -300,6 +300,10 @@ export const campaignService = {
       id: string;
       status: 'pending' | 'accepted' | 'rejected';
       workStatus: 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED';
+      // The application's own payment status — distinct from campaign.paymentStatus,
+      // which tracks the campaign record itself and isn't updated by the per-application
+      // pay/release flow. Use this one to know if THIS creator's payment was released.
+      paymentStatus: 'UNPAID' | 'PAID' | 'RELEASED';
       proposedRate: string;
       coverLetter: string;
       createdAt: string;
@@ -315,6 +319,7 @@ export const campaignService = {
     const res = await request<Array<{
       id: string; status: string; proposedRate: number; coverLetter: string; createdAt: string;
       workStatus?: string;
+      paymentStatus?: string;
       campaign: { id: string; title: string; platforms: string[]; campaignType?: string; paymentStatus?: string };
       creator: { id: string; fullName: string; avatarUrl: string | null; location: string | null };
     }>>('GET', '/api/campaigns/applications/business', undefined, {
@@ -326,6 +331,7 @@ export const campaignService = {
         id: a.id,
         status: a.status.toLowerCase() as 'pending' | 'accepted' | 'rejected',
         workStatus: (a.workStatus ?? 'NONE') as 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED',
+        paymentStatus: (a.paymentStatus ?? 'UNPAID') as 'UNPAID' | 'PAID' | 'RELEASED',
         proposedRate: `Rs. ${a.proposedRate.toLocaleString()}`,
         coverLetter: a.coverLetter ?? '',
         createdAt: a.createdAt,

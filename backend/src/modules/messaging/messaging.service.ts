@@ -273,6 +273,39 @@ export class MessagingService {
     }, pushBody);
   }
 
+  // ── Automated proposal-accept / project-completion transitions ────────────
+
+  // Called when a business accepts a creator's proposal — no message request/accept
+  // step is needed, so the conversation is established as ACCEPTED directly and
+  // seeded with a system greeting sent on the business's behalf. If the two were
+  // already genuinely chatting, it's left alone — no greeting is injected.
+  async sendProposalAcceptedMessage(
+    creatorId: string,
+    businessId: string,
+    campaignId: string,
+    businessUserId: string,
+    content: string,
+  ) {
+    const { conversation, activated } = await this.repo.findOrCreateAcceptedConversation(creatorId, businessId, campaignId);
+    if (!activated) return null;
+    return this.persistAndBroadcast(conversation, businessUserId, 'BUSINESS', { content }, content);
+  }
+
+  // Called once a project is completed and its payment released — the conversation
+  // reverts to PENDING so either side must send a fresh request before chatting again.
+  async closeConversationAfterCompletion(
+    creatorUserId: string,
+    businessUserId: string,
+    creatorId: string,
+    businessId: string,
+  ) {
+    const conversationId = await this.repo.resetToPendingAfterCompletion(creatorId, businessId);
+    if (conversationId) {
+      emitToUser(creatorUserId,  'conversation:update', { conversationId });
+      emitToUser(businessUserId, 'conversation:update', { conversationId });
+    }
+  }
+
   // ── Seen / badge ───────────────────────────────────────────────────────────
 
   async markSeen(conversationId: string, userId: string, role: Role) {

@@ -388,7 +388,9 @@
       "Bash(node analytics-regression.mjs)",
       "Bash(echo \"---exit $?\")",
       "Bash(node public-stats-check.mjs)",
-      "Bash(grep -iE \"^expo-document-picker$|^expo-image-picker$|emoji\")"
+      "Bash(grep -iE \"^expo-document-picker$|^expo-image-picker$|emoji\")",
+      "Bash(./node_modules/.bin/eslint \"src/app/\\(business\\)/campaign-proposals.tsx\" \"src/app/\\(business\\)/\\(tabs\\)/proposals.tsx\" \"src/services/campaign.ts\")",
+      "Bash(lsof -nP -iTCP:3000 -sTCP:LISTEN)"
     ],
     "additionalDirectories": [
       "/private/tmp",

@@ -743,10 +743,12 @@ const ne = {
     statusAccepted: 'स्वीकृत',
     statusRejected: 'अस्वीकृत',
     applicationCount: '{{n}} आवेदन',
-    projectCompleted:   'परियोजना पूर्ण',
-    reviewDeliverables: 'डेलिभरेबल समीक्षा गर्नुहोस्',
-    creatorIsWorking:   'सिर्जनकर्ता काममा छन्',
-    startTheProject:    'परियोजना शुरू गर्नुहोस्',
+    projectCompleted:       'परियोजना पूर्ण',
+    paymentReleased:        'भुक्तानी जारी गरियो',
+    awaitingPaymentRelease: 'भुक्तानी जारी हुन बाँकी',
+    reviewDeliverables:     'डेलिभरेबल समीक्षा गर्नुहोस्',
+    creatorIsWorking:       'सिर्जनकर्ता काममा छन्',
+    startTheProject:        'परियोजना शुरू गर्नुहोस्',
   },
 
   // ── Creator Detail (business view) ───────────────────────────

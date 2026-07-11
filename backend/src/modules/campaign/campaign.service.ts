@@ -6,6 +6,7 @@ import { CampaignRepository } from './campaign.repository';
 import { FavoriteRepository } from '../creator/favorite.repository';
 import { notificationService } from '../notifications/notification.service';
 import { analyticsService } from '../analytics/analytics.service';
+import { MessagingService } from '../messaging/messaging.service';
 import { emitToRole } from '../../socket';
 import { translateFields, translateMany } from '../../utils/translation';
 import {
@@ -58,6 +59,8 @@ import type {
   CampaignListQuery,
   ApplyToCampaignInput,
 } from './campaign.schema';
+
+const messagingService = new MessagingService();
 
 export class CampaignService {
   private repo:         CampaignRepository;
@@ -427,6 +430,13 @@ export class CampaignService {
     if (creatorUserId) {
       if (status === 'ACCEPTED') {
         analyticsService.incrProposalAccepted(creatorUserId, application.creatorId, business.userId, business.id, appId);
+
+        // Auto-start (or resume) the chat with a greeting — the creator never has to send a request.
+        const greetingName = application.creator?.fullName ?? 'there';
+        const greeting = `Hello ${greetingName}, your proposal has been accepted. You can message me here for more information or if you have any questions. It will be great working with you. Thank you!`;
+        messagingService
+          .sendProposalAcceptedMessage(application.creatorId, business.id, campaignId, business.userId, greeting)
+          .catch(() => {});
       } else {
         analyticsService.incrProposalRejected(creatorUserId);
       }
@@ -720,6 +730,13 @@ export class CampaignService {
       refId:   app.campaignId,
       refType: 'campaign',
     }).catch(() => {});
+
+    // A conversation that was only ever auto-accepted (never a real chat request/accept)
+    // pauses back to PENDING now that the project is done and paid — a genuinely-accepted
+    // conversation is left open as-is.
+    messagingService
+      .closeConversationAfterCompletion(userId, businessUserId, app.creator.id, app.campaign.business.id)
+      .catch(() => {});
 
     return toApplicationDto(updated);
   }

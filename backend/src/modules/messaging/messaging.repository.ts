@@ -79,6 +79,56 @@ export class MessagingRepository {
     return conv;
   }
 
+  // Used when a business accepts a creator's proposal — establishes (or reactivates)
+  // the conversation as ACCEPTED directly, with no PENDING request step needed.
+  // `activated` is false when the conversation was already ACCEPTED (a real chat
+  // request/accept had already happened) — the caller should leave it alone in
+  // that case rather than sending a greeting into an already-live conversation.
+  async findOrCreateAcceptedConversation(
+    creatorId: string,
+    businessId: string,
+    campaignId?: string,
+  ): Promise<{ conversation: NonNullable<Awaited<ReturnType<MessagingRepository['findConversationById']>>>; activated: boolean }> {
+    const existing = await prisma.conversation.findUnique({
+      where: { creatorId_businessId: { creatorId, businessId } },
+      include: CONV_INCLUDE_FULL,
+    });
+
+    if (existing) {
+      if (existing.status === 'ACCEPTED') return { conversation: existing, activated: false };
+      const conversation = await prisma.conversation.update({
+        where: { id: existing.id },
+        data: { status: 'ACCEPTED', autoAccepted: true, campaignId: existing.campaignId ?? campaignId },
+        include: CONV_INCLUDE_FULL,
+      });
+      return { conversation, activated: true };
+    }
+
+    const conversation = await prisma.conversation.create({
+      data: { creatorId, businessId, campaignId, status: 'ACCEPTED', autoAccepted: true },
+      include: CONV_INCLUDE_FULL,
+    });
+    return { conversation, activated: true };
+  }
+
+  // Once a project is completed and paid out, a conversation that was only ever
+  // auto-accepted (never a real chat request/accept) reverts to PENDING — messaging
+  // is paused until either side sends a fresh request. A genuinely-accepted
+  // conversation (autoAccepted: false) is left untouched.
+  async resetToPendingAfterCompletion(creatorId: string, businessId: string): Promise<string | null> {
+    const existing = await prisma.conversation.findUnique({
+      where: { creatorId_businessId: { creatorId, businessId } },
+      select: { id: true, status: true, autoAccepted: true },
+    });
+    if (!existing || existing.status !== 'ACCEPTED' || !existing.autoAccepted) return null;
+
+    await prisma.conversation.update({
+      where: { id: existing.id },
+      data: { status: 'PENDING', autoAccepted: false, requestMessage: null },
+    });
+    return existing.id;
+  }
+
   async findConversationsByCreator(creatorId: string, status?: ConversationStatus) {
     return prisma.conversation.findMany({
       where: { creatorId, ...(status ? { status } : {}) },

@@ -21,7 +21,8 @@ import { useLanguage } from '@/context/LanguageContext';
 import { campaignService } from '@/services/campaign';
 import { F } from '@/utilities/constants';
 
-type WS = 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED';
+type WS = 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED';
+type PS = 'UNPAID' | 'PAID' | 'RELEASED';
 
 type Proposal = {
   id: string;
@@ -30,17 +31,23 @@ type Proposal = {
   proposedRate: string;
   coverLetter: string;
   createdAt: string;
-  paymentStatus: 'UNPAID' | 'PAID' | 'RELEASED';
+  paymentStatus: PS;
   paidAt: string | null;
   creator: { id: string; fullName: string; avatarUrl: string | null; location: string | null };
 };
 
 type TFn = (key: string) => string;
-function projectBtnConfig(ws: WS, t: TFn) {
-  if (ws === 'APPROVED')    return { label: t('campaignProposals.projectCompleted'),   icon: 'checkmark-done-circle' as const, color: '#16A34A' };
-  if (ws === 'SUBMITTED')   return { label: t('campaignProposals.reviewDeliverables'), icon: 'eye'                   as const, color: '#D97706' };
-  if (ws === 'IN_PROGRESS') return { label: t('campaignProposals.creatorIsWorking'),   icon: 'brush'                 as const, color: '#7C3AED' };
-  return                           { label: t('campaignProposals.startTheProject'),    icon: 'rocket'                as const, color: '#4F46E5' };
+// Mirrors the stage logic in activity-timeline.tsx so the card's status always
+// agrees with the timeline (workStatus alone isn't enough — APPROVED needs
+// paymentStatus to tell "awaiting release" from "released" from "completed").
+function projectBtnConfig(ws: WS, paymentStatus: PS, t: TFn) {
+  if (ws === 'COMPLETED') return { label: t('campaignProposals.projectCompleted'),       icon: 'checkmark-done-circle' as const, color: '#16A34A' };
+  if (ws === 'APPROVED' && paymentStatus === 'RELEASED')
+                           return { label: t('campaignProposals.paymentReleased'),        icon: 'cash'                  as const, color: '#0EA5E9' };
+  if (ws === 'APPROVED')   return { label: t('campaignProposals.awaitingPaymentRelease'), icon: 'hourglass-outline'     as const, color: '#EA580C' };
+  if (ws === 'SUBMITTED')  return { label: t('campaignProposals.reviewDeliverables'),     icon: 'eye'                   as const, color: '#D97706' };
+  if (ws === 'IN_PROGRESS')return { label: t('campaignProposals.creatorIsWorking'),       icon: 'brush'                 as const, color: '#7C3AED' };
+  return                          { label: t('campaignProposals.startTheProject'),        icon: 'rocket'                as const, color: '#4F46E5' };
 }
 
 type StatusFilter = 'all' | 'pending' | 'accepted' | 'rejected';
@@ -207,7 +214,7 @@ function ProposalCard({
 
       {/* Dynamic project action button — paid campaigns only */}
       {p.status === 'accepted' && !isFree && (() => {
-        const cfg = projectBtnConfig(p.workStatus, t);
+        const cfg = projectBtnConfig(p.workStatus, p.paymentStatus, t);
         return (
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
             style={({ pressed }) => [styles.startProjectBtn, { backgroundColor: cfg.color, opacity: pressed ? 0.88 : 1 }]}
