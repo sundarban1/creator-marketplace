@@ -280,7 +280,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, on
 
   // Business: payment required
   if (!paid && ws === 'NONE' && !isCreator) return (
-    <View style={[ac.card, { backgroundColor: '#fff', borderLeftColor: '#EF4444' }]}>
+    <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#EF4444' }]}>
       <View style={[ac.iconBg, { backgroundColor: '#FEF2F2' }]}><Ionicons name="card-outline" size={26} color="#EF4444" /></View>
       <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acPaymentRequiredTitle')}</Text>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acPaymentRequiredSub')}</Text>
@@ -293,7 +293,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, on
 
   // Creator: waiting for payment
   if (!paid && ws === 'NONE' && isCreator) return (
-    <View style={[ac.card, { backgroundColor: '#fff', borderLeftColor: '#D97706' }]}>
+    <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#D97706' }]}>
       <View style={[ac.iconBg, { backgroundColor: '#FFF7ED' }]}><Ionicons name="time-outline" size={26} color="#D97706" /></View>
       <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acWaitingPaymentTitle')}</Text>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acWaitingPaymentSub')}</Text>
@@ -302,7 +302,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, on
 
   // Business: payment done, waiting on creator
   if (paid && ws === 'NONE' && !isCreator) return (
-    <View style={[ac.card, { backgroundColor: '#fff', borderLeftColor: '#0EA5E9' }]}>
+    <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#0EA5E9' }]}>
       <View style={[ac.iconBg, { backgroundColor: '#E0F2FE' }]}><Ionicons name="hourglass-outline" size={26} color="#0EA5E9" /></View>
       <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acWaitingCreatorTitle')}</Text>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{isFree ? t('activityTimeline.acWaitingCreatorSubFree') : t('activityTimeline.acWaitingCreatorSubPaid')}</Text>
@@ -311,7 +311,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, on
 
   // Creator: ready to start
   if (paid && ws === 'NONE' && isCreator) return (
-    <View style={[ac.card, { backgroundColor: '#fff', borderLeftColor: '#7C3AED' }]}>
+    <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#7C3AED' }]}>
       <View style={[ac.iconBg, { backgroundColor: '#EEF2FF' }]}><Ionicons name="rocket-outline" size={26} color="#7C3AED" /></View>
       <Text style={[ac.heading, { color: C.text }]}>{isFree ? t('activityTimeline.acReadyFreeTitle') : t('activityTimeline.acReadyPaidTitle')}</Text>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{isFree ? t('activityTimeline.acReadyFreeSub') : t('activityTimeline.acReadyPaidSub')}</Text>
@@ -325,7 +325,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, on
 
   // Business: creator working
   if (ws === 'IN_PROGRESS' && !isCreator) return (
-    <View style={[ac.card, { backgroundColor: '#fff', borderLeftColor: '#7C3AED' }]}>
+    <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#7C3AED' }]}>
       <View style={[ac.iconBg, { backgroundColor: '#EEF2FF' }]}><Ionicons name="play-circle-outline" size={26} color="#7C3AED" /></View>
       <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acCreatorWorkingTitle')}</Text>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acCreatorWorkingSub')}</Text>
@@ -334,7 +334,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, on
 
   // Creator: upload deliverables
   if (ws === 'IN_PROGRESS' && isCreator) return (
-    <View style={[ac.card, { backgroundColor: '#fff', borderLeftColor: '#7C3AED' }]}>
+    <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#7C3AED' }]}>
       <View style={[ac.iconBg, { backgroundColor: '#EEF2FF' }]}><Ionicons name="cloud-upload-outline" size={26} color="#7C3AED" /></View>
       <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acUploadTitle')}</Text>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acUploadSub')}</Text>
@@ -347,7 +347,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, on
 
   // Business: review submitted work
   if (ws === 'SUBMITTED' && !isCreator) return (
-    <View style={[ac.card, { backgroundColor: '#fff', borderLeftColor: '#D97706' }]}>
+    <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#D97706' }]}>
       <View style={[ac.iconBg, { backgroundColor: '#FFF7ED' }]}><Ionicons name="eye-outline" size={26} color="#D97706" /></View>
       <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acSubmittedTitle')}</Text>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acSubmittedSub')}</Text>
@@ -372,7 +372,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, on
 
   // Creator: awaiting review
   if (ws === 'SUBMITTED' && isCreator) return (
-    <View style={[ac.card, { backgroundColor: '#fff', borderLeftColor: '#0EA5E9' }]}>
+    <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#0EA5E9' }]}>
       <View style={[ac.iconBg, { backgroundColor: '#E0F2FE' }]}><Ionicons name="hourglass-outline" size={26} color="#0EA5E9" /></View>
       <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acAwaitingReviewTitle')}</Text>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acAwaitingReviewSub')}</Text>
@@ -381,7 +381,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, on
 
   // Project fully complete — both roles
   if (ws === 'COMPLETED') return (
-    <View style={[ac.card, { backgroundColor: '#fff', borderLeftColor: '#16A34A' }]}>
+    <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#16A34A' }]}>
       <View style={[ac.iconBg, { backgroundColor: '#DCFCE7' }]}><Ionicons name="checkmark-done-circle-outline" size={26} color="#16A34A" /></View>
       <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acProjectCompleteTitle')}</Text>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{isCreator ? t('activityTimeline.acProjectCompleteCreatorSub') : t('activityTimeline.acProjectCompleteBizSub')}</Text>
@@ -390,7 +390,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, on
 
   // APPROVED, payment released — business: waiting on creator to confirm
   if (!isCreator && paymentStatus === 'RELEASED') return (
-    <View style={[ac.card, { backgroundColor: '#fff', borderLeftColor: '#0EA5E9' }]}>
+    <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#0EA5E9' }]}>
       <View style={[ac.iconBg, { backgroundColor: '#E0F2FE' }]}><Ionicons name="cash-outline" size={26} color="#0EA5E9" /></View>
       <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acReleasedBizTitle')}</Text>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acReleasedBizSub')}</Text>
@@ -399,7 +399,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, on
 
   // APPROVED, payment still held — business: admin will release it
   if (!isCreator) return (
-    <View style={[ac.card, { backgroundColor: '#fff', borderLeftColor: '#16A34A' }]}>
+    <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#16A34A' }]}>
       <View style={[ac.iconBg, { backgroundColor: '#DCFCE7' }]}><Ionicons name="checkmark-done-circle-outline" size={26} color="#16A34A" /></View>
       <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acApprovedBizTitle')}</Text>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acApprovedBizSub')}</Text>
@@ -408,7 +408,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, on
 
   // APPROVED, payment released — creator: verify + complete
   if (paymentStatus === 'RELEASED') return (
-    <View style={[ac.card, { backgroundColor: '#fff', borderLeftColor: '#0EA5E9' }]}>
+    <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#0EA5E9' }]}>
       <View style={[ac.iconBg, { backgroundColor: '#E0F2FE' }]}><Ionicons name="wallet-outline" size={26} color="#0EA5E9" /></View>
       <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acReleasedCreatorTitle')}</Text>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acReleasedCreatorSub')}</Text>
@@ -422,7 +422,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, on
 
   // APPROVED, payment still held — creator: admin will release it
   return (
-    <View style={[ac.card, { backgroundColor: '#fff', borderLeftColor: '#16A34A' }]}>
+    <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#16A34A' }]}>
       <View style={[ac.iconBg, { backgroundColor: '#DCFCE7' }]}><Ionicons name="trophy-outline" size={26} color="#16A34A" /></View>
       <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acApprovedCreatorTitle')}</Text>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acApprovedCreatorSub')}</Text>
@@ -669,8 +669,8 @@ export default function CampaignWorkspaceScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={[s.screen, { backgroundColor: '#F9FAFB' }]} edges={['top']}>
-        <View style={[s.header, { backgroundColor: '#fff', borderBottomColor: '#E5E7EB' }]}>
+      <SafeAreaView style={[s.screen, { backgroundColor: C.background }]} edges={['top']}>
+        <View style={[s.header, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
           <BackButton />
           <Text style={[s.headerTitle, { color: C.text }]} numberOfLines={1}>{campaignTitle ?? t('activityTimeline.headerFallback')}</Text>
           <View style={{ width: 44 }} />
@@ -698,10 +698,10 @@ export default function CampaignWorkspaceScreen() {
   const tlEvents       = buildTimeline(ws, paid, campaign, app, isCreator, t);
 
   return (
-    <SafeAreaView style={[s.screen, { backgroundColor: '#F9FAFB' }]} edges={['top']}>
+    <SafeAreaView style={[s.screen, { backgroundColor: C.background }]} edges={['top']}>
 
       {/* ── Header ── */}
-      <View style={[s.header, { backgroundColor: '#fff', borderBottomColor: '#E5E7EB' }]}>
+      <View style={[s.header, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
         <BackButton />
         <View style={s.headerCenter}>
           <Text style={[s.headerTitle, { color: C.text }]} numberOfLines={1}>
@@ -721,7 +721,7 @@ export default function CampaignWorkspaceScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.body}>
 
         {/* ── Campaign Summary Card ── */}
-        <View style={[s.card, { backgroundColor: '#fff' }]}>
+        <View style={[s.card, { backgroundColor: C.surface }]}>
           <View style={s.summaryRow}>
             <View style={[s.thumb, { backgroundColor: '#EEF2FF' }]}>
               <Ionicons name="megaphone-outline" size={26} color="#7C3AED" />
@@ -776,7 +776,7 @@ export default function CampaignWorkspaceScreen() {
         </View>
 
         {/* ── Progress Tracker (centered on current step) ── */}
-        <View style={[s.card, { backgroundColor: '#fff', paddingHorizontal: 0, paddingBottom: 16 }]}>
+        <View style={[s.card, { backgroundColor: C.surface, paddingHorizontal: 0, paddingBottom: 16 }]}>
           <Text style={[s.secTitle, { color: C.text, marginHorizontal: 16, marginBottom: 14 }]}>{t('activityTimeline.campaignProgress')}</Text>
           <ProgressTracker current={pIdx} scrollRef={progressScrollRef} labels={progressLabels} />
         </View>
@@ -794,7 +794,7 @@ export default function CampaignWorkspaceScreen() {
         />
 
         {/* ── Activity Timeline ── */}
-        <View style={[s.card, { backgroundColor: '#fff' }]}>
+        <View style={[s.card, { backgroundColor: C.surface }]}>
           <View style={s.secHeader}>
             <View>
               <Text style={[s.secTitle, { color: C.text }]}>{t('activityTimeline.sectionTimeline')}</Text>
@@ -836,7 +836,7 @@ export default function CampaignWorkspaceScreen() {
 
 
         {/* ── Payment Details ── */}
-        <View style={[s.card, { backgroundColor: '#fff' }]}>
+        <View style={[s.card, { backgroundColor: C.surface }]}>
           <Text style={[s.secTitle, { color: C.text }]}>{t('activityTimeline.paymentDetails')}</Text>
           <View style={{ marginTop: 12, gap: 10 }}>
             {[

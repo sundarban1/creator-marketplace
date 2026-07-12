@@ -26,7 +26,6 @@ import * as WebBrowser from 'expo-web-browser';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
-import { useAppColors } from '@/context/ThemeContext';
 import { authService } from '@/services/auth';
 import type { Lang } from '@/i18n';
 import { COLORS, F } from '@/utilities/constants';
@@ -71,9 +70,20 @@ const PW_RULES = [
 ];
 
 function isValidEmail(v: string) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()); }
+// Nepal-only app — every mobile number is 10 digits starting 97/98 (matches the same
+// check in (business)/settings.tsx's phone-verify flow).
 function isValidPhone(v: string) {
   const stripped = v.replace(/^\+?977/, '').replace(/[\s\-()]/g, '');
-  return /^\d{7,10}$/.test(stripped);
+  return /^(97|98)\d{8}$/.test(stripped);
+}
+// Always sends E.164 (+977XXXXXXXXXX) to the backend regardless of whether the user
+// typed the country code themselves — the field only ever shows a "+977" prefix chip,
+// it doesn't require them to type it.
+function normalisePhone(v: string): string {
+  const stripped = v.replace(/[\s\-()]/g, '');
+  if (stripped.startsWith('+977')) return stripped;
+  if (stripped.startsWith('977'))  return `+${stripped}`;
+  return `+977${stripped}`;
 }
 const EMAIL_DOMAINS = ['gmail.com', 'yahoo.com', 'hotmail.com'];
 
@@ -138,7 +148,6 @@ function Field({
   error?: string;
   rightSlot?: React.ReactNode;
 }) {
-  const C = useAppColors();
   const [focused, setFocused] = useState(false);
   const [hidden,  setHidden]  = useState(secureTextEntry);
   const anim   = useRef(new Animated.Value(0)).current;
@@ -151,19 +160,19 @@ function Field({
   return (
     <View style={s.fieldWrap}>
       <View style={s.fieldLabelRow}>
-        <Text style={[s.fieldLabel, { color: C.text }]}>{label}</Text>
+        <Text style={s.fieldLabel}>{label}</Text>
         {rightSlot}
       </View>
       <Animated.View style={[
         s.field,
-        { borderColor: border, backgroundColor: C.surface },
+        { borderColor: border },
         focused && s.fieldFocused,
       ]}>
         <View style={[s.fieldIconWrap, { backgroundColor: focused ? `${P2}15` : '#F3F4F6' }]}>
           <Ionicons name={icon} size={16} color={focused ? P2 : '#9CA3AF'} />
         </View>
         <TextInput
-          style={[s.fieldInput, { color: C.text }]}
+          style={s.fieldInput}
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
@@ -172,6 +181,10 @@ function Field({
           keyboardType={keyboardType}
           autoCapitalize={autoCapitalize}
           autoCorrect={false}
+          // Android's EditText wraps long placeholder/value text to a second line by
+          // default (unlike iOS, which always clips to one line) — numberOfLines pins it
+          // to one line there; the explicit height in s.fieldInput keeps that line centered.
+          numberOfLines={1}
           onFocus={() => { setFocused(true);  Animated.timing(anim, { toValue: 1, duration: 200, useNativeDriver: false }).start(); }}
           onBlur={()  => { setTimeout(() => { setFocused(false); Animated.timing(anim, { toValue: 0, duration: 200, useNativeDriver: false }).start(); }, 150); }}
         />
@@ -248,7 +261,7 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
     setApiError('');
     setLoading(true);
     try {
-      const identifier = channel === 'email' ? { email: trimmedIdentifier } : { phone: trimmedIdentifier };
+      const identifier = channel === 'email' ? { email: trimmedIdentifier } : { phone: normalisePhone(trimmedIdentifier) };
       await login(identifier, password, rememberMe);
     } catch (e) {
       const message = e instanceof Error ? e.message : t('auth.login.requiredError');
@@ -388,7 +401,6 @@ function SignupForm({ onGooglePress, googleLoading, googleError, onFacebookPress
   facebookLoading: boolean;
   facebookError: string;
 }) {
-  const C = useAppColors();
   const { t } = useLanguage();
 
   const [role,      setRole]      = useState<'CREATOR' | 'BUSINESS'>('CREATOR');
@@ -416,8 +428,9 @@ function SignupForm({ onGooglePress, googleLoading, googleError, onFacebookPress
         await authService.register({ email: trimmedEmail, password, role });
         router.push({ pathname: '/verify', params: { email: trimmedEmail } });
       } else {
-        await authService.register({ phone: trimmedIdentifier, password, role });
-        router.push({ pathname: '/verify', params: { phone: trimmedIdentifier } });
+        const normalisedPhone = normalisePhone(trimmedIdentifier);
+        await authService.register({ phone: normalisedPhone, password, role });
+        router.push({ pathname: '/verify', params: { phone: normalisedPhone } });
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : t('auth.signup.registrationFailed'));
@@ -440,7 +453,7 @@ function SignupForm({ onGooglePress, googleLoading, googleError, onFacebookPress
               key={r.key}
               style={({ pressed }) => [
                 s.roleCard,
-                { borderColor: active ? tint : '#ECEAF5', backgroundColor: C.surface },
+                { borderColor: active ? tint : '#ECEAF5', backgroundColor: '#fff' },
                 active && [s.roleCardActive, { shadowColor: tint }],
                 { transform: [{ scale: pressed ? 0.97 : 1 }] },
               ]}
@@ -454,7 +467,7 @@ function SignupForm({ onGooglePress, googleLoading, googleError, onFacebookPress
                 start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
                 <Ionicons name={r.icon} size={26} color={active ? '#fff' : '#8B5CF6'} />
               </LinearGradient>
-              <Text style={[s.roleLabel, { color: C.text }]}>{roleLabel}</Text>
+              <Text style={s.roleLabel}>{roleLabel}</Text>
               <Text style={[s.roleSub, { color: active ? tint : '#9CA3AF' }]}>{roleSub}</Text>
               {active && (
                 <View style={[s.roleCheck, { backgroundColor: tint }]}>
@@ -988,7 +1001,7 @@ const s = StyleSheet.create({
   field:         { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 18, paddingHorizontal: 5, height: 54, gap: 4, borderColor: 'transparent', backgroundColor: '#F3EFFB' },
   fieldFocused:  { borderColor: P2, backgroundColor: '#fff', shadowColor: P2, shadowOpacity: 0.14, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
   fieldIconWrap: { width: 38, height: 38, borderRadius: 19, justifyContent: 'center', alignItems: 'center', marginLeft: 4 },
-  fieldInput:    { flex: 1, fontSize: 15, fontFamily: F.regular, color: '#111827' },
+  fieldInput:    { flex: 1, height: 50, fontSize: 15, fontFamily: F.regular, color: '#111827', textAlignVertical: 'center' },
   eyeBtn:        { paddingHorizontal: 12 },
   fieldErrRow:   { flexDirection: 'row', alignItems: 'center', gap: 4 },
   fieldErrText:  { fontSize: 11, color: '#EF4444', fontFamily: F.medium },
@@ -1004,7 +1017,7 @@ const s = StyleSheet.create({
   roleCardActive:{ shadowOpacity: 0.16, shadowRadius: 16, shadowOffset: { width: 0, height: 6 }, elevation: 6 },
   roleTintOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 22 },
   roleIconBox:   { width: 58, height: 58, borderRadius: 29, justifyContent: 'center', alignItems: 'center' },
-  roleLabel:     { fontSize: 14, fontFamily: F.bold, textAlign: 'center' },
+  roleLabel:     { fontSize: 14, fontFamily: F.bold, textAlign: 'center', color: '#111827' },
   roleSub:       { fontSize: 11.5, fontFamily: F.regular, textAlign: 'center', lineHeight: 16 },
   roleCheck:     { position: 'absolute', top: -8, right: -8, width: 26, height: 26, borderRadius: 13, justifyContent: 'center', alignItems: 'center', borderWidth: 2.5, borderColor: '#fff', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
 

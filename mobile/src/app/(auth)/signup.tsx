@@ -109,7 +109,7 @@ function Field({
                 key={domain}
                 style={s.domainSuggestItem}
                 onPress={() => onChangeText(`${localPart}@${domain}`)}>
-                <Text style={s.domainSuggestText}>{localPart}@<Text style={s.domainSuggestTextBold}>{domain}</Text></Text>
+                <Text style={[s.domainSuggestText, { color: C.textSecondary }]}>{localPart}@<Text style={[s.domainSuggestTextBold, { color: C.text }]}>{domain}</Text></Text>
               </Pressable>
             ))}
           </View>
@@ -360,8 +360,8 @@ const s = StyleSheet.create({
   fieldErrorText:{ fontSize: 12, color: '#EF4444', fontFamily: F.medium },
   domainSuggestBox:      { borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 12, overflow: 'hidden' },
   domainSuggestItem:     { paddingHorizontal: 14, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#F3F4F6' },
-  domainSuggestText:     { fontSize: 14, fontFamily: F.regular, color: '#6B7280' },
-  domainSuggestTextBold: { fontFamily: F.semibold, color: '#374151' },
+  domainSuggestText:     { fontSize: 14, fontFamily: F.regular },
+  domainSuggestTextBold: { fontFamily: F.semibold },
 
   rulesRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
   rulePill: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 8, borderWidth: 1, paddingHorizontal: 8, paddingVertical: 4 },

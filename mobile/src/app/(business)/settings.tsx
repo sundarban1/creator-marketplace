@@ -1052,7 +1052,7 @@ export default function BusinessSettingsScreen() {
               </View>
               <TextInput
                 style={[styles.phoneField, { flex: 0, color: C.text, borderColor: phoneError ? C.error : C.border, backgroundColor: C.background }]}
-                placeholder="+977 98XXXXXXXX"
+                placeholder="98XXXXXXXX"
                 placeholderTextColor={C.textSecondary}
                 keyboardType="phone-pad"
                 value={phoneInput}
@@ -1380,7 +1380,7 @@ export default function BusinessSettingsScreen() {
                   </View>
                 </View>
                 <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.removeBtn, { backgroundColor: '#FEE2E2' }]} onPress={() => removeCreator(creator.id)}>
-                  <Text style={[styles.removeBtnText, { color: C.error }]}>{t('businessSettings.removeCreatorBtn')}</Text>
+                  <Text style={[styles.removeBtnText, { color: '#EF4444' }]}>{t('businessSettings.removeCreatorBtn')}</Text>
                 </Pressable>
               </View>
 

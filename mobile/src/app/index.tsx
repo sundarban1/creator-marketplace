@@ -1,8 +1,6 @@
-import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useRef } from 'react';
 import { Animated, Image, StyleSheet, Text, View } from 'react-native';
-import { useAuth } from '@/context/AuthContext';
 import { F } from '@/utilities/constants';
 
 const PINK    = '#E8527A';
@@ -102,9 +100,13 @@ function PulseDot({ delay, color }: { delay: number; color: string }) {
 
 // ─── Splash Screen ────────────────────────────────────────────────────────────
 
+// Pure splash visual — navigation away from here is entirely owned by RootNavigator
+// (src/app/_layout.tsx), which already redirects based on auth state including the
+// isFirstLogin -> onboarding case. This screen used to also run its own redirect
+// effect that ignored isFirstLogin entirely, so a first-time user would briefly land
+// on onboarding (via RootNavigator) and then get yanked back to the main app by this
+// screen's own delayed timer a moment later — the "double slide" bug.
 export default function SplashScreen() {
-  const { user, isLoading } = useAuth();
-
   const logoScale   = useRef(new Animated.Value(0.35)).current;
   const logoOpacity = useRef(new Animated.Value(0)).current;
   const textOpacity = useRef(new Animated.Value(0)).current;
@@ -122,16 +124,6 @@ export default function SplashScreen() {
       Animated.timing(dotsOpacity, { toValue: 1, duration: 280, useNativeDriver: true }),
     ]).start();
   }, []);
-
-  useEffect(() => {
-    if (isLoading) return;
-    const t = setTimeout(() => {
-      if (!user) router.replace('/(auth)/login' as never);
-      else if (user.role === 'CREATOR') router.replace('/(creator)/' as never);
-      else router.replace('/(business)/' as never);
-    }, 600);
-    return () => clearTimeout(t);
-  }, [isLoading, user]);
 
   return (
     <View style={styles.root}>

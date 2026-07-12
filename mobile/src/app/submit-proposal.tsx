@@ -314,8 +314,8 @@ export default function SubmitProposalScreen() {
 
             {hasErrors && submitted && (
               <View style={[styles.errorSummary, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}>
-                <Ionicons name="close-circle" size={16} color={C.error} />
-                <Text style={[styles.errorSummaryText, { color: C.error, flex: 1 }]}>
+                <Ionicons name="close-circle" size={16} color="#EF4444" />
+                <Text style={[styles.errorSummaryText, { color: '#EF4444', flex: 1 }]}>
                   Please fix the errors above before submitting.
                 </Text>
               </View>

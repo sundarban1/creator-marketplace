@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Animated, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
@@ -212,6 +212,7 @@ export default function OnboardingScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
 
       {/* ── Top bar ── */}
       <View style={styles.topBar}>
@@ -243,7 +244,7 @@ export default function OnboardingScreen() {
 
             {step1Error ? (
               <View style={[styles.errorBanner, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}>
-                <Text style={[styles.errorBannerText, { color: C.error }]}>{step1Error}</Text>
+                <Text style={[styles.errorBannerText, { color: '#EF4444' }]}>{step1Error}</Text>
               </View>
             ) : null}
 
@@ -376,7 +377,7 @@ export default function OnboardingScreen() {
 
             {step2Submitted && selectedCategories.length === 0 && (
               <View style={[styles.errorBanner, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}>
-                <Text style={[styles.errorBannerText, { color: C.error }]}>
+                <Text style={[styles.errorBannerText, { color: '#EF4444' }]}>
                   {t('onboarding.categoryError')}
                 </Text>
               </View>
@@ -384,7 +385,7 @@ export default function OnboardingScreen() {
 
             {step2Error ? (
               <View style={[styles.errorBanner, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}>
-                <Text style={[styles.errorBannerText, { color: C.error }]}>{step2Error}</Text>
+                <Text style={[styles.errorBannerText, { color: '#EF4444' }]}>{step2Error}</Text>
               </View>
             ) : null}
 
@@ -430,6 +431,7 @@ export default function OnboardingScreen() {
           </ScrollView>
         )}
 
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

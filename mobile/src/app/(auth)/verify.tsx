@@ -239,8 +239,8 @@ export default function VerifyScreen() {
           {/* Error banner */}
           {error ? (
             <View style={[styles.errorBanner, { backgroundColor: '#FEE2E2', borderColor: '#FECACA' }]}>
-              <Ionicons name="warning" size={14} color={C.error} />
-              <Text style={[styles.errorText, { color: C.error }]}>{error}</Text>
+              <Ionicons name="warning" size={14} color="#EF4444" />
+              <Text style={[styles.errorText, { color: '#EF4444' }]}>{error}</Text>
             </View>
           ) : null}
 

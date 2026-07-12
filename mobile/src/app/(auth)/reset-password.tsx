@@ -99,7 +99,7 @@ export default function ResetPasswordScreen() {
 
           {error ? (
             <View style={[styles.errorBanner, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}>
-              <Text style={[styles.errorBannerText, { color: C.error }]}>{error}</Text>
+              <Text style={[styles.errorBannerText, { color: '#EF4444' }]}>{error}</Text>
             </View>
           ) : null}
 
