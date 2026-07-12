@@ -429,12 +429,15 @@
       "Bash(node /private/tmp/claude-501/-Users-sundarban-Documents-projects-marketplace/f965d7e4-8c8e-4d73-aeaa-2962d6ae5b58/scratchpad/strip-fontweight.js src --dry-run)",
       "Bash(node /private/tmp/claude-501/-Users-sundarban-Documents-projects-marketplace/f965d7e4-8c8e-4d73-aeaa-2962d6ae5b58/scratchpad/strip-fontweight.js src/app/\\\\\\(auth\\\\\\))",
       "Bash(node /private/tmp/claude-501/-Users-sundarban-Documents-projects-marketplace/f965d7e4-8c8e-4d73-aeaa-2962d6ae5b58/scratchpad/strip-fontweight.js src)",
-      "Bash(tee /tmp/tsc_after_fw.log)"
+      "Bash(tee /tmp/tsc_after_fw.log)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code} in %{time_total}s\\\\n\" --max-time 15 https://creator-marketplace-api.onrender.com/api/platforms)",
+      "Bash(rm -rf prisma/migrations/* && ls prisma/migrations/ 2>&1)"
     ],
     "additionalDirectories": [
       "/private/tmp",
       "/private/tmp/claude-501/-Users-sundarban-Documents-projects-marketplace/f4dadbd6-ef73-4bff-b8ee-f2b326c42e8f/scratchpad",
-      "/Users/sundarban/Documents/projects/marketplace/web"
+      "/Users/sundarban/Documents/projects/marketplace/web",
+      "/Users/sundarban/Documents/projects/marketplace/backend/prisma/migrations"
     ]
   }
 }

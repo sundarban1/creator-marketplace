@@ -280,7 +280,7 @@ async function main() {
       id: randomUUID(),
       businessId: biz.id,
       category,
-      platform: rand(PLATFORMS),
+      platforms: pickSubset(PLATFORMS, randInt(1, 2)),
       deadline,
       location,
       locationLat,

@@ -5,10 +5,13 @@ CREATE TYPE "ReferralStatus" AS ENUM ('PENDING', 'COMPLETED', 'EXPIRED');
 CREATE TYPE "Role" AS ENUM ('CREATOR', 'BUSINESS', 'ADMIN');
 
 -- CreateEnum
-CREATE TYPE "CampaignStatus" AS ENUM ('ACTIVE', 'PAUSED', 'CLOSED', 'CANCELLED');
+CREATE TYPE "CampaignStatus" AS ENUM ('DRAFT', 'ACTIVE', 'PAUSED', 'CLOSED', 'CANCELLED');
 
 -- CreateEnum
 CREATE TYPE "ConversationStatus" AS ENUM ('PENDING', 'ACCEPTED', 'DECLINED');
+
+-- CreateEnum
+CREATE TYPE "MessageType" AS ENUM ('TEXT', 'IMAGE', 'FILE');
 
 -- CreateEnum
 CREATE TYPE "ApplicationStatus" AS ENUM ('PENDING', 'ACCEPTED', 'REJECTED');
@@ -20,10 +23,25 @@ CREATE TYPE "CampaignType" AS ENUM ('PAID_CAMPAIGN', 'OPEN_EVENT');
 CREATE TYPE "EventStatus" AS ENUM ('OPEN', 'FULL', 'CLOSED');
 
 -- CreateEnum
-CREATE TYPE "WorkStatus" AS ENUM ('NONE', 'IN_PROGRESS', 'SUBMITTED', 'APPROVED');
+CREATE TYPE "WorkStatus" AS ENUM ('NONE', 'IN_PROGRESS', 'SUBMITTED', 'APPROVED', 'COMPLETED');
 
 -- CreateEnum
 CREATE TYPE "PaymentStatus" AS ENUM ('UNPAID', 'PAID', 'RELEASED', 'REFUNDED');
+
+-- CreateEnum
+CREATE TYPE "CategoryScope" AS ENUM ('CREATOR', 'BUSINESS', 'BOTH');
+
+-- CreateEnum
+CREATE TYPE "CategoryStatus" AS ENUM ('ACTIVE', 'INACTIVE');
+
+-- CreateEnum
+CREATE TYPE "CitizenshipStatus" AS ENUM ('NONE', 'PENDING', 'APPROVED', 'REJECTED');
+
+-- CreateEnum
+CREATE TYPE "DocumentStatus" AS ENUM ('NONE', 'PENDING', 'APPROVED', 'REJECTED');
+
+-- CreateEnum
+CREATE TYPE "PlatformStatus" AS ENUM ('ACTIVE', 'INACTIVE');
 
 -- CreateTable
 CREATE TABLE "users" (
@@ -32,12 +50,14 @@ CREATE TABLE "users" (
     "password" TEXT NOT NULL,
     "role" "Role" NOT NULL,
     "isEmailVerified" BOOLEAN NOT NULL DEFAULT false,
+    "isPhoneVerified" BOOLEAN NOT NULL DEFAULT false,
     "refreshToken" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "phone" TEXT,
     "isOnboarded" BOOLEAN NOT NULL DEFAULT false,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "suspendedAt" TIMESTAMP(3),
     "pushToken" TEXT,
     "deviceId" TEXT,
 
@@ -66,7 +86,12 @@ CREATE TABLE "creator_profiles" (
     "prefBudgetMax" DOUBLE PRECISION NOT NULL DEFAULT 500,
     "locationLat" DOUBLE PRECISION,
     "locationLng" DOUBLE PRECISION,
+    "nearbyRadiusKm" INTEGER NOT NULL DEFAULT 25,
+    "nearbyUseHomeLocation" BOOLEAN NOT NULL DEFAULT false,
     "referralCode" TEXT,
+    "citizenshipDocUrl" TEXT,
+    "citizenshipStatus" "CitizenshipStatus" NOT NULL DEFAULT 'NONE',
+    "citizenshipUploadedAt" TIMESTAMP(3),
 
     CONSTRAINT "creator_profiles_pkey" PRIMARY KEY ("id")
 );
@@ -107,10 +132,23 @@ CREATE TABLE "social_accounts" (
     "platform" TEXT NOT NULL,
     "profileUrl" TEXT NOT NULL,
     "followers" INTEGER NOT NULL DEFAULT 0,
+    "connectedViaOAuth" BOOLEAN NOT NULL DEFAULT false,
+    "platformUserId" TEXT,
+    "avatarUrl" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "social_accounts_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "profile_views" (
+    "id" TEXT NOT NULL,
+    "creatorId" TEXT NOT NULL,
+    "businessId" TEXT NOT NULL,
+    "viewedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "profile_views_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -124,6 +162,7 @@ CREATE TABLE "business_profiles" (
     "categories" TEXT[],
     "panNo" TEXT,
     "location" TEXT,
+    "phone" TEXT,
     "isVerified" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -132,6 +171,17 @@ CREATE TABLE "business_profiles" (
     "showPublicProfile" BOOLEAN NOT NULL DEFAULT true,
     "paymentMethods" TEXT[] DEFAULT ARRAY[]::TEXT[],
     "referralCode" TEXT,
+    "socialLinks" JSONB NOT NULL DEFAULT '{}',
+    "presenceServices" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "defaultPlatforms" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "defaultCreatorCategories" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "defaultBudgetRange" TEXT,
+    "panDocUrl" TEXT,
+    "panDocStatus" "DocumentStatus" NOT NULL DEFAULT 'NONE',
+    "panDocUploadedAt" TIMESTAMP(3),
+    "companyRegDocUrl" TEXT,
+    "companyRegDocStatus" "DocumentStatus" NOT NULL DEFAULT 'NONE',
+    "companyRegDocUploadedAt" TIMESTAMP(3),
 
     CONSTRAINT "business_profiles_pkey" PRIMARY KEY ("id")
 );
@@ -161,14 +211,17 @@ CREATE TABLE "campaigns" (
     "title" TEXT NOT NULL,
     "description" TEXT NOT NULL,
     "template" TEXT,
+    "featureImageUrl" TEXT,
     "category" TEXT NOT NULL,
     "goals" JSONB NOT NULL DEFAULT '[]',
-    "platform" TEXT NOT NULL,
+    "platforms" TEXT[] DEFAULT ARRAY[]::TEXT[],
     "minFollowers" INTEGER NOT NULL DEFAULT 0,
     "contentType" TEXT NOT NULL,
     "deliverables" TEXT NOT NULL,
     "deadline" TIMESTAMP(3) NOT NULL,
     "location" TEXT,
+    "locationLat" DOUBLE PRECISION,
+    "locationLng" DOUBLE PRECISION,
     "budgetMin" DOUBLE PRECISION NOT NULL,
     "budgetMax" DOUBLE PRECISION NOT NULL,
     "paymentType" TEXT NOT NULL,
@@ -186,6 +239,18 @@ CREATE TABLE "campaigns" (
     "paymentStatus" "PaymentStatus" NOT NULL DEFAULT 'UNPAID',
     "paidAt" TIMESTAMP(3),
     "paymentMethod" TEXT,
+    "objective" TEXT,
+    "contentGuidelines" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "targetAudience" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "hashtags" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "sampleCaption" TEXT,
+    "callToAction" TEXT,
+    "approvalRequirements" TEXT,
+    "aiGenerated" BOOLEAN NOT NULL DEFAULT false,
+    "aiPrompt" TEXT,
+    "aiSuggestedCategories" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "aiSuggestedPlatforms" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "aiNeedsInputFields" TEXT[] DEFAULT ARRAY[]::TEXT[],
 
     CONSTRAINT "campaigns_pkey" PRIMARY KEY ("id")
 );
@@ -207,10 +272,25 @@ CREATE TABLE "applications" (
     "deliverableUrls" TEXT,
     "paymentStatus" "PaymentStatus" NOT NULL DEFAULT 'UNPAID',
     "paidAt" TIMESTAMP(3),
+    "releasedAt" TIMESTAMP(3),
+    "releasedByAdminId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "applications_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "reviews" (
+    "id" TEXT NOT NULL,
+    "applicationId" TEXT NOT NULL,
+    "fromUserId" TEXT NOT NULL,
+    "toUserId" TEXT NOT NULL,
+    "rating" INTEGER NOT NULL,
+    "comment" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "reviews_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -221,6 +301,7 @@ CREATE TABLE "conversations" (
     "campaignId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "status" "ConversationStatus" NOT NULL DEFAULT 'PENDING',
+    "autoAccepted" BOOLEAN NOT NULL DEFAULT false,
     "requestMessage" TEXT,
     "lastMessageAt" TIMESTAMP(3),
     "businessSeenAt" TIMESTAMP(3),
@@ -235,6 +316,9 @@ CREATE TABLE "messages" (
     "conversationId" TEXT NOT NULL,
     "senderId" TEXT NOT NULL,
     "content" TEXT NOT NULL,
+    "type" "MessageType" NOT NULL DEFAULT 'TEXT',
+    "attachmentUrl" TEXT,
+    "attachmentName" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "messages_pkey" PRIMARY KEY ("id")
@@ -273,6 +357,8 @@ CREATE TABLE "faq_articles" (
 CREATE TABLE "support_requests" (
     "id" TEXT NOT NULL,
     "userId" TEXT,
+    "guestName" TEXT,
+    "guestEmail" TEXT,
     "topic" TEXT NOT NULL,
     "message" TEXT NOT NULL,
     "status" TEXT NOT NULL DEFAULT 'OPEN',
@@ -368,12 +454,82 @@ CREATE TABLE "campaign_invitations" (
 );
 
 -- CreateTable
+CREATE TABLE "creator_analytics" (
+    "userId" TEXT NOT NULL,
+    "totalProfileViews" INTEGER NOT NULL DEFAULT 0,
+    "totalEarnings" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "pendingEarnings" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "invitationsReceived" INTEGER NOT NULL DEFAULT 0,
+    "applicationsSubmitted" INTEGER NOT NULL DEFAULT 0,
+    "applicationsAccepted" INTEGER NOT NULL DEFAULT 0,
+    "applicationsRejected" INTEGER NOT NULL DEFAULT 0,
+    "activeCampaigns" INTEGER NOT NULL DEFAULT 0,
+    "completedCampaigns" INTEGER NOT NULL DEFAULT 0,
+    "averageRating" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "reviewCount" INTEGER NOT NULL DEFAULT 0,
+    "responseTimeAvgMins" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "responseTimeSamples" INTEGER NOT NULL DEFAULT 0,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "creator_analytics_pkey" PRIMARY KEY ("userId")
+);
+
+-- CreateTable
+CREATE TABLE "brand_analytics" (
+    "userId" TEXT NOT NULL,
+    "campaignsCreated" INTEGER NOT NULL DEFAULT 0,
+    "activeCampaigns" INTEGER NOT NULL DEFAULT 0,
+    "completedCampaigns" INTEGER NOT NULL DEFAULT 0,
+    "totalSpend" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "applicationsReceived" INTEGER NOT NULL DEFAULT 0,
+    "creatorsHired" INTEGER NOT NULL DEFAULT 0,
+    "averageRatingGiven" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "ratingsGivenCount" INTEGER NOT NULL DEFAULT 0,
+    "responseTimeAvgMins" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "responseTimeSamples" INTEGER NOT NULL DEFAULT 0,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "brand_analytics_pkey" PRIMARY KEY ("userId")
+);
+
+-- CreateTable
 CREATE TABLE "platform_settings" (
     "key" TEXT NOT NULL,
     "value" TEXT NOT NULL,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "platform_settings_pkey" PRIMARY KEY ("key")
+);
+
+-- CreateTable
+CREATE TABLE "categories" (
+    "id" TEXT NOT NULL,
+    "icon" TEXT NOT NULL,
+    "iconBg" TEXT NOT NULL,
+    "color" TEXT NOT NULL DEFAULT '#6B7280',
+    "name" TEXT NOT NULL,
+    "key" TEXT NOT NULL,
+    "scope" "CategoryScope" NOT NULL DEFAULT 'BOTH',
+    "status" "CategoryStatus" NOT NULL DEFAULT 'ACTIVE',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "categories_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "platforms" (
+    "id" TEXT NOT NULL,
+    "icon" TEXT NOT NULL,
+    "iconBg" TEXT NOT NULL,
+    "color" TEXT NOT NULL DEFAULT '#6B7280',
+    "name" TEXT NOT NULL,
+    "key" TEXT NOT NULL,
+    "status" "PlatformStatus" NOT NULL DEFAULT 'ACTIVE',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "platforms_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -404,6 +560,12 @@ CREATE INDEX "referrals_referrerId_idx" ON "referrals"("referrerId");
 CREATE UNIQUE INDEX "social_accounts_creatorProfileId_platform_key" ON "social_accounts"("creatorProfileId", "platform");
 
 -- CreateIndex
+CREATE INDEX "profile_views_creatorId_viewedAt_idx" ON "profile_views"("creatorId", "viewedAt");
+
+-- CreateIndex
+CREATE INDEX "profile_views_creatorId_businessId_viewedAt_idx" ON "profile_views"("creatorId", "businessId", "viewedAt");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "business_profiles_userId_key" ON "business_profiles"("userId");
 
 -- CreateIndex
@@ -431,6 +593,9 @@ CREATE INDEX "campaigns_status_createdAt_idx" ON "campaigns"("status", "createdA
 CREATE INDEX "campaigns_campaignType_status_idx" ON "campaigns"("campaignType", "status");
 
 -- CreateIndex
+CREATE INDEX "campaigns_locationLat_locationLng_idx" ON "campaigns"("locationLat", "locationLng");
+
+-- CreateIndex
 CREATE INDEX "applications_creatorId_idx" ON "applications"("creatorId");
 
 -- CreateIndex
@@ -441,6 +606,12 @@ CREATE INDEX "applications_campaignId_status_idx" ON "applications"("campaignId"
 
 -- CreateIndex
 CREATE UNIQUE INDEX "applications_campaignId_creatorId_key" ON "applications"("campaignId", "creatorId");
+
+-- CreateIndex
+CREATE INDEX "reviews_toUserId_idx" ON "reviews"("toUserId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "reviews_applicationId_fromUserId_key" ON "reviews"("applicationId", "fromUserId");
 
 -- CreateIndex
 CREATE INDEX "conversations_businessId_idx" ON "conversations"("businessId");
@@ -472,6 +643,12 @@ CREATE UNIQUE INDEX "saved_creators_businessId_creatorId_key" ON "saved_creators
 -- CreateIndex
 CREATE UNIQUE INDEX "campaign_invitations_campaignId_creatorId_key" ON "campaign_invitations"("campaignId", "creatorId");
 
+-- CreateIndex
+CREATE UNIQUE INDEX "categories_key_key" ON "categories"("key");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "platforms_key_key" ON "platforms"("key");
+
 -- AddForeignKey
 ALTER TABLE "creator_profiles" ADD CONSTRAINT "creator_profiles_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
@@ -486,6 +663,12 @@ ALTER TABLE "referrals" ADD CONSTRAINT "referrals_referredId_fkey" FOREIGN KEY (
 
 -- AddForeignKey
 ALTER TABLE "social_accounts" ADD CONSTRAINT "social_accounts_creatorProfileId_fkey" FOREIGN KEY ("creatorProfileId") REFERENCES "creator_profiles"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "profile_views" ADD CONSTRAINT "profile_views_creatorId_fkey" FOREIGN KEY ("creatorId") REFERENCES "creator_profiles"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "profile_views" ADD CONSTRAINT "profile_views_businessId_fkey" FOREIGN KEY ("businessId") REFERENCES "business_profiles"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "business_profiles" ADD CONSTRAINT "business_profiles_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -504,6 +687,15 @@ ALTER TABLE "applications" ADD CONSTRAINT "applications_campaignId_fkey" FOREIGN
 
 -- AddForeignKey
 ALTER TABLE "applications" ADD CONSTRAINT "applications_creatorId_fkey" FOREIGN KEY ("creatorId") REFERENCES "creator_profiles"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "reviews" ADD CONSTRAINT "reviews_applicationId_fkey" FOREIGN KEY ("applicationId") REFERENCES "applications"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "reviews" ADD CONSTRAINT "reviews_fromUserId_fkey" FOREIGN KEY ("fromUserId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "reviews" ADD CONSTRAINT "reviews_toUserId_fkey" FOREIGN KEY ("toUserId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "conversations" ADD CONSTRAINT "conversations_businessId_fkey" FOREIGN KEY ("businessId") REFERENCES "business_profiles"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -552,4 +744,3 @@ ALTER TABLE "campaign_invitations" ADD CONSTRAINT "campaign_invitations_creatorI
 
 -- AddForeignKey
 ALTER TABLE "campaign_invitations" ADD CONSTRAINT "campaign_invitations_businessId_fkey" FOREIGN KEY ("businessId") REFERENCES "business_profiles"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
