@@ -420,7 +420,8 @@
       "Bash(npx vite *)",
       "Bash(node regen.js)",
       "Bash(node ./scripts/strip-push-entitlement.js)",
-      "Bash(node ./scripts/fix-ios-podfile.js)"
+      "Bash(node ./scripts/fix-ios-podfile.js)",
+      "Bash(grep -n \"return \\(\\\\s*$\" \"/Users/sundarban/Documents/projects/marketplace/mobile/src/app/\\(auth\\)/login.tsx\")"
     ],
     "additionalDirectories": [
       "/private/tmp",

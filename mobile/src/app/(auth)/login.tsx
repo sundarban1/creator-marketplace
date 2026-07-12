@@ -2,6 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
+import MaskedView from '@react-native-masked-view/masked-view';
 import { useRef, useState, useEffect } from 'react';
 import {
   Animated,
@@ -16,6 +17,7 @@ import {
   Text,
   TextInput,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import * as Google from 'expo-auth-session/providers/google';
 import * as Facebook from 'expo-auth-session/providers/facebook';
@@ -40,16 +42,21 @@ const P1 = '#4C1D95';
 const P2 = '#6D28D9';
 const P3 = '#7C3AED';
 
-// Decorative background icons scattered across the hero — purely visual, low-opacity texture
-const BG_ICONS: { name: string; size: number; rotate: string; style: object }[] = [
-  { name: 'camera',       size: 32, rotate: '-14deg', style: { top: 6,   left: '8%'  } },
-  { name: 'dollar-sign',  size: 24, rotate: '12deg',  style: { top: 2,   right: '30%' } },
-  { name: 'mobile-alt',   size: 28, rotate: '-8deg',  style: { top: 118, left: '4%'  } },
-  { name: 'laptop',       size: 34, rotate: '9deg',   style: { top: 140, right: '6%' } },
-  { name: 'hashtag',      size: 20, rotate: '-6deg',  style: { top: 54,  left: '44%' } },
-  { name: 'video',        size: 22, rotate: '15deg',  style: { top: 190, left: '38%' } },
-  { name: 'chart-line',   size: 20, rotate: '-10deg', style: { top: 30,  right: '4%' } },
-  { name: 'heart',        size: 18, rotate: '10deg',  style: { top: 210, right: '22%' } },
+// Content-creator/brand iconography scattered across the gradient background — random
+// per-icon opacity (computed once at module load, so it's stable across re-renders
+// rather than flickering) gives the scatter a less mechanical, hand-placed feel.
+function scatterOpacity() { return Math.round((Math.random() * 0.14 + 0.08) * 100) / 100; }
+
+const BG_ICONS: { name: string; size: number; rotate: string; style: object; opacity: number }[] = [
+  { name: 'camera',           size: 30, rotate: '-14deg', style: { top: 10,  left: '6%'  }, opacity: scatterOpacity() },
+  { name: 'dollar-sign',      size: 22, rotate: '12deg',  style: { top: 4,   right: '32%' }, opacity: scatterOpacity() },
+  { name: 'laptop',           size: 32, rotate: '9deg',   style: { top: 130, right: '5%' }, opacity: scatterOpacity() },
+  { name: 'bullhorn',         size: 24, rotate: '-10deg', style: { top: 60,  left: '42%' }, opacity: scatterOpacity() },
+  { name: 'photo-video',      size: 22, rotate: '15deg',  style: { top: 195, left: '36%' }, opacity: scatterOpacity() },
+  { name: 'chart-line',       size: 20, rotate: '-8deg',  style: { top: 26,  right: '6%' }, opacity: scatterOpacity() },
+  { name: 'briefcase',        size: 24, rotate: '11deg',  style: { top: 150, left: '8%'  }, opacity: scatterOpacity() },
+  { name: 'hashtag',          size: 18, rotate: '-6deg',  style: { top: 215, right: '20%' }, opacity: scatterOpacity() },
+  { name: 'mobile-alt',       size: 26, rotate: '-9deg',  style: { top: 100, left: '2%'  }, opacity: scatterOpacity() },
 ];
 
 const ROLES = [
@@ -86,6 +93,32 @@ function getPwErrorKey(p: string): string | undefined {
   if (!/[A-Z]/.test(p)) return 'auth.signup.pwErrorUppercase';
   if (!/[0-9]/.test(p)) return 'auth.signup.pwErrorNumber';
 }
+
+// ── Gradient / 3D headline word ─────────────────────────────────────────────────
+// Text can't be gradient-filled natively in RN, so the glyphs are used as a mask over
+// a LinearGradient (MaskedView). The "3D" read comes from two darker, offset copies of
+// the same word rendered underneath the masked layer — a cheap extrusion/emboss trick,
+// since there's no real depth renderer available here.
+
+function GradientHighlight({ text, style }: { text: string; style: any }) {
+  return (
+    <View style={gh.wrap}>
+      <Text style={[style, gh.depthFar]}>{text}</Text>
+      <Text style={[style, gh.depthNear]}>{text}</Text>
+      <MaskedView maskElement={<Text style={style}>{text}</Text>}>
+        <LinearGradient colors={['#FFE9C2', '#FFC581', '#F97316']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+          <Text style={[style, { opacity: 0 }]}>{text}</Text>
+        </LinearGradient>
+      </MaskedView>
+    </View>
+  );
+}
+
+const gh = StyleSheet.create({
+  wrap:      { position: 'relative' },
+  depthFar:  { position: 'absolute', top: 3.5, left: 3.5, color: '#7C2D12', opacity: 0.5, textShadowColor: 'transparent' },
+  depthNear: { position: 'absolute', top: 1.75, left: 1.75, color: '#C2410C', opacity: 0.65, textShadowColor: 'transparent' },
+});
 
 // ── Input field ───────────────────────────────────────────────────────────────
 
@@ -539,6 +572,28 @@ export default function LoginScreen() {
   const insets                    = useSafeAreaInsets();
   const [tab, setTab]             = useState<'login' | 'signup'>(params.tab === 'signup' ? 'signup' : 'login');
 
+  // Tagline auto-fit: measured against an invisible unwrapped copy of itself, then
+  // scaled down (never reflowed/wrapped) so "Where Brands Meet Creators" always renders
+  // on one line no matter the screen width or which language's word lengths are in play.
+  const { width: windowWidth } = useWindowDimensions();
+  const [taglineNaturalWidth, setTaglineNaturalWidth] = useState(0);
+  const taglineAvailableWidth = windowWidth - 40; // matches scrollContent's paddingHorizontal (20 × 2)
+  const taglineScale = taglineNaturalWidth > 0 ? Math.min(1, taglineAvailableWidth / taglineNaturalWidth) : 1;
+
+  function renderTaglineWords() {
+    return (
+      <>
+        <Text style={s.heroTagline}>{t('auth.login.heroTaglinePrefix')}</Text>
+        <GradientHighlight text={t('auth.login.heroTaglineBrands')} style={s.heroTaglineHighlight} />
+        <Text style={s.heroTagline}>{t('auth.login.heroTaglineMiddle')}</Text>
+        <GradientHighlight text={t('auth.login.heroTaglineCreators')} style={s.heroTaglineHighlight} />
+        {!!t('auth.login.heroTaglineSuffix') && (
+          <Text style={s.heroTagline}>{t('auth.login.heroTaglineSuffix')}</Text>
+        )}
+      </>
+    );
+  }
+
   // Entrance animation — card slides up and fades in on mount
   const cardAnim = useRef(new Animated.Value(0)).current;
   useEffect(() => {
@@ -714,32 +769,34 @@ export default function LoginScreen() {
   }
 
   return (
-    <View style={[s.root, { backgroundColor: P1 }]}>
+    <View style={s.root}>
       <StatusBar style="light" />
+
+      {/* Full-bleed gradient — the whole screen is the "aurora", not just a top strip */}
+      <LinearGradient colors={[P3, P2, P1]} style={StyleSheet.absoluteFill} start={{ x: 0.1, y: 0 }} end={{ x: 0.85, y: 1 }} pointerEvents="none" />
+      <View style={s.auroraLayer} pointerEvents="none">
+        <View style={[s.auroraBlob, s.auroraBlobA]} />
+        <View style={[s.auroraBlob, s.auroraBlobB]} />
+        <View style={[s.auroraBlob, s.auroraBlobC]} />
+        {BG_ICONS.map((icon, i) => (
+          <FontAwesome5
+            key={i}
+            name={icon.name as any}
+            size={icon.size}
+            color="#ffffff"
+            style={[s.bgIcon, icon.style, { opacity: icon.opacity, transform: [{ rotate: icon.rotate }] }]}
+          />
+        ))}
+      </View>
+
       <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <ScrollView
+          contentContainerStyle={[s.scrollContent, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 28 }]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}>
 
-        {/* ── Gradient hero ── */}
-        <LinearGradient colors={[P3, P2, P1]} style={[s.hero, { paddingTop: insets.top + 12 }]} start={{ x: 0.2, y: 0 }} end={{ x: 0.8, y: 1 }}>
-          {/* Decorative blobs */}
-          <View style={s.blob1} />
-          <View style={s.blob2} />
-          <View style={s.blob3} />
-
-          {/* Decorative background icons */}
-          <View style={s.bgIconLayer} pointerEvents="none">
-            {BG_ICONS.map((icon, i) => (
-              <FontAwesome5
-                key={i}
-                name={icon.name as any}
-                size={icon.size}
-                color="#ffffff"
-                style={[s.bgIcon, icon.style, { transform: [{ rotate: icon.rotate }] }]}
-              />
-            ))}
-          </View>
-
-          {/* Lang switcher pinned to the top-right */}
-          <View style={[s.langRow, { top: insets.top + 12 }]}>
+          {/* Lang switcher */}
+          <View style={s.langRow}>
             {LANG_OPTIONS.map(({ lang, flag }) => (
               <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                 key={lang}
@@ -750,81 +807,86 @@ export default function LoginScreen() {
             ))}
           </View>
 
-          {/* Logo, centered, with tagline below */}
+          {/* Logo in a glowing badge, tagline below */}
           <View style={s.heroCenter}>
-            <View style={s.logoBadgeCard}>
-              <Image source={require('@/assets/images/logo.png')} style={s.logoImage} resizeMode="contain" />
+            <View style={s.logoGlowRing}>
+              <View style={s.logoBadgeCard}>
+                <Image source={require('@/assets/images/logo.png')} style={s.logoImage} resizeMode="contain" />
+              </View>
             </View>
-            <Text style={s.heroTagline}>
-              {t('auth.login.heroTaglinePrefix')}{' '}
-              <Text style={s.heroTaglineHighlight}>{t('auth.login.heroTaglineBrands')}</Text>{' '}
-              {t('auth.login.heroTaglineMiddle')}{' '}
-              <Text style={s.heroTaglineHighlight}>{t('auth.login.heroTaglineCreators')}</Text>
-              {t('auth.login.heroTaglineSuffix') ? ` ${t('auth.login.heroTaglineSuffix')}` : ''}
-            </Text>
+            {/* Row of independent word chunks rather than one flowing <Text> paragraph —
+                MaskedView (used for the gradient words below) can't sit inline inside a
+                Text run the way nested <Text> can, so each word lays out as a flex item.
+                An invisible unwrapped copy measures the row's natural width; the visible
+                copy is scaled down (never reflowed) to guarantee it always fits one line. */}
+            <View style={s.heroTaglineMeasure} pointerEvents="none" onLayout={(e) => setTaglineNaturalWidth(e.nativeEvent.layout.width)}>
+              {renderTaglineWords()}
+            </View>
+            <View style={s.heroTaglineClip}>
+              <View style={[s.heroTaglineRow, { transform: [{ scale: taglineScale }] }]}>
+                {renderTaglineWords()}
+              </View>
+            </View>
           </View>
-        </LinearGradient>
 
-        {/* ── White card ──
-            Shadow lives on this outer view (no overflow clipping) and the rounded-corner
-            clip lives on the inner view — iOS silently drops a shadow on any view that
-            also has overflow:hidden, so the two responsibilities can't share one view. */}
-        <Animated.View
-          style={[
-            s.cardOuter,
-            {
-              opacity: cardAnim,
-              transform: [{
-                translateY: cardAnim.interpolate({ inputRange: [0, 1], outputRange: [28, 0] }),
-              }],
-            },
-          ]}>
-          <View style={s.cardInner}>
-          <ScrollView
-            contentContainerStyle={[s.cardScroll, { paddingBottom: insets.bottom + 24 }]}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}>
-
-            {/* Tab bar */}
-            <View style={s.tabBar}>
-              {(['login', 'signup'] as const).map((tabKey) => (
-                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                  key={tabKey}
-                  style={[s.tabBtn, tab === tabKey && s.tabBtnActive]}
-                  onPress={() => setTab(tabKey)}>
-                  {tab === tabKey && (
-                    <LinearGradient colors={[P3, P1]} style={s.tabBtnGrad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} />
-                  )}
-                  <Text style={[s.tabBtnText, { color: tab === tabKey ? '#fff' : '#6B7280' }]}>
-                    {tabKey === 'login' ? t('auth.login.tabLogin') : t('auth.login.tabSignup')}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-
-            {/* Form */}
-            <Animated.View
-              style={{
-                opacity: formAnim,
+          {/* ── Floating card ──
+              Shadow lives on this outer view (no overflow clipping) and the rounded-corner
+              clip lives on the inner view — iOS silently drops a shadow on any view that
+              also has overflow:hidden, so the two responsibilities can't share one view. */}
+          <Animated.View
+            style={[
+              s.cardOuter,
+              {
+                opacity: cardAnim,
                 transform: [{
-                  translateY: formAnim.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }),
+                  translateY: cardAnim.interpolate({ inputRange: [0, 1], outputRange: [28, 0] }),
                 }],
-              }}>
-              {tab === 'login'
-                ? <LoginForm verified={params.verified} onGooglePress={handleGooglePress} googleLoading={googleLoading} googleError={googleError} onFacebookPress={handleFacebookPress} facebookLoading={facebookLoading} facebookError={facebookError} />
-                : <SignupForm onGooglePress={handleGooglePress} googleLoading={googleLoading} googleError={googleError} onFacebookPress={handleFacebookPress} facebookLoading={facebookLoading} facebookError={facebookError} />}
-            </Animated.View>
+              },
+            ]}>
+            <View style={s.cardInner}>
+              <View style={s.cardBody}>
 
-            {/* Footer */}
-            <View style={s.footer}>
-              <Ionicons name="shield-checkmark-outline" size={12} color="#A78BFA" />
-              <Text style={s.footerText}>{t('auth.login.footer')}</Text>
+                {/* Pill-shaped segmented tab */}
+                <View style={s.tabBar}>
+                  {(['login', 'signup'] as const).map((tabKey) => (
+                    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                      key={tabKey}
+                      style={[s.tabBtn, tab === tabKey && s.tabBtnActive]}
+                      onPress={() => setTab(tabKey)}>
+                      {tab === tabKey && (
+                        <LinearGradient colors={[P3, P1]} style={s.tabBtnGrad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} />
+                      )}
+                      <Text style={[s.tabBtnText, { color: tab === tabKey ? '#fff' : '#8B7EA8' }]}>
+                        {tabKey === 'login' ? t('auth.login.tabLogin') : t('auth.login.tabSignup')}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+
+                {/* Form */}
+                <Animated.View
+                  style={{
+                    opacity: formAnim,
+                    transform: [{
+                      translateY: formAnim.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }),
+                    }],
+                  }}>
+                  {tab === 'login'
+                    ? <LoginForm verified={params.verified} onGooglePress={handleGooglePress} googleLoading={googleLoading} googleError={googleError} onFacebookPress={handleFacebookPress} facebookLoading={facebookLoading} facebookError={facebookError} />
+                    : <SignupForm onGooglePress={handleGooglePress} googleLoading={googleLoading} googleError={googleError} onFacebookPress={handleFacebookPress} facebookLoading={facebookLoading} facebookError={facebookError} />}
+                </Animated.View>
+
+              </View>
             </View>
+          </Animated.View>
 
-          </ScrollView>
+          {/* Footer */}
+          <View style={s.footer}>
+            <Ionicons name="shield-checkmark-outline" size={12} color="rgba(255,255,255,0.65)" />
+            <Text style={s.footerText}>{t('auth.login.footer')}</Text>
           </View>
-        </Animated.View>
 
+        </ScrollView>
       </KeyboardAvoidingView>
 
       {/* Role selection modal — shown for new Google users */}
@@ -864,86 +926,96 @@ export default function LoginScreen() {
 }
 
 const s = StyleSheet.create({
-  root: { flex: 1 },
+  root: { flex: 1, backgroundColor: P1 },
   flex: { flex: 1 },
 
-  // Hero
-  hero:    { paddingHorizontal: 24, paddingBottom: 64, overflow: 'hidden' },
-  blob1:   { position: 'absolute', width: 240, height: 240, borderRadius: 120, backgroundColor: 'rgba(255,255,255,0.03)', top: -60, right: -60 },
-  blob2:   { position: 'absolute', width: 160, height: 160, borderRadius: 80,  backgroundColor: 'rgba(255,255,255,0.03)', bottom: 20, left: -50 },
-  blob3:   { position: 'absolute', width: 100, height: 100, borderRadius: 50,  backgroundColor: 'rgba(255,255,255,0.03)', top: 40, left: 80 },
+  scrollContent: { flexGrow: 1, paddingHorizontal: 20 },
 
-  bgIconLayer: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
-  bgIcon:      { position: 'absolute', opacity: 0.14 },
+  // Aurora glow blobs — soft two-tone (purple + warm orange) light sources instead of
+  // scattered decorative icons, echoing the app icon's own purple-triangle/orange-ring duo.
+  auroraLayer:  { position: 'absolute', top: 0, left: 0, right: 0, height: 420, overflow: 'hidden' },
+  auroraBlob:   { position: 'absolute', borderRadius: 999 },
+  auroraBlobA:  { width: 280, height: 280, backgroundColor: 'rgba(255,255,255,0.05)', top: -90, right: -70 },
+  auroraBlobB:  { width: 220, height: 220, backgroundColor: 'rgba(249,115,22,0.16)', top: 80, left: -90 },
+  auroraBlobC:  { width: 160, height: 160, backgroundColor: 'rgba(255,255,255,0.04)', top: 250, right: 40 },
+  bgIcon:       { position: 'absolute' },
 
-  logoBadgeCard: { backgroundColor: '#fff', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8, shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 14, shadowOffset: { width: 0, height: 6 }, elevation: 8 },
-  logoImage: { width: 108, height: 108 / (1740 / 620) },
-  langRow:  { flexDirection: 'row', gap: 6, position: 'absolute', right: 24 },
+  logoGlowRing: { padding: 6, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.10)', shadowColor: '#FFC581', shadowOpacity: 0.35, shadowRadius: 20, shadowOffset: { width: 0, height: 0 }, elevation: 6 },
+  logoBadgeCard: { backgroundColor: '#fff', borderRadius: 999, paddingHorizontal: 16, paddingVertical: 10, shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 14, shadowOffset: { width: 0, height: 6 }, elevation: 8 },
+  logoImage: { width: 104, height: 104 / (1740 / 620) },
+  langRow:  { flexDirection: 'row', gap: 6, justifyContent: 'flex-end', marginBottom: 6 },
   langBtn:  { width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(255,255,255,0.12)', justifyContent: 'center', alignItems: 'center' },
   langBtnActive: { backgroundColor: 'rgba(255,255,255,0.28)', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.5)' },
   langFlag: { fontSize: 15 },
 
-  heroCenter:  { alignItems: 'center', marginTop: 20, gap: 16 },
-  heroTagline: { fontSize: 19, color: 'rgba(255,255,255,0.9)', fontFamily: F.semibold, textAlign: 'center', letterSpacing: 0.3 },
-  heroTaglineHighlight: { fontSize: 21, color: '#FFC581', fontFamily: F.extrabold, letterSpacing: 0.2, textShadowColor: 'rgba(0,0,0,0.18)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
+  heroCenter:  { alignItems: 'center', marginTop: 8, marginBottom: 28, gap: 16, position: 'relative' },
+  // Invisible, unwrapped — exists only so onLayout can report the tagline's true
+  // one-line width, which the visible copy below is then scaled down to fit.
+  heroTaglineMeasure: { position: 'absolute', top: 0, opacity: 0, flexDirection: 'row', alignItems: 'center', gap: 8 },
+  heroTaglineClip: { width: '100%', overflow: 'hidden', alignItems: 'center' },
+  heroTaglineRow:  { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  heroTagline: { fontSize: 20, color: 'rgba(255,255,255,0.9)', fontFamily: F.semibold, letterSpacing: 0.3 },
+  heroTaglineHighlight: { fontSize: 30, fontFamily: F.extrabold, letterSpacing: 0.2 },
 
-  // Card
-  cardOuter:  { flex: 1, backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, marginTop: -28, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 16, shadowOffset: { width: 0, height: -4 }, elevation: 10 },
-  cardInner:  { flex: 1, borderTopLeftRadius: 24, borderTopRightRadius: 24, overflow: 'hidden' },
-  cardScroll: { paddingHorizontal: 24, paddingTop: 28 },
+  // Floating card — visible gradient margin on every side (not an edge-to-edge sheet),
+  // fully rounded corners on all four corners for a "card floating in the aurora" feel.
+  cardOuter:  { borderRadius: 30, shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 24, shadowOffset: { width: 0, height: 12 }, elevation: 14 },
+  cardInner:  { borderRadius: 30, overflow: 'hidden', backgroundColor: '#fff' },
+  cardBody:   { paddingHorizontal: 22, paddingTop: 22, paddingBottom: 26 },
 
-  // Tab bar
-  tabBar:       { flexDirection: 'row', backgroundColor: '#F5F3FF', borderRadius: 12, padding: 4, marginBottom: 24, gap: 2 },
-  tabBtn:       { flex: 1, height: 42, borderRadius: 10, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
+  // Pill-shaped segmented tab
+  tabBar:       { flexDirection: 'row', backgroundColor: '#F3EFFB', borderRadius: 999, padding: 4, marginBottom: 22, gap: 2 },
+  tabBtn:       { flex: 1, height: 44, borderRadius: 999, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
   tabBtnActive: { shadowColor: P1, shadowOpacity: 0.2, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
-  tabBtnGrad:   { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 10 },
+  tabBtnGrad:   { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 999 },
   tabBtnText:   { fontSize: 14, fontFamily: F.semibold, zIndex: 1 },
 
   // Banners
-  banner:     { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12, borderRadius: 12, borderWidth: 1, marginBottom: 16 },
+  banner:     { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12, borderRadius: 14, borderWidth: 1, marginBottom: 16 },
   bannerText: { fontSize: 13, flex: 1, fontFamily: F.medium },
 
   // Remember me
   rememberRow:  { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 20, marginTop: -4 },
   rememberText: { fontSize: 13, fontFamily: F.medium, color: '#374151' },
 
-  // Form
+  // Form — filled/tonal fields (soft lavender fill, no border until focused) rather than
+  // outlined boxes, with circular icon badges to match the pill language used throughout.
   form:          { gap: 16, marginBottom: 20 },
   fieldWrap:     { gap: 6 },
   fieldLabelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   fieldLabel:    { fontSize: 13, fontWeight: '600', fontFamily: F.semibold, color: '#374151' },
   forgotText:    { fontSize: 12, fontFamily: F.semibold, color: P2 },
-  field:         { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 14, paddingHorizontal: 4, height: 52, gap: 4, borderColor: '#E8E0F8' },
-  fieldFocused:  { shadowColor: P2, shadowOpacity: 0.12, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
-  fieldIconWrap: { width: 36, height: 36, borderRadius: 10, justifyContent: 'center', alignItems: 'center', marginLeft: 4 },
+  field:         { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 18, paddingHorizontal: 5, height: 54, gap: 4, borderColor: 'transparent', backgroundColor: '#F3EFFB' },
+  fieldFocused:  { borderColor: P2, backgroundColor: '#fff', shadowColor: P2, shadowOpacity: 0.14, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
+  fieldIconWrap: { width: 38, height: 38, borderRadius: 19, justifyContent: 'center', alignItems: 'center', marginLeft: 4 },
   fieldInput:    { flex: 1, fontSize: 15, fontFamily: F.regular, color: '#111827' },
   eyeBtn:        { paddingHorizontal: 12 },
   fieldErrRow:   { flexDirection: 'row', alignItems: 'center', gap: 4 },
   fieldErrText:  { fontSize: 11, color: '#EF4444', fontFamily: F.medium },
-  domainSuggestBoxOuter: { borderRadius: 12, shadowColor: '#4C1D95', shadowOpacity: 0.15, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
-  domainSuggestBox:      { borderWidth: 1, borderColor: '#E8E0F8', borderRadius: 12, overflow: 'hidden', backgroundColor: '#fff' },
+  domainSuggestBoxOuter: { borderRadius: 16, shadowColor: '#4C1D95', shadowOpacity: 0.15, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
+  domainSuggestBox:      { borderWidth: 1, borderColor: '#E8E0F8', borderRadius: 16, overflow: 'hidden', backgroundColor: '#fff' },
   domainSuggestItem:     { paddingHorizontal: 14, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#F0EBFB' },
   domainSuggestText:     { fontSize: 14, fontFamily: F.regular, color: '#6B7280' },
   domainSuggestTextBold: { fontFamily: F.semibold, color: '#374151' },
 
   // Role cards
   roleRow:       { flexDirection: 'row', gap: 14, marginBottom: 22 },
-  roleCard:      { flex: 1, borderRadius: 20, borderWidth: 1.5, borderColor: '#ECEAF5', padding: 18, gap: 10, alignItems: 'center', position: 'relative' },
+  roleCard:      { flex: 1, borderRadius: 22, borderWidth: 1.5, borderColor: '#ECEAF5', padding: 18, gap: 10, alignItems: 'center', position: 'relative' },
   roleCardActive:{ shadowOpacity: 0.16, shadowRadius: 16, shadowOffset: { width: 0, height: 6 }, elevation: 6 },
-  roleTintOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 20 },
-  roleIconBox:   { width: 60, height: 60, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
+  roleTintOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 22 },
+  roleIconBox:   { width: 58, height: 58, borderRadius: 29, justifyContent: 'center', alignItems: 'center' },
   roleLabel:     { fontSize: 14, fontWeight: '700', fontFamily: F.bold, textAlign: 'center' },
   roleSub:       { fontSize: 11.5, fontFamily: F.regular, textAlign: 'center', lineHeight: 16 },
   roleCheck:     { position: 'absolute', top: -8, right: -8, width: 26, height: 26, borderRadius: 13, justifyContent: 'center', alignItems: 'center', borderWidth: 2.5, borderColor: '#fff', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
 
   // Password rules
   rulesRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginTop: -8 },
-  rulePill: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 8, borderWidth: 1, paddingHorizontal: 8, paddingVertical: 4 },
+  rulePill: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 999, borderWidth: 1, paddingHorizontal: 8, paddingVertical: 4 },
   ruleText: { fontSize: 11, fontFamily: F.medium },
 
-  // Button
-  primaryBtnWrap: { borderRadius: 14, marginBottom: 20, shadowColor: P1, shadowOpacity: 0.2, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
-  primaryBtn:     { height: 54, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  // Button — full pill shape with a warm glow shadow
+  primaryBtnWrap: { borderRadius: 999, marginBottom: 20, shadowColor: P1, shadowOpacity: 0.25, shadowRadius: 14, shadowOffset: { width: 0, height: 6 }, elevation: 7 },
+  primaryBtn:     { height: 54, borderRadius: 999, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   primaryBtnText: { fontSize: 16, fontWeight: '700', color: '#fff', fontFamily: F.bold, letterSpacing: 0.3 },
 
   // Divider
@@ -951,12 +1023,12 @@ const s = StyleSheet.create({
   dividerLine: { flex: 1, height: 1 },
   dividerText: { fontSize: 12, color: '#A78BFA', fontFamily: F.medium },
 
-  // Social row (Google + Facebook side by side)
+  // Social row (Google + Facebook side by side) — same pill family as the primary button
   socialRow:      { flexDirection: 'row', gap: 12, marginBottom: 12 },
-  socialBtn:      { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 50, borderRadius: 14, borderWidth: 1.5, borderColor: '#DDD6FE', backgroundColor: '#FAFAFE', shadowColor: '#4C1D95', shadowOpacity: 0.06, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 1 },
+  socialBtn:      { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 52, borderRadius: 999, borderWidth: 1.5, borderColor: '#DDD6FE', backgroundColor: '#FAFAFE', shadowColor: '#4C1D95', shadowOpacity: 0.06, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 1 },
   socialBtnFull:  { flex: 0, marginBottom: 12 },
   socialBtnText:  { fontSize: 14, fontFamily: F.semibold, color: '#374151' },
-  socialBtnFb:    { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 50, borderRadius: 14, borderWidth: 1.5, borderColor: '#BFDBFE', backgroundColor: '#EFF6FF' },
+  socialBtnFb:    { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 52, borderRadius: 999, borderWidth: 1.5, borderColor: '#BFDBFE', backgroundColor: '#EFF6FF' },
   socialBtnFbText:{ fontSize: 14, fontFamily: F.semibold, color: '#1D4ED8' },
   googleBadge:    { width: 22, height: 22, borderRadius: 11, backgroundColor: '#4285F4', justifyContent: 'center', alignItems: 'center' },
   googleG:        { color: '#fff', fontSize: 12, fontWeight: '900', fontFamily: F.bold },
@@ -966,7 +1038,7 @@ const s = StyleSheet.create({
 
   // Role modal
   modalOverlay:    { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  modalSheet:      { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 36, gap: 4 },
+  modalSheet:      { backgroundColor: '#fff', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, paddingBottom: 36, gap: 4 },
   modalHandle:     { width: 40, height: 4, borderRadius: 2, backgroundColor: '#DDD6FE', alignSelf: 'center', marginBottom: 20 },
   modalTitle:      { fontSize: 20, fontWeight: '700', fontFamily: F.bold, color: P1, textAlign: 'center' },
   modalSub:        { fontSize: 14, fontFamily: F.regular, color: '#6B7280', textAlign: 'center', marginBottom: 20 },
@@ -976,11 +1048,11 @@ const s = StyleSheet.create({
   // Suspended-account modal
   suspendedSheet:          { alignItems: 'center', paddingTop: 8 },
   suspendedIconWrap:       { width: 56, height: 56, borderRadius: 28, backgroundColor: '#FEF2F2', justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
-  suspendedContactBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: P2, borderRadius: 14, paddingVertical: 14, paddingHorizontal: 20, width: '100%', marginTop: 4 },
+  suspendedContactBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: P2, borderRadius: 999, paddingVertical: 14, paddingHorizontal: 20, width: '100%', marginTop: 4 },
   suspendedContactBtnText: { fontSize: 15, fontFamily: F.semibold, color: '#fff' },
 
   terms:  { fontSize: 12, color: '#9CA3AF', lineHeight: 18, textAlign: 'center', fontFamily: F.regular, marginBottom: 8 },
 
-  footer:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, marginTop: 12 },
-  footerText: { fontSize: 11, color: '#A78BFA', fontFamily: F.regular },
+  footer:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, marginTop: 16 },
+  footerText: { fontSize: 11, color: 'rgba(255,255,255,0.65)', fontFamily: F.regular },
 });
