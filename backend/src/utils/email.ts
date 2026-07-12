@@ -1,10 +1,17 @@
 import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import { env } from '../config/env';
 import { logger } from '../config/logger';
 
 const FROM_NAME    = 'CreatorMarket';
 const FROM_ADDRESS = env.EMAIL_USERNAME ?? 'no-reply@creatormarket.com';
-const FROM         = `"${FROM_NAME}" <${FROM_ADDRESS}>`;
+const FROM         = `${FROM_NAME} <${FROM_ADDRESS}>`;
+
+// Resend requires the from-address to be on a domain verified with Resend —
+// a Gmail address never qualifies. Without a verified domain, their sandbox
+// sender is the only address that can send at all (and only to the account
+// owner's own inbox until a domain is verified).
+const RESEND_FROM = `${FROM_NAME} <onboarding@resend.dev>`;
 
 function createTransporter() {
   // Prefer Gmail config when available
@@ -33,6 +40,16 @@ function createTransporter() {
 }
 
 async function sendEmail(to: string, subject: string, html: string): Promise<void> {
+  // Resend uses HTTPS, not raw SMTP — Render's free tier blocks outbound SMTP
+  // ports (25/465/587), so this is the path production actually uses.
+  if (env.RESEND_API_KEY) {
+    const resend = new Resend(env.RESEND_API_KEY);
+    const { error } = await resend.emails.send({ from: RESEND_FROM, to, subject, html });
+    if (error) throw new Error(`Resend: ${error.message}`);
+    logger.info({ to, subject }, 'Email sent (Resend)');
+    return;
+  }
+
   const transporter = createTransporter();
 
   if (!transporter) {
@@ -41,7 +58,7 @@ async function sendEmail(to: string, subject: string, html: string): Promise<voi
   }
 
   await transporter.sendMail({ from: FROM, to, subject, html });
-  logger.info({ to, subject }, 'Email sent');
+  logger.info({ to, subject }, 'Email sent (SMTP)');
 }
 
 // ── Templates ─────────────────────────────────────────────────────────────────

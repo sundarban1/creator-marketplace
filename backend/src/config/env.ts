@@ -29,6 +29,9 @@ const envSchema = z.object({
   EMAIL_SECURE:   z.string().optional(),
   EMAIL_USERNAME: z.string().optional(),
   EMAIL_PASSWORD: z.string().optional(),
+  // Resend (HTTP API) — preferred in production, since it isn't blocked by
+  // Render's free-tier restriction on outbound SMTP ports.
+  RESEND_API_KEY: z.string().optional(),
   ADMIN_EMAIL:    z.string().optional(),
   FRONTEND_URL: z.string().default('http://localhost:3000'),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).optional(),
