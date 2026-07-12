@@ -157,15 +157,17 @@ function Field({
         const suggestions = EMAIL_DOMAINS.filter((d) => d.startsWith(domainPart));
         if (suggestions.length === 0) return null;
         return (
-          <View style={s.domainSuggestBox}>
-            {suggestions.map((domain) => (
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                key={domain}
-                style={s.domainSuggestItem}
-                onPress={() => onChangeText(`${localPart}@${domain}`)}>
-                <Text style={s.domainSuggestText}>{localPart}@<Text style={s.domainSuggestTextBold}>{domain}</Text></Text>
-              </Pressable>
-            ))}
+          <View style={s.domainSuggestBoxOuter}>
+            <View style={s.domainSuggestBox}>
+              {suggestions.map((domain) => (
+                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                  key={domain}
+                  style={s.domainSuggestItem}
+                  onPress={() => onChangeText(`${localPart}@${domain}`)}>
+                  <Text style={s.domainSuggestText}>{localPart}@<Text style={s.domainSuggestTextBold}>{domain}</Text></Text>
+                </Pressable>
+              ))}
+            </View>
           </View>
         );
       })()}
@@ -268,7 +270,7 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
 
       <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
         onPress={handleLogin} disabled={loading}
-        style={({ pressed }) => [s.primaryBtnWrap, { opacity: pressed ? 0.9 : 1 }]}>
+        style={({ pressed }) => [s.primaryBtnWrap, { opacity: pressed ? 0.92 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] }]}>
         <LinearGradient colors={[P3, P1]} style={s.primaryBtn} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
           {loading
             ? <Ionicons name="sync" size={18} color="#fff" />
@@ -285,7 +287,13 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
         <View style={[s.dividerLine, { backgroundColor: '#EDE9FE' }]} />
       </View>
 
-      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[s.socialBtn, s.socialBtnFull, googleLoading && { opacity: 0.6 }]} onPress={onGooglePress} disabled={googleLoading}>
+      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+        style={({ pressed }) => [
+          s.socialBtn, s.socialBtnFull,
+          googleLoading && { opacity: 0.6 },
+          pressed && !googleLoading && { transform: [{ scale: 0.98 }], backgroundColor: '#F3F0FC' },
+        ]}
+        onPress={onGooglePress} disabled={googleLoading}>
         {googleLoading
           ? <View style={s.spinner} />
           : <View style={s.googleBadge}><Text style={s.googleG}>G</Text></View>}
@@ -463,7 +471,7 @@ function SignupForm({ onGooglePress, googleLoading, googleError, onFacebookPress
 
       <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
         onPress={handleCreate} disabled={loading}
-        style={({ pressed }) => [s.primaryBtnWrap, { opacity: pressed ? 0.9 : 1 }]}>
+        style={({ pressed }) => [s.primaryBtnWrap, { opacity: pressed ? 0.92 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] }]}>
         <LinearGradient colors={[P3, P1]} style={s.primaryBtn} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
           {loading
             ? <Ionicons name="sync" size={18} color="#fff" />
@@ -480,7 +488,13 @@ function SignupForm({ onGooglePress, googleLoading, googleError, onFacebookPress
         <View style={[s.dividerLine, { backgroundColor: '#EDE9FE' }]} />
       </View>
 
-      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[s.socialBtn, s.socialBtnFull, googleLoading && { opacity: 0.6 }]} onPress={onGooglePress} disabled={googleLoading}>
+      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+        style={({ pressed }) => [
+          s.socialBtn, s.socialBtnFull,
+          googleLoading && { opacity: 0.6 },
+          pressed && !googleLoading && { transform: [{ scale: 0.98 }], backgroundColor: '#F3F0FC' },
+        ]}
+        onPress={onGooglePress} disabled={googleLoading}>
         {googleLoading
           ? <View style={s.spinner} />
           : <View style={s.googleBadge}><Text style={s.googleG}>G</Text></View>}
@@ -741,14 +755,23 @@ export default function LoginScreen() {
             <View style={s.logoBadgeCard}>
               <Image source={require('@/assets/images/logo.png')} style={s.logoImage} resizeMode="contain" />
             </View>
-            <Text style={s.heroTagline}>{t('auth.login.heroTagline')}</Text>
+            <Text style={s.heroTagline}>
+              {t('auth.login.heroTaglinePrefix')}{' '}
+              <Text style={s.heroTaglineHighlight}>{t('auth.login.heroTaglineBrands')}</Text>{' '}
+              {t('auth.login.heroTaglineMiddle')}{' '}
+              <Text style={s.heroTaglineHighlight}>{t('auth.login.heroTaglineCreators')}</Text>
+              {t('auth.login.heroTaglineSuffix') ? ` ${t('auth.login.heroTaglineSuffix')}` : ''}
+            </Text>
           </View>
         </LinearGradient>
 
-        {/* ── White card ── */}
+        {/* ── White card ──
+            Shadow lives on this outer view (no overflow clipping) and the rounded-corner
+            clip lives on the inner view — iOS silently drops a shadow on any view that
+            also has overflow:hidden, so the two responsibilities can't share one view. */}
         <Animated.View
           style={[
-            s.card,
+            s.cardOuter,
             {
               opacity: cardAnim,
               transform: [{
@@ -756,6 +779,7 @@ export default function LoginScreen() {
               }],
             },
           ]}>
+          <View style={s.cardInner}>
           <ScrollView
             contentContainerStyle={[s.cardScroll, { paddingBottom: insets.bottom + 24 }]}
             keyboardShouldPersistTaps="handled"
@@ -798,6 +822,7 @@ export default function LoginScreen() {
             </View>
 
           </ScrollView>
+          </View>
         </Animated.View>
 
       </KeyboardAvoidingView>
@@ -851,7 +876,7 @@ const s = StyleSheet.create({
   bgIconLayer: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   bgIcon:      { position: 'absolute', opacity: 0.14 },
 
-  logoBadgeCard: { backgroundColor: '#fff', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8 },
+  logoBadgeCard: { backgroundColor: '#fff', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8, shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 14, shadowOffset: { width: 0, height: 6 }, elevation: 8 },
   logoImage: { width: 108, height: 108 / (1740 / 620) },
   langRow:  { flexDirection: 'row', gap: 6, position: 'absolute', right: 24 },
   langBtn:  { width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(255,255,255,0.12)', justifyContent: 'center', alignItems: 'center' },
@@ -859,10 +884,12 @@ const s = StyleSheet.create({
   langFlag: { fontSize: 15 },
 
   heroCenter:  { alignItems: 'center', marginTop: 20, gap: 16 },
-  heroTagline: { fontSize: 18, color: 'rgba(255,255,255,0.9)', fontFamily: F.semibold, textAlign: 'center', letterSpacing: 0.3 },
+  heroTagline: { fontSize: 19, color: 'rgba(255,255,255,0.9)', fontFamily: F.semibold, textAlign: 'center', letterSpacing: 0.3 },
+  heroTaglineHighlight: { fontSize: 21, color: '#FFC581', fontFamily: F.extrabold, letterSpacing: 0.2, textShadowColor: 'rgba(0,0,0,0.18)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
 
   // Card
-  card:       { flex: 1, backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, marginTop: -28, overflow: 'hidden' },
+  cardOuter:  { flex: 1, backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, marginTop: -28, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 16, shadowOffset: { width: 0, height: -4 }, elevation: 10 },
+  cardInner:  { flex: 1, borderTopLeftRadius: 24, borderTopRightRadius: 24, overflow: 'hidden' },
   cardScroll: { paddingHorizontal: 24, paddingTop: 28 },
 
   // Tab bar
@@ -893,6 +920,7 @@ const s = StyleSheet.create({
   eyeBtn:        { paddingHorizontal: 12 },
   fieldErrRow:   { flexDirection: 'row', alignItems: 'center', gap: 4 },
   fieldErrText:  { fontSize: 11, color: '#EF4444', fontFamily: F.medium },
+  domainSuggestBoxOuter: { borderRadius: 12, shadowColor: '#4C1D95', shadowOpacity: 0.15, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
   domainSuggestBox:      { borderWidth: 1, borderColor: '#E8E0F8', borderRadius: 12, overflow: 'hidden', backgroundColor: '#fff' },
   domainSuggestItem:     { paddingHorizontal: 14, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#F0EBFB' },
   domainSuggestText:     { fontSize: 14, fontFamily: F.regular, color: '#6B7280' },
@@ -925,7 +953,7 @@ const s = StyleSheet.create({
 
   // Social row (Google + Facebook side by side)
   socialRow:      { flexDirection: 'row', gap: 12, marginBottom: 12 },
-  socialBtn:      { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 50, borderRadius: 14, borderWidth: 1.5, borderColor: '#DDD6FE', backgroundColor: '#FAFAFE' },
+  socialBtn:      { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 50, borderRadius: 14, borderWidth: 1.5, borderColor: '#DDD6FE', backgroundColor: '#FAFAFE', shadowColor: '#4C1D95', shadowOpacity: 0.06, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 1 },
   socialBtnFull:  { flex: 0, marginBottom: 12 },
   socialBtnText:  { fontSize: 14, fontFamily: F.semibold, color: '#374151' },
   socialBtnFb:    { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 50, borderRadius: 14, borderWidth: 1.5, borderColor: '#BFDBFE', backgroundColor: '#EFF6FF' },
