@@ -52,9 +52,8 @@ export function LandingNav() {
     <>
       <header className="fixed top-0 left-0 right-0 z-50 px-4 md:px-6 pt-4 md:pt-5">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <button onClick={() => go('hero')} className="flex items-center gap-2 bg-white rounded-full pl-2 pr-4 py-2 shadow-sm ring-1 ring-black/5">
-            <img src="/icon.png" alt="kolab" className="h-6 w-6 rounded-full object-cover" />
-            <span className="font-extrabold text-gray-900 tracking-tight text-sm">kolab</span>
+          <button onClick={() => go('hero')} className="flex items-center bg-white rounded-full pl-3 pr-4 py-2 shadow-sm ring-1 ring-black/5">
+            <img src="/logo.png" alt="kolab" className="h-6 w-auto object-contain" />
           </button>
 
           <motion.nav

@@ -60,8 +60,8 @@ const BG_ICONS: { name: string; size: number; rotate: string; style: object; opa
 ];
 
 const ROLES = [
-  { key: 'CREATOR'  as const, label: 'Content Creator', sub: 'Influencer & creator', icon: 'camera-outline'    as const, grad: [COLORS.brinjal1, COLORS.brinjal2] as const },
-  { key: 'BUSINESS' as const, label: 'Brand / Business', sub: 'Company & brand',     icon: 'briefcase-outline' as const, grad: [COLORS.accent, '#EA580C'] as const },
+  { key: 'CREATOR'  as const, label: 'Creator', sub: 'Influencer & creator', icon: 'camera-outline'    as const, grad: [COLORS.brinjal1, COLORS.brinjal2] as const },
+  { key: 'BUSINESS' as const, label: 'Brand', sub: 'Company & brand',     icon: 'briefcase-outline' as const, grad: [COLORS.accent, '#EA580C'] as const },
 ];
 
 const PW_RULES = [
