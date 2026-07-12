@@ -151,24 +151,24 @@ const styles = StyleSheet.create({
 
   header:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1 },
   headerCenter: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  headerTitle:  { fontSize: 17, fontWeight: '700', fontFamily: F.bold },
+  headerTitle:  { fontSize: 17, fontFamily: F.bold },
 
-  errorText:    { fontSize: 15, textAlign: 'center', fontWeight: '500', fontFamily: F.medium },
+  errorText:    { fontSize: 15, textAlign: 'center', fontFamily: F.medium },
   retryBtn:     { borderRadius: 12, paddingHorizontal: 24, paddingVertical: 10, marginTop: 4 },
-  retryBtnText: { color: '#fff', fontWeight: '700', fontSize: 14, fontFamily: F.bold },
+  retryBtnText: { color: '#fff', fontSize: 14, fontFamily: F.bold },
 
   scroll:   { padding: 16, paddingBottom: 40 },
   sections: { gap: 10 },
 
   updatedRow:  { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, borderWidth: 1, marginBottom: 12 },
-  updatedText: { fontSize: 12, fontWeight: '500', fontFamily: F.medium },
+  updatedText: { fontSize: 12, fontFamily: F.medium },
 
   accordionCard:   { borderRadius: 14, borderWidth: 1.5, overflow: 'hidden' },
   accordionHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14 },
   indexBadge:      { width: 26, height: 26, borderRadius: 8, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
-  indexText:       { fontSize: 12, fontWeight: '700', fontFamily: F.bold },
+  indexText:       { fontSize: 12, fontFamily: F.bold },
   sectionEmoji:    { fontSize: 18 },
-  accordionTitle:  { flex: 1, fontSize: 14, fontWeight: '700', fontFamily: F.bold },
+  accordionTitle:  { flex: 1, fontSize: 14, fontFamily: F.bold },
   accordionBody:   { fontSize: 14, lineHeight: 22, paddingHorizontal: 14, paddingBottom: 14, paddingTop: 12, borderTopWidth: 1, fontFamily: F.regular },
 
   footer:     { alignItems: 'center', paddingTop: 20 },

@@ -269,15 +269,15 @@ const styles = StyleSheet.create({
   container:  { flex: 1 },
   gradientHeader: { borderBottomLeftRadius: 16, borderBottomRightRadius: 16, overflow: 'hidden' },
   headerRow:  { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingTop: 14, paddingBottom: 14 },
-  heading:    { fontSize: 20, fontWeight: '700', fontFamily: F.bold, color: '#fff', lineHeight: 24 },
+  heading:    { fontSize: 20, fontFamily: F.bold, color: '#fff', lineHeight: 24 },
   subheading: { fontSize: 13, marginTop: 2, fontFamily: F.regular, color: 'rgba(255,255,255,0.75)' },
   markAllBtn: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 12, borderWidth: 1 },
-  markAllText:{ fontSize: 12, fontWeight: '600', fontFamily: F.semibold, color: '#fff' },
+  markAllText:{ fontSize: 12, fontFamily: F.semibold, color: '#fff' },
   center:     { flex: 1, alignItems: 'center', justifyContent: 'center' },
   list:       { paddingBottom: 32 },
   listEmpty:  { flexGrow: 1 },
 
-  groupLabel: { fontSize: 11, fontWeight: '700', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 8, textTransform: 'uppercase', letterSpacing: 0, fontFamily: F.bold },
+  groupLabel: { fontSize: 11, paddingHorizontal: 20, paddingTop: 20, paddingBottom: 8, textTransform: 'uppercase', letterSpacing: 0, fontFamily: F.bold },
 
   item:       { flexDirection: 'row', paddingVertical: 16, paddingHorizontal: 20, borderBottomWidth: 1, gap: 14, alignItems: 'flex-start' },
   accentBar:  { position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, borderRadius: 2 },
@@ -286,11 +286,11 @@ const styles = StyleSheet.create({
 
   itemContent:{ flex: 1, gap: 5 },
   titleRow:   { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  itemTitle:  { fontSize: 14, fontWeight: '700', flex: 1, fontFamily: F.bold, lineHeight: 20 },
+  itemTitle:  { fontSize: 14, flex: 1, fontFamily: F.bold, lineHeight: 20 },
   unreadDot:  { width: 7, height: 7, borderRadius: 4, flexShrink: 0 },
 
   labelChip:     { alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 },
-  labelChipText: { fontSize: 10, fontWeight: '700', letterSpacing: 0.3, fontFamily: F.bold },
+  labelChipText: { fontSize: 10, letterSpacing: 0.3, fontFamily: F.bold },
 
   itemBody:   { fontSize: 13, lineHeight: 19, fontFamily: F.regular },
   itemTime:   { fontSize: 11, opacity: 0.55, fontFamily: F.regular, marginTop: 1 },

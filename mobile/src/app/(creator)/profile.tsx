@@ -368,7 +368,7 @@ const s = StyleSheet.create({
   bubble2:  { width: 100, height: 100, bottom: -20, left: 30 },
   bubble3:  { width: 60,  height: 60,  top: 20,   left: -20  },
   topBar:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 10 },
-  topTitle: { fontSize: 20, fontWeight: '700', color: '#fff', fontFamily: F.bold, lineHeight: 24 },
+  topTitle: { fontSize: 20, color: '#fff', fontFamily: F.bold, lineHeight: 24 },
   topIconBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center' },
 
   // Profile card (floats over cover)
@@ -380,12 +380,12 @@ const s = StyleSheet.create({
   avatarPressable:{ position: 'relative', alignItems: 'center', justifyContent: 'center' },
   avatar:         { width: 96, height: 96, borderRadius: 48, justifyContent: 'center', alignItems: 'center',
                     borderWidth: 4, borderColor: '#fff', overflow: 'hidden' },
-  avatarInitial:  { fontSize: 38, fontWeight: '700', color: '#fff', fontFamily: F.bold, textAlign: 'center', lineHeight: 96 },
+  avatarInitial:  { fontSize: 38, color: '#fff', fontFamily: F.bold, textAlign: 'center', lineHeight: 96 },
   cameraBadge:    { position: 'absolute', bottom: 2, right: 2, width: 28, height: 28, borderRadius: 14,
                     justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#fff' },
 
   // Identity
-  name:        { fontSize: 22, fontWeight: '700', fontFamily: F.bold, textAlign: 'center' },
+  name:        { fontSize: 22, fontFamily: F.bold, textAlign: 'center' },
   username:    { fontSize: 14, fontFamily: F.regular, textAlign: 'center', marginTop: 2 },
   locationRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   location:    { fontSize: 13, fontFamily: F.regular },
@@ -394,49 +394,49 @@ const s = StyleSheet.create({
   actionRow:   { flexDirection: 'row', gap: 10, marginTop: 6 },
   editBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
                  borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 8 },
-  editBtnText: { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
+  editBtnText: { fontSize: 13, fontFamily: F.bold },
 
   // Stats strip
   statsStrip:   { flexDirection: 'row', alignItems: 'center', width: '100%', marginTop: 16,
                   paddingTop: 16, borderTopWidth: 1 },
   statItem:     { flex: 1, alignItems: 'center', gap: 2 },
-  statValue:    { fontSize: 18, fontWeight: '700', fontFamily: F.bold },
-  statLabel:    { fontSize: 11, fontWeight: '500', fontFamily: F.medium },
+  statValue:    { fontSize: 18, fontFamily: F.bold },
+  statLabel:    { fontSize: 11, fontFamily: F.medium },
   statDivider:  { width: 1, height: 32 },
 
   // Section cards
   sectionCard:   { marginHorizontal: 16, marginTop: 12, borderRadius: 16, padding: 18,
                    shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
-  sectionTitle:  { fontSize: 15, fontWeight: '700', fontFamily: F.bold },
-  sectionAction: { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
+  sectionTitle:  { fontSize: 15, fontFamily: F.bold },
+  sectionAction: { fontSize: 13, fontFamily: F.bold },
 
   // Category chips
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip:     { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 12 },
-  chipText: { fontSize: 13, fontWeight: '600', fontFamily: F.semibold },
+  chipText: { fontSize: 13, fontFamily: F.semibold },
 
   // Social / portfolio rows
   cardList:      { gap: 10 },
   socialRow:     { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 14, padding: 12, borderWidth: 1 },
   platformBubble:{ width: 42, height: 42, borderRadius: 12, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   socialMeta:    { flex: 1, gap: 2 },
-  socialName:    { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
+  socialName:    { fontSize: 14, fontFamily: F.bold },
   socialHandle:  { fontSize: 12, fontFamily: F.regular },
   followerPill:  { alignItems: 'center', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, marginRight: 4 },
-  followerNum:   { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
-  followerLbl:   { fontSize: 9, fontWeight: '600', textTransform: 'uppercase', fontFamily: F.semibold },
+  followerNum:   { fontSize: 13, fontFamily: F.bold },
+  followerLbl:   { fontSize: 9, textTransform: 'uppercase', fontFamily: F.semibold },
 
   // Add more
   addMoreRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
                  borderRadius: 12, borderWidth: 1.5, borderStyle: 'dashed', paddingVertical: 11 },
-  addMoreText: { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
+  addMoreText: { fontSize: 13, fontFamily: F.bold },
 
   // Empty state
   emptyWrap:    { alignItems: 'center', gap: 8, paddingVertical: 20, paddingHorizontal: 12,
                   borderWidth: 1.5, borderRadius: 16, borderStyle: 'dashed' },
-  emptyTitle:   { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
+  emptyTitle:   { fontSize: 14, fontFamily: F.bold },
   emptyHint:    { fontSize: 12, textAlign: 'center', lineHeight: 18, fontFamily: F.regular },
   emptyCta:     { borderRadius: 12, paddingHorizontal: 20, paddingVertical: 9, marginTop: 4 },
-  emptyCtaText: { fontSize: 13, fontWeight: '700', color: '#fff', fontFamily: F.bold },
+  emptyCtaText: { fontSize: 13, color: '#fff', fontFamily: F.bold },
 });

@@ -184,15 +184,15 @@ const styles = StyleSheet.create({
   sheet:    { position: 'absolute', left: 0, right: 0, bottom: 0, borderTopLeftRadius: 24, borderTopRightRadius: 24, shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 20, shadowOffset: { width: 0, height: -4 }, elevation: 20 },
   handle:   { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginTop: 12, marginBottom: 4 },
   header:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1 },
-  title:    { fontSize: 17, fontWeight: '700', fontFamily: F.bold },
+  title:    { fontSize: 17, fontFamily: F.bold },
 
   body: { padding: 20, gap: 4 },
 
   sourceToggleRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
   sourceToggle: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1.5, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 8 },
-  sourceToggleText: { fontSize: 12, fontWeight: '700', fontFamily: F.bold, flexShrink: 1 },
+  sourceToggleText: { fontSize: 12, fontFamily: F.bold, flexShrink: 1 },
 
-  sectionLabel: { fontSize: 11, fontWeight: '700', letterSpacing: 0.6, fontFamily: F.bold },
+  sectionLabel: { fontSize: 11, letterSpacing: 0.6, fontFamily: F.bold },
   sectionHint:  { fontSize: 12, fontFamily: F.regular, marginTop: 2, marginBottom: 10 },
 
   mapWrap: { height: 220, borderRadius: 16, overflow: 'hidden', marginBottom: 20 },
@@ -201,5 +201,5 @@ const styles = StyleSheet.create({
 
   footer:   { paddingHorizontal: 20, paddingVertical: 16, borderTopWidth: 1 },
   applyBtn: { height: 50, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
-  applyBtnText: { color: '#fff', fontWeight: '700', fontSize: 15, fontFamily: F.bold },
+  applyBtnText: { color: '#fff', fontSize: 15, fontFamily: F.bold },
 });

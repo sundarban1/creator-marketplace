@@ -288,11 +288,11 @@ const dp = StyleSheet.create({
   triggerText:  { flex: 1, fontSize: 14, fontFamily: F.medium },
   error:        { fontSize: 12, color: ERROR_RED, fontFamily: F.regular, marginTop: 4 },
   modalWrap:  { flex: 1, justifyContent: 'flex-end' },
-  scrim:      { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.45)' },
+  scrim:      { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.45)' },
   sheet:      { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 40, maxHeight: '70%' },
   handle:     { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginBottom: 16 },
   sheetHeader:{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 0 },
-  sheetTitle: { fontSize: 16, fontWeight: '700', fontFamily: F.bold, marginBottom: 12 },
+  sheetTitle: { fontSize: 16, fontFamily: F.bold, marginBottom: 12 },
   item:         { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 12, marginBottom: 4 },
   itemThumbWrap:{ width: 44, height: 44, borderRadius: 10, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   itemThumb:    { width: 44, height: 44 },
@@ -374,9 +374,9 @@ function MultiCheckboxDropdown({
 
 const mc = StyleSheet.create({
   badge:      { width: 20, height: 20, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
-  badgeText:  { fontSize: 11, color: '#fff', fontWeight: '700', fontFamily: F.bold },
+  badgeText:  { fontSize: 11, color: '#fff', fontFamily: F.bold },
   sheetHeader:{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  done:       { fontSize: 15, fontWeight: '700', fontFamily: F.bold },
+  done:       { fontSize: 15, fontFamily: F.bold },
   row:        { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 13, paddingHorizontal: 12, borderRadius: 12, marginBottom: 4 },
   checkbox:   { width: 22, height: 22, borderRadius: 6, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center' },
   rowLabel:   { flex: 1, fontSize: 14 },
@@ -611,13 +611,13 @@ const cal = StyleSheet.create({
   monthNav:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   navBtn:    { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
   navTxt:    { fontSize: 28, lineHeight: 32 },
-  monthTitle:{ fontSize: 15, fontWeight: '700', fontFamily: F.bold },
+  monthTitle:{ fontSize: 15, fontFamily: F.bold },
   dayRow:    { flexDirection: 'row' },
-  dayHdr:    { flex: 1, textAlign: 'center', fontSize: 11, fontWeight: '600', fontFamily: F.semibold },
+  dayHdr:    { flex: 1, textAlign: 'center', fontSize: 11, fontFamily: F.semibold },
   grid:      { flexDirection: 'row', flexWrap: 'wrap' },
   cell:      { width: '14.285%', aspectRatio: 1, justifyContent: 'center', alignItems: 'center' },
   dayCircle: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
-  dayNum:    { fontSize: 13, fontWeight: '500', fontFamily: F.medium },
+  dayNum:    { fontSize: 13, fontFamily: F.medium },
 });
 
 // ─── DeadlinePicker ───────────────────────────────────────────────────────────
@@ -663,7 +663,7 @@ function DeadlinePicker({ value, onChange, error, colors, label }: {
             </View>
             {value && (
               <View style={[{ borderRadius: 10, padding: 10, marginTop: 12, backgroundColor: C.primaryLight }]}>
-                <Text style={[{ fontSize: 13, fontWeight: '700', fontFamily: F.bold, color: C.brinjal1 }]}>{t('createEvent.deadlineSelected', { date: fmtDate(value) })}</Text>
+                <Text style={[{ fontSize: 13, fontFamily: F.bold, color: C.brinjal1 }]}>{t('createEvent.deadlineSelected', { date: fmtDate(value) })}</Text>
               </View>
             )}
             <View style={{ marginTop: 16 }}>
@@ -704,10 +704,10 @@ function Stepper({ value, onChange, min = 1, max = 50, colors }: {
 const st = StyleSheet.create({
   wrap:   { flexDirection: 'row', alignItems: 'center', borderRadius: 14, borderWidth: 1.5, overflow: 'hidden' },
   btn:    { width: 52, height: 52, justifyContent: 'center', alignItems: 'center' },
-  btnTxt: { fontSize: 24, fontWeight: '300', lineHeight: 28, fontFamily: F.regular },
+  btnTxt: { fontSize: 24, lineHeight: 28, fontFamily: F.regular },
   center: { flex: 1, alignItems: 'center' },
-  value:  { fontSize: 24, fontWeight: '700', fontFamily: F.bold },
-  unit:   { fontSize: 11, fontWeight: '500', marginTop: 1, fontFamily: F.medium },
+  value:  { fontSize: 24, fontFamily: F.bold },
+  unit:   { fontSize: 11, marginTop: 1, fontFamily: F.medium },
 });
 
 // ─── SectionCard ──────────────────────────────────────────────────────────────
@@ -773,7 +773,7 @@ const fi = StyleSheet.create({
 
 const sc = StyleSheet.create({
   card:  { borderRadius: 16, padding: 16, gap: 10, shadowColor: '#000', shadowOpacity: 0.03, shadowRadius: 6, shadowOffset: { width: 0, height: 1 }, elevation: 1 },
-  title: { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
+  title: { fontSize: 14, fontFamily: F.bold },
   sub:   { fontSize: 12, lineHeight: 18, fontFamily: F.regular },
 });
 
@@ -1907,10 +1907,10 @@ const s = StyleSheet.create({
   header:       { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14 },
   backBtn:      { width: 38, height: 38, borderRadius: 19, justifyContent: 'center', alignItems: 'center' },
   headerCenter: { flex: 1, alignItems: 'center' },
-  headerTitle:  { fontSize: 16, fontWeight: '700', fontFamily: F.bold, color: '#fff' },
+  headerTitle:  { fontSize: 16, fontFamily: F.bold, color: '#fff' },
   headerSub:    { fontSize: 11, marginTop: 1, fontFamily: F.regular, color: 'rgba(255,255,255,0.75)' },
   phasePill:    { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
-  phasePillText:{ fontSize: 12, fontWeight: '700', fontFamily: F.bold, color: '#fff' },
+  phasePillText:{ fontSize: 12, fontFamily: F.bold, color: '#fff' },
 
   progressTrack:{ height: 3 },
   progressFill: { height: 3 },
@@ -1925,56 +1925,56 @@ const s = StyleSheet.create({
   descHeaderRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
   descHeaderText: { flex: 1 },
   suggestBtn:     { borderRadius: 20, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 7, minHeight: 30, alignItems: 'center', justifyContent: 'center' },
-  suggestBtnText: { fontSize: 12, fontWeight: '700', fontFamily: F.bold },
+  suggestBtnText: { fontSize: 12, fontFamily: F.bold },
 
   generateBtn:     { borderRadius: 14, height: 52, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 8 },
-  generateBtnText: { color: '#fff', fontSize: 15, fontWeight: '700', fontFamily: F.bold },
+  generateBtnText: { color: '#fff', fontSize: 15, fontFamily: F.bold },
 
   reviewBanner:      { flexDirection: 'row', alignItems: 'flex-start', gap: 12, borderRadius: 12, borderLeftWidth: 3, paddingVertical: 14, paddingHorizontal: 14 },
-  reviewBannerTitle: { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
+  reviewBannerTitle: { fontSize: 14, fontFamily: F.bold },
   reviewBannerSub:   { fontSize: 12, fontFamily: F.regular, lineHeight: 18 },
-  reviewBannerHeading: { fontSize: 17, fontWeight: '700', fontFamily: F.bold, lineHeight: 23 },
+  reviewBannerHeading: { fontSize: 17, fontFamily: F.bold, lineHeight: 23 },
 
   summaryRow:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingVertical: 10, gap: 12 },
   summaryLabel: { fontSize: 13, fontFamily: F.regular, width: 72 },
-  summaryValue: { flex: 1, fontSize: 13, fontWeight: '600', fontFamily: F.semibold, textAlign: 'right' },
+  summaryValue: { flex: 1, fontSize: 13, fontFamily: F.semibold, textAlign: 'right' },
 
   featuredToggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderRadius: 16, padding: 16, borderWidth: 1.5 },
   featuredLeft:   { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
-  featuredLabel:  { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
+  featuredLabel:  { fontSize: 14, fontFamily: F.bold },
   featuredSub:    { fontSize: 12, lineHeight: 17, fontFamily: F.regular },
   toggle:         { width: 44, height: 26, borderRadius: 13, position: 'relative' },
   toggleThumb:    { position: 'absolute', top: 3, width: 20, height: 20, borderRadius: 10, backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 3, shadowOffset: { width: 0, height: 1 }, elevation: 3 },
 
   draftBtn:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderRadius: 14, height: 48, borderWidth: 1.5, marginTop: 8 },
-  draftBtnText:  { fontSize: 14, fontWeight: '600', fontFamily: F.semibold },
+  draftBtnText:  { fontSize: 14, fontFamily: F.semibold },
   reviewActions: { flexDirection: 'row', gap: 12, marginTop: 8 },
   editBtn:       { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, borderRadius: 14, height: 52, borderWidth: 1.5 },
-  editBtnText:   { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
+  editBtnText:   { fontSize: 14, fontFamily: F.bold },
   publishBtn:    { flex: 2, borderRadius: 14, height: 52, justifyContent: 'center', alignItems: 'center' },
-  publishBtnText:{ color: '#fff', fontSize: 15, fontWeight: '700', fontFamily: F.bold },
+  publishBtnText:{ color: '#fff', fontSize: 15, fontFamily: F.bold },
 
   warnScrim:       { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 },
   warnSheet:       { width: '100%', borderRadius: 20, padding: 24, alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 20, elevation: 10 },
   warnIconWrap:    { width: 64, height: 64, borderRadius: 32, backgroundColor: '#FFF8E8', justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
-  warnTitle:       { fontSize: 18, fontWeight: '700', fontFamily: F.bold, marginBottom: 12, textAlign: 'center' },
+  warnTitle:       { fontSize: 18, fontFamily: F.bold, marginBottom: 12, textAlign: 'center' },
   warnBody:        { fontSize: 14, fontFamily: F.regular, lineHeight: 21, textAlign: 'center', marginBottom: 24 },
   warnActions:     { flexDirection: 'row', gap: 10, width: '100%' },
   warnCancelBtn:   { flex: 1, borderRadius: 12, borderWidth: 1.5, paddingVertical: 13, alignItems: 'center' },
-  warnCancelText:  { fontSize: 13, fontWeight: '600', fontFamily: F.semibold },
+  warnCancelText:  { fontSize: 13, fontFamily: F.semibold },
   warnConfirmBtn:  { flex: 1, borderRadius: 12, paddingVertical: 13, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6 },
-  warnConfirmText: { color: '#fff', fontSize: 13, fontWeight: '700', fontFamily: F.bold },
+  warnConfirmText: { color: '#fff', fontSize: 13, fontFamily: F.bold },
 
   toast:     { position: 'absolute', bottom: 40, left: 20, right: 20, borderRadius: 14, paddingHorizontal: 18, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 10 },
-  toastText: { color: '#fff', fontSize: 14, fontWeight: '700', flex: 1, fontFamily: F.bold },
+  toastText: { color: '#fff', fontSize: 14, flex: 1, fontFamily: F.bold },
 
-  stepSectionHeading: { fontSize: 15, fontWeight: '700', fontFamily: F.bold },
+  stepSectionHeading: { fontSize: 15, fontFamily: F.bold },
   stepSectionSub:     { fontSize: 12, fontFamily: F.regular, lineHeight: 18, marginBottom: 4 },
 
   // Event type tab slider
   etTabBar:  { flexDirection: 'row', borderRadius: 14, borderWidth: 1.5, padding: 4, gap: 4 },
   etTab:     { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 11, borderRadius: 10 },
-  etTabText: { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
+  etTabText: { fontSize: 14, fontFamily: F.bold },
 
   // Event type info panel
   etInfoPanel: { borderRadius: 12, padding: 12 },
@@ -1987,9 +1987,9 @@ const s = StyleSheet.create({
   // Budget grid
   budgetGrid:         { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   budgetCard:         { width: '48%', borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 14, alignItems: 'center', justifyContent: 'center' },
-  budgetCardText:     { fontSize: 12, fontWeight: '700', fontFamily: F.bold, textAlign: 'center' },
+  budgetCardText:     { fontSize: 12, fontFamily: F.bold, textAlign: 'center' },
   budgetCardFull:     { flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 16, paddingVertical: 13 },
-  budgetCardFullText: { flex: 1, fontSize: 13, fontWeight: '600', fontFamily: F.semibold },
+  budgetCardFullText: { flex: 1, fontSize: 13, fontFamily: F.semibold },
 
   eventHintBox:  { flexDirection: 'row', alignItems: 'flex-start', gap: 10, borderRadius: 12, padding: 14 },
   eventHintText: { flex: 1, fontSize: 12, lineHeight: 18, fontFamily: F.regular },
@@ -2003,12 +2003,12 @@ const dlv = StyleSheet.create({
   counter:    { flexDirection: 'row', alignItems: 'center', borderRadius: 10, borderWidth: 1.5, overflow: 'hidden' },
   counterBtn: { width: 34, height: 34, justifyContent: 'center', alignItems: 'center' },
   counterBtnTxt: { fontSize: 20, lineHeight: 24, fontWeight: '300' },
-  counterVal: { width: 28, textAlign: 'center', fontSize: 14, fontWeight: '700', fontFamily: F.bold },
+  counterVal: { width: 28, textAlign: 'center', fontSize: 14, fontFamily: F.bold },
 });
 
 const ai = StyleSheet.create({
   charCount:    { fontSize: 11, fontFamily: F.regular, textAlign: 'right', marginTop: 4 },
-  exampleLabel: { fontSize: 11, fontWeight: '700', fontFamily: F.bold, textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 4 },
+  exampleLabel: { fontSize: 11, fontFamily: F.bold, textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 4 },
   exampleChip:  { borderRadius: 10, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 8, maxWidth: '100%' },
   exampleChipText: { fontSize: 12, fontFamily: F.regular },
   chipWrap:     { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },

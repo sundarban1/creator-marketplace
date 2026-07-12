@@ -36,10 +36,10 @@ export function TextInputWithLabel({ label, error, secureToggle, secureTextEntry
 
 const styles = StyleSheet.create({
   container: { gap: 6 },
-  label: { fontSize: 13, fontWeight: '500', fontFamily: F.medium },
+  label: { fontSize: 13, fontFamily: F.medium },
   inputRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 10, paddingHorizontal: 14, height: 50 },
   input: { flex: 1, fontSize: 15, fontFamily: F.regular },
   toggle: { paddingLeft: 8 },
-  toggleText: { fontSize: 13, fontWeight: '500', fontFamily: F.medium },
+  toggleText: { fontSize: 13, fontFamily: F.medium },
   error: { fontSize: 12, fontFamily: F.regular },
 });

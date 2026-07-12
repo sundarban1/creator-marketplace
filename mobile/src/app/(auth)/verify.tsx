@@ -297,9 +297,9 @@ const styles = StyleSheet.create({
   backArrow: { fontSize: 26, color: '#fff', lineHeight: 30 },
   heroContent: { alignItems: 'center', paddingHorizontal: 24, gap: 10 },
   emailIconWrap: { width: 68, height: 68, borderRadius: 34, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
-  heroTitle: { fontSize: 20, fontWeight: '700', color: '#fff', textAlign: 'center', fontFamily: F.bold },
+  heroTitle: { fontSize: 20, color: '#fff', textAlign: 'center', fontFamily: F.bold },
   heroSub: { fontSize: 14, color: 'rgba(255,255,255,0.78)', textAlign: 'center', lineHeight: 22, fontFamily: F.regular },
-  heroEmail: { fontWeight: '700', color: '#fff', fontFamily: F.bold },
+  heroEmail: { color: '#fff', fontFamily: F.bold },
 
   card: { flex: 1, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingTop: 36, alignItems: 'center' },
 
@@ -311,12 +311,11 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     textAlign: 'center',
     fontSize: 22,
-    fontWeight: '700',
     fontFamily: F.bold,
   },
 
   errorBanner: { width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderRadius: 10, padding: 12, marginBottom: 14 },
-  errorText: { fontSize: 13, fontWeight: '600', textAlign: 'center', fontFamily: F.semibold },
+  errorText: { fontSize: 13, textAlign: 'center', fontFamily: F.semibold },
 
   verifyBtn: {
     width: '100%',
@@ -330,7 +329,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   verifyBtnDisabled: { opacity: 0.45 },
-  verifyBtnText: { color: '#fff', fontSize: 16, fontWeight: '700', fontFamily: F.bold },
+  verifyBtnText: { color: '#fff', fontSize: 16, fontFamily: F.bold },
   loadingRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   spinner: {
     width: 18,
@@ -343,8 +342,8 @@ const styles = StyleSheet.create({
 
   resendRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
   resendLabel: { fontSize: 14, fontFamily: F.regular },
-  resendTimer: { fontSize: 14, fontWeight: '600', fontFamily: F.semibold },
-  resendLink: { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
+  resendTimer: { fontSize: 14, fontFamily: F.semibold },
+  resendLink: { fontSize: 14, fontFamily: F.bold },
 
   hint: { fontSize: 12, textAlign: 'center', opacity: 0.7, fontFamily: F.regular },
 
@@ -362,6 +361,6 @@ const styles = StyleSheet.create({
     elevation: 8,
     marginBottom: 8,
   },
-  successTitle: { fontSize: 26, fontWeight: '700', fontFamily: F.bold },
+  successTitle: { fontSize: 26, fontFamily: F.bold },
   successSub: { fontSize: 15, textAlign: 'center', lineHeight: 24, fontFamily: F.regular },
 });

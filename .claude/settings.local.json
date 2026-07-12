@@ -421,7 +421,15 @@
       "Bash(node regen.js)",
       "Bash(node ./scripts/strip-push-entitlement.js)",
       "Bash(node ./scripts/fix-ios-podfile.js)",
-      "Bash(grep -n \"return \\(\\\\s*$\" \"/Users/sundarban/Documents/projects/marketplace/mobile/src/app/\\(auth\\)/login.tsx\")"
+      "Bash(grep -n \"return \\(\\\\s*$\" \"/Users/sundarban/Documents/projects/marketplace/mobile/src/app/\\(auth\\)/login.tsx\")",
+      "Bash(grep -rnP \"^\\\\s*[\\\\w$]*\\(card|container|modal|sheet|wrap\\)[\\\\w$]*\\\\s*:\\\\s*\\\\{\\(?:\\(?!shadowOffset\\).\\)*\\\\bwidth\\\\s*:\\\\s*[1-9][0-9]{2,}\\\\b\" .)",
+      "Bash(grep -rnP \"^\\\\s*[\\\\w$]*\\(card|container|modal|sheet|wrap|Card|Modal|Sheet|Container|Wrap\\)[\\\\w$]*\\\\s*:\\\\s*\\\\{\\(?:\\(?!shadowOffset\\).\\)*\\\\bwidth\\\\s*:\\\\s*[0-9]+\\\\b\" .)",
+      "Bash(grep -rnP \"^\\\\s*[\\\\w$]+\\\\s*:\\\\s*\\\\{\\(?:\\(?!shadowOffset\\).\\)*\\\\bwidth\\\\s*:\\\\s*[0-9]{3,}\\\\b\" .)",
+      "Bash(grep -rnP \"\\\\bwidth\\\\s*:\\\\s*[0-9]{3,}\\\\b\" .)",
+      "Bash(node /private/tmp/claude-501/-Users-sundarban-Documents-projects-marketplace/f965d7e4-8c8e-4d73-aeaa-2962d6ae5b58/scratchpad/strip-fontweight.js src --dry-run)",
+      "Bash(node /private/tmp/claude-501/-Users-sundarban-Documents-projects-marketplace/f965d7e4-8c8e-4d73-aeaa-2962d6ae5b58/scratchpad/strip-fontweight.js src/app/\\\\\\(auth\\\\\\))",
+      "Bash(node /private/tmp/claude-501/-Users-sundarban-Documents-projects-marketplace/f965d7e4-8c8e-4d73-aeaa-2962d6ae5b58/scratchpad/strip-fontweight.js src)",
+      "Bash(tee /tmp/tsc_after_fw.log)"
     ],
     "additionalDirectories": [
       "/private/tmp",

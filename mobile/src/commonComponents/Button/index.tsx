@@ -39,5 +39,5 @@ const styles = StyleSheet.create({
   secondary: { borderWidth: 1.5 },
   ghost: { backgroundColor: 'transparent' },
   dimmed: { opacity: 0.6 },
-  label: { fontSize: 16, fontWeight: '600', color: '#fff', fontFamily: F.semibold },
+  label: { fontSize: 16, color: '#fff', fontFamily: F.semibold },
 });

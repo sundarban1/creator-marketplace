@@ -66,7 +66,7 @@ function Avatar({ name, size = 50 }: { name: string; size?: number }) {
 }
 const av = StyleSheet.create({
   wrap: { justifyContent: 'center', alignItems: 'center' },
-  text: { color: '#fff', fontWeight: '700', fontFamily: F.bold },
+  text: { color: '#fff', fontFamily: F.bold },
 });
 
 // ── Pending Card (business sent, waiting for creator to accept) ───────────────
@@ -334,7 +334,7 @@ const s = StyleSheet.create({
   // Header
   gradientHeader: { borderBottomLeftRadius: 16, borderBottomRightRadius: 16, overflow: 'hidden' },
   header:         { paddingHorizontal: 20, paddingTop: 14, paddingBottom: 14 },
-  heading:        { fontSize: 20, fontWeight: '700', fontFamily: F.bold, color: '#fff', lineHeight: 24 },
+  heading:        { fontSize: 20, fontFamily: F.bold, color: '#fff', lineHeight: 24 },
   headingSub:     { fontSize: 13, fontFamily: F.regular, color: 'rgba(255,255,255,0.75)', marginTop: 2 },
 
   // Pending list
@@ -347,14 +347,14 @@ const s = StyleSheet.create({
   reqTop:      { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
   reqInfo:     { flex: 1, gap: 4 },
   reqNameRow:  { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  reqName:     { flex: 1, fontSize: 15, fontWeight: '700', fontFamily: F.bold },
+  reqName:     { flex: 1, fontSize: 15, fontFamily: F.bold },
   waitBadge:   { flexDirection: 'row', alignItems: 'center', gap: 3, borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3 },
-  waitBadgeTxt:{ fontSize: 10, fontWeight: '700', fontFamily: F.bold },
+  waitBadgeTxt:{ fontSize: 10, fontFamily: F.bold },
   reqTime:     { fontSize: 11, fontFamily: F.regular },
   reqMsgBox:   { flexDirection: 'row', alignItems: 'flex-start', gap: 8, borderRadius: 12, padding: 12, borderWidth: StyleSheet.hairlineWidth },
   reqMsg:      { flex: 1, fontSize: 13, lineHeight: 19, fontFamily: F.regular },
   waitingNote: { flexDirection: 'row', alignItems: 'center', gap: 7, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9, borderWidth: StyleSheet.hairlineWidth },
-  waitingNoteTxt: { flex: 1, fontSize: 12, fontFamily: F.medium, fontWeight: '500' },
+  waitingNoteTxt: { flex: 1, fontSize: 12, fontFamily: F.medium, },
 
   // Chat list
   chatList: { paddingBottom: 40 },
@@ -372,15 +372,15 @@ const s = StyleSheet.create({
   avatarWrap:     { position: 'relative' },
   avatarRing:     { position: 'absolute', top: -3, left: -3, right: -3, bottom: -3, borderRadius: 29, borderWidth: 2 },
   avatarBadge:    { position: 'absolute', top: -4, right: -4, minWidth: 20, height: 20, borderRadius: 10, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 4, borderWidth: 2, borderColor: '#fff' },
-  avatarBadgeTxt: { color: '#fff', fontSize: 10, fontWeight: '700', fontFamily: F.bold, lineHeight: 12 },
+  avatarBadgeTxt: { color: '#fff', fontSize: 10, fontFamily: F.bold, lineHeight: 12 },
   content:        { flex: 1, gap: 3 },
   rowTop:         { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   name:           { flex: 1, fontSize: 15, fontFamily: F.semibold },
-  nameUnread:     { fontFamily: F.bold, fontWeight: '700' },
+  nameUnread:     { fontFamily: F.bold, },
   time:           { fontSize: 11, fontFamily: F.regular, flexShrink: 0 },
-  timeUnread:     { fontFamily: F.semibold, fontWeight: '600' },
+  timeUnread:     { fontFamily: F.semibold, },
   campaignPill:    { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
-  campaignPillTxt: { fontSize: 10, fontWeight: '600', fontFamily: F.semibold, maxWidth: 180 },
+  campaignPillTxt: { fontSize: 10, fontFamily: F.semibold, maxWidth: 180 },
   rowBottom:      { flexDirection: 'row', alignItems: 'center', gap: 6 },
   preview:        { flex: 1, fontSize: 13, fontFamily: F.regular },
   previewUnread:  { fontFamily: F.medium },

@@ -319,7 +319,7 @@ const styles = StyleSheet.create({
 
   gradientHeader: { borderBottomLeftRadius: 16, borderBottomRightRadius: 16, overflow: 'hidden' },
   headerContent:  { paddingHorizontal: 20, paddingTop: 14, paddingBottom: 14 },
-  pageTitle:      { fontSize: 20, fontWeight: '700', color: '#fff', fontFamily: F.bold, lineHeight: 24 },
+  pageTitle:      { fontSize: 20, color: '#fff', fontFamily: F.bold, lineHeight: 24 },
   pageSub:        { fontSize: 13, color: 'rgba(255,255,255,0.75)', fontFamily: F.regular, marginTop: 2 },
 
   filterRow: { shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
@@ -340,25 +340,25 @@ const styles = StyleSheet.create({
   cardTopRow:    { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8 },
   cardTopSpacer: { flex: 1 },
   typeBadge:     { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
-  typeBadgeText: { fontSize: 11, fontWeight: '700', fontFamily: F.bold },
+  typeBadgeText: { fontSize: 11, fontFamily: F.bold },
   platformPill:  { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
-  platformText:  { fontSize: 11, fontWeight: '600', fontFamily: F.semibold },
+  platformText:  { fontSize: 11, fontFamily: F.semibold },
 
-  cardTitle: { fontSize: 15, fontWeight: '700', lineHeight: 20, paddingHorizontal: 16, paddingBottom: 10, fontFamily: F.bold },
+  cardTitle: { fontSize: 15, lineHeight: 20, paddingHorizontal: 16, paddingBottom: 10, fontFamily: F.bold },
 
   statsRow:    { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, borderTopWidth: StyleSheet.hairlineWidth },
   statItem:    { flex: 1, alignItems: 'center', gap: 2 },
-  statNum:     { fontSize: 16, fontWeight: '700', fontFamily: F.bold },
-  statLabel:   { fontSize: 11, fontWeight: '500', fontFamily: F.medium },
+  statNum:     { fontSize: 16, fontFamily: F.bold },
+  statLabel:   { fontSize: 11, fontFamily: F.medium },
   statDivider: { width: StyleSheet.hairlineWidth, height: 28 },
 
   nudge:     { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, paddingVertical: 8 },
-  nudgeText: { fontSize: 12, fontWeight: '600', fontFamily: F.semibold },
+  nudgeText: { fontSize: 12, fontFamily: F.semibold },
 
   startWorkBtn:     { flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: 16, marginBottom: 14, marginTop: 6, paddingVertical: 13, paddingHorizontal: 14, borderRadius: 14 },
   btnIconBadge:     { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.22)', justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   btnTextBlock:     { flex: 1, gap: 2 },
-  startWorkBtnTxt:  { fontSize: 14, fontWeight: '700', color: '#fff', fontFamily: F.bold },
+  startWorkBtnTxt:  { fontSize: 14, color: '#fff', fontFamily: F.bold },
   startWorkBtnSub:  { fontSize: 11, color: 'rgba(255,255,255,0.75)', fontFamily: F.regular },
   btnArrow:         { width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
 

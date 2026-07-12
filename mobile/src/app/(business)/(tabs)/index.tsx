@@ -357,7 +357,7 @@ const styles = StyleSheet.create({
   avatarFallback: { width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center' },
   statsStrip: { flexDirection: 'row', marginHorizontal: 20, marginBottom: 4, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 16, paddingVertical: 12 },
   statStripItem: { flex: 1, alignItems: 'center' },
-  statStripVal: { fontSize: 20, fontWeight: '700', color: '#fff', fontFamily: F.bold },
+  statStripVal: { fontSize: 20, color: '#fff', fontFamily: F.bold },
   statStripLabel: { fontSize: 10, color: 'rgba(255,255,255,0.7)', fontFamily: F.medium, marginTop: 2 },
   statStripDiv: { width: 1, backgroundColor: 'rgba(255,255,255,0.2)', marginVertical: 4 },
 
@@ -378,7 +378,7 @@ const styles = StyleSheet.create({
   // Attention banner
   attentionBanner: { flexDirection: 'row', alignItems: 'center', borderRadius: 14, marginHorizontal: 20, marginTop: 16, padding: 14, gap: 12, backgroundColor: '#FFFBEB', borderWidth: 1, borderColor: '#FDE68A' },
   attentionIconWrap: { width: 36, height: 36, borderRadius: 10, backgroundColor: '#FEF3C7', justifyContent: 'center', alignItems: 'center' },
-  attentionTitle: { fontSize: 13, fontWeight: '700', color: '#92400E', fontFamily: F.bold },
+  attentionTitle: { fontSize: 13, color: '#92400E', fontFamily: F.bold },
   attentionSub: { fontSize: 11, color: '#B45309', fontFamily: F.regular, marginTop: 1 },
 
   // Section headers
@@ -389,7 +389,7 @@ const styles = StyleSheet.create({
   // Error
   errorCard: { backgroundColor: '#FEE2E2', marginHorizontal: 20, marginBottom: 16, borderRadius: 12, padding: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderLeftWidth: 4, borderLeftColor: '#EF4444' },
   errorText: { color: '#DC2626', fontSize: 13, flex: 1, fontFamily: F.medium },
-  retryText: { fontSize: 13, fontWeight: '700', marginLeft: 12, fontFamily: F.bold },
+  retryText: { fontSize: 13, marginLeft: 12, fontFamily: F.bold },
 
   // Find banner
   findBanner: { flexDirection: 'row', alignItems: 'center', borderRadius: 16, marginHorizontal: 20, marginTop: 14, marginBottom: 4, paddingHorizontal: 16, paddingVertical: 14, gap: 12, backgroundColor: '#F0FDF4', borderWidth: 1, borderColor: '#BBF7D0' },
@@ -404,7 +404,7 @@ const styles = StyleSheet.create({
   typeBadge: { borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 },
   typeBadgePaid: { backgroundColor: '#EEF2FF' },
   typeBadgeFree: { backgroundColor: '#F0FDF4' },
-  typeBadgeText: { fontSize: 10, fontWeight: '700', fontFamily: F.bold },
+  typeBadgeText: { fontSize: 10, fontFamily: F.bold },
   typeBadgeTextPaid: { color: '#4F46E5' },
   typeBadgeTextFree: { color: '#059669' },
 
@@ -413,13 +413,13 @@ const styles = StyleSheet.create({
   thumb: { width: 72, height: 72, borderRadius: 14, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   campaignBody: { flex: 1, gap: 5 },
   campaignTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
-  campaignTitle: { fontSize: 14, fontWeight: '700', flex: 1, fontFamily: F.bold },
+  campaignTitle: { fontSize: 14, flex: 1, fontFamily: F.bold },
   statusBadge: { borderRadius: 10, paddingHorizontal: 9, paddingVertical: 4 },
-  statusText: { fontSize: 11, fontWeight: '700', fontFamily: F.bold },
+  statusText: { fontSize: 11, fontFamily: F.bold },
   campaignMeta: { fontSize: 12, fontFamily: F.regular },
   campaignStats: { flexDirection: 'row', gap: 8, marginTop: 2 },
   campaignStat: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  campaignStatVal: { fontSize: 11, fontWeight: '700', fontFamily: F.bold },
+  campaignStatVal: { fontSize: 11, fontFamily: F.bold },
   campaignStatLabel: { fontSize: 11, fontFamily: F.regular },
 
   loadingWrap: { paddingVertical: 60, alignItems: 'center', gap: 14 },
@@ -429,5 +429,5 @@ const styles = StyleSheet.create({
   emptyTitle: { fontSize: 17, fontFamily: F.bold },
   emptyHint: { fontSize: 13, textAlign: 'center', lineHeight: 20, fontFamily: F.regular },
   emptyBtn: { borderRadius: 14, paddingHorizontal: 28, paddingVertical: 13, marginTop: 8 },
-  emptyBtnText: { color: '#fff', fontSize: 14, fontWeight: '700', fontFamily: F.bold },
+  emptyBtnText: { color: '#fff', fontSize: 14, fontFamily: F.bold },
 });

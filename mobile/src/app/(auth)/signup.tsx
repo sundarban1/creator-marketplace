@@ -337,21 +337,21 @@ const s = StyleSheet.create({
   tabBtnText:  { fontSize: 14, fontFamily: F.medium },
 
   headingWrap: { marginBottom: 22, gap: 6 },
-  heading:     { fontSize: 20, fontWeight: '700', fontFamily: F.bold },
+  heading:     { fontSize: 20, fontFamily: F.bold },
   headingSub:  { fontSize: 13, color: '#6B7280', fontFamily: F.regular, lineHeight: 19 },
 
-  sectionLabel: { fontSize: 13, fontWeight: '600', fontFamily: F.semibold, marginBottom: 10 },
+  sectionLabel: { fontSize: 13, fontFamily: F.semibold, marginBottom: 10 },
 
   roleRow:     { flexDirection: 'row', gap: 12, marginBottom: 22 },
   roleCard:    { flex: 1, borderRadius: 14, borderWidth: 1.5, padding: 14, gap: 8, alignItems: 'center' },
   roleIconBox: { width: 52, height: 52, borderRadius: 16, justifyContent: 'center', alignItems: 'center', position: 'relative' },
   roleIconBadge:{ position: 'absolute', top: -2, right: -2, width: 16, height: 16, borderRadius: 8, backgroundColor: '#EDE9FE', justifyContent: 'center', alignItems: 'center' },
-  roleLabel:   { fontSize: 13, fontWeight: '700', fontFamily: F.bold, textAlign: 'center' },
+  roleLabel:   { fontSize: 13, fontFamily: F.bold, textAlign: 'center' },
   roleSub:     { fontSize: 11, color: '#6B7280', fontFamily: F.regular, textAlign: 'center', lineHeight: 15 },
 
   form:     { gap: 14, marginBottom: 4 },
   fieldWrap:    { gap: 6 },
-  fieldLabel:   { fontSize: 13, fontWeight: '600', fontFamily: F.semibold },
+  fieldLabel:   { fontSize: 13, fontFamily: F.semibold },
   field:        { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 14, height: 50, gap: 10 },
   fieldIcon:    { flexShrink: 0 },
   fieldInput:   { flex: 1, fontSize: 15, fontFamily: F.regular },
@@ -373,7 +373,7 @@ const s = StyleSheet.create({
   errorText:   { fontSize: 13, color: '#EF4444', flex: 1, fontFamily: F.medium },
 
   primaryBtn:     { height: 52, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginTop: 18, marginBottom: 20 },
-  primaryBtnText: { fontSize: 16, fontWeight: '700', color: '#fff', fontFamily: F.bold },
+  primaryBtnText: { fontSize: 16, color: '#fff', fontFamily: F.bold },
 
   divider:     { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 },
   dividerLine: { flex: 1, height: StyleSheet.hairlineWidth },
@@ -381,14 +381,14 @@ const s = StyleSheet.create({
 
   socialBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, height: 50, borderRadius: 12, borderWidth: 1.5, marginBottom: 16 },
   googleBadge:   { width: 22, height: 22, borderRadius: 11, backgroundColor: '#4285F4', justifyContent: 'center', alignItems: 'center' },
-  googleG:       { color: '#fff', fontSize: 12, fontWeight: '900', fontFamily: F.bold },
+  googleG:       { color: '#fff', fontSize: 12, fontFamily: F.bold },
   socialBtnText: { fontSize: 15, fontFamily: F.semibold },
 
   terms: { fontSize: 12, color: '#9CA3AF', lineHeight: 18, textAlign: 'center', fontFamily: F.regular, marginBottom: 16 },
 
   switchRow:  { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 5, marginBottom: 16 },
   switchText: { fontSize: 14, fontFamily: F.regular },
-  switchLink: { fontSize: 14, fontFamily: F.bold, fontWeight: '700' },
+  switchLink: { fontSize: 14, fontFamily: F.bold, },
 
   secureRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5 },
   secureText: { fontSize: 11, color: '#9CA3AF', fontFamily: F.regular },

@@ -413,7 +413,7 @@ const styles = StyleSheet.create({
   // Header
   gradientHeader: { borderBottomLeftRadius: 16, borderBottomRightRadius: 16, overflow: 'hidden' },
   headerContent:  { paddingHorizontal: 20, paddingTop: 14, paddingBottom: 14 },
-  heading:        { fontSize: 20, fontWeight: '700', fontFamily: F.bold, color: '#fff', lineHeight: 24 },
+  heading:        { fontSize: 20, fontFamily: F.bold, color: '#fff', lineHeight: 24 },
   subheading:     { fontSize: 13, fontFamily: F.regular, color: 'rgba(255,255,255,0.75)', marginTop: 2 },
 
   // Tab bar
@@ -435,10 +435,10 @@ const styles = StyleSheet.create({
   brandAvatar:  { width: 42, height: 42, borderRadius: 12, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   brandInitials:{ fontSize: 15, fontFamily: F.bold },
   brandBlock:   { flex: 1, gap: 2 },
-  brandName:    { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
+  brandName:    { fontSize: 14, fontFamily: F.bold },
   campaignTitle:{ fontSize: 12, fontFamily: F.regular },
   statusPill:   { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 20, paddingHorizontal: 8, paddingVertical: 4, flexShrink: 0 },
-  statusText:   { fontSize: 11, fontWeight: '700', fontFamily: F.bold },
+  statusText:   { fontSize: 11, fontFamily: F.bold },
 
   // Cover letter
   coverRow:  { flexDirection: 'row', alignItems: 'flex-start', gap: 7, borderRadius: 10, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 8 },
@@ -448,22 +448,22 @@ const styles = StyleSheet.create({
   // Meta chips
   metaRow:      { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
   metaChip:     { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 5 },
-  metaChipTxt:  { fontSize: 12, fontWeight: '600', fontFamily: F.semibold },
+  metaChipTxt:  { fontSize: 12, fontFamily: F.semibold },
 
   // Track button
   trackBtn:     { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 12, paddingVertical: 11, paddingHorizontal: 12 },
   trackBtnIcon: { width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' },
   trackBtnText: { flex: 1, gap: 1 },
-  trackBtnLabel:{ fontSize: 13, fontWeight: '700', color: '#fff', fontFamily: F.bold },
+  trackBtnLabel:{ fontSize: 13, color: '#fff', fontFamily: F.bold },
   trackBtnSub:  { fontSize: 11, color: 'rgba(255,255,255,0.75)', fontFamily: F.regular },
 
   // Invited banner
   invitedBanner:{ flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 11 },
   invitedIcon:  { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
-  invitedTitle: { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
+  invitedTitle: { fontSize: 13, fontFamily: F.bold },
   invitedSub:   { fontSize: 11, fontFamily: F.regular, marginTop: 1 },
 
   // Footer row
   footerRow:  { flexDirection: 'row', alignItems: 'center', gap: 8, paddingTop: 10, borderTopWidth: StyleSheet.hairlineWidth },
-  footerTxt:  { flex: 1, fontSize: 12, fontWeight: '600', fontFamily: F.semibold },
+  footerTxt:  { flex: 1, fontSize: 12, fontFamily: F.semibold },
 });

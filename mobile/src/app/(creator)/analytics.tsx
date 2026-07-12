@@ -201,7 +201,7 @@ const s = StyleSheet.create({
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center' },
   gradientTopBar: { overflow: 'hidden', borderBottomLeftRadius: 16, borderBottomRightRadius: 16 },
   topBar:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
-  topTitle:  { fontSize: 16, fontWeight: '700', fontFamily: F.bold },
+  topTitle:  { fontSize: 16, fontFamily: F.bold },
 
   rangeRow: { flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 16, paddingVertical: 14 },
 
@@ -212,19 +212,19 @@ const s = StyleSheet.create({
   tileHeader:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   tileIconWrap:{ width: 34, height: 34, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
   tileTrend:     { paddingHorizontal: 7, paddingVertical: 3, borderRadius: 20 },
-  tileTrendText: { fontSize: 10, fontWeight: '700', fontFamily: F.bold },
-  tileValue:   { fontSize: 19, fontWeight: '700', fontFamily: F.bold, marginTop: 2 },
+  tileTrendText: { fontSize: 10, fontFamily: F.bold },
+  tileValue:   { fontSize: 19, fontFamily: F.bold, marginTop: 2 },
   tileLabel:   { fontSize: 11, fontFamily: F.medium },
 
   card:      { borderRadius: 18, padding: 18, gap: 16, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
-  cardTitle: { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
+  cardTitle: { fontSize: 14, fontFamily: F.bold },
 
   referralGrid:  { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   referralItem:  { width: '47%', gap: 4, borderRadius: 14, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 14 },
-  referralValue: { fontSize: 16, fontWeight: '700', fontFamily: F.bold },
+  referralValue: { fontSize: 16, fontFamily: F.bold },
   referralLabel: { fontSize: 11, fontFamily: F.medium },
 
   missingWrap:     { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   missingChip:     { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10 },
-  missingChipText: { fontSize: 11, fontWeight: '600', fontFamily: F.semibold },
+  missingChipText: { fontSize: 11, fontFamily: F.semibold },
 });

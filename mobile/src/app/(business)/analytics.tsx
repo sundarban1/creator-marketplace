@@ -157,7 +157,7 @@ const s = StyleSheet.create({
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center' },
   gradientTopBar: { overflow: 'hidden', borderBottomLeftRadius: 16, borderBottomRightRadius: 16 },
   topBar:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
-  topTitle:  { fontSize: 16, fontWeight: '700', fontFamily: F.bold },
+  topTitle:  { fontSize: 16, fontFamily: F.bold },
 
   rangeRow: { flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 16, paddingVertical: 14 },
 
@@ -166,9 +166,9 @@ const s = StyleSheet.create({
   grid:        { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   tile:        { width: '47%', borderRadius: 18, borderWidth: 1, padding: 14, gap: 6, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
   tileIconWrap:{ width: 34, height: 34, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginBottom: 2 },
-  tileValue:   { fontSize: 19, fontWeight: '700', fontFamily: F.bold },
+  tileValue:   { fontSize: 19, fontFamily: F.bold },
   tileLabel:   { fontSize: 11, fontFamily: F.medium },
 
   card:      { borderRadius: 18, padding: 18, gap: 16, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
-  cardTitle: { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
+  cardTitle: { fontSize: 14, fontFamily: F.bold },
 });

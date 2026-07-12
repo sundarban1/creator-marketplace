@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
   imgOverlay: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.18)' },
 
   badge:     { position: 'absolute', top: 10, left: 10, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
-  badgeText: { fontSize: 9, fontWeight: '800', color: '#fff', letterSpacing: 0.6, fontFamily: F.extrabold },
+  badgeText: { fontSize: 9, color: '#fff', letterSpacing: 0.6, fontFamily: F.extrabold },
 
   distanceTag: {
     position: 'absolute', top: 10, right: 10,
@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(17,24,39,0.75)',
     paddingHorizontal: 7, paddingVertical: 3, borderRadius: 6,
   },
-  distanceTagText: { fontSize: 9, fontWeight: '800', color: '#fff', fontFamily: F.extrabold },
+  distanceTagText: { fontSize: 9, color: '#fff', fontFamily: F.extrabold },
 
   brandPill: {
     position: 'absolute', bottom: 10, left: 10,
@@ -182,14 +182,14 @@ const styles = StyleSheet.create({
     maxWidth: CARD_W - 60,
   },
   brandAvatar:     { width: 20, height: 20, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
-  brandAvatarText: { fontSize: 9, fontWeight: '800', color: '#fff', fontFamily: F.extrabold },
-  brandPillName:   { fontSize: 11, fontWeight: '600', flexShrink: 1, color: '#111', fontFamily: F.semibold },
+  brandAvatarText: { fontSize: 9, color: '#fff', fontFamily: F.extrabold },
+  brandPillName:   { fontSize: 11, flexShrink: 1, color: '#111', fontFamily: F.semibold },
 
   body:  { padding: 14, gap: 9 },
-  title: { fontSize: 14, fontWeight: '700', lineHeight: 20, fontFamily: F.bold },
+  title: { fontSize: 14, lineHeight: 20, fontFamily: F.bold },
 
   budgetChip: { borderRadius: 8, paddingHorizontal: 9, paddingVertical: 4 },
-  budgetText: { fontSize: 13, fontWeight: '800', fontFamily: F.extrabold },
+  budgetText: { fontSize: 13, fontFamily: F.extrabold },
 
   metaRow:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 },
   metaItemRow:  { flexDirection: 'row', alignItems: 'center', gap: 3, flexShrink: 0 },
@@ -197,8 +197,8 @@ const styles = StyleSheet.create({
   deadlineText: { fontSize: 11, fontFamily: F.medium },
 
   typePill:     { borderRadius: 8, paddingHorizontal: 7, paddingVertical: 2, borderWidth: 1, flexShrink: 0 },
-  typePillText: { fontSize: 10, fontWeight: '700', fontFamily: F.bold },
+  typePillText: { fontSize: 10, fontFamily: F.bold },
 
   applyBtn:     { height: 38, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginTop: 2 },
-  applyBtnText: { color: '#fff', fontWeight: '700', fontSize: 13, fontFamily: F.bold },
+  applyBtnText: { color: '#fff', fontSize: 13, fontFamily: F.bold },
 });

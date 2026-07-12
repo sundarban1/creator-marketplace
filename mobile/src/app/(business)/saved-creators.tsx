@@ -167,7 +167,7 @@ const s = StyleSheet.create({
   gradientHeader: { paddingBottom: 14, borderBottomLeftRadius: 16, borderBottomRightRadius: 16, overflow: 'hidden' },
   header:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 10, paddingBottom: 0 },
   backBtn:   { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center' },
-  heading:   { fontSize: 20, fontWeight: '700', color: '#fff', fontFamily: F.bold, lineHeight: 24 },
+  heading:   { fontSize: 20, color: '#fff', fontFamily: F.bold, lineHeight: 24 },
   subheading:{ fontSize: 12, color: 'rgba(255,255,255,0.8)', marginTop: 2, fontFamily: F.regular },
 
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
@@ -178,15 +178,15 @@ const s = StyleSheet.create({
   cardMain: { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 14 },
   info:     { flex: 1, gap: 3 },
   nameRow:  { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  name:     { fontSize: 15, fontWeight: '700', fontFamily: F.bold, flex: 1 },
+  name:     { fontSize: 15, fontFamily: F.bold, flex: 1 },
   verifiedBadge: { borderRadius: 8, paddingHorizontal: 5, paddingVertical: 1 },
   locationRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   location:  { fontSize: 12, fontFamily: F.regular },
   followers: { fontSize: 12, fontFamily: F.regular },
-  categories:{ fontSize: 11, fontWeight: '600', fontFamily: F.semibold },
+  categories:{ fontSize: 11, fontFamily: F.semibold },
 
   divider:    { height: 1 },
   removeRow:  { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 12 },
-  removeText: { fontSize: 13, fontWeight: '600', color: '#EF4444', fontFamily: F.semibold },
+  removeText: { fontSize: 13, color: '#EF4444', fontFamily: F.semibold },
 
 });

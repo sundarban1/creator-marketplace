@@ -955,7 +955,7 @@ const s = StyleSheet.create({
   heroTaglineClip: { width: '100%', overflow: 'hidden', alignItems: 'center' },
   heroTaglineRow:  { flexDirection: 'row', alignItems: 'center', gap: 8 },
   heroTagline: { fontSize: 20, color: 'rgba(255,255,255,0.9)', fontFamily: F.semibold, letterSpacing: 0.3 },
-  heroTaglineHighlight: { fontSize: 30, fontFamily: F.extrabold, letterSpacing: 0.2 },
+  heroTaglineHighlight: { fontSize: 26, fontFamily: F.extrabold, letterSpacing: 0.2 },
 
   // Floating card — visible gradient margin on every side (not an edge-to-edge sheet),
   // fully rounded corners on all four corners for a "card floating in the aurora" feel.
@@ -983,7 +983,7 @@ const s = StyleSheet.create({
   form:          { gap: 16, marginBottom: 20 },
   fieldWrap:     { gap: 6 },
   fieldLabelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  fieldLabel:    { fontSize: 13, fontWeight: '600', fontFamily: F.semibold, color: '#374151' },
+  fieldLabel:    { fontSize: 13, fontFamily: F.semibold, color: '#374151' },
   forgotText:    { fontSize: 12, fontFamily: F.semibold, color: P2 },
   field:         { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 18, paddingHorizontal: 5, height: 54, gap: 4, borderColor: 'transparent', backgroundColor: '#F3EFFB' },
   fieldFocused:  { borderColor: P2, backgroundColor: '#fff', shadowColor: P2, shadowOpacity: 0.14, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
@@ -1004,7 +1004,7 @@ const s = StyleSheet.create({
   roleCardActive:{ shadowOpacity: 0.16, shadowRadius: 16, shadowOffset: { width: 0, height: 6 }, elevation: 6 },
   roleTintOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 22 },
   roleIconBox:   { width: 58, height: 58, borderRadius: 29, justifyContent: 'center', alignItems: 'center' },
-  roleLabel:     { fontSize: 14, fontWeight: '700', fontFamily: F.bold, textAlign: 'center' },
+  roleLabel:     { fontSize: 14, fontFamily: F.bold, textAlign: 'center' },
   roleSub:       { fontSize: 11.5, fontFamily: F.regular, textAlign: 'center', lineHeight: 16 },
   roleCheck:     { position: 'absolute', top: -8, right: -8, width: 26, height: 26, borderRadius: 13, justifyContent: 'center', alignItems: 'center', borderWidth: 2.5, borderColor: '#fff', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
 
@@ -1016,7 +1016,7 @@ const s = StyleSheet.create({
   // Button — full pill shape with a warm glow shadow
   primaryBtnWrap: { borderRadius: 999, marginBottom: 20, shadowColor: P1, shadowOpacity: 0.25, shadowRadius: 14, shadowOffset: { width: 0, height: 6 }, elevation: 7 },
   primaryBtn:     { height: 54, borderRadius: 999, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  primaryBtnText: { fontSize: 16, fontWeight: '700', color: '#fff', fontFamily: F.bold, letterSpacing: 0.3 },
+  primaryBtnText: { fontSize: 16, color: '#fff', fontFamily: F.bold, letterSpacing: 0.3 },
 
   // Divider
   divider:     { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
@@ -1031,16 +1031,16 @@ const s = StyleSheet.create({
   socialBtnFb:    { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 52, borderRadius: 999, borderWidth: 1.5, borderColor: '#BFDBFE', backgroundColor: '#EFF6FF' },
   socialBtnFbText:{ fontSize: 14, fontFamily: F.semibold, color: '#1D4ED8' },
   googleBadge:    { width: 22, height: 22, borderRadius: 11, backgroundColor: '#4285F4', justifyContent: 'center', alignItems: 'center' },
-  googleG:        { color: '#fff', fontSize: 12, fontWeight: '900', fontFamily: F.bold },
+  googleG:        { color: '#fff', fontSize: 12, fontFamily: F.bold },
   fbBadge:        { width: 22, height: 22, borderRadius: 11, backgroundColor: '#1877F2', justifyContent: 'center', alignItems: 'center' },
-  fbF:            { color: '#fff', fontSize: 13, fontWeight: '900', fontFamily: F.bold },
+  fbF:            { color: '#fff', fontSize: 13, fontFamily: F.bold },
   spinner:        { width: 18, height: 18, borderRadius: 9, borderWidth: 2, borderColor: '#DDD6FE', borderTopColor: P2 },
 
   // Role modal
   modalOverlay:    { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   modalSheet:      { backgroundColor: '#fff', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, paddingBottom: 36, gap: 4 },
   modalHandle:     { width: 40, height: 4, borderRadius: 2, backgroundColor: '#DDD6FE', alignSelf: 'center', marginBottom: 20 },
-  modalTitle:      { fontSize: 20, fontWeight: '700', fontFamily: F.bold, color: P1, textAlign: 'center' },
+  modalTitle:      { fontSize: 20, fontFamily: F.bold, color: P1, textAlign: 'center' },
   modalSub:        { fontSize: 14, fontFamily: F.regular, color: '#6B7280', textAlign: 'center', marginBottom: 20 },
   modalCancel:     { marginTop: 16, alignItems: 'center', padding: 12 },
   modalCancelText: { fontSize: 15, fontFamily: F.semibold, color: '#9CA3AF' },

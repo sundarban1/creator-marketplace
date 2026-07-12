@@ -225,12 +225,12 @@ const styles = StyleSheet.create({
 
   roleRow:     { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 32, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 7, backgroundColor: 'rgba(0,0,0,0.03)', borderWidth: 1, borderColor: 'rgba(0,0,0,0.07)' },
   chip:        { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, borderWidth: 1 },
-  chipText:    { fontSize: 12, fontWeight: '700', letterSpacing: 0.3, fontFamily: F.bold },
+  chipText:    { fontSize: 12, letterSpacing: 0.3, fontFamily: F.bold },
   chipDivider: { width: 1, height: 14, backgroundColor: 'rgba(0,0,0,0.12)' },
 
   logoImage: { width: 220, height: 220 / (1740 / 620) },
 
-  tagline:  { fontSize: 14, color: '#888', marginTop: 8, letterSpacing: 0.4, fontWeight: '500', fontFamily: F.medium },
+  tagline:  { fontSize: 14, color: '#888', marginTop: 8, letterSpacing: 0.4, fontFamily: F.medium },
 
   dotsRow: { position: 'absolute', bottom: 56, flexDirection: 'row', gap: 9, alignItems: 'center' },
 });

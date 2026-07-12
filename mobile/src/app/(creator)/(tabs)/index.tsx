@@ -857,7 +857,7 @@ const styles = StyleSheet.create({
   // ── Error ──
   errorCard: { marginHorizontal: 20, marginBottom: 16, borderRadius: 10, padding: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   errorText:  { color: '#DC2626', fontSize: 13, flex: 1, fontFamily: F.medium },
-  retryText:  { fontSize: 13, fontWeight: '700', marginLeft: 12, fontFamily: F.bold },
+  retryText:  { fontSize: 13, marginLeft: 12, fontFamily: F.bold },
 
   // ── Section headers ──
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginTop: 20, marginBottom: 12 },
@@ -891,9 +891,9 @@ const styles = StyleSheet.create({
   // ── Nearby ──
   nearbyTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 },
   nearbyChip: { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5, flexShrink: 1 },
-  nearbyChipText: { fontSize: 11, fontWeight: '700', fontFamily: F.bold, flexShrink: 1 },
+  nearbyChipText: { fontSize: 11, fontFamily: F.bold, flexShrink: 1 },
   expandRadiusBtn: { borderRadius: 12, paddingHorizontal: 16, paddingVertical: 10, marginTop: 4 },
-  expandRadiusBtnText: { color: '#fff', fontSize: 13, fontWeight: '700', fontFamily: F.bold },
+  expandRadiusBtnText: { color: '#fff', fontSize: 13, fontFamily: F.bold },
 
   // ── Attention banner ──
   attentionBanner: { flexDirection: 'row', alignItems: 'center', borderRadius: 14, marginHorizontal: 20, marginTop: 12, padding: 14, gap: 12, backgroundColor: '#FFFBEB', borderWidth: 1, borderColor: '#FDE68A' },

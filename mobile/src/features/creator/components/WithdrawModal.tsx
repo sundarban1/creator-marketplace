@@ -182,14 +182,14 @@ const styles = StyleSheet.create({
   sheet:    { position: 'absolute', left: 0, right: 0, bottom: 0, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '80%', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 20, shadowOffset: { width: 0, height: -4 }, elevation: 20 },
   handle:   { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginTop: 12, marginBottom: 4 },
   header:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1 },
-  title:    { fontSize: 16, fontWeight: '700', fontFamily: F.bold },
+  title:    { fontSize: 16, fontFamily: F.bold },
   body:     { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8, gap: 4 },
   footer:   { padding: 20, borderTopWidth: 1 },
 
-  label: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: F.bold, marginBottom: 8 },
+  label: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: F.bold, marginBottom: 8 },
   methodRow: { flexDirection: 'row', gap: 8 },
   methodChip: { flex: 1, alignItems: 'center', gap: 4, borderRadius: 12, borderWidth: 1.5, paddingVertical: 12 },
-  methodLabel: { fontSize: 12, fontWeight: '600', fontFamily: F.semibold },
+  methodLabel: { fontSize: 12, fontFamily: F.semibold },
 
   amountRow: { flexDirection: 'row', alignItems: 'center', borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14, height: 52, gap: 8 },
   currencyPrefix: { fontSize: 15, fontFamily: F.semibold },
@@ -202,8 +202,8 @@ const styles = StyleSheet.create({
   manageLink: { fontSize: 13, fontFamily: F.semibold },
 
   submitBtn: { borderRadius: 14, height: 52, justifyContent: 'center', alignItems: 'center', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
-  submitBtnText: { color: '#fff', fontSize: 15, fontWeight: '700', fontFamily: F.bold },
+  submitBtnText: { color: '#fff', fontSize: 15, fontFamily: F.bold },
 
   accessoryBar: { flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 16, paddingVertical: 8, borderTopWidth: StyleSheet.hairlineWidth },
-  accessoryDoneText: { fontSize: 15, fontWeight: '700', fontFamily: F.semibold },
+  accessoryDoneText: { fontSize: 15, fontFamily: F.semibold },
 });

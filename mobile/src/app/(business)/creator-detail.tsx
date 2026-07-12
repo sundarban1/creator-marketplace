@@ -440,26 +440,26 @@ const s = StyleSheet.create({
   centered:  { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, padding: 32 },
 
   topBar:    { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12 },
-  topTitle:  { flex: 1, fontSize: 17, fontWeight: '700', textAlign: 'center', fontFamily: F.bold },
+  topTitle:  { flex: 1, fontSize: 17, textAlign: 'center', fontFamily: F.bold },
 
   scroll: { paddingBottom: 16, gap: 12 },
 
   // Hero
   hero:         { flexDirection: 'row', alignItems: 'center', gap: 16, paddingHorizontal: 20, paddingVertical: 24, marginHorizontal: 20, borderRadius: 14, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 3 },
   avatarCircle: { width: 72, height: 72, borderRadius: 36, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
-  avatarText:   { fontSize: 26, fontWeight: '700', fontFamily: F.bold },
+  avatarText:   { fontSize: 26, fontFamily: F.bold },
   heroInfo:     { flex: 1, gap: 4 },
   nameRow:      { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
-  heroName:     { fontSize: 20, fontWeight: '700', fontFamily: F.bold },
+  heroName:     { fontSize: 20, fontFamily: F.bold },
   verifiedBadge:{ borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3 },
-  verifiedText: { fontSize: 11, fontWeight: '700', color: '#2E7D32', fontFamily: F.bold },
+  verifiedText: { fontSize: 11, color: '#2E7D32', fontFamily: F.bold },
   username:     { fontSize: 13, fontFamily: F.regular },
   locationRow:  { flexDirection: 'row', alignItems: 'center', gap: 4 },
   location:     { fontSize: 13, fontFamily: F.regular },
 
   // Sections
   section:      { marginHorizontal: 20, borderRadius: 16, padding: 16, gap: 12, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, shadowOffset: { width: 0, height: 1 }, elevation: 2 },
-  sectionTitle: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0, fontFamily: F.bold },
+  sectionTitle: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 0, fontFamily: F.bold },
 
   // Bio
   bioText: { fontSize: 14, lineHeight: 22, fontFamily: F.regular },
@@ -467,7 +467,7 @@ const s = StyleSheet.create({
   // Chips
   chips:       { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   catChip:     { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 12 },
-  catChipText: { fontSize: 13, fontWeight: '600', fontFamily: F.semibold },
+  catChipText: { fontSize: 13, fontFamily: F.semibold },
   platChip:    { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 12, borderWidth: 1.5 },
 
   // Social accounts
@@ -475,55 +475,55 @@ const s = StyleSheet.create({
   socialRow:       { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, borderBottomWidth: 1 },
   socialIconWrap:  { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   socialInfo:      { flex: 1 },
-  socialPlatform:  { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
+  socialPlatform:  { fontSize: 14, fontFamily: F.bold },
   socialSub:       { fontSize: 12, marginTop: 1, fontFamily: F.regular },
-  socialLink:      { fontSize: 18, fontWeight: '600', fontFamily: F.semibold },
+  socialLink:      { fontSize: 18, fontFamily: F.semibold },
 
   // Stats
   statsGrid:  { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   statTile:   { width: '47%', borderRadius: 12, padding: 12, gap: 4, alignItems: 'flex-start' },
-  statValue:  { fontSize: 16, fontWeight: '700', fontFamily: F.bold },
+  statValue:  { fontSize: 16, fontFamily: F.bold },
   statLabel:  { fontSize: 11, fontFamily: F.medium },
 
   // Budget
   budgetCard:  { flexDirection: 'row', alignItems: 'center', borderRadius: 12, padding: 14, gap: 12 },
   budgetInfo:  { flex: 1 },
-  budgetLabel: { fontSize: 11, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0, fontFamily: F.semibold },
-  budgetValue: { fontSize: 16, fontWeight: '700', marginTop: 2, fontFamily: F.bold },
+  budgetLabel: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 0, fontFamily: F.semibold },
+  budgetValue: { fontSize: 16, marginTop: 2, fontFamily: F.bold },
 
   // Portfolio
   portfolioList:    { gap: 10 },
   portfolioRow:     { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, borderBottomWidth: 1 },
   portfolioIconWrap:{ width: 36, height: 36, borderRadius: 10, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
-  portfolioLabel:   { flex: 1, fontSize: 14, fontWeight: '600', fontFamily: F.semibold },
+  portfolioLabel:   { flex: 1, fontSize: 14, fontFamily: F.semibold },
 
   // Error state
   errorEmoji: { marginBottom: 4 },
-  errorTitle: { fontSize: 18, fontWeight: '700', fontFamily: F.bold },
+  errorTitle: { fontSize: 18, fontFamily: F.bold },
   errorHint:  { fontSize: 13, textAlign: 'center', lineHeight: 20, fontFamily: F.regular },
   retryBtn:   { borderRadius: 20, borderWidth: 1.5, paddingHorizontal: 20, paddingVertical: 10, marginTop: 4 },
-  retryText:  { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
+  retryText:  { fontSize: 14, fontFamily: F.bold },
 });
 
 // Message button bar
 const msgBtn = StyleSheet.create({
   bar: { paddingHorizontal: 20, paddingVertical: 14, borderTopWidth: 1 },
   btn: { borderRadius: 14, height: 52, flexDirection: 'row', gap: 8, justifyContent: 'center', alignItems: 'center' },
-  txt: { color: '#fff', fontSize: 16, fontWeight: '700', fontFamily: F.bold },
+  txt: { color: '#fff', fontSize: 16, fontFamily: F.bold },
 });
 
 // Request modal
 const rm = StyleSheet.create({
   overlay: { flex: 1, justifyContent: 'flex-end' },
-  scrim:   { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.45)' },
+  scrim:   { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.45)' },
   sheet:   { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 40, gap: 14 },
   handle:   { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginBottom: 4 },
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  title:    { fontSize: 18, fontWeight: '700', fontFamily: F.bold, flex: 1 },
+  title:    { fontSize: 18, fontFamily: F.bold, flex: 1 },
   closeBtn: { width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
   subtitle:{ fontSize: 13, lineHeight: 20, fontFamily: F.regular },
   input:   { borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, minHeight: 100, textAlignVertical: 'top', fontFamily: F.regular },
   counter: { fontSize: 11, textAlign: 'right', marginTop: -6, fontFamily: F.regular },
   sendBtn: { borderRadius: 14, height: 52, justifyContent: 'center', alignItems: 'center' },
-  sendTxt: { color: '#fff', fontSize: 16, fontWeight: '700', fontFamily: F.bold },
+  sendTxt: { color: '#fff', fontSize: 16, fontFamily: F.bold },
 });

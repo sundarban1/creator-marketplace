@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
   listDatesRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
 
   typeBadge:     { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1 },
-  typeBadgeText: { fontSize: 11, fontWeight: '700', fontFamily: F.bold },
+  typeBadgeText: { fontSize: 11, fontFamily: F.bold },
   applyBtn: {
     flexShrink: 0, alignSelf: 'center',
     borderRadius: 20, paddingVertical: 8, paddingHorizontal: 14,

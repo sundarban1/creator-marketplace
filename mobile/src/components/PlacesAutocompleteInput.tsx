@@ -120,16 +120,21 @@ export function PlacesAutocompleteInput({
       />
       {error ? <Text style={[styles.errorTxt, { color: C.error }]}>{error}</Text> : null}
       {suggestions.length > 0 && (
-        <View style={[styles.dropdown, { backgroundColor: C.surface, borderColor: C.border }]}>
-          {suggestions.map((place, i) => (
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-              key={place.place_id}
-              style={[styles.item, i < suggestions.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}
-              onPress={() => handleSelect(place)}>
-              <Ionicons name="location" size={14} color={C.textSecondary} />
-              <Text style={[styles.itemText, { color: C.text }]} numberOfLines={2}>{place.description}</Text>
-            </Pressable>
-          ))}
+        // Shadow lives on the outer view (no overflow clipping) and the rounded-corner
+        // clip lives on the inner view — iOS drops a shadow on any view that also has
+        // overflow:hidden, and `elevation` alone (Android's shadow) renders nothing on iOS.
+        <View style={styles.dropdownOuter}>
+          <View style={[styles.dropdown, { backgroundColor: C.surface, borderColor: C.border }]}>
+            {suggestions.map((place, i) => (
+              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                key={place.place_id}
+                style={[styles.item, i < suggestions.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}
+                onPress={() => handleSelect(place)}>
+                <Ionicons name="location" size={14} color={C.textSecondary} />
+                <Text style={[styles.itemText, { color: C.text }]} numberOfLines={2}>{place.description}</Text>
+              </Pressable>
+            ))}
+          </View>
         </View>
       )}
     </View>
@@ -140,7 +145,8 @@ const styles = StyleSheet.create({
   wrap:     { zIndex: 99 },
   input:    { borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14, height: 50, fontSize: 15, fontFamily: F.regular },
   errorTxt: { fontSize: 12, marginTop: 4, fontFamily: F.regular },
-  dropdown: { borderRadius: 12, borderWidth: 1.5, marginTop: 6, overflow: 'hidden', elevation: 10, zIndex: 100 },
+  dropdownOuter: { marginTop: 6, borderRadius: 12, zIndex: 100, shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 10 },
+  dropdown: { borderRadius: 12, borderWidth: 1.5, overflow: 'hidden' },
   item:     { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, gap: 10 },
   itemText: { fontSize: 13, flex: 1, fontFamily: F.regular },
 });

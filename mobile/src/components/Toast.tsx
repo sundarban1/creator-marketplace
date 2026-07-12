@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
   inner:   { flexDirection: 'row', alignItems: 'flex-start', padding: 14, gap: 10 },
   icon:    { marginTop: 1 },
   texts:   { flex: 1 },
-  title:   { fontSize: 13, fontWeight: '700', marginBottom: 2, fontFamily: F.bold },
+  title:   { fontSize: 13, marginBottom: 2, fontFamily: F.bold },
   message: { fontSize: 13, lineHeight: 18, fontFamily: F.regular },
   dismiss: { opacity: 0.6, marginTop: 2 },
 });

@@ -365,7 +365,7 @@ const cm = StyleSheet.create({
   backdrop:     { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 },
   sheet:        { width: '100%', borderRadius: 24, padding: 24, alignItems: 'center', gap: 12, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 24, shadowOffset: { width: 0, height: 8 }, elevation: 12 },
   iconCircle:   { width: 72, height: 72, borderRadius: 36, justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
-  title:        { fontSize: 20, fontWeight: '700', fontFamily: F.bold, textAlign: 'center' },
+  title:        { fontSize: 20, fontFamily: F.bold, textAlign: 'center' },
   creatorName:  { fontSize: 14, fontFamily: F.semibold, textAlign: 'center', marginTop: -4 },
   body:         { fontSize: 13, fontFamily: F.regular, textAlign: 'center', lineHeight: 20 },
   warningBox:   { flexDirection: 'row', alignItems: 'flex-start', gap: 8, borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, width: '100%' },
@@ -374,9 +374,9 @@ const cm = StyleSheet.create({
   capacityText: { fontSize: 12, fontFamily: F.semibold },
   actions:      { flexDirection: 'row', gap: 10, width: '100%', marginTop: 4 },
   cancelBtn:    { flex: 1, height: 46, borderRadius: 12, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center' },
-  cancelText:   { fontSize: 14, fontWeight: '600', fontFamily: F.semibold },
+  cancelText:   { fontSize: 14, fontFamily: F.semibold },
   confirmBtn:   { flex: 1, height: 46, borderRadius: 12, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6 },
-  confirmText:  { fontSize: 14, fontWeight: '700', color: '#fff', fontFamily: F.bold },
+  confirmText:  { fontSize: 14, color: '#fff', fontFamily: F.bold },
 });
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
@@ -673,15 +673,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 5,
   },
-  totalPillText: { fontSize: 12, fontWeight: '600', color: '#fff', fontFamily: F.semibold },
+  totalPillText: { fontSize: 12, color: '#fff', fontFamily: F.semibold },
 
   headerBody: { paddingHorizontal: 16, paddingTop: 8, gap: 8 },
-  headerTitle: { fontSize: 20, fontWeight: '700', color: '#fff', fontFamily: F.bold, lineHeight: 24 },
+  headerTitle: { fontSize: 20, color: '#fff', fontFamily: F.bold, lineHeight: 24 },
   headerBadgeRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   typeBadge:     { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
-  typeBadgeText: { fontSize: 11, fontWeight: '700', fontFamily: F.bold },
+  typeBadgeText: { fontSize: 11, fontFamily: F.bold },
   platformPill:  { backgroundColor: 'rgba(255,255,255,0.18)', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
-  platformText:  { fontSize: 11, fontWeight: '600', color: '#fff', fontFamily: F.semibold },
+  platformText:  { fontSize: 11, color: '#fff', fontFamily: F.semibold },
 
   statStrip: {
     flexDirection: 'row',
@@ -693,8 +693,8 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   statStripItem:    { flex: 1, alignItems: 'center', gap: 2 },
-  statStripNum:     { fontSize: 16, fontWeight: '700', color: '#fff', fontFamily: F.bold },
-  statStripLabel:   { fontSize: 10, fontWeight: '600', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', fontFamily: F.semibold },
+  statStripNum:     { fontSize: 16, color: '#fff', fontFamily: F.bold },
+  statStripLabel:   { fontSize: 10, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', fontFamily: F.semibold },
   statStripDivider: { width: 1, height: 32 },
 
   sectionLabelRow: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 4 },
@@ -704,9 +704,9 @@ const styles = StyleSheet.create({
   filterBar:    { borderBottomWidth: StyleSheet.hairlineWidth },
   filterScroll: { paddingHorizontal: 16, paddingVertical: 10, gap: 8 },
   filterChip:   { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 7 },
-  filterChipText:      { fontSize: 13, fontWeight: '600', fontFamily: F.semibold },
+  filterChipText:      { fontSize: 13, fontFamily: F.semibold },
   filterChipBadge:     { borderRadius: 10, minWidth: 20, height: 20, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 5 },
-  filterChipBadgeText: { fontSize: 11, fontWeight: '700', fontFamily: F.bold },
+  filterChipBadgeText: { fontSize: 11, fontFamily: F.bold },
 
   // ── List ─────────────────────────────────────────────────────────────────────
   list:      { paddingTop: 16, paddingHorizontal: 16, paddingBottom: 40 },
@@ -726,14 +726,14 @@ const styles = StyleSheet.create({
   },
   cardHeader:     { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
   avatar:         { width: 46, height: 46, borderRadius: 23, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
-  avatarText:     { fontSize: 15, fontWeight: '700', fontFamily: F.bold },
+  avatarText:     { fontSize: 15, fontFamily: F.bold },
   creatorMeta:    { flex: 1, gap: 3 },
-  creatorName:    { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
+  creatorName:    { fontSize: 14, fontFamily: F.bold },
   locationRow:    { flexDirection: 'row', alignItems: 'center', gap: 3 },
   locationText:   { fontSize: 11, fontFamily: F.regular },
   cardHeaderRight:{ alignItems: 'flex-end', gap: 4 },
   statusBadge:    { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
-  statusText:     { fontSize: 11, fontWeight: '700', fontFamily: F.bold },
+  statusText:     { fontSize: 11, fontFamily: F.bold },
   timeText:       { fontSize: 10, fontFamily: F.regular },
 
   cardDivider: { height: StyleSheet.hairlineWidth },
@@ -741,22 +741,22 @@ const styles = StyleSheet.create({
   coverWrap:   { flexDirection: 'row', alignItems: 'flex-start', gap: 8, borderRadius: 10, padding: 10 },
   coverLetter: { fontSize: 12, lineHeight: 18, fontStyle: 'italic', fontFamily: F.regular },
   seeMoreBtn:  { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 4 },
-  seeMoreText: { fontSize: 12, fontWeight: '700', fontFamily: F.bold },
+  seeMoreText: { fontSize: 12, fontFamily: F.bold },
 
   rateRow:    { flexDirection: 'row', alignItems: 'center', gap: 10 },
   ratePill:   { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6 },
-  rateAmount: { fontSize: 14, fontWeight: '700', fontFamily: F.bold },
+  rateAmount: { fontSize: 14, fontFamily: F.bold },
   rateLabel:  { fontSize: 11, fontFamily: F.regular },
 
   freeTag:     { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 7 },
-  freeTagText: { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
+  freeTagText: { fontSize: 13, fontFamily: F.bold },
 
   actions:    { flexDirection: 'row', gap: 10 },
   declineBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 11, borderRadius: 12, borderWidth: 1.5 },
   acceptBtn:  { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 11, borderRadius: 12 },
-  actionText: { fontSize: 13, fontWeight: '700', fontFamily: F.bold },
+  actionText: { fontSize: 13, fontFamily: F.bold },
 
   startProjectBtn:    { flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 12, paddingVertical: 11, paddingHorizontal: 14, marginTop: 10 },
-  startProjectBtnTxt: { fontSize: 13, fontWeight: '700', color: '#fff', fontFamily: F.bold },
+  startProjectBtnTxt: { fontSize: 13, color: '#fff', fontFamily: F.bold },
 
 });

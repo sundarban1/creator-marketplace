@@ -546,7 +546,7 @@ export default function CreatorChatRoomScreen() {
         </View>
       )}
 
-      <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={0}>
+      <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={0}>
         {/* inverted=true → newest messages at bottom, scroll up for history (Instagram pattern) */}
         <FlatList
           ref={listRef}
