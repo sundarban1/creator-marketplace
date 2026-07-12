@@ -47,6 +47,35 @@ interface TiktokUserInfoResponse {
   error?: { code?: string; message?: string };
 }
 
+interface FacebookPageRaw {
+  id: string;
+  name: string;
+  access_token: string;
+  fan_count?: number;
+  link?: string;
+  picture?: { data?: { url?: string } };
+  instagram_business_account?: {
+    id: string;
+    username?: string;
+    followers_count?: number;
+    profile_picture_url?: string;
+  };
+}
+
+interface FacebookPagesResponse {
+  data?: FacebookPageRaw[];
+  error?: { message?: string; code?: number };
+}
+
+export interface FacebookPageOption {
+  id: string;
+  name: string;
+  fanCount: number;
+  picture?: string;
+  hasInstagram: boolean;
+  instagramUsername?: string;
+}
+
 export class CreatorService {
   private repo: CreatorRepository;
   private businessRepo: BusinessRepository;
@@ -298,6 +327,10 @@ export class CreatorService {
     url.searchParams.set('state', state);
     url.searchParams.set('code_challenge', codeChallenge);
     url.searchParams.set('code_challenge_method', 'S256');
+    // Without this, TikTok silently reuses whatever account is already logged into the
+    // in-app browser session, so a creator who disconnected and wants to link a
+    // different TikTok account never sees the login/account-switch screen at all.
+    url.searchParams.set('disable_auto_auth', '1');
     return url.toString();
   }
 
@@ -351,6 +384,79 @@ export class CreatorService {
       followers: 0,
       platformUserId: tiktokUser.open_id ?? profile.id,
       avatarUrl: tiktokUser.avatar_url,
+    });
+    return toSocialAccountDto(account);
+  }
+
+  // Facebook only exposes follower/fan counts for Pages, never personal profiles, and
+  // an Instagram Business/Creator account's stats are only reachable by first finding
+  // the Facebook Page it's linked to — so both "Connect Facebook" and "Connect
+  // Instagram" share this one Graph API call (fetched fresh each time rather than
+  // trusting client-supplied numbers) and just read different fields off the result.
+  private async fetchFacebookPages(accessToken: string): Promise<FacebookPageRaw[]> {
+    const url =
+      'https://graph.facebook.com/me/accounts' +
+      '?fields=id,name,fan_count,link,access_token,picture{url},instagram_business_account{id,username,followers_count,profile_picture_url}' +
+      `&access_token=${encodeURIComponent(accessToken)}`;
+    const res = await fetch(url);
+    const data = (await res.json()) as FacebookPagesResponse;
+    if (!res.ok || data.error) {
+      logger.error({ status: res.status, error: data.error }, 'Facebook Pages request failed');
+      if (res.status === 401 || data.error?.code === 190) {
+        throw new AppError('Facebook session expired — please reconnect', 401);
+      }
+      throw new AppError(data.error?.message ?? 'Could not reach Facebook', 502);
+    }
+    return data.data ?? [];
+  }
+
+  // Lists the Pages the creator manages so the app can prompt them to pick one when
+  // there's more than one (auto-selected on the client when there's exactly one).
+  async listFacebookPages(accessToken: string): Promise<FacebookPageOption[]> {
+    const pages = await this.fetchFacebookPages(accessToken);
+    return pages.map((p) => ({
+      id: p.id,
+      name: p.name,
+      fanCount: p.fan_count ?? 0,
+      picture: p.picture?.data?.url,
+      hasInstagram: !!p.instagram_business_account,
+      instagramUsername: p.instagram_business_account?.username,
+    }));
+  }
+
+  async connectFacebookPage(userId: string, accessToken: string, pageId: string) {
+    const profile = await this.repo.findByUserId(userId);
+    if (!profile) throw new AppError('Creator profile not found', 404);
+
+    const pages = await this.fetchFacebookPages(accessToken);
+    const page = pages.find((p) => p.id === pageId);
+    if (!page) throw new AppError('Facebook Page not found — please reconnect and try again', 404);
+
+    const account = await this.repo.upsertOAuthSocialAccount(profile.id, 'facebook', {
+      profileUrl: page.link ?? `https://www.facebook.com/${page.id}`,
+      followers: page.fan_count ?? 0,
+      platformUserId: page.id,
+      avatarUrl: page.picture?.data?.url,
+    });
+    return toSocialAccountDto(account);
+  }
+
+  async connectInstagramAccount(userId: string, accessToken: string, pageId: string) {
+    const profile = await this.repo.findByUserId(userId);
+    if (!profile) throw new AppError('Creator profile not found', 404);
+
+    const pages = await this.fetchFacebookPages(accessToken);
+    const page = pages.find((p) => p.id === pageId);
+    if (!page) throw new AppError('Facebook Page not found — please reconnect and try again', 404);
+
+    const ig = page.instagram_business_account;
+    if (!ig) throw new AppError('This Facebook Page has no linked Instagram Business account', 404);
+
+    const account = await this.repo.upsertOAuthSocialAccount(profile.id, 'instagram', {
+      profileUrl: ig.username ? `https://www.instagram.com/${ig.username}` : 'https://www.instagram.com/',
+      followers: ig.followers_count ?? 0,
+      platformUserId: ig.id,
+      avatarUrl: ig.profile_picture_url,
     });
     return toSocialAccountDto(account);
   }

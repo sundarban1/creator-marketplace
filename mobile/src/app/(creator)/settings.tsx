@@ -25,7 +25,9 @@ import { AppModal } from '@/components/AppModal';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useKeyboardOffset } from '@/hooks/useKeyboardOffset';
 import { useGoogleAccessToken } from '@/hooks/useGoogleAccessToken';
+import { useFacebookAccessToken } from '@/hooks/useFacebookAccessToken';
 import * as WebBrowser from 'expo-web-browser';
+import type { FacebookPageOption } from '@/services/creator';
 import { useAppColors, useIsDark } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/components/Toast';
@@ -48,7 +50,7 @@ const CONNECTABLE_SOCIAL_PLATFORMS: { id: string; label: string; iconName: strin
   { id: 'instagram', label: 'Instagram',  iconName: 'instagram', color: '#E1306C', followersLabel: 'Followers' },
   { id: 'youtube',   label: 'YouTube',    iconName: 'youtube',   color: '#FF0000', followersLabel: 'Subscribers' },
 ];
-const OAUTH_LIVE_PLATFORM_IDS = new Set(['youtube', 'tiktok']);
+const OAUTH_LIVE_PLATFORM_IDS = new Set(['youtube', 'tiktok', 'facebook', 'instagram']);
 
 // Remaining platforms still use manual entry (no OAuth data-access app for these is
 // in scope right now).
@@ -101,18 +103,6 @@ function PlatformIcon({ iconName, iconLib, size, color, style }: { iconName: str
   if (iconLib === 'ion') return <Ionicons name={iconName as any} size={size} color={color} style={style} />;
   return <FontAwesome5 name={iconName as any} size={size} color={color} style={style} />;
 }
-
-const PLATFORM_URL_PREFIX: Record<string, string> = {
-  instagram: 'https://instagram.com/',
-  tiktok:    'https://tiktok.com/@',
-  youtube:   'https://youtube.com/@',
-  facebook:  'https://facebook.com/',
-  twitter:   'https://x.com/',
-  linkedin:  'https://linkedin.com/in/',
-  pinterest: 'https://pinterest.com/',
-  snapchat:  'https://snapchat.com/add/',
-  twitch:    'https://twitch.tv/',
-};
 
 const PAYMENT_METHODS = [
   { id: 'esewa',   icon: 'wallet',       label: 'eSewa',   color: '#60BB46' },
@@ -237,15 +227,13 @@ export default function CreatorSettingsScreen() {
   // Social accounts state (API-driven)
   type SocialAccount = { id: string; platform: string; profileUrl: string; followers: number; connectedViaOAuth?: boolean };
   const [socialAccounts, setSocialAccounts] = useState<SocialAccount[]>([]);
-  const [socialLoading, setSocialLoading] = useState(false);
   const [connectingPlatform, setConnectingPlatform] = useState<string | null>(null);
-  const [showAddSocial, setShowAddSocial] = useState(false);
-  const [editingSocialId, setEditingSocialId] = useState<string | null>(null);
-  const [socialForm, setSocialForm] = useState({ platform: '', profileUrl: '', followers: '' });
-  const [socialFormErrors, setSocialFormErrors] = useState<Record<string, string>>({});
-  const socialSheetAnim = useRef(new Animated.Value(0)).current;
   const keyboardOffset = useKeyboardOffset();
   const youtubeAuth = useGoogleAccessToken(['https://www.googleapis.com/auth/youtube.readonly']);
+  const facebookPagesAuth = useFacebookAccessToken(['pages_show_list', 'pages_read_engagement', 'instagram_basic']);
+  // When a creator manages more than one Facebook Page, they pick which one to connect
+  // (or which one's linked Instagram account to connect) here.
+  const [pagePicker, setPagePicker] = useState<{ mode: 'facebook' | 'instagram'; accessToken: string; pages: FacebookPageOption[] } | null>(null);
 
   // Portfolio (in Social section)
   type PortfolioItem = { id: string; label: string; url: string };
@@ -440,73 +428,6 @@ export default function CreatorSettingsScreen() {
     });
   }
 
-  function openSocialSheet(opts?: { account?: SocialAccount }) {
-    if (opts?.account) {
-      setSocialForm({ platform: opts.account.platform, profileUrl: opts.account.profileUrl, followers: String(opts.account.followers) });
-      setEditingSocialId(opts.account.id);
-    } else {
-      setSocialForm({ platform: '', profileUrl: '', followers: '' });
-      setEditingSocialId(null);
-    }
-    setSocialFormErrors({});
-    setShowAddSocial(true);
-    socialSheetAnim.setValue(0);
-    Animated.spring(socialSheetAnim, { toValue: 1, useNativeDriver: true, tension: 65, friction: 11 }).start();
-  }
-
-  function resetSocialForm() {
-    Animated.timing(socialSheetAnim, { toValue: 0, duration: 200, useNativeDriver: true }).start(() => {
-      setSocialForm({ platform: '', profileUrl: '', followers: '' });
-      setSocialFormErrors({});
-      setEditingSocialId(null);
-      setShowAddSocial(false);
-    });
-  }
-
-  function startEditSocialAccount(acct: SocialAccount) {
-    openSocialSheet({ account: acct });
-  }
-
-  function validateSocialForm() {
-    const errors: Record<string, string> = {};
-    if (!socialForm.platform) errors.platform = t('creatorSettings.errSelectPlatform');
-    if (!socialForm.profileUrl.trim()) errors.profileUrl = t('creatorSettings.errProfileUrlRequired');
-    else {
-      try { new URL(socialForm.profileUrl.trim()); } catch { errors.profileUrl = t('creatorSettings.errInvalidUrl'); }
-    }
-    if (!socialForm.followers.trim() || !/^\d+$/.test(socialForm.followers)) errors.followers = t('creatorSettings.errInvalidNumber');
-    return errors;
-  }
-
-  async function saveSocialAccount() {
-    const errors = validateSocialForm();
-    if (Object.keys(errors).length > 0) { setSocialFormErrors(errors); return; }
-    setSocialLoading(true);
-    try {
-      if (editingSocialId) {
-        const updated = await creatorService.updateSocialAccount(editingSocialId, {
-          profileUrl: socialForm.profileUrl.trim(),
-          followers: Number(socialForm.followers),
-        });
-        setSocialAccounts((prev) => prev.map((a) => a.id === editingSocialId ? { ...a, ...updated } : a));
-        showToast(t('creatorSettings.socialUpdatedToast'));
-      } else {
-        const created = await creatorService.addSocialAccount({
-          platform: socialForm.platform,
-          profileUrl: socialForm.profileUrl.trim(),
-          followers: Number(socialForm.followers),
-        });
-        setSocialAccounts((prev) => [...prev, { id: created.id, platform: created.platform, profileUrl: created.profileUrl, followers: created.followers }]);
-        showToast(t('creatorSettings.socialAddedToast'));
-      }
-      resetSocialForm();
-    } catch (e: any) {
-      setSocialFormErrors({ platform: e.message ?? t('creatorSettings.socialSaveFailed') });
-    } finally {
-      setSocialLoading(false);
-    }
-  }
-
   function handleConnectYoutube() {
     setConnectingPlatform('youtube');
     youtubeAuth.prompt((accessToken) => {
@@ -539,7 +460,10 @@ export default function CreatorSettingsScreen() {
     setConnectingPlatform('tiktok');
     try {
       const url = await creatorService.getTiktokAuthorizeUrl();
-      const result = await WebBrowser.openAuthSessionAsync(url, 'kolab://tiktok-callback');
+      // preferEphemeralSession (iOS) stops the login screen from silently reusing the
+      // TikTok account already logged into the shared browser session — otherwise a
+      // creator who disconnects can't switch to a different TikTok account.
+      const result = await WebBrowser.openAuthSessionAsync(url, 'kolab://tiktok-callback', { preferEphemeralSession: true });
       if (result.type === 'success' && result.url) {
         const parsed = new URL(result.url);
         const success = parsed.searchParams.get('success') === 'true';
@@ -556,6 +480,98 @@ export default function CreatorSettingsScreen() {
       showToast(e instanceof Error ? e.message : t('creatorSettings.socialSaveFailed'), true);
     } finally {
       setConnectingPlatform(null);
+    }
+  }
+
+  // Facebook only exposes follower counts for Pages (never personal profiles), and an
+  // Instagram Business account's stats are only reachable via the Facebook Page it's
+  // linked to — so both buttons share this one Facebook Login + Page-listing step, and
+  // just differ in which pages qualify and which fields get saved.
+  function handleConnectFacebook() {
+    setConnectingPlatform('facebook');
+    facebookPagesAuth.prompt(async (accessToken) => {
+      try {
+        const pages = await creatorService.getFacebookPages(accessToken);
+        if (pages.length === 0) {
+          showToast(t('creatorSettings.noFacebookPages'), true);
+          setConnectingPlatform(null);
+          return;
+        }
+        if (pages.length === 1) {
+          await finishFacebookConnect(accessToken, pages[0].id);
+          return;
+        }
+        setPagePicker({ mode: 'facebook', accessToken, pages });
+        setConnectingPlatform(null);
+      } catch (e) {
+        showToast(e instanceof Error ? e.message : t('creatorSettings.socialSaveFailed'), true);
+        setConnectingPlatform(null);
+      }
+    });
+  }
+
+  function handleConnectInstagram() {
+    setConnectingPlatform('instagram');
+    facebookPagesAuth.prompt(async (accessToken) => {
+      try {
+        const pages = (await creatorService.getFacebookPages(accessToken)).filter((p) => p.hasInstagram);
+        if (pages.length === 0) {
+          showToast(t('creatorSettings.noInstagramPages'), true);
+          setConnectingPlatform(null);
+          return;
+        }
+        if (pages.length === 1) {
+          await finishInstagramConnect(accessToken, pages[0].id);
+          return;
+        }
+        setPagePicker({ mode: 'instagram', accessToken, pages });
+        setConnectingPlatform(null);
+      } catch (e) {
+        showToast(e instanceof Error ? e.message : t('creatorSettings.socialSaveFailed'), true);
+        setConnectingPlatform(null);
+      }
+    });
+  }
+
+  useEffect(() => {
+    if (facebookPagesAuth.error) {
+      showToast(facebookPagesAuth.error, true);
+      setConnectingPlatform(null);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [facebookPagesAuth.error]);
+
+  async function finishFacebookConnect(accessToken: string, pageId: string) {
+    setConnectingPlatform('facebook');
+    try {
+      const account = await creatorService.connectFacebookPage(accessToken, pageId);
+      setSocialAccounts((prev) => {
+        const without = prev.filter((a) => a.platform !== 'facebook');
+        return [...without, { id: account.id, platform: account.platform, profileUrl: account.profileUrl, followers: account.followers, connectedViaOAuth: account.connectedViaOAuth }];
+      });
+      showToast(t('creatorSettings.socialAddedToast'));
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : t('creatorSettings.socialSaveFailed'), true);
+    } finally {
+      setConnectingPlatform(null);
+      setPagePicker(null);
+    }
+  }
+
+  async function finishInstagramConnect(accessToken: string, pageId: string) {
+    setConnectingPlatform('instagram');
+    try {
+      const account = await creatorService.connectInstagramAccount(accessToken, pageId);
+      setSocialAccounts((prev) => {
+        const without = prev.filter((a) => a.platform !== 'instagram');
+        return [...without, { id: account.id, platform: account.platform, profileUrl: account.profileUrl, followers: account.followers, connectedViaOAuth: account.connectedViaOAuth }];
+      });
+      showToast(t('creatorSettings.socialAddedToast'));
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : t('creatorSettings.socialSaveFailed'), true);
+    } finally {
+      setConnectingPlatform(null);
+      setPagePicker(null);
     }
   }
 
@@ -1119,200 +1135,9 @@ export default function CreatorSettingsScreen() {
   function renderSocialAccounts() {
     const connectablePlatformIds = new Set(CONNECTABLE_SOCIAL_PLATFORMS.map((p) => p.id));
     const connectedByPlatform = new Map(socialAccounts.filter((a) => connectablePlatformIds.has(a.platform)).map((a) => [a.platform, a]));
-    const manualAccounts = socialAccounts.filter((a) => !connectablePlatformIds.has(a.platform));
-    const addedPlatforms = new Set(manualAccounts.map((a) => a.platform));
-    const isEditing = !!editingSocialId;
-    const selectedPlatform = ALL_SOCIAL_PLATFORMS.find((p) => p.id === socialForm.platform);
-    const followersPreview = socialForm.followers ? fmt(socialForm.followers) : null;
-    const sheetTranslateY = socialSheetAnim.interpolate({ inputRange: [0, 1], outputRange: [500, 0] });
 
     return (
       <>
-        {/* ── Bottom-sheet modal ─────────────────────────────────────── */}
-        <Modal visible={showAddSocial} transparent animationType="none" onRequestClose={resetSocialForm}>
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.sheetBackdrop} onPress={resetSocialForm} />
-          <Animated.View
-            style={[
-              styles.socialSheet,
-              { backgroundColor: C.surface, transform: [{ translateY: sheetTranslateY }, { translateY: keyboardOffset }] },
-            ]}>
-
-            {/* Sheet header — changes colour when platform is chosen */}
-            <View style={[
-              styles.sheetHeader,
-              { backgroundColor: selectedPlatform ? selectedPlatform.color : C.brinjal1 },
-            ]}>
-              <View style={styles.sheetHeaderInner}>
-                {selectedPlatform && (
-                  <View style={styles.sheetPlatformIcon}>
-                    <FontAwesome5 name={selectedPlatform.iconName as any} size={28} color="#fff" />
-                  </View>
-                )}
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.sheetTitle}>
-                    {isEditing
-                      ? t('creatorSettings.editSocialModalTitle', { platform: selectedPlatform?.label ?? '' })
-                      : selectedPlatform
-                        ? selectedPlatform.label
-                        : t('creatorSettings.addSocialModalTitle')}
-                  </Text>
-                  {selectedPlatform && !isEditing && (
-                    <Text style={styles.sheetSubtitle}>{t('creatorSettings.tapToChangePlatform')}</Text>
-                  )}
-                  {isEditing && (
-                    <Text style={styles.sheetSubtitle}>{t('creatorSettings.updateAccountSub')}</Text>
-                  )}
-                </View>
-              </View>
-              {/* drag handle */}
-              <View style={styles.sheetHandle} />
-            </View>
-
-            <ScrollView style={{ flex: 1 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-              <View style={styles.sheetBody}>
-
-                {/* Platform grid — only shown when adding, not editing */}
-                {!isEditing && (
-                  <View style={styles.sheetSection}>
-                    <Text style={[styles.sheetLabel, { color: C.textSecondary }]}>{t('creatorSettings.selectPlatformLabel')}</Text>
-                    {socialFormErrors.platform ? (
-                      <Text style={[styles.fieldError, { color: C.error, marginBottom: 8 }]}>{socialFormErrors.platform}</Text>
-                    ) : null}
-                    <View style={styles.platformGrid}>
-                      {ALL_SOCIAL_PLATFORMS.map((p) => {
-                        const alreadyAdded = addedPlatforms.has(p.id);
-                        const isSelected = socialForm.platform === p.id;
-                        return (
-                          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                            key={p.id}
-                            disabled={alreadyAdded}
-                            style={[
-                              styles.platformGridItem,
-                              { borderColor: isSelected ? p.color : C.border, backgroundColor: isSelected ? p.color + '15' : C.background },
-                              alreadyAdded && styles.platformGridItemDisabled,
-                            ]}
-                            onPress={() => {
-                              const prefix = PLATFORM_URL_PREFIX[p.id] ?? '';
-                              setSocialForm((f) => {
-                                // Preserve whatever handle the user typed after the previous
-                                // platform's prefix, so switching platforms swaps the prefix
-                                // instead of leaving the old one stuck in place.
-                                const oldPrefix = PLATFORM_URL_PREFIX[f.platform] ?? '';
-                                const handle = f.profileUrl.startsWith(oldPrefix) ? f.profileUrl.slice(oldPrefix.length) : '';
-                                return { ...f, platform: p.id, profileUrl: prefix + handle };
-                              });
-                              setSocialFormErrors((e) => ({ ...e, platform: '' }));
-                            }}>
-                            <FontAwesome5 name={p.iconName as any} size={24} color={isSelected ? p.color : '#888'} style={alreadyAdded ? { opacity: 0.35 } : undefined} />
-                            <Text style={[
-                              styles.platformGridLabel,
-                              { color: isSelected ? p.color : C.text },
-                              alreadyAdded && { opacity: 0.35 },
-                            ]}>{p.label}</Text>
-                            {alreadyAdded && (
-                              <View style={[styles.platformGridAddedBadge, { backgroundColor: p.color + '22' }]}>
-                                <Ionicons name="checkmark" size={11} color={p.color} />
-                              </View>
-                            )}
-                            {isSelected && (
-                              <View style={[styles.platformGridSelectedDot, { backgroundColor: p.color }]} />
-                            )}
-                          </Pressable>
-                        );
-                      })}
-                    </View>
-                  </View>
-                )}
-
-                {/* Show URL + followers only after platform is chosen (or always when editing) */}
-                {(isEditing || socialForm.platform) && (
-                  <>
-                    {/* Profile URL */}
-                    <View style={styles.sheetSection}>
-                      <Text style={[styles.sheetLabel, { color: C.textSecondary }]}>{t('creatorSettings.profileUrlLabel')}</Text>
-                      <View style={[
-                        styles.sheetInputWrap,
-                        { borderColor: socialFormErrors.profileUrl ? C.error : selectedPlatform ? selectedPlatform.color + '60' : C.border, backgroundColor: C.background },
-                      ]}>
-                        {selectedPlatform && (
-                          <FontAwesome5 name={selectedPlatform.iconName as any} size={14} color={selectedPlatform.color} style={styles.sheetInputPrefix} />
-                        )}
-                        <TextInput
-                          style={[styles.sheetInput, { color: C.text }]}
-                          value={socialForm.profileUrl}
-                          onChangeText={(t) => { setSocialForm((f) => ({ ...f, profileUrl: t })); setSocialFormErrors((e) => ({ ...e, profileUrl: '' })); }}
-                          placeholder={selectedPlatform ? (PLATFORM_URL_PREFIX[selectedPlatform.id] + 'yourhandle') : 'https://...'}
-                          autoCapitalize="none"
-                          keyboardType="url"
-                          autoCorrect={false}
-                          placeholderTextColor={C.textSecondary}
-                        />
-                      </View>
-                      {socialFormErrors.profileUrl
-                        ? <Text style={[styles.sheetFieldError, { color: C.error }]}>{socialFormErrors.profileUrl}</Text>
-                        : <Text style={[styles.sheetFieldHint, { color: C.textSecondary }]}>{t('creatorSettings.profileUrlHint')}</Text>}
-                    </View>
-
-                    {/* Follower count */}
-                    <View style={styles.sheetSection}>
-                      <Text style={[styles.sheetLabel, { color: C.textSecondary }]}>
-                        {t('creatorSettings.followersCountLabel', { label: selectedPlatform?.followersLabel ?? 'Followers' })}
-                      </Text>
-                      <View style={[
-                        styles.sheetInputWrap,
-                        { borderColor: socialFormErrors.followers ? C.error : selectedPlatform ? selectedPlatform.color + '60' : C.border, backgroundColor: C.background },
-                      ]}>
-                        <TextInput
-                          style={[styles.sheetInput, { color: C.text, flex: 1 }]}
-                          value={socialForm.followers}
-                          onChangeText={(t) => { setSocialForm((f) => ({ ...f, followers: t.replace(/\D/g, '') })); setSocialFormErrors((e) => ({ ...e, followers: '' })); }}
-                          placeholder="e.g. 18200"
-                          keyboardType="numeric"
-                          placeholderTextColor={C.textSecondary}
-                        />
-                        {followersPreview && (
-                          <View style={[styles.sheetCountBadge, { backgroundColor: selectedPlatform ? selectedPlatform.color + '18' : C.primaryLight }]}>
-                            <Text style={[styles.sheetCountBadgeText, { color: selectedPlatform?.color ?? C.brinjal1 }]}>{followersPreview}</Text>
-                          </View>
-                        )}
-                      </View>
-                      {socialFormErrors.followers
-                        ? <Text style={[styles.sheetFieldError, { color: C.error }]}>{socialFormErrors.followers}</Text>
-                        : <Text style={[styles.sheetFieldHint, { color: C.textSecondary }]}>{t('creatorSettings.followersHint')}</Text>}
-                    </View>
-
-                    {/* Save button */}
-                    <View style={styles.sheetActions}>
-                      <Pressable
-                        style={[
-                          styles.sheetSaveBtn,
-                          { backgroundColor: selectedPlatform?.color ?? C.brinjal1, opacity: socialLoading ? 0.6 : 1 },
-                        ]}
-                        onPress={saveSocialAccount}
-                        disabled={socialLoading}>
-                        {socialLoading ? (
-                          <View style={styles.sheetSaveBtnRow}>
-                            <View style={styles.sheetSpinner} />
-                            <Text style={styles.sheetSaveBtnText}>{t('creatorSettings.savingLabel')}</Text>
-                          </View>
-                        ) : (
-                          <Text style={styles.sheetSaveBtnText}>
-                            {isEditing ? t('creatorSettings.saveChangesBtn') : t('creatorSettings.addAccountBtn', { platform: selectedPlatform?.label ?? 'Account' })}
-                          </Text>
-                        )}
-                      </Pressable>
-                      <Pressable style={[styles.sheetCancelBtn, { borderColor: C.border }]} onPress={resetSocialForm}>
-                        <Text style={[styles.sheetCancelBtnText, { color: C.textSecondary }]}>{t('common.cancel')}</Text>
-                      </Pressable>
-                    </View>
-                  </>
-                )}
-
-              </View>
-            </ScrollView>
-          </Animated.View>
-        </Modal>
-
         {/* ── Connect Accounts: TikTok, Facebook, Instagram, YouTube ──────
             Pulls profile URL + follower/subscriber count straight from the
             platform via OAuth — nothing to type in. ── */}
@@ -1364,6 +1189,8 @@ export default function CreatorSettingsScreen() {
                       onPress={() => {
                         if (p.id === 'youtube') handleConnectYoutube();
                         else if (p.id === 'tiktok') void handleConnectTiktok();
+                        else if (p.id === 'facebook') handleConnectFacebook();
+                        else if (p.id === 'instagram') handleConnectInstagram();
                       }}>
                       {isConnecting
                         ? <ActivityIndicator size="small" color="#fff" />
@@ -1380,62 +1207,39 @@ export default function CreatorSettingsScreen() {
           })}
         </Card>
 
-        {/* ── Other platforms: still manual entry (Twitter/X, LinkedIn, Pinterest, Snapchat, Twitch) ── */}
-        <SectionHeader title={t('creatorSettings.otherPlatformsHeading')} />
-
-        {/* Empty state */}
-        {manualAccounts.length === 0 && (
-          <View style={[styles.socialEmptyState, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <FontAwesome5 name="share-alt" size={32} color={C.textSecondary} style={{ marginBottom: 4 }} />
-            <Text style={[styles.socialEmptyTitle, { color: C.text }]}>{t('creatorSettings.noOtherAccountsLinked')}</Text>
-            <Text style={[styles.socialEmptySubtitle, { color: C.textSecondary }]}>
-              {t('creatorSettings.noOtherAccountsSub')}
+        {/* Facebook Page / linked-Instagram picker — only shown when the creator
+            manages more than one qualifying Page (auto-selected otherwise). */}
+        <Modal visible={!!pagePicker} transparent animationType="fade" onRequestClose={() => setPagePicker(null)}>
+          <Pressable style={styles.sheetBackdrop} onPress={() => setPagePicker(null)} />
+          <View style={[styles.pagePickerSheet, { backgroundColor: C.surface }]}>
+            <Text style={[styles.pagePickerTitle, { color: C.text }]}>
+              {pagePicker?.mode === 'instagram' ? t('creatorSettings.pickInstagramPage') : t('creatorSettings.pickFacebookPage')}
             </Text>
+            <ScrollView style={{ maxHeight: 360 }}>
+              {pagePicker?.pages.map((p) => (
+                <Pressable
+                  key={p.id}
+                  style={[styles.pagePickerRow, { borderBottomColor: C.border }]}
+                  disabled={connectingPlatform !== null}
+                  onPress={() => {
+                    if (!pagePicker) return;
+                    if (pagePicker.mode === 'facebook') void finishFacebookConnect(pagePicker.accessToken, p.id);
+                    else void finishInstagramConnect(pagePicker.accessToken, p.id);
+                  }}>
+                  <Text style={[styles.pagePickerRowTitle, { color: C.text }]}>
+                    {pagePicker?.mode === 'instagram' ? `@${p.instagramUsername ?? p.name}` : p.name}
+                  </Text>
+                  {pagePicker?.mode === 'facebook' && (
+                    <Text style={[styles.pagePickerRowSub, { color: C.textSecondary }]}>{fmt(String(p.fanCount))} {t('creatorSettings.followers')}</Text>
+                  )}
+                </Pressable>
+              ))}
+            </ScrollView>
+            <Pressable style={styles.pagePickerCancel} onPress={() => setPagePicker(null)}>
+              <Text style={[styles.pagePickerCancelText, { color: C.textSecondary }]}>{t('common.cancel')}</Text>
+            </Pressable>
           </View>
-        )}
-
-        {/* Added accounts list */}
-        {manualAccounts.length > 0 && (
-          <Card>
-            {manualAccounts.map((acct, idx) => {
-              const cfg = PLATFORM_CONFIG[acct.platform] ?? { id: acct.platform, iconName: 'link', label: acct.platform, color: '#6366f1', followersLabel: 'Followers' };
-              const isLast = idx === manualAccounts.length - 1;
-              return (
-                <View key={acct.id} style={[styles.row, styles.socialRow, !isLast && { borderBottomWidth: 1, borderBottomColor: C.border }]}>
-                  <View style={[styles.socialIconWrap, { backgroundColor: cfg.color + '18' }]}>
-                    <PlatformIcon iconName={cfg.iconName} size={20} color={cfg.color} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.socialPlatformName, { color: C.text }]}>{cfg.label}</Text>
-                    <View style={styles.socialMetaRow}>
-                      <View style={[styles.socialFollowerBadge, { backgroundColor: cfg.color + '15' }]}>
-                        <Text style={[styles.socialFollowerBadgeText, { color: cfg.color }]}>
-                          {fmt(String(acct.followers))} {cfg.followersLabel.toLowerCase()}
-                        </Text>
-                      </View>
-                    </View>
-                    <Text style={[styles.socialUrl, { color: C.textSecondary }]} numberOfLines={1}>{acct.profileUrl}</Text>
-                  </View>
-                  <View style={styles.socialActions}>
-                    <Pressable style={[styles.socialEditBtn, { backgroundColor: cfg.color + '15' }]} onPress={() => startEditSocialAccount(acct)}>
-                      <Text style={[styles.socialEditBtnText, { color: cfg.color }]}>{t('creatorSettings.editBtn')}</Text>
-                    </Pressable>
-                    <Pressable style={styles.socialDisconnectBtn} onPress={() => deleteSocialAccount(acct)}>
-                      <Ionicons name="close" size={14} color={C.error} />
-                    </Pressable>
-                  </View>
-                </View>
-              );
-            })}
-          </Card>
-        )}
-
-        {/* Add button */}
-        <Pressable
-          style={[styles.addSocialBtn, { borderColor: C.brinjal1, backgroundColor: C.primaryLight }]}
-          onPress={() => openSocialSheet()}>
-          <Text style={[styles.addSocialBtnText, { color: C.brinjal1 }]}>{t('creatorSettings.addSocialBtn')}</Text>
-        </Pressable>
+        </Modal>
 
       </>
     );
@@ -2432,6 +2236,19 @@ const styles = StyleSheet.create({
   connectBtnText: { fontSize: 12, fontWeight: '700', fontFamily: F.bold, color: '#fff' },
   comingSoonBtn:  { borderRadius: 8, paddingHorizontal: 10, height: 32, justifyContent: 'center', alignItems: 'center', borderWidth: 1 },
   comingSoonBtnText: { fontSize: 11, fontWeight: '600', fontFamily: F.semibold },
+
+  // ── Facebook/Instagram Page picker ────────────────────────────────────────────
+  pagePickerSheet: {
+    position: 'absolute', top: '25%', left: 20, right: 20,
+    borderRadius: 16, padding: 16, maxHeight: '55%',
+    shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 20, shadowOffset: { width: 0, height: 4 }, elevation: 20,
+  },
+  pagePickerTitle: { fontSize: 16, fontWeight: '700', fontFamily: F.bold, marginBottom: 8 },
+  pagePickerRow: { paddingVertical: 12, borderBottomWidth: 1 },
+  pagePickerRowTitle: { fontSize: 14, fontWeight: '600', fontFamily: F.semibold },
+  pagePickerRowSub: { fontSize: 12, fontFamily: F.regular, marginTop: 2 },
+  pagePickerCancel: { paddingVertical: 12, alignItems: 'center' },
+  pagePickerCancelText: { fontSize: 14, fontWeight: '600', fontFamily: F.semibold },
 
   // ── Social sheet modal ──────────────────────────────────────────────────────
   sheetBackdrop: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)' },

@@ -16,7 +16,7 @@
         "CFBundleURLTypes": [
           {
             "CFBundleURLSchemes": [
-              "fb27739673972329504"
+              "fb1241262111343589"
             ]
           },
           {
@@ -25,7 +25,7 @@
             ]
           }
         ],
-        "FacebookAppID": "27739673972329504",
+        "FacebookAppID": "1241262111343589",
         "FacebookDisplayName": "kolab"
       }
     },

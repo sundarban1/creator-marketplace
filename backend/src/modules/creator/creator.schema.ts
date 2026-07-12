@@ -45,6 +45,20 @@ export const connectYoutubeAccountSchema = z.object({
   accessToken: z.string().min(1, 'Access token is required'),
 });
 
+export const listFacebookPagesSchema = z.object({
+  accessToken: z.string().min(1, 'Access token is required'),
+});
+
+export const connectFacebookPageSchema = z.object({
+  accessToken: z.string().min(1, 'Access token is required'),
+  pageId:      z.string().min(1, 'Page id is required'),
+});
+
+export const connectInstagramAccountSchema = z.object({
+  accessToken: z.string().min(1, 'Access token is required'),
+  pageId:      z.string().min(1, 'Page id is required'),
+});
+
 const VALID_PAYMENT_METHODS = ['esewa', 'khalti', 'fonepay'] as const;
 
 export const updatePaymentMethodsSchema = z.object({
@@ -67,6 +81,9 @@ export type AddPortfolioLinkInput      = z.infer<typeof addPortfolioLinkSchema>;
 export type UpdateSocialLinksInput     = z.infer<typeof updateSocialLinksSchema>;
 export type AddSocialAccountInput      = z.infer<typeof addSocialAccountSchema>;
 export type UpdateSocialAccountInput   = z.infer<typeof updateSocialAccountSchema>;
-export type ConnectYoutubeAccountInput = z.infer<typeof connectYoutubeAccountSchema>;
+export type ConnectYoutubeAccountInput   = z.infer<typeof connectYoutubeAccountSchema>;
+export type ListFacebookPagesInput       = z.infer<typeof listFacebookPagesSchema>;
+export type ConnectFacebookPageInput     = z.infer<typeof connectFacebookPageSchema>;
+export type ConnectInstagramAccountInput = z.infer<typeof connectInstagramAccountSchema>;
 export type UpdatePaymentMethodsInput  = z.infer<typeof updatePaymentMethodsSchema>;
 export type UpdateCampaignPrefsInput   = z.infer<typeof updateCampaignPrefsSchema>;

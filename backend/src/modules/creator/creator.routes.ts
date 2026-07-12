@@ -12,6 +12,9 @@ import {
   addSocialAccountSchema,
   updateSocialAccountSchema,
   connectYoutubeAccountSchema,
+  listFacebookPagesSchema,
+  connectFacebookPageSchema,
+  connectInstagramAccountSchema,
   updatePaymentMethodsSchema,
   updateCampaignPrefsSchema,
 } from './creator.schema';
@@ -236,6 +239,9 @@ router.put('/social-accounts/:id',         validate(updateSocialAccountSchema), 
 router.delete('/social-accounts/:id',      ctrl.deleteSocialAccount.bind(ctrl));
 router.post('/social-accounts/youtube/connect', validate(connectYoutubeAccountSchema), ctrl.connectYoutubeAccount.bind(ctrl));
 router.get('/social-accounts/tiktok/authorize', ctrl.getTiktokAuthorizeUrl.bind(ctrl));
+router.post('/social-accounts/facebook/pages',   validate(listFacebookPagesSchema),       ctrl.getFacebookPages.bind(ctrl));
+router.post('/social-accounts/facebook/connect', validate(connectFacebookPageSchema),     ctrl.connectFacebookPage.bind(ctrl));
+router.post('/social-accounts/instagram/connect', validate(connectInstagramAccountSchema), ctrl.connectInstagramAccount.bind(ctrl));
 
 router.get('/earnings',                    ctrl.getEarnings.bind(ctrl));
 router.get('/analytics',                   ctrl.getMyAnalytics.bind(ctrl));

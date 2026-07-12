@@ -32,6 +32,10 @@ export function useGoogleAccessToken(scopes: string[]) {
     androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ?? 'unset',
     redirectUri:     iosRedirectUri,
     scopes,
+    // Without this, Google silently reuses whichever account is already signed into the
+    // device/browser session — a creator who disconnected and wants to link a different
+    // Google account would never see the account chooser at all.
+    selectAccount:   true,
   });
 
   useEffect(() => {
@@ -76,7 +80,7 @@ export function useGoogleAccessToken(scopes: string[]) {
     onSuccessRef.current = onSuccess;
     setError('');
     setLoading(true);
-    void promptAsync();
+    void promptAsync({ preferEphemeralSession: true });
   }
 
   return { prompt, loading, error, ready: !!request };

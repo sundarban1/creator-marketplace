@@ -30,6 +30,15 @@ export interface ApiCreatorProfile {
   user: { id: string; email: string; role: string; isEmailVerified: boolean };
 }
 
+export interface FacebookPageOption {
+  id: string;
+  name: string;
+  fanCount: number;
+  picture?: string;
+  hasInstagram: boolean;
+  instagramUsername?: string;
+}
+
 export interface ApiEarningsSummary {
   totalEarned:       number;
   pendingEarnings:   number;
@@ -212,6 +221,21 @@ export const creatorService = {
   async getTiktokAuthorizeUrl(): Promise<string> {
     const res = await request<{ url: string }>('GET', '/api/creator/social-accounts/tiktok/authorize');
     return res.data.url;
+  },
+
+  async getFacebookPages(accessToken: string): Promise<FacebookPageOption[]> {
+    const res = await request<FacebookPageOption[]>('POST', '/api/creator/social-accounts/facebook/pages', { accessToken });
+    return res.data;
+  },
+
+  async connectFacebookPage(accessToken: string, pageId: string): Promise<ApiSocialAccount> {
+    const res = await request<ApiSocialAccount>('POST', '/api/creator/social-accounts/facebook/connect', { accessToken, pageId });
+    return res.data;
+  },
+
+  async connectInstagramAccount(accessToken: string, pageId: string): Promise<ApiSocialAccount> {
+    const res = await request<ApiSocialAccount>('POST', '/api/creator/social-accounts/instagram/connect', { accessToken, pageId });
+    return res.data;
   },
 
   // ── Business: save/unsave creators ─────────────────────────────────────────

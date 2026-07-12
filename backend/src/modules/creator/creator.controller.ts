@@ -190,6 +190,33 @@ export class CreatorController {
     }
   }
 
+  async getFacebookPages(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const pages = await creatorService.listFacebookPages(req.body.accessToken);
+      success(res, pages, 'Facebook Pages retrieved');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async connectFacebookPage(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const account = await creatorService.connectFacebookPage(req.user!.id, req.body.accessToken, req.body.pageId);
+      success(res, account, 'Facebook Page connected', 201);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async connectInstagramAccount(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const account = await creatorService.connectInstagramAccount(req.user!.id, req.body.accessToken, req.body.pageId);
+      success(res, account, 'Instagram account connected', 201);
+    } catch (err) {
+      next(err);
+    }
+  }
+
   async getEarnings(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const summary = await creatorService.getEarningsSummary(req.user!.id);
