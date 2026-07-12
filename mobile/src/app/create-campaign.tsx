@@ -713,12 +713,12 @@ const st = StyleSheet.create({
 // ─── SectionCard ──────────────────────────────────────────────────────────────
 
 function SectionCard({ title, sub, children, colors }: {
-  title: string; sub?: string; children: React.ReactNode; colors: ReturnType<typeof useAppColors>;
+  title?: string; sub?: string; children: React.ReactNode; colors: ReturnType<typeof useAppColors>;
 }) {
   const C = colors;
   return (
     <View style={[sc.card, { backgroundColor: C.surface }]}>
-      <Text style={[sc.title, { color: C.text }]}>{title}</Text>
+      {title && <Text style={[sc.title, { color: C.text }]}>{title}</Text>}
       {sub && <Text style={[sc.sub, { color: C.textSecondary }]}>{sub}</Text>}
       {children}
     </View>
@@ -1403,15 +1403,18 @@ export default function CreateCampaignScreen() {
                   </SectionCard>
 
                   {/* Editable description */}
-                  <SectionCard title={t('createEvent.secDescPaid')} colors={C}>
-                    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                      style={[s.suggestBtn, { borderColor: C.brinjal1, opacity: descSuggestLoading ? 0.6 : 1 }]}
-                      onPress={handleSuggestDescription}
-                      disabled={descSuggestLoading}>
-                      {descSuggestLoading
-                        ? <ActivityIndicator size="small" color={C.brinjal1} />
-                        : <Text style={[s.suggestBtnText, { color: C.brinjal1 }]}>{t('createEvent.suggestDescriptionBtn')}</Text>}
-                    </Pressable>
+                  <SectionCard colors={C}>
+                    <View style={s.descHeaderRow}>
+                      <Text style={[sc.title, s.descHeaderText, { color: C.text }]}>{t('createEvent.secDescPaid')}</Text>
+                      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                        style={[s.suggestBtn, { borderColor: C.brinjal1, opacity: descSuggestLoading ? 0.6 : 1 }]}
+                        onPress={handleSuggestDescription}
+                        disabled={descSuggestLoading}>
+                        {descSuggestLoading
+                          ? <ActivityIndicator size="small" color={C.brinjal1} />
+                          : <Text style={[s.suggestBtnText, { color: C.brinjal1 }]}>{t('createEvent.suggestDescriptionBtn')}</Text>}
+                      </Pressable>
+                    </View>
                     <TextInput
                       style={[s.textarea, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
                       value={form.description}
@@ -1709,15 +1712,21 @@ export default function CreateCampaignScreen() {
                   </SectionCard>
 
                   {/* Description */}
-                  <SectionCard title={t('createEvent.secDescOpen')} sub={t('createEvent.secDescOpenSub')} colors={C}>
-                    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                      style={[s.suggestBtn, { borderColor: C.brinjal1, opacity: descSuggestLoading ? 0.6 : 1 }]}
-                      onPress={handleSuggestDescription}
-                      disabled={descSuggestLoading}>
-                      {descSuggestLoading
-                        ? <ActivityIndicator size="small" color={C.brinjal1} />
-                        : <Text style={[s.suggestBtnText, { color: C.brinjal1 }]}>{t('createEvent.suggestDescriptionBtn')}</Text>}
-                    </Pressable>
+                  <SectionCard colors={C}>
+                    <View style={s.descHeaderRow}>
+                      <View style={s.descHeaderText}>
+                        <Text style={[sc.title, { color: C.text }]}>{t('createEvent.secDescOpen')}</Text>
+                        <Text style={[sc.sub, { color: C.textSecondary }]}>{t('createEvent.secDescOpenSub')}</Text>
+                      </View>
+                      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                        style={[s.suggestBtn, { borderColor: C.brinjal1, opacity: descSuggestLoading ? 0.6 : 1 }]}
+                        onPress={handleSuggestDescription}
+                        disabled={descSuggestLoading}>
+                        {descSuggestLoading
+                          ? <ActivityIndicator size="small" color={C.brinjal1} />
+                          : <Text style={[s.suggestBtnText, { color: C.brinjal1 }]}>{t('createEvent.suggestDescriptionBtn')}</Text>}
+                      </Pressable>
+                    </View>
                     <TextInput
                       style={[s.textarea, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
                       value={form.description}
@@ -1913,7 +1922,9 @@ const s = StyleSheet.create({
   textarea:  { borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, minHeight: 120, textAlignVertical: 'top', fontFamily: F.regular },
   errorText: { fontSize: 12, color: ERROR_RED, fontFamily: F.regular },
 
-  suggestBtn:     { alignSelf: 'flex-end', borderRadius: 20, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 7, minHeight: 30, alignItems: 'center', justifyContent: 'center' },
+  descHeaderRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+  descHeaderText: { flex: 1 },
+  suggestBtn:     { borderRadius: 20, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 7, minHeight: 30, alignItems: 'center', justifyContent: 'center' },
   suggestBtnText: { fontSize: 12, fontWeight: '700', fontFamily: F.bold },
 
   generateBtn:     { borderRadius: 14, height: 52, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 8 },

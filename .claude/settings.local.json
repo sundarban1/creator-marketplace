@@ -417,7 +417,10 @@
       "Bash(openssl base64 *)",
       "Bash(grep -n \"Facebook Page / linked-Instagram picker\\\\|^  }$\" \"src/app/\\(creator\\)/settings.tsx\")",
       "Bash(curl -s http://localhost:3000/api/platforms)",
-      "Bash(npx vite *)"
+      "Bash(npx vite *)",
+      "Bash(node regen.js)",
+      "Bash(node ./scripts/strip-push-entitlement.js)",
+      "Bash(node ./scripts/fix-ios-podfile.js)"
     ],
     "additionalDirectories": [
       "/private/tmp",

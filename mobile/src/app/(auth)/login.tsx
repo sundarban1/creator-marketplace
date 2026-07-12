@@ -852,7 +852,7 @@ const s = StyleSheet.create({
   bgIcon:      { position: 'absolute', opacity: 0.14 },
 
   logoBadgeCard: { backgroundColor: '#fff', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8 },
-  logoImage: { width: 108, height: 108 / (520 / 210) },
+  logoImage: { width: 108, height: 108 / (1740 / 620) },
   langRow:  { flexDirection: 'row', gap: 6, position: 'absolute', right: 24 },
   langBtn:  { width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(255,255,255,0.12)', justifyContent: 'center', alignItems: 'center' },
   langBtnActive: { backgroundColor: 'rgba(255,255,255,0.28)', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.5)' },

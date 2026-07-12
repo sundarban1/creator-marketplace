@@ -1,49 +1,44 @@
-<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Kolab 3D app icon">
+<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <!-- Sphere-style gradients: light source top-left -->
-    <radialGradient id="creatorSphere" cx="0.35" cy="0.25" r="1">
-      <stop offset="0" stop-color="#D9741F"/>
-      <stop offset="0.45" stop-color="#B84A0E"/>
-      <stop offset="1" stop-color="#7A2D08"/>
-    </radialGradient>
-    <radialGradient id="brandSphere" cx="0.35" cy="0.25" r="1">
-      <stop offset="0" stop-color="#4553C4"/>
-      <stop offset="0.45" stop-color="#2733A3"/>
-      <stop offset="1" stop-color="#101460"/>
-    </radialGradient>
-    <radialGradient id="blendSphere" cx="0.4" cy="0.2" r="1">
-      <stop offset="0" stop-color="#8547CC"/>
-      <stop offset="0.5" stop-color="#6128AC"/>
-      <stop offset="1" stop-color="#38127C"/>
-    </radialGradient>
-    <filter id="softShadow" x="-40%" y="-40%" width="180%" height="180%">
-      <feDropShadow dx="0" dy="9" stdDeviation="9" flood-color="#000000" flood-opacity="0.38"/>
+    <linearGradient id="purple" x1="0" y1="290" x2="0" y2="760" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7B5CF5"/>
+      <stop offset="1" stop-color="#5B2ED6"/>
+    </linearGradient>
+    <linearGradient id="purpleDark" x1="0" y1="330" x2="0" y2="800" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#4A2BA8"/>
+      <stop offset="1" stop-color="#3A1E86"/>
+    </linearGradient>
+    <linearGradient id="orange" x1="600" y1="205" x2="600" y2="810" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F9A24B"/>
+      <stop offset="1" stop-color="#EF7220"/>
+    </linearGradient>
+    <filter id="softGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="38"/>
     </filter>
-    <clipPath id="cHead3d"><circle cx="82" cy="62" r="34"/></clipPath>
-    <clipPath id="bHead3d"><rect x="124" y="28" width="68" height="68" rx="21"/></clipPath>
-    <clipPath id="cBody3d"><path d="M22 190 C22 140 49 112 82 112 C115 112 142 140 142 190 Z"/></clipPath>
-    <clipPath id="bBody3d"><path d="M98 190 C98 140 125 112 158 112 C191 112 218 140 218 190 Z"/></clipPath>
   </defs>
 
-  <!-- Background squircle with depth -->
-  <rect x="1.5" y="1.5" width="509" height="509" rx="114" fill="#FFFFFF" stroke="#E9E5F3" stroke-width="3"/>
-
-  <g transform="translate(3.8,27.1) scale(2.1)">
-    <!-- Creator figure -->
-    <circle cx="82" cy="62" r="34" fill="url(#creatorSphere)" filter="url(#softShadow)"/>
-    <path d="M22 190 C22 140 49 112 82 112 C115 112 142 140 142 190 Z" fill="url(#creatorSphere)" filter="url(#softShadow)"/>
-
-    <!-- Brand figure -->
-    <rect x="124" y="28" width="68" height="68" rx="21" fill="url(#brandSphere)" filter="url(#softShadow)"/>
-    <path d="M98 190 C98 140 125 112 158 112 C191 112 218 140 218 190 Z" fill="url(#brandSphere)" filter="url(#softShadow)"/>
-
-    <!-- Overlap: violet blend with its own depth -->
-    <g clip-path="url(#bBody3d)">
-      <path d="M22 190 C22 140 49 112 82 112 C115 112 142 140 142 190 Z" fill="url(#blendSphere)"/>
-    </g>
-
-    <!-- Spark: glow + gloss + lift -->
-    <circle cx="120" cy="104.8" r="14" fill="#4A0E5C" stroke="#9B7BDF" stroke-width="2.5" filter="url(#softShadow)"/>
-    <path d="M115.9 98.7 L127.6 104.8 L115.9 110.9 Z" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="2.3" stroke-linejoin="round"/>
+  <!-- soft ambient glow -->
+  <g filter="url(#softGlow)" opacity="0.16">
+    <circle cx="600" cy="530" r="255" fill="none" stroke="#8F7BD8" stroke-width="130"/>
+    <path d="M130 360 L500 545 L500 585 L130 780 Z" fill="#8F7BD8"/>
   </g>
+
+  <!-- 3D under-layer of triangle -->
+  <path fill="url(#purpleDark)"
+        d="M118 372 Q118 322 162 336 L498 522 Q530 540 530 562 Q530 584 498 602 L162 788 Q118 802 118 752 Z"/>
+
+  <!-- orange ring (full) -->
+  <circle cx="600" cy="505" r="242" fill="none" stroke="url(#orange)" stroke-width="108"/>
+
+  <!-- play triangle -->
+  <path fill="url(#purple)"
+        d="M118 340 Q118 290 162 304 L498 490 Q530 508 530 530 Q530 552 498 570 L162 756 Q118 770 118 720 Z"/>
+
+  <!-- ring segment drawn over the triangle (interlock effect) -->
+  <path fill="none" stroke="url(#orange)" stroke-width="108"
+        d="M 578.9 746.1 A 242 242 0 0 1 358.1 496.6"/>
+
+  <!-- glossy highlight along the top -->
+  <path fill="none" stroke="#FBDDBA" stroke-width="34" stroke-linecap="round" opacity="0.9"
+        d="M 415 330 A 258 258 0 0 1 762 290"/>
 </svg>
