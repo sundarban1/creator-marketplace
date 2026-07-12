@@ -19,6 +19,7 @@ import { useCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { usePlatforms, getPlatformMeta } from '@/hooks/usePlatforms';
 import { EmptyState } from '@/components/EmptyState';
 import { TabSlider } from '@/components/TabSlider';
+import { RangeDropdown } from '@/components/RangeDropdown';
 import { campaignService } from '@/services/campaign';
 import { creatorService } from '@/services/creator';
 import { getSocket } from '@/lib/socket';
@@ -30,6 +31,8 @@ import type { Campaign } from '@/types';
 const RADIUS_PRESETS = [5, 10, 25, 50, 100];
 
 const SLIDER_MAX = 100000;
+
+type SortOption = 'date-latest' | 'date-oldest' | 'price-low' | 'price-high';
 
 export default function HomeScreen() {
   const { user } = useAuth();
@@ -49,6 +52,7 @@ export default function HomeScreen() {
   const [activeSearch, setActiveSearch] = useState('');
   const [activeCategories, setActiveCategories] = useState<string[]>([]);
   const [activeFilterTab, setActiveFilterTab] = useState('all');
+  const [sortBy, setSortBy] = useState<SortOption>('date-latest');
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [missingFields, setMissingFields] = useState<string[]>([]);
   const [pendingActions, setPendingActions] = useState<Array<{ type: 'start_work' | 'upload_work' | 'event_pending'; title: string }>>([]);
@@ -367,13 +371,21 @@ export default function HomeScreen() {
     }
 
     return matchLocation && matchTab;
+  }).sort((a, b) => {
+    switch (sortBy) {
+      case 'date-oldest': return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      case 'price-low':   return a.budgetRaw - b.budgetRaw;
+      case 'price-high':  return b.budgetRaw - a.budgetRaw;
+      case 'date-latest':
+      default:            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    }
   });
 
   const visibleFeatured = featured.slice(0, featuredVisibleCount);
   const visibleList     = filteredList.slice(0, listVisibleCount);
 
   useEffect(() => { setFeaturedVisibleCount(PAGE_SIZE); }, [campaigns]);
-  useEffect(() => { setListVisibleCount(PAGE_SIZE); }, [campaigns, activeFilterTab, locationFilter]);
+  useEffect(() => { setListVisibleCount(PAGE_SIZE); }, [campaigns, activeFilterTab, locationFilter, sortBy]);
 
   function handleFeaturedScroll(e: { nativeEvent: { contentOffset: { x: number }; contentSize: { width: number }; layoutMeasurement: { width: number } } }) {
     const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
@@ -759,7 +771,7 @@ export default function HomeScreen() {
               />
             </View>
 
-            {/* ── Campaign list header with count ── */}
+            {/* ── Campaign list header with count + sort ── */}
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { color: C.text }]}>
                 {activeFilterTab === 'all' ? 'All Events' :
@@ -767,6 +779,16 @@ export default function HomeScreen() {
                  activeFilterTab === 'trending' ? 'Trending' : 'Ending Soon'}
                 {filteredList.length > 0 ? `  ·  ${filteredList.length}` : ''}
               </Text>
+              <RangeDropdown
+                value={sortBy}
+                options={[
+                  { value: 'date-latest', label: t('creator.home.sortDateLatest') },
+                  { value: 'date-oldest', label: t('creator.home.sortDateOldest') },
+                  { value: 'price-low',   label: t('creator.home.sortPriceLow') },
+                  { value: 'price-high',  label: t('creator.home.sortPriceHigh') },
+                ]}
+                onChange={setSortBy}
+              />
             </View>
           </>
         )}

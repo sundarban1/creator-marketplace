@@ -73,6 +73,12 @@
       ],
       "expo-secure-store",
       [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Allow kolab to use Face ID to quickly and securely unlock the app."
+        }
+      ],
+      [
         "expo-notifications",
         {
           "color": "#6d28d9"

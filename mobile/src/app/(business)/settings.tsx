@@ -31,6 +31,14 @@ import { request } from '@/lib/api';
 import { pickAndUpload } from '@/utilities/uploadImage';
 import { useCategories } from '@/hooks/useCategories';
 import { usePlatforms } from '@/hooks/usePlatforms';
+import {
+  authenticate as authenticateBiometric,
+  getBiometricLabel,
+  isBiometricAvailable,
+  isBiometricLoginEnabled,
+  setBiometricLoginEnabled,
+  type BiometricLabel,
+} from '@/services/biometric';
 
 type ColorsType = typeof COLORS;
 const ColorCtx = createContext<ColorsType>(COLORS);
@@ -199,6 +207,36 @@ export default function BusinessSettingsScreen() {
   const [showNewPw, setShowNewPw] = useState(false);
   const [showConfirmPw, setShowConfirmPw] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
+
+  // Biometric login toggle
+  const [biometricSupported, setBiometricSupported] = useState(false);
+  const [biometricLabel, setBiometricLabelState] = useState<BiometricLabel>('Biometrics');
+  const [biometricEnabled, setBiometricEnabledState] = useState(false);
+
+  useEffect(() => {
+    isBiometricAvailable().then(setBiometricSupported);
+    getBiometricLabel().then(setBiometricLabelState);
+    setBiometricEnabledState(isBiometricLoginEnabled());
+  }, []);
+
+  async function handleToggleBiometric() {
+    if (biometricEnabled) {
+      await setBiometricLoginEnabled(false);
+      setBiometricEnabledState(false);
+      return;
+    }
+    if (!biometricSupported) {
+      toast.error(t('businessSettings.biometricNotAvailable'));
+      return;
+    }
+    const ok = await authenticateBiometric(`Enable ${biometricLabel} login`);
+    if (!ok) {
+      toast.error(t('businessSettings.biometricEnableFailed'));
+      return;
+    }
+    await setBiometricLoginEnabled(true);
+    setBiometricEnabledState(true);
+  }
 
   // ── Phone verification ──
   type PhoneVerifyStage = 'idle' | 'enter-phone' | 'enter-otp' | 'verified';
@@ -1176,6 +1214,17 @@ export default function BusinessSettingsScreen() {
               </Pressable>
               <Text style={[styles.rowSub, { color: C.textSecondary }]}>{t('businessSettings.passwordHint')}</Text>
             </View>
+          )}
+
+          {biometricSupported && (
+            <SwitchRow
+              faIcon={biometricLabel === 'Face ID' ? 'smile' : 'fingerprint'}
+              faIconColor="#0D9488"
+              label={t('businessSettings.biometricLoginLabel', { biometricLabel })}
+              sub={t('businessSettings.biometricLoginSub', { biometricLabel })}
+              value={biometricEnabled}
+              onChange={handleToggleBiometric}
+            />
           )}
 
           <View style={styles.row}>

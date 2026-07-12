@@ -40,9 +40,10 @@ export const F = {
   extrabold: 'Poppins-ExtraBold',
 };
 
-export const USER_KEY          = 'ch_user';
-export const ACCESS_TOKEN_KEY  = 'ch_access_token';
-export const REFRESH_TOKEN_KEY = 'ch_refresh_token';
+export const USER_KEY               = 'ch_user';
+export const ACCESS_TOKEN_KEY       = 'ch_access_token';
+export const REFRESH_TOKEN_KEY      = 'ch_refresh_token';
+export const BIOMETRIC_ENABLED_KEY  = 'ch_biometric_enabled';
 
 // User roles — use these instead of the bare 'CREATOR'/'BUSINESS' string literals
 export const ROLE = {

@@ -5,6 +5,7 @@ import type { User } from '@/types';
 import { USER_KEY } from '@/utilities/constants';
 import { storage } from '@/utilities/storage';
 import { warmDeviceId } from '@/utilities/deviceId';
+import { isBiometricLoginEnabled } from '@/services/biometric';
 
 type AuthContextValue = {
   user: User | null;
@@ -21,9 +22,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Stable ref so the session-expired handler always calls the current logout
-  // without needing to re-register every render.
-  const logoutRef = useRef<(() => Promise<void>) | undefined>(undefined);
+  // Stable ref so the session-expired handler always calls the current
+  // force-logout without needing to re-register every render.
+  const forceLogoutRef = useRef<(() => Promise<void>) | undefined>(undefined);
 
   useEffect(() => {
     void warmDeviceId();
@@ -34,7 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     // Register once — the ref keeps the reference live
-    setSessionExpiredHandler(() => { logoutRef.current?.(); });
+    setSessionExpiredHandler(() => { forceLogoutRef.current?.(); });
 
     return () => { setSessionExpiredHandler(() => { /* unmounted */ }); };
   }, []);
@@ -45,7 +46,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(u);
   }
 
-  async function logout() {
+  // Always a full server + local clear — used when the refresh token itself is
+  // genuinely invalid/expired (the session-expired handler below), where there
+  // is nothing valid left to preserve for a biometric resume.
+  async function forceLogout() {
     try {
       await authService.logout();
     } catch {
@@ -55,8 +59,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  // Keep the ref in sync with the latest logout closure
-  logoutRef.current = logout;
+  // Explicit, user-initiated logout (Settings → Logout, or "Use password
+  // instead" on the biometric lock screen). If biometric login is enabled,
+  // this "locks" instead of fully signing out — the session stays valid on
+  // the server and in storage so Face ID/Fingerprint can silently resume it
+  // later, the same way Instagram/banking apps treat Logout as a lock when
+  // biometric is on. Skips the server logout call entirely in that case,
+  // since the backend nulls out the refresh token on logout — calling it
+  // would invalidate the very session being kept around to resume.
+  async function logout() {
+    if (isBiometricLoginEnabled()) {
+      setUser(null);
+      return;
+    }
+    await forceLogout();
+  }
+
+  // Keep the ref in sync with the latest force-logout closure
+  forceLogoutRef.current = forceLogout;
 
   function updateUser(patch: Partial<User>) {
     setUser((prev) => {

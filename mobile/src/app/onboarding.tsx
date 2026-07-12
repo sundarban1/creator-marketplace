@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
-import { Animated, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Animated, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
@@ -76,6 +76,21 @@ export default function OnboardingScreen() {
   const [step1Submitted, setStep1Submitted] = useState(false);
   const [step1Loading,   setStep1Loading]   = useState(false);
   const [step1Error,     setStep1Error]     = useState('');
+  const step1ScrollRef = useRef<ScrollView>(null);
+  const locationFocusedRef = useRef(false);
+
+  // Location sits at the bottom of the step-1 form, right above the submit
+  // button — Android's adjustResize shrinks the window when the keyboard
+  // opens but never auto-scrolls a mid-form field into the new viewport, so
+  // without this the field ends up hidden behind the keyboard. keyboardDidShow
+  // (rather than the input's onFocus) fires after that resize has actually
+  // happened, so scrollToEnd lands correctly against the shrunk viewport.
+  useEffect(() => {
+    const sub = Keyboard.addListener('keyboardDidShow', () => {
+      if (locationFocusedRef.current) step1ScrollRef.current?.scrollToEnd({ animated: true });
+    });
+    return () => sub.remove();
+  }, []);
 
   // Step 2 — categories
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -240,7 +255,7 @@ export default function OnboardingScreen() {
 
         {/* ────────── Step 1: Profile basics ────────── */}
         {step === 1 && (
-          <ScrollView style={styles.flex} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
+          <ScrollView ref={step1ScrollRef} style={styles.flex} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
 
             {step1Error ? (
               <View style={[styles.errorBanner, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}>
@@ -257,6 +272,7 @@ export default function OnboardingScreen() {
                   style={[styles.formInput, { backgroundColor: C.surface, borderColor: fullNameError ? C.error : C.border, color: C.text }]}
                   value={fullName}
                   onChangeText={handleFullNameChange}
+                  onFocus={() => { locationFocusedRef.current = false; }}
                   placeholder={t('onboarding.fullNamePlaceholder')}
                   placeholderTextColor={C.textSecondary}
                   autoCapitalize="words"
@@ -276,6 +292,7 @@ export default function OnboardingScreen() {
                       setStep1Error('');
                       setUsername(v.replace(/[^a-zA-Z0-9_]/g, '').slice(0, 20));
                     }}
+                    onFocus={() => { locationFocusedRef.current = false; }}
                     placeholder={t('onboarding.usernamePlaceholder')}
                     placeholderTextColor={C.textSecondary}
                     autoCapitalize="none"
@@ -336,6 +353,7 @@ export default function OnboardingScreen() {
                   types="geocode"
                   autoCapitalize="words"
                   error={locationError}
+                  onFocus={() => { locationFocusedRef.current = true; }}
                 />
               </View>
 

@@ -26,6 +26,7 @@ type Props = {
   style?: StyleProp<ViewStyle>;
   /** Fires alongside onChangeText when a suggestion is tapped, for callers that need the place_id (e.g. to resolve lat/lng). */
   onSelectPlace?: (place: PlacePrediction) => void;
+  onFocus?: () => void;
 };
 
 /**
@@ -35,7 +36,7 @@ type Props = {
  * the place_id to resolve lat/lng itself (e.g. geocoding a campaign's location).
  */
 export function PlacesAutocompleteInput({
-  value, onChangeText, placeholder, error, types, autoCapitalize, autoCorrect = true, style, onSelectPlace,
+  value, onChangeText, placeholder, error, types, autoCapitalize, autoCorrect = true, style, onSelectPlace, onFocus,
 }: Props) {
   const C = useAppColors();
   const [suggestions, setSuggestions] = useState<PlacePrediction[]>([]);
@@ -111,6 +112,7 @@ export function PlacesAutocompleteInput({
       <TextInput
         value={value}
         onChangeText={handleChange}
+        onFocus={onFocus}
         onBlur={handleBlur}
         placeholder={placeholder}
         placeholderTextColor={C.textSecondary}

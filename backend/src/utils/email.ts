@@ -40,8 +40,23 @@ function createTransporter() {
 }
 
 async function sendEmail(to: string, subject: string, html: string): Promise<void> {
-  // Resend uses HTTPS, not raw SMTP — Render's free tier blocks outbound SMTP
-  // ports (25/465/587), so this is the path production actually uses.
+  // Gmail SMTP first — it can send to any recipient with no sandbox restriction.
+  // Resend is the fallback: it's HTTPS-based (works even if outbound SMTP ports are
+  // blocked wherever this is hosted), but on the free tier it can only deliver to
+  // the account owner's own inbox until a domain is verified at resend.com/domains,
+  // so it's a safety net for when SMTP is unreachable/misconfigured, not the primary
+  // path.
+  const transporter = createTransporter();
+  if (transporter) {
+    try {
+      await transporter.sendMail({ from: FROM, to, subject, html });
+      logger.info({ to, subject }, 'Email sent (SMTP)');
+      return;
+    } catch (err) {
+      logger.warn({ to, subject, err }, 'SMTP send failed, falling back to Resend');
+    }
+  }
+
   if (env.RESEND_API_KEY) {
     const resend = new Resend(env.RESEND_API_KEY);
     const { error } = await resend.emails.send({ from: RESEND_FROM, to, subject, html });
@@ -50,15 +65,7 @@ async function sendEmail(to: string, subject: string, html: string): Promise<voi
     return;
   }
 
-  const transporter = createTransporter();
-
-  if (!transporter) {
-    logger.debug({ to, subject }, 'Email not sent (no SMTP configured)');
-    return;
-  }
-
-  await transporter.sendMail({ from: FROM, to, subject, html });
-  logger.info({ to, subject }, 'Email sent (SMTP)');
+  logger.debug({ to, subject }, 'Email not sent (no email provider configured)');
 }
 
 // ── Templates ─────────────────────────────────────────────────────────────────

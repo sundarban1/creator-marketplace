@@ -33,6 +33,14 @@ import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/components/Toast';
 import { COLORS, F } from '@/utilities/constants';
 import { pickAndUpload } from '@/utilities/uploadImage';
+import {
+  authenticate as authenticateBiometric,
+  getBiometricLabel,
+  isBiometricAvailable,
+  isBiometricLoginEnabled,
+  setBiometricLoginEnabled,
+  type BiometricLabel,
+} from '@/services/biometric';
 
 type ColorsType = typeof COLORS;
 const ColorCtx = createContext<ColorsType>(COLORS);
@@ -306,6 +314,36 @@ export default function CreatorSettingsScreen() {
 
   // Change password — inline collapsible panel (Security section)
   const [showChangePassword, setShowChangePassword] = useState(false);
+
+  // Biometric login toggle (Security section)
+  const [biometricSupported, setBiometricSupported] = useState(false);
+  const [biometricLabel, setBiometricLabelState] = useState<BiometricLabel>('Biometrics');
+  const [biometricEnabled, setBiometricEnabledState] = useState(false);
+
+  useEffect(() => {
+    isBiometricAvailable().then(setBiometricSupported);
+    getBiometricLabel().then(setBiometricLabelState);
+    setBiometricEnabledState(isBiometricLoginEnabled());
+  }, []);
+
+  async function handleToggleBiometric() {
+    if (biometricEnabled) {
+      await setBiometricLoginEnabled(false);
+      setBiometricEnabledState(false);
+      return;
+    }
+    if (!biometricSupported) {
+      toast.error(t('creatorSettings.biometricNotAvailable'));
+      return;
+    }
+    const ok = await authenticateBiometric(`Enable ${biometricLabel} login`);
+    if (!ok) {
+      toast.error(t('creatorSettings.biometricEnableFailed'));
+      return;
+    }
+    await setBiometricLoginEnabled(true);
+    setBiometricEnabledState(true);
+  }
 
   // Accordion (support / legal sub-pages)
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
@@ -1676,6 +1714,15 @@ export default function CreatorSettingsScreen() {
             </View>
           )}
 
+          {biometricSupported && (
+            <SwitchRow
+              faIcon={biometricLabel === 'Face ID' ? 'smile' : 'fingerprint'}
+              faIconColor="#0D9488"
+              label={t('creatorSettings.biometricLoginLabel', { biometricLabel })}
+              value={biometricEnabled}
+              onChange={handleToggleBiometric}
+            />
+          )}
           <NavRow faIcon="mobile-alt" faIconColor="#6366F1" label={t('creatorSettings.logoutAllDevices')} onPress={handleLogoutAll} isLast />
         </Card>
 

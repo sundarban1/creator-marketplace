@@ -154,19 +154,43 @@ function fireSessionExpired(): void {
 
 // ── Core fetch ─────────────────────────────────────────────────────────────────
 
+// Render's free tier spins the backend down after inactivity — a cold start
+// can take 30-60s (occasionally longer). Without a ceiling here, a fetch made
+// right after the app resumes from background can hang indefinitely, which
+// reads to the user as the app being stuck on the splash/loading screen.
+const REQUEST_TIMEOUT_MS = 30000;
+
+async function fetchWithTimeout(url: string, opts: RequestInit, timeoutMs = REQUEST_TIMEOUT_MS): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...opts, signal: controller.signal });
+  } catch (err) {
+    if (controller.signal.aborted) throw new Error('The server is taking too long to respond. Please try again.');
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// Thrown only when the refresh token itself is genuinely missing/rejected —
+// distinct from a network/timeout failure, which shouldn't log the user out
+// (e.g. a cold Render backend timing out on refresh isn't an expired session).
+class AuthRefreshInvalidError extends Error {}
+
 let pendingRefresh: Promise<string> | null = null;
 
 async function refreshAccessToken(): Promise<string> {
   const rt = storage.get(REFRESH_TOKEN_KEY);
-  if (!rt) throw new Error('No refresh token');
+  if (!rt) throw new AuthRefreshInvalidError('No refresh token');
 
-  const res = await fetch(`${API_BASE}/api/auth/refresh`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/auth/refresh`, {
     method:  'POST',
     headers: { 'Content-Type': 'application/json' },
     body:    JSON.stringify({ refreshToken: rt }),
   });
 
-  if (!res.ok) throw new Error('Refresh failed');
+  if (!res.ok) throw new AuthRefreshInvalidError('Refresh failed');
 
   const json = await res.json() as ApiEnvelope<{ accessToken: string; refreshToken?: string }>;
   const newAccessToken = json.data.accessToken;
@@ -216,11 +240,11 @@ export async function request<T>(
   // ── Retry on 529 / 503 (server temporarily overloaded) ───────────────────
   const RETRYABLE = new Set([503, 529]);
   let attempt = 0;
-  let res = await fetch(url.toString(), fetchOpts());
+  let res = await fetchWithTimeout(url.toString(), fetchOpts());
   while (RETRYABLE.has(res.status) && attempt < 3) {
     await new Promise((r) => setTimeout(r, 500 * 2 ** attempt));
     attempt++;
-    res = await fetch(url.toString(), fetchOpts());
+    res = await fetchWithTimeout(url.toString(), fetchOpts());
   }
 
   // ── Token refresh on 401 ───────────────────────────────────────────────────
@@ -232,11 +256,16 @@ export async function request<T>(
 
     try {
       const newToken = await pendingRefresh;
-      res = await fetch(url.toString(), fetchOpts(newToken));
-    } catch {
-      // Refresh token is expired or invalid — log the user out silently
-      fireSessionExpired();
-      throw new Error('Your session has expired. Please sign in again.');
+      res = await fetchWithTimeout(url.toString(), fetchOpts(newToken));
+    } catch (err) {
+      // Only a genuinely invalid/expired refresh token logs the user out —
+      // a network/timeout failure (e.g. a cold backend) should surface as a
+      // retryable error instead of discarding a still-valid session.
+      if (err instanceof AuthRefreshInvalidError) {
+        fireSessionExpired();
+        throw new Error('Your session has expired. Please sign in again.');
+      }
+      throw err;
     }
   }
 

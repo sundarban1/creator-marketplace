@@ -29,6 +29,13 @@ import { useLanguage } from '@/context/LanguageContext';
 import { authService } from '@/services/auth';
 import type { Lang } from '@/i18n';
 import { COLORS, F } from '@/utilities/constants';
+import {
+  authenticate as authenticateBiometric,
+  getBiometricLabel,
+  isBiometricAvailable,
+  isBiometricLoginEnabled,
+  type BiometricLabel,
+} from '@/services/biometric';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -238,7 +245,7 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
   facebookLoading: boolean;
   facebookError: string;
 }) {
-  const { login } = useAuth();
+  const { login, reloadUser } = useAuth();
   const { t }     = useLanguage();
 
   const [identifierInput, setIdentifierInput] = useState('');
@@ -248,6 +255,35 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
   const [loading,    setLoading]    = useState(false);
   const [apiError,   setApiError]   = useState('');
   const [suspendedModal, setSuspendedModal] = useState(false);
+
+  // Face ID / Fingerprint quick login — only relevant if the user previously
+  // enabled it (which requires a preserved, "locked" session on this device).
+  const [biometricReady,   setBiometricReady]   = useState(false);
+  const [biometricLabel,   setBiometricLabel]   = useState<BiometricLabel>('Biometrics');
+  const [biometricLoading, setBiometricLoading] = useState(false);
+
+  useEffect(() => {
+    if (!isBiometricLoginEnabled()) return;
+    isBiometricAvailable().then((available) => { if (available) setBiometricReady(true); });
+    getBiometricLabel().then(setBiometricLabel);
+  }, []);
+
+  async function handleBiometricLogin() {
+    setApiError('');
+    setBiometricLoading(true);
+    try {
+      const ok = await authenticateBiometric(t('auth.login.biometricLoginBtn', { biometricLabel }));
+      if (ok) {
+        const u = await reloadUser();
+        if (!u) setApiError(t('auth.login.biometricNoSession'));
+        // On success RootNavigator's redirect effect takes it from here.
+      }
+    } catch {
+      setApiError(t('auth.login.biometricFailed'));
+    } finally {
+      setBiometricLoading(false);
+    }
+  }
 
   const trimmedIdentifier = identifierInput.trim();
   const channel = identifierChannel(trimmedIdentifier);
@@ -326,6 +362,23 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
               </>}
         </LinearGradient>
       </Pressable>
+
+      {biometricReady && (
+        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+          style={({ pressed }) => [
+            s.socialBtn, s.socialBtnFull,
+            biometricLoading && { opacity: 0.6 },
+            pressed && !biometricLoading && { transform: [{ scale: 0.98 }], backgroundColor: '#F3F0FC' },
+          ]}
+          onPress={handleBiometricLogin} disabled={biometricLoading}>
+          {biometricLoading
+            ? <View style={s.spinner} />
+            : <FontAwesome5 name={biometricLabel === 'Face ID' ? 'smile' : 'fingerprint'} size={17} color={P2} />}
+          <Text style={s.socialBtnText}>
+            {biometricLoading ? t('auth.login.signingIn') : t('auth.login.biometricLoginBtn', { biometricLabel })}
+          </Text>
+        </Pressable>
+      )}
 
       <View style={s.divider}>
         <View style={[s.dividerLine, { backgroundColor: '#EDE9FE' }]} />

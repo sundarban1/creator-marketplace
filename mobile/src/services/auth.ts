@@ -1,6 +1,6 @@
 import { request, API_BASE }                              from '@/lib/api';
 import { storage }                                        from '@/utilities/storage';
-import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, USER_KEY } from '@/utilities/constants';
+import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, USER_KEY, BIOMETRIC_ENABLED_KEY } from '@/utilities/constants';
 import type { ApiLoginResponse }                          from '@/lib/api';
 import type { User }                                      from '@/types';
 
@@ -106,7 +106,7 @@ export const authService = {
   },
 
   async getStoredUser(): Promise<User | null> {
-    await storage.hydrate([ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, USER_KEY]);
+    await storage.hydrate([ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, USER_KEY, BIOMETRIC_ENABLED_KEY]);
     return storage.getJSON<User>(USER_KEY);
   },
 

@@ -203,7 +203,17 @@
       "Bash(curl -s http://localhost:3000/api/creator/wallet -H 'Authorization: Bearer __TRACKED_VAR__')",
       "Bash(git *)",
       "Bash(npm *)",
-      "Bash(pytest *)"
+      "Bash(pytest *)",
+      "WebSearch",
+      "Bash(git check-ignore *)",
+      "Bash(echo \"exit:$?\")",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(curl -sS -o /dev/null -w \"health: %{http_code}\\\\n\" --max-time 15 https://marketplace-backend-ofge.onrender.com/health)",
+      "Bash(DATABASE_URL=postgresql://marketplace_db_0wp1_user:UUFCQdsGBqFwUDqHFVh2dMGFuMa93CA3@dpg-d99lnnecjfls738efur0-a.oregon-postgres.render.com/marketplace_db_0wp1 npx tsx -e ' *)",
+      "Bash(npm view *)",
+      "Bash(grep -n \"^  creatorSettings:\\\\|^  businessSettings:\\\\|^  [a-zA-Z]*: {$\" /Users/sundarban/Documents/projects/marketplace/mobile/src/i18n/en.ts)"
     ],
     "additionalDirectories": [
       "/Users/sundarban/Documents/projects/marketplace/content",
