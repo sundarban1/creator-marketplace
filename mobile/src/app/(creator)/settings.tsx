@@ -1141,7 +1141,6 @@ export default function CreatorSettingsScreen() {
         {/* ── Connect Accounts: TikTok, Facebook, Instagram, YouTube ──────
             Pulls profile URL + follower/subscriber count straight from the
             platform via OAuth — nothing to type in. ── */}
-        <SectionHeader title={t('creatorSettings.connectAccountsHeading')} />
         <Card>
           {CONNECTABLE_SOCIAL_PLATFORMS.map((p, idx) => {
             const acct = connectedByPlatform.get(p.id);
