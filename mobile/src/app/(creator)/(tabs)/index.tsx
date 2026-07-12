@@ -16,6 +16,7 @@ import { FilterModal } from '@/features/creator/components/FilterModal';
 import type { EventTypeFilter, LocationFilter } from '@/features/creator/components/FilterModal';
 import { displayCategory } from '@/features/creator/data/filterOptions';
 import { useCategories, getCategoryMeta } from '@/hooks/useCategories';
+import { usePlatforms, getPlatformMeta } from '@/hooks/usePlatforms';
 import { EmptyState } from '@/components/EmptyState';
 import { TabSlider } from '@/components/TabSlider';
 import { campaignService } from '@/services/campaign';
@@ -30,30 +31,6 @@ const RADIUS_PRESETS = [5, 10, 25, 50, 100];
 
 const SLIDER_MAX = 100000;
 
-const PLATFORM_ICONS: Record<string, { icon: string; color: string }> = {
-  instagram:     { icon: 'logo-instagram', color: '#E1306C' },
-  tiktok:        { icon: 'musical-notes',  color: '#010101' },
-  youtube:       { icon: 'logo-youtube',   color: '#FF0000' },
-  facebook:      { icon: 'logo-facebook',  color: '#1877F2' },
-  twitter:       { icon: 'logo-twitter',   color: '#1DA1F2' },
-  'twitter / x': { icon: 'logo-twitter',   color: '#1DA1F2' },
-  x:             { icon: 'logo-twitter',   color: '#1DA1F2' },
-  linkedin:      { icon: 'logo-linkedin',  color: '#0A66C2' },
-  pinterest:     { icon: 'logo-pinterest', color: '#E60023' },
-  snapchat:      { icon: 'logo-snapchat',  color: '#F5C300' },
-  whatsapp:      { icon: 'logo-whatsapp',  color: '#25D366' },
-};
-
-function getPlatformMeta(name: string) {
-  return PLATFORM_ICONS[name.toLowerCase()] ?? { icon: 'globe-outline', color: '#6B7280' };
-}
-
-// Always-filterable baseline — /api/campaigns/platforms only returns
-// platforms already used by an ACTIVE campaign, so a platform nobody has
-// picked yet (e.g. Facebook) would otherwise never appear in this filter at
-// all. Merged with the live list rather than replaced by it.
-const DEFAULT_PLATFORMS = ['Instagram', 'TikTok', 'YouTube', 'Facebook'];
-
 export default function HomeScreen() {
   const { user } = useAuth();
   const { openDrawer } = useContext(DrawerContext);
@@ -61,8 +38,8 @@ export default function HomeScreen() {
   const C = useAppColors();
 
   const { categories: adminCategories } = useCategories('CREATOR');
+  const { platforms: adminPlatforms } = usePlatforms();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-  const [apiPlatforms, setApiPlatforms] = useState<string[]>(DEFAULT_PLATFORMS);
   const [activePlatforms, setActivePlatforms] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -225,9 +202,6 @@ export default function HomeScreen() {
 
   useEffect(() => {
     void fetchCampaigns();
-    campaignService.getPlatforms()
-      .then((plats) => { setApiPlatforms(Array.from(new Set([...DEFAULT_PLATFORMS, ...plats]))); })
-      .catch(() => {});
     creatorService.getProfile()
       .then((profile) => {
         const missing: string[] = [];
@@ -649,18 +623,18 @@ export default function HomeScreen() {
         </ScrollView>
 
         {/* ── Platform Filter ── */}
-        {apiPlatforms.length > 0 && (
+        {adminPlatforms.length > 0 && (
           <>
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { color: C.text }]}>{t('creator.home.platforms')}</Text>
             </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.platformsRow}>
-              {apiPlatforms.map((p) => {
-                const meta = getPlatformMeta(p);
-                const isActive = activePlatforms.includes(p);
+              {adminPlatforms.map((p) => {
+                const meta = getPlatformMeta(adminPlatforms, p.name);
+                const isActive = activePlatforms.includes(p.name);
                 return (
                   <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                    key={p}
+                    key={p.id}
                     style={[
                       styles.catPill,
                       {
@@ -669,14 +643,14 @@ export default function HomeScreen() {
                       },
                     ]}
                     onPress={() => {
-                      const next = activePlatforms.includes(p)
-                        ? activePlatforms.filter((x) => x !== p)
-                        : [...activePlatforms, p];
+                      const next = activePlatforms.includes(p.name)
+                        ? activePlatforms.filter((x) => x !== p.name)
+                        : [...activePlatforms, p.name];
                       setActivePlatforms(next);
                       void fetchCampaigns({ platform: next });
                     }}>
-                    <Ionicons name={meta.icon as any} size={14} color={isActive ? '#fff' : meta.color} />
-                    <Text style={[styles.catLabel, { color: isActive ? '#fff' : C.text }]} numberOfLines={1}>{p}</Text>
+                    <FontAwesome5 name={meta.icon} size={13} color={isActive ? '#fff' : meta.color} />
+                    <Text style={[styles.catLabel, { color: isActive ? '#fff' : C.text }]} numberOfLines={1}>{p.name}</Text>
                   </Pressable>
                 );
               })}

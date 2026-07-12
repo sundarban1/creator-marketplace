@@ -30,13 +30,11 @@ import { COLORS, F } from '@/utilities/constants';
 import { request } from '@/lib/api';
 import { pickAndUpload } from '@/utilities/uploadImage';
 import { useCategories } from '@/hooks/useCategories';
+import { usePlatforms } from '@/hooks/usePlatforms';
 
 type ColorsType = typeof COLORS;
 const ColorCtx = createContext<ColorsType>(COLORS);
 
-// ── Data ──────────────────────────────────────────────────────────────────────
-
-const PLATFORMS = ['TikTok', 'Instagram', 'Facebook', 'YouTube'];
 
 const BUDGET_RANGES = ['Under NPR 5,000', 'NPR 5,000–15,000', 'NPR 15,000–50,000', 'NPR 50,000+'];
 
@@ -165,6 +163,7 @@ export default function BusinessSettingsScreen() {
   const { language, setLanguage, t } = useLanguage();
   const { categories: businessCategoryOptions } = useCategories('BUSINESS');
   const { categories: creatorCategoryOptions } = useCategories('CREATOR');
+  const { platforms: platformOptions } = usePlatforms();
 
   const langLabelToCode = (label: string): 'en' | 'ne' => label === 'Nepali' ? 'ne' : 'en';
   const langCodeToLabel = (code: string): string => code === 'ne' ? 'Nepali' : 'English';
@@ -1309,7 +1308,7 @@ export default function BusinessSettingsScreen() {
         <Card>
           <View style={styles.chipSection}>
             <ChipGroup
-              options={PLATFORMS}
+              options={platformOptions.map((p) => p.name)}
               selected={prefPlatforms}
               onToggle={(v) => toggleAndSave(prefPlatforms, setPrefPlatforms, v, (next) => profileService.updateBusinessProfile({ defaultPlatforms: next }))}
             />

@@ -4,7 +4,7 @@ import { Plus, Pencil, Trash2, ToggleLeft, ToggleRight, Search } from 'lucide-re
 import { useCategories } from '../../context/CategoriesContext';
 import { StatusBadge } from '../../components/StatusBadge';
 import { PageHeader } from '../../components/PageHeader';
-import { getIconOption } from './iconOptions';
+import { getIconOption } from '../../lib/iconOptions';
 
 function DeleteModal({ name, onConfirm, onCancel }: { name: string; onConfirm: () => void; onCancel: () => void }) {
   return (

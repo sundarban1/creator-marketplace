@@ -22,6 +22,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { campaignService } from '@/services/campaign';
 import { profileService } from '@/services/profile';
 import { useCategories } from '@/hooks/useCategories';
+import { usePlatforms } from '@/hooks/usePlatforms';
 import { getTemplateImage, DEFAULT_TEMPLATE_IMAGE } from '@/features/creator/data/templateImages';
 import { PlacesAutocompleteInput, type PlacePrediction } from '@/components/PlacesAutocompleteInput';
 import { pickAndUpload } from '@/utilities/uploadImage';
@@ -40,8 +41,6 @@ const CREATOR_TYPES = [
   'Student Creator',
   'Any Creator',
 ];
-
-const PLATFORM_FALLBACK = ['Instagram', 'TikTok', 'YouTube', 'Facebook'];
 
 const AI_PROMPT_EXAMPLES = [
   "I want to promote my cafe's new iced coffee.",
@@ -798,17 +797,10 @@ export default function CreateCampaignScreen() {
   const scrollRef = useRef<ScrollView>(null);
   const { categories: liveCategories } = useCategories('BUSINESS');
   const categoryOptions = liveCategories.map((c) => ({ label: c.name, icon: c.icon, color: c.color }));
-  const [platformOptions, setPlatformOptions] = useState<string[]>(PLATFORM_FALLBACK);
+  const { platforms: livePlatforms } = usePlatforms();
+  const platformOptions = livePlatforms.map((p) => p.name);
 
   useEffect(() => {
-    campaignService.getPlatforms().then((plats) => {
-      // Merge rather than replace — getPlatforms() only returns platforms
-      // already used by an existing campaign, so a platform nobody has
-      // picked yet (e.g. Facebook) would otherwise silently disappear from
-      // the picker and could never be selected for a new campaign either.
-      setPlatformOptions(Array.from(new Set([...PLATFORM_FALLBACK, ...plats])));
-    }).catch(() => { /* keep fallback */ });
-
     profileService.getBusinessProfile().then((profile) => {
       if (profile.location) {
         setForm((prev) => ({ ...prev, location: profile.location!, venue: profile.location! }));

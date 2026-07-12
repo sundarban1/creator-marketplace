@@ -15,6 +15,7 @@ import {
   FaCalendarAlt, FaStar, FaHeart, FaGlobe, FaLightbulb, FaShieldAlt, FaKey, FaLock,
   FaBriefcase, FaBriefcaseMedical, FaUsers, FaUser, FaHandshake,
   FaInstagram, FaTiktok, FaYoutube, FaTwitter, FaFacebook,
+  FaLinkedin, FaPinterest, FaSnapchat, FaTwitch,
   FaWrench, FaHammer, FaChair, FaBullseye, FaBuilding, FaTrophy,
 } from 'react-icons/fa';
 
@@ -127,6 +128,10 @@ export const ICON_OPTIONS: IconOption[] = [
   { slug: 'youtube', label: 'YouTube', Icon: FaYoutube },
   { slug: 'twitter', label: 'Twitter / X', Icon: FaTwitter },
   { slug: 'facebook', label: 'Facebook', Icon: FaFacebook },
+  { slug: 'linkedin', label: 'LinkedIn', Icon: FaLinkedin },
+  { slug: 'pinterest', label: 'Pinterest', Icon: FaPinterest },
+  { slug: 'snapchat', label: 'Snapchat', Icon: FaSnapchat },
+  { slug: 'twitch', label: 'Twitch', Icon: FaTwitch },
   { slug: 'wrench', label: 'Tools / Repair', Icon: FaWrench },
   { slug: 'hammer', label: 'Construction', Icon: FaHammer },
   { slug: 'chair', label: 'Chair', Icon: FaChair },

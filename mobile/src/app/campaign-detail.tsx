@@ -22,6 +22,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { getIconColor } from '@/features/creator/data/filterOptions';
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
+import { usePlatforms } from '@/hooks/usePlatforms';
 import { PlacesAutocompleteInput } from '@/components/PlacesAutocompleteInput';
 import { campaignService } from '@/services/campaign';
 import type { Campaign } from '@/types';
@@ -34,7 +35,6 @@ const ERROR_RED = '#EF4444';
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const DAY_SHORT = ['Su','Mo','Tu','We','Th','Fr','Sa'];
 
-const PLATFORMS     = ['Instagram','TikTok','YouTube','Twitter / X','LinkedIn'] as const;
 const CONTENT_TYPES = ['Reel / Short Video','Story','Static Post','Blog Article','Podcast Mention'];
 const STATUS_OPTIONS: { labelKey: string; value: NonNullable<Campaign['status']> }[] = [
   { labelKey: 'campaignDetail.statusActive', value: 'active' },
@@ -203,6 +203,7 @@ export default function CampaignDetailScreen() {
   const C = useAppColors();
   const isBusiness = user?.role === 'BUSINESS';
   const { categories: allCategories } = useAllCategories();
+  const { platforms: allPlatforms } = usePlatforms();
 
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [hasApplied, setHasApplied]           = useState(false);
@@ -769,7 +770,7 @@ export default function CampaignDetailScreen() {
                   <>
                     {/* ── Paid Campaign fields ── */}
                     <Text style={[em.sectionHdr, { color: C.textSecondary, marginTop: 24 }]}>{t('campaignDetail.editSectionPlatform')}</Text>
-                    <ChipGroup options={PLATFORMS} value={editForm.platform} onChange={(v) => updateEdit('platform', v)} colors={C} error={editErrors.platform} />
+                    <ChipGroup options={allPlatforms.map((p) => p.name)} value={editForm.platform} onChange={(v) => updateEdit('platform', v)} colors={C} error={editErrors.platform} />
 
                     <Text style={[em.sectionHdr, { color: C.textSecondary, marginTop: 24 }]}>{t('campaignDetail.editSectionRequirements')}</Text>
 

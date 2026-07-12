@@ -12,6 +12,7 @@
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
     "db:seed:admin": "tsx prisma/seed-admin.ts",
+    "db:seed:platforms": "tsx prisma/seed-platforms.ts",
     "db:seed:bulk": "tsx prisma/bulk-seed.ts"
   },
   "dependencies": {

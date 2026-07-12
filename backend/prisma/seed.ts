@@ -3,6 +3,7 @@ import { seedUsers } from './seeds/users';
 import { seedCampaigns } from './seeds/campaigns';
 import { seedContent } from './seeds/content';
 import { seedCategories } from './seeds/categories';
+import { seedPlatforms } from './seeds/platforms';
 
 const prisma = new PrismaClient();
 
@@ -11,6 +12,9 @@ async function main() {
 
   console.log('── Categories ───────────────────────────────────────────');
   await seedCategories(prisma);
+
+  console.log('\n── Platforms ────────────────────────────────────────────');
+  await seedPlatforms(prisma);
 
   console.log('\n── Users ────────────────────────────────────────────────');
   const { businesses } = await seedUsers(prisma);

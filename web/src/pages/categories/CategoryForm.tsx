@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Category, CategoryStatus, CategoryScope } from '../../context/CategoriesContext';
-import { ICON_OPTIONS, getIconOption } from './iconOptions';
+import { ICON_OPTIONS, getIconOption } from '../../lib/iconOptions';
 
 const BG_COLORS = [
   { hex: '#f3e8ff', label: 'Purple' },

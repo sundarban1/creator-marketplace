@@ -151,6 +151,18 @@ export interface ApiCategory {
   itemCount?: number;
 }
 
+export interface ApiPlatform {
+  id: string;
+  icon: string;
+  iconBg: string;
+  color: string;
+  name: string;
+  key: string;
+  status: 'ACTIVE' | 'INACTIVE';
+  createdAt: string;
+  campaignCount?: number;
+}
+
 export interface ApiBusiness {
   id:           string;
   userId:       string;
@@ -567,6 +579,21 @@ export const api = {
 
     deleteCategory: (id: string) =>
       request<null>('DELETE', `/api/admin/categories/${id}`),
+
+    platforms: () =>
+      request<ApiPlatform[]>('GET', '/api/admin/platforms'),
+
+    createPlatform: (data: { icon: string; iconBg: string; color: string; name: string; key: string; status: string }) =>
+      request<ApiPlatform>('POST', '/api/admin/platforms', data),
+
+    updatePlatform: (id: string, data: { icon: string; iconBg: string; color: string; name: string; key: string; status: string }) =>
+      request<ApiPlatform>('PUT', `/api/admin/platforms/${id}`, data),
+
+    togglePlatformStatus: (id: string, status: string) =>
+      request<ApiPlatform>('PATCH', `/api/admin/platforms/${id}/status`, { status }),
+
+    deletePlatform: (id: string) =>
+      request<null>('DELETE', `/api/admin/platforms/${id}`),
   },
 
   help: {

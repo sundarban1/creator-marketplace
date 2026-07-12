@@ -29,18 +29,10 @@ import { useFavoriteBusinesses } from '@/hooks/useFavoriteBusinesses';
 import { useToast } from '@/components/Toast';
 import { F } from '@/utilities/constants';
 import { useCategories, getCategoryMeta } from '@/hooks/useCategories';
+import { usePlatforms } from '@/hooks/usePlatforms';
 
 type DisplayBusiness = BusinessListItem & { isFavorited: boolean };
 
-// ─── Constants ────────────────────────────────────────────────────────────────
-
-const PLATFORMS = [
-  { label: 'Instagram', icon: 'instagram' },
-  { label: 'YouTube',   icon: 'youtube' },
-  { label: 'TikTok',    icon: 'tiktok' },
-  { label: 'Facebook',  icon: 'facebook' },
-  { label: 'Twitter',   icon: 'twitter' },
-];
 
 // ─── Filter Modal ─────────────────────────────────────────────────────────────
 
@@ -70,6 +62,7 @@ function ExploreFilterModal({
   const C = useAppColors();
   const { t } = useLanguage();
   const { categories: businessCategories } = useCategories('BUSINESS');
+  const { platforms: allPlatforms } = usePlatforms();
   const keyboardOffset = useKeyboardOffset();
 
   return (
@@ -97,15 +90,15 @@ function ExploreFilterModal({
           {/* Platform */}
           <Text style={[fm.section, { color: C.textSecondary }]}>{t('explore.businesses.filterPlatform')}</Text>
           <View style={fm.chipGrid}>
-            {PLATFORMS.map((p) => {
-              const active = tempPlatform === p.label;
+            {allPlatforms.map((p) => {
+              const active = tempPlatform === p.name;
               return (
                 <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                  key={p.label}
-                  onPress={() => setTempPlatform(active ? '' : p.label)}
+                  key={p.id}
+                  onPress={() => setTempPlatform(active ? '' : p.name)}
                   style={[fm.filterChip, { borderColor: active ? C.brinjal1 : C.border, backgroundColor: active ? C.brinjal1 : C.background }]}>
                   <FontAwesome5 name={p.icon} size={12} color={active ? '#fff' : C.textSecondary} />
-                  <Text style={[fm.filterChipText, { color: active ? '#fff' : C.text }]}>{p.label}</Text>
+                  <Text style={[fm.filterChipText, { color: active ? '#fff' : C.text }]}>{p.name}</Text>
                 </Pressable>
               );
             })}

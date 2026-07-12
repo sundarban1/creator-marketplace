@@ -5,10 +5,14 @@ import { PlatformForm } from './PlatformForm';
 
 export function EditPlatformPage() {
   const { id } = useParams<{ id: string }>();
-  const { getById, updatePlatform } = usePlatforms();
+  const { getById, updatePlatform, loading } = usePlatforms();
   const navigate = useNavigate();
 
   const platform = id ? getById(id) : undefined;
+
+  if (loading) {
+    return <div className="flex items-center justify-center h-64 text-sm text-gray-400">Loading…</div>;
+  }
 
   if (!platform) {
     return (
@@ -30,9 +34,13 @@ export function EditPlatformPage() {
     );
   }
 
-  function handleSubmit(data: Omit<Platform, 'id' | 'createdAt' | 'campaignCount'>) {
-    updatePlatform(platform!.id, data);
-    navigate('/platforms');
+  async function handleSubmit(data: Omit<Platform, 'id' | 'createdAt' | 'campaignCount'>) {
+    try {
+      await updatePlatform(platform!.id, data);
+      navigate('/platforms');
+    } catch (e) {
+      window.alert((e as Error).message ?? 'Failed to update platform.');
+    }
   }
 
   return (

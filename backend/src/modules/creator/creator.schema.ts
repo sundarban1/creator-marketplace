@@ -1,10 +1,5 @@
 import { z } from 'zod';
 
-const VALID_PLATFORMS = [
-  'instagram', 'tiktok', 'youtube', 'facebook',
-  'twitter', 'linkedin', 'pinterest', 'snapchat', 'twitch',
-] as const;
-
 export const updateCreatorProfileSchema = z.object({
   username:    z.string().min(3).max(20).regex(/^[a-zA-Z0-9_]+$/, 'Only letters, numbers, and underscores allowed').optional(),
   fullName:    z.string().min(2).optional(),
@@ -31,7 +26,9 @@ export const updateSocialLinksSchema = z.object({
 });
 
 export const addSocialAccountSchema = z.object({
-  platform:   z.enum(VALID_PLATFORMS, { errorMap: () => ({ message: 'Invalid platform' }) }),
+  // Platform key is validated dynamically against the admin-managed Platform catalog
+  // in CreatorService, not a fixed enum — see connectYoutubeAccount-style comment there.
+  platform:   z.string().min(1, 'Platform is required'),
   profileUrl: z.string().url('Invalid profile URL'),
   followers:  z.number().int('Must be a whole number').min(0, 'Cannot be negative'),
 });
@@ -65,12 +62,12 @@ export const updatePaymentMethodsSchema = z.object({
   methods: z.array(z.enum(VALID_PAYMENT_METHODS)).min(0),
 });
 
-const VALID_PREF_PLATFORMS = ['Instagram', 'TikTok', 'YouTube', 'Facebook'] as const;
 const VALID_LOCATIONS = ['Kathmandu', 'Pokhara', 'Lalitpur', 'Bhaktapur', 'Butwal', 'Biratnagar', 'Remote'] as const;
 
 export const updateCampaignPrefsSchema = z.object({
   categories:   z.array(z.string()).max(5, 'Max 5 categories').optional(),
-  prefPlatforms: z.array(z.enum(VALID_PREF_PLATFORMS)).optional(),
+  // Validated dynamically against the admin-managed Platform catalog in CreatorService.
+  prefPlatforms: z.array(z.string()).optional(),
   prefLocations: z.array(z.enum(VALID_LOCATIONS)).max(3, 'Max 3 locations').optional(),
   prefBudgetMin: z.number().min(0).optional(),
   prefBudgetMax: z.number().min(0).optional(),

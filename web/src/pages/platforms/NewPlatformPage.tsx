@@ -7,9 +7,13 @@ export function NewPlatformPage() {
   const { addPlatform } = usePlatforms();
   const navigate = useNavigate();
 
-  function handleSubmit(data: Omit<Platform, 'id' | 'createdAt' | 'campaignCount'>) {
-    addPlatform(data);
-    navigate('/platforms');
+  async function handleSubmit(data: Omit<Platform, 'id' | 'createdAt' | 'campaignCount'>) {
+    try {
+      await addPlatform(data);
+      navigate('/platforms');
+    } catch (e) {
+      window.alert((e as Error).message ?? 'Failed to create platform.');
+    }
   }
 
   return (

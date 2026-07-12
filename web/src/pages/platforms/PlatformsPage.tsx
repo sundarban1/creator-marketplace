@@ -4,6 +4,7 @@ import { Plus, Pencil, Trash2, ToggleLeft, ToggleRight, Search } from 'lucide-re
 import { usePlatforms } from '../../context/PlatformsContext';
 import { StatusBadge } from '../../components/StatusBadge';
 import { PageHeader } from '../../components/PageHeader';
+import { getIconOption } from '../../lib/iconOptions';
 
 function DeleteModal({ name, onConfirm, onCancel }: { name: string; onConfirm: () => void; onCancel: () => void }) {
   return (
@@ -31,7 +32,7 @@ function DeleteModal({ name, onConfirm, onCancel }: { name: string; onConfirm: (
 }
 
 export function PlatformsPage() {
-  const { platforms, toggleStatus, deletePlatform } = usePlatforms();
+  const { platforms, loading, toggleStatus, deletePlatform } = usePlatforms();
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
@@ -86,21 +87,31 @@ export function PlatformsPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {filtered.length === 0 && (
+            {loading && (
+              <tr>
+                <td colSpan={7} className="px-4 py-12 text-center text-gray-400 text-sm">
+                  Loading…
+                </td>
+              </tr>
+            )}
+            {!loading && filtered.length === 0 && (
               <tr>
                 <td colSpan={7} className="px-4 py-12 text-center text-gray-400 text-sm">
                   No platforms found.
                 </td>
               </tr>
             )}
-            {filtered.map((plt) => (
+            {!loading && filtered.map((plt) => (
               <tr key={plt.id} className="hover:bg-gray-50 transition-colors">
                 <td className="px-4 py-3">
                   <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center text-xl select-none"
+                    className="w-10 h-10 rounded-xl flex items-center justify-center select-none"
                     style={{ backgroundColor: plt.iconBg }}
                   >
-                    {plt.icon}
+                    {(() => {
+                      const opt = getIconOption(plt.icon);
+                      return opt ? <opt.Icon size={16} color={plt.color} /> : null;
+                    })()}
                   </div>
                 </td>
                 <td className="px-4 py-3">

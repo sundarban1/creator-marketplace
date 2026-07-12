@@ -3,6 +3,7 @@ import { CategoryScope } from '@prisma/client';
 import { env } from '../../config/env';
 import { logger } from '../../config/logger';
 import { CategoryRepository } from '../category/category.repository';
+import { PlatformRepository } from '../platform/platform.repository';
 import { aiCampaignDraftSchema, type AiCampaignDraft, type SuggestDescriptionInput } from './campaign-ai.schema';
 import dummyData from './campaign-ai.dummy.json';
 
@@ -38,11 +39,7 @@ function pickDummyDescription(input: SuggestDescriptionInput): string {
 const MODEL = 'claude-haiku-4-5-20251001';
 const REQUEST_TIMEOUT_MS = 20_000;
 
-// Canonical platform list — matches mobile's PLATFORM_FALLBACK; the distinct-platforms-in-use
-// query can be empty on a fresh DB, so this is a stable list to fuzzy-match/fall back against.
-const KNOWN_PLATFORMS = ['Instagram', 'TikTok', 'YouTube', 'Facebook'];
-
-function buildSystemPrompt(categoryNames: string[]): string {
+function buildSystemPrompt(categoryNames: string[], platformNames: string[]): string {
   return `You are a campaign-brief generator for a creator-marketplace app in Nepal, connecting brands with content creators for paid promotional campaigns.
 
 Given a brand's short description of what they want to promote, generate a complete campaign brief as a single JSON object — no prose, no markdown code fences, just the raw JSON object.
@@ -50,7 +47,7 @@ Given a brand's short description of what they want to promote, generate a compl
 Existing categories in the app (prefer one of these for "category" if it fits; otherwise suggest the closest real-world category name):
 ${categoryNames.map((c) => `- ${c}`).join('\n')}
 
-Known platforms: ${KNOWN_PLATFORMS.join(', ')} (prefer one of these for "platform").
+Known platforms: ${platformNames.join(', ')} (prefer one of these for "platform").
 
 Respond with a JSON object with EXACTLY these keys:
 - title: string, a punchy campaign title
@@ -84,6 +81,7 @@ Given a few details about a brand's event/campaign, write a single description o
 
 export class CampaignAiService {
   private categoryRepo = new CategoryRepository();
+  private platformRepo = new PlatformRepository();
 
   async suggestDescription(input: SuggestDescriptionInput): Promise<string> {
     try {
@@ -113,27 +111,31 @@ export class CampaignAiService {
   }
 
   async generateDraft(prompt: string): Promise<AiCampaignDraft & { aiSuggestedCategories: string[]; aiSuggestedPlatforms: string[]; platforms: string[] }> {
-    const realCategories = await this.categoryRepo.findManyPublic(CategoryScope.BUSINESS);
+    const [realCategories, realPlatforms] = await Promise.all([
+      this.categoryRepo.findManyPublic(CategoryScope.BUSINESS),
+      this.platformRepo.findManyPublic(),
+    ]);
     const categoryNames = realCategories.map((c) => c.name);
+    const platformNames = realPlatforms.map((p) => p.name);
 
     let draft: AiCampaignDraft;
     try {
       if (!env.ANTHROPIC_API_KEY) throw new Error('ANTHROPIC_API_KEY not configured');
-      const raw = await this.callClaude(prompt, categoryNames);
+      const raw = await this.callClaude(prompt, categoryNames, platformNames);
       draft = this.parseAndValidate(raw);
     } catch (err) {
       logger.warn({ err: err instanceof Error ? err.message : err }, 'Anthropic unavailable — falling back to dummy campaign draft');
       draft = pickDummyDraft(prompt);
     }
-    return this.matchToRealTaxonomy(draft, categoryNames);
+    return this.matchToRealTaxonomy(draft, categoryNames, platformNames);
   }
 
-  private async callClaude(prompt: string, categoryNames: string[]): Promise<string> {
+  private async callClaude(prompt: string, categoryNames: string[], platformNames: string[]): Promise<string> {
     const client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY, timeout: REQUEST_TIMEOUT_MS });
     const response = await client.messages.create({
       model: MODEL,
       max_tokens: 1500,
-      system: buildSystemPrompt(categoryNames),
+      system: buildSystemPrompt(categoryNames, platformNames),
       messages: [{ role: 'user', content: prompt }],
     });
     const block = response.content[0];
@@ -163,14 +165,15 @@ export class CampaignAiService {
   private matchToRealTaxonomy(
     draft: AiCampaignDraft,
     realCategories: string[],
+    realPlatforms: string[],
   ): AiCampaignDraft & { aiSuggestedCategories: string[]; aiSuggestedPlatforms: string[]; platforms: string[] } {
     const matchedCategory = fuzzyMatch(draft.category, realCategories) ?? realCategories[0] ?? draft.category;
     if (matchedCategory !== draft.category && !realCategories.some((c) => c === draft.category)) {
       logger.warn({ guess: draft.category, matched: matchedCategory }, 'AI category guess did not match real taxonomy, falling back');
     }
 
-    const matchedPlatform = fuzzyMatch(draft.platform, KNOWN_PLATFORMS) ?? 'Instagram';
-    if (matchedPlatform !== draft.platform && !KNOWN_PLATFORMS.some((p) => p === draft.platform)) {
+    const matchedPlatform = fuzzyMatch(draft.platform, realPlatforms) ?? realPlatforms[0] ?? draft.platform;
+    if (matchedPlatform !== draft.platform && !realPlatforms.some((p) => p === draft.platform)) {
       logger.warn({ guess: draft.platform, matched: matchedPlatform }, 'AI platform guess did not match known platforms, falling back');
     }
 

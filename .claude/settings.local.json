@@ -415,7 +415,9 @@
       "Bash(keytool -exportcert -alias androiddebugkey -keystore android/app/debug.keystore -storepass android -keypass android)",
       "Bash(openssl sha1 *)",
       "Bash(openssl base64 *)",
-      "Bash(grep -n \"Facebook Page / linked-Instagram picker\\\\|^  }$\" \"src/app/\\(creator\\)/settings.tsx\")"
+      "Bash(grep -n \"Facebook Page / linked-Instagram picker\\\\|^  }$\" \"src/app/\\(creator\\)/settings.tsx\")",
+      "Bash(curl -s http://localhost:3000/api/platforms)",
+      "Bash(npx vite *)"
     ],
     "additionalDirectories": [
       "/private/tmp",

@@ -10,6 +10,7 @@ import { haversineKm } from '../../utils/geo';
 const CREATOR_FIELDS = ['bio', 'location', 'categories'] as const;
 import { CreatorRepository } from './creator.repository';
 import { BusinessRepository } from '../business/business.repository';
+import { PlatformRepository } from '../platform/platform.repository';
 import { analyticsService } from '../analytics/analytics.service';
 import type {
   UpdateCreatorProfileInput,
@@ -79,10 +80,12 @@ export interface FacebookPageOption {
 export class CreatorService {
   private repo: CreatorRepository;
   private businessRepo: BusinessRepository;
+  private platformRepo: PlatformRepository;
 
   constructor() {
     this.repo = new CreatorRepository();
     this.businessRepo = new BusinessRepository();
+    this.platformRepo = new PlatformRepository();
   }
 
   async listCreators(params: {
@@ -232,6 +235,9 @@ export class CreatorService {
   async addSocialAccount(userId: string, input: AddSocialAccountInput) {
     const profile = await this.repo.findByUserId(userId);
     if (!profile) throw new AppError('Creator profile not found', 404);
+
+    const platforms = await this.platformRepo.findManyPublic();
+    if (!platforms.some((p) => p.key === input.platform)) throw new AppError('Invalid platform', 400);
 
     const existing = await this.repo.findSocialAccountByPlatform(profile.id, input.platform);
     if (existing) throw new AppError(`${input.platform} account is already added`, 409);
@@ -474,6 +480,14 @@ export class CreatorService {
   async updateCampaignPrefs(userId: string, input: UpdateCampaignPrefsInput) {
     const profile = await this.repo.findByUserId(userId);
     if (!profile) throw new AppError('Creator profile not found', 404);
+
+    if (input.prefPlatforms?.length) {
+      const platforms = await this.platformRepo.findManyPublic();
+      const validNames = new Set(platforms.map((p) => p.name));
+      const invalid = input.prefPlatforms.filter((p) => !validNames.has(p));
+      if (invalid.length) throw new AppError(`Invalid platform(s): ${invalid.join(', ')}`, 400);
+    }
+
     return toCreatorProfileDto(await this.repo.updateCampaignPrefs(userId, input));
   }
 

@@ -187,11 +187,6 @@ export const campaignService = {
     };
   },
 
-  async getPlatforms(): Promise<string[]> {
-    const res = await request<string[]>('GET', '/api/campaigns/platforms');
-    return res.data;
-  },
-
   async getById(id: string): Promise<Campaign> {
     const res = await request<ApiCampaign>('GET', `/api/campaigns/${id}`);
     return toCampaign(res.data);
