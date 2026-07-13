@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { useAppColors } from '@/context/ThemeContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { F } from '@/utilities/constants';
 
 export interface StackedBarSegment {
@@ -16,13 +17,14 @@ interface StackedBarProps {
 // dependency-free substitute for a pie/donut chart (see BarChart.tsx).
 export function StackedBar({ segments }: StackedBarProps) {
   const C = useAppColors();
+  const { t } = useLanguage();
   const total = segments.reduce((sum, s) => sum + s.value, 0);
   const visible = segments.filter((s) => s.value > 0);
 
   if (total === 0) {
     return (
       <View style={s.emptyWrap}>
-        <Text style={[s.emptyText, { color: C.textSecondary }]}>No data for this range.</Text>
+        <Text style={[s.emptyText, { color: C.textSecondary }]}>{t('common.noDataForRange')}</Text>
       </View>
     );
   }

@@ -37,7 +37,7 @@ export default function WalletScreen() {
   function loadAll() {
     return Promise.all([walletService.getSummary(), walletService.getTransactions()])
       .then(([s, tx]) => { setSummary(s); setTransactions(tx); })
-      .catch(() => toast.error('Could not load your wallet. Please try again.'));
+      .catch(() => toast.error(t('wallet.loadError')));
   }
 
   useEffect(() => {

@@ -1,6 +1,14 @@
 import { storage }                                from '@/utilities/storage';
 import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY }  from '@/utilities/constants';
 import { getCachedDeviceId } from '@/utilities/deviceId';
+import { network } from './network';
+
+export class OfflineError extends Error {
+  constructor() {
+    super("You're offline. Please check your connection.");
+    this.name = 'OfflineError';
+  }
+}
 
 export const API_BASE = process.env.EXPO_PUBLIC_API_BASE ?? 'http://localhost:3000';
 
@@ -58,6 +66,7 @@ export interface ApiCampaign {
   template?:     string | null;
   featureImageUrl?: string | null;
   category:      string;
+  categoryKey:   string;
   goals:         string[];
   platforms:     string[];
   minFollowers:  number;
@@ -211,6 +220,10 @@ export async function request<T>(
   body?:   unknown,
   params?: Record<string, string | number | undefined>,
 ): Promise<ApiEnvelope<T>> {
+  // Fail fast instead of waiting out the 30s timeout when we already know
+  // there's no connection — NetInfo's cached state is checked synchronously.
+  if (!network.isOnline()) throw new OfflineError();
+
   const url = new URL(`${API_BASE}${path}`);
   if (params) {
     for (const [k, v] of Object.entries(params)) {

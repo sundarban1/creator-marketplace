@@ -197,7 +197,7 @@ export default function BusinessDetailScreen() {
         } as never);
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not send message. Please try again.');
+      toast.error(err instanceof Error ? err.message : t('businessDetail.sendMessageError'));
     } finally {
       setSendingMsg(false);
     }
@@ -269,7 +269,7 @@ export default function BusinessDetailScreen() {
     try {
       await toggle(id);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not update. Please try again.');
+      toast.error(err instanceof Error ? err.message : t('businessDetail.updateError'));
     }
   }
 

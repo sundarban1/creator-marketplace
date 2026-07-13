@@ -143,11 +143,11 @@ export default function BusinessOnboardingScreen() {
   }
 
   const businessNameError = step1Submitted && !businessName.trim() ? t('businessOnboarding.nameRequired') : undefined;
-  const locationError     = step1Submitted && !location.trim() ? 'Location is required' : undefined;
+  const locationError     = step1Submitted && !location.trim() ? t('businessOnboarding.locationRequired') : undefined;
 
   const STEP_CONFIG = [
-    { title: 'Tell us about your business', subtitle: 'Basic details that appear on your public profile.' },
-    { title: 'What industry are you in?', subtitle: 'Select at least 1 and up to 3 categories that describe your business.' },
+    { title: t('businessOnboarding.step1Title'), subtitle: t('businessOnboarding.step1Subtitle') },
+    { title: t('businessOnboarding.step2Title'), subtitle: t('businessOnboarding.step2Subtitle') },
   ];
   const { title, subtitle } = STEP_CONFIG[step - 1];
 
@@ -192,14 +192,14 @@ export default function BusinessOnboardingScreen() {
             {/* Business Name */}
             <View style={styles.fieldGroup}>
               <Text style={[styles.fieldLabel, { color: C.text, marginBottom: 8 }]}>
-                Name <Text style={{ color: C.error }}>*</Text>
+                {t('businessOnboarding.businessNameLabel')} <Text style={{ color: C.error }}>*</Text>
               </Text>
               <TextInput
                 style={[styles.input, { backgroundColor: C.surface, borderColor: businessNameError ? C.error : C.border, color: C.text }]}
                 value={businessName}
                 onChangeText={(t) => { setStep1Error(''); setBusinessName(t); }}
                 onFocus={() => { locationFocusedRef.current = false; }}
-                placeholder="e.g. Himalayan Trekking Co."
+                placeholder={t('businessOnboarding.businessNamePlaceholder')}
                 placeholderTextColor={C.textSecondary}
                 autoCapitalize="words"
               />
@@ -207,7 +207,7 @@ export default function BusinessOnboardingScreen() {
                 <Text style={[styles.fieldError, { color: C.error }]}>{businessNameError}</Text>
               ) : (
                 <Text style={[styles.inputHint, { color: C.textSecondary }]}>
-                  This will appear on your public profile and event listings.
+                  {t('businessOnboarding.nameHint')}
                 </Text>
               )}
             </View>
@@ -215,12 +215,12 @@ export default function BusinessOnboardingScreen() {
             {/* Location */}
             <View style={[styles.fieldGroup, { zIndex: 10 }]}>
               <Text style={[styles.fieldLabel, { color: C.text, marginBottom: 8 }]}>
-                Location <Text style={{ color: C.error }}>*</Text>
+                {t('businessOnboarding.locationLabel')} <Text style={{ color: C.error }}>*</Text>
               </Text>
               <PlacesAutocompleteInput
                 value={location}
                 onChangeText={setLocation}
-                placeholder="e.g. Kathmandu, Thamel"
+                placeholder={t('businessOnboarding.locationPlaceholder')}
                 types="geocode"
                 error={locationError}
                 onFocus={() => { locationFocusedRef.current = true; }}
@@ -243,7 +243,7 @@ export default function BusinessOnboardingScreen() {
                 </View>
               ) : (
                 <View style={styles.loadingRow}>
-                  <Text style={styles.primaryBtnText}>Continue</Text>
+                  <Text style={styles.primaryBtnText}>{t('businessOnboarding.continueBtn')}</Text>
                   <Ionicons name="arrow-forward" size={16} color="#fff" />
                 </View>
               )}
@@ -265,7 +265,7 @@ export default function BusinessOnboardingScreen() {
             <View style={styles.fieldGroup}>
               <View style={styles.labelRow}>
                 <Text style={[styles.fieldLabel, { color: C.text }]}>
-                  Select Categories <Text style={{ color: C.error }}>*</Text>
+                  {t('businessOnboarding.selectCategoriesLabel')} <Text style={{ color: C.error }}>*</Text>
                 </Text>
                 <View style={[styles.countBadge, { backgroundColor: selectedCategories.length > 0 ? C.primaryLight : C.border }]}>
                   <Text style={[styles.countBadgeText, { color: selectedCategories.length > 0 ? C.brinjal1 : C.textSecondary }]}>
@@ -276,11 +276,11 @@ export default function BusinessOnboardingScreen() {
               {selectedCategories.length === 3 && (
                 <View style={[styles.maxBanner, { backgroundColor: C.primaryLight }]}>
                   <Ionicons name="checkmark-circle" size={14} color={C.brinjal1} />
-                  <Text style={[styles.maxBannerText, { color: C.brinjal1 }]}>Max 3 categories selected</Text>
+                  <Text style={[styles.maxBannerText, { color: C.brinjal1 }]}>{t('businessOnboarding.maxCategoriesReached')}</Text>
                 </View>
               )}
               {categorySubmitted && selectedCategories.length === 0 && (
-                <Text style={[styles.fieldError, { color: C.error, marginBottom: 8 }]}>Select at least one category</Text>
+                <Text style={[styles.fieldError, { color: C.error, marginBottom: 8 }]}>{t('businessOnboarding.categoryError')}</Text>
               )}
               <View style={styles.categoryGrid}>
                 {categories.map((cat) => {
@@ -318,12 +318,12 @@ export default function BusinessOnboardingScreen() {
                 </View>
               ) : (
                 <View style={styles.loadingRow}>
-                  <Text style={styles.primaryBtnText}>Complete Setup</Text>
+                  <Text style={styles.primaryBtnText}>{t('businessOnboarding.completeBtn')}</Text>
                   <Ionicons name="arrow-forward" size={16} color="#fff" />
                 </View>
               )}
             </Pressable>
-            <Text style={[styles.finishNote, { color: C.textSecondary }]}>At least 1 category is required</Text>
+            <Text style={[styles.finishNote, { color: C.textSecondary }]}>{t('businessOnboarding.categoryRequired')}</Text>
 
           </ScrollView>
         )}

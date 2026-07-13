@@ -175,12 +175,6 @@ export const en = {
   },
   footer: {
     tagline: "Nepal's creator marketplace — where brands and creators discover each other, collaborate, and get paid securely.",
-    columns: [
-      { title: 'Product', links: ['Features', 'For Creators', 'For Brands', 'AI Campaigns', 'Pricing'] },
-      { title: 'Company', links: ['About', 'Careers', 'Blog', 'Press'] },
-      { title: 'Resources', links: ['Help Center', 'FAQ', 'Guides', 'API'] },
-      { title: 'Legal', links: ['Terms', 'Privacy', 'Cookies'] },
-    ],
     rights: 'All rights reserved.',
     madeIn: 'Made in Nepal',
   },

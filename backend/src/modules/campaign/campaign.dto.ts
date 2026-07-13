@@ -7,6 +7,7 @@ export interface CampaignDto {
   template: string | null;
   featureImageUrl: string | null;
   category: string;
+  categoryKey: string;
   goals: string[];
   platforms: string[];
   minFollowers: number;
@@ -147,6 +148,7 @@ export function toCampaignDto(c: RawCampaign): CampaignDto {
     template:       c.template,
     featureImageUrl: c.featureImageUrl,
     category:       c.category,
+    categoryKey:    c.category,
     goals:          (c.goals ?? []) as string[],
     platforms:      c.platforms,
     minFollowers:   c.minFollowers,

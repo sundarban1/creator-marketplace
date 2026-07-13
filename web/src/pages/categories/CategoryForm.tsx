@@ -115,7 +115,7 @@ export function CategoryForm({ initial, onSubmit, submitLabel }: CategoryFormPro
               <div className="flex-1 space-y-3">
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1.5">Background color</label>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     {BG_COLORS.map((c) => (
                       <button
                         key={c.hex}
@@ -126,12 +126,26 @@ export function CategoryForm({ initial, onSubmit, submitLabel }: CategoryFormPro
                         style={{ backgroundColor: c.hex }}
                       />
                     ))}
+                    <input
+                      type="color"
+                      value={iconBg}
+                      onChange={(e) => setIconBg(e.target.value)}
+                      title="Custom color"
+                      className="w-7 h-7 rounded-lg border-2 border-gray-300 cursor-pointer p-0 [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:rounded-[5px] [&::-webkit-color-swatch]:border-none"
+                    />
+                    <input
+                      type="text"
+                      value={iconBg}
+                      onChange={(e) => setIconBg(e.target.value)}
+                      placeholder="#000000"
+                      className="w-24 px-2 py-1.5 text-xs font-mono border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                    />
                   </div>
                 </div>
 
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1.5">Icon color</label>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     {ICON_COLORS.map((c) => (
                       <button
                         key={c.hex}
@@ -142,6 +156,20 @@ export function CategoryForm({ initial, onSubmit, submitLabel }: CategoryFormPro
                         style={{ backgroundColor: c.hex }}
                       />
                     ))}
+                    <input
+                      type="color"
+                      value={color}
+                      onChange={(e) => setColor(e.target.value)}
+                      title="Custom color"
+                      className="w-7 h-7 rounded-lg border-2 border-gray-300 cursor-pointer p-0 [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:rounded-[5px] [&::-webkit-color-swatch]:border-none"
+                    />
+                    <input
+                      type="text"
+                      value={color}
+                      onChange={(e) => setColor(e.target.value)}
+                      placeholder="#000000"
+                      className="w-24 px-2 py-1.5 text-xs font-mono border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                    />
                   </div>
                 </div>
               </div>

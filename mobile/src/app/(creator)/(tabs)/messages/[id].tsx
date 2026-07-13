@@ -33,6 +33,7 @@ import {
   pickImageFromLibrary, pickImageFromCamera, pickDocumentAttachment, promptAttachmentChoice,
   type PickedAttachment,
 } from '@/utilities/chatAttachments';
+import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import type { Message } from '@/types';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -246,6 +247,7 @@ export default function CreatorChatRoomScreen() {
   const insets   = useSafeAreaInsets();
 
   const [messages, setMessages]       = useState<Message[]>([]);
+  const [messagesError, setMessagesError] = useState('');
   const [status, setStatus]           = useState<'PENDING' | 'ACCEPTED' | 'DECLINED'>(
     (urlStatus as 'PENDING' | 'ACCEPTED' | 'DECLINED') ?? 'ACCEPTED',
   );
@@ -281,15 +283,28 @@ export default function CreatorChatRoomScreen() {
   }
 
   // Load messages
+  function loadMessages() {
+    if (!id) return;
+    setMessagesError('');
+    chatService.getMessages(id)
+      .then((msgs) => setMessages(msgs))
+      .catch((e) => setMessagesError(e instanceof Error ? e.message : t('messages.loadFailedSub')));
+  }
+
+  // Auto-refresh the moment connectivity is restored after being offline.
+  const { reconnectedAt } = useNetworkStatus();
+  useEffect(() => {
+    if (reconnectedAt) loadMessages();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reconnectedAt]);
+
   useEffect(() => {
     setMessages([]);
     setText('');
     const convStatus = (urlStatus as 'PENDING' | 'ACCEPTED' | 'DECLINED') ?? 'ACCEPTED';
     setStatus(convStatus);
     if (!id) return;
-    chatService.getMessages(id).then((msgs) => {
-      setMessages(msgs);
-    });
+    loadMessages();
     if (convStatus === 'ACCEPTED') markSeen();
     if (focusInput === 'true' && convStatus === 'ACCEPTED') {
       setTimeout(() => inputRef.current?.focus(), 400);
@@ -446,7 +461,7 @@ export default function CreatorChatRoomScreen() {
       });
     } catch (e) {
       setMessages((prev) => prev.filter((m) => m.id !== tempId));
-      Alert.alert('Failed to send', e instanceof Error ? e.message : 'Please try again.');
+      Alert.alert(t('messages.sendFailedTitle'), e instanceof Error ? e.message : t('messages.sendFailedGeneric'));
     } finally {
       isSending.current = false;
     }
@@ -578,17 +593,30 @@ export default function CreatorChatRoomScreen() {
           contentContainerStyle={s.msgList}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
-            <View style={s.emptyWrap}>
-              <View style={[s.emptyIcon, { backgroundColor: C.primaryLight }]}>
-                <Ionicons name="chatbubble-ellipses-outline" size={36} color={C.brinjal1} />
+            messagesError ? (
+              <View style={s.emptyWrap}>
+                <View style={[s.emptyIcon, { backgroundColor: C.primaryLight }]}>
+                  <Ionicons name="alert-circle-outline" size={36} color={C.brinjal1} />
+                </View>
+                <Text style={[s.emptyTitle, { color: C.text }]}>{t('messages.loadMessagesFailedTitle')}</Text>
+                <Text style={[s.emptyHint, { color: C.textSecondary }]}>{messagesError}</Text>
+                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={loadMessages} style={s.retryBtn}>
+                  <Text style={[s.retryBtnText, { color: C.brinjal1 }]}>{t('messages.retry')}</Text>
+                </Pressable>
               </View>
-              <Text style={[s.emptyTitle, { color: C.text }]}>
-                {isPending ? t('messages.requestPending') : t('messages.startConversation')}
-              </Text>
-              <Text style={[s.emptyHint, { color: C.textSecondary }]}>
-                {isPending ? t('messages.acceptRequest') : t('messages.sendFirstMessage')}
-              </Text>
-            </View>
+            ) : (
+              <View style={s.emptyWrap}>
+                <View style={[s.emptyIcon, { backgroundColor: C.primaryLight }]}>
+                  <Ionicons name="chatbubble-ellipses-outline" size={36} color={C.brinjal1} />
+                </View>
+                <Text style={[s.emptyTitle, { color: C.text }]}>
+                  {isPending ? t('messages.requestPending') : t('messages.startConversation')}
+                </Text>
+                <Text style={[s.emptyHint, { color: C.textSecondary }]}>
+                  {isPending ? t('messages.acceptRequest') : t('messages.sendFirstMessage')}
+                </Text>
+              </View>
+            )
           }
         />
 
@@ -719,6 +747,8 @@ const s = StyleSheet.create({
   emptyIcon:  { width: 72, height: 72, borderRadius: 36, justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
   emptyTitle: { fontSize: 16, fontFamily: F.bold, textAlign: 'center' },
   emptyHint:  { fontSize: 13, fontFamily: F.regular, textAlign: 'center', lineHeight: 19 },
+  retryBtn:     { marginTop: 6, paddingHorizontal: 20, paddingVertical: 10 },
+  retryBtnText: { fontSize: 14, fontFamily: F.bold },
 
   // Input
   inputBar:  { flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: 10, paddingVertical: 10, paddingBottom: 16, borderTopWidth: StyleSheet.hairlineWidth, gap: 6 },

@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import MapView, { PROVIDER_GOOGLE, type Region } from 'react-native-maps';
 import { useAppColors } from '@/context/ThemeContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { RadiusSlider } from '@/components/RadiusSlider';
 import { F } from '@/utilities/constants';
 import { getCurrentLocation, type LatLng } from '@/utilities/geolocation';
@@ -31,6 +32,7 @@ type Props = {
  */
 export function NearbyLocationSheet({ visible, onClose, source, radiusKm, homeLabel, currentCoords, homeCoords, customCoords, onApply }: Props) {
   const C = useAppColors();
+  const { t } = useLanguage();
   const mapRef = useRef<MapView>(null);
 
   const [draftSource, setDraftSource] = useState<NearbySource>(source);
@@ -104,7 +106,7 @@ export function NearbyLocationSheet({ visible, onClose, source, radiusKm, homeLa
         <View style={[styles.handle, { backgroundColor: C.border }]} />
 
         <View style={[styles.header, { borderBottomColor: C.border }]}>
-          <Text style={[styles.title, { color: C.text }]}>Nearby Events</Text>
+          <Text style={[styles.title, { color: C.text }]}>{t('nearbyLocationSheet.title')}</Text>
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={onClose} hitSlop={10}>
             <Ionicons name="close" size={22} color={C.textSecondary} />
           </Pressable>
@@ -121,7 +123,7 @@ export function NearbyLocationSheet({ visible, onClose, source, radiusKm, homeLa
               ) : (
                 <Ionicons name="navigate" size={13} color={draftSource === 'current' ? C.brinjal1 : C.textSecondary} />
               )}
-              <Text style={[styles.sourceToggleText, { color: draftSource === 'current' ? C.brinjal1 : C.text }]}>Current Location</Text>
+              <Text style={[styles.sourceToggleText, { color: draftSource === 'current' ? C.brinjal1 : C.text }]}>{t('nearbyLocationSheet.currentLocation')}</Text>
             </Pressable>
             <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
               style={[
@@ -133,14 +135,14 @@ export function NearbyLocationSheet({ visible, onClose, source, radiusKm, homeLa
               onPress={handleSelectHome}>
               <Ionicons name="home" size={13} color={draftSource === 'home' ? C.brinjal1 : C.textSecondary} />
               <Text style={[styles.sourceToggleText, { color: draftSource === 'home' ? C.brinjal1 : C.text }]} numberOfLines={1}>
-                {homeLabel ? `Home · ${homeLabel}` : 'Home'}
+                {homeLabel ? t('nearbyLocationSheet.homeWithLabel', { label: homeLabel }) : t('nearbyLocationSheet.home')}
               </Text>
             </Pressable>
           </View>
 
-          <Text style={[styles.sectionLabel, { color: C.textSecondary }]}>CHANGE LOCATION</Text>
+          <Text style={[styles.sectionLabel, { color: C.textSecondary }]}>{t('nearbyLocationSheet.changeLocation')}</Text>
           <Text style={[styles.sectionHint, { color: C.textSecondary }]}>
-            {draftSource === 'custom' ? 'Using a custom point on the map.' : 'Drag the map to fine-tune the search point.'}
+            {draftSource === 'custom' ? t('nearbyLocationSheet.customPointHint') : t('nearbyLocationSheet.dragMapHint')}
           </Text>
 
           <View style={styles.mapWrap}>
@@ -171,7 +173,7 @@ export function NearbyLocationSheet({ visible, onClose, source, radiusKm, homeLa
             style={({ pressed }) => [styles.applyBtn, { backgroundColor: C.brinjal1 }, (pressed || locatingCurrent) && { opacity: 0.88 }]}
             disabled={locatingCurrent}
             onPress={handleApply}>
-            <Text style={styles.applyBtnText}>Apply</Text>
+            <Text style={styles.applyBtnText}>{t('nearbyLocationSheet.applyBtn')}</Text>
           </Pressable>
         </View>
       </View>

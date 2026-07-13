@@ -57,8 +57,6 @@ export interface PublicCreatorDto {
   avatarUrl: string | null;
   categories: string[];
   isVerified: boolean;
-  prefBudgetMin: number | null;
-  prefBudgetMax: number | null;
   prefPlatforms: string[];
   socialLinks: Record<string, string>;
   portfolioLinks: Array<{ id: string; label: string; url: string }>;
@@ -79,8 +77,6 @@ export interface CreatorListItemDto {
   location: string | null;
   categories: string[];
   isVerified: boolean;
-  prefBudgetMin: number | null;
-  prefBudgetMax: number | null;
   socialAccounts: Array<{ platform: string; followers: number }>;
   distanceKm?: number;
 }
@@ -181,8 +177,6 @@ type RawPublicCreator = {
   avatarUrl: string | null;
   categories: string[];
   isVerified: boolean;
-  prefBudgetMin: number | null;
-  prefBudgetMax: number | null;
   prefPlatforms: string[];
   socialLinks: Prisma.JsonValue;
   portfolioLinks: Prisma.JsonValue;
@@ -200,8 +194,6 @@ export function toPublicCreatorDto(p: RawPublicCreator): PublicCreatorDto {
     avatarUrl:     p.avatarUrl,
     categories:    p.categories,
     isVerified:    p.isVerified,
-    prefBudgetMin: p.prefBudgetMin,
-    prefBudgetMax: p.prefBudgetMax,
     prefPlatforms: p.prefPlatforms,
     socialLinks:   (p.socialLinks ?? {}) as Record<string, string>,
     portfolioLinks: (p.portfolioLinks ?? []) as Array<{ id: string; label: string; url: string }>,
@@ -217,8 +209,6 @@ type RawCreatorListItem = {
   location: string | null;
   categories: string[];
   isVerified: boolean;
-  prefBudgetMin: number | null;
-  prefBudgetMax: number | null;
   socialAccounts: Array<{ platform: string; followers: number }>;
   distanceKm?: number;
 };
@@ -232,8 +222,6 @@ export function toCreatorListItemDto(p: RawCreatorListItem): CreatorListItemDto 
     location:      p.location,
     categories:    p.categories,
     isVerified:    p.isVerified,
-    prefBudgetMin: p.prefBudgetMin,
-    prefBudgetMax: p.prefBudgetMax,
     socialAccounts: p.socialAccounts,
   };
   if (p.distanceKm != null) dto.distanceKm = Math.round(p.distanceKm * 10) / 10;

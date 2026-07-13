@@ -25,12 +25,18 @@ export class NotificationRepository {
     return prisma.notification.createMany({ data });
   }
 
-  async findByUser(userId: string) {
-    return prisma.notification.findMany({
-      where: { userId, NOT: { type: 'new_message' } },
-      orderBy: { createdAt: 'desc' },
-      take: 50,
-    });
+  async findByUser(userId: string, page = 1, limit = 50) {
+    const where = { userId, NOT: { type: 'new_message' } } as const;
+    const [notifications, total] = await Promise.all([
+      prisma.notification.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.notification.count({ where }),
+    ]);
+    return { notifications, total };
   }
 
   async getUnreadCountExcludeMessages(userId: string) {

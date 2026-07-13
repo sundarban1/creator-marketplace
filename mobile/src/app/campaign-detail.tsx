@@ -403,7 +403,7 @@ export default function CampaignDetailScreen() {
     );
   }
 
-  const catMeta = getCategoryMeta(allCategories, campaign.category);
+  const catMeta = getCategoryMeta(allCategories, campaign.categoryKey ?? campaign.category);
   const heroBg  = catMeta.bg;
   const posted  = daysAgo(campaign.createdAt);
 
@@ -427,7 +427,7 @@ export default function CampaignDetailScreen() {
           </View>
           {campaign.isNew && (
             <View style={[s.heroNewBadge, { backgroundColor: C.badgeNew }]}>
-              <Text style={s.heroBadgeTxt}>NEW</Text>
+              <Text style={s.heroBadgeTxt}>{t('campaignCard.new')}</Text>
             </View>
           )}
           <View style={[s.heroPosted, { backgroundColor: 'rgba(0,0,0,0.38)' }]}>
@@ -482,7 +482,7 @@ export default function CampaignDetailScreen() {
         {/* 2. Objectives — merged Objective + Event Goals content into one card */}
         {(campaign.template || campaign.objective || campaign.goals.length > 0 || (campaign.targetAudience && campaign.targetAudience.length > 0)) && (
           <View style={[s.card, { backgroundColor: C.surface }]}>
-            <Text style={[s.sectionLabel, { color: C.textSecondary }]}>Objectives</Text>
+            <Text style={[s.sectionLabel, { color: C.textSecondary }]}>{t('campaignDetail.sectionObjectives')}</Text>
             {campaign.goals.length > 0 && (
               <View style={s.goalChips}>
                 {campaign.goals.map((g) => (
@@ -507,7 +507,7 @@ export default function CampaignDetailScreen() {
             )}
             {campaign.targetAudience && campaign.targetAudience.length > 0 && (
               <>
-                <Text style={[s.sectionLabel, { color: C.textSecondary, marginTop: 12 }]}>Target Audience</Text>
+                <Text style={[s.sectionLabel, { color: C.textSecondary, marginTop: 12 }]}>{t('campaignDetail.sectionTargetAudience')}</Text>
                 <View style={s.goalChips}>
                   {campaign.targetAudience.map((aud) => (
                     <View key={aud} style={[s.goalChip, { backgroundColor: C.primaryLight }]}>
@@ -525,24 +525,24 @@ export default function CampaignDetailScreen() {
           <Text style={[s.sectionLabel, { color: C.textSecondary }]}>{t('campaignDetail.sectionDetails')}</Text>
           <View style={s.detailsGrid}>
             {isOpenEvent && campaign.eventDate ? (
-              <DetailRow icon="calendar-day" label="Event Date" value={formatDeadline(campaign.eventDate)} C={C} />
+              <DetailRow icon="calendar-day" label={t('campaignDetail.detailEventDate')} value={formatDeadline(campaign.eventDate)} C={C} />
             ) : null}
             <DetailRow icon="calendar-alt" label={isOpenEvent ? 'Registration Deadline' : t('campaignDetail.detailDeadline')} value={formatDeadline(campaign.deadline)} C={C} />
             {!isOpenEvent && (
               <>
                 <DetailRow icon="money-bill-wave" label={t('campaignDetail.detailBudget')}  value={campaign.budget} C={C} />
                 {campaign.creatorsNeeded != null && (
-                  <DetailRow icon="users" label="Creators Needed" value={String(campaign.creatorsNeeded)} C={C} />
+                  <DetailRow icon="users" label={t('campaignDetail.detailCreatorsNeeded')} value={String(campaign.creatorsNeeded)} C={C} />
                 )}
               </>
             )}
             {isOpenEvent && campaign.venue ? (
-              <DetailRow icon="map-marker-alt" label="Venue" value={campaign.venue} C={C} />
+              <DetailRow icon="map-marker-alt" label={t('campaignDetail.detailVenue')} value={campaign.venue} C={C} />
             ) : (
               <DetailRow icon="map-marker-alt" label={t('campaignDetail.detailLocation')} value={campaign.location ?? t('campaignDetail.remoteLocation')} C={C} />
             )}
             {isOpenEvent && campaign.capacity ? (
-              <DetailRow icon="users" label="Capacity" value={`${campaign.capacity} creators`} C={C} />
+              <DetailRow icon="users" label={t('campaignDetail.detailCapacity')} value={t('campaignDetail.capacityCreators', { n: campaign.capacity })} C={C} />
             ) : null}
             <DetailRow icon="chart-bar" label={t('campaignDetail.detailStatus')} value={campaign.status ? campaign.status.charAt(0).toUpperCase() + campaign.status.slice(1) : t('campaignDetail.statusActive')} C={C} />
           </View>
@@ -551,7 +551,7 @@ export default function CampaignDetailScreen() {
         {/* Benefits card — free events only */}
         {isOpenEvent && campaign.benefits && campaign.benefits.length > 0 ? (
           <View style={[s.card, { backgroundColor: C.surface }]}>
-            <Text style={[s.sectionLabel, { color: C.textSecondary }]}>What You Get</Text>
+            <Text style={[s.sectionLabel, { color: C.textSecondary }]}>{t('campaignDetail.sectionWhatYouGet')}</Text>
             <View style={s.benefitsWrap}>
               {campaign.benefits.map((b, i) => (
                 <View key={i} style={[s.benefitChip, { backgroundColor: '#F0FDF4', borderColor: '#A7F3D0' }]}>
@@ -576,7 +576,7 @@ export default function CampaignDetailScreen() {
         {/* 5. Content Guidelines */}
         {campaign.contentGuidelines && campaign.contentGuidelines.length > 0 && (
           <View style={[s.card, { backgroundColor: C.surface }]}>
-            <Text style={[s.sectionLabel, { color: C.textSecondary }]}>Content Guidelines</Text>
+            <Text style={[s.sectionLabel, { color: C.textSecondary }]}>{t('campaignDetail.sectionContentGuidelines')}</Text>
             {campaign.contentGuidelines.map((g, i) => (
               <ReqItem key={i} text={g} C={C} />
             ))}
@@ -586,7 +586,7 @@ export default function CampaignDetailScreen() {
         {/* 6. Hashtags */}
         {campaign.hashtags && campaign.hashtags.length > 0 && (
           <View style={[s.card, { backgroundColor: C.surface }]}>
-            <Text style={[s.sectionLabel, { color: C.textSecondary }]}>Hashtags</Text>
+            <Text style={[s.sectionLabel, { color: C.textSecondary }]}>{t('campaignDetail.sectionHashtags')}</Text>
             <View style={s.goalChips}>
               {campaign.hashtags.map((tag) => (
                 <View key={tag} style={[s.goalChip, { backgroundColor: C.primaryLight }]}>
@@ -600,7 +600,7 @@ export default function CampaignDetailScreen() {
         {/* Sample Caption */}
         {campaign.sampleCaption && (
           <View style={[s.card, { backgroundColor: C.surface }]}>
-            <Text style={[s.sectionLabel, { color: C.textSecondary }]}>Sample Caption</Text>
+            <Text style={[s.sectionLabel, { color: C.textSecondary }]}>{t('campaignDetail.sectionSampleCaption')}</Text>
             <Text style={[s.description, { color: C.text, fontStyle: 'italic' }]}>&ldquo;{campaign.sampleCaption}&rdquo;</Text>
           </View>
         )}
@@ -608,7 +608,7 @@ export default function CampaignDetailScreen() {
         {/* 7. Call to Action */}
         {campaign.callToAction && (
           <View style={[s.card, { backgroundColor: C.surface }]}>
-            <Text style={[s.sectionLabel, { color: C.textSecondary }]}>Call to Action</Text>
+            <Text style={[s.sectionLabel, { color: C.textSecondary }]}>{t('campaignDetail.sectionCallToAction')}</Text>
             <Text style={[s.description, { color: C.text }]}>{campaign.callToAction}</Text>
           </View>
         )}
@@ -616,7 +616,7 @@ export default function CampaignDetailScreen() {
         {/* Approval Requirements */}
         {campaign.approvalRequirements && (
           <View style={[s.card, { backgroundColor: C.surface }]}>
-            <Text style={[s.sectionLabel, { color: C.textSecondary }]}>Brand Approval Requirements</Text>
+            <Text style={[s.sectionLabel, { color: C.textSecondary }]}>{t('campaignDetail.sectionApprovalRequirements')}</Text>
             <Text style={[s.description, { color: C.text }]}>{campaign.approvalRequirements}</Text>
           </View>
         )}
@@ -639,8 +639,8 @@ export default function CampaignDetailScreen() {
               <FontAwesome5 name="trophy" size={18} color="#16A34A" solid />
             </View>
             <View style={s.invitedTextBlock}>
-              <Text style={s.invitedTitle}>Congrats, You're Invited!</Text>
-              <Text style={s.invitedSub}>You've been selected for this event. Check your workspace to get started.</Text>
+              <Text style={s.invitedTitle}>{t('campaignDetail.invitedTitle')}</Text>
+              <Text style={s.invitedSub}>{t('campaignDetail.invitedSub')}</Text>
             </View>
           </View>
         ) : hasApplied ? (

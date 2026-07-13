@@ -63,8 +63,6 @@ export interface ApiCreatorPublicProfile {
   location: string | null;
   categories: string[];
   isVerified: boolean;
-  prefBudgetMin: number;
-  prefBudgetMax: number;
   prefPlatforms: string[];
   portfolioLinks: { id: string; label: string; url: string }[];
   socialLinks: Record<string, string | null> | null;
@@ -80,8 +78,6 @@ export interface ApiCreatorListItem {
   location: string | null;
   categories: string[];
   isVerified: boolean;
-  prefBudgetMin: number;
-  prefBudgetMax: number;
   socialAccounts: { platform: string; followers: number }[];
   distanceKm?: number;
 }

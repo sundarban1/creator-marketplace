@@ -12,12 +12,13 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { legalService, type LegalDocument, type LegalSlug } from '@/services/legal';
 import { F } from '@/utilities/constants';
 
-const META: Record<LegalSlug, { title: string; icon: keyof typeof Ionicons.glyphMap }> = {
-  'terms':          { title: 'Terms of Service', icon: 'document-text-outline' },
-  'privacy-policy': { title: 'Privacy Policy',   icon: 'shield-checkmark-outline' },
+const META: Record<LegalSlug, { titleKey: string; icon: keyof typeof Ionicons.glyphMap }> = {
+  'terms':          { titleKey: 'legalScreen.termsTitle',   icon: 'document-text-outline' },
+  'privacy-policy': { titleKey: 'legalScreen.privacyTitle', icon: 'shield-checkmark-outline' },
 };
 
 function formatDate(iso: string | null): string {
@@ -29,6 +30,7 @@ function formatDate(iso: string | null): string {
 export default function LegalScreen() {
   const { type } = useLocalSearchParams<{ type: LegalSlug }>();
   const C = useAppColors();
+  const { t } = useLanguage();
 
   const slug = (type as LegalSlug) ?? 'terms';
   const meta = META[slug] ?? META['terms'];
@@ -54,7 +56,7 @@ export default function LegalScreen() {
     legalService
       .getDocument(slug)
       .then(setDoc)
-      .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load'))
+      .catch((e) => setError(e instanceof Error ? e.message : t('legalScreen.loadFailed')))
       .finally(() => setLoading(false));
   }
 
@@ -68,7 +70,7 @@ export default function LegalScreen() {
         <BackButton />
         <View style={styles.headerCenter}>
           <Ionicons name={meta.icon} size={18} color={C.brinjal1} />
-          <Text style={[styles.headerTitle, { color: C.text }]}>{meta.title}</Text>
+          <Text style={[styles.headerTitle, { color: C.text }]}>{t(meta.titleKey)}</Text>
         </View>
         <View style={{ width: 40 }} />
       </View>
@@ -83,13 +85,13 @@ export default function LegalScreen() {
           <Ionicons name="cloud-offline-outline" size={48} color={C.textSecondary} />
           <Text style={[styles.errorText, { color: C.textSecondary }]}>{error}</Text>
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.retryBtn, { backgroundColor: C.brinjal1 }]} onPress={loadDoc}>
-            <Text style={styles.retryBtnText}>Try Again</Text>
+            <Text style={styles.retryBtnText}>{t('legalScreen.tryAgain')}</Text>
           </Pressable>
         </View>
       ) : !doc || doc.sections.length === 0 ? (
         <View style={styles.centered}>
           <Ionicons name="document-outline" size={48} color={C.textSecondary} />
-          <Text style={[styles.errorText, { color: C.textSecondary }]}>No content available yet.</Text>
+          <Text style={[styles.errorText, { color: C.textSecondary }]}>{t('legalScreen.noContent')}</Text>
         </View>
       ) : (
         <ScrollView
@@ -101,7 +103,7 @@ export default function LegalScreen() {
             <View style={[styles.updatedRow, { backgroundColor: C.surface, borderColor: C.border }]}>
               <Ionicons name="time-outline" size={13} color={C.textSecondary} />
               <Text style={[styles.updatedText, { color: C.textSecondary }]}>
-                Last updated {formatDate(doc.lastUpdated)}
+                {t('legalScreen.lastUpdated', { date: formatDate(doc.lastUpdated) })}
               </Text>
             </View>
           )}
@@ -136,7 +138,7 @@ export default function LegalScreen() {
 
           <View style={styles.footer}>
             <Text style={[styles.footerText, { color: C.textSecondary }]}>
-              © 2026 kolab · All rights reserved
+              {t('legalScreen.footer')}
             </Text>
           </View>
         </ScrollView>

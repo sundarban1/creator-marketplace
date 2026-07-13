@@ -230,7 +230,7 @@ export default function EditProfileScreen() {
         setCategories(profile.categories ?? []);
         setAllCategories(cats);
       })
-      .catch(() => toast.error('Could not load profile. Please try again.'))
+      .catch(() => toast.error(t('profile.editCreator.loadError')))
       .finally(() => setLoading(false));
   }, []);
 
@@ -263,21 +263,21 @@ export default function EditProfileScreen() {
 
   async function handleSave() {
     if (!fullName.trim() || fullName.trim().length < 2) {
-      toast.warning('Full name must be at least 2 characters.');
+      toast.warning(t('profile.editCreator.nameMinLengthWarning'));
       return;
     }
     const usernameChanged = username !== originalUsername;
     if (usernameChanged) {
       if (usernameStatus === 'invalid') {
-        toast.warning('Username must be at least 3 characters (letters, numbers, underscores only).');
+        toast.warning(t('profile.editCreator.usernameMinLengthWarning'));
         return;
       }
       if (usernameStatus === 'checking') {
-        toast.warning('Still checking username availability, please wait.');
+        toast.warning(t('profile.editCreator.usernameCheckingWarning'));
         return;
       }
       if (usernameStatus === 'taken') {
-        toast.warning('That username is already taken.');
+        toast.warning(t('profile.editCreator.usernameTakenWarning'));
         return;
       }
     }
@@ -299,10 +299,10 @@ export default function EditProfileScreen() {
       setUsername(profile.username ?? '');
       setOriginalUsername(profile.username ?? '');
       setUsernameStatus('idle');
-      toast.success('Profile saved successfully!');
+      toast.success(t('profile.editCreator.saveSuccess'));
       router.back();
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Failed to save profile. Please try again.');
+      toast.error(err instanceof Error ? err.message : t('profile.editCreator.saveError'));
     } finally {
       setSaving(false);
     }
@@ -351,14 +351,14 @@ export default function EditProfileScreen() {
           <View style={[styles.divider, { backgroundColor: C.border }]} />
 
           <View style={styles.field}>
-            <Text style={[styles.label, { color: C.textSecondary }]}>Username</Text>
+            <Text style={[styles.label, { color: C.textSecondary }]}>{t('profile.editCreator.usernameLabel')}</Text>
             <View style={[styles.usernameRow, { backgroundColor: C.background, borderColor: usernameStatus === 'taken' || usernameStatus === 'invalid' ? C.error : C.border }]}>
               <Text style={[styles.atSign, { color: C.textSecondary }]}>@</Text>
               <TextInput
                 style={[styles.usernameInput, { color: C.text }]}
                 value={username}
                 onChangeText={handleUsernameChange}
-                placeholder="username"
+                placeholder={t('profile.editCreator.usernamePlaceholder')}
                 placeholderTextColor={C.textSecondary}
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -367,9 +367,9 @@ export default function EditProfileScreen() {
               {usernameStatus === 'available' && <Ionicons name="checkmark-circle" size={18} color="#16A34A" />}
               {(usernameStatus === 'taken' || usernameStatus === 'invalid') && <Ionicons name="close-circle" size={18} color={C.error} />}
             </View>
-            {usernameStatus === 'taken' && <Text style={[styles.usernameHint, { color: C.error }]}>This username is already taken.</Text>}
-            {usernameStatus === 'invalid' && <Text style={[styles.usernameHint, { color: C.error }]}>3-20 characters: letters, numbers, underscores only.</Text>}
-            {usernameStatus === 'available' && <Text style={[styles.usernameHint, { color: '#16A34A' }]}>Username is available.</Text>}
+            {usernameStatus === 'taken' && <Text style={[styles.usernameHint, { color: C.error }]}>{t('profile.editCreator.usernameTakenError')}</Text>}
+            {usernameStatus === 'invalid' && <Text style={[styles.usernameHint, { color: C.error }]}>{t('profile.editCreator.usernameInvalidHint')}</Text>}
+            {usernameStatus === 'available' && <Text style={[styles.usernameHint, { color: '#16A34A' }]}>{t('profile.editCreator.usernameAvailableHint')}</Text>}
           </View>
 
           <View style={[styles.divider, { backgroundColor: C.border }]} />
@@ -392,18 +392,18 @@ export default function EditProfileScreen() {
           <View style={[styles.divider, { backgroundColor: C.border }]} />
 
           <View style={styles.field}>
-            <Text style={[styles.label, { color: C.textSecondary }]}>LOCATION</Text>
+            <Text style={[styles.label, { color: C.textSecondary }]}>{t('profile.editCreator.locationLabel')}</Text>
             <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
               style={[styles.locationBtn, { backgroundColor: C.background, borderColor: C.border }]}
               onPress={() => setLocationModalOpen(true)}>
               <Text style={[styles.locationBtnTxt, { color: location ? C.text : C.textSecondary }]} numberOfLines={2}>
-                {location || 'Tap to search location…'}
+                {location || t('profile.editCreator.locationPlaceholder')}
               </Text>
               <Text style={styles.locationArrow}>›</Text>
             </Pressable>
             {location ? (
               <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => { setLocation(''); setLocationLat(null); setLocationLng(null); }}>
-                <Text style={[styles.clearLocation, { color: C.error ?? '#EF4444' }]}>Clear location</Text>
+                <Text style={[styles.clearLocation, { color: C.error ?? '#EF4444' }]}>{t('profile.editCreator.clearLocation')}</Text>
               </Pressable>
             ) : null}
           </View>
@@ -448,7 +448,7 @@ export default function EditProfileScreen() {
           style={[styles.saveBtn, { backgroundColor: saving ? C.border : C.brinjal1 }]}
           onPress={handleSave}
           disabled={saving}>
-          {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>Save Profile</Text>}
+          {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>{t('profile.editCreator.saveBtn')}</Text>}
         </Pressable>
 
         <View style={{ height: 32 }} />

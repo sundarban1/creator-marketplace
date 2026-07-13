@@ -21,7 +21,6 @@ import { useKeyboardOffset } from '@/hooks/useKeyboardOffset';
 import { creatorService, type ApiCreatorPublicProfile } from '@/services/creator';
 import { chatService } from '@/services/chat';
 import { F } from '@/utilities/constants';
-import { getIconColor } from '@/features/creator/data/filterOptions';
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
 import type { ApiCategory } from '@/services/category';
 
@@ -167,7 +166,6 @@ export default function CreatorDetailScreen() {
 
   const initials = (profile.fullName ?? 'C').split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2);
   const avatarBg = getAvatarBg(allCategories, profile.categories);
-  const hasBudget = profile.prefBudgetMin > 0 || profile.prefBudgetMax > 0;
   const portfolioLinks = (profile.portfolioLinks ?? []) as { id: string; label: string; url: string }[];
 
   // Merge socialLinks (JSON handles) + socialAccounts (structured with followers)
@@ -320,22 +318,6 @@ export default function CreatorDetailScreen() {
           </View>
         )}
 
-        {/* ── Rate / Budget ── */}
-        {hasBudget && (
-          <View style={[s.section, { backgroundColor: C.surface }]}>
-            <SectionTitle label={t('creatorDetailExtra.sectionRatePreference')} color={C.textSecondary} />
-            <View style={[s.budgetCard, { backgroundColor: C.primaryLight }]}>
-              <FontAwesome5 name="wallet" size={22} color={getIconColor('wallet')} />
-              <View style={s.budgetInfo}>
-                <Text style={[s.budgetLabel, { color: C.textSecondary }]}>{t('creatorDetailExtra.preferredRange')}</Text>
-                <Text style={[s.budgetValue, { color: C.brinjal1 }]}>
-                  Rs. {profile.prefBudgetMin} – Rs. {profile.prefBudgetMax}
-                </Text>
-              </View>
-            </View>
-          </View>
-        )}
-
         {/* ── Preferred Platforms ── */}
         {profile.prefPlatforms.length > 0 && (
           <View style={[s.section, { backgroundColor: C.surface }]}>
@@ -484,12 +466,6 @@ const s = StyleSheet.create({
   statTile:   { width: '47%', borderRadius: 12, padding: 12, gap: 4, alignItems: 'flex-start' },
   statValue:  { fontSize: 16, fontFamily: F.bold },
   statLabel:  { fontSize: 11, fontFamily: F.medium },
-
-  // Budget
-  budgetCard:  { flexDirection: 'row', alignItems: 'center', borderRadius: 12, padding: 14, gap: 12 },
-  budgetInfo:  { flex: 1 },
-  budgetLabel: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 0, fontFamily: F.semibold },
-  budgetValue: { fontSize: 16, marginTop: 2, fontFamily: F.bold },
 
   // Portfolio
   portfolioList:    { gap: 10 },

@@ -18,6 +18,7 @@ import { AppThemeProvider, useIsDark } from '@/context/ThemeContext';
 import { NotificationProvider } from '@/context/NotificationContext';
 import { SplashScreen } from '@/components/SplashScreen';
 import { BiometricGateScreen } from '@/components/BiometricGateScreen';
+import { OfflineBanner } from '@/components/OfflineBanner';
 import { ToastProvider } from '@/components/Toast';
 import { isBiometricLoginEnabled } from '@/services/biometric';
 
@@ -96,18 +97,17 @@ function RootNavigator() {
 function RootLayoutInner() {
   const { isDark } = useIsDark();
   return (
-    <LanguageProvider>
-      <AuthProvider>
-        <NotificationProvider>
-          <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
-            {/* Default status bar for plain-background screens — light-headered
-                auth screens override this locally with their own <StatusBar style="light" />. */}
-            <StatusBar style={isDark ? 'light' : 'dark'} />
-            <RootNavigator />
-          </ThemeProvider>
-        </NotificationProvider>
-      </AuthProvider>
-    </LanguageProvider>
+    <AuthProvider>
+      <NotificationProvider>
+        <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
+          {/* Default status bar for plain-background screens — light-headered
+              auth screens override this locally with their own <StatusBar style="light" />. */}
+          <StatusBar style={isDark ? 'light' : 'dark'} />
+          <RootNavigator />
+          <OfflineBanner />
+        </ThemeProvider>
+      </NotificationProvider>
+    </AuthProvider>
   );
 }
 
@@ -125,10 +125,12 @@ export default function RootLayout() {
   return (
     <AppThemeProvider>
       <ToastProvider>
-        <View style={{ flex: 1 }}>
-          <RootLayoutInner />
-          <SplashScreen />
-        </View>
+        <LanguageProvider>
+          <View style={{ flex: 1 }}>
+            <RootLayoutInner />
+            <SplashScreen />
+          </View>
+        </LanguageProvider>
       </ToastProvider>
     </AppThemeProvider>
   );

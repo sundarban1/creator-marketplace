@@ -46,7 +46,7 @@ export default function ReferralScreen() {
   function loadOverview() {
     return referralService.getOverview()
       .then(setOverview)
-      .catch(() => toast.error('Could not load referral info. Please try again.'));
+      .catch(() => toast.error(t('referral.loadError')));
   }
 
   useEffect(() => {

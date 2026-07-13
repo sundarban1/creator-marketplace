@@ -3,6 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { ActivityIndicator, Animated, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { RangeSlider } from '@/components/RangeSlider';
 import { useAppColors } from '@/context/ThemeContext';
+import { useLanguage, type TFn } from '@/context/LanguageContext';
 import { useKeyboardOffset } from '@/hooks/useKeyboardOffset';
 import { F } from '@/utilities/constants';
 
@@ -21,11 +22,15 @@ type Prediction = {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const MONTHS = [
-  'January','February','March','April','May','June',
-  'July','August','September','October','November','December',
-];
-const DAY_SHORT = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+function getMonths(t: TFn) {
+  return Array.from({ length: 12 }, (_, i) => t(`filterModal.month${i}`));
+}
+function getMonthsShort(t: TFn) {
+  return Array.from({ length: 12 }, (_, i) => t(`filterModal.monthShort${i}`));
+}
+function getDaysShort(t: TFn) {
+  return Array.from({ length: 7 }, (_, i) => t(`filterModal.day${i}`));
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -38,19 +43,19 @@ function sameDay(a: Date, b: Date) {
 function isBetween(d: Date, from: Date, to: Date) {
   return d.getTime() > from.getTime() && d.getTime() < to.getTime();
 }
-function fmtDate(d: Date | null) {
+function fmtDate(d: Date | null, monthsShort: string[]) {
   if (!d) return '—';
-  return `${d.getDate()} ${MONTHS[d.getMonth()].slice(0, 3)} ${d.getFullYear()}`;
+  return `${d.getDate()} ${monthsShort[d.getMonth()]} ${d.getFullYear()}`;
 }
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 export type EventTypeFilter = 'ALL' | 'PAID_CAMPAIGN' | 'OPEN_EVENT';
 
-const EVENT_TYPE_OPTS: { value: EventTypeFilter; label: string }[] = [
-  { value: 'ALL',           label: 'All'    },
-  { value: 'PAID_CAMPAIGN', label: 'Paid' },
-  { value: 'OPEN_EVENT',    label: 'Free'   },
+const EVENT_TYPE_OPTS: { value: EventTypeFilter; labelKey: string }[] = [
+  { value: 'ALL',           labelKey: 'filterModal.optionAll'  },
+  { value: 'PAID_CAMPAIGN', labelKey: 'filterModal.optionPaid' },
+  { value: 'OPEN_EVENT',    labelKey: 'filterModal.optionFree' },
 ];
 
 type Props = {
@@ -82,11 +87,15 @@ export function LocationSearchPicker({
   onSelect: (v: LocationFilter) => void;
 }) {
   const C = useAppColors();
+  const { t } = useLanguage();
   const [query, setQuery] = useState('');
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [searching, setSearching] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // 'Remote' is a data sentinel compared against campaign/creator location
+  // elsewhere in the app — keep it untranslated in the stored label, only
+  // the displayed text below is localized.
   const remoteSelected = selected.some((l) => l.label === 'Remote');
   const nonRemote = selected.filter((l) => l.label !== 'Remote');
   const atMax = selected.length >= MAX_LOCS;
@@ -157,7 +166,7 @@ export function LocationSearchPicker({
         disabled={!remoteSelected && atMax}>
         <Ionicons name="globe-outline" size={14} color={remoteSelected ? C.brinjal1 : C.textSecondary} />
         <Text style={[ls.remoteText, { color: remoteSelected ? C.brinjal1 : C.text, fontWeight: remoteSelected ? '700' : '500' }]}>
-          Remote
+          {t('filterModal.remote')}
         </Text>
         {remoteSelected && <Ionicons name="close" size={14} color={C.brinjal1} />}
       </Pressable>
@@ -186,7 +195,7 @@ export function LocationSearchPicker({
               style={[ls.searchInput, { color: C.text }]}
               value={query}
               onChangeText={handleSearchChange}
-              placeholder="Search city…"
+              placeholder={t('filterModal.searchCityPlaceholder')}
               placeholderTextColor={C.textSecondary}
               returnKeyType="search"
             />
@@ -246,6 +255,10 @@ function DateRangePicker({
   onFromChange: (d: Date | null) => void; onToChange: (d: Date | null) => void;
 }) {
   const C = useAppColors();
+  const { t } = useLanguage();
+  const months = getMonths(t);
+  const monthsShort = getMonthsShort(t);
+  const daysShort = getDaysShort(t);
   const today = dayStart(new Date());
   const [activePicker, setActivePicker] = useState<'from' | 'to' | null>(null);
   const [calYear, setCalYear] = useState(today.getFullYear());
@@ -298,9 +311,9 @@ function DateRangePicker({
   while (cells.length % 7 !== 0) cells.push(null);
 
   const PRESETS = [
-    { label: 'Today',      days: 0 },
-    { label: 'Last week',  days: 7 },
-    { label: 'Last month', days: 30 },
+    { label: t('filterModal.presetToday'),     days: 0 },
+    { label: t('filterModal.presetLastWeek'),  days: 7 },
+    { label: t('filterModal.presetLastMonth'), days: 30 },
   ];
 
   function applyPreset(days: number) {
@@ -346,11 +359,11 @@ function DateRangePicker({
           return (
             <View key={field} style={dp.inputGroup}>
               <Text style={[dp.inputLabel, { color: C.textSecondary }]}>
-                {field === 'from' ? 'From' : 'To'}
+                {field === 'from' ? t('filterModal.fromLabel') : t('filterModal.toLabel')}
               </Text>
               <View style={[dp.inputBox, { borderColor: active ? C.brinjal1 : date ? C.brinjal1 + '60' : C.border, backgroundColor: C.background }]}>
                 <Text style={[dp.inputValue, { color: date ? C.text : C.textSecondary }]} numberOfLines={1}>
-                  {date ? fmtDate(date) : 'DD MMM YYYY'}
+                  {date ? fmtDate(date, monthsShort) : t('filterModal.datePlaceholder')}
                 </Text>
                 <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => togglePicker(field)} hitSlop={8}>
                   <Ionicons name="calendar-outline" size={16} color={active ? C.brinjal1 : C.textSecondary} />
@@ -373,22 +386,22 @@ function DateRangePicker({
       {activePicker && (
         <View style={[dp.cal, { backgroundColor: C.background, borderColor: C.border }]}>
           <Text style={[dp.calTitle, { color: C.brinjal1 }]}>
-            {activePicker === 'from' ? 'Select start date' : 'Select end date'}
+            {activePicker === 'from' ? t('filterModal.selectStartDate') : t('filterModal.selectEndDate')}
           </Text>
 
           <View style={dp.monthNav}>
             <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={dp.navBtn} onPress={prevMonth}>
               <Text style={[dp.navBtnTxt, { color: C.brinjal1 }]}>‹</Text>
             </Pressable>
-            <Text style={[dp.monthTitle, { color: C.text }]}>{MONTHS[calMonth]} {calYear}</Text>
+            <Text style={[dp.monthTitle, { color: C.text }]}>{months[calMonth]} {calYear}</Text>
             <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={dp.navBtn} onPress={nextMonth}>
               <Text style={[dp.navBtnTxt, { color: C.brinjal1 }]}>›</Text>
             </Pressable>
           </View>
 
           <View style={dp.dayRow}>
-            {DAY_SHORT.map((d) => (
-              <Text key={d} style={[dp.dayHdr, { color: C.textSecondary }]}>{d}</Text>
+            {daysShort.map((d, i) => (
+              <Text key={i} style={[dp.dayHdr, { color: C.textSecondary }]}>{d}</Text>
             ))}
           </View>
 
@@ -433,6 +446,7 @@ export function FilterModal({
   onApply, onReset, onClose,
 }: Props) {
   const C = useAppColors();
+  const { t } = useLanguage();
   const keyboardOffset = useKeyboardOffset();
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -441,38 +455,38 @@ export function FilterModal({
         <View style={[styles.handle, { backgroundColor: C.border }]} />
 
         <View style={[styles.header, { borderBottomColor: C.border }]}>
-          <Text style={[styles.title, { color: C.text }]}>Filters</Text>
+          <Text style={[styles.title, { color: C.text }]}>{t('filterModal.title')}</Text>
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={onReset}>
-            <Text style={[styles.reset, { color: C.brinjal1 }]}>Reset all</Text>
+            <Text style={[styles.reset, { color: C.brinjal1 }]}>{t('filterModal.resetAll')}</Text>
           </Pressable>
         </View>
 
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.body}>
 
-          <Text style={[styles.section, { color: C.textSecondary }]}>Price Range</Text>
+          <Text style={[styles.section, { color: C.textSecondary }]}>{t('filterModal.sectionPriceRange')}</Text>
           <RangeSlider minVal={tempPriceMin} maxVal={tempPriceMax} onMinChange={setTempPriceMin} onMaxChange={setTempPriceMax} currency="Rs" max={100000} step={1000} />
 
-          <Text style={[styles.section, { color: C.textSecondary }]}>Event Type</Text>
+          <Text style={[styles.section, { color: C.textSecondary }]}>{t('filterModal.sectionEventType')}</Text>
           <View style={styles.eventTypeRow}>
-            {EVENT_TYPE_OPTS.map(({ value, label }) => {
+            {EVENT_TYPE_OPTS.map(({ value, labelKey }) => {
               const sel = tempEventType === value;
               return (
                 <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                   key={value}
                   style={[styles.eventChip, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? C.primaryLight : C.background }]}
                   onPress={() => setTempEventType(value)}>
-                  <Text style={[styles.eventChipTxt, { color: sel ? C.brinjal1 : C.textSecondary, fontWeight: sel ? '700' : '500' }]}>{label}</Text>
+                  <Text style={[styles.eventChipTxt, { color: sel ? C.brinjal1 : C.textSecondary, fontWeight: sel ? '700' : '500' }]}>{t(labelKey)}</Text>
                 </Pressable>
               );
             })}
           </View>
 
-          <Text style={[styles.section, { color: C.textSecondary }]}>Deadline Range</Text>
+          <Text style={[styles.section, { color: C.textSecondary }]}>{t('filterModal.sectionDeadlineRange')}</Text>
           <DateRangePicker dateFrom={tempDateFrom} dateTo={tempDateTo} onFromChange={setTempDateFrom} onToChange={setTempDateTo} />
 
           <View style={styles.sectionRow}>
-            <Text style={[styles.section, { color: C.textSecondary, marginBottom: 0 }]}>Location</Text>
-            <Text style={[styles.sectionHint, { color: C.textSecondary }]}>{tempLocation.length}/{MAX_LOCS} allowed</Text>
+            <Text style={[styles.section, { color: C.textSecondary, marginBottom: 0 }]}>{t('filterModal.sectionLocation')}</Text>
+            <Text style={[styles.sectionHint, { color: C.textSecondary }]}>{t('filterModal.locationsAllowed', { n: tempLocation.length, max: MAX_LOCS })}</Text>
           </View>
           <LocationSearchPicker selected={tempLocation} onSelect={setTempLocation} />
 
@@ -482,7 +496,7 @@ export function FilterModal({
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
             style={({ pressed }) => [styles.applyBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }, pressed && { opacity: 0.88 }]}
             onPress={onApply}>
-            <Text style={styles.applyTxt}>Apply Filters</Text>
+            <Text style={styles.applyTxt}>{t('filterModal.applyFiltersBtn')}</Text>
           </Pressable>
         </View>
       </Animated.View>

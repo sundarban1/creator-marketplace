@@ -149,13 +149,13 @@ export default function SubmitProposalScreen() {
     : undefined;
   const rateError  = !isFreeEvent && submitted
     ? (!proposedRate || proposedRate <= 0)
-      ? 'Enter a valid amount (e.g. 5000)'
+      ? t('proposal.rateInvalidError')
       : rateOutOfRange
-        ? `Enter an amount between Rs. ${budgetMinNum.toLocaleString()} and Rs. ${budgetMaxNum.toLocaleString()}`
+        ? t('proposal.rateRangeError', { min: budgetMinNum.toLocaleString(), max: budgetMaxNum.toLocaleString() })
         : undefined
     : undefined;
   const portError  = submitted && portfolio.trim() && !isValidUrl(portfolio.trim())
-    ? 'Enter a valid URL (e.g. https://yourportfolio.com)'
+    ? t('proposal.portfolioInvalidError')
     : undefined;
 
   const hasErrors = !!coverError || !!rateError || !!portError;
@@ -167,7 +167,7 @@ export default function SubmitProposalScreen() {
   async function handleSubmit() {
     setSubmitted(true);
     if (coverLetterLen < 50 || isRateInvalid || (portfolio.trim() && !isValidUrl(portfolio.trim()))) {
-      toast.warning('Please fix the errors below before submitting.');
+      toast.warning(t('proposal.fixErrorsWarning'));
       return;
     }
 
@@ -189,10 +189,10 @@ export default function SubmitProposalScreen() {
         socialHandles: {},
         portfolioUrl: portfolio.trim() || undefined,
       });
-      toast.success(`Proposal sent to ${brand}!`, 'Application submitted');
+      toast.success(t('proposal.submitSuccessBody', { brand }), t('proposal.submitSuccessTitle'));
       setTimeout(() => router.back(), 1200);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Failed to submit proposal. Please try again.');
+      toast.error(e instanceof Error ? e.message : t('proposal.submitError'));
     } finally {
       setLoading(false);
     }
@@ -321,7 +321,7 @@ export default function SubmitProposalScreen() {
               </View>
             )}
 
-            <Button label={loading ? 'Submitting…' : t('proposal.submit')} onPress={handleSubmit} loading={loading} />
+            <Button label={loading ? t('proposal.submitting') : t('proposal.submit')} onPress={handleSubmit} loading={loading} />
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

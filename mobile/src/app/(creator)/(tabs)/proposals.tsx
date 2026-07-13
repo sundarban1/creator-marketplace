@@ -51,15 +51,15 @@ const STATUS_CFG = {
   rejected: { labelKey: 'proposal.creator.statusRejected' as const, icon: 'close-circle'     as const, color: '#B91C1C', bg: '#FEF2F2' },
 };
 
-const TRACK_CFG: Record<WS, { label: string; icon: keyof typeof Ionicons.glyphMap; color: string; sub: string }> = {
-  NONE:        { label: 'Track Project',    icon: 'navigate',   color: '#C2410C', sub: 'Waiting to start'          },
-  IN_PROGRESS: { label: 'View My Work',     icon: 'brush',      color: '#C2410C', sub: 'Work in progress'          },
-  SUBMITTED:   { label: 'Awaiting Review',  icon: 'hourglass',  color: '#B45309', sub: 'Brand reviewing your work' },
+const TRACK_CFG: Record<WS, { labelKey: string; icon: keyof typeof Ionicons.glyphMap; color: string; subKey: string }> = {
+  NONE:        { labelKey: 'proposal.creator.trackNoneLabel',        icon: 'navigate',       color: '#C2410C', subKey: 'proposal.creator.trackNoneSub'        },
+  IN_PROGRESS: { labelKey: 'proposal.creator.trackInProgressLabel',  icon: 'brush',          color: '#C2410C', subKey: 'proposal.creator.trackInProgressSub'  },
+  SUBMITTED:   { labelKey: 'proposal.creator.trackSubmittedLabel',   icon: 'hourglass',      color: '#B45309', subKey: 'proposal.creator.trackSubmittedSub'   },
   // Approval no longer releases payment automatically — an admin releases it
   // manually, so ProposalCard overrides this "sub" based on paymentStatus
   // (pending release, awaiting verification, or fully complete).
-  APPROVED:    { label: 'Verify Payment',   icon: 'trophy',     color: '#16A34A', sub: 'Payment released!'         },
-  COMPLETED:   { label: 'Project Complete', icon: 'checkmark-done', color: '#16A34A', sub: 'This collaboration is complete' },
+  APPROVED:    { labelKey: 'proposal.creator.trackApprovedLabel',    icon: 'trophy',         color: '#16A34A', subKey: 'proposal.creator.trackApprovedSub'    },
+  COMPLETED:   { labelKey: 'proposal.creator.trackCompletedLabel',   icon: 'checkmark-done', color: '#16A34A', subKey: 'proposal.creator.trackCompletedSub'   },
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -177,9 +177,9 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
   const [expanded, setExpanded] = useState(false);
   const cfg        = STATUS_CFG[proposal.status];
   const trackCfg   = proposal.workStatus === 'APPROVED' && proposal.paymentStatus === 'RELEASED'
-    ? { ...TRACK_CFG.APPROVED, label: 'Verify Payment', sub: 'Verify your payment to complete the project' }
+    ? { ...TRACK_CFG.APPROVED, labelKey: 'proposal.creator.trackApprovedReleasedLabel', subKey: 'proposal.creator.trackApprovedReleasedSub' }
     : proposal.workStatus === 'APPROVED'
-    ? { ...TRACK_CFG.APPROVED, label: 'Project Approved', sub: 'Approved — admin will release payment' }
+    ? { ...TRACK_CFG.APPROVED, labelKey: 'proposal.creator.trackApprovedPendingLabel', subKey: 'proposal.creator.trackApprovedPendingSub' }
     : TRACK_CFG[proposal.workStatus];
   const isFree     = proposal.campaignType === 'OPEN_EVENT';
   const accentColor = cfg.color;
@@ -220,7 +220,7 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
               {proposal.coverLetter.length > 100 && (
                 <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={(e) => { e.stopPropagation(); setExpanded((v) => !v); }}>
                   <Text style={[styles.seeMore, { color: accentColor }]}>
-                    {expanded ? 'See less' : 'See more'}
+                    {expanded ? t('proposal.creator.seeLess') : t('proposal.creator.seeMore')}
                   </Text>
                 </Pressable>
               )}
@@ -252,8 +252,8 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
                 <Ionicons name="checkmark-circle" size={20} color={accentColor} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.invitedTitle, { color: accentColor }]}>You're invited!</Text>
-                <Text style={[styles.invitedSub, { color: C.textSecondary }]}>The brand accepted your application</Text>
+                <Text style={[styles.invitedTitle, { color: accentColor }]}>{t('proposal.creator.invitedTitle')}</Text>
+                <Text style={[styles.invitedSub, { color: C.textSecondary }]}>{t('proposal.creator.invitedSub')}</Text>
               </View>
             </View>
           ) : (
@@ -276,8 +276,8 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
                 <Ionicons name={trackCfg.icon} size={17} color="#fff" />
               </View>
               <View style={styles.trackBtnText}>
-                <Text style={styles.trackBtnLabel}>{trackCfg.label}</Text>
-                <Text style={styles.trackBtnSub}>{trackCfg.sub}</Text>
+                <Text style={styles.trackBtnLabel}>{t(trackCfg.labelKey)}</Text>
+                <Text style={styles.trackBtnSub}>{t(trackCfg.subKey)}</Text>
               </View>
               <Ionicons name="chevron-forward" size={15} color="rgba(255,255,255,0.6)" />
             </Pressable>

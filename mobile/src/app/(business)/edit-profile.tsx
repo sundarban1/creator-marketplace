@@ -61,7 +61,7 @@ export default function EditBusinessProfileScreen() {
         setCategories(profile.categories ?? []);
         setAllCategories(cats);
       })
-      .catch(() => toast.error('Could not load profile.'))
+      .catch(() => toast.error(t('profile.editBusiness.loadError')))
       .finally(() => setLoading(false));
   }, []);
 
@@ -82,7 +82,7 @@ export default function EditBusinessProfileScreen() {
 
   async function handleSave() {
     if (!businessName.trim() || businessName.trim().length < 2) {
-      toast.warning('Business name must be at least 2 characters.');
+      toast.warning(t('profile.editBusiness.nameMinLengthWarning'));
       return;
     }
     setSaving(true);
@@ -94,10 +94,10 @@ export default function EditBusinessProfileScreen() {
         location:     location.trim() || null,
         categories,
       });
-      toast.success('Profile saved!');
+      toast.success(t('profile.editBusiness.saveSuccess'));
       router.back();
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Failed to save profile.');
+      toast.error(err instanceof Error ? err.message : t('profile.editBusiness.saveError'));
     } finally {
       setSaving(false);
     }

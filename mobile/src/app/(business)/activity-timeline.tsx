@@ -550,7 +550,7 @@ export default function CampaignWorkspaceScreen() {
       setShowPay(false);
       showToast(t('activityTimeline.toastPaySuccess'));
     } catch (e: any) {
-      showToast(e?.message ?? 'Payment failed. Please try again.');
+      showToast(e?.message ?? t('activityTimeline.toastPayFailed'));
     } finally {
       setSubmitting(false);
     }
@@ -564,7 +564,7 @@ export default function CampaignWorkspaceScreen() {
       setApp(a => a ? { ...a, workStatus: 'IN_PROGRESS' } : a);
       showToast(t('activityTimeline.acStartBtn'));
     } catch (e: any) {
-      showToast(e?.message ?? 'Failed to start. Please try again.');
+      showToast(e?.message ?? t('activityTimeline.toastStartFailed'));
     } finally {
       setSubmitting(false);
     }
@@ -583,7 +583,7 @@ export default function CampaignWorkspaceScreen() {
       setShowUpload(false);
       showToast(t('activityTimeline.toastWorkSubmitted'));
     } catch (e: any) {
-      showToast(e?.message ?? 'Submission failed. Please try again.');
+      showToast(e?.message ?? t('activityTimeline.toastSubmitFailed'));
     } finally {
       setSubmitting(false);
     }
@@ -597,7 +597,7 @@ export default function CampaignWorkspaceScreen() {
       setApp(a => a ? { ...a, workStatus: 'APPROVED' } : a);
       showToast(t('activityTimeline.toastWorkApproved'));
     } catch (e: any) {
-      showToast(e?.message ?? 'Approval failed. Please try again.');
+      showToast(e?.message ?? t('activityTimeline.toastApproveFailed'));
     } finally {
       setSubmitting(false);
     }
@@ -611,7 +611,7 @@ export default function CampaignWorkspaceScreen() {
       setApp(a => a ? { ...a, workStatus: 'COMPLETED' } : a);
       showToast(t('activityTimeline.toastProjectCompleted'));
     } catch (e: any) {
-      showToast(e?.message ?? 'Failed to complete project. Please try again.');
+      showToast(e?.message ?? t('activityTimeline.toastCompleteFailed'));
     } finally {
       setSubmitting(false);
     }
@@ -626,7 +626,7 @@ export default function CampaignWorkspaceScreen() {
       setRevisionNote(''); setShowRevision(false);
       showToast(t('activityTimeline.toastRevisionRequested'));
     } catch (e: any) {
-      showToast(e?.message ?? 'Failed. Please try again.');
+      showToast(e?.message ?? t('activityTimeline.toastRevisionFailed'));
     } finally {
       setSubmitting(false);
     }
@@ -640,7 +640,7 @@ export default function CampaignWorkspaceScreen() {
       showToast(t('activityTimeline.toastCampaignCancelled'));
       setTimeout(() => router.back(), 1500);
     } catch (e: any) {
-      showToast(e?.message ?? 'Cancellation failed. Please try again.');
+      showToast(e?.message ?? t('activityTimeline.toastCancelFailed'));
     } finally {
       setSubmitting(false);
     }
@@ -648,7 +648,7 @@ export default function CampaignWorkspaceScreen() {
 
   async function handleMessage() {
     const otherProfileId = app?.creatorProfileId;
-    const otherName      = isCreator ? (app?.creatorName ?? 'Brand') : (app?.creatorName ?? 'Creator');
+    const otherName      = isCreator ? (app?.creatorName ?? t('activityTimeline.fallbackBrand')) : (app?.creatorName ?? t('activityTimeline.fallbackCreator'));
 
     if (otherProfileId) {
       try {
@@ -905,11 +905,11 @@ export default function CampaignWorkspaceScreen() {
       <Sheet visible={showPay} onClose={() => setShowPay(false)} title={t('activityTimeline.modalPayTitle')}>
         <Text style={sh.sub}>{t('activityTimeline.modalPaySub')}</Text>
         <View style={{ gap: 8, marginVertical: 14 }}>
-          {([['Creator Fee', crFee], ['Platform Fee (5%)', pfFee], ['VAT (13%)', vat]] as [string, number][]).map(([l, v]) => (
+          {([[t('activityTimeline.feeCreator'), crFee], [t('activityTimeline.feePlatform'), pfFee], [t('activityTimeline.feeVat'), vat]] as [string, number][]).map(([l, v]) => (
             <View key={l} style={sh.sumRow}><Text style={sh.sumLabel}>{l}</Text><Text style={sh.sumValue}>NPR {v.toLocaleString()}</Text></View>
           ))}
           <View style={[sh.divider, { backgroundColor: '#E5E7EB' }]} />
-          <View style={sh.sumRow}><Text style={sh.totalLabel}>Total</Text><Text style={sh.totalValue}>NPR {total.toLocaleString()}</Text></View>
+          <View style={sh.sumRow}><Text style={sh.totalLabel}>{t('activityTimeline.feeTotal')}</Text><Text style={sh.totalValue}>NPR {total.toLocaleString()}</Text></View>
         </View>
         <Text style={sh.sectionLabel}>{t('activityTimeline.modalPayWith')}</Text>
         <View style={{ gap: 8, marginBottom: 16 }}>

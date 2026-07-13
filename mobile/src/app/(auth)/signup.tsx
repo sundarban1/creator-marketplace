@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
+import { useLanguage, type TFn } from '@/context/LanguageContext';
 import { authService } from '@/services/auth';
 import { F } from '@/utilities/constants';
 
@@ -25,28 +26,28 @@ function isValidEmail(v: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
 }
 const EMAIL_DOMAINS = ['gmail.com', 'yahoo.com'];
-function getPasswordError(pwd: string): string | undefined {
-  if (pwd.length < 8)     return 'At least 8 characters required.';
-  if (!/[A-Z]/.test(pwd)) return 'Add at least one uppercase letter.';
-  if (!/[0-9]/.test(pwd)) return 'Add at least one number.';
+function getPasswordError(pwd: string, t: TFn): string | undefined {
+  if (pwd.length < 8)     return t('signupScreen.errPasswordMinLength');
+  if (!/[A-Z]/.test(pwd)) return t('signupScreen.errPasswordUppercase');
+  if (!/[0-9]/.test(pwd)) return t('signupScreen.errPasswordNumber');
   return undefined;
 }
 
 const ROLES = [
   {
-    key: 'CREATOR',  label: 'Content Creator',  sub: 'I create content and want to collaborate with brands',
+    key: 'CREATOR',  labelKey: 'signupScreen.roleCreatorLabel',  subKey: 'signupScreen.roleCreatorSub',
     icon: 'camera-outline' as const,
   },
   {
-    key: 'BUSINESS', label: 'Brand / Business',  sub: 'I represent a brand and want to work with creators',
+    key: 'BUSINESS', labelKey: 'signupScreen.roleBusinessLabel',  subKey: 'signupScreen.roleBusinessSub',
     icon: 'briefcase-outline' as const,
   },
 ] as const;
 
 const PASSWORD_RULES = [
-  { test: (p: string) => p.length >= 8,   label: '8+ chars'  },
-  { test: (p: string) => /[A-Z]/.test(p), label: 'Uppercase' },
-  { test: (p: string) => /[0-9]/.test(p), label: 'Number'    },
+  { test: (p: string) => p.length >= 8,   labelKey: 'signupScreen.ruleChars'     },
+  { test: (p: string) => /[A-Z]/.test(p), labelKey: 'signupScreen.ruleUppercase' },
+  { test: (p: string) => /[0-9]/.test(p), labelKey: 'signupScreen.ruleNumber'    },
 ];
 
 // ── Input field ───────────────────────────────────────────────────────────────
@@ -129,6 +130,7 @@ function Field({
 
 export default function SignupScreen() {
   const C = useAppColors();
+  const { t } = useLanguage();
 
   const [role,      setRole]      = useState<'CREATOR' | 'BUSINESS'>('CREATOR');
   const [email,     setEmail]     = useState('');
@@ -137,19 +139,19 @@ export default function SignupScreen() {
   const [loading,   setLoading]   = useState(false);
   const [apiError,  setApiError]  = useState('');
 
-  const emailError    = submitted && !isValidEmail(email)     ? 'Enter a valid email address' : undefined;
-  const passwordError = submitted ? getPasswordError(password) : undefined;
+  const emailError    = submitted && !isValidEmail(email)     ? t('signupScreen.errEmailInvalid') : undefined;
+  const passwordError = submitted ? getPasswordError(password, t) : undefined;
 
   async function handleCreate() {
     setSubmitted(true);
     setApiError('');
-    if (!isValidEmail(email) || getPasswordError(password)) return;
+    if (!isValidEmail(email) || getPasswordError(password, t)) return;
     setLoading(true);
     try {
       await authService.register({ email: email.trim().toLowerCase(), password, role });
       router.push({ pathname: '/verify', params: { email: email.trim().toLowerCase() } });
     } catch (err) {
-      setApiError(err instanceof Error ? err.message : 'Registration failed. Please try again.');
+      setApiError(err instanceof Error ? err.message : t('signupScreen.errRegistrationFailed'));
     } finally {
       setLoading(false);
     }
@@ -177,24 +179,24 @@ export default function SignupScreen() {
 
           {/* Heading */}
           <View style={s.headingWrap}>
-            <Text style={[s.heading, { color: C.text }]}>Create your account</Text>
+            <Text style={[s.heading, { color: C.text }]}>{t('signupScreen.heading')}</Text>
             <Text style={[s.headingSub, { color: '#6B7280' }]}>
-              Join kolab and unlock endless collaboration opportunities.
+              {t('signupScreen.subtitle')}
             </Text>
           </View>
 
           {/* Tab bar */}
           <View style={[s.tabBar, { backgroundColor: '#F3F4F6' }]}>
             <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={s.tabBtn} onPress={() => router.replace('/login')}>
-              <Text style={[s.tabBtnText, { color: '#6B7280' }]}>Log in</Text>
+              <Text style={[s.tabBtnText, { color: '#6B7280' }]}>{t('signupScreen.tabLogin')}</Text>
             </Pressable>
             <View style={[s.tabBtn, s.tabBtnActive]}>
-              <Text style={[s.tabBtnText, { color: PRIMARY, fontFamily: F.bold }]}>Create Account</Text>
+              <Text style={[s.tabBtnText, { color: PRIMARY, fontFamily: F.bold }]}>{t('signupScreen.tabCreateAccount')}</Text>
             </View>
           </View>
 
           {/* Role selector */}
-          <Text style={[s.sectionLabel, { color: C.text }]}>I'm joining as</Text>
+          <Text style={[s.sectionLabel, { color: C.text }]}>{t('signupScreen.joiningAs')}</Text>
           <View style={s.roleRow}>
             {ROLES.map((r) => {
               const active = role === r.key;
@@ -215,8 +217,8 @@ export default function SignupScreen() {
                       </View>
                     )}
                   </View>
-                  <Text style={[s.roleLabel, { color: active ? PRIMARY : C.text }]}>{r.label}</Text>
-                  <Text style={[s.roleSub, { color: '#6B7280' }]} numberOfLines={2}>{r.sub}</Text>
+                  <Text style={[s.roleLabel, { color: active ? PRIMARY : C.text }]}>{t(r.labelKey)}</Text>
+                  <Text style={[s.roleSub, { color: '#6B7280' }]} numberOfLines={2}>{t(r.subKey)}</Text>
                 </Pressable>
               );
             })}
@@ -226,19 +228,19 @@ export default function SignupScreen() {
           <View style={s.form}>
             <Field
               icon="mail-outline"
-              label="Email"
+              label={t('signupScreen.emailLabel')}
               value={email}
               onChangeText={(v) => { setEmail(v); setApiError(''); }}
-              placeholder="you@email.com"
+              placeholder={t('signupScreen.emailPlaceholder')}
               keyboardType="email-address"
               error={emailError}
             />
             <Field
               icon="lock-closed-outline"
-              label="Password"
+              label={t('signupScreen.passwordLabel')}
               value={password}
               onChangeText={(v) => { setPassword(v); setApiError(''); }}
-              placeholder="Create a password"
+              placeholder={t('signupScreen.passwordPlaceholder')}
               secureTextEntry
               error={passwordError}
             />
@@ -249,16 +251,16 @@ export default function SignupScreen() {
                 {PASSWORD_RULES.map((rule) => {
                   const ok = rule.test(password);
                   return (
-                    <View key={rule.label} style={[s.rulePill, { backgroundColor: ok ? '#F0FDF4' : '#F9FAFB', borderColor: ok ? '#86EFAC' : '#E5E7EB' }]}>
+                    <View key={rule.labelKey} style={[s.rulePill, { backgroundColor: ok ? '#F0FDF4' : '#F9FAFB', borderColor: ok ? '#86EFAC' : '#E5E7EB' }]}>
                       <Ionicons name={ok ? 'checkmark-circle' : 'ellipse-outline'} size={11} color={ok ? '#16A34A' : '#9CA3AF'} />
-                      <Text style={[s.ruleText, { color: ok ? '#16A34A' : '#9CA3AF' }]}>{rule.label}</Text>
+                      <Text style={[s.ruleText, { color: ok ? '#16A34A' : '#9CA3AF' }]}>{t(rule.labelKey)}</Text>
                     </View>
                   );
                 })}
               </View>
             )}
 
-            <Text style={s.passwordHint}>Min. 8 characters with uppercase letters and numbers</Text>
+            <Text style={s.passwordHint}>{t('signupScreen.passwordHint')}</Text>
 
             {!!apiError && (
               <View style={s.errorBanner}>
@@ -275,13 +277,13 @@ export default function SignupScreen() {
             style={({ pressed }) => [s.primaryBtn, { backgroundColor: PRIMARY, opacity: pressed ? 0.88 : 1 }]}>
             {loading
               ? <Ionicons name="sync" size={18} color="#fff" />
-              : <Text style={s.primaryBtnText}>Sign up</Text>}
+              : <Text style={s.primaryBtnText}>{t('signupScreen.signUpBtn')}</Text>}
           </Pressable>
 
           {/* Divider */}
           <View style={s.divider}>
             <View style={[s.dividerLine, { backgroundColor: '#E5E7EB' }]} />
-            <Text style={s.dividerText}>or continue with</Text>
+            <Text style={s.dividerText}>{t('signupScreen.orContinueWith')}</Text>
             <View style={[s.dividerLine, { backgroundColor: '#E5E7EB' }]} />
           </View>
 
@@ -290,7 +292,7 @@ export default function SignupScreen() {
             style={[s.socialBtn, { borderColor: '#E5E7EB', backgroundColor: C.surface }]}
             onPress={() => setApiError('Google sign-in is not available yet.')}>
             <View style={s.googleBadge}><Text style={s.googleG}>G</Text></View>
-            <Text style={[s.socialBtnText, { color: C.text }]}>Continue with Google</Text>
+            <Text style={[s.socialBtnText, { color: C.text }]}>{t('signupScreen.continueGoogle')}</Text>
           </Pressable>
 
           {/* Terms */}
@@ -303,16 +305,16 @@ export default function SignupScreen() {
 
           {/* Login link */}
           <View style={s.switchRow}>
-            <Text style={[s.switchText, { color: '#6B7280' }]}>Already have an account?</Text>
+            <Text style={[s.switchText, { color: '#6B7280' }]}>{t('signupScreen.alreadyHaveAccount')}</Text>
             <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => router.replace('/login')}>
-              <Text style={[s.switchLink, { color: PRIMARY }]}>Log in</Text>
+              <Text style={[s.switchLink, { color: PRIMARY }]}>{t('signupScreen.tabLogin')}</Text>
             </Pressable>
           </View>
 
           {/* Security footer */}
           <View style={s.secureRow}>
             <Ionicons name="shield-checkmark-outline" size={13} color="#9CA3AF" />
-            <Text style={s.secureText}>Secure sign up  •  Your data is safe with us</Text>
+            <Text style={s.secureText}>{t('signupScreen.secureNote')}</Text>
           </View>
 
         </ScrollView>

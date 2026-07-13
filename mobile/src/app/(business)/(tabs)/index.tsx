@@ -16,6 +16,7 @@ import { notificationService } from '@/services/notifications';
 import { profileService } from '@/services/profile';
 import type { Campaign } from '@/types';
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
+import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 
 const STATUS_STYLE = {
   active: { bg: '#DCFCE7', color: '#16A34A',  statusKey: 'business.home.statusActive' as const },
@@ -66,11 +67,11 @@ export default function BusinessHomeScreen() {
     profileService.getBusinessProfile()
       .then((profile) => {
         const missing: string[] = [];
-        if (!profile.logoUrl)            missing.push('Logo');
-        if (!profile.description)        missing.push('Description');
-        if (!profile.location)           missing.push('Location');
-        if (!profile.categories?.length) missing.push('Categories');
-        if (!profile.website)            missing.push('Website');
+        if (!profile.logoUrl)            missing.push(t('business.home.fieldLogo'));
+        if (!profile.description)        missing.push(t('business.home.fieldDescription'));
+        if (!profile.location)           missing.push(t('business.home.fieldLocation'));
+        if (!profile.categories?.length) missing.push(t('business.home.fieldCategories'));
+        if (!profile.website)            missing.push(t('business.home.fieldWebsite'));
         setMissingFields(missing);
       })
       .catch(() => {});
@@ -79,6 +80,13 @@ export default function BusinessHomeScreen() {
   useFocusEffect(useCallback(() => {
     notificationService.getBadge().then((r) => setBadgeCount(r.count)).catch(() => {});
   }, []));
+
+  // Auto-refresh the moment connectivity is restored after being offline.
+  const { reconnectedAt } = useNetworkStatus();
+  useEffect(() => {
+    if (reconnectedAt) void fetchCampaigns(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reconnectedAt]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -131,7 +139,7 @@ export default function BusinessHomeScreen() {
               </Pressable>
               <View>
                 <Text style={[styles.greeting, { color: 'rgba(255,255,255,0.7)' }]}>{getGreeting()}</Text>
-                <Text style={[styles.brandName, { color: '#fff' }]} numberOfLines={1}>{user?.name ?? 'Business'}</Text>
+                <Text style={[styles.brandName, { color: '#fff' }]} numberOfLines={1}>{(user?.name ?? 'Business').replace(/^\+977\s*/, '')}</Text>
               </View>
             </View>
             <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.avatarCircle, { borderColor: 'rgba(255,255,255,0.5)', borderWidth: 2.5 }]} onPress={() => router.push('/(business)/profile')}>
@@ -154,17 +162,17 @@ export default function BusinessHomeScreen() {
           <View style={styles.statsStrip}>
             <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.statStripItem} onPress={() => router.push('/(business)/campaigns')}>
               <Text style={styles.statStripVal}>{stats.active}</Text>
-              <Text style={styles.statStripLabel}>Active</Text>
+              <Text style={styles.statStripLabel}>{t('business.home.statStripActive')}</Text>
             </Pressable>
             <View style={styles.statStripDiv} />
             <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.statStripItem} onPress={() => router.push('/(business)/campaigns')}>
               <Text style={styles.statStripVal}>{stats.total}</Text>
-              <Text style={styles.statStripLabel}>Total</Text>
+              <Text style={styles.statStripLabel}>{t('business.home.statStripTotal')}</Text>
             </Pressable>
             <View style={styles.statStripDiv} />
             <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.statStripItem} onPress={() => router.push('/(business)/campaigns')}>
               <Text style={styles.statStripVal}>{stats.completed}</Text>
-              <Text style={styles.statStripLabel}>Completed</Text>
+              <Text style={styles.statStripLabel}>{t('business.home.statStripCompleted')}</Text>
             </Pressable>
           </View>
         </LinearGradient>
@@ -172,10 +180,10 @@ export default function BusinessHomeScreen() {
         {/* ── Quick Actions ── */}
         <View style={styles.quickActionsRow}>
           {([
-            { icon: 'add-circle-outline' as const,  label: 'Create',    bg: '#EDE9FE', color: '#7C3AED', route: '/create-campaign' },
-            { icon: 'people-outline'     as const,  label: 'Proposals', bg: '#DCFCE7', color: '#059669', route: '/(business)/proposals' },
-            { icon: 'chatbubbles-outline'as const,  label: 'Messages',  bg: '#DBEAFE', color: '#2563EB', route: '/(business)/messages' },
-            { icon: 'briefcase-outline'  as const,  label: 'Events',    bg: '#FEF3C7', color: '#D97706', route: '/(business)/campaigns' },
+            { icon: 'add-circle-outline' as const,  label: t('business.home.quickActionCreate'),    bg: '#EDE9FE', color: '#7C3AED', route: '/create-campaign' },
+            { icon: 'people-outline'     as const,  label: t('business.home.quickActionProposals'), bg: '#DCFCE7', color: '#059669', route: '/(business)/proposals' },
+            { icon: 'chatbubbles-outline'as const,  label: t('business.home.quickActionMessages'),  bg: '#DBEAFE', color: '#2563EB', route: '/(business)/messages' },
+            { icon: 'briefcase-outline'  as const,  label: t('business.home.quickActionEvents'),    bg: '#FEF3C7', color: '#D97706', route: '/(business)/campaigns' },
           ]).map(({ icon, label, bg, color, route }) => (
             <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} key={label} style={[styles.quickAction, { backgroundColor: C.surface, borderColor: C.border }]}
               onPress={() => router.push(route as never)}>
@@ -196,9 +204,9 @@ export default function BusinessHomeScreen() {
               <Ionicons name="business-outline" size={20} color={C.brinjal1} />
             </View>
             <View style={styles.bannerText}>
-              <Text style={[styles.bannerTitle, { color: C.text }]}>Complete your profile</Text>
+              <Text style={[styles.bannerTitle, { color: C.text }]}>{t('business.home.completeProfile')}</Text>
               <Text style={[styles.bannerSub, { color: C.textSecondary }]} numberOfLines={2}>
-                Missing: {missingFields.join(' · ')}
+                {t('business.home.missingFieldsPrefix', { fields: missingFields.join(' · ') })}
               </Text>
             </View>
             <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.bannerClose} onPress={() => setBannerDismissed(true)} hitSlop={10}>
@@ -214,9 +222,11 @@ export default function BusinessHomeScreen() {
               <Ionicons name="alert-circle" size={18} color="#D97706" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.attentionTitle}>Needs Your Attention</Text>
+              <Text style={styles.attentionTitle}>{t('business.home.attentionTitle')}</Text>
               <Text style={styles.attentionSub}>
-                {stats.proposals} proposal{stats.proposals !== 1 ? 's' : ''} waiting for review
+                {stats.proposals === 1
+                  ? t('business.home.attentionProposalsSingular', { n: stats.proposals })
+                  : t('business.home.attentionProposalsPlural', { n: stats.proposals })}
               </Text>
             </View>
             <Ionicons name="chevron-forward" size={16} color="#D97706" />
@@ -296,7 +306,7 @@ export default function BusinessHomeScreen() {
         ) : (
           <View style={styles.campaignList}>
             {recent.map((c) => {
-              const meta = getCategoryMeta(allCategories, c.category);
+              const meta = getCategoryMeta(allCategories, c.categoryKey ?? c.category);
               const st = STATUS_STYLE[c.status ?? 'draft'] ?? STATUS_STYLE.draft;
               return (
                 <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}

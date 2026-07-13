@@ -403,7 +403,6 @@ function CreatorCard({ creator, isSaved, onToggleSave }: {
   const C = useAppColors();
   const { categories: allCategories } = useAllCategories();
   const meta = firstCategoryMeta(allCategories, creator.categories);
-  const hasBudget = creator.prefBudgetMin > 0 || creator.prefBudgetMax > 0;
   const topPlatforms = creator.socialAccounts.slice(0, 3);
 
   return (
@@ -458,7 +457,7 @@ function CreatorCard({ creator, isSaved, onToggleSave }: {
         <Text style={[s.bio, { color: C.textSecondary }]} numberOfLines={2}>{creator.bio}</Text>
       ) : null}
 
-      {/* Bottom row: categories + budget */}
+      {/* Bottom row: categories */}
       <View style={s.cardFooter}>
         <View style={s.catRow}>
           {creator.categories.slice(0, 3).map((cat) => {
@@ -476,12 +475,6 @@ function CreatorCard({ creator, isSaved, onToggleSave }: {
             </View>
           ) : null}
         </View>
-        {hasBudget ? (
-          <View style={s.budgetPill}>
-            <Ionicons name="cash-outline" size={11} color="#16A34A" />
-            <Text style={s.budgetText}>${creator.prefBudgetMin}–{creator.prefBudgetMax}</Text>
-          </View>
-        ) : null}
       </View>
     </Pressable>
   );
@@ -871,8 +864,6 @@ const s = StyleSheet.create({
   catRow: { flexDirection: 'row', gap: 5, flexWrap: 'wrap', flex: 1 },
   catChip: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 8 },
   catLabel: { fontSize: 11, fontFamily: F.semibold },
-  budgetPill: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 8, backgroundColor: '#DCFCE7', flexShrink: 0 },
-  budgetText: { fontSize: 11, color: '#16A34A', fontFamily: F.bold },
 
   footerWrap: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 20, marginTop: 8, marginBottom: 36, gap: 10 },
   footerLine: { flex: 1, height: 1 },

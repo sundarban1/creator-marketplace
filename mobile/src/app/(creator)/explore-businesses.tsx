@@ -181,6 +181,7 @@ function BusinessCard({
   onToggleFavorite: () => void;
 }) {
   const C = useAppColors();
+  const { t } = useLanguage();
   const { categories: businessCategories } = useCategories('BUSINESS');
 
   return (
@@ -200,7 +201,7 @@ function BusinessCard({
             {item.isVerified && (
               <View style={styles.verifiedBadge}>
                 <Ionicons name="checkmark-circle" size={13} color="#fff" />
-                <Text style={styles.verifiedTxt}>Verified</Text>
+                <Text style={styles.verifiedTxt}>{t('explore.businesses.verifiedBadge')}</Text>
               </View>
             )}
           </View>
@@ -209,7 +210,7 @@ function BusinessCard({
               {item.description}
             </Text>
           ) : (
-            <Text style={[styles.desc, { color: C.textSecondary, fontStyle: 'italic' }]}>No description provided</Text>
+            <Text style={[styles.desc, { color: C.textSecondary, fontStyle: 'italic' }]}>{t('explore.businesses.noDescription')}</Text>
           )}
         </View>
 
@@ -257,7 +258,7 @@ function BusinessCard({
           </Text>
         </View>
         <View style={[styles.viewBtn, { backgroundColor: C.brinjal1 }]}>
-          <Text style={styles.viewBtnTxt}>View Profile</Text>
+          <Text style={styles.viewBtnTxt}>{t('explore.businesses.viewProfileBtn')}</Text>
           <Ionicons name="chevron-forward" size={13} color="#fff" />
         </View>
       </View>
@@ -270,6 +271,7 @@ function BusinessCard({
 
 export default function ExploreBusinessesScreen() {
   const C      = useAppColors();
+  const { t }  = useLanguage();
   const toast  = useToast();
   const { favoriteIds, toggle, reloadIds } = useFavoriteBusinesses();
 
@@ -363,9 +365,9 @@ export default function ExploreBusinessesScreen() {
     const wasFavorited = favoriteIds.has(businessId);
     try {
       const isFavorited = await toggle(businessId);
-      if (isFavorited) toast.success('Added to favorites');
+      if (isFavorited) toast.success(t('explore.businesses.addedToFavorites'));
     } catch {
-      toast.error(wasFavorited ? 'Could not remove favorite.' : 'Could not add favorite.');
+      toast.error(wasFavorited ? t('explore.businesses.couldNotRemoveFav') : t('explore.businesses.couldNotAddFav'));
     }
   }
 
@@ -383,14 +385,14 @@ export default function ExploreBusinessesScreen() {
         <View style={styles.header}>
           <BackButton fallback="/(creator)/" />
           <View style={styles.headerMiddle}>
-            <Text style={[styles.heading, { color: '#fff' }]}>Explore Brands</Text>
-            <Text style={[styles.headingSub, { color: 'rgba(255,255,255,0.82)' }]}>Find businesses hiring creators</Text>
+            <Text style={[styles.heading, { color: '#fff' }]}>{t('explore.businesses.headerTitle')}</Text>
+            <Text style={[styles.headingSub, { color: 'rgba(255,255,255,0.82)' }]}>{t('explore.businesses.headerSub')}</Text>
           </View>
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
             style={styles.favLink}
             onPress={() => router.push('/(creator)/favorite-businesses' as Parameters<typeof router.push>[0])}>
             <Ionicons name="heart" size={15} color="#fff" />
-            <Text style={styles.favLinkText}>Saved</Text>
+            <Text style={styles.favLinkText}>{t('explore.businesses.savedLink')}</Text>
           </Pressable>
         </View>
       </LinearGradient>
@@ -401,7 +403,7 @@ export default function ExploreBusinessesScreen() {
           <Ionicons name="search-outline" size={18} color={C.textSecondary} />
           <TextInput
             style={[styles.searchInput, { color: C.text }]}
-            placeholder="Search brands…"
+            placeholder={t('explore.businesses.searchPlaceholder')}
             placeholderTextColor={C.textSecondary}
             value={search}
             onChangeText={onSearchChange}
@@ -466,7 +468,7 @@ export default function ExploreBusinessesScreen() {
             </Pressable>
           ) : null}
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={clearAll}>
-            <Text style={[styles.clearAllText, { color: C.error }]}>Clear all</Text>
+            <Text style={[styles.clearAllText, { color: C.error }]}>{t('explore.businesses.clearAll')}</Text>
           </Pressable>
         </View>
       )}
@@ -474,10 +476,10 @@ export default function ExploreBusinessesScreen() {
       {loading ? (
         <View style={styles.center}>
           <ActivityIndicator size="large" color={C.brinjal1} />
-          <Text style={[styles.loadingText, { color: C.textSecondary }]}>Finding brands…</Text>
+          <Text style={[styles.loadingText, { color: C.textSecondary }]}>{t('explore.businesses.loading')}</Text>
         </View>
       ) : error ? (
-        <EmptyState faIcon="exclamation-triangle" title="Couldn't load businesses" subtitle={error} action={{ label: 'Retry', onPress: () => fetchBusinesses() }} />
+        <EmptyState faIcon="exclamation-triangle" title={t('explore.businesses.loadError')} subtitle={error} action={{ label: t('explore.businesses.retry'), onPress: () => fetchBusinesses() }} />
       ) : (
         <FlatList
           data={displayItems}
@@ -495,9 +497,9 @@ export default function ExploreBusinessesScreen() {
           ListEmptyComponent={
             <EmptyState
               faIcon="building"
-              title="No brands found"
+              title={t('explore.businesses.noResultsFiltered')}
               subtitle={hasFilter ? 'Try adjusting your filters or search term.' : 'No businesses are currently hiring. Check back soon!'}
-              action={hasFilter ? { label: 'Clear Filters', onPress: clearAll } : undefined}
+              action={hasFilter ? { label: t('explore.businesses.clearFiltersBtn'), onPress: clearAll } : undefined}
             />
           }
         />

@@ -18,6 +18,7 @@ import { displayCategory } from '@/features/creator/data/filterOptions';
 import { useCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { usePlatforms, getPlatformMeta } from '@/hooks/usePlatforms';
 import { EmptyState } from '@/components/EmptyState';
+import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { TabSlider } from '@/components/TabSlider';
 import { RangeDropdown } from '@/components/RangeDropdown';
 import { campaignService } from '@/services/campaign';
@@ -209,13 +210,13 @@ export default function HomeScreen() {
     creatorService.getProfile()
       .then((profile) => {
         const missing: string[] = [];
-        if (!profile.avatarUrl)            missing.push('Profile photo');
-        if (!profile.bio)                  missing.push('Bio');
-        if (!profile.location)             missing.push('Location');
-        if (!profile.categories?.length)   missing.push('Categories');
+        if (!profile.avatarUrl)            missing.push(t('creator.home.fieldProfilePhoto'));
+        if (!profile.bio)                  missing.push(t('creator.home.fieldBio'));
+        if (!profile.location)             missing.push(t('creator.home.fieldLocation'));
+        if (!profile.categories?.length)   missing.push(t('creator.home.fieldCategories'));
         const hasLink = profile.socialLinks &&
           Object.values(profile.socialLinks).some((v) => !!v);
-        if (!hasLink) missing.push('Social links');
+        if (!hasLink) missing.push(t('creator.home.fieldSocialLinks'));
         setMissingFields(missing);
         void initNearby(profile);
       })
@@ -225,6 +226,12 @@ export default function HomeScreen() {
   // Keep a stable ref to the latest fetch so the socket handler never captures stale state
   const fetchRef = useRef(fetchCampaigns);
   useEffect(() => { fetchRef.current = fetchCampaigns; });
+
+  // Auto-refresh the moment connectivity is restored after being offline.
+  const { reconnectedAt } = useNetworkStatus();
+  useEffect(() => {
+    if (reconnectedAt) void fetchRef.current({ showLoader: false });
+  }, [reconnectedAt]);
 
   const refreshNearbyRef = useRef(() => {});
   useEffect(() => {
@@ -441,7 +448,7 @@ export default function HomeScreen() {
               </Pressable>
               <View>
                 <Text style={styles.greeting}>{t('creator.home.greeting')}</Text>
-                <Text style={styles.brandName} numberOfLines={1}>{user?.name ?? 'Creator'}</Text>
+                <Text style={styles.brandName} numberOfLines={1}>{(user?.name ?? 'Creator').replace(/^\+977\s*/, '')}</Text>
               </View>
             </View>
 
@@ -540,9 +547,9 @@ export default function HomeScreen() {
               <Ionicons name="person-outline" size={20} color={C.brinjal1} />
             </View>
             <View style={styles.bannerText}>
-              <Text style={[styles.bannerTitle, { color: C.text }]}>Complete your profile</Text>
+              <Text style={[styles.bannerTitle, { color: C.text }]}>{t('creator.home.completeProfile')}</Text>
               <Text style={[styles.bannerSub, { color: C.textSecondary }]} numberOfLines={2}>
-                Missing: {missingFields.join(' · ')}
+                {t('creator.home.missingFieldsPrefix', { fields: missingFields.join(' · ') })}
               </Text>
             </View>
             <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.bannerClose} onPress={() => setBannerDismissed(true)} hitSlop={10}>
@@ -560,15 +567,15 @@ export default function HomeScreen() {
               <Ionicons name="alert-circle" size={18} color="#D97706" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.attentionTitle}>Action Required</Text>
+              <Text style={styles.attentionTitle}>{t('creator.home.actionRequired')}</Text>
               <Text style={styles.attentionSub} numberOfLines={1}>
                 {pendingActions.length === 1
                   ? pendingActions[0]!.type === 'start_work'
-                    ? `Payment received — start work on "${pendingActions[0]!.title}"`
+                    ? t('creator.home.actionStartWork', { title: pendingActions[0]!.title })
                     : pendingActions[0]!.type === 'upload_work'
-                      ? `Upload deliverables for "${pendingActions[0]!.title}"`
-                      : `Submit your content for "${pendingActions[0]!.title}"`
-                  : `${pendingActions.length} events are waiting for your action`}
+                      ? t('creator.home.actionUploadWork', { title: pendingActions[0]!.title })
+                      : t('creator.home.actionSubmitContent', { title: pendingActions[0]!.title })
+                  : t('creator.home.actionMultiple', { n: pendingActions.length })}
               </Text>
             </View>
             <Ionicons name="chevron-forward" size={16} color="#D97706" />
@@ -711,7 +718,7 @@ export default function HomeScreen() {
             {/* ── Nearby Events ── */}
             <View style={styles.sectionHeader}>
               <View style={styles.nearbyTitleRow}>
-                <Text style={[styles.sectionTitle, { color: C.text }]}>Nearby Events</Text>
+                <Text style={[styles.sectionTitle, { color: C.text }]}>{t('creator.home.nearbyEvents')}</Text>
                 <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                   style={[styles.nearbyChip, { backgroundColor: C.primaryLight, borderColor: C.border }]}
                   onPress={() => setNearbySheetOpen(true)}>
@@ -742,16 +749,16 @@ export default function HomeScreen() {
             ) : nearbyLocationDenied && !nearbyHomeCoords ? (
               <View style={[styles.featuredEmpty, { backgroundColor: C.surface, borderColor: C.border }]}>
                 <Ionicons name="location-outline" size={32} color={C.textSecondary} />
-                <Text style={[styles.featuredEmptyTitle, { color: C.text }]}>Enable location for nearby events</Text>
-                <Text style={[styles.featuredEmptySub, { color: C.textSecondary }]}>Turn on location access, or set a home location in your profile.</Text>
+                <Text style={[styles.featuredEmptyTitle, { color: C.text }]}>{t('creator.home.enableLocationTitle')}</Text>
+                <Text style={[styles.featuredEmptySub, { color: C.textSecondary }]}>{t('creator.home.enableLocationSub')}</Text>
               </View>
             ) : (
               <View style={[styles.featuredEmpty, { backgroundColor: C.surface, borderColor: C.border }]}>
                 <Ionicons name="navigate-outline" size={32} color={C.textSecondary} />
-                <Text style={[styles.featuredEmptyTitle, { color: C.text }]}>No events within {nearbyRadiusKm} km</Text>
+                <Text style={[styles.featuredEmptyTitle, { color: C.text }]}>{t('creator.home.noEventsWithinKm', { km: nearbyRadiusKm })}</Text>
                 {nearbyRadiusKm < 100 && (
                   <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.expandRadiusBtn, { backgroundColor: C.brinjal1 }]} onPress={handleExpandNearbyRadius}>
-                    <Text style={styles.expandRadiusBtnText}>Expand to {RADIUS_PRESETS.find((r) => r > nearbyRadiusKm) ?? 100} km</Text>
+                    <Text style={styles.expandRadiusBtnText}>{t('creator.home.expandToKm', { km: RADIUS_PRESETS.find((r) => r > nearbyRadiusKm) ?? 100 })}</Text>
                   </Pressable>
                 )}
               </View>

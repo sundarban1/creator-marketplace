@@ -13,7 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppColors } from '@/context/ThemeContext';
-import { useLanguage } from '@/context/LanguageContext';
+import { useLanguage, type TFn } from '@/context/LanguageContext';
 import { campaignService } from '@/services/campaign';
 import { TabSlider } from '@/components/TabSlider';
 import { EmptyState } from '@/components/EmptyState';
@@ -92,14 +92,14 @@ function buildCampaignCards(proposals: Proposal[]): CampaignCard[] {
 // Mirrors the stage logic in activity-timeline.tsx so the card's status always
 // agrees with the timeline (workStatus alone isn't enough — APPROVED needs
 // paymentStatus to tell "awaiting release" from "released" from "completed").
-function workspaceBtnConfig(ws: WS | null, paymentStatus: PS) {
-  if (ws === 'COMPLETED') return { label: 'Project Completed', sub: 'Creator confirmed payment received', color: '#16A34A', icon: 'checkmark-done-circle' as const };
+function workspaceBtnConfig(ws: WS | null, paymentStatus: PS, t: TFn) {
+  if (ws === 'COMPLETED') return { label: t('proposal.business.workspaceCompletedLabel'), sub: t('proposal.business.workspaceCompletedSub'), color: '#16A34A', icon: 'checkmark-done-circle' as const };
   if (ws === 'APPROVED' && paymentStatus === 'RELEASED')
-                          return { label: 'Payment Released', sub: 'Awaiting creator to confirm completion', color: '#0EA5E9', icon: 'cash' as const };
-  if (ws === 'APPROVED') return { label: 'Awaiting Payment Release', sub: 'Work approved — release payment to proceed', color: '#EA580C', icon: 'hourglass-outline' as const };
-  if (ws === 'SUBMITTED') return { label: 'Review Deliverables', sub: 'Creator has submitted their work', color: '#D97706', icon: 'eye' as const };
-  if (ws === 'IN_PROGRESS') return { label: 'Creator is Working', sub: 'Content creation in progress', color: '#7C3AED', icon: 'brush' as const };
-  return { label: 'Track the project status', sub: '', color: '#6366F1', icon: 'folder-open' as const };
+                          return { label: t('proposal.business.workspacePaymentReleasedLabel'), sub: t('proposal.business.workspacePaymentReleasedSub'), color: '#0EA5E9', icon: 'cash' as const };
+  if (ws === 'APPROVED') return { label: t('proposal.business.workspaceAwaitingReleaseLabel'), sub: t('proposal.business.workspaceAwaitingReleaseSub'), color: '#EA580C', icon: 'hourglass-outline' as const };
+  if (ws === 'SUBMITTED') return { label: t('proposal.business.workspaceReviewLabel'), sub: t('proposal.business.workspaceReviewSub'), color: '#D97706', icon: 'eye' as const };
+  if (ws === 'IN_PROGRESS') return { label: t('proposal.business.workspaceInProgressLabel'), sub: t('proposal.business.workspaceInProgressSub'), color: '#7C3AED', icon: 'brush' as const };
+  return { label: t('proposal.business.workspaceDefaultLabel'), sub: '', color: '#6366F1', icon: 'folder-open' as const };
 }
 
 function CampaignEventCard({ item }: { item: CampaignCard }) {
@@ -182,7 +182,7 @@ function CampaignEventCard({ item }: { item: CampaignCard }) {
 
       {/* Dynamic project status button for accepted campaigns */}
       {item.accepted > 0 && (() => {
-        const cfg = workspaceBtnConfig(item.acceptedWorkStatus, item.acceptedPaymentStatus);
+        const cfg = workspaceBtnConfig(item.acceptedWorkStatus, item.acceptedPaymentStatus, t);
         return (
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
             style={({ pressed }) => [styles.startWorkBtn, { backgroundColor: cfg.color, opacity: pressed ? 0.88 : 1 }]}

@@ -37,10 +37,11 @@ export async function sendExpoPush(userId: string, title: string, body: string) 
 }
 
 export const notificationService = {
-  async getForUser(userId: string, lang = 'en') {
-    const notifications = await repo.findByUser(userId);
+  async getForUser(userId: string, lang = 'en', page = 1, limit = 50) {
+    const { notifications, total } = await repo.findByUser(userId, page, limit);
     const dtos = notifications.map(toNotificationDto);
-    return translateMany(dtos, [...NOTIFICATION_FIELDS], lang);
+    const translated = await translateMany(dtos, [...NOTIFICATION_FIELDS], lang);
+    return { notifications: translated, total, page, limit };
   },
 
   async markRead(id: string, userId: string) {

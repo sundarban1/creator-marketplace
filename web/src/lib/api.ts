@@ -477,8 +477,9 @@ export const api = {
   },
 
   notifications: {
-    list: () =>
-      request<ApiNotification[]>('GET', '/api/notifications'),
+    list: (params?: { page?: number; limit?: number }) =>
+      request<ApiNotification[]>('GET', '/api/notifications', undefined,
+        params as Record<string, string | number | undefined>),
 
     badge: () =>
       request<{ count: number }>('GET', '/api/notifications/badge'),

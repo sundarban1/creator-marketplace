@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { EmptyState } from '@/components/EmptyState';
+import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage, type TFn } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
@@ -110,12 +111,18 @@ export default function NotificationsScreen() {
   const { clearBadge, decrementBadge } = useNotificationBadge();
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   function loadNotifications(showLoader = true) {
     if (showLoader) setLoading(true);
     notificationService.getNotifications()
-      .then((data) => setNotifications(data))
-      .catch(() => {})
+      .then((data) => { setNotifications(data); setError(''); })
+      .catch((e) => {
+        // Only surface errors from the user-visible (loader-shown) path — the
+        // silent background refresh (socket-triggered) shouldn't blow away an
+        // already-populated, still-valid list on a transient failure.
+        if (showLoader) setError(e instanceof Error ? e.message : t('notifications.loadFailedSub'));
+      })
       .finally(() => setLoading(false));
   }
 
@@ -123,6 +130,13 @@ export default function NotificationsScreen() {
   useFocusEffect(useCallback(() => {
     loadNotifications();
   }, []));
+
+  // Auto-refresh the moment connectivity is restored after being offline.
+  const { reconnectedAt } = useNetworkStatus();
+  useEffect(() => {
+    if (reconnectedAt) loadNotifications(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reconnectedAt]);
 
   // Also listen for real-time socket events to prepend new notifications instantly
   useEffect(() => {
@@ -238,6 +252,13 @@ export default function NotificationsScreen() {
         <View style={styles.center}>
           <ActivityIndicator size="large" color={C.brinjal1} />
         </View>
+      ) : error ? (
+        <EmptyState
+          icon="alert-circle-outline"
+          title={t('notifications.loadFailedTitle')}
+          subtitle={error}
+          action={{ label: t('notifications.retry'), onPress: () => loadNotifications() }}
+        />
       ) : (
         <FlatList
           data={grouped}

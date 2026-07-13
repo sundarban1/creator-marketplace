@@ -24,6 +24,7 @@ export type Campaign = {
   template?: string;
   featureImageUrl?: string;
   category: string;
+  categoryKey: string;
   goals: string[];
   minFollowers: string;
   minFollowersRaw: number;

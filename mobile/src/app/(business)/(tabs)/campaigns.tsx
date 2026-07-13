@@ -261,7 +261,7 @@ export default function CampaignsScreen() {
           ) : (
             shown.map((c) => {
               const st = STATUS_CFG[c.status ?? 'draft'];
-              const meta = getCategoryMeta(allCategories, c.category);
+              const meta = getCategoryMeta(allCategories, c.categoryKey ?? c.category);
               const bg = meta.bg;
               return (
                 <View key={c.id} style={[styles.card, { backgroundColor: C.surface }]}>

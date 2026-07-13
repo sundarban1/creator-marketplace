@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useRef } from 'react';
 import { Animated, Image, StyleSheet, Text, View } from 'react-native';
+import { useLanguage } from '@/context/LanguageContext';
 import { F } from '@/utilities/constants';
 
 const PINK    = '#E8527A';
@@ -107,6 +108,7 @@ function PulseDot({ delay, color }: { delay: number; color: string }) {
 // on onboarding (via RootNavigator) and then get yanked back to the main app by this
 // screen's own delayed timer a moment later — the "double slide" bug.
 export default function SplashScreen() {
+  const { t } = useLanguage();
   const logoScale   = useRef(new Animated.Value(0.35)).current;
   const logoOpacity = useRef(new Animated.Value(0)).current;
   const textOpacity = useRef(new Animated.Value(0)).current;
@@ -114,7 +116,7 @@ export default function SplashScreen() {
   const dotsOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    Animated.sequence([
+    const sequence = Animated.sequence([
       Animated.parallel([
         Animated.spring(logoScale, { toValue: 1, useNativeDriver: true, tension: 55, friction: 8 }),
         Animated.timing(logoOpacity, { toValue: 1, duration: 480, useNativeDriver: true }),
@@ -122,7 +124,9 @@ export default function SplashScreen() {
       Animated.timing(textOpacity, { toValue: 1, duration: 360, useNativeDriver: true }),
       Animated.timing(tagOpacity,  { toValue: 1, duration: 300, useNativeDriver: true }),
       Animated.timing(dotsOpacity, { toValue: 1, duration: 280, useNativeDriver: true }),
-    ]).start();
+    ]);
+    sequence.start();
+    return () => sequence.stop();
   }, []);
 
   return (
@@ -179,12 +183,12 @@ export default function SplashScreen() {
         <View style={styles.roleRow}>
           <View style={[styles.chip, { backgroundColor: `${PINK}1A`, borderColor: `${PINK}50` }]}>
             <Ionicons name="camera-outline" size={12} color={PINK} />
-            <Text style={[styles.chipText, { color: PINK }]}>Creator</Text>
+            <Text style={[styles.chipText, { color: PINK }]}>{t('splash.roleCreator')}</Text>
           </View>
           <View style={styles.chipDivider} />
           <View style={[styles.chip, { backgroundColor: `${TEAL}1A`, borderColor: `${TEAL}50` }]}>
             <Ionicons name="briefcase-outline" size={12} color={TEAL} />
-            <Text style={[styles.chipText, { color: TEAL }]}>Business</Text>
+            <Text style={[styles.chipText, { color: TEAL }]}>{t('splash.roleBusiness')}</Text>
           </View>
         </View>
 
@@ -195,7 +199,7 @@ export default function SplashScreen() {
 
         {/* Tagline */}
         <Animated.Text style={[styles.tagline, { opacity: tagOpacity }]}>
-          Where creators meet brands
+          {t('splash.tagline')}
         </Animated.Text>
       </View>
 

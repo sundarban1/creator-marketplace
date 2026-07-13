@@ -1,11 +1,14 @@
 import { Request, Response, NextFunction } from 'express';
 import { notificationService } from './notification.service';
+import { paginated } from '../../utils/response';
 
 export class NotificationController {
   async list(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const notifications = await notificationService.getForUser(req.user!.id, req.language);
-      res.json({ success: true, data: notifications });
+      const page = Math.max(1, Number(req.query.page) || 1);
+      const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 50));
+      const { notifications, total } = await notificationService.getForUser(req.user!.id, req.language, page, limit);
+      paginated(res, notifications, total, page, limit);
     } catch (err) { next(err); }
   }
 

@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { useAppColors } from '@/context/ThemeContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { F } from '@/utilities/constants';
 
 export interface BarChartDatum {
@@ -18,6 +19,7 @@ interface BarChartProps {
 // deliberately, to avoid a native module + Expo prebuild requirement.
 export function BarChart({ data, valueFormatter, barColor, height = 140 }: BarChartProps) {
   const C = useAppColors();
+  const { t } = useLanguage();
   const color = barColor ?? C.brinjal1;
   const max = Math.max(1, ...data.map((d) => d.value));
   const fmt = valueFormatter ?? ((v: number) => v.toLocaleString());
@@ -25,7 +27,7 @@ export function BarChart({ data, valueFormatter, barColor, height = 140 }: BarCh
   if (data.length === 0) {
     return (
       <View style={[s.emptyWrap, { height }]}>
-        <Text style={[s.emptyText, { color: C.textSecondary }]}>No data for this range.</Text>
+        <Text style={[s.emptyText, { color: C.textSecondary }]}>{t('common.noDataForRange')}</Text>
       </View>
     );
   }

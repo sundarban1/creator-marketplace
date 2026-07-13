@@ -4,13 +4,14 @@ import { useEffect, useRef, useState } from 'react';
 import { Animated, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
+import { useLanguage, type TFn } from '@/context/LanguageContext';
 import { authService } from '@/services/auth';
 import { F } from '@/utilities/constants';
 
-function getPasswordError(pwd: string): string | undefined {
-  if (pwd.length < 8) return 'Password must be at least 8 characters.';
-  if (!/[A-Z]/.test(pwd)) return 'Must contain at least one uppercase letter.';
-  if (!/[0-9]/.test(pwd)) return 'Must contain at least one number.';
+function getPasswordError(pwd: string, t: TFn): string | undefined {
+  if (pwd.length < 8) return t('auth.resetPassword.pwErrorMinLength');
+  if (!/[A-Z]/.test(pwd)) return t('auth.resetPassword.pwErrorUppercase');
+  if (!/[0-9]/.test(pwd)) return t('auth.resetPassword.pwErrorNumber');
   return undefined;
 }
 
@@ -40,6 +41,7 @@ function Toast({ visible, message }: { visible: boolean; message: string }) {
 export default function ResetPasswordScreen() {
   const { resetToken } = useLocalSearchParams<{ resetToken: string }>();
   const C = useAppColors();
+  const { t } = useLanguage();
 
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -48,9 +50,9 @@ export default function ResetPasswordScreen() {
   const [error, setError] = useState('');
   const [showToast, setShowToast] = useState(false);
 
-  const pwdError     = submitted ? getPasswordError(password) : undefined;
-  const confirmError = submitted && confirm !== password ? 'Passwords do not match.' : undefined;
-  const isValid      = !getPasswordError(password) && password === confirm;
+  const pwdError     = submitted ? getPasswordError(password, t) : undefined;
+  const confirmError = submitted && confirm !== password ? t('auth.resetPassword.passwordsNoMatch') : undefined;
+  const isValid      = !getPasswordError(password, t) && password === confirm;
 
   async function handleReset() {
     setSubmitted(true);
@@ -66,7 +68,7 @@ export default function ResetPasswordScreen() {
         setTimeout(() => router.replace('/login'), 200);
       }, 2000);
     } catch (e: any) {
-      setError(e.message ?? 'Failed to reset password. Please try again.');
+      setError(e.message ?? t('auth.resetPassword.resetFailedError'));
     } finally {
       setLoading(false);
     }
@@ -82,10 +84,8 @@ export default function ResetPasswordScreen() {
           <View style={styles.iconWrap}>
             <Ionicons name="key" size={26} color="#fff" />
           </View>
-          <Text style={styles.heroTitle}>Set New Password</Text>
-          <Text style={styles.heroSub}>
-            Choose a strong password with at least{'\n'}8 characters, 1 uppercase and 1 number.
-          </Text>
+          <Text style={styles.heroTitle}>{t('auth.resetPassword.heroTitle')}</Text>
+          <Text style={styles.heroSub}>{t('auth.resetPassword.heroSub')}</Text>
         </View>
       </View>
 
@@ -106,11 +106,11 @@ export default function ResetPasswordScreen() {
           <View style={styles.form}>
             {/* New password */}
             <View style={styles.fieldGroup}>
-              <Text style={[styles.label, { color: C.text }]}>New Password</Text>
+              <Text style={[styles.label, { color: C.text }]}>{t('auth.resetPassword.newPasswordLabel')}</Text>
               <PasswordInput
                 value={password}
-                onChange={(t) => { setPassword(t); setError(''); }}
-                placeholder="Min 8 chars, 1 uppercase, 1 number"
+                onChange={(v) => { setPassword(v); setError(''); }}
+                placeholder={t('auth.resetPassword.newPasswordPlaceholder')}
                 hasError={!!pwdError}
                 C={C}
               />
@@ -119,11 +119,11 @@ export default function ResetPasswordScreen() {
 
             {/* Confirm password */}
             <View style={styles.fieldGroup}>
-              <Text style={[styles.label, { color: C.text }]}>Confirm Password</Text>
+              <Text style={[styles.label, { color: C.text }]}>{t('auth.resetPassword.confirmPasswordLabel')}</Text>
               <PasswordInput
                 value={confirm}
                 onChange={setConfirm}
-                placeholder="Re-enter your password"
+                placeholder={t('auth.resetPassword.confirmPasswordPlaceholder')}
                 hasError={!!confirmError}
                 C={C}
               />
@@ -138,25 +138,25 @@ export default function ResetPasswordScreen() {
             {loading ? (
               <View style={styles.loadingRow}>
                 <View style={[styles.spinner, { borderTopColor: '#fff' }]} />
-                <Text style={styles.btnText}>Updating…</Text>
+                <Text style={styles.btnText}>{t('auth.resetPassword.updating')}</Text>
               </View>
             ) : (
-              <Text style={styles.btnText}>Reset Password</Text>
+              <Text style={styles.btnText}>{t('auth.resetPassword.resetBtn')}</Text>
             )}
           </Pressable>
 
           <View style={styles.rules}>
-            <RuleRow met={password.length >= 8} text="At least 8 characters" />
-            <RuleRow met={/[A-Z]/.test(password)} text="One uppercase letter" />
-            <RuleRow met={/[0-9]/.test(password)} text="One number" />
-            <RuleRow met={password.length > 0 && password === confirm} text="Passwords match" />
+            <RuleRow met={password.length >= 8} text={t('auth.resetPassword.ruleMinLength')} />
+            <RuleRow met={/[A-Z]/.test(password)} text={t('auth.resetPassword.ruleUppercase')} />
+            <RuleRow met={/[0-9]/.test(password)} text={t('auth.resetPassword.ruleNumber')} />
+            <RuleRow met={password.length > 0 && password === confirm} text={t('auth.resetPassword.rulePasswordsMatch')} />
           </View>
 
         </ScrollView>
       </KeyboardAvoidingView>
 
       {/* ── Toast ── */}
-      <Toast visible={showToast} message="Password updated! Redirecting to sign in…" />
+      <Toast visible={showToast} message={t('auth.resetPassword.toastSuccess')} />
     </SafeAreaView>
   );
 }

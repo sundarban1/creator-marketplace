@@ -2,43 +2,45 @@ import { router } from 'expo-router';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAppColors } from '@/context/ThemeContext';
+import { useLanguage, type TFn } from '@/context/LanguageContext';
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
 import type { Campaign } from '@/types';
 import { F } from '@/utilities/constants';
 
-function timeAgo(iso: string): string {
+function timeAgo(iso: string, t: TFn): string {
   const diff = Date.now() - new Date(iso).getTime();
   const mins = Math.floor(diff / 60000);
-  if (mins < 1)   return 'Just now';
-  if (mins < 60)  return `${mins}m ago`;
+  if (mins < 1)   return t('campaignCard.justNow');
+  if (mins < 60)  return t('campaignCard.minsAgo', { n: mins });
   const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
+  if (hours < 24) return t('campaignCard.hoursAgo', { n: hours });
   const days = Math.floor(hours / 24);
-  if (days === 1) return 'Yesterday';
-  if (days < 7)   return `${days}d ago`;
+  if (days === 1) return t('campaignCard.yesterday');
+  if (days < 7)   return t('campaignCard.daysAgo', { n: days });
   const weeks = Math.floor(days / 7);
-  if (weeks < 5)  return `${weeks}w ago`;
+  if (weeks < 5)  return t('campaignCard.weeksAgo', { n: weeks });
   const months = Math.floor(days / 30);
-  if (months < 12) return `${months}mo ago`;
-  return `${Math.floor(months / 12)}y ago`;
+  if (months < 12) return t('campaignCard.monthsAgo', { n: months });
+  return t('campaignCard.yearsAgo', { n: Math.floor(months / 12) });
 }
 
-function expiryLabel(iso: string): { label: string; color: string } {
+function expiryLabel(iso: string, t: TFn): { label: string; color: string } {
   const days = Math.ceil((new Date(iso).getTime() - Date.now()) / 86400000);
-  if (days < 0)   return { label: 'Expired',           color: '#9CA3AF' };
-  if (days === 0) return { label: 'Expires today',     color: '#EF4444' };
-  if (days === 1) return { label: 'Expires tomorrow',  color: '#F97316' };
-  if (days <= 3)  return { label: `${days}d left`,     color: '#F97316' };
-  if (days <= 7)  return { label: `${days}d left`,     color: '#EAB308' };
-  if (days <= 14) return { label: `${Math.ceil(days / 7)}w left`, color: '#6B7280' };
-  return { label: `${Math.ceil(days / 30)}mo left`,    color: '#6B7280' };
+  if (days < 0)   return { label: t('campaignCard.expired'),          color: '#9CA3AF' };
+  if (days === 0) return { label: t('campaignCard.expiresToday'),     color: '#EF4444' };
+  if (days === 1) return { label: t('campaignCard.expiresTomorrow'),  color: '#F97316' };
+  if (days <= 3)  return { label: t('campaignCard.daysLeft', { n: days }), color: '#F97316' };
+  if (days <= 7)  return { label: t('campaignCard.daysLeft', { n: days }), color: '#EAB308' };
+  if (days <= 14) return { label: t('campaignCard.weeksLeft', { n: Math.ceil(days / 7) }), color: '#6B7280' };
+  return { label: t('campaignCard.monthsLeft', { n: Math.ceil(days / 30) }), color: '#6B7280' };
 }
 
 
 export function CampaignListItem({ campaign }: { campaign: Campaign }) {
   const C = useAppColors();
+  const { t } = useLanguage();
   const { categories } = useAllCategories();
-  const catMeta = getCategoryMeta(categories, campaign.category);
+  const catMeta = getCategoryMeta(categories, campaign.categoryKey ?? campaign.category);
 
   function goToDetail() {
     router.push({ pathname: '/campaign-detail', params: { campaignId: campaign.id } });
@@ -56,11 +58,11 @@ export function CampaignListItem({ campaign }: { campaign: Campaign }) {
         </View>
         {campaign.campaignType === 'OPEN_EVENT' ? (
           <View style={[styles.typeBadge, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}>
-            <Text style={[styles.typeBadgeText, { color: '#059669' }]}>Free</Text>
+            <Text style={[styles.typeBadgeText, { color: '#059669' }]}>{t('campaignCard.free')}</Text>
           </View>
         ) : (
           <View style={[styles.typeBadge, { backgroundColor: '#EEF2FF', borderColor: '#C7D2FE' }]}>
-            <Text style={[styles.typeBadgeText, { color: '#4F46E5' }]}>Paid</Text>
+            <Text style={[styles.typeBadgeText, { color: '#4F46E5' }]}>{t('campaignCard.paid')}</Text>
           </View>
         )}
       </View>
@@ -76,16 +78,16 @@ export function CampaignListItem({ campaign }: { campaign: Campaign }) {
         <View style={styles.listMetaRow}>
           <Ionicons name="location-outline" size={12} color={C.textSecondary} />
           <Text style={[styles.listMeta, { color: C.textSecondary }]} numberOfLines={1}>
-            {campaign.location ?? 'Remote'}
+            {campaign.location ?? t('campaignCard.remoteFallback')}
           </Text>
         </View>
         <View style={styles.listDatesRow}>
           <View style={styles.listMetaRow}>
             <Ionicons name="calendar-outline" size={12} color={C.textSecondary} />
-            <Text style={[styles.listMeta, { color: C.textSecondary }]}>{timeAgo(campaign.createdAt)}</Text>
+            <Text style={[styles.listMeta, { color: C.textSecondary }]}>{timeAgo(campaign.createdAt, t)}</Text>
           </View>
           {(() => {
-            const expiry = expiryLabel(campaign.deadline);
+            const expiry = expiryLabel(campaign.deadline, t);
             return (
               <View style={styles.listMetaRow}>
                 <Ionicons name="time-outline" size={12} color={expiry.color} />
@@ -98,7 +100,7 @@ export function CampaignListItem({ campaign }: { campaign: Campaign }) {
 
       {/* Apply button */}
       <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.applyBtn, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]} onPress={goToDetail}>
-        <Text style={[styles.applyBtnText, { color: C.brinjal1 }]}>Apply</Text>
+        <Text style={[styles.applyBtnText, { color: C.brinjal1 }]}>{t('campaignCard.apply')}</Text>
       </Pressable>
     </Pressable>
   );

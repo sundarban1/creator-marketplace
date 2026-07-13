@@ -3,6 +3,7 @@ import { Image } from 'expo-image';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { Easing, Keyframe } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
+import { useLanguage } from '@/context/LanguageContext';
 
 const TOTAL = 2400;
 
@@ -35,6 +36,7 @@ const dotsKf = new Keyframe({
 });
 
 export function SplashScreen() {
+  const { t } = useLanguage();
   const [visible, setVisible] = useState(true);
   if (!visible) return null;
 
@@ -61,7 +63,7 @@ export function SplashScreen() {
 
       {/* Text */}
       <Animated.View entering={textKf.duration(TOTAL)} style={styles.textBlock}>
-        <Text style={styles.tagline}>Where creators meet brands</Text>
+        <Text style={styles.tagline}>{t('splash.tagline')}</Text>
       </Animated.View>
 
       {/* Dots */}

@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Animated, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { authService } from '@/services/auth';
 import { F } from '@/utilities/constants';
 
@@ -30,6 +31,7 @@ export default function ResetOtpScreen() {
   const identifier = channel === 'email' ? { email: email ?? '' } : { phone: phone ?? '' };
   const maskedContact = channel === 'email' ? maskEmail(email ?? '') : maskPhone(phone ?? '');
   const C = useAppColors();
+  const { t } = useLanguage();
 
   const [code, setCode] = useState<string[]>(Array(OTP_LENGTH).fill(''));
   const [error, setError] = useState('');
@@ -55,7 +57,7 @@ export default function ResetOtpScreen() {
       const resetToken = await authService.verifyResetOtp(identifier, fullCode);
       router.replace({ pathname: '/reset-password', params: { resetToken } });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Verification failed. Please try again.');
+      setError(err instanceof Error ? err.message : t('auth.resetOtp.verifyFailedError'));
       setCode(Array(OTP_LENGTH).fill(''));
       setTimeout(() => inputs.current[0]?.focus(), 50);
     } finally {
@@ -100,7 +102,7 @@ export default function ResetOtpScreen() {
 
   function handleManualVerify() {
     const fullCode = code.join('');
-    if (fullCode.length < OTP_LENGTH) { setError(`Please enter all ${OTP_LENGTH} digits.`); return; }
+    if (fullCode.length < OTP_LENGTH) { setError(t('auth.resetOtp.incompleteError', { length: OTP_LENGTH })); return; }
     void submitCode(fullCode);
   }
 
@@ -113,7 +115,7 @@ export default function ResetOtpScreen() {
       setResendTimer(RESEND_SECONDS);
       setTimeout(() => inputs.current[0]?.focus(), 50);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to resend code.');
+      setError(err instanceof Error ? err.message : t('auth.resetOtp.resendError'));
     } finally {
       setResending(false);
     }
@@ -137,9 +139,9 @@ export default function ResetOtpScreen() {
             <View style={styles.iconWrap}>
               <Ionicons name={channel === 'email' ? 'mail' : 'phone-portrait'} size={26} color="#fff" />
             </View>
-            <Text style={styles.heroTitle}>{channel === 'email' ? 'Check your email' : 'Check your phone'}</Text>
+            <Text style={styles.heroTitle}>{channel === 'email' ? t('auth.resetOtp.titleEmail') : t('auth.resetOtp.titlePhone')}</Text>
             <Text style={styles.heroSub}>
-              We sent a {OTP_LENGTH}-digit code to{'\n'}
+              {t('auth.resetOtp.subtitle', { length: OTP_LENGTH })}{'\n'}
               <Text style={styles.heroPhone}>{maskedContact}</Text>
             </Text>
           </View>
@@ -160,7 +162,7 @@ export default function ResetOtpScreen() {
                   error ? { borderColor: C.error, backgroundColor: '#FEF2F2', color: '#DC2626' } : null,
                 ]}
                 value={digit}
-                onChangeText={(t) => handleChange(t, i)}
+                onChangeText={(v) => handleChange(v, i)}
                 onKeyPress={({ nativeEvent }) => handleKeyPress(nativeEvent.key, i)}
                 keyboardType="number-pad"
                 maxLength={i === 0 ? OTP_LENGTH : 1}
@@ -187,28 +189,28 @@ export default function ResetOtpScreen() {
             {loading ? (
               <View style={styles.loadingRow}>
                 <View style={[styles.spinner, { borderTopColor: '#fff' }]} />
-                <Text style={styles.verifyBtnText}>Verifying…</Text>
+                <Text style={styles.verifyBtnText}>{t('auth.resetOtp.verifying')}</Text>
               </View>
             ) : (
-              <Text style={styles.verifyBtnText}>Verify Code</Text>
+              <Text style={styles.verifyBtnText}>{t('auth.resetOtp.verifyBtn')}</Text>
             )}
           </Pressable>
 
           <View style={styles.resendRow}>
-            <Text style={[styles.resendLabel, { color: C.textSecondary }]}>Didn't receive the code? </Text>
+            <Text style={[styles.resendLabel, { color: C.textSecondary }]}>{t('auth.resetOtp.resendPrompt')}</Text>
             {resendTimer > 0 ? (
-              <Text style={[styles.resendTimer, { color: C.textSecondary }]}>Resend in {resendTimer}s</Text>
+              <Text style={[styles.resendTimer, { color: C.textSecondary }]}>{t('auth.resetOtp.resendCountdown', { n: resendTimer })}</Text>
             ) : (
               <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={handleResend} disabled={resending}>
                 <Text style={[styles.resendLink, { color: resending ? C.textSecondary : C.brinjal1 }]}>
-                  {resending ? 'Sending…' : 'Resend Code'}
+                  {resending ? t('auth.resetOtp.resending') : t('auth.resetOtp.resendBtn')}
                 </Text>
               </Pressable>
             )}
           </View>
 
           <Text style={[styles.hint, { color: C.textSecondary }]}>
-            Code expires in 10 minutes{channel === 'email' ? ' · Check your spam folder' : ''}
+            {t('auth.resetOtp.expiryHint')}{channel === 'email' ? t('auth.resetOtp.spamHint') : ''}
           </Text>
         </View>
       </KeyboardAvoidingView>

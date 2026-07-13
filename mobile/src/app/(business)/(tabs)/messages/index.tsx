@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { TabSlider } from '@/components/TabSlider';
 import { EmptyState } from '@/components/EmptyState';
+import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { messagingEvents } from '@/lib/messagingEvents';
 import { getSocket } from '@/lib/socket';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -194,6 +195,7 @@ export default function BusinessChatListScreen() {
   const [chats, setChats]           = useState<Conversation[]>([]);
   const [loading, setLoading]       = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError]           = useState('');
 
   async function load(silent = false) {
     if (!silent) setLoading(true);
@@ -204,11 +206,23 @@ export default function BusinessChatListScreen() {
       ]);
       setPending(pend);
       setChats(accepted.sort((a, b) => new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime()));
+      setError('');
+    } catch (e) {
+      // Only surface errors from user-visible (non-silent) loads — a transient
+      // failure during a background socket-triggered refresh shouldn't blow
+      // away an already-populated, still-valid list.
+      if (!silent) setError(e instanceof Error ? e.message : t('messages.loadFailedSub'));
     } finally {
       if (!silent) setLoading(false);
       setRefreshing(false);
     }
   }
+
+  // Auto-refresh the moment connectivity is restored after being offline.
+  const { reconnectedAt } = useNetworkStatus();
+  useEffect(() => {
+    if (reconnectedAt) void load(true);
+  }, [reconnectedAt]);
 
   useEffect(() => {
     load();
@@ -289,6 +303,13 @@ export default function BusinessChatListScreen() {
         <View style={s.center}>
           <ActivityIndicator size="large" color={ACCENT} />
         </View>
+      ) : error ? (
+        <EmptyState
+          icon="alert-circle-outline"
+          title={t('messages.loadFailedTitle')}
+          subtitle={error}
+          action={{ label: t('messages.retry'), onPress: () => load() }}
+        />
       ) : tab === 'pending' ? (
         <FlatList
           data={pending}

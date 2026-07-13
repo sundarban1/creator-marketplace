@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useAuth } from '@/context/AuthContext';
 import { useAppColors } from '@/context/ThemeContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { authenticate, getBiometricLabel, type BiometricLabel } from '@/services/biometric';
 import { F } from '@/utilities/constants';
 
@@ -15,6 +16,7 @@ type Props = { onUnlock: () => void };
 export function BiometricGateScreen({ onUnlock }: Props) {
   const { user, logout } = useAuth();
   const C = useAppColors();
+  const { t } = useLanguage();
   const [label, setLabel] = useState<BiometricLabel>('Biometrics');
   const [checking, setChecking] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -40,11 +42,11 @@ export function BiometricGateScreen({ onUnlock }: Props) {
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]}>
       <View style={styles.content}>
         <View style={[styles.iconWrap, { backgroundColor: C.primaryLight }]}>
-          <FontAwesome5 name="fingerprint" size={44} color={C.brinjal1} />
+          <FontAwesome5 name={label === 'Face ID' ? 'smile' : 'fingerprint'} size={44} color={C.brinjal1} />
         </View>
-        <Text style={[styles.title, { color: C.text }]}>Unlock kolab</Text>
+        <Text style={[styles.title, { color: C.text }]}>{t('biometricGate.title')}</Text>
         <Text style={[styles.subtitle, { color: C.textSecondary }]}>
-          {checking ? `Waiting for ${label}…` : failed ? `${label} didn't work — try again.` : `Use ${label} to continue`}
+          {checking ? t('biometricGate.waitingFor', { label }) : failed ? t('biometricGate.failedRetry', { label }) : t('biometricGate.useToContinue', { label })}
         </Text>
 
         {checking ? (
@@ -53,12 +55,12 @@ export function BiometricGateScreen({ onUnlock }: Props) {
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
             style={[styles.primaryBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }]}
             onPress={tryUnlock}>
-            <Text style={styles.primaryBtnText}>Unlock with {label}</Text>
+            <Text style={styles.primaryBtnText}>{t('biometricGate.unlockWith', { label })}</Text>
           </Pressable>
         )}
 
         <Pressable style={styles.linkBtn} onPress={() => { void logout(); }}>
-          <Text style={[styles.linkText, { color: C.brinjal1 }]}>Use password instead</Text>
+          <Text style={[styles.linkText, { color: C.brinjal1 }]}>{t('biometricGate.usePasswordInstead')}</Text>
         </Pressable>
       </View>
     </SafeAreaView>

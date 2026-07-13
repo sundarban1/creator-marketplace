@@ -18,7 +18,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
-import { useLanguage } from '@/context/LanguageContext';
+import { useLanguage, type TFn } from '@/context/LanguageContext';
 import { campaignService } from '@/services/campaign';
 import { profileService } from '@/services/profile';
 import { useCategories } from '@/hooks/useCategories';
@@ -50,27 +50,27 @@ const AI_PROMPT_EXAMPLES = [
   'Promote our mobile app to university students.',
 ];
 
-const DELIVERABLE_TYPES: { key: string; label: string }[] = [
-  { key: 'REEL',                  label: 'Reel' },
-  { key: 'STORY',                 label: 'Story' },
-  { key: 'PHOTO_POST',            label: 'Photo Post' },
-  { key: 'CAROUSEL_POST',         label: 'Carousel Post' },
-  { key: 'VISIT_STORE',           label: 'Visit Store' },
-  { key: 'PRODUCT_REVIEW_VIDEO',  label: 'Product Review Video' },
-  { key: 'EVENT_COVERAGE_VIDEO',  label: 'Event Coverage Video' },
-  { key: 'MENTION_IN_CAPTION',    label: 'Mention in Caption' },
-  { key: 'TAG_BUSINESS',          label: 'Tag Business' },
-  { key: 'GOOGLE_REVIEW',         label: 'Google Review' },
+const DELIVERABLE_TYPES: { key: string; labelKey: string }[] = [
+  { key: 'REEL',                  labelKey: 'createEvent.deliverableReel' },
+  { key: 'STORY',                 labelKey: 'createEvent.deliverableStory' },
+  { key: 'PHOTO_POST',            labelKey: 'createEvent.deliverablePhotoPost' },
+  { key: 'CAROUSEL_POST',         labelKey: 'createEvent.deliverableCarouselPost' },
+  { key: 'VISIT_STORE',           labelKey: 'createEvent.deliverableVisitStore' },
+  { key: 'PRODUCT_REVIEW_VIDEO',  labelKey: 'createEvent.deliverableProductReviewVideo' },
+  { key: 'EVENT_COVERAGE_VIDEO',  labelKey: 'createEvent.deliverableEventCoverageVideo' },
+  { key: 'MENTION_IN_CAPTION',    labelKey: 'createEvent.deliverableMentionInCaption' },
+  { key: 'TAG_BUSINESS',          labelKey: 'createEvent.deliverableTagBusiness' },
+  { key: 'GOOGLE_REVIEW',         labelKey: 'createEvent.deliverableGoogleReview' },
 ];
 
 const DEFAULT_DELIVERABLES: Record<string, number> = Object.fromEntries(
   DELIVERABLE_TYPES.map((d) => [d.key, 0])
 );
 
-function summarizeDeliverables(deliverables: Record<string, number>, fallback: string[]): string {
+function summarizeDeliverables(deliverables: Record<string, number>, fallback: string[], t: TFn): string {
   const parts = DELIVERABLE_TYPES
     .filter((d) => (deliverables[d.key] ?? 0) > 0)
-    .map((d) => `${deliverables[d.key]} ${d.label}`);
+    .map((d) => `${deliverables[d.key]} ${t(d.labelKey)}`);
   return parts.length > 0 ? parts.join(', ') : fallback.join(', ');
 }
 
@@ -146,6 +146,42 @@ const CATEGORY_BENEFITS: Record<string, string[]> = {
   'Mindfulness':   ['Free product / service', 'Event access', 'Networking opportunities'],
   'Food & Drink':  ['Free food & drinks', 'Event access', 'Gift hampers'],
   'Entertainment': ['Event access', 'Networking opportunities', 'Future collaboration'],
+};
+
+const EVENT_TEMPLATE_CONTENT_NE: Record<string, { title: string; desc: string }> = {
+  'Food':          { title: 'विशेष फूड क्रिएटर नाइट – खाना चाख्नुहोस्, अन्वेषण गर्नुहोस् र सामग्री बनाउनुहोस्', desc: 'हामी फूड क्रिएटरहरूलाई हाम्रो रेस्टुरेन्टमा विशेष क्रिएटर नाइटमा आमन्त्रण गर्दैछौं। हाम्रा विशेष परिकारहरू चाख्नुहोस्, सेफलाई भेट्नुहोस्, र आफ्नो डाइनिङ अनुभवबारे प्रामाणिक सामग्री बनाउनुहोस्। क्युरेटेड मेनु, किचनको ब्याकस्टेज एक्सेस, र साथी क्रिएटरहरूसँगै एउटा यादगार साँझको आनन्द लिनुहोस्।' },
+  'Travel':        { title: 'ट्राभल क्रिएटर अनुभव – घुम्नुहोस् र डकुमेन्ट गर्नुहोस्', desc: 'हाम्रो ट्राभल डेस्टिनेसन वा प्रोपर्टीमा एक विशेष क्रिएटर अनुभवमा सामेल हुनुहोस्। नि:शुल्क एक्सेस, क्युरेटेड एक्टिभिटीहरू, र आफ्नो प्रामाणिक यात्रा डकुमेन्ट गर्ने स्वतन्त्रताको आनन्द लिनुहोस्। लुकेका रत्नहरू फेला पार्न र आफ्ना दर्शकहरूसँग अनुभव साझा गर्न रुचाउने ट्राभल क्रिएटरहरूका लागि उपयुक्त।' },
+  'Fashion':       { title: 'फेसन क्रिएटर शोकेस – स्टाइल नाइट', desc: 'हामी एउटा विशेष फेसन क्रिएटर इभेन्ट आयोजना गर्दैछौं जहाँ तपाईंले हाम्रो नयाँ कलेक्सनमा पहिलो पहुँच, व्यावसायिक स्टाइलिङ सहयोग, र सामग्री निर्माणका लागि क्युरेटेड ब्याकड्रप पाउनुहुनेछ। समान विचारका क्रिएटरहरूसँग जोडिँदै आकर्षक फेसन सामग्री बनाउने उत्तम अवसर।' },
+  'Beauty':        { title: 'ब्युटी क्रिएटर इभेन्ट – ग्लो, क्रिएट र कनेक्ट गर्नुहोस्', desc: 'नि:शुल्क ट्रिटमेन्ट, प्रोडक्ट डेमोन्स्ट्रेसन, र सामग्री निर्माणका अवसरहरूका लागि हाम्रो विशेष ब्युटी क्रिएटर इभेन्टमा सामेल हुनुहोस्। हाम्रा सेवाहरू प्रत्यक्ष अनुभव गर्नुहोस् र आफ्ना दर्शकहरूसँग मेल खाने प्रामाणिक ब्युटी सामग्री बनाउनुहोस्।' },
+  'Fitness':       { title: 'फिटनेस क्रिएटर निमन्त्रणा – ट्रेन, क्रिएट र इन्स्पायर गर्नुहोस्', desc: 'हामी फिटनेस क्रिएटरहरूलाई नि:शुल्क वर्कआउट सेसन, सुविधा भ्रमण, र सामग्री निर्माण दिनको लागि आमन्त्रण गर्दैछौं। हाम्रा उपकरण, कक्षाहरू, र समुदाय अनुभव गर्नुहोस् — त्यसपछि आफ्नो प्रामाणिक फिटनेस यात्रा आफ्ना दर्शकहरूसँग साझा गर्नुहोस्।' },
+  'Gaming':        { title: 'गेमिङ क्रिएटर नाइट – खेल्नुहोस्, समीक्षा गर्नुहोस् र सामग्री बनाउनुहोस्', desc: 'हाम्रो विशेष गेमिङ क्रिएटर नाइटमा सामेल हुनुहोस्। हाम्रा नयाँ गेम, हार्डवेयर, वा गेमिङ सेटअपमा पहिलो पहुँच पाउनुहोस्। इमानदार गेमप्ले सामग्री बनाउनुहोस्, साथी क्रिएटरहरूसँग जोडिनुहोस्, र आफ्नो गेमिङ समुदायसँग अनुभव साझा गर्नुहोस्।' },
+  'Tech':          { title: 'टेक क्रिएटर शोकेस – अनुभव गर्नुहोस् र समीक्षा गर्नुहोस्', desc: 'हामी एउटा विशेष टेक क्रिएटर इभेन्ट आयोजना गर्दैछौं जहाँ तपाईंले हाम्रा नयाँ प्रोडक्टहरूमा सबैभन्दा पहिले ह्यान्ड्स-अन पहुँच पाउनुहुनेछ। फिचरहरू अनुभव गर्नुहोस्, विस्तृत सामग्री बनाउनुहोस्, र आफ्नो टेक-प्रेमी दर्शकसँग इमानदार समीक्षा साझा गर्नुहोस्।' },
+  'Education':     { title: 'एजुकेसन क्रिएटर इभेन्ट – सिक्नुहोस्, अन्वेषण गर्नुहोस् र साझा गर्नुहोस्', desc: 'हाम्रो शैक्षिक संस्था वा प्लेटफर्ममा हाम्रो विशेष क्रिएटर अनुभवमा सामेल हुनुहोस्। लाइभ सेसनमा भाग लिनुहोस्, हाम्रा प्रशिक्षकहरूलाई भेट्नुहोस्, र आफ्ना दर्शकहरूलाई सिक्न र बढ्न प्रेरित गर्ने सामग्री बनाउन ब्याकस्टेज पहुँच पाउनुहोस्।' },
+  'Lifestyle':     { title: 'लाइफस्टाइल क्रिएटर निमन्त्रणा – अनुभव गर्नुहोस् र सामग्री बनाउनुहोस्', desc: 'हामी लाइफस्टाइल क्रिएटरहरूलाई एउटा विशेष ब्रान्ड अनुभवका लागि आमन्त्रण गर्दैछौं। सामग्री निर्माणका लागि डिजाइन गरिएको क्युरेटेड सेटिङमा हाम्रा प्रोडक्ट वा सेवाहरूको आनन्द लिनुहोस्। आफ्ना दर्शकहरूका लागि सुन्दर, प्रामाणिक लाइफस्टाइल सामग्री बनाउने उत्तम अवसर।' },
+  'Home & Living': { title: 'होम क्रिएटर अनुभव – स्टाइल, सुट र साझा गर्नुहोस्', desc: 'हाम्रो विशेष होम एन्ड लिभिङ क्रिएटर इभेन्टमा सामेल हुनुहोस्। सुन्दर स्टाइल गरिएको सेटिङमा हाम्रो प्रोडक्ट कलेक्सन अन्वेषण गर्नुहोस्, हाम्रा विशेषज्ञहरूबाट स्टाइलिङ सुझाव पाउनुहोस्, र आफ्ना दर्शकहरूलाई प्रेरित गर्ने आकर्षक होम सामग्री बनाउनुहोस्।' },
+  'Wellness':      { title: 'वेलनेस क्रिएटर रिट्रिट – रिल्याक्स, रिस्टोर र क्रिएट गर्नुहोस्', desc: 'हामी वेलनेस क्रिएटरहरूलाई हाम्रा सेवाहरू प्रत्यक्ष अनुभव गर्न आमन्त्रण गर्दैछौं। नि:शुल्क ट्रिटमेन्ट, वेलनेस सेसन, र आफ्ना दर्शकहरूका लागि प्रामाणिक स्वास्थ्य सामग्री बनाउन उपयुक्त शान्त वातावरणको आनन्द लिनुहोस्।' },
+  'Music':         { title: 'म्युजिक क्रिएटर इभेन्ट – लाइभ, विशेष र इमर्सिभ', desc: 'लाइभ प्रदर्शन, ब्याकस्टेज पहुँच, र अनौठो सामग्री निर्माण अवसरहरू सहितको हाम्रो विशेष म्युजिक क्रिएटर इभेन्टमा सामेल हुनुहोस्। आफ्ना दर्शकहरूसँग प्रामाणिक, इमर्सिभ अनुभव साझा गर्न चाहने म्युजिक क्रिएटरहरूका लागि उपयुक्त।' },
+  'Art & Design':  { title: 'आर्ट क्रिएटर अनुभव – बनाउनुहोस्, सहकार्य गर्नुहोस् र प्रदर्शन गर्नुहोस्', desc: 'हामी एउटा विशेष आर्ट एन्ड डिजाइन क्रिएटर इभेन्ट आयोजना गर्दैछौं। हाम्रो स्पेस अन्वेषण गर्नुहोस्, हाम्रा कलाकारहरूलाई भेट्नुहोस्, र रचनात्मकता र कलात्मकतालाई मनाउने सामग्री बनाउन प्रेरित हुनुहोस्। भिजुअल स्टोरीटेलिङलाई कदर गर्ने क्रिएटरहरूका लागि उपयुक्त इभेन्ट।' },
+  'Pets':          { title: 'पेट क्रिएटर डे – रमाइलो, खेल र सामग्री निर्माण', desc: 'आफ्ना प्यारा साथीहरूलाई लिएर आउनुहोस्! हामी हाम्रो पेट-फ्रेन्डली भेन्युमा विशेष पेट क्रिएटर इभेन्ट आयोजना गर्दैछौं। आफ्ना पेटसँगै हाम्रा प्रोडक्ट वा सेवाहरू अनुभव गर्नुहोस्, प्यारो सामग्री बनाउनुहोस्, र साथी पेट क्रिएटरहरूसँग जोडिनुहोस्।' },
+  'Parenting':     { title: 'फ्यामिली क्रिएटर इभेन्ट – अभिभावक र बच्चाहरूका लागि रमाइलो दिन', desc: 'हामी एउटा विशेष फ्यामिली र प्यारेन्टिङ क्रिएटर इभेन्ट आयोजना गर्दैछौं। परिवार-मैत्री गतिविधिहरूको आनन्द लिनुहोस्, आफ्नो परिवारसँग हाम्रा प्रोडक्ट वा सेवाहरू अनुभव गर्नुहोस्, र आफ्ना दर्शकहरूसँग मेल खाने प्रामाणिक प्यारेन्टिङ सामग्री बनाउनुहोस्।' },
+  'Automotive':    { title: 'अटो क्रिएटर ड्राइभ डे – अनुभव गर्नुहोस् र समीक्षा गर्नुहोस्', desc: 'टेस्ट ड्राइभ, सुविधा भ्रमण, र ब्याकस्टेज सामग्री निर्माण दिनको लागि हाम्रो विशेष अटोमोटिभ क्रिएटर इभेन्टमा सामेल हुनुहोस्। हाम्रा गाडीहरूको प्रदर्शन, डिजाइन, र फिचरहरू अनुभव गर्नुहोस् — त्यसपछि आफ्नो प्रामाणिक समीक्षा साझा गर्नुहोस्।' },
+  'Finance':       { title: 'फाइनान्स क्रिएटर वर्कशप – सिक्नुहोस्, अनुभव गर्नुहोस् र साझा गर्नुहोस्', desc: 'हामी एउटा विशेष फाइनान्स क्रिएटर वर्कशप आयोजना गर्दैछौं। हाम्रा विशेषज्ञहरूबाट अन्तर्दृष्टि पाउनुहोस्, हाम्रा उपकरण वा सेवाहरू प्रत्यक्ष अनुभव गर्नुहोस्, र आफ्ना दर्शकहरूलाई राम्रो आर्थिक निर्णय लिन मद्दत गर्ने शैक्षिक सामग्री बनाउनुहोस्।' },
+  'Sustainability':{ title: 'इको क्रिएटर इभेन्ट – दिगो, सुन्दर र प्रभावकारी', desc: 'हाम्रो सस्टेनेबिलिटी क्रिएटर इभेन्टमा सामेल हुनुहोस्। हाम्रा इको-फ्रेन्डली प्रोडक्टहरू अन्वेषण गर्नुहोस्, हाम्रो दिगोपन पहलहरूबारे जान्नुहोस्, र आफ्ना दर्शकहरूलाई पृथ्वीका लागि सचेत विकल्प रोज्न प्रेरित गर्ने सामग्री बनाउनुहोस्।' },
+  'Photography':   { title: 'फोटोग्राफी क्रिएटर सुट – विशेष पहुँच र सहकार्य', desc: 'हामी एउटा विशेष फोटोग्राफी क्रिएटर इभेन्ट आयोजना गर्दैछौं। मनमोहक लोकेसन, व्यावसायिक उपकरण, र हाम्रो ब्रान्डलाई प्रामाणिक भिजुअल स्टाइलमा देखाउँदै अद्भुत सामग्री बनाउन विशेषज्ञ मार्गदर्शन पाउनुहोस्।' },
+  'Sports':        { title: 'स्पोर्ट्स क्रिएटर डे – खेल्नुहोस्, तालिम लिनुहोस् र सामग्री बनाउनुहोस्', desc: 'हाम्रो विशेष स्पोर्ट्स क्रिएटर इभेन्टमा सामेल हुनुहोस्। हाम्रो सुविधा, उपकरण, वा खेल अनुभव प्रत्यक्ष अनुभव गर्नुहोस्। आफ्नो एथलेटिक दर्शकलाई उत्साहित गर्ने र आफ्नो वास्तविक अनुभव देखाउने उच्च-ऊर्जा सामग्री बनाउनुहोस्।' },
+  'Film & TV':     { title: 'इन्टरटेनमेन्ट क्रिएटर प्रिमियर – विशेष र इमर्सिभ', desc: 'हामी इन्टरटेनमेन्ट क्रिएटरहरूलाई विशेष प्रिमियर वा ब्याकस्टेज इभेन्टमा आमन्त्रण गर्दैछौं। सबैभन्दा पहिले पहुँच पाउनुहोस्, कलाकारहरूसँग अन्तरक्रिया गर्नुहोस्, र आफ्ना दर्शकहरूका लागि उत्साह र प्रतीक्षा बढाउने रोमाञ्चक सामग्री बनाउनुहोस्।' },
+  'Mindfulness':   { title: 'माइन्डफुलनेस क्रिएटर अनुभव – शान्ति फेला पार्नुहोस्, सामग्री बनाउनुहोस्', desc: 'हाम्रो विशेष माइन्डफुलनेस क्रिएटर इभेन्टमा सामेल हुनुहोस्। हाम्रा सेसन, प्रोडक्ट, वा रिट्रिट सेटिङ अनुभव गर्नुहोस् र आफ्ना दर्शकहरूको स्वास्थ्य यात्रामा मद्दत गर्ने शान्त, प्रामाणिक सामग्री बनाउनुहोस्।' },
+  'Food & Drink':  { title: 'फूड एन्ड ड्रिंक क्रिएटर नाइट – चाख्नुहोस्, अनुभव गर्नुहोस् र सामग्री बनाउनुहोस्', desc: 'हामी एउटा विशेष फूड एन्ड ड्रिंक क्रिएटर साँझ आयोजना गर्दैछौं। क्युरेटेड टेस्टिङको आनन्द लिनुहोस्, स्वादहरू पछाडिको टिमलाई भेट्नुहोस्, र आफ्ना दर्शकहरूलाई त्यो अनुभव चाख्न मन लाग्ने सुन्दर सामग्री बनाउनुहोस्।' },
+  'Entertainment': { title: 'इन्टरटेनमेन्ट क्रिएटर इभेन्ट – लाइभ, विशेष र अविस्मरणीय', desc: 'हामीसँग एउटा विशेष इन्टरटेनमेन्ट क्रिएटर इभेन्टमा सामेल हुनुहोस्। शो अनुभव गर्नुहोस्, ब्याकस्टेज जानुहोस्, र आफ्ना दर्शकहरूका लागि ऊर्जा र उत्साह समेट्ने इमर्सिभ सामग्री बनाउनुहोस्।' },
+};
+
+const BENEFIT_LABELS_NE: Record<string, string> = {
+  'Free food & drinks':      'नि:शुल्क खाना र पेय पदार्थ',
+  'Event access':            'इभेन्ट पहुँच',
+  'Free product / service':  'नि:शुल्क प्रोडक्ट / सेवा',
+  'Gift hampers':            'गिफ्ट ह्याम्पर',
+  'Networking opportunities':'नेटवर्किङ अवसर',
+  'Future collaboration':    'भविष्यको सहकार्य',
 };
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -781,7 +817,7 @@ const sc = StyleSheet.create({
 
 export default function CreateCampaignScreen() {
   const C = useAppColors();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const notRequiredLabel = t('createEvent.notRequired');
   const [phase, setPhase] = useState<'setup' | 'review'>('setup');
   const [loading, setLoading] = useState(false);
@@ -999,7 +1035,7 @@ export default function CreateCampaignScreen() {
   async function handleSuggestDescription() {
     if (descSuggestLoading) return;
     const deliverables = form.eventType === 'PAID_CAMPAIGN'
-      ? summarizeDeliverables(form.deliverables, form.goals)
+      ? summarizeDeliverables(form.deliverables, form.goals, t)
       : form.benefits.join(', ');
     if (!form.title.trim() && !form.template && !deliverables) {
       showToast(t('createEvent.descSuggestNeedsInfo'), 'error');
@@ -1030,11 +1066,15 @@ export default function CreateCampaignScreen() {
     if (Object.keys(errs).length > 0) { setEventErrors(errs); return; }
     setEventErrors({});
 
-    const content  = EVENT_TEMPLATE_CONTENT[form.template] ?? { title: '', desc: '' };
+    const templates = language === 'ne' ? EVENT_TEMPLATE_CONTENT_NE : EVENT_TEMPLATE_CONTENT;
+    const content  = templates[form.template] ?? { title: '', desc: '' };
     const autoDesc = content.desc
-      ? content.desc + (form.venue ? `\n\nLocation: ${form.venue}` : '')
+      ? content.desc + (form.venue ? `\n\n${t('createEvent.locationPrefix')}: ${form.venue}` : '')
       : '';
-    const suggestedBenefits = CATEGORY_BENEFITS[form.template] ?? ['Event access'];
+    const rawBenefits = CATEGORY_BENEFITS[form.template] ?? ['Event access'];
+    const suggestedBenefits = language === 'ne'
+      ? rawBenefits.map((b) => BENEFIT_LABELS_NE[b] ?? b)
+      : rawBenefits;
     const defaultEventDate  = dayStart(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
 
     setForm((prev) => {
@@ -1068,12 +1108,7 @@ export default function CreateCampaignScreen() {
       locationLng:    locationLng ?? undefined,
       minFollowers:   0,
       contentType:    form.goals[0] ?? '',
-      deliverables:   form.aiGenerated ? form.aiDeliverables : (() => {
-        const parts = DELIVERABLE_TYPES
-          .filter((d) => (form.deliverables[d.key] ?? 0) > 0)
-          .map((d) => `${form.deliverables[d.key]} ${d.label}`);
-        return parts.length > 0 ? parts.join(', ') : form.goals.join(', ');
-      })(),
+      deliverables:   form.aiGenerated ? form.aiDeliverables : summarizeDeliverables(form.deliverables, form.goals, t),
       deadline:       form.deadline!.toISOString(),
       budgetMin:      budget.min,
       budgetMax:      budget.max,
@@ -1490,7 +1525,7 @@ export default function CreateCampaignScreen() {
                               ]}>
                               <View style={[dlv.bullet, { backgroundColor: active ? C.brinjal1 : C.border }]} />
                               <Text style={[dlv.label, { color: active ? C.text : C.textSecondary, fontFamily: active ? F.semibold : F.regular }]}>
-                                {item.label}
+                                {t(item.labelKey)}
                               </Text>
                               <View style={[dlv.counter, { borderColor: active ? C.brinjal1 : C.border, backgroundColor: C.background }]}>
                                 <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}

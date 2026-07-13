@@ -77,6 +77,7 @@ export function toCampaign(api: ApiCampaign): Campaign {
     template:     api.template ?? undefined,
     featureImageUrl: api.featureImageUrl ?? undefined,
     category:     api.category,
+    categoryKey:  api.categoryKey,
     goals:        Array.isArray(api.goals) ? api.goals : [],
     minFollowers:    formatFollowers(api.minFollowers),
     minFollowersRaw: api.minFollowers,

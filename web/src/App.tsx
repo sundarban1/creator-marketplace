@@ -21,6 +21,7 @@ import { FAQManager } from './pages/FAQManager';
 import { SupportInbox } from './pages/SupportInbox';
 import { LegalEditor } from './pages/LegalEditor';
 import { Conversations } from './pages/Conversations';
+import { Notifications } from './pages/Notifications';
 import { CampaignDetail } from './pages/CampaignDetail';
 import { UserAnalytics } from './pages/UserAnalytics';
 import { CategoriesPage } from './pages/categories/CategoriesPage';
@@ -76,6 +77,7 @@ export default function App() {
                 <Route path="/support-inbox" element={<SupportInbox />} />
                 <Route path="/legal"          element={<LegalEditor />} />
                 <Route path="/conversations" element={<Conversations />} />
+                <Route path="/notifications" element={<Notifications />} />
                 <Route path="/settings" element={<Settings />} />
               </Route>
             </Route>
