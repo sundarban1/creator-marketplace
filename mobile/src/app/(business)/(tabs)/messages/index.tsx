@@ -1,7 +1,7 @@
 import { router, useFocusEffect } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -24,10 +24,12 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import { chatService } from '@/services/chat';
 import { F } from '@/utilities/constants';
+import { TabColors } from '@/utilities/tabColors';
 import type { ApiMessage } from '@/lib/api';
 import type { Conversation } from '@/types';
 
 const ACCENT = '#0EA5E9';
+const PAGE_SIZE = 20;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -87,9 +89,9 @@ function PendingCard({ conv }: { conv: Conversation }) {
         <View style={s.reqInfo}>
           <View style={s.reqNameRow}>
             <Text style={[s.reqName, { color: C.text }]} numberOfLines={1}>{conv.participantName}</Text>
-            <View style={[s.waitBadge, { backgroundColor: '#FEF3C7' }]}>
-              <Ionicons name="time-outline" size={10} color="#92400E" />
-              <Text style={[s.waitBadgeTxt, { color: '#92400E' }]}>Pending</Text>
+            <View style={[s.waitBadge, { backgroundColor: TabColors.warning.bg }]}>
+              <Ionicons name="time-outline" size={10} color={TabColors.warning.color} />
+              <Text style={[s.waitBadgeTxt, { color: TabColors.warning.color }]}>{t('messages.statusPending')}</Text>
             </View>
           </View>
           {conv.campaignTitle ? (
@@ -113,10 +115,10 @@ function PendingCard({ conv }: { conv: Conversation }) {
         </View>
       ) : null}
 
-      <View style={[s.waitingNote, { backgroundColor: '#FFFBEB', borderColor: '#FDE68A' }]}>
-        <Ionicons name="hourglass-outline" size={13} color="#92400E" />
-        <Text style={[s.waitingNoteTxt, { color: '#92400E' }]}>
-          Waiting for {conv.participantName} to respond
+      <View style={[s.waitingNote, { backgroundColor: TabColors.warning.bg, borderColor: TabColors.warning.color + '40' }]}>
+        <Ionicons name="hourglass-outline" size={13} color={TabColors.warning.color} />
+        <Text style={[s.waitingNoteTxt, { color: TabColors.warning.color }]}>
+          {t('messages.waitingForResponse', { name: conv.participantName })}
         </Text>
       </View>
     </View>
@@ -210,27 +212,36 @@ function ChatCard({ conv, onDelete }: { conv: Conversation; onDelete: (id: strin
 // ── Screen ────────────────────────────────────────────────────────────────────
 
 type Tab = 'chats' | 'pending';
+type TabState = { items: Conversation[]; page: number; total: number; loadingMore: boolean; loaded: boolean };
+const emptyTabState = (): TabState => ({ items: [], page: 0, total: 0, loadingMore: false, loaded: false });
 
 export default function BusinessChatListScreen() {
   const C = useAppColors();
   const { t } = useLanguage();
   const { user } = useAuth();
   const [tab, setTab]               = useState<Tab>('chats');
-  const [pending, setPending]       = useState<Conversation[]>([]);
-  const [chats, setChats]           = useState<Conversation[]>([]);
+  const [tabData, setTabData]       = useState<Record<Tab, TabState>>({ chats: emptyTabState(), pending: emptyTabState() });
   const [loading, setLoading]       = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError]           = useState('');
+  const loadingMoreRef = useRef(false);
+
+  async function loadTab(tabKey: Tab, page: number, replace: boolean) {
+    if (!replace) setTabData((prev) => ({ ...prev, [tabKey]: { ...prev[tabKey], loadingMore: true } }));
+    const status = tabKey === 'pending' ? 'PENDING' : 'ACCEPTED';
+    const { conversations, total } = await chatService.getConversations('BUSINESS', status, { page, limit: PAGE_SIZE });
+    setTabData((prev) => {
+      const prevItems = replace ? [] : prev[tabKey].items;
+      const seen = new Set(prevItems.map((c) => c.id));
+      const merged = [...prevItems, ...conversations.filter((c) => !seen.has(c.id))];
+      return { ...prev, [tabKey]: { items: merged, page, total, loadingMore: false, loaded: true } };
+    });
+  }
 
   async function load(silent = false) {
     if (!silent) setLoading(true);
     try {
-      const [pend, accepted] = await Promise.all([
-        chatService.getConversations('BUSINESS', 'PENDING'),
-        chatService.getConversations('BUSINESS', 'ACCEPTED'),
-      ]);
-      setPending(pend);
-      setChats(accepted.sort((a, b) => new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime()));
+      await Promise.all([loadTab('pending', 1, true), loadTab('chats', 1, true)]);
       setError('');
     } catch (e) {
       // Only surface errors from user-visible (non-silent) loads — a transient
@@ -240,7 +251,15 @@ export default function BusinessChatListScreen() {
     } finally {
       if (!silent) setLoading(false);
       setRefreshing(false);
+      loadingMoreRef.current = false;
     }
+  }
+
+  function loadMore() {
+    const state = tabData[tab];
+    if (loadingMoreRef.current || state.loadingMore || state.items.length >= state.total) return;
+    loadingMoreRef.current = true;
+    void loadTab(tab, state.page + 1, false).finally(() => { loadingMoreRef.current = false; });
   }
 
   // Auto-refresh the moment connectivity is restored after being offline.
@@ -255,10 +274,10 @@ export default function BusinessChatListScreen() {
     const socket = getSocket();
 
     const onMessageNew = (data: { conversationId: string; message: ApiMessage }) => {
-      setChats((prev) => {
-        const idx = prev.findIndex((c) => c.id === data.conversationId);
+      setTabData((prev) => {
+        const idx = prev.chats.items.findIndex((c) => c.id === data.conversationId);
         if (idx === -1) { void load(true); return prev; }
-        const updated = [...prev];
+        const updated = [...prev.chats.items];
         const conv = { ...updated[idx]! };
         conv.lastMessage = data.message.content;
         conv.lastMessageTime = data.message.createdAt;
@@ -267,7 +286,7 @@ export default function BusinessChatListScreen() {
         }
         updated.splice(idx, 1);
         updated.unshift(conv);
-        return updated;
+        return { ...prev, chats: { ...prev.chats, items: updated } };
       });
     };
     const onConvUpdate = () => void load(true);
@@ -287,9 +306,14 @@ export default function BusinessChatListScreen() {
   }, []));
 
   function handleDeleteConversation(conversationId: string) {
-    setChats((prev) => prev.filter((c) => c.id !== conversationId));
+    setTabData((prev) => ({
+      ...prev,
+      chats: { ...prev.chats, items: prev.chats.items.filter((c) => c.id !== conversationId), total: Math.max(0, prev.chats.total - 1) },
+    }));
   }
 
+  const pending = tabData.pending.items;
+  const chats   = tabData.chats.items;
   const totalUnread = chats.reduce((acc, c) => acc + (c.unreadCount ?? 0), 0);
 
   return (
@@ -305,10 +329,8 @@ export default function BusinessChatListScreen() {
           <View>
             <Text style={s.heading}>{t('messages.heading')}</Text>
             <Text style={s.headingSub}>
-              {pending.length > 0
-                ? pending.length !== 1
-                  ? `${pending.length} pending responses`
-                  : '1 pending response'
+              {tabData.pending.total > 0
+                ? t(tabData.pending.total !== 1 ? 'messages.pendingRequests' : 'messages.pendingRequest', { n: tabData.pending.total })
                 : totalUnread > 0
                 ? t('messages.unreadCount', { n: totalUnread })
                 : t('messages.yourConversations')}
@@ -321,8 +343,8 @@ export default function BusinessChatListScreen() {
       <TabSlider
         justify
         tabs={[
-          { key: 'chats',   label: t('messages.tabMessages'), count: totalUnread,   color: '#4f46e5' },
-          { key: 'pending', label: 'Pending',                 count: pending.length, color: '#4f46e5' },
+          { key: 'chats',   label: t('messages.tabMessages'),        count: totalUnread,          color: TabColors.brand.color },
+          { key: 'pending', label: t('messages.tabPendingRequests'), count: tabData.pending.total, color: TabColors.warning.color },
         ]}
         active={tab}
         onChange={(key) => setTab(key as Tab)}
@@ -345,13 +367,16 @@ export default function BusinessChatListScreen() {
           keyExtractor={(c) => c.id}
           renderItem={({ item }) => <PendingCard conv={item} />}
           contentContainerStyle={[s.reqList, pending.length === 0 && s.listEmpty]}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={ACCENT} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void loadTab('pending', 1, true).finally(() => setRefreshing(false)); }} tintColor={ACCENT} />}
           showsVerticalScrollIndicator={false}
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.4}
+          ListFooterComponent={tabData.pending.loadingMore ? <View style={s.footerLoading}><ActivityIndicator size="small" color={ACCENT} /></View> : null}
           ListEmptyComponent={
             <EmptyState
               faIcon="paper-plane"
-              title="No pending requests"
-              subtitle="Requests you've sent to creators will appear here"
+              title={t('messages.noPendingRequestsTitle')}
+              subtitle={t('messages.noPendingRequestsSub')}
             />
           }
         />
@@ -362,8 +387,11 @@ export default function BusinessChatListScreen() {
           renderItem={({ item }) => <ChatCard conv={item} onDelete={handleDeleteConversation} />}
           contentContainerStyle={[s.chatList, chats.length === 0 && s.listEmpty]}
           ItemSeparatorComponent={() => <View style={[s.sep, { backgroundColor: C.border }]} />}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={ACCENT} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void loadTab('chats', 1, true).finally(() => setRefreshing(false)); }} tintColor={ACCENT} />}
           showsVerticalScrollIndicator={false}
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.4}
+          ListFooterComponent={tabData.chats.loadingMore ? <View style={s.footerLoading}><ActivityIndicator size="small" color={ACCENT} /></View> : null}
           ListEmptyComponent={
             <EmptyState
               faIcon="comment-dots"
@@ -390,6 +418,7 @@ const s = StyleSheet.create({
   // Pending list
   reqList:   { padding: 16, gap: 12, paddingBottom: 40 },
   listEmpty: { flexGrow: 1 },
+  footerLoading: { paddingVertical: 20 },
 
   // Pending card
   reqCard:     { borderRadius: 14, borderWidth: 1.5, padding: 14, gap: 12, shadowRadius: 6, shadowOpacity: 0.04, shadowOffset: { width: 0, height: 2 }, elevation: 2, overflow: 'hidden' },

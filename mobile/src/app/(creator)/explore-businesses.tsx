@@ -7,24 +7,21 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Animated,
   FlatList,
   Image,
-  Modal,
   Pressable,
   RefreshControl,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useKeyboardOffset } from '@/hooks/useKeyboardOffset';
+import { FilterSheet } from '@/components/FilterSheet';
 import { EmptyState } from '@/components/EmptyState';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
-import { LocationSearchPicker, type LocationFilter } from '@/features/creator/components/FilterModal';
+import { LocationSearchPicker, type LocationFilter } from '@/components/LocationSearchPicker';
 import { businessService, type BusinessListItem } from '@/services/business';
 import { useFavoriteBusinesses } from '@/hooks/useFavoriteBusinesses';
 import { useToast } from '@/components/Toast';
@@ -64,95 +61,68 @@ function ExploreFilterModal({
   const { t } = useLanguage();
   const { categories: businessCategories } = useCategories('BUSINESS');
   const { platforms: allPlatforms } = usePlatforms();
-  const keyboardOffset = useKeyboardOffset();
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={fm.backdrop} onPress={onClose} />
-      <Animated.View style={[fm.sheet, { backgroundColor: C.surface, transform: [{ translateY: keyboardOffset }] }]}>
-        <View style={[fm.handle, { backgroundColor: C.border }]} />
+    <FilterSheet
+      visible={visible}
+      title={t('explore.businesses.filterTitle')}
+      resetLabel={t('explore.businesses.filterResetAll')}
+      applyLabel={t('explore.businesses.filterApplyBtn')}
+      onApply={onApply}
+      onReset={onReset}
+      onClose={onClose}
+    >
+      {/* Location */}
+      <View style={fm.sectionRow}>
+        <Text style={[fm.section, { color: C.textSecondary }]}>{t('explore.businesses.filterLocation')}</Text>
+        <Text style={[fm.sectionHint, { color: C.textSecondary }]}>{t('explore.businesses.filterLocationCount', { n: tempLocation.length })}</Text>
+      </View>
+      <LocationSearchPicker selected={tempLocation} onSelect={setTempLocation} />
 
-        <View style={[fm.header, { borderBottomColor: C.border }]}>
-          <Text style={[fm.title, { color: C.text }]}>{t('explore.businesses.filterTitle')}</Text>
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={onReset}>
-            <Text style={[fm.reset, { color: C.brinjal1 }]}>{t('explore.businesses.filterResetAll')}</Text>
-          </Pressable>
-        </View>
+      {/* Platform */}
+      <Text style={[fm.section, { color: C.textSecondary }]}>{t('explore.businesses.filterPlatform')}</Text>
+      <View style={fm.chipGrid}>
+        {allPlatforms.map((p) => {
+          const active = tempPlatform === p.name;
+          return (
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+              key={p.id}
+              onPress={() => setTempPlatform(active ? '' : p.name)}
+              style={[fm.filterChip, { borderColor: active ? C.brinjal1 : C.border, backgroundColor: active ? C.primaryLight : C.background }]}>
+              <FontAwesome5 name={p.icon} size={12} color={active ? C.brinjal1 : C.textSecondary} />
+              <Text style={[fm.filterChipText, { color: active ? C.brinjal1 : C.text, fontWeight: active ? '700' : '400' }]}>{p.name}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
 
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={fm.body}>
-
-          {/* Location */}
-          <View style={fm.sectionRow}>
-            <Text style={[fm.section, { color: C.textSecondary }]}>{t('explore.businesses.filterLocation')}</Text>
-            <Text style={[fm.sectionHint, { color: C.textSecondary }]}>{t('explore.businesses.filterLocationCount', { n: tempLocation.length })}</Text>
-          </View>
-          <LocationSearchPicker selected={tempLocation} onSelect={setTempLocation} />
-
-          {/* Platform */}
-          <Text style={[fm.section, { color: C.textSecondary }]}>{t('explore.businesses.filterPlatform')}</Text>
-          <View style={fm.chipGrid}>
-            {allPlatforms.map((p) => {
-              const active = tempPlatform === p.name;
-              return (
-                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                  key={p.id}
-                  onPress={() => setTempPlatform(active ? '' : p.name)}
-                  style={[fm.filterChip, { borderColor: active ? C.brinjal1 : C.border, backgroundColor: active ? C.brinjal1 : C.background }]}>
-                  <FontAwesome5 name={p.icon} size={12} color={active ? '#fff' : C.textSecondary} />
-                  <Text style={[fm.filterChipText, { color: active ? '#fff' : C.text }]}>{p.name}</Text>
-                </Pressable>
-              );
-            })}
-          </View>
-
-          {/* Category */}
-          <Text style={[fm.section, { color: C.textSecondary }]}>{t('explore.businesses.filterCategory')}</Text>
-          <View style={fm.chipGrid}>
-            {businessCategories.map((cat) => {
-              const active = tempCategory === cat.name;
-              return (
-                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                  key={cat.id}
-                  onPress={() => setTempCategory(active ? '' : cat.name)}
-                  style={[fm.filterChip, { borderColor: active ? C.brinjal1 : C.border, backgroundColor: active ? C.primaryLight : C.background }]}>
-                  <FontAwesome5 name={cat.icon} size={12} color={active ? cat.color : C.textSecondary} />
-                  <Text style={[fm.filterChipText, { color: active ? C.brinjal1 : C.text, fontWeight: active ? '700' : '400' }]}>{cat.name}</Text>
-                </Pressable>
-              );
-            })}
-          </View>
-
-        </ScrollView>
-
-        <View style={[fm.footer, { borderTopColor: C.border }]}>
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-            style={({ pressed }) => [fm.applyBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }, pressed && { opacity: 0.88 }]}
-            onPress={onApply}>
-            <Text style={fm.applyTxt}>{t('explore.businesses.filterApplyBtn')}</Text>
-          </Pressable>
-        </View>
-      </Animated.View>
-    </Modal>
+      {/* Category */}
+      <Text style={[fm.section, { color: C.textSecondary }]}>{t('explore.businesses.filterCategory')}</Text>
+      <View style={fm.chipGrid}>
+        {businessCategories.map((cat) => {
+          const active = tempCategory === cat.name;
+          return (
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+              key={cat.id}
+              onPress={() => setTempCategory(active ? '' : cat.name)}
+              style={[fm.filterChip, { borderColor: active ? C.brinjal1 : C.border, backgroundColor: active ? C.primaryLight : C.background }]}>
+              <FontAwesome5 name={cat.icon} size={12} color={active ? C.brinjal1 : C.textSecondary} />
+              <Text style={[fm.filterChipText, { color: active ? C.brinjal1 : C.text, fontWeight: active ? '700' : '400' }]}>{cat.name}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    </FilterSheet>
   );
 }
 
 const fm = StyleSheet.create({
-  backdrop:        { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)' },
-  sheet:           { position: 'absolute', left: 0, right: 0, bottom: 0, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '80%', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 20, shadowOffset: { width: 0, height: -4 }, elevation: 20 },
-  handle:          { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginTop: 12, marginBottom: 4 },
-  header:          { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1 },
-  title:           { fontSize: 17, fontFamily: F.bold },
-  reset:           { fontSize: 14, fontFamily: F.semibold },
-  body:            { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16, gap: 20 },
   section:         { fontSize: 12, textTransform: 'uppercase', letterSpacing: 0, marginBottom: -4, fontFamily: F.bold },
   sectionRow:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: -4 },
   sectionHint:     { fontSize: 11, fontFamily: F.semibold },
   chipGrid:        { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   filterChip:      { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1.5, borderRadius: 22, paddingHorizontal: 14, paddingVertical: 9 },
   filterChipText:  { fontSize: 13, fontFamily: F.medium },
-  footer:          { padding: 20, borderTopWidth: 1 },
-  applyBtn:        { borderRadius: 14, height: 52, justifyContent: 'center', alignItems: 'center', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
-  applyTxt:        { color: '#fff', fontSize: 16, fontFamily: F.bold },
 });
 
 // ─── Business Avatar ──────────────────────────────────────────────────────────
@@ -405,7 +375,8 @@ export default function ExploreBusinessesScreen() {
     }
   }
 
-  const isFilterActive  = !!(category || platform || locations.length > 0);
+  const filterActiveCount = [!!category, !!platform, locations.length > 0].filter(Boolean).length;
+  const isFilterActive  = filterActiveCount > 0;
   const hasFilter       = !!(search || category || platform || locations.length > 0);
   const displayItems: DisplayBusiness[] = businesses.map((b) => ({
     ...b,
@@ -454,7 +425,11 @@ export default function ExploreBusinessesScreen() {
           style={[styles.filterBtn, { backgroundColor: isFilterActive ? C.brinjal1 : C.surface, borderColor: isFilterActive ? C.brinjal1 : C.border }]}
           onPress={openFilter}>
           <Ionicons name="options-outline" size={20} color={isFilterActive ? '#fff' : C.brinjal1} />
-          {isFilterActive && <View style={styles.filterDot} />}
+          {isFilterActive && (
+            <View style={styles.filterCountBadge}>
+              <Text style={styles.filterCountBadgeTxt}>{filterActiveCount}</Text>
+            </View>
+          )}
         </Pressable>
       </View>
 
@@ -584,7 +559,8 @@ const styles = StyleSheet.create({
   searchBox:      { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 9, borderRadius: 16, borderWidth: 1.5, paddingHorizontal: 14, height: 50 },
   searchInput:    { flex: 1, fontSize: 15, fontFamily: F.regular },
   filterBtn:      { width: 50, height: 50, borderRadius: 16, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center' },
-  filterDot:      { position: 'absolute', top: 8, right: 8, width: 8, height: 8, borderRadius: 4, backgroundColor: '#EF4444' },
+  filterCountBadge: { position: 'absolute', top: -4, right: -4, minWidth: 16, height: 16, borderRadius: 8, paddingHorizontal: 3, backgroundColor: '#EF4444', justifyContent: 'center', alignItems: 'center' },
+  filterCountBadgeTxt: { fontSize: 9, fontFamily: F.extrabold, color: '#fff' },
 
   // Active filter pills
   activePills:    { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', paddingHorizontal: 16, paddingBottom: 8, gap: 8 },

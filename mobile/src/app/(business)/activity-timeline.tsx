@@ -472,7 +472,7 @@ export default function CampaignWorkspaceScreen() {
     setLoading(true);
     try {
       if (isCreator) {
-        const [c, myApps] = await Promise.all([
+        const [c, { proposals: myApps }] = await Promise.all([
           campaignService.getById(campaignId),
           campaignService.getMyApplications(),
         ]);

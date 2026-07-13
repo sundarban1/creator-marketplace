@@ -1,24 +1,18 @@
-import { useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
-import { ActivityIndicator, Animated, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { RangeSlider } from '@/components/RangeSlider';
+import { FilterSheet } from '@/components/FilterSheet';
+import { FilterChip, FilterChipGroup } from '@/components/FilterChip';
+import { LocationSearchPicker, type LocationEntry, type LocationFilter } from '@/components/LocationSearchPicker';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage, type TFn } from '@/context/LanguageContext';
-import { useKeyboardOffset } from '@/hooks/useKeyboardOffset';
 import { F } from '@/utilities/constants';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+export { LocationSearchPicker, type LocationEntry, type LocationFilter };
 
-export type LocationEntry = { label: string; lat: number | null; lng: number | null };
-export type LocationFilter = LocationEntry[];
-
-const PLACES_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY ?? '';
 const MAX_LOCS = 3;
-
-type Prediction = {
-  place_id: string;
-  structured_formatting: { main_text: string; secondary_text: string };
-};
+const BUDGET_MAX = 100000;
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -48,14 +42,50 @@ function fmtDate(d: Date | null, monthsShort: string[]) {
   return `${d.getDate()} ${monthsShort[d.getMonth()]} ${d.getFullYear()}`;
 }
 
+// ─── Quick-pick presets ───────────────────────────────────────────────────────
+// Budget and Deadline both follow the same "fast path first" concept: a row of
+// one-tap presets covering the common cases, with a trailing "Custom" chip that
+// reveals the precise slider/calendar only when someone actually needs it —
+// instead of always showing a full slider + inline calendar on open.
+
+type BudgetPreset = { key: string; min: number; max: number; labelKey: string };
+const BUDGET_PRESETS: BudgetPreset[] = [
+  { key: 'any',      min: 0,     max: BUDGET_MAX, labelKey: 'filterModal.presetAnyBudget' },
+  { key: 'under10k', min: 0,     max: 10000,      labelKey: 'filterModal.presetUnder10k'  },
+  { key: '10to30k',  min: 10000, max: 30000,      labelKey: 'filterModal.preset10to30k'   },
+  { key: '30kplus',  min: 30000, max: BUDGET_MAX, labelKey: 'filterModal.preset30kPlus'   },
+];
+
+type DeadlinePreset = { key: string; days: number | null; labelKey: string };
+const DEADLINE_PRESETS: DeadlinePreset[] = [
+  { key: 'any',     days: null, labelKey: 'filterModal.presetAnyTime'            },
+  { key: 'week',    days: 7,    labelKey: 'filterModal.presetEndingThisWeek'     },
+  { key: 'month',   days: 30,   labelKey: 'filterModal.presetEndingThisMonth'    },
+  { key: 'quarter', days: 90,   labelKey: 'filterModal.presetEndingIn3Months'   },
+];
+
+function matchBudgetPreset(min: number, max: number) {
+  return BUDGET_PRESETS.find((p) => p.min === min && p.max === max) ?? null;
+}
+function matchDeadlinePreset(today: Date, from: Date | null, to: Date | null) {
+  if (!from && !to) return DEADLINE_PRESETS[0];
+  if (!from || !to || !sameDay(from, today)) return null;
+  return DEADLINE_PRESETS.find((p) => {
+    if (p.days == null) return false;
+    const expectedTo = new Date(today);
+    expectedTo.setDate(today.getDate() + p.days);
+    return sameDay(to, expectedTo);
+  }) ?? null;
+}
+
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 export type EventTypeFilter = 'ALL' | 'PAID_CAMPAIGN' | 'OPEN_EVENT';
 
-const EVENT_TYPE_OPTS: { value: EventTypeFilter; labelKey: string }[] = [
-  { value: 'ALL',           labelKey: 'filterModal.optionAll'  },
-  { value: 'PAID_CAMPAIGN', labelKey: 'filterModal.optionPaid' },
-  { value: 'OPEN_EVENT',    labelKey: 'filterModal.optionFree' },
+const EVENT_TYPE_OPTS: { value: EventTypeFilter; labelKey: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+  { value: 'ALL',           labelKey: 'filterModal.optionAll',  icon: 'apps-outline'   },
+  { value: 'PAID_CAMPAIGN', labelKey: 'filterModal.optionPaid', icon: 'cash-outline'   },
+  { value: 'OPEN_EVENT',    labelKey: 'filterModal.optionFree', icon: 'gift-outline'   },
 ];
 
 type Props = {
@@ -77,176 +107,10 @@ type Props = {
   onClose: () => void;
 };
 
-// ─── LocationSearchPicker ─────────────────────────────────────────────────────
-
-export function LocationSearchPicker({
-  selected,
-  onSelect,
-}: {
-  selected: LocationFilter;
-  onSelect: (v: LocationFilter) => void;
-}) {
-  const C = useAppColors();
-  const { t } = useLanguage();
-  const [query, setQuery] = useState('');
-  const [predictions, setPredictions] = useState<Prediction[]>([]);
-  const [searching, setSearching] = useState(false);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // 'Remote' is a data sentinel compared against campaign/creator location
-  // elsewhere in the app — keep it untranslated in the stored label, only
-  // the displayed text below is localized.
-  const remoteSelected = selected.some((l) => l.label === 'Remote');
-  const nonRemote = selected.filter((l) => l.label !== 'Remote');
-  const atMax = selected.length >= MAX_LOCS;
-
-  function toggleRemote() {
-    if (remoteSelected) {
-      onSelect(selected.filter((l) => l.label !== 'Remote'));
-    } else if (!atMax) {
-      onSelect([...selected, { label: 'Remote', lat: null, lng: null }]);
-    }
-  }
-
-  function remove(label: string) {
-    onSelect(selected.filter((l) => l.label !== label));
-  }
-
-  function handleSearchChange(text: string) {
-    setQuery(text);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (!text.trim()) { setPredictions([]); return; }
-    debounceRef.current = setTimeout(() => fetchPredictions(text), 350);
-  }
-
-  async function fetchPredictions(text: string) {
-    if (!PLACES_KEY) return;
-    setSearching(true);
-    try {
-      const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(text)}&key=${PLACES_KEY}&language=en&types=(cities)&components=country:np`;
-      const res = await fetch(url);
-      const data = (await res.json()) as { predictions: Prediction[]; status: string };
-      setPredictions(data.status === 'OK' ? data.predictions : []);
-    } catch {
-      setPredictions([]);
-    } finally {
-      setSearching(false);
-    }
-  }
-
-  async function handleSelectPrediction(pred: Prediction) {
-    const label = pred.structured_formatting.main_text;
-    if (selected.some((l) => l.label === label)) return;
-    setQuery('');
-    setPredictions([]);
-    try {
-      const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${pred.place_id}&fields=geometry&key=${PLACES_KEY}`;
-      const res = await fetch(url);
-      const data = (await res.json()) as {
-        result: { geometry: { location: { lat: number; lng: number } } };
-        status: string;
-      };
-      if (data.status === 'OK') {
-        const { lat, lng } = data.result.geometry.location;
-        onSelect([...selected, { label, lat, lng }]);
-      } else {
-        onSelect([...selected, { label, lat: null, lng: null }]);
-      }
-    } catch {
-      onSelect([...selected, { label, lat: null, lng: null }]);
-    }
-  }
-
-  return (
-    <View style={ls.container}>
-      {/* Remote — separate standalone chip */}
-      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-        style={[ls.remoteChip, { borderColor: remoteSelected ? C.brinjal1 : C.border, backgroundColor: remoteSelected ? C.primaryLight : C.background }, !remoteSelected && atMax && { opacity: 0.35 }]}
-        onPress={toggleRemote}
-        disabled={!remoteSelected && atMax}>
-        <Ionicons name="globe-outline" size={14} color={remoteSelected ? C.brinjal1 : C.textSecondary} />
-        <Text style={[ls.remoteText, { color: remoteSelected ? C.brinjal1 : C.text, fontWeight: remoteSelected ? '700' : '500' }]}>
-          {t('filterModal.remote')}
-        </Text>
-        {remoteSelected && <Ionicons name="close" size={14} color={C.brinjal1} />}
-      </Pressable>
-
-      {/* Selected place chips */}
-      {nonRemote.length > 0 && (
-        <View style={ls.selectedChips}>
-          {nonRemote.map((loc) => (
-            <View key={loc.label} style={[ls.selectedChip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
-              <Ionicons name="location" size={12} color={C.brinjal1} />
-              <Text style={[ls.selectedChipText, { color: C.brinjal1 }]}>{loc.label}</Text>
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => remove(loc.label)} hitSlop={8}>
-                <Ionicons name="close" size={13} color={C.brinjal1} />
-              </Pressable>
-            </View>
-          ))}
-        </View>
-      )}
-
-      {/* Search input — hidden when limit reached */}
-      {!atMax && (
-        <>
-          <View style={[ls.searchRow, { backgroundColor: C.background, borderColor: C.border }]}>
-            <Ionicons name="search" size={15} color={C.textSecondary} />
-            <TextInput
-              style={[ls.searchInput, { color: C.text }]}
-              value={query}
-              onChangeText={handleSearchChange}
-              placeholder={t('filterModal.searchCityPlaceholder')}
-              placeholderTextColor={C.textSecondary}
-              returnKeyType="search"
-            />
-            {searching
-              ? <ActivityIndicator size="small" color={C.brinjal1} />
-              : query.length > 0
-              ? <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => { setQuery(''); setPredictions([]); }} hitSlop={8}>
-                  <Ionicons name="close" size={15} color={C.textSecondary} />
-                </Pressable>
-              : null}
-          </View>
-
-          {predictions.length > 0 && (
-            <View style={[ls.dropdown, { backgroundColor: C.surface, borderColor: C.border }]}>
-              {predictions.slice(0, 5).map((pred, idx) => (
-                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                  key={pred.place_id}
-                  style={[ls.dropRow, { borderBottomColor: idx < Math.min(predictions.length, 5) - 1 ? C.border : 'transparent' }]}
-                  onPress={() => handleSelectPrediction(pred)}>
-                  <Ionicons name="location" size={16} color={C.textSecondary} />
-                  <View style={ls.dropTexts}>
-                    <Text style={[ls.dropMain, { color: C.text }]}>{pred.structured_formatting.main_text}</Text>
-                    <Text style={[ls.dropSec, { color: C.textSecondary }]} numberOfLines={1}>{pred.structured_formatting.secondary_text}</Text>
-                  </View>
-                </Pressable>
-              ))}
-            </View>
-          )}
-        </>
-      )}
-    </View>
-  );
-}
-
-const ls = StyleSheet.create({
-  container:       { gap: 10 },
-  remoteChip:      { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 22, borderWidth: 1.5 },
-  remoteText:      { fontSize: 13, fontFamily: F.regular },
-  selectedChips:   { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  selectedChip:    { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1.5 },
-  selectedChipText:{ fontSize: 13, fontFamily: F.semibold },
-  searchRow:       { flexDirection: 'row', alignItems: 'center', borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 12, height: 44, gap: 8 },
-  searchInput:     { flex: 1, fontSize: 14, fontFamily: F.regular },
-  dropdown:        { borderRadius: 12, borderWidth: 1.5, overflow: 'hidden' },
-  dropRow:         { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, gap: 10, borderBottomWidth: 1 },
-  dropTexts:       { flex: 1 },
-  dropMain:        { fontSize: 14, fontFamily: F.semibold },
-  dropSec:         { fontSize: 11, marginTop: 1, fontFamily: F.regular },
-});
-
 // ─── DateRangePicker ──────────────────────────────────────────────────────────
+// Custom calendar for the Deadline filter — only rendered once someone taps
+// "Custom" on the preset row above, since a full month grid doesn't need to be
+// the first thing everyone sees.
 
 function DateRangePicker({
   dateFrom, dateTo, onFromChange, onToChange,
@@ -310,47 +174,8 @@ function DateRangePicker({
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
   while (cells.length % 7 !== 0) cells.push(null);
 
-  const PRESETS = [
-    { label: t('filterModal.presetToday'),     days: 0 },
-    { label: t('filterModal.presetLastWeek'),  days: 7 },
-    { label: t('filterModal.presetLastMonth'), days: 30 },
-  ];
-
-  function applyPreset(days: number) {
-    const from = new Date(today);
-    if (days > 0) from.setDate(today.getDate() - days);
-    onFromChange(dayStart(from));
-    onToChange(new Date(today));
-    setActivePicker(null);
-  }
-
-  function isPresetActive(days: number) {
-    if (!dateFrom || !dateTo) return false;
-    const expectedFrom = new Date(today);
-    if (days > 0) expectedFrom.setDate(today.getDate() - days);
-    return sameDay(dayStart(expectedFrom), dateFrom) && sameDay(today, dateTo);
-  }
-
   return (
     <View style={dp.container}>
-
-      {/* Quick presets */}
-      <View style={dp.presets}>
-        {PRESETS.map((p) => {
-          const active = isPresetActive(p.days);
-          return (
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-              key={p.label}
-              style={[dp.preset, { borderColor: active ? C.brinjal1 : C.border, backgroundColor: active ? C.primaryLight : C.background }]}
-              onPress={() => applyPreset(p.days)}>
-              <Text style={[dp.presetTxt, { color: active ? C.brinjal1 : C.textSecondary, fontWeight: active ? '700' : '500' }]}>
-                {p.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-
       {/* From / To inputs with calendar icon */}
       <View style={dp.inputsRow}>
         {(['from', 'to'] as const).map((field) => {
@@ -361,25 +186,17 @@ function DateRangePicker({
               <Text style={[dp.inputLabel, { color: C.textSecondary }]}>
                 {field === 'from' ? t('filterModal.fromLabel') : t('filterModal.toLabel')}
               </Text>
-              <View style={[dp.inputBox, { borderColor: active ? C.brinjal1 : date ? C.brinjal1 + '60' : C.border, backgroundColor: C.background }]}>
+              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                style={[dp.inputBox, { borderColor: active ? C.brinjal1 : date ? C.brinjal1 + '60' : C.border, backgroundColor: C.background }]}
+                onPress={() => togglePicker(field)}>
                 <Text style={[dp.inputValue, { color: date ? C.text : C.textSecondary }]} numberOfLines={1}>
                   {date ? fmtDate(date, monthsShort) : t('filterModal.datePlaceholder')}
                 </Text>
-                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => togglePicker(field)} hitSlop={8}>
-                  <Ionicons name="calendar-outline" size={16} color={active ? C.brinjal1 : C.textSecondary} />
-                </Pressable>
-              </View>
+                <Ionicons name="calendar-outline" size={16} color={active ? C.brinjal1 : C.textSecondary} />
+              </Pressable>
             </View>
           );
         })}
-
-        {(dateFrom || dateTo) && (
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-            style={dp.clearBtn}
-            onPress={() => { onFromChange(null); onToChange(null); setActivePicker(null); }}>
-            <Ionicons name="close" size={16} color={C.error} />
-          </Pressable>
-        )}
       </View>
 
       {/* Calendar — only shown when a picker is active */}
@@ -426,7 +243,21 @@ function DateRangePicker({
           </View>
         </View>
       )}
+    </View>
+  );
+}
 
+// ─── Section header ───────────────────────────────────────────────────────────
+
+function SectionHeader({ icon, label, hint }: { icon: keyof typeof Ionicons.glyphMap; label: string; hint?: string }) {
+  const C = useAppColors();
+  return (
+    <View style={styles.sectionRow}>
+      <View style={styles.sectionTitleRow}>
+        <Ionicons name={icon} size={13} color={C.textSecondary} />
+        <Text style={[styles.section, { color: C.textSecondary }]}>{label}</Text>
+      </View>
+      {hint ? <Text style={[styles.sectionHint, { color: C.textSecondary }]}>{hint}</Text> : null}
     </View>
   );
 }
@@ -447,60 +278,188 @@ export function FilterModal({
 }: Props) {
   const C = useAppColors();
   const { t } = useLanguage();
-  const keyboardOffset = useKeyboardOffset();
+  const today = dayStart(new Date());
+  const monthsShort = getMonthsShort(t);
+
+  const [budgetCustomOpen, setBudgetCustomOpen]     = useState(false);
+  const [deadlineCustomOpen, setDeadlineCustomOpen] = useState(false);
+
+  // Re-derive from scratch every time the sheet opens — the parent already
+  // re-syncs temp values from the committed filters on open, so a stale
+  // "custom panel is open" flag from the last visit shouldn't carry over.
+  useEffect(() => {
+    if (visible) {
+      setBudgetCustomOpen(false);
+      setDeadlineCustomOpen(false);
+    }
+  }, [visible]);
+
+  function handleReset() {
+    setBudgetCustomOpen(false);
+    setDeadlineCustomOpen(false);
+    onReset();
+  }
+
+  const matchedBudget   = matchBudgetPreset(tempPriceMin, tempPriceMax);
+  const matchedDeadline = matchDeadlinePreset(today, tempDateFrom, tempDateTo);
+  const showBudgetCustom   = budgetCustomOpen || !matchedBudget;
+  const showDeadlineCustom = deadlineCustomOpen || !matchedDeadline;
+  const selectedBudgetKey   = matchedBudget?.key   ?? (showBudgetCustom ? 'custom' : undefined);
+  const selectedDeadlineKey = matchedDeadline?.key ?? (showDeadlineCustom ? 'custom' : undefined);
+
+  function applyBudgetPreset(p: BudgetPreset) {
+    setTempPriceMin(p.min);
+    setTempPriceMax(p.max);
+    setBudgetCustomOpen(false);
+  }
+  function applyDeadlinePreset(p: DeadlinePreset) {
+    if (p.days == null) {
+      setTempDateFrom(null);
+      setTempDateTo(null);
+    } else {
+      const to = new Date(today);
+      to.setDate(today.getDate() + p.days);
+      setTempDateFrom(today);
+      setTempDateTo(to);
+    }
+    setDeadlineCustomOpen(false);
+  }
+
+  // A quick-glance, one-tap-to-clear summary of what's currently set — so
+  // reviewing or undoing a choice doesn't require scrolling to find its
+  // section. Doubles as the source for the Apply button's live count.
+  type ActiveChip = { key: string; label: string; onClear: () => void };
+  const activeChips: ActiveChip[] = [];
+  if (tempEventType !== 'ALL') {
+    activeChips.push({
+      key: 'type',
+      label: t(EVENT_TYPE_OPTS.find((o) => o.value === tempEventType)!.labelKey),
+      onClear: () => setTempEventType('ALL'),
+    });
+  }
+  if (!matchedBudget || matchedBudget.key !== 'any') {
+    activeChips.push({
+      key: 'budget',
+      label: matchedBudget ? t(matchedBudget.labelKey) : `Rs ${Math.round(tempPriceMin / 1000)}k–${Math.round(tempPriceMax / 1000)}k`,
+      onClear: () => { setTempPriceMin(0); setTempPriceMax(BUDGET_MAX); setBudgetCustomOpen(false); },
+    });
+  }
+  if (!matchedDeadline || matchedDeadline.key !== 'any') {
+    activeChips.push({
+      key: 'deadline',
+      label: matchedDeadline ? t(matchedDeadline.labelKey) : `${fmtDate(tempDateFrom, monthsShort)} – ${fmtDate(tempDateTo, monthsShort)}`,
+      onClear: () => { setTempDateFrom(null); setTempDateTo(null); setDeadlineCustomOpen(false); },
+    });
+  }
+  for (const loc of tempLocation) {
+    activeChips.push({
+      key: `loc-${loc.label}`,
+      label: loc.label === 'Remote' ? t('filterModal.remote') : loc.label,
+      onClear: () => setTempLocation(tempLocation.filter((l) => l.label !== loc.label)),
+    });
+  }
+
+  const applyLabel = activeChips.length > 0
+    ? t('filterModal.applyFiltersCount', { n: activeChips.length })
+    : t('filterModal.showAllEvents');
+
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.backdrop} onPress={onClose} />
-      <Animated.View style={[styles.sheet, { backgroundColor: C.surface, transform: [{ translateY: keyboardOffset }] }]}>
-        <View style={[styles.handle, { backgroundColor: C.border }]} />
-
-        <View style={[styles.header, { borderBottomColor: C.border }]}>
-          <Text style={[styles.title, { color: C.text }]}>{t('filterModal.title')}</Text>
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={onReset}>
-            <Text style={[styles.reset, { color: C.brinjal1 }]}>{t('filterModal.resetAll')}</Text>
-          </Pressable>
+    <FilterSheet
+      visible={visible}
+      title={t('filterModal.title')}
+      resetLabel={t('filterModal.resetAll')}
+      applyLabel={applyLabel}
+      onApply={onApply}
+      onReset={handleReset}
+      onClose={onClose}
+    >
+      {activeChips.length > 0 && (
+        <View style={styles.activeRow}>
+          {activeChips.map((chip) => (
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+              key={chip.key}
+              style={[styles.activeChip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}
+              onPress={chip.onClear}>
+              <Text style={[styles.activeChipText, { color: C.brinjal1 }]} numberOfLines={1}>{chip.label}</Text>
+              <Ionicons name="close" size={13} color={C.brinjal1} />
+            </Pressable>
+          ))}
         </View>
+      )}
 
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.body}>
+      {/* Event Type — fastest, most decisive filter, so it leads */}
+      <View>
+        <SectionHeader icon="pricetag-outline" label={t('filterModal.sectionEventType')} />
+        <FilterChipGroup
+          options={EVENT_TYPE_OPTS.map(({ value, labelKey, icon }) => ({ value, label: t(labelKey), icon }))}
+          selected={[tempEventType]}
+          onToggle={(vals) => setTempEventType((vals[0] as typeof tempEventType) ?? 'ALL')}
+          equalWidth
+        />
+      </View>
 
-          <Text style={[styles.section, { color: C.textSecondary }]}>{t('filterModal.sectionPriceRange')}</Text>
-          <RangeSlider minVal={tempPriceMin} maxVal={tempPriceMax} onMinChange={setTempPriceMin} onMaxChange={setTempPriceMax} currency="Rs" max={100000} step={1000} />
-
-          <Text style={[styles.section, { color: C.textSecondary }]}>{t('filterModal.sectionEventType')}</Text>
-          <View style={styles.eventTypeRow}>
-            {EVENT_TYPE_OPTS.map(({ value, labelKey }) => {
-              const sel = tempEventType === value;
-              return (
-                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                  key={value}
-                  style={[styles.eventChip, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? C.primaryLight : C.background }]}
-                  onPress={() => setTempEventType(value)}>
-                  <Text style={[styles.eventChipTxt, { color: sel ? C.brinjal1 : C.textSecondary, fontWeight: sel ? '700' : '500' }]}>{t(labelKey)}</Text>
-                </Pressable>
-              );
-            })}
-          </View>
-
-          <Text style={[styles.section, { color: C.textSecondary }]}>{t('filterModal.sectionDeadlineRange')}</Text>
-          <DateRangePicker dateFrom={tempDateFrom} dateTo={tempDateTo} onFromChange={setTempDateFrom} onToChange={setTempDateTo} />
-
-          <View style={styles.sectionRow}>
-            <Text style={[styles.section, { color: C.textSecondary, marginBottom: 0 }]}>{t('filterModal.sectionLocation')}</Text>
-            <Text style={[styles.sectionHint, { color: C.textSecondary }]}>{t('filterModal.locationsAllowed', { n: tempLocation.length, max: MAX_LOCS })}</Text>
-          </View>
-          <LocationSearchPicker selected={tempLocation} onSelect={setTempLocation} />
-
-        </ScrollView>
-
-        <View style={[styles.footer, { borderTopColor: C.border }]}>
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-            style={({ pressed }) => [styles.applyBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }, pressed && { opacity: 0.88 }]}
-            onPress={onApply}>
-            <Text style={styles.applyTxt}>{t('filterModal.applyFiltersBtn')}</Text>
-          </Pressable>
+      {/* Budget — one-tap presets first, precise slider tucked behind "Custom" */}
+      <View>
+        <SectionHeader icon="cash-outline" label={t('filterModal.sectionBudget')} />
+        <View style={styles.presetRow}>
+          {BUDGET_PRESETS.map((p) => (
+            <FilterChip
+              key={p.key}
+              label={t(p.labelKey)}
+              selected={selectedBudgetKey === p.key}
+              onPress={() => applyBudgetPreset(p)}
+            />
+          ))}
+          <FilterChip
+            label={t('filterModal.customLabel')}
+            icon="options-outline"
+            selected={selectedBudgetKey === 'custom'}
+            onPress={() => setBudgetCustomOpen(true)}
+          />
         </View>
-      </Animated.View>
-    </Modal>
+        {showBudgetCustom && (
+          <View style={styles.customPanel}>
+            <RangeSlider minVal={tempPriceMin} maxVal={tempPriceMax} onMinChange={setTempPriceMin} onMaxChange={setTempPriceMax} currency="Rs" max={BUDGET_MAX} step={1000} />
+          </View>
+        )}
+      </View>
+
+      {/* Deadline — same "presets first" concept as Budget */}
+      <View>
+        <SectionHeader icon="calendar-outline" label={t('filterModal.sectionDeadlineRange')} />
+        <View style={styles.presetRow}>
+          {DEADLINE_PRESETS.map((p) => (
+            <FilterChip
+              key={p.key}
+              label={t(p.labelKey)}
+              selected={selectedDeadlineKey === p.key}
+              onPress={() => applyDeadlinePreset(p)}
+            />
+          ))}
+          <FilterChip
+            label={t('filterModal.customLabel')}
+            icon="options-outline"
+            selected={selectedDeadlineKey === 'custom'}
+            onPress={() => setDeadlineCustomOpen(true)}
+          />
+        </View>
+        {showDeadlineCustom && (
+          <View style={styles.customPanel}>
+            <DateRangePicker dateFrom={tempDateFrom} dateTo={tempDateTo} onFromChange={setTempDateFrom} onToChange={setTempDateTo} />
+          </View>
+        )}
+      </View>
+
+      {/* Location */}
+      <View>
+        <SectionHeader
+          icon="location-outline"
+          label={t('filterModal.sectionLocation')}
+          hint={t('filterModal.locationsAllowed', { n: tempLocation.length, max: MAX_LOCS })}
+        />
+        <LocationSearchPicker selected={tempLocation} onSelect={setTempLocation} />
+      </View>
+    </FilterSheet>
   );
 }
 
@@ -508,17 +467,12 @@ export function FilterModal({
 
 const dp = StyleSheet.create({
   container:   { gap: 12 },
-  // Quick presets
-  presets:     { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  preset:      { paddingHorizontal: 13, paddingVertical: 7, borderRadius: 20, borderWidth: 1.5 },
-  presetTxt:   { fontSize: 12, fontFamily: F.regular },
   // From / To input row
   inputsRow:   { flexDirection: 'row', alignItems: 'flex-end', gap: 8 },
   inputGroup:  { flex: 1, gap: 4 },
   inputLabel:  { fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.6, marginLeft: 2, fontFamily: F.bold },
-  inputBox:    { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 9, gap: 6 },
+  inputBox:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1.5, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 9, gap: 6 },
   inputValue:  { flex: 1, fontSize: 13, fontFamily: F.semibold },
-  clearBtn:    { width: 32, height: 40, justifyContent: 'center', alignItems: 'center', borderRadius: 8 },
   // Inline calendar
   cal:         { borderRadius: 14, borderWidth: 1, padding: 12, gap: 8, marginTop: 2 },
   calTitle:    { fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.6, textAlign: 'center', fontFamily: F.bold },
@@ -535,20 +489,13 @@ const dp = StyleSheet.create({
 });
 
 const styles = StyleSheet.create({
-  backdrop: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)' },
-  sheet:    { position: 'absolute', left: 0, right: 0, bottom: 0, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '92%', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 20, shadowOffset: { width: 0, height: -4 }, elevation: 20 },
-  handle:   { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginTop: 12, marginBottom: 4 },
-  header:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1 },
-  title:    { fontSize: 17, fontFamily: F.extrabold },
-  reset:    { fontSize: 14, fontFamily: F.semibold },
-  body:     { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16, gap: 24 },
-  eventTypeRow:  { flexDirection: 'row', gap: 10 },
-  eventChip:     { flex: 1, paddingVertical: 10, borderRadius: 20, borderWidth: 1.5, alignItems: 'center' },
-  eventChipTxt:  { fontSize: 13, fontFamily: F.medium },
-  section:    { fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: -8, fontFamily: F.bold },
-  sectionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: -8 },
-  sectionHint:{ fontSize: 11, fontFamily: F.semibold },
-  footer:   { padding: 20, borderTopWidth: 1 },
-  applyBtn: { borderRadius: 14, height: 52, justifyContent: 'center', alignItems: 'center', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
-  applyTxt: { color: '#fff', fontSize: 16, fontFamily: F.bold },
+  section:         { fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.8, fontFamily: F.bold },
+  sectionRow:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
+  sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  sectionHint:     { fontSize: 11, fontFamily: F.semibold },
+  presetRow:       { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  customPanel:     { marginTop: 12 },
+  activeRow:       { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  activeChip:      { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1.5, maxWidth: '100%' },
+  activeChipText:  { fontSize: 12, fontFamily: F.semibold, flexShrink: 1 },
 });

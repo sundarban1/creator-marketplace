@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
@@ -18,6 +18,7 @@ import { campaignService } from '@/services/campaign';
 import { TabSlider } from '@/components/TabSlider';
 import { EmptyState } from '@/components/EmptyState';
 import { F } from '@/utilities/constants';
+import { TabColors } from '@/utilities/tabColors';
 
 type WS = 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED';
 type PS = 'UNPAID' | 'PAID' | 'RELEASED';
@@ -33,7 +34,7 @@ type Proposal = {
   coverLetter: string;
   createdAt: string;
   campaign: {
-    id: string; title: string; platform: string;
+    id: string; title: string; platforms: string[];
     campaignType: 'PAID_CAMPAIGN' | 'OPEN_EVENT';
     paymentStatus: PS;
   };
@@ -43,7 +44,7 @@ type Proposal = {
 type CampaignCard = {
   id: string;
   title: string;
-  platform: string;
+  platforms: string[];
   campaignType: 'PAID_CAMPAIGN' | 'OPEN_EVENT';
   total: number;
   pending: number;
@@ -57,18 +58,18 @@ type CampaignCard = {
 
 type TabKey = 'all' | 'paid' | 'free' | 'accepted';
 
-const PAID_ACCENT = '#4F46E5';
-const FREE_ACCENT = '#059669';
-const PAID_LIGHT  = '#EEF2FF';
-const FREE_LIGHT  = '#F0FDF4';
+const PAID_ACCENT = TabColors.brand.color;
+const FREE_ACCENT = TabColors.info.color;
+const PAID_LIGHT  = TabColors.brand.bg;
+const FREE_LIGHT  = TabColors.info.bg;
 
 function buildCampaignCards(proposals: Proposal[]): CampaignCard[] {
   const map = new Map<string, CampaignCard>();
   for (const p of proposals) {
-    const { id, title, platform, campaignType, paymentStatus } = p.campaign;
+    const { id, title, platforms, campaignType, paymentStatus } = p.campaign;
     if (!map.has(id)) {
       map.set(id, {
-        id, title, platform, campaignType,
+        id, title, platforms, campaignType,
         total: 0, pending: 0, accepted: 0, rejected: 0,
         latestAt: p.createdAt,
         acceptedWorkStatus: null,
@@ -109,6 +110,8 @@ function CampaignEventCard({ item }: { item: CampaignCard }) {
   const accent   = isFree ? FREE_ACCENT : PAID_ACCENT;
   const accentBg = isFree ? FREE_LIGHT  : PAID_LIGHT;
 
+  const platformLabel = item.platforms.join(', ');
+
   function handlePress() {
     router.push({
       pathname: '/(business)/campaign-proposals',
@@ -116,7 +119,7 @@ function CampaignEventCard({ item }: { item: CampaignCard }) {
         campaignId:    item.id,
         campaignTitle: item.title,
         campaignType:  item.campaignType,
-        platform:      item.platform,
+        platform:      platformLabel,
       },
     });
   }
@@ -133,9 +136,9 @@ function CampaignEventCard({ item }: { item: CampaignCard }) {
             {isFree ? t('proposal.business.typeFreeEvent') : t('proposal.business.typePaidCampaign')}
           </Text>
         </View>
-        {item.platform ? (
+        {platformLabel ? (
           <View style={[styles.platformPill, { backgroundColor: C.background }]}>
-            <Text style={[styles.platformText, { color: C.textSecondary }]}>{item.platform}</Text>
+            <Text style={[styles.platformText, { color: C.textSecondary }]}>{platformLabel}</Text>
           </View>
         ) : null}
         <View style={styles.cardTopSpacer} />
@@ -155,26 +158,26 @@ function CampaignEventCard({ item }: { item: CampaignCard }) {
         </View>
         <View style={[styles.statDivider, { backgroundColor: C.border }]} />
         <View style={styles.statItem}>
-          <Text style={[styles.statNum, { color: '#D97706' }]}>{item.pending}</Text>
+          <Text style={[styles.statNum, { color: TabColors.warning.color }]}>{item.pending}</Text>
           <Text style={[styles.statLabel, { color: C.textSecondary }]}>{t('proposal.business.statPending')}</Text>
         </View>
         <View style={[styles.statDivider, { backgroundColor: C.border }]} />
         <View style={styles.statItem}>
-          <Text style={[styles.statNum, { color: '#16A34A' }]}>{item.accepted}</Text>
+          <Text style={[styles.statNum, { color: TabColors.positive.color }]}>{item.accepted}</Text>
           <Text style={[styles.statLabel, { color: C.textSecondary }]}>{isFree ? t('proposal.business.statApproved') : t('proposal.business.statAccepted')}</Text>
         </View>
         <View style={[styles.statDivider, { backgroundColor: C.border }]} />
         <View style={styles.statItem}>
-          <Text style={[styles.statNum, { color: '#EF4444' }]}>{item.rejected}</Text>
+          <Text style={[styles.statNum, { color: TabColors.danger.color }]}>{item.rejected}</Text>
           <Text style={[styles.statLabel, { color: C.textSecondary }]}>{t('proposal.business.statDeclined')}</Text>
         </View>
       </View>
 
       {/* Pending action nudge */}
       {item.pending > 0 && (
-        <View style={[styles.nudge, { backgroundColor: '#FFF7ED' }]}>
-          <Ionicons name="time-outline" size={13} color="#D97706" />
-          <Text style={[styles.nudgeText, { color: '#D97706' }]}>
+        <View style={[styles.nudge, { backgroundColor: TabColors.warning.bg }]}>
+          <Ionicons name="time-outline" size={13} color={TabColors.warning.color} />
+          <Text style={[styles.nudgeText, { color: TabColors.warning.color }]}>
             {t('proposal.business.nudge', { n: item.pending })}
           </Text>
         </View>
@@ -194,7 +197,7 @@ function CampaignEventCard({ item }: { item: CampaignCard }) {
                   campaignId:    item.id,
                   campaignTitle: item.title,
                   campaignType:  item.campaignType,
-                  platform:      item.platform,
+                  platform:      platformLabel,
                 },
               });
             }}>
@@ -218,26 +221,62 @@ function CampaignEventCard({ item }: { item: CampaignCard }) {
   );
 }
 
+const PAGE_SIZE = 30;
+
 export default function ProposalsScreen() {
   const C = useAppColors();
   const { t, languageVersion } = useLanguage();
+  // These 4 tabs are overlapping categorical views over the SAME set of
+  // applications (Paid/Free split by campaign type, Accepted by application
+  // status, All = everything) rather than independent partitions — a per-
+  // campaign card's stats (total/pending/accepted/rejected) need the full
+  // picture for that campaign, so we paginate ONE shared, growing, deduped
+  // application list and derive every tab's cards from it client-side,
+  // rather than giving each tab its own server cursor (which would starve
+  // a card of the sibling-application counts it needs to render correctly).
   const [proposals, setProposals]   = useState<Proposal[]>([]);
+  const [page, setPage]             = useState(0);
+  const [total, setTotal]           = useState(0);
   const [loading, setLoading]       = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab]   = useState<TabKey>('all');
+  const loadingMoreRef = useRef(false);
+
+  async function loadPage(p: number, replace: boolean) {
+    if (!replace) setLoadingMore(true);
+    const { proposals: data, total: newTotal } = await campaignService.getBusinessProposals({ page: p, limit: PAGE_SIZE });
+    setProposals((prev) => {
+      const prevItems = replace ? [] : prev;
+      const seen = new Set(prevItems.map((x) => x.id));
+      return [...prevItems, ...data.filter((x) => !seen.has(x.id))];
+    });
+    setTotal(newTotal);
+    setPage(p);
+  }
 
   async function load(showRefresh = false) {
     if (showRefresh) setRefreshing(true);
     else setLoading(true);
     try {
-      const { proposals: data } = await campaignService.getBusinessProposals({ limit: 500 });
-      setProposals(data);
+      await loadPage(1, true);
     } catch { /* empty state shows */ }
-    finally { setLoading(false); setRefreshing(false); }
+    finally {
+      setLoading(false);
+      setRefreshing(false);
+      setLoadingMore(false);
+      loadingMoreRef.current = false;
+    }
   }
 
   useEffect(() => { void load(); }, [languageVersion]);
   const onRefresh = useCallback(() => void load(true), []);
+
+  function loadMore() {
+    if (loadingMoreRef.current || loadingMore || proposals.length >= total) return;
+    loadingMoreRef.current = true;
+    void loadPage(page + 1, false).finally(() => { loadingMoreRef.current = false; setLoadingMore(false); });
+  }
 
   const allCards      = buildCampaignCards(proposals);
   const paidCards     = allCards.filter((c) => c.campaignType === 'PAID_CAMPAIGN');
@@ -251,10 +290,10 @@ export default function ProposalsScreen() {
     allCards;
 
   const tabs = [
-    { key: 'all',      label: t('proposal.business.tabAll'),      icon: 'layers-outline'          as const, count: allCards.length,      color: '#7C3AED' },
+    { key: 'all',      label: t('proposal.business.tabAll'),      icon: 'layers-outline'          as const, count: allCards.length,      color: TabColors.neutral.color },
     { key: 'paid',     label: t('proposal.business.tabPaid'),     icon: 'cash-outline'             as const, count: paidCards.length,     color: PAID_ACCENT },
     { key: 'free',     label: t('proposal.business.tabFree'),     icon: 'gift-outline'             as const, count: freeCards.length,     color: FREE_ACCENT },
-    { key: 'accepted', label: t('proposal.business.tabAccepted'), icon: 'checkmark-circle-outline' as const, count: acceptedCards.length, color: '#16A34A' },
+    { key: 'accepted', label: t('proposal.business.tabAccepted'), icon: 'checkmark-circle-outline' as const, count: acceptedCards.length, color: TabColors.positive.color },
   ];
 
   return (
@@ -292,6 +331,9 @@ export default function ProposalsScreen() {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brinjal1} />}
           renderItem={({ item }) => <CampaignEventCard item={item} />}
           ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.4}
+          ListFooterComponent={loadingMore ? <View style={styles.footerLoading}><ActivityIndicator size="small" color={C.brinjal1} /></View> : null}
           ListEmptyComponent={
             <EmptyState
               faIcon={activeTab === 'accepted' ? 'check-circle' :
@@ -326,6 +368,7 @@ const styles = StyleSheet.create({
 
   list:      { paddingTop: 16, paddingHorizontal: 20, paddingBottom: 40 },
   listEmpty: { flexGrow: 1 },
+  footerLoading: { paddingVertical: 20 },
 
   card: {
     borderRadius: 16,

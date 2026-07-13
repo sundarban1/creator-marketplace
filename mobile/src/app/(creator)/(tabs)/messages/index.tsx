@@ -24,6 +24,7 @@ import { useLanguage, type TFn } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { chatService } from '@/services/chat';
 import { F } from '@/utilities/constants';
+import { TabColors } from '@/utilities/tabColors';
 import type { ApiMessage } from '@/lib/api';
 import type { Conversation } from '@/types';
 
@@ -278,8 +279,8 @@ export default function CreatorMessagesScreen() {
         chatService.getConversations('CREATOR', 'PENDING'),
         chatService.getConversations('CREATOR', 'ACCEPTED'),
       ]);
-      setRequests(pending);
-      setChats(accepted.sort((a, b) => new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime()));
+      setRequests(pending.conversations);
+      setChats(accepted.conversations.sort((a, b) => new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime()));
       setError('');
     } catch (e) {
       // Only surface errors from user-visible (non-silent) loads — a transient
@@ -371,8 +372,8 @@ export default function CreatorMessagesScreen() {
       <TabSlider
         justify
         tabs={[
-          { key: 'chats',    label: t('messages.tabMessages'), count: totalUnread,      color: '#4f46e5' },
-          { key: 'requests', label: t('messages.tabRequests'), count: requests.length,  color: '#4f46e5' },
+          { key: 'chats',    label: t('messages.tabMessages'), count: totalUnread,      color: TabColors.brand.color },
+          { key: 'requests', label: t('messages.tabRequests'), count: requests.length,  color: TabColors.warning.color },
         ]}
         active={tab}
         onChange={(key) => setTab(key as Tab)}

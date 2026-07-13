@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { router } from 'expo-router';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
   ActivityIndicator,
+  FlatList,
   Modal,
   Pressable,
   RefreshControl,
@@ -22,6 +23,7 @@ import { creatorService, type SavedCreatorItem } from '@/services/creator';
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
 import type { Campaign } from '@/types';
 import { F } from '@/utilities/constants';
+import { TabColors } from '@/utilities/tabColors';
 
 type Application = {
   id: string;
@@ -38,38 +40,50 @@ const FILTERS = ['All', 'Active', 'Draft', 'Closed'] as const;
 const EMPTY_CFG: Record<typeof FILTERS[number], {
   icon: IoniconName; iconColor: string; iconBg: string; showCreate: boolean;
 }> = {
-  All:    { icon: 'megaphone-outline',    iconColor: '#7c3aed', iconBg: '#f5f3ff', showCreate: true  },
-  Active: { icon: 'flash-outline',        iconColor: '#16A34A', iconBg: '#ECFDF5', showCreate: true  },
-  Draft:  { icon: 'create-outline',       iconColor: '#D97706', iconBg: '#FEF3C7', showCreate: true  },
-  Closed: { icon: 'lock-closed-outline',  iconColor: '#6B7280', iconBg: '#F3F4F6', showCreate: false },
+  All:    { icon: 'megaphone-outline',    iconColor: TabColors.neutral.color,  iconBg: TabColors.neutral.bg,  showCreate: true  },
+  Active: { icon: 'flash-outline',        iconColor: TabColors.positive.color, iconBg: TabColors.positive.bg, showCreate: true  },
+  Draft:  { icon: 'create-outline',       iconColor: TabColors.warning.color,  iconBg: TabColors.warning.bg,  showCreate: true  },
+  Closed: { icon: 'lock-closed-outline',  iconColor: TabColors.closed.color,   iconBg: TabColors.closed.bg,   showCreate: false },
 };
 
 const STATUS_CFG = {
-  active: { bg: '#EEF9F3', color: '#16A34A' },
-  draft:  { bg: '#F4F4F4', color: '#6B7280' },
-  closed: { bg: '#FEF3C7', color: '#D97706' },
+  active: { bg: TabColors.positive.bg, color: TabColors.positive.color },
+  draft:  { bg: TabColors.warning.bg,  color: TabColors.warning.color  },
+  closed: { bg: TabColors.closed.bg,   color: TabColors.closed.color   },
 } as const;
 
 const PROPOSAL_STATUS_CFG = {
-  pending:  { bg: '#FFF7ED', color: '#D97706', label: 'Pending'  },
-  accepted: { bg: '#EEF9F3', color: '#16A34A', label: 'Accepted' },
-  rejected: { bg: '#F3F4F6', color: '#6B7280', label: 'Rejected' },
+  pending:  { bg: TabColors.warning.bg,  color: TabColors.warning.color,  label: 'Pending'  },
+  accepted: { bg: TabColors.positive.bg, color: TabColors.positive.color, label: 'Accepted' },
+  rejected: { bg: TabColors.danger.bg,   color: TabColors.danger.color,   label: 'Rejected' },
 } as const;
 
 function initials(name: string) {
   return name.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase();
 }
 
+const PAGE_SIZE = 10;
+type FilterKey = typeof FILTERS[number];
+type TabState = { items: Campaign[]; page: number; total: number; loadingMore: boolean; loaded: boolean };
+const emptyTabState = (): TabState => ({ items: [], page: 0, total: 0, loadingMore: false, loaded: false });
+
+const STATUS_PARAM: Record<FilterKey, 'ACTIVE' | 'DRAFT' | 'CLOSED' | undefined> = {
+  All: undefined, Active: 'ACTIVE', Draft: 'DRAFT', Closed: 'CLOSED',
+};
+
 export default function CampaignsScreen() {
   const C = useAppColors();
   const { t } = useLanguage();
   const { categories: allCategories } = useAllCategories();
   const toast = useToast();
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [tabData, setTabData] = useState<Record<FilterKey, TabState>>({
+    All: emptyTabState(), Active: emptyTabState(), Draft: emptyTabState(), Closed: emptyTabState(),
+  });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [activeFilter, setActiveFilter] = useState<typeof FILTERS[number]>('All');
+  const [activeFilter, setActiveFilter] = useState<FilterKey>('All');
   const [publishingId, setPublishingId] = useState<string | null>(null);
+  const loadingMoreRef = useRef(false);
 
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const [applications, setApplications] = useState<Application[]>([]);
@@ -83,23 +97,56 @@ export default function CampaignsScreen() {
   const [inviteSending, setInviteSending]           = useState(false);
   const [inviteSuccess, setInviteSuccess]           = useState(false);
 
+  async function loadTab(filter: FilterKey, page: number, replace: boolean) {
+    if (!replace) setTabData((prev) => ({ ...prev, [filter]: { ...prev[filter], loadingMore: true } }));
+    const { campaigns: data, total } = await campaignService.listMy({ page, limit: PAGE_SIZE, status: STATUS_PARAM[filter] });
+    setTabData((prev) => {
+      const prevItems = replace ? [] : prev[filter].items;
+      const seen = new Set(prevItems.map((c) => c.id));
+      const merged = [...prevItems, ...data.filter((c) => !seen.has(c.id))];
+      return { ...prev, [filter]: { items: merged, page, total, loadingMore: false, loaded: true } };
+    });
+  }
+
   async function loadCampaigns(showRefresh = false) {
     if (showRefresh) setRefreshing(true);
     else setLoading(true);
     try {
-      const { campaigns: data } = await campaignService.listMy({ limit: 50 });
-      setCampaigns(data);
+      await loadTab(activeFilter, 1, true);
     } catch {
       // silently fail — empty state handles it
     } finally {
       setLoading(false);
       setRefreshing(false);
+      loadingMoreRef.current = false;
     }
   }
 
   useEffect(() => { loadCampaigns(); }, []);
 
-  const onRefresh = useCallback(() => loadCampaigns(true), []);
+  const onRefresh = useCallback(() => loadCampaigns(true), [activeFilter]);
+
+  function selectFilter(filter: FilterKey) {
+    setActiveFilter(filter);
+    if (!tabData[filter].loaded) {
+      setLoading(true);
+      void loadTab(filter, 1, true).finally(() => setLoading(false));
+    }
+  }
+
+  function loadMore() {
+    const state = tabData[activeFilter];
+    if (loadingMoreRef.current || state.loadingMore || state.items.length >= state.total) return;
+    loadingMoreRef.current = true;
+    void loadTab(activeFilter, state.page + 1, false).finally(() => { loadingMoreRef.current = false; });
+  }
+
+  // A status-changing action (e.g. publishing a draft) can move a campaign
+  // between tabs — invalidate everything and refetch the tab in view rather
+  // than trying to patch each cached tab's items/counts individually.
+  function invalidateAllTabs() {
+    setTabData({ All: emptyTabState(), Active: emptyTabState(), Draft: emptyTabState(), Closed: emptyTabState() });
+  }
 
   async function openInvite(c: Campaign) {
     setInviteCampaign(c);
@@ -143,11 +190,14 @@ export default function CampaignsScreen() {
     try {
       await campaignService.update(c.id, { status: 'active' });
       toast.success(t('campaigns.draftPublished'));
-      await loadCampaigns();
+      invalidateAllTabs();
+      setLoading(true);
+      await loadTab(activeFilter, 1, true);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t('campaigns.draftPublishFailed'));
     } finally {
       setPublishingId(null);
+      setLoading(false);
     }
   }
 
@@ -165,20 +215,14 @@ export default function CampaignsScreen() {
     }
   }
 
-  const activeCount = campaigns.filter((c) => c.status === 'active').length;
-  const draftCount  = campaigns.filter((c) => c.status === 'draft').length;
-  const closedCount = campaigns.filter((c) => c.status === 'closed').length;
-
   const CAMP_TABS = [
-    { key: 'All',    label: t('campaigns.all'),    icon: 'layers-outline'      as const, color: '#4F46E5', count: campaigns.length },
-    { key: 'Active', label: t('campaigns.active'), icon: 'flash-outline'       as const, color: '#16A34A', count: activeCount       },
-    { key: 'Draft',  label: t('campaigns.draft'),  icon: 'create-outline'      as const, color: '#D97706', count: draftCount        },
-    { key: 'Closed', label: t('campaigns.closed'), icon: 'lock-closed-outline' as const, color: '#6B7280', count: closedCount       },
+    { key: 'All',    label: t('campaigns.all'),    icon: 'layers-outline'      as const, color: TabColors.neutral.color,  count: tabData.All.total },
+    { key: 'Active', label: t('campaigns.active'), icon: 'flash-outline'       as const, color: TabColors.positive.color, count: tabData.Active.total },
+    { key: 'Draft',  label: t('campaigns.draft'),  icon: 'create-outline'      as const, color: TabColors.warning.color,  count: tabData.Draft.total },
+    { key: 'Closed', label: t('campaigns.closed'), icon: 'lock-closed-outline' as const, color: TabColors.closed.color,   count: tabData.Closed.total },
   ];
 
-  const shown = campaigns.filter((c) =>
-    activeFilter === 'All' || c.status === activeFilter.toLowerCase()
-  );
+  const shown = tabData[activeFilter].items;
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
@@ -201,7 +245,7 @@ export default function CampaignsScreen() {
         <TabSlider
           tabs={CAMP_TABS}
           active={activeFilter}
-          onChange={(k) => setActiveFilter(k as typeof activeFilter)}
+          onChange={(k) => selectFilter(k as FilterKey)}
         />
       </View>
 
@@ -211,11 +255,16 @@ export default function CampaignsScreen() {
           <ActivityIndicator size="large" color={C.brinjal1} />
         </View>
       ) : (
-        <ScrollView
+        <FlatList
+          data={shown}
+          keyExtractor={(c) => c.id}
           contentContainerStyle={[styles.list, shown.length === 0 && styles.listEmpty]}
           showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brinjal1} />}>
-          {shown.length === 0 ? (
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brinjal1} />}
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.4}
+          ListFooterComponent={tabData[activeFilter].loadingMore ? <View style={styles.footerLoading}><ActivityIndicator size="small" color={C.brinjal1} /></View> : null}
+          ListEmptyComponent={
             <View style={styles.emptyWrap}>
               <View style={[styles.emptyCard, { backgroundColor: C.surface, borderColor: C.border }]}>
                 {/* Decorative dots */}
@@ -251,101 +300,100 @@ export default function CampaignsScreen() {
 
                 {/* Or switch tab hint for non-All filters */}
                 {activeFilter !== 'All' && (
-                  <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => setActiveFilter('All')} style={styles.emptySwitchRow}>
+                  <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => selectFilter('All')} style={styles.emptySwitchRow}>
                     <Text style={[styles.emptySwitchText, { color: C.textSecondary }]}>{t('campaigns.viewAllEvents')}  </Text>
                     <Text style={[styles.emptySwitchLink, { color: C.brinjal1 }]}>{t('campaigns.seeAll')}</Text>
                   </Pressable>
                 )}
               </View>
             </View>
-          ) : (
-            shown.map((c) => {
-              const st = STATUS_CFG[c.status ?? 'draft'];
-              const meta = getCategoryMeta(allCategories, c.categoryKey ?? c.category);
-              const bg = meta.bg;
-              return (
-                <View key={c.id} style={[styles.card, { backgroundColor: C.surface }]}>
-                  <View style={[styles.cardAccent, { backgroundColor: st.color }]} />
-                  <View style={styles.cardContent}>
-                    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                      style={({ pressed }) => [styles.cardMain, pressed && { opacity: 0.88 }]}
-                      onPress={() => router.push({ pathname: '/campaign-detail', params: { campaignId: c.id } })}>
-                      <View style={[styles.thumb, { backgroundColor: bg }]}>
-                        <FontAwesome5 name={meta.icon} size={22} color={meta.color} />
+          }
+          renderItem={({ item: c }) => {
+            const st = STATUS_CFG[c.status ?? 'draft'];
+            const meta = getCategoryMeta(allCategories, c.categoryKey ?? c.category);
+            const bg = meta.bg;
+            return (
+              <View style={[styles.card, { backgroundColor: C.surface }]}>
+                <View style={[styles.cardAccent, { backgroundColor: st.color }]} />
+                <View style={styles.cardContent}>
+                  <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                    style={({ pressed }) => [styles.cardMain, pressed && { opacity: 0.88 }]}
+                    onPress={() => router.push({ pathname: '/campaign-detail', params: { campaignId: c.id } })}>
+                    <View style={[styles.thumb, { backgroundColor: bg }]}>
+                      <FontAwesome5 name={meta.icon} size={22} color={meta.color} />
+                    </View>
+                    <View style={styles.body}>
+                      <Text style={[styles.title, { color: C.text }]} numberOfLines={1}>{c.title}</Text>
+                      <View style={styles.metaRow}>
+                        <Ionicons name="globe-outline" size={12} color={C.textSecondary} />
+                        <Text style={[styles.meta, { color: C.textSecondary }]}>{c.platform}</Text>
+                        <Text style={[styles.metaDot, { color: C.border }]}>·</Text>
+                        <Ionicons name="cash-outline" size={12} color={C.textSecondary} />
+                        <Text style={[styles.meta, { color: C.textSecondary }]}>{c.budget}</Text>
                       </View>
-                      <View style={styles.body}>
-                        <Text style={[styles.title, { color: C.text }]} numberOfLines={1}>{c.title}</Text>
-                        <View style={styles.metaRow}>
-                          <Ionicons name="globe-outline" size={12} color={C.textSecondary} />
-                          <Text style={[styles.meta, { color: C.textSecondary }]}>{c.platform}</Text>
-                          <Text style={[styles.metaDot, { color: C.border }]}>·</Text>
-                          <Ionicons name="cash-outline" size={12} color={C.textSecondary} />
-                          <Text style={[styles.meta, { color: C.textSecondary }]}>{c.budget}</Text>
-                        </View>
-                        {(c.status === 'draft') ? (
-                          <Text style={[styles.draftNote, { color: C.textSecondary }]}>{t('campaigns.tapToEdit')}</Text>
-                        ) : (
-                          <View style={styles.statRow}>
-                            <View style={[styles.statPill, { backgroundColor: C.primaryLight }]}>
-                              <Ionicons name="people-outline" size={12} color={C.brinjal1} />
-                              <Text style={[styles.stat, { color: C.brinjal1 }]}>
-                                {c.proposals} proposal{c.proposals !== 1 ? 's' : ''}
-                              </Text>
-                            </View>
-                            <View style={[styles.badge, { backgroundColor: st.bg }]}>
-                              <Text style={[styles.badgeText, { color: st.color }]}>
-                                {c.status === 'active' ? t('campaigns.statusActive') : c.status === 'draft' ? t('campaigns.statusDraft') : t('campaigns.statusClosed')}
-                              </Text>
-                            </View>
+                      {(c.status === 'draft') ? (
+                        <Text style={[styles.draftNote, { color: C.textSecondary }]}>{t('campaigns.tapToEdit')}</Text>
+                      ) : (
+                        <View style={styles.statRow}>
+                          <View style={[styles.statPill, { backgroundColor: C.primaryLight }]}>
+                            <Ionicons name="people-outline" size={12} color={C.brinjal1} />
+                            <Text style={[styles.stat, { color: C.brinjal1 }]}>
+                              {c.proposals} proposal{c.proposals !== 1 ? 's' : ''}
+                            </Text>
                           </View>
+                          <View style={[styles.badge, { backgroundColor: st.bg }]}>
+                            <Text style={[styles.badgeText, { color: st.color }]}>
+                              {c.status === 'active' ? t('campaigns.statusActive') : c.status === 'draft' ? t('campaigns.statusDraft') : t('campaigns.statusClosed')}
+                            </Text>
+                          </View>
+                        </View>
+                      )}
+                    </View>
+                    <Ionicons name="chevron-forward" size={18} color={C.border} />
+                  </Pressable>
+
+                  {/* Footer actions */}
+                  {(c.proposals > 0 || c.status === 'active' || c.status === 'draft') && (
+                    <>
+                      <View style={[styles.footerDivider, { backgroundColor: C.border }]} />
+                      <View style={styles.footerRow}>
+                        {c.proposals > 0 && (
+                          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                            style={({ pressed }) => [styles.footerBtn, pressed && { opacity: 0.7 }]}
+                            onPress={() => openProposals(c)}>
+                            <Text style={[styles.footerBtnText, { color: C.brinjal1 }]}>{t('campaigns.viewProposals')}</Text>
+                            <Ionicons name="arrow-forward" size={12} color={C.brinjal1} />
+                          </Pressable>
+                        )}
+                        {c.status === 'active' && (
+                          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                            style={({ pressed }) => [styles.inviteBtn, { backgroundColor: C.primaryLight }, pressed && { opacity: 0.7 }]}
+                            onPress={() => openInvite(c)}>
+                            <Ionicons name="person-add-outline" size={13} color={C.brinjal1} />
+                            <Text style={[styles.inviteBtnText, { color: C.brinjal1 }]}>{t('campaigns.invite')}</Text>
+                          </Pressable>
+                        )}
+                        {c.status === 'draft' && (
+                          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                            style={({ pressed }) => [styles.inviteBtn, { backgroundColor: C.primaryLight, opacity: publishingId === c.id ? 0.6 : 1 }, pressed && { opacity: 0.7 }]}
+                            disabled={publishingId === c.id}
+                            onPress={() => handlePublishDraft(c)}>
+                            {publishingId === c.id ? (
+                              <ActivityIndicator size="small" color={C.brinjal1} />
+                            ) : (
+                              <Ionicons name="cloud-upload-outline" size={13} color={C.brinjal1} />
+                            )}
+                            <Text style={[styles.inviteBtnText, { color: C.brinjal1 }]}>{t('campaigns.publishDraft')}</Text>
+                          </Pressable>
                         )}
                       </View>
-                      <Ionicons name="chevron-forward" size={18} color={C.border} />
-                    </Pressable>
-
-                    {/* Footer actions */}
-                    {(c.proposals > 0 || c.status === 'active' || c.status === 'draft') && (
-                      <>
-                        <View style={[styles.footerDivider, { backgroundColor: C.border }]} />
-                        <View style={styles.footerRow}>
-                          {c.proposals > 0 && (
-                            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                              style={({ pressed }) => [styles.footerBtn, pressed && { opacity: 0.7 }]}
-                              onPress={() => openProposals(c)}>
-                              <Text style={[styles.footerBtnText, { color: C.brinjal1 }]}>{t('campaigns.viewProposals')}</Text>
-                              <Ionicons name="arrow-forward" size={12} color={C.brinjal1} />
-                            </Pressable>
-                          )}
-                          {c.status === 'active' && (
-                            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                              style={({ pressed }) => [styles.inviteBtn, { backgroundColor: C.primaryLight }, pressed && { opacity: 0.7 }]}
-                              onPress={() => openInvite(c)}>
-                              <Ionicons name="person-add-outline" size={13} color={C.brinjal1} />
-                              <Text style={[styles.inviteBtnText, { color: C.brinjal1 }]}>{t('campaigns.invite')}</Text>
-                            </Pressable>
-                          )}
-                          {c.status === 'draft' && (
-                            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                              style={({ pressed }) => [styles.inviteBtn, { backgroundColor: C.primaryLight, opacity: publishingId === c.id ? 0.6 : 1 }, pressed && { opacity: 0.7 }]}
-                              disabled={publishingId === c.id}
-                              onPress={() => handlePublishDraft(c)}>
-                              {publishingId === c.id ? (
-                                <ActivityIndicator size="small" color={C.brinjal1} />
-                              ) : (
-                                <Ionicons name="cloud-upload-outline" size={13} color={C.brinjal1} />
-                              )}
-                              <Text style={[styles.inviteBtnText, { color: C.brinjal1 }]}>{t('campaigns.publishDraft')}</Text>
-                            </Pressable>
-                          )}
-                        </View>
-                      </>
-                    )}
-                  </View>
+                    </>
+                  )}
                 </View>
-              );
-            })
-          )}
-        </ScrollView>
+              </View>
+            );
+          }}
+        />
       )}
 
       {/* Invite Creators bottom sheet */}
@@ -533,6 +581,7 @@ const styles = StyleSheet.create({
 
   list: { paddingHorizontal: 20, paddingTop: 14, gap: 12, paddingBottom: 40 },
   listEmpty: { flexGrow: 1 },
+  footerLoading: { paddingVertical: 20 },
 
   emptyWrap: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24, paddingVertical: 16 },
   emptyCard: {

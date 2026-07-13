@@ -17,11 +17,12 @@ import { profileService } from '@/services/profile';
 import type { Campaign } from '@/types';
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
+import { TabColors } from '@/utilities/tabColors';
 
 const STATUS_STYLE = {
-  active: { bg: '#DCFCE7', color: '#16A34A',  statusKey: 'business.home.statusActive' as const },
-  draft:  { bg: '#F1F5F9', color: '#64748B',  statusKey: 'business.home.statusPaused' as const },
-  closed: { bg: '#FEF9C3', color: '#CA8A04',  statusKey: 'business.home.statusClosed' as const },
+  active: { bg: TabColors.positive.bg, color: TabColors.positive.color, statusKey: 'business.home.statusActive' as const },
+  draft:  { bg: TabColors.warning.bg,  color: TabColors.warning.color,  statusKey: 'business.home.statusPaused' as const },
+  closed: { bg: TabColors.closed.bg,   color: TabColors.closed.color,   statusKey: 'business.home.statusClosed' as const },
 };
 
 export default function BusinessHomeScreen() {
@@ -112,9 +113,9 @@ export default function BusinessHomeScreen() {
   const openCount = campaigns.filter((c) => c.campaignType === 'OPEN_EVENT').length;
 
   const TYPE_TABS = [
-    { key: 'All',  label: t('business.home.tabAll'),      icon: 'layers-outline' as const,  color: '#4F46E5', count: campaigns.length },
-    { key: 'Paid', label: t('business.home.tabPaid'),     icon: 'cash-outline'  as const,   color: '#0369A1', count: paidCount        },
-    { key: 'Open', label: t('business.home.tabOpenFree'), icon: 'gift-outline'  as const,   color: '#059669', count: openCount        },
+    { key: 'All',  label: t('business.home.tabAll'),      icon: 'layers-outline' as const,  color: TabColors.neutral.color, count: campaigns.length },
+    { key: 'Paid', label: t('business.home.tabPaid'),     icon: 'cash-outline'  as const,   color: TabColors.brand.color,   count: paidCount        },
+    { key: 'Open', label: t('business.home.tabOpenFree'), icon: 'gift-outline'  as const,   color: TabColors.info.color,    count: openCount        },
   ];
 
   const recent = campaigns.filter(matchesType).slice(0, 5);
@@ -412,11 +413,11 @@ const styles = StyleSheet.create({
 
   // Campaign cards
   typeBadge: { borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 },
-  typeBadgePaid: { backgroundColor: '#EEF2FF' },
-  typeBadgeFree: { backgroundColor: '#F0FDF4' },
+  typeBadgePaid: { backgroundColor: TabColors.brand.bg },
+  typeBadgeFree: { backgroundColor: TabColors.info.bg },
   typeBadgeText: { fontSize: 10, fontFamily: F.bold },
-  typeBadgeTextPaid: { color: '#4F46E5' },
-  typeBadgeTextFree: { color: '#059669' },
+  typeBadgeTextPaid: { color: TabColors.brand.color },
+  typeBadgeTextFree: { color: TabColors.info.color },
 
   campaignList: { paddingHorizontal: 20, gap: 12 },
   campaignCard: { flexDirection: 'row', alignItems: 'center', borderRadius: 14, padding: 14, gap: 12, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 4, overflow: 'hidden' },

@@ -54,13 +54,17 @@ export const chatService = {
   async getConversations(
     currentUserRole: 'CREATOR' | 'BUSINESS',
     status?: 'PENDING' | 'ACCEPTED' | 'DECLINED',
-  ): Promise<Conversation[]> {
+    params?: { page?: number; limit?: number },
+  ): Promise<{ conversations: Conversation[]; total: number }> {
     const res = await request<ApiConversation[]>(
       'GET', '/api/messaging/conversations',
       undefined,
-      status ? { status } : undefined,
+      { status, page: params?.page ?? 1, limit: params?.limit ?? 100 },
     );
-    return res.data.map((c) => toConversation(c, currentUserRole));
+    return {
+      conversations: res.data.map((c) => toConversation(c, currentUserRole)),
+      total: res.pagination?.total ?? res.data.length,
+    };
   },
 
   async sendMessageRequest(

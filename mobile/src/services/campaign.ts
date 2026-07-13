@@ -121,10 +121,15 @@ function toApiStatus(s: Campaign['status']): 'ACTIVE' | 'PAUSED' | 'CLOSED' {
 // ── Service ─────────────────────────────────────────────────────────────────────
 
 export const campaignService = {
-  async listMy(params?: { page?: number; limit?: number }): Promise<{ campaigns: Campaign[]; total: number }> {
+  async listMy(params?: {
+    page?:   number;
+    limit?:  number;
+    status?: 'DRAFT' | 'ACTIVE' | 'PAUSED' | 'CLOSED' | 'CANCELLED';
+  }): Promise<{ campaigns: Campaign[]; total: number }> {
     const res = await request<ApiCampaign[]>('GET', '/api/campaigns/my', undefined, {
-      page:  params?.page  ?? 1,
-      limit: params?.limit ?? 50,
+      page:   params?.page  ?? 1,
+      limit:  params?.limit ?? 50,
+      status: params?.status,
     });
     return {
       campaigns: res.data.map((c) => toCampaign({ ...c, business: c.business ?? { businessName: '', logoUrl: null } })),
@@ -291,7 +296,12 @@ export const campaignService = {
     });
   },
 
-  async getBusinessProposals(params?: { page?: number; limit?: number }): Promise<{
+  async getBusinessProposals(params?: {
+    page?: number;
+    limit?: number;
+    status?: 'PENDING' | 'ACCEPTED' | 'REJECTED';
+    campaignType?: 'PAID_CAMPAIGN' | 'OPEN_EVENT';
+  }): Promise<{
     proposals: Array<{
       id: string;
       status: 'pending' | 'accepted' | 'rejected';
@@ -319,8 +329,10 @@ export const campaignService = {
       campaign: { id: string; title: string; platforms: string[]; campaignType?: string; paymentStatus?: string };
       creator: { id: string; fullName: string; avatarUrl: string | null; location: string | null };
     }>>('GET', '/api/campaigns/applications/business', undefined, {
-      page: params?.page ?? 1,
-      limit: params?.limit ?? 50,
+      page:         params?.page  ?? 1,
+      limit:        params?.limit ?? 50,
+      status:       params?.status,
+      campaignType: params?.campaignType,
     });
     return {
       proposals: res.data.map((a) => ({
@@ -420,23 +432,30 @@ export const campaignService = {
     }));
   },
 
-  async getMyApplications(): Promise<Array<{
-    id:               string;
-    campaignId:       string;
-    campaignTitle:    string;
-    brand:            string;
-    businessId:       string;
-    status:           'pending' | 'accepted' | 'rejected';
-    submittedAt:      string;
-    workSubmittedAt:  string | null;
-    coverLetter:      string;
-    proposedRate:     string;
-    proposedRateRaw:  number;
-    workStatus:       'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED';
-    campaignType:     'PAID_CAMPAIGN' | 'OPEN_EVENT';
-    paymentStatus:    'UNPAID' | 'PAID' | 'RELEASED';
-    paidAt:           string | null;
-  }>> {
+  async getMyApplications(params?: {
+    page?:   number;
+    limit?:  number;
+    status?: 'PENDING' | 'ACCEPTED' | 'REJECTED';
+  }): Promise<{
+    proposals: Array<{
+      id:               string;
+      campaignId:       string;
+      campaignTitle:    string;
+      brand:            string;
+      businessId:       string;
+      status:           'pending' | 'accepted' | 'rejected';
+      submittedAt:      string;
+      workSubmittedAt:  string | null;
+      coverLetter:      string;
+      proposedRate:     string;
+      proposedRateRaw:  number;
+      workStatus:       'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED';
+      campaignType:     'PAID_CAMPAIGN' | 'OPEN_EVENT';
+      paymentStatus:    'UNPAID' | 'PAID' | 'RELEASED';
+      paidAt:           string | null;
+    }>;
+    total: number;
+  }> {
     const res = await request<Array<{
       id:              string;
       status:          string;
@@ -452,24 +471,31 @@ export const campaignService = {
         paymentStatus?: string; paidAt?: string | null;
         business: { id: string; businessName: string };
       };
-    }>>('GET', '/api/campaigns/applications/my');
+    }>>('GET', '/api/campaigns/applications/my', undefined, {
+      page:   params?.page  ?? 1,
+      limit:  params?.limit ?? 10,
+      status: params?.status,
+    });
 
-    return res.data.map((a) => ({
-      id:              a.id,
-      campaignId:      a.campaign.id,
-      campaignTitle:   a.campaign.title,
-      brand:           a.campaign.business.businessName,
-      businessId:      a.campaign.business.id,
-      status:          a.status.toLowerCase() as 'pending' | 'accepted' | 'rejected',
-      submittedAt:     a.createdAt,
-      workSubmittedAt: a.submittedAt ?? null,
-      coverLetter:     a.coverLetter,
-      proposedRate:    `Rs. ${a.proposedRate.toLocaleString()}`,
-      proposedRateRaw: a.proposedRate,
-      workStatus:      (a.workStatus ?? 'NONE') as 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED',
-      campaignType:    (a.campaign.campaignType ?? 'PAID_CAMPAIGN') as 'PAID_CAMPAIGN' | 'OPEN_EVENT',
-      paymentStatus:   (a.paymentStatus ?? a.campaign.paymentStatus ?? 'UNPAID') as 'UNPAID' | 'PAID' | 'RELEASED',
-      paidAt:          a.paidAt ?? a.campaign.paidAt ?? null,
-    }));
+    return {
+      proposals: res.data.map((a) => ({
+        id:              a.id,
+        campaignId:      a.campaign.id,
+        campaignTitle:   a.campaign.title,
+        brand:           a.campaign.business.businessName,
+        businessId:      a.campaign.business.id,
+        status:          a.status.toLowerCase() as 'pending' | 'accepted' | 'rejected',
+        submittedAt:     a.createdAt,
+        workSubmittedAt: a.submittedAt ?? null,
+        coverLetter:     a.coverLetter,
+        proposedRate:    `Rs. ${a.proposedRate.toLocaleString()}`,
+        proposedRateRaw: a.proposedRate,
+        workStatus:      (a.workStatus ?? 'NONE') as 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED',
+        campaignType:    (a.campaign.campaignType ?? 'PAID_CAMPAIGN') as 'PAID_CAMPAIGN' | 'OPEN_EVENT',
+        paymentStatus:   (a.paymentStatus ?? a.campaign.paymentStatus ?? 'UNPAID') as 'UNPAID' | 'PAID' | 'RELEASED',
+        paidAt:          a.paidAt ?? a.campaign.paidAt ?? null,
+      })),
+      total: res.pagination?.total ?? res.data.length,
+    };
   },
 };

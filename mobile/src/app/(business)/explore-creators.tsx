@@ -6,10 +6,8 @@ import { BackButton } from '@/components/BackButton';
 import { VerifiedBadge } from '@/components/VerifiedBadge';
 import {
   ActivityIndicator,
-  Animated,
   FlatList,
   Image,
-  Modal,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -20,10 +18,11 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RangeSlider } from '@/components/RangeSlider';
+import { FilterSheet } from '@/components/FilterSheet';
+import { LocationSearchPicker, type LocationEntry } from '@/components/LocationSearchPicker';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { creatorService, type ApiCreatorListItem } from '@/services/creator';
-import { useKeyboardOffset } from '@/hooks/useKeyboardOffset';
 import { F } from '@/utilities/constants';
 import { getIconColor } from '@/features/creator/data/filterOptions';
 import { useAllCategories, useCategories, getCategoryMeta } from '@/hooks/useCategories';
@@ -31,13 +30,7 @@ import type { ApiCategory } from '@/services/category';
 
 const PAGE_SIZE = 10;
 const SLIDER_MAX = 1000;
-const PLACES_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY ?? '';
 const MAX_LOCS = 3;
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-type LocationEntry = { label: string; lat: number | null; lng: number | null };
-type Prediction = { place_id: string; structured_formatting: { main_text: string; secondary_text: string } };
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -91,155 +84,18 @@ const DEFAULT_FILTER: FilterState = {
   categories: [],
 };
 
+function filterActiveCount(f: FilterState) {
+  return [
+    f.locations.length > 0,
+    f.priceMin > 0 || f.priceMax < SLIDER_MAX,
+    f.platforms.length > 0,
+    f.categories.length > 0,
+  ].filter(Boolean).length;
+}
 function isFilterActive(f: FilterState) {
-  return (
-    f.locations.length > 0 ||
-    f.priceMin > 0 ||
-    f.priceMax < SLIDER_MAX ||
-    f.platforms.length > 0 ||
-    f.categories.length > 0
-  );
+  return filterActiveCount(f) > 0;
 }
 
-// ─── Location Search Picker ───────────────────────────────────────────────────
-
-function LocationPicker({ selected, onChange }: { selected: LocationEntry[]; onChange: (v: LocationEntry[]) => void }) {
-  const C = useAppColors();
-  const { t } = useLanguage();
-  const [query, setQuery] = useState('');
-  const [predictions, setPredictions] = useState<Prediction[]>([]);
-  const [searching, setSearching] = useState(false);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const remoteSelected = selected.some((l) => l.label === 'Remote');
-  const nonRemote = selected.filter((l) => l.label !== 'Remote');
-  const atMax = selected.length >= MAX_LOCS;
-
-  function toggleRemote() {
-    if (remoteSelected) {
-      onChange(selected.filter((l) => l.label !== 'Remote'));
-    } else if (!atMax) {
-      onChange([...selected, { label: 'Remote', lat: null, lng: null }]);
-    }
-  }
-
-  function remove(label: string) { onChange(selected.filter((l) => l.label !== label)); }
-
-  function onQueryChange(text: string) {
-    setQuery(text);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (!text.trim()) { setPredictions([]); return; }
-    debounceRef.current = setTimeout(() => fetchPredictions(text), 350);
-  }
-
-  async function fetchPredictions(text: string) {
-    if (!PLACES_KEY) return;
-    setSearching(true);
-    try {
-      const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(text)}&key=${PLACES_KEY}&language=en&types=(cities)&components=country:np`;
-      const data = (await (await fetch(url)).json()) as { predictions: Prediction[]; status: string };
-      setPredictions(data.status === 'OK' ? data.predictions : []);
-    } catch { setPredictions([]); }
-    finally { setSearching(false); }
-  }
-
-  async function selectPrediction(pred: Prediction) {
-    const label = pred.structured_formatting.main_text;
-    if (selected.some((l) => l.label === label)) return;
-    setQuery(''); setPredictions([]);
-    try {
-      const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${pred.place_id}&fields=geometry&key=${PLACES_KEY}`;
-      const data = (await (await fetch(url)).json()) as { result: { geometry: { location: { lat: number; lng: number } } }; status: string };
-      const { lat, lng } = data.status === 'OK' ? data.result.geometry.location : { lat: null as unknown as number, lng: null as unknown as number };
-      onChange([...selected, { label, lat: data.status === 'OK' ? lat : null, lng: data.status === 'OK' ? lng : null }]);
-    } catch {
-      onChange([...selected, { label, lat: null, lng: null }]);
-    }
-  }
-
-  return (
-    <View style={lp.wrap}>
-      {/* Remote chip */}
-      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-        style={[lp.remoteChip, { borderColor: remoteSelected ? C.brinjal1 : C.border, backgroundColor: remoteSelected ? C.primaryLight : C.background }, !remoteSelected && atMax && { opacity: 0.35 }]}
-        onPress={toggleRemote}
-        disabled={!remoteSelected && atMax}>
-        <Ionicons name="globe-outline" size={14} color={remoteSelected ? C.brinjal1 : C.textSecondary} />
-        <Text style={[lp.remoteText, { color: remoteSelected ? C.brinjal1 : C.text, fontWeight: remoteSelected ? '700' : '500' }]}>{t('campaignDetail.remoteLocation')}</Text>
-        {remoteSelected && <Ionicons name="close" size={14} color={C.brinjal1} />}
-      </Pressable>
-
-      {/* Selected place chips */}
-      {nonRemote.length > 0 && (
-        <View style={lp.chips}>
-          {nonRemote.map((loc) => (
-            <View key={loc.label} style={[lp.locChip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
-              <Ionicons name="location" size={12} color={C.brinjal1} />
-              <Text style={[lp.locChipText, { color: C.brinjal1 }]}>{loc.label}</Text>
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => remove(loc.label)} hitSlop={8}>
-                <Ionicons name="close" size={13} color={C.brinjal1} />
-              </Pressable>
-            </View>
-          ))}
-        </View>
-      )}
-
-      {/* Search input */}
-      {!atMax && (
-        <>
-          <View style={[lp.searchRow, { backgroundColor: C.background, borderColor: C.border }]}>
-            <Ionicons name="search" size={15} color={C.textSecondary} />
-            <TextInput
-              style={[lp.searchInput, { color: C.text }]}
-              value={query}
-              onChangeText={onQueryChange}
-              placeholder={t('explore.searchCity')}
-              placeholderTextColor={C.textSecondary}
-              returnKeyType="search"
-            />
-            {searching
-              ? <ActivityIndicator size="small" color={C.brinjal1} />
-              : query.length > 0
-              ? <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => { setQuery(''); setPredictions([]); }} hitSlop={8}><Ionicons name="close" size={15} color={C.textSecondary} /></Pressable>
-              : null}
-          </View>
-          {predictions.length > 0 && (
-            <View style={[lp.dropdown, { backgroundColor: C.surface, borderColor: C.border }]}>
-              {predictions.slice(0, 5).map((pred, idx) => (
-                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                  key={pred.place_id}
-                  style={[lp.dropRow, { borderBottomColor: idx < Math.min(predictions.length, 5) - 1 ? C.border : 'transparent' }]}
-                  onPress={() => selectPrediction(pred)}>
-                  <Ionicons name="location" size={16} color={C.textSecondary} />
-                  <View style={lp.dropTexts}>
-                    <Text style={[lp.dropMain, { color: C.text }]}>{pred.structured_formatting.main_text}</Text>
-                    <Text style={[lp.dropSec, { color: C.textSecondary }]} numberOfLines={1}>{pred.structured_formatting.secondary_text}</Text>
-                  </View>
-                </Pressable>
-              ))}
-            </View>
-          )}
-        </>
-      )}
-    </View>
-  );
-}
-
-const lp = StyleSheet.create({
-  wrap:        { gap: 10 },
-  remoteChip:  { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 12, borderWidth: 1.5 },
-  remoteText:  { fontSize: 13, fontFamily: F.regular },
-  chips:       { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  locChip:     { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 12, borderWidth: 1.5 },
-  locChipText: { fontSize: 13, fontFamily: F.semibold },
-  searchRow:   { flexDirection: 'row', alignItems: 'center', borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 12, height: 44, gap: 8 },
-  searchInput: { flex: 1, fontSize: 14, fontFamily: F.regular },
-  dropdown:    { borderRadius: 12, borderWidth: 1.5, overflow: 'hidden' },
-  dropRow:     { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, gap: 10, borderBottomWidth: 1 },
-  dropTexts:   { flex: 1 },
-  dropMain:    { fontSize: 14, fontFamily: F.semibold },
-  dropSec:     { fontSize: 11, marginTop: 1, fontFamily: F.regular },
-});
 
 // ─── Filter Modal ─────────────────────────────────────────────────────────────
 
@@ -259,117 +115,91 @@ function ExploreFilterModal({
   const C = useAppColors();
   const { t } = useLanguage();
   const { categories: allCategories } = useAllCategories();
-  const keyboardOffset = useKeyboardOffset();
 
   function set<K extends keyof FilterState>(key: K, val: FilterState[K]) {
     setTemp({ ...temp, [key]: val });
   }
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={fm.backdrop} onPress={onClose} />
-      <Animated.View style={[fm.sheet, { backgroundColor: C.surface, transform: [{ translateY: keyboardOffset }] }]}>
-        <View style={[fm.handle, { backgroundColor: C.border }]} />
-        <View style={[fm.header, { borderBottomColor: C.border }]}>
-          <Text style={[fm.title, { color: C.text }]}>{t('explore.filterCreators')}</Text>
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={onReset}>
-            <Text style={[fm.reset, { color: C.brinjal1 }]}>{t('explore.resetAll')}</Text>
-          </Pressable>
-        </View>
+    <FilterSheet
+      visible={visible}
+      title={t('explore.filterCreators')}
+      resetLabel={t('explore.resetAll')}
+      applyLabel={t('explore.applyFilters')}
+      onApply={onApply}
+      onReset={onReset}
+      onClose={onClose}
+    >
+      {/* Location */}
+      <View style={fm.sectionRow}>
+        <Text style={[fm.sectionLabel, { color: C.textSecondary }]}>{t('explore.location')}</Text>
+        <Text style={[fm.sectionHint, { color: C.textSecondary }]}>{t('explore.locationsAllowed', { count: temp.locations.length, max: MAX_LOCS })}</Text>
+      </View>
+      <LocationSearchPicker selected={temp.locations} onSelect={(v) => set('locations', v)} />
 
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={fm.body}>
+      {/* Price Range */}
+      <Text style={[fm.sectionLabel, { color: C.textSecondary }]}>{t('explore.priceRange')}</Text>
+      <RangeSlider
+        minVal={temp.priceMin}
+        maxVal={temp.priceMax}
+        onMinChange={(v) => set('priceMin', v)}
+        onMaxChange={(v) => set('priceMax', v)}
+        currency="Rs"
+      />
 
-          {/* Location */}
-          <View style={fm.sectionRow}>
-            <Text style={[fm.sectionLabel, { color: C.textSecondary }]}>{t('explore.location')}</Text>
-            <Text style={[fm.sectionHint, { color: C.textSecondary }]}>{t('explore.locationsAllowed', { count: temp.locations.length, max: MAX_LOCS })}</Text>
+      {/* Platform */}
+      {availablePlatforms.length > 0 && (
+        <>
+          <Text style={[fm.sectionLabel, { color: C.textSecondary }]}>{t('explore.platform')}</Text>
+          <View style={fm.chips}>
+            {availablePlatforms.map((p) => {
+              const sel = temp.platforms.includes(p);
+              return (
+                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                  key={p}
+                  onPress={() => set('platforms', toggle(temp.platforms, p))}
+                  style={[fm.chip, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? C.primaryLight : C.background }]}>
+                  <Ionicons name={getPlatformMeta(p).icon} size={14} color={sel ? C.brinjal1 : getPlatformMeta(p).color} />
+                  <Text style={[fm.chipText, { color: sel ? C.brinjal1 : C.text, fontWeight: sel ? '700' : '500' }]}>{normalizePlatform(p)}</Text>
+                </Pressable>
+              );
+            })}
           </View>
-          <LocationPicker selected={temp.locations} onChange={(v) => set('locations', v)} />
+        </>
+      )}
 
-          {/* Price Range */}
-          <Text style={[fm.sectionLabel, { color: C.textSecondary }]}>{t('explore.priceRange')}</Text>
-          <RangeSlider
-            minVal={temp.priceMin}
-            maxVal={temp.priceMax}
-            onMinChange={(v) => set('priceMin', v)}
-            onMaxChange={(v) => set('priceMax', v)}
-            currency="Rs"
-          />
-
-          {/* Platform */}
-          {availablePlatforms.length > 0 && (
-            <>
-              <Text style={[fm.sectionLabel, { color: C.textSecondary }]}>{t('explore.platform')}</Text>
-              <View style={fm.chips}>
-                {availablePlatforms.map((p) => {
-                  const sel = temp.platforms.includes(p);
-                  return (
-                    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                      key={p}
-                      onPress={() => set('platforms', toggle(temp.platforms, p))}
-                      style={[fm.chip, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? C.primaryLight : C.background }]}>
-                      <Ionicons name={getPlatformMeta(p).icon} size={14} color={sel ? C.brinjal1 : getPlatformMeta(p).color} />
-                      <Text style={[fm.chipText, { color: sel ? C.brinjal1 : C.text, fontWeight: sel ? '700' : '500' }]}>{normalizePlatform(p)}</Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </>
-          )}
-
-          {/* Category */}
-          {availableCategories.length > 0 && (
-            <>
-              <Text style={[fm.sectionLabel, { color: C.textSecondary }]}>{t('explore.category')}</Text>
-              <View style={fm.chips}>
-                {availableCategories.map((cat) => {
-                  const meta = getCategoryMeta(allCategories, cat);
-                  const sel = temp.categories.includes(cat);
-                  return (
-                    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                      key={cat}
-                      onPress={() => set('categories', toggle(temp.categories, cat))}
-                      style={[fm.chip, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? C.primaryLight : C.background }]}>
-                      <FontAwesome5 name={meta.icon} size={12} color={sel ? meta.color : C.textSecondary} />
-                      <Text style={[fm.chipText, { color: sel ? C.brinjal1 : C.text, fontWeight: sel ? '700' : '500' }]}>{cat}</Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </>
-          )}
-
-        </ScrollView>
-
-        <View style={[fm.footer, { borderTopColor: C.border }]}>
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-            style={({ pressed }) => [fm.applyBtn, { backgroundColor: C.brinjal1 }, pressed && { opacity: 0.88 }]}
-            onPress={onApply}>
-            <Text style={fm.applyTxt}>{t('explore.applyFilters')}</Text>
-          </Pressable>
-        </View>
-      </Animated.View>
-    </Modal>
+      {/* Category */}
+      {availableCategories.length > 0 && (
+        <>
+          <Text style={[fm.sectionLabel, { color: C.textSecondary }]}>{t('explore.category')}</Text>
+          <View style={fm.chips}>
+            {availableCategories.map((cat) => {
+              const meta = getCategoryMeta(allCategories, cat);
+              const sel = temp.categories.includes(cat);
+              return (
+                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                  key={cat}
+                  onPress={() => set('categories', toggle(temp.categories, cat))}
+                  style={[fm.chip, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? C.primaryLight : C.background }]}>
+                  <FontAwesome5 name={meta.icon} size={12} color={sel ? meta.color : C.textSecondary} />
+                  <Text style={[fm.chipText, { color: sel ? C.brinjal1 : C.text, fontWeight: sel ? '700' : '500' }]}>{cat}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </>
+      )}
+    </FilterSheet>
   );
 }
 
 const fm = StyleSheet.create({
-  backdrop:    { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)' },
-  sheet:       { position: 'absolute', left: 0, right: 0, bottom: 0, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '92%', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 20, shadowOffset: { width: 0, height: -4 }, elevation: 20 },
-  handle:      { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginTop: 12, marginBottom: 4 },
-  header:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1 },
-  title:       { fontSize: 17, fontFamily: F.bold },
-  reset:       { fontSize: 14, fontFamily: F.semibold },
-  body:        { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16, gap: 16 },
   sectionRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   sectionLabel:{ fontSize: 12, textTransform: 'uppercase', letterSpacing: 0, fontFamily: F.bold },
   sectionHint: { fontSize: 11, fontFamily: F.semibold },
   chips:       { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip:        { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 13, paddingVertical: 8, borderRadius: 12, borderWidth: 1.5 },
   chipText:    { fontSize: 13, fontFamily: F.medium },
-  footer:      { padding: 20, borderTopWidth: 1 },
-  applyBtn:    { borderRadius: 14, height: 52, justifyContent: 'center', alignItems: 'center' },
-  applyTxt:    { color: '#fff', fontSize: 16, fontFamily: F.bold },
 });
 
 // ─── Creator Avatar ───────────────────────────────────────────────────────────
@@ -509,6 +339,7 @@ export default function ExploreCreatorsScreen() {
   const [availablePlatforms, setAvailablePlatforms] = useState<string[]>([]);
 
   const filterActive = isFilterActive(activeFilter);
+  const filterCount  = filterActiveCount(activeFilter);
 
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   // Ref (not state) so the guard is synchronous — FlatList's onEndReached can
@@ -678,7 +509,11 @@ export default function ExploreCreatorsScreen() {
           style={[s.filterBtn, { backgroundColor: filterActive ? C.brinjal1 : C.surface, borderColor: filterActive ? C.brinjal1 : C.border }]}
           onPress={openFilter}>
           <Ionicons name="options-outline" size={20} color={filterActive ? '#fff' : C.brinjal1} />
-          {filterActive && <View style={s.filterDot} />}
+          {filterActive && (
+            <View style={s.filterCountBadge}>
+              <Text style={s.filterCountBadgeTxt}>{filterCount}</Text>
+            </View>
+          )}
         </Pressable>
       </View>
 
@@ -826,7 +661,8 @@ const s = StyleSheet.create({
   searchCard: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 9, borderRadius: 16, borderWidth: 1.5, paddingHorizontal: 14, height: 50 },
   searchInput: { flex: 1, fontSize: 14, fontFamily: F.regular },
   filterBtn: { width: 50, height: 50, borderRadius: 16, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center' },
-  filterDot: { position: 'absolute', top: 8, right: 8, width: 8, height: 8, borderRadius: 4, backgroundColor: '#EF4444' },
+  filterCountBadge: { position: 'absolute', top: -4, right: -4, minWidth: 16, height: 16, borderRadius: 8, paddingHorizontal: 3, backgroundColor: '#EF4444', justifyContent: 'center', alignItems: 'center' },
+  filterCountBadgeTxt: { fontSize: 9, fontFamily: F.extrabold, color: '#fff' },
 
   chipRow: { paddingHorizontal: 20, paddingBottom: 8, gap: 6, flexDirection: 'row', alignItems: 'center' },
   chip: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 16, borderWidth: 1.5 },

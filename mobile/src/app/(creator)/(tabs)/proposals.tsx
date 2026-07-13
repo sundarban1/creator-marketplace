@@ -3,23 +3,22 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useRef, useState } from 'react';
 import {
-  Animated,
   ActivityIndicator,
   FlatList,
-  LayoutChangeEvent,
   Pressable,
   RefreshControl,
-  ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { EmptyState } from '@/components/EmptyState';
+import { TabSlider } from '@/components/TabSlider';
 import { useLanguage, type TFn } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { campaignService } from '@/services/campaign';
 import { F } from '@/utilities/constants';
+import { TabColors } from '@/utilities/tabColors';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -46,9 +45,9 @@ type Proposal = {
 // ─── Config ───────────────────────────────────────────────────────────────────
 
 const STATUS_CFG = {
-  pending:  { labelKey: 'proposal.creator.statusPending'  as const, icon: 'time'             as const, color: '#B45309', bg: '#FFF7ED' },
-  accepted: { labelKey: 'proposal.creator.statusAccepted' as const, icon: 'checkmark-circle' as const, color: '#16A34A', bg: '#F0FDF4' },
-  rejected: { labelKey: 'proposal.creator.statusRejected' as const, icon: 'close-circle'     as const, color: '#B91C1C', bg: '#FEF2F2' },
+  pending:  { labelKey: 'proposal.creator.statusPending'  as const, icon: 'time'             as const, color: TabColors.warning.color,  bg: TabColors.warning.bg },
+  accepted: { labelKey: 'proposal.creator.statusAccepted' as const, icon: 'checkmark-circle' as const, color: TabColors.positive.color, bg: TabColors.positive.bg },
+  rejected: { labelKey: 'proposal.creator.statusRejected' as const, icon: 'close-circle'     as const, color: TabColors.danger.color,   bg: TabColors.danger.bg },
 };
 
 const TRACK_CFG: Record<WS, { labelKey: string; icon: keyof typeof Ionicons.glyphMap; color: string; subKey: string }> = {
@@ -76,98 +75,6 @@ function timeAgo(iso: string, t: TFn): string {
 function brandInitials(name: string): string {
   return name.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase();
 }
-
-// ─── Tab Slider ───────────────────────────────────────────────────────────────
-
-type TabDef = { key: TabKey; label: string; icon: keyof typeof Ionicons.glyphMap; color: string; count: number };
-
-function TabSlider({ tabs, active, onChange }: {
-  tabs: TabDef[];
-  active: TabKey;
-  onChange: (k: TabKey) => void;
-}) {
-  const C = useAppColors();
-  const scrollRef = useRef<ScrollView>(null);
-  const indicatorX = useRef(new Animated.Value(0)).current;
-  const indicatorW = useRef(new Animated.Value(0)).current;
-  const tabLayouts = useRef<{ x: number; width: number }[]>([]);
-
-  function handleLayout(idx: number, e: LayoutChangeEvent) {
-    const { x, width } = e.nativeEvent.layout;
-    tabLayouts.current[idx] = { x, width };
-    if (tabs[idx].key === active) {
-      indicatorX.setValue(x + 8);
-      indicatorW.setValue(width - 16);
-    }
-  }
-
-  function handlePress(tab: TabDef, idx: number) {
-    onChange(tab.key);
-    const layout = tabLayouts.current[idx];
-    if (layout) {
-      Animated.spring(indicatorX, { toValue: layout.x + 8, useNativeDriver: false, speed: 20, bounciness: 4 }).start();
-      Animated.spring(indicatorW, { toValue: layout.width - 16, useNativeDriver: false, speed: 20, bounciness: 4 }).start();
-      scrollRef.current?.scrollTo({ x: Math.max(0, layout.x - 40), animated: true });
-    }
-  }
-
-  const activeTab = tabs.find((tb) => tb.key === active)!;
-
-  return (
-    <View style={ts.wrapper}>
-      <ScrollView
-        ref={scrollRef}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={ts.scroll}
-        bounces={false}
-      >
-        {tabs.map((tab, idx) => {
-          const isActive = tab.key === active;
-          return (
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-              key={tab.key}
-              onLayout={(e) => handleLayout(idx, e)}
-              onPress={() => handlePress(tab, idx)}
-              style={ts.tab}
-            >
-              <View style={[ts.tabInner, isActive && { backgroundColor: `${activeTab.color}14` }]}>
-                <Ionicons name={tab.icon} size={14} color={isActive ? tab.color : C.textSecondary} />
-                <Text style={[ts.tabLabel, { color: isActive ? tab.color : C.textSecondary }]}>
-                  {tab.label}
-                </Text>
-                {tab.count > 0 && (
-                  <View style={[ts.badge, { backgroundColor: isActive ? tab.color : C.border }]}>
-                    <Text style={[ts.badgeTxt, { color: isActive ? '#fff' : C.textSecondary }]}>
-                      {tab.count}
-                    </Text>
-                  </View>
-                )}
-              </View>
-            </Pressable>
-          );
-        })}
-        <Animated.View
-          style={[ts.indicator, { backgroundColor: activeTab.color, left: indicatorX, width: indicatorW }]}
-          pointerEvents="none"
-        />
-      </ScrollView>
-      <View style={[ts.bottomBorder, { backgroundColor: C.border }]} />
-    </View>
-  );
-}
-
-const ts = StyleSheet.create({
-  wrapper:      { backgroundColor: 'transparent' },
-  scroll:       { paddingHorizontal: 12, paddingBottom: 0, position: 'relative' },
-  tab:          { paddingHorizontal: 4, paddingVertical: 10 },
-  tabInner:     { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 6 },
-  tabLabel:     { fontSize: 13, fontFamily: F.bold },
-  badge:        { minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 5, justifyContent: 'center', alignItems: 'center' },
-  badgeTxt:     { fontSize: 10, fontFamily: F.bold },
-  indicator:    { position: 'absolute', bottom: 0, height: 3, borderRadius: 2 },
-  bottomBorder: { height: StyleSheet.hairlineWidth, marginHorizontal: 16 },
-});
 
 // ─── Proposal Card ────────────────────────────────────────────────────────────
 
@@ -300,49 +207,81 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
+const PAGE_SIZE = 10;
+
+type TabState = { items: Proposal[]; page: number; total: number; loadingMore: boolean; loaded: boolean };
+const emptyTabState = (): TabState => ({ items: [], page: 0, total: 0, loadingMore: false, loaded: false });
+
+const STATUS_PARAM: Record<TabKey, 'PENDING' | 'ACCEPTED' | 'REJECTED' | undefined> = {
+  all: undefined, pending: 'PENDING', accepted: 'ACCEPTED', rejected: 'REJECTED',
+};
+
 export default function ProposalsScreen() {
   const { t } = useLanguage();
   const C = useAppColors();
-  const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [tabData, setTabData] = useState<Record<TabKey, TabState>>({
+    all: emptyTabState(), pending: emptyTabState(), accepted: emptyTabState(), rejected: emptyTabState(),
+  });
   const [loading, setLoading]     = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError]         = useState('');
   const [activeTab, setActiveTab] = useState<TabKey>('all');
+  const loadingMoreRef = useRef(false);
 
-  async function fetchProposals(silent = false) {
-    if (!silent) setLoading(true);
-    setError('');
+  async function loadTab(tab: TabKey, page: number, replace: boolean) {
+    if (replace) { setError(''); } else { setTabData((prev) => ({ ...prev, [tab]: { ...prev[tab], loadingMore: true } })); }
     try {
-      const data = await campaignService.getMyApplications();
-      setProposals(data);
+      const { proposals, total } = await campaignService.getMyApplications({
+        page, limit: PAGE_SIZE, status: STATUS_PARAM[tab],
+      });
+      setTabData((prev) => {
+        const prevItems = replace ? [] : prev[tab].items;
+        const seen = new Set(prevItems.map((p) => p.id));
+        const merged = [...prevItems, ...proposals.filter((p) => !seen.has(p.id))];
+        return { ...prev, [tab]: { items: merged, page, total, loadingMore: false, loaded: true } };
+      });
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load proposals');
+      if (replace) setError(e instanceof Error ? e.message : 'Failed to load proposals');
     } finally {
-      setLoading(false);
+      loadingMoreRef.current = false;
+      if (replace) setLoading(false);
       setRefreshing(false);
     }
   }
 
-  useFocusEffect(useCallback(() => { void fetchProposals(); }, []));
-  const onRefresh = useCallback(() => { setRefreshing(true); void fetchProposals(true); }, []);
+  useFocusEffect(useCallback(() => {
+    setLoading(true);
+    void loadTab('all', 1, true);
+  }, []));
 
-  const counts = {
-    all:      proposals.length,
-    pending:  proposals.filter((p) => p.status === 'pending').length,
-    accepted: proposals.filter((p) => p.status === 'accepted').length,
-    rejected: proposals.filter((p) => p.status === 'rejected').length,
-  };
+  function selectTab(tab: TabKey) {
+    setActiveTab(tab);
+    if (!tabData[tab].loaded) {
+      setLoading(true);
+      void loadTab(tab, 1, true);
+    }
+  }
 
-  const tabs: TabDef[] = [
-    { key: 'all',      label: t('proposal.creator.tabAll'),      icon: 'documents-outline',       color: '#C2410C', count: counts.all      },
-    { key: 'pending',  label: t('proposal.creator.tabPending'),  icon: 'time-outline',             color: '#B45309', count: counts.pending  },
-    { key: 'accepted', label: t('proposal.creator.tabAccepted'), icon: 'checkmark-circle-outline', color: '#16A34A', count: counts.accepted },
-    { key: 'rejected', label: t('proposal.creator.tabRejected'), icon: 'close-circle-outline',     color: '#B91C1C', count: counts.rejected },
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    void loadTab(activeTab, 1, true);
+  }, [activeTab]);
+
+  function loadMore() {
+    const state = tabData[activeTab];
+    if (loadingMoreRef.current || state.loadingMore || state.items.length >= state.total) return;
+    loadingMoreRef.current = true;
+    void loadTab(activeTab, state.page + 1, false);
+  }
+
+  const tabs = [
+    { key: 'all',      label: t('proposal.creator.tabAll'),      icon: 'documents-outline'       as const, color: TabColors.neutral.color,  count: tabData.all.total },
+    { key: 'pending',  label: t('proposal.creator.tabPending'),  icon: 'time-outline'             as const, color: TabColors.warning.color,  count: tabData.pending.total },
+    { key: 'accepted', label: t('proposal.creator.tabAccepted'), icon: 'checkmark-circle-outline' as const, color: TabColors.positive.color, count: tabData.accepted.total },
+    { key: 'rejected', label: t('proposal.creator.tabRejected'), icon: 'close-circle-outline'     as const, color: TabColors.danger.color,   count: tabData.rejected.total },
   ];
 
-  const filtered = activeTab === 'all'
-    ? proposals
-    : proposals.filter((p) => p.status === activeTab);
+  const current = tabData[activeTab];
 
   const emptyMessages: Record<TabKey, { faIcon: string; title: string; sub: string }> = {
     all:      { faIcon: 'inbox',          title: t('proposal.creator.emptyTitle'),        sub: t('proposal.creator.emptySub')        },
@@ -367,7 +306,7 @@ export default function ProposalsScreen() {
 
       {/* ── Tab bar ── */}
       <View style={[styles.tabBar, { backgroundColor: C.surface }]}>
-        <TabSlider tabs={tabs} active={activeTab} onChange={setActiveTab} />
+        <TabSlider tabs={tabs} active={activeTab} onChange={(k) => selectTab(k as TabKey)} />
       </View>
 
       {/* ── Content ── */}
@@ -381,16 +320,21 @@ export default function ProposalsScreen() {
           faIcon="exclamation-triangle"
           title={t('proposal.creator.loadError')}
           subtitle={error}
-          action={{ label: t('proposal.creator.retry'), onPress: () => fetchProposals() }}
+          action={{ label: t('proposal.creator.retry'), onPress: () => loadTab(activeTab, 1, true) }}
         />
       ) : (
         <FlatList
-          data={filtered}
+          data={current.items}
           keyExtractor={(p) => p.id}
           renderItem={({ item }) => <ProposalCard proposal={item} />}
-          contentContainerStyle={[styles.list, filtered.length === 0 && styles.listEmpty]}
+          contentContainerStyle={[styles.list, current.items.length === 0 && styles.listEmpty]}
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brinjal1} />}
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.4}
+          ListFooterComponent={current.loadingMore ? (
+            <View style={styles.footerLoading}><ActivityIndicator size="small" color={C.brinjal1} /></View>
+          ) : null}
           ListEmptyComponent={
             <EmptyState
               faIcon={emptyMsg.faIcon}
@@ -424,6 +368,7 @@ const styles = StyleSheet.create({
   listEmpty: { flexGrow: 1 },
   center:    { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
   loadingText: { fontSize: 14, fontFamily: F.regular },
+  footerLoading: { paddingVertical: 20 },
 
   // Card
   card:        { borderRadius: 14, flexDirection: 'row', borderWidth: 1, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 3, overflow: 'hidden' },

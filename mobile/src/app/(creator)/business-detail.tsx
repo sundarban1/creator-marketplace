@@ -167,7 +167,7 @@ export default function BusinessDetailScreen() {
     setLoading(true);
     Promise.all([
       businessService.getBusinessById(id),
-      campaignService.getMyApplications().catch(() => []),
+      campaignService.getMyApplications().then((r) => r.proposals).catch(() => []),
     ])
       .then(([biz, applications]) => {
         setBusiness(biz);

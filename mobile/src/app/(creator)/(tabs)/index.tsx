@@ -27,6 +27,7 @@ import { getSocket } from '@/lib/socket';
 import { storage } from '@/utilities/storage';
 import { getCurrentLocation, geocodeAddress, type LatLng } from '@/utilities/geolocation';
 import { ACCESS_TOKEN_KEY, F } from '@/utilities/constants';
+import { TabColors } from '@/utilities/tabColors';
 import type { Campaign } from '@/types';
 
 const RADIUS_PRESETS = [5, 10, 25, 50, 100];
@@ -257,7 +258,7 @@ export default function HomeScreen() {
   useFocusEffect(useCallback(() => {
     if (!storage.get(ACCESS_TOKEN_KEY)) return;
     campaignService.getMyApplications()
-      .then((apps) => {
+      .then(({ proposals: apps }) => {
         const actions: Array<{ type: 'start_work' | 'upload_work' | 'event_pending'; title: string }> = [];
         for (const app of apps) {
           if (app.status !== 'accepted') continue;
@@ -283,7 +284,13 @@ export default function HomeScreen() {
     void fetchCampaigns({ showLoader: false });
   }, [activeCategories, priceMin, priceMax, dateFrom, dateTo]);
 
-  const isFilterActive = eventType !== 'ALL' || priceMin > 0 || priceMax < SLIDER_MAX || locationFilter.length > 0 || !!dateFrom;
+  const filterActiveCount = [
+    eventType !== 'ALL',
+    priceMin > 0 || priceMax < SLIDER_MAX,
+    locationFilter.length > 0,
+    !!dateFrom,
+  ].filter(Boolean).length;
+  const isFilterActive = filterActiveCount > 0;
 
   function openFilter() {
     setTempEventType(eventType);
@@ -513,7 +520,11 @@ export default function HomeScreen() {
               onPress={openFilter}
               hitSlop={6}>
               <Ionicons name="options-outline" size={18} color={isFilterActive ? '#fff' : C.brinjal1} />
-              {isFilterActive && <View style={styles.filterActiveDot} />}
+              {isFilterActive && (
+                <View style={styles.filterCountBadge}>
+                  <Text style={styles.filterCountBadgeTxt}>{filterActiveCount}</Text>
+                </View>
+              )}
             </Pressable>
           </Pressable>
         </View>
@@ -768,10 +779,10 @@ export default function HomeScreen() {
             <View style={[styles.filterTabsWrap, { backgroundColor: C.surface }]}>
               <TabSlider
                 tabs={[
-                  { key: 'all',          label: t('creator.home.tabAll'),         icon: 'layers-outline',   color: '#4F46E5' },
-                  { key: 'recommended',  label: t('creator.home.tabRecommended'), icon: 'star-outline',     color: '#D97706' },
-                  { key: 'trending',     label: t('creator.home.tabTrending'),    icon: 'flame-outline',    color: '#DC2626' },
-                  { key: 'ending-soon',  label: t('creator.home.tabEndingSoon'),  icon: 'timer-outline',    color: '#059669' },
+                  { key: 'all',          label: t('creator.home.tabAll'),         icon: 'layers-outline',   color: TabColors.neutral.color },
+                  { key: 'recommended',  label: t('creator.home.tabRecommended'), icon: 'star-outline',     color: TabColors.info.color },
+                  { key: 'trending',     label: t('creator.home.tabTrending'),    icon: 'flame-outline',    color: TabColors.danger.color },
+                  { key: 'ending-soon',  label: t('creator.home.tabEndingSoon'),  icon: 'timer-outline',    color: TabColors.warning.color },
                 ]}
                 active={activeFilterTab}
                 onChange={setActiveFilterTab}
@@ -867,7 +878,8 @@ const styles = StyleSheet.create({
   searchIcon:      { marginRight: 8 },
   searchInput:     { flex: 1, fontSize: 14, fontFamily: F.regular },
   filterBtn:       { width: 36, height: 36, borderRadius: 11, justifyContent: 'center', alignItems: 'center' },
-  filterActiveDot: { position: 'absolute', top: 4, right: 4, width: 7, height: 7, borderRadius: 4, backgroundColor: '#EF4444' },
+  filterCountBadge: { position: 'absolute', top: -4, right: -4, minWidth: 16, height: 16, borderRadius: 8, paddingHorizontal: 3, backgroundColor: '#EF4444', justifyContent: 'center', alignItems: 'center' },
+  filterCountBadgeTxt: { fontSize: 9, fontFamily: F.extrabold, color: '#fff' },
 
   // ── Quick Actions ──
   quickActionsRow:  { flexDirection: 'row', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 4, gap: 10 },

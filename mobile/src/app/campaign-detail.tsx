@@ -348,7 +348,7 @@ export default function CampaignDetailScreen() {
     if (!campaignId) return;
     const appFetch = isBusiness
       ? Promise.resolve([])
-      : campaignService.getMyApplications().catch(() => []);
+      : campaignService.getMyApplications().then((r) => r.proposals).catch(() => []);
     Promise.all([campaignService.getById(campaignId), appFetch])
       .then(([c, apps]) => {
         setCampaign(c);
@@ -367,7 +367,7 @@ export default function CampaignDetailScreen() {
     useCallback(() => {
       if (isBusiness || !campaignId) return;
       campaignService.getMyApplications()
-        .then((apps) => {
+        .then(({ proposals: apps }) => {
           const myApp = apps.find((a) => a.campaignId === campaignId);
           setHasApplied(!!myApp);
           setApplicationStatus(myApp ? myApp.status as 'pending' | 'accepted' | 'rejected' : null);
