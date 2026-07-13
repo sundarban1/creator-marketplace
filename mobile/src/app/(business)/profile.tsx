@@ -2,6 +2,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BackButton } from '@/components/BackButton';
+import { VerifiedBadge } from '@/components/VerifiedBadge';
 import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
@@ -22,6 +23,7 @@ import { profileService, type BusinessProfile } from '@/services/profile';
 import { campaignService } from '@/services/campaign';
 import { F } from '@/utilities/constants';
 import { pickAndUpload } from '@/utilities/uploadImage';
+import { formatPhoneDisplay } from '@/utilities/phone';
 
 const CATEGORY_BG: Record<string, string> = {
   Fashion: '#F2DCF0', Beauty: '#DCF2E6', Tech: '#DCE6F2', Food: '#F2E6DC',
@@ -139,7 +141,10 @@ export default function BusinessProfileScreen() {
               onPress={handleLogoPress}
             />
             <View style={styles.heroMeta}>
-              <Text style={styles.heroName} numberOfLines={2}>{name}</Text>
+              <View style={styles.heroNameRow}>
+                <Text style={styles.heroName} numberOfLines={2}>{name}</Text>
+                {profile?.fullyVerified && <VerifiedBadge size={16} />}
+              </View>
               {profile?.isVerified && (
                 <View style={styles.verifiedRow}>
                   <Text style={styles.verifiedText}>{t('profileExtra.verifiedBusiness')}</Text>
@@ -211,13 +216,28 @@ export default function BusinessProfileScreen() {
             </Pressable>
           )}
 
-          {/* Email */}
+          {/* Contact */}
           <View style={[styles.infoCard, { backgroundColor: C.surface }]}>
             <View style={styles.infoHeader}>
               <Ionicons name="mail" size={16} color={C.brinjal1} />
               <Text style={[styles.infoTitle, { color: C.text }]}>{t('profile.contact')}</Text>
             </View>
-            <Text style={[styles.contactText, { color: C.text }]}>{profile?.user?.email ?? user?.email ?? '—'}</Text>
+            {(() => {
+              const hasPhone = !!profile?.user?.phone;
+              const hasVerifiedEmail = !!profile?.user?.isEmailVerified;
+              if (hasPhone && hasVerifiedEmail) {
+                return (
+                  <>
+                    <Text style={[styles.contactText, { color: C.text }]}>{formatPhoneDisplay(profile!.user!.phone!)}</Text>
+                    <Text style={[styles.contactText, { color: C.text, marginTop: 2 }]}>{profile!.user!.email}</Text>
+                  </>
+                );
+              }
+              if (hasPhone) {
+                return <Text style={[styles.contactText, { color: C.text }]}>{formatPhoneDisplay(profile!.user!.phone!)}</Text>;
+              }
+              return <Text style={[styles.contactText, { color: C.text }]}>{profile?.user?.email ?? user?.email ?? '—'}</Text>;
+            })()}
           </View>
 
           {/* Website */}
@@ -289,7 +309,8 @@ const styles = StyleSheet.create({
   heroBubble2:      { position: 'absolute', width: 140, height: 140, borderRadius: 70, backgroundColor: 'rgba(255,255,255,0.06)', bottom: -30, left: -30 },
   heroInner:        { flexDirection: 'row', alignItems: 'flex-start', gap: 16 },
   heroMeta:         { flex: 1, paddingTop: 4 },
-  heroName:         { fontSize: 20, color: '#fff', lineHeight: 28, marginBottom: 6, fontFamily: F.bold },
+  heroNameRow:      { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' },
+  heroName:         { fontSize: 20, color: '#fff', lineHeight: 28, marginBottom: 6, fontFamily: F.bold, flexShrink: 1 },
   verifiedRow:      { alignSelf: 'flex-start', backgroundColor: 'rgba(255,255,255,0.18)', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, marginBottom: 12 },
   verifiedText:     { fontSize: 11, color: '#fff', fontFamily: F.bold },
   heroStats:        { flexDirection: 'row', alignItems: 'center', gap: 12 },

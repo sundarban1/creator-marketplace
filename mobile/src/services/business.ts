@@ -8,6 +8,7 @@ export type BusinessListItem = {
   website:      string | null;
   categories:   string[];
   isVerified:   boolean;
+  fullyVerified: boolean;
   _count:       { campaigns: number };
 };
 

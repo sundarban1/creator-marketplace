@@ -12,7 +12,7 @@ import { useNavigate } from 'react-router-dom';
 
 const PAGE_SIZE = 10;
 
-type Action = { type: 'suspend' | 'activate' | 'delete'; business: ApiBusiness };
+type Action = { type: 'suspend' | 'activate' | 'delete' | 'verify' | 'unverify'; business: ApiBusiness };
 
 function businessStatus(b: ApiBusiness): string {
   if (b.user.isActive === false) return 'suspended';
@@ -26,7 +26,6 @@ export function Businesses() {
   const [viewing, setViewing] = useState<ApiBusiness | null>(null);
   const [loading, setLoading] = useState(false);
   const [toast,   setToast]   = useState<{ msg: string; ok: boolean } | null>(null);
-  const [verifyingId, setVerifyingId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
 
   const { data, loading: fetching, error, refetch } = useApi(() => api.admin.businesses({ page, limit: PAGE_SIZE }));
@@ -41,19 +40,6 @@ export function Businesses() {
     setTimeout(() => setToast(null), 3000);
   }
 
-  async function handleToggleVerified(row: ApiBusiness) {
-    setVerifyingId(row.id);
-    try {
-      await api.admin.verifyBusiness(row.id, !row.isVerified);
-      showToast(`${row.businessName} ${row.isVerified ? 'unverified' : 'verified'}.`);
-      refetch();
-    } catch (e) {
-      showToast((e as Error).message ?? 'Something went wrong.', false);
-    } finally {
-      setVerifyingId(null);
-    }
-  }
-
   async function handleConfirm() {
     if (!action) return;
     setLoading(true);
@@ -62,6 +48,9 @@ export function Businesses() {
       if (action.type === 'delete') {
         await api.admin.deleteUser(userId);
         showToast(`${action.business.businessName} deleted.`);
+      } else if (action.type === 'verify' || action.type === 'unverify') {
+        await api.admin.verifyBusiness(action.business.id, action.type === 'verify');
+        showToast(`${action.business.businessName} ${action.type === 'verify' ? 'verified' : 'unverified'}.`);
       } else {
         const isActive = action.type === 'activate';
         await api.admin.suspendUser(userId, isActive);
@@ -164,9 +153,8 @@ export function Businesses() {
               Analytics
             </button>
             <button
-              className="text-xs text-indigo-600 hover:text-indigo-800 font-medium disabled:opacity-50"
-              disabled={verifyingId === row.id}
-              onClick={() => handleToggleVerified(row)}>
+              className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+              onClick={() => setAction({ type: row.isVerified ? 'unverify' : 'verify', business: row })}>
               {row.isVerified ? 'Unverify' : 'Verify'}
             </button>
             {row.panDocUrl && (
@@ -210,7 +198,11 @@ export function Businesses() {
       ? { title: `Delete ${bName}?`, body: `Permanently deletes the account and all data. An email will be sent to ${bEmail}.`, confirmLabel: 'Delete account', variant: 'danger' as const }
       : action.type === 'suspend'
       ? { title: `Suspend ${bName}?`, body: `The business will be unable to log in. An email will be sent to ${bEmail}.`, confirmLabel: 'Suspend account', variant: 'warning' as const }
-      : { title: `Reactivate ${bName}?`, body: `The business will regain full access. An email will be sent to ${bEmail}.`, confirmLabel: 'Reactivate', variant: 'success' as const }
+      : action.type === 'activate'
+      ? { title: `Reactivate ${bName}?`, body: `The business will regain full access. An email will be sent to ${bEmail}.`, confirmLabel: 'Reactivate', variant: 'success' as const }
+      : action.type === 'verify'
+      ? { title: `Verify ${bName}?`, body: `This marks ${bName} as a verified business.`, confirmLabel: 'Verify business', variant: 'success' as const }
+      : { title: `Unverify ${bName}?`, body: `This removes ${bName}'s verified badge.`, confirmLabel: 'Unverify business', variant: 'warning' as const }
     : null;
 
   return (

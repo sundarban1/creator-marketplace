@@ -26,5 +26,9 @@ router.get('/conversations/:id/messages',            ctrl.getMessages.bind(ctrl)
 router.post('/conversations/:id/messages',           validate(sendMessageSchema), ctrl.sendMessage.bind(ctrl));
 // Image / file attachment — multipart upload, field name "file", optional "caption" text field
 router.post('/conversations/:id/attachments',        uploadChatFile.single('file'), ctrl.sendAttachment.bind(ctrl));
+// Delete a single message — body: { forEveryone?: boolean } (sender-only; defaults to "delete for me")
+router.delete('/conversations/:id/messages/:messageId', ctrl.deleteMessage.bind(ctrl));
+// Delete (hide) the whole conversation from the caller's own inbox only
+router.delete('/conversations/:id',                  ctrl.deleteConversation.bind(ctrl));
 
 export default router;

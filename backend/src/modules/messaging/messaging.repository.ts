@@ -1,11 +1,16 @@
 import { ConversationStatus } from '@prisma/client';
 import prisma from '../../prisma';
 
+// Only the applications relevant to this conversation's creator are needed to
+// tell whether the campaign work is COMPLETED for them — see toConversationDto,
+// which hides the campaign title once that's the case.
+const CAMPAIGN_SELECT = { select: { title: true, applications: { select: { creatorId: true, workStatus: true } } } };
+
 const CONV_SELECT_CREATOR = {
   id: true, creatorId: true, businessId: true, campaignId: true, status: true,
   requestMessage: true, lastMessageAt: true, creatorSeenAt: true, createdAt: true,
   business: { select: { businessName: true, logoUrl: true } },
-  campaign: { select: { title: true } },
+  campaign: CAMPAIGN_SELECT,
   messages: { orderBy: { createdAt: 'desc' as const }, take: 1 },
 };
 
@@ -13,14 +18,14 @@ const CONV_SELECT_BUSINESS = {
   id: true, creatorId: true, businessId: true, campaignId: true, status: true,
   requestMessage: true, lastMessageAt: true, businessSeenAt: true, createdAt: true,
   creator:  { select: { fullName: true, avatarUrl: true } },
-  campaign: { select: { title: true } },
+  campaign: CAMPAIGN_SELECT,
   messages: { orderBy: { createdAt: 'desc' as const }, take: 1 },
 };
 
 const CONV_INCLUDE_FULL = {
   creator:  { select: { fullName: true, avatarUrl: true, userId: true } },
   business: { select: { businessName: true, logoUrl: true, userId: true } },
-  campaign: { select: { title: true } },
+  campaign: CAMPAIGN_SELECT,
 };
 
 export class MessagingRepository {
@@ -131,7 +136,7 @@ export class MessagingRepository {
 
   async findConversationsByCreator(creatorId: string, status?: ConversationStatus) {
     return prisma.conversation.findMany({
-      where: { creatorId, ...(status ? { status } : {}) },
+      where: { creatorId, hiddenForCreator: false, ...(status ? { status } : {}) },
       orderBy: [{ lastMessageAt: 'desc' }, { createdAt: 'desc' }],
       select: CONV_SELECT_CREATOR,
     });
@@ -139,10 +144,15 @@ export class MessagingRepository {
 
   async findConversationsByBusiness(businessId: string, status?: ConversationStatus) {
     return prisma.conversation.findMany({
-      where: { businessId, ...(status ? { status } : {}) },
+      where: { businessId, hiddenForBusiness: false, ...(status ? { status } : {}) },
       orderBy: [{ lastMessageAt: 'desc' }, { createdAt: 'desc' }],
       select: CONV_SELECT_BUSINESS,
     });
+  }
+
+  /** "Delete conversation" — per-side hide, resets automatically on the next message. */
+  async hideConversationForUser(conversationId: string, field: 'hiddenForCreator' | 'hiddenForBusiness') {
+    return prisma.conversation.update({ where: { id: conversationId }, data: { [field]: true } });
   }
 
   async findConversationById(id: string) {
@@ -167,22 +177,44 @@ export class MessagingRepository {
     return prisma.conversation.update({ where: { id }, data: { [field]: new Date() } });
   }
 
-  async findMessages(conversationId: string, page: number, limit: number) {
+  async findMessages(conversationId: string, page: number, limit: number, viewerRole: 'CREATOR' | 'BUSINESS' | 'ADMIN') {
     const skip = (page - 1) * limit;
+    // "Delete for me" hides a message from just the deleting side's view —
+    // filter it out of their own history entirely (admins see everything).
+    const hiddenField = viewerRole === 'CREATOR' ? 'hiddenForCreator' : viewerRole === 'BUSINESS' ? 'hiddenForBusiness' : null;
+    const where = { conversationId, ...(hiddenField ? { [hiddenField]: false } : {}) };
     const [messages, total] = await Promise.all([
       // Fetch newest-first so page 1 always contains the most recent messages.
       // The controller reverses the array before sending so the client receives
       // messages in chronological order (oldest → newest).
       prisma.message.findMany({
-        where: { conversationId },
+        where,
         skip,
         take: limit,
         orderBy: { createdAt: 'desc' },
         include: { sender: { select: { id: true, email: true, role: true } } },
       }),
-      prisma.message.count({ where: { conversationId } }),
+      prisma.message.count({ where }),
     ]);
     return { messages: messages.reverse(), total };
+  }
+
+  async findMessageById(messageId: string) {
+    return prisma.message.findUnique({ where: { id: messageId } });
+  }
+
+  /** "Delete for me" — hides a single message from one side's view only. */
+  async hideMessageForUser(messageId: string, field: 'hiddenForCreator' | 'hiddenForBusiness') {
+    return prisma.message.update({ where: { id: messageId }, data: { [field]: true } });
+  }
+
+  /** "Delete for everyone" (sender-only) — tombstones the message for both sides. */
+  async softDeleteMessage(messageId: string, deletedBy: string) {
+    return prisma.message.update({
+      where: { id: messageId },
+      data: { deletedAt: new Date(), deletedBy },
+      include: { sender: { select: { id: true, email: true, role: true } } },
+    });
   }
 
   /** The single most recent message in this conversation, if any — used to
@@ -208,10 +240,11 @@ export class MessagingRepository {
       data,
       include: { sender: { select: { id: true, email: true, role: true } } },
     });
-    // Update lastMessageAt on the conversation
+    // Update lastMessageAt, and un-hide the conversation for whichever side
+    // had "deleted" it — a fresh message brings the thread back to their inbox.
     await prisma.conversation.update({
       where: { id: data.conversationId },
-      data: { lastMessageAt: msg.createdAt },
+      data: { lastMessageAt: msg.createdAt, hiddenForCreator: false, hiddenForBusiness: false },
     });
     return msg;
   }

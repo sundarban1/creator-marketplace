@@ -149,18 +149,34 @@ const td = StyleSheet.create({
 // ── Message Bubble ─────────────────────────────────────────────────────────────
 
 function MessageBubble({
-  msg, isSent, showAvatar, isLast, personName, personColor,
+  msg, isSent, showAvatar, isLast, personName, personColor, onLongPress,
 }: {
   msg: Message; isSent: boolean; showAvatar: boolean; isLast: boolean;
-  personName: string; personColor: string;
+  personName: string; personColor: string; onLongPress: () => void;
 }) {
   const C = useAppColors();
+  const { t } = useLanguage();
   const isPending = msg.id.startsWith('temp-');
   const isImage   = msg.type === 'IMAGE' && !!msg.attachmentUrl;
   const isFile    = msg.type === 'FILE'  && !!msg.attachmentUrl;
 
+  if (msg.isDeleted) {
+    return (
+      <View style={[s.bubbleRow, isSent ? s.bubbleRowSent : s.bubbleRowReceived]}>
+        {!isSent && <View style={s.avatarSpacer} />}
+        <View style={[s.bubbleWrap, isSent ? s.bubbleWrapSent : s.bubbleWrapReceived]}>
+          <View style={[s.bubble, s.deletedBubble, { borderColor: C.border }]}>
+            <Ionicons name="ban-outline" size={13} color={C.textSecondary} />
+            <Text style={[s.deletedTxt, { color: C.textSecondary }]}>{t('messages.messageDeleted')}</Text>
+          </View>
+        </View>
+      </View>
+    );
+  }
+
   return (
-    <View style={[s.bubbleRow, isSent ? s.bubbleRowSent : s.bubbleRowReceived]}>
+    <Pressable style={[s.bubbleRow, isSent ? s.bubbleRowSent : s.bubbleRowReceived]}
+      onLongPress={isPending ? undefined : onLongPress} delayLongPress={350}>
       {!isSent && (
         showAvatar
           ? <View style={[s.msgAvatar, { backgroundColor: personColor }]}>
@@ -226,7 +242,7 @@ function MessageBubble({
           )}
         </View>
       </View>
-    </View>
+    </Pressable>
   );
 }
 
@@ -326,20 +342,57 @@ export default function BusinessChatRoomScreen() {
     const onTypingStart = (data: { conversationId: string }) => { if (data.conversationId === id) setOtherTyping(true); };
     const onTypingStop  = (data: { conversationId: string }) => { if (data.conversationId === id) setOtherTyping(false); };
     const onReconnect   = () => { socket.emit('join:conversation', { conversationId: id }); };
+    // The other participant "delete for everyone"-ing a message — tombstone it live.
+    const onMessageDeleted = (data: { conversationId: string; messageId: string }) => {
+      if (data.conversationId !== id) return;
+      setMessages((prev) => prev.map((m) =>
+        m.id === data.messageId ? { ...m, isDeleted: true, text: '', attachmentUrl: null, attachmentName: null } : m
+      ));
+    };
 
     socket.on('typing:start', onTypingStart);
     socket.on('typing:stop',  onTypingStop);
     socket.on('connect',      onReconnect);
+    socket.on('message:deleted', onMessageDeleted);
 
     return () => {
       socket.off('typing:start', onTypingStart);
       socket.off('typing:stop',  onTypingStop);
       socket.off('connect',      onReconnect);
+      socket.off('message:deleted', onMessageDeleted);
       socket.emit('leave:conversation', { conversationId: id });
       if (typingTimer.current) clearTimeout(typingTimer.current);
       if (seenTimer.current)   clearTimeout(seenTimer.current);
     };
   }, [id]);
+
+  function handleMessageLongPress(msg: Message) {
+    if (msg.isDeleted || msg.id.startsWith('temp-')) return;
+    const isMine = msg.senderId === user?.id;
+    const options: { text: string; style?: 'destructive' | 'cancel'; onPress?: () => void }[] = [
+      { text: t('messages.deleteForMe'), style: 'destructive', onPress: () => void deleteMessage(msg, false) },
+    ];
+    if (isMine) {
+      options.push({ text: t('messages.deleteForEveryone'), style: 'destructive', onPress: () => void deleteMessage(msg, true) });
+    }
+    options.push({ text: t('common.cancel'), style: 'cancel' });
+    Alert.alert(t('messages.deleteMessageTitle'), undefined, options);
+  }
+
+  async function deleteMessage(msg: Message, forEveryone: boolean) {
+    try {
+      await chatService.deleteMessage(id, msg.id, forEveryone);
+      if (forEveryone) {
+        setMessages((prev) => prev.map((m) =>
+          m.id === msg.id ? { ...m, isDeleted: true, text: '', attachmentUrl: null, attachmentName: null } : m
+        ));
+      } else {
+        setMessages((prev) => prev.filter((m) => m.id !== msg.id));
+      }
+    } catch (e) {
+      Alert.alert(t('common.error'), e instanceof Error ? e.message : t('messages.deleteFailedGeneric'));
+    }
+  }
 
   useEffect(() => {
     if (otherTyping) scrollToBottom();
@@ -539,6 +592,7 @@ export default function BusinessChatRoomScreen() {
                 msg={item.msg} isSent={item.isSent}
                 showAvatar={item.showAvatar} isLast={item.isLast}
                 personName={personName} personColor={personColor}
+                onLongPress={() => handleMessageLongPress(item.msg)}
               />
             );
           }}
@@ -676,6 +730,8 @@ const s = StyleSheet.create({
   bubble:         { borderRadius: 18, paddingHorizontal: 14, paddingVertical: 10 },
   bubbleSent:     { borderBottomRightRadius: 4 },
   bubbleReceived: { borderBottomLeftRadius: 4, borderWidth: StyleSheet.hairlineWidth },
+  deletedBubble: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: StyleSheet.hairlineWidth, borderRadius: 18 },
+  deletedTxt: { fontSize: 13, fontFamily: F.regular, fontStyle: 'italic' },
   bubbleTxt:  { fontSize: 15, lineHeight: 22, fontFamily: F.regular },
   bubbleMeta: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 3, paddingHorizontal: 2 },
   bubbleTime: { fontSize: 10, fontFamily: F.regular },

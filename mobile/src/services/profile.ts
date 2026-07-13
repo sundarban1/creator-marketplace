@@ -20,6 +20,7 @@ export type BusinessProfile = {
   panNo:        string | null;
   location:     string | null;
   isVerified:   boolean;
+  fullyVerified: boolean;
   createdAt:    string;
   socialLinks:  SocialLinks;
   presenceServices:         string[];
@@ -31,7 +32,7 @@ export type BusinessProfile = {
   panDocStatus:        DocStatus;
   companyRegDocUrl:    string | null;
   companyRegDocStatus: DocStatus;
-  user: { email: string };
+  user: { email: string; phone: string | null; isEmailVerified: boolean; isPhoneVerified: boolean };
 };
 
 export type Category = { emoji: string; label: string };

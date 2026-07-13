@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Pressable,
   RefreshControl,
@@ -13,6 +14,7 @@ import {
 } from 'react-native';
 import { TabSlider } from '@/components/TabSlider';
 import { EmptyState } from '@/components/EmptyState';
+import { SwipeableChatRow } from '@/components/SwipeableChatRow';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { messagingEvents } from '@/lib/messagingEvents';
 import { getSocket } from '@/lib/socket';
@@ -123,62 +125,85 @@ function PendingCard({ conv }: { conv: Conversation }) {
 
 // ── Chat Card ─────────────────────────────────────────────────────────────────
 
-function ChatCard({ conv }: { conv: Conversation }) {
+function ChatCard({ conv, onDelete }: { conv: Conversation; onDelete: (id: string) => void }) {
   const C = useAppColors();
   const { t } = useLanguage();
   const hasUnread = conv.unreadCount > 0;
 
+  function handleLongPress() {
+    Alert.alert(
+      t('messages.deleteConversationTitle'),
+      t('messages.deleteConversationBody', { name: conv.participantName }),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('messages.deleteConversationConfirm'),
+          style: 'destructive',
+          onPress: () => {
+            chatService.deleteConversation(conv.id)
+              .then(() => onDelete(conv.id))
+              .catch(() => Alert.alert(t('common.error'), t('messages.deleteConversationFailed')));
+          },
+        },
+      ],
+    );
+  }
+
   return (
-    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-      style={({ pressed }) => [
-        s.card,
-        { backgroundColor: pressed ? C.surface : C.background },
-      ]}
-      onPress={() =>
-        router.push({
-          pathname: '/(business)/messages/[id]' as never,
-          params: { id: conv.id, name: conv.participantName, status: conv.status, campaignTitle: conv.campaignTitle ?? '' },
-        })
-      }>
-      {hasUnread && <View style={s.stripe} />}
+    <SwipeableChatRow onDelete={handleLongPress} deleteLabel={t('messages.deleteConversationConfirm')}>
+      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+        style={({ pressed }) => [
+          s.card,
+          { backgroundColor: pressed ? C.surface : C.background },
+        ]}
+        onLongPress={handleLongPress}
+        delayLongPress={400}
+        onPress={() =>
+          router.push({
+            pathname: '/(business)/messages/[id]' as never,
+            params: { id: conv.id, name: conv.participantName, status: conv.status, campaignTitle: conv.campaignTitle ?? '' },
+          })
+        }>
+        {hasUnread && <View style={s.stripe} />}
 
-      <View style={s.avatarWrap}>
-        {hasUnread && <View style={[s.avatarRing, { borderColor: ACCENT }]} pointerEvents="none" />}
-        <Avatar name={conv.participantName} size={50} />
-        {hasUnread && (
-          <View style={[s.avatarBadge, { backgroundColor: ACCENT }]}>
-            <Text style={s.avatarBadgeTxt}>{conv.unreadCount > 99 ? '99+' : conv.unreadCount}</Text>
-          </View>
-        )}
-      </View>
-
-      <View style={s.content}>
-        <View style={s.rowTop}>
-          <Text style={[s.name, { color: C.text }, hasUnread && s.nameUnread]} numberOfLines={1}>
-            {conv.participantName}
-          </Text>
-          <Text style={[s.time, { color: hasUnread ? ACCENT : C.textSecondary }, hasUnread && s.timeUnread]}>
-            {formatTime(conv.lastMessageTime, t)}
-          </Text>
+        <View style={s.avatarWrap}>
+          {hasUnread && <View style={[s.avatarRing, { borderColor: ACCENT }]} pointerEvents="none" />}
+          <Avatar name={conv.participantName} size={50} />
+          {hasUnread && (
+            <View style={[s.avatarBadge, { backgroundColor: ACCENT }]}>
+              <Text style={s.avatarBadgeTxt}>{conv.unreadCount > 99 ? '99+' : conv.unreadCount}</Text>
+            </View>
+          )}
         </View>
 
-        {conv.campaignTitle ? (
-          <View style={[s.campaignPill, { backgroundColor: '#E0F2FE' }]}>
-            <Ionicons name="briefcase-outline" size={10} color={ACCENT} />
-            <Text style={[s.campaignPillTxt, { color: ACCENT }]} numberOfLines={1}>{conv.campaignTitle}</Text>
+        <View style={s.content}>
+          <View style={s.rowTop}>
+            <Text style={[s.name, { color: C.text }, hasUnread && s.nameUnread]} numberOfLines={1}>
+              {conv.participantName}
+            </Text>
+            <Text style={[s.time, { color: hasUnread ? ACCENT : C.textSecondary }, hasUnread && s.timeUnread]}>
+              {formatTime(conv.lastMessageTime, t)}
+            </Text>
           </View>
-        ) : null}
 
-        <View style={s.rowBottom}>
-          <Text
-            style={[s.preview, { color: hasUnread ? C.text : C.textSecondary }, hasUnread && s.previewUnread]}
-            numberOfLines={1}>
-            {conv.lastMessage || t('messages.noMessagesYet')}
-          </Text>
-          {!hasUnread && <Ionicons name="checkmark-done-outline" size={14} color={C.textSecondary} />}
+          {conv.campaignTitle ? (
+            <View style={[s.campaignPill, { backgroundColor: '#E0F2FE' }]}>
+              <Ionicons name="briefcase-outline" size={10} color={ACCENT} />
+              <Text style={[s.campaignPillTxt, { color: ACCENT }]} numberOfLines={1}>{conv.campaignTitle}</Text>
+            </View>
+          ) : null}
+
+          <View style={s.rowBottom}>
+            <Text
+              style={[s.preview, { color: hasUnread ? C.text : C.textSecondary }, hasUnread && s.previewUnread]}
+              numberOfLines={1}>
+              {conv.lastMessage || t('messages.noMessagesYet')}
+            </Text>
+            {!hasUnread && <Ionicons name="checkmark-done-outline" size={14} color={C.textSecondary} />}
+          </View>
         </View>
-      </View>
-    </Pressable>
+      </Pressable>
+    </SwipeableChatRow>
   );
 }
 
@@ -261,6 +286,10 @@ export default function BusinessChatListScreen() {
     void load(true);
   }, []));
 
+  function handleDeleteConversation(conversationId: string) {
+    setChats((prev) => prev.filter((c) => c.id !== conversationId));
+  }
+
   const totalUnread = chats.reduce((acc, c) => acc + (c.unreadCount ?? 0), 0);
 
   return (
@@ -330,7 +359,7 @@ export default function BusinessChatListScreen() {
         <FlatList
           data={chats}
           keyExtractor={(c) => c.id}
-          renderItem={({ item }) => <ChatCard conv={item} />}
+          renderItem={({ item }) => <ChatCard conv={item} onDelete={handleDeleteConversation} />}
           contentContainerStyle={[s.chatList, chats.length === 0 && s.listEmpty]}
           ItemSeparatorComponent={() => <View style={[s.sep, { backgroundColor: C.border }]} />}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={ACCENT} />}

@@ -7,6 +7,7 @@ export interface MessageDto {
   attachmentUrl: string | null;
   attachmentName: string | null;
   createdAt: string;
+  isDeleted?: boolean;
   sender?: { id: string; email: string; role: string };
 }
 
@@ -26,6 +27,11 @@ export interface ConversationDto {
   messages?: MessageDto[];
 }
 
+type RawCampaign = {
+  title: string;
+  applications?: { creatorId: string; workStatus: string }[];
+};
+
 type RawMessage = {
   id: string;
   conversationId: string;
@@ -35,20 +41,23 @@ type RawMessage = {
   attachmentUrl: string | null;
   attachmentName: string | null;
   createdAt: Date;
+  deletedAt?: Date | null;
   sender?: { id: string; email: string; role: string };
 };
 
 export function toMessageDto(m: RawMessage): MessageDto {
+  const isDeleted = !!m.deletedAt;
   const dto: MessageDto = {
     id:             m.id,
     conversationId: m.conversationId,
     senderId:       m.senderId,
-    content:        m.content,
+    content:        isDeleted ? '' : m.content,
     type:           m.type,
-    attachmentUrl:  m.attachmentUrl,
-    attachmentName: m.attachmentName,
+    attachmentUrl:  isDeleted ? null : m.attachmentUrl,
+    attachmentName: isDeleted ? null : m.attachmentName,
     createdAt:      m.createdAt.toISOString(),
   };
+  if (isDeleted) dto.isDeleted = true;
   if (m.sender) dto.sender = m.sender;
   return dto;
 }
@@ -66,7 +75,7 @@ type RawConversation = {
   createdAt: Date;
   creator?: { fullName: string | null; avatarUrl: string | null; userId?: string } | null;
   business?: { businessName: string | null; logoUrl: string | null; userId?: string } | null;
-  campaign?: { title: string } | null;
+  campaign?: RawCampaign | null;
   messages?: RawMessage[];
 };
 
@@ -93,7 +102,12 @@ export function toConversationDto(
   };
   if (c.creator  != null) dto.creator  = c.creator;
   if (c.business != null) dto.business = c.business;
-  if (c.campaign != null) dto.campaign = c.campaign;
+  // Once the creator's work on this campaign is COMPLETED, stop surfacing the
+  // campaign/event title in the chat — the conversation lives on independently.
+  const campaignCompleted = c.campaign?.applications?.some(
+    (a) => a.creatorId === c.creatorId && a.workStatus === 'COMPLETED',
+  );
+  if (c.campaign != null && !campaignCompleted) dto.campaign = { title: c.campaign.title };
   if (c.messages != null) dto.messages = c.messages.map(toMessageDto);
   return dto;
 }

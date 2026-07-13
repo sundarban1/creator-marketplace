@@ -1242,7 +1242,8 @@ export default function CreateCampaignScreen() {
           ref={scrollRef}
           contentContainerStyle={s.scroll}
           keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}>
+          showsVerticalScrollIndicator={false}
+          automaticallyAdjustKeyboardInsets>
 
           {/* ── Phase 1: Setup ── */}
           {phase === 'setup' && (

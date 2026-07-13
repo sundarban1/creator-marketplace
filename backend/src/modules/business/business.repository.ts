@@ -36,7 +36,12 @@ export class BusinessRepository {
         where,
         skip,
         take: params.limit,
-        orderBy: [{ isVerified: 'desc' }, { businessName: 'asc' }],
+        // `id` is a tie-breaker, not a display order — isVerified+businessName
+        // isn't unique (bulk-seeded/duplicate-named rows can tie on both), and
+        // without a fully deterministic sort, Postgres can return the same
+        // row on two different pages (or skip one entirely) as the result
+        // set shifts between paginated queries.
+        orderBy: [{ isVerified: 'desc' }, { businessName: 'asc' }, { id: 'asc' }],
         select: {
           id:           true,
           businessName: true,
@@ -45,6 +50,9 @@ export class BusinessRepository {
           website:      true,
           categories:   true,
           isVerified:   true,
+          panDocStatus: true,
+          companyRegDocStatus: true,
+          user: { select: { isEmailVerified: true, isPhoneVerified: true } },
           _count: { select: { campaigns: { where: { status: 'ACTIVE' } } } },
         },
       }),
@@ -65,11 +73,14 @@ export class BusinessRepository {
         phone:                true,
         categories:           true,
         isVerified:           true,
+        panDocStatus:         true,
+        companyRegDocStatus:  true,
         createdAt:            true,
         showPublicProfile:    true,
         hideContactDetails:   true,
         allowDirectMessages:  true,
         userId:               true,
+        user: { select: { isEmailVerified: true, isPhoneVerified: true } },
         campaigns: {
           where:   { status: 'ACTIVE' },
           orderBy: { createdAt: 'desc' },
@@ -97,7 +108,7 @@ export class BusinessRepository {
     return prisma.businessProfile.findUnique({
       where: { userId },
       include: {
-        user: { select: { id: true, email: true, role: true, isEmailVerified: true } },
+        user: { select: { id: true, email: true, phone: true, role: true, isEmailVerified: true, isPhoneVerified: true } },
       },
     });
   }

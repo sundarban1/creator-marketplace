@@ -13,7 +13,7 @@ import { useApi }        from '../lib/useApi';
 
 const PAGE_SIZE = 10;
 
-type Action = { type: 'suspend' | 'activate' | 'delete'; creator: ApiCreator };
+type Action = { type: 'suspend' | 'activate' | 'delete' | 'verify' | 'unverify'; creator: ApiCreator };
 
 function creatorStatus(c: ApiCreator): string {
   if (c.user.isActive === false) return 'suspended';
@@ -29,7 +29,6 @@ export function Creators() {
   const [viewing, setViewing] = useState<ApiCreator | null>(null);
   const [loading, setLoading] = useState(false);
   const [toast,   setToast]   = useState<{ msg: string; ok: boolean } | null>(null);
-  const [verifyingId, setVerifyingId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
 
   const { data, loading: fetching, error, refetch } = useApi(() =>
@@ -56,19 +55,6 @@ export function Creators() {
     }, 400);
   }
 
-  async function handleToggleVerified(row: ApiCreator) {
-    setVerifyingId(row.id);
-    try {
-      await api.admin.verifyCreator(row.id, !row.isVerified);
-      showToast(`${row.fullName ?? 'Creator'} ${row.isVerified ? 'unverified' : 'verified'}.`);
-      refetch();
-    } catch (e) {
-      showToast((e as Error).message ?? 'Something went wrong.', false);
-    } finally {
-      setVerifyingId(null);
-    }
-  }
-
   async function handleConfirm() {
     if (!action) return;
     setLoading(true);
@@ -77,6 +63,9 @@ export function Creators() {
       if (action.type === 'delete') {
         await api.admin.deleteUser(userId);
         showToast(`${action.creator.fullName ?? 'Creator'} deleted.`);
+      } else if (action.type === 'verify' || action.type === 'unverify') {
+        await api.admin.verifyCreator(action.creator.id, action.type === 'verify');
+        showToast(`${action.creator.fullName ?? 'Creator'} ${action.type === 'verify' ? 'verified' : 'unverified'}.`);
       } else {
         const isActive = action.type === 'activate';
         await api.admin.suspendUser(userId, isActive);
@@ -169,9 +158,8 @@ export function Creators() {
               Analytics
             </button>
             <button
-              className="text-xs text-indigo-600 hover:text-indigo-800 font-medium disabled:opacity-50"
-              disabled={verifyingId === row.id}
-              onClick={() => handleToggleVerified(row)}>
+              className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+              onClick={() => setAction({ type: row.isVerified ? 'unverify' : 'verify', creator: row })}>
               {row.isVerified ? 'Unverify' : 'Verify'}
             </button>
             {row.citizenshipDocUrl && (
@@ -207,7 +195,11 @@ export function Creators() {
       ? { title: `Delete ${name}?`, body: `Permanently deletes the account and all data. An email will be sent to ${email}.`, confirmLabel: 'Delete account', variant: 'danger' as const }
       : action.type === 'suspend'
       ? { title: `Suspend ${name}?`, body: `The creator will be unable to log in. An email will be sent to ${email}.`, confirmLabel: 'Suspend account', variant: 'warning' as const }
-      : { title: `Reactivate ${name}?`, body: `The creator will regain full access. An email will be sent to ${email}.`, confirmLabel: 'Reactivate', variant: 'success' as const }
+      : action.type === 'activate'
+      ? { title: `Reactivate ${name}?`, body: `The creator will regain full access. An email will be sent to ${email}.`, confirmLabel: 'Reactivate', variant: 'success' as const }
+      : action.type === 'verify'
+      ? { title: `Verify ${name}?`, body: `This marks ${name} as a verified creator.`, confirmLabel: 'Verify creator', variant: 'success' as const }
+      : { title: `Unverify ${name}?`, body: `This removes ${name}'s verified badge.`, confirmLabel: 'Unverify creator', variant: 'warning' as const }
     : null;
 
   return (

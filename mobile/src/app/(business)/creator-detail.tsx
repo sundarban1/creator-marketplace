@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { BackButton } from '@/components/BackButton';
+import { VerifiedBadge } from '@/components/VerifiedBadge';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import {
   ActivityIndicator,
@@ -125,6 +126,14 @@ export default function CreatorDetailScreen() {
     }
   }
 
+  function openRequestModal() {
+    if (!requestMsg.trim()) {
+      const firstName = profile?.fullName?.split(' ')[0] ?? 'there';
+      setRequestMsg(t('creatorDetailExtra.messageRequestDefault', { firstName }));
+    }
+    setShowModal(true);
+  }
+
   function openChat() {
     if (!convId || !profile) return;
     router.push({
@@ -206,6 +215,7 @@ export default function CreatorDetailScreen() {
           <View style={s.heroInfo}>
             <View style={s.nameRow}>
               <Text style={[s.heroName, { color: C.text }]}>{profile.fullName ?? 'Creator'}</Text>
+              {profile.fullyVerified && <VerifiedBadge size={16} />}
               {profile.isVerified && (
                 <View style={[s.verifiedBadge, { backgroundColor: '#E8F5E9' }]}>
                   <Text style={s.verifiedText}>{t('creatorDetailExtra.verified')}</Text>
@@ -371,7 +381,7 @@ export default function CreatorDetailScreen() {
             <Text style={[msgBtn.txt, { color: '#fff' }]}>{t('creatorDetailExtra.requestSent')}</Text>
           </View>
         ) : (
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[msgBtn.btn, { backgroundColor: C.brinjal1 }]} onPress={() => setShowModal(true)}>
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[msgBtn.btn, { backgroundColor: C.brinjal1 }]} onPress={openRequestModal}>
             <Text style={msgBtn.txt}>{t('creatorDetailExtra.sendMessage')}</Text>
           </Pressable>
         )}
@@ -396,7 +406,7 @@ export default function CreatorDetailScreen() {
               style={[rm.input, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
               value={requestMsg}
               onChangeText={setRequestMsg}
-              placeholder={t('creatorDetailExtra.messageRequestPlaceholder', { firstName: profile?.fullName?.split(' ')[0] ?? 'there' })}
+              placeholder={t('creatorDetailExtra.messageRequestPlaceholder')}
               placeholderTextColor={C.textSecondary}
               multiline
               maxLength={500}

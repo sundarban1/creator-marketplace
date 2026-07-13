@@ -40,12 +40,19 @@ export class CreatorRepository {
         where,
         skip,
         take: filters.limit,
-        orderBy: { createdAt: 'desc' },
+        // `id` is a tie-breaker, not a display order — createdAt alone isn't
+        // unique (bulk-seeded rows can share a timestamp), and without a fully
+        // deterministic sort, Postgres can return the same row on two
+        // different pages (or skip one entirely) as the result set shifts
+        // between paginated queries.
+        orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
         select: {
           id: true, fullName: true, bio: true, avatarUrl: true,
           location: true, categories: true, isVerified: true,
+          citizenshipStatus: true,
           prefBudgetMin: true, prefBudgetMax: true,
           socialAccounts: { select: { platform: true, followers: true } },
+          user: { select: { isEmailVerified: true, isPhoneVerified: true } },
         },
       }),
       prisma.creatorProfile.count({ where }),
@@ -68,9 +75,11 @@ export class CreatorRepository {
       select: {
         id: true, fullName: true, bio: true, avatarUrl: true,
         location: true, categories: true, isVerified: true,
+        citizenshipStatus: true,
         locationLat: true, locationLng: true,
         prefBudgetMin: true, prefBudgetMax: true,
         socialAccounts: { select: { platform: true, followers: true } },
+        user: { select: { isEmailVerified: true, isPhoneVerified: true } },
       },
     });
   }
@@ -89,7 +98,7 @@ export class CreatorRepository {
     return prisma.creatorProfile.findUnique({
       where: { userId },
       include: {
-        user: { select: { id: true, email: true, role: true, isEmailVerified: true, isOnboarded: true } },
+        user: { select: { id: true, email: true, phone: true, role: true, isEmailVerified: true, isPhoneVerified: true, isOnboarded: true } },
         socialAccounts: { orderBy: { createdAt: 'asc' } },
       },
     });
@@ -112,6 +121,7 @@ export class CreatorRepository {
         location: true,
         categories: true,
         isVerified: true,
+        citizenshipStatus: true,
         prefBudgetMin: true,
         prefBudgetMax: true,
         prefPlatforms: true,
@@ -121,6 +131,7 @@ export class CreatorRepository {
           select: { id: true, platform: true, followers: true, profileUrl: true, connectedViaOAuth: true },
           orderBy: { followers: 'desc' },
         },
+        user: { select: { isEmailVerified: true, isPhoneVerified: true } },
       },
     });
   }

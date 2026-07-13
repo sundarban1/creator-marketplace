@@ -5,6 +5,7 @@ import { createContext, useContext, useEffect, useRef, useState, type ReactNode 
 import {
   ActivityIndicator,
   Animated,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -18,6 +19,7 @@ import {
 import { AppModal } from '@/components/AppModal';
 import { PaymentMethodIcon } from '@/components/PaymentMethodIcon';
 import { isPaymentMethodId } from '@/utilities/paymentMethods';
+import { formatPhoneDisplay } from '@/utilities/phone';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
@@ -186,6 +188,23 @@ export default function BusinessSettingsScreen() {
   }
   useEffect(() => { setExpandedItems(new Set()); }, [subPage]);
 
+  const scrollRef = useRef<ScrollView>(null);
+  const bottomFieldFocusedRef = useRef(false);
+
+  // Several sub-pages (Contact Support, Report Issue, Change Password) stack a
+  // textarea/field right above their submit button — Android's adjustResize
+  // shrinks the window when the keyboard opens but never auto-scrolls a
+  // mid-form field into the new viewport, so without this it ends up hidden
+  // behind the keyboard. keyboardDidShow (rather than the input's onFocus)
+  // fires after that resize has actually happened, so scrollToEnd lands
+  // correctly against the shrunk viewport.
+  useEffect(() => {
+    const sub = Keyboard.addListener('keyboardDidShow', () => {
+      if (bottomFieldFocusedRef.current) scrollRef.current?.scrollToEnd({ animated: true });
+    });
+    return () => sub.remove();
+  }, []);
+
   // ── Section 1: Business Profile ──
   const [bizName, setBizName] = useState(user?.name ?? '');
   const [bizCategory, setBizCategory] = useState<string[]>([]);
@@ -240,17 +259,17 @@ export default function BusinessSettingsScreen() {
 
   // ── Phone verification ──
   type PhoneVerifyStage = 'idle' | 'enter-phone' | 'enter-otp' | 'verified';
-  const [phoneStage,     setPhoneStage]     = useState<PhoneVerifyStage>('idle');
+  const [phoneStage,     setPhoneStage]     = useState<PhoneVerifyStage>(user?.isPhoneVerified ? 'verified' : 'idle');
   const [phoneInput,     setPhoneInput]     = useState('');
   const [phoneOtp,       setPhoneOtp]       = useState('');
   const [phoneLoading,   setPhoneLoading]   = useState(false);
   const [phoneError,     setPhoneError]     = useState('');
-  const [verifiedPhone,  setVerifiedPhone]  = useState('');
+  const [verifiedPhone,  setVerifiedPhone]  = useState(user?.phone ? formatPhoneDisplay(user.phone) : '');
 
   // ── Email verification (mirrors phone above) — for accounts that signed up
   // via phone and still hold a placeholder email ──
   type EmailVerifyStage = 'idle' | 'enter-email' | 'enter-otp' | 'verified';
-  const [emailStage,     setEmailStage]     = useState<EmailVerifyStage>(user?.email && user.email.includes('@') && !user.email.endsWith('.internal') ? 'verified' : 'idle');
+  const [emailStage,     setEmailStage]     = useState<EmailVerifyStage>(user?.isEmailVerified ? 'verified' : 'idle');
   const [emailInput,     setEmailInput]     = useState('');
   const [emailOtp,       setEmailOtp]       = useState('');
   const [emailLoading,   setEmailLoading]   = useState(false);
@@ -681,6 +700,8 @@ export default function BusinessSettingsScreen() {
                 style={[styles.formTextarea, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
                 value={supportMsg}
                 onChangeText={setSupportMsg}
+                onFocus={() => { bottomFieldFocusedRef.current = true; }}
+                onBlur={() => { bottomFieldFocusedRef.current = false; }}
                 placeholder={t('businessSettings.messagePlaceholder')}
                 placeholderTextColor={C.textSecondary}
                 multiline
@@ -729,6 +750,8 @@ export default function BusinessSettingsScreen() {
                 style={[styles.formTextarea, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
                 value={reportDesc}
                 onChangeText={setReportDesc}
+                onFocus={() => { bottomFieldFocusedRef.current = true; }}
+                onBlur={() => { bottomFieldFocusedRef.current = false; }}
                 placeholder={t('businessSettings.reportDescPlaceholder')}
                 placeholderTextColor={C.textSecondary}
                 multiline
@@ -1178,6 +1201,8 @@ export default function BusinessSettingsScreen() {
                     style={[styles.pwInput, { color: C.text }]}
                     value={newPw}
                     onChangeText={(pw) => { setNewPw(pw); setPwSubmitted(false); }}
+                    onFocus={() => { bottomFieldFocusedRef.current = true; }}
+                    onBlur={() => { bottomFieldFocusedRef.current = false; }}
                     secureTextEntry={!showNewPw}
                     placeholder={t('businessSettings.newPasswordPlaceholder')}
                     placeholderTextColor={C.textSecondary}
@@ -1197,6 +1222,8 @@ export default function BusinessSettingsScreen() {
                     style={[styles.pwInput, { color: C.text }]}
                     value={confirmPw}
                     onChangeText={(pw) => { setConfirmPw(pw); setPwSubmitted(false); }}
+                    onFocus={() => { bottomFieldFocusedRef.current = true; }}
+                    onBlur={() => { bottomFieldFocusedRef.current = false; }}
                     secureTextEntry={!showConfirmPw}
                     placeholder={t('businessSettings.confirmPasswordPlaceholder')}
                     placeholderTextColor={C.textSecondary}
@@ -1336,6 +1363,7 @@ export default function BusinessSettingsScreen() {
             ))
           )}
         </Card>
+        <View style={{ height: 12 }} />
         <Card>
           <NavRow faIcon="receipt" ionIconColor="#6366F1" label={t('businessSettings.receiptsLabel')} onPress={() => showToast(t('businessSettings.noReceiptsToast'))} />
           <NavRow faIcon="file-invoice" ionIconColor="#6366F1" label={t('businessSettings.invoicesLabel')} onPress={() => showToast(t('businessSettings.noInvoicesToast'))} isLast />
@@ -1763,10 +1791,12 @@ export default function BusinessSettingsScreen() {
 
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
+          ref={scrollRef}
           style={styles.scroll}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled">
+          keyboardShouldPersistTaps="handled"
+          automaticallyAdjustKeyboardInsets>
 
           {/* Sub-pages */}
           {subPage === 'help-center'      && renderHelpCenter()}

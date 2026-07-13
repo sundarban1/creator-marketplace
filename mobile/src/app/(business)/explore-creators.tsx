@@ -3,6 +3,7 @@ import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { BackButton } from '@/components/BackButton';
+import { VerifiedBadge } from '@/components/VerifiedBadge';
 import {
   ActivityIndicator,
   Animated,
@@ -417,6 +418,7 @@ function CreatorCard({ creator, isSaved, onToggleSave }: {
         <View style={s.cardMeta}>
           <View style={s.nameRow}>
             <Text style={[s.name, { color: C.text }]} numberOfLines={1}>{creator.fullName ?? 'Creator'}</Text>
+            {creator.fullyVerified && <VerifiedBadge size={14} />}
             {creator.isVerified && (
               <Ionicons name="checkmark-circle" size={16} color="#22C55E" />
             )}

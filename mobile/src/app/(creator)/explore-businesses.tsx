@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BackButton } from '@/components/BackButton';
+import { VerifiedBadge } from '@/components/VerifiedBadge';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -198,6 +199,7 @@ function BusinessCard({
             <Text style={[styles.bizName, { color: C.text }]} numberOfLines={1}>
               {item.businessName}
             </Text>
+            {item.fullyVerified && <VerifiedBadge size={14} />}
             {item.isVerified && (
               <View style={styles.verifiedBadge}>
                 <Ionicons name="checkmark-circle" size={13} color="#fff" />
@@ -278,6 +280,9 @@ export default function ExploreBusinessesScreen() {
   const [businesses, setBusinesses] = useState<BusinessListItem[]>([]);
   const [loading, setLoading]       = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage]             = useState(1);
+  const [total, setTotal]           = useState(0);
   const [error, setError]           = useState('');
 
   const [search,    setSearch]    = useState('');
@@ -291,6 +296,7 @@ export default function ExploreBusinessesScreen() {
   const [tempLocation, setTempLocation] = useState<LocationFilter>([]);
 
   const searchTimer = useRef<ReturnType<typeof setTimeout>>(null);
+  const PAGE_SIZE = 20;
 
   async function fetchBusinesses(opts?: {
     search?:    string;
@@ -308,13 +314,41 @@ export default function ExploreBusinessesScreen() {
         category:  opts?.category  !== undefined ? opts.category  : category,
         platform:  opts?.platform  !== undefined ? opts.platform  : platform,
         locations: locs.map((l) => l.label),
+        page:      1,
+        limit:     PAGE_SIZE,
       });
       setBusinesses(data.businesses);
+      setTotal(data.total);
+      setPage(1);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load businesses');
     } finally {
       setLoading(false);
       setRefreshing(false);
+    }
+  }
+
+  async function loadMoreBusinesses() {
+    if (loadingMore || loading || refreshing || businesses.length >= total) return;
+    setLoadingMore(true);
+    try {
+      const nextPage = page + 1;
+      const data = await businessService.listBusinesses({
+        search, category, platform,
+        locations: locations.map((l) => l.label),
+        page:      nextPage,
+        limit:     PAGE_SIZE,
+      });
+      setBusinesses((prev) => {
+        const seen = new Set(prev.map((b) => b.id));
+        return [...prev, ...data.businesses.filter((b) => !seen.has(b.id))];
+      });
+      setTotal(data.total);
+      setPage(nextPage);
+    } catch {
+      // Silent — the user can trigger another attempt just by scrolling again.
+    } finally {
+      setLoadingMore(false);
     }
   }
 
@@ -494,6 +528,13 @@ export default function ExploreBusinessesScreen() {
           contentContainerStyle={[styles.list, displayItems.length === 0 && styles.listEmpty]}
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brinjal1} />}
+          onEndReached={() => void loadMoreBusinesses()}
+          onEndReachedThreshold={0.4}
+          ListFooterComponent={loadingMore ? (
+            <View style={styles.footerLoading}>
+              <ActivityIndicator size="small" color={C.brinjal1} />
+            </View>
+          ) : null}
           ListEmptyComponent={
             <EmptyState
               faIcon="building"
@@ -555,6 +596,7 @@ const styles = StyleSheet.create({
   loadingText:    { fontSize: 14, fontFamily: F.regular },
   list:           { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 48, gap: 14 },
   listEmpty:      { flexGrow: 1 },
+  footerLoading:  { paddingVertical: 20 },
 
   // Card
   card:           { borderRadius: 20, borderWidth: 1, padding: 16, gap: 12, shadowColor: '#000', shadowOpacity: 0.07, shadowRadius: 14, shadowOffset: { width: 0, height: 4 }, elevation: 4 },

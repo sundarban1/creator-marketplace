@@ -97,6 +97,7 @@ export type Message = {
   type: 'TEXT' | 'IMAGE' | 'FILE';
   attachmentUrl?: string | null;
   attachmentName?: string | null;
+  isDeleted?: boolean;
 };
 
 export type AppNotification = {
@@ -114,7 +115,8 @@ export type AppNotification = {
     | 'message_request_accepted'
     | 'business_favorited'
     | 'creator_saved'
-    | 'campaign_invitation';
+    | 'campaign_invitation'
+    | 'account_verified';
   title: string;
   body: string;
   timestamp: string;

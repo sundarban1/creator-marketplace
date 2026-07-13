@@ -226,7 +226,10 @@ export class AdminRepository {
     return prisma.creatorProfile.update({
       where: { id: creatorProfileId },
       data,
-      select: { id: true, fullName: true, isVerified: true, citizenshipStatus: true, citizenshipDocUrl: true },
+      select: {
+        id: true, userId: true, fullName: true, isVerified: true, citizenshipStatus: true, citizenshipDocUrl: true,
+        user: { select: { email: true } },
+      },
     });
   }
 
@@ -244,8 +247,9 @@ export class AdminRepository {
       where: { id: businessProfileId },
       data,
       select: {
-        id: true, businessName: true, isVerified: true,
+        id: true, userId: true, businessName: true, isVerified: true,
         panDocUrl: true, panDocStatus: true, companyRegDocUrl: true, companyRegDocStatus: true,
+        user: { select: { email: true } },
       },
     });
   }

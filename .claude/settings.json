@@ -234,7 +234,13 @@
       "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" --max-time 15 https://marketplace-backend-ofge.onrender.com)",
       "Bash(curl -s --max-time 15 https://marketplace-backend-ofge.onrender.com/)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" --max-time 15 https://marketplace-backend-ofge.onrender.com/api-docs)",
-      "Bash(npx eas-cli *)"
+      "Bash(npx eas-cli *)",
+      "Bash(grep -n \"^function MessageBubble\\\\|onLongPress\\\\|bubbleReceived:\\\\|bubbleRow, isSent\\\\|</View>$\" \"/Users/sundarban/Documents/projects/marketplace/mobile/src/app/\\(business\\)/\\(tabs\\)/messages/[id].tsx\")",
+      "Bash(grep -n \"</Pressable>$\" \"/Users/sundarban/Documents/projects/marketplace/mobile/src/app/\\(business\\)/\\(tabs\\)/messages/[id].tsx\")",
+      "Bash(grep -n \"^  [a-zA-Z]*: {$\" /Users/sundarban/Documents/projects/marketplace/mobile/src/i18n/ne.ts)",
+      "Bash(grep -noE \"^  [a-zA-Z]+: \\\\{$\" /Users/sundarban/Documents/projects/marketplace/mobile/src/i18n/ne.ts)",
+      "Skill(artifact-design)",
+      "Skill(artifact-design:*)"
     ],
     "additionalDirectories": [
       "/Users/sundarban/Documents/projects/marketplace/content",

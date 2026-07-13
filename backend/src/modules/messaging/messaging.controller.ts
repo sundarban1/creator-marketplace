@@ -84,4 +84,23 @@ export class MessagingController {
       success(res, result);
     } catch (err) { next(err); }
   }
+
+  async deleteMessage(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const forEveryone = req.body?.forEveryone === true;
+      if (forEveryone) {
+        await messagingService.deleteMessageForEveryone(req.params.id, req.params.messageId, req.user!.id, req.user!.role);
+      } else {
+        await messagingService.deleteMessageForMe(req.params.id, req.params.messageId, req.user!.id, req.user!.role);
+      }
+      success(res, null, 'Message deleted');
+    } catch (err) { next(err); }
+  }
+
+  async deleteConversation(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      await messagingService.deleteConversationForMe(req.params.id, req.user!.id, req.user!.role);
+      success(res, null, 'Conversation deleted');
+    } catch (err) { next(err); }
+  }
 }

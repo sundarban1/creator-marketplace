@@ -7,6 +7,7 @@ import { isBusinessProfileComplete, REFERRAL_HOLD_DAYS } from '../business-refer
 import { CampaignRepository } from '../campaign/campaign.repository';
 import { notificationService } from '../notifications/notification.service';
 import { analyticsService } from '../analytics/analytics.service';
+import { sendAccountVerifiedEmail } from '../../utils/email';
 import { AppError } from '../../middleware/error';
 
 export class AdminService {
@@ -174,12 +175,38 @@ export class AdminService {
     return updated;
   }
 
-  setCreatorVerified(creatorId: string, verified: boolean) {
-    return this.repo.updateCreatorVerification(creatorId, verified);
+  async setCreatorVerified(creatorId: string, verified: boolean) {
+    const updated = await this.repo.updateCreatorVerification(creatorId, verified);
+    if (verified && updated.user) {
+      const name = updated.fullName ?? 'there';
+      notificationService.create({
+        userId:  updated.userId,
+        type:    'account_verified',
+        title:   "You're verified! ✅",
+        body:    'Your creator profile has been verified — a verified badge now appears next to your name.',
+        refId:   updated.id,
+        refType: 'creator',
+      }).catch(() => {});
+      sendAccountVerifiedEmail(updated.user.email, name, 'creator').catch(() => {});
+    }
+    return updated;
   }
 
-  setBusinessVerified(businessId: string, verified: boolean) {
-    return this.repo.updateBusinessVerification(businessId, verified);
+  async setBusinessVerified(businessId: string, verified: boolean) {
+    const updated = await this.repo.updateBusinessVerification(businessId, verified);
+    if (verified && updated.user) {
+      const name = updated.businessName ?? 'there';
+      notificationService.create({
+        userId:  updated.userId,
+        type:    'account_verified',
+        title:   "You're verified! ✅",
+        body:    'Your business profile has been verified — a verified badge now appears next to your name.',
+        refId:   updated.id,
+        refType: 'business',
+      }).catch(() => {});
+      sendAccountVerifiedEmail(updated.user.email, name, 'business').catch(() => {});
+    }
+    return updated;
   }
 
   // ── Business Referrals ───────────────────────────────────────────────────────

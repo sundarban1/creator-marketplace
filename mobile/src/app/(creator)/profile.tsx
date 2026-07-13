@@ -7,6 +7,7 @@ import {
   Pressable, ScrollView, StyleSheet, Text, View,
 } from 'react-native';
 import { useToast } from '@/components/Toast';
+import { VerifiedBadge } from '@/components/VerifiedBadge';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
 import { useAppColors } from '@/context/ThemeContext';
@@ -151,7 +152,10 @@ export default function CreatorProfileScreen() {
           </View>
 
           {/* Identity */}
-          <Text style={[s.name, { color: C.text }]}>{displayName}</Text>
+          <View style={s.nameRow}>
+            <Text style={[s.name, { color: C.text }]}>{displayName}</Text>
+            {profile?.fullyVerified && <VerifiedBadge size={16} />}
+          </View>
           {profile?.username ? (
             <Text style={[s.username, { color: C.textSecondary }]}>@{profile.username}</Text>
           ) : null}
@@ -385,6 +389,7 @@ const s = StyleSheet.create({
                     justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#fff' },
 
   // Identity
+  nameRow:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
   name:        { fontSize: 22, fontFamily: F.bold, textAlign: 'center' },
   username:    { fontSize: 14, fontFamily: F.regular, textAlign: 'center', marginTop: 2 },
   locationRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },

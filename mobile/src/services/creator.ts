@@ -25,9 +25,10 @@ export interface ApiCreatorProfile {
   prefBudgetMin:  number;
   prefBudgetMax:  number;
   isVerified: boolean;
+  fullyVerified: boolean;
   citizenshipDocUrl: string | null;
   citizenshipStatus: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
-  user: { id: string; email: string; role: string; isEmailVerified: boolean };
+  user: { id: string; email: string; phone: string | null; role: string; isEmailVerified: boolean; isPhoneVerified: boolean };
 }
 
 export interface FacebookPageOption {
@@ -63,6 +64,7 @@ export interface ApiCreatorPublicProfile {
   location: string | null;
   categories: string[];
   isVerified: boolean;
+  fullyVerified: boolean;
   prefPlatforms: string[];
   portfolioLinks: { id: string; label: string; url: string }[];
   socialLinks: Record<string, string | null> | null;
@@ -78,6 +80,7 @@ export interface ApiCreatorListItem {
   location: string | null;
   categories: string[];
   isVerified: boolean;
+  fullyVerified: boolean;
   socialAccounts: { platform: string; followers: number }[];
   distanceKm?: number;
 }

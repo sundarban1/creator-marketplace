@@ -1,4 +1,5 @@
 import { Prisma } from '@prisma/client';
+import { isCreatorFullyVerified } from '../../utils/verification';
 
 export interface SocialAccountDto {
   id: string;
@@ -28,6 +29,7 @@ export interface CreatorProfileDto {
   socialLinks: Record<string, string>;
   portfolioLinks: Array<{ id: string; label: string; url: string }>;
   isVerified: boolean;
+  fullyVerified: boolean;
   paymentMethods: string[];
   prefPlatforms: string[];
   prefLocations: string[];
@@ -40,8 +42,10 @@ export interface CreatorProfileDto {
   user: {
     id: string;
     email: string;
+    phone: string | null;
     role: string;
     isEmailVerified: boolean;
+    isPhoneVerified: boolean;
     isOnboarded: boolean;
   } | null;
   socialAccounts: SocialAccountDto[];
@@ -57,6 +61,7 @@ export interface PublicCreatorDto {
   avatarUrl: string | null;
   categories: string[];
   isVerified: boolean;
+  fullyVerified: boolean;
   prefPlatforms: string[];
   socialLinks: Record<string, string>;
   portfolioLinks: Array<{ id: string; label: string; url: string }>;
@@ -77,6 +82,7 @@ export interface CreatorListItemDto {
   location: string | null;
   categories: string[];
   isVerified: boolean;
+  fullyVerified: boolean;
   socialAccounts: Array<{ platform: string; followers: number }>;
   distanceKm?: number;
 }
@@ -132,7 +138,7 @@ type RawCreatorProfile = {
   citizenshipStatus: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
   createdAt: Date;
   updatedAt: Date;
-  user?: { id: string; email: string; role: string; isEmailVerified: boolean; isOnboarded: boolean } | null;
+  user?: { id: string; email: string; phone: string | null; role: string; isEmailVerified: boolean; isPhoneVerified: boolean; isOnboarded: boolean } | null;
   socialAccounts?: RawSocialAccount[];
 };
 
@@ -153,6 +159,7 @@ export function toCreatorProfileDto(p: RawCreatorProfile): CreatorProfileDto {
     socialLinks:   (p.socialLinks ?? {}) as Record<string, string>,
     portfolioLinks: (p.portfolioLinks ?? []) as Array<{ id: string; label: string; url: string }>,
     isVerified:    p.isVerified,
+    fullyVerified: p.user ? isCreatorFullyVerified(p.user, p) : false,
     paymentMethods: (p.paymentMethods ?? []) as string[],
     prefPlatforms: p.prefPlatforms,
     prefLocations: p.prefLocations,
@@ -177,10 +184,12 @@ type RawPublicCreator = {
   avatarUrl: string | null;
   categories: string[];
   isVerified: boolean;
+  citizenshipStatus: string;
   prefPlatforms: string[];
   socialLinks: Prisma.JsonValue;
   portfolioLinks: Prisma.JsonValue;
   socialAccounts: Array<{ id: string; platform: string; followers: number; profileUrl: string; connectedViaOAuth?: boolean }>;
+  user: { isEmailVerified: boolean; isPhoneVerified: boolean } | null;
 };
 
 export function toPublicCreatorDto(p: RawPublicCreator): PublicCreatorDto {
@@ -194,6 +203,7 @@ export function toPublicCreatorDto(p: RawPublicCreator): PublicCreatorDto {
     avatarUrl:     p.avatarUrl,
     categories:    p.categories,
     isVerified:    p.isVerified,
+    fullyVerified: p.user ? isCreatorFullyVerified(p.user, p) : false,
     prefPlatforms: p.prefPlatforms,
     socialLinks:   (p.socialLinks ?? {}) as Record<string, string>,
     portfolioLinks: (p.portfolioLinks ?? []) as Array<{ id: string; label: string; url: string }>,
@@ -209,8 +219,10 @@ type RawCreatorListItem = {
   location: string | null;
   categories: string[];
   isVerified: boolean;
+  citizenshipStatus: string;
   socialAccounts: Array<{ platform: string; followers: number }>;
   distanceKm?: number;
+  user: { isEmailVerified: boolean; isPhoneVerified: boolean } | null;
 };
 
 export function toCreatorListItemDto(p: RawCreatorListItem): CreatorListItemDto {
@@ -222,6 +234,7 @@ export function toCreatorListItemDto(p: RawCreatorListItem): CreatorListItemDto 
     location:      p.location,
     categories:    p.categories,
     isVerified:    p.isVerified,
+    fullyVerified: p.user ? isCreatorFullyVerified(p.user, p) : false,
     socialAccounts: p.socialAccounts,
   };
   if (p.distanceKm != null) dto.distanceKm = Math.round(p.distanceKm * 10) / 10;

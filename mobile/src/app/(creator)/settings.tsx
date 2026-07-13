@@ -12,7 +12,10 @@ import { API_BASE, request } from '@/lib/api';
 import {
   ActivityIndicator,
   Animated,
+  Keyboard,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -33,6 +36,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/components/Toast';
 import { COLORS, F } from '@/utilities/constants';
 import { pickAndUpload } from '@/utilities/uploadImage';
+import { formatPhoneDisplay } from '@/utilities/phone';
 import {
   authenticate as authenticateBiometric,
   getBiometricLabel,
@@ -237,6 +241,23 @@ export default function CreatorSettingsScreen() {
   const [socialAccounts, setSocialAccounts] = useState<SocialAccount[]>([]);
   const [connectingPlatform, setConnectingPlatform] = useState<string | null>(null);
   const keyboardOffset = useKeyboardOffset();
+  const scrollRef = useRef<ScrollView>(null);
+  const bottomFieldFocusedRef = useRef(false);
+
+  // Several sub-pages (Contact Support, Report Issue, Change Password) stack a
+  // textarea/field right above their submit button — Android's adjustResize
+  // shrinks the window when the keyboard opens but never auto-scrolls a
+  // mid-form field into the new viewport, so without this it ends up hidden
+  // behind the keyboard. keyboardDidShow (rather than the input's onFocus)
+  // fires after that resize has actually happened, so scrollToEnd lands
+  // correctly against the shrunk viewport.
+  useEffect(() => {
+    const sub = Keyboard.addListener('keyboardDidShow', () => {
+      if (bottomFieldFocusedRef.current) scrollRef.current?.scrollToEnd({ animated: true });
+    });
+    return () => sub.remove();
+  }, []);
+
   const youtubeAuth = useGoogleAccessToken(['https://www.googleapis.com/auth/youtube.readonly']);
   const facebookPagesAuth = useFacebookAccessToken(['pages_show_list', 'pages_read_engagement', 'instagram_basic']);
   // When a creator manages more than one Facebook Page, they pick which one to connect
@@ -293,6 +314,8 @@ export default function CreatorSettingsScreen() {
 
   // Email/phone verification
   const [emailVerified, setEmailVerified] = useState<boolean | null>(null);
+  const [phoneVerified, setPhoneVerified] = useState<boolean | null>(null);
+  const [verifiedPhoneNumber, setVerifiedPhoneNumber] = useState('');
 
   // Citizenship verification
   const [citizenshipStatus, setCitizenshipStatus] = useState<'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED'>('NONE');
@@ -382,6 +405,8 @@ export default function CreatorSettingsScreen() {
       if (profile.paymentMethods?.length) setPaymentMethods(profile.paymentMethods);
       // Email verified status from DB
       if (profile.user?.isEmailVerified != null) setEmailVerified(profile.user.isEmailVerified);
+      if (profile.user?.isPhoneVerified != null) setPhoneVerified(profile.user.isPhoneVerified);
+      if (profile.user?.phone) setVerifiedPhoneNumber(formatPhoneDisplay(profile.user.phone));
       if (profile.citizenshipStatus) setCitizenshipStatus(profile.citizenshipStatus);
       setCreatorIsVerified(profile.isVerified === true);
     }).catch(() => {});
@@ -910,6 +935,8 @@ export default function CreatorSettingsScreen() {
                 style={[styles.formTextarea, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
                 value={supportMsg}
                 onChangeText={setSupportMsg}
+                onFocus={() => { bottomFieldFocusedRef.current = true; }}
+                onBlur={() => { bottomFieldFocusedRef.current = false; }}
                 placeholder={t('creatorSettings.supportMsgPlaceholder')}
                 placeholderTextColor={C.textSecondary}
                 multiline
@@ -960,6 +987,8 @@ export default function CreatorSettingsScreen() {
                 style={[styles.formTextarea, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
                 value={reportDesc}
                 onChangeText={setReportDesc}
+                onFocus={() => { bottomFieldFocusedRef.current = true; }}
+                onBlur={() => { bottomFieldFocusedRef.current = false; }}
                 placeholder={t('creatorSettings.reportDescPlaceholder')}
                 placeholderTextColor={C.textSecondary}
                 multiline
@@ -1567,6 +1596,8 @@ export default function CreatorSettingsScreen() {
     setPhoneLoading(true);
     try {
       await authService.verifyPhoneOtp(phoneNumber.trim(), phoneOtp.trim());
+      setPhoneVerified(true);
+      setVerifiedPhoneNumber(formatPhoneDisplay(phoneNumber.trim()));
       setPhoneSubPage(null);
       setPhoneNumber('');
       setPhoneOtp('');
@@ -1675,6 +1706,8 @@ export default function CreatorSettingsScreen() {
                     style={[styles.pwInput, { color: C.text }]}
                     value={newPw}
                     onChangeText={(v) => { setNewPw(v); setPwSubmitted(false); }}
+                    onFocus={() => { bottomFieldFocusedRef.current = true; }}
+                    onBlur={() => { bottomFieldFocusedRef.current = false; }}
                     secureTextEntry={!showNewPw}
                     placeholder={t('creatorSettings.newPasswordPlaceholder')}
                     placeholderTextColor={C.textSecondary}
@@ -1694,6 +1727,8 @@ export default function CreatorSettingsScreen() {
                     style={[styles.pwInput, { color: C.text }]}
                     value={confirmPw}
                     onChangeText={(v) => { setConfirmPw(v); setPwSubmitted(false); }}
+                    onFocus={() => { bottomFieldFocusedRef.current = true; }}
+                    onBlur={() => { bottomFieldFocusedRef.current = false; }}
                     secureTextEntry={!showConfirmPw}
                     placeholder={t('creatorSettings.confirmPasswordPlaceholder')}
                     placeholderTextColor={C.textSecondary}
@@ -1821,19 +1856,32 @@ export default function CreatorSettingsScreen() {
           {/* Phone row */}
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
             style={[styles.row, { borderBottomWidth: phoneSubPage ? 1 : 1, borderBottomColor: C.border }]}
-            onPress={() => { if (phoneSubPage) closePhone(); else setPhoneSubPage('input'); }}>
+            disabled={phoneVerified === true}
+            onPress={() => {
+              if (phoneVerified === true) return;
+              if (phoneSubPage) closePhone(); else setPhoneSubPage('input');
+            }}>
             <View style={[styles.navIonIconWrap, { backgroundColor: '#10B98118' }]}>
               <Ionicons name="call-outline" size={18} color="#10B981" />
             </View>
-            <Text style={[styles.rowLabel, { color: C.text }]}>{t('creatorSettings.phoneNumberLabel')}</Text>
-            {!phoneSubPage && (
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.rowLabel, { color: C.text }]}>{t('creatorSettings.phoneNumberLabel')}</Text>
+              {phoneVerified === true && verifiedPhoneNumber ? (
+                <Text style={[styles.inlinePhonePanelSub, { color: C.textSecondary }]}>{verifiedPhoneNumber}</Text>
+              ) : null}
+            </View>
+            {phoneVerified === null ? (
+              <ActivityIndicator size="small" color={C.brinjal1} />
+            ) : phoneVerified === true ? (
+              <View style={styles.verifiedBadge}><Text style={[styles.badgeText, { color: C.active }]}>{t('creatorSettings.verifiedBadge')}</Text></View>
+            ) : !phoneSubPage ? (
               <View style={styles.navRight}>
                 <View style={[styles.chip, { borderColor: C.brinjal1, backgroundColor: C.primaryLight, paddingHorizontal: 8, paddingVertical: 2 }]}>
                   <Text style={[styles.chipText, { color: C.brinjal1, fontSize: 12 }]}>{t('creatorSettings.verifyBtnLabel')}</Text>
                 </View>
                 <Text style={[styles.navArrow, { color: C.textSecondary }]}>›</Text>
               </View>
-            )}
+            ) : null}
           </Pressable>
 
           {/* Inline: enter phone number */}
@@ -2082,11 +2130,14 @@ export default function CreatorSettingsScreen() {
           </View>
         </LinearGradient>
 
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
+          ref={scrollRef}
           style={styles.scroll}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled">
+          keyboardShouldPersistTaps="handled"
+          automaticallyAdjustKeyboardInsets>
 
           {/* Sub-pages */}
           {subPage === 'help-center'      && renderHelpCenter()}
@@ -2106,6 +2157,7 @@ export default function CreatorSettingsScreen() {
           {!subPage && section === 'support'    && renderSupport()}
           {!subPage && section === 'legal'      && renderLegal()}
         </ScrollView>
+        </KeyboardAvoidingView>
 
 
         {/* ── Deactivate Account Modal ──────────────────────────── */}

@@ -1,4 +1,5 @@
 import { Prisma } from '@prisma/client';
+import { isBusinessFullyVerified } from '../../utils/verification';
 
 export interface BusinessProfileDto {
   id: string;
@@ -12,6 +13,7 @@ export interface BusinessProfileDto {
   location: string | null;
   phone: string | null;
   isVerified: boolean;
+  fullyVerified: boolean;
   showPublicProfile: boolean;
   hideContactDetails: boolean;
   allowDirectMessages: boolean;
@@ -27,7 +29,7 @@ export interface BusinessProfileDto {
   companyRegDocStatus: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
   createdAt: string;
   updatedAt: string;
-  user: { id: string; email: string; role: string; isEmailVerified: boolean } | null;
+  user: { id: string; email: string; phone: string | null; role: string; isEmailVerified: boolean; isPhoneVerified: boolean } | null;
 }
 
 export interface PrivateBusinessDto {
@@ -47,6 +49,7 @@ export interface PublicBusinessDto {
   phone: string | null;
   categories: string[];
   isVerified: boolean;
+  fullyVerified: boolean;
   showPublicProfile: boolean;
   hideContactDetails: boolean;
   allowDirectMessages: boolean;
@@ -75,6 +78,7 @@ export interface BusinessListItemDto {
   website: string | null;
   categories: string[];
   isVerified: boolean;
+  fullyVerified: boolean;
   _count: { campaigns: number };
 }
 
@@ -105,7 +109,7 @@ type RawBusinessProfile = {
   companyRegDocStatus?: string;
   createdAt: Date;
   updatedAt: Date;
-  user?: { id: string; email: string; role: string; isEmailVerified: boolean } | null;
+  user?: { id: string; email: string; phone: string | null; role: string; isEmailVerified: boolean; isPhoneVerified: boolean } | null;
 };
 
 export function toBusinessProfileDto(b: RawBusinessProfile): BusinessProfileDto {
@@ -121,6 +125,7 @@ export function toBusinessProfileDto(b: RawBusinessProfile): BusinessProfileDto 
     location:            b.location,
     phone:               b.phone ?? null,
     isVerified:          b.isVerified,
+    fullyVerified:       b.user ? isBusinessFullyVerified(b.user, { panDocStatus: b.panDocStatus ?? 'NONE', companyRegDocStatus: b.companyRegDocStatus ?? 'NONE' }) : false,
     showPublicProfile:   b.showPublicProfile,
     hideContactDetails:  b.hideContactDetails,
     allowDirectMessages: b.allowDirectMessages,
@@ -150,6 +155,8 @@ type RawPublicBusiness = {
   phone: string | null;
   categories: string[];
   isVerified: boolean;
+  panDocStatus?: string;
+  companyRegDocStatus?: string;
   showPublicProfile: boolean;
   hideContactDetails: boolean;
   allowDirectMessages: boolean;
@@ -168,6 +175,7 @@ type RawPublicBusiness = {
     _count: { applications: number };
   }>;
   _count: { campaigns: number };
+  user: { isEmailVerified: boolean; isPhoneVerified: boolean } | null;
 };
 
 export function toPublicBusinessDto(b: RawPublicBusiness): PublicBusinessDto {
@@ -181,6 +189,7 @@ export function toPublicBusinessDto(b: RawPublicBusiness): PublicBusinessDto {
     phone:               b.phone,
     categories:          b.categories,
     isVerified:          b.isVerified,
+    fullyVerified:       b.user ? isBusinessFullyVerified(b.user, { panDocStatus: b.panDocStatus ?? 'NONE', companyRegDocStatus: b.companyRegDocStatus ?? 'NONE' }) : false,
     showPublicProfile:   b.showPublicProfile,
     hideContactDetails:  b.hideContactDetails,
     allowDirectMessages: b.allowDirectMessages,
@@ -202,7 +211,10 @@ type RawBusinessListItem = {
   website: string | null;
   categories: string[];
   isVerified: boolean;
+  panDocStatus?: string;
+  companyRegDocStatus?: string;
   _count: { campaigns: number };
+  user: { isEmailVerified: boolean; isPhoneVerified: boolean } | null;
 };
 
 export function toBusinessListItemDto(b: RawBusinessListItem): BusinessListItemDto {
@@ -214,6 +226,7 @@ export function toBusinessListItemDto(b: RawBusinessListItem): BusinessListItemD
     website:      b.website,
     categories:   b.categories,
     isVerified:   b.isVerified,
+    fullyVerified: b.user ? isBusinessFullyVerified(b.user, { panDocStatus: b.panDocStatus ?? 'NONE', companyRegDocStatus: b.companyRegDocStatus ?? 'NONE' }) : false,
     _count:       b._count,
   };
 }

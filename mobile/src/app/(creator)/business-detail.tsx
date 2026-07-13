@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { EmptyState } from '@/components/EmptyState';
+import { VerifiedBadge } from '@/components/VerifiedBadge';
 import { useKeyboardOffset } from '@/hooks/useKeyboardOffset';
 import { useAppColors } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
@@ -297,6 +298,7 @@ export default function BusinessDetailScreen() {
             <View style={styles.heroMeta}>
               <View style={styles.heroNameRow}>
                 <Text style={[styles.heroName, { color: C.text }]} numberOfLines={2}>{business.businessName}</Text>
+                {business.fullyVerified && <VerifiedBadge size={16} />}
               </View>
               {business.isVerified && (
                 <View style={[styles.verifiedRow, { backgroundColor: '#E8F5E9' }]}>
@@ -521,8 +523,8 @@ const styles = StyleSheet.create({
   hero:                  { paddingHorizontal: 20, paddingTop: 28, paddingBottom: 32 },
   heroInner:             { flexDirection: 'row', alignItems: 'flex-start', gap: 16 },
   heroMeta:              { flex: 1, paddingTop: 4 },
-  heroNameRow:           { marginBottom: 6 },
-  heroName:              { fontSize: 22, lineHeight: 28, fontFamily: F.bold },
+  heroNameRow:           { marginBottom: 6, flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' },
+  heroName:              { fontSize: 22, lineHeight: 28, fontFamily: F.bold, flexShrink: 1 },
   verifiedRow:           { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, marginBottom: 12, alignSelf: 'flex-start' },
   verifiedText:          { fontSize: 11, fontFamily: F.bold },
   heroStats:             { flexDirection: 'row', alignItems: 'center', gap: 12 },

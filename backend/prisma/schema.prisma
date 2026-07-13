@@ -351,6 +351,12 @@ model Conversation {
   lastMessageAt  DateTime?
   businessSeenAt DateTime?
   creatorSeenAt  DateTime?
+  // "Delete conversation" is per-side only (like Messenger/Instagram) — hiding it
+  // from one participant's inbox never affects the other's copy. Both flags reset
+  // to false the moment a new message is sent, so the thread reappears for
+  // whichever side had hidden it.
+  hiddenForCreator  Boolean         @default(false)
+  hiddenForBusiness Boolean         @default(false)
   business       BusinessProfile    @relation("BusinessConversations", fields: [businessId], references: [id], onDelete: Cascade)
   campaign       Campaign?          @relation(fields: [campaignId], references: [id])
   creator        CreatorProfile     @relation("CreatorConversations", fields: [creatorId], references: [id], onDelete: Cascade)
@@ -371,6 +377,14 @@ model Message {
   attachmentUrl  String?
   attachmentName String?
   createdAt      DateTime     @default(now())
+  // "Delete for everyone" (sender-only, no time limit) — the row is kept so
+  // history/pagination doesn't shift, but the content is tombstoned in the DTO.
+  deletedAt         DateTime?
+  deletedBy         String?
+  // "Delete for me" — hides the message from one side's view without touching
+  // the other participant's copy or the underlying content.
+  hiddenForCreator  Boolean      @default(false)
+  hiddenForBusiness Boolean      @default(false)
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   sender         User         @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
 

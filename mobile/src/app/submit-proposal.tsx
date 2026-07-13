@@ -1,9 +1,10 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { BackButton } from '@/components/BackButton';
 import {
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -131,6 +132,22 @@ export default function SubmitProposalScreen() {
   const [loading, setLoading]     = useState(false);
   const [showSocialModal, setShowSocialModal] = useState(false);
 
+  const scrollRef = useRef<ScrollView>(null);
+  const bottomFieldFocusedRef = useRef(false);
+
+  // Rate and Portfolio sit at the bottom of the form, right above the submit
+  // button — Android's adjustResize shrinks the window when the keyboard opens
+  // but never auto-scrolls a mid-form field into the new viewport, so without
+  // this they end up hidden behind the keyboard. keyboardDidShow (rather than
+  // the input's onFocus) fires after that resize has actually happened, so
+  // scrollToEnd lands correctly against the shrunk viewport.
+  useEffect(() => {
+    const sub = Keyboard.addListener('keyboardDidShow', () => {
+      if (bottomFieldFocusedRef.current) scrollRef.current?.scrollToEnd({ animated: true });
+    });
+    return () => sub.remove();
+  }, []);
+
   const coverLetterLen = coverLetter.trim().length;
   const proposedRate   = isFreeEvent ? 0 : parseFloat(rate.replace(/[^0-9.]/g, ''));
 
@@ -208,9 +225,11 @@ export default function SubmitProposalScreen() {
 
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
+          ref={scrollRef}
           contentContainerStyle={styles.scroll}
           keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}>
+          showsVerticalScrollIndicator={false}
+          automaticallyAdjustKeyboardInsets>
 
           {/* Campaign badge */}
           <View style={[styles.campaignBadge, { backgroundColor: C.primaryLight, borderLeftColor: C.brinjal1 }]}>
@@ -262,6 +281,7 @@ export default function SubmitProposalScreen() {
                   style={[styles.textarea, { color: C.text }]}
                   value={coverLetter}
                   onChangeText={setCoverLetter}
+                  onFocus={() => { bottomFieldFocusedRef.current = false; }}
                   placeholder={t('proposal.coverLetterPlaceholder')}
                   placeholderTextColor={C.textSecondary}
                   multiline
@@ -294,6 +314,7 @@ export default function SubmitProposalScreen() {
                 label="Proposed Rate (Rs.) *"
                 value={rate}
                 onChangeText={handleRateChange}
+                onFocus={() => { bottomFieldFocusedRef.current = true; }}
                 placeholder="e.g. 5000"
                 keyboardType="numeric"
                 error={rateError}
@@ -306,6 +327,7 @@ export default function SubmitProposalScreen() {
               label={t('proposal.portfolio')}
               value={portfolio}
               onChangeText={setPortfolio}
+              onFocus={() => { bottomFieldFocusedRef.current = true; }}
               placeholder={t('proposal.portfolioPlaceholder')}
               keyboardType="url"
               autoCapitalize="none"

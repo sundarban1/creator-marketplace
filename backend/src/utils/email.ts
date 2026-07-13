@@ -554,6 +554,19 @@ export async function sendAccountReactivatedEmail(email: string, name: string): 
   await sendEmail(email, 'Your CreatorMarket account has been reactivated', html);
 }
 
+export async function sendAccountVerifiedEmail(email: string, name: string, kind: 'creator' | 'business'): Promise<void> {
+  const html = wrapLayout(`
+    <h2 style="color:#059669;font-size:22px;font-weight:700;margin:0 0 8px;">You're verified! ✅</h2>
+    <p style="color:#6b7280;font-size:15px;margin:0 0 20px;line-height:1.6;">
+      Hi <strong>${name}</strong>, congratulations — your ${kind === 'creator' ? 'creator' : 'business'} account has been verified by our team. A verified badge now appears next to your name across the app.
+    </p>
+    <p style="color:#9ca3af;font-size:13px;margin:0;">
+      If you have any questions, please contact our support team through the app.
+    </p>
+  `);
+  await sendEmail(email, "You're verified! ✅", html);
+}
+
 export async function sendAccountDeletedEmail(email: string, name: string): Promise<void> {
   const html = wrapLayout(`
     <h2 style="color:#DC2626;font-size:22px;font-weight:700;margin:0 0 8px;">Your account has been deleted</h2>

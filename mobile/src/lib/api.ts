@@ -125,6 +125,7 @@ export interface ApiMessage {
   attachmentUrl:  string | null;
   attachmentName: string | null;
   createdAt:      string;
+  isDeleted?:     boolean;
   sender:         { id: string; email: string; role: string };
 }
 

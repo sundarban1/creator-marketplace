@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { StatusBadge }  from '../components/StatusBadge';
 import { Avatar }       from '../components/Avatar';
+import { ConfirmModal } from '../components/ConfirmModal';
 import { api, type ApiCampaignDetail, type ApiApplication } from '../lib/api';
 import { useApi }       from '../lib/useApi';
 
@@ -102,16 +103,22 @@ function ApplicationRow({ app, onReleased, showToast }: {
 }) {
   const [expanded, setExpanded] = useState(false);
   const [releasing, setReleasing] = useState(false);
+  const [showReleaseConfirm, setShowReleaseConfirm] = useState(false);
   const name = app.creator.fullName ?? app.creator.user.email;
   const initials = name.slice(0, 2).toUpperCase();
   const canRelease = app.workStatus === 'APPROVED' && app.paymentStatus === 'PAID';
 
-  async function handleRelease(e: MouseEvent) {
+  function handleReleaseClick(e: MouseEvent) {
     e.stopPropagation();
+    setShowReleaseConfirm(true);
+  }
+
+  async function handleConfirmRelease() {
     setReleasing(true);
     try {
       await api.admin.releasePayment(app.id);
       showToast(`Payment released to ${name}`);
+      setShowReleaseConfirm(false);
       onReleased();
     } catch (err) {
       showToast((err as Error).message ?? 'Failed to release payment.', false);
@@ -143,7 +150,7 @@ function ApplicationRow({ app, onReleased, showToast }: {
           </div>
           {canRelease && (
             <button
-              onClick={handleRelease}
+              onClick={handleReleaseClick}
               disabled={releasing}
               className="flex items-center gap-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white px-2.5 py-1.5 rounded-lg transition-colors"
             >
@@ -186,6 +193,16 @@ function ApplicationRow({ app, onReleased, showToast }: {
           </div>
         </div>
       )}
+      <ConfirmModal
+        open={showReleaseConfirm}
+        variant="success"
+        title="Release payment?"
+        body={`This releases NPR ${app.proposedRate.toLocaleString()} to ${name}. This cannot be undone.`}
+        confirmLabel="Release Payment"
+        loading={releasing}
+        onConfirm={handleConfirmRelease}
+        onCancel={() => setShowReleaseConfirm(false)}
+      />
     </div>
   );
 }

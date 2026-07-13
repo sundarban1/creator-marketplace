@@ -1,7 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
-import { Animated, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Animated, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage, type TFn } from '@/context/LanguageContext';
@@ -50,6 +50,22 @@ export default function ResetPasswordScreen() {
   const [error, setError] = useState('');
   const [showToast, setShowToast] = useState(false);
 
+  const scrollRef = useRef<ScrollView>(null);
+  const confirmFocusedRef = useRef(false);
+
+  // Confirm-password sits right above the submit button — Android's
+  // adjustResize shrinks the window when the keyboard opens but never
+  // auto-scrolls a mid-form field into the new viewport, so without this it
+  // ends up hidden behind the keyboard. keyboardDidShow (rather than the
+  // input's onFocus) fires after that resize has actually happened, so
+  // scrollToEnd lands correctly against the shrunk viewport.
+  useEffect(() => {
+    const sub = Keyboard.addListener('keyboardDidShow', () => {
+      if (confirmFocusedRef.current) scrollRef.current?.scrollToEnd({ animated: true });
+    });
+    return () => sub.remove();
+  }, []);
+
   const pwdError     = submitted ? getPasswordError(password, t) : undefined;
   const confirmError = submitted && confirm !== password ? t('auth.resetPassword.passwordsNoMatch') : undefined;
   const isValid      = !getPasswordError(password, t) && password === confirm;
@@ -92,10 +108,12 @@ export default function ResetPasswordScreen() {
       {/* ── Card ── */}
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
+          ref={scrollRef}
           style={[styles.card, { backgroundColor: C.background }]}
           contentContainerStyle={styles.cardContent}
           keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}>
+          showsVerticalScrollIndicator={false}
+          automaticallyAdjustKeyboardInsets>
 
           {error ? (
             <View style={[styles.errorBanner, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}>
@@ -123,6 +141,8 @@ export default function ResetPasswordScreen() {
               <PasswordInput
                 value={confirm}
                 onChange={setConfirm}
+                onFocus={() => { confirmFocusedRef.current = true; }}
+                onBlur={() => { confirmFocusedRef.current = false; }}
                 placeholder={t('auth.resetPassword.confirmPasswordPlaceholder')}
                 hasError={!!confirmError}
                 C={C}
@@ -164,8 +184,8 @@ export default function ResetPasswordScreen() {
 // ── Sub-components ─────────────────────────────────────────────────────────────
 
 function PasswordInput({
-  value, onChange, placeholder, hasError, C,
-}: { value: string; onChange: (t: string) => void; placeholder: string; hasError: boolean; C: any }) {
+  value, onChange, placeholder, hasError, C, onFocus, onBlur,
+}: { value: string; onChange: (t: string) => void; placeholder: string; hasError: boolean; C: any; onFocus?: () => void; onBlur?: () => void }) {
   const [show, setShow] = useState(false);
   return (
     <View style={[styles.pwdRow, { backgroundColor: C.surface, borderColor: hasError ? C.error : C.border }]}>
@@ -173,6 +193,8 @@ function PasswordInput({
         style={[styles.pwdInput, { color: C.text }]}
         value={value}
         onChangeText={onChange}
+        onFocus={onFocus}
+        onBlur={onBlur}
         placeholder={placeholder}
         placeholderTextColor={C.textSecondary}
         secureTextEntry={!show}

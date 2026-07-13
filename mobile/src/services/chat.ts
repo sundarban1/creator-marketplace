@@ -44,6 +44,7 @@ export function toMessage(api: ApiMessage): Message {
     type:           api.type ?? 'TEXT',
     attachmentUrl:  api.attachmentUrl,
     attachmentName: api.attachmentName,
+    isDeleted:      api.isDeleted ?? false,
   };
 }
 
@@ -134,5 +135,13 @@ export const chatService = {
       'GET', '/api/messaging/badge-count',
     );
     return res.data;
+  },
+
+  async deleteMessage(conversationId: string, messageId: string, forEveryone: boolean): Promise<void> {
+    await request('DELETE', `/api/messaging/conversations/${conversationId}/messages/${messageId}`, { forEveryone });
+  },
+
+  async deleteConversation(conversationId: string): Promise<void> {
+    await request('DELETE', `/api/messaging/conversations/${conversationId}`);
   },
 };

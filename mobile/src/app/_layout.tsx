@@ -3,6 +3,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import {
   useFonts,
   Poppins_400Regular,
@@ -123,15 +124,17 @@ export default function RootLayout() {
   if (!fontsLoaded) return null;
 
   return (
-    <AppThemeProvider>
-      <ToastProvider>
-        <LanguageProvider>
-          <View style={{ flex: 1 }}>
-            <RootLayoutInner />
-            <SplashScreen />
-          </View>
-        </LanguageProvider>
-      </ToastProvider>
-    </AppThemeProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <AppThemeProvider>
+        <ToastProvider>
+          <LanguageProvider>
+            <View style={{ flex: 1 }}>
+              <RootLayoutInner />
+              <SplashScreen />
+            </View>
+          </LanguageProvider>
+        </ToastProvider>
+      </AppThemeProvider>
+    </GestureHandlerRootView>
   );
 }

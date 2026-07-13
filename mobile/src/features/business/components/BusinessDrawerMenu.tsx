@@ -1,11 +1,12 @@
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Animated, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { F } from '@/utilities/constants';
+import { formatPhoneDisplay } from '@/utilities/phone';
 
 const DRAWER_W = 280;
 
@@ -34,7 +35,7 @@ const NAV_GROUPS: { labelKey: string; items: NavItem[] }[] = [
 
 type Props = {
   visible: boolean;
-  user: { name?: string; email?: string } | null;
+  user: { name?: string; email?: string; phone?: string | null; avatar?: string } | null;
   onClose: () => void;
   onLogout: () => void;
 };
@@ -67,6 +68,7 @@ export function BusinessDrawerMenu({ visible, user, onClose, onLogout }: Props) 
   if (!rendered) return null;
 
   const initial = (user?.name ?? 'B')[0].toUpperCase();
+  const identityLine = user?.phone ? formatPhoneDisplay(user.phone) : (user?.email ?? '');
 
   function navigate(route: string) {
     onClose();
@@ -83,12 +85,16 @@ export function BusinessDrawerMenu({ visible, user, onClose, onLogout }: Props) 
         {/* Header */}
         <View style={[styles.header, { paddingTop: insets.top + 20, backgroundColor: C.brinjal2 }]}>
           <View style={styles.userRow}>
-            <View style={styles.avatarCircle}>
-              <Text style={styles.avatarInitial}>{initial}</Text>
-            </View>
+            {user?.avatar ? (
+              <Image source={{ uri: user.avatar }} style={styles.avatarCircle} />
+            ) : (
+              <View style={styles.avatarCircle}>
+                <Text style={styles.avatarInitial}>{initial}</Text>
+              </View>
+            )}
             <View style={{ flex: 1 }}>
               <Text style={styles.userName} numberOfLines={1}>{user?.name ?? 'Business'}</Text>
-              <Text style={styles.userEmail} numberOfLines={1}>{user?.email ?? ''}</Text>
+              <Text style={styles.userEmail} numberOfLines={1}>{identityLine}</Text>
             </View>
           </View>
         </View>

@@ -172,8 +172,50 @@ export class MessagingService {
     const conversation = await this.repo.findConversationById(conversationId);
     if (!conversation) throw new AppError('Conversation not found', 404);
     await this.verifyConversationAccess(conversation, userId, role);
-    const { messages: raw, total } = await this.repo.findMessages(conversationId, page, Math.min(limit, 200));
+    const { messages: raw, total } = await this.repo.findMessages(conversationId, page, Math.min(limit, 200), role);
     return { messages: raw.map(toMessageDto), total, page, limit };
+  }
+
+  // ── Delete ─────────────────────────────────────────────────────────────────
+
+  /** "Delete for me" — hides one message from the caller's own view only. */
+  async deleteMessageForMe(conversationId: string, messageId: string, userId: string, role: Role) {
+    const conversation = await this.repo.findConversationById(conversationId);
+    if (!conversation) throw new AppError('Conversation not found', 404);
+    await this.verifyConversationAccess(conversation, userId, role);
+    const message = await this.repo.findMessageById(messageId);
+    if (!message || message.conversationId !== conversationId) throw new AppError('Message not found', 404);
+
+    const field = role === 'CREATOR' ? 'hiddenForCreator' : 'hiddenForBusiness';
+    await this.repo.hideMessageForUser(messageId, field);
+  }
+
+  /** "Delete for everyone" — sender-only, tombstones the message for both sides. */
+  async deleteMessageForEveryone(conversationId: string, messageId: string, userId: string, role: Role) {
+    const conversation = await this.repo.findConversationById(conversationId);
+    if (!conversation) throw new AppError('Conversation not found', 404);
+    await this.verifyConversationAccess(conversation, userId, role);
+    const message = await this.repo.findMessageById(messageId);
+    if (!message || message.conversationId !== conversationId) throw new AppError('Message not found', 404);
+    if (message.senderId !== userId) throw new AppError('You can only delete your own messages for everyone', 403);
+
+    await this.repo.softDeleteMessage(messageId, userId);
+
+    // Live-update whichever side didn't just perform the delete.
+    const recipientUserId = userId === conversation.creator.userId
+      ? conversation.business.userId
+      : conversation.creator.userId;
+    emitToUser(recipientUserId, 'message:deleted', { conversationId, messageId });
+  }
+
+  /** "Delete conversation" — per-side hide from the inbox; resets on the next new message. */
+  async deleteConversationForMe(conversationId: string, userId: string, role: Role) {
+    const conversation = await this.repo.findConversationById(conversationId);
+    if (!conversation) throw new AppError('Conversation not found', 404);
+    await this.verifyConversationAccess(conversation, userId, role);
+
+    const field = role === 'CREATOR' ? 'hiddenForCreator' : 'hiddenForBusiness';
+    await this.repo.hideConversationForUser(conversationId, field);
   }
 
   private async prepareSend(conversationId: string, userId: string, role: Role) {
