@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import { Animated, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useAppColors } from '@/context/ThemeContext';
 import { useKeyboardOffset } from '@/hooks/useKeyboardOffset';
@@ -61,4 +62,62 @@ const s = StyleSheet.create({
   footer:   { padding: 20, borderTopWidth: 1 },
   applyBtn: { borderRadius: 14, height: 52, justifyContent: 'center', alignItems: 'center', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
   applyTxt: { color: '#fff', fontSize: 16, fontFamily: F.bold },
+});
+
+// ─── Shared section chrome ────────────────────────────────────────────────────
+// The same "icon + uppercase label (+ optional hint)" header is used to
+// introduce every section in every filter sheet across the app, so it lives
+// here once instead of being redrawn per screen.
+
+type IoniconName = keyof typeof Ionicons.glyphMap;
+
+export function FilterSectionHeader({ icon, label, hint }: { icon: IoniconName; label: string; hint?: string }) {
+  const C = useAppColors();
+  return (
+    <View style={h.row}>
+      <View style={h.titleRow}>
+        <Ionicons name={icon} size={13} color={C.textSecondary} />
+        <Text style={[h.label, { color: C.textSecondary }]}>{label}</Text>
+      </View>
+      {hint ? <Text style={[h.hint, { color: C.textSecondary }]}>{hint}</Text> : null}
+    </View>
+  );
+}
+
+const h = StyleSheet.create({
+  row:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  label:    { fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.8, fontFamily: F.bold },
+  hint:     { fontSize: 11, fontFamily: F.semibold },
+});
+
+// ─── Shared active-filter summary row ─────────────────────────────────────────
+// A quick-glance, one-tap-to-clear summary of what's currently set inside a
+// filter sheet, rendered as the first thing in the scrollable body — reviewing
+// or undoing a choice shouldn't require scrolling down to find its section.
+
+export type ActiveFilterChip = { key: string; label: string; onClear: () => void };
+
+export function ActiveFilterChips({ chips }: { chips: ActiveFilterChip[] }) {
+  const C = useAppColors();
+  if (chips.length === 0) return null;
+  return (
+    <View style={a.row}>
+      {chips.map((chip) => (
+        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+          key={chip.key}
+          style={[a.chip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}
+          onPress={chip.onClear}>
+          <Text style={[a.chipText, { color: C.brinjal1 }]} numberOfLines={1}>{chip.label}</Text>
+          <Ionicons name="close" size={13} color={C.brinjal1} />
+        </Pressable>
+      ))}
+    </View>
+  );
+}
+
+const a = StyleSheet.create({
+  row:      { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  chip:     { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1.5, maxWidth: '100%' },
+  chipText: { fontSize: 12, fontFamily: F.semibold, flexShrink: 1 },
 });

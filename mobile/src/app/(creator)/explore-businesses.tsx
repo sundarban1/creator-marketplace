@@ -17,7 +17,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { FilterSheet } from '@/components/FilterSheet';
+import { FilterSheet, FilterSectionHeader, ActiveFilterChips, type ActiveFilterChip } from '@/components/FilterSheet';
 import { EmptyState } from '@/components/EmptyState';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
@@ -62,64 +62,85 @@ function ExploreFilterModal({
   const { categories: businessCategories } = useCategories('BUSINESS');
   const { platforms: allPlatforms } = usePlatforms();
 
+  const activeChips: ActiveFilterChip[] = [];
+  for (const loc of tempLocation) {
+    activeChips.push({
+      key: `loc-${loc.label}`,
+      label: loc.label === 'Remote' ? t('filterModal.remote') : loc.label,
+      onClear: () => setTempLocation(tempLocation.filter((l) => l.label !== loc.label)),
+    });
+  }
+  if (tempPlatform) activeChips.push({ key: 'platform', label: tempPlatform, onClear: () => setTempPlatform('') });
+  if (tempCategory) activeChips.push({ key: 'category', label: tempCategory, onClear: () => setTempCategory('') });
+
+  const applyLabel = activeChips.length > 0
+    ? t('explore.businesses.filterApplyCount', { n: activeChips.length })
+    : t('explore.businesses.filterShowAll');
+
   return (
     <FilterSheet
       visible={visible}
       title={t('explore.businesses.filterTitle')}
       resetLabel={t('explore.businesses.filterResetAll')}
-      applyLabel={t('explore.businesses.filterApplyBtn')}
+      applyLabel={applyLabel}
       onApply={onApply}
       onReset={onReset}
       onClose={onClose}
     >
+      <ActiveFilterChips chips={activeChips} />
+
       {/* Location */}
-      <View style={fm.sectionRow}>
-        <Text style={[fm.section, { color: C.textSecondary }]}>{t('explore.businesses.filterLocation')}</Text>
-        <Text style={[fm.sectionHint, { color: C.textSecondary }]}>{t('explore.businesses.filterLocationCount', { n: tempLocation.length })}</Text>
+      <View>
+        <FilterSectionHeader
+          icon="location-outline"
+          label={t('explore.businesses.filterLocation')}
+          hint={t('explore.businesses.filterLocationCount', { n: tempLocation.length })}
+        />
+        <LocationSearchPicker selected={tempLocation} onSelect={setTempLocation} />
       </View>
-      <LocationSearchPicker selected={tempLocation} onSelect={setTempLocation} />
 
       {/* Platform */}
-      <Text style={[fm.section, { color: C.textSecondary }]}>{t('explore.businesses.filterPlatform')}</Text>
-      <View style={fm.chipGrid}>
-        {allPlatforms.map((p) => {
-          const active = tempPlatform === p.name;
-          return (
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-              key={p.id}
-              onPress={() => setTempPlatform(active ? '' : p.name)}
-              style={[fm.filterChip, { borderColor: active ? C.brinjal1 : C.border, backgroundColor: active ? C.primaryLight : C.background }]}>
-              <FontAwesome5 name={p.icon} size={12} color={active ? C.brinjal1 : C.textSecondary} />
-              <Text style={[fm.filterChipText, { color: active ? C.brinjal1 : C.text, fontWeight: active ? '700' : '400' }]}>{p.name}</Text>
-            </Pressable>
-          );
-        })}
+      <View>
+        <FilterSectionHeader icon="phone-portrait-outline" label={t('explore.businesses.filterPlatform')} />
+        <View style={fm.chipGrid}>
+          {allPlatforms.map((p) => {
+            const active = tempPlatform === p.name;
+            return (
+              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                key={p.id}
+                onPress={() => setTempPlatform(active ? '' : p.name)}
+                style={[fm.filterChip, { borderColor: active ? C.brinjal1 : C.border, backgroundColor: active ? C.primaryLight : C.background }]}>
+                <FontAwesome5 name={p.icon} size={12} color={active ? C.brinjal1 : C.textSecondary} />
+                <Text style={[fm.filterChipText, { color: active ? C.brinjal1 : C.text, fontWeight: active ? '700' : '400' }]}>{p.name}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
       </View>
 
       {/* Category */}
-      <Text style={[fm.section, { color: C.textSecondary }]}>{t('explore.businesses.filterCategory')}</Text>
-      <View style={fm.chipGrid}>
-        {businessCategories.map((cat) => {
-          const active = tempCategory === cat.name;
-          return (
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-              key={cat.id}
-              onPress={() => setTempCategory(active ? '' : cat.name)}
-              style={[fm.filterChip, { borderColor: active ? C.brinjal1 : C.border, backgroundColor: active ? C.primaryLight : C.background }]}>
-              <FontAwesome5 name={cat.icon} size={12} color={active ? C.brinjal1 : C.textSecondary} />
-              <Text style={[fm.filterChipText, { color: active ? C.brinjal1 : C.text, fontWeight: active ? '700' : '400' }]}>{cat.name}</Text>
-            </Pressable>
-          );
-        })}
+      <View>
+        <FilterSectionHeader icon="pricetag-outline" label={t('explore.businesses.filterCategory')} />
+        <View style={fm.chipGrid}>
+          {businessCategories.map((cat) => {
+            const active = tempCategory === cat.name;
+            return (
+              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                key={cat.id}
+                onPress={() => setTempCategory(active ? '' : cat.name)}
+                style={[fm.filterChip, { borderColor: active ? C.brinjal1 : C.border, backgroundColor: active ? C.primaryLight : C.background }]}>
+                <FontAwesome5 name={cat.icon} size={12} color={active ? C.brinjal1 : C.textSecondary} />
+                <Text style={[fm.filterChipText, { color: active ? C.brinjal1 : C.text, fontWeight: active ? '700' : '400' }]}>{cat.name}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
       </View>
     </FilterSheet>
   );
 }
 
 const fm = StyleSheet.create({
-  section:         { fontSize: 12, textTransform: 'uppercase', letterSpacing: 0, marginBottom: -4, fontFamily: F.bold },
-  sectionRow:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: -4 },
-  sectionHint:     { fontSize: 11, fontFamily: F.semibold },
   chipGrid:        { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   filterChip:      { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1.5, borderRadius: 22, paddingHorizontal: 14, paddingVertical: 9 },
   filterChipText:  { fontSize: 13, fontFamily: F.medium },
@@ -154,87 +175,66 @@ function BusinessCard({
   const C = useAppColors();
   const { t } = useLanguage();
   const { categories: businessCategories } = useCategories('BUSINESS');
+  const primaryMeta = item.categories.length > 0 ? getCategoryMeta(businessCategories, item.categories[0]) : null;
+  const extraCats = item.categories.length - 1;
+  const hasEvents = item._count.campaigns > 0;
 
   return (
     <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-      style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}
+      style={[styles.card, { backgroundColor: C.surface }]}
       onPress={() => router.push({ pathname: '/(creator)/business-detail', params: { id: item.id } } as never)}>
+      <View style={[styles.cardAccent, { backgroundColor: primaryMeta?.color ?? C.brinjal1 }]} />
+      <View style={styles.cardBody}>
+        {/* Top section */}
+        <View style={styles.cardTop}>
+          <BusinessAvatar name={item.businessName} logoUrl={item.logoUrl} size={56} />
 
-      {/* Top section */}
-      <View style={styles.cardTop}>
-        <BusinessAvatar name={item.businessName} logoUrl={item.logoUrl} size={56} />
-
-        <View style={styles.cardInfo}>
-          <View style={styles.nameRow}>
-            <Text style={[styles.bizName, { color: C.text }]} numberOfLines={1}>
-              {item.businessName}
-            </Text>
-            {item.fullyVerified && <VerifiedBadge size={14} />}
-            {item.isVerified && (
-              <View style={styles.verifiedBadge}>
-                <Ionicons name="checkmark-circle" size={13} color="#fff" />
-                <Text style={styles.verifiedTxt}>{t('explore.businesses.verifiedBadge')}</Text>
-              </View>
+          <View style={styles.cardInfo}>
+            <View style={styles.nameRow}>
+              <Text style={[styles.bizName, { color: C.text }]} numberOfLines={1}>
+                {item.businessName}
+              </Text>
+              {(item.fullyVerified || item.isVerified) && <VerifiedBadge size={14} />}
+            </View>
+            {item.description ? (
+              <Text style={[styles.desc, { color: C.textSecondary }]} numberOfLines={2}>
+                {item.description}
+              </Text>
+            ) : (
+              <Text style={[styles.desc, { color: C.textSecondary, fontStyle: 'italic' }]}>{t('explore.businesses.noDescription')}</Text>
             )}
           </View>
-          {item.description ? (
-            <Text style={[styles.desc, { color: C.textSecondary }]} numberOfLines={2}>
-              {item.description}
-            </Text>
-          ) : (
-            <Text style={[styles.desc, { color: C.textSecondary, fontStyle: 'italic' }]}>{t('explore.businesses.noDescription')}</Text>
-          )}
+
+          {/* Heart */}
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            style={[styles.heartBtn, { backgroundColor: isFavorited ? '#FEE2E2' : C.background }]}
+            onPress={(e) => { e.stopPropagation(); onToggleFavorite(); }}
+            hitSlop={10}>
+            <Ionicons
+              name={isFavorited ? 'heart' : 'heart-outline'}
+              size={18}
+              color={isFavorited ? '#EF4444' : C.textSecondary}
+            />
+          </Pressable>
         </View>
 
-        {/* Heart */}
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-          style={[styles.heartBtn, { backgroundColor: isFavorited ? '#FEE2E2' : C.background }]}
-          onPress={(e) => { e.stopPropagation(); onToggleFavorite(); }}
-          hitSlop={10}>
-          <Ionicons
-            name={isFavorited ? 'heart' : 'heart-outline'}
-            size={18}
-            color={isFavorited ? '#EF4444' : C.textSecondary}
-          />
-        </Pressable>
-      </View>
-
-      {/* Category chips */}
-      {item.categories.length > 0 && (
-        <View style={styles.chips}>
-          {item.categories.slice(0, 3).map((cat) => {
-            const meta = getCategoryMeta(businessCategories, cat);
-            return (
-              <View key={cat} style={[styles.chip, { backgroundColor: C.primaryLight, borderColor: 'rgba(79,70,229,0.25)' }]}>
-                <FontAwesome5 name={meta.icon} size={10} color={meta.color} />
-                <Text style={[styles.chipTxt, { color: C.brinjal1 }]}>{cat}</Text>
-              </View>
-            );
-          })}
-          {item.categories.length > 3 && (
-            <View style={[styles.chip, { backgroundColor: C.background, borderColor: C.border }]}>
-              <Text style={[styles.chipTxt, { color: C.textSecondary }]}>+{item.categories.length - 3} more</Text>
+        {/* One consolidated stat row: primary category + active events */}
+        <View style={[styles.statRow, { borderTopColor: C.border }]}>
+          {primaryMeta && (
+            <View style={[styles.catPill, { backgroundColor: primaryMeta.bg }]}>
+              <FontAwesome5 name={primaryMeta.icon} size={10} color={primaryMeta.color} />
+              <Text style={[styles.chipTxt, { color: primaryMeta.color }]} numberOfLines={1}>{item.categories[0]}</Text>
+              {extraCats > 0 && <Text style={[styles.chipTxt, { color: primaryMeta.color }]}>+{extraCats}</Text>}
             </View>
           )}
-        </View>
-      )}
-
-      {/* Footer */}
-      <View style={[styles.cardFooter, { borderTopColor: C.border }]}>
-        <View style={[styles.campaignBadge, { backgroundColor: item._count.campaigns > 0 ? 'rgba(79,70,229,0.1)' : C.background }]}>
-          <Ionicons name="megaphone-outline" size={12} color={item._count.campaigns > 0 ? C.brinjal1 : C.textSecondary} />
-          <Text style={[styles.campaignBadgeTxt, { color: item._count.campaigns > 0 ? C.brinjal1 : C.textSecondary }]}>
-            {item._count.campaigns > 0
-              ? `${item._count.campaigns} event${item._count.campaigns !== 1 ? 's' : ''}`
-              : 'No events yet'}
-          </Text>
-        </View>
-        <View style={[styles.viewBtn, { backgroundColor: C.brinjal1 }]}>
-          <Text style={styles.viewBtnTxt}>{t('explore.businesses.viewProfileBtn')}</Text>
-          <Ionicons name="chevron-forward" size={13} color="#fff" />
+          <View style={styles.campaignStat}>
+            <Ionicons name="megaphone-outline" size={13} color={hasEvents ? C.brinjal1 : C.textSecondary} />
+            <Text style={[styles.campaignStatTxt, { color: hasEvents ? C.brinjal1 : C.textSecondary }]}>
+              {hasEvents ? t('explore.businesses.campaignsBadge', { n: item._count.campaigns }) : t('explore.businesses.noEventsYet')}
+            </Text>
+          </View>
         </View>
       </View>
-
     </Pressable>
   );
 }
@@ -435,12 +435,9 @@ export default function ExploreBusinessesScreen() {
 
       {/* Count below search */}
       {!loading && businesses.length > 0 && (
-        <View style={styles.countRow}>
-          <View style={[styles.countPill, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
-            <Ionicons name="business-outline" size={13} color={C.brinjal1} />
-            <Text style={[styles.countTxt, { color: C.brinjal1 }]}>{businesses.length} brands found</Text>
-          </View>
-        </View>
+        <Text style={[styles.countTxt, { color: C.textSecondary }]}>
+          {t('explore.businesses.brandsFound', { n: total })}
+        </Text>
       )}
 
       {/* Active filter pills */}
@@ -548,9 +545,7 @@ const styles = StyleSheet.create({
   headerMiddle:   { flex: 1, alignItems: 'center', gap: 2 },
   heading:        { fontSize: 20, fontFamily: F.bold, color: '#fff', lineHeight: 24 },
   headingSub:     { fontSize: 12, fontFamily: F.regular },
-  countRow:       { alignItems: 'flex-end', paddingHorizontal: 16, marginBottom: 4 },
-  countPill:      { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 5, borderRadius: 20, borderWidth: 1.5 },
-  countTxt:       { fontSize: 12, fontFamily: F.bold },
+  countTxt:       { fontSize: 12, fontFamily: F.semibold, paddingHorizontal: 16, marginTop: 6, marginBottom: 2 },
   favLink:        { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(255,255,255,0.22)', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 6 },
   favLinkText:    { fontSize: 12, color: '#fff', fontFamily: F.bold },
 
@@ -575,26 +570,23 @@ const styles = StyleSheet.create({
   footerLoading:  { paddingVertical: 20 },
 
   // Card
-  card:           { borderRadius: 20, borderWidth: 1, padding: 16, gap: 12, shadowColor: '#000', shadowOpacity: 0.07, shadowRadius: 14, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
+  card:           { flexDirection: 'row', borderRadius: 20, overflow: 'hidden', shadowColor: '#000', shadowOpacity: 0.07, shadowRadius: 14, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
+  cardAccent:     { width: 4 },
+  cardBody:       { flex: 1, padding: 16, gap: 12 },
   cardTop:        { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
   cardInfo:       { flex: 1, gap: 4 },
   nameRow:        { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
   bizName:        { fontSize: 16, flexShrink: 1, letterSpacing: -0.3, fontFamily: F.bold },
-  verifiedBadge:  { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: '#4F46E5', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
-  verifiedTxt:    { fontSize: 10, color: '#fff', fontFamily: F.bold },
   desc:           { fontSize: 13, lineHeight: 19, fontFamily: F.regular },
 
   // Heart (top-right inside cardTop)
   heartBtn:       { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
 
-  chips:          { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  chip:           { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 10, borderWidth: 1, paddingHorizontal: 9, paddingVertical: 4 },
   chipTxt:        { fontSize: 11, fontFamily: F.bold },
 
-  // Card footer
-  cardFooter:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 12, borderTopWidth: StyleSheet.hairlineWidth },
-  campaignBadge:    { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5 },
-  campaignBadgeTxt: { fontSize: 12, fontFamily: F.bold },
-  viewBtn:          { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7 },
-  viewBtnTxt:       { fontSize: 12, color: '#fff', fontFamily: F.bold },
+  // One consolidated stat row: primary category + active events
+  statRow:          { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, paddingTop: 12, borderTopWidth: StyleSheet.hairlineWidth },
+  catPill:          { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5, flexShrink: 1 },
+  campaignStat:     { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  campaignStatTxt:  { fontSize: 12, fontFamily: F.bold },
 });

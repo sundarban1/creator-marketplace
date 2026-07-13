@@ -298,14 +298,8 @@ export default function BusinessDetailScreen() {
             <View style={styles.heroMeta}>
               <View style={styles.heroNameRow}>
                 <Text style={[styles.heroName, { color: C.text }]} numberOfLines={2}>{business.businessName}</Text>
-                {business.fullyVerified && <VerifiedBadge size={16} />}
+                {(business.fullyVerified || business.isVerified) && <VerifiedBadge size={16} />}
               </View>
-              {business.isVerified && (
-                <View style={[styles.verifiedRow, { backgroundColor: '#E8F5E9' }]}>
-                  <Ionicons name="checkmark-circle" size={12} color="#388E3C" />
-                  <Text style={[styles.verifiedText, { color: '#388E3C' }]}>{t('businessDetail.verifiedBusiness')}</Text>
-                </View>
-              )}
               <View style={styles.heroStats}>
                 <View style={styles.heroStat}>
                   <Text style={[styles.heroStatValue, { color: C.brinjal1 }]}>{business._count.campaigns}</Text>
@@ -525,8 +519,6 @@ const styles = StyleSheet.create({
   heroMeta:              { flex: 1, paddingTop: 4 },
   heroNameRow:           { marginBottom: 6, flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' },
   heroName:              { fontSize: 22, lineHeight: 28, fontFamily: F.bold, flexShrink: 1 },
-  verifiedRow:           { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, marginBottom: 12, alignSelf: 'flex-start' },
-  verifiedText:          { fontSize: 11, fontFamily: F.bold },
   heroStats:             { flexDirection: 'row', alignItems: 'center', gap: 12 },
   heroStat:              { alignItems: 'center' },
   heroStatValue:         { fontSize: 18, fontFamily: F.bold },

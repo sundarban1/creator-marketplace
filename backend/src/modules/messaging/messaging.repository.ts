@@ -2,9 +2,9 @@ import { ConversationStatus } from '@prisma/client';
 import prisma from '../../prisma';
 
 // Only the applications relevant to this conversation's creator are needed to
-// tell whether the campaign work is COMPLETED for them — see toConversationDto,
-// which hides the campaign title once that's the case.
-const CAMPAIGN_SELECT = { select: { title: true, applications: { select: { creatorId: true, workStatus: true } } } };
+// tell whether the campaign work is COMPLETED or payment has been RELEASED for
+// them — see toConversationDto, which hides the campaign title once either is true.
+const CAMPAIGN_SELECT = { select: { title: true, applications: { select: { creatorId: true, workStatus: true, paymentStatus: true } } } };
 
 const CONV_SELECT_CREATOR = {
   id: true, creatorId: true, businessId: true, campaignId: true, status: true,
@@ -134,20 +134,37 @@ export class MessagingRepository {
     return existing.id;
   }
 
-  async findConversationsByCreator(creatorId: string, status?: ConversationStatus) {
-    return prisma.conversation.findMany({
-      where: { creatorId, hiddenForCreator: false, ...(status ? { status } : {}) },
-      orderBy: [{ lastMessageAt: 'desc' }, { createdAt: 'desc' }],
-      select: CONV_SELECT_CREATOR,
-    });
+  async findConversationsByCreator(creatorId: string, status?: ConversationStatus, page = 1, limit = 50) {
+    const where = { creatorId, hiddenForCreator: false, ...(status ? { status } : {}) };
+    const [conversations, total] = await Promise.all([
+      prisma.conversation.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        // `id` tie-breaker — two conversations can plausibly share both
+        // lastMessageAt and createdAt (e.g. neither has an exchanged message
+        // yet), so without it, pagination across pages isn't deterministic.
+        orderBy: [{ lastMessageAt: 'desc' }, { createdAt: 'desc' }, { id: 'asc' }],
+        select: CONV_SELECT_CREATOR,
+      }),
+      prisma.conversation.count({ where }),
+    ]);
+    return { conversations, total };
   }
 
-  async findConversationsByBusiness(businessId: string, status?: ConversationStatus) {
-    return prisma.conversation.findMany({
-      where: { businessId, hiddenForBusiness: false, ...(status ? { status } : {}) },
-      orderBy: [{ lastMessageAt: 'desc' }, { createdAt: 'desc' }],
-      select: CONV_SELECT_BUSINESS,
-    });
+  async findConversationsByBusiness(businessId: string, status?: ConversationStatus, page = 1, limit = 50) {
+    const where = { businessId, hiddenForBusiness: false, ...(status ? { status } : {}) };
+    const [conversations, total] = await Promise.all([
+      prisma.conversation.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: [{ lastMessageAt: 'desc' }, { createdAt: 'desc' }, { id: 'asc' }],
+        select: CONV_SELECT_BUSINESS,
+      }),
+      prisma.conversation.count({ where }),
+    ]);
+    return { conversations, total };
   }
 
   /** "Delete conversation" — per-side hide, resets automatically on the next message. */

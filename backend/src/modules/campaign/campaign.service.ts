@@ -1,3 +1,4 @@
+import { CampaignStatus, ApplicationStatus, CampaignType } from '@prisma/client';
 import { AppError } from '../../middleware/error';
 import { toCampaignDto, toApplicationDto } from './campaign.dto';
 import { BusinessRepository } from '../business/business.repository';
@@ -237,13 +238,13 @@ export class CampaignService {
     return { message: 'Campaign deleted successfully' };
   }
 
-  async getMyCampaigns(userId: string, page: number, limit: number, lang = 'en') {
+  async getMyCampaigns(userId: string, page: number, limit: number, lang = 'en', status?: CampaignStatus) {
     const business = await this.businessRepo.findByUserId(userId);
     if (!business) {
       throw new AppError('Business profile not found', 404);
     }
 
-    const { campaigns: raw, total } = await this.repo.findByBusinessId(business.id, page, Math.min(limit, 50));
+    const { campaigns: raw, total } = await this.repo.findByBusinessId(business.id, page, Math.min(limit, 50), status);
     const dtos = raw.map(toCampaignDto);
     const campaigns = await translateMany(dtos, [...CAMPAIGN_FIELDS], lang);
     return { campaigns, total, page, limit };
@@ -341,11 +342,17 @@ export class CampaignService {
     return { applications: raw.map(toApplicationDto), total, page, limit };
   }
 
-  async getBusinessApplications(userId: string, page: number, limit: number) {
+  async getBusinessApplications(
+    userId: string,
+    page: number,
+    limit: number,
+    status?: ApplicationStatus,
+    campaignType?: CampaignType,
+  ) {
     const business = await this.businessRepo.findByUserId(userId);
     if (!business) throw new AppError('Business profile not found', 404);
     const { applications: raw, total } = await this.repo.findApplicationsByBusinessId(
-      business.id, page, Math.min(limit, 100)
+      business.id, page, Math.min(limit, 100), status, campaignType
     );
     return { applications: raw.map(toApplicationDto), total, page, limit };
   }
@@ -513,7 +520,7 @@ export class CampaignService {
     return updated;
   }
 
-  async getMyApplications(userId: string, page: number, limit: number) {
+  async getMyApplications(userId: string, page: number, limit: number, status?: ApplicationStatus) {
     const creator = await this.creatorRepo.findByUserId(userId);
     if (!creator) {
       throw new AppError('Creator profile not found', 404);
@@ -522,7 +529,8 @@ export class CampaignService {
     const { applications: raw, total } = await this.repo.findApplicationsByCreator(
       creator.id,
       page,
-      Math.min(limit, 50)
+      Math.min(limit, 50),
+      status,
     );
 
     return { applications: raw.map(toApplicationDto), total, page, limit };

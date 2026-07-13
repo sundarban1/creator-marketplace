@@ -240,7 +240,22 @@
       "Bash(grep -n \"^  [a-zA-Z]*: {$\" /Users/sundarban/Documents/projects/marketplace/mobile/src/i18n/ne.ts)",
       "Bash(grep -noE \"^  [a-zA-Z]+: \\\\{$\" /Users/sundarban/Documents/projects/marketplace/mobile/src/i18n/ne.ts)",
       "Skill(artifact-design)",
-      "Skill(artifact-design:*)"
+      "Skill(artifact-design:*)",
+      "Bash(lsof -iTCP -sTCP:LISTEN -P)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" -X DELETE http://localhost:3000/api/messaging/conversations/test123)",
+      "Bash(curl -s -X DELETE http://localhost:3000/api/messaging/conversations/test123)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" -X GET http://localhost:3000/api/messaging/conversations)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:8081/)",
+      "Bash(curl -s \"http://localhost:8081/index.bundle?platform=ios&dev=true\" -o /tmp/bundle_check.txt -w \"HTTP %{http_code}, size=%{size_download}\\\\n\")",
+      "Bash(ps -p 2985 -o lstart=)",
+      "Bash(watchman watch-list *)",
+      "Bash(watchman watch-project *)",
+      "Bash(ps -p 2985 -o command=)",
+      "Bash(ps -p 2963 -o command=)",
+      "Bash(kill 2985 2963)",
+      "Bash(disown)",
+      "Bash(awk 'NR<=974 && /^  [a-zA-Z]+: {$/{last=$0; line=NR} END{}' /Users/sundarban/Documents/projects/marketplace/mobile/src/i18n/en.ts)",
+      "Bash(grep -n \"^  [a-zA-Z]*: {$\")"
     ],
     "additionalDirectories": [
       "/Users/sundarban/Documents/projects/marketplace/content",

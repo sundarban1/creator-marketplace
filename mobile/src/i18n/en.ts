@@ -971,7 +971,6 @@ const en = {
     sectionPortfolio: 'Portfolio',
     preferredRange: 'Preferred range',
     followersSuffix: 'followers',
-    verified: '✓ Verified',
     openChat: 'Open Chat',
     requestSent: '⏳  Request Sent',
     sendMessage: '✉️  Send Message',
@@ -987,7 +986,6 @@ const en = {
   businessDetail: {
     loadError: "Couldn't load business",
     goBack: 'Go Back',
-    verifiedBusiness: 'Verified Business',
     statActive: 'Active',
     statJoined: 'Joined',
     statSectors: 'Sectors',
@@ -1538,9 +1536,10 @@ const en = {
     findingBrands: 'Finding brands…',
     filterCreators: 'Filter Creators',
     resetAll: 'Reset all',
-    applyFilters: 'Apply Filters',
+    applyFiltersCount: 'Apply Filters ({{n}})',
+    showAllCreators: 'Show All Creators',
     location: 'Location',
-    priceRange: 'Price Range',
+    priceRange: 'Rate Range',
     platform: 'Platform',
     category: 'Category',
     showingAll: 'Showing all {{count}} creator',
@@ -1548,6 +1547,10 @@ const en = {
     remote: 'Remote',
     searchCity: 'Search city…',
     locationsAllowed: '{{count}}/{{max}} allowed',
+    presetAnyRate: 'Any rate',
+    presetUnder200: 'Under Rs 200',
+    preset200to500: 'Rs 200–500',
+    preset500Plus: 'Rs 500+',
     businesses: {
       filterTitle: 'Filters',
       filterResetAll: 'Reset all',
@@ -1555,7 +1558,8 @@ const en = {
       filterLocationCount: '{{n}}/3 selected',
       filterPlatform: 'Platform',
       filterCategory: 'Category',
-      filterApplyBtn: 'Apply Filters',
+      filterApplyCount: 'Apply Filters ({{n}})',
+      filterShowAll: 'Show All Brands',
       headerTitle: 'Explore Brands',
       headerSub: 'Find businesses hiring creators',
       savedLink: 'Saved',
@@ -1573,11 +1577,9 @@ const en = {
       couldNotRemoveFav: 'Could not remove favorite.',
       couldNotAddFav: 'Could not add favorite.',
       campaignsBadge: '{{n}} active event(s)',
-      viewHint: 'View',
+      noEventsYet: 'No events yet',
       exploreCreatorsSub: 'Find the perfect creator for your event',
-      verifiedBadge: 'Verified',
       noDescription: 'No description provided',
-      viewProfileBtn: 'View Profile',
     },
   },
 
@@ -2057,7 +2059,6 @@ const en = {
     sectionPreferredPlatforms: 'Preferred Platforms',
     sectionPortfolio:          'Portfolio',
     followersSuffix:           'followers',
-    verified:                  '✓ Verified',
     openChat: 'Open Chat',
     requestSent:               '⏳  Request Sent',
     sendMessage:               '✉️  Send Message',
@@ -2084,7 +2085,6 @@ const en = {
 
   profileExtra: {
     navTitle:         'Profile',
-    verifiedBusiness: '✓ Verified Business',
   },
 
   createEvent: {

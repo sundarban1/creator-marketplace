@@ -29,7 +29,7 @@ export interface ConversationDto {
 
 type RawCampaign = {
   title: string;
-  applications?: { creatorId: string; workStatus: string }[];
+  applications?: { creatorId: string; workStatus: string; paymentStatus: string }[];
 };
 
 type RawMessage = {
@@ -102,12 +102,14 @@ export function toConversationDto(
   };
   if (c.creator  != null) dto.creator  = c.creator;
   if (c.business != null) dto.business = c.business;
-  // Once the creator's work on this campaign is COMPLETED, stop surfacing the
-  // campaign/event title in the chat — the conversation lives on independently.
-  const campaignCompleted = c.campaign?.applications?.some(
-    (a) => a.creatorId === c.creatorId && a.workStatus === 'COMPLETED',
+  // Once the creator's work on this campaign is COMPLETED, or the admin has
+  // RELEASED payment for it (which happens before the creator's own COMPLETED
+  // confirmation), stop surfacing the campaign/event title in the chat — the
+  // conversation lives on independently.
+  const campaignDone = c.campaign?.applications?.some(
+    (a) => a.creatorId === c.creatorId && (a.workStatus === 'COMPLETED' || a.paymentStatus === 'RELEASED'),
   );
-  if (c.campaign != null && !campaignCompleted) dto.campaign = { title: c.campaign.title };
+  if (c.campaign != null && !campaignDone) dto.campaign = { title: c.campaign.title };
   if (c.messages != null) dto.messages = c.messages.map(toMessageDto);
   return dto;
 }

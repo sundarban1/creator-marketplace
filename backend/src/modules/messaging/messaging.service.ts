@@ -54,18 +54,18 @@ export class MessagingService {
 
   // ── Conversation list ──────────────────────────────────────────────────────
 
-  async listConversations(userId: string, role: Role, status?: ConversationStatus) {
+  async listConversations(userId: string, role: Role, status?: ConversationStatus, page = 1, limit = 50) {
     if (role === 'CREATOR') {
       const creator = await this.resolveCreator(userId);
-      const convs = await this.repo.findConversationsByCreator(creator.id, status);
-      return convs.map((c) => toConversationDto(c, 'CREATOR'));
+      const { conversations, total } = await this.repo.findConversationsByCreator(creator.id, status, page, limit);
+      return { conversations: conversations.map((c) => toConversationDto(c, 'CREATOR')), total };
     }
     if (role === 'BUSINESS') {
       const business = await this.resolveBusiness(userId);
-      const convs = await this.repo.findConversationsByBusiness(business.id, status);
-      return convs.map((c) => toConversationDto(c, 'BUSINESS'));
+      const { conversations, total } = await this.repo.findConversationsByBusiness(business.id, status, page, limit);
+      return { conversations: conversations.map((c) => toConversationDto(c, 'BUSINESS')), total };
     }
-    return [];
+    return { conversations: [], total: 0 };
   }
 
   // ── Start / find conversation ──────────────────────────────────────────────

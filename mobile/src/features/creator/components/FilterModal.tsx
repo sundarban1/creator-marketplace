@@ -1,13 +1,13 @@
-import { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { RangeSlider } from '@/components/RangeSlider';
-import { FilterSheet } from '@/components/FilterSheet';
+import { FilterSheet, FilterSectionHeader, ActiveFilterChips, type ActiveFilterChip } from '@/components/FilterSheet';
 import { FilterChip, FilterChipGroup } from '@/components/FilterChip';
+import { BudgetRangePicker, matchBudgetPreset, type BudgetPreset } from '@/components/BudgetRangePicker';
 import { LocationSearchPicker, type LocationEntry, type LocationFilter } from '@/components/LocationSearchPicker';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage, type TFn } from '@/context/LanguageContext';
 import { F } from '@/utilities/constants';
+import { useEffect, useState } from 'react';
 
 export { LocationSearchPicker, type LocationEntry, type LocationFilter };
 
@@ -48,13 +48,14 @@ function fmtDate(d: Date | null, monthsShort: string[]) {
 // reveals the precise slider/calendar only when someone actually needs it —
 // instead of always showing a full slider + inline calendar on open.
 
-type BudgetPreset = { key: string; min: number; max: number; labelKey: string };
-const BUDGET_PRESETS: BudgetPreset[] = [
-  { key: 'any',      min: 0,     max: BUDGET_MAX, labelKey: 'filterModal.presetAnyBudget' },
-  { key: 'under10k', min: 0,     max: 10000,      labelKey: 'filterModal.presetUnder10k'  },
-  { key: '10to30k',  min: 10000, max: 30000,      labelKey: 'filterModal.preset10to30k'   },
-  { key: '30kplus',  min: 30000, max: BUDGET_MAX, labelKey: 'filterModal.preset30kPlus'   },
-];
+function budgetPresets(t: TFn): BudgetPreset[] {
+  return [
+    { key: 'any',      min: 0,     max: BUDGET_MAX, label: t('filterModal.presetAnyBudget') },
+    { key: 'under10k', min: 0,     max: 10000,      label: t('filterModal.presetUnder10k')  },
+    { key: '10to30k',  min: 10000, max: 30000,      label: t('filterModal.preset10to30k')   },
+    { key: '30kplus',  min: 30000, max: BUDGET_MAX, label: t('filterModal.preset30kPlus')   },
+  ];
+}
 
 type DeadlinePreset = { key: string; days: number | null; labelKey: string };
 const DEADLINE_PRESETS: DeadlinePreset[] = [
@@ -64,9 +65,6 @@ const DEADLINE_PRESETS: DeadlinePreset[] = [
   { key: 'quarter', days: 90,   labelKey: 'filterModal.presetEndingIn3Months'   },
 ];
 
-function matchBudgetPreset(min: number, max: number) {
-  return BUDGET_PRESETS.find((p) => p.min === min && p.max === max) ?? null;
-}
 function matchDeadlinePreset(today: Date, from: Date | null, to: Date | null) {
   if (!from && !to) return DEADLINE_PRESETS[0];
   if (!from || !to || !sameDay(from, today)) return null;
@@ -247,21 +245,6 @@ function DateRangePicker({
   );
 }
 
-// ─── Section header ───────────────────────────────────────────────────────────
-
-function SectionHeader({ icon, label, hint }: { icon: keyof typeof Ionicons.glyphMap; label: string; hint?: string }) {
-  const C = useAppColors();
-  return (
-    <View style={styles.sectionRow}>
-      <View style={styles.sectionTitleRow}>
-        <Ionicons name={icon} size={13} color={C.textSecondary} />
-        <Text style={[styles.section, { color: C.textSecondary }]}>{label}</Text>
-      </View>
-      {hint ? <Text style={[styles.sectionHint, { color: C.textSecondary }]}>{hint}</Text> : null}
-    </View>
-  );
-}
-
 // ─── FilterModal ──────────────────────────────────────────────────────────────
 
 export function FilterModal({
@@ -276,42 +259,30 @@ export function FilterModal({
   setTempDateFrom, setTempDateTo,
   onApply, onReset, onClose,
 }: Props) {
-  const C = useAppColors();
   const { t } = useLanguage();
   const today = dayStart(new Date());
   const monthsShort = getMonthsShort(t);
+  const BUDGET_PRESETS = budgetPresets(t);
 
-  const [budgetCustomOpen, setBudgetCustomOpen]     = useState(false);
   const [deadlineCustomOpen, setDeadlineCustomOpen] = useState(false);
 
   // Re-derive from scratch every time the sheet opens — the parent already
   // re-syncs temp values from the committed filters on open, so a stale
   // "custom panel is open" flag from the last visit shouldn't carry over.
   useEffect(() => {
-    if (visible) {
-      setBudgetCustomOpen(false);
-      setDeadlineCustomOpen(false);
-    }
+    if (visible) setDeadlineCustomOpen(false);
   }, [visible]);
 
   function handleReset() {
-    setBudgetCustomOpen(false);
     setDeadlineCustomOpen(false);
     onReset();
   }
 
-  const matchedBudget   = matchBudgetPreset(tempPriceMin, tempPriceMax);
+  const matchedBudget   = matchBudgetPreset(BUDGET_PRESETS, tempPriceMin, tempPriceMax);
   const matchedDeadline = matchDeadlinePreset(today, tempDateFrom, tempDateTo);
-  const showBudgetCustom   = budgetCustomOpen || !matchedBudget;
   const showDeadlineCustom = deadlineCustomOpen || !matchedDeadline;
-  const selectedBudgetKey   = matchedBudget?.key   ?? (showBudgetCustom ? 'custom' : undefined);
   const selectedDeadlineKey = matchedDeadline?.key ?? (showDeadlineCustom ? 'custom' : undefined);
 
-  function applyBudgetPreset(p: BudgetPreset) {
-    setTempPriceMin(p.min);
-    setTempPriceMax(p.max);
-    setBudgetCustomOpen(false);
-  }
   function applyDeadlinePreset(p: DeadlinePreset) {
     if (p.days == null) {
       setTempDateFrom(null);
@@ -325,11 +296,7 @@ export function FilterModal({
     setDeadlineCustomOpen(false);
   }
 
-  // A quick-glance, one-tap-to-clear summary of what's currently set — so
-  // reviewing or undoing a choice doesn't require scrolling to find its
-  // section. Doubles as the source for the Apply button's live count.
-  type ActiveChip = { key: string; label: string; onClear: () => void };
-  const activeChips: ActiveChip[] = [];
+  const activeChips: ActiveFilterChip[] = [];
   if (tempEventType !== 'ALL') {
     activeChips.push({
       key: 'type',
@@ -340,8 +307,8 @@ export function FilterModal({
   if (!matchedBudget || matchedBudget.key !== 'any') {
     activeChips.push({
       key: 'budget',
-      label: matchedBudget ? t(matchedBudget.labelKey) : `Rs ${Math.round(tempPriceMin / 1000)}k–${Math.round(tempPriceMax / 1000)}k`,
-      onClear: () => { setTempPriceMin(0); setTempPriceMax(BUDGET_MAX); setBudgetCustomOpen(false); },
+      label: matchedBudget ? matchedBudget.label : `Rs ${Math.round(tempPriceMin / 1000)}k–${Math.round(tempPriceMax / 1000)}k`,
+      onClear: () => { setTempPriceMin(0); setTempPriceMax(BUDGET_MAX); },
     });
   }
   if (!matchedDeadline || matchedDeadline.key !== 'any') {
@@ -373,23 +340,11 @@ export function FilterModal({
       onReset={handleReset}
       onClose={onClose}
     >
-      {activeChips.length > 0 && (
-        <View style={styles.activeRow}>
-          {activeChips.map((chip) => (
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-              key={chip.key}
-              style={[styles.activeChip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}
-              onPress={chip.onClear}>
-              <Text style={[styles.activeChipText, { color: C.brinjal1 }]} numberOfLines={1}>{chip.label}</Text>
-              <Ionicons name="close" size={13} color={C.brinjal1} />
-            </Pressable>
-          ))}
-        </View>
-      )}
+      <ActiveFilterChips chips={activeChips} />
 
       {/* Event Type — fastest, most decisive filter, so it leads */}
       <View>
-        <SectionHeader icon="pricetag-outline" label={t('filterModal.sectionEventType')} />
+        <FilterSectionHeader icon="pricetag-outline" label={t('filterModal.sectionEventType')} />
         <FilterChipGroup
           options={EVENT_TYPE_OPTS.map(({ value, labelKey, icon }) => ({ value, label: t(labelKey), icon }))}
           selected={[tempEventType]}
@@ -400,33 +355,22 @@ export function FilterModal({
 
       {/* Budget — one-tap presets first, precise slider tucked behind "Custom" */}
       <View>
-        <SectionHeader icon="cash-outline" label={t('filterModal.sectionBudget')} />
-        <View style={styles.presetRow}>
-          {BUDGET_PRESETS.map((p) => (
-            <FilterChip
-              key={p.key}
-              label={t(p.labelKey)}
-              selected={selectedBudgetKey === p.key}
-              onPress={() => applyBudgetPreset(p)}
-            />
-          ))}
-          <FilterChip
-            label={t('filterModal.customLabel')}
-            icon="options-outline"
-            selected={selectedBudgetKey === 'custom'}
-            onPress={() => setBudgetCustomOpen(true)}
-          />
-        </View>
-        {showBudgetCustom && (
-          <View style={styles.customPanel}>
-            <RangeSlider minVal={tempPriceMin} maxVal={tempPriceMax} onMinChange={setTempPriceMin} onMaxChange={setTempPriceMax} currency="Rs" max={BUDGET_MAX} step={1000} />
-          </View>
-        )}
+        <FilterSectionHeader icon="cash-outline" label={t('filterModal.sectionBudget')} />
+        <BudgetRangePicker
+          visible={visible}
+          presets={BUDGET_PRESETS}
+          min={tempPriceMin}
+          max={tempPriceMax}
+          onChange={(min, max) => { setTempPriceMin(min); setTempPriceMax(max); }}
+          sliderMax={BUDGET_MAX}
+          step={1000}
+          customLabel={t('filterModal.customLabel')}
+        />
       </View>
 
       {/* Deadline — same "presets first" concept as Budget */}
       <View>
-        <SectionHeader icon="calendar-outline" label={t('filterModal.sectionDeadlineRange')} />
+        <FilterSectionHeader icon="calendar-outline" label={t('filterModal.sectionDeadlineRange')} />
         <View style={styles.presetRow}>
           {DEADLINE_PRESETS.map((p) => (
             <FilterChip
@@ -452,7 +396,7 @@ export function FilterModal({
 
       {/* Location */}
       <View>
-        <SectionHeader
+        <FilterSectionHeader
           icon="location-outline"
           label={t('filterModal.sectionLocation')}
           hint={t('filterModal.locationsAllowed', { n: tempLocation.length, max: MAX_LOCS })}
@@ -489,13 +433,6 @@ const dp = StyleSheet.create({
 });
 
 const styles = StyleSheet.create({
-  section:         { fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.8, fontFamily: F.bold },
-  sectionRow:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
-  sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  sectionHint:     { fontSize: 11, fontFamily: F.semibold },
-  presetRow:       { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  customPanel:     { marginTop: 12 },
-  activeRow:       { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  activeChip:      { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1.5, maxWidth: '100%' },
-  activeChipText:  { fontSize: 12, fontFamily: F.semibold, flexShrink: 1 },
+  presetRow:   { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  customPanel: { marginTop: 12 },
 });

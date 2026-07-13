@@ -10,8 +10,12 @@ export class MessagingController {
   async listConversations(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const status = req.query.status as ConversationStatus | undefined;
-      const conversations = await messagingService.listConversations(req.user!.id, req.user!.role, status);
-      success(res, conversations);
+      const page  = Math.max(1, parseInt(req.query.page  as string) || 1);
+      const limit = Math.min(100, parseInt(req.query.limit as string) || 50);
+      const { conversations, total } = await messagingService.listConversations(
+        req.user!.id, req.user!.role, status, page, limit,
+      );
+      paginated(res, conversations, total, page, limit);
     } catch (err) { next(err); }
   }
 

@@ -154,7 +154,7 @@ export default function CreatorProfileScreen() {
           {/* Identity */}
           <View style={s.nameRow}>
             <Text style={[s.name, { color: C.text }]}>{displayName}</Text>
-            {profile?.fullyVerified && <VerifiedBadge size={16} />}
+            {(profile?.fullyVerified || profile?.isVerified) && <VerifiedBadge size={16} />}
           </View>
           {profile?.username ? (
             <Text style={[s.username, { color: C.textSecondary }]}>@{profile.username}</Text>

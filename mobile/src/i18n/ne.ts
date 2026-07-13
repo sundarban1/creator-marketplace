@@ -965,7 +965,6 @@ const ne = {
     sectionPortfolio: 'पोर्टफोलियो',
     preferredRange: 'मनपर्ने रेन्ज',
     followersSuffix: 'फलोअर',
-    verified: '✓ भेरिफाइड',
     openChat: 'च्याट खोल्नुहोस्',
     requestSent: '⏳  रिक्वेस्ट पठाइयो',
     sendMessage: '✉️  मेसेज पठाउनुहोस्',
@@ -981,7 +980,6 @@ const ne = {
   businessDetail: {
     loadError: 'बिजनेस लोड हुन सकेन',
     goBack: 'पछाडि जानुहोस्',
-    verifiedBusiness: 'भेरिफाइड बिजनेस',
     statActive: 'एक्टिभ',
     statJoined: 'जोडिएको',
     statSectors: 'क्षेत्रहरू',
@@ -1532,7 +1530,8 @@ const ne = {
     findingBrands: 'ब्रान्ड खोज्दैछ…',
     filterCreators: 'क्रिएटर फिल्टर गर्नुहोस्',
     resetAll: 'सबै रिसेट',
-    applyFilters: 'फिल्टर लगाउनुहोस्',
+    applyFiltersCount: 'फिल्टर लगाउनुहोस् ({{n}})',
+    showAllCreators: 'सबै क्रिएटर देखाउनुहोस्',
     location: 'लोकेसन',
     priceRange: 'रेट रेन्ज',
     platform: 'प्लेटफर्म',
@@ -1542,6 +1541,10 @@ const ne = {
     remote: 'रिमोट',
     searchCity: 'सहर खोज्नुहोस्…',
     locationsAllowed: '{{count}}/{{max}} छान्न मिल्छ',
+    presetAnyRate: 'जुनसुकै रेट',
+    presetUnder200: 'रु २०० भन्दा कम',
+    preset200to500: 'रु २००–५००',
+    preset500Plus: 'रु ५००+',
     businesses: {
       filterTitle: 'फिल्टरहरू',
       filterResetAll: 'सबै रिसेट',
@@ -1549,7 +1552,8 @@ const ne = {
       filterLocationCount: '{{n}}/३ छानियो',
       filterPlatform: 'प्लेटफर्म',
       filterCategory: 'क्याटेगोरी',
-      filterApplyBtn: 'फिल्टर लगाउनुहोस्',
+      filterApplyCount: 'फिल्टर लगाउनुहोस् ({{n}})',
+      filterShowAll: 'सबै ब्रान्ड देखाउनुहोस्',
       headerTitle: 'ब्रान्डहरू खोज्नुहोस्',
       headerSub: 'क्रिएटर खोजिरहेका बिजनेसहरू भेट्टाउनुहोस्',
       savedLink: 'सेभ गरिएको',
@@ -1567,11 +1571,9 @@ const ne = {
       couldNotRemoveFav: 'मनपर्नेबाट हटाउन सकिएन।',
       couldNotAddFav: 'मनपर्नेमा थप्न सकिएन।',
       campaignsBadge: '{{n}} एक्टिभ क्याम्पेन',
-      viewHint: 'हेर्नुहोस्',
+      noEventsYet: 'अहिलेसम्म कुनै इभेन्ट छैन',
       exploreCreatorsSub: 'तपाईंको इभेन्टका लागि सबैभन्दा राम्रो क्रिएटर भेट्टाउनुहोस्',
-      verifiedBadge: 'भेरिफाइड',
       noDescription: 'कुनै विवरण छैन',
-      viewProfileBtn: 'प्रोफाइल हेर्नुहोस्',
     },
   },
 
@@ -2052,7 +2054,6 @@ const ne = {
     sectionPreferredPlatforms: 'मनपर्ने प्लेटफर्महरू',
     sectionPortfolio: 'पोर्टफोलियो',
     followersSuffix: 'फलोअर',
-    verified: '✓ भेरिफाइड',
     openChat: 'च्याट खोल्नुहोस्',
     requestSent: '⏳  रिक्वेस्ट पठाइयो',
     sendMessage: '✉️  मेसेज पठाउनुहोस्',
@@ -2082,7 +2083,6 @@ const ne = {
   // ── Profile Extra ─────────────────────────────────────────────
   profileExtra: {
     navTitle: 'प्रोफाइल',
-    verifiedBusiness: '✓ भेरिफाइड बिजनेस',
   },
 
   // ── Create Event ──────────────────────────────────────────────

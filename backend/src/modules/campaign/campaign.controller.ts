@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { CampaignStatus, ApplicationStatus, CampaignType } from '@prisma/client';
 import { CampaignService } from './campaign.service';
 import { analyticsService } from '../analytics/analytics.service';
 import { success, paginated } from '../../utils/response';
@@ -110,7 +111,8 @@ export class CampaignController {
     try {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 10;
-      const { campaigns, total } = await campaignService.getMyCampaigns(req.user!.id, page, limit, req.language);
+      const status = req.query.status as CampaignStatus | undefined;
+      const { campaigns, total } = await campaignService.getMyCampaigns(req.user!.id, page, limit, req.language, status);
       paginated(res, campaigns, total, page, limit);
     } catch (err) {
       next(err);
@@ -172,8 +174,10 @@ export class CampaignController {
     try {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 50;
+      const status = req.query.status as ApplicationStatus | undefined;
+      const campaignType = req.query.campaignType as CampaignType | undefined;
       const { applications, total } = await campaignService.getBusinessApplications(
-        req.user!.id, page, limit
+        req.user!.id, page, limit, status, campaignType
       );
       paginated(res, applications, total, page, limit);
     } catch (err) {
@@ -185,10 +189,12 @@ export class CampaignController {
     try {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 10;
+      const status = req.query.status as ApplicationStatus | undefined;
       const { applications, total } = await campaignService.getMyApplications(
         req.user!.id,
         page,
-        limit
+        limit,
+        status,
       );
       paginated(res, applications, total, page, limit);
     } catch (err) {

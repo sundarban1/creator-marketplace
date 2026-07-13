@@ -1,4 +1,4 @@
-import { CampaignStatus, WorkStatus, PaymentStatus, Prisma } from '@prisma/client';
+import { CampaignStatus, CampaignType, ApplicationStatus, WorkStatus, PaymentStatus, Prisma } from '@prisma/client';
 import prisma from '../../prisma';
 
 export class CampaignRepository {
@@ -220,17 +220,23 @@ export class CampaignRepository {
     });
   }
 
-  async findByBusinessId(businessId: string, page: number, limit: number) {
+  async findByBusinessId(businessId: string, page: number, limit: number, status?: CampaignStatus) {
     const skip = (page - 1) * limit;
+    const where: Prisma.CampaignWhereInput = { businessId, ...(status ? { status } : {}) };
     const [campaigns, total] = await Promise.all([
       prisma.campaign.findMany({
-        where: { businessId },
+        where,
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' },
+        // `id` is a tie-breaker, not a display order — createdAt alone isn't
+        // unique (bulk-created rows can share a timestamp), and without a
+        // fully deterministic sort, Postgres can return the same row on two
+        // different pages (or skip one entirely) as the result set shifts
+        // between paginated queries.
+        orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
         include: { _count: { select: { applications: true } } },
       }),
-      prisma.campaign.count({ where: { businessId } }),
+      prisma.campaign.count({ where }),
     ]);
 
     return { campaigns, total };
@@ -352,14 +358,26 @@ export class CampaignRepository {
     return this.findApplicationsByCampaign(campaignId, page, limit);
   }
 
-  async findApplicationsByBusinessId(businessId: string, page: number, limit: number) {
+  async findApplicationsByBusinessId(
+    businessId: string,
+    page: number,
+    limit: number,
+    status?: ApplicationStatus,
+    campaignType?: CampaignType,
+  ) {
     const skip = (page - 1) * limit;
+    const where: Prisma.ApplicationWhereInput = {
+      campaign: { businessId, ...(campaignType ? { campaignType } : {}) },
+      ...(status ? { status } : {}),
+    };
     const [applications, total] = await Promise.all([
       prisma.application.findMany({
-        where: { campaign: { businessId } },
+        where,
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' },
+        // `id` tie-breaker — see findByBusinessId above for why this matters
+        // once two rows can share a createdAt value.
+        orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
         select: {
           id: true,
           campaignId: true,
@@ -384,7 +402,7 @@ export class CampaignRepository {
           },
         },
       }),
-      prisma.application.count({ where: { campaign: { businessId } } }),
+      prisma.application.count({ where }),
     ]);
     return { applications, total };
   }
@@ -413,14 +431,17 @@ export class CampaignRepository {
     });
   }
 
-  async findApplicationsByCreator(creatorId: string, page: number, limit: number) {
+  async findApplicationsByCreator(creatorId: string, page: number, limit: number, status?: ApplicationStatus) {
     const skip = (page - 1) * limit;
+    const where: Prisma.ApplicationWhereInput = { creatorId, ...(status ? { status } : {}) };
     const [applications, total] = await Promise.all([
       prisma.application.findMany({
-        where: { creatorId },
+        where,
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' },
+        // `id` tie-breaker — see findByBusinessId above for why this matters
+        // once two rows can share a createdAt value.
+        orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
         select: {
           id: true,
           campaignId: true,
@@ -455,7 +476,7 @@ export class CampaignRepository {
           },
         },
       }),
-      prisma.application.count({ where: { creatorId } }),
+      prisma.application.count({ where }),
     ]);
 
     return { applications, total };

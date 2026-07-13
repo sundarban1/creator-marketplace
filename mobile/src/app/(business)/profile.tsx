@@ -143,13 +143,8 @@ export default function BusinessProfileScreen() {
             <View style={styles.heroMeta}>
               <View style={styles.heroNameRow}>
                 <Text style={styles.heroName} numberOfLines={2}>{name}</Text>
-                {profile?.fullyVerified && <VerifiedBadge size={16} />}
+                {(profile?.fullyVerified || profile?.isVerified) && <VerifiedBadge size={16} />}
               </View>
-              {profile?.isVerified && (
-                <View style={styles.verifiedRow}>
-                  <Text style={styles.verifiedText}>{t('profileExtra.verifiedBusiness')}</Text>
-                </View>
-              )}
               <View style={styles.heroStats}>
                 <View style={styles.heroStat}>
                   <Text style={styles.heroStatValue}>{activeCampaigns}</Text>
@@ -311,8 +306,6 @@ const styles = StyleSheet.create({
   heroMeta:         { flex: 1, paddingTop: 4 },
   heroNameRow:      { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' },
   heroName:         { fontSize: 20, color: '#fff', lineHeight: 28, marginBottom: 6, fontFamily: F.bold, flexShrink: 1 },
-  verifiedRow:      { alignSelf: 'flex-start', backgroundColor: 'rgba(255,255,255,0.18)', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, marginBottom: 12 },
-  verifiedText:     { fontSize: 11, color: '#fff', fontFamily: F.bold },
   heroStats:        { flexDirection: 'row', alignItems: 'center', gap: 12 },
   heroStat:         { alignItems: 'center' },
   heroStatValue:    { fontSize: 16, color: '#fff', fontFamily: F.bold },

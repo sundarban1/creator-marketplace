@@ -215,12 +215,7 @@ export default function CreatorDetailScreen() {
           <View style={s.heroInfo}>
             <View style={s.nameRow}>
               <Text style={[s.heroName, { color: C.text }]}>{profile.fullName ?? 'Creator'}</Text>
-              {profile.fullyVerified && <VerifiedBadge size={16} />}
-              {profile.isVerified && (
-                <View style={[s.verifiedBadge, { backgroundColor: '#E8F5E9' }]}>
-                  <Text style={s.verifiedText}>{t('creatorDetailExtra.verified')}</Text>
-                </View>
-              )}
+              {(profile.fullyVerified || profile.isVerified) && <VerifiedBadge size={16} />}
             </View>
             {profile.username ? (
               <Text style={[s.username, { color: C.textSecondary }]}>@{profile.username}</Text>
@@ -443,8 +438,6 @@ const s = StyleSheet.create({
   heroInfo:     { flex: 1, gap: 4 },
   nameRow:      { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
   heroName:     { fontSize: 20, fontFamily: F.bold },
-  verifiedBadge:{ borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3 },
-  verifiedText: { fontSize: 11, color: '#2E7D32', fontFamily: F.bold },
   username:     { fontSize: 13, fontFamily: F.regular },
   locationRow:  { flexDirection: 'row', alignItems: 'center', gap: 4 },
   location:     { fontSize: 13, fontFamily: F.regular },
