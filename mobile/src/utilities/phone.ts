@@ -26,3 +26,16 @@ export function normalizePhoneForSubmit(phone: string): string {
 export function formatPhoneDisplay(phone: string): string {
   return phone.trim().replace(/^\+?977/, '');
 }
+
+// Phone-only signups get a placeholder `<phone>@phone.kolab.internal` email on
+// the backend (see backend auth.service.ts) since the User.email column is
+// required — it must never be surfaced to the user as if it were a real email.
+const PLACEHOLDER_EMAIL_DOMAIN = '@phone.kolab.internal';
+
+/** Best identity line to show under a user's name: formatted phone if present,
+ *  otherwise the real email — but never the phone-signup placeholder email. */
+export function getAccountIdentityLine(user: { phone?: string | null; email?: string | null }): string {
+  if (user.phone) return formatPhoneDisplay(user.phone);
+  if (user.email && !user.email.endsWith(PLACEHOLDER_EMAIL_DOMAIN)) return user.email;
+  return '';
+}

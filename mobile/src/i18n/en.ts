@@ -1110,7 +1110,7 @@ const en = {
     errBudgetMinMax: 'Must be ≥ minimum budget.',
     toastUpdated: 'Event updated successfully!',
     toastFailed: 'Failed to update event.',
-    toastLocked: 'Editing is locked — proposals have already been submitted for this event.',
+    lockedFieldNote: 'Locked — proposals have already been submitted against these terms.',
     remoteLocation: 'Remote',
     proposalCount: '{{n}} proposal',
     proposalsCount: '{{n}} proposals',

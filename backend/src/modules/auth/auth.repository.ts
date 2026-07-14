@@ -16,7 +16,7 @@ export class AuthRepository {
   }
 
   async findUserByPhone(phone: string) {
-    return prisma.user.findUnique({ where: { phone } });
+    return prisma.user.findUnique({ where: { phone }, include: profileSelect });
   }
 
   async createUserWithCreatorProfile(data: {

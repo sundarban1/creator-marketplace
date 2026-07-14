@@ -18,7 +18,7 @@ export function MarketplaceWorkflow() {
           <div className="absolute left-[19px] top-2 bottom-2 w-px bg-gradient-to-b from-brand-indigo via-brand-indigo/40 to-orange-400" />
           <div className="flex flex-col gap-7">
             {d.workflow.steps.map((step, i) => (
-              <motion.div key={step} variants={fadeUp} className="flex items-center gap-5">
+              <motion.div key={i} variants={fadeUp} className="flex items-center gap-5">
                 <div className="relative z-10 flex-shrink-0 w-10 h-10 rounded-full bg-white border-2 border-brand-indigo flex items-center justify-center font-bold text-brand-indigo text-sm">
                   {i + 1}
                 </div>

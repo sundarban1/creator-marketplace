@@ -30,9 +30,9 @@ export function MobileAppShowcase() {
         </motion.div>
 
         <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="grid sm:grid-cols-2 gap-6">
-          {SIDES.map(({ icon: Icon, label, color, bg, points }) => (
+          {SIDES.map(({ icon: Icon, label, color, bg, points }, i) => (
             <motion.div
-              key={label}
+              key={i}
               variants={fadeUp}
               whileHover={{ y: -6 }}
               className="p-8 rounded-3xl bg-white/5 ring-1 ring-white/10 backdrop-blur-sm hover:bg-white/[0.07] transition-all"
@@ -42,8 +42,8 @@ export function MobileAppShowcase() {
               </div>
               <h3 className="font-extrabold text-white text-xl mb-5">{label}</h3>
               <ul className="space-y-4">
-                {points.map(({ icon: PIcon, text }) => (
-                  <li key={text} className="flex items-start gap-3">
+                {points.map(({ icon: PIcon, text }, j) => (
+                  <li key={j} className="flex items-start gap-3">
                     <PIcon size={18} className="flex-shrink-0 mt-0.5 text-white/50" />
                     <span className="text-white/70 text-sm leading-relaxed">{text}</span>
                   </li>

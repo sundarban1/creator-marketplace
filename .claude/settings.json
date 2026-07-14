@@ -261,7 +261,15 @@
       "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" \"http://localhost:3000/api/creator/social-accounts/instagram-login/callback?error=access_denied\")",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" \"http://localhost:3000/api/creator/social-accounts/instagram-login/authorize\")",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" \"http://localhost:3000/api/creator/social-accounts\")",
-      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('\\\\n'.join\\(k+': '+v for k,v in d.get\\('dependencies',{}\\).items\\(\\) if 'navigation' in k\\)\\)\")"
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('\\\\n'.join\\(k+': '+v for k,v in d.get\\('dependencies',{}\\).items\\(\\) if 'navigation' in k\\)\\)\")",
+      "Bash(adb devices *)",
+      "Bash(system_profiler SPUSBDataType)",
+      "Bash(grep -E \"Product ID|Vendor ID|^\\\\s+[A-Za-z].*:$\")",
+      "Bash(adb version *)",
+      "Bash(adb kill-server *)",
+      "Bash(adb start-server *)",
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(PGPASSWORD=postgres psql -h localhost -U postgres -d creatormarket -c \"SELECT bp.\\\\\"businessName\\\\\", bp.\\\\\"logoUrl\\\\\", u.name, u.phone, u.email FROM \\\\\"BusinessProfile\\\\\" bp JOIN \\\\\"User\\\\\" u ON u.id = bp.\\\\\"userId\\\\\" ORDER BY bp.\\\\\"createdAt\\\\\" DESC LIMIT 15;\")"
     ],
     "additionalDirectories": [
       "/Users/sundarban/Documents/projects/marketplace/content",

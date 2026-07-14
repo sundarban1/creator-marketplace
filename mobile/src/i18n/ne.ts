@@ -1104,7 +1104,7 @@ const ne = {
     errBudgetMinMax: 'बढी बजेट कम्तीमा बजेट बराबर वा बढी हुनुपर्छ।',
     toastUpdated: 'इभेन्ट अपडेट भयो!',
     toastFailed: 'इभेन्ट अपडेट हुन सकेन।',
-    toastLocked: 'एडिट लक भयो — यो इभेन्टमा प्रपोजल आइसकेका छन्।',
+    lockedFieldNote: 'लक भयो — यी सर्तहरूमा पहिले नै प्रपोजलहरू पेश भइसकेका छन्।',
     remoteLocation: 'रिमोट',
     proposalCount: '{{n}} प्रपोजल',
     proposalsCount: '{{n}} प्रपोजल',

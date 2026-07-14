@@ -5,6 +5,7 @@ import { Animated, Image, Pressable, ScrollView, StyleSheet, Text, View } from '
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
+import { profileService } from '@/services/profile';
 import { F } from '@/utilities/constants';
 import { formatPhoneDisplay } from '@/utilities/phone';
 
@@ -47,6 +48,17 @@ export function BusinessDrawerMenu({ visible, user, onClose, onLogout }: Props) 
   const slideAnim = useRef(new Animated.Value(-DRAWER_W)).current;
   const backdropOpacity = useRef(new Animated.Value(0)).current;
   const [rendered, setRendered] = useState(false);
+  const [businessName, setBusinessName] = useState('');
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    profileService.getBusinessProfile()
+      .then((profile) => {
+        setBusinessName(profile.businessName);
+        setLogoUrl(profile.logoUrl);
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (visible) {
@@ -67,7 +79,9 @@ export function BusinessDrawerMenu({ visible, user, onClose, onLogout }: Props) 
 
   if (!rendered) return null;
 
-  const initial = (user?.name ?? 'B')[0].toUpperCase();
+  const displayName = businessName || (user?.name ?? 'Business').replace(/^\+977\s*/, '');
+  const displayAvatar = logoUrl || user?.avatar;
+  const initial = displayName[0].toUpperCase();
   const identityLine = user?.phone ? formatPhoneDisplay(user.phone) : (user?.email ?? '');
 
   function navigate(route: string) {
@@ -85,15 +99,15 @@ export function BusinessDrawerMenu({ visible, user, onClose, onLogout }: Props) 
         {/* Header */}
         <View style={[styles.header, { paddingTop: insets.top + 20, backgroundColor: C.brinjal2 }]}>
           <View style={styles.userRow}>
-            {user?.avatar ? (
-              <Image source={{ uri: user.avatar }} style={styles.avatarCircle} />
+            {displayAvatar ? (
+              <Image source={{ uri: displayAvatar }} style={styles.avatarCircle} />
             ) : (
               <View style={styles.avatarCircle}>
                 <Text style={styles.avatarInitial}>{initial}</Text>
               </View>
             )}
             <View style={{ flex: 1 }}>
-              <Text style={styles.userName} numberOfLines={1}>{user?.name ?? 'Business'}</Text>
+              <Text style={styles.userName} numberOfLines={1}>{displayName}</Text>
               <Text style={styles.userEmail} numberOfLines={1}>{identityLine}</Text>
             </View>
           </View>

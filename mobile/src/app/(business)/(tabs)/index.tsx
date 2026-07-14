@@ -47,6 +47,7 @@ export default function BusinessHomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [fetchError, setFetchError] = useState('');
   const [missingFields, setMissingFields] = useState<string[]>([]);
+  const [businessName, setBusinessName] = useState('');
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [referralBannerDismissed, setReferralBannerDismissed] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
@@ -70,6 +71,7 @@ export default function BusinessHomeScreen() {
     void fetchCampaigns();
     profileService.getBusinessProfile()
       .then((profile) => {
+        setBusinessName(profile.businessName);
         const missing: string[] = [];
         if (!profile.logoUrl)            missing.push(t('business.home.fieldLogo'));
         if (!profile.description)        missing.push(t('business.home.fieldDescription'));
@@ -144,7 +146,7 @@ export default function BusinessHomeScreen() {
               </Pressable>
               <View>
                 <Text style={[styles.greeting, { color: 'rgba(255,255,255,0.7)' }]}>{getGreeting()}</Text>
-                <Text style={[styles.brandName, { color: '#fff' }]} numberOfLines={1}>{(user?.name ?? 'Business').replace(/^\+977\s*/, '')}</Text>
+                <Text style={[styles.brandName, { color: '#fff' }]} numberOfLines={1}>{businessName || (user?.name ?? 'Business').replace(/^\+977\s*/, '')}</Text>
               </View>
             </View>
             <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.avatarCircle, { borderColor: 'rgba(255,255,255,0.5)', borderWidth: 2.5 }]} onPress={() => router.push('/(business)/profile')}>

@@ -95,6 +95,52 @@ const cg = StyleSheet.create({
   err:  { fontSize: 12, color: ERROR_RED },
 });
 
+// ─── PlatformChipGroup (multi-select, capped, lockable) ────────────────────────
+
+function PlatformChipGroup({
+  options, values, onChange, colors, error, max, disabled,
+}: {
+  options: readonly string[];
+  values: string[];
+  onChange: (v: string[]) => void;
+  colors: ReturnType<typeof useAppColors>;
+  error?: string;
+  max: number;
+  disabled?: boolean;
+}) {
+  const C = colors;
+  function toggle(opt: string) {
+    if (disabled) return;
+    if (values.includes(opt)) { onChange(values.filter((v) => v !== opt)); return; }
+    if (values.length >= max) return;
+    onChange([...values, opt]);
+  }
+  return (
+    <View style={{ gap: 6 }}>
+      <View style={cg.wrap}>
+        {options.map((opt) => {
+          const sel = values.includes(opt);
+          const chipDisabled = disabled || (!sel && values.length >= max);
+          return (
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+              key={opt}
+              disabled={chipDisabled}
+              style={[cg.chip, {
+                borderColor: sel ? C.brinjal1 : C.border,
+                backgroundColor: sel ? C.primaryLight : C.background,
+                opacity: chipDisabled && !sel ? 0.4 : 1,
+              }]}
+              onPress={() => toggle(opt)}>
+              <Text style={[cg.txt, { color: sel ? C.brinjal1 : C.textSecondary, fontWeight: sel ? '700' : '500' }]}>{opt}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
+      {error ? <Text style={cg.err}>{error}</Text> : null}
+    </View>
+  );
+}
+
 // ─── CalendarGrid ─────────────────────────────────────────────────────────────
 
 function CalendarGrid({ value, onChange, colors }: {
@@ -167,7 +213,7 @@ const cal = StyleSheet.create({
 type EditForm = {
   title: string;
   description: string;
-  platform: string;
+  platforms: string[];
   contentType: string;
   deliverables: string;
   status: NonNullable<Campaign['status']>;
@@ -229,7 +275,7 @@ export default function CampaignDetailScreen() {
   const [calOpen, setCalOpen] = useState(false);
   const [eventCalOpen, setEventCalOpen] = useState(false);
   const [editForm, setEditForm] = useState<EditForm>({
-    title: '', description: '', platform: '',
+    title: '', description: '', platforms: [],
     contentType: '', deliverables: '',
     status: 'active', budgetMin: '', budgetMax: '', deadline: null,
     location: '', isFeatured: false,
@@ -238,18 +284,16 @@ export default function CampaignDetailScreen() {
   const [editErrors, setEditErrors] = useState<EditErrors>({});
   const [saving, setSaving] = useState(false);
 
-  const isEditLocked = (campaign?.proposals ?? 0) > 0;
+  // Once a proposal has been submitted, the terms it was submitted against
+  // (price, platform, deliverables) are locked — everything else stays editable.
+  const hasProposals = (campaign?.proposals ?? 0) > 0;
 
   function openEdit() {
     if (!campaign) return;
-    if (isEditLocked) {
-      showToast(t('campaignDetail.toastLocked'), 'error');
-      return;
-    }
     setEditForm({
       title:        campaign.title,
       description:  campaign.description ?? '',
-      platform:     campaign.platform,
+      platforms:    campaign.platforms ?? [],
       contentType:  campaign.contentType,
       deliverables: campaign.deliverables ?? '',
       status:       campaign.status ?? 'active',
@@ -285,7 +329,7 @@ export default function CampaignDetailScreen() {
         errs.deadline = t('campaignDetail.errRegBeforeEvent');
       if (!editForm.venue.trim()) errs.venue = t('campaignDetail.errVenueRequired');
     } else {
-      if (!editForm.platform)            errs.platform     = t('campaignDetail.errPlatformRequired');
+      if (editForm.platforms.length === 0) errs.platforms  = t('campaignDetail.errPlatformRequired');
       if (!editForm.contentType)         errs.contentType  = t('campaignDetail.errContentTypeRequired');
       if (!editForm.deliverables.trim()) errs.deliverables = t('campaignDetail.errDeliverablesRequired');
       if (!editForm.location.trim())     errs.location     = t('campaignDetail.errLocationRequired');
@@ -322,7 +366,7 @@ export default function CampaignDetailScreen() {
         await campaignService.update(campaign!.id, {
           title:        editForm.title.trim(),
           description:  editForm.description.trim() || undefined,
-          platform:     editForm.platform,
+          platforms:    editForm.platforms,
           contentType:  editForm.contentType,
           deliverables: editForm.deliverables.trim(),
           status:       editForm.status,
@@ -457,7 +501,7 @@ export default function CampaignDetailScreen() {
               <Ionicons name="checkmark" size={10} color="#fff" />
             </View>
             <View style={[s.platformTag, { backgroundColor: C.primaryLight, marginLeft: 'auto' }]}>
-              <Text style={[s.platformTagTxt, { color: C.brinjal1 }]}>{campaign.platform}</Text>
+              <Text style={[s.platformTagTxt, { color: C.brinjal1 }]}>{campaign.platforms.join(', ')}</Text>
             </View>
           </View>
           <Text style={[s.campaignTitle, { color: C.text }]}>{campaign.title}</Text>
@@ -628,10 +672,10 @@ export default function CampaignDetailScreen() {
       <View style={[s.ctaBar, { backgroundColor: C.surface, borderTopColor: C.border, justifyContent: 'center' }]}>
         {isBusiness ? (
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-            style={({ pressed }) => [s.applyBtn, { backgroundColor: isEditLocked ? C.border : C.brinjal1, shadowColor: isEditLocked ? 'transparent' : C.brinjal1 }, pressed && !isEditLocked && { opacity: 0.88 }]}
+            style={({ pressed }) => [s.applyBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }, pressed && { opacity: 0.88 }]}
             onPress={openEdit}>
-            <Ionicons name={isEditLocked ? 'lock-closed-outline' : 'create-outline'} size={16} color="#fff" />
-            <Text style={s.applyBtnTxt}>{isEditLocked ? t('campaignDetail.locked') : t('campaignDetail.editEvent')}</Text>
+            <Ionicons name="create-outline" size={16} color="#fff" />
+            <Text style={s.applyBtnTxt}>{t('campaignDetail.editEvent')}</Text>
           </Pressable>
         ) : isOpenEvent && applicationStatus === 'accepted' ? (
           <View style={s.invitedCard}>
@@ -661,7 +705,7 @@ export default function CampaignDetailScreen() {
       <Modal visible={editOpen} transparent animationType="slide" onRequestClose={() => setEditOpen(false)}>
         <View style={em.overlay}>
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={em.scrim} onPress={() => setEditOpen(false)} />
-          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={em.sheetWrap}>
+          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={em.sheetWrap}>
             <View style={[em.sheet, { backgroundColor: C.surface }]}>
               <View style={[em.handle, { backgroundColor: C.border }]} />
 
@@ -769,17 +813,25 @@ export default function CampaignDetailScreen() {
                 ) : (
                   <>
                     {/* ── Paid Campaign fields ── */}
-                    <Text style={[em.sectionHdr, { color: C.textSecondary, marginTop: 24 }]}>{t('campaignDetail.editSectionPlatform')}</Text>
-                    <ChipGroup options={allPlatforms.map((p) => p.name)} value={editForm.platform} onChange={(v) => updateEdit('platform', v)} colors={C} error={editErrors.platform} />
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 24 }}>
+                      <Text style={[em.sectionHdr, { color: C.textSecondary }]}>{t('campaignDetail.editSectionPlatform')}</Text>
+                      {hasProposals && <Ionicons name="lock-closed" size={11} color={C.textSecondary} />}
+                    </View>
+                    {hasProposals && <Text style={[em.lockedNote, { color: C.textSecondary }]}>{t('campaignDetail.lockedFieldNote')}</Text>}
+                    <PlatformChipGroup options={allPlatforms.map((p) => p.name)} values={editForm.platforms} onChange={(v) => updateEdit('platforms', v)} colors={C} error={editErrors.platforms} max={3} disabled={hasProposals} />
 
                     <Text style={[em.sectionHdr, { color: C.textSecondary, marginTop: 24 }]}>{t('campaignDetail.editSectionRequirements')}</Text>
 
                     <Text style={[em.label, { color: C.text }]}>{t('campaignDetail.fieldContentType')} <Text style={{ color: C.brinjal1 }}>*</Text></Text>
                     <ChipGroup options={CONTENT_TYPES} value={editForm.contentType} onChange={(v) => updateEdit('contentType', v)} colors={C} error={editErrors.contentType} />
 
-                    <Text style={[em.label, { color: C.text, marginTop: 16 }]}>{t('campaignDetail.fieldDeliverables')} <Text style={{ color: C.brinjal1 }}>*</Text></Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 16 }}>
+                      <Text style={[em.label, { color: C.text }]}>{t('campaignDetail.fieldDeliverables')} <Text style={{ color: C.brinjal1 }}>*</Text></Text>
+                      {hasProposals && <Ionicons name="lock-closed" size={11} color={C.textSecondary} />}
+                    </View>
+                    {hasProposals && <Text style={[em.lockedNote, { color: C.textSecondary }]}>{t('campaignDetail.lockedFieldNote')}</Text>}
                     <TextInput
-                      style={[em.textarea, { backgroundColor: C.background, borderColor: editErrors.deliverables ? ERROR_RED : C.border, color: C.text }]}
+                      style={[em.textarea, { backgroundColor: hasProposals ? C.border : C.background, borderColor: editErrors.deliverables ? ERROR_RED : C.border, color: C.text, opacity: hasProposals ? 0.6 : 1 }]}
                       value={editForm.deliverables}
                       onChangeText={(v) => updateEdit('deliverables', v)}
                       placeholder={t('campaignDetail.deliverablesPlaceholder')}
@@ -787,15 +839,20 @@ export default function CampaignDetailScreen() {
                       multiline
                       numberOfLines={3}
                       textAlignVertical="top"
+                      editable={!hasProposals}
                     />
                     {editErrors.deliverables ? <Text style={em.errTxt}>{editErrors.deliverables}</Text> : null}
 
-                    <Text style={[em.sectionHdr, { color: C.textSecondary, marginTop: 24 }]}>{t('campaignDetail.editSectionBudget')}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 24 }}>
+                      <Text style={[em.sectionHdr, { color: C.textSecondary }]}>{t('campaignDetail.editSectionBudget')}</Text>
+                      {hasProposals && <Ionicons name="lock-closed" size={11} color={C.textSecondary} />}
+                    </View>
+                    {hasProposals && <Text style={[em.lockedNote, { color: C.textSecondary }]}>{t('campaignDetail.lockedFieldNote')}</Text>}
 
                     <Text style={[em.label, { color: C.text }]}>{t('campaignDetail.fieldBudget')} <Text style={{ color: C.brinjal1 }}>*</Text></Text>
                     <View style={em.budgetRow}>
                       <View style={{ flex: 1 }}>
-                        <View style={[em.currencyWrap, { backgroundColor: C.background, borderColor: editErrors.budgetMin ? ERROR_RED : C.border }]}>
+                        <View style={[em.currencyWrap, { backgroundColor: hasProposals ? C.border : C.background, borderColor: editErrors.budgetMin ? ERROR_RED : C.border, opacity: hasProposals ? 0.6 : 1 }]}>
                           <Text style={[em.currencySymbol, { color: C.textSecondary }]}>Rs.</Text>
                           <TextInput
                             style={[em.currencyInput, { color: C.text }]}
@@ -804,13 +861,14 @@ export default function CampaignDetailScreen() {
                             placeholder={t('campaignDetail.budgetMinPlaceholder')}
                             placeholderTextColor={C.textSecondary}
                             keyboardType="numeric"
+                            editable={!hasProposals}
                           />
                         </View>
                         {editErrors.budgetMin ? <Text style={em.errTxt}>{editErrors.budgetMin}</Text> : null}
                       </View>
                       <Text style={[em.budgetDash, { color: C.textSecondary }]}>–</Text>
                       <View style={{ flex: 1 }}>
-                        <View style={[em.currencyWrap, { backgroundColor: C.background, borderColor: editErrors.budgetMax ? ERROR_RED : C.border }]}>
+                        <View style={[em.currencyWrap, { backgroundColor: hasProposals ? C.border : C.background, borderColor: editErrors.budgetMax ? ERROR_RED : C.border, opacity: hasProposals ? 0.6 : 1 }]}>
                           <Text style={[em.currencySymbol, { color: C.textSecondary }]}>Rs.</Text>
                           <TextInput
                             style={[em.currencyInput, { color: C.text }]}
@@ -819,6 +877,7 @@ export default function CampaignDetailScreen() {
                             placeholder={t('campaignDetail.budgetMaxPlaceholder')}
                             placeholderTextColor={C.textSecondary}
                             keyboardType="numeric"
+                            editable={!hasProposals}
                           />
                         </View>
                         {editErrors.budgetMax ? <Text style={em.errTxt}>{editErrors.budgetMax}</Text> : null}
@@ -1084,6 +1143,7 @@ const em = StyleSheet.create({
   body: { flexGrow: 0 },
 
   sectionHdr: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 0, marginBottom: 12, fontFamily: F.bold },
+  lockedNote: { fontSize: 11, marginTop: -8, marginBottom: 10, fontFamily: F.regular },
   label:      { fontSize: 13, marginBottom: 8, fontFamily: F.semibold },
   optional:   { fontSize: 12, fontFamily: F.regular },
   input:      { borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14, height: 48, fontSize: 15, fontFamily: F.regular },

@@ -6,6 +6,7 @@ import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import {
   ActivityIndicator,
   Animated,
+  Image,
   Linking,
   Modal,
   Pressable,
@@ -208,9 +209,13 @@ export default function CreatorDetailScreen() {
 
         {/* ── Hero ── */}
         <View style={[s.hero, { backgroundColor: C.surface }]}>
-          <View style={[s.avatarCircle, { backgroundColor: avatarBg }]}>
-            <Text style={s.avatarText}>{initials}</Text>
-          </View>
+          {profile.avatarUrl ? (
+            <Image source={{ uri: profile.avatarUrl }} style={s.avatarCircle} />
+          ) : (
+            <View style={[s.avatarCircle, { backgroundColor: avatarBg }]}>
+              <Text style={s.avatarText}>{initials}</Text>
+            </View>
+          )}
 
           <View style={s.heroInfo}>
             <View style={s.nameRow}>

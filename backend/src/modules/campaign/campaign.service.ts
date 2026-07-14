@@ -22,6 +22,11 @@ import {
 
 const CAMPAIGN_FIELDS = ['title', 'description', 'category', 'goals', 'platforms', 'contentType', 'deliverables', 'paymentType', 'location', 'venue', 'benefits'] as const;
 
+// Once a creator has submitted a proposal, the terms it was submitted against
+// (price, platform, deliverables) can no longer change under them — everything
+// else (title, description, deadline, status, etc.) can still be edited.
+const FIELDS_LOCKED_AFTER_PROPOSALS = ['budgetMin', 'budgetMax', 'platforms', 'deliverables'] as const;
+
 export const MASTER_CATEGORIES: { emoji: string; label: string }[] = [
   { emoji: '🍔', label: 'Food' },
   { emoji: '✈️', label: 'Travel' },
@@ -188,6 +193,14 @@ export class CampaignService {
 
     if (campaign.businessId !== business.id) {
       throw new AppError('You are not authorized to update this campaign', 403);
+    }
+
+    if (campaign._count.applications > 0) {
+      for (const field of FIELDS_LOCKED_AFTER_PROPOSALS) {
+        if (input[field] !== undefined) {
+          throw new AppError(`Cannot change ${field} — proposals have already been submitted for this event`, 400);
+        }
+      }
     }
 
     const updated = await this.repo.update(id, {

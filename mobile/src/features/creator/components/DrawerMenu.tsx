@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { F } from '@/utilities/constants';
-import { formatPhoneDisplay } from '@/utilities/phone';
+import { getAccountIdentityLine } from '@/utilities/phone';
 
 const DRAWER_W = 280;
 
@@ -63,7 +63,7 @@ export function DrawerMenu({ visible, user, onClose, onLogout }: Props) {
   if (!rendered) return null;
 
   const initial = (user?.name ?? 'C')[0].toUpperCase();
-  const identityLine = user?.phone ? formatPhoneDisplay(user.phone) : (user?.email ?? '');
+  const identityLine = user ? getAccountIdentityLine(user) : '';
 
   return (
     <View style={StyleSheet.absoluteFill}>

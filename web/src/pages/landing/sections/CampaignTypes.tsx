@@ -24,9 +24,9 @@ export function CampaignTypes() {
         </motion.div>
 
         <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="grid md:grid-cols-2 gap-6">
-          {TYPES.map(({ icon: Icon, tag, color, bg, title, desc, points }) => (
+          {TYPES.map(({ icon: Icon, tag, color, bg, title, desc, points }, i) => (
             <motion.div
-              key={tag}
+              key={i}
               variants={fadeUp}
               whileHover={{ y: -6 }}
               className="p-8 rounded-3xl bg-white border border-gray-100 shadow-sm hover:shadow-xl transition-all"
@@ -38,8 +38,8 @@ export function CampaignTypes() {
               <h3 className="font-extrabold text-gray-900 text-xl mt-2 mb-3">{title}</h3>
               <p className="text-gray-500 text-sm leading-relaxed mb-5">{desc}</p>
               <ul className="space-y-2.5">
-                {points.map((p) => (
-                  <li key={p} className="flex items-start gap-2.5 text-sm text-gray-600">
+                {points.map((p, j) => (
+                  <li key={j} className="flex items-start gap-2.5 text-sm text-gray-600">
                     <Check size={16} className="flex-shrink-0 mt-0.5" style={{ color }} />
                     <span>{p}</span>
                   </li>

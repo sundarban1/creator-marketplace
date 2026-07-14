@@ -12,6 +12,7 @@ import { API_BASE, request } from '@/lib/api';
 import {
   ActivityIndicator,
   Animated,
+  Image,
   Keyboard,
   KeyboardAvoidingView,
   Modal,
@@ -36,7 +37,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/components/Toast';
 import { COLORS, F } from '@/utilities/constants';
 import { pickAndUpload } from '@/utilities/uploadImage';
-import { formatPhoneDisplay, isValidNepaliPhone, normalizePhoneForSubmit } from '@/utilities/phone';
+import { formatPhoneDisplay, getAccountIdentityLine, isValidNepaliPhone, normalizePhoneForSubmit } from '@/utilities/phone';
 import {
   authenticate as authenticateBiometric,
   getBiometricLabel,
@@ -2103,12 +2104,16 @@ export default function CreatorSettingsScreen() {
         <SectionHeader title={t('creatorSettings.accountSection')} />
         <Card>
           <View style={[styles.accountCard, { borderBottomWidth: 1, borderBottomColor: C.border }]}>
-            <View style={[styles.accountAvatar, { backgroundColor: C.brinjal1 }]}>
-              <Text style={styles.accountAvatarText}>{(user?.name ?? 'C')[0].toUpperCase()}</Text>
-            </View>
+            {user?.avatar ? (
+              <Image source={{ uri: user.avatar }} style={styles.accountAvatar} />
+            ) : (
+              <View style={[styles.accountAvatar, { backgroundColor: C.brinjal1 }]}>
+                <Text style={styles.accountAvatarText}>{(user?.name ?? 'C')[0].toUpperCase()}</Text>
+              </View>
+            )}
             <View style={{ flex: 1 }}>
               <Text style={[styles.accountName, { color: C.text }]}>{user?.name ?? 'Creator'}</Text>
-              <Text style={[styles.accountEmail, { color: C.textSecondary }]}>{user?.email ?? 'creator@example.com'}</Text>
+              <Text style={[styles.accountEmail, { color: C.textSecondary }]}>{user ? getAccountIdentityLine(user) : 'creator@example.com'}</Text>
             </View>
           </View>
           <NavRow ionIcon="create-outline" ionIconColor={C.brinjal1} label={t('creatorSettings.editProfileLabel')} onPress={() => router.push('/(creator)/edit-profile')} />
