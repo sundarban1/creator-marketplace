@@ -14,6 +14,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { creatorService, type ApiCreatorProfile } from '@/services/creator';
 import { useFavoriteBusinesses } from '@/hooks/useFavoriteBusinesses';
+import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { F } from '@/utilities/constants';
 import { pickAndUpload } from '@/utilities/uploadImage';
 
@@ -65,6 +66,7 @@ export default function CreatorProfileScreen() {
   const { t } = useLanguage();
   const toast = useToast();
   const { favoriteIds } = useFavoriteBusinesses();
+  const { categories: allCategories } = useAllCategories();
   const [profile, setProfile]           = useState<ApiCreatorProfile | null>(null);
   const [avatarUploading, setUploading] = useState(false);
 
@@ -213,11 +215,15 @@ export default function CreatorProfileScreen() {
           C={C}>
           {profile?.categories?.length ? (
             <View style={s.chipWrap}>
-              {profile.categories.map((cat) => (
-                <View key={cat} style={[s.chip, { backgroundColor: C.primaryLight }]}>
-                  <Text style={[s.chipText, { color: C.brinjal1 }]}>{cat}</Text>
-                </View>
-              ))}
+              {profile.categories.map((cat) => {
+                const meta = getCategoryMeta(allCategories, cat);
+                return (
+                  <View key={cat} style={[s.chip, { backgroundColor: C.primaryLight }]}>
+                    <FontAwesome5 name={meta.icon} size={11} color={meta.color} />
+                    <Text style={[s.chipText, { color: C.brinjal1 }]}>{cat}</Text>
+                  </View>
+                );
+              })}
             </View>
           ) : (
             <EmptyState
@@ -418,7 +424,7 @@ const s = StyleSheet.create({
 
   // Category chips
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip:     { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 12 },
+  chip:     { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 12 },
   chipText: { fontSize: 13, fontFamily: F.semibold },
 
   // Social / portfolio rows

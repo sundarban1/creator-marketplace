@@ -477,7 +477,7 @@ export default function HomeScreen() {
                     <Image source={{ uri: user.avatar }} style={styles.avatarImage} resizeMode="cover" />
                   ) : (
                     <View style={[styles.avatarFallback, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
-                      <Ionicons name="person" size={20} color="#fff" />
+                      <Text style={styles.avatarInitial}>{(user?.name ?? 'C').trim()[0].toUpperCase()}</Text>
                     </View>
                   )}
                 </View>
@@ -877,6 +877,7 @@ const styles = StyleSheet.create({
   avatarClip:   { width: '100%', height: '100%', borderRadius: 22, overflow: 'hidden' },
   avatarImage:  { width: '100%', height: '100%' },
   avatarFallback: { width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center' },
+  avatarInitial:  { fontSize: 18, color: '#fff', fontFamily: F.extrabold },
 
   // ── Search ──
   searchRow: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 4 },

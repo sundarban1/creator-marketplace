@@ -1248,7 +1248,7 @@ const en = {
     noSocialAccounts: 'No social accounts added yet.',
     noPastWork: 'No work added yet.',
     tapEditSettings: 'Edit in settings',
-    contentCategories: 'Content Categories',
+    contentCategories: 'Categories',
     addBtn: '+ Add',
     addContentCategories: 'Add Categories',
     noCategoriesYet: 'No categories yet',

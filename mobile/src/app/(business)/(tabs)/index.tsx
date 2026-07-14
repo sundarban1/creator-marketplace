@@ -158,7 +158,7 @@ export default function BusinessHomeScreen() {
                   <Image source={{ uri: user.avatar }} style={styles.avatarImage} resizeMode="cover" />
                 ) : (
                   <View style={[styles.avatarFallback, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
-                    <Ionicons name="business-outline" size={22} color="#fff" />
+                    <Text style={styles.avatarInitial}>{(businessName || user?.name || 'B').trim()[0].toUpperCase()}</Text>
                   </View>
                 )}
               </View>
@@ -372,6 +372,7 @@ const styles = StyleSheet.create({
   avatarClip:   { width: '100%', height: '100%', borderRadius: 22, overflow: 'hidden' },
   avatarImage: { width: '100%', height: '100%' },
   avatarFallback: { width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center' },
+  avatarInitial:  { fontSize: 18, color: '#fff', fontFamily: F.extrabold },
   statsStrip: { flexDirection: 'row', marginHorizontal: 20, marginBottom: 4, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 16, paddingVertical: 12 },
   statStripItem: { flex: 1, alignItems: 'center' },
   statStripVal: { fontSize: 20, color: '#fff', fontFamily: F.bold },

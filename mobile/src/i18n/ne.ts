@@ -1242,7 +1242,7 @@ const ne = {
     noSocialAccounts: 'अहिलेसम्म कुनै सोसल एकाउन्ट जोडिएको छैन।',
     noPastWork: 'अहिलेसम्म कुनै काम थपिएको छैन।',
     tapEditSettings: 'सेटिङमा गएर एडिट गर्नुहोस्',
-    contentCategories: 'कन्टेन्ट क्याटेगोरीहरू',
+    contentCategories: 'क्याटेगोरीहरू',
     addBtn: '+ थप्नुहोस्',
     addContentCategories: 'क्याटेगोरी थप्नुहोस्',
     noCategoriesYet: 'अहिलेसम्म कुनै क्याटेगोरी छैन',
