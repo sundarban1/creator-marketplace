@@ -19,6 +19,7 @@ import { useCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { usePlatforms, getPlatformMeta } from '@/hooks/usePlatforms';
 import { EmptyState } from '@/components/EmptyState';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
+import { useScrollToTopOnTabPress } from '@/hooks/useScrollToTopOnTabPress';
 import { TabSlider } from '@/components/TabSlider';
 import { RangeDropdown } from '@/components/RangeDropdown';
 import { campaignService } from '@/services/campaign';
@@ -56,6 +57,7 @@ export default function HomeScreen() {
   const [activeFilterTab, setActiveFilterTab] = useState('all');
   const [sortBy, setSortBy] = useState<SortOption>('date-latest');
   const [bannerDismissed, setBannerDismissed] = useState(false);
+  const [referralBannerDismissed, setReferralBannerDismissed] = useState(false);
   const [missingFields, setMissingFields] = useState<string[]>([]);
   const [pendingActions, setPendingActions] = useState<Array<{ type: 'start_work' | 'upload_work' | 'event_pending'; title: string }>>([]);
   const [eventType, setEventType] = useState<EventTypeFilter>('ALL');
@@ -68,6 +70,7 @@ export default function HomeScreen() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
   const searchInputRef  = useRef<TextInput>(null);
+  const listRef         = useRef<FlatList<Campaign>>(null);
   const searchDebounce  = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [tempPriceMin, setTempPriceMin] = useState(0);
   const [tempPriceMax, setTempPriceMax] = useState(SLIDER_MAX);
@@ -233,6 +236,8 @@ export default function HomeScreen() {
   useEffect(() => {
     if (reconnectedAt) void fetchRef.current({ showLoader: false });
   }, [reconnectedAt]);
+
+  useScrollToTopOnTabPress('index', () => listRef.current?.scrollToOffset({ offset: 0, animated: true }));
 
   const refreshNearbyRef = useRef(() => {});
   useEffect(() => {
@@ -412,6 +417,7 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
       <FlatList
+        ref={listRef}
         style={styles.scroll}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
@@ -594,18 +600,22 @@ export default function HomeScreen() {
         )}
 
         {/* ── Refer a friend banner ── */}
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-          style={[styles.banner, { backgroundColor: C.surface, borderLeftColor: '#EC4899' }]}
-          onPress={() => router.push('/(creator)/referral')}>
-          <View style={[styles.bannerIconBox, { backgroundColor: '#FCE7F3' }]}>
-            <Ionicons name="gift-outline" size={20} color="#EC4899" />
-          </View>
-          <View style={styles.bannerText}>
-            <Text style={[styles.bannerTitle, { color: C.text }]}>{t('referral.homeBannerTitle')}</Text>
-            <Text style={[styles.bannerSub, { color: C.textSecondary }]} numberOfLines={1}>{t('referral.homeBannerSub')}</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={16} color={C.textSecondary} />
-        </Pressable>
+        {!referralBannerDismissed && (
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            style={[styles.banner, { backgroundColor: C.surface, borderLeftColor: '#EC4899' }]}
+            onPress={() => router.push('/(creator)/referral')}>
+            <View style={[styles.bannerIconBox, { backgroundColor: '#FCE7F3' }]}>
+              <Ionicons name="gift-outline" size={20} color="#EC4899" />
+            </View>
+            <View style={styles.bannerText}>
+              <Text style={[styles.bannerTitle, { color: C.text }]}>{t('referral.homeBannerTitle')}</Text>
+              <Text style={[styles.bannerSub, { color: C.textSecondary }]} numberOfLines={1}>{t('referral.homeBannerSub')}</Text>
+            </View>
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.bannerClose} onPress={() => setReferralBannerDismissed(true)} hitSlop={10}>
+              <Ionicons name="close" size={16} color={C.textSecondary} />
+            </Pressable>
+          </Pressable>
+        )}
 
         {/* ── Error ── */}
         {fetchError ? (

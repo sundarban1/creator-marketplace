@@ -1,4 +1,18 @@
 import { z } from 'zod';
+import { isValidNepaliPhone, toE164NepaliPhone } from '../../utils/phone';
+
+// Optional/nullable — this is the business's public contact number, separate
+// from the OTP-verified account phone (see auth.schema.ts's phoneField), but
+// still expected to be a Nepal mobile number like everywhere else in the app.
+// An empty/absent value is allowed through untouched (clearing the field);
+// only a non-empty value gets format-checked and canonicalized.
+const businessPhoneField = z
+  .string()
+  .trim()
+  .optional()
+  .nullable()
+  .refine((v) => !v || isValidNepaliPhone(v), 'Enter a valid Nepali mobile number (starts with 97 or 98, 10 digits)')
+  .transform((v) => (v ? toE164NepaliPhone(v) : v));
 
 export const updateBusinessProfileSchema = z.object({
   businessName: z.string().min(2, 'Business name must be at least 2 characters').optional(),
@@ -8,7 +22,7 @@ export const updateBusinessProfileSchema = z.object({
   categories: z.array(z.string()).optional(),
   panNo: z.string().optional().nullable(),
   location: z.string().optional().nullable(),
-  phone: z.string().max(20).optional().nullable(),
+  phone: businessPhoneField,
   showPublicProfile:   z.boolean().optional(),
   hideContactDetails:  z.boolean().optional(),
   allowDirectMessages: z.boolean().optional(),

@@ -8,6 +8,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { DrawerMenu } from '@/features/creator/components/DrawerMenu';
 import { useNotificationBadge } from '@/context/NotificationContext';
+import { scrollToTopEvents } from '@/lib/scrollToTopEvents';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
@@ -71,6 +72,11 @@ function CustomTabBar({
         const color   = cfg.color ?? C.brinjal1;
 
         function onPress() {
+          // Always fires, whether this tab is already focused or not — the
+          // destination screen's own useScrollToTopOnTabPress listener scrolls its
+          // list back up, since Tabs keeps every screen mounted (and scrolled where
+          // you left it) when switching away and back.
+          scrollToTopEvents.emit(route.name);
           if (route.name === 'messages') {
             navigation.navigate('messages', { screen: 'index' });
           } else {

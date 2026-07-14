@@ -212,8 +212,11 @@ export const creatorService = {
     await request('DELETE', `/api/creator/social-accounts/${id}`);
   },
 
-  async connectYoutubeAccount(accessToken: string): Promise<ApiSocialAccount> {
-    const res = await request<ApiSocialAccount>('POST', '/api/creator/social-accounts/youtube/connect', { accessToken });
+  // refreshToken/expiresIn are only present when Google actually issued a refresh
+  // token — the backend persists them so the subscriber count can keep refreshing
+  // itself automatically afterwards (see useGoogleAccessToken.ts).
+  async connectYoutubeAccount(accessToken: string, refreshToken?: string, expiresIn?: number): Promise<ApiSocialAccount> {
+    const res = await request<ApiSocialAccount>('POST', '/api/creator/social-accounts/youtube/connect', { accessToken, refreshToken, expiresIn });
     return res.data;
   },
 
@@ -235,6 +238,14 @@ export const creatorService = {
   async connectInstagramAccount(accessToken: string, pageId: string): Promise<ApiSocialAccount> {
     const res = await request<ApiSocialAccount>('POST', '/api/creator/social-accounts/instagram/connect', { accessToken, pageId });
     return res.data;
+  },
+
+  // Direct connect — no Facebook account/Page needed, for creators who only have
+  // Instagram. See getTiktokAuthorizeUrl above for the same "backend hands back a
+  // browser URL, we open it, the redirect lands on our API" pattern.
+  async getInstagramLoginAuthorizeUrl(): Promise<string> {
+    const res = await request<{ url: string }>('GET', '/api/creator/social-accounts/instagram-login/authorize');
+    return res.data.url;
   },
 
   // ── Business: save/unsave creators ─────────────────────────────────────────

@@ -8,14 +8,11 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { authService } from '@/services/auth';
 import { F } from '@/utilities/constants';
+import { isValidNepaliPhone, normalizePhoneForSubmit } from '@/utilities/phone';
 
 type Channel = 'email' | 'phone';
 
 function isValidEmail(v: string) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()); }
-function isValidPhone(v: string) {
-  const stripped = v.replace(/^\+?977/, '').replace(/[\s\-()]/g, '');
-  return /^\d{7,10}$/.test(stripped);
-}
 
 export default function ForgotPasswordScreen() {
   const C = useAppColors();
@@ -26,7 +23,7 @@ export default function ForgotPasswordScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const isValid = channel === 'email' ? isValidEmail(email) : isValidPhone(phone);
+  const isValid = channel === 'email' ? isValidEmail(email) : isValidNepaliPhone(phone);
 
   async function handleSendOtp() {
     if (!isValid) {
@@ -41,9 +38,9 @@ export default function ForgotPasswordScreen() {
         await authService.forgotPassword({ email: trimmedEmail });
         router.push({ pathname: '/reset-otp', params: { email: trimmedEmail } });
       } else {
-        const trimmedPhone = phone.trim();
-        await authService.forgotPassword({ phone: trimmedPhone });
-        router.push({ pathname: '/reset-otp', params: { phone: trimmedPhone } });
+        const normalisedPhone = normalizePhoneForSubmit(phone);
+        await authService.forgotPassword({ phone: normalisedPhone });
+        router.push({ pathname: '/reset-otp', params: { phone: normalisedPhone } });
       }
     } catch (e: any) {
       setError(e.message ?? 'Failed to send code. Please try again.');

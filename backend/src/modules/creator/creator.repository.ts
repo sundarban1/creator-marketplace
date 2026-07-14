@@ -220,16 +220,63 @@ export class CreatorRepository {
   }
 
   // Used by OAuth-connect flows (e.g. YouTube) — creates the row on first connect,
-  // or refreshes profileUrl/followers/avatar on a reconnect.
+  // or refreshes profileUrl/followers/avatar on a reconnect. Also persists whatever
+  // token data the platform gave back so the follower count can keep refreshing
+  // itself afterwards (see refreshAllSocialAccountFollowers in creator.service.ts)
+  // without the creator ever having to reconnect or tap anything.
   async upsertOAuthSocialAccount(
     creatorProfileId: string,
     platform: string,
-    data: { profileUrl: string; followers: number; platformUserId: string; avatarUrl?: string },
+    data: {
+      profileUrl: string;
+      followers: number;
+      platformUserId: string;
+      avatarUrl?: string;
+      accessToken?: string;
+      refreshToken?: string;
+      tokenExpiresAt?: Date;
+      oauthConnectionType?: string;
+    },
   ) {
+    const now = new Date();
     return prisma.socialAccount.upsert({
       where: { creatorProfileId_platform: { creatorProfileId, platform } },
-      create: { creatorProfileId, platform, connectedViaOAuth: true, ...data },
-      update: { connectedViaOAuth: true, ...data, updatedAt: new Date() },
+      create: { creatorProfileId, platform, connectedViaOAuth: true, followersSyncedAt: now, ...data },
+      update: { connectedViaOAuth: true, followersSyncedAt: now, updatedAt: now, ...data },
+    });
+  }
+
+  // All OAuth-connected accounts with a stored token, across every creator — used by
+  // the scheduled job so follower counts keep drifting toward accurate on their own,
+  // with no action needed from the creator.
+  async findAllRefreshableSocialAccounts() {
+    return prisma.socialAccount.findMany({
+      where: { connectedViaOAuth: true, accessToken: { not: null } },
+    });
+  }
+
+  // This one creator's connected accounts that haven't been synced in a while —
+  // used to silently top up stale numbers the moment their Social Accounts screen
+  // loads, on top of the scheduled job, so opening the app is itself enough to see
+  // current numbers without waiting for the next scheduled run.
+  async findStaleSocialAccounts(creatorProfileId: string, staleBefore: Date) {
+    return prisma.socialAccount.findMany({
+      where: {
+        creatorProfileId,
+        connectedViaOAuth: true,
+        accessToken: { not: null },
+        OR: [{ followersSyncedAt: null }, { followersSyncedAt: { lt: staleBefore } }],
+      },
+    });
+  }
+
+  async updateFollowerSync(
+    id: string,
+    data: { followers: number; accessToken?: string; refreshToken?: string; tokenExpiresAt?: Date },
+  ) {
+    return prisma.socialAccount.update({
+      where: { id },
+      data: { ...data, followersSyncedAt: new Date() },
     });
   }
 

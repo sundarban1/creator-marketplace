@@ -16,6 +16,7 @@ import { TabSlider } from '@/components/TabSlider';
 import { EmptyState } from '@/components/EmptyState';
 import { SwipeableChatRow } from '@/components/SwipeableChatRow';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
+import { useScrollToTopOnTabPress } from '@/hooks/useScrollToTopOnTabPress';
 import { messagingEvents } from '@/lib/messagingEvents';
 import { getSocket } from '@/lib/socket';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -225,6 +226,8 @@ export default function BusinessChatListScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError]           = useState('');
   const loadingMoreRef = useRef(false);
+  const listRef = useRef<FlatList<Conversation>>(null);
+  useScrollToTopOnTabPress('messages', () => listRef.current?.scrollToOffset({ offset: 0, animated: true }));
 
   async function loadTab(tabKey: Tab, page: number, replace: boolean) {
     if (!replace) setTabData((prev) => ({ ...prev, [tabKey]: { ...prev[tabKey], loadingMore: true } }));
@@ -363,6 +366,7 @@ export default function BusinessChatListScreen() {
         />
       ) : tab === 'pending' ? (
         <FlatList
+          ref={listRef}
           data={pending}
           keyExtractor={(c) => c.id}
           renderItem={({ item }) => <PendingCard conv={item} />}
@@ -382,6 +386,7 @@ export default function BusinessChatListScreen() {
         />
       ) : (
         <FlatList
+          ref={listRef}
           data={chats}
           keyExtractor={(c) => c.id}
           renderItem={({ item }) => <ChatCard conv={item} onDelete={handleDeleteConversation} />}

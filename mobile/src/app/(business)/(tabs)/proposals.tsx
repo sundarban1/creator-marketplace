@@ -17,6 +17,7 @@ import { useLanguage, type TFn } from '@/context/LanguageContext';
 import { campaignService } from '@/services/campaign';
 import { TabSlider } from '@/components/TabSlider';
 import { EmptyState } from '@/components/EmptyState';
+import { useScrollToTopOnTabPress } from '@/hooks/useScrollToTopOnTabPress';
 import { F } from '@/utilities/constants';
 import { TabColors } from '@/utilities/tabColors';
 
@@ -242,6 +243,8 @@ export default function ProposalsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab]   = useState<TabKey>('all');
   const loadingMoreRef = useRef(false);
+  const listRef = useRef<FlatList<CampaignCard>>(null);
+  useScrollToTopOnTabPress('proposals', () => listRef.current?.scrollToOffset({ offset: 0, animated: true }));
 
   async function loadPage(p: number, replace: boolean) {
     if (!replace) setLoadingMore(true);
@@ -324,6 +327,7 @@ export default function ProposalsScreen() {
         </View>
       ) : (
         <FlatList
+          ref={listRef}
           data={cards}
           keyExtractor={(c) => c.id}
           showsVerticalScrollIndicator={false}

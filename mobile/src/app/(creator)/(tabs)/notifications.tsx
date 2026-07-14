@@ -1,11 +1,12 @@
 import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { EmptyState } from '@/components/EmptyState';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
+import { useScrollToTopOnTabPress } from '@/hooks/useScrollToTopOnTabPress';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage, type TFn } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
@@ -113,6 +114,8 @@ export default function NotificationsScreen() {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const listRef = useRef<FlatList<{ group: string; items: AppNotification[] }>>(null);
+  useScrollToTopOnTabPress('notifications', () => listRef.current?.scrollToOffset({ offset: 0, animated: true }));
 
   function loadNotifications(showLoader = true) {
     if (showLoader) setLoading(true);
@@ -262,6 +265,7 @@ export default function NotificationsScreen() {
         />
       ) : (
         <FlatList
+          ref={listRef}
           data={grouped}
           keyExtractor={(g) => g.group}
           renderItem={({ item: g }) => (

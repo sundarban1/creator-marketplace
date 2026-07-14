@@ -255,7 +255,13 @@
       "Bash(kill 2985 2963)",
       "Bash(disown)",
       "Bash(awk 'NR<=974 && /^  [a-zA-Z]+: {$/{last=$0; line=NR} END{}' /Users/sundarban/Documents/projects/marketplace/mobile/src/i18n/en.ts)",
-      "Bash(grep -n \"^  [a-zA-Z]*: {$\")"
+      "Bash(grep -n \"^  [a-zA-Z]*: {$\")",
+      "Bash(curl -s -X POST http://localhost:3000/api/auth/register -H \"Content-Type: application/json\" -d '{\"phone\":\"12345\",\"password\":\"Passw0rd\",\"role\":\"CREATOR\",\"fullName\":\"Test User\"}')",
+      "Bash(curl -s -X POST http://localhost:3000/api/auth/register -H \"Content-Type: application/json\" -d '{\"phone\":\"9812345678\",\"password\":\"Passw0rd\",\"role\":\"CREATOR\",\"fullName\":\"Test User\"}')",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" \"http://localhost:3000/api/creator/social-accounts/instagram-login/callback?error=access_denied\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" \"http://localhost:3000/api/creator/social-accounts/instagram-login/authorize\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" \"http://localhost:3000/api/creator/social-accounts\")",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('\\\\n'.join\\(k+': '+v for k,v in d.get\\('dependencies',{}\\).items\\(\\) if 'navigation' in k\\)\\)\")"
     ],
     "additionalDirectories": [
       "/Users/sundarban/Documents/projects/marketplace/content",

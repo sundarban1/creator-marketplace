@@ -38,12 +38,14 @@ export function verifyPasswordResetToken(token: string): { id: string; email: st
   return jwt.verify(token, env.JWT_ACCESS_SECRET + '_reset') as { id: string; email: string } & JwtPayload;
 }
 
-// Carries the requesting user + PKCE code_verifier across the redirect to a third-party
-// OAuth provider (e.g. TikTok) and back to our callback, since that round trip happens
-// in a browser with no Authorization header we control.
+// Carries the requesting user (+ PKCE code_verifier, for providers that need it, e.g.
+// TikTok) across the redirect to a third-party OAuth provider and back to our
+// callback, since that round trip happens in a browser with no Authorization header
+// we control. Instagram Login's token exchange uses a client secret instead of PKCE,
+// so codeVerifier is omitted there.
 export interface OAuthStatePayload {
   userId: string;
-  codeVerifier: string;
+  codeVerifier?: string;
 }
 
 export function signOAuthState(payload: OAuthStatePayload): string {

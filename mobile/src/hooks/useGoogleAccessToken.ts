@@ -12,15 +12,25 @@ function reversedIosClientId(clientId: string): string {
   return `com.googleusercontent.apps.${clientId.replace('.apps.googleusercontent.com', '')}`;
 }
 
+type GoogleTokenSuccess = (accessToken: string, refreshToken?: string, expiresIn?: number) => void;
+
 /**
  * Requests a Google access token with the given scopes (beyond the basic
  * profile/email ones expo-auth-session always includes), for calling a Google API
  * server-side (e.g. YouTube Data API) — not for signing the user into this app.
+ *
+ * Also requests offline access (access_type=offline, prompt=consent) so Google
+ * issues a refresh token alongside the access token on native — the backend
+ * persists it (see creator.service.ts connectYoutubeAccount) so the subscriber
+ * count can keep refreshing itself long after this short-lived access token
+ * expires, with no reconnect needed. Google's implicit flow (used on web) never
+ * returns a refresh token regardless — that's an OAuth spec limitation, not a
+ * bug — so web connections just won't self-refresh in the background.
  */
 export function useGoogleAccessToken(scopes: string[]) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const onSuccessRef = useRef<((accessToken: string) => void) | null>(null);
+  const onSuccessRef = useRef<GoogleTokenSuccess | null>(null);
 
   const iosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? 'unset';
   const iosRedirectUri = Platform.OS === 'ios' ? `${reversedIosClientId(iosClientId)}:/oauthredirect` : undefined;
@@ -36,12 +46,19 @@ export function useGoogleAccessToken(scopes: string[]) {
     // device/browser session — a creator who disconnected and wants to link a different
     // Google account would never see the account chooser at all.
     selectAccount:   true,
+    extraParams: {
+      access_type: 'offline',
+      // Google only actually issues a refresh_token on the FIRST consent for a given
+      // client+account — forcing the consent screen again is what guarantees one
+      // comes back even for a creator reconnecting the same Google account.
+      prompt: 'consent',
+    },
   });
 
   useEffect(() => {
     if (!response) return;
     if (response.type === 'success' && response.authentication?.accessToken) {
-      // Implicit flow (web).
+      // Implicit flow (web) — no refresh token possible here, see doc comment above.
       onSuccessRef.current?.(response.authentication.accessToken);
       setLoading(false);
     } else if (response.type === 'success' && response.params?.code) {
@@ -62,7 +79,7 @@ export function useGoogleAccessToken(scopes: string[]) {
         Google.discovery,
       )
         .then((token) => {
-          if (token.accessToken) onSuccessRef.current?.(token.accessToken);
+          if (token.accessToken) onSuccessRef.current?.(token.accessToken, token.refreshToken, token.expiresIn);
           else setError('Google authorization failed. Please try again.');
         })
         .catch(() => setError('Google authorization failed. Please try again.'))
@@ -76,7 +93,7 @@ export function useGoogleAccessToken(scopes: string[]) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [response]);
 
-  function prompt(onSuccess: (accessToken: string) => void) {
+  function prompt(onSuccess: GoogleTokenSuccess) {
     onSuccessRef.current = onSuccess;
     setError('');
     setLoading(true);

@@ -11,6 +11,11 @@ export interface SocialAccountDto {
   avatarUrl: string | null;
   createdAt: string;
   updatedAt: string;
+  // Last time `followers` was actually re-fetched from the platform — lets the app
+  // show "Updated 3h ago" so the automatic-refresh behavior is visible, even though
+  // there's no manual sync action. Never null for an OAuth-connected account once
+  // it's synced at least once; null otherwise (e.g. a manually-typed account).
+  followersSyncedAt: string | null;
 }
 
 export interface CreatorProfileDto {
@@ -95,6 +100,7 @@ type RawSocialAccount = {
   followers: number;
   connectedViaOAuth?: boolean;
   avatarUrl?: string | null;
+  followersSyncedAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -108,6 +114,7 @@ export function toSocialAccountDto(a: RawSocialAccount): SocialAccountDto {
     followers:        a.followers,
     connectedViaOAuth: a.connectedViaOAuth ?? false,
     avatarUrl:        a.avatarUrl ?? null,
+    followersSyncedAt: a.followersSyncedAt ? a.followersSyncedAt.toISOString() : null,
     createdAt:        a.createdAt.toISOString(),
     updatedAt:        a.updatedAt.toISOString(),
   };

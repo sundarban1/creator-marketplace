@@ -1,12 +1,13 @@
 import { router, useFocusEffect } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { TabSlider } from '@/components/TabSlider';
 import { EmptyState } from '@/components/EmptyState';
 import { SwipeableChatRow } from '@/components/SwipeableChatRow';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
+import { useScrollToTopOnTabPress } from '@/hooks/useScrollToTopOnTabPress';
 import {
   ActivityIndicator,
   Alert,
@@ -271,6 +272,8 @@ export default function CreatorMessagesScreen() {
   const [loading, setLoading]       = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError]           = useState('');
+  const listRef = useRef<FlatList<Conversation>>(null);
+  useScrollToTopOnTabPress('messages', () => listRef.current?.scrollToOffset({ offset: 0, animated: true }));
 
   async function load(silent = false) {
     if (!silent) setLoading(true);
@@ -392,6 +395,7 @@ export default function CreatorMessagesScreen() {
         />
       ) : tab === 'requests' ? (
         <FlatList
+          ref={listRef}
           data={requests}
           keyExtractor={(c) => c.id}
           renderItem={({ item }) => <RequestCard conv={item} onRespond={() => load()} />}
@@ -408,6 +412,7 @@ export default function CreatorMessagesScreen() {
         />
       ) : (
         <FlatList
+          ref={listRef}
           data={chats}
           keyExtractor={(c) => c.id}
           renderItem={({ item }) => <ChatCard conv={item} onDelete={handleDeleteConversation} />}

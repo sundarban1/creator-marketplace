@@ -37,6 +37,7 @@ model User {
   reviewsGiven     Review[]          @relation("ReviewFrom")
   reviewsReceived  Review[]          @relation("ReviewTo")
 
+  @@index([role])
   @@map("users")
 }
 
@@ -79,6 +80,7 @@ model CreatorProfile {
   withdrawals          Withdrawal[]
   profileViews         ProfileView[]
 
+  @@index([isVerified])
   @@map("creator_profiles")
 }
 
@@ -135,6 +137,21 @@ model SocialAccount {
   // row instead of erroring on the creatorProfileId+platform unique constraint.
   platformUserId   String?
   avatarUrl        String?
+  // Persisted so the follower/subscriber count can keep refreshing itself (manual
+  // "Refresh" tap + the scheduled job in jobs/refreshSocialFollowers.ts) long after
+  // the connect flow's own short-lived token would otherwise have expired.
+  // Never exposed in any DTO — see creator.dto.ts's toSocialAccountDto allowlist.
+  accessToken      String?
+  refreshToken     String?
+  tokenExpiresAt   DateTime?
+  // Distinguishes HOW this row was connected when the platform alone is ambiguous —
+  // 'instagram' can come from either the Facebook-Page-linked flow or Instagram's own
+  // direct login, and each stores a token from a different API with a different
+  // refresh mechanism (see creator.service.ts refreshAllSocialAccountFollowers).
+  oauthConnectionType String?
+  // Last time `followers` was actually re-fetched from the platform — distinct from
+  // `updatedAt`, which also changes on unrelated edits (e.g. connectedViaOAuth flips).
+  followersSyncedAt DateTime?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
   creatorProfile   CreatorProfile @relation(fields: [creatorProfileId], references: [id], onDelete: Cascade)
@@ -199,6 +216,7 @@ model BusinessProfile {
   referralsReceived   BusinessReferral?    @relation("BizReferralsReceived")
   profileViews        ProfileView[]
 
+  @@index([isVerified])
   @@map("business_profiles")
 }
 
@@ -363,7 +381,12 @@ model Conversation {
   messages       Message[]
 
   @@unique([creatorId, businessId])
-  @@index([businessId])
+  // Covers the inbox list query (messaging.repository.ts findConversationsByCreator/
+  // findConversationsByBusiness): filter by side + hidden flag, ordered by
+  // lastMessageAt. The old standalone @@index([businessId]) is superseded — a
+  // composite index still serves businessId-only lookups via its leading column.
+  @@index([creatorId, hiddenForCreator, lastMessageAt(sort: Desc)])
+  @@index([businessId, hiddenForBusiness, lastMessageAt(sort: Desc)])
   @@index([lastMessageAt(sort: Desc)])
   @@map("conversations")
 }

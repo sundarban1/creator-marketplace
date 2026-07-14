@@ -16,6 +16,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { TabSlider } from '@/components/TabSlider';
 import { useLanguage, type TFn } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
+import { useScrollToTopOnTabPress } from '@/hooks/useScrollToTopOnTabPress';
 import { campaignService } from '@/services/campaign';
 import { F } from '@/utilities/constants';
 import { TabColors } from '@/utilities/tabColors';
@@ -227,6 +228,8 @@ export default function ProposalsScreen() {
   const [error, setError]         = useState('');
   const [activeTab, setActiveTab] = useState<TabKey>('all');
   const loadingMoreRef = useRef(false);
+  const listRef = useRef<FlatList<Proposal>>(null);
+  useScrollToTopOnTabPress('proposals', () => listRef.current?.scrollToOffset({ offset: 0, animated: true }));
 
   async function loadTab(tab: TabKey, page: number, replace: boolean) {
     if (replace) { setError(''); } else { setTabData((prev) => ({ ...prev, [tab]: { ...prev[tab], loadingMore: true } })); }
@@ -324,6 +327,7 @@ export default function ProposalsScreen() {
         />
       ) : (
         <FlatList
+          ref={listRef}
           data={current.items}
           keyExtractor={(p) => p.id}
           renderItem={({ item }) => <ProposalCard proposal={item} />}

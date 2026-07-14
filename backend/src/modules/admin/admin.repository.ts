@@ -80,7 +80,11 @@ export class AdminRepository {
         where,
         skip:    (page - 1) * limit,
         take:    limit,
-        orderBy: { createdAt: 'desc' },
+        // `id` is a tie-breaker, not a display order — createdAt alone isn't
+        // unique, so without it Postgres can return the same row on two
+        // different pages (or skip one) as the result set shifts between
+        // paginated queries.
+        orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
         select: {
           id:              true,
           email:           true,
@@ -112,7 +116,7 @@ export class AdminRepository {
         where,
         skip:    (page - 1) * limit,
         take:    limit,
-        orderBy: { createdAt: 'desc' },
+        orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
         include: {
           user:   { select: { id: true, email: true, isEmailVerified: true, isActive: true, createdAt: true } },
           _count: { select: { applications: true } },
@@ -138,7 +142,7 @@ export class AdminRepository {
         where,
         skip:    (page - 1) * limit,
         take:    limit,
-        orderBy: { createdAt: 'desc' },
+        orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
         include: {
           user:   { select: { id: true, email: true, isEmailVerified: true, isActive: true, createdAt: true } },
           _count: { select: { campaigns: true } },
@@ -171,7 +175,7 @@ export class AdminRepository {
         where,
         skip:    (page - 1) * limit,
         take:    limit,
-        orderBy: { createdAt: 'desc' },
+        orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
         include: {
           business: { select: { businessName: true, logoUrl: true } },
           _count:   { select: { applications: true } },
@@ -341,7 +345,9 @@ export class AdminRepository {
         where,
         skip:    (page - 1) * limit,
         take:    limit,
-        orderBy: { lastMessageAt: 'desc' },
+        // `id` tie-breaker matters even more here since lastMessageAt is
+        // nullable — ties (including null vs null) are common.
+        orderBy: [{ lastMessageAt: 'desc' }, { id: 'asc' }],
         include: {
           creator:  { select: { fullName: true, avatarUrl: true } },
           business: { select: { businessName: true, logoUrl: true } },

@@ -1,13 +1,13 @@
 import { router, useFocusEffect } from 'expo-router';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Image } from 'expo-image';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { BackButton } from '@/components/BackButton';
 import { VerifiedBadge } from '@/components/VerifiedBadge';
 import {
   ActivityIndicator,
   FlatList,
-  Image,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -258,6 +258,7 @@ function CreatorAvatar({ avatarUrl, bg }: { avatarUrl: string | null; bg: string
       <Image
         source={{ uri: avatarUrl }}
         style={s.avatar}
+        contentFit="cover"
         onError={() => setFailed(true)}
       />
     );

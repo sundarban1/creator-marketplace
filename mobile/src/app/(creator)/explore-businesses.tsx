@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Image } from 'expo-image';
 import { BackButton } from '@/components/BackButton';
 import { VerifiedBadge } from '@/components/VerifiedBadge';
 import { useFocusEffect } from 'expo-router';
@@ -8,7 +9,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
-  Image,
   Pressable,
   RefreshControl,
   StyleSheet,
@@ -152,7 +152,7 @@ function BusinessAvatar({ name, logoUrl, size = 56 }: { name: string; logoUrl: s
   const C = useAppColors();
   const initials = name.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase();
   if (logoUrl) {
-    return <Image source={{ uri: logoUrl }} style={{ width: size, height: size, borderRadius: size * 0.28 }} resizeMode="cover" />;
+    return <Image source={{ uri: logoUrl }} style={{ width: size, height: size, borderRadius: size * 0.28 }} contentFit="cover" />;
   }
   return (
     <View style={{ width: size, height: size, borderRadius: size * 0.28, backgroundColor: C.primaryLight, alignItems: 'center', justifyContent: 'center' }}>

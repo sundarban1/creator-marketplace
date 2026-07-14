@@ -18,11 +18,13 @@ import { languageMiddleware } from './middleware/language';
 import prisma from './prisma';
 import { initSocket } from './socket';
 import { startCampaignExpiryJob } from './jobs/expireCampaigns';
+import { startSocialFollowerRefreshJob } from './jobs/refreshSocialFollowers';
 
 // Route imports
 import authRoutes from './modules/auth/auth.routes';
 import creatorRoutes from './modules/creator/creator.routes';
 import tiktokCallbackRoutes from './modules/creator/tiktok.routes';
+import instagramLoginCallbackRoutes from './modules/creator/instagram-login.routes';
 import referralRoutes from './modules/referral/referral.routes';
 import businessReferralRoutes from './modules/business-referral/business-referral.routes';
 import walletRoutes from './modules/wallet/wallet.routes';
@@ -284,9 +286,11 @@ app.get('/api/docs.json', (_req, res) => {
 
 // ── API Routes ────────────────────────────────────────────────────────────────
 app.use('/api/auth', authRoutes);
-// Public — TikTok's browser redirect lands here directly with no auth header, so this
-// must be mounted (and matched) before the authenticated /api/creator router below.
+// Public — TikTok's and Instagram's browser redirects land here directly with no
+// auth header, so these must be mounted (and matched) before the authenticated
+// /api/creator router below.
 app.use('/api/creator/social-accounts/tiktok', tiktokCallbackRoutes);
+app.use('/api/creator/social-accounts/instagram-login', instagramLoginCallbackRoutes);
 app.use('/api/creator', creatorRoutes);
 app.use('/api/creator/referral', referralRoutes);
 app.use('/api/creator/wallet', walletRoutes);
@@ -321,6 +325,7 @@ async function bootstrap() {
     const httpServer = createServer(app);
     initSocket(httpServer);
     startCampaignExpiryJob();
+    startSocialFollowerRefreshJob();
 
     httpServer.listen(PORT, () => {
       logger.info(`Server running on http://localhost:${PORT}`);

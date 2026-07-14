@@ -18,6 +18,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { TabSlider } from '@/components/TabSlider';
 import { useToast } from '@/components/Toast';
+import { useScrollToTopOnTabPress } from '@/hooks/useScrollToTopOnTabPress';
 import { campaignService } from '@/services/campaign';
 import { creatorService, type SavedCreatorItem } from '@/services/creator';
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
@@ -84,6 +85,8 @@ export default function CampaignsScreen() {
   const [activeFilter, setActiveFilter] = useState<FilterKey>('All');
   const [publishingId, setPublishingId] = useState<string | null>(null);
   const loadingMoreRef = useRef(false);
+  const listRef = useRef<FlatList<Campaign>>(null);
+  useScrollToTopOnTabPress('campaigns', () => listRef.current?.scrollToOffset({ offset: 0, animated: true }));
 
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const [applications, setApplications] = useState<Application[]>([]);
@@ -256,6 +259,7 @@ export default function CampaignsScreen() {
         </View>
       ) : (
         <FlatList
+          ref={listRef}
           data={shown}
           keyExtractor={(c) => c.id}
           contentContainerStyle={[styles.list, shown.length === 0 && styles.listEmpty]}

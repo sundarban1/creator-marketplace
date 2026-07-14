@@ -190,6 +190,35 @@ export class CreatorController {
     }
   }
 
+  async getInstagramLoginAuthorizeUrl(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const url = creatorService.getInstagramLoginAuthorizeUrl(req.user!.id);
+      success(res, { url }, 'Instagram authorize URL generated');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // Public — Instagram's browser redirect lands here (no auth header), so like
+  // tiktokCallback above, failures are reported back as a 302 to the app's custom
+  // URL scheme instead of a JSON error response.
+  async instagramLoginCallback(req: Request, res: Response): Promise<void> {
+    const { code, state, error } = req.query as { code?: string; state?: string; error?: string };
+    const redirectBase = `${env.APP_SCHEME}://instagram-login-callback`;
+
+    if (error || !code || !state) {
+      res.redirect(`${redirectBase}?success=false&error=${encodeURIComponent(error ?? 'missing_code')}`);
+      return;
+    }
+    try {
+      await creatorService.handleInstagramLoginCallback(code, state);
+      res.redirect(`${redirectBase}?success=true`);
+    } catch (err) {
+      const message = err instanceof AppError ? err.message : 'Could not connect Instagram account';
+      res.redirect(`${redirectBase}?success=false&error=${encodeURIComponent(message)}`);
+    }
+  }
+
   async getFacebookPages(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const pages = await creatorService.listFacebookPages(req.body.accessToken);

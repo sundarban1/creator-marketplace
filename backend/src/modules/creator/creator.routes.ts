@@ -242,6 +242,8 @@ router.get('/social-accounts/tiktok/authorize', ctrl.getTiktokAuthorizeUrl.bind(
 router.post('/social-accounts/facebook/pages',   validate(listFacebookPagesSchema),       ctrl.getFacebookPages.bind(ctrl));
 router.post('/social-accounts/facebook/connect', validate(connectFacebookPageSchema),     ctrl.connectFacebookPage.bind(ctrl));
 router.post('/social-accounts/instagram/connect', validate(connectInstagramAccountSchema), ctrl.connectInstagramAccount.bind(ctrl));
+// Direct connect — no Facebook account/Page needed (see instagram-login.routes.ts for the public callback half of this flow).
+router.get('/social-accounts/instagram-login/authorize', ctrl.getInstagramLoginAuthorizeUrl.bind(ctrl));
 
 router.get('/earnings',                    ctrl.getEarnings.bind(ctrl));
 router.get('/analytics',                   ctrl.getMyAnalytics.bind(ctrl));

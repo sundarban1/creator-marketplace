@@ -29,6 +29,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { authService } from '@/services/auth';
 import type { Lang } from '@/i18n';
 import { COLORS, F } from '@/utilities/constants';
+import { isValidNepaliPhone, normalizePhoneForSubmit } from '@/utilities/phone';
 import {
   authenticate as authenticateBiometric,
   getBiometricLabel,
@@ -77,21 +78,6 @@ const PW_RULES = [
 ];
 
 function isValidEmail(v: string) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()); }
-// Nepal-only app — every mobile number is 10 digits starting 97/98 (matches the same
-// check in (business)/settings.tsx's phone-verify flow).
-function isValidPhone(v: string) {
-  const stripped = v.replace(/^\+?977/, '').replace(/[\s\-()]/g, '');
-  return /^(97|98)\d{8}$/.test(stripped);
-}
-// Always sends E.164 (+977XXXXXXXXXX) to the backend regardless of whether the user
-// typed the country code themselves — the field only ever shows a "+977" prefix chip,
-// it doesn't require them to type it.
-function normalisePhone(v: string): string {
-  const stripped = v.replace(/[\s\-()]/g, '');
-  if (stripped.startsWith('+977')) return stripped;
-  if (stripped.startsWith('977'))  return `+${stripped}`;
-  return `+977${stripped}`;
-}
 const EMAIL_DOMAINS = ['gmail.com', 'yahoo.com', 'hotmail.com'];
 
 // ── Email / Phone identifier detection ───────────────────────────────────────
@@ -102,7 +88,7 @@ function identifierChannel(value: string): IdentifierChannel {
   return value.includes('@') ? 'email' : 'phone';
 }
 function isValidIdentifier(value: string): boolean {
-  return identifierChannel(value) === 'email' ? isValidEmail(value) : isValidPhone(value);
+  return identifierChannel(value) === 'email' ? isValidEmail(value) : isValidNepaliPhone(value);
 }
 
 function getPwErrorKey(p: string): string | undefined {
@@ -297,7 +283,7 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
     setApiError('');
     setLoading(true);
     try {
-      const identifier = channel === 'email' ? { email: trimmedIdentifier } : { phone: normalisePhone(trimmedIdentifier) };
+      const identifier = channel === 'email' ? { email: trimmedIdentifier } : { phone: normalizePhoneForSubmit(trimmedIdentifier) };
       await login(identifier, password, rememberMe);
     } catch (e) {
       const message = e instanceof Error ? e.message : t('auth.login.requiredError');
@@ -481,7 +467,7 @@ function SignupForm({ onGooglePress, googleLoading, googleError, onFacebookPress
         await authService.register({ email: trimmedEmail, password, role });
         router.push({ pathname: '/verify', params: { email: trimmedEmail } });
       } else {
-        const normalisedPhone = normalisePhone(trimmedIdentifier);
+        const normalisedPhone = normalizePhoneForSubmit(trimmedIdentifier);
         await authService.register({ phone: normalisedPhone, password, role });
         router.push({ pathname: '/verify', params: { phone: normalisedPhone } });
       }

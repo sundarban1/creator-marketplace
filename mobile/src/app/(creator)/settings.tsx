@@ -7,7 +7,7 @@ import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { BackButton } from '@/components/BackButton';
 import { creatorService } from '@/services/creator';
 import { authService } from '@/services/auth';
-import { useLanguage } from '@/context/LanguageContext';
+import { useLanguage, type TFn } from '@/context/LanguageContext';
 import { API_BASE, request } from '@/lib/api';
 import {
   ActivityIndicator,
@@ -36,7 +36,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/components/Toast';
 import { COLORS, F } from '@/utilities/constants';
 import { pickAndUpload } from '@/utilities/uploadImage';
-import { formatPhoneDisplay } from '@/utilities/phone';
+import { formatPhoneDisplay, isValidNepaliPhone, normalizePhoneForSubmit } from '@/utilities/phone';
 import {
   authenticate as authenticateBiometric,
   getBiometricLabel,
@@ -155,6 +155,19 @@ function fmt(n: string): string {
   return v.toString();
 }
 
+// Surfaces the automatic background refresh (see creator.service.ts
+// refreshStaleSocialAccountsForCreator / jobs/refreshSocialFollowers.ts) as a plain
+// "Updated 3h ago" line — there's no manual sync action to show instead.
+function syncedAgo(iso: string | null | undefined, t: TFn): string | null {
+  if (!iso) return null;
+  const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  if (mins < 1) return t('creatorSettings.syncedJustNow');
+  if (mins < 60) return t('creatorSettings.syncedMinutesAgo', { n: mins });
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return t('creatorSettings.syncedHoursAgo', { n: hrs });
+  return t('creatorSettings.syncedDaysAgo', { n: Math.floor(hrs / 24) });
+}
+
 // ── Themed helpers ────────────────────────────────────────────
 
 function SectionHeader({ title }: { title: string }) {
@@ -237,7 +250,7 @@ export default function CreatorSettingsScreen() {
   const [subPage, setSubPage] = useState<string | null>(null);
 
   // Social accounts state (API-driven)
-  type SocialAccount = { id: string; platform: string; profileUrl: string; followers: number; connectedViaOAuth?: boolean };
+  type SocialAccount = { id: string; platform: string; profileUrl: string; followers: number; connectedViaOAuth?: boolean; followersSyncedAt?: string | null };
   const [socialAccounts, setSocialAccounts] = useState<SocialAccount[]>([]);
   const [connectingPlatform, setConnectingPlatform] = useState<string | null>(null);
   const keyboardOffset = useKeyboardOffset();
@@ -396,7 +409,7 @@ export default function CreatorSettingsScreen() {
   // Load profile from API on mount
   useEffect(() => {
     creatorService.getSocialAccounts().then((accounts) => {
-      setSocialAccounts(accounts.map((a) => ({ id: a.id, platform: a.platform, profileUrl: a.profileUrl, followers: a.followers })));
+      setSocialAccounts(accounts.map((a) => ({ id: a.id, platform: a.platform, profileUrl: a.profileUrl, followers: a.followers, connectedViaOAuth: a.connectedViaOAuth, followersSyncedAt: a.followersSyncedAt })));
     }).catch(() => {});
     creatorService.getProfile().then((profile) => {
       if (profile.portfolioLinks?.length) {
@@ -493,12 +506,12 @@ export default function CreatorSettingsScreen() {
 
   function handleConnectYoutube() {
     setConnectingPlatform('youtube');
-    youtubeAuth.prompt((accessToken) => {
-      creatorService.connectYoutubeAccount(accessToken)
+    youtubeAuth.prompt((accessToken, refreshToken, expiresIn) => {
+      creatorService.connectYoutubeAccount(accessToken, refreshToken, expiresIn)
         .then((account) => {
           setSocialAccounts((prev) => {
             const without = prev.filter((a) => a.platform !== 'youtube');
-            return [...without, { id: account.id, platform: account.platform, profileUrl: account.profileUrl, followers: account.followers, connectedViaOAuth: account.connectedViaOAuth }];
+            return [...without, { id: account.id, platform: account.platform, profileUrl: account.profileUrl, followers: account.followers, connectedViaOAuth: account.connectedViaOAuth, followersSyncedAt: account.followersSyncedAt }];
           });
           showToast(t('creatorSettings.socialAddedToast'));
         })
@@ -594,6 +607,35 @@ export default function CreatorSettingsScreen() {
         setConnectingPlatform(null);
       }
     });
+  }
+
+  // Direct connect — no Facebook account/Page needed, for creators who only have
+  // Instagram. Mirrors handleConnectTiktok: the backend hands back an authorize URL,
+  // we open it in a browser, and Instagram's redirect lands on our API, which saves
+  // the account (validating it's a Business/Creator account, not Personal) and then
+  // 302s back into the app via the kolab:// scheme.
+  async function handleConnectInstagramDirect() {
+    setConnectingPlatform('instagram');
+    try {
+      const url = await creatorService.getInstagramLoginAuthorizeUrl();
+      const result = await WebBrowser.openAuthSessionAsync(url, 'kolab://instagram-login-callback', { preferEphemeralSession: true });
+      if (result.type === 'success' && result.url) {
+        const parsed = new URL(result.url);
+        const success = parsed.searchParams.get('success') === 'true';
+        if (success) {
+          const accounts = await creatorService.getSocialAccounts();
+          setSocialAccounts(accounts);
+          showToast(t('creatorSettings.socialAddedToast'));
+        } else {
+          const error = parsed.searchParams.get('error') ?? t('creatorSettings.socialSaveFailed');
+          showToast(error, true);
+        }
+      }
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : t('creatorSettings.socialSaveFailed'), true);
+    } finally {
+      setConnectingPlatform(null);
+    }
   }
 
   useEffect(() => {
@@ -1214,6 +1256,7 @@ export default function CreatorSettingsScreen() {
             const isLive = OAUTH_LIVE_PLATFORM_IDS.has(p.id);
             const isConnecting = connectingPlatform === p.id;
             const isLast = idx === CONNECTABLE_SOCIAL_PLATFORMS.length - 1;
+            const syncedLabel = acct?.connectedViaOAuth ? syncedAgo(acct.followersSyncedAt, t) : null;
             return (
               <View key={p.id} style={[styles.row, styles.socialRow, !isLast && { borderBottomWidth: 1, borderBottomColor: C.border }]}>
                 <View style={[styles.socialIconWrap, { backgroundColor: p.color + '18' }]}>
@@ -1235,12 +1278,25 @@ export default function CreatorSettingsScreen() {
                           </Text>
                         </View>
                       </View>
-                      <Text style={[styles.socialUrl, { color: C.textSecondary }]} numberOfLines={1}>{acct.profileUrl}</Text>
+                      {syncedLabel && (
+                        <Text style={[styles.socialSyncedText, { color: C.textSecondary }]}>
+                          {t('creatorSettings.syncedPrefix', { time: syncedLabel })}
+                        </Text>
+                      )}
                     </>
                   ) : (
-                    <Text style={[styles.connectPlatformHint, { color: C.textSecondary }]}>
-                      {isLive ? t('creatorSettings.connectHint') : t('creatorSettings.comingSoonHint')}
-                    </Text>
+                    <>
+                      <Text style={[styles.connectPlatformHint, { color: C.textSecondary }]}>
+                        {isLive ? t('creatorSettings.connectHint') : t('creatorSettings.comingSoonHint')}
+                      </Text>
+                      {p.id === 'instagram' && (
+                        <Pressable disabled={isConnecting} onPress={() => void handleConnectInstagramDirect()} hitSlop={4}>
+                          <Text style={[styles.connectInstagramDirectLink, { color: p.color }]}>
+                            {t('creatorSettings.connectInstagramDirectly')}
+                          </Text>
+                        </Pressable>
+                      )}
+                    </>
                   )}
                 </View>
                 <View style={styles.socialActions}>
@@ -1580,9 +1636,13 @@ export default function CreatorSettingsScreen() {
 
   async function handleRequestPhoneOtp() {
     if (!phoneNumber.trim()) return;
+    if (!isValidNepaliPhone(phoneNumber)) {
+      showToast(t('settings.phoneInvalid'), true);
+      return;
+    }
     setPhoneLoading(true);
     try {
-      await authService.requestPhoneOtp(phoneNumber.trim());
+      await authService.requestPhoneOtp(normalizePhoneForSubmit(phoneNumber));
       setPhoneSubPage('otp');
     } catch (e: any) {
       showToast(e.message ?? t('creatorSettings.otpSendFailed'), true);
@@ -1595,7 +1655,7 @@ export default function CreatorSettingsScreen() {
     if (!phoneOtp.trim()) return;
     setPhoneLoading(true);
     try {
-      await authService.verifyPhoneOtp(phoneNumber.trim(), phoneOtp.trim());
+      await authService.verifyPhoneOtp(normalizePhoneForSubmit(phoneNumber), phoneOtp.trim());
       setPhoneVerified(true);
       setVerifiedPhoneNumber(formatPhoneDisplay(phoneNumber.trim()));
       setPhoneSubPage(null);
@@ -2330,6 +2390,7 @@ const styles = StyleSheet.create({
   // ── Connect Accounts (OAuth) ─────────────────────────────────────────────────
   connectPlatformNameRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   connectPlatformHint:    { fontSize: 11, marginTop: 2, fontFamily: F.regular },
+  connectInstagramDirectLink: { fontSize: 11, marginTop: 3, fontFamily: F.bold, textDecorationLine: 'underline' },
   connectBtn:     { borderRadius: 8, paddingHorizontal: 14, height: 32, justifyContent: 'center', alignItems: 'center', minWidth: 84 },
   connectBtnText: { fontSize: 12, fontFamily: F.bold, color: '#fff' },
   comingSoonBtn:  { borderRadius: 8, paddingHorizontal: 10, height: 32, justifyContent: 'center', alignItems: 'center', borderWidth: 1 },
@@ -2408,6 +2469,7 @@ const styles = StyleSheet.create({
   socialMetaRow: { flexDirection: 'row', marginTop: 3, marginBottom: 2 },
   socialFollowerBadge: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2 },
   socialFollowerBadgeText: { fontSize: 11, fontFamily: F.bold },
+  socialSyncedText: { fontSize: 10, fontFamily: F.regular, marginTop: 1 },
 
   // Form section title (kept for other uses)
   formSectionTitle: { fontSize: 15, marginBottom: 16, fontFamily: F.bold },

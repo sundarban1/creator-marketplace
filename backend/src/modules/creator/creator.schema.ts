@@ -40,6 +40,12 @@ export const updateSocialAccountSchema = z.object({
 
 export const connectYoutubeAccountSchema = z.object({
   accessToken: z.string().min(1, 'Access token is required'),
+  // Present only when Google actually issued one (first-time consent with
+  // access_type=offline) — lets the follower count keep refreshing itself long
+  // after this short-lived access token expires. See creator.service.ts
+  // refreshYoutubeFollowers.
+  refreshToken: z.string().optional(),
+  expiresIn: z.number().optional(),
 });
 
 export const listFacebookPagesSchema = z.object({

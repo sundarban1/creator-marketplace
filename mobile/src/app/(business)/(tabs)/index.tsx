@@ -1,9 +1,10 @@
 import { router, useFocusEffect } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { TabSlider } from '@/components/TabSlider';
+import { useScrollToTopOnTabPress } from '@/hooks/useScrollToTopOnTabPress';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
 import { useDrawer } from '@/context/DrawerContext';
@@ -48,6 +49,8 @@ export default function BusinessHomeScreen() {
   const [missingFields, setMissingFields] = useState<string[]>([]);
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [referralBannerDismissed, setReferralBannerDismissed] = useState(false);
+  const scrollRef = useRef<ScrollView>(null);
+  useScrollToTopOnTabPress('index', () => scrollRef.current?.scrollTo({ y: 0, animated: true }));
 
   async function fetchCampaigns(showLoader = true) {
     if (showLoader) setLoading(true);
@@ -123,6 +126,7 @@ export default function BusinessHomeScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
       <ScrollView
+        ref={scrollRef}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scroll}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#7c3aed" />}>

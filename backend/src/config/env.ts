@@ -40,7 +40,24 @@ const envSchema = z.object({
   TIKTOK_CLIENT_KEY: z.string().optional(),
   TIKTOK_CLIENT_SECRET: z.string().optional(),
   TIKTOK_REDIRECT_URI: z.string().optional(),
-  // Custom URL scheme the TikTok callback redirects back into on mobile (see app.json "scheme")
+  // Instagram API with Instagram Login (direct connect — no Facebook account/Page
+  // required, unlike the Facebook Login + Pages flow above). A separate product
+  // under the same Meta App, with its own Instagram App ID/Secret.
+  INSTAGRAM_APP_ID: z.string().optional(),
+  INSTAGRAM_APP_SECRET: z.string().optional(),
+  INSTAGRAM_REDIRECT_URI: z.string().optional(),
+  // Facebook Login (creator social-account OAuth connect) — the mobile app only
+  // needs the App ID (public), but exchanging the client's short-lived user token
+  // for a long-lived one (so follower counts can keep auto-refreshing for months
+  // instead of ~2 hours) has to happen server-side with the App Secret.
+  FACEBOOK_APP_ID: z.string().optional(),
+  FACEBOOK_APP_SECRET: z.string().optional(),
+  // Google OAuth (YouTube connect) — only needed server-side to mint a fresh access
+  // token from a stored refresh token once the original one expires; the initial
+  // connect itself happens entirely client-side and needs no secret.
+  GOOGLE_WEB_CLIENT_ID: z.string().optional(),
+  GOOGLE_CLIENT_SECRET: z.string().optional(),
+  // Custom URL scheme the TikTok/Instagram callbacks redirect back into on mobile (see app.json "scheme")
   APP_SCHEME: z.string().default('kolab'),
 });
 

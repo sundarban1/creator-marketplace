@@ -1,7 +1,16 @@
 import { z } from 'zod';
+import { isValidNepaliPhone, toE164NepaliPhone } from '../../utils/phone';
 
 const emailField = z.string().email('Invalid email address');
-const phoneField = z.string().min(7, 'Phone number is too short').max(15, 'Phone number is too long').regex(/^\+?[\d\s\-().]+$/, 'Invalid phone number');
+
+// Tolerant of a +977/977 prefix and spaces/dashes/parens on input, but always
+// canonicalizes to E.164 (+977XXXXXXXXXX) so every phone number is ever stored
+// or queried in exactly one format — never trust the client to have normalized it.
+const phoneField = z
+  .string()
+  .refine(isValidNepaliPhone, 'Enter a valid Nepali mobile number (starts with 97 or 98, 10 digits)')
+  .transform(toE164NepaliPhone);
+
 const codeField  = z.string().length(6, 'Code must be 6 digits').regex(/^\d{6}$/, 'Code must be numeric');
 
 // Every identifier-based schema below accepts EITHER email OR phone — never both,

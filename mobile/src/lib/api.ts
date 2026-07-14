@@ -54,6 +54,10 @@ export interface ApiSocialAccount {
   followers:        number;
   connectedViaOAuth: boolean;
   avatarUrl:        string | null;
+  // Last time `followers` was actually re-fetched from the platform — the follower
+  // count keeps updating itself automatically in the background, this is just so
+  // the UI can show "Updated 3h ago". Null for a manually-typed (non-OAuth) account.
+  followersSyncedAt: string | null;
   createdAt:        string;
   updatedAt:        string;
 }

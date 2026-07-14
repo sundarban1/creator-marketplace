@@ -19,7 +19,7 @@ import {
 import { AppModal } from '@/components/AppModal';
 import { PaymentMethodIcon } from '@/components/PaymentMethodIcon';
 import { isPaymentMethodId } from '@/utilities/paymentMethods';
-import { formatPhoneDisplay } from '@/utilities/phone';
+import { formatPhoneDisplay, isValidNepaliPhone, normalizePhoneForSubmit } from '@/utilities/phone';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
@@ -472,18 +472,6 @@ export default function BusinessSettingsScreen() {
     });
   }
 
-  function isValidNepaliPhone(phone: string): boolean {
-    const stripped = phone.replace(/^\+?977/, '').replace(/[\s\-()]/g, '');
-    return /^(97|98)\d{8}$/.test(stripped);
-  }
-
-  function normalisePhone(phone: string): string {
-    const stripped = phone.replace(/[\s\-()]/g, '');
-    if (stripped.startsWith('+977')) return stripped;
-    if (stripped.startsWith('977')) return `+${stripped}`;
-    return `+977${stripped}`;
-  }
-
   async function handleSendPhoneOtp() {
     setPhoneError('');
     if (!isValidNepaliPhone(phoneInput)) {
@@ -492,7 +480,7 @@ export default function BusinessSettingsScreen() {
     }
     setPhoneLoading(true);
     try {
-      await authService.requestPhoneOtp(normalisePhone(phoneInput));
+      await authService.requestPhoneOtp(normalizePhoneForSubmit(phoneInput));
       setPhoneStage('enter-otp');
       setPhoneOtp('');
     } catch (e: any) {
@@ -552,8 +540,8 @@ export default function BusinessSettingsScreen() {
     }
     setPhoneLoading(true);
     try {
-      await authService.verifyPhoneOtp(normalisePhone(phoneInput), phoneOtp);
-      setVerifiedPhone(normalisePhone(phoneInput));
+      await authService.verifyPhoneOtp(normalizePhoneForSubmit(phoneInput), phoneOtp);
+      setVerifiedPhone(normalizePhoneForSubmit(phoneInput));
       setPhoneStage('verified');
     } catch (e: any) {
       setPhoneError(e.message ?? t('settings.phoneVerifyFailed'));
