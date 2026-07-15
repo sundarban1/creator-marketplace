@@ -1,43 +1,31 @@
-import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { fadeUp, stagger, VP } from '../lib/motion';
 import { useLandingLanguage } from '../context/LanguageContext';
+import { AppStoreBadges } from '../components/AppStoreBadges';
 
 export function FinalCTA() {
-  const navigate = useNavigate();
   const { d } = useLandingLanguage();
+
   return (
-    <section className="py-28 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #3730A3 0%, #4F46E5 60%, #F97316 130%)' }}>
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="mesh-blob absolute top-[-20%] left-[10%] w-[30rem] h-[30rem] rounded-full opacity-20 blur-3xl bg-white" />
-        <div className="mesh-blob absolute bottom-[-20%] right-[5%] w-[26rem] h-[26rem] rounded-full opacity-15 blur-3xl bg-white" style={{ animationDelay: '-8s' }} />
+    <section className="relative overflow-hidden bg-ink py-24">
+      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
+        <div className="mesh-blob absolute left-1/4 top-0 h-[380px] w-[380px] rounded-full bg-brand-indigo/25 blur-[110px]" />
+        <div className="mesh-blob absolute bottom-0 right-1/4 h-[340px] w-[340px] rounded-full bg-brand-orange/20 blur-[110px]" />
       </div>
-      <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="relative max-w-2xl mx-auto px-5 text-center">
-        <motion.h2 variants={fadeUp} className="text-3xl md:text-5xl font-extrabold text-white mb-5 leading-tight">
-          {d.finalCta.heading}
-        </motion.h2>
-        <motion.p variants={fadeUp} className="text-white/75 text-lg mb-10">
-          {d.finalCta.sub}
-        </motion.p>
-        <motion.div variants={fadeUp} className="flex flex-wrap justify-center gap-4">
-          <motion.button
-            whileHover={{ y: -3, boxShadow: '0 16px 40px rgba(0,0,0,0.25)' }}
-            whileTap={{ scale: 0.97 }}
-            onClick={() => navigate('/login')}
-            className="px-8 py-4 rounded-2xl bg-white text-brand-indigo font-bold"
-          >
-            {d.finalCta.ctaJoin}
-          </motion.button>
-          <motion.button
-            whileHover={{ backgroundColor: 'rgba(255,255,255,0.15)' }}
-            whileTap={{ scale: 0.97 }}
-            onClick={() => navigate('/login')}
-            className="px-8 py-4 rounded-2xl border border-white/40 text-white font-bold"
-          >
-            {d.finalCta.ctaHire}
-          </motion.button>
+
+      <div className="mx-auto max-w-2xl px-5 text-center">
+        <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()}>
+          <motion.h2 variants={fadeUp} className="text-3xl font-extrabold text-white sm:text-4xl md:text-5xl">
+            {d.finalCta.heading}
+          </motion.h2>
+          <motion.p variants={fadeUp} className="mt-4 text-lg text-white/60">
+            {d.finalCta.sub}
+          </motion.p>
+          <motion.div variants={fadeUp} className="mt-9">
+            <AppStoreBadges variant="light" />
+          </motion.div>
         </motion.div>
-      </motion.div>
+      </div>
     </section>
   );
 }

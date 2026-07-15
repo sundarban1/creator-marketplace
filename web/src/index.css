@@ -4,6 +4,11 @@
   --color-brand-indigo: #4F46E5;
   --color-brand-indigo-dark: #3730A3;
   --color-brand-orange: #F97316;
+
+  /* Landing page only — admin dashboard keeps the default font. */
+  --color-ink: #0F172A;
+  --color-ink-soft: #64748B;
+  --font-display: "Inter", ui-sans-serif, system-ui, sans-serif;
 }
 
 * {

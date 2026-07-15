@@ -5,18 +5,16 @@ import { NAV_LINKS } from '../constants';
 import { useLenisScroll } from '../hooks/useLenis';
 import { useLandingLanguage } from '../context/LanguageContext';
 
-function LanguageSwitch({ scrolled }: { scrolled: boolean }) {
+function LanguageSwitch() {
   const { lang, setLang } = useLandingLanguage();
   return (
-    <div className={`flex items-center rounded-full p-0.5 text-xs font-bold transition-colors ${scrolled ? 'bg-gray-100' : 'bg-white/15'}`}>
+    <div className="flex items-center rounded-full bg-gray-100 p-0.5 text-xs font-bold">
       {(['en', 'ne'] as const).map((l) => (
         <button
           key={l}
           onClick={() => setLang(l)}
-          className={`px-2.5 py-1.5 rounded-full transition-colors ${
-            lang === l
-              ? 'bg-brand-indigo text-white'
-              : scrolled ? 'text-gray-500 hover:text-gray-800' : 'text-white/70 hover:text-white'
+          className={`rounded-full px-2.5 py-1.5 transition-colors ${
+            lang === l ? 'bg-ink text-white' : 'text-ink-soft hover:text-ink'
           }`}
         >
           {l === 'en' ? 'EN' : 'ने'}
@@ -50,36 +48,42 @@ export function LandingNav() {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-50 px-4 md:px-6 pt-4 md:pt-5">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <button onClick={() => go('hero')} className="flex items-center bg-white rounded-full pl-3 pr-4 py-2 shadow-sm ring-1 ring-black/5">
+      <header className="fixed left-0 right-0 top-0 z-50 px-4 pt-4 md:px-6 md:pt-5">
+        <div className="mx-auto flex max-w-6xl items-center justify-between">
+          <button onClick={() => go('hero')} className="flex items-center rounded-full bg-white py-2 pl-3 pr-4 shadow-sm ring-1 ring-black/5">
             <img src="/logo.png" alt="kolab" className="h-6 w-auto object-contain" />
           </button>
 
           <motion.nav
             initial={false}
-            animate={{ backgroundColor: scrolled ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.1)' }}
-            className="hidden lg:flex items-center gap-1 rounded-full px-2 py-2 backdrop-blur-md ring-1 ring-white/15 shadow-sm"
+            animate={{ boxShadow: scrolled ? '0 8px 24px rgba(15,23,42,0.08)' : '0 0 0 rgba(0,0,0,0)' }}
+            className="hidden items-center gap-1 rounded-full bg-white p-2 ring-1 ring-black/5 lg:flex"
           >
             {NAV_LINKS.map((l) => (
               <button
                 key={l.id}
                 onClick={() => go(l.id)}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${scrolled ? 'text-gray-600 hover:text-brand-indigo hover:bg-indigo-50' : 'text-white/85 hover:text-white hover:bg-white/10'}`}
+                className="rounded-full px-4 py-2 text-sm font-medium text-ink-soft transition-colors hover:bg-brand-indigo/5 hover:text-brand-indigo"
               >
-                {d.nav.links[l.id as keyof typeof d.nav.links]}
+                {d.nav.links[l.key]}
               </button>
             ))}
           </motion.nav>
 
-          <div className="hidden lg:flex items-center">
-            <LanguageSwitch scrolled={scrolled} />
+          <div className="hidden items-center gap-3 lg:flex">
+            <LanguageSwitch />
+            <button
+              onClick={() => go('contact')}
+              className="rounded-full bg-ink px-5 py-2.5 text-sm font-bold text-white shadow-sm transition-transform hover:-translate-y-0.5"
+            >
+              {d.nav.cta}
+            </button>
           </div>
 
           <button
             onClick={() => setOpen((v) => !v)}
             aria-label="Toggle menu"
-            className={`lg:hidden w-10 h-10 rounded-full flex items-center justify-center transition-colors ${scrolled || open ? 'bg-brand-indigo text-white' : 'bg-white/15 text-white backdrop-blur'}`}
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-ink text-white lg:hidden"
           >
             {open ? <X size={18} /> : <Menu size={18} />}
           </button>
@@ -93,21 +97,21 @@ export function LandingNav() {
             animate={{ clipPath: 'circle(150% at 92% 4%)' }}
             exit={{ clipPath: 'circle(4% at 92% 4%)' }}
             transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed inset-0 z-40 flex flex-col justify-center px-8"
-            style={{ background: 'linear-gradient(160deg,#0B0B1F 0%,#151537 55%,#3730A3 100%)' }}
+            className="fixed inset-0 z-40 flex flex-col justify-center bg-white px-8"
           >
             <div className="flex flex-col gap-1">
               {NAV_LINKS.map((l, i) => (
                 <button
                   key={l.id}
                   onClick={() => go(l.id)}
-                  className="text-left text-4xl font-extrabold text-white/90 hover:text-white py-2 tracking-tight"
+                  className="py-2 text-left text-4xl font-extrabold tracking-tight text-ink/90 hover:text-ink"
                 >
-                  <span className="text-white/30 text-lg align-super mr-3">0{i + 1}</span>{d.nav.links[l.id as keyof typeof d.nav.links]}
+                  <span className="mr-3 align-super text-lg text-ink/30">0{i + 1}</span>
+                  {d.nav.links[l.key]}
                 </button>
               ))}
               <div className="mt-6">
-                <LanguageSwitch scrolled={false} />
+                <LanguageSwitch />
               </div>
             </div>
           </motion.div>

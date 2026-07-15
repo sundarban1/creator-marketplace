@@ -1,16 +1,15 @@
 import { motion } from 'framer-motion';
 import { fadeUp, stagger, VP } from '../lib/motion';
 import { SECTION_IDS } from '../constants';
-import { TRUST_STATS } from '../data/trustStats';
 import { useCountUp } from '../hooks/useCountUp';
 import { useLandingLanguage } from '../context/LanguageContext';
 
-function StatTile({ stat, label }: { stat: (typeof TRUST_STATS)[number]; label: string }) {
-  const { ref, display } = useCountUp(stat.value, { decimals: stat.decimals });
+function StatTile({ value, suffix, label }: { value: number; suffix: string; label: string }) {
+  const { ref, display } = useCountUp(value);
   return (
     <motion.div ref={ref} variants={fadeUp} className="text-center">
-      <div className="text-4xl md:text-5xl font-extrabold text-white mb-2">{display}{stat.suffix}</div>
-      <div className="text-white/50 text-sm">{label}</div>
+      <div className="text-3xl font-extrabold text-ink sm:text-4xl">{display}{suffix}</div>
+      <div className="mt-1 text-sm text-ink-soft">{label}</div>
     </motion.div>
   );
 }
@@ -18,17 +17,18 @@ function StatTile({ stat, label }: { stat: (typeof TRUST_STATS)[number]; label: 
 export function TrustStats() {
   const { d } = useLandingLanguage();
   return (
-    <section id={SECTION_IDS.trust} className="py-24" style={{ background: 'linear-gradient(135deg, #3730A3 0%, #4F46E5 100%)' }}>
-      <div className="max-w-5xl mx-auto px-5">
-        <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="text-center mb-14">
-          <motion.span variants={fadeUp} className="text-orange-300 font-bold text-xs uppercase tracking-widest">{d.trust.eyebrow}</motion.span>
-          <motion.h2 variants={fadeUp} className="text-3xl md:text-4xl font-extrabold text-white mt-3">{d.trust.heading}</motion.h2>
-          <motion.p variants={fadeUp} className="text-white/60 text-sm md:text-base mt-4 max-w-xl mx-auto">{d.trust.sub}</motion.p>
-        </motion.div>
-        <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="grid grid-cols-2 md:grid-cols-4 gap-8">
-          {TRUST_STATS.map((s, i) => <StatTile key={s.label} stat={s} label={d.trust.stats[i]!.label} />)}
-        </motion.div>
-      </div>
+    <section id={SECTION_IDS.trust} className="border-y border-ink/5 bg-gray-50/60 py-14">
+      <motion.div
+        initial="hidden"
+        whileInView="show"
+        viewport={VP}
+        variants={stagger()}
+        className="mx-auto grid max-w-4xl grid-cols-2 gap-8 px-5 sm:grid-cols-4"
+      >
+        {d.trust.stats.map((s) => (
+          <StatTile key={s.label} value={s.value} suffix={s.suffix} label={s.label} />
+        ))}
+      </motion.div>
     </section>
   );
 }

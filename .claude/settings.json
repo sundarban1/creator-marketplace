@@ -287,7 +287,12 @@
       "Bash(awk 'NR>1826 && /^  \\\\},$/{print NR; exit}' /Users/sundarban/Documents/projects/marketplace/mobile/src/i18n/en.ts)",
       "Bash(awk 'NR>=1300 && NR<=1360 && /^  [a-zA-Z]+: {/' src/i18n/en.ts)",
       "Bash(awk 'NR<=1755 && /^  [a-zA-Z]+: {/{last=NR\": \"$0} END{print last}' /Users/sundarban/Documents/projects/marketplace/mobile/src/i18n/en.ts)",
-      "Bash(awk 'NR<=1790 && /^  [a-zA-Z]+: {/{last=NR\": \"$0} END{print last}' /Users/sundarban/Documents/projects/marketplace/mobile/src/i18n/en.ts)"
+      "Bash(awk 'NR<=1790 && /^  [a-zA-Z]+: {/{last=NR\": \"$0} END{print last}' /Users/sundarban/Documents/projects/marketplace/mobile/src/i18n/en.ts)",
+      "Bash(git reset *)",
+      "Bash(git checkout *)",
+      "Bash(kill -9 64505)",
+      "Bash(npx vite *)",
+      "Bash(echo \"\\(exit: $?\\)\")"
     ],
     "additionalDirectories": [
       "/Users/sundarban/Documents/projects/marketplace/content",

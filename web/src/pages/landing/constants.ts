@@ -13,30 +13,20 @@ export const EASE = {
 
 export const SECTION_IDS = {
   hero: 'hero',
-  story: 'story',
-  creators: 'creators',
-  brands: 'brands',
-  workflow: 'workflow',
-  ai: 'ai',
   trust: 'trust',
+  how: 'how',
+  audience: 'audience',
+  categories: 'categories',
+  partners: 'partners',
+  security: 'security',
   stories: 'stories',
-  app: 'app',
   contact: 'contact',
 } as const;
 
-export const NAV_LINKS: { label: string; id: string }[] = [
-  { label: 'Features', id: SECTION_IDS.story },
-  { label: 'Creators', id: SECTION_IDS.creators },
-  { label: 'Brands', id: SECTION_IDS.brands },
-  { label: 'AI', id: SECTION_IDS.ai },
-  { label: 'About', id: SECTION_IDS.trust },
-  { label: 'Contact', id: SECTION_IDS.contact },
+export const NAV_LINKS: { key: 'how' | 'audience' | 'categories' | 'security' | 'contact'; id: string }[] = [
+  { key: 'how', id: SECTION_IDS.how },
+  { key: 'audience', id: SECTION_IDS.audience },
+  { key: 'categories', id: SECTION_IDS.categories },
+  { key: 'security', id: SECTION_IDS.security },
+  { key: 'contact', id: SECTION_IDS.contact },
 ];
-
-// Phone frame outer dimensions, shared by every PhoneFrame instance so the
-// bezel/notch math and the screen-stack sizing never drift apart.
-export const PHONE = {
-  width: 280,
-  height: 572,
-  borderRadius: 50,
-};

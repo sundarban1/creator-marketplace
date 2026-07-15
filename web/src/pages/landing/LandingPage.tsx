@@ -3,33 +3,27 @@ import { LandingLanguageProvider } from './context/LanguageContext';
 import { LandingNav } from './nav/LandingNav';
 import { LandingFooter } from './nav/LandingFooter';
 import { Hero } from './sections/Hero';
-import { ProductHighlights } from './sections/ProductHighlights';
-import { CreatorShowcase } from './sections/CreatorShowcase';
-import { BrandShowcase } from './sections/BrandShowcase';
-import { CampaignTypes } from './sections/CampaignTypes';
-import { MarketplaceWorkflow } from './sections/MarketplaceWorkflow';
-import { AIExperience } from './sections/AIExperience';
 import { TrustStats } from './sections/TrustStats';
-import { Testimonials } from './sections/Testimonials';
-import { MobileAppShowcase } from './sections/MobileAppShowcase';
-import { ContactSection } from './sections/ContactSection';
+import { HowItWorks } from './sections/HowItWorks';
+import { Audience } from './sections/Audience';
+import { Categories } from './sections/Categories';
+import { Partners } from './sections/Partners';
+import { Security } from './sections/Security';
+import { Stories } from './sections/Stories';
 import { FinalCTA } from './sections/FinalCTA';
 
 function LandingPageInner() {
   return (
-    <div className="min-h-screen bg-white font-sans overflow-x-hidden">
+    <div className="min-h-screen overflow-x-hidden bg-white font-display">
       <LandingNav />
       <Hero />
-      <ProductHighlights />
-      <CreatorShowcase />
-      <BrandShowcase />
-      <AIExperience />
-      <CampaignTypes />
-      <MarketplaceWorkflow />
       <TrustStats />
-      <Testimonials />
-      <MobileAppShowcase />
-      <ContactSection />
+      <HowItWorks />
+      <Audience />
+      <Categories />
+      <Partners />
+      <Security />
+      <Stories />
       <FinalCTA />
       <LandingFooter />
     </div>
