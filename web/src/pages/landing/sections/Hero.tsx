@@ -1,11 +1,14 @@
 import { motion } from 'framer-motion';
+import { ChevronDown } from 'lucide-react';
 import { fadeUp, stagger } from '../lib/motion';
 import { SECTION_IDS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
 import { AppStoreBadges } from '../components/AppStoreBadges';
+import { useLenisScroll } from '../hooks/useLenis';
 
 export function Hero() {
   const { d } = useLandingLanguage();
+  const { scrollTo } = useLenisScroll();
 
   return (
     <section id={SECTION_IDS.hero} className="relative overflow-hidden bg-paper pt-44 pb-28">
@@ -32,7 +35,7 @@ export function Hero() {
 
           <motion.h1
             variants={fadeUp}
-            className="text-balance mt-6 font-serif text-5xl font-medium leading-[1.05] tracking-tight text-ink sm:text-6xl md:text-7xl"
+            className="text-balance mt-6 font-serif text-5xl font-medium leading-[1.03] tracking-tight text-ink sm:text-6xl md:text-7xl lg:text-8xl"
           >
             {d.hero.headline}{' '}
             <em className="bg-gradient-to-r from-violet to-brand-orange bg-clip-text text-transparent not-italic">
@@ -65,6 +68,20 @@ export function Hero() {
           </div>
         </motion.div>
       </div>
+
+      <motion.button
+        aria-label="Scroll to explore"
+        onClick={() => scrollTo(`#${SECTION_IDS.trust}`)}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1, duration: 0.6 }}
+        className="absolute bottom-6 left-1/2 hidden -translate-x-1/2 flex-col items-center gap-1.5 text-ink-soft/60 transition-colors hover:text-ink-soft sm:flex"
+      >
+        <span className="text-[10px] font-semibold uppercase tracking-widest">Scroll</span>
+        <motion.span animate={{ y: [0, 6, 0] }} transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}>
+          <ChevronDown size={16} />
+        </motion.span>
+      </motion.button>
     </section>
   );
 }

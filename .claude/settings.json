@@ -292,7 +292,11 @@
       "Bash(git checkout *)",
       "Bash(kill -9 64505)",
       "Bash(npx vite *)",
-      "Bash(echo \"\\(exit: $?\\)\")"
+      "Bash(echo \"\\(exit: $?\\)\")",
+      "Bash(sed -i '' 's/whileHover={{ y: -5 }}/whileHover={{ y: -5, scale: 1.03 }}/' src/pages/landing/sections/HowItWorks.tsx)",
+      "Bash(sed -i '' 's/whileHover={{ y: -4 }}/whileHover={{ y: -4, scale: 1.03 }}/' src/pages/landing/sections/Security.tsx)",
+      "Bash(sed -i '' 's/whileHover={{ y: -4 }}/whileHover={{ y: -4, scale: 1.02 }}/' src/pages/landing/sections/Stories.tsx)",
+      "Bash(sed -i '' 's/whileHover={{ y: -3 }}/whileHover={{ y: -3, scale: 1.04 }}/' src/pages/landing/sections/TrustStats.tsx)"
     ],
     "additionalDirectories": [
       "/Users/sundarban/Documents/projects/marketplace/content",

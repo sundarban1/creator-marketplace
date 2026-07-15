@@ -3,6 +3,7 @@ import { FaFingerprint, FaLock, FaIdBadge, FaStar } from 'react-icons/fa6';
 import { fadeUp, stagger, VP } from '../lib/motion';
 import { SECTION_IDS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
+import { SectionWave } from '../components/SectionWave';
 
 const ICONS = [FaFingerprint, FaLock, FaIdBadge, FaStar];
 
@@ -11,6 +12,7 @@ export function Security() {
 
   return (
     <section id={SECTION_IDS.security} className="relative overflow-hidden bg-ink py-28 text-white">
+      <SectionWave fill="#141110" />
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
         <div className="mesh-blob absolute left-[-10%] top-1/4 h-[380px] w-[380px] rounded-full bg-violet/[0.12] blur-[110px]" />
         <div className="mesh-blob absolute right-[-8%] bottom-0 h-[300px] w-[300px] rounded-full bg-brand-orange/[0.1] blur-[110px]" style={{ animationDelay: '2s' }} />
@@ -43,7 +45,7 @@ export function Security() {
               <motion.div
                 key={i}
                 variants={fadeUp}
-                whileHover={{ y: -4 }}
+                whileHover={{ y: -4, scale: 1.03 }}
                 className="group rounded-2xl border border-white/10 bg-white/[0.04] p-5 backdrop-blur-sm transition-all duration-300 hover:border-white/25 hover:bg-white/[0.07]"
               >
                 <span className={`flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 ${accent} transition-transform duration-300 group-hover:scale-110`}>

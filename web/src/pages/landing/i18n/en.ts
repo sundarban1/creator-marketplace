@@ -136,6 +136,12 @@ export const en = {
       successTitle: 'Message sent',
       successSub: "We'll get back to you soon.",
       errorGeneric: 'Something went wrong. Please try again.',
+      errorNameRequired: 'Please enter your name.',
+      errorEmailRequired: 'Please enter your email.',
+      errorEmailInvalid: 'Please enter a valid email address.',
+      errorTopicRequired: 'Please enter a topic.',
+      errorMessageRequired: 'Please enter a message.',
+      errorMessageTooShort: 'Message must be at least 10 characters.',
     },
   },
 };

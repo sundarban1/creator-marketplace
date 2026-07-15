@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { fadeUp, stagger, VP } from '../lib/motion';
 import { SECTION_IDS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
+import { SectionWave } from '../components/SectionWave';
 
 export function Audience() {
   const { d } = useLandingLanguage();
@@ -9,6 +10,7 @@ export function Audience() {
 
   return (
     <section id={SECTION_IDS.audience} className="relative overflow-hidden bg-ink py-28 text-white">
+      <SectionWave fill="#141110" />
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
         <div className="mesh-blob absolute left-[10%] top-0 h-[340px] w-[340px] rounded-full bg-violet/[0.12] blur-[110px]" />
         <div className="mesh-blob absolute right-[5%] bottom-0 h-[340px] w-[340px] rounded-full bg-brand-orange/[0.1] blur-[110px]" style={{ animationDelay: '2.5s' }} />

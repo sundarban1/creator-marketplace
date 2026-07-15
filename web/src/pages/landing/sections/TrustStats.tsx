@@ -11,7 +11,7 @@ function StatTile({ value, label, isLast }: { value: number; label: string; isLa
     <motion.div
       ref={ref}
       variants={fadeUp}
-      whileHover={{ y: -3 }}
+      whileHover={{ y: -3, scale: 1.04 }}
       className={`cursor-default px-6 py-8 text-center transition-colors duration-300 hover:bg-white sm:text-left ${!isLast ? 'sm:border-r sm:border-ink/10' : ''}`}
     >
       <div className="bg-gradient-to-br from-ink to-violet-dark bg-clip-text font-serif text-4xl font-medium text-transparent sm:text-5xl">

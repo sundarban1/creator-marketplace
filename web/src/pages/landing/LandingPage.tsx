@@ -2,6 +2,7 @@ import { LenisProvider } from './hooks/useLenis';
 import { useLandingStats } from './hooks/useLandingStats';
 import { LandingLanguageProvider } from './context/LanguageContext';
 import { CursorSparkles } from './components/CursorSparkles';
+import { ScrollProgress } from './components/ScrollProgress';
 import { LandingNav } from './nav/LandingNav';
 import { LandingFooter } from './nav/LandingFooter';
 import { Hero } from './sections/Hero';
@@ -20,6 +21,7 @@ function LandingPageInner() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-white font-display">
       <CursorSparkles />
+      <ScrollProgress />
       <LandingNav />
       <Hero />
       <TrustStats stats={stats} />

@@ -36,8 +36,9 @@ export function Categories({ stats }: { stats: LandingStats | null }) {
             {group.map((name, i) => {
               const { icon: Icon, color } = getCategoryStyle(name);
               return (
-                <div
+                <motion.div
                   key={i}
+                  whileHover={{ y: -3, scale: 1.05 }}
                   className="group flex flex-shrink-0 items-center gap-3 rounded-2xl border border-ink/10 bg-white px-4 py-3.5 shadow-[0_2px_8px_rgba(20,17,16,0.03)] transition-shadow duration-300 hover:shadow-[0_14px_28px_-10px_rgba(20,17,16,0.16)]"
                 >
                   <span
@@ -47,7 +48,7 @@ export function Categories({ stats }: { stats: LandingStats | null }) {
                     <Icon size={16} />
                   </span>
                   <span className="whitespace-nowrap text-sm font-semibold text-ink">{name}</span>
-                </div>
+                </motion.div>
               );
             })}
           </div>

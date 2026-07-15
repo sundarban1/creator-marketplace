@@ -35,7 +35,7 @@ export function HowItWorks() {
               <motion.div
                 key={i}
                 variants={fadeUp}
-                whileHover={{ y: -5 }}
+                whileHover={{ y: -5, scale: 1.03 }}
                 className="group rounded-3xl border border-ink/10 bg-white p-6 shadow-[0_2px_10px_rgba(20,17,16,0.04)] transition-shadow duration-300 hover:shadow-[0_20px_40px_-14px_rgba(123,92,245,0.2)]"
               >
                 <span

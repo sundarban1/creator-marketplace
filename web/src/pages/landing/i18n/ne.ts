@@ -137,6 +137,12 @@ export const ne: LandingDict = {
       successTitle: 'सन्देश पठाइयो',
       successSub: 'हामी चाँडै तपाईंलाई सम्पर्क गर्नेछौं।',
       errorGeneric: 'केही गडबड भयो। फेरि प्रयास गर्नुहोस्।',
+      errorNameRequired: 'कृपया आफ्नो नाम लेख्नुहोस्।',
+      errorEmailRequired: 'कृपया आफ्नो इमेल लेख्नुहोस्।',
+      errorEmailInvalid: 'कृपया मान्य इमेल ठेगाना लेख्नुहोस्।',
+      errorTopicRequired: 'कृपया विषय लेख्नुहोस्।',
+      errorMessageRequired: 'कृपया सन्देश लेख्नुहोस्।',
+      errorMessageTooShort: 'सन्देश कम्तिमा १० अक्षरको हुनुपर्छ।',
     },
   },
 };

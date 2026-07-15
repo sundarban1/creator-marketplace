@@ -10,22 +10,22 @@ type LogoItem =
   | { type: 'icon'; Icon: typeof FaInstagram; name: string; color: string }
   | { type: 'text'; name: string; color?: string };
 
-// Real platform/payment integrations, plus a few sample placeholder brand
-// wordmarks (clearly generic, not real clients) until actual partner logos
-// are ready to swap in.
+// Real platform/payment integrations, plus a few sample placeholder Nepal-
+// based brand wordmarks (clearly generic, not real clients) until actual
+// partner logos are ready to swap in.
 const LOGOS: LogoItem[] = [
   { type: 'icon', Icon: FaInstagram, name: 'Instagram', color: '#E1306C' },
   { type: 'icon', Icon: FaTiktok, name: 'TikTok', color: '#000000' },
-  { type: 'text', name: 'Northfield Co.' },
+  { type: 'text', name: 'Himalaya Traders' },
   { type: 'icon', Icon: FaYoutube, name: 'YouTube', color: '#FF0000' },
   { type: 'text', name: 'eSewa', color: '#60BB46' },
-  { type: 'text', name: 'Cedarly' },
+  { type: 'text', name: 'Everest Retail Group' },
   { type: 'icon', Icon: FaFacebook, name: 'Facebook', color: '#1877F2' },
   { type: 'text', name: 'Khalti', color: '#5C2D91' },
-  { type: 'text', name: 'Bluepeak Retail' },
+  { type: 'text', name: 'Sagarmatha Foods' },
   { type: 'text', name: 'Fonepay', color: '#00A0DC' },
-  { type: 'text', name: 'Aurelia Studio' },
-  { type: 'text', name: 'Solstice Living' },
+  { type: 'text', name: 'Annapurna Living' },
+  { type: 'text', name: 'Bagmati Textiles' },
 ];
 
 function LogoBadge({ item }: { item: LogoItem }) {
