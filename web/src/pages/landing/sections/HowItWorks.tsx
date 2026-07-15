@@ -35,13 +35,15 @@ export function HowItWorks() {
             <motion.div
               key={step.title}
               variants={fadeUp}
-              whileHover={{ y: -4 }}
-              className="rounded-3xl border border-ink/8 bg-white p-6 shadow-sm transition-shadow hover:shadow-md"
+              whileHover={{ y: -5 }}
+              className="group rounded-3xl border border-ink/[0.06] bg-white p-6 shadow-[0_2px_10px_rgba(15,23,42,0.04)] transition-shadow duration-300 hover:shadow-[0_20px_40px_-12px_rgba(79,70,229,0.18)]"
             >
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-indigo to-brand-orange text-white">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-indigo to-brand-orange text-white shadow-[0_4px_14px_rgba(79,70,229,0.35)] transition-transform duration-300 group-hover:scale-110">
                 <Icon size={19} />
               </div>
-              <div className="mt-4 text-xs font-bold text-brand-indigo">Step {i + 1}</div>
+              <div className="mt-4 bg-gradient-to-r from-brand-indigo to-brand-orange bg-clip-text text-xs font-extrabold uppercase tracking-wide text-transparent">
+                Step {i + 1}
+              </div>
               <h3 className="mt-1 text-lg font-bold text-ink">{step.title}</h3>
               <p className="mt-2 text-sm leading-relaxed text-ink-soft">{step.desc}</p>
             </motion.div>

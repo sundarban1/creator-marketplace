@@ -38,11 +38,17 @@ export function Stories() {
         className="mx-auto grid max-w-5xl gap-5 px-5 sm:grid-cols-2"
       >
         {items.map(({ quote, name, role, grad }) => (
-          <motion.div key={name} variants={fadeUp} className="flex flex-col rounded-3xl border border-ink/8 bg-white p-6 shadow-sm">
+          <motion.div
+            key={name}
+            variants={fadeUp}
+            whileHover={{ y: -4 }}
+            className="relative flex flex-col rounded-3xl border border-ink/[0.06] bg-white p-6 shadow-[0_2px_10px_rgba(15,23,42,0.04)] transition-shadow duration-300 hover:shadow-[0_20px_40px_-14px_rgba(79,70,229,0.16)]"
+          >
+            <span aria-hidden className="absolute right-5 top-4 select-none font-serif text-5xl leading-none text-ink/[0.06]">&rdquo;</span>
             <div className="mb-4 flex gap-1">
               {[...Array(5)].map((_, i) => <Star key={i} size={13} className="fill-current text-brand-orange" />)}
             </div>
-            <p className="flex-1 text-sm leading-relaxed text-ink">&ldquo;{quote}&rdquo;</p>
+            <p className="relative flex-1 text-sm leading-relaxed text-ink">&ldquo;{quote}&rdquo;</p>
             <div className="mt-5 flex items-center gap-3">
               <div
                 className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"

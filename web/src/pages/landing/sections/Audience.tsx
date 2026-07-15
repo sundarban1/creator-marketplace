@@ -34,8 +34,14 @@ export function Audience() {
         className="mx-auto grid max-w-4xl gap-6 px-5 md:grid-cols-2"
       >
         {cards.map((card) => (
-          <motion.div key={card.title} variants={fadeUp} className="rounded-3xl border border-ink/8 bg-white p-8 shadow-sm">
-            <div className={`mb-5 inline-flex rounded-full bg-gradient-to-r ${card.accent} px-4 py-1.5 text-xs font-bold text-white`}>
+          <motion.div
+            key={card.title}
+            variants={fadeUp}
+            whileHover={{ y: -4 }}
+            className="relative overflow-hidden rounded-3xl border border-ink/[0.06] bg-white p-8 shadow-[0_4px_20px_rgba(15,23,42,0.05)] transition-shadow duration-300 hover:shadow-[0_24px_48px_-16px_rgba(79,70,229,0.2)]"
+          >
+            <div aria-hidden className={`pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-gradient-to-br ${card.accent} opacity-[0.07] blur-2xl`} />
+            <div className={`relative mb-5 inline-flex rounded-full bg-gradient-to-r ${card.accent} px-4 py-1.5 text-xs font-bold text-white shadow-[0_4px_12px_rgba(79,70,229,0.25)]`}>
               {card.title}
             </div>
             <p className="text-lg font-semibold text-ink">{card.sub}</p>

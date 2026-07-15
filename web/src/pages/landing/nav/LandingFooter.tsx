@@ -78,7 +78,7 @@ function ContactForm() {
       <button
         type="submit"
         disabled={status === 'submitting'}
-        className="flex items-center justify-center gap-2 rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-ink transition-opacity disabled:opacity-60 sm:col-span-2"
+        className="shine-hover flex items-center justify-center gap-2 rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-ink shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg disabled:opacity-60 sm:col-span-2"
       >
         <Send size={14} />
         {status === 'submitting' ? t.submittingBtn : t.submitBtn}
@@ -91,7 +91,8 @@ export function LandingFooter() {
   const { d } = useLandingLanguage();
 
   return (
-    <footer id={SECTION_IDS.contact} className="bg-ink py-16 text-white">
+    <footer id={SECTION_IDS.contact} className="relative bg-ink py-16 text-white">
+      <div aria-hidden className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
       <div className="mx-auto max-w-5xl px-5">
         <div className="grid gap-12 md:grid-cols-2">
           <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()}>

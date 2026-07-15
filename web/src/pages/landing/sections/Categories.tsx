@@ -39,9 +39,9 @@ export function Categories() {
               key={name}
               variants={fadeUp}
               whileHover={{ y: -3 }}
-              className="flex items-center gap-3 rounded-2xl border border-ink/8 bg-white px-4 py-3.5 shadow-sm transition-shadow hover:shadow-md"
+              className="group flex items-center gap-3 rounded-2xl border border-ink/[0.06] bg-white px-4 py-3.5 shadow-[0_2px_8px_rgba(15,23,42,0.03)] transition-shadow duration-300 hover:shadow-[0_14px_28px_-10px_rgba(79,70,229,0.16)]"
             >
-              <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-brand-indigo/8 text-brand-indigo">
+              <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand-indigo/10 to-brand-orange/10 text-brand-indigo transition-transform duration-300 group-hover:scale-110">
                 <Icon size={16} />
               </div>
               <span className="text-sm font-semibold text-ink">{name}</span>

@@ -20,7 +20,7 @@ export function AppStoreBadges({ variant = 'dark', className = '' }: AppStoreBad
     <div className={`flex flex-wrap items-center justify-center gap-3 ${className}`}>
       <a
         href={APP_STORE_URL}
-        className={`flex items-center gap-2.5 rounded-full px-5 py-3 text-sm font-bold shadow-sm transition-colors ${badgeClass}`}
+        className={`shine-hover flex items-center gap-2.5 rounded-full px-5 py-3 text-sm font-bold shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg ${badgeClass}`}
       >
         <FaApple size={18} />
         <span className="flex flex-col items-start leading-none">
@@ -30,7 +30,7 @@ export function AppStoreBadges({ variant = 'dark', className = '' }: AppStoreBad
       </a>
       <a
         href={PLAY_STORE_URL}
-        className={`flex items-center gap-2.5 rounded-full px-5 py-3 text-sm font-bold shadow-sm transition-colors ${badgeClass}`}
+        className={`shine-hover flex items-center gap-2.5 rounded-full px-5 py-3 text-sm font-bold shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg ${badgeClass}`}
       >
         <FaGooglePlay size={16} />
         <span className="flex flex-col items-start leading-none">

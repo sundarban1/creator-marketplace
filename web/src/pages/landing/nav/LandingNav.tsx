@@ -50,14 +50,14 @@ export function LandingNav() {
     <>
       <header className="fixed left-0 right-0 top-0 z-50 px-4 pt-4 md:px-6 md:pt-5">
         <div className="mx-auto flex max-w-6xl items-center justify-between">
-          <button onClick={() => go('hero')} className="flex items-center rounded-full bg-white py-2 pl-3 pr-4 shadow-sm ring-1 ring-black/5">
+          <button onClick={() => go('hero')} className="flex items-center rounded-full bg-white/90 py-2 pl-3 pr-4 shadow-sm ring-1 ring-black/5 backdrop-blur-md">
             <img src="/logo.png" alt="kolab" className="h-6 w-auto object-contain" />
           </button>
 
           <motion.nav
             initial={false}
-            animate={{ boxShadow: scrolled ? '0 8px 24px rgba(15,23,42,0.08)' : '0 0 0 rgba(0,0,0,0)' }}
-            className="hidden items-center gap-1 rounded-full bg-white p-2 ring-1 ring-black/5 lg:flex"
+            animate={{ boxShadow: scrolled ? '0 8px 30px rgba(15,23,42,0.1)' : '0 4px 16px rgba(15,23,42,0.04)' }}
+            className="hidden items-center gap-1 rounded-full bg-white/80 p-2 ring-1 ring-black/5 backdrop-blur-md lg:flex"
           >
             {NAV_LINKS.map((l) => (
               <button
@@ -74,7 +74,7 @@ export function LandingNav() {
             <LanguageSwitch />
             <button
               onClick={() => go('contact')}
-              className="rounded-full bg-ink px-5 py-2.5 text-sm font-bold text-white shadow-sm transition-transform hover:-translate-y-0.5"
+              className="shine-hover rounded-full bg-gradient-to-r from-ink to-ink/90 px-5 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg"
             >
               {d.nav.cta}
             </button>

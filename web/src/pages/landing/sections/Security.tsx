@@ -10,7 +10,11 @@ export function Security() {
   const { d } = useLandingLanguage();
 
   return (
-    <section id={SECTION_IDS.security} className="bg-ink py-24">
+    <section id={SECTION_IDS.security} className="relative overflow-hidden bg-ink py-24">
+      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
+        <div className="mesh-blob absolute left-1/3 top-0 h-[400px] w-[400px] rounded-full bg-brand-indigo/20 blur-[120px]" />
+        <div className="mesh-blob absolute bottom-0 right-1/4 h-[300px] w-[300px] rounded-full bg-brand-orange/15 blur-[120px]" style={{ animationDelay: '2s' }} />
+      </div>
       <div className="mx-auto mb-14 max-w-2xl px-5 text-center">
         <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()}>
           <motion.span variants={fadeUp} className="text-xs font-bold uppercase tracking-widest text-brand-orange">
@@ -35,8 +39,13 @@ export function Security() {
         {d.security.points.map((point, i) => {
           const Icon = ICONS[i] ?? ShieldCheck;
           return (
-            <motion.div key={point.title} variants={fadeUp} className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-brand-orange">
+            <motion.div
+              key={point.title}
+              variants={fadeUp}
+              whileHover={{ y: -4 }}
+              className="group rounded-2xl border border-white/10 bg-white/[0.04] p-5 backdrop-blur-sm transition-all duration-300 hover:border-brand-orange/30 hover:bg-white/[0.07]"
+            >
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-brand-orange transition-transform duration-300 group-hover:scale-110">
                 <Icon size={17} />
               </div>
               <h3 className="mt-4 text-sm font-bold text-white">{point.title}</h3>

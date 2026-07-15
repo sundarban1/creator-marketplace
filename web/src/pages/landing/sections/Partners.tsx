@@ -46,8 +46,8 @@ export function Partners() {
               <motion.div
                 key={name}
                 variants={fadeUp}
-                whileHover={{ y: -3 }}
-                className="flex items-center gap-2.5 rounded-2xl border border-ink/8 bg-white px-5 py-3.5 shadow-sm transition-shadow hover:shadow-md"
+                whileHover={{ y: -3, scale: 1.03 }}
+                className="flex items-center gap-2.5 rounded-2xl border border-ink/[0.06] bg-white px-5 py-3.5 shadow-[0_2px_8px_rgba(15,23,42,0.03)] transition-shadow duration-300 hover:shadow-[0_14px_28px_-10px_rgba(15,23,42,0.16)]"
               >
                 <Icon size={22} style={{ color }} />
                 <span className="text-sm font-bold text-ink">{name}</span>
@@ -66,8 +66,8 @@ export function Partners() {
               <motion.div
                 key={name}
                 variants={fadeUp}
-                whileHover={{ y: -3 }}
-                className="rounded-2xl px-6 py-3.5 text-base font-extrabold tracking-tight shadow-sm transition-shadow hover:shadow-md"
+                whileHover={{ y: -3, scale: 1.03 }}
+                className="rounded-2xl px-6 py-3.5 text-base font-extrabold tracking-tight shadow-[0_8px_20px_-8px_rgba(0,0,0,0.25)] transition-shadow duration-300 hover:shadow-[0_16px_32px_-8px_rgba(0,0,0,0.35)]"
                 style={{ backgroundColor: bg, color: text }}
               >
                 {name}
