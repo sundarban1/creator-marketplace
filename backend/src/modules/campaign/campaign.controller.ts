@@ -238,15 +238,6 @@ export class CampaignController {
     }
   }
 
-  async completeProject(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const result = await campaignService.completeProject(req.params.appId, req.user!.id);
-      success(res, result, 'Project marked complete');
-    } catch (err) {
-      next(err);
-    }
-  }
-
   async requestRevision(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { note } = req.body as { note?: string };

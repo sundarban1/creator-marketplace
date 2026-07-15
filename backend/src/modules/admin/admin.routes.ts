@@ -22,6 +22,7 @@ import {
   releasePayment,
   verifyCreator,
   verifyBusiness,
+  rejectBusiness,
   getBusinessReferrals,
   releaseBusinessReferral,
   getUserAnalytics,
@@ -45,6 +46,7 @@ router.get('/creators',  getCreators);
 router.patch('/creators/:id/verify', verifyCreator);
 router.get('/businesses', getBusinesses);
 router.patch('/businesses/:id/verify', verifyBusiness);
+router.patch('/businesses/:id/reject', rejectBusiness);
 
 router.get('/campaigns', getCampaigns);
 router.get('/campaigns/:id', getCampaignDetail);

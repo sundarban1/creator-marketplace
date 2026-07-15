@@ -1,4 +1,6 @@
 import { request } from '@/lib/api';
+import type { ApiSocialAccount } from '@/lib/api';
+import type { FacebookPageOption } from '@/services/creator';
 
 export type BusinessListItem = {
   id:           string;
@@ -108,6 +110,59 @@ export const businessService = {
   async getPaymentHistory(): Promise<PaymentHistoryEntry[]> {
     const res = await request<PaymentHistoryEntry[]>('GET', '/api/business/payment-history');
     return res.data;
+  },
+
+  // ── Social Accounts — mirrors creatorService's methods of the same name; see
+  // that file for the OAuth "backend hands back a browser URL, we open it, the
+  // redirect lands on our API" pattern used by TikTok/Instagram below. ──
+
+  async getSocialAccounts(): Promise<ApiSocialAccount[]> {
+    const res = await request<ApiSocialAccount[]>('GET', '/api/business/social-accounts');
+    return res.data;
+  },
+
+  async addSocialAccount(data: { platform: string; profileUrl: string; followers: number }): Promise<ApiSocialAccount> {
+    const res = await request<ApiSocialAccount>('POST', '/api/business/social-accounts', data);
+    return res.data;
+  },
+
+  async updateSocialAccount(id: string, data: { profileUrl?: string; followers?: number }): Promise<ApiSocialAccount> {
+    const res = await request<ApiSocialAccount>('PUT', `/api/business/social-accounts/${id}`, data);
+    return res.data;
+  },
+
+  async deleteSocialAccount(id: string): Promise<void> {
+    await request('DELETE', `/api/business/social-accounts/${id}`);
+  },
+
+  async connectYoutubeAccount(accessToken: string, refreshToken?: string, expiresIn?: number): Promise<ApiSocialAccount> {
+    const res = await request<ApiSocialAccount>('POST', '/api/business/social-accounts/youtube/connect', { accessToken, refreshToken, expiresIn });
+    return res.data;
+  },
+
+  async getTiktokAuthorizeUrl(): Promise<string> {
+    const res = await request<{ url: string }>('GET', '/api/business/social-accounts/tiktok/authorize');
+    return res.data.url;
+  },
+
+  async getFacebookPages(accessToken: string): Promise<FacebookPageOption[]> {
+    const res = await request<FacebookPageOption[]>('POST', '/api/business/social-accounts/facebook/pages', { accessToken });
+    return res.data;
+  },
+
+  async connectFacebookPage(accessToken: string, pageId: string): Promise<ApiSocialAccount> {
+    const res = await request<ApiSocialAccount>('POST', '/api/business/social-accounts/facebook/connect', { accessToken, pageId });
+    return res.data;
+  },
+
+  async connectInstagramAccount(accessToken: string, pageId: string): Promise<ApiSocialAccount> {
+    const res = await request<ApiSocialAccount>('POST', '/api/business/social-accounts/instagram/connect', { accessToken, pageId });
+    return res.data;
+  },
+
+  async getInstagramLoginAuthorizeUrl(): Promise<string> {
+    const res = await request<{ url: string }>('GET', '/api/business/social-accounts/instagram-login/authorize');
+    return res.data.url;
   },
 };
 

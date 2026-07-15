@@ -27,6 +27,7 @@ export interface BusinessProfileDto {
   panDocStatus: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
   companyRegDocUrl: string | null;
   companyRegDocStatus: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
+  verificationRejectReason: string | null;
   createdAt: string;
   updatedAt: string;
   user: { id: string; email: string; phone: string | null; role: string; isEmailVerified: boolean; isPhoneVerified: boolean } | null;
@@ -107,6 +108,7 @@ type RawBusinessProfile = {
   panDocStatus?: string;
   companyRegDocUrl?: string | null;
   companyRegDocStatus?: string;
+  verificationRejectReason?: string | null;
   createdAt: Date;
   updatedAt: Date;
   user?: { id: string; email: string; phone: string | null; role: string; isEmailVerified: boolean; isPhoneVerified: boolean } | null;
@@ -139,6 +141,7 @@ export function toBusinessProfileDto(b: RawBusinessProfile): BusinessProfileDto 
     panDocStatus:        (b.panDocStatus ?? 'NONE') as BusinessProfileDto['panDocStatus'],
     companyRegDocUrl:    b.companyRegDocUrl ?? null,
     companyRegDocStatus: (b.companyRegDocStatus ?? 'NONE') as BusinessProfileDto['companyRegDocStatus'],
+    verificationRejectReason: b.verificationRejectReason ?? null,
     createdAt:           b.createdAt.toISOString(),
     updatedAt:           b.updatedAt.toISOString(),
     user:                b.user ?? null,

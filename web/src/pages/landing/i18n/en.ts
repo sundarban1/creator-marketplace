@@ -32,10 +32,10 @@ export const en = {
       { title: 'Chat in Real Time', desc: 'Message brands directly, negotiate terms, and build relationships — with live typing indicators and instant delivery.' },
       { title: 'Submit in Minutes', desc: 'Write your pitch, set your rate, and send a professional proposal without leaving the app.' },
       { title: 'Secure Payments', desc: 'Funds move from brand to escrow the moment a proposal is accepted — released to you only once work is approved.' },
-      { title: 'Get Paid, Instantly', desc: 'Track earnings, withdraw to eSewa or your bank, and see your full payment history in one place.' },
+      { title: 'Get Paid, Instantly', desc: 'Track earnings, withdraw to eSewa, Khalti, or Fonepay, and see your full payment history in one place.' },
       { title: 'Know Your Impact', desc: 'Reach, engagement, and earnings — visualized so you always know how your content is performing.' },
       { title: 'AI-Assisted Campaigns', desc: 'Brands describe their goal in one sentence — Kolab’s AI generates the objective, budget, deliverables, and timeline instantly.' },
-      { title: 'Your Portfolio, Built In', desc: 'A public profile that showcases your work, stats, and verified badge — built to win you more collaborations.' },
+      { title: 'Your Portfolio, Built In', desc: 'A public profile with OAuth-verified follower counts (not self-reported), your work, and a verified badge — built to win you more collaborations.' },
     ],
   },
   creators: {
@@ -46,7 +46,7 @@ export const en = {
     campaigns: 'campaigns',
     list: [
       { name: 'Priya Sharma', category: 'Food & Lifestyle' },
-      { name: 'Aditya Verma', category: 'Tech Reviews' },
+      { name: 'Anish Shrestha', category: 'Tech Reviews' },
       { name: 'Sunita Rai', category: 'Travel & Adventure' },
       { name: 'Bikash Thapa', category: 'Fitness' },
       { name: 'Kripa Gurung', category: 'Fashion' },
@@ -57,7 +57,7 @@ export const en = {
     heading: 'Everything you need to run a campaign',
     cards: [
       { title: 'Create a Campaign', desc: 'Post a paid campaign or a free open event in minutes — AI can even draft it for you.' },
-      { title: 'Shortlist Creators', desc: 'Browse verified creators by category, engagement, and location — save your favorites.' },
+      { title: 'Shortlist Creators', desc: 'Browse creators by category and location, with real OAuth-verified follower counts — no bought or fake numbers, save your favorites.' },
       { title: 'Approve Proposals', desc: 'Review pitches, negotiate in-app, and accept the creators who fit your brand best.' },
       { title: 'Track Your Budget', desc: 'See exactly where every rupee goes across every active campaign, in real time.' },
       { title: 'Payment Protection', desc: 'Funds sit in escrow until you approve delivered content — zero risk, either side.' },
@@ -124,6 +124,7 @@ export const en = {
   trust: {
     eyebrow: 'Trusted Nationwide',
     heading: "Built for Nepal's creator economy",
+    sub: 'PAN-verified businesses. OAuth-verified follower counts, not self-reported numbers. Payouts through eSewa, Khalti, and Fonepay.',
     stats: [
       { label: 'Verified Creators' },
       { label: 'Active Brands' },

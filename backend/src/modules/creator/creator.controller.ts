@@ -34,8 +34,10 @@ export class CreatorController {
       if (!category) throw new AppError('category is required', 400);
       const lat = req.query.lat ? parseFloat(String(req.query.lat)) : undefined;
       const lng = req.query.lng ? parseFloat(String(req.query.lng)) : undefined;
+      const budgetMin = req.query.budgetMin ? parseFloat(String(req.query.budgetMin)) : undefined;
+      const budgetMax = req.query.budgetMax ? parseFloat(String(req.query.budgetMax)) : undefined;
       const limit = req.query.limit ? parseInt(String(req.query.limit), 10) : undefined;
-      const creators = await creatorService.getRecommendedForCampaign({ category, lat, lng, limit, lang: req.language });
+      const creators = await creatorService.getRecommendedForCampaign({ category, lat, lng, budgetMin, budgetMax, limit, lang: req.language });
       success(res, creators, 'Recommended creators retrieved');
     } catch (err) {
       next(err);

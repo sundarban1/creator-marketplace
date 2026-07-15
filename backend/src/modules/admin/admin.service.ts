@@ -5,9 +5,11 @@ import { isCreatorProfileComplete } from '../referral/referral.service';
 import { BusinessReferralRepository } from '../business-referral/business-referral.repository';
 import { isBusinessProfileComplete, REFERRAL_HOLD_DAYS } from '../business-referral/business-referral.service';
 import { CampaignRepository } from '../campaign/campaign.repository';
+import { MessagingService } from '../messaging/messaging.service';
 import { notificationService } from '../notifications/notification.service';
 import { analyticsService } from '../analytics/analytics.service';
-import { sendAccountVerifiedEmail } from '../../utils/email';
+import { sendAccountVerifiedEmail, sendVerificationRejectedEmail } from '../../utils/email';
+import { sendSms } from '../../utils/sms';
 import { AppError } from '../../middleware/error';
 
 export class AdminService {
@@ -15,12 +17,14 @@ export class AdminService {
   private referralRepo: ReferralRepository;
   private businessReferralRepo: BusinessReferralRepository;
   private campaignRepo: CampaignRepository;
+  private messagingService: MessagingService;
 
   constructor() {
     this.repo = new AdminRepository();
     this.referralRepo = new ReferralRepository();
     this.businessReferralRepo = new BusinessReferralRepository();
     this.campaignRepo = new CampaignRepository();
+    this.messagingService = new MessagingService();
   }
 
   getStats() {
@@ -153,6 +157,10 @@ export class AdminService {
     });
   }
 
+  // Payment release is the project's final stage — no separate creator
+  // "confirm receipt" step. releaseApplicationPayment flips workStatus straight
+  // to COMPLETED in the same update, so the completion side effects (analytics,
+  // notification, closing the auto-accepted conversation) fire here too.
   async releasePayment(appId: string, adminUserId: string) {
     const app = await this.campaignRepo.findApplicationById(appId);
     if (!app) throw new AppError('Application not found', 404);
@@ -161,16 +169,34 @@ export class AdminService {
     if (app.paymentStatus !== 'PAID') throw new AppError('No escrow payment is held for this application', 400);
 
     const updated = await this.campaignRepo.releaseApplicationPayment(appId, adminUserId);
-    analyticsService.incrPaymentReleased(app.creator.userId, app.campaign.business.userId, app.proposedRate);
+    const creatorUserId = app.creator.userId;
+    const businessUserId = app.campaign.business.userId;
+    analyticsService.incrPaymentReleased(creatorUserId, businessUserId, app.proposedRate);
+    analyticsService.incrCampaignCompleted(creatorUserId, businessUserId);
 
     notificationService.create({
-      userId:  app.creator.userId,
+      userId:  creatorUserId,
       type:    'payment_released',
       title:   '💸 Payment Released!',
       body:    `Your payment for "${app.campaign.title}" has been released. Check your wallet!`,
       refId:   app.campaignId,
       refType: 'campaign',
     }).catch(() => {});
+    notificationService.create({
+      userId:  businessUserId,
+      type:    'project_completed',
+      title:   '✅ Project Complete',
+      body:    `Payment for "${app.campaign.title}" has been released — the project is now complete.`,
+      refId:   app.campaignId,
+      refType: 'campaign',
+    }).catch(() => {});
+
+    // A conversation that was only ever auto-accepted (never a real chat request/accept)
+    // pauses back to PENDING now that the project is done and paid — a genuinely-accepted
+    // conversation is left open as-is.
+    this.messagingService
+      .closeConversationAfterCompletion(creatorUserId, businessUserId, app.creator.id, app.campaign.business.id)
+      .catch(() => {});
 
     return updated;
   }
@@ -205,6 +231,26 @@ export class AdminService {
         refType: 'business',
       }).catch(() => {});
       sendAccountVerifiedEmail(updated.user.email, name, 'business').catch(() => {});
+    }
+    return updated;
+  }
+
+  async rejectBusiness(businessId: string, reason: string) {
+    const updated = await this.repo.rejectBusinessVerification(businessId, reason);
+    if (updated.user) {
+      const name = updated.businessName ?? 'there';
+      notificationService.create({
+        userId:  updated.userId,
+        type:    'verification_rejected',
+        title:   'Verification not approved',
+        body:    `Your business verification was not approved: ${reason}`,
+        refId:   updated.id,
+        refType: 'business',
+      }).catch(() => {});
+      sendVerificationRejectedEmail(updated.user.email, name, reason, 'business').catch(() => {});
+      if (updated.user.phone) {
+        sendSms(updated.user.phone, `CreatorMarket: your business verification was not approved. Reason: ${reason}`).catch(() => {});
+      }
     }
     return updated;
   }

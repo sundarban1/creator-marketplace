@@ -9,7 +9,7 @@ const CAMPAIGN_SELECT = { select: { title: true, applications: { select: { creat
 const CONV_SELECT_CREATOR = {
   id: true, creatorId: true, businessId: true, campaignId: true, status: true,
   requestMessage: true, lastMessageAt: true, creatorSeenAt: true, createdAt: true,
-  business: { select: { businessName: true, logoUrl: true } },
+  business: { select: { businessName: true, logoUrl: true, userId: true } },
   campaign: CAMPAIGN_SELECT,
   messages: { orderBy: { createdAt: 'desc' as const }, take: 1 },
 };
@@ -17,7 +17,7 @@ const CONV_SELECT_CREATOR = {
 const CONV_SELECT_BUSINESS = {
   id: true, creatorId: true, businessId: true, campaignId: true, status: true,
   requestMessage: true, lastMessageAt: true, businessSeenAt: true, createdAt: true,
-  creator:  { select: { fullName: true, avatarUrl: true } },
+  creator:  { select: { fullName: true, avatarUrl: true, userId: true } },
   campaign: CAMPAIGN_SELECT,
   messages: { orderBy: { createdAt: 'desc' as const }, take: 1 },
 };

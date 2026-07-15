@@ -26,29 +26,22 @@ import { creatorService, type ApiCreatorListItem } from '@/services/creator';
 import { F } from '@/utilities/constants';
 import { getIconColor } from '@/features/creator/data/filterOptions';
 import { useAllCategories, useCategories, getCategoryMeta } from '@/hooks/useCategories';
+import { usePlatforms, getPlatformMeta } from '@/hooks/usePlatforms';
 import type { ApiCategory } from '@/services/category';
+import type { ApiPlatform } from '@/services/platform';
 
 const PAGE_SIZE = 10;
-const SLIDER_MAX = 1000;
+const SLIDER_MIN = 1000;
+const SLIDER_MAX = 100000;
 const MAX_LOCS = 3;
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
-
-const PLATFORM_ICON: Record<string, { icon: IoniconName; color: string }> = {
-  instagram: { icon: 'logo-instagram', color: '#E1306C' },
-  youtube:   { icon: 'logo-youtube',   color: '#FF0000' },
-  twitter:   { icon: 'logo-twitter',   color: '#1DA1F2' },
-  facebook:  { icon: 'logo-facebook',  color: '#1877F2' },
-  linkedin:  { icon: 'logo-linkedin',  color: '#0A66C2' },
-  snapchat:  { icon: 'logo-snapchat',  color: '#FFBF00' },
-  pinterest: { icon: 'logo-pinterest', color: '#E60023' },
-  tiktok:    { icon: 'musical-notes',  color: '#010101' },
-};
-
-function getPlatformMeta(p: string) { return PLATFORM_ICON[p.toLowerCase()] ?? { icon: 'phone-portrait-outline' as IoniconName, color: '#6B7280' }; }
-function normalizePlatform(p: string) { return p.charAt(0).toUpperCase() + p.slice(1).toLowerCase(); }
+function formatRate(v: number): string {
+  if (v >= 100000) return `Rs ${(v / 100000).toFixed(1)}L`;
+  if (v >= 1000)   return `Rs ${(v / 1000).toFixed(0)}K`;
+  return `Rs ${v}`;
+}
 /** First admin category (in order) that matches one of a creator's category labels. */
 function firstCategoryMeta(categories: ApiCategory[], creatorCats: string[]) {
   for (const name of creatorCats) {
@@ -67,14 +60,14 @@ function toggle<T>(arr: T[], item: T): T[] {
 }
 
 // Same "fast path first" concept as every other range filter in the app —
-// scaled to this screen's own rate range (0–1000), not the campaign-budget
+// scaled to this screen's own rate range (Rs 1K–1L), not the campaign-budget
 // scale used on the home feed.
 function budgetPresets(t: TFn): BudgetPreset[] {
   return [
-    { key: 'any',    min: 0,   max: SLIDER_MAX, label: t('explore.presetAnyRate')  },
-    { key: 'u200',   min: 0,   max: 200,        label: t('explore.presetUnder200') },
-    { key: '2to500', min: 200, max: 500,        label: t('explore.preset200to500') },
-    { key: '500p',   min: 500, max: SLIDER_MAX, label: t('explore.preset500Plus')  },
+    { key: 'any',     min: SLIDER_MIN, max: SLIDER_MAX, label: t('explore.presetAnyRate')     },
+    { key: 'u10k',    min: SLIDER_MIN, max: 10000,      label: t('explore.presetUnder10k')    },
+    { key: '10to50k', min: 10000,      max: 50000,      label: t('explore.preset10kTo50k')    },
+    { key: '50kp',    min: 50000,      max: SLIDER_MAX, label: t('explore.preset50kPlus')      },
   ];
 }
 
@@ -90,7 +83,7 @@ type FilterState = {
 
 const DEFAULT_FILTER: FilterState = {
   locations: [],
-  priceMin: 0,
+  priceMin: SLIDER_MIN,
   priceMax: SLIDER_MAX,
   platforms: [],
   categories: [],
@@ -99,7 +92,7 @@ const DEFAULT_FILTER: FilterState = {
 function filterActiveCount(f: FilterState) {
   return [
     f.locations.length > 0,
-    f.priceMin > 0 || f.priceMax < SLIDER_MAX,
+    f.priceMin > SLIDER_MIN || f.priceMax < SLIDER_MAX,
     f.platforms.length > 0,
     f.categories.length > 0,
   ].filter(Boolean).length;
@@ -112,14 +105,13 @@ function isFilterActive(f: FilterState) {
 // ─── Filter Modal ─────────────────────────────────────────────────────────────
 
 function ExploreFilterModal({
-  visible, temp, setTemp, availableCategories, availablePlatforms,
+  visible, temp, setTemp, availableCategories,
   onApply, onReset, onClose,
 }: {
   visible: boolean;
   temp: FilterState;
   setTemp: (f: FilterState) => void;
   availableCategories: string[];
-  availablePlatforms: string[];
   onApply: () => void;
   onReset: () => void;
   onClose: () => void;
@@ -127,6 +119,7 @@ function ExploreFilterModal({
   const C = useAppColors();
   const { t } = useLanguage();
   const { categories: allCategories } = useAllCategories();
+  const { platforms: allPlatforms } = usePlatforms();
   const BUDGET_PRESETS = budgetPresets(t);
 
   function set<K extends keyof FilterState>(key: K, val: FilterState[K]) {
@@ -146,12 +139,13 @@ function ExploreFilterModal({
   if (!matchedBudget || matchedBudget.key !== 'any') {
     activeChips.push({
       key: 'budget',
-      label: matchedBudget ? matchedBudget.label : `Rs ${temp.priceMin}–${temp.priceMax >= SLIDER_MAX ? `${SLIDER_MAX}+` : temp.priceMax}`,
-      onClear: () => { set('priceMin', 0); set('priceMax', SLIDER_MAX); },
+      label: matchedBudget ? matchedBudget.label : `${formatRate(temp.priceMin)}–${temp.priceMax >= SLIDER_MAX ? `${formatRate(SLIDER_MAX)}+` : formatRate(temp.priceMax)}`,
+      onClear: () => { set('priceMin', SLIDER_MIN); set('priceMax', SLIDER_MAX); },
     });
   }
   for (const p of temp.platforms) {
-    activeChips.push({ key: `plat-${p}`, label: normalizePlatform(p), onClear: () => set('platforms', temp.platforms.filter((x) => x !== p)) });
+    const label = allPlatforms.find((x) => x.key === p)?.name ?? p;
+    activeChips.push({ key: `plat-${p}`, label, onClear: () => set('platforms', temp.platforms.filter((x) => x !== p)) });
   }
   for (const cat of temp.categories) {
     activeChips.push({ key: `cat-${cat}`, label: cat, onClear: () => set('categories', temp.categories.filter((x) => x !== cat)) });
@@ -173,6 +167,32 @@ function ExploreFilterModal({
     >
       <ActiveFilterChips chips={activeChips} />
 
+      {/* Category */}
+      {availableCategories.length > 0 && (
+        <View>
+          <FilterSectionHeader
+            icon="pricetag-outline"
+            label={t('explore.category')}
+            hint={temp.categories.length > 0 ? t('filterModal.selectedCount', { count: temp.categories.length }) : undefined}
+          />
+          <View style={fm.chips}>
+            {availableCategories.map((cat) => {
+              const meta = getCategoryMeta(allCategories, cat);
+              const sel = temp.categories.includes(cat);
+              return (
+                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                  key={cat}
+                  onPress={() => set('categories', toggle(temp.categories, cat))}
+                  style={[fm.chip, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? C.primaryLight : C.background }]}>
+                  <FontAwesome5 name={meta.icon} size={12} color={sel ? meta.color : C.textSecondary} />
+                  <Text style={[fm.chipText, { color: sel ? C.brinjal1 : C.text, fontWeight: sel ? '700' : '500' }]}>{cat}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+      )}
+
       {/* Location */}
       <View>
         <FilterSectionHeader
@@ -192,47 +212,31 @@ function ExploreFilterModal({
           min={temp.priceMin}
           max={temp.priceMax}
           onChange={(min, max) => setTemp({ ...temp, priceMin: min, priceMax: max })}
+          sliderMin={SLIDER_MIN}
           sliderMax={SLIDER_MAX}
           customLabel={t('filterModal.customLabel')}
         />
       </View>
 
-      {/* Platform */}
-      {availablePlatforms.length > 0 && (
+      {/* Platform — sourced from the admin platform catalog so every supported
+          platform is always selectable, not just ones a creator already connected. */}
+      {allPlatforms.length > 0 && (
         <View>
-          <FilterSectionHeader icon="phone-portrait-outline" label={t('explore.platform')} />
+          <FilterSectionHeader
+            icon="phone-portrait-outline"
+            label={t('explore.platform')}
+            hint={temp.platforms.length > 0 ? t('filterModal.selectedCount', { count: temp.platforms.length }) : undefined}
+          />
           <View style={fm.chips}>
-            {availablePlatforms.map((p) => {
-              const sel = temp.platforms.includes(p);
+            {allPlatforms.map((p) => {
+              const sel = temp.platforms.includes(p.key);
               return (
                 <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                  key={p}
-                  onPress={() => set('platforms', toggle(temp.platforms, p))}
+                  key={p.key}
+                  onPress={() => set('platforms', toggle(temp.platforms, p.key))}
                   style={[fm.chip, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? C.primaryLight : C.background }]}>
-                  <Ionicons name={getPlatformMeta(p).icon} size={14} color={sel ? C.brinjal1 : getPlatformMeta(p).color} />
-                  <Text style={[fm.chipText, { color: sel ? C.brinjal1 : C.text, fontWeight: sel ? '700' : '500' }]}>{normalizePlatform(p)}</Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </View>
-      )}
-
-      {/* Category */}
-      {availableCategories.length > 0 && (
-        <View>
-          <FilterSectionHeader icon="pricetag-outline" label={t('explore.category')} />
-          <View style={fm.chips}>
-            {availableCategories.map((cat) => {
-              const meta = getCategoryMeta(allCategories, cat);
-              const sel = temp.categories.includes(cat);
-              return (
-                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                  key={cat}
-                  onPress={() => set('categories', toggle(temp.categories, cat))}
-                  style={[fm.chip, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? C.primaryLight : C.background }]}>
-                  <FontAwesome5 name={meta.icon} size={12} color={sel ? meta.color : C.textSecondary} />
-                  <Text style={[fm.chipText, { color: sel ? C.brinjal1 : C.text, fontWeight: sel ? '700' : '500' }]}>{cat}</Text>
+                  <FontAwesome5 name={p.icon} size={13} color={sel ? C.brinjal1 : p.color} />
+                  <Text style={[fm.chipText, { color: sel ? C.brinjal1 : C.text, fontWeight: sel ? '700' : '500' }]}>{p.name}</Text>
                 </Pressable>
               );
             })}
@@ -281,11 +285,12 @@ function CreatorCard({ creator, isSaved, onToggleSave }: {
 }) {
   const C = useAppColors();
   const { categories: allCategories } = useAllCategories();
+  const { platforms: allPlatforms } = usePlatforms();
   const meta = firstCategoryMeta(allCategories, creator.categories);
   const topAccount = creator.socialAccounts.length > 0
     ? [...creator.socialAccounts].sort((a, b) => b.followers - a.followers)[0]
     : null;
-  const topPlatform = topAccount ? getPlatformMeta(topAccount.platform) : null;
+  const topPlatform = topAccount ? getPlatformMeta(allPlatforms, topAccount.platform) : null;
   const extraCats = creator.categories.length - 1;
 
   return (
@@ -335,7 +340,7 @@ function CreatorCard({ creator, isSaved, onToggleSave }: {
           )}
           {topAccount && topPlatform ? (
             <View style={s.platformStat}>
-              <Ionicons name={topPlatform.icon} size={13} color={topPlatform.color} />
+              <FontAwesome5 name={topPlatform.icon} size={12} color={topPlatform.color} />
               <Text style={[s.platformCount, { color: C.text }]}>{formatFollowers(topAccount.followers)}</Text>
             </View>
           ) : null}
@@ -351,6 +356,7 @@ export default function ExploreCreatorsScreen() {
   const C = useAppColors();
   const { t } = useLanguage();
   const { categories: allCategories } = useAllCategories();
+  const { platforms: allPlatforms } = usePlatforms();
 
   const [creators, setCreators] = useState<ApiCreatorListItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -369,7 +375,6 @@ export default function ExploreCreatorsScreen() {
   const [tempFilter, setTempFilter] = useState<FilterState>(DEFAULT_FILTER);
   const { categories: adminCategories } = useCategories('CREATOR');
   const availableCategories = adminCategories.map((c) => c.name);
-  const [availablePlatforms, setAvailablePlatforms] = useState<string[]>([]);
 
   const filterActive = isFilterActive(activeFilter);
   const filterCount  = filterActiveCount(activeFilter);
@@ -411,15 +416,6 @@ export default function ExploreCreatorsScreen() {
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [search]);
 
-  // Load filter options once
-  useEffect(() => {
-    creatorService.getCreatorFilterOptions()
-      .then(({ platforms }) => {
-        setAvailablePlatforms(platforms);
-      })
-      .catch(() => {});
-  }, []);
-
   async function fetchCreators(p: number, replace: boolean, filter: FilterState, nameSearch: string) {
     if (p === 1 && replace) setLoading(true);
     else if (!replace) setLoadingMore(true);
@@ -436,7 +432,7 @@ export default function ExploreCreatorsScreen() {
         location: locationText || undefined,
         categories: filter.categories.length ? filter.categories : undefined,
         platforms: filter.platforms.length ? filter.platforms : undefined,
-        priceMin: filter.priceMin > 0 ? filter.priceMin : undefined,
+        priceMin: filter.priceMin > SLIDER_MIN ? filter.priceMin : undefined,
         priceMax: filter.priceMax < SLIDER_MAX ? filter.priceMax : undefined,
       });
       setTotal(res.total);
@@ -494,7 +490,7 @@ export default function ExploreCreatorsScreen() {
     } else if (key === 'categories' && value !== undefined) {
       setActiveFilter({ ...activeFilter, categories: activeFilter.categories.filter((c) => c !== value) });
     } else if (key === 'priceMin' || key === 'priceMax') {
-      setActiveFilter({ ...activeFilter, priceMin: 0, priceMax: SLIDER_MAX });
+      setActiveFilter({ ...activeFilter, priceMin: SLIDER_MIN, priceMax: SLIDER_MAX });
     }
   }
 
@@ -560,20 +556,24 @@ export default function ExploreCreatorsScreen() {
               <Ionicons name="close" size={12} color={C.brinjal1} />
             </Pressable>
           ))}
-          {(activeFilter.priceMin > 0 || activeFilter.priceMax < SLIDER_MAX) && (
+          {(activeFilter.priceMin > SLIDER_MIN || activeFilter.priceMax < SLIDER_MAX) && (
             <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => removeActiveFilter('priceMin')} style={[s.chip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
               <FontAwesome5 name="wallet" size={11} color={getIconColor('wallet')} />
-              <Text style={[s.chipText, { color: C.brinjal1 }]}>Rs {activeFilter.priceMin}–{activeFilter.priceMax >= SLIDER_MAX ? '1K+' : `Rs ${activeFilter.priceMax}`}</Text>
+              <Text style={[s.chipText, { color: C.brinjal1 }]}>{formatRate(activeFilter.priceMin)}–{activeFilter.priceMax >= SLIDER_MAX ? `${formatRate(SLIDER_MAX)}+` : formatRate(activeFilter.priceMax)}</Text>
               <Ionicons name="close" size={12} color={C.brinjal1} />
             </Pressable>
           )}
-          {activeFilter.platforms.map((p) => (
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} key={p} onPress={() => removeActiveFilter('platforms', p)} style={[s.chip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
-              <Ionicons name={getPlatformMeta(p).icon} size={12} color={getPlatformMeta(p).color} />
-              <Text style={[s.chipText, { color: C.brinjal1 }]}>{normalizePlatform(p)}</Text>
-              <Ionicons name="close" size={12} color={C.brinjal1} />
-            </Pressable>
-          ))}
+          {activeFilter.platforms.map((p) => {
+            const meta = getPlatformMeta(allPlatforms, p);
+            const label = allPlatforms.find((x) => x.key === p)?.name ?? p;
+            return (
+              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} key={p} onPress={() => removeActiveFilter('platforms', p)} style={[s.chip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
+                <FontAwesome5 name={meta.icon} size={11} color={meta.color} />
+                <Text style={[s.chipText, { color: C.brinjal1 }]}>{label}</Text>
+                <Ionicons name="close" size={12} color={C.brinjal1} />
+              </Pressable>
+            );
+          })}
           {activeFilter.categories.map((cat) => {
             const meta = getCategoryMeta(allCategories, cat);
             return (
@@ -663,7 +663,6 @@ export default function ExploreCreatorsScreen() {
         temp={tempFilter}
         setTemp={setTempFilter}
         availableCategories={availableCategories}
-        availablePlatforms={availablePlatforms}
         onApply={applyFilter}
         onReset={resetFilter}
         onClose={() => setFilterVisible(false)}

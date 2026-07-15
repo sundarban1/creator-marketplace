@@ -1,6 +1,7 @@
 import { router, useFocusEffect } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { TabSlider } from '@/components/TabSlider';
@@ -61,7 +62,18 @@ function formatTime(iso: string, t: TFn) {
 
 // ── Avatar ────────────────────────────────────────────────────────────────────
 
-function Avatar({ name, size = 50 }: { name: string; size?: number }) {
+function Avatar({ name, imageUrl, size = 50 }: { name: string; imageUrl?: string | null; size?: number }) {
+  const [failed, setFailed] = useState(false);
+  if (imageUrl && !failed) {
+    return (
+      <Image
+        source={{ uri: imageUrl }}
+        style={{ width: size, height: size, borderRadius: size / 2 }}
+        contentFit="cover"
+        onError={() => setFailed(true)}
+      />
+    );
+  }
   const color = avatarColor(name);
   return (
     <View style={[av.wrap, { width: size, height: size, borderRadius: size / 2, backgroundColor: color }]}>
@@ -99,7 +111,7 @@ function RequestCard({ conv, onRespond }: { conv: Conversation; onRespond: () =>
 
       {/* Top: avatar + info + new badge */}
       <View style={s.reqTop}>
-        <Avatar name={conv.participantName} size={48} />
+        <Avatar name={conv.participantName} imageUrl={conv.participantAvatar} size={48} />
         <View style={s.reqInfo}>
           <View style={s.reqNameRow}>
             <Text style={[s.reqName, { color: C.text }]} numberOfLines={1}>{conv.participantName}</Text>
@@ -205,7 +217,7 @@ function ChatCard({ conv, onDelete }: { conv: Conversation; onDelete: (id: strin
         onPress={() =>
           router.push({
             pathname: '/(creator)/messages/[id]' as never,
-            params: { id: conv.id, name: conv.participantName, status: conv.status, campaignTitle: conv.campaignTitle ?? '' },
+            params: { id: conv.id, name: conv.participantName, avatar: conv.participantAvatar ?? '', userId: conv.participantUserId ?? '', status: conv.status, campaignTitle: conv.campaignTitle ?? '' },
           })
         }>
         {/* Left accent stripe */}
@@ -214,7 +226,7 @@ function ChatCard({ conv, onDelete }: { conv: Conversation; onDelete: (id: strin
         {/* Avatar + badge */}
         <View style={s.avatarWrap}>
           {hasUnread && <View style={[s.avatarRing, { borderColor: ACCENT }]} pointerEvents="none" />}
-          <Avatar name={conv.participantName} size={50} />
+          <Avatar name={conv.participantName} imageUrl={conv.participantAvatar} size={50} />
           {hasUnread && (
             <View style={[s.avatarBadge, { backgroundColor: ACCENT }]}>
               <Text style={s.avatarBadgeTxt}>{conv.unreadCount > 99 ? '99+' : conv.unreadCount}</Text>

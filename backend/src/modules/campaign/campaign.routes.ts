@@ -331,13 +331,6 @@ router.put(
   ctrl.requestRevision.bind(ctrl)
 );
 
-router.put(
-  '/applications/:appId/complete',
-  authenticate,
-  authorize('CREATOR'),
-  ctrl.completeProject.bind(ctrl)
-);
-
 router.post(
   '/applications/:appId/review',
   authenticate,

@@ -190,4 +190,71 @@ export class BusinessRepository {
     ]);
     return { applications, referrals };
   }
+
+  // ── Social Accounts (structured table, shared with CreatorProfile — see
+  // creator.repository.ts's mirror-image section for the creator-side of this) ──
+
+  async findSocialAccountsByUserId(userId: string) {
+    const profile = await prisma.businessProfile.findUnique({ where: { userId }, select: { id: true } });
+    if (!profile) return [];
+    return prisma.socialAccount.findMany({
+      where: { businessProfileId: profile.id },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  async findSocialAccountById(id: string) {
+    return prisma.socialAccount.findUnique({ where: { id } });
+  }
+
+  async addSocialAccount(businessProfileId: string, data: { platform: string; profileUrl: string; followers: number }) {
+    return prisma.socialAccount.create({ data: { businessProfileId, ...data } });
+  }
+
+  async updateSocialAccount(id: string, data: { profileUrl?: string; followers?: number }) {
+    return prisma.socialAccount.update({ where: { id }, data: { ...data, updatedAt: new Date() } });
+  }
+
+  async deleteSocialAccount(id: string) {
+    return prisma.socialAccount.delete({ where: { id } });
+  }
+
+  async findSocialAccountByPlatform(businessProfileId: string, platform: string) {
+    return prisma.socialAccount.findUnique({ where: { businessProfileId_platform: { businessProfileId, platform } } });
+  }
+
+  async upsertOAuthSocialAccount(
+    businessProfileId: string,
+    platform: string,
+    data: {
+      profileUrl: string;
+      followers: number;
+      platformUserId: string;
+      avatarUrl?: string;
+      accessToken?: string;
+      refreshToken?: string;
+      tokenExpiresAt?: Date;
+      oauthConnectionType?: string;
+    },
+  ) {
+    const now = new Date();
+    return prisma.socialAccount.upsert({
+      where: { businessProfileId_platform: { businessProfileId, platform } },
+      create: { businessProfileId, platform, connectedViaOAuth: true, followersSyncedAt: now, ...data },
+      update: { connectedViaOAuth: true, followersSyncedAt: now, updatedAt: now, ...data },
+    });
+  }
+
+  // This business's connected accounts that haven't been synced in a while — same
+  // "silently top up on load" idea as creator.repository.ts's findStaleSocialAccounts.
+  async findStaleSocialAccounts(businessProfileId: string, staleBefore: Date) {
+    return prisma.socialAccount.findMany({
+      where: {
+        businessProfileId,
+        connectedViaOAuth: true,
+        accessToken: { not: null },
+        OR: [{ followersSyncedAt: null }, { followersSyncedAt: { lt: staleBefore } }],
+      },
+    });
+  }
 }

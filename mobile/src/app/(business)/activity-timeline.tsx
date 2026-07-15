@@ -46,7 +46,10 @@ type AppInfo = {
 };
 
 // ─── Progress steps ────────────────────────────────────────────────────────────
-// idx: 0=Accepted 1=Payment 2=Secured 3=Waiting 4=Started 5=Submitted 6=Review 7=Approved 8=Released 9=Completed
+// idx: 0=Accepted 1=Payment 2=Secured 3=Waiting 4=Started 5=Submitted 6=Review 7=Approved 8=Released (terminal)
+// Payment release is the final stage — there is no separate "Completed"
+// confirmation step. As soon as paymentStatus is RELEASED, every step
+// (including "Released") shows done.
 
 type TFn = (key: string, params?: Record<string, string | number>) => string;
 
@@ -61,13 +64,11 @@ function getProgressLabels(t: TFn): string[] {
     t('activityTimeline.progressReview'),
     t('activityTimeline.progressApproved'),
     t('activityTimeline.progressReleased'),
-    t('activityTimeline.progressCompleted'),
   ];
 }
 
 function progressIdx(ws: WS, paid: boolean, paymentStatus?: PS): number {
-  if (ws === 'COMPLETED')  return 9;
-  if (ws === 'APPROVED' && paymentStatus === 'RELEASED') return 8;
+  if (paymentStatus === 'RELEASED') return 9; // final stage — every step shows done
   if (ws === 'APPROVED')   return 7;
   if (ws === 'SUBMITTED')  return 5;
   if (ws === 'IN_PROGRESS') return 4;
@@ -119,7 +120,7 @@ function validateUrls(raw: string, t: TFn): string {
 }
 
 function statusLabel(ws: WS, paid: boolean, t: TFn, paymentStatus?: PS) {
-  if (ws === 'COMPLETED')   return t('activityTimeline.statusCompleted');
+  if (ws === 'COMPLETED')   return t('activityTimeline.statusReleased');
   if (ws === 'APPROVED' && paymentStatus === 'RELEASED') return t('activityTimeline.statusReleased');
   if (ws === 'APPROVED')    return t('activityTimeline.statusApproved');
   if (ws === 'SUBMITTED')   return t('activityTimeline.statusUnderReview');
@@ -128,7 +129,7 @@ function statusLabel(ws: WS, paid: boolean, t: TFn, paymentStatus?: PS) {
   return t('activityTimeline.statusWaitingPayment');
 }
 function statusColor(ws: WS, paid: boolean, paymentStatus?: PS) {
-  if (ws === 'COMPLETED')   return '#16A34A';
+  if (ws === 'COMPLETED')   return '#0EA5E9';
   if (ws === 'APPROVED' && paymentStatus === 'RELEASED') return '#0EA5E9';
   if (ws === 'APPROVED')    return '#65A30D';
   if (ws === 'SUBMITTED')   return '#D97706';
@@ -270,10 +271,10 @@ function ProgressTracker({ current, scrollRef, labels }: { current: number; scro
 
 // ─── Action Card ──────────────────────────────────────────────────────────────
 
-function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, onPay, onStartWork, onUpload, onReview, onApprove, onRevision, onCompleteProject }: {
+function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, onPay, onStartWork, onUpload, onReview, onApprove, onRevision }: {
   ws: WS; paid: boolean; paymentStatus: PS; isCreator: boolean; isFree: boolean; submitting: boolean;
   onPay: () => void; onStartWork: () => void; onUpload: () => void;
-  onReview: () => void; onApprove: () => void; onRevision: () => void; onCompleteProject: () => void;
+  onReview: () => void; onApprove: () => void; onRevision: () => void;
 }) {
   const C = useAppColors();
   const { t } = useLanguage();
@@ -379,21 +380,13 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, on
     </View>
   );
 
-  // Project fully complete — both roles
-  if (ws === 'COMPLETED') return (
+  // Payment released — the final stage, both roles see the same completion
+  // card immediately (no separate "confirm receipt" step required).
+  if (paymentStatus === 'RELEASED') return (
     <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#16A34A' }]}>
       <View style={[ac.iconBg, { backgroundColor: '#DCFCE7' }]}><Ionicons name="checkmark-done-circle-outline" size={26} color="#16A34A" /></View>
       <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acProjectCompleteTitle')}</Text>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{isCreator ? t('activityTimeline.acProjectCompleteCreatorSub') : t('activityTimeline.acProjectCompleteBizSub')}</Text>
-    </View>
-  );
-
-  // APPROVED, payment released — business: waiting on creator to confirm
-  if (!isCreator && paymentStatus === 'RELEASED') return (
-    <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#0EA5E9' }]}>
-      <View style={[ac.iconBg, { backgroundColor: '#E0F2FE' }]}><Ionicons name="cash-outline" size={26} color="#0EA5E9" /></View>
-      <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acReleasedBizTitle')}</Text>
-      <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acReleasedBizSub')}</Text>
     </View>
   );
 
@@ -403,20 +396,6 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, on
       <View style={[ac.iconBg, { backgroundColor: '#DCFCE7' }]}><Ionicons name="checkmark-done-circle-outline" size={26} color="#16A34A" /></View>
       <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acApprovedBizTitle')}</Text>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acApprovedBizSub')}</Text>
-    </View>
-  );
-
-  // APPROVED, payment released — creator: verify + complete
-  if (paymentStatus === 'RELEASED') return (
-    <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#0EA5E9' }]}>
-      <View style={[ac.iconBg, { backgroundColor: '#E0F2FE' }]}><Ionicons name="wallet-outline" size={26} color="#0EA5E9" /></View>
-      <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acReleasedCreatorTitle')}</Text>
-      <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acReleasedCreatorSub')}</Text>
-      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[ac.btn, { backgroundColor: '#0EA5E9', opacity: submitting ? 0.75 : 1 }]} onPress={onCompleteProject} disabled={submitting}>
-        {submitting
-          ? <ActivityIndicator size="small" color="#fff" />
-          : <><Ionicons name="checkmark-circle-outline" size={16} color="#fff" /><Text style={ac.btnTxt}>{t('activityTimeline.acReleasedCreatorBtn')}</Text></>}
-      </Pressable>
     </View>
   );
 
@@ -603,20 +582,6 @@ export default function CampaignWorkspaceScreen() {
     }
   }
 
-  async function handleCompleteProject() {
-    if (!app) return;
-    setSubmitting(true);
-    try {
-      await campaignService.completeProject(app.id);
-      setApp(a => a ? { ...a, workStatus: 'COMPLETED' } : a);
-      showToast(t('activityTimeline.toastProjectCompleted'));
-    } catch (e: any) {
-      showToast(e?.message ?? t('activityTimeline.toastCompleteFailed'));
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
   async function handleRevision() {
     if (!app || !revisionNote.trim()) return;
     setSubmitting(true);
@@ -712,10 +677,17 @@ export default function CampaignWorkspaceScreen() {
             <Text style={[s.statusBadgeTxt, { color: sClr }]}>{sLbl}</Text>
           </View>
         </View>
-        {/* Only message icon — no three dots */}
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={s.iconBtn} onPress={handleMessage} hitSlop={6}>
-          <Ionicons name="chatbubble-outline" size={22} color="#7C3AED" />
-        </Pressable>
+        {/* Only message icon — no three dots. Payment release is the final
+            stage, so chat closes here rather than staying open indefinitely. */}
+        {app?.paymentStatus === 'RELEASED' ? (
+          <View style={s.iconBtn}>
+            <Ionicons name="chatbubble-outline" size={22} color="#D1D5DB" />
+          </View>
+        ) : (
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={s.iconBtn} onPress={handleMessage} hitSlop={6}>
+            <Ionicons name="chatbubble-outline" size={22} color="#7C3AED" />
+          </Pressable>
+        )}
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.body}>
@@ -790,7 +762,6 @@ export default function CampaignWorkspaceScreen() {
           onReview={() => setShowReview(true)}
           onApprove={handleApprove}
           onRevision={() => setShowRevision(true)}
-          onCompleteProject={handleCompleteProject}
         />
 
         {/* ── Activity Timeline ── */}

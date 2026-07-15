@@ -27,6 +27,8 @@ model User {
   suspendedAt      DateTime?
   pushToken        String?
   deviceId         String?
+  // Updated on socket connect/disconnect — drives the chat "Active now" / "Active Xm ago" status.
+  lastSeenAt       DateTime?
   businessProfile  BusinessProfile?
   creatorProfile   CreatorProfile?
   issueReports     IssueReport[]
@@ -126,7 +128,10 @@ enum ReferralStatus {
 
 model SocialAccount {
   id               String         @id @default(cuid())
-  creatorProfileId String
+  // Exactly one of creatorProfileId/businessProfileId is set — which one determines
+  // whose Social Accounts list this row appears in.
+  creatorProfileId  String?
+  businessProfileId String?
   platform         String
   profileUrl       String
   followers        Int            @default(0)
@@ -154,9 +159,11 @@ model SocialAccount {
   followersSyncedAt DateTime?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
-  creatorProfile   CreatorProfile @relation(fields: [creatorProfileId], references: [id], onDelete: Cascade)
+  creatorProfile   CreatorProfile?  @relation(fields: [creatorProfileId], references: [id], onDelete: Cascade)
+  businessProfile  BusinessProfile? @relation(fields: [businessProfileId], references: [id], onDelete: Cascade)
 
   @@unique([creatorProfileId, platform])
+  @@unique([businessProfileId, platform])
   @@map("social_accounts")
 }
 
@@ -206,6 +213,8 @@ model BusinessProfile {
   companyRegDocUrl        String?
   companyRegDocStatus     DocumentStatus       @default(NONE)
   companyRegDocUploadedAt DateTime?
+  verificationRejectReason String?
+  verificationRejectedAt  DateTime?
   user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   campaigns           Campaign[]
   conversations       Conversation[]       @relation("BusinessConversations")
@@ -215,6 +224,7 @@ model BusinessProfile {
   referralsMade       BusinessReferral[]   @relation("BizReferralsMade")
   referralsReceived   BusinessReferral?    @relation("BizReferralsReceived")
   profileViews        ProfileView[]
+  socialAccounts      SocialAccount[]
 
   @@index([isVerified])
   @@map("business_profiles")

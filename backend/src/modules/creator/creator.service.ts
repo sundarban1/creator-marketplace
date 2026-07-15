@@ -50,7 +50,7 @@ interface TiktokUserInfoResponse {
   error?: { code?: string; message?: string };
 }
 
-interface FacebookPageRaw {
+export interface FacebookPageRaw {
   id: string;
   name: string;
   access_token: string;
@@ -107,7 +107,7 @@ interface InstagramMeResponse {
 // be shown (see refreshStaleSocialAccountsForCreator) — there's no manual "sync"
 // action anywhere in the app; both paths call the same per-platform functions below.
 
-type RawSocialAccountRow = {
+export type RawSocialAccountRow = {
   id: string;
   platform: string;
   platformUserId: string | null;
@@ -147,12 +147,50 @@ async function fetchYoutubeSubscriberCount(accessToken: string): Promise<number>
   return stats?.hiddenSubscriberCount ? 0 : parseInt(stats?.subscriberCount ?? '0', 10);
 }
 
+// Shared by both creator and business YouTube connect — fetches the caller's own
+// channel (snippet + statistics) and shapes it into the fields a SocialAccount row
+// needs. Kept owner-agnostic on purpose so it isn't duplicated per profile type.
+export async function fetchYoutubeChannel(accessToken: string): Promise<{
+  channelId: string; profileUrl: string; followers: number; avatarUrl?: string;
+}> {
+  const res = await fetch(
+    'https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&mine=true',
+    { headers: { Authorization: `Bearer ${accessToken}` } },
+  );
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    logger.error({ status: res.status, body }, 'YouTube Data API request failed');
+    const reason = (() => { try { return JSON.parse(body)?.error?.errors?.[0]?.reason; } catch { return undefined; } })();
+
+    if (res.status === 401) throw new AppError('Google session expired — please reconnect', 401);
+    if (reason === 'accessNotConfigured') {
+      throw new AppError('YouTube Data API v3 is not enabled for this app yet — enable it in Google Cloud Console and try again', 502);
+    }
+    if (res.status === 403) {
+      throw new AppError('Google denied access to YouTube data — check the youtube.readonly scope is added to the OAuth consent screen', 403);
+    }
+    throw new AppError(`Could not reach YouTube (${res.status})`, 502);
+  }
+  const data = (await res.json()) as YoutubeChannelResponse;
+  const channel = data.items?.[0];
+  if (!channel) throw new AppError('No YouTube channel found for this Google account', 404);
+
+  const profileUrl = channel.snippet?.customUrl
+    ? `https://www.youtube.com/${channel.snippet.customUrl}`
+    : `https://www.youtube.com/channel/${channel.id}`;
+  const followers = channel.statistics?.hiddenSubscriberCount
+    ? 0
+    : parseInt(channel.statistics?.subscriberCount ?? '0', 10);
+
+  return { channelId: channel.id, profileUrl, followers, avatarUrl: channel.snippet?.thumbnails?.default?.url };
+}
+
 // Facebook Page access tokens derived from a long-lived (60-day) user token are
 // themselves effectively long-lived, which is what makes it possible to keep
 // refreshing a Page's (or its linked Instagram account's) follower count for
 // months without the creator ever reconnecting. A short-lived client token alone
 // would go stale within ~2 hours.
-async function exchangeForLongLivedFacebookToken(shortLivedToken: string): Promise<string> {
+export async function exchangeForLongLivedFacebookToken(shortLivedToken: string): Promise<string> {
   const url =
     'https://graph.facebook.com/oauth/access_token' +
     '?grant_type=fb_exchange_token' +
@@ -169,6 +207,36 @@ async function exchangeForLongLivedFacebookToken(shortLivedToken: string): Promi
     return shortLivedToken;
   }
   return data.access_token;
+}
+
+// ── Recommended-creators scoring ─────────────────────────────────────────────
+// Candidates are already category-gated (findRecommended only returns creators
+// with the campaign's category), so category isn't a weighted factor here — this
+// only ranks WITHIN that already-matched pool. Every sub-score is normalized to
+// [0, 1]; missing data (no reviews yet, no coordinates, no stated budget) falls
+// back to a neutral 0.5 rather than 0, so a new/unrated creator isn't penalized
+// as harshly as one with an actually-bad track record.
+const RECOMMEND_WEIGHTS = { followers: 0.25, completion: 0.3, rating: 0.2, proximity: 0.15, rate: 0.1 };
+
+function scoreCandidate(
+  c: { topFollowers: number; completionRate?: number; averageRating?: number; distanceKm?: number; prefBudgetMin: number; prefBudgetMax: number },
+  params: { budgetMin?: number; budgetMax?: number },
+): number {
+  const followerScore = Math.min(c.topFollowers / 100_000, 1);
+  const completionScore = c.completionRate ?? 0.5;
+  const ratingScore = c.averageRating != null ? c.averageRating / 5 : 0.5;
+  const proximityScore = c.distanceKm != null ? Math.max(0, 1 - c.distanceKm / 50) : 0.5;
+  const rateScore = params.budgetMin != null && params.budgetMax != null
+    ? (c.prefBudgetMax >= params.budgetMin && c.prefBudgetMin <= params.budgetMax ? 1 : 0.3)
+    : 0.5;
+
+  return (
+    followerScore   * RECOMMEND_WEIGHTS.followers +
+    completionScore * RECOMMEND_WEIGHTS.completion +
+    ratingScore      * RECOMMEND_WEIGHTS.rating +
+    proximityScore   * RECOMMEND_WEIGHTS.proximity +
+    rateScore        * RECOMMEND_WEIGHTS.rate
+  );
 }
 
 export class CreatorService {
@@ -215,26 +283,33 @@ export class CreatorService {
     category: string;
     lat?: number;
     lng?: number;
+    budgetMin?: number;
+    budgetMax?: number;
     limit?: number;
     lang?: string;
   }) {
     const limit = Math.min(params.limit ?? 10, 20);
     const candidates = await this.repo.findRecommended(params.category);
+    const analyticsByUserId = new Map(
+      (await this.repo.findAnalyticsByUserIds(candidates.map((c) => c.userId))).map((a) => [a.userId, a]),
+    );
 
     const ranked = candidates
-      .map((c) => ({
-        ...c,
-        distanceKm:
+      .map((c) => {
+        const distanceKm =
           params.lat != null && params.lng != null && c.locationLat != null && c.locationLng != null
             ? haversineKm(params.lat, params.lng, c.locationLat, c.locationLng)
-            : undefined,
-      }))
-      .sort((a, b) => {
-        if (a.distanceKm == null && b.distanceKm == null) return 0;
-        if (a.distanceKm == null) return 1;
-        if (b.distanceKm == null) return -1;
-        return a.distanceKm - b.distanceKm;
+            : undefined;
+        const analytics = analyticsByUserId.get(c.userId);
+        const completionRate = analytics && analytics.applicationsAccepted > 0
+          ? analytics.completedCampaigns / analytics.applicationsAccepted
+          : undefined;
+        const averageRating = analytics && analytics.reviewCount > 0 ? analytics.averageRating : undefined;
+        const topFollowers = c.socialAccounts.reduce((max, a) => Math.max(max, a.followers), 0);
+
+        return { ...c, distanceKm, completionRate, averageRating, topFollowers };
       })
+      .sort((a, b) => scoreCandidate(b, params) - scoreCandidate(a, params))
       .slice(0, limit);
 
     const dtos = ranked.map(toCreatorListItemDto);
@@ -329,7 +404,7 @@ export class CreatorService {
     // many third-party API calls that would take. Combined with the scheduled job
     // (jobs/refreshSocialFollowers.ts), this is the entire "keeps updating"
     // mechanism — there's no manual sync action anywhere in the app.
-    const profile = accounts[0] ? { id: accounts[0].creatorProfileId } : await this.repo.findByUserId(userId);
+    const profile = accounts[0] ? { id: accounts[0].creatorProfileId! } : await this.repo.findByUserId(userId);
     if (profile) {
       this.refreshStaleSocialAccountsForCreator(profile.id).catch((err) =>
         logger.error({ err, userId }, 'Background social account refresh failed to start'));
@@ -382,40 +457,13 @@ export class CreatorService {
     const profile = await this.repo.findByUserId(userId);
     if (!profile) throw new AppError('Creator profile not found', 404);
 
-    const res = await fetch(
-      'https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&mine=true',
-      { headers: { Authorization: `Bearer ${accessToken}` } },
-    );
-    if (!res.ok) {
-      const body = await res.text().catch(() => '');
-      logger.error({ status: res.status, body }, 'YouTube Data API request failed');
-      const reason = (() => { try { return JSON.parse(body)?.error?.errors?.[0]?.reason; } catch { return undefined; } })();
-
-      if (res.status === 401) throw new AppError('Google session expired — please reconnect', 401);
-      if (reason === 'accessNotConfigured') {
-        throw new AppError('YouTube Data API v3 is not enabled for this app yet — enable it in Google Cloud Console and try again', 502);
-      }
-      if (res.status === 403) {
-        throw new AppError('Google denied access to YouTube data — check the youtube.readonly scope is added to the OAuth consent screen', 403);
-      }
-      throw new AppError(`Could not reach YouTube (${res.status})`, 502);
-    }
-    const data = (await res.json()) as YoutubeChannelResponse;
-    const channel = data.items?.[0];
-    if (!channel) throw new AppError('No YouTube channel found for this Google account', 404);
-
-    const profileUrl = channel.snippet?.customUrl
-      ? `https://www.youtube.com/${channel.snippet.customUrl}`
-      : `https://www.youtube.com/channel/${channel.id}`;
-    const followers = channel.statistics?.hiddenSubscriberCount
-      ? 0
-      : parseInt(channel.statistics?.subscriberCount ?? '0', 10);
+    const channel = await fetchYoutubeChannel(accessToken);
 
     const account = await this.repo.upsertOAuthSocialAccount(profile.id, 'youtube', {
-      profileUrl,
-      followers,
-      platformUserId: channel.id,
-      avatarUrl: channel.snippet?.thumbnails?.default?.url,
+      profileUrl: channel.profileUrl,
+      followers: channel.followers,
+      platformUserId: channel.channelId,
+      avatarUrl: channel.avatarUrl,
       accessToken,
       refreshToken,
       tokenExpiresAt: expiresIn ? new Date(Date.now() + expiresIn * 1000) : undefined,
@@ -429,13 +477,16 @@ export class CreatorService {
   // happen here on the backend rather than on-device. The mobile app opens this URL in
   // a browser; TikTok redirects back to our /callback route (below), which then 302s
   // into the app via the custom scheme once the exchange + save is done.
-  getTiktokAuthorizeUrl(userId: string): string {
+  getTiktokAuthorizeUrl(userId: string, role: 'CREATOR' | 'BUSINESS' = 'CREATOR'): string {
     if (!env.TIKTOK_CLIENT_KEY || !env.TIKTOK_REDIRECT_URI) {
       throw new AppError('TikTok login is not configured', 500);
     }
     const codeVerifier = randomBytes(32).toString('base64url');
     const codeChallenge = createHash('sha256').update(codeVerifier).digest('base64url');
-    const state = signOAuthState({ userId, codeVerifier });
+    // redirect_uri below always points at this same backend route regardless of
+    // role — TikTok's Developer Portal only has one registered redirect URI, so the
+    // business flow reuses it and the callback below tells the two apart via `role`.
+    const state = signOAuthState({ userId, codeVerifier, role });
 
     const url = new URL('https://www.tiktok.com/v2/auth/authorize/');
     url.searchParams.set('client_key', env.TIKTOK_CLIENT_KEY);
@@ -461,11 +512,12 @@ export class CreatorService {
     } catch {
       throw new AppError('TikTok authorization expired — please try again', 400);
     }
-    const { userId, codeVerifier } = statePayload;
+    const { userId, codeVerifier, role } = statePayload;
     if (!codeVerifier) throw new AppError('TikTok authorization expired — please try again', 400);
 
-    const profile = await this.repo.findByUserId(userId);
-    if (!profile) throw new AppError('Creator profile not found', 404);
+    const isBusiness = role === 'BUSINESS';
+    const profile = isBusiness ? await this.businessRepo.findByUserId(userId) : await this.repo.findByUserId(userId);
+    if (!profile) throw new AppError(`${isBusiness ? 'Business' : 'Creator'} profile not found`, 404);
 
     const tokenRes = await fetch('https://open.tiktokapis.com/v2/oauth/token/', {
       method: 'POST',
@@ -499,8 +551,7 @@ export class CreatorService {
     // user.info.profile scope, which isn't enabled on this app yet — fall back to a
     // best-effort link from display_name until that scope is added and approved.
     const profileUrl = `https://www.tiktok.com/@${encodeURIComponent(tiktokUser.display_name ?? tiktokUser.open_id ?? '')}`;
-
-    const account = await this.repo.upsertOAuthSocialAccount(profile.id, 'tiktok', {
+    const tiktokData = {
       profileUrl,
       followers: 0,
       platformUserId: tiktokUser.open_id ?? profile.id,
@@ -509,7 +560,10 @@ export class CreatorService {
       refreshToken: tokenData.refresh_token,
       tokenExpiresAt: tokenData.expires_in ? new Date(Date.now() + tokenData.expires_in * 1000) : undefined,
       oauthConnectionType: 'tiktok',
-    });
+    };
+    const account = isBusiness
+      ? await this.businessRepo.upsertOAuthSocialAccount(profile.id, 'tiktok', tiktokData)
+      : await this.repo.upsertOAuthSocialAccount(profile.id, 'tiktok', tiktokData);
     return toSocialAccountDto(account);
   }
 
@@ -518,7 +572,9 @@ export class CreatorService {
   // the Facebook Page it's linked to — so both "Connect Facebook" and "Connect
   // Instagram" share this one Graph API call (fetched fresh each time rather than
   // trusting client-supplied numbers) and just read different fields off the result.
-  private async fetchFacebookPages(accessToken: string): Promise<FacebookPageRaw[]> {
+  // Not private: reused as-is by BusinessService's Facebook/Instagram connect
+  // methods (this call has no creator-specific data, it just needs any valid token).
+  async fetchFacebookPages(accessToken: string): Promise<FacebookPageRaw[]> {
     const url =
       'https://graph.facebook.com/me/accounts' +
       '?fields=id,name,fan_count,link,access_token,picture{url},instagram_business_account{id,username,followers_count,profile_picture_url}' +
@@ -607,11 +663,12 @@ export class CreatorService {
   // redirect lands on our API, which then 302s back into the app via the kolab://
   // scheme once the exchange + save is done. See fetchFacebookPages/connectInstagramAccount
   // above for the OTHER Instagram path (via a linked Facebook Page).
-  getInstagramLoginAuthorizeUrl(userId: string): string {
+  getInstagramLoginAuthorizeUrl(userId: string, role: 'CREATOR' | 'BUSINESS' = 'CREATOR'): string {
     if (!env.INSTAGRAM_APP_ID || !env.INSTAGRAM_REDIRECT_URI) {
       throw new AppError('Instagram direct login is not configured', 500);
     }
-    const state = signOAuthState({ userId });
+    // Same single-registered-redirect-URI reasoning as getTiktokAuthorizeUrl above.
+    const state = signOAuthState({ userId, role });
 
     const url = new URL('https://www.instagram.com/oauth/authorize');
     url.searchParams.set('client_id', env.INSTAGRAM_APP_ID);
@@ -626,16 +683,17 @@ export class CreatorService {
   }
 
   async handleInstagramLoginCallback(code: string, state: string) {
-    let statePayload: { userId: string };
+    let statePayload: ReturnType<typeof verifyOAuthState>;
     try {
       statePayload = verifyOAuthState(state);
     } catch {
       throw new AppError('Instagram authorization expired — please try again', 400);
     }
-    const { userId } = statePayload;
+    const { userId, role } = statePayload;
 
-    const profile = await this.repo.findByUserId(userId);
-    if (!profile) throw new AppError('Creator profile not found', 404);
+    const isBusiness = role === 'BUSINESS';
+    const profile = isBusiness ? await this.businessRepo.findByUserId(userId) : await this.repo.findByUserId(userId);
+    if (!profile) throw new AppError(`${isBusiness ? 'Business' : 'Creator'} profile not found`, 404);
 
     // Step 1: exchange the authorization code for a short-lived access token.
     const tokenRes = await fetch('https://api.instagram.com/oauth/access_token', {
@@ -686,7 +744,7 @@ export class CreatorService {
       );
     }
 
-    const account = await this.repo.upsertOAuthSocialAccount(profile.id, 'instagram', {
+    const instagramData = {
       profileUrl: me.username ? `https://www.instagram.com/${me.username}` : 'https://www.instagram.com/',
       followers: me.followers_count ?? 0,
       platformUserId: me.id ?? profile.id,
@@ -696,7 +754,10 @@ export class CreatorService {
         ? new Date(Date.now() + longLivedData.expires_in * 1000)
         : undefined,
       oauthConnectionType: 'instagram_direct',
-    });
+    };
+    const account = isBusiness
+      ? await this.businessRepo.upsertOAuthSocialAccount(profile.id, 'instagram', instagramData)
+      : await this.repo.upsertOAuthSocialAccount(profile.id, 'instagram', instagramData);
     return toSocialAccountDto(account);
   }
 
@@ -890,7 +951,14 @@ export class CreatorService {
   async refreshStaleSocialAccountsForCreator(creatorProfileId: string): Promise<void> {
     const staleBefore = new Date(Date.now() - 6 * 60 * 60 * 1000);
     const stale = await this.repo.findStaleSocialAccounts(creatorProfileId, staleBefore);
-    for (const account of stale) {
+    await this.refreshStaleAccountsBatch(stale);
+  }
+
+  // Same silent top-up, generalized to any list of rows regardless of which profile
+  // owns them — reused by BusinessService for a business's own stale accounts, since
+  // the per-platform refresh logic above needs nothing creator-specific to run.
+  async refreshStaleAccountsBatch(accounts: RawSocialAccountRow[]): Promise<void> {
+    for (const account of accounts) {
       try {
         const result = await this.refreshOneAccountFollowers(account);
         await this.applyRefreshResult(account.id, result);

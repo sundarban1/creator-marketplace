@@ -16,12 +16,14 @@ function toConversation(api: ApiConversation, currentUserRole: 'CREATOR' | 'BUSI
   const participantAvatar = isCreator
     ? (api.business?.logoUrl  ?? undefined)
     : (api.creator?.avatarUrl ?? undefined);
+  const participantUserId = isCreator ? api.business?.userId : api.creator?.userId;
 
   return {
     id:              api.id,
     participantId:   isCreator ? api.businessId : api.creatorId,
     participantName,
     participantAvatar,
+    participantUserId,
     participantRole: isCreator ? 'BUSINESS' : 'CREATOR',
     status:          api.status ?? 'ACCEPTED',
     requestMessage:  api.requestMessage,

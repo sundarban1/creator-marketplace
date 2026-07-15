@@ -1,4 +1,5 @@
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useAppColors } from '@/context/ThemeContext';
@@ -12,6 +13,8 @@ type Props = {
   category: string;
   lat?: number | null;
   lng?: number | null;
+  budgetMin?: number;
+  budgetMax?: number;
   onDone: () => void;
 };
 
@@ -26,7 +29,7 @@ function formatFollowers(n: number): string {
   return String(n);
 }
 
-export function RecommendedCreatorsModal({ visible, campaignId, category, lat, lng, onDone }: Props) {
+export function RecommendedCreatorsModal({ visible, campaignId, category, lat, lng, budgetMin, budgetMax, onDone }: Props) {
   const C = useAppColors();
   const { t } = useLanguage();
 
@@ -41,11 +44,11 @@ export function RecommendedCreatorsModal({ visible, campaignId, category, lat, l
     setLoading(true);
     setSelected(new Set());
     setSent(false);
-    creatorService.getRecommendedCreators({ category, lat: lat ?? undefined, lng: lng ?? undefined, limit: 10 })
+    creatorService.getRecommendedCreators({ category, lat: lat ?? undefined, lng: lng ?? undefined, budgetMin, budgetMax, limit: 10 })
       .then(setCreators)
       .catch(() => setCreators([]))
       .finally(() => setLoading(false));
-  }, [visible, category, lat, lng]);
+  }, [visible, category, lat, lng, budgetMin, budgetMax]);
 
   const allSelected = creators.length > 0 && selected.size === creators.length;
 
@@ -128,11 +131,15 @@ export function RecommendedCreatorsModal({ visible, campaignId, category, lat, l
                 return (
                   <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                     key={creator.id}
-                    style={[s.row, { backgroundColor: sel ? C.primaryLight : C.background, borderColor: sel ? C.brinjal1 : C.border }]}
+                    style={[s.row, { backgroundColor: '#fff', borderColor: sel ? C.brinjal1 : C.border }]}
                     onPress={() => toggle(creator.id)}>
-                    <View style={[s.avatar, { backgroundColor: C.brinjal1 }]}>
-                      <Text style={s.avatarText}>{abbr}</Text>
-                    </View>
+                    {creator.avatarUrl ? (
+                      <Image source={{ uri: creator.avatarUrl }} style={s.avatarImg} contentFit="cover" />
+                    ) : (
+                      <View style={[s.avatar, { backgroundColor: C.brinjal1 }]}>
+                        <Text style={s.avatarText}>{abbr}</Text>
+                      </View>
+                    )}
                     <View style={s.info}>
                       <Text style={[s.name, { color: C.text }]} numberOfLines={1}>{creator.fullName ?? 'Creator'}</Text>
                       <View style={s.metaRow}>
@@ -148,6 +155,19 @@ export function RecommendedCreatorsModal({ visible, campaignId, category, lat, l
                           </View>
                         )}
                       </View>
+                      {(creator.averageRating != null || creator.completionRate != null) && (
+                        <View style={s.metaRow}>
+                          {creator.averageRating != null && (
+                            <View style={s.ratingTag}>
+                              <Ionicons name="star" size={10} color="#F59E0B" />
+                              <Text style={[s.ratingText, { color: C.textSecondary }]}>{creator.averageRating.toFixed(1)}</Text>
+                            </View>
+                          )}
+                          {creator.completionRate != null && (
+                            <Text style={[s.sub, { color: C.textSecondary }]}>{creator.completionRate}% {t('createEvent.completionRate')}</Text>
+                          )}
+                        </View>
+                      )}
                     </View>
                     <View style={[s.checkbox, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? C.brinjal1 : 'transparent' }]}>
                       {sel && <Ionicons name="checkmark" size={14} color="#fff" />}
@@ -204,6 +224,7 @@ const s = StyleSheet.create({
   list: { paddingHorizontal: 16, paddingBottom: 16, gap: 10 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 14, borderWidth: 1.5, padding: 12 },
   avatar: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  avatarImg: { width: 40, height: 40, borderRadius: 20, flexShrink: 0 },
   avatarText: { color: '#fff', fontSize: 13, fontFamily: F.bold },
   info: { flex: 1, gap: 3 },
   name: { fontSize: 14, fontFamily: F.bold },
@@ -211,6 +232,8 @@ const s = StyleSheet.create({
   sub: { fontSize: 12, fontFamily: F.regular },
   distanceTag: { flexDirection: 'row', alignItems: 'center', gap: 2 },
   distanceText: { fontSize: 11, fontFamily: F.bold },
+  ratingTag: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  ratingText: { fontSize: 12, fontFamily: F.bold },
   checkbox: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
 
   footer: { flexDirection: 'row', alignItems: 'center', gap: 12, borderTopWidth: 1, paddingHorizontal: 16, paddingVertical: 14 },

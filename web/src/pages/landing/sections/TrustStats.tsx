@@ -23,6 +23,7 @@ export function TrustStats() {
         <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="text-center mb-14">
           <motion.span variants={fadeUp} className="text-orange-300 font-bold text-xs uppercase tracking-widest">{d.trust.eyebrow}</motion.span>
           <motion.h2 variants={fadeUp} className="text-3xl md:text-4xl font-extrabold text-white mt-3">{d.trust.heading}</motion.h2>
+          <motion.p variants={fadeUp} className="text-white/60 text-sm md:text-base mt-4 max-w-xl mx-auto">{d.trust.sub}</motion.p>
         </motion.div>
         <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="grid grid-cols-2 md:grid-cols-4 gap-8">
           {TRUST_STATS.map((s, i) => <StatTile key={s.label} stat={s} label={d.trust.stats[i]!.label} />)}

@@ -32,6 +32,7 @@ export type BusinessProfile = {
   panDocStatus:        DocStatus;
   companyRegDocUrl:    string | null;
   companyRegDocStatus: DocStatus;
+  verificationRejectReason: string | null;
   user: { email: string; phone: string | null; isEmailVerified: boolean; isPhoneVerified: boolean };
 };
 

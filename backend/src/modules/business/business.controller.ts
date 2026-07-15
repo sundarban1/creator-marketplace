@@ -120,4 +120,96 @@ export class BusinessController {
       next(err);
     }
   }
+
+  // ── Social Accounts — mirrors creator.controller.ts's handlers of the same name ──
+
+  async getSocialAccounts(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const accounts = await businessService.getSocialAccounts(req.user!.id);
+      success(res, accounts, 'Social accounts retrieved');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async addSocialAccount(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const account = await businessService.addSocialAccount(req.user!.id, req.body);
+      success(res, account, 'Social account added', 201);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async updateSocialAccount(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const account = await businessService.updateSocialAccount(req.user!.id, req.params.id!, req.body);
+      success(res, account, 'Social account updated');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async deleteSocialAccount(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      await businessService.deleteSocialAccount(req.user!.id, req.params.id!);
+      success(res, null, 'Social account deleted');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async connectYoutubeAccount(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const account = await businessService.connectYoutubeAccount(req.user!.id, req.body.accessToken, req.body.refreshToken, req.body.expiresIn);
+      success(res, account, 'YouTube account connected', 201);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async getTiktokAuthorizeUrl(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const url = businessService.getTiktokAuthorizeUrl(req.user!.id);
+      success(res, { url }, 'TikTok authorize URL generated');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async getInstagramLoginAuthorizeUrl(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const url = businessService.getInstagramLoginAuthorizeUrl(req.user!.id);
+      success(res, { url }, 'Instagram authorize URL generated');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async getFacebookPages(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const pages = await businessService.listFacebookPages(req.body.accessToken);
+      success(res, pages, 'Facebook Pages retrieved');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async connectFacebookPage(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const account = await businessService.connectFacebookPage(req.user!.id, req.body.accessToken, req.body.pageId);
+      success(res, account, 'Facebook Page connected', 201);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async connectInstagramAccount(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const account = await businessService.connectInstagramAccount(req.user!.id, req.body.accessToken, req.body.pageId);
+      success(res, account, 'Instagram account connected', 201);
+    } catch (err) {
+      next(err);
+    }
+  }
 }

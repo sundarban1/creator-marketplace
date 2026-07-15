@@ -519,13 +519,6 @@ export class CampaignRepository {
     });
   }
 
-  async completeProject(appId: string) {
-    return prisma.application.update({
-      where: { id: appId },
-      data: { workStatus: WorkStatus.COMPLETED },
-    });
-  }
-
   async requestRevision(appId: string, note: string) {
     return prisma.application.update({
       where: { id: appId },
@@ -540,10 +533,12 @@ export class CampaignRepository {
     });
   }
 
+  // Payment release is the final stage of a project — no separate creator
+  // confirmation step — so workStatus flips straight to COMPLETED here too.
   async releaseApplicationPayment(appId: string, adminId: string) {
     return prisma.application.update({
       where: { id: appId },
-      data: { paymentStatus: 'RELEASED', releasedAt: new Date(), releasedByAdminId: adminId },
+      data: { paymentStatus: 'RELEASED', releasedAt: new Date(), releasedByAdminId: adminId, workStatus: WorkStatus.COMPLETED },
     });
   }
 

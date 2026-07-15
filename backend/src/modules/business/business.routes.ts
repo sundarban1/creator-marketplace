@@ -4,7 +4,15 @@ import { CreatorController } from '../creator/creator.controller';
 import { SavedCreatorController } from './saved-creator.controller';
 import { authenticate, authorize } from '../../middleware/auth';
 import { validate } from '../../middleware/validate';
-import { updateBusinessProfileSchema } from './business.schema';
+import {
+  updateBusinessProfileSchema,
+  addSocialAccountSchema,
+  updateSocialAccountSchema,
+  connectYoutubeAccountSchema,
+  listFacebookPagesSchema,
+  connectFacebookPageSchema,
+  connectInstagramAccountSchema,
+} from './business.schema';
 import { uploadImage } from '../../middleware/upload';
 
 const router      = Router();
@@ -35,5 +43,21 @@ router.post('/documents/pan',         uploadImage.single('document'), ctrl.uploa
 router.post('/documents/company-reg', uploadImage.single('document'), ctrl.uploadCompanyRegDoc.bind(ctrl));
 router.get('/payment-history', ctrl.getPaymentHistory.bind(ctrl));
 router.get('/analytics', ctrl.getMyAnalytics.bind(ctrl));
+
+// Social Accounts — mirrors /api/creator/social-accounts (see creator.routes.ts).
+// TikTok/Instagram-direct-login callbacks are NOT duplicated here: both providers
+// only have one registered redirect URI, so those two flows still land on
+// /api/creator/social-accounts/{tiktok,instagram-login}/callback, which is already
+// role-aware (see creator.service.ts).
+router.get('/social-accounts',             ctrl.getSocialAccounts.bind(ctrl));
+router.post('/social-accounts',            validate(addSocialAccountSchema),    ctrl.addSocialAccount.bind(ctrl));
+router.put('/social-accounts/:id',         validate(updateSocialAccountSchema), ctrl.updateSocialAccount.bind(ctrl));
+router.delete('/social-accounts/:id',      ctrl.deleteSocialAccount.bind(ctrl));
+router.post('/social-accounts/youtube/connect', validate(connectYoutubeAccountSchema), ctrl.connectYoutubeAccount.bind(ctrl));
+router.get('/social-accounts/tiktok/authorize', ctrl.getTiktokAuthorizeUrl.bind(ctrl));
+router.post('/social-accounts/facebook/pages',    validate(listFacebookPagesSchema),       ctrl.getFacebookPages.bind(ctrl));
+router.post('/social-accounts/facebook/connect',  validate(connectFacebookPageSchema),     ctrl.connectFacebookPage.bind(ctrl));
+router.post('/social-accounts/instagram/connect', validate(connectInstagramAccountSchema), ctrl.connectInstagramAccount.bind(ctrl));
+router.get('/social-accounts/instagram-login/authorize', ctrl.getInstagramLoginAuthorizeUrl.bind(ctrl));
 
 export default router;

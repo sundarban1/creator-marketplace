@@ -188,7 +188,7 @@ export default function BusinessHomeScreen() {
         <View style={styles.quickActionsRow}>
           {([
             { icon: 'add-circle-outline' as const,  label: t('business.home.quickActionCreate'),    bg: '#EDE9FE', color: '#7C3AED', route: '/create-campaign' },
-            { icon: 'people-outline'     as const,  label: t('business.home.quickActionProposals'), bg: '#DCFCE7', color: '#059669', route: '/(business)/proposals' },
+            { icon: 'document-text-outline' as const, label: t('business.home.quickActionProposals'), bg: '#DCFCE7', color: '#059669', route: '/(business)/proposals' },
             { icon: 'chatbubbles-outline'as const,  label: t('business.home.quickActionMessages'),  bg: '#DBEAFE', color: '#2563EB', route: '/(business)/messages' },
             { icon: 'briefcase-outline'  as const,  label: t('business.home.quickActionEvents'),    bg: '#FEF3C7', color: '#D97706', route: '/(business)/campaigns' },
           ]).map(({ icon, label, bg, color, route }) => (

@@ -177,6 +177,7 @@ export interface ApiBusiness {
   panDocStatus?:       'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
   companyRegDocUrl?:   string | null;
   companyRegDocStatus?: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
+  verificationRejectReason?: string | null;
   user:  { id: string; email: string; isEmailVerified: boolean; isActive: boolean; createdAt: string };
   _count: { campaigns: number };
 }
@@ -553,6 +554,9 @@ export const api = {
 
     verifyBusiness: (id: string, verified: boolean) =>
       request<{ id: string; businessName: string | null; isVerified: boolean }>('PATCH', `/api/admin/businesses/${id}/verify`, { verified }),
+
+    rejectBusiness: (id: string, reason: string) =>
+      request<{ id: string; businessName: string | null; isVerified: boolean }>('PATCH', `/api/admin/businesses/${id}/reject`, { reason }),
 
     businessReferrals: (status?: string) =>
       request<ApiBusinessReferral[]>('GET', '/api/admin/business-referrals', undefined, status ? { status } : undefined),

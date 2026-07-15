@@ -1,6 +1,9 @@
 {
   "permissions": {
     "allow": [
+      "Bash(npm run lint)",
+      "Bash(git status)",
+      "Bash(git commit *)",
       "Bash(mv /Users/sundarban/Documents/projects/marketplace/content /Users/sundarban/Documents/projects/marketplace/mobile)",
       "Bash(npm install *)",
       "Bash(npm run *)",
@@ -269,7 +272,22 @@
       "Bash(adb kill-server *)",
       "Bash(adb start-server *)",
       "Bash(echo \"EXIT:$?\")",
-      "Bash(PGPASSWORD=postgres psql -h localhost -U postgres -d creatormarket -c \"SELECT bp.\\\\\"businessName\\\\\", bp.\\\\\"logoUrl\\\\\", u.name, u.phone, u.email FROM \\\\\"BusinessProfile\\\\\" bp JOIN \\\\\"User\\\\\" u ON u.id = bp.\\\\\"userId\\\\\" ORDER BY bp.\\\\\"createdAt\\\\\" DESC LIMIT 15;\")"
+      "Bash(PGPASSWORD=postgres psql -h localhost -U postgres -d creatormarket -c \"SELECT bp.\\\\\"businessName\\\\\", bp.\\\\\"logoUrl\\\\\", u.name, u.phone, u.email FROM \\\\\"BusinessProfile\\\\\" bp JOIN \\\\\"User\\\\\" u ON u.id = bp.\\\\\"userId\\\\\" ORDER BY bp.\\\\\"createdAt\\\\\" DESC LIMIT 15;\")",
+      "Bash(grep -n \"priceMin: 0, priceMax: SLIDER_MAX\\\\|availablePlatforms={\\\\|normalizePlatform\\\\|getPlatformMeta\\(p\\)\\\\|activeFilter.priceMin > 0\" \"src/app/\\(business\\)/explore-creators.tsx\")",
+      "Bash(xargs ls -la)",
+      "Bash(awk 'NR<=1411 && /^  [a-zA-Z]+: {$/ {line=NR; name=$0} END{print line\": \"name}' /Users/sundarban/Documents/projects/marketplace/mobile/src/i18n/en.ts)",
+      "Bash(awk 'NR<=2004 && /^  [a-zA-Z]+: {$/ {line=NR; name=$0} END{print line\": \"name}' /Users/sundarban/Documents/projects/marketplace/mobile/src/i18n/en.ts)",
+      "Bash(awk 'NR<=1327 && /^  [a-zA-Z]+: {$/ {line=NR; name=$0} END{print line\": \"name}' /Users/sundarban/Documents/projects/marketplace/mobile/src/i18n/en.ts)",
+      "Bash(awk 'NR<=2276 && /^  [a-zA-Z]+: {$/ {line=NR; name=$0} END{print line\": \"name}' /Users/sundarban/Documents/projects/marketplace/mobile/src/i18n/en.ts)",
+      "Bash(awk 'NR<=2326 && /^  [a-zA-Z]+: {$/ {line=NR; name=$0} END{print line\": \"name}' /Users/sundarban/Documents/projects/marketplace/mobile/src/i18n/ne.ts)",
+      "Bash(awk 'NR<=2426 && /^  [a-zA-Z]+: {$/ {line=NR; name=$0} END{print line\": \"name}' /Users/sundarban/Documents/projects/marketplace/mobile/src/i18n/ne.ts)",
+      "Bash(tee /tmp/tsc_after_phaseA.txt)",
+      "Bash(awk '/businessSettings: \\\\{/{f=1} f && /^  [a-zA-Z]+: \\\\{/ && !/businessSettings/{f=0} f' /Users/sundarban/Documents/projects/marketplace/mobile/src/i18n/en.ts)",
+      "Bash(awk '/^  businessSettings: \\\\{/{start=NR} start && /^  \\\\};?$/{print NR; exit}' /Users/sundarban/Documents/projects/marketplace/mobile/src/i18n/en.ts)",
+      "Bash(awk 'NR>1826 && /^  \\\\},$/{print NR; exit}' /Users/sundarban/Documents/projects/marketplace/mobile/src/i18n/en.ts)",
+      "Bash(awk 'NR>=1300 && NR<=1360 && /^  [a-zA-Z]+: {/' src/i18n/en.ts)",
+      "Bash(awk 'NR<=1755 && /^  [a-zA-Z]+: {/{last=NR\": \"$0} END{print last}' /Users/sundarban/Documents/projects/marketplace/mobile/src/i18n/en.ts)",
+      "Bash(awk 'NR<=1790 && /^  [a-zA-Z]+: {/{last=NR\": \"$0} END{print last}' /Users/sundarban/Documents/projects/marketplace/mobile/src/i18n/en.ts)"
     ],
     "additionalDirectories": [
       "/Users/sundarban/Documents/projects/marketplace/content",

@@ -46,6 +46,9 @@ export function verifyPasswordResetToken(token: string): { id: string; email: st
 export interface OAuthStatePayload {
   userId: string;
   codeVerifier?: string;
+  // Which profile this connect belongs to — defaults to CREATOR when omitted
+  // (every state signed before this field existed was creator-only).
+  role?: Role;
 }
 
 export function signOAuthState(payload: OAuthStatePayload): string {

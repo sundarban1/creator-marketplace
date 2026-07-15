@@ -728,42 +728,6 @@ export class CampaignService {
     return toApplicationDto(updated);
   }
 
-  // Creator confirms they've received the released payment — the final step
-  // that closes out the project. Only the applying creator may do this, and
-  // only once an admin has actually released the escrow amount.
-  async completeProject(appId: string, userId: string) {
-    const creator = await this.creatorRepo.findByUserId(userId);
-    if (!creator) throw new AppError('Creator profile not found', 404);
-
-    const app = await this.repo.findApplicationById(appId);
-    if (!app) throw new AppError('Application not found', 404);
-    if (app.creator.id !== creator.id) throw new AppError('Not authorized', 403);
-    if (app.workStatus !== 'APPROVED') throw new AppError('Work has not been approved yet', 400);
-    if (app.paymentStatus !== 'RELEASED') throw new AppError('Payment has not been released yet', 400);
-
-    const updated = await this.repo.completeProject(appId);
-
-    const businessUserId = app.campaign.business.userId;
-    analyticsService.incrCampaignCompleted(userId, businessUserId);
-    notificationService.create({
-      userId:  businessUserId,
-      type:    'project_completed',
-      title:   '✅ Project Complete',
-      body:    `${app.creator.fullName ?? 'The creator'} verified payment for "${app.campaign.title}" — the project is now complete.`,
-      refId:   app.campaignId,
-      refType: 'campaign',
-    }).catch(() => {});
-
-    // A conversation that was only ever auto-accepted (never a real chat request/accept)
-    // pauses back to PENDING now that the project is done and paid — a genuinely-accepted
-    // conversation is left open as-is.
-    messagingService
-      .closeConversationAfterCompletion(userId, businessUserId, app.creator.id, app.campaign.business.id)
-      .catch(() => {});
-
-    return toApplicationDto(updated);
-  }
-
   async requestRevision(appId: string, userId: string, note: string) {
     const business = await this.businessRepo.findByUserId(userId);
     if (!business) throw new AppError('Business profile not found', 404);

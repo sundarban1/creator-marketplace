@@ -15,6 +15,7 @@ import {
   Image,
   Keyboard,
   KeyboardAvoidingView,
+  LayoutAnimation,
   Modal,
   Platform,
   Pressable,
@@ -23,8 +24,16 @@ import {
   Switch,
   Text,
   TextInput,
+  UIManager,
   View,
 } from 'react-native';
+
+// Smooth expand/collapse for accordions (Help Center, FAQs, legal docs) — opt
+// into the same LayoutAnimation Android needs explicit enabling for; iOS has
+// it on by default.
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 import { AppModal } from '@/components/AppModal';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useKeyboardOffset } from '@/hooks/useKeyboardOffset';
@@ -126,7 +135,6 @@ const PAYMENT_METHODS = [
 const LANGUAGE_OPTIONS = [
   { label: 'English', native: 'English', flag: '🇬🇧', desc: 'Default app language', future: false },
   { label: 'Nepali',  native: 'नेपाली',  flag: '🇳🇵', desc: 'स्थानीय भाषा समर्थन', future: false },
-  { label: 'Hindi',   native: 'हिंदी',   flag: '🇮🇳', desc: 'Coming soon',         future: true  },
 ];
 
 const SECTION_TITLES: Record<string, string> = {
@@ -234,6 +242,54 @@ function NavRow({ faIcon, faIconColor, ionIcon, ionIconColor, label, value, onPr
         {value ? <Text style={[styles.navValue, { color: C.textSecondary }]}>{value}</Text> : null}
         <Text style={[styles.navArrow, { color: C.textSecondary }]}>›</Text>
       </View>
+    </Pressable>
+  );
+}
+
+// Shared accordion row for Help Center, FAQs, Privacy Policy, Terms &
+// Conditions, and Community Guidelines — one consistent look everywhere
+// instead of five near-identical hand-rolled copies. `emoji` (data-driven,
+// e.g. a Community Guidelines section's own icon) takes precedence over the
+// static `icon` FontAwesome fallback when both are given.
+type AccordionRowProps = {
+  title: string;
+  body: string;
+  iconColor: string;
+  icon?: string;
+  emoji?: string;
+  open: boolean;
+  onToggle: () => void;
+};
+function AccordionRow({ title, body, iconColor, icon, emoji, open, onToggle }: AccordionRowProps) {
+  const C = useContext(ColorCtx);
+  const rotateAnim = useRef(new Animated.Value(open ? 1 : 0)).current;
+
+  useEffect(() => {
+    Animated.timing(rotateAnim, { toValue: open ? 1 : 0, duration: 200, useNativeDriver: true }).start();
+  }, [open]);
+
+  const rotate = rotateAnim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '180deg'] });
+
+  return (
+    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+      style={[styles.accordionCard, { backgroundColor: C.surface, borderColor: open ? iconColor : C.border }]}
+      onPress={onToggle}>
+      <View style={styles.accordionHeader}>
+        <View style={[styles.accordionIconWrap, { backgroundColor: iconColor + '18' }]}>
+          {emoji ? (
+            <Text style={styles.accordionEmoji}>{emoji}</Text>
+          ) : icon ? (
+            <FontAwesome5 name={icon as any} size={13} color={iconColor} solid />
+          ) : null}
+        </View>
+        <Text style={[styles.accordionTitle, { color: C.text }]}>{title}</Text>
+        <Animated.View style={[styles.accordionChevronWrap, { backgroundColor: open ? iconColor + '18' : 'transparent', transform: [{ rotate }] }]}>
+          <Ionicons name="chevron-down" size={15} color={open ? iconColor : C.textSecondary} />
+        </Animated.View>
+      </View>
+      {open && (
+        <Text style={[styles.accordionBody, { color: C.textSecondary, borderTopColor: C.border }]}>{body}</Text>
+      )}
     </Pressable>
   );
 }
@@ -385,6 +441,7 @@ export default function CreatorSettingsScreen() {
   // Accordion (support / legal sub-pages)
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
   function toggleExpand(id: string) {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setExpandedItems((prev) => {
       const next = new Set(prev);
       next.has(id) ? next.delete(id) : next.add(id);
@@ -832,17 +889,6 @@ export default function CreatorSettingsScreen() {
     }
   }
 
-  function handleLogoutAll() {
-    setAppModal({
-      visible: true, type: 'warning',
-      title: t('creatorSettings.logoutAllTitle'),
-      body: t('creatorSettings.logoutAllBody'),
-      confirmLabel: t('creatorSettings.logoutAllConfirm'),
-      warning: undefined,
-      onConfirm: async () => { closeAppModal(); logout(); },
-    });
-  }
-
   async function handleSupportSubmit() {
     if (!supportMsg.trim() || !supportTopic) return;
     setSupportSubmitting(true);
@@ -928,21 +974,17 @@ export default function CreatorSettingsScreen() {
           <View key={cat}>
             <SectionHeader title={cat} />
             <View style={{ marginHorizontal: 16, gap: 8 }}>
-              {items.map((item) => {
-                const open = expandedItems.has(item.id);
-                return (
-                  <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                    key={item.id}
-                    style={[styles.accordionCard, { backgroundColor: C.surface, borderColor: open ? C.brinjal1 : C.border }]}
-                    onPress={() => toggleExpand(item.id)}>
-                    <View style={styles.accordionHeader}>
-                      <Text style={[styles.accordionTitle, { color: C.text }]}>{item.question}</Text>
-                      <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={16} color={C.textSecondary} />
-                    </View>
-                    {open && <Text style={[styles.accordionBody, { color: C.textSecondary }]}>{item.answer}</Text>}
-                  </Pressable>
-                );
-              })}
+              {items.map((item) => (
+                <AccordionRow
+                  key={item.id}
+                  title={item.question}
+                  body={item.answer}
+                  icon="question-circle"
+                  iconColor="#0891B2"
+                  open={expandedItems.has(item.id)}
+                  onToggle={() => toggleExpand(item.id)}
+                />
+              ))}
             </View>
           </View>
         ))}
@@ -1087,21 +1129,17 @@ export default function CreatorSettingsScreen() {
           <View key={cat}>
             <SectionHeader title={cat} />
             <View style={{ marginHorizontal: 16, gap: 8 }}>
-              {items.map((item) => {
-                const open = expandedItems.has(item.id);
-                return (
-                  <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                    key={item.id}
-                    style={[styles.accordionCard, { backgroundColor: C.surface, borderColor: open ? C.brinjal1 : C.border }]}
-                    onPress={() => toggleExpand(item.id)}>
-                    <View style={styles.accordionHeader}>
-                      <Text style={[styles.accordionTitle, { color: C.text }]}>{item.question}</Text>
-                      <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={16} color={C.textSecondary} />
-                    </View>
-                    {open && <Text style={[styles.accordionBody, { color: C.textSecondary }]}>{item.answer}</Text>}
-                  </Pressable>
-                );
-              })}
+              {items.map((item) => (
+                <AccordionRow
+                  key={item.id}
+                  title={item.question}
+                  body={item.answer}
+                  icon="comments"
+                  iconColor="#7C3AED"
+                  open={expandedItems.has(item.id)}
+                  onToggle={() => toggleExpand(item.id)}
+                />
+              ))}
             </View>
           </View>
         ))}
@@ -1135,21 +1173,17 @@ export default function CreatorSettingsScreen() {
           </Text>
         )}
         <View style={{ gap: 8 }}>
-          {(sections ?? []).map((s) => {
-            const open = expandedItems.has(s.id);
-            return (
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                key={s.id}
-                style={[styles.accordionCard, { backgroundColor: C.surface, borderColor: open ? C.brinjal1 : C.border }]}
-                onPress={() => toggleExpand(s.id)}>
-                <View style={styles.accordionHeader}>
-                  <Text style={[styles.accordionTitle, { color: C.text }]}>{s.title}</Text>
-                  <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={16} color={C.textSecondary} />
-                </View>
-                {open && <Text style={[styles.accordionBody, { color: C.textSecondary }]}>{s.body}</Text>}
-              </Pressable>
-            );
-          })}
+          {(sections ?? []).map((s) => (
+            <AccordionRow
+              key={s.id}
+              title={s.title}
+              body={s.body}
+              icon="shield-alt"
+              iconColor="#4F46E5"
+              open={expandedItems.has(s.id)}
+              onToggle={() => toggleExpand(s.id)}
+            />
+          ))}
         </View>
       </View>
     );
@@ -1181,21 +1215,17 @@ export default function CreatorSettingsScreen() {
           </Text>
         )}
         <View style={{ gap: 8 }}>
-          {(sections ?? []).map((s) => {
-            const open = expandedItems.has(s.id);
-            return (
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                key={s.id}
-                style={[styles.accordionCard, { backgroundColor: C.surface, borderColor: open ? C.brinjal1 : C.border }]}
-                onPress={() => toggleExpand(s.id)}>
-                <View style={styles.accordionHeader}>
-                  <Text style={[styles.accordionTitle, { color: C.text }]}>{s.title}</Text>
-                  <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={16} color={C.textSecondary} />
-                </View>
-                {open && <Text style={[styles.accordionBody, { color: C.textSecondary }]}>{s.body}</Text>}
-              </Pressable>
-            );
-          })}
+          {(sections ?? []).map((s) => (
+            <AccordionRow
+              key={s.id}
+              title={s.title}
+              body={s.body}
+              icon="file-contract"
+              iconColor="#D97706"
+              open={expandedItems.has(s.id)}
+              onToggle={() => toggleExpand(s.id)}
+            />
+          ))}
         </View>
       </View>
     );
@@ -1220,22 +1250,18 @@ export default function CreatorSettingsScreen() {
     }
     return (
       <View style={{ marginHorizontal: 16, gap: 8 }}>
-        {(sections ?? []).map((s) => {
-          const open = expandedItems.has(s.id);
-          return (
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-              key={s.id}
-              style={[styles.accordionCard, { backgroundColor: C.surface, borderColor: open ? C.brinjal1 : C.border }]}
-              onPress={() => toggleExpand(s.id)}>
-              <View style={styles.accordionHeader}>
-                {s.icon ? <Text style={styles.accordionIcon}>{s.icon}</Text> : null}
-                <Text style={[styles.accordionTitle, { color: C.text }]}>{s.title}</Text>
-                <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={16} color={C.textSecondary} />
-              </View>
-              {open && <Text style={[styles.accordionBody, { color: C.textSecondary }]}>{s.body}</Text>}
-            </Pressable>
-          );
-        })}
+        {(sections ?? []).map((s) => (
+          <AccordionRow
+            key={s.id}
+            title={s.title}
+            body={s.body}
+            emoji={s.icon ?? undefined}
+            icon="users"
+            iconColor="#16A34A"
+            open={expandedItems.has(s.id)}
+            onToggle={() => toggleExpand(s.id)}
+          />
+        ))}
       </View>
     );
   }
@@ -1817,9 +1843,9 @@ export default function CreatorSettingsScreen() {
               label={t('creatorSettings.biometricLoginLabel', { biometricLabel })}
               value={biometricEnabled}
               onChange={handleToggleBiometric}
+              isLast
             />
           )}
-          <NavRow faIcon="mobile-alt" faIconColor="#6366F1" label={t('creatorSettings.logoutAllDevices')} onPress={handleLogoutAll} isLast />
         </Card>
 
         <SectionHeader title={t('creatorSettings.verificationSection')} />
@@ -2341,11 +2367,16 @@ const styles = StyleSheet.create({
   navValue: { fontSize: 14, fontFamily: F.regular },
   navIonIconWrap: { width: 34, height: 34, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
 
-  accordionCard: { borderRadius: 12, borderWidth: 1.5, overflow: 'hidden', backgroundColor: 'transparent' },
-  accordionHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14 },
+  accordionCard: {
+    borderRadius: 14, borderWidth: 1.5, overflow: 'hidden', backgroundColor: 'transparent',
+    shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 1,
+  },
+  accordionHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
+  accordionIconWrap: { width: 30, height: 30, borderRadius: 10, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  accordionEmoji: { fontSize: 15 },
   accordionTitle: { flex: 1, fontSize: 14, lineHeight: 20, fontFamily: F.bold },
-  accordionBody: { fontSize: 13, lineHeight: 20, paddingHorizontal: 14, paddingBottom: 14, fontFamily: F.regular },
-  accordionIcon: { fontSize: 20 },
+  accordionChevronWrap: { width: 26, height: 26, borderRadius: 8, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  accordionBody: { fontSize: 13, lineHeight: 21, paddingHorizontal: 14, paddingBottom: 14, paddingTop: 12, borderTopWidth: 1, fontFamily: F.regular },
 
   chipSection: { paddingHorizontal: 12, paddingTop: 8, paddingBottom: 12 },
   sliderSection: { paddingHorizontal: 16, paddingVertical: 16 },

@@ -372,10 +372,6 @@ export const campaignService = {
     await request('PUT', `/api/campaigns/applications/${appId}/approve`);
   },
 
-  async completeProject(appId: string): Promise<void> {
-    await request('PUT', `/api/campaigns/applications/${appId}/complete`);
-  },
-
   async requestRevision(appId: string, note: string): Promise<void> {
     await request('PUT', `/api/campaigns/applications/${appId}/request-revision`, { note });
   },

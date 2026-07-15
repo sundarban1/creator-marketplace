@@ -82,8 +82,9 @@ export default function CreatorProfileScreen() {
         setProfile((p) => p ? { ...p, avatarUrl: result.url } : p);
         updateUser({ avatar: result.url });
       }
-    } catch {
-      toast.error(t('profile.uploadFailed'));
+    } catch (err) {
+      console.error('[avatar upload]', err);
+      toast.error(err instanceof Error && err.message ? err.message : t('profile.uploadFailed'));
     } finally {
       setUploading(false);
     }

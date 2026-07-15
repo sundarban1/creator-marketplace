@@ -59,6 +59,9 @@ const envSchema = z.object({
   GOOGLE_CLIENT_SECRET: z.string().optional(),
   // Custom URL scheme the TikTok/Instagram callbacks redirect back into on mobile (see app.json "scheme")
   APP_SCHEME: z.string().default('kolab'),
+  // Sparrow SMS (Nepal) — not wired up yet; sendSms() logs instead of sending until both are set.
+  SPARROW_SMS_TOKEN: z.string().optional(),
+  SPARROW_SMS_FROM: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

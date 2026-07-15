@@ -2,6 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { messagingEvents } from '@/lib/messagingEvents';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Image as ExpoImage } from 'expo-image';
 import { useEffect, useRef, useState } from 'react';
 import {
   Alert,
@@ -28,6 +29,7 @@ import { getSocket } from '@/lib/socket';
 import { incomingMessageEvents } from '@/lib/incomingMessageEvents';
 import { F } from '@/utilities/constants';
 import { CHAT_EMOJIS } from '@/utilities/chatEmojis';
+import { formatPresence } from '@/utilities/presence';
 import {
   pickImageFromLibrary, pickImageFromCamera, pickDocumentAttachment, promptAttachmentChoice,
   type PickedAttachment,
@@ -249,8 +251,8 @@ function MessageBubble({
 // ── Screen ────────────────────────────────────────────────────────────────────
 
 export default function BusinessChatRoomScreen() {
-  const { id, name, status: urlStatus, campaignTitle } = useLocalSearchParams<{
-    id: string; name?: string; status?: string; campaignTitle?: string;
+  const { id, name, avatar, userId: participantUserId, status: urlStatus, campaignTitle } = useLocalSearchParams<{
+    id: string; name?: string; avatar?: string; userId?: string; status?: string; campaignTitle?: string;
   }>();
   const { user } = useAuth();
   const { t }    = useLanguage();
@@ -265,6 +267,7 @@ export default function BusinessChatRoomScreen() {
   const [text, setText]               = useState('');
   const [otherTyping, setOtherTyping] = useState(false);
   const [emojiOpen, setEmojiOpen]     = useState(false);
+  const [presence, setPresence]       = useState<{ online: boolean; lastSeenAt: string | null } | null>(null);
   const listRef         = useRef<FlatList>(null);
   const inputRef        = useRef<TextInput>(null);
   const isSending       = useRef(false);
@@ -274,6 +277,8 @@ export default function BusinessChatRoomScreen() {
 
   const personName  = name ?? 'Chat';
   const personColor = avatarColor(personName);
+  const personAvatar = avatar || undefined;
+  const [personAvatarFailed, setPersonAvatarFailed] = useState(false);
 
   // Scroll to offset 0 = visual bottom for inverted FlatList
   function scrollToBottom(animated = true) {
@@ -365,6 +370,27 @@ export default function BusinessChatRoomScreen() {
       if (seenTimer.current)   clearTimeout(seenTimer.current);
     };
   }, [id]);
+
+  // Socket: the other participant's online/last-seen status
+  useEffect(() => {
+    const socket = getSocket();
+    if (!socket || !participantUserId) return;
+    socket.emit('presence:subscribe', { userId: participantUserId });
+
+    const onPresenceUpdate = (data: { userId: string; online: boolean; lastSeenAt: string | null }) => {
+      if (data.userId === participantUserId) setPresence({ online: data.online, lastSeenAt: data.lastSeenAt });
+    };
+    const onReconnect = () => { socket.emit('presence:subscribe', { userId: participantUserId }); };
+
+    socket.on('presence:update', onPresenceUpdate);
+    socket.on('connect', onReconnect);
+
+    return () => {
+      socket.off('presence:update', onPresenceUpdate);
+      socket.off('connect', onReconnect);
+      socket.emit('presence:unsubscribe', { userId: participantUserId });
+    };
+  }, [participantUserId]);
 
   function handleMessageLongPress(msg: Message) {
     if (msg.isDeleted || msg.id.startsWith('temp-')) return;
@@ -530,9 +556,13 @@ export default function BusinessChatRoomScreen() {
         <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={s.backBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/(business)/messages' as never)}>
           <Ionicons name="chevron-back" size={22} color="#fff" />
         </Pressable>
-        <View style={[s.headerAvatar, { backgroundColor: personColor }]}>
-          <Text style={s.headerAvatarTxt}>{initials(personName)}</Text>
-        </View>
+        {personAvatar && !personAvatarFailed ? (
+          <ExpoImage source={{ uri: personAvatar }} style={s.headerAvatar} contentFit="cover" onError={() => setPersonAvatarFailed(true)} />
+        ) : (
+          <View style={[s.headerAvatar, { backgroundColor: personColor }]}>
+            <Text style={s.headerAvatarTxt}>{initials(personName)}</Text>
+          </View>
+        )}
         <View style={s.headerInfo}>
           <Text style={s.headerName} numberOfLines={1}>{personName}</Text>
           {otherTyping
@@ -546,7 +576,12 @@ export default function BusinessChatRoomScreen() {
             )
             : isDeclined
             ? <Text style={[s.headerSub, { color: '#FCA5A5' }]}>{t('messages.requestDeclined')}</Text>
-            : <Text style={[s.headerSub, { color: '#86EFAC' }]}>{t('messages.active')}</Text>}
+            : (() => {
+                const label = presence ? formatPresence(t, presence.online, presence.lastSeenAt) : null;
+                return label
+                  ? <Text style={[s.headerSub, { color: presence?.online ? '#86EFAC' : 'rgba(255,255,255,0.7)' }]}>{label}</Text>
+                  : null;
+              })()}
         </View>
       </LinearGradient>
 

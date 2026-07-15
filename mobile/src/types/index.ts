@@ -77,6 +77,7 @@ export type Conversation = {
   participantId: string;
   participantName: string;
   participantAvatar?: string;
+  participantUserId?: string;
   participantRole: 'CREATOR' | 'BUSINESS';
   status: 'PENDING' | 'ACCEPTED' | 'DECLINED';
   requestMessage?: string | null;
@@ -116,7 +117,8 @@ export type AppNotification = {
     | 'business_favorited'
     | 'creator_saved'
     | 'campaign_invitation'
-    | 'account_verified';
+    | 'account_verified'
+    | 'verification_rejected';
   title: string;
   body: string;
   timestamp: string;

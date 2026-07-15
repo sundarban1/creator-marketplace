@@ -40,3 +40,45 @@ export const updateBusinessProfileSchema = z.object({
 });
 
 export type UpdateBusinessProfileInput = z.infer<typeof updateBusinessProfileSchema>;
+
+// ── Social Accounts (structured table) — mirrors creator.schema.ts's schemas of
+// the same name; platform is validated dynamically against the admin-managed
+// Platform catalog in BusinessService, not a fixed enum. ──
+
+export const addSocialAccountSchema = z.object({
+  platform:   z.string().min(1, 'Platform is required'),
+  profileUrl: z.string().url('Invalid profile URL'),
+  followers:  z.number().int('Must be a whole number').min(0, 'Cannot be negative'),
+});
+
+export const updateSocialAccountSchema = z.object({
+  profileUrl: z.string().url('Invalid profile URL').optional(),
+  followers:  z.number().int('Must be a whole number').min(0, 'Cannot be negative').optional(),
+});
+
+export const connectYoutubeAccountSchema = z.object({
+  accessToken: z.string().min(1, 'Access token is required'),
+  refreshToken: z.string().optional(),
+  expiresIn: z.number().optional(),
+});
+
+export const listFacebookPagesSchema = z.object({
+  accessToken: z.string().min(1, 'Access token is required'),
+});
+
+export const connectFacebookPageSchema = z.object({
+  accessToken: z.string().min(1, 'Access token is required'),
+  pageId:      z.string().min(1, 'Page id is required'),
+});
+
+export const connectInstagramAccountSchema = z.object({
+  accessToken: z.string().min(1, 'Access token is required'),
+  pageId:      z.string().min(1, 'Page id is required'),
+});
+
+export type AddSocialAccountInput        = z.infer<typeof addSocialAccountSchema>;
+export type UpdateSocialAccountInput     = z.infer<typeof updateSocialAccountSchema>;
+export type ConnectYoutubeAccountInput   = z.infer<typeof connectYoutubeAccountSchema>;
+export type ListFacebookPagesInput       = z.infer<typeof listFacebookPagesSchema>;
+export type ConnectFacebookPageInput     = z.infer<typeof connectFacebookPageSchema>;
+export type ConnectInstagramAccountInput = z.infer<typeof connectInstagramAccountSchema>;

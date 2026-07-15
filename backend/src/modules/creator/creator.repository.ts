@@ -73,7 +73,7 @@ export class CreatorRepository {
       take: 50,
       orderBy: { createdAt: 'desc' },
       select: {
-        id: true, fullName: true, bio: true, avatarUrl: true,
+        id: true, userId: true, fullName: true, bio: true, avatarUrl: true,
         location: true, categories: true, isVerified: true,
         citizenshipStatus: true,
         locationLat: true, locationLng: true,
@@ -81,6 +81,15 @@ export class CreatorRepository {
         socialAccounts: { select: { platform: true, followers: true } },
         user: { select: { isEmailVerified: true, isPhoneVerified: true } },
       },
+    });
+  }
+
+  // CreatorAnalytics has no Prisma relation to CreatorProfile (bare userId PK) —
+  // joined in application code by the caller (see CreatorService.getRecommendedForCampaign).
+  async findAnalyticsByUserIds(userIds: string[]) {
+    return prisma.creatorAnalytics.findMany({
+      where: { userId: { in: userIds } },
+      select: { userId: true, completedCampaigns: true, applicationsAccepted: true, averageRating: true, reviewCount: true },
     });
   }
 

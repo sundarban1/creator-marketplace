@@ -1,6 +1,8 @@
 import * as ImagePicker from 'expo-image-picker';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
-import * as FileSystem from 'expo-file-system';
+// SDK 56 moved the function-based API (getInfoAsync etc.) to this subpath —
+// the top-level `expo-file-system` export is the newer File/Directory class API.
+import * as FileSystem from 'expo-file-system/legacy';
 import { isDevice } from 'expo-device';
 import { Alert, ActionSheetIOS, Platform } from 'react-native';
 import { API_BASE } from '@/lib/api';

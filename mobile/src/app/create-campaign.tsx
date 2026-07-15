@@ -822,7 +822,7 @@ export default function CreateCampaignScreen() {
   const [phase, setPhase] = useState<'setup' | 'review'>('setup');
   const [loading, setLoading] = useState(false);
   const [publishWarnVisible, setPublishWarnVisible] = useState(false);
-  const [publishedCampaign, setPublishedCampaign] = useState<{ id: string; category: string; lat: number | null; lng: number | null } | null>(null);
+  const [publishedCampaign, setPublishedCampaign] = useState<{ id: string; category: string; lat: number | null; lng: number | null; budgetMin?: number; budgetMax?: number } | null>(null);
 
   function handleRecommendedDone() {
     setPublishedCampaign(null);
@@ -1156,7 +1156,7 @@ export default function CreateCampaignScreen() {
       try {
         const campaign = await campaignService.create({ ...buildPaidCampaignPayload(), status: 'ACTIVE' });
         showToast(t('createEvent.toastPublished'));
-        setPublishedCampaign({ id: campaign.id, category: form.template, lat: locationLat, lng: locationLng });
+        setPublishedCampaign({ id: campaign.id, category: form.template, lat: locationLat, lng: locationLng, budgetMin: form.aiBudgetMin, budgetMax: form.aiBudgetMax });
       } catch (err) {
         showToast(err instanceof Error ? err.message : t('createEvent.toastPublishFailed'), 'error');
       } finally {
@@ -1918,6 +1918,8 @@ export default function CreateCampaignScreen() {
         category={publishedCampaign?.category ?? ''}
         lat={publishedCampaign?.lat}
         lng={publishedCampaign?.lng}
+        budgetMin={publishedCampaign?.budgetMin}
+        budgetMax={publishedCampaign?.budgetMax}
         onDone={handleRecommendedDone}
       />
 

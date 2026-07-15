@@ -285,6 +285,19 @@ export async function verifyBusiness(req: Request, res: Response, next: NextFunc
   }
 }
 
+// PATCH /api/admin/businesses/:id/reject
+export async function rejectBusiness(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { id }     = req.params;
+    const { reason } = req.body as { reason: string };
+    if (!reason?.trim()) throw new AppError('reason is required', 400);
+    const updated = await service.rejectBusiness(id!, reason.trim());
+    return success(res, updated, 'Business verification rejected');
+  } catch (err) {
+    next(err);
+  }
+}
+
 // ── Business Referrals ───────────────────────────────────────────────────────
 
 // GET /api/admin/business-referrals

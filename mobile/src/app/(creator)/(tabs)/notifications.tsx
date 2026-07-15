@@ -41,6 +41,7 @@ const TYPE_CONFIG: Record<AppNotification['type'], TypeConfig> = {
   creator_saved:            { icon: 'bookmark',            iconColor: '#7C3AED', iconBg: '#F5F3FF', accentColor: '#7C3AED', labelKey: 'notifications.typeSaved'         },
   campaign_invitation:      { icon: 'mail',                iconColor: '#0891B2', iconBg: '#E0F2FE', accentColor: '#0891B2', labelKey: 'notifications.typeInvited'       },
   account_verified:         { icon: 'shield-checkmark',    iconColor: '#10B981', iconBg: '#ECFDF5', accentColor: '#10B981', labelKey: 'notifications.typeVerified'      },
+  verification_rejected:    { icon: 'shield-outline',      iconColor: '#EF4444', iconBg: '#FEF2F2', accentColor: '#EF4444', labelKey: 'notifications.typeVerificationRejected' },
 };
 
 const FALLBACK: TypeConfig = { icon: 'notifications', iconColor: '#6B7280', iconBg: '#F3F4F6', accentColor: '#6B7280', labelKey: 'notifications.typeNotification' };

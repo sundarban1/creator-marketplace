@@ -1,5 +1,5 @@
 import { router, useFocusEffect } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BackButton } from '@/components/BackButton';
 import { VerifiedBadge } from '@/components/VerifiedBadge';
@@ -24,13 +24,7 @@ import { campaignService } from '@/services/campaign';
 import { F } from '@/utilities/constants';
 import { pickAndUpload } from '@/utilities/uploadImage';
 import { formatPhoneDisplay } from '@/utilities/phone';
-
-const CATEGORY_BG: Record<string, string> = {
-  Fashion: '#F2DCF0', Beauty: '#DCF2E6', Tech: '#DCE6F2', Food: '#F2E6DC',
-  Travel: '#F2F2DC', Fitness: '#DCF2EE', Gaming: '#E6DCF2', Education: '#FDEFD0',
-  'Food & Beverage': '#F2E6DC', 'Fashion & Apparel': '#F2DCF0',
-  'Beauty & Cosmetics': '#DCF2E6', 'Health & Fitness': '#DCF2EE',
-};
+import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
 
 function BusinessAvatar({ name, logoUrl, size = 88, uploading, onPress }: {
   name: string; logoUrl: string | null; size?: number;
@@ -62,6 +56,7 @@ export default function BusinessProfileScreen() {
   const { user, updateUser } = useAuth();
   const C = useAppColors();
   const { t } = useLanguage();
+  const { categories: allCategories } = useAllCategories();
   const toast = useToast();
   const [profile, setProfile]               = useState<BusinessProfile | null>(null);
   const [activeCampaigns, setActiveCampaigns] = useState(0);
@@ -76,8 +71,9 @@ export default function BusinessProfileScreen() {
         setProfile((p) => p ? { ...p, logoUrl: result.url } : p);
         updateUser({ avatar: result.url });
       }
-    } catch {
-      toast.error(t('profile.uploadFailed'));
+    } catch (err) {
+      console.error('[logo upload]', err);
+      toast.error(err instanceof Error && err.message ? err.message : t('profile.uploadFailed'));
     } finally {
       setLogoUploading(false);
     }
@@ -223,15 +219,31 @@ export default function BusinessProfileScreen() {
               if (hasPhone && hasVerifiedEmail) {
                 return (
                   <>
-                    <Text style={[styles.contactText, { color: C.text }]}>{formatPhoneDisplay(profile!.user!.phone!)}</Text>
-                    <Text style={[styles.contactText, { color: C.text, marginTop: 2 }]}>{profile!.user!.email}</Text>
+                    <View style={styles.contactRow}>
+                      <Ionicons name="call-outline" size={14} color={C.textSecondary} />
+                      <Text style={[styles.contactText, { color: C.text }]}>{formatPhoneDisplay(profile!.user!.phone!)}</Text>
+                    </View>
+                    <View style={[styles.contactRow, { marginTop: 4 }]}>
+                      <Ionicons name="mail-outline" size={14} color={C.textSecondary} />
+                      <Text style={[styles.contactText, { color: C.text }]}>{profile!.user!.email}</Text>
+                    </View>
                   </>
                 );
               }
               if (hasPhone) {
-                return <Text style={[styles.contactText, { color: C.text }]}>{formatPhoneDisplay(profile!.user!.phone!)}</Text>;
+                return (
+                  <View style={styles.contactRow}>
+                    <Ionicons name="call-outline" size={14} color={C.textSecondary} />
+                    <Text style={[styles.contactText, { color: C.text }]}>{formatPhoneDisplay(profile!.user!.phone!)}</Text>
+                  </View>
+                );
               }
-              return <Text style={[styles.contactText, { color: C.text }]}>{profile?.user?.email ?? user?.email ?? '—'}</Text>;
+              return (
+                <View style={styles.contactRow}>
+                  <Ionicons name="mail-outline" size={14} color={C.textSecondary} />
+                  <Text style={[styles.contactText, { color: C.text }]}>{profile?.user?.email ?? user?.email ?? '—'}</Text>
+                </View>
+              );
             })()}
           </View>
 
@@ -267,11 +279,15 @@ export default function BusinessProfileScreen() {
                 <Text style={[styles.infoTitle, { color: C.text }]}>{t('profile.industries')}</Text>
               </View>
               <View style={styles.categoriesWrap}>
-                {profile!.categories.map((cat) => (
-                  <View key={cat} style={[styles.categoryChip, { backgroundColor: CATEGORY_BG[cat] ?? C.primaryLight }]}>
-                    <Text style={[styles.categoryChipText, { color: C.text }]}>{cat}</Text>
-                  </View>
-                ))}
+                {profile!.categories.map((cat) => {
+                  const meta = getCategoryMeta(allCategories, cat);
+                  return (
+                    <View key={cat} style={[styles.categoryChip, { backgroundColor: meta.bg }]}>
+                      <FontAwesome5 name={meta.icon} size={11} color={meta.color} />
+                      <Text style={[styles.categoryChipText, { color: meta.color }]}>{cat}</Text>
+                    </View>
+                  );
+                })}
               </View>
             </View>
           ) : (
@@ -322,6 +338,7 @@ const styles = StyleSheet.create({
   infoHeader:       { flexDirection: 'row', alignItems: 'center', gap: 8 },
   infoTitle:        { fontSize: 14, fontFamily: F.bold },
   aboutText:        { fontSize: 14, lineHeight: 22, fontFamily: F.regular },
+  contactRow:       { flexDirection: 'row', alignItems: 'center', gap: 8 },
   contactText:      { fontSize: 14, fontFamily: F.regular },
 
   emptyField:       { borderRadius: 14, borderWidth: 1.5, borderStyle: 'dashed', padding: 16, alignItems: 'center' },
@@ -334,7 +351,7 @@ const styles = StyleSheet.create({
   websiteUrl:       { fontSize: 13, fontFamily: F.semibold },
 
   categoriesWrap:   { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  categoryChip:     { borderRadius: 10, paddingHorizontal: 12, paddingVertical: 6 },
+  categoryChip:     { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 6 },
   categoryChipText: { fontSize: 12, fontFamily: F.bold },
 
   sectionDivider:   { height: 1, marginVertical: 4 },

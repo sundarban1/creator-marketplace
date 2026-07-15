@@ -1,12 +1,14 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as WebBrowser from 'expo-web-browser';
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
   Animated,
   Keyboard,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -27,12 +29,15 @@ import { useToast } from '@/components/Toast';
 import { useAppColors, useIsDark } from '@/context/ThemeContext';
 import { businessService, type PaymentHistoryEntry } from '@/services/business';
 import { authService } from '@/services/auth';
-import { profileService, type SocialLinks } from '@/services/profile';
+import { profileService } from '@/services/profile';
+import type { FacebookPageOption } from '@/services/creator';
 import { COLORS, F } from '@/utilities/constants';
 import { request } from '@/lib/api';
 import { pickAndUpload } from '@/utilities/uploadImage';
 import { useCategories } from '@/hooks/useCategories';
 import { usePlatforms } from '@/hooks/usePlatforms';
+import { useGoogleAccessToken } from '@/hooks/useGoogleAccessToken';
+import { useFacebookAccessToken } from '@/hooks/useFacebookAccessToken';
 import {
   authenticate as authenticateBiometric,
   getBiometricLabel,
@@ -49,10 +54,40 @@ const ColorCtx = createContext<ColorsType>(COLORS);
 const BUDGET_RANGES = ['Under NPR 5,000', 'NPR 5,000–15,000', 'NPR 15,000–50,000', 'NPR 50,000+'];
 
 const NEPAL_PAYMENTS = [
-  { id: 'esewa',    icon: 'wallet',          label: 'eSewa',         color: '#60BB46' },
-  { id: 'khalti',   icon: 'money-check-alt', label: 'Khalti',        color: '#5C2D91' },
-  { id: 'bank',     icon: 'university',      label: 'Bank Transfer', color: '#1877F2' },
+  { id: 'esewa',    icon: 'wallet',          label: 'eSewa',   color: '#60BB46' },
+  { id: 'khalti',   icon: 'money-check-alt', label: 'Khalti',  color: '#5C2D91' },
+  { id: 'fonepay',  icon: 'mobile-alt',      label: 'Fonepay', color: '#EE3124' },
 ];
+
+// ── Social Accounts (Connect Accounts) — mirrors (creator)/settings.tsx's section
+// of the same name; see that file for the OAuth flow details/comments.
+const CONNECTABLE_SOCIAL_PLATFORMS: { id: string; label: string; iconName: string; color: string; followersLabel: string }[] = [
+  { id: 'tiktok',    label: 'TikTok',     iconName: 'tiktok',    color: '#010101', followersLabel: 'Followers' },
+  { id: 'facebook',  label: 'Facebook',   iconName: 'facebook',  color: '#1877F2', followersLabel: 'Followers' },
+  { id: 'instagram', label: 'Instagram',  iconName: 'instagram', color: '#E1306C', followersLabel: 'Followers' },
+  { id: 'youtube',   label: 'YouTube',    iconName: 'youtube',   color: '#FF0000', followersLabel: 'Subscribers' },
+];
+const OAUTH_LIVE_PLATFORM_IDS = new Set(['youtube', 'tiktok', 'facebook', 'instagram']);
+const PLATFORM_CONFIG: Record<string, { id: string; label: string; iconName: string; color: string; followersLabel: string }> =
+  Object.fromEntries(CONNECTABLE_SOCIAL_PLATFORMS.map((p) => [p.id, p]));
+
+function fmtCount(n: string): string {
+  const v = parseInt(n, 10);
+  if (isNaN(v)) return n;
+  if (v >= 1_000_000) return (v / 1_000_000).toFixed(1) + 'M';
+  if (v >= 1_000) return (v / 1_000).toFixed(1) + 'K';
+  return v.toString();
+}
+
+function syncedAgo(iso: string | null | undefined, t: (key: string, params?: Record<string, string | number>) => string): string | null {
+  if (!iso) return null;
+  const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  if (mins < 1) return t('businessSettings.syncedJustNow');
+  if (mins < 60) return t('businessSettings.syncedMinutesAgo', { n: mins });
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return t('businessSettings.syncedHoursAgo', { n: hrs });
+  return t('businessSettings.syncedDaysAgo', { n: Math.floor(hrs / 24) });
+}
 const MOCK_SAVED_CREATORS = [
   { id: 's1', name: 'Sarah Johnson',  handle: '@sarahjcreates',  followers: '28.4K', category: 'Lifestyle', avatar: 'SJ', avatarBg: '#EDE9FE', avatarColor: '#4F46E5', notes: '' },
   { id: 's2', name: 'James Liu',      handle: '@jamesliu_nz',    followers: '63.2K', category: 'Tech',      avatar: 'JL', avatarBg: '#FFF7ED', avatarColor: '#D97706', notes: 'Great engagement rate' },
@@ -215,10 +250,6 @@ export default function BusinessSettingsScreen() {
   const [contactEmail, setContactEmail] = useState(user?.email ?? '');
   const [contactPhone, setContactPhone] = useState('');
 
-  // ── Social Links (Online Presence) ──
-  const [socialLinks, setSocialLinks] = useState<SocialLinks>({});
-  const [socialSaving, setSocialSaving] = useState(false);
-
   // ── Section 2: Account ──
   const [newPw, setNewPw] = useState('');
   const [confirmPw, setConfirmPw] = useState('');
@@ -306,6 +337,16 @@ export default function BusinessSettingsScreen() {
   const [companyRegDocStatus, setCompanyRegDocStatus] = useState<DocStatus>('NONE');
   const [panUploading, setPanUploading] = useState(false);
   const [companyRegUploading, setCompanyRegUploading] = useState(false);
+  const [rejectReason, setRejectReason] = useState<string | null>(null);
+
+  // Social accounts state (API-driven) — mirrors (creator)/settings.tsx
+  type SocialAccount = { id: string; platform: string; profileUrl: string; followers: number; connectedViaOAuth?: boolean; followersSyncedAt?: string | null };
+  const [socialAccounts, setSocialAccounts] = useState<SocialAccount[]>([]);
+  const [connectingPlatform, setConnectingPlatform] = useState<string | null>(null);
+  const [pagePicker, setPagePicker] = useState<{ mode: 'facebook' | 'instagram'; accessToken: string; pages: FacebookPageOption[] } | null>(null);
+  const youtubeAuth = useGoogleAccessToken(['https://www.googleapis.com/auth/youtube.readonly']);
+  const facebookPagesAuth = useFacebookAccessToken(['pages_show_list', 'pages_read_engagement', 'instagram_basic']);
+
   const verificationStatus: 'verified' | 'under_review' | 'not_verified' =
     isBizVerified ? 'verified'
     : (panDocStatus === 'PENDING' || companyRegDocStatus === 'PENDING') ? 'under_review'
@@ -341,6 +382,187 @@ export default function BusinessSettingsScreen() {
     }
   }
 
+  // ── Social Accounts connect handlers — mirrors (creator)/settings.tsx ──
+
+  function handleConnectYoutube() {
+    setConnectingPlatform('youtube');
+    youtubeAuth.prompt((accessToken, refreshToken, expiresIn) => {
+      businessService.connectYoutubeAccount(accessToken, refreshToken, expiresIn)
+        .then((account) => {
+          setSocialAccounts((prev) => {
+            const without = prev.filter((a) => a.platform !== 'youtube');
+            return [...without, { id: account.id, platform: account.platform, profileUrl: account.profileUrl, followers: account.followers, connectedViaOAuth: account.connectedViaOAuth, followersSyncedAt: account.followersSyncedAt }];
+          });
+          showToast(t('businessSettings.socialAddedToast'));
+        })
+        .catch((e) => toast.error(e instanceof Error ? e.message : t('businessSettings.socialSaveFailed')))
+        .finally(() => setConnectingPlatform(null));
+    });
+  }
+
+  useEffect(() => {
+    if (youtubeAuth.error) {
+      toast.error(youtubeAuth.error);
+      setConnectingPlatform(null);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [youtubeAuth.error]);
+
+  async function handleConnectTiktok() {
+    setConnectingPlatform('tiktok');
+    try {
+      const url = await businessService.getTiktokAuthorizeUrl();
+      const result = await WebBrowser.openAuthSessionAsync(url, 'kolab://tiktok-callback', { preferEphemeralSession: true });
+      if (result.type === 'success' && result.url) {
+        const parsed = new URL(result.url);
+        const success = parsed.searchParams.get('success') === 'true';
+        if (success) {
+          const accounts = await businessService.getSocialAccounts();
+          setSocialAccounts(accounts);
+          showToast(t('businessSettings.socialAddedToast'));
+        } else {
+          const error = parsed.searchParams.get('error') ?? t('businessSettings.socialSaveFailed');
+          toast.error(error);
+        }
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t('businessSettings.socialSaveFailed'));
+    } finally {
+      setConnectingPlatform(null);
+    }
+  }
+
+  function handleConnectFacebook() {
+    setConnectingPlatform('facebook');
+    facebookPagesAuth.prompt(async (accessToken) => {
+      try {
+        const pages = await businessService.getFacebookPages(accessToken);
+        if (pages.length === 0) {
+          toast.error(t('businessSettings.noFacebookPages'));
+          setConnectingPlatform(null);
+          return;
+        }
+        if (pages.length === 1) {
+          await finishFacebookConnect(accessToken, pages[0].id);
+          return;
+        }
+        setPagePicker({ mode: 'facebook', accessToken, pages });
+        setConnectingPlatform(null);
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : t('businessSettings.socialSaveFailed'));
+        setConnectingPlatform(null);
+      }
+    });
+  }
+
+  function handleConnectInstagram() {
+    setConnectingPlatform('instagram');
+    facebookPagesAuth.prompt(async (accessToken) => {
+      try {
+        const pages = (await businessService.getFacebookPages(accessToken)).filter((p) => p.hasInstagram);
+        if (pages.length === 0) {
+          toast.error(t('businessSettings.noInstagramPages'));
+          setConnectingPlatform(null);
+          return;
+        }
+        if (pages.length === 1) {
+          await finishInstagramConnect(accessToken, pages[0].id);
+          return;
+        }
+        setPagePicker({ mode: 'instagram', accessToken, pages });
+        setConnectingPlatform(null);
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : t('businessSettings.socialSaveFailed'));
+        setConnectingPlatform(null);
+      }
+    });
+  }
+
+  async function handleConnectInstagramDirect() {
+    setConnectingPlatform('instagram');
+    try {
+      const url = await businessService.getInstagramLoginAuthorizeUrl();
+      const result = await WebBrowser.openAuthSessionAsync(url, 'kolab://instagram-login-callback', { preferEphemeralSession: true });
+      if (result.type === 'success' && result.url) {
+        const parsed = new URL(result.url);
+        const success = parsed.searchParams.get('success') === 'true';
+        if (success) {
+          const accounts = await businessService.getSocialAccounts();
+          setSocialAccounts(accounts);
+          showToast(t('businessSettings.socialAddedToast'));
+        } else {
+          const error = parsed.searchParams.get('error') ?? t('businessSettings.socialSaveFailed');
+          toast.error(error);
+        }
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t('businessSettings.socialSaveFailed'));
+    } finally {
+      setConnectingPlatform(null);
+    }
+  }
+
+  useEffect(() => {
+    if (facebookPagesAuth.error) {
+      toast.error(facebookPagesAuth.error);
+      setConnectingPlatform(null);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [facebookPagesAuth.error]);
+
+  async function finishFacebookConnect(accessToken: string, pageId: string) {
+    setConnectingPlatform('facebook');
+    try {
+      const account = await businessService.connectFacebookPage(accessToken, pageId);
+      setSocialAccounts((prev) => {
+        const without = prev.filter((a) => a.platform !== 'facebook');
+        return [...without, { id: account.id, platform: account.platform, profileUrl: account.profileUrl, followers: account.followers, connectedViaOAuth: account.connectedViaOAuth }];
+      });
+      showToast(t('businessSettings.socialAddedToast'));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t('businessSettings.socialSaveFailed'));
+    } finally {
+      setConnectingPlatform(null);
+      setPagePicker(null);
+    }
+  }
+
+  async function finishInstagramConnect(accessToken: string, pageId: string) {
+    setConnectingPlatform('instagram');
+    try {
+      const account = await businessService.connectInstagramAccount(accessToken, pageId);
+      setSocialAccounts((prev) => {
+        const without = prev.filter((a) => a.platform !== 'instagram');
+        return [...without, { id: account.id, platform: account.platform, profileUrl: account.profileUrl, followers: account.followers, connectedViaOAuth: account.connectedViaOAuth }];
+      });
+      showToast(t('businessSettings.socialAddedToast'));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t('businessSettings.socialSaveFailed'));
+    } finally {
+      setConnectingPlatform(null);
+      setPagePicker(null);
+    }
+  }
+
+  function deleteSocialAccount(acct: SocialAccount) {
+    const cfg = PLATFORM_CONFIG[acct.platform];
+    setAppModal({
+      visible: true, type: 'danger',
+      title: t('businessSettings.removeAccountTitle', { platform: cfg?.label ?? acct.platform }),
+      body: t('businessSettings.removeAccountBody'),
+      confirmLabel: t('common.remove'),
+      warning: undefined,
+      onConfirm: async () => {
+        closeAppModal();
+        try {
+          await businessService.deleteSocialAccount(acct.id);
+          setSocialAccounts((prev) => prev.filter((a) => a.id !== acct.id));
+          showToast(t('businessSettings.socialRemovedToast'));
+        } catch { toast.error(t('businessSettings.socialRemoveFailed')); }
+      },
+    });
+  }
+
   // ── Section 9: Privacy ──
   const [showProfilePublic, setShowProfilePublic] = useState(true);
   const [hideContactDetails, setHideContactDetails] = useState(false);
@@ -356,11 +578,14 @@ export default function BusinessSettingsScreen() {
       setHideContactDetails(p.hideContactDetails);
       setAllowDirectMessages(p.allowDirectMessages);
     }).catch(() => {});
+    businessService.getSocialAccounts().then((accounts) => {
+      setSocialAccounts(accounts.map((a) => ({ id: a.id, platform: a.platform, profileUrl: a.profileUrl, followers: a.followers, connectedViaOAuth: a.connectedViaOAuth, followersSyncedAt: a.followersSyncedAt })));
+    }).catch(() => {});
     profileService.getBusinessProfile().then((p) => {
-      setSocialLinks(p.socialLinks ?? {});
       setIsBizVerified(p.isVerified);
       setPanDocStatus(p.panDocStatus);
       setCompanyRegDocStatus(p.companyRegDocStatus);
+      setRejectReason(p.verificationRejectReason);
       if (p.defaultPlatforms?.length)         setPrefPlatforms(p.defaultPlatforms);
       if (p.defaultCreatorCategories?.length)  setPrefCreatorCats(p.defaultCreatorCategories);
       if (p.defaultBudgetRange)               setPrefBudget(p.defaultBudgetRange);
@@ -405,18 +630,6 @@ export default function BusinessSettingsScreen() {
     showToast(t('businessSettings.profileSavedToast'));
   }
 
-  async function handleSaveSocialLinks() {
-    setSocialSaving(true);
-    try {
-      await profileService.updateBusinessProfile({ socialLinks });
-      showToast(t('settings.savedOnlinePresence'));
-    } catch {
-      toast.error(t('businessSettings.saveSocialFailed'));
-    } finally {
-      setSocialSaving(false);
-    }
-  }
-
   function handleChangePassword() {
     setPwSubmitted(true);
     if (newPw.length >= 8 && newPw === confirmPw) {
@@ -429,17 +642,6 @@ export default function BusinessSettingsScreen() {
   function closeChangePassword() {
     setShowChangePassword(false);
     setNewPw(''); setConfirmPw(''); setPwSubmitted(false);
-  }
-
-  function handleLogoutAll() {
-    setAppModal({
-      visible: true, type: 'warning',
-      title: t('businessSettings.logoutAllTitle'),
-      body: t('businessSettings.logoutAllMsg'),
-      confirmLabel: t('businessSettings.logoutAllConfirmBtn'),
-      warning: undefined,
-      onConfirm: () => { closeAppModal(); logout(); },
-    });
   }
 
   function handleDeactivateAccount() {
@@ -605,6 +807,7 @@ export default function BusinessSettingsScreen() {
     campaigns:     'businessSettings.sectionCampaigns',
     saved:         'businessSettings.sectionSaved',
     verification:  'businessSettings.sectionVerification',
+    social:        'businessSettings.sectionSocial',
     privacy:       'businessSettings.sectionPrivacy',
     support:       'businessSettings.sectionSupport',
     app:           'businessSettings.sectionApp',
@@ -762,7 +965,7 @@ export default function BusinessSettingsScreen() {
     { q: 'What is CreatorMarket for businesses?', a: 'CreatorMarket lets you find and hire local content creators for paid collaborations — video promotions, product reviews, social media marketing, and more.' },
     { q: 'How much does it cost?', a: 'Posting events is free. A 10% platform fee applies on each completed collaboration, deducted from the event budget.' },
     { q: 'How do I find the right creators?', a: 'Browse creator profiles by category, follower count, and platform. Or post an event and let creators apply to you.' },
-    { q: 'What payment methods are supported?', a: 'For Nepal: eSewa, Khalti, and Bank Transfer. For international events: Visa/Mastercard. Stripe support is coming soon.' },
+    { q: 'What payment methods are supported?', a: 'For Nepal: eSewa, Khalti, and Fonepay. For international events: Visa/Mastercard. Stripe support is coming soon.' },
     { q: 'Can I run multiple events at once?', a: 'Yes. You can have multiple active events simultaneously and manage all proposals in one place.' },
     { q: 'Is my business information secure?', a: 'Yes. We use industry-standard encryption. Your contact details can be hidden from the public profile in Privacy Settings.' },
   ];
@@ -853,49 +1056,6 @@ export default function BusinessSettingsScreen() {
           </View>
         </Card>
 
-        {/* Online Presence */}
-        <SectionHeader title={t('businessSettings.onlinePresenceSection')} />
-        <Card>
-          <View style={styles.inlineForm}>
-            {([
-              { key: 'facebook',  label: 'Facebook',  icon: 'logo-facebook'  as const, color: '#1877F2', placeholder: 'https://facebook.com/yourpage' },
-              { key: 'instagram', label: 'Instagram', icon: 'logo-instagram' as const, color: '#E1306C', placeholder: 'https://instagram.com/yourhandle' },
-              { key: 'tiktok',    label: 'TikTok',    icon: 'musical-notes'  as const, color: '#010101', placeholder: 'https://tiktok.com/@yourhandle' },
-              { key: 'linkedin',  label: 'LinkedIn',  icon: 'logo-linkedin'  as const, color: '#0A66C2', placeholder: 'https://linkedin.com/company/yourname' },
-            ] as { key: keyof SocialLinks; label: string; icon: React.ComponentProps<typeof Ionicons>['name']; color: string; placeholder: string }[]).map((f) => (
-              <View key={f.key} style={styles.formField}>
-                <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>{f.label}</Text>
-                <View style={[styles.socialInputRow, { backgroundColor: C.background, borderColor: C.border }]}>
-                  <View style={[styles.socialIconCircle, { backgroundColor: f.color + '18' }]}>
-                    <Ionicons name={f.icon} size={18} color={f.color} />
-                  </View>
-                  <TextInput
-                    style={[styles.socialInput, { color: C.text }]}
-                    value={socialLinks[f.key] ?? ''}
-                    onChangeText={(v) => setSocialLinks((prev) => ({ ...prev, [f.key]: v }))}
-                    placeholder={f.placeholder}
-                    placeholderTextColor={C.textSecondary}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    keyboardType="url"
-                  />
-                  {!!socialLinks[f.key] && (
-                    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => setSocialLinks((prev) => { const n = { ...prev }; delete n[f.key]; return n; })} hitSlop={8}>
-                      <Ionicons name="close-circle" size={18} color={C.textSecondary} />
-                    </Pressable>
-                  )}
-                </View>
-              </View>
-            ))}
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-              style={[styles.primaryBtn, { backgroundColor: C.brinjal1, opacity: socialSaving ? 0.65 : 1 }]}
-              onPress={handleSaveSocialLinks}
-              disabled={socialSaving}>
-              <Text style={styles.primaryBtnText}>{socialSaving ? t('businessSettings.savingLabel') : t('businessSettings.saveOnlinePresenceBtn')}</Text>
-            </Pressable>
-          </View>
-        </Card>
-
         {/* Contact Information */}
         <SectionHeader title={t('businessSettings.contactInfoSection')} />
         <Card>
@@ -943,6 +1103,74 @@ export default function BusinessSettingsScreen() {
       <>
         <SectionHeader title={t('businessSettings.loginSecuritySection')} />
         <Card>
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            style={[styles.row, { borderBottomWidth: 1, borderBottomColor: C.border }]}
+            onPress={() => setShowChangePassword((v) => !v)}>
+            <View style={[styles.navIonIconWrap, { backgroundColor: '#6366F118' }]}>
+              <FontAwesome5 name="key" size={16} color="#6366F1" />
+            </View>
+            <Text style={[styles.rowLabel, { color: C.text, flex: 1 }]}>{t('businessSettings.changePasswordLabel')}</Text>
+            {!showChangePassword && <Text style={[styles.navArrow, { color: C.textSecondary }]}>›</Text>}
+          </Pressable>
+
+          {showChangePassword && (
+            <View style={[styles.inlineForm, { borderBottomWidth: 1, borderBottomColor: C.border }]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Text style={[styles.formFieldLabel, { color: C.text, fontSize: 14, flex: 1, flexShrink: 1 }]} numberOfLines={1} ellipsizeMode="tail">{t('businessSettings.setNewPasswordSection')}</Text>
+                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={closeChangePassword} hitSlop={10} style={{ flexShrink: 0, marginLeft: 8 }}>
+                  <Ionicons name="close-circle" size={22} color={C.textSecondary} />
+                </Pressable>
+              </View>
+
+              <View style={styles.formField}>
+                <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>{t('businessSettings.newPasswordLabel')}</Text>
+                <View style={[styles.pwRow, { backgroundColor: C.background, borderColor: pwError ? C.error : C.border }]}>
+                  <TextInput
+                    style={[styles.pwInput, { color: C.text }]}
+                    value={newPw}
+                    onChangeText={(pw) => { setNewPw(pw); setPwSubmitted(false); }}
+                    onFocus={() => { bottomFieldFocusedRef.current = true; }}
+                    onBlur={() => { bottomFieldFocusedRef.current = false; }}
+                    secureTextEntry={!showNewPw}
+                    placeholder={t('businessSettings.newPasswordPlaceholder')}
+                    placeholderTextColor={C.textSecondary}
+                    autoCapitalize="none"
+                  />
+                  <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => setShowNewPw((v) => !v)} style={styles.eyeBtn}>
+                    <Ionicons name={showNewPw ? 'eye-off-outline' : 'eye-outline'} size={20} color={C.textSecondary} />
+                  </Pressable>
+                </View>
+                {pwError ? <Text style={[styles.fieldError, { color: C.error }]}>{pwError}</Text> : null}
+              </View>
+
+              <View style={styles.formField}>
+                <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>{t('businessSettings.confirmPasswordLabel')}</Text>
+                <View style={[styles.pwRow, { backgroundColor: C.background, borderColor: cPwError ? C.error : C.border }]}>
+                  <TextInput
+                    style={[styles.pwInput, { color: C.text }]}
+                    value={confirmPw}
+                    onChangeText={(pw) => { setConfirmPw(pw); setPwSubmitted(false); }}
+                    onFocus={() => { bottomFieldFocusedRef.current = true; }}
+                    onBlur={() => { bottomFieldFocusedRef.current = false; }}
+                    secureTextEntry={!showConfirmPw}
+                    placeholder={t('businessSettings.confirmPasswordPlaceholder')}
+                    placeholderTextColor={C.textSecondary}
+                    autoCapitalize="none"
+                  />
+                  <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => setShowConfirmPw((v) => !v)} style={styles.eyeBtn}>
+                    <Ionicons name={showConfirmPw ? 'eye-off-outline' : 'eye-outline'} size={20} color={C.textSecondary} />
+                  </Pressable>
+                </View>
+                {cPwError ? <Text style={[styles.fieldError, { color: C.error }]}>{cPwError}</Text> : null}
+              </View>
+
+              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.primaryBtn, { backgroundColor: C.brinjal1 }]} onPress={handleChangePassword}>
+                <Text style={styles.primaryBtnText}>{t('businessSettings.updatePasswordBtn')}</Text>
+              </Pressable>
+              <Text style={[styles.rowSub, { color: C.textSecondary }]}>{t('businessSettings.passwordHint')}</Text>
+            </View>
+          )}
+
           {/* Email verification */}
           {emailStage === 'idle' && (
             <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
@@ -1163,74 +1391,6 @@ export default function BusinessSettingsScreen() {
               </View>
             </View>
           )}
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-            style={[styles.row, { borderBottomWidth: 1, borderBottomColor: C.border }]}
-            onPress={() => setShowChangePassword((v) => !v)}>
-            <View style={[styles.navIonIconWrap, { backgroundColor: '#6366F118' }]}>
-              <FontAwesome5 name="key" size={16} color="#6366F1" />
-            </View>
-            <Text style={[styles.rowLabel, { color: C.text, flex: 1 }]}>{t('businessSettings.changePasswordLabel')}</Text>
-            {!showChangePassword && <Text style={[styles.navArrow, { color: C.textSecondary }]}>›</Text>}
-          </Pressable>
-
-          {showChangePassword && (
-            <View style={[styles.inlineForm, { borderBottomWidth: 1, borderBottomColor: C.border }]}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Text style={[styles.formFieldLabel, { color: C.text, fontSize: 14, flex: 1, flexShrink: 1 }]} numberOfLines={1} ellipsizeMode="tail">{t('businessSettings.setNewPasswordSection')}</Text>
-                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={closeChangePassword} hitSlop={10} style={{ flexShrink: 0, marginLeft: 8 }}>
-                  <Ionicons name="close-circle" size={22} color={C.textSecondary} />
-                </Pressable>
-              </View>
-
-              <View style={styles.formField}>
-                <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>{t('businessSettings.newPasswordLabel')}</Text>
-                <View style={[styles.pwRow, { backgroundColor: C.background, borderColor: pwError ? C.error : C.border }]}>
-                  <TextInput
-                    style={[styles.pwInput, { color: C.text }]}
-                    value={newPw}
-                    onChangeText={(pw) => { setNewPw(pw); setPwSubmitted(false); }}
-                    onFocus={() => { bottomFieldFocusedRef.current = true; }}
-                    onBlur={() => { bottomFieldFocusedRef.current = false; }}
-                    secureTextEntry={!showNewPw}
-                    placeholder={t('businessSettings.newPasswordPlaceholder')}
-                    placeholderTextColor={C.textSecondary}
-                    autoCapitalize="none"
-                  />
-                  <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => setShowNewPw((v) => !v)} style={styles.eyeBtn}>
-                    <Ionicons name={showNewPw ? 'eye-off-outline' : 'eye-outline'} size={20} color={C.textSecondary} />
-                  </Pressable>
-                </View>
-                {pwError ? <Text style={[styles.fieldError, { color: C.error }]}>{pwError}</Text> : null}
-              </View>
-
-              <View style={styles.formField}>
-                <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>{t('businessSettings.confirmPasswordLabel')}</Text>
-                <View style={[styles.pwRow, { backgroundColor: C.background, borderColor: cPwError ? C.error : C.border }]}>
-                  <TextInput
-                    style={[styles.pwInput, { color: C.text }]}
-                    value={confirmPw}
-                    onChangeText={(pw) => { setConfirmPw(pw); setPwSubmitted(false); }}
-                    onFocus={() => { bottomFieldFocusedRef.current = true; }}
-                    onBlur={() => { bottomFieldFocusedRef.current = false; }}
-                    secureTextEntry={!showConfirmPw}
-                    placeholder={t('businessSettings.confirmPasswordPlaceholder')}
-                    placeholderTextColor={C.textSecondary}
-                    autoCapitalize="none"
-                  />
-                  <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => setShowConfirmPw((v) => !v)} style={styles.eyeBtn}>
-                    <Ionicons name={showConfirmPw ? 'eye-off-outline' : 'eye-outline'} size={20} color={C.textSecondary} />
-                  </Pressable>
-                </View>
-                {cPwError ? <Text style={[styles.fieldError, { color: C.error }]}>{cPwError}</Text> : null}
-              </View>
-
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.primaryBtn, { backgroundColor: C.brinjal1 }]} onPress={handleChangePassword}>
-                <Text style={styles.primaryBtnText}>{t('businessSettings.updatePasswordBtn')}</Text>
-              </Pressable>
-              <Text style={[styles.rowSub, { color: C.textSecondary }]}>{t('businessSettings.passwordHint')}</Text>
-            </View>
-          )}
-
           {biometricSupported && (
             <SwitchRow
               faIcon={biometricLabel === 'Face ID' ? 'smile' : 'fingerprint'}
@@ -1239,23 +1399,13 @@ export default function BusinessSettingsScreen() {
               sub={t('businessSettings.biometricLoginSub', { biometricLabel })}
               value={biometricEnabled}
               onChange={handleToggleBiometric}
+              isLast
             />
           )}
-
-          <View style={styles.row}>
-            <View style={[styles.navIonIconWrap, { backgroundColor: '#6366F118' }]}>
-              <FontAwesome5 name="shield-alt" size={16} color="#6366F1" />
-            </View>
-            <Text style={[styles.rowLabel, { color: C.text }]}>{t('businessSettings.twoFactorLabel')}</Text>
-            <View style={[styles.soonBadge, { backgroundColor: C.primaryLight }]}>
-              <Text style={[styles.badgeText, { color: C.brinjal1 }]}>{t('businessSettings.comingSoonBadge')}</Text>
-            </View>
-          </View>
         </Card>
 
         <SectionHeader title={t('businessSettings.actionsSection')} />
         <Card>
-          <NavRow faIcon="mobile-alt" ionIconColor="#6366F1" label={t('businessSettings.logoutAllDevicesLabel')} onPress={handleLogoutAll} />
           <NavRow faIcon="pause-circle" label={t('businessSettings.deactivateAccountLabel')} sub={t('businessSettings.deactivateAccountSub')} onPress={handleDeactivateAccount} danger />
           <NavRow faIcon="trash-alt" label={t('businessSettings.deleteAccountLabel')} sub={t('businessSettings.deleteAccountSub')} onPress={handleDeleteAccount} danger isLast />
         </Card>
@@ -1488,33 +1638,23 @@ export default function BusinessSettingsScreen() {
   // ── Section: Verification ─────────────────────────────────────
 
   function renderVerification() {
-    const statusConfig = {
-      not_verified:  { label: t('businessSettings.notVerifiedLabel'),   bg: '#F3F4F6', color: C.textSecondary },
-      under_review:  { label: t('businessSettings.underReviewLabel'),   bg: '#FFF7ED', color: C.draft },
-      verified:      { label: t('businessSettings.verifiedStatusLabel'), bg: '#DCFCE7', color: C.active },
-    };
-    const st = statusConfig[verificationStatus];
-
     return (
       <>
-        <SectionHeader title={t('businessSettings.verificationStatusSection')} />
-        <Card>
-          <View style={[styles.row, { justifyContent: 'space-between' }]}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-              <View style={[styles.navIonIconWrap, { backgroundColor: '#6366F118' }]}>
-                <FontAwesome5 name="shield-alt" size={16} color="#6366F1" />
-              </View>
-              <Text style={[styles.rowLabel, { color: C.text }]}>{t('businessSettings.businessVerificationLabel')}</Text>
-            </View>
-            <View style={[styles.statusBadge, { backgroundColor: st.bg }]}>
-              <Text style={[styles.badgeText, { color: st.color }]}>{st.label}</Text>
-            </View>
+        {rejectReason && (
+          <View style={[styles.hintCard, { backgroundColor: '#FEE2E2' }]}>
+            <Text style={[styles.hintText, { color: '#991B1B' }]}>
+              {t('businessSettings.verificationRejectedMessage', { reason: rejectReason })}
+            </Text>
           </View>
-        </Card>
+        )}
 
-        <HintCard>
-          <Text style={[styles.hintText, { color: C.brinjal1 }]}>{t('businessSettings.verifiedHint')}</Text>
-        </HintCard>
+        {verificationStatus !== 'verified' && (
+          <HintCard>
+            <Text style={[styles.hintText, { color: C.brinjal1 }]}>
+              {verificationStatus === 'under_review' ? t('businessSettings.underReviewMessage') : t('businessSettings.verifiedHint')}
+            </Text>
+          </HintCard>
+        )}
 
         <SectionHeader title={t('businessSettings.uploadDocumentsSection')} />
         <Card>
@@ -1562,6 +1702,127 @@ export default function BusinessSettingsScreen() {
     );
   }
 
+  // ── Section: Social Accounts ───────────────────────────────────
+  // Mirrors (creator)/settings.tsx's renderSocialAccounts() — see that file for
+  // the OAuth flow's per-provider comments.
+
+  function renderSocialAccounts() {
+    const connectedByPlatform = new Map(socialAccounts.map((a) => [a.platform, a]));
+
+    return (
+      <>
+        <Card>
+          {CONNECTABLE_SOCIAL_PLATFORMS.map((p, idx) => {
+            const acct = connectedByPlatform.get(p.id);
+            const isLive = OAUTH_LIVE_PLATFORM_IDS.has(p.id);
+            const isConnecting = connectingPlatform === p.id;
+            const isLast = idx === CONNECTABLE_SOCIAL_PLATFORMS.length - 1;
+            const syncedLabel = acct?.connectedViaOAuth ? syncedAgo(acct.followersSyncedAt, t) : null;
+            return (
+              <View key={p.id} style={[styles.row, styles.socialRow, !isLast && { borderBottomWidth: 1, borderBottomColor: C.border }]}>
+                <View style={[styles.socialIconWrap, { backgroundColor: p.color + '18' }]}>
+                  <FontAwesome5 name={p.iconName} size={20} color={p.color} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <View style={styles.connectPlatformNameRow}>
+                    <Text style={[styles.socialPlatformName, { color: C.text }]}>{p.label}</Text>
+                    {acct?.connectedViaOAuth && (
+                      <Ionicons name="checkmark-circle" size={14} color="#16A34A" />
+                    )}
+                  </View>
+                  {acct ? (
+                    <>
+                      <View style={styles.socialMetaRow}>
+                        <View style={[styles.socialFollowerBadge, { backgroundColor: p.color + '15' }]}>
+                          <Text style={[styles.socialFollowerBadgeText, { color: p.color }]}>
+                            {fmtCount(String(acct.followers))} {p.followersLabel.toLowerCase()}
+                          </Text>
+                        </View>
+                      </View>
+                      {syncedLabel && (
+                        <Text style={[styles.socialSyncedText, { color: C.textSecondary }]}>
+                          {t('businessSettings.syncedPrefix', { time: syncedLabel })}
+                        </Text>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <Text style={[styles.connectPlatformHint, { color: C.textSecondary }]}>
+                        {t('businessSettings.connectHint')}
+                      </Text>
+                      {p.id === 'instagram' && (
+                        <Pressable disabled={isConnecting} onPress={() => void handleConnectInstagramDirect()} hitSlop={4}>
+                          <Text style={[styles.connectInstagramDirectLink, { color: p.color }]}>
+                            {t('businessSettings.connectInstagramDirectly')}
+                          </Text>
+                        </Pressable>
+                      )}
+                    </>
+                  )}
+                </View>
+                <View style={styles.socialActions}>
+                  {acct ? (
+                    <Pressable style={styles.socialDisconnectBtn} onPress={() => deleteSocialAccount(acct)}>
+                      <Ionicons name="close" size={14} color={C.error} />
+                    </Pressable>
+                  ) : isLive ? (
+                    <Pressable
+                      style={[styles.connectBtn, { backgroundColor: p.color, opacity: isConnecting ? 0.7 : 1 }]}
+                      disabled={isConnecting}
+                      onPress={() => {
+                        if (p.id === 'youtube') handleConnectYoutube();
+                        else if (p.id === 'tiktok') void handleConnectTiktok();
+                        else if (p.id === 'facebook') handleConnectFacebook();
+                        else if (p.id === 'instagram') handleConnectInstagram();
+                      }}>
+                      {isConnecting
+                        ? <ActivityIndicator size="small" color="#fff" />
+                        : <Text style={styles.connectBtnText}>{t('businessSettings.connectBtn')}</Text>}
+                    </Pressable>
+                  ) : null}
+                </View>
+              </View>
+            );
+          })}
+        </Card>
+
+        {/* Facebook Page / linked-Instagram picker — only shown when more than one
+            qualifying Page exists (auto-selected otherwise). */}
+        <Modal visible={!!pagePicker} transparent animationType="fade" onRequestClose={() => setPagePicker(null)}>
+          <Pressable style={styles.sheetBackdrop} onPress={() => setPagePicker(null)} />
+          <View style={[styles.pagePickerSheet, { backgroundColor: C.surface }]}>
+            <Text style={[styles.pagePickerTitle, { color: C.text }]}>
+              {pagePicker?.mode === 'instagram' ? t('businessSettings.pickInstagramPage') : t('businessSettings.pickFacebookPage')}
+            </Text>
+            <ScrollView style={{ maxHeight: 360 }}>
+              {pagePicker?.pages.map((p) => (
+                <Pressable
+                  key={p.id}
+                  style={[styles.pagePickerRow, { borderBottomColor: C.border }]}
+                  disabled={connectingPlatform !== null}
+                  onPress={() => {
+                    if (!pagePicker) return;
+                    if (pagePicker.mode === 'facebook') void finishFacebookConnect(pagePicker.accessToken, p.id);
+                    else void finishInstagramConnect(pagePicker.accessToken, p.id);
+                  }}>
+                  <Text style={[styles.pagePickerRowTitle, { color: C.text }]}>
+                    {pagePicker?.mode === 'instagram' ? `@${p.instagramUsername ?? p.name}` : p.name}
+                  </Text>
+                  {pagePicker?.mode === 'facebook' && (
+                    <Text style={[styles.pagePickerRowSub, { color: C.textSecondary }]}>{fmtCount(String(p.fanCount))} {t('businessSettings.followers')}</Text>
+                  )}
+                </Pressable>
+              ))}
+            </ScrollView>
+            <Pressable style={styles.pagePickerCancel} onPress={() => setPagePicker(null)}>
+              <Text style={[styles.pagePickerCancelText, { color: C.textSecondary }]}>{t('common.cancel')}</Text>
+            </Pressable>
+          </View>
+        </Modal>
+      </>
+    );
+  }
+
   // ── Section: Privacy Settings ─────────────────────────────────
 
   async function savePrivacy(patch: { showPublicProfile?: boolean; hideContactDetails?: boolean; allowDirectMessages?: boolean }) {
@@ -1575,9 +1836,6 @@ export default function BusinessSettingsScreen() {
   function renderPrivacy() {
     return (
       <>
-        <HintCard>
-          <Text style={[styles.hintText, { color: C.brinjal1 }]}>{t('businessSettings.privacyHint')}</Text>
-        </HintCard>
         <SectionHeader title={t('businessSettings.visibilitySection')} />
         <Card>
           <SwitchRow
@@ -1615,7 +1873,6 @@ export default function BusinessSettingsScreen() {
             isLast
           />
         </Card>
-        <Text style={[styles.saveHint, { color: C.textSecondary }]}>{t('businessSettings.privacyAutoSaved')}</Text>
       </>
     );
   }
@@ -1625,7 +1882,6 @@ export default function BusinessSettingsScreen() {
   function renderSupport() {
     return (
       <>
-        <SectionHeader title={t('businessSettings.getHelpSection')} />
         <Card>
           <NavRow ionIcon="help-circle-outline"         ionIconColor="#0891B2" label={t('businessSettings.helpCenterNavLabel')}  onPress={() => setSubPage('help-center')} />
           <NavRow ionIcon="chatbubble-ellipses-outline" ionIconColor="#7C3AED" label={t('businessSettings.contactSupportLabel')} onPress={() => setSubPage('contact-support')} />
@@ -1801,6 +2057,7 @@ export default function BusinessSettingsScreen() {
           {!subPage && section === 'campaigns'     && renderCampaignPreferences()}
           {!subPage && section === 'saved'         && renderSavedCreators()}
           {!subPage && section === 'verification'  && renderVerification()}
+          {!subPage && section === 'social'        && renderSocialAccounts()}
           {!subPage && section === 'privacy'       && renderPrivacy()}
           {!subPage && section === 'support'       && renderSupport()}
           {!subPage && section === 'app'           && renderAppSettings()}
@@ -1978,4 +2235,34 @@ const styles = StyleSheet.create({
   langDesc: { fontSize: 12, fontFamily: F.regular },
   activeLangCheck: { width: 24, height: 24, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
   inactiveLangCircle: { width: 24, height: 24, borderRadius: 12, borderWidth: 2 },
+
+  // ── Social Accounts ────────────────────────────────────────────────────────
+  socialRow: { alignItems: 'center' },
+  socialIconWrap: { width: 42, height: 42, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
+  socialPlatformName: { fontSize: 14, fontFamily: F.bold },
+  socialActions: { flexDirection: 'row', gap: 6 },
+  socialDisconnectBtn: { width: 28, height: 28, borderRadius: 8, backgroundColor: '#FEE2E2', justifyContent: 'center', alignItems: 'center' },
+  connectPlatformNameRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  connectPlatformHint:    { fontSize: 11, marginTop: 2, fontFamily: F.regular },
+  connectInstagramDirectLink: { fontSize: 11, marginTop: 3, fontFamily: F.bold, textDecorationLine: 'underline' },
+  connectBtn:     { borderRadius: 8, paddingHorizontal: 14, height: 32, justifyContent: 'center', alignItems: 'center', minWidth: 84 },
+  connectBtnText: { fontSize: 12, fontFamily: F.bold, color: '#fff' },
+  socialMetaRow: { flexDirection: 'row', marginTop: 3, marginBottom: 2 },
+  socialFollowerBadge: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2 },
+  socialFollowerBadgeText: { fontSize: 11, fontFamily: F.bold },
+  socialSyncedText: { fontSize: 10, fontFamily: F.regular, marginTop: 1 },
+
+  // ── Facebook/Instagram Page picker ──────────────────────────────────────────
+  pagePickerSheet: {
+    position: 'absolute', top: '25%', left: 20, right: 20,
+    borderRadius: 16, padding: 16, maxHeight: '55%',
+    shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 20, shadowOffset: { width: 0, height: 4 }, elevation: 20,
+  },
+  pagePickerTitle: { fontSize: 16, fontFamily: F.bold, marginBottom: 8 },
+  pagePickerRow: { paddingVertical: 12, borderBottomWidth: 1 },
+  pagePickerRowTitle: { fontSize: 14, fontFamily: F.semibold },
+  pagePickerRowSub: { fontSize: 12, fontFamily: F.regular, marginTop: 2 },
+  pagePickerCancel: { paddingVertical: 12, alignItems: 'center' },
+  pagePickerCancelText: { fontSize: 14, fontFamily: F.semibold },
+  sheetBackdrop: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)' },
 });

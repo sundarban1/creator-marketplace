@@ -41,7 +41,7 @@ type TFn = (key: string) => string;
 // agrees with the timeline (workStatus alone isn't enough — APPROVED needs
 // paymentStatus to tell "awaiting release" from "released" from "completed").
 function projectBtnConfig(ws: WS, paymentStatus: PS, t: TFn) {
-  if (ws === 'COMPLETED') return { label: t('campaignProposals.projectCompleted'),       icon: 'checkmark-done-circle' as const, color: '#16A34A' };
+  if (ws === 'COMPLETED') return { label: t('campaignProposals.paymentReleased'),        icon: 'cash'                  as const, color: '#0EA5E9' };
   if (ws === 'APPROVED' && paymentStatus === 'RELEASED')
                            return { label: t('campaignProposals.paymentReleased'),        icon: 'cash'                  as const, color: '#0EA5E9' };
   if (ws === 'APPROVED')   return { label: t('campaignProposals.awaitingPaymentRelease'), icon: 'hourglass-outline'     as const, color: '#EA580C' };

@@ -13,6 +13,10 @@ const FROM         = `${FROM_NAME} <${FROM_ADDRESS}>`;
 // owner's own inbox until a domain is verified).
 const RESEND_FROM = `${FROM_NAME} <onboarding@resend.dev>`;
 
+function escapeHtml(text: string): string {
+  return text.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
+}
+
 function createTransporter() {
   // Prefer Gmail config when available
   if (env.EMAIL_HOST && env.EMAIL_USERNAME && env.EMAIL_PASSWORD) {
@@ -565,6 +569,22 @@ export async function sendAccountVerifiedEmail(email: string, name: string, kind
     </p>
   `);
   await sendEmail(email, "You're verified! ✅", html);
+}
+
+export async function sendVerificationRejectedEmail(email: string, name: string, reason: string, kind: 'creator' | 'business'): Promise<void> {
+  const html = wrapLayout(`
+    <h2 style="color:#DC2626;font-size:22px;font-weight:700;margin:0 0 8px;">Verification not approved</h2>
+    <p style="color:#6b7280;font-size:15px;margin:0 0 20px;line-height:1.6;">
+      Hi <strong>${escapeHtml(name)}</strong>, your ${kind === 'creator' ? 'creator' : 'business'} verification documents could not be approved.
+    </p>
+    <div style="background:#FEF2F2;border:1.5px solid #FECACA;border-radius:10px;padding:16px 20px;margin-bottom:24px;">
+      <p style="margin:0;color:#991B1B;font-size:14px;line-height:1.6;"><strong>Reason:</strong> ${escapeHtml(reason)}</p>
+    </div>
+    <p style="color:#9ca3af;font-size:13px;margin:0;">
+      You can re-upload your documents from the Verification section of the app at any time.
+    </p>
+  `);
+  await sendEmail(email, 'Verification not approved', html);
 }
 
 export async function sendAccountDeletedEmail(email: string, name: string): Promise<void> {

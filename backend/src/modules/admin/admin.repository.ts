@@ -258,6 +258,29 @@ export class AdminRepository {
     });
   }
 
+  async rejectBusinessVerification(businessProfileId: string, reason: string) {
+    const existing = await prisma.businessProfile.findUnique({
+      where:  { id: businessProfileId },
+      select: { panDocUrl: true, companyRegDocUrl: true },
+    });
+    const data: {
+      isVerified: boolean; verificationRejectReason: string; verificationRejectedAt: Date;
+      panDocStatus?: 'REJECTED'; companyRegDocStatus?: 'REJECTED';
+    } = { isVerified: false, verificationRejectReason: reason, verificationRejectedAt: new Date() };
+    if (existing?.panDocUrl) data.panDocStatus = 'REJECTED';
+    if (existing?.companyRegDocUrl) data.companyRegDocStatus = 'REJECTED';
+    return prisma.businessProfile.update({
+      where: { id: businessProfileId },
+      data,
+      select: {
+        id: true, userId: true, businessName: true, isVerified: true,
+        panDocUrl: true, panDocStatus: true, companyRegDocUrl: true, companyRegDocStatus: true,
+        verificationRejectReason: true,
+        user: { select: { email: true, phone: true } },
+      },
+    });
+  }
+
   async getUserById(userId: string) {
     const user = await prisma.user.findUnique({
       where:  { id: userId },

@@ -12,7 +12,7 @@ import { useNavigate } from 'react-router-dom';
 
 const PAGE_SIZE = 10;
 
-type Action = { type: 'suspend' | 'activate' | 'delete' | 'verify' | 'unverify'; business: ApiBusiness };
+type Action = { type: 'suspend' | 'activate' | 'delete' | 'verify' | 'unverify' | 'reject'; business: ApiBusiness };
 
 function businessStatus(b: ApiBusiness): string {
   if (b.user.isActive === false) return 'suspended';
@@ -27,6 +27,7 @@ export function Businesses() {
   const [loading, setLoading] = useState(false);
   const [toast,   setToast]   = useState<{ msg: string; ok: boolean } | null>(null);
   const [page, setPage] = useState(1);
+  const [rejectReason, setRejectReason] = useState('');
 
   const { data, loading: fetching, error, refetch } = useApi(() => api.admin.businesses({ page, limit: PAGE_SIZE }));
   useEffect(() => { refetch(); }, [page]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -51,6 +52,10 @@ export function Businesses() {
       } else if (action.type === 'verify' || action.type === 'unverify') {
         await api.admin.verifyBusiness(action.business.id, action.type === 'verify');
         showToast(`${action.business.businessName} ${action.type === 'verify' ? 'verified' : 'unverified'}.`);
+      } else if (action.type === 'reject') {
+        await api.admin.rejectBusiness(action.business.id, rejectReason.trim());
+        showToast(`${action.business.businessName}'s verification was rejected.`);
+        setRejectReason('');
       } else {
         const isActive = action.type === 'activate';
         await api.admin.suspendUser(userId, isActive);
@@ -157,6 +162,13 @@ export function Businesses() {
               onClick={() => setAction({ type: row.isVerified ? 'unverify' : 'verify', business: row })}>
               {row.isVerified ? 'Unverify' : 'Verify'}
             </button>
+            {!row.isVerified && (
+              <button
+                className="text-xs text-red-500 hover:text-red-700 font-medium"
+                onClick={() => { setRejectReason(''); setAction({ type: 'reject', business: row }); }}>
+                Reject
+              </button>
+            )}
             {row.panDocUrl && (
               <button
                 className="text-xs text-blue-600 hover:text-blue-800 font-medium"
@@ -202,6 +214,8 @@ export function Businesses() {
       ? { title: `Reactivate ${bName}?`, body: `The business will regain full access. An email will be sent to ${bEmail}.`, confirmLabel: 'Reactivate', variant: 'success' as const }
       : action.type === 'verify'
       ? { title: `Verify ${bName}?`, body: `This marks ${bName} as a verified business.`, confirmLabel: 'Verify business', variant: 'success' as const }
+      : action.type === 'reject'
+      ? { title: `Reject ${bName}'s verification?`, body: `${bName} will be notified by email (and SMS, once a gateway is configured) with the reason below.`, confirmLabel: 'Reject verification', variant: 'danger' as const }
       : { title: `Unverify ${bName}?`, body: `This removes ${bName}'s verified badge.`, confirmLabel: 'Unverify business', variant: 'warning' as const }
     : null;
 
@@ -237,8 +251,19 @@ export function Businesses() {
           confirmLabel={modalCfg.confirmLabel}
           variant={modalCfg.variant}
           loading={loading}
+          confirmDisabled={action?.type === 'reject' && !rejectReason.trim()}
+          extra={action?.type === 'reject' ? (
+            <textarea
+              autoFocus
+              rows={3}
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              placeholder="Reason for rejection (shown to the business)…"
+              className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-400 resize-none"
+            />
+          ) : undefined}
           onConfirm={handleConfirm}
-          onCancel={() => setAction(null)}
+          onCancel={() => { setAction(null); setRejectReason(''); }}
         />
       )}
 
@@ -285,6 +310,7 @@ export function Businesses() {
                     ...(viewing.panDocStatus ? [{ label: 'PAN status', value: viewing.panDocStatus }] : []),
                     ...(viewing.companyRegDocUrl ? [{ label: 'Company reg.', value: <a href={viewing.companyRegDocUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">View document</a> }] : []),
                     ...(viewing.companyRegDocStatus ? [{ label: 'Reg. status', value: viewing.companyRegDocStatus }] : []),
+                    ...(viewing.verificationRejectReason ? [{ label: 'Reject reason', value: viewing.verificationRejectReason }] : []),
                   ],
                 }]
               : []),

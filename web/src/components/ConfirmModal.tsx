@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import {Trash2, ShieldOff, ShieldCheck, X } from 'lucide-react';
 
 type Variant = 'danger' | 'warning' | 'success';
@@ -9,6 +10,9 @@ interface Props {
   confirmLabel:  string;
   variant?:      Variant;
   loading?:      boolean;
+  /** Extra content rendered between the body text and the action buttons (e.g. a reason textarea). */
+  extra?:        ReactNode;
+  confirmDisabled?: boolean;
   onConfirm:     () => void;
   onCancel:      () => void;
 }
@@ -19,7 +23,7 @@ const VARIANT_CFG: Record<Variant, { icon: typeof Trash2; iconBg: string; iconCo
   success: { icon: ShieldCheck,  iconBg: 'bg-green-50',  iconColor: 'text-green-500',  btnClass: 'bg-green-600 hover:bg-green-700 focus:ring-green-500' },
 };
 
-export function ConfirmModal({ open, title, body, confirmLabel, variant = 'danger', loading, onConfirm, onCancel }: Props) {
+export function ConfirmModal({ open, title, body, confirmLabel, variant = 'danger', loading, extra, confirmDisabled, onConfirm, onCancel }: Props) {
   if (!open) return null;
   const cfg = VARIANT_CFG[variant];
   const Icon = cfg.icon;
@@ -45,6 +49,8 @@ export function ConfirmModal({ open, title, body, confirmLabel, variant = 'dange
         <h3 className="text-base font-semibold text-gray-900 mb-1">{title}</h3>
         <p className="text-sm text-gray-500 leading-relaxed mb-6">{body}</p>
 
+        {extra && <div className="mb-6">{extra}</div>}
+
         <div className="flex gap-3">
           <button
             onClick={onCancel}
@@ -55,7 +61,7 @@ export function ConfirmModal({ open, title, body, confirmLabel, variant = 'dange
           </button>
           <button
             onClick={onConfirm}
-            disabled={loading}
+            disabled={loading || confirmDisabled}
             className={`flex-1 px-4 py-2.5 text-sm font-semibold text-white rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-60 ${cfg.btnClass}`}
           >
             {loading ? 'Please wait…' : confirmLabel}

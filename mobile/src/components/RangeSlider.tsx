@@ -7,10 +7,12 @@ const DEFAULT_STEP = 10;
 const DEFAULT_GAP  = 80;
 const THUMB_R = 13;
 
-function valToPx(val: number, tw: number, max: number) { return (val / max) * tw; }
-function pxToVal(px: number, tw: number, max: number, step: number) {
-  if (tw === 0) return 0;
-  return Math.round(Math.max(0, Math.min(px / tw, 1)) * max / step) * step;
+function valToPx(val: number, tw: number, min: number, max: number) { return ((val - min) / (max - min)) * tw; }
+/** Converts a value *delta* (e.g. the min-gap between thumbs) to px — independent of the range floor. */
+function deltaToPx(delta: number, tw: number, min: number, max: number) { return (delta / (max - min)) * tw; }
+function pxToVal(px: number, tw: number, min: number, max: number, step: number) {
+  if (tw === 0) return min;
+  return min + Math.round(Math.max(0, Math.min(px / tw, 1)) * (max - min) / step) * step;
 }
 
 function fmtVal(v: number, currency: string, max: number): string {
@@ -27,6 +29,7 @@ type Props = {
   maxVal: number;
   onMinChange: (v: number) => void;
   onMaxChange: (v: number) => void;
+  min?: number;
   max?: number;
   step?: number;
   minGap?: number;
@@ -35,7 +38,7 @@ type Props = {
 
 export function RangeSlider({
   minVal, maxVal, onMinChange, onMaxChange,
-  max = DEFAULT_MAX, step = DEFAULT_STEP, minGap = DEFAULT_GAP, currency = 'Rs',
+  min = 0, max = DEFAULT_MAX, step = DEFAULT_STEP, minGap = DEFAULT_GAP, currency = 'Rs',
 }: Props) {
   const C = useAppColors();
   const [dispMin, setDispMin] = useState(minVal);
@@ -51,6 +54,7 @@ export function RangeSlider({
   const dragMax      = useRef(false);
   const onMinRef     = useRef(onMinChange);
   const onMaxRef     = useRef(onMaxChange);
+  const minRef       = useRef(min);
   const maxRef       = useRef(max);
   const stepRef      = useRef(step);
   const minGapRef    = useRef(minGap);
@@ -60,6 +64,7 @@ export function RangeSlider({
   trackWRef.current  = trackW;
   onMinRef.current   = onMinChange;
   onMaxRef.current   = onMaxChange;
+  minRef.current     = min;
   maxRef.current     = max;
   stepRef.current    = step;
   minGapRef.current  = minGap;
@@ -74,14 +79,15 @@ export function RangeSlider({
     onShouldBlockNativeResponder: () => true,
     onPanResponderGrant: () => {
       dragMin.current = true;
-      startMinPx.current = valToPx(dispMinRef.current, trackWRef.current, maxRef.current);
+      startMinPx.current = valToPx(dispMinRef.current, trackWRef.current, minRef.current, maxRef.current);
     },
     onPanResponderMove: (_, g) => {
       const tw = trackWRef.current;
+      const minV = minRef.current;
       const maxV = maxRef.current;
-      const maxAllowed = valToPx(dispMaxRef.current, tw, maxV) - valToPx(minGapRef.current, tw, maxV);
+      const maxAllowed = valToPx(dispMaxRef.current, tw, minV, maxV) - deltaToPx(minGapRef.current, tw, minV, maxV);
       const clamped = Math.max(0, Math.min(startMinPx.current + g.dx, maxAllowed));
-      setDispMin(pxToVal(clamped, tw, maxV, stepRef.current));
+      setDispMin(pxToVal(clamped, tw, minV, maxV, stepRef.current));
     },
     onPanResponderRelease: ()   => { dragMin.current = false; onMinRef.current(dispMinRef.current); },
     onPanResponderTerminate: () => { dragMin.current = false; onMinRef.current(dispMinRef.current); },
@@ -94,27 +100,29 @@ export function RangeSlider({
     onShouldBlockNativeResponder: () => true,
     onPanResponderGrant: () => {
       dragMax.current = true;
-      startMaxPx.current = valToPx(dispMaxRef.current, trackWRef.current, maxRef.current);
+      startMaxPx.current = valToPx(dispMaxRef.current, trackWRef.current, minRef.current, maxRef.current);
     },
     onPanResponderMove: (_, g) => {
       const tw = trackWRef.current;
+      const minV = minRef.current;
       const maxV = maxRef.current;
-      const minAllowed = valToPx(dispMinRef.current, tw, maxV) + valToPx(minGapRef.current, tw, maxV);
+      const minAllowed = valToPx(dispMinRef.current, tw, minV, maxV) + deltaToPx(minGapRef.current, tw, minV, maxV);
       const clamped = Math.max(minAllowed, Math.min(startMaxPx.current + g.dx, tw));
-      setDispMax(pxToVal(clamped, tw, maxV, stepRef.current));
+      setDispMax(pxToVal(clamped, tw, minV, maxV, stepRef.current));
     },
     onPanResponderRelease: ()   => { dragMax.current = false; onMaxRef.current(dispMaxRef.current); },
     onPanResponderTerminate: () => { dragMax.current = false; onMaxRef.current(dispMaxRef.current); },
   })).current;
 
-  const minPct = dispMin / max;
-  const maxPct = dispMax / max;
+  const minPct = (dispMin - min) / (max - min);
+  const maxPct = (dispMax - min) / (max - min);
 
-  const midLabel = currency === 'Rs' ? `Rs ${(max / 2 / 1000).toFixed(0)}K` : `${currency}${Math.round(max / 2).toLocaleString()}`;
+  const mid = (min + max) / 2;
+  const midLabel = currency === 'Rs' ? fmtVal(mid, currency, max) : `${currency}${Math.round(mid).toLocaleString()}`;
   const maxLabel = currency === 'Rs'
-    ? (max >= 100000 ? `Rs ${(max / 100000).toFixed(1)}L` : `Rs ${(max / 1000).toFixed(0)}K`)
+    ? fmtVal(max, currency, max)
     : `${currency}${max.toLocaleString()}+`;
-  const minLabel = currency === 'Rs' ? `Rs ${step}` : `${currency}0`;
+  const minLabel = currency === 'Rs' ? fmtVal(min, currency, max) : `${currency}${min.toLocaleString()}`;
 
   return (
     <View style={styles.wrap}>

@@ -545,7 +545,7 @@ const styles = StyleSheet.create({
   headerMiddle:   { flex: 1, alignItems: 'center', gap: 2 },
   heading:        { fontSize: 20, fontFamily: F.bold, color: '#fff', lineHeight: 24 },
   headingSub:     { fontSize: 12, fontFamily: F.regular },
-  countTxt:       { fontSize: 12, fontFamily: F.semibold, paddingHorizontal: 16, marginTop: 6, marginBottom: 2 },
+  countTxt:       { fontSize: 12, fontFamily: F.semibold, paddingHorizontal: 16, marginTop: 6, marginBottom: 2, textAlign: 'right' },
   favLink:        { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(255,255,255,0.22)', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 6 },
   favLinkText:    { fontSize: 12, color: '#fff', fontFamily: F.bold },
 

@@ -10,7 +10,7 @@ export type BudgetPreset = { key: string; min: number; max: number; label: strin
 // filter in the app (budget, deadline, …), so opening a filter sheet doesn't
 // always mean staring at a full slider before you can do anything.
 export function BudgetRangePicker({
-  visible, presets, min, max, onChange, sliderMax, step = 10, currency = 'Rs', customLabel,
+  visible, presets, min, max, onChange, sliderMin = 0, sliderMax, step = 10, currency = 'Rs', customLabel,
 }: {
   /** Pass the sheet's own `visible` prop so a stale "custom open" flag from
    *  the previous visit doesn't linger once the sheet is reopened. */
@@ -19,6 +19,8 @@ export function BudgetRangePicker({
   min: number;
   max: number;
   onChange: (min: number, max: number) => void;
+  /** Floor of the underlying slider (not to be confused with `min`, the currently selected value). Defaults to 0. */
+  sliderMin?: number;
   sliderMax: number;
   step?: number;
   currency?: string;
@@ -60,6 +62,7 @@ export function BudgetRangePicker({
             onMinChange={(v) => onChange(v, max)}
             onMaxChange={(v) => onChange(min, v)}
             currency={currency}
+            min={sliderMin}
             max={sliderMax}
             step={step}
           />

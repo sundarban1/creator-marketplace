@@ -114,8 +114,8 @@ export interface ApiConversation {
   lastMessageAt?:  string | null;
   createdAt:      string;
   unreadCount:    number;
-  creator?:       { fullName: string; avatarUrl: string | null };
-  business?:      { businessName: string; logoUrl: string | null };
+  creator?:       { fullName: string; avatarUrl: string | null; userId?: string };
+  business?:      { businessName: string; logoUrl: string | null; userId?: string };
   campaign?:      { title: string } | null;
   messages:       ApiMessage[];
 }

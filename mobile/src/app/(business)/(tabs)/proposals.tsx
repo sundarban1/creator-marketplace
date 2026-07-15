@@ -95,7 +95,7 @@ function buildCampaignCards(proposals: Proposal[]): CampaignCard[] {
 // agrees with the timeline (workStatus alone isn't enough — APPROVED needs
 // paymentStatus to tell "awaiting release" from "released" from "completed").
 function workspaceBtnConfig(ws: WS | null, paymentStatus: PS, t: TFn) {
-  if (ws === 'COMPLETED') return { label: t('proposal.business.workspaceCompletedLabel'), sub: t('proposal.business.workspaceCompletedSub'), color: '#16A34A', icon: 'checkmark-done-circle' as const };
+  if (ws === 'COMPLETED') return { label: t('proposal.business.workspacePaymentReleasedLabel'), sub: t('proposal.business.workspacePaymentReleasedSub'), color: '#0EA5E9', icon: 'cash' as const };
   if (ws === 'APPROVED' && paymentStatus === 'RELEASED')
                           return { label: t('proposal.business.workspacePaymentReleasedLabel'), sub: t('proposal.business.workspacePaymentReleasedSub'), color: '#0EA5E9', icon: 'cash' as const };
   if (ws === 'APPROVED') return { label: t('proposal.business.workspaceAwaitingReleaseLabel'), sub: t('proposal.business.workspaceAwaitingReleaseSub'), color: '#EA580C', icon: 'hourglass-outline' as const };

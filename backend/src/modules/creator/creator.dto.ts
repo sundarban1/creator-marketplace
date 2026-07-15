@@ -4,6 +4,7 @@ import { isCreatorFullyVerified } from '../../utils/verification';
 export interface SocialAccountDto {
   id: string;
   creatorProfileId: string;
+  businessProfileId: string | null;
   platform: string;
   profileUrl: string;
   followers: number;
@@ -90,11 +91,16 @@ export interface CreatorListItemDto {
   fullyVerified: boolean;
   socialAccounts: Array<{ platform: string; followers: number }>;
   distanceKm?: number;
+  // Only populated on the "recommended creators" path (see getRecommendedForCampaign) —
+  // undefined everywhere else (explore/search doesn't compute these per-row).
+  averageRating?: number;
+  completionRate?: number;
 }
 
 type RawSocialAccount = {
   id: string;
-  creatorProfileId: string;
+  creatorProfileId: string | null;
+  businessProfileId?: string | null;
   platform: string;
   profileUrl: string;
   followers: number;
@@ -108,7 +114,8 @@ type RawSocialAccount = {
 export function toSocialAccountDto(a: RawSocialAccount): SocialAccountDto {
   return {
     id:               a.id,
-    creatorProfileId: a.creatorProfileId,
+    creatorProfileId: a.creatorProfileId ?? '',
+    businessProfileId: a.businessProfileId ?? null,
     platform:         a.platform,
     profileUrl:       a.profileUrl,
     followers:        a.followers,
@@ -229,6 +236,8 @@ type RawCreatorListItem = {
   citizenshipStatus: string;
   socialAccounts: Array<{ platform: string; followers: number }>;
   distanceKm?: number;
+  averageRating?: number;
+  completionRate?: number;
   user: { isEmailVerified: boolean; isPhoneVerified: boolean } | null;
 };
 
@@ -245,5 +254,7 @@ export function toCreatorListItemDto(p: RawCreatorListItem): CreatorListItemDto 
     socialAccounts: p.socialAccounts,
   };
   if (p.distanceKm != null) dto.distanceKm = Math.round(p.distanceKm * 10) / 10;
+  if (p.averageRating != null) dto.averageRating = Math.round(p.averageRating * 10) / 10;
+  if (p.completionRate != null) dto.completionRate = Math.round(p.completionRate * 100);
   return dto;
 }
