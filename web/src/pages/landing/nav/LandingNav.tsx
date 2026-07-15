@@ -5,17 +5,15 @@ import { NAV_LINKS } from '../constants';
 import { useLenisScroll } from '../hooks/useLenis';
 import { useLandingLanguage } from '../context/LanguageContext';
 
-function LanguageSwitch() {
+function LanguageSwitch({ dark = false }: { dark?: boolean }) {
   const { lang, setLang } = useLandingLanguage();
   return (
-    <div className="flex items-center rounded-full bg-gray-100 p-0.5 text-xs font-bold">
+    <div className={`flex items-center gap-3 text-xs font-semibold uppercase tracking-wide ${dark ? 'text-ink/90' : 'text-white/70'}`}>
       {(['en', 'ne'] as const).map((l) => (
         <button
           key={l}
           onClick={() => setLang(l)}
-          className={`rounded-full px-2.5 py-1.5 transition-colors ${
-            lang === l ? 'bg-ink text-white' : 'text-ink-soft hover:text-ink'
-          }`}
+          className={lang === l ? (dark ? 'text-ink' : 'text-white') + ' underline underline-offset-4' : 'opacity-60 hover:opacity-100'}
         >
           {l === 'en' ? 'EN' : 'ने'}
         </button>
@@ -48,70 +46,68 @@ export function LandingNav() {
 
   return (
     <>
-      <header className="fixed left-0 right-0 top-0 z-50 px-4 pt-4 md:px-6 md:pt-5">
-        <div className="mx-auto flex max-w-6xl items-center justify-between">
-          <button onClick={() => go('hero')} className="flex items-center rounded-full bg-white/90 py-2 pl-3 pr-4 shadow-sm ring-1 ring-black/5 backdrop-blur-md">
+      <motion.header
+        initial={false}
+        animate={{
+          backgroundColor: scrolled ? 'rgba(251,249,245,0.92)' : 'rgba(251,249,245,0)',
+          borderColor: scrolled ? 'rgba(20,17,16,0.1)' : 'rgba(20,17,16,0)',
+        }}
+        className="fixed left-0 right-0 top-0 z-50 border-b backdrop-blur-md"
+      >
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-5">
+          <button onClick={() => go('hero')} className="flex items-center">
             <img src="/logo.png" alt="kolab" className="h-6 w-auto object-contain" />
           </button>
 
-          <motion.nav
-            initial={false}
-            animate={{ boxShadow: scrolled ? '0 8px 30px rgba(15,23,42,0.1)' : '0 4px 16px rgba(15,23,42,0.04)' }}
-            className="hidden items-center gap-1 rounded-full bg-white/80 p-2 ring-1 ring-black/5 backdrop-blur-md lg:flex"
-          >
+          <nav className="hidden items-center gap-8 lg:flex">
             {NAV_LINKS.map((l) => (
               <button
                 key={l.id}
                 onClick={() => go(l.id)}
-                className="rounded-full px-4 py-2 text-sm font-medium text-ink-soft transition-colors hover:bg-brand-indigo/5 hover:text-brand-indigo"
+                className="text-xs font-semibold uppercase tracking-wide text-ink-soft transition-colors hover:text-ink"
               >
                 {d.nav.links[l.key]}
               </button>
             ))}
-          </motion.nav>
+          </nav>
 
-          <div className="hidden items-center gap-3 lg:flex">
-            <LanguageSwitch />
+          <div className="hidden items-center gap-6 lg:flex">
+            <LanguageSwitch dark />
             <button
               onClick={() => go('contact')}
-              className="shine-hover rounded-full bg-gradient-to-r from-ink to-ink/90 px-5 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg"
+              className="rounded-md bg-gradient-to-r from-violet to-brand-orange px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white transition-opacity hover:opacity-90"
             >
               {d.nav.cta}
             </button>
           </div>
 
-          <button
-            onClick={() => setOpen((v) => !v)}
-            aria-label="Toggle menu"
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-ink text-white lg:hidden"
-          >
-            {open ? <X size={18} /> : <Menu size={18} />}
+          <button onClick={() => setOpen((v) => !v)} aria-label="Toggle menu" className="text-ink lg:hidden">
+            {open ? <X size={22} /> : <Menu size={22} />}
           </button>
         </div>
-      </header>
+      </motion.header>
 
       <AnimatePresence>
         {open && (
           <motion.div
-            initial={{ clipPath: 'circle(4% at 92% 4%)' }}
-            animate={{ clipPath: 'circle(150% at 92% 4%)' }}
-            exit={{ clipPath: 'circle(4% at 92% 4%)' }}
-            transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed inset-0 z-40 flex flex-col justify-center bg-white px-8"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="fixed inset-0 z-40 flex flex-col justify-center bg-paper px-8"
           >
             <div className="flex flex-col gap-1">
-              {NAV_LINKS.map((l, i) => (
+              {NAV_LINKS.map((l) => (
                 <button
                   key={l.id}
                   onClick={() => go(l.id)}
-                  className="py-2 text-left text-4xl font-extrabold tracking-tight text-ink/90 hover:text-ink"
+                  className="py-2.5 text-left font-serif text-4xl italic text-ink/85 hover:text-ink"
                 >
-                  <span className="mr-3 align-super text-lg text-ink/30">0{i + 1}</span>
                   {d.nav.links[l.key]}
                 </button>
               ))}
-              <div className="mt-6">
-                <LanguageSwitch />
+              <div className="mt-8">
+                <LanguageSwitch dark />
               </div>
             </div>
           </motion.div>

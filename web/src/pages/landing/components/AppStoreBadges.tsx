@@ -13,16 +13,16 @@ interface AppStoreBadgesProps {
 export function AppStoreBadges({ variant = 'dark', className = '' }: AppStoreBadgesProps) {
   const isDark = variant === 'dark';
   const badgeClass = isDark
-    ? 'bg-ink text-white hover:bg-ink/90'
-    : 'bg-white text-ink border border-ink/15 hover:border-ink/30';
+    ? 'bg-ink text-white hover:bg-ink/85'
+    : 'bg-transparent text-white border border-white/30 hover:border-white/60';
 
   return (
     <div className={`flex flex-wrap items-center justify-center gap-3 ${className}`}>
       <a
         href={APP_STORE_URL}
-        className={`shine-hover flex items-center gap-2.5 rounded-full px-5 py-3 text-sm font-bold shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg ${badgeClass}`}
+        className={`flex items-center gap-2.5 rounded-md px-5 py-3 text-sm font-semibold transition-colors ${badgeClass}`}
       >
-        <FaApple size={18} />
+        <FaApple size={17} />
         <span className="flex flex-col items-start leading-none">
           <span className="text-[9px] font-medium uppercase tracking-wide opacity-70">Download on the</span>
           <span>App Store</span>
@@ -30,9 +30,9 @@ export function AppStoreBadges({ variant = 'dark', className = '' }: AppStoreBad
       </a>
       <a
         href={PLAY_STORE_URL}
-        className={`shine-hover flex items-center gap-2.5 rounded-full px-5 py-3 text-sm font-bold shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg ${badgeClass}`}
+        className={`flex items-center gap-2.5 rounded-md px-5 py-3 text-sm font-semibold transition-colors ${badgeClass}`}
       >
-        <FaGooglePlay size={16} />
+        <FaGooglePlay size={15} />
         <span className="flex flex-col items-start leading-none">
           <span className="text-[9px] font-medium uppercase tracking-wide opacity-70">Get it on</span>
           <span>Google Play</span>

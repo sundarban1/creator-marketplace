@@ -3,32 +3,44 @@ import { fadeUp, stagger, VP } from '../lib/motion';
 import { SECTION_IDS } from '../constants';
 import { useCountUp } from '../hooks/useCountUp';
 import { useLandingLanguage } from '../context/LanguageContext';
+import type { LandingStats } from '../../../lib/api';
 
-function StatTile({ value, suffix, label, isLast }: { value: number; suffix: string; label: string; isLast: boolean }) {
+function StatTile({ value, label, isLast }: { value: number; label: string; isLast: boolean }) {
   const { ref, display } = useCountUp(value);
   return (
-    <motion.div ref={ref} variants={fadeUp} className={`relative text-center ${!isLast ? 'sm:after:absolute sm:after:right-[-1rem] sm:after:top-1/2 sm:after:h-10 sm:after:w-px sm:after:-translate-y-1/2 sm:after:bg-ink/10 sm:after:content-[""]' : ''}`}>
-      <div className="bg-gradient-to-br from-ink to-ink/70 bg-clip-text text-3xl font-extrabold text-transparent sm:text-4xl">
-        {display}{suffix}
+    <motion.div
+      ref={ref}
+      variants={fadeUp}
+      className={`px-6 py-8 text-center sm:text-left ${!isLast ? 'sm:border-r sm:border-ink/10' : ''}`}
+    >
+      <div className="bg-gradient-to-br from-ink to-violet-dark bg-clip-text font-serif text-4xl font-medium text-transparent sm:text-5xl">
+        {display}
       </div>
-      <div className="mt-1.5 text-sm font-medium text-ink-soft">{label}</div>
+      <div className="mt-2 text-sm text-ink-soft">{label}</div>
     </motion.div>
   );
 }
 
-export function TrustStats() {
+export function TrustStats({ stats }: { stats: LandingStats | null }) {
   const { d } = useLandingLanguage();
+
+  const values = [
+    stats?.totalCreators ?? d.trust.stats[0]!.fallback,
+    stats?.totalBusinesses ?? d.trust.stats[1]!.fallback,
+    stats?.categories.length ?? d.trust.stats[2]!.fallback,
+  ];
+
   return (
-    <section id={SECTION_IDS.trust} className="border-y border-ink/5 bg-gradient-to-b from-gray-50/80 to-gray-50/40 py-16">
+    <section id={SECTION_IDS.trust} className="border-y border-ink/10 bg-paper">
       <motion.div
         initial="hidden"
         whileInView="show"
         viewport={VP}
         variants={stagger()}
-        className="mx-auto grid max-w-4xl grid-cols-2 gap-y-8 px-5 sm:grid-cols-4 sm:gap-x-8"
+        className="mx-auto grid max-w-3xl grid-cols-1 sm:grid-cols-3"
       >
         {d.trust.stats.map((s, i) => (
-          <StatTile key={s.label} value={s.value} suffix={s.suffix} label={s.label} isLast={i === d.trust.stats.length - 1} />
+          <StatTile key={i} value={values[i]!} label={s.label} isLast={i === d.trust.stats.length - 1} />
         ))}
       </motion.div>
     </section>

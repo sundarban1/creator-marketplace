@@ -23,10 +23,9 @@ export const ne: LandingDict = {
 
   trust: {
     stats: [
-      { value: 5000, suffix: '+', label: 'क्रिएटरहरू' },
-      { value: 300, suffix: '+', label: 'ब्रान्डहरू' },
-      { value: 8000, suffix: '+', label: 'सम्पन्न क्याम्पेनहरू' },
-      { value: 25, suffix: '+', label: 'नेपालभरका शहरहरू' },
+      { fallback: 5000, label: 'क्रिएटरहरू' },
+      { fallback: 300, label: 'ब्रान्डहरू' },
+      { fallback: 12, label: 'श्रेणीहरू' },
     ],
   },
 

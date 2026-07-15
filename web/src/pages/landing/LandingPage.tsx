@@ -1,4 +1,5 @@
 import { LenisProvider } from './hooks/useLenis';
+import { useLandingStats } from './hooks/useLandingStats';
 import { LandingLanguageProvider } from './context/LanguageContext';
 import { LandingNav } from './nav/LandingNav';
 import { LandingFooter } from './nav/LandingFooter';
@@ -13,14 +14,16 @@ import { Stories } from './sections/Stories';
 import { FinalCTA } from './sections/FinalCTA';
 
 function LandingPageInner() {
+  const stats = useLandingStats();
+
   return (
     <div className="min-h-screen overflow-x-hidden bg-white font-display">
       <LandingNav />
       <Hero />
-      <TrustStats />
+      <TrustStats stats={stats} />
       <HowItWorks />
       <Audience />
-      <Categories />
+      <Categories stats={stats} />
       <Partners />
       <Security />
       <Stories />

@@ -20,11 +20,11 @@ export const en = {
   },
 
   trust: {
+    // fallback is shown only until the real /api/public/landing-stats count loads
     stats: [
-      { value: 5000, suffix: '+', label: 'Creators' },
-      { value: 300, suffix: '+', label: 'Brands' },
-      { value: 8000, suffix: '+', label: 'Campaigns completed' },
-      { value: 25, suffix: '+', label: 'Cities across Nepal' },
+      { fallback: 5000, label: 'Creators' },
+      { fallback: 300, label: 'Brands' },
+      { fallback: 12, label: 'Categories' },
     ],
   },
 

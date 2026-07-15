@@ -151,6 +151,12 @@ export interface ApiCategory {
   itemCount?: number;
 }
 
+export interface LandingStats {
+  totalCreators: number;
+  totalBusinesses: number;
+  categories: { id: string; name: string }[];
+}
+
 export interface ApiPlatform {
   id: string;
   icon: string;
@@ -667,5 +673,10 @@ export const api = {
 
     togglePublish: (id: string, published: boolean) =>
       request<LegalSection>('PATCH', `/api/legal/${id}/publish`, { published }),
+  },
+
+  public: {
+    landingStats: () =>
+      request<LandingStats>('GET', '/api/public/landing-stats'),
   },
 };

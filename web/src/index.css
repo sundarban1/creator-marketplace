@@ -5,10 +5,20 @@
   --color-brand-indigo-dark: #3730A3;
   --color-brand-orange: #F97316;
 
-  /* Landing page only — admin dashboard keeps the default font. */
-  --color-ink: #0F172A;
-  --color-ink-soft: #64748B;
+  /* Landing page only — editorial palette. Admin dashboard is untouched and
+     keeps the tokens above + its default font. --color-violet is an exact
+     match of the logo's purple gradient stop (see public/logo.svg's #kp
+     gradient, 7B5CF5->5B2ED6) — paired with brand-orange (already close to
+     the logo's #F9A24B->EF7220 orange) as the landing page's two accent
+     colors, used deliberately rather than as an everywhere-gradient. */
+  --color-ink: #141110;
+  --color-ink-soft: #6B6560;
+  --color-paper: #FBF9F5;
+  --color-paper-dim: #F3F0EA;
+  --color-violet: #7B5CF5;
+  --color-violet-dark: #5B2ED6;
   --font-display: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Fraunces", ui-serif, Georgia, serif;
 }
 
 * {
