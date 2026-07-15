@@ -73,12 +73,6 @@ export function LandingNav() {
 
           <div className="hidden items-center gap-6 lg:flex">
             <LanguageSwitch dark />
-            <button
-              onClick={() => go('contact')}
-              className="rounded-md bg-gradient-to-r from-violet to-brand-orange px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white transition-opacity hover:opacity-90"
-            >
-              {d.nav.cta}
-            </button>
           </div>
 
           <button onClick={() => setOpen((v) => !v)} aria-label="Toggle menu" className="text-ink lg:hidden">

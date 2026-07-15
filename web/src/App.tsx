@@ -19,6 +19,7 @@ import { Settings } from './pages/Settings';
 import { HelpCenter } from './pages/HelpCenter';
 import { FAQManager } from './pages/FAQManager';
 import { SupportInbox } from './pages/SupportInbox';
+import { GetInTouch } from './pages/GetInTouch';
 import { LegalEditor } from './pages/LegalEditor';
 import { Conversations } from './pages/Conversations';
 import { Notifications } from './pages/Notifications';
@@ -75,6 +76,7 @@ export default function App() {
                 <Route path="/help-center" element={<HelpCenter />} />
                 <Route path="/faqs" element={<FAQManager />} />
                 <Route path="/support-inbox" element={<SupportInbox />} />
+                <Route path="/get-in-touch" element={<GetInTouch />} />
                 <Route path="/legal"          element={<LegalEditor />} />
                 <Route path="/conversations" element={<Conversations />} />
                 <Route path="/notifications" element={<Notifications />} />

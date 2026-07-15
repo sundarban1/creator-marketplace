@@ -26,7 +26,7 @@ export function HowItWorks() {
           whileInView="show"
           viewport={VP}
           variants={stagger()}
-          className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4"
+          className="grid gap-5 grid-cols-2 sm:grid-cols-4"
         >
           {d.how.steps.map((step, i) => {
             const Icon = ICONS[i] ?? FaUserPlus;
@@ -45,10 +45,7 @@ export function HowItWorks() {
                 >
                   <Icon size={18} />
                 </span>
-                <div className={`mt-4 font-serif text-sm italic ${accent === 'violet' ? 'text-violet' : 'text-brand-orange'}`}>
-                  {String(i + 1).padStart(2, '0')}
-                </div>
-                <h3 className="mt-1 text-lg font-bold text-ink">{step.title}</h3>
+                <h3 className="mt-4 text-lg font-bold text-ink">{step.title}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-ink-soft">{step.desc}</p>
               </motion.div>
             );

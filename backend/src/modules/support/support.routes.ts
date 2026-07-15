@@ -9,7 +9,7 @@ import { env } from '../../config/env';
 import prisma from '../../prisma';
 import { notificationService } from '../notifications/notification.service';
 
-const ADMIN_EMAIL = env.ADMIN_EMAIL ?? env.EMAIL_USERNAME ?? 'admin@creatormarket.com';
+const ADMIN_EMAIL = env.ADMIN_EMAIL ?? env.EMAIL_USERNAME ?? 'sundarban007@gmail.com';
 
 const router = Router();
 
@@ -116,8 +116,9 @@ router.get('/contacts', authenticate, authorize(Role.ADMIN), async (req: Request
     const page  = Math.max(1, parseInt(req.query['page'] as string) || 1);
     const limit = Math.min(100, parseInt(req.query['limit'] as string) || 20);
     const status = req.query['status'] as string | undefined;
+    const guestOnly = req.query['guestOnly'] === 'true';
 
-    const where = status ? { status } : {};
+    const where = { ...(status ? { status } : {}), ...(guestOnly ? { userId: null } : {}) };
     const [items, total] = await Promise.all([
       prisma.supportRequest.findMany({
         where,

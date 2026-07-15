@@ -2,7 +2,6 @@ import { motion } from 'framer-motion';
 import { fadeUp, stagger, VP } from '../lib/motion';
 import { SECTION_IDS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
-import { AppStoreBadges } from '../components/AppStoreBadges';
 
 export function Audience() {
   const { d } = useLandingLanguage();
@@ -35,14 +34,20 @@ export function Audience() {
             <motion.div key={i} variants={fadeUp} className={i === 1 ? 'md:pl-12' : ''}>
               <span className={`font-serif text-sm italic ${i === 0 ? 'text-violet' : 'text-brand-orange'}`}>{card.title}</span>
               <p className="mt-3 text-xl font-medium leading-snug text-white">{card.sub}</p>
-              <ul className="mt-6 flex flex-col gap-3 border-t border-white/10 pt-6">
+              <ul className="mt-6 flex flex-col gap-3.5 border-t border-white/10 pt-6">
                 {card.points.map((p, j) => (
-                  <li key={j} className="text-sm leading-relaxed text-white/60">{p}</li>
+                  <li key={j} className="flex items-start gap-3 text-sm leading-relaxed text-white/60">
+                    <span
+                      className={`mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white ${
+                        i === 0 ? 'bg-violet' : 'bg-brand-orange'
+                      }`}
+                    >
+                      {j + 1}
+                    </span>
+                    {p}
+                  </li>
                 ))}
               </ul>
-              <div className="mt-8">
-                <AppStoreBadges variant="light" />
-              </div>
             </motion.div>
           ))}
         </motion.div>

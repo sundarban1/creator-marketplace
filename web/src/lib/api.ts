@@ -642,7 +642,7 @@ export const api = {
   },
 
   support: {
-    listContacts: (params?: { page?: number; limit?: number; status?: string }) =>
+    listContacts: (params?: { page?: number; limit?: number; status?: string; guestOnly?: boolean }) =>
       request<unknown[]>('GET', '/api/support/contacts', undefined, params as Record<string, string | number | undefined>),
 
     listReports: (params?: { page?: number; limit?: number; status?: string }) =>
