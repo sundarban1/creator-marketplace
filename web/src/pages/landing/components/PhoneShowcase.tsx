@@ -106,12 +106,12 @@ function ClothingScene() {
     >
       <div className="absolute inset-x-0 top-0 flex items-center px-4 pt-3">
         <Badge>
-          <Shirt size={11} />
-          Client shoot
+          <Mic size={11} />
+          Creator Pitching
         </Badge>
       </div>
       <div className="absolute inset-x-0 bottom-0 px-4 pb-4">
-        <p className="text-xs font-medium text-white">&ldquo;Presenting the new collection&rdquo;</p>
+        <p className="text-xs font-medium text-white">&ldquo;Hey Guys, Today we are checking out&hellip;&rdquo;</p>
         <p className="mt-0.5 text-[11px] text-white/70">Pesal &middot; Itahari, Nepal</p>
       </div>
     </SceneFrame>
