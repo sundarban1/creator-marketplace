@@ -17,7 +17,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useToast } from '@/components/Toast';
 import { creatorService } from '@/services/creator';
 import { useCategories } from '@/hooks/useCategories';
-import { F } from '@/utilities/constants';
+import { F, RADIUS } from '@/utilities/constants';
 
 const MAX = 5;
 
@@ -137,16 +137,16 @@ export default function EditCategoriesScreen() {
 const s = StyleSheet.create({
   container: { flex: 1 },
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  gradientTopBar: { overflow: 'hidden', borderBottomLeftRadius: 20, borderBottomRightRadius: 20 },
+  gradientTopBar: { overflow: 'hidden', borderBottomLeftRadius: RADIUS.lg, borderBottomRightRadius: RADIUS.lg },
   topBar:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
   topTitle:  { fontSize: 20, fontFamily: F.bold, lineHeight: 24 },
-  saveBtn:   { borderRadius: 10, paddingHorizontal: 16, paddingVertical: 8, minWidth: 56, alignItems: 'center' },
+  saveBtn:   { borderRadius: RADIUS.sm, paddingHorizontal: 16, paddingVertical: 8, minWidth: 56, minHeight: 40, alignItems: 'center', justifyContent: 'center' },
   saveBtnTxt:{ color: '#fff', fontSize: 14, fontFamily: F.bold },
   content:   { padding: 20, paddingBottom: 48 },
   hint:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   hintTxt:   { fontSize: 13, flex: 1, fontFamily: F.regular },
   counter:   { fontSize: 13, marginLeft: 8, fontFamily: F.bold },
   chips:     { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  chip:      { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1.5 },
+  chip:      { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 8, minHeight: 40, borderRadius: RADIUS.full, borderWidth: 1.5 },
   chipTxt:   { fontSize: 14, fontFamily: F.medium },
 });

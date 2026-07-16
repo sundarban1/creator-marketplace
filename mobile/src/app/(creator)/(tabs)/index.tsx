@@ -28,7 +28,7 @@ import { creatorService } from '@/services/creator';
 import { getSocket } from '@/lib/socket';
 import { storage } from '@/utilities/storage';
 import { getCurrentLocation, geocodeAddress, type LatLng } from '@/utilities/geolocation';
-import { ACCESS_TOKEN_KEY, F } from '@/utilities/constants';
+import { ACCESS_TOKEN_KEY, F, RADIUS, SHADOW } from '@/utilities/constants';
 import { TabColors } from '@/utilities/tabColors';
 import type { Campaign } from '@/types';
 
@@ -880,43 +880,43 @@ const styles = StyleSheet.create({
   scrollContent: { paddingBottom: 40 },
 
   // ── Header ──
-  gradientHeader: { borderBottomLeftRadius: 16, borderBottomRightRadius: 16, overflow: 'hidden' },
+  gradientHeader: { borderBottomLeftRadius: RADIUS.lg, borderBottomRightRadius: RADIUS.lg, overflow: 'hidden' },
 
   header:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 14 },
   headerLeft:   { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
   headerRight:  { flexDirection: 'row', alignItems: 'center', gap: 10 },
   menuBtn:      { padding: 0 },
-  menuBtnInner: { width: 38, height: 38, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center' },
+  menuBtnInner: { width: 38, height: 38, borderRadius: RADIUS.sm, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center' },
   greeting:     { fontSize: 12, marginBottom: 2, fontFamily: F.medium, color: 'rgba(255,255,255,0.75)' },
   brandName:    { fontSize: 20, fontFamily: F.bold, color: '#fff', maxWidth: 180, letterSpacing: -0.3 },
-  avatarCircle: { width: 44, height: 44, borderRadius: 22, shadowOpacity: 0.4, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
-  avatarClip:   { width: '100%', height: '100%', borderRadius: 22, overflow: 'hidden' },
+  avatarCircle: { width: 44, height: 44, borderRadius: RADIUS.full, shadowOpacity: 0.4, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
+  avatarClip:   { width: '100%', height: '100%', borderRadius: RADIUS.full, overflow: 'hidden' },
   avatarImage:  { width: '100%', height: '100%' },
   avatarFallback: { width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center' },
   avatarInitial:  { fontSize: 18, color: '#fff', fontFamily: F.extrabold },
 
   // ── Search ──
   searchRow: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 4 },
-  searchCard: { flexDirection: 'row', alignItems: 'center', borderRadius: 16, paddingHorizontal: 14, height: 52, borderWidth: 1.5 },
+  searchCard: { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.lg, paddingHorizontal: 14, height: 52, borderWidth: 1.5 },
   searchCardFocused: {
     borderColor: '#7C3AED', borderWidth: 2,
     shadowColor: '#7C3AED', shadowOpacity: 0.18, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 6,
   },
   searchIcon:      { marginRight: 8 },
   searchInput:     { flex: 1, fontSize: 14, fontFamily: F.regular },
-  filterBtn:       { width: 36, height: 36, borderRadius: 11, justifyContent: 'center', alignItems: 'center' },
-  filterCountBadge: { position: 'absolute', top: -4, right: -4, minWidth: 16, height: 16, borderRadius: 8, paddingHorizontal: 3, backgroundColor: '#EF4444', justifyContent: 'center', alignItems: 'center' },
+  filterBtn:       { width: 36, height: 36, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center' },
+  filterCountBadge: { position: 'absolute', top: -4, right: -4, minWidth: 16, height: 16, borderRadius: RADIUS.full, paddingHorizontal: 3, backgroundColor: '#EF4444', justifyContent: 'center', alignItems: 'center' },
   filterCountBadgeTxt: { fontSize: 9, fontFamily: F.extrabold, color: '#fff' },
 
   // ── Quick Actions ──
   quickActionsRow:  { flexDirection: 'row', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 4, gap: 10 },
-  quickAction:      { flex: 1, alignItems: 'center', borderRadius: 16, paddingVertical: 12, gap: 6, borderWidth: 1, shadowColor: '#000', shadowOpacity: 0.03, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 1 },
-  quickActionIcon:  { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+  quickAction:      { flex: 1, alignItems: 'center', borderRadius: RADIUS.lg, paddingVertical: 12, gap: 6, borderWidth: 1, ...SHADOW.card },
+  quickActionIcon:  { width: 40, height: 40, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center' },
   quickActionLabel: { fontSize: 11, fontFamily: F.medium, textAlign: 'center' },
 
   // ── Banner ──
-  banner:        { flexDirection: 'row', alignItems: 'center', borderRadius: 16, marginHorizontal: 20, marginTop: 14, marginBottom: 2, padding: 14, gap: 12, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2, borderLeftWidth: 4 },
-  bannerIconBox: { width: 38, height: 38, borderRadius: 11, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  banner:        { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.lg, marginHorizontal: 20, marginTop: 14, marginBottom: 2, padding: 14, gap: 12, ...SHADOW.card, borderLeftWidth: 4 },
+  bannerIconBox: { width: 38, height: 38, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   bannerText:    { flex: 1, gap: 2 },
   bannerTitle:   { fontSize: 13, fontFamily: F.semibold },
   bannerSub:     { fontSize: 12, fontFamily: F.regular, lineHeight: 17, opacity: 0.75 },
@@ -924,7 +924,7 @@ const styles = StyleSheet.create({
   bannerClose:   { position: 'absolute', top: 8, right: 8, padding: 4 },
 
   // ── Error ──
-  errorCard: { marginHorizontal: 20, marginBottom: 16, borderRadius: 10, padding: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  errorCard: { marginHorizontal: 20, marginBottom: 16, borderRadius: RADIUS.sm, padding: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   errorText:  { color: '#DC2626', fontSize: 13, flex: 1, fontFamily: F.medium },
   retryText:  { fontSize: 13, marginLeft: 12, fontFamily: F.bold },
 
@@ -937,9 +937,9 @@ const styles = StyleSheet.create({
   categoriesRow: { paddingHorizontal: 20, gap: 8, marginBottom: 0 },
   catPill: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
-    height: 38, borderRadius: 20, paddingHorizontal: 12,
+    height: 38, borderRadius: RADIUS.full, paddingHorizontal: 12,
     borderWidth: 1,
-    shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 2,
+    ...SHADOW.card,
   },
   catLabel: { fontSize: 12, fontFamily: F.semibold, lineHeight: 16 },
 
@@ -952,26 +952,26 @@ const styles = StyleSheet.create({
 
   // ── Featured ──
   featuredRow:       { paddingHorizontal: 20, gap: 16, marginBottom: 0 },
-  featuredEmpty:     { marginHorizontal: 20, marginBottom: 0, borderRadius: 14, borderWidth: 1.5, borderStyle: 'dashed', padding: 24, alignItems: 'center', gap: 8 },
+  featuredEmpty:     { marginHorizontal: 20, marginBottom: 0, borderRadius: RADIUS.md, borderWidth: 1.5, borderStyle: 'dashed', padding: 24, alignItems: 'center', gap: 8 },
   featuredEmptyTitle:{ fontSize: 14, fontFamily: F.bold, textAlign: 'center' },
   featuredEmptySub:  { fontSize: 12, fontFamily: F.regular, textAlign: 'center', lineHeight: 18 },
   featuredLoadingMore: { width: 60, justifyContent: 'center', alignItems: 'center' },
 
   // ── Nearby ──
   nearbyTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 },
-  nearbyChip: { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5, flexShrink: 1 },
+  nearbyChip: { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1, borderRadius: RADIUS.full, paddingHorizontal: 10, paddingVertical: 5, flexShrink: 1 },
   nearbyChipText: { fontSize: 11, fontFamily: F.bold, flexShrink: 1 },
-  expandRadiusBtn: { borderRadius: 12, paddingHorizontal: 16, paddingVertical: 10, marginTop: 4 },
+  expandRadiusBtn: { borderRadius: RADIUS.md, paddingHorizontal: 16, paddingVertical: 10, minHeight: 40, justifyContent: 'center', alignItems: 'center', marginTop: 4 },
   expandRadiusBtnText: { color: '#fff', fontSize: 13, fontFamily: F.bold },
 
   // ── Attention banner ──
-  attentionBanner: { flexDirection: 'row', alignItems: 'center', borderRadius: 14, marginHorizontal: 20, marginTop: 12, padding: 14, gap: 12, backgroundColor: '#FFFBEB', borderWidth: 1, borderColor: '#FDE68A' },
-  attentionIconWrap: { width: 36, height: 36, borderRadius: 10, backgroundColor: '#FEF3C7', justifyContent: 'center', alignItems: 'center' },
+  attentionBanner: { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.lg, marginHorizontal: 20, marginTop: 12, padding: 14, gap: 12, backgroundColor: '#FFFBEB', borderWidth: 1, borderColor: '#FDE68A' },
+  attentionIconWrap: { width: 36, height: 36, borderRadius: RADIUS.sm, backgroundColor: '#FEF3C7', justifyContent: 'center', alignItems: 'center' },
   attentionTitle: { fontSize: 13, color: '#92400E', fontFamily: F.bold },
   attentionSub: { fontSize: 11, color: '#B45309', fontFamily: F.regular, marginTop: 1 },
 
   // ── Tab filter ──
-  filterTabsWrap: { marginTop: 8, marginBottom: 4, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
+  filterTabsWrap: { marginTop: 8, marginBottom: 4, ...SHADOW.card },
 
   // ── Campaign list ──
   eventSeparator: { height: 6 },

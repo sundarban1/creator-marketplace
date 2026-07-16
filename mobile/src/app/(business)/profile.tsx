@@ -21,7 +21,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { profileService, type BusinessProfile } from '@/services/profile';
 import { campaignService } from '@/services/campaign';
-import { F } from '@/utilities/constants';
+import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { pickAndUpload } from '@/utilities/uploadImage';
 import { formatPhoneDisplay } from '@/utilities/phone';
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
@@ -310,14 +310,14 @@ const styles = StyleSheet.create({
   center:           { flex: 1, alignItems: 'center', justifyContent: 'center' },
   navBar:           { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 8, borderBottomWidth: 1 },
   navTitle:         { flex: 1, fontSize: 15, textAlign: 'center', fontFamily: F.bold },
-  editNavBtn:       { borderRadius: 10, paddingHorizontal: 14, paddingVertical: 7 },
+  editNavBtn:       { borderRadius: RADIUS.sm, paddingHorizontal: 14, paddingVertical: 7 },
   editNavText:      { fontSize: 13, fontFamily: F.bold },
 
-  cameraBadge:      { position: 'absolute', bottom: 2, right: 2, width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#fff' },
+  cameraBadge:      { position: 'absolute', bottom: 2, right: 2, width: 28, height: 28, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#fff' },
 
   hero:             { paddingHorizontal: 20, paddingTop: 28, paddingBottom: 32, overflow: 'hidden' },
-  heroBubble1:      { position: 'absolute', width: 220, height: 220, borderRadius: 110, backgroundColor: 'rgba(255,255,255,0.07)', top: -70, right: -50 },
-  heroBubble2:      { position: 'absolute', width: 140, height: 140, borderRadius: 70, backgroundColor: 'rgba(255,255,255,0.06)', bottom: -30, left: -30 },
+  heroBubble1:      { position: 'absolute', width: 220, height: 220, borderRadius: RADIUS.full, backgroundColor: 'rgba(255,255,255,0.07)', top: -70, right: -50 },
+  heroBubble2:      { position: 'absolute', width: 140, height: 140, borderRadius: RADIUS.full, backgroundColor: 'rgba(255,255,255,0.06)', bottom: -30, left: -30 },
   heroInner:        { flexDirection: 'row', alignItems: 'flex-start', gap: 16 },
   heroMeta:         { flex: 1, paddingTop: 4 },
   heroNameRow:      { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' },
@@ -329,33 +329,33 @@ const styles = StyleSheet.create({
   heroStatDivider:  { width: 1, height: 28, backgroundColor: 'rgba(255,255,255,0.25)' },
 
   body:             { padding: 16, gap: 12 },
-  editCta:          { flexDirection: 'row', alignItems: 'center', borderRadius: 16, padding: 14, gap: 12, borderWidth: 1 },
+  editCta:          { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.lg, padding: 14, gap: 12, borderWidth: 1, ...SHADOW.card },
   editCtaText:      { flex: 1 },
   editCtaTitle:     { fontSize: 14, fontFamily: F.bold },
   editCtaSub:       { fontSize: 12, marginTop: 2, fontFamily: F.regular },
 
-  infoCard:         { borderRadius: 16, padding: 16, gap: 10 },
+  infoCard:         { borderRadius: RADIUS.lg, padding: 16, gap: 10, ...SHADOW.card },
   infoHeader:       { flexDirection: 'row', alignItems: 'center', gap: 8 },
   infoTitle:        { fontSize: 14, fontFamily: F.bold },
   aboutText:        { fontSize: 14, lineHeight: 22, fontFamily: F.regular },
   contactRow:       { flexDirection: 'row', alignItems: 'center', gap: 8 },
   contactText:      { fontSize: 14, fontFamily: F.regular },
 
-  emptyField:       { borderRadius: 14, borderWidth: 1.5, borderStyle: 'dashed', padding: 16, alignItems: 'center' },
+  emptyField:       { borderRadius: RADIUS.md, borderWidth: 1.5, borderStyle: 'dashed', padding: 16, alignItems: 'center' },
   emptyFieldText:   { fontSize: 13, fontFamily: F.medium },
 
-  websiteCard:      { flexDirection: 'row', alignItems: 'center', borderRadius: 16, padding: 14, gap: 12, borderWidth: 1 },
-  websiteIconBox:   { width: 44, height: 44, borderRadius: 12, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  websiteCard:      { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.lg, padding: 14, gap: 12, borderWidth: 1, ...SHADOW.card },
+  websiteIconBox:   { width: 44, height: 44, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   websiteTextWrap:  { flex: 1 },
   websiteLabel:     { fontSize: 10, textTransform: 'uppercase', marginBottom: 2, fontFamily: F.bold },
   websiteUrl:       { fontSize: 13, fontFamily: F.semibold },
 
   categoriesWrap:   { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  categoryChip:     { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 6 },
+  categoryChip:     { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: RADIUS.full, paddingHorizontal: 12, paddingVertical: 6 },
   categoryChipText: { fontSize: 12, fontFamily: F.bold },
 
   sectionDivider:   { height: 1, marginVertical: 4 },
   quickRow:         { flexDirection: 'row', gap: 10 },
-  quickBtn:         { flex: 1, borderRadius: 14, paddingVertical: 14, alignItems: 'center', gap: 6, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
+  quickBtn:         { flex: 1, borderRadius: RADIUS.md, paddingVertical: 14, alignItems: 'center', gap: 6, ...SHADOW.card },
   quickLabel:       { fontSize: 11, fontFamily: F.semibold },
 });

@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppColors } from '@/context/ThemeContext';
-import { F } from '@/utilities/constants';
+import { F, RADIUS } from '@/utilities/constants';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
@@ -74,7 +74,7 @@ export function FilterChipGroup({ options, selected, onToggle, multi = false, eq
 
 const s = StyleSheet.create({
   row:     { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  chip:    { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 13, paddingVertical: 9, borderRadius: 20, borderWidth: 1.5 },
+  chip:    { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 9, borderRadius: RADIUS.full, borderWidth: 1.5 },
   chipFlex:{ flex: 1, justifyContent: 'center' },
   chipTxt: { fontSize: 13, fontFamily: F.medium },
 });

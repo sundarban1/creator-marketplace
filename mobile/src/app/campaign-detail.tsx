@@ -26,7 +26,7 @@ import { usePlatforms } from '@/hooks/usePlatforms';
 import { PlacesAutocompleteInput } from '@/components/PlacesAutocompleteInput';
 import { campaignService } from '@/services/campaign';
 import type { Campaign } from '@/types';
-import { F } from '@/utilities/constants';
+import { F, RADIUS, SHADOW } from '@/utilities/constants';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -90,7 +90,7 @@ function ChipGroup({
 }
 const cg = StyleSheet.create({
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { paddingHorizontal: 13, paddingVertical: 8, borderRadius: 20, borderWidth: 1.5 },
+  chip: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: RADIUS.full, borderWidth: 1.5 },
   txt:  { fontSize: 13 },
   err:  { fontSize: 12, color: ERROR_RED },
 });
@@ -202,7 +202,7 @@ const cal = StyleSheet.create({
   dayHdr: { flex: 1, textAlign: 'center', fontSize: 11, fontWeight: '600' },
   grid:   { flexDirection: 'row', flexWrap: 'wrap' },
   cell:   { width: '14.285%', aspectRatio: 1, justifyContent: 'center', alignItems: 'center' },
-  circle: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
+  circle: { width: 36, height: 36, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
   dayNum: { fontSize: 13, fontWeight: '500' },
 });
 
@@ -1052,7 +1052,7 @@ function ReqItem({ text, C }: { text: string; C: any }) {
 const s = StyleSheet.create({
   container: { flex: 1 },
   centered:  { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
-  goBackBtn: { borderRadius: 10, paddingHorizontal: 20, paddingVertical: 10, marginTop: 8 },
+  goBackBtn: { borderRadius: RADIUS.sm, paddingHorizontal: 20, paddingVertical: 10, marginTop: 8 },
   goBackBtnTxt: { color: '#fff', fontSize: 14, fontFamily: F.bold },
 
   gradientHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
@@ -1061,70 +1061,70 @@ const s = StyleSheet.create({
   scroll: { paddingBottom: 20 },
 
   hero:         { height: 180, justifyContent: 'center', alignItems: 'center', position: 'relative' },
-  heroBadge:    { position: 'absolute', top: 14, left: 16, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 },
-  heroNewBadge: { position: 'absolute', top: 14, right: 16, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 },
+  heroBadge:    { position: 'absolute', top: 14, left: 16, paddingHorizontal: 10, paddingVertical: 5, borderRadius: RADIUS.sm },
+  heroNewBadge: { position: 'absolute', top: 14, right: 16, paddingHorizontal: 10, paddingVertical: 5, borderRadius: RADIUS.sm },
   heroBadgeTxt: { fontSize: 10, color: '#fff', letterSpacing: 0.5, fontFamily: F.bold },
-  heroPosted:    { position: 'absolute', bottom: 12, left: 16, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
+  heroPosted:    { position: 'absolute', bottom: 12, left: 16, borderRadius: RADIUS.full, paddingHorizontal: 10, paddingVertical: 4 },
   heroPostedTxt: { fontSize: 11, color: '#fff', fontFamily: F.medium },
-  heroTypeBadge: { position: 'absolute', bottom: 12, right: 14, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
+  heroTypeBadge: { position: 'absolute', bottom: 12, right: 14, borderRadius: RADIUS.full, paddingHorizontal: 10, paddingVertical: 4 },
   heroTypeTxt:   { fontSize: 11, fontFamily: F.bold },
 
   titleBlock:    { paddingHorizontal: 20, paddingVertical: 16, gap: 10, borderBottomWidth: 1 },
   brandRow:      { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  brandAvatar:   { width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
+  brandAvatar:   { width: 28, height: 28, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
   brandAvatarTxt:{ fontSize: 12, color: '#fff', fontFamily: F.bold },
   brandName:     { fontSize: 14, fontFamily: F.semibold },
-  verifiedBadge: { width: 16, height: 16, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
-  platformTag:   { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
+  verifiedBadge: { width: 16, height: 16, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
+  platformTag:   { borderRadius: RADIUS.sm, paddingHorizontal: 10, paddingVertical: 4 },
   platformTagTxt:{ fontSize: 12, fontFamily: F.semibold },
   campaignTitle: { fontSize: 20, lineHeight: 26, fontFamily: F.bold },
   budgetRow:     { flexDirection: 'row', alignItems: 'center', gap: 10 },
   budget:        { fontSize: 22, fontFamily: F.bold },
-  typeBadge:     { borderRadius: 8, paddingHorizontal: 9, paddingVertical: 4, borderWidth: 1 },
+  typeBadge:     { borderRadius: RADIUS.sm, paddingHorizontal: 9, paddingVertical: 4, borderWidth: 1 },
   typeBadgeText: { fontSize: 12, fontFamily: F.bold },
-  proposalsBadge:{ borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
+  proposalsBadge:{ borderRadius: RADIUS.full, paddingHorizontal: 10, paddingVertical: 4 },
   proposalsTxt:  { fontSize: 12, fontFamily: F.semibold },
 
-  card:        { marginHorizontal: 16, marginTop: 12, borderRadius: 16, padding: 16, gap: 12, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
+  card:        { marginHorizontal: 16, marginTop: 12, borderRadius: RADIUS.lg, padding: 16, gap: 12, ...SHADOW.card },
   sectionLabel:{ fontSize: 13, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4, fontFamily: F.bold },
   templateRow: { flexDirection: 'row' },
-  templateBadge:{ borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
+  templateBadge:{ borderRadius: RADIUS.sm, paddingHorizontal: 12, paddingVertical: 6 },
   templateTxt: { fontSize: 13, fontFamily: F.bold },
   aiAlsoRelevant: { fontSize: 11, fontFamily: F.regular, marginTop: 6 },
   goalChips:   { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  goalChip:    { borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 },
+  goalChip:    { borderRadius: RADIUS.full, paddingHorizontal: 12, paddingVertical: 6 },
   goalChipTxt: { fontSize: 12, fontFamily: F.semibold },
   detailsGrid: { gap: 10 },
   detailRow:   { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  detailIcon:  { width: 36, height: 36, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
+  detailIcon:  { width: 36, height: 36, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center' },
   detailContent:{ flex: 1 },
   detailLabel: { fontSize: 11, fontFamily: F.medium },
   detailValue: { fontSize: 14, marginTop: 1, fontFamily: F.semibold },
   description: { fontSize: 15, lineHeight: 22, fontFamily: F.regular },
   reqItem:     { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingTop: 4 },
-  reqDot:      { width: 6, height: 6, borderRadius: 3, marginTop: 7, flexShrink: 0 },
+  reqDot:      { width: 6, height: 6, borderRadius: RADIUS.full, marginTop: 7, flexShrink: 0 },
   reqText:     { flex: 1, fontSize: 14, lineHeight: 20, fontFamily: F.regular },
 
   benefitsWrap:  { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  benefitChip:   { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 7 },
+  benefitChip:   { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: RADIUS.full, paddingHorizontal: 12, paddingVertical: 7 },
   benefitChipTxt:{ fontSize: 13, fontFamily: F.semibold },
 
-  ctaBar:        { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12, borderTopWidth: 1, gap: 16, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 12, shadowOffset: { width: 0, height: -3 }, elevation: 8 },
+  ctaBar:        { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12, borderTopWidth: 1, gap: 16, ...SHADOW.floating, shadowOffset: { width: 0, height: -6 } },
   ctaInfo:       { flex: 1 },
   ctaBudget:     { fontSize: 18, fontFamily: F.bold },
   ctaLabel:      { fontSize: 11, marginTop: 1, fontFamily: F.regular },
-  applyBtn:      { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 14, paddingHorizontal: 22, paddingVertical: 14, shadowOpacity: 0.4, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
+  applyBtn:      { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: RADIUS.md, paddingHorizontal: 22, paddingVertical: 15, ...SHADOW.raised },
   applyBtnTxt:   { color: '#fff', fontSize: 15, fontFamily: F.bold },
-  appliedBadge:  { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#ECFDF5', borderRadius: 14, paddingHorizontal: 20, paddingVertical: 14, borderWidth: 1.5, borderColor: '#A7F3D0' },
+  appliedBadge:  { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#ECFDF5', borderRadius: RADIUS.md, paddingHorizontal: 20, paddingVertical: 14, borderWidth: 1.5, borderColor: '#A7F3D0' },
   appliedBadgeTxt:{ fontSize: 15, color: '#059669', fontFamily: F.bold },
 
-  invitedCard:      { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#F0FDF4', borderRadius: 16, paddingHorizontal: 14, paddingVertical: 12, borderWidth: 1.5, borderColor: '#6EE7B7' },
-  invitedIconWrap:  { width: 44, height: 44, borderRadius: 22, backgroundColor: '#DCFCE7', justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  invitedCard:      { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#F0FDF4', borderRadius: RADIUS.lg, paddingHorizontal: 14, paddingVertical: 12, borderWidth: 1.5, borderColor: '#6EE7B7' },
+  invitedIconWrap:  { width: 44, height: 44, borderRadius: RADIUS.full, backgroundColor: '#DCFCE7', justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   invitedTextBlock: { flex: 1, gap: 2 },
   invitedTitle:     { fontSize: 15, color: '#065F46', fontFamily: F.bold },
   invitedSub:       { fontSize: 12, color: '#047857', fontFamily: F.regular, lineHeight: 17 },
 
-  toast:    { position: 'absolute', bottom: 100, left: 20, right: 20, borderRadius: 14, paddingHorizontal: 18, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 10 },
+  toast:    { position: 'absolute', bottom: 100, left: 20, right: 20, borderRadius: RADIUS.md, paddingHorizontal: 18, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', ...SHADOW.floating },
   toastTxt: { color: '#fff', fontSize: 14, flex: 1, fontFamily: F.bold },
 });
 
@@ -1132,8 +1132,8 @@ const em = StyleSheet.create({
   overlay:   { flex: 1, justifyContent: 'flex-end' },
   scrim:     { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.45)' },
   sheetWrap: { justifyContent: 'flex-end' },
-  sheet:     { borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 20, paddingBottom: 32, maxHeight: '92%' },
-  calSheet:  { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 40, gap: 16 },
+  sheet:     { borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl, paddingHorizontal: 20, paddingBottom: 32, maxHeight: '92%' },
+  calSheet:  { borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl, padding: 20, paddingBottom: 40, gap: 16 },
   handle:    { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginTop: 12, marginBottom: 16 },
 
   sheetHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
@@ -1146,29 +1146,29 @@ const em = StyleSheet.create({
   lockedNote: { fontSize: 11, marginTop: -8, marginBottom: 10, fontFamily: F.regular },
   label:      { fontSize: 13, marginBottom: 8, fontFamily: F.semibold },
   optional:   { fontSize: 12, fontFamily: F.regular },
-  input:      { borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14, height: 48, fontSize: 15, fontFamily: F.regular },
-  textarea:   { borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, minHeight: 80, fontFamily: F.regular },
+  input:      { borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 14, height: 50, fontSize: 15, fontFamily: F.regular },
+  textarea:   { borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, minHeight: 80, fontFamily: F.regular },
   errTxt:     { fontSize: 12, color: ERROR_RED, marginTop: 4, fontFamily: F.regular },
 
   budgetRow:      { flexDirection: 'row', alignItems: 'flex-start' },
   budgetDash:     { marginHorizontal: 10, marginTop: 14, fontSize: 16 },
-  currencyWrap:   { flexDirection: 'row', alignItems: 'center', borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 12, height: 48, gap: 4 },
+  currencyWrap:   { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 12, height: 50, gap: 4 },
   currencySymbol: { fontSize: 16, fontFamily: F.semibold },
   currencyInput:  { flex: 1, fontSize: 15, fontFamily: F.regular },
 
-  dateTrigger: { flexDirection: 'row', alignItems: 'center', borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14, height: 48, gap: 8 },
+  dateTrigger: { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 14, height: 50, gap: 8 },
   dateTxt:     { flex: 1, fontSize: 15, fontFamily: F.regular },
 
-  selectedBadge: { borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, marginBottom: 8 },
+  selectedBadge: { borderRadius: RADIUS.sm, paddingHorizontal: 12, paddingVertical: 8, marginBottom: 8 },
   selectedTxt:   { fontSize: 13, fontFamily: F.bold },
 
-  featuredToggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderRadius: 14, padding: 14, borderWidth: 1.5 },
+  featuredToggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderRadius: RADIUS.md, padding: 14, borderWidth: 1.5 },
   featuredLeft:   { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
   featuredLabel:  { fontSize: 14, fontFamily: F.bold },
   featuredSub:    { fontSize: 12, fontFamily: F.regular },
-  toggle:         { width: 44, height: 26, borderRadius: 13, position: 'relative' },
-  toggleThumb:    { position: 'absolute', top: 3, width: 20, height: 20, borderRadius: 10, backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 3, shadowOffset: { width: 0, height: 1 }, elevation: 3 },
+  toggle:         { width: 44, height: 26, borderRadius: RADIUS.full, position: 'relative' },
+  toggleThumb:    { position: 'absolute', top: 3, width: 20, height: 20, borderRadius: RADIUS.full, backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 3, shadowOffset: { width: 0, height: 1 }, elevation: 3 },
 
-  saveBtn:    { borderRadius: 14, height: 52, justifyContent: 'center', alignItems: 'center', marginTop: 8 },
+  saveBtn:    { borderRadius: RADIUS.md, height: 54, justifyContent: 'center', alignItems: 'center', marginTop: 8 },
   saveBtnTxt: { color: '#fff', fontSize: 16, fontFamily: F.bold },
 });

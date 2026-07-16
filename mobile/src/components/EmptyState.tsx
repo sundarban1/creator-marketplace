@@ -4,7 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { useAppColors } from '@/context/ThemeContext';
 import { getIconColor } from '@/features/creator/data/filterOptions';
-import { F } from '@/utilities/constants';
+import { F, RADIUS, SHADOW } from '@/utilities/constants';
 
 type Props = {
   emoji?:    string;
@@ -22,7 +22,7 @@ export function EmptyState({ emoji, icon = 'cube-outline', faIcon, title, subtit
 
   return (
     <View style={styles.container}>
-      <View style={[styles.iconWrap, { backgroundColor: C.surface, shadowColor: faIconColor }]}>
+      <View style={[styles.iconWrap, { backgroundColor: C.surface, ...SHADOW.raised, shadowColor: faIconColor }]}>
         {faIcon ? (
           <FontAwesome5 name={faIcon as any} size={34} color={faIconColor} />
         ) : emoji ? (
@@ -56,10 +56,10 @@ const styles = StyleSheet.create({
   // button) is rendered below — centering the whole variable-height block
   // would shift the icon up or down depending on what follows it.
   container: { flex: 1, alignItems: 'center', paddingHorizontal: 40, paddingTop: 72, paddingBottom: 60, gap: 12 },
-  iconWrap:  { width: 88, height: 88, borderRadius: 28, justifyContent: 'center', alignItems: 'center', marginBottom: 6, shadowOpacity: 0.10, shadowRadius: 16, shadowOffset: { width: 0, height: 6 }, elevation: 5 },
+  iconWrap:  { width: 88, height: 88, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
   emoji:     { fontSize: 40 },
-  title:     { fontSize: 18, textAlign: 'center' },
+  title:     { fontSize: 19, textAlign: 'center', letterSpacing: 0.1 },
   subtitle:  { fontSize: 14, textAlign: 'center', lineHeight: 22, marginTop: -2 },
-  btn:       { paddingHorizontal: 32, paddingVertical: 13, borderRadius: 14 },
+  btn:       { paddingHorizontal: 32, paddingVertical: 14, borderRadius: RADIUS.md },
   btnText:   { color: '#fff', fontSize: 14 },
 });

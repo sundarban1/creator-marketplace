@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { BackButton } from '@/components/BackButton';
+import { EmptyState } from '@/components/EmptyState';
 import { VerifiedBadge } from '@/components/VerifiedBadge';
 import {
   ActivityIndicator,
@@ -23,7 +24,7 @@ import { LocationSearchPicker, type LocationEntry } from '@/components/LocationS
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage, type TFn } from '@/context/LanguageContext';
 import { creatorService, type ApiCreatorListItem } from '@/services/creator';
-import { F } from '@/utilities/constants';
+import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { getIconColor } from '@/features/creator/data/filterOptions';
 import { useAllCategories, useCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { usePlatforms, getPlatformMeta } from '@/hooks/usePlatforms';
@@ -249,7 +250,7 @@ function ExploreFilterModal({
 
 const fm = StyleSheet.create({
   chips:    { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip:     { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 13, paddingVertical: 8, borderRadius: 20, borderWidth: 1.5 },
+  chip:     { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 13, paddingVertical: 8, borderRadius: RADIUS.full, borderWidth: 1.5 },
   chipText: { fontSize: 13, fontFamily: F.medium },
 });
 
@@ -604,12 +605,12 @@ export default function ExploreCreatorsScreen() {
           <Text style={[s.loadingText, { color: C.textSecondary }]}>{t('explore.findingCreators')}</Text>
         </View>
       ) : error ? (
-        <View style={s.centered}>
-          <Text style={s.errorText}>{error}</Text>
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => fetchCreators(1, true, activeFilter, searchDebounced)}>
-            <Text style={[s.linkText, { color: C.brinjal1 }]}>{t('common.retry')}</Text>
-          </Pressable>
-        </View>
+        <EmptyState
+          icon="alert-circle-outline"
+          title={t('common.error')}
+          subtitle={error}
+          action={{ label: t('common.retry'), onPress: () => fetchCreators(1, true, activeFilter, searchDebounced) }}
+        />
       ) : creators.length === 0 ? (
         <View style={s.centered}>
           <FontAwesome5 name="users" size={44} color={C.textSecondary} style={s.emptyIcon} />
@@ -675,44 +676,43 @@ export default function ExploreCreatorsScreen() {
 
 const s = StyleSheet.create({
   container: { flex: 1 },
-  gradientHeader: { paddingBottom: 16, borderBottomLeftRadius: 16, borderBottomRightRadius: 16, overflow: 'hidden' },
+  gradientHeader: { paddingBottom: 16, borderBottomLeftRadius: RADIUS.lg, borderBottomRightRadius: RADIUS.lg, overflow: 'hidden' },
 
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 4, gap: 12 },
   headerMiddle: { flex: 1, alignItems: 'center', gap: 2 },
   headerTitle: { fontSize: 20, textAlign: 'center', fontFamily: F.bold, color: '#fff', lineHeight: 24 },
   headerSub: { fontSize: 12, color: 'rgba(255,255,255,0.75)', fontFamily: F.regular, textAlign: 'center' },
-  savedLink: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 6 },
+  savedLink: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: RADIUS.full, paddingHorizontal: 10, paddingVertical: 6 },
   savedLinkText: { fontSize: 12, color: '#fff', fontFamily: F.bold },
 
   searchRow:  { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 12 },
-  searchCard: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 9, borderRadius: 16, borderWidth: 1.5, paddingHorizontal: 14, height: 50 },
+  searchCard: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 9, borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 14, height: 50 },
   searchInput: { flex: 1, fontSize: 14, fontFamily: F.regular },
-  filterBtn: { width: 50, height: 50, borderRadius: 16, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center' },
-  filterCountBadge: { position: 'absolute', top: -4, right: -4, minWidth: 16, height: 16, borderRadius: 8, paddingHorizontal: 3, backgroundColor: '#EF4444', justifyContent: 'center', alignItems: 'center' },
+  filterBtn: { width: 50, height: 50, borderRadius: RADIUS.md, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center' },
+  filterCountBadge: { position: 'absolute', top: -4, right: -4, minWidth: 16, height: 16, borderRadius: RADIUS.full, paddingHorizontal: 3, backgroundColor: '#EF4444', justifyContent: 'center', alignItems: 'center' },
   filterCountBadgeTxt: { fontSize: 9, fontFamily: F.extrabold, color: '#fff' },
 
   chipRow: { paddingHorizontal: 20, paddingBottom: 8, gap: 6, flexDirection: 'row', alignItems: 'center' },
-  chip: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 16, borderWidth: 1.5 },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: RADIUS.full, borderWidth: 1.5 },
   chipText: { fontSize: 12, fontFamily: F.semibold },
 
   countText: { fontSize: 12, fontFamily: F.semibold, paddingHorizontal: 20, marginTop: 8, marginBottom: 4 },
 
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, paddingHorizontal: 32 },
   loadingText: { fontSize: 14, fontFamily: F.regular },
-  errorText: { color: '#DC2626', fontSize: 14, fontFamily: F.regular },
   linkText: { fontSize: 14, fontFamily: F.bold },
   emptyIcon: { marginBottom: 4 },
   emptyTitle: { fontSize: 18, fontFamily: F.bold },
   emptyHint: { fontSize: 13, textAlign: 'center', lineHeight: 20, fontFamily: F.regular },
-  clearBtn: { borderRadius: 20, borderWidth: 1.5, paddingHorizontal: 16, paddingVertical: 8, marginTop: 4 },
+  clearBtn: { borderRadius: RADIUS.full, borderWidth: 1.5, paddingHorizontal: 16, paddingVertical: 8, marginTop: 4 },
 
   list: { paddingHorizontal: 20, paddingBottom: 40, gap: 14 },
 
-  card: { flexDirection: 'row', borderRadius: 18, overflow: 'hidden', shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
+  card: { flexDirection: 'row', borderRadius: RADIUS.lg, overflow: 'hidden', ...SHADOW.card },
   cardAccent: { width: 4 },
   cardBody: { flex: 1, padding: 14, gap: 10 },
   cardHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-  avatar: { width: 60, height: 60, borderRadius: 18, flexShrink: 0 },
+  avatar: { width: 60, height: 60, borderRadius: RADIUS.md, flexShrink: 0 },
   avatarPlaceholder: { justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
   avatarIconWrap: { alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' },
   cardMeta: { flex: 1, gap: 4, justifyContent: 'center' },
@@ -722,14 +722,14 @@ const s = StyleSheet.create({
   location: { fontSize: 12, fontFamily: F.regular },
   platformStat: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   platformCount: { fontSize: 12, fontFamily: F.bold },
-  saveBtn: { width: 34, height: 34, borderRadius: 10, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  saveBtn: { width: 34, height: 34, borderRadius: RADIUS.sm, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   bio: { fontSize: 13, lineHeight: 19, fontFamily: F.regular },
   statRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, paddingTop: 10, borderTopWidth: StyleSheet.hairlineWidth },
-  catPill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10, flexShrink: 1 },
+  catPill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 5, borderRadius: RADIUS.sm, flexShrink: 1 },
   catLabel: { fontSize: 11, fontFamily: F.bold, flexShrink: 1 },
 
   footerWrap: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 20, marginTop: 8, marginBottom: 36, gap: 10 },
   footerLine: { flex: 1, height: 1 },
-  footerPill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1 },
+  footerPill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 7, borderRadius: RADIUS.full, borderWidth: 1 },
   footerText: { fontSize: 12, fontFamily: F.regular },
 });

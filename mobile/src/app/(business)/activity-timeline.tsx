@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { BackButton } from '@/components/BackButton';
 import { PaymentMethodIcon } from '@/components/PaymentMethodIcon';
 import { isPaymentMethodId } from '@/utilities/paymentMethods';
@@ -24,7 +24,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { campaignService } from '@/services/campaign';
 import { chatService } from '@/services/chat';
 import type { Campaign } from '@/types';
-import { F } from '@/utilities/constants';
+import { F, RADIUS, SHADOW as TOKEN_SHADOW } from '@/utilities/constants';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -282,11 +282,11 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, on
   // Business: payment required
   if (!paid && ws === 'NONE' && !isCreator) return (
     <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#EF4444' }]}>
-      <View style={[ac.iconBg, { backgroundColor: '#FEF2F2' }]}><Ionicons name="card-outline" size={26} color="#EF4444" /></View>
+      <View style={[ac.iconBg, { backgroundColor: '#FEF2F2' }]}><FontAwesome5 name="credit-card" size={22} color="#EF4444" solid /></View>
       <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acPaymentRequiredTitle')}</Text>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acPaymentRequiredSub')}</Text>
       <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[ac.btn, { backgroundColor: '#EF4444' }]} onPress={onPay}>
-        <Ionicons name="card-outline" size={16} color="#fff" />
+        <FontAwesome5 name="credit-card" size={14} color="#fff" solid />
         <Text style={ac.btnTxt}>{t('activityTimeline.acPayNowBtn')}</Text>
       </Pressable>
     </View>
@@ -313,13 +313,13 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, on
   // Creator: ready to start
   if (paid && ws === 'NONE' && isCreator) return (
     <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#7C3AED' }]}>
-      <View style={[ac.iconBg, { backgroundColor: '#EEF2FF' }]}><Ionicons name="rocket-outline" size={26} color="#7C3AED" /></View>
+      <View style={[ac.iconBg, { backgroundColor: '#EEF2FF' }]}><FontAwesome5 name="rocket" size={22} color="#7C3AED" solid /></View>
       <Text style={[ac.heading, { color: C.text }]}>{isFree ? t('activityTimeline.acReadyFreeTitle') : t('activityTimeline.acReadyPaidTitle')}</Text>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{isFree ? t('activityTimeline.acReadyFreeSub') : t('activityTimeline.acReadyPaidSub')}</Text>
       <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[ac.btn, { backgroundColor: '#7C3AED', opacity: submitting ? 0.75 : 1 }]} onPress={onStartWork} disabled={submitting}>
         {submitting
           ? <ActivityIndicator size="small" color="#fff" />
-          : <><Ionicons name="rocket-outline" size={16} color="#fff" /><Text style={ac.btnTxt}>{t('activityTimeline.acStartBtn')}</Text></>}
+          : <><FontAwesome5 name="rocket" size={14} color="#fff" solid /><Text style={ac.btnTxt}>{t('activityTimeline.acStartBtn')}</Text></>}
       </Pressable>
     </View>
   );
@@ -402,7 +402,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, on
   // APPROVED, payment still held — creator: admin will release it
   return (
     <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#16A34A' }]}>
-      <View style={[ac.iconBg, { backgroundColor: '#DCFCE7' }]}><Ionicons name="trophy-outline" size={26} color="#16A34A" /></View>
+      <View style={[ac.iconBg, { backgroundColor: '#DCFCE7' }]}><FontAwesome5 name="trophy" size={22} color="#16A34A" solid /></View>
       <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acApprovedCreatorTitle')}</Text>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acApprovedCreatorSub')}</Text>
     </View>
@@ -1102,8 +1102,6 @@ export default function CampaignWorkspaceScreen() {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const SHADOW = { shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2 };
-
 const s = StyleSheet.create({
   screen:   { flex: 1 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
@@ -1112,20 +1110,20 @@ const s = StyleSheet.create({
   header:       { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 10, borderBottomWidth: 1, gap: 8 },
   headerCenter: { flex: 1, gap: 4 },
   headerTitle:  { fontSize: 15, fontFamily: F.bold },
-  iconBtn:      { padding: 8 },
+  iconBtn:      { padding: 8, minWidth: 40, minHeight: 40, alignItems: 'center', justifyContent: 'center' },
 
-  statusBadge:    { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3 },
-  statusDot:      { width: 6, height: 6, borderRadius: 3 },
+  statusBadge:    { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', borderRadius: RADIUS.sm, paddingHorizontal: 7, paddingVertical: 3 },
+  statusDot:      { width: 6, height: 6, borderRadius: RADIUS.full },
   statusBadgeTxt: { fontSize: 10, fontFamily: F.bold },
 
-  card: { borderRadius: 16, padding: 16, ...SHADOW, overflow: 'hidden' },
+  card: { borderRadius: RADIUS.lg, padding: 16, ...TOKEN_SHADOW.card, overflow: 'hidden' },
 
   summaryRow:   { flexDirection: 'row', gap: 12, marginBottom: 12 },
-  thumb:        { width: 68, height: 68, borderRadius: 12, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  thumb:        { width: 68, height: 68, borderRadius: RADIUS.md, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   summaryTitle: { fontSize: 15, fontFamily: F.bold, lineHeight: 21, marginBottom: 3 },
   summaryBrand: { fontSize: 13, fontFamily: F.semibold, marginBottom: 6 },
   metaRow:      { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
-  metaChip:     { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F3F4F6', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
+  metaChip:     { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F3F4F6', borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingVertical: 3 },
   metaChipTxt:  { fontSize: 11, fontFamily: F.semibold, color: '#6B7280' },
 
   summaryFooter: { flexDirection: 'row', borderTopWidth: 1, paddingTop: 12, gap: 4 },
@@ -1140,10 +1138,10 @@ const s = StyleSheet.create({
   secFooter:    { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 4, paddingVertical: 8 },
   secFooterTxt: { fontSize: 11, fontFamily: F.regular, flex: 1 },
 
-  cancelBtn:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1.5, borderRadius: 14, paddingVertical: 14 },
+  cancelBtn:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1.5, borderRadius: RADIUS.md, paddingVertical: 14 },
   cancelBtnTxt: { fontSize: 15, fontFamily: F.bold },
 
-  toast:    { position: 'absolute', bottom: 24, left: 24, right: 24, backgroundColor: '#1F2937', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, alignItems: 'center' },
+  toast:    { position: 'absolute', bottom: 24, left: 24, right: 24, backgroundColor: '#1F2937', borderRadius: RADIUS.md, paddingHorizontal: 16, paddingVertical: 12, alignItems: 'center' },
   toastTxt: { fontSize: 13, fontFamily: F.semibold, color: '#fff', textAlign: 'center' },
 });
 
@@ -1152,37 +1150,37 @@ const pt = StyleSheet.create({
   step:       { width: STEP_W, alignItems: 'center' },
   connRow:    { flexDirection: 'row', alignItems: 'center', width: '100%', height: 34 },
   line:       { flex: 1, height: 2 },
-  dot:        { width: 28, height: 28, borderRadius: 14, borderWidth: 2, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  activePulse:{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#fff' },
-  emptyCore:  { width: 8, height: 8, borderRadius: 4, backgroundColor: '#E5E7EB' },
+  dot:        { width: 28, height: 28, borderRadius: RADIUS.full, borderWidth: 2, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  activePulse:{ width: 10, height: 10, borderRadius: RADIUS.full, backgroundColor: '#fff' },
+  emptyCore:  { width: 8, height: 8, borderRadius: RADIUS.full, backgroundColor: '#E5E7EB' },
   label:      { fontSize: 9, fontFamily: F.semibold, textAlign: 'center', marginTop: 5, lineHeight: 12 },
 });
 
 const tl = StyleSheet.create({
   row:      { flexDirection: 'row', gap: 12, marginBottom: 0 },
   left:     { alignItems: 'center', width: 32 },
-  dot:      { width: 32, height: 32, borderRadius: 16, borderWidth: 2, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  dot:      { width: 32, height: 32, borderRadius: RADIUS.full, borderWidth: 2, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   line:     { width: 2, flex: 1, minHeight: 12, marginTop: 2 },
   body:     { flex: 1, paddingBottom: 18, paddingTop: 4 },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 3 },
   title:    { fontSize: 13 },
-  badge:    { borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 },
+  badge:    { borderRadius: RADIUS.sm, paddingHorizontal: 7, paddingVertical: 2 },
   badgeTxt: { fontSize: 9, fontFamily: F.bold, textTransform: 'uppercase', letterSpacing: 0.3 },
   desc:     { fontSize: 12, fontFamily: F.regular, lineHeight: 17 },
   time:     { fontSize: 10, fontFamily: F.regular, marginTop: 4, lineHeight: 15 },
 });
 
 const rv = StyleSheet.create({
-  section:          { backgroundColor: '#FAFAFA', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: '#F3F4F6' },
+  section:          { backgroundColor: '#FAFAFA', borderRadius: RADIUS.md, padding: 12, borderWidth: 1, borderColor: '#F3F4F6' },
   sectionHeader:    { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
-  sectionIcon:      { width: 26, height: 26, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
+  sectionIcon:      { width: 26, height: 26, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center' },
   sectionTitle:     { fontSize: 13, fontFamily: F.bold, color: '#1F2937' },
-  linkRow:          { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#F5F3FF', borderWidth: 1, borderColor: '#EDE9FE', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 11 },
+  linkRow:          { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#F5F3FF', borderWidth: 1, borderColor: '#EDE9FE', borderRadius: RADIUS.md, paddingHorizontal: 12, paddingVertical: 11 },
   linkTxt:          { flex: 1, fontSize: 13, fontFamily: F.semibold, color: '#7C3AED', textDecorationLine: 'underline' },
   noLinks:          { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 10 },
   noLinksTxt:       { fontSize: 13, fontFamily: F.regular, color: '#9CA3AF' },
   deliverableRow:   { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
-  deliverableNum:   { width: 22, height: 22, borderRadius: 11, backgroundColor: '#FED7AA', justifyContent: 'center', alignItems: 'center', marginTop: 1, flexShrink: 0 },
+  deliverableNum:   { width: 22, height: 22, borderRadius: RADIUS.full, backgroundColor: '#FED7AA', justifyContent: 'center', alignItems: 'center', marginTop: 1, flexShrink: 0 },
   deliverableNumTxt:{ fontSize: 11, fontFamily: F.bold, color: '#D97706' },
   deliverableTxt:   { flex: 1, fontSize: 13, fontFamily: F.regular, color: '#374151', lineHeight: 20 },
 });
@@ -1194,34 +1192,34 @@ const py = StyleSheet.create({
   divider:      { height: 1 },
   totalLabel:   { fontSize: 15, fontFamily: F.bold },
   totalValue:   { fontSize: 17, fontFamily: F.bold },
-  statusChip:   { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
+  statusChip:   { borderRadius: RADIUS.sm, paddingHorizontal: 10, paddingVertical: 4 },
   statusChipTxt:{ fontSize: 12, fontFamily: F.bold },
-  trustBox:     { flexDirection: 'row', alignItems: 'center', gap: 7, borderWidth: 1, borderRadius: 10, padding: 10, marginTop: 14 },
+  trustBox:     { flexDirection: 'row', alignItems: 'center', gap: 7, borderWidth: 1, borderRadius: RADIUS.sm, padding: 10, marginTop: 14 },
   trustTxt:     { fontSize: 12, fontFamily: F.semibold, flex: 1 },
 });
 
 const ac = StyleSheet.create({
-  card:   { borderRadius: 16, padding: 18, borderLeftWidth: 4, ...SHADOW, backgroundColor: '#fff', gap: 8 },
-  iconBg: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', alignSelf: 'flex-start' },
+  card:   { borderRadius: RADIUS.lg, padding: 18, borderLeftWidth: 4, ...TOKEN_SHADOW.raised, backgroundColor: '#fff', gap: 8 },
+  iconBg: { width: 52, height: 52, borderRadius: RADIUS.full, alignItems: 'center', justifyContent: 'center', alignSelf: 'flex-start' },
   heading:{ fontSize: 16, fontFamily: F.bold },
   sub:    { fontSize: 13, fontFamily: F.regular, lineHeight: 19 },
   btnRow: { flexDirection: 'row', gap: 10, marginTop: 4 },
-  btn:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, borderRadius: 12, paddingVertical: 13, marginTop: 4 },
+  btn:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, borderRadius: RADIUS.md, paddingVertical: 13, marginTop: 4 },
   btnTxt: { fontSize: 14, fontFamily: F.bold, color: '#fff' },
 });
 
 const up = StyleSheet.create({
   errorRow:       { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 6 },
   errorTxt:       { fontSize: 12, fontFamily: F.semibold, color: '#EF4444', flex: 1 },
-  linkPreview:    { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 7 },
+  linkPreview:    { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderRadius: RADIUS.sm, paddingHorizontal: 10, paddingVertical: 7 },
   linkPreviewTxt: { flex: 1, fontSize: 12, fontFamily: F.regular },
 });
 
 const sh = StyleSheet.create({
   overlay:      { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
   kav:          { justifyContent: 'flex-end' },
-  sheet:        { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 36 },
-  handle:       { width: 40, height: 4, borderRadius: 2, backgroundColor: '#E5E7EB', alignSelf: 'center', marginBottom: 16 },
+  sheet:        { backgroundColor: '#fff', borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl, padding: 20, paddingBottom: 36 },
+  handle:       { width: 40, height: 4, borderRadius: RADIUS.full, backgroundColor: '#E5E7EB', alignSelf: 'center', marginBottom: 16 },
   title:        { fontSize: 18, fontFamily: F.bold, color: '#111827', marginBottom: 6 },
   sub:          { fontSize: 13, fontFamily: F.regular, color: '#6B7280', marginBottom: 4 },
   sectionLabel: { fontSize: 13, fontFamily: F.bold, color: '#374151', marginBottom: 8, marginTop: 4 },
@@ -1231,16 +1229,16 @@ const sh = StyleSheet.create({
   totalLabel:   { fontSize: 15, fontFamily: F.bold, color: '#111827' },
   totalValue:   { fontSize: 17, fontFamily: F.bold, color: '#16A34A' },
   divider:      { height: 1, marginVertical: 4 },
-  methodBtn:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12 },
+  methodBtn:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1.5, borderRadius: RADIUS.md, paddingHorizontal: 14, paddingVertical: 12 },
   methodLeft:   { flexDirection: 'row', alignItems: 'center', gap: 10 },
   methodTxt:    { fontSize: 14, fontFamily: F.semibold },
   inputLabel:   { fontSize: 12, fontFamily: F.semibold, color: '#374151', marginBottom: 6 },
-  input:        { borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, fontFamily: F.regular, textAlignVertical: 'top' },
-  primaryBtn:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 14, paddingVertical: 15 },
+  input:        { borderWidth: 1, borderColor: '#E5E7EB', borderRadius: RADIUS.sm, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, fontFamily: F.regular, textAlignVertical: 'top' },
+  primaryBtn:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: RADIUS.md, paddingVertical: 15 },
   primaryBtnTxt:{ fontSize: 15, fontFamily: F.bold, color: '#fff' },
-  infoBox:      { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderRadius: 10, padding: 10 },
+  infoBox:      { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderRadius: RADIUS.sm, padding: 10 },
   infoTxt:      { fontSize: 12, fontFamily: F.semibold, flex: 1 },
-  warnBox:      { flexDirection: 'row', alignItems: 'flex-start', gap: 10, borderWidth: 1.5, borderRadius: 12, padding: 14, marginVertical: 12 },
+  warnBox:      { flexDirection: 'row', alignItems: 'flex-start', gap: 10, borderWidth: 1.5, borderRadius: RADIUS.md, padding: 14, marginVertical: 12 },
   warnTitle:    { fontSize: 14, fontFamily: F.bold, marginBottom: 4 },
   warnBody:     { fontSize: 13, fontFamily: F.regular, lineHeight: 19 },
 });

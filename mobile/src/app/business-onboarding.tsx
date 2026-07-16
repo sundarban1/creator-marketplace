@@ -21,7 +21,7 @@ import { authService } from '@/services/auth';
 import { profileService } from '@/services/profile';
 import { useCategories } from '@/hooks/useCategories';
 import { PlacesAutocompleteInput } from '@/components/PlacesAutocompleteInput';
-import { F } from '@/utilities/constants';
+import { F, RADIUS, SHADOW } from '@/utilities/constants';
 
 const TOTAL_STEPS = 2;
 
@@ -158,7 +158,7 @@ export default function BusinessOnboardingScreen() {
       {/* ── Top bar ── */}
       <View style={styles.topBar}>
         {step > 1 ? (
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.backBtn, { backgroundColor: C.surface, borderColor: C.border }]} onPress={() => setStep((s) => s - 1)}>
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} hitSlop={8} style={[styles.backBtn, { backgroundColor: C.surface, borderColor: C.border }]} onPress={() => setStep((s) => s - 1)}>
             <Text style={[styles.backArrow, { color: C.brinjal1 }]}>‹</Text>
           </Pressable>
         ) : (
@@ -337,7 +337,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   flex: { flex: 1 },
   topBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 4, gap: 12 },
-  backBtn: { width: 36, height: 36, borderRadius: 18, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center' },
+  backBtn: { width: 36, height: 36, borderRadius: RADIUS.full, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center' },
   backBtnPlaceholder: { width: 36, height: 36 },
   backArrow: { fontSize: 26, lineHeight: 30 },
   progressRow: { flex: 1, flexDirection: 'row', gap: 6 },
@@ -347,36 +347,36 @@ const styles = StyleSheet.create({
   stepTitle: { fontSize: 24, fontFamily: F.bold },
   stepSubtitle: { fontSize: 14, lineHeight: 20, marginTop: 4, fontFamily: F.regular },
   scrollContent: { paddingHorizontal: 20, paddingBottom: 48 },
-  errorBanner: { borderRadius: 10, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 16 },
+  errorBanner: { borderRadius: RADIUS.sm, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 16 },
   errorBannerText: { fontSize: 13, fontFamily: F.semibold },
   fieldGroup: { marginBottom: 24 },
   labelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
   fieldLabel: { fontSize: 14, fontFamily: F.bold },
   fieldError: { fontSize: 12, fontFamily: F.medium },
-  input: { borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 13, fontSize: 15, fontFamily: F.regular },
+  input: { borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 13, fontSize: 15, fontFamily: F.regular },
   textarea: { minHeight: 120, paddingTop: 13, textAlignVertical: 'top' },
   inputHint: { fontSize: 11, marginTop: 5, fontFamily: F.regular },
   charRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 },
   charCount: { fontSize: 11, alignSelf: 'flex-end', fontFamily: F.regular },
-  countBadge: { borderRadius: 10, paddingHorizontal: 10, paddingVertical: 3 },
+  countBadge: { borderRadius: RADIUS.sm, paddingHorizontal: 10, paddingVertical: 3 },
   countBadgeText: { fontSize: 12, fontFamily: F.bold },
-  maxBanner: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, marginBottom: 10 },
+  maxBanner: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: RADIUS.sm, paddingHorizontal: 12, paddingVertical: 8, marginBottom: 10 },
   maxBannerText: { fontSize: 13, fontFamily: F.semibold },
   categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
-  categoryChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 9, borderRadius: 22, borderWidth: 1.5 },
+  categoryChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 9, borderRadius: RADIUS.full, borderWidth: 1.5 },
   chipDisabled: { opacity: 0.35 },
   chipLabel: { fontSize: 13, fontFamily: F.medium },
   loadingRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  spinner: { width: 16, height: 16, borderRadius: 8, borderWidth: 2, borderColor: 'rgba(255,255,255,0.35)' },
-  primaryBtn: { borderRadius: 14, paddingVertical: 15, alignItems: 'center', shadowOpacity: 0.25, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 5, marginBottom: 12 },
+  spinner: { width: 16, height: 16, borderRadius: RADIUS.full, borderWidth: 2, borderColor: 'rgba(255,255,255,0.35)' },
+  primaryBtn: { borderRadius: RADIUS.md, paddingVertical: 15, alignItems: 'center', ...SHADOW.raised, marginBottom: 12 },
   primaryBtnDisabled: { opacity: 0.45, shadowOpacity: 0, elevation: 0 },
   primaryBtnText: { color: '#fff', fontSize: 16, fontFamily: F.bold },
   finishNote: { textAlign: 'center', fontSize: 12, fontFamily: F.regular },
   successContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 },
   successContent: { alignItems: 'center', gap: 16 },
-  checkCircle: { width: 110, height: 110, borderRadius: 55, justifyContent: 'center', alignItems: 'center', shadowOpacity: 0.35, shadowRadius: 20, shadowOffset: { width: 0, height: 8 }, elevation: 10, marginBottom: 8 },
+  checkCircle: { width: 110, height: 110, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', ...SHADOW.floating, marginBottom: 8 },
   successTitle: { fontSize: 28, fontFamily: F.bold },
   successSub: { fontSize: 15, textAlign: 'center', lineHeight: 24, fontFamily: F.regular },
-  goHomeBtn: { marginTop: 16, borderRadius: 14, paddingHorizontal: 48, paddingVertical: 15, shadowOpacity: 0.3, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 6 },
+  goHomeBtn: { marginTop: 16, borderRadius: RADIUS.md, paddingHorizontal: 48, paddingVertical: 15, ...SHADOW.raised },
   goHomeBtnText: { color: '#fff', fontSize: 16, fontFamily: F.bold },
 });

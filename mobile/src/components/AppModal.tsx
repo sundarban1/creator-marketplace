@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAppColors } from '@/context/ThemeContext';
-import { F } from '@/utilities/constants';
+import { F, RADIUS, SHADOW } from '@/utilities/constants';
 
 type ModalType = 'danger' | 'warning' | 'info' | 'success';
 
@@ -97,15 +97,15 @@ export function AppModal({
 
 const s = StyleSheet.create({
   backdrop:    { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 28 },
-  sheet:       { width: '100%', borderRadius: 24, padding: 24, alignItems: 'center', gap: 10, shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 24, shadowOffset: { width: 0, height: 8 }, elevation: 12 },
-  iconCircle:  { width: 68, height: 68, borderRadius: 34, justifyContent: 'center', alignItems: 'center', marginBottom: 2 },
+  sheet:       { width: '100%', borderRadius: RADIUS.xl, padding: 24, alignItems: 'center', gap: 10, ...SHADOW.floating },
+  iconCircle:  { width: 68, height: 68, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', marginBottom: 2 },
   title:       { fontSize: 18, fontFamily: F.extrabold, textAlign: 'center' },
   body:        { fontSize: 13, fontFamily: F.regular, textAlign: 'center', lineHeight: 20 },
-  warningBox:  { flexDirection: 'row', alignItems: 'flex-start', gap: 8, borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, width: '100%' },
+  warningBox:  { flexDirection: 'row', alignItems: 'flex-start', gap: 8, borderWidth: 1, borderRadius: RADIUS.md, paddingHorizontal: 12, paddingVertical: 10, width: '100%' },
   warningText: { flex: 1, fontSize: 12, fontFamily: F.medium, lineHeight: 18, color: '#C2410C' },
   actions:     { flexDirection: 'row', gap: 10, width: '100%', marginTop: 6 },
-  cancelBtn:   { flex: 1, height: 46, borderRadius: 12, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center' },
+  cancelBtn:   { flex: 1, height: 48, borderRadius: RADIUS.md, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center' },
   cancelText:  { fontSize: 14, fontFamily: F.semibold },
-  confirmBtn:  { flex: 1, height: 46, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+  confirmBtn:  { flex: 1, height: 48, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center' },
   confirmText: { fontSize: 14, color: '#fff', fontFamily: F.bold },
 });

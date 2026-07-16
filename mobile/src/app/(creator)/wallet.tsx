@@ -12,7 +12,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/components/Toast';
 import { walletService, type ApiWalletSummary, type ApiWithdrawal } from '@/services/wallet';
 import { WithdrawModal } from '@/features/creator/components/WithdrawModal';
-import { F } from '@/utilities/constants';
+import { F, RADIUS, SHADOW } from '@/utilities/constants';
 
 const METHOD_META: Record<string, { icon: string; color: string }> = {
   esewa:   { icon: 'wallet', color: '#60BB46' },
@@ -157,12 +157,12 @@ export default function WalletScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  gradientTopBar: { overflow: 'hidden', borderBottomLeftRadius: 16, borderBottomRightRadius: 16 },
+  gradientTopBar: { overflow: 'hidden', borderBottomLeftRadius: RADIUS.lg, borderBottomRightRadius: RADIUS.lg },
   topBar:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
   topTitle:  { fontSize: 16, fontFamily: F.bold },
   content:   { padding: 16, paddingBottom: 32, gap: 12 },
 
-  balanceCard: { borderRadius: 18, padding: 20, gap: 4 },
+  balanceCard: { borderRadius: RADIUS.lg, padding: 20, gap: 4, ...SHADOW.raised },
   balanceLabel: { fontSize: 12, color: 'rgba(255,255,255,0.75)', fontFamily: F.medium },
   balanceValue: { fontSize: 32, color: '#fff', fontFamily: F.bold, marginBottom: 12 },
   balanceStatsRow: { flexDirection: 'row', alignItems: 'center', gap: 16, paddingTop: 12, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.2)' },
@@ -171,20 +171,20 @@ const styles = StyleSheet.create({
   balanceStatLabel: { fontSize: 11, color: 'rgba(255,255,255,0.7)', fontFamily: F.medium },
   balanceStatValue: { fontSize: 15, color: '#fff', fontFamily: F.bold },
 
-  withdrawBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 14, borderWidth: 1.5, paddingVertical: 14 },
+  withdrawBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: RADIUS.md, borderWidth: 1.5, paddingVertical: 14 },
   withdrawBtnText: { fontSize: 14, fontFamily: F.bold },
   noMethodsHint: { fontSize: 12, textAlign: 'center', fontFamily: F.regular, marginTop: -4 },
-  manageBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 14, borderWidth: 1.5, paddingVertical: 12 },
+  manageBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: RADIUS.md, borderWidth: 1.5, paddingVertical: 12 },
   manageBtnText: { fontSize: 13, fontFamily: F.semibold },
 
   sectionHeader: { fontSize: 11, letterSpacing: 0.5, textTransform: 'uppercase', fontFamily: F.bold, marginTop: 8 },
-  card: { borderRadius: 14, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
-  emptyWrap: { alignItems: 'center', borderRadius: 14, paddingVertical: 32, paddingHorizontal: 16, gap: 8 },
+  card: { borderRadius: RADIUS.md, ...SHADOW.card },
+  emptyWrap: { alignItems: 'center', borderRadius: RADIUS.md, paddingVertical: 32, paddingHorizontal: 16, gap: 8, ...SHADOW.card },
   emptyTitle: { fontSize: 14, fontFamily: F.bold },
   emptyHint: { fontSize: 12, textAlign: 'center', fontFamily: F.regular },
 
   txRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12, paddingHorizontal: 14 },
-  txIconWrap: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
+  txIconWrap: { width: 36, height: 36, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
   txInfo: { flex: 1, gap: 2 },
   txMethod: { fontSize: 13, fontFamily: F.semibold },
   txDate: { fontSize: 11, fontFamily: F.regular },

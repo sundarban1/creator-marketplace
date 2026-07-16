@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { fadeUp, stagger, VP } from '../lib/motion';
+import { fadeUp, stagger, VP, CARD_HOVER } from '../lib/motion';
 import { SECTION_IDS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
 
@@ -24,7 +24,7 @@ export function Stories() {
             <motion.figure
               key={i}
               variants={fadeUp}
-              whileHover={{ y: -4, scale: 1.02 }}
+              whileHover={CARD_HOVER}
               className="rounded-3xl border border-ink/10 bg-white p-7 shadow-[0_2px_10px_rgba(20,17,16,0.04)] transition-shadow duration-300 hover:shadow-[0_20px_40px_-14px_rgba(123,92,245,0.18)]"
             >
               <div className={`mb-6 h-0.5 w-10 rounded-full bg-gradient-to-r ${i % 2 === 0 ? 'from-violet to-violet-dark' : 'from-brand-orange to-violet'}`} />

@@ -1,13 +1,13 @@
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { authService } from '@/services/auth';
-import { F } from '@/utilities/constants';
+import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { isValidNepaliPhone, normalizePhoneForSubmit } from '@/utilities/phone';
 
 type Channel = 'email' | 'phone';
@@ -56,12 +56,12 @@ export default function ForgotPasswordScreen() {
       <View style={styles.hero}>
         <View style={styles.bubble1} />
         <View style={styles.bubble2} />
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.back} onPress={() => router.canGoBack() ? router.back() : router.replace('/login')}>
+        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} hitSlop={8} style={styles.back} onPress={() => router.canGoBack() ? router.back() : router.replace('/login')}>
           <Text style={styles.backArrow}>‹</Text>
         </Pressable>
         <View style={styles.heroContent}>
           <View style={styles.iconWrap}>
-            <Ionicons name="lock-closed" size={26} color="#fff" />
+            <FontAwesome5 name="lock" size={22} color="#fff" solid />
           </View>
           <Text style={styles.heroTitle}>{t('auth.forgotPassword.title')}</Text>
           <Text style={styles.heroSub}>{t('auth.forgotPassword.subtitle')}</Text>
@@ -157,22 +157,22 @@ const styles = StyleSheet.create({
   hero: { paddingBottom: 36, overflow: 'hidden' },
   bubble1: { position: 'absolute', width: 200, height: 200, borderRadius: 100, backgroundColor: 'rgba(255,255,255,0.07)', top: -60, right: -50 },
   bubble2: { position: 'absolute', width: 120, height: 120, borderRadius: 60, backgroundColor: 'rgba(255,255,255,0.06)', bottom: 0, left: -30 },
-  back: { margin: 16, width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center' },
+  back: { margin: 16, width: 38, height: 38, borderRadius: RADIUS.full, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center' },
   backArrow: { fontSize: 26, color: '#fff', lineHeight: 30 },
   heroContent: { alignItems: 'center', paddingHorizontal: 24, gap: 10 },
-  iconWrap: { width: 68, height: 68, borderRadius: 34, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
+  iconWrap: { width: 68, height: 68, borderRadius: RADIUS.full, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
   heroTitle: { fontSize: 20, color: '#fff', textAlign: 'center', fontFamily: F.bold },
   heroSub: { fontSize: 14, color: 'rgba(255,255,255,0.78)', textAlign: 'center', lineHeight: 22, fontFamily: F.regular },
-  card: { flex: 1, borderTopLeftRadius: 24, borderTopRightRadius: 24 },
+  card: { flex: 1, borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl },
   cardContent: { padding: 28, paddingBottom: 40 },
-  channelToggle: { flexDirection: 'row', gap: 6, borderRadius: 12, padding: 4, marginBottom: 20 },
-  channelTab: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 9, borderRadius: 9 },
+  channelToggle: { flexDirection: 'row', gap: 6, borderRadius: RADIUS.md, padding: 4, marginBottom: 20 },
+  channelTab: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 9, borderRadius: RADIUS.sm },
   channelTabText: { fontSize: 13, fontFamily: F.bold },
   label: { fontSize: 14, marginBottom: 8, fontFamily: F.bold },
-  input: { borderRadius: 14, borderWidth: 1.5, paddingHorizontal: 16, paddingVertical: 14, fontSize: 16, marginBottom: 6, fontFamily: F.regular },
+  input: { borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 16, paddingVertical: 14, fontSize: 16, marginBottom: 6, fontFamily: F.regular },
   errorText: { fontSize: 12, marginBottom: 4, fontFamily: F.medium },
   hint: { fontSize: 12, marginBottom: 24, lineHeight: 18, fontFamily: F.regular },
-  btn: { borderRadius: 14, paddingVertical: 15, alignItems: 'center', shadowOpacity: 0.25, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 5, marginBottom: 16 },
+  btn: { borderRadius: RADIUS.md, paddingVertical: 15, alignItems: 'center', ...SHADOW.raised, marginBottom: 16 },
   btnDisabled: { opacity: 0.45, shadowOpacity: 0, elevation: 0 },
   btnText: { color: '#fff', fontSize: 16, fontFamily: F.bold },
   loadingRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },

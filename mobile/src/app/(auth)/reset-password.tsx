@@ -1,12 +1,12 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage, type TFn } from '@/context/LanguageContext';
 import { authService } from '@/services/auth';
-import { F } from '@/utilities/constants';
+import { F, RADIUS, SHADOW } from '@/utilities/constants';
 
 function getPasswordError(pwd: string, t: TFn): string | undefined {
   if (pwd.length < 8) return t('auth.resetPassword.pwErrorMinLength');
@@ -98,7 +98,7 @@ export default function ResetPasswordScreen() {
         <View style={styles.bubble2} />
         <View style={styles.heroContent}>
           <View style={styles.iconWrap}>
-            <Ionicons name="key" size={26} color="#fff" />
+            <FontAwesome5 name="key" size={22} color="#fff" solid />
           </View>
           <Text style={styles.heroTitle}>{t('auth.resetPassword.heroTitle')}</Text>
           <Text style={styles.heroSub}>{t('auth.resetPassword.heroSub')}</Text>
@@ -226,22 +226,22 @@ const styles = StyleSheet.create({
   bubble1: { position: 'absolute', width: 200, height: 200, borderRadius: 100, backgroundColor: 'rgba(255,255,255,0.07)', top: -60, right: -50 },
   bubble2: { position: 'absolute', width: 120, height: 120, borderRadius: 60, backgroundColor: 'rgba(255,255,255,0.06)', bottom: 0, left: -30 },
   heroContent: { alignItems: 'center', paddingHorizontal: 24, gap: 10, paddingTop: 52 },
-  iconWrap: { width: 68, height: 68, borderRadius: 34, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
+  iconWrap: { width: 68, height: 68, borderRadius: RADIUS.full, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
   heroTitle: { fontSize: 20, color: '#fff', textAlign: 'center', fontFamily: F.bold },
   heroSub: { fontSize: 14, color: 'rgba(255,255,255,0.78)', textAlign: 'center', lineHeight: 22, fontFamily: F.regular },
 
-  card: { flex: 1, borderTopLeftRadius: 24, borderTopRightRadius: 24 },
+  card: { flex: 1, borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl },
   cardContent: { padding: 28, paddingBottom: 40 },
-  errorBanner: { borderRadius: 10, borderWidth: 1, padding: 12, marginBottom: 16 },
+  errorBanner: { borderRadius: RADIUS.sm, borderWidth: 1, padding: 12, marginBottom: 16 },
   errorBannerText: { fontSize: 13, fontFamily: F.semibold },
   form: { gap: 16, marginBottom: 24 },
   fieldGroup: { gap: 6 },
   label: { fontSize: 13, fontFamily: F.bold },
   fieldError: { fontSize: 12, fontFamily: F.medium },
-  pwdRow: { flexDirection: 'row', alignItems: 'center', borderRadius: 14, borderWidth: 1.5, paddingHorizontal: 14 },
+  pwdRow: { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 14 },
   pwdInput: { flex: 1, fontSize: 15, paddingVertical: 14, fontFamily: F.regular },
   eyeBtn: { padding: 6 },
-  btn: { borderRadius: 14, paddingVertical: 15, alignItems: 'center', shadowOpacity: 0.25, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 5, marginBottom: 24 },
+  btn: { borderRadius: RADIUS.md, paddingVertical: 15, alignItems: 'center', ...SHADOW.raised, marginBottom: 24 },
   btnDisabled: { opacity: 0.45, shadowOpacity: 0, elevation: 0 },
   btnText: { color: '#fff', fontSize: 16, fontFamily: F.bold },
   loadingRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
@@ -257,16 +257,13 @@ const styles = StyleSheet.create({
     right: 20,
     flexDirection: 'row',
     gap: 8,
-    borderRadius: 14,
+    borderRadius: RADIUS.md,
     paddingVertical: 14,
     paddingHorizontal: 18,
     alignItems: 'center',
     justifyContent: 'center',
+    ...SHADOW.floating,
     shadowColor: '#000',
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 8,
   },
   toastText: { color: '#fff', fontSize: 14, fontFamily: F.bold },
 });

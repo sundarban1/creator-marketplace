@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BackButton } from '@/components/BackButton';
 import { RangeDropdown } from '@/components/RangeDropdown';
@@ -14,7 +14,7 @@ import { BarChart } from '@/components/charts/BarChart';
 import {
   analyticsService, type ApiCreatorAnalytics, type AnalyticsRange,
 } from '@/services/analytics';
-import { F } from '@/utilities/constants';
+import { F, RADIUS, SHADOW } from '@/utilities/constants';
 
 const RANGES: { value: AnalyticsRange; labelKey: string }[] = [
   { value: '7d',   labelKey: 'analytics.range7d' },
@@ -46,7 +46,9 @@ function StatTile({ icon, label, value, sub, subPositive, C }: {
     <View style={[s.tile, { backgroundColor: C.surface, borderColor: C.border }]}>
       <View style={s.tileHeader}>
         <View style={[s.tileIconWrap, { backgroundColor: C.primaryLight }]}>
-          <Ionicons name={icon as never} size={17} color={C.brinjal1} />
+          {icon === 'star-outline'
+            ? <FontAwesome5 name="star" solid size={14} color={C.brinjal1} />
+            : <Ionicons name={icon as never} size={17} color={C.brinjal1} />}
         </View>
         {sub ? (
           <View style={[s.tileTrend, { backgroundColor: `${trendColor}1A` }]}>
@@ -199,7 +201,7 @@ export default function CreatorAnalyticsScreen() {
 const s = StyleSheet.create({
   container: { flex: 1 },
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  gradientTopBar: { overflow: 'hidden', borderBottomLeftRadius: 16, borderBottomRightRadius: 16 },
+  gradientTopBar: { overflow: 'hidden', borderBottomLeftRadius: RADIUS.lg, borderBottomRightRadius: RADIUS.lg },
   topBar:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
   topTitle:  { fontSize: 16, fontFamily: F.bold },
 
@@ -208,23 +210,23 @@ const s = StyleSheet.create({
   content: { padding: 16, paddingTop: 0, paddingBottom: 32, gap: 16 },
 
   grid:        { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  tile:        { width: '47%', borderRadius: 18, borderWidth: 1, padding: 14, gap: 6, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
+  tile:        { width: '47%', borderRadius: RADIUS.lg, borderWidth: 1, padding: 14, gap: 6, ...SHADOW.card },
   tileHeader:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  tileIconWrap:{ width: 34, height: 34, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
-  tileTrend:     { paddingHorizontal: 7, paddingVertical: 3, borderRadius: 20 },
+  tileIconWrap:{ width: 34, height: 34, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center' },
+  tileTrend:     { paddingHorizontal: 7, paddingVertical: 3, borderRadius: RADIUS.full },
   tileTrendText: { fontSize: 10, fontFamily: F.bold },
   tileValue:   { fontSize: 19, fontFamily: F.bold, marginTop: 2 },
   tileLabel:   { fontSize: 11, fontFamily: F.medium },
 
-  card:      { borderRadius: 18, padding: 18, gap: 16, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
+  card:      { borderRadius: RADIUS.lg, padding: 18, gap: 16, ...SHADOW.card },
   cardTitle: { fontSize: 14, fontFamily: F.bold },
 
   referralGrid:  { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  referralItem:  { width: '47%', gap: 4, borderRadius: 14, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 14 },
+  referralItem:  { width: '47%', gap: 4, borderRadius: RADIUS.md, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 14 },
   referralValue: { fontSize: 16, fontFamily: F.bold },
   referralLabel: { fontSize: 11, fontFamily: F.medium },
 
   missingWrap:     { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  missingChip:     { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10 },
+  missingChip:     { paddingHorizontal: 12, paddingVertical: 6, borderRadius: RADIUS.sm },
   missingChipText: { fontSize: 11, fontFamily: F.semibold },
 });

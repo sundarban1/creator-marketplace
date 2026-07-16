@@ -4,6 +4,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import Animated, { Easing, Keyframe } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 import { useLanguage } from '@/context/LanguageContext';
+import { RADIUS, SHADOW } from '@/utilities/constants';
 
 const TOTAL = 2400;
 
@@ -88,7 +89,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: 360,
     height: 360,
-    borderRadius: 180,
+    borderRadius: RADIUS.full,
     backgroundColor: 'rgba(255,255,255,0.06)',
     top: -100,
     right: -80,
@@ -97,7 +98,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: 260,
     height: 260,
-    borderRadius: 130,
+    borderRadius: RADIUS.full,
     backgroundColor: 'rgba(255,255,255,0.05)',
     bottom: -60,
     left: -70,
@@ -106,7 +107,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: 130,
     height: 130,
-    borderRadius: 65,
+    borderRadius: RADIUS.full,
     backgroundColor: 'rgba(255,255,255,0.04)',
     top: '32%',
     left: -30,
@@ -115,7 +116,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: 90,
     height: 90,
-    borderRadius: 45,
+    borderRadius: RADIUS.full,
     backgroundColor: 'rgba(255,255,255,0.05)',
     bottom: '28%',
     right: 18,
@@ -126,15 +127,12 @@ const styles = StyleSheet.create({
     marginBottom: 36,
   },
   logoCard: {
-    borderRadius: 24,
+    borderRadius: RADIUS.xl,
     backgroundColor: '#fff',
     paddingHorizontal: 24,
     paddingVertical: 18,
+    ...SHADOW.floating,
     shadowColor: '#000',
-    shadowOpacity: 0.4,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: 12 },
-    elevation: 20,
   },
   logoImage: {
     width: 200,
@@ -160,13 +158,13 @@ const styles = StyleSheet.create({
   dot: {
     width: 8,
     height: 8,
-    borderRadius: 4,
+    borderRadius: RADIUS.full,
     backgroundColor: 'rgba(255,255,255,0.85)',
   },
   dotSm: {
     width: 6,
     height: 6,
-    borderRadius: 3,
+    borderRadius: RADIUS.full,
     backgroundColor: 'rgba(255,255,255,0.5)',
   },
 });

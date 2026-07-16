@@ -27,7 +27,7 @@ import { campaignService } from '@/services/campaign';
 import { chatService } from '@/services/chat';
 import { useFavoriteBusinesses } from '@/hooks/useFavoriteBusinesses';
 import { useToast } from '@/components/Toast';
-import { F } from '@/utilities/constants';
+import { F, RADIUS, SHADOW } from '@/utilities/constants';
 
 const PLATFORM_ICON: Record<string, { iconName: string; color: string }> = {
   Instagram: { iconName: 'instagram', color: '#E1306C' },
@@ -126,6 +126,7 @@ function CampaignCard({ campaign, isApplied }: { campaign: BusinessActiveCampaig
         ) : (
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
             style={[styles.applyNowBtn, { backgroundColor: C.brinjal1 }]}
+            hitSlop={8}
             onPress={(e) => { e.stopPropagation(); goToDetail(); }}>
             <Text style={styles.applyNowBtnText}>{t('businessDetail.applyNow')}</Text>
             <Ionicons name="arrow-forward" size={12} color="#fff" />
@@ -512,7 +513,7 @@ const styles = StyleSheet.create({
   center:                { flex: 1, alignItems: 'center', justifyContent: 'center' },
   navBar:                { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 8, borderBottomWidth: 1 },
   navTitle:              { flex: 1, fontSize: 15, textAlign: 'center', marginHorizontal: 4, fontFamily: F.bold },
-  navActionBtn:          { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
+  navActionBtn:          { width: 36, height: 36, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
 
   hero:                  { paddingHorizontal: 20, paddingTop: 28, paddingBottom: 32 },
   heroInner:             { flexDirection: 'row', alignItems: 'flex-start', gap: 16 },
@@ -526,9 +527,9 @@ const styles = StyleSheet.create({
   heroStatDivider:       { width: 1, height: 28 },
 
   body:                  { padding: 16, gap: 12 },
-  infoCard:              { borderRadius: 16, padding: 16, gap: 12 },
+  infoCard:              { borderRadius: RADIUS.lg, padding: 16, gap: 12 },
   infoCardHeader:        { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  infoIconBox:           { width: 32, height: 32, borderRadius: 9, justifyContent: 'center', alignItems: 'center' },
+  infoIconBox:           { width: 32, height: 32, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center' },
   infoCardTitle:         { fontSize: 14, fontFamily: F.bold },
   aboutText:             { fontSize: 14, lineHeight: 22, fontFamily: F.regular },
 
@@ -538,36 +539,36 @@ const styles = StyleSheet.create({
   statLabel:             { fontSize: 11, fontFamily: F.medium },
   statDivider:           { width: 1, height: 30 },
 
-  websiteCard:           { flexDirection: 'row', alignItems: 'center', borderRadius: 16, padding: 14, gap: 12, borderWidth: 1 },
-  websiteIconBox:        { width: 44, height: 44, borderRadius: 12, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  websiteCard:           { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.lg, padding: 14, gap: 12, borderWidth: 1 },
+  websiteIconBox:        { width: 44, height: 44, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   websiteText:           { flex: 1 },
   websiteLabel:          { fontSize: 10, textTransform: 'uppercase', marginBottom: 2, fontFamily: F.bold },
   websiteUrl:            { fontSize: 13, fontFamily: F.semibold },
 
   categoriesWrap:        { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  categoryChip:          { borderRadius: 10, paddingHorizontal: 12, paddingVertical: 6 },
+  categoryChip:          { borderRadius: RADIUS.sm, paddingHorizontal: 12, paddingVertical: 6 },
   categoryChipText:      { fontSize: 12, fontFamily: F.bold },
 
   sectionDivider:        { height: 1, marginVertical: 4 },
   campaignsSection:      { gap: 12 },
   campaignsSectionHeader:{ flexDirection: 'row', alignItems: 'center', gap: 10 },
   campaignsSectionTitle: { fontSize: 17, fontFamily: F.bold },
-  countBadge:            { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
+  countBadge:            { borderRadius: RADIUS.sm, paddingHorizontal: 10, paddingVertical: 4 },
   countBadgeText:        { fontSize: 13, fontFamily: F.bold },
 
-  noCampaigns:           { borderRadius: 16, borderWidth: 1, padding: 32, alignItems: 'center', gap: 4 },
+  noCampaigns:           { borderRadius: RADIUS.lg, borderWidth: 1, padding: 32, alignItems: 'center', gap: 4 },
   noCampaignsTitle:      { fontSize: 16, fontFamily: F.bold },
   noCampaignsSub:        { fontSize: 13, textAlign: 'center', lineHeight: 20, fontFamily: F.regular },
 
-  campaignCard:          { flexDirection: 'row', borderRadius: 16, overflow: 'hidden', shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
+  campaignCard:          { flexDirection: 'row', borderRadius: RADIUS.lg, overflow: 'hidden', ...SHADOW.card },
   campaignThumb:         { width: 72, alignItems: 'center', justifyContent: 'center', flexShrink: 0, position: 'relative' },
-  featuredDot:           { position: 'absolute', top: 6, right: 4, backgroundColor: '#F59E0B', borderRadius: 8, width: 16, height: 16, alignItems: 'center', justifyContent: 'center' },
+  featuredDot:           { position: 'absolute', top: 6, right: 4, backgroundColor: '#F59E0B', borderRadius: RADIUS.full, width: 16, height: 16, alignItems: 'center', justifyContent: 'center' },
   campaignBody:          { flex: 1, padding: 12, gap: 4 },
   campaignTitle:         { fontSize: 14, lineHeight: 20, fontFamily: F.bold },
   campaignMeta:          { fontSize: 11, marginTop: 1, fontFamily: F.regular },
   campaignFooter:        { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4, flexWrap: 'wrap' },
   campaignBudget:        { fontSize: 13, fontFamily: F.bold },
-  deadlinePill:          { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
+  deadlinePill:          { borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingVertical: 3 },
   deadlineText:          { fontSize: 11, fontFamily: F.bold },
   locationRow:           { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 2 },
   campaignLocation:      { fontSize: 11, fontFamily: F.regular },
@@ -575,27 +576,27 @@ const styles = StyleSheet.create({
   appliedCount:          { fontSize: 13, fontFamily: F.bold },
   appliedLabel:          { fontSize: 9, textTransform: 'uppercase', fontFamily: F.semibold },
 
-  appliedPill:           { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#ECFDF5', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, alignSelf: 'flex-start', marginTop: 4 },
+  appliedPill:           { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#ECFDF5', borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingVertical: 4, alignSelf: 'flex-start', marginTop: 4 },
   appliedPillText:       { fontSize: 11, color: '#059669', fontFamily: F.bold },
-  applyNowBtn:           { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5, alignSelf: 'flex-start', marginTop: 4 },
+  applyNowBtn:           { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: RADIUS.sm, paddingHorizontal: 10, paddingVertical: 5, alignSelf: 'flex-start', marginTop: 4 },
   applyNowBtnText:       { fontSize: 11, color: '#fff', fontFamily: F.bold },
 
   // Sticky message bar
   msgBar:                { paddingHorizontal: 20, paddingVertical: 14, borderTopWidth: 1 },
-  msgBtn:                { borderRadius: 14, height: 52, flexDirection: 'row', gap: 8, justifyContent: 'center', alignItems: 'center' },
+  msgBtn:                { borderRadius: RADIUS.md, height: 52, flexDirection: 'row', gap: 8, justifyContent: 'center', alignItems: 'center' },
   msgBtnText:            { color: '#fff', fontSize: 16, fontFamily: F.bold },
 
   // Request modal
   modalOverlay:          { flex: 1, justifyContent: 'flex-end' },
   modalScrim:            { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.45)' },
-  modalSheet:            { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 40, gap: 14 },
+  modalSheet:            { borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl, padding: 20, paddingBottom: 40, gap: 14 },
   modalHandle:           { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginBottom: 4 },
   modalTitleRow:         { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   modalTitle:            { fontSize: 18, fontFamily: F.bold, flex: 1 },
-  modalCloseBtn:         { width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
+  modalCloseBtn:         { width: 32, height: 32, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
   modalSubtitle:         { fontSize: 13, lineHeight: 20, fontFamily: F.regular },
-  modalInput:            { borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, minHeight: 100, textAlignVertical: 'top', fontFamily: F.regular },
+  modalInput:            { borderRadius: RADIUS.sm, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, minHeight: 100, textAlignVertical: 'top', fontFamily: F.regular },
   modalCounter:          { fontSize: 11, textAlign: 'right', marginTop: -6, fontFamily: F.regular },
-  modalSendBtn:          { borderRadius: 14, height: 52, justifyContent: 'center', alignItems: 'center' },
+  modalSendBtn:          { borderRadius: RADIUS.md, height: 52, justifyContent: 'center', alignItems: 'center' },
   modalSendText:         { color: '#fff', fontSize: 16, fontFamily: F.bold },
 });

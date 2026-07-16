@@ -3,7 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Animated, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useAppColors } from '@/context/ThemeContext';
 import { useKeyboardOffset } from '@/hooks/useKeyboardOffset';
-import { F } from '@/utilities/constants';
+import { F, RADIUS, SHADOW } from '@/utilities/constants';
 
 type Props = {
   visible: boolean;
@@ -41,7 +41,7 @@ export function FilterSheet({ visible, title, resetLabel, applyLabel, onApply, o
 
         <View style={[s.footer, { borderTopColor: C.border }]}>
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-            style={({ pressed }) => [s.applyBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }, pressed && { opacity: 0.88 }]}
+            style={({ pressed }) => [s.applyBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }, pressed && { opacity: 0.9 }]}
             onPress={onApply}>
             <Text style={s.applyTxt}>{applyLabel}</Text>
           </Pressable>
@@ -53,14 +53,14 @@ export function FilterSheet({ visible, title, resetLabel, applyLabel, onApply, o
 
 const s = StyleSheet.create({
   backdrop: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)' },
-  sheet:    { position: 'absolute', left: 0, right: 0, bottom: 0, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '92%', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 20, shadowOffset: { width: 0, height: -4 }, elevation: 20 },
+  sheet:    { position: 'absolute', left: 0, right: 0, bottom: 0, borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl, maxHeight: '92%', ...SHADOW.floating, shadowOffset: { width: 0, height: -6 } },
   handle:   { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginTop: 12, marginBottom: 4 },
-  header:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1 },
+  header:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1 },
   title:    { fontSize: 17, fontFamily: F.extrabold },
   reset:    { fontSize: 14, fontFamily: F.semibold },
   body:     { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16, gap: 24 },
   footer:   { padding: 20, borderTopWidth: 1 },
-  applyBtn: { borderRadius: 14, height: 52, justifyContent: 'center', alignItems: 'center', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
+  applyBtn: { borderRadius: RADIUS.md, height: 54, justifyContent: 'center', alignItems: 'center', ...SHADOW.raised },
   applyTxt: { color: '#fff', fontSize: 16, fontFamily: F.bold },
 });
 
@@ -118,6 +118,6 @@ export function ActiveFilterChips({ chips }: { chips: ActiveFilterChip[] }) {
 
 const a = StyleSheet.create({
   row:      { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip:     { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1.5, maxWidth: '100%' },
+  chip:     { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 7, borderRadius: RADIUS.full, borderWidth: 1.5, maxWidth: '100%' },
   chipText: { fontSize: 12, fontFamily: F.semibold, flexShrink: 1 },
 });

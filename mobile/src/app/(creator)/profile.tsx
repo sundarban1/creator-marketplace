@@ -15,7 +15,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { creatorService, type ApiCreatorProfile } from '@/services/creator';
 import { useFavoriteBusinesses } from '@/hooks/useFavoriteBusinesses';
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
-import { F } from '@/utilities/constants';
+import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { pickAndUpload } from '@/utilities/uploadImage';
 
 const PLATFORM_MAP: Record<string, { platform: string; color: string; iconName: string }> = {
@@ -126,7 +126,7 @@ export default function CreatorProfileScreen() {
 
           {/* Top bar */}
           <View style={s.topBar}>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={s.topIconBtn} onPress={() => router.back()}>
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={s.topIconBtn} hitSlop={4} onPress={() => router.back()}>
               <Ionicons name="chevron-back" size={22} color="#fff" />
             </Pressable>
             <Text style={s.topTitle}>{t('profile.myProfile')}</Text>
@@ -228,7 +228,7 @@ export default function CreatorProfileScreen() {
             </View>
           ) : (
             <EmptyState
-              icon="grid-outline"
+              icon="th-large"
               title={t('profile.noCategoriesYet')}
               hint={t('profile.categoriesHint')}
               cta={t('profile.addContentCategories')}
@@ -268,7 +268,7 @@ export default function CreatorProfileScreen() {
             </View>
           ) : (
             <EmptyState
-              icon="share-social-outline"
+              icon="share-alt"
               title={t('profile.noSocialLinked')}
               hint={t('profile.socialHint')}
               cta={t('profile.addAccount')}
@@ -311,7 +311,7 @@ export default function CreatorProfileScreen() {
             </View>
           ) : (
             <EmptyState
-              icon="briefcase-outline"
+              icon="briefcase"
               title={t('profile.noPastWorkYet')}
               hint={t('profile.pastWorkHint')}
               cta={t('profile.addWorkSample')}
@@ -357,7 +357,7 @@ function EmptyState({
 }) {
   return (
     <View style={[s.emptyWrap, { borderColor: C.border }]}>
-      <Ionicons name={icon as never} size={32} color={C.border} />
+      <FontAwesome5 name={icon} solid size={28} color={C.border} />
       <Text style={[s.emptyTitle, { color: C.text }]}>{title}</Text>
       <Text style={[s.emptyHint, { color: C.textSecondary }]}>{hint}</Text>
       <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[s.emptyCta, { backgroundColor: C.brinjal1 }]} onPress={onPress}>
@@ -374,25 +374,25 @@ const s = StyleSheet.create({
 
   // Cover
   cover:    { height: 180, overflow: 'hidden' },
-  bubble:   { position: 'absolute', borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.08)' },
+  bubble:   { position: 'absolute', borderRadius: RADIUS.full, backgroundColor: 'rgba(255,255,255,0.08)' },
   bubble1:  { width: 160, height: 160, top: -50, right: -30 },
   bubble2:  { width: 100, height: 100, bottom: -20, left: 30 },
   bubble3:  { width: 60,  height: 60,  top: 20,   left: -20  },
   topBar:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 10 },
   topTitle: { fontSize: 20, color: '#fff', fontFamily: F.bold, lineHeight: 24 },
-  topIconBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center' },
+  topIconBtn: { width: 38, height: 38, borderRadius: RADIUS.full, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center' },
 
   // Profile card (floats over cover)
-  profileCard: { marginHorizontal: 16, marginTop: -60, borderRadius: 20, padding: 20, alignItems: 'center', gap: 6,
-                 shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 20, shadowOffset: { width: 0, height: 8 }, elevation: 8 },
+  profileCard: { marginHorizontal: 16, marginTop: -60, borderRadius: RADIUS.xl, padding: 20, alignItems: 'center', gap: 6,
+                 ...SHADOW.floating },
 
   // Avatar
   avatarArea:     { marginTop: -50, marginBottom: 6, alignItems: 'center', alignSelf: 'center' },
   avatarPressable:{ position: 'relative', alignItems: 'center', justifyContent: 'center' },
-  avatar:         { width: 96, height: 96, borderRadius: 48, justifyContent: 'center', alignItems: 'center',
+  avatar:         { width: 96, height: 96, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center',
                     borderWidth: 4, borderColor: '#fff', overflow: 'hidden' },
   avatarInitial:  { fontSize: 38, color: '#fff', fontFamily: F.bold, textAlign: 'center', lineHeight: 96 },
-  cameraBadge:    { position: 'absolute', bottom: 2, right: 2, width: 28, height: 28, borderRadius: 14,
+  cameraBadge:    { position: 'absolute', bottom: 2, right: 2, width: 28, height: 28, borderRadius: RADIUS.full,
                     justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#fff' },
 
   // Identity
@@ -404,8 +404,8 @@ const s = StyleSheet.create({
   bio:         { fontSize: 13, textAlign: 'center', lineHeight: 20, paddingHorizontal: 8, fontFamily: F.regular },
 
   actionRow:   { flexDirection: 'row', gap: 10, marginTop: 6 },
-  editBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
-                 borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 8 },
+  editBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, minHeight: 40,
+                 borderWidth: 1.5, borderRadius: RADIUS.md, paddingHorizontal: 16, paddingVertical: 8 },
   editBtnText: { fontSize: 13, fontFamily: F.bold },
 
   // Stats strip
@@ -417,38 +417,37 @@ const s = StyleSheet.create({
   statDivider:  { width: 1, height: 32 },
 
   // Section cards
-  sectionCard:   { marginHorizontal: 16, marginTop: 12, borderRadius: 16, padding: 18,
-                   shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
+  sectionCard:   { marginHorizontal: 16, marginTop: 12, borderRadius: RADIUS.lg, padding: 18, ...SHADOW.card },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
   sectionTitle:  { fontSize: 15, fontFamily: F.bold },
   sectionAction: { fontSize: 13, fontFamily: F.bold },
 
   // Category chips
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip:     { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 12 },
+  chip:     { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 7, borderRadius: RADIUS.sm },
   chipText: { fontSize: 13, fontFamily: F.semibold },
 
   // Social / portfolio rows
   cardList:      { gap: 10 },
-  socialRow:     { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 14, padding: 12, borderWidth: 1 },
-  platformBubble:{ width: 42, height: 42, borderRadius: 12, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  socialRow:     { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: RADIUS.md, padding: 12, borderWidth: 1 },
+  platformBubble:{ width: 42, height: 42, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   socialMeta:    { flex: 1, gap: 2 },
   socialName:    { fontSize: 14, fontFamily: F.bold },
   socialHandle:  { fontSize: 12, fontFamily: F.regular },
-  followerPill:  { alignItems: 'center', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, marginRight: 4 },
+  followerPill:  { alignItems: 'center', paddingHorizontal: 10, paddingVertical: 4, borderRadius: RADIUS.sm, marginRight: 4 },
   followerNum:   { fontSize: 13, fontFamily: F.bold },
   followerLbl:   { fontSize: 9, textTransform: 'uppercase', fontFamily: F.semibold },
 
   // Add more
-  addMoreRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
-                 borderRadius: 12, borderWidth: 1.5, borderStyle: 'dashed', paddingVertical: 11 },
+  addMoreRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, minHeight: 40,
+                 borderRadius: RADIUS.md, borderWidth: 1.5, borderStyle: 'dashed', paddingVertical: 11 },
   addMoreText: { fontSize: 13, fontFamily: F.bold },
 
   // Empty state
   emptyWrap:    { alignItems: 'center', gap: 8, paddingVertical: 20, paddingHorizontal: 12,
-                  borderWidth: 1.5, borderRadius: 16, borderStyle: 'dashed' },
+                  borderWidth: 1.5, borderRadius: RADIUS.lg, borderStyle: 'dashed' },
   emptyTitle:   { fontSize: 14, fontFamily: F.bold },
   emptyHint:    { fontSize: 12, textAlign: 'center', lineHeight: 18, fontFamily: F.regular },
-  emptyCta:     { borderRadius: 12, paddingHorizontal: 20, paddingVertical: 9, marginTop: 4 },
+  emptyCta:     { borderRadius: RADIUS.md, paddingHorizontal: 20, paddingVertical: 9, minHeight: 40, justifyContent: 'center', alignItems: 'center', marginTop: 4 },
   emptyCtaText: { fontSize: 13, color: '#fff', fontFamily: F.bold },
 });

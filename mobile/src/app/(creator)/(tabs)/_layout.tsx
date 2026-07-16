@@ -9,6 +9,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { DrawerMenu } from '@/features/creator/components/DrawerMenu';
 import { useNotificationBadge } from '@/context/NotificationContext';
 import { scrollToTopEvents } from '@/lib/scrollToTopEvents';
+import { RADIUS, SHADOW } from '@/utilities/constants';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
@@ -135,38 +136,37 @@ const tabS = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     height: Platform.OS === 'ios' ? 84 : 64,
-    paddingTop: 6,
+    paddingTop: 8,
     paddingBottom: Platform.OS === 'ios' ? 24 : 6,
-    paddingHorizontal: 4,
+    paddingHorizontal: 6,
     borderTopWidth: StyleSheet.hairlineWidth,
-    shadowColor: '#000',
-    shadowOpacity: 0.07,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: -4 },
-    elevation: 12,
+    borderTopLeftRadius: RADIUS.xl,
+    borderTopRightRadius: RADIUS.xl,
+    ...SHADOW.floating,
+    shadowOffset: { width: 0, height: -6 },
   },
   item: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 2,
+    gap: 3,
   },
   bubble: {
-    width: 44,
+    width: 46,
     height: 32,
-    borderRadius: 14,
+    borderRadius: RADIUS.md,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
   },
   label: {
-    fontSize: 10,
-    letterSpacing: 0,
+    fontSize: 10.5,
+    letterSpacing: 0.1,
   },
   dot: {
     width: 4,
     height: 4,
-    borderRadius: 2,
+    borderRadius: RADIUS.full,
     marginTop: 1,
   },
   badge: {
@@ -174,12 +174,14 @@ const tabS = StyleSheet.create({
     top: 1,
     right: 2,
     backgroundColor: '#EF4444',
-    borderRadius: 8,
+    borderRadius: RADIUS.full,
     minWidth: 15,
     height: 15,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 3,
+    borderWidth: 1.5,
+    borderColor: '#fff',
   },
   badgeTxt: {
     fontSize: 8,

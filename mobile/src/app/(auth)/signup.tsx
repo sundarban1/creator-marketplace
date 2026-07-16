@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { useRef, useState } from 'react';
 import {
   Animated,
@@ -17,7 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage, type TFn } from '@/context/LanguageContext';
 import { authService } from '@/services/auth';
-import { F } from '@/utilities/constants';
+import { F, RADIUS, SHADOW } from '@/utilities/constants';
 
 const PRIMARY = '#5B21B6';
 const INDIGO  = '#4F46E5';
@@ -36,11 +36,11 @@ function getPasswordError(pwd: string, t: TFn): string | undefined {
 const ROLES = [
   {
     key: 'CREATOR',  labelKey: 'signupScreen.roleCreatorLabel',  subKey: 'signupScreen.roleCreatorSub',
-    icon: 'camera-outline' as const,
+    icon: 'camera' as const,
   },
   {
     key: 'BUSINESS', labelKey: 'signupScreen.roleBusinessLabel',  subKey: 'signupScreen.roleBusinessSub',
-    icon: 'briefcase-outline' as const,
+    icon: 'briefcase' as const,
   },
 ] as const;
 
@@ -172,6 +172,7 @@ export default function SignupScreen() {
             </View>
             <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
               style={[s.backBtn, { borderColor: '#E5E7EB', backgroundColor: C.surface }]}
+              hitSlop={8}
               onPress={() => (router.canGoBack() ? router.back() : router.replace('/login'))}>
               <Ionicons name="chevron-back" size={18} color={C.text} />
             </Pressable>
@@ -210,7 +211,7 @@ export default function SignupScreen() {
                   ]}
                   onPress={() => { setRole(r.key); setSubmitted(false); setApiError(''); }}>
                   <View style={[s.roleIconBox, { backgroundColor: active ? `${PRIMARY}12` : '#F9FAFB' }]}>
-                    <Ionicons name={r.icon} size={24} color={active ? PRIMARY : '#9CA3AF'} />
+                    <FontAwesome5 name={r.icon} size={20} color={active ? PRIMARY : '#9CA3AF'} solid />
                     {active && (
                       <View style={s.roleIconBadge}>
                         <Ionicons name="sparkles" size={9} color={PRIMARY} />
@@ -331,11 +332,11 @@ const s = StyleSheet.create({
   appHeader:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 },
   appHeaderLeft:{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
   logoImage:    { width: 120, height: 120 / (1740 / 620) },
-  backBtn:      { width: 34, height: 34, borderRadius: 10, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center' },
+  backBtn:      { width: 34, height: 34, borderRadius: RADIUS.sm, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center' },
 
-  tabBar:      { flexDirection: 'row', borderRadius: 12, padding: 4, marginBottom: 20, gap: 2 },
-  tabBtn:      { flex: 1, height: 40, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
-  tabBtnActive:{ backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 3 },
+  tabBar:      { flexDirection: 'row', borderRadius: RADIUS.md, padding: 4, marginBottom: 20, gap: 2 },
+  tabBtn:      { flex: 1, height: 40, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center' },
+  tabBtnActive:{ backgroundColor: '#fff', ...SHADOW.card },
   tabBtnText:  { fontSize: 14, fontFamily: F.medium },
 
   headingWrap: { marginBottom: 22, gap: 6 },
@@ -345,44 +346,44 @@ const s = StyleSheet.create({
   sectionLabel: { fontSize: 13, fontFamily: F.semibold, marginBottom: 10 },
 
   roleRow:     { flexDirection: 'row', gap: 12, marginBottom: 22 },
-  roleCard:    { flex: 1, borderRadius: 14, borderWidth: 1.5, padding: 14, gap: 8, alignItems: 'center' },
-  roleIconBox: { width: 52, height: 52, borderRadius: 16, justifyContent: 'center', alignItems: 'center', position: 'relative' },
-  roleIconBadge:{ position: 'absolute', top: -2, right: -2, width: 16, height: 16, borderRadius: 8, backgroundColor: '#EDE9FE', justifyContent: 'center', alignItems: 'center' },
+  roleCard:    { flex: 1, borderRadius: RADIUS.md, borderWidth: 1.5, padding: 14, gap: 8, alignItems: 'center' },
+  roleIconBox: { width: 52, height: 52, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center', position: 'relative' },
+  roleIconBadge:{ position: 'absolute', top: -2, right: -2, width: 16, height: 16, borderRadius: RADIUS.full, backgroundColor: '#EDE9FE', justifyContent: 'center', alignItems: 'center' },
   roleLabel:   { fontSize: 13, fontFamily: F.bold, textAlign: 'center' },
   roleSub:     { fontSize: 11, color: '#6B7280', fontFamily: F.regular, textAlign: 'center', lineHeight: 15 },
 
   form:     { gap: 14, marginBottom: 4 },
   fieldWrap:    { gap: 6 },
   fieldLabel:   { fontSize: 13, fontFamily: F.semibold },
-  field:        { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 14, height: 50, gap: 10 },
+  field:        { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: RADIUS.md, paddingHorizontal: 14, height: 50, gap: 10 },
   fieldIcon:    { flexShrink: 0 },
   fieldInput:   { flex: 1, fontSize: 15, fontFamily: F.regular },
-  eyeBtn:       { padding: 2 },
+  eyeBtn:       { padding: 8 },
   fieldError:   { flexDirection: 'row', alignItems: 'center', gap: 4 },
   fieldErrorText:{ fontSize: 12, color: '#EF4444', fontFamily: F.medium },
-  domainSuggestBox:      { borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 12, overflow: 'hidden' },
+  domainSuggestBox:      { borderWidth: 1, borderColor: '#E5E7EB', borderRadius: RADIUS.md, overflow: 'hidden' },
   domainSuggestItem:     { paddingHorizontal: 14, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#F3F4F6' },
   domainSuggestText:     { fontSize: 14, fontFamily: F.regular },
   domainSuggestTextBold: { fontFamily: F.semibold },
 
   rulesRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
-  rulePill: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 8, borderWidth: 1, paddingHorizontal: 8, paddingVertical: 4 },
+  rulePill: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: RADIUS.sm, borderWidth: 1, paddingHorizontal: 8, paddingVertical: 4 },
   ruleText: { fontSize: 11, fontFamily: F.medium },
 
   passwordHint: { fontSize: 11, color: '#9CA3AF', fontFamily: F.regular, marginTop: -6 },
 
-  errorBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12, borderRadius: 10, backgroundColor: '#FFF1F2', borderWidth: 1, borderColor: '#FECDD3' },
+  errorBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12, borderRadius: RADIUS.sm, backgroundColor: '#FFF1F2', borderWidth: 1, borderColor: '#FECDD3' },
   errorText:   { fontSize: 13, color: '#EF4444', flex: 1, fontFamily: F.medium },
 
-  primaryBtn:     { height: 52, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginTop: 18, marginBottom: 20 },
+  primaryBtn:     { height: 52, borderRadius: RADIUS.md, alignItems: 'center', justifyContent: 'center', marginTop: 18, marginBottom: 20, ...SHADOW.raised },
   primaryBtnText: { fontSize: 16, color: '#fff', fontFamily: F.bold },
 
   divider:     { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 },
   dividerLine: { flex: 1, height: StyleSheet.hairlineWidth },
   dividerText: { fontSize: 12, color: '#9CA3AF', fontFamily: F.regular },
 
-  socialBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, height: 50, borderRadius: 12, borderWidth: 1.5, marginBottom: 16 },
-  googleBadge:   { width: 22, height: 22, borderRadius: 11, backgroundColor: '#4285F4', justifyContent: 'center', alignItems: 'center' },
+  socialBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, height: 50, borderRadius: RADIUS.md, borderWidth: 1.5, marginBottom: 16 },
+  googleBadge:   { width: 22, height: 22, borderRadius: RADIUS.full, backgroundColor: '#4285F4', justifyContent: 'center', alignItems: 'center' },
   googleG:       { color: '#fff', fontSize: 12, fontFamily: F.bold },
   socialBtnText: { fontSize: 15, fontFamily: F.semibold },
 

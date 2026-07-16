@@ -20,7 +20,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/components/Toast';
 import { businessReferralService, type ApiBusinessReferralOverview } from '@/services/business-referral';
-import { F } from '@/utilities/constants';
+import { F, RADIUS, SHADOW } from '@/utilities/constants';
 
 const STATUS_META: Record<string, { bg: string; text: string }> = {
   PENDING:   { bg: '#FEF3C7', text: '#92400E' },
@@ -214,43 +214,43 @@ export default function BusinessReferralScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  gradientTopBar: { overflow: 'hidden', borderBottomLeftRadius: 16, borderBottomRightRadius: 16 },
+  gradientTopBar: { overflow: 'hidden', borderBottomLeftRadius: RADIUS.lg, borderBottomRightRadius: RADIUS.lg },
   topBar:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
   topTitle:  { fontSize: 16, fontFamily: F.bold },
   content:   { padding: 16, paddingBottom: 32, gap: 16 },
 
-  card: { borderRadius: 14, padding: 16, gap: 8, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
+  card: { borderRadius: RADIUS.md, padding: 16, gap: 8, ...SHADOW.card },
   cardTitle: { fontSize: 15, fontFamily: F.bold, marginBottom: 4 },
   stepText: { fontSize: 13, lineHeight: 20, fontFamily: F.regular },
   conditionNote: { fontSize: 12, fontFamily: F.medium, marginTop: 6, lineHeight: 18 },
 
   field: { gap: 6 },
   label: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: F.bold },
-  codeCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, borderRadius: 14, paddingVertical: 18 },
+  codeCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, borderRadius: RADIUS.md, paddingVertical: 18, ...SHADOW.raised },
   codeText: { fontSize: 24, color: '#fff', letterSpacing: 4, fontFamily: F.bold },
   shareHint: { fontSize: 11, textAlign: 'center', fontFamily: F.regular },
 
-  referredByRow: { flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 12, padding: 12 },
+  referredByRow: { flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: RADIUS.sm, padding: 12 },
   referredByText: { fontSize: 13, fontFamily: F.regular },
 
   applyCodeRow: { flexDirection: 'row', gap: 8, marginTop: 4 },
-  applyCodeInput: { flex: 1, borderRadius: 10, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, letterSpacing: 1, fontFamily: F.regular },
-  applyCodeBtn: { borderRadius: 10, paddingHorizontal: 16, justifyContent: 'center', alignItems: 'center' },
+  applyCodeInput: { flex: 1, borderRadius: RADIUS.sm, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, letterSpacing: 1, fontFamily: F.regular },
+  applyCodeBtn: { borderRadius: RADIUS.sm, paddingHorizontal: 16, justifyContent: 'center', alignItems: 'center' },
   applyCodeBtnText: { color: '#fff', fontSize: 13, fontFamily: F.bold },
 
   sectionHeader: { fontSize: 11, letterSpacing: 0.5, textTransform: 'uppercase', fontFamily: F.bold },
-  emptyWrap: { alignItems: 'center', borderRadius: 14, paddingVertical: 32, paddingHorizontal: 16, gap: 8 },
+  emptyWrap: { alignItems: 'center', borderRadius: RADIUS.md, paddingVertical: 32, paddingHorizontal: 16, gap: 8 },
   emptyTitle: { fontSize: 14, fontFamily: F.bold },
   emptyHint: { fontSize: 12, textAlign: 'center', fontFamily: F.regular },
 
   referralRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12, paddingHorizontal: 4 },
-  referralAvatar: { width: 36, height: 36, borderRadius: 18 },
+  referralAvatar: { width: 36, height: 36, borderRadius: RADIUS.full },
   referralAvatarFallback: { justifyContent: 'center', alignItems: 'center' },
   referralInfo: { flex: 1, gap: 2 },
   referralName: { fontSize: 13, fontFamily: F.semibold },
   referralDate: { fontSize: 11, fontFamily: F.regular },
-  statusPill: { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
+  statusPill: { borderRadius: RADIUS.sm, paddingHorizontal: 10, paddingVertical: 4 },
   statusPillText: { fontSize: 11, fontFamily: F.bold },
-  resendBtn: { borderRadius: 10, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 6 },
+  resendBtn: { borderRadius: RADIUS.sm, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 6 },
   resendBtnText: { fontSize: 11, fontFamily: F.bold },
 });

@@ -44,7 +44,7 @@ import type { FacebookPageOption } from '@/services/creator';
 import { useAppColors, useIsDark } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/components/Toast';
-import { COLORS, F } from '@/utilities/constants';
+import { COLORS, F, RADIUS, SHADOW } from '@/utilities/constants';
 import { pickAndUpload } from '@/utilities/uploadImage';
 import { formatPhoneDisplay, getAccountIdentityLine, isValidNepaliPhone, normalizePhoneForSubmit } from '@/utilities/phone';
 import {
@@ -1800,7 +1800,7 @@ export default function CreatorSettingsScreen() {
                     placeholderTextColor={C.textSecondary}
                     autoCapitalize="none"
                   />
-                  <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => setShowNewPw((v) => !v)} style={styles.eyeBtn}>
+                  <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => setShowNewPw((v) => !v)} style={styles.eyeBtn} hitSlop={8}>
                     <Ionicons name={showNewPw ? 'eye-off-outline' : 'eye-outline'} size={20} color={C.textSecondary} />
                   </Pressable>
                 </View>
@@ -1821,7 +1821,7 @@ export default function CreatorSettingsScreen() {
                     placeholderTextColor={C.textSecondary}
                     autoCapitalize="none"
                   />
-                  <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => setShowConfirmPw((v) => !v)} style={styles.eyeBtn}>
+                  <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => setShowConfirmPw((v) => !v)} style={styles.eyeBtn} hitSlop={8}>
                     <Ionicons name={showConfirmPw ? 'eye-off-outline' : 'eye-outline'} size={20} color={C.textSecondary} />
                   </Pressable>
                 </View>
@@ -2337,7 +2337,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { flex: 1 },
   scrollContent: { paddingTop: 16, paddingBottom: 24 },
-  gradientTopBar: { overflow: 'hidden', borderBottomLeftRadius: 20, borderBottomRightRadius: 20 },
+  gradientTopBar: { overflow: 'hidden', borderBottomLeftRadius: RADIUS.lg, borderBottomRightRadius: RADIUS.lg },
 
   topBar: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -2350,11 +2350,10 @@ const styles = StyleSheet.create({
     letterSpacing: 0, marginTop: 20, marginBottom: 6, marginHorizontal: 20, fontFamily: F.bold,
   },
   card: {
-    marginHorizontal: 16, borderRadius: 14,
-    shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 }, elevation: 2, overflow: 'hidden',
+    marginHorizontal: 16, borderRadius: RADIUS.md,
+    ...SHADOW.card, overflow: 'hidden',
   },
-  hintCard: { marginHorizontal: 16, borderRadius: 10, padding: 12, marginTop: 8, marginBottom: 4 },
+  hintCard: { marginHorizontal: 16, borderRadius: RADIUS.sm, padding: 12, marginTop: 8, marginBottom: 4 },
   hintText: { fontSize: 13, lineHeight: 18, fontFamily: F.regular },
   saveHint: { textAlign: 'center', fontSize: 12, marginTop: 8, marginHorizontal: 16, fontFamily: F.regular },
   subLabel: { fontSize: 11, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: F.bold },
@@ -2365,78 +2364,77 @@ const styles = StyleSheet.create({
   navRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   navArrow: { fontSize: 18 },
   navValue: { fontSize: 14, fontFamily: F.regular },
-  navIonIconWrap: { width: 34, height: 34, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
+  navIonIconWrap: { width: 34, height: 34, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center' },
 
   accordionCard: {
-    borderRadius: 14, borderWidth: 1.5, overflow: 'hidden', backgroundColor: 'transparent',
-    shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 1,
+    borderRadius: RADIUS.md, borderWidth: 1.5, overflow: 'hidden', backgroundColor: 'transparent',
+    ...SHADOW.card,
   },
   accordionHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
-  accordionIconWrap: { width: 30, height: 30, borderRadius: 10, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  accordionIconWrap: { width: 30, height: 30, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   accordionEmoji: { fontSize: 15 },
   accordionTitle: { flex: 1, fontSize: 14, lineHeight: 20, fontFamily: F.bold },
-  accordionChevronWrap: { width: 26, height: 26, borderRadius: 8, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  accordionChevronWrap: { width: 26, height: 26, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   accordionBody: { fontSize: 13, lineHeight: 21, paddingHorizontal: 14, paddingBottom: 14, paddingTop: 12, borderTopWidth: 1, fontFamily: F.regular },
 
   chipSection: { paddingHorizontal: 12, paddingTop: 8, paddingBottom: 12 },
   sliderSection: { paddingHorizontal: 16, paddingVertical: 16 },
   chipGroup: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, borderWidth: 1.5 },
+  chip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: RADIUS.sm, borderWidth: 1.5 },
   chipText: { fontSize: 13, fontFamily: F.medium },
 
   accountCard: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, paddingBottom: 12 },
-  accountAvatar: { width: 50, height: 50, borderRadius: 25, justifyContent: 'center', alignItems: 'center' },
+  accountAvatar: { width: 50, height: 50, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
   accountAvatarText: { fontSize: 20, color: '#fff', fontFamily: F.bold },
   accountName: { fontSize: 16, fontFamily: F.bold },
   accountEmail: { fontSize: 13, marginTop: 2, fontFamily: F.regular },
-  editBtn: { borderRadius: 8, paddingHorizontal: 14, paddingVertical: 6 },
+  editBtn: { borderRadius: RADIUS.sm, paddingHorizontal: 14, paddingVertical: 6, minHeight: 32, justifyContent: 'center' },
   editBtnText: { fontSize: 13, fontFamily: F.bold },
 
   // Language (improved)
   langCard: {
     flexDirection: 'row', alignItems: 'center', gap: 14,
-    borderRadius: 14, borderWidth: 2, padding: 16,
-    shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 }, elevation: 2,
+    borderRadius: RADIUS.md, borderWidth: 2, padding: 16,
+    ...SHADOW.card,
   },
   langFlag: { fontSize: 32 },
   langNameRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 2 },
   langName: { fontSize: 15, fontFamily: F.bold },
   langNative: { fontSize: 13, fontFamily: F.regular },
   langDesc: { fontSize: 12, fontFamily: F.regular },
-  activeLangCheck: { width: 24, height: 24, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
-  inactiveLangCircle: { width: 24, height: 24, borderRadius: 12, borderWidth: 2 },
-  soonBadge: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
+  activeLangCheck: { width: 24, height: 24, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
+  inactiveLangCircle: { width: 24, height: 24, borderRadius: RADIUS.full, borderWidth: 2 },
+  soonBadge: { borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingVertical: 4 },
   badgeText: { fontSize: 11, fontFamily: F.bold },
 
   versionText: { fontSize: 14, fontFamily: F.medium },
 
   socialRow: { alignItems: 'center' },
-  socialIconWrap: { width: 42, height: 42, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
+  socialIconWrap: { width: 42, height: 42, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center' },
   socialEmoji: { fontSize: 20 },
   socialPlatformName: { fontSize: 14, fontFamily: F.bold },
   socialMeta: { fontSize: 12, marginTop: 1, fontFamily: F.regular },
   socialUrl: { fontSize: 11, marginTop: 1, fontFamily: F.regular },
   socialNotConnected: { fontSize: 12, marginTop: 2, fontFamily: F.regular },
   socialActions: { flexDirection: 'row', gap: 6 },
-  socialEditBtn: { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 },
+  socialEditBtn: { borderRadius: RADIUS.sm, paddingHorizontal: 10, paddingVertical: 5 },
   socialEditBtnText: { fontSize: 12, fontFamily: F.bold },
-  socialDisconnectBtn: { width: 28, height: 28, borderRadius: 8, backgroundColor: '#FEE2E2', justifyContent: 'center', alignItems: 'center' },
+  socialDisconnectBtn: { width: 28, height: 28, borderRadius: RADIUS.sm, backgroundColor: '#FEE2E2', justifyContent: 'center', alignItems: 'center' },
 
   // ── Connect Accounts (OAuth) ─────────────────────────────────────────────────
   connectPlatformNameRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   connectPlatformHint:    { fontSize: 11, marginTop: 2, fontFamily: F.regular },
   connectInstagramDirectLink: { fontSize: 11, marginTop: 3, fontFamily: F.bold, textDecorationLine: 'underline' },
-  connectBtn:     { borderRadius: 8, paddingHorizontal: 14, height: 32, justifyContent: 'center', alignItems: 'center', minWidth: 84 },
+  connectBtn:     { borderRadius: RADIUS.sm, paddingHorizontal: 14, height: 32, justifyContent: 'center', alignItems: 'center', minWidth: 84 },
   connectBtnText: { fontSize: 12, fontFamily: F.bold, color: '#fff' },
-  comingSoonBtn:  { borderRadius: 8, paddingHorizontal: 10, height: 32, justifyContent: 'center', alignItems: 'center', borderWidth: 1 },
+  comingSoonBtn:  { borderRadius: RADIUS.sm, paddingHorizontal: 10, height: 32, justifyContent: 'center', alignItems: 'center', borderWidth: 1 },
   comingSoonBtnText: { fontSize: 11, fontFamily: F.semibold },
 
   // ── Facebook/Instagram Page picker ────────────────────────────────────────────
   pagePickerSheet: {
     position: 'absolute', top: '25%', left: 20, right: 20,
-    borderRadius: 16, padding: 16, maxHeight: '55%',
-    shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 20, shadowOffset: { width: 0, height: 4 }, elevation: 20,
+    borderRadius: RADIUS.lg, padding: 16, maxHeight: '55%',
+    ...SHADOW.floating,
   },
   pagePickerTitle: { fontSize: 16, fontFamily: F.bold, marginBottom: 8 },
   pagePickerRow: { paddingVertical: 12, borderBottomWidth: 1 },
@@ -2449,14 +2447,14 @@ const styles = StyleSheet.create({
   sheetBackdrop: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)' },
   socialSheet: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
-    borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl,
     maxHeight: '90%',
-    shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 20, shadowOffset: { width: 0, height: -4 }, elevation: 20,
+    ...SHADOW.floating,
   },
   sheetHandle: { width: 38, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.4)', alignSelf: 'center', marginTop: 10 },
-  sheetHeader: { borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 20, paddingTop: 20, paddingBottom: 18 },
+  sheetHeader: { borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl, paddingHorizontal: 20, paddingTop: 20, paddingBottom: 18 },
   sheetHeaderInner: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  sheetPlatformIcon: { width: 52, height: 52, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' },
+  sheetPlatformIcon: { width: 52, height: 52, borderRadius: RADIUS.lg, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' },
   sheetTitle: { fontSize: 20, color: '#fff', fontFamily: F.bold },
   sheetSubtitle: { fontSize: 12, color: 'rgba(255,255,255,0.75)', marginTop: 3, fontFamily: F.regular },
   sheetBody: { padding: 20, paddingBottom: 36 },
@@ -2468,42 +2466,42 @@ const styles = StyleSheet.create({
   // Platform grid
   platformGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   platformGridItem: {
-    width: '30%', borderRadius: 14, borderWidth: 1.5, paddingVertical: 12, paddingHorizontal: 6,
+    width: '30%', borderRadius: RADIUS.md, borderWidth: 1.5, paddingVertical: 12, paddingHorizontal: 6,
     alignItems: 'center', gap: 6, position: 'relative', overflow: 'hidden',
   },
   platformGridItemDisabled: { opacity: 0.5 },
   platformGridLabel: { fontSize: 11, textAlign: 'center', fontFamily: F.bold },
-  platformGridAddedBadge: { position: 'absolute', top: 4, right: 4, width: 16, height: 16, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
-  platformGridSelectedDot: { position: 'absolute', bottom: 6, width: 6, height: 6, borderRadius: 3 },
+  platformGridAddedBadge: { position: 'absolute', top: 4, right: 4, width: 16, height: 16, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
+  platformGridSelectedDot: { position: 'absolute', bottom: 6, width: 6, height: 6, borderRadius: RADIUS.full },
 
   // Inputs inside sheet
-  sheetInputWrap: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 14, minHeight: 50 },
+  sheetInputWrap: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: RADIUS.sm, paddingHorizontal: 14, minHeight: 50 },
   sheetInputPrefix: { fontSize: 18, marginRight: 6 },
   sheetInput: { flex: 1, fontSize: 15, paddingVertical: 12, fontFamily: F.regular },
-  sheetCountBadge: { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, marginLeft: 8 },
+  sheetCountBadge: { borderRadius: RADIUS.sm, paddingHorizontal: 10, paddingVertical: 4, marginLeft: 8 },
   sheetCountBadgeText: { fontSize: 13, fontFamily: F.bold },
 
   // Sheet action buttons
   sheetActions: { gap: 10, marginTop: 6 },
-  sheetSaveBtn: { borderRadius: 14, paddingVertical: 15, alignItems: 'center' },
+  sheetSaveBtn: { borderRadius: RADIUS.md, paddingVertical: 15, alignItems: 'center' },
   sheetSaveBtnRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  sheetSpinner: { width: 16, height: 16, borderRadius: 8, borderWidth: 2, borderColor: 'rgba(255,255,255,0.4)', borderTopColor: '#fff' },
+  sheetSpinner: { width: 16, height: 16, borderRadius: RADIUS.full, borderWidth: 2, borderColor: 'rgba(255,255,255,0.4)', borderTopColor: '#fff' },
   sheetSaveBtnText: { color: '#fff', fontSize: 15, fontFamily: F.bold },
-  sheetCancelBtn: { borderRadius: 14, paddingVertical: 13, alignItems: 'center', borderWidth: 1.5 },
+  sheetCancelBtn: { borderRadius: RADIUS.md, paddingVertical: 13, alignItems: 'center', borderWidth: 1.5 },
   sheetCancelBtnText: { fontSize: 14, fontFamily: F.semibold },
 
   // Add social button (dashed)
-  addSocialBtn: { marginHorizontal: 16, marginTop: 10, borderRadius: 14, borderWidth: 1.5, borderStyle: 'dashed', paddingVertical: 15, alignItems: 'center' },
+  addSocialBtn: { marginHorizontal: 16, marginTop: 10, borderRadius: RADIUS.md, borderWidth: 1.5, borderStyle: 'dashed', paddingVertical: 15, alignItems: 'center' },
   addSocialBtnText: { fontSize: 14, letterSpacing: 0.3, fontFamily: F.bold },
 
   // Empty state
-  socialEmptyState: { marginHorizontal: 16, marginBottom: 8, borderRadius: 16, borderWidth: 1, padding: 28, alignItems: 'center', gap: 6 },
+  socialEmptyState: { marginHorizontal: 16, marginBottom: 8, borderRadius: RADIUS.lg, borderWidth: 1, padding: 28, alignItems: 'center', gap: 6 },
   socialEmptyTitle: { fontSize: 15, fontFamily: F.bold },
   socialEmptySubtitle: { fontSize: 13, textAlign: 'center', lineHeight: 20, fontFamily: F.regular },
 
   // Follower badge on account cards
   socialMetaRow: { flexDirection: 'row', marginTop: 3, marginBottom: 2 },
-  socialFollowerBadge: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2 },
+  socialFollowerBadge: { borderRadius: RADIUS.full, paddingHorizontal: 8, paddingVertical: 2 },
   socialFollowerBadgeText: { fontSize: 11, fontFamily: F.bold },
   socialSyncedText: { fontSize: 10, fontFamily: F.regular, marginTop: 1 },
 
@@ -2513,13 +2511,13 @@ const styles = StyleSheet.create({
   inlineForm: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 14, gap: 12 },
   formField: { gap: 4 },
   formFieldLabel: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: F.bold },
-  formInput: { borderRadius: 10, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, fontFamily: F.regular },
-  formTextarea: { borderRadius: 10, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, minHeight: 120, fontFamily: F.regular },
+  formInput: { borderRadius: RADIUS.sm, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, fontFamily: F.regular },
+  formTextarea: { borderRadius: RADIUS.sm, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, minHeight: 120, fontFamily: F.regular },
   fieldError: { fontSize: 12, fontFamily: F.medium },
   formActions: { flexDirection: 'row', gap: 8 },
-  saveBtn: { borderRadius: 10, paddingVertical: 11, alignItems: 'center' },
+  saveBtn: { borderRadius: RADIUS.sm, paddingVertical: 11, alignItems: 'center' },
   saveBtnText: { fontSize: 14, color: '#fff', fontFamily: F.bold },
-  cancelBtn: { borderRadius: 10, paddingVertical: 11, alignItems: 'center' },
+  cancelBtn: { borderRadius: RADIUS.sm, paddingVertical: 11, alignItems: 'center' },
   cancelBtnText: { fontSize: 14, fontFamily: F.semibold },
 
   inlinePhonePanel: { paddingHorizontal: 16, paddingVertical: 14, gap: 12, borderBottomWidth: 1 },
@@ -2527,7 +2525,7 @@ const styles = StyleSheet.create({
   inlinePhonePanelTitle: { fontSize: 14, fontFamily: F.bold },
   inlinePhonePanelSub: { fontSize: 12, fontFamily: F.regular, marginTop: 2 },
 
-  pwRow: { flexDirection: 'row', alignItems: 'center', borderRadius: 10, borderWidth: 1.5, paddingHorizontal: 12 },
+  pwRow: { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.sm, borderWidth: 1.5, paddingHorizontal: 12 },
   pwInput: { flex: 1, fontSize: 14, paddingVertical: 11, fontFamily: F.regular },
   eyeBtn: { padding: 6 },
   eyeIcon: { fontSize: 18 },
@@ -2544,27 +2542,27 @@ const styles = StyleSheet.create({
   earningsStat: { alignItems: 'center', gap: 4 },
   earningsValue: { fontSize: 22, fontFamily: F.bold },
   earningsLabel: { fontSize: 11, textAlign: 'center', fontFamily: F.semibold },
-  earningsSkeletonValue: { width: 52, height: 26, borderRadius: 6, marginBottom: 2 },
+  earningsSkeletonValue: { width: 52, height: 26, borderRadius: RADIUS.sm, marginBottom: 2 },
 
-  paymentIcon: { width: 38, height: 38, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
-  checkboxOuter: { width: 22, height: 22, borderRadius: 6, borderWidth: 2, justifyContent: 'center', alignItems: 'center' },
+  paymentIcon: { width: 38, height: 38, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center' },
+  checkboxOuter: { width: 22, height: 22, borderRadius: RADIUS.sm, borderWidth: 2, justifyContent: 'center', alignItems: 'center' },
 
-  verifiedBadge: { backgroundColor: '#DCFCE7', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
+  verifiedBadge: { backgroundColor: '#DCFCE7', borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingVertical: 3 },
 
   // FAQ / legal
-  faqCard: { borderRadius: 12, padding: 14, gap: 6, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
+  faqCard: { borderRadius: RADIUS.md, padding: 14, gap: 6, ...SHADOW.card },
   faqQ: { fontSize: 14, lineHeight: 20, fontFamily: F.bold },
   faqA: { fontSize: 13, lineHeight: 19, fontFamily: F.regular },
-  helpSkeletonQ: { height: 14, borderRadius: 7, marginBottom: 8, width: '80%' },
-  helpSkeletonA: { height: 11, borderRadius: 5, marginBottom: 4, width: '100%' },
-  helpEmpty: { margin: 20, borderRadius: 16, borderWidth: 1, padding: 32, alignItems: 'center', gap: 8 },
+  helpSkeletonQ: { height: 14, borderRadius: RADIUS.sm, marginBottom: 8, width: '80%' },
+  helpSkeletonA: { height: 11, borderRadius: RADIUS.sm, marginBottom: 4, width: '100%' },
+  helpEmpty: { margin: 20, borderRadius: RADIUS.lg, borderWidth: 1, padding: 32, alignItems: 'center', gap: 8 },
   helpEmptyTitle: { fontSize: 15, textAlign: 'center', fontFamily: F.bold },
   helpEmptySubtitle: { fontSize: 13, textAlign: 'center', lineHeight: 19, fontFamily: F.regular },
   legalDate: { fontSize: 12, marginTop: 12, marginBottom: 4, fontFamily: F.regular },
   legalSection: { paddingVertical: 14, borderBottomWidth: 1, gap: 6 },
   legalTitle: { fontSize: 14, fontFamily: F.bold },
   legalBody: { fontSize: 13, lineHeight: 20, fontFamily: F.regular },
-  guideCard: { borderRadius: 14, padding: 16, gap: 8, marginBottom: 10, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
+  guideCard: { borderRadius: RADIUS.md, padding: 16, gap: 8, marginBottom: 10, ...SHADOW.card },
   guideHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   guideIcon: { fontSize: 22 },
   guideTitle: { fontSize: 15, fontFamily: F.bold },
@@ -2573,10 +2571,9 @@ const styles = StyleSheet.create({
   // Toast
   toast: {
     position: 'absolute', bottom: 32, left: 32, right: 32,
-    borderRadius: 12, paddingVertical: 12, paddingHorizontal: 18,
+    borderRadius: RADIUS.md, paddingVertical: 12, paddingHorizontal: 18,
     flexDirection: 'row', alignItems: 'center',
-    shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 }, elevation: 8,
+    ...SHADOW.floating,
   },
   toastText: { color: '#fff', fontSize: 14, flex: 1, fontFamily: F.semibold },
 
@@ -2586,30 +2583,29 @@ const styles = StyleSheet.create({
     justifyContent: 'center', alignItems: 'center', padding: 24,
   },
   confirmCard: {
-    width: '100%', borderRadius: 20, padding: 24,
-    shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 20,
-    shadowOffset: { width: 0, height: 8 }, elevation: 12,
+    width: '100%', borderRadius: RADIUS.xl, padding: 24,
+    ...SHADOW.floating,
   },
   confirmIconWrap: {
-    width: 56, height: 56, borderRadius: 28,
+    width: 56, height: 56, borderRadius: RADIUS.full,
     justifyContent: 'center', alignItems: 'center', marginBottom: 16,
   },
   confirmTitle: { fontSize: 20, marginBottom: 10, fontFamily: F.bold },
   confirmBody: { fontSize: 14, lineHeight: 22, marginBottom: 24, fontFamily: F.regular },
   confirmActions: { flexDirection: 'row', gap: 10 },
   confirmCancelBtn: {
-    flex: 1, borderWidth: 1.5, borderRadius: 12,
+    flex: 1, borderWidth: 1.5, borderRadius: RADIUS.md,
     paddingVertical: 13, alignItems: 'center',
   },
   confirmCancelText: { fontSize: 14, fontFamily: F.semibold },
   confirmActionBtn: {
-    flex: 1, borderRadius: 12,
+    flex: 1, borderRadius: RADIUS.md,
     paddingVertical: 13, alignItems: 'center',
   },
   confirmActionText: { color: '#fff', fontSize: 14, fontFamily: F.bold },
   dangerBanner: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
-    borderWidth: 1, borderRadius: 10, padding: 10, marginBottom: 20,
+    borderWidth: 1, borderRadius: RADIUS.sm, padding: 10, marginBottom: 20,
   },
   dangerBannerText: { fontSize: 12, flex: 1, lineHeight: 18, fontFamily: F.bold },
 });

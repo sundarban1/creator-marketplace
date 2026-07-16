@@ -1,17 +1,20 @@
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
-import { F } from '@/utilities/constants';
+import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { getAccountIdentityLine, isValidNepaliPhone } from '@/utilities/phone';
 
 const DRAWER_W = 280;
 
 type NavItem = {
   iconName: keyof typeof Ionicons.glyphMap;
+  // Set for items where the FontAwesome5 glyph reads sharper/more recognizable
+  // than its Ionicons counterpart — rendered instead of `iconName` when present.
+  faName?: string;
   labelKey: string;
   route: string;
   color: string;
@@ -19,12 +22,12 @@ type NavItem = {
 
 const ACCOUNT_ITEMS: NavItem[] = [
   { iconName: 'share-social-outline',    labelKey: 'drawer.socialAccounts',    route: '/(creator)/settings?section=social',    color: '#E1306C' },
-  { iconName: 'wallet-outline',          labelKey: 'drawer.myWallet',          route: '/(creator)/wallet',                     color: '#16A34A' },
-  { iconName: 'gift-outline',            labelKey: 'drawer.referAFriend',      route: '/(creator)/referral',                   color: '#EC4899' },
+  { iconName: 'wallet-outline', faName: 'wallet',        labelKey: 'drawer.myWallet',          route: '/(creator)/wallet',                     color: '#16A34A' },
+  { iconName: 'gift-outline',   faName: 'gift',          labelKey: 'drawer.referAFriend',      route: '/(creator)/referral',                   color: '#EC4899' },
   { iconName: 'images-outline',          labelKey: 'drawer.pastWork',          route: '/(creator)/settings?section=past-work', color: '#F59E0B' },
-  { iconName: 'shield-checkmark-outline', labelKey: 'drawer.security',         route: '/(creator)/settings?section=security',  color: '#3B82F6' },
-  { iconName: 'help-buoy-outline',       labelKey: 'drawer.support',           route: '/(creator)/settings?section=support',   color: '#0891B2' },
-  { iconName: 'scale-outline',           labelKey: 'drawer.legal',             route: '/(creator)/settings?section=legal',     color: '#6366F1' },
+  { iconName: 'shield-checkmark-outline', faName: 'shield-alt', labelKey: 'drawer.security',   route: '/(creator)/settings?section=security',  color: '#3B82F6' },
+  { iconName: 'help-buoy-outline', faName: 'life-ring',  labelKey: 'drawer.support',            route: '/(creator)/settings?section=support',   color: '#0891B2' },
+  { iconName: 'scale-outline', faName: 'balance-scale',  labelKey: 'drawer.legal',              route: '/(creator)/settings?section=legal',     color: '#6366F1' },
   { iconName: 'settings-outline',        labelKey: 'drawer.settings',          route: '/(creator)/settings',                  color: '#6B7280' },
 ];
 
@@ -93,13 +96,18 @@ export function DrawerMenu({ visible, user, onClose, onLogout }: Props) {
         {/* Nav */}
         <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
           <View style={[styles.navGroup, { backgroundColor: C.surface, borderColor: C.border }]}>
-            {ACCOUNT_ITEMS.map(({ iconName, labelKey, route, color }, idx) => (
+            {ACCOUNT_ITEMS.map(({ iconName, faName, labelKey, route, color }, idx) => (
               <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                 key={labelKey}
+                hitSlop={4}
                 style={[styles.navItem, idx < ACCOUNT_ITEMS.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}
                 onPress={() => { onClose(); router.push(route as Parameters<typeof router.push>[0]); }}>
                 <View style={[styles.navIconWrap, { backgroundColor: color + '18' }]}>
-                  <Ionicons name={iconName} size={18} color={color} />
+                  {faName ? (
+                    <FontAwesome5 name={faName} size={15} color={color} solid />
+                  ) : (
+                    <Ionicons name={iconName} size={18} color={color} />
+                  )}
                 </View>
                 <Text style={[styles.navLabel, { color: C.text }]}>{t(labelKey)}</Text>
                 <Ionicons name="chevron-forward" size={16} color={C.border} />
@@ -124,14 +132,13 @@ const styles = StyleSheet.create({
   backdrop: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.45)' },
   panel: {
     position: 'absolute', top: 0, bottom: 0, left: 0, width: DRAWER_W,
-    borderTopRightRadius: 28, borderBottomRightRadius: 28, overflow: 'hidden',
-    shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 20,
-    shadowOffset: { width: 6, height: 0 }, elevation: 20, flexDirection: 'column',
+    borderTopRightRadius: RADIUS.xl, borderBottomRightRadius: RADIUS.xl, overflow: 'hidden',
+    ...SHADOW.floating, shadowOffset: { width: 6, height: 0 }, flexDirection: 'column',
   },
-  header: { paddingHorizontal: 20, paddingBottom: 16 },
+  header: { paddingHorizontal: 20, paddingBottom: 20 },
   userRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   avatarCircle: {
-    width: 48, height: 48, borderRadius: 24,
+    width: 48, height: 48, borderRadius: RADIUS.full,
     backgroundColor: 'rgba(255,255,255,0.25)',
     justifyContent: 'center', alignItems: 'center',
     borderWidth: 2, borderColor: 'rgba(255,255,255,0.5)',
@@ -141,10 +148,10 @@ const styles = StyleSheet.create({
   userEmail: { fontSize: 11, color: 'rgba(255,255,255,0.7)', fontFamily: F.regular },
   scroll: { flex: 1 },
   scrollContent: { paddingTop: 8, paddingBottom: 18 },
-  navGroup: { marginHorizontal: 12, marginVertical: 4, borderRadius: 14, borderWidth: 1, overflow: 'hidden' },
-  navItem: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 9 },
-  navIconWrap: { width: 30, height: 30, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
+  navGroup: { marginHorizontal: 12, marginVertical: 4, borderRadius: RADIUS.md, borderWidth: 1, overflow: 'hidden' },
+  navItem: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 11, minHeight: 44 },
+  navIconWrap: { width: 32, height: 32, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center' },
   navLabel: { flex: 1, fontSize: 14, fontFamily: F.semibold, letterSpacing: 0.1 },
-  logout: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingTop: 12, borderTopWidth: 1 },
+  logout: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingVertical: 12, borderTopWidth: 1, minHeight: 44 },
   logoutText: { fontSize: 15, fontFamily: F.bold },
 });

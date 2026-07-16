@@ -20,7 +20,7 @@ import { useToast } from '@/components/Toast';
 import { profileService, type Category } from '@/services/profile';
 import { categoryService } from '@/services/category';
 import { PlacesAutocompleteInput } from '@/components/PlacesAutocompleteInput';
-import { F } from '@/utilities/constants';
+import { F, RADIUS, SHADOW } from '@/utilities/constants';
 
 function generateBusinessDescription(name: string, cats: string[]): string {
   if (cats.length === 0) return '';
@@ -245,28 +245,28 @@ export default function EditBusinessProfileScreen() {
 const styles = StyleSheet.create({
   container:     { flex: 1 },
   center:        { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  gradientTopBar: { overflow: 'hidden', borderBottomLeftRadius: 16, borderBottomRightRadius: 16 },
+  gradientTopBar: { overflow: 'hidden', borderBottomLeftRadius: RADIUS.lg, borderBottomRightRadius: RADIUS.lg },
   topBar:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
   topTitle:      { fontSize: 20, fontFamily: F.bold, lineHeight: 24 },
   content:       { paddingBottom: 24 },
   sectionHeader: { fontSize: 11, letterSpacing: 0, marginTop: 20, marginBottom: 6, marginHorizontal: 20, fontFamily: F.bold },
-  card:          { marginHorizontal: 16, borderRadius: 14, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2, overflow: 'hidden' },
+  card:          { marginHorizontal: 16, borderRadius: RADIUS.md, ...SHADOW.card, overflow: 'hidden' },
   field:         { padding: 16, gap: 8 },
   divider:       { height: 1 },
   label:         { fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: F.bold },
   labelRow:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  regenerateBtn: { borderRadius: 10, paddingHorizontal: 10, paddingVertical: 4 },
+  regenerateBtn: { borderRadius: RADIUS.sm, paddingHorizontal: 10, paddingVertical: 4 },
   regenerateBtnText: { fontSize: 11, fontFamily: F.semibold },
   subHint:       { fontSize: 12, lineHeight: 18, fontFamily: F.regular },
-  input:         { borderRadius: 10, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, fontFamily: F.regular },
-  textarea:      { borderRadius: 10, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, minHeight: 100, fontFamily: F.regular },
+  input:         { borderRadius: RADIUS.sm, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, fontFamily: F.regular },
+  textarea:      { borderRadius: RADIUS.sm, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, minHeight: 100, fontFamily: F.regular },
   charCount:     { fontSize: 11, textAlign: 'right', fontFamily: F.regular },
-  suggestBox:    { borderRadius: 10, borderWidth: 1.5, marginTop: 4, overflow: 'hidden' },
+  suggestBox:    { borderRadius: RADIUS.sm, borderWidth: 1.5, marginTop: 4, overflow: 'hidden' },
   suggestItem:   { paddingHorizontal: 12, paddingVertical: 11 },
   suggestText:   { fontSize: 13, fontFamily: F.regular },
   chipGrid:      { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
-  chip:          { borderRadius: 12, paddingHorizontal: 14, paddingVertical: 8 },
+  chip:          { borderRadius: RADIUS.full, paddingHorizontal: 14, paddingVertical: 8 },
   chipText:      { fontSize: 13, fontFamily: F.semibold },
-  saveBtn:       { marginHorizontal: 16, marginTop: 20, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
+  saveBtn:       { marginHorizontal: 16, marginTop: 20, borderRadius: RADIUS.md, paddingVertical: 14, alignItems: 'center' },
   saveBtnText:   { fontSize: 15, color: '#fff', fontFamily: F.bold },
 });

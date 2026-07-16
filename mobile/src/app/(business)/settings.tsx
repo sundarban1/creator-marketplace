@@ -31,7 +31,7 @@ import { businessService, type PaymentHistoryEntry } from '@/services/business';
 import { authService } from '@/services/auth';
 import { profileService } from '@/services/profile';
 import type { FacebookPageOption } from '@/services/creator';
-import { COLORS, F } from '@/utilities/constants';
+import { COLORS, F, RADIUS, SHADOW } from '@/utilities/constants';
 import { request } from '@/lib/api';
 import { pickAndUpload } from '@/utilities/uploadImage';
 import { useCategories } from '@/hooks/useCategories';
@@ -1136,7 +1136,7 @@ export default function BusinessSettingsScreen() {
                     placeholderTextColor={C.textSecondary}
                     autoCapitalize="none"
                   />
-                  <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => setShowNewPw((v) => !v)} style={styles.eyeBtn}>
+                  <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => setShowNewPw((v) => !v)} style={styles.eyeBtn} hitSlop={8}>
                     <Ionicons name={showNewPw ? 'eye-off-outline' : 'eye-outline'} size={20} color={C.textSecondary} />
                   </Pressable>
                 </View>
@@ -1157,7 +1157,7 @@ export default function BusinessSettingsScreen() {
                     placeholderTextColor={C.textSecondary}
                     autoCapitalize="none"
                   />
-                  <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => setShowConfirmPw((v) => !v)} style={styles.eyeBtn}>
+                  <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => setShowConfirmPw((v) => !v)} style={styles.eyeBtn} hitSlop={8}>
                     <Ionicons name={showConfirmPw ? 'eye-off-outline' : 'eye-outline'} size={20} color={C.textSecondary} />
                   </Pressable>
                 </View>
@@ -1762,7 +1762,7 @@ export default function BusinessSettingsScreen() {
                 </View>
                 <View style={styles.socialActions}>
                   {acct ? (
-                    <Pressable style={styles.socialDisconnectBtn} onPress={() => deleteSocialAccount(acct)}>
+                    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.socialDisconnectBtn} onPress={() => deleteSocialAccount(acct)} hitSlop={8}>
                       <Ionicons name="close" size={14} color={C.error} />
                     </Pressable>
                   ) : isLive ? (
@@ -2087,13 +2087,13 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { flex: 1 },
   scrollContent: { paddingTop: 16, paddingBottom: 24 },
-  gradientTopBar: { overflow: 'hidden', borderBottomLeftRadius: 20, borderBottomRightRadius: 20 },
+  gradientTopBar: { overflow: 'hidden', borderBottomLeftRadius: RADIUS.lg, borderBottomRightRadius: RADIUS.lg },
 
   topBar: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 16, paddingVertical: 12,
   },
-  backBtn: { width: 36, height: 36, borderRadius: 18, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center' },
+  backBtn: { width: 36, height: 36, borderRadius: RADIUS.full, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center' },
   backArrow: { fontSize: 26, lineHeight: 30 },
   topTitle: { fontSize: 20, fontFamily: F.bold, lineHeight: 24 },
 
@@ -2102,11 +2102,10 @@ const styles = StyleSheet.create({
     marginTop: 20, marginBottom: 6, marginHorizontal: 20, fontFamily: F.bold,
   },
   card: {
-    marginHorizontal: 16, borderRadius: 14,
-    shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 }, elevation: 2, overflow: 'hidden',
+    marginHorizontal: 16, borderRadius: RADIUS.md,
+    ...SHADOW.card, overflow: 'hidden',
   },
-  hintCard: { marginHorizontal: 16, borderRadius: 10, padding: 12, marginTop: 8, marginBottom: 4 },
+  hintCard: { marginHorizontal: 16, borderRadius: RADIUS.sm, padding: 12, marginTop: 8, marginBottom: 4 },
   hintText: { fontSize: 13, lineHeight: 18, fontFamily: F.regular },
   saveHint: { textAlign: 'center', fontSize: 12, marginTop: 8, marginHorizontal: 16, fontFamily: F.regular },
 
@@ -2120,39 +2119,39 @@ const styles = StyleSheet.create({
 
   chipSection: { paddingHorizontal: 12, paddingTop: 8, paddingBottom: 12 },
   chipGroup: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, borderWidth: 1.5 },
+  chip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: RADIUS.full, borderWidth: 1.5 },
   chipText: { fontSize: 13, fontFamily: F.medium },
 
-  logoPicker: { borderRadius: 12, borderWidth: 1.5, borderStyle: 'dashed', height: 100, justifyContent: 'center', alignItems: 'center', gap: 4 },
+  logoPicker: { borderRadius: RADIUS.md, borderWidth: 1.5, borderStyle: 'dashed', height: 100, justifyContent: 'center', alignItems: 'center', gap: 4 },
   logoPickerText: { fontSize: 13, fontFamily: F.bold },
   logoPickerSub: { fontSize: 11, fontFamily: F.regular },
   labelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   optionalTag: { fontSize: 12, fontFamily: F.regular },
 
-  socialInputRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 10, paddingHorizontal: 10, height: 48, gap: 8 },
-  socialIconCircle: { width: 30, height: 30, borderRadius: 8, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  socialInputRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: RADIUS.sm, paddingHorizontal: 10, height: 48, gap: 8 },
+  socialIconCircle: { width: 30, height: 30, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   socialInput: { flex: 1, fontSize: 14, fontFamily: F.regular },
 
   actionGroup: { marginHorizontal: 16, marginTop: 20, gap: 10 },
-  primaryBtn: { borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
+  primaryBtn: { borderRadius: RADIUS.md, paddingVertical: 14, alignItems: 'center' },
   primaryBtnText: { color: '#fff', fontSize: 15, fontFamily: F.bold },
-  secondaryBtn: { borderRadius: 12, paddingVertical: 13, alignItems: 'center', borderWidth: 1.5 },
+  secondaryBtn: { borderRadius: RADIUS.md, paddingVertical: 13, alignItems: 'center', borderWidth: 1.5 },
   secondaryBtnText: { fontSize: 15, fontFamily: F.bold },
 
   inlineForm: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 16, gap: 14 },
   formField: { gap: 5 },
   formFieldLabel: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: F.bold },
-  formInput: { borderRadius: 10, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 11, fontSize: 14, fontFamily: F.regular },
-  formTextarea: { borderRadius: 10, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 11, fontSize: 14, minHeight: 110, fontFamily: F.regular },
+  formInput: { borderRadius: RADIUS.sm, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 11, fontSize: 14, fontFamily: F.regular },
+  formTextarea: { borderRadius: RADIUS.sm, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 11, fontSize: 14, minHeight: 110, fontFamily: F.regular },
   fieldError: { fontSize: 12, fontFamily: F.medium },
-  pwRow: { flexDirection: 'row', alignItems: 'center', borderRadius: 10, borderWidth: 1.5, paddingHorizontal: 12 },
+  pwRow: { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.sm, borderWidth: 1.5, paddingHorizontal: 12 },
   pwInput: { flex: 1, fontSize: 14, paddingVertical: 11, fontFamily: F.regular },
   eyeBtn: { padding: 6 },
 
-  paymentIcon: { width: 38, height: 38, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
-  checkboxOuter: { width: 22, height: 22, borderRadius: 6, borderWidth: 2, justifyContent: 'center', alignItems: 'center' },
-  radioOuter: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, justifyContent: 'center', alignItems: 'center' },
-  radioInner: { width: 11, height: 11, borderRadius: 6 },
+  paymentIcon: { width: 38, height: 38, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center' },
+  checkboxOuter: { width: 22, height: 22, borderRadius: RADIUS.sm, borderWidth: 2, justifyContent: 'center', alignItems: 'center' },
+  radioOuter: { width: 22, height: 22, borderRadius: RADIUS.full, borderWidth: 2, justifyContent: 'center', alignItems: 'center' },
+  radioInner: { width: 11, height: 11, borderRadius: RADIUS.full },
 
   txRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 13, gap: 12 },
   txDesc: { fontSize: 14, fontFamily: F.semibold },
@@ -2160,103 +2159,101 @@ const styles = StyleSheet.create({
   txAmount: { fontSize: 14, fontFamily: F.bold },
 
   accountCard: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, paddingBottom: 12 },
-  accountAvatar: { width: 50, height: 50, borderRadius: 25, justifyContent: 'center', alignItems: 'center' },
+  accountAvatar: { width: 50, height: 50, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
   accountAvatarText: { fontSize: 20, color: '#fff', fontFamily: F.bold },
   accountName: { fontSize: 16, fontFamily: F.bold },
   accountEmail: { fontSize: 13, marginTop: 2, fontFamily: F.regular },
-  editBtn: { borderRadius: 8, paddingHorizontal: 14, paddingVertical: 6 },
+  editBtn: { borderRadius: RADIUS.sm, paddingHorizontal: 14, paddingVertical: 6 },
   editBtnText: { fontSize: 13, fontFamily: F.bold },
 
-  soonBadge: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
+  soonBadge: { borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingVertical: 4 },
   badgeText: { fontSize: 11, fontFamily: F.bold },
-  verifiedBadge: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
-  statusBadge: { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
-  uploadBtn: { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
+  verifiedBadge: { borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingVertical: 3 },
+  statusBadge: { borderRadius: RADIUS.sm, paddingHorizontal: 10, paddingVertical: 4 },
+  uploadBtn: { borderRadius: RADIUS.sm, paddingHorizontal: 10, paddingVertical: 4 },
 
-  creatorCard: { marginHorizontal: 16, marginBottom: 12, borderRadius: 14, padding: 14, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
+  creatorCard: { marginHorizontal: 16, marginBottom: 12, borderRadius: RADIUS.md, padding: 14, ...SHADOW.card },
   creatorCardTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-  creatorAvatar: { width: 46, height: 46, borderRadius: 23, justifyContent: 'center', alignItems: 'center' },
+  creatorAvatar: { width: 46, height: 46, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
   creatorAvatarText: { fontSize: 16, fontFamily: F.bold },
   creatorName: { fontSize: 14, fontFamily: F.bold },
   creatorMeta: { fontSize: 12, marginTop: 2, fontFamily: F.regular },
-  categoryPill: { alignSelf: 'flex-start', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2, marginTop: 4 },
+  categoryPill: { alignSelf: 'flex-start', borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingVertical: 2, marginTop: 4 },
   categoryPillText: { fontSize: 11, fontFamily: F.semibold },
-  removeBtn: { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 },
+  removeBtn: { borderRadius: RADIUS.sm, paddingHorizontal: 10, paddingVertical: 5 },
   removeBtnText: { fontSize: 12, fontFamily: F.bold },
-  noteBubble: { marginTop: 10, borderRadius: 8, padding: 10 },
+  noteBubble: { marginTop: 10, borderRadius: RADIUS.sm, padding: 10 },
   noteText: { fontSize: 13, fontFamily: F.regular },
   addNoteBtn: { paddingTop: 10 },
   addNoteText: { fontSize: 13, fontFamily: F.semibold },
-  noteEditRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10, borderRadius: 8, padding: 8 },
-  noteInput: { flex: 1, fontSize: 13, borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, fontFamily: F.regular },
-  noteSaveBtn: { borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
+  noteEditRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10, borderRadius: RADIUS.sm, padding: 8 },
+  noteInput: { flex: 1, fontSize: 13, borderWidth: 1, borderRadius: RADIUS.sm, paddingHorizontal: 10, paddingVertical: 6, fontFamily: F.regular },
+  noteSaveBtn: { borderRadius: RADIUS.sm, paddingHorizontal: 12, paddingVertical: 6 },
   noteSaveBtnText: { color: '#fff', fontSize: 12, fontFamily: F.bold },
 
   emptyState: { alignItems: 'center', paddingTop: 60, gap: 10 },
   emptyText: { fontSize: 16, fontFamily: F.semibold },
   emptySubText: { fontSize: 13, fontFamily: F.regular },
 
-  faqCard: { borderRadius: 12, padding: 14, gap: 6, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
+  faqCard: { borderRadius: RADIUS.md, padding: 14, gap: 6, ...SHADOW.card },
   faqQ: { fontSize: 14, lineHeight: 20, fontFamily: F.bold },
   faqA: { fontSize: 13, lineHeight: 19, fontFamily: F.regular },
 
-  accordionCard: { borderRadius: 12, borderWidth: 1.5, overflow: 'hidden', backgroundColor: 'transparent' },
+  accordionCard: { borderRadius: RADIUS.md, borderWidth: 1.5, overflow: 'hidden', backgroundColor: 'transparent' },
   accordionHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14 },
   accordionTitle: { flex: 1, fontSize: 14, lineHeight: 20, fontFamily: F.bold },
   accordionBody: { fontSize: 13, lineHeight: 20, paddingHorizontal: 14, paddingBottom: 14, fontFamily: F.regular },
-  navIonIconWrap: { width: 34, height: 34, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
+  navIonIconWrap: { width: 34, height: 34, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center' },
 
   toast: {
     position: 'absolute', bottom: 32, left: 32, right: 32,
-    borderRadius: 12, paddingVertical: 12, paddingHorizontal: 18,
+    borderRadius: RADIUS.md, paddingVertical: 12, paddingHorizontal: 18,
     flexDirection: 'row', alignItems: 'center',
-    shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 }, elevation: 8,
+    ...SHADOW.floating,
   },
   toastText: { color: '#fff', fontSize: 14, flex: 1, fontFamily: F.semibold },
 
-  otpCloseBtn: { width: 30, height: 30, borderRadius: 15, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  otpCloseBtn: { width: 30, height: 30, borderRadius: RADIUS.full, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
 
-  phoneField: { flex: 1, borderWidth: 1.5, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 11, fontSize: 14, fontFamily: F.regular },
+  phoneField: { flex: 1, borderWidth: 1.5, borderRadius: RADIUS.sm, paddingHorizontal: 12, paddingVertical: 11, fontSize: 14, fontFamily: F.regular },
   phoneError: { fontSize: 12, fontFamily: F.regular, marginTop: -4 },
-  phoneActionBtn: { flex: 1, borderRadius: 10, paddingVertical: 11, alignItems: 'center', justifyContent: 'center' },
+  phoneActionBtn: { flex: 1, borderRadius: RADIUS.sm, paddingVertical: 11, alignItems: 'center', justifyContent: 'center' },
   phoneActionBtnText: { fontSize: 14, fontFamily: F.semibold },
 
   langCard: {
     flexDirection: 'row', alignItems: 'center', gap: 14,
-    borderRadius: 14, borderWidth: 2, padding: 16,
-    shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 }, elevation: 2,
+    borderRadius: RADIUS.md, borderWidth: 2, padding: 16,
+    ...SHADOW.card,
   },
   langFlag: { fontSize: 32 },
   langNameRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 2 },
   langName: { fontSize: 15, fontFamily: F.bold },
   langNative: { fontSize: 13, fontFamily: F.regular },
   langDesc: { fontSize: 12, fontFamily: F.regular },
-  activeLangCheck: { width: 24, height: 24, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
-  inactiveLangCircle: { width: 24, height: 24, borderRadius: 12, borderWidth: 2 },
+  activeLangCheck: { width: 24, height: 24, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
+  inactiveLangCircle: { width: 24, height: 24, borderRadius: RADIUS.full, borderWidth: 2 },
 
   // ── Social Accounts ────────────────────────────────────────────────────────
   socialRow: { alignItems: 'center' },
-  socialIconWrap: { width: 42, height: 42, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
+  socialIconWrap: { width: 42, height: 42, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center' },
   socialPlatformName: { fontSize: 14, fontFamily: F.bold },
   socialActions: { flexDirection: 'row', gap: 6 },
-  socialDisconnectBtn: { width: 28, height: 28, borderRadius: 8, backgroundColor: '#FEE2E2', justifyContent: 'center', alignItems: 'center' },
+  socialDisconnectBtn: { width: 28, height: 28, borderRadius: RADIUS.full, backgroundColor: '#FEE2E2', justifyContent: 'center', alignItems: 'center' },
   connectPlatformNameRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   connectPlatformHint:    { fontSize: 11, marginTop: 2, fontFamily: F.regular },
   connectInstagramDirectLink: { fontSize: 11, marginTop: 3, fontFamily: F.bold, textDecorationLine: 'underline' },
-  connectBtn:     { borderRadius: 8, paddingHorizontal: 14, height: 32, justifyContent: 'center', alignItems: 'center', minWidth: 84 },
+  connectBtn:     { borderRadius: RADIUS.sm, paddingHorizontal: 14, height: 32, justifyContent: 'center', alignItems: 'center', minWidth: 84 },
   connectBtnText: { fontSize: 12, fontFamily: F.bold, color: '#fff' },
   socialMetaRow: { flexDirection: 'row', marginTop: 3, marginBottom: 2 },
-  socialFollowerBadge: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2 },
+  socialFollowerBadge: { borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingVertical: 2 },
   socialFollowerBadgeText: { fontSize: 11, fontFamily: F.bold },
   socialSyncedText: { fontSize: 10, fontFamily: F.regular, marginTop: 1 },
 
   // ── Facebook/Instagram Page picker ──────────────────────────────────────────
   pagePickerSheet: {
     position: 'absolute', top: '25%', left: 20, right: 20,
-    borderRadius: 16, padding: 16, maxHeight: '55%',
-    shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 20, shadowOffset: { width: 0, height: 4 }, elevation: 20,
+    borderRadius: RADIUS.lg, padding: 16, maxHeight: '55%',
+    ...SHADOW.floating,
   },
   pagePickerTitle: { fontSize: 16, fontFamily: F.bold, marginBottom: 8 },
   pagePickerRow: { paddingVertical: 12, borderBottomWidth: 1 },

@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { FaUserPlus, FaMagnifyingGlass, FaComments, FaShieldHalved } from 'react-icons/fa6';
-import { fadeUp, stagger, VP } from '../lib/motion';
+import { fadeUp, stagger, VP, CARD_HOVER } from '../lib/motion';
 import { SECTION_IDS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
 
@@ -26,7 +26,7 @@ export function HowItWorks() {
           whileInView="show"
           viewport={VP}
           variants={stagger()}
-          className="grid gap-5 grid-cols-2 sm:grid-cols-4"
+          className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4"
         >
           {d.how.steps.map((step, i) => {
             const Icon = ICONS[i] ?? FaUserPlus;
@@ -35,7 +35,7 @@ export function HowItWorks() {
               <motion.div
                 key={i}
                 variants={fadeUp}
-                whileHover={{ y: -5, scale: 1.03 }}
+                whileHover={CARD_HOVER}
                 className="group rounded-3xl border border-ink/10 bg-white p-6 shadow-[0_2px_10px_rgba(20,17,16,0.04)] transition-shadow duration-300 hover:shadow-[0_20px_40px_-14px_rgba(123,92,245,0.2)]"
               >
                 <span

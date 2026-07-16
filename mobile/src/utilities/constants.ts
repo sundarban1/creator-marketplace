@@ -40,6 +40,27 @@ export const F = {
   extrabold: 'Poppins-ExtraBold',
 };
 
+// Shared corner-radius scale — screens previously hand-rolled one-off values
+// (10/11/12/14/16/20...) with no consistent logic. Use these everywhere instead
+// so every card/button/sheet reads as one coherent system.
+export const RADIUS = {
+  sm:   10,  // chips, small icon buttons, inputs
+  md:   14,  // standard cards, list rows
+  lg:   18,  // section cards, banners
+  xl:   24,  // hero panels, bottom sheets, modals
+  full: 999, // pills, avatars, circular buttons
+};
+
+// Shared elevation scale (shadow on iOS, elevation on Android) — same reasoning
+// as RADIUS: screens were duplicating slightly-different shadow objects everywhere.
+// `card` = resting surface, `raised` = interactive/hover-like emphasis (banners,
+// featured cards), `floating` = sheets/modals/FABs that sit above everything.
+export const SHADOW = {
+  card:    { shadowColor: '#0F172A', shadowOpacity: 0.06, shadowRadius: 8,  shadowOffset: { width: 0, height: 2 }, elevation: 2 },
+  raised:  { shadowColor: '#0F172A', shadowOpacity: 0.10, shadowRadius: 14, shadowOffset: { width: 0, height: 6 }, elevation: 5 },
+  floating:{ shadowColor: '#0F172A', shadowOpacity: 0.16, shadowRadius: 24, shadowOffset: { width: 0, height: 10 }, elevation: 10 },
+};
+
 export const USER_KEY               = 'ch_user';
 export const ACCESS_TOKEN_KEY       = 'ch_access_token';
 export const REFRESH_TOKEN_KEY      = 'ch_refresh_token';

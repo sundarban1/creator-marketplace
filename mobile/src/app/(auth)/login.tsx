@@ -28,7 +28,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { authService } from '@/services/auth';
 import type { Lang } from '@/i18n';
-import { COLORS, F } from '@/utilities/constants';
+import { COLORS, F, RADIUS, SHADOW } from '@/utilities/constants';
 import { isValidNepaliPhone, normalizePhoneForSubmit } from '@/utilities/phone';
 import {
   authenticate as authenticateBiometric,
@@ -67,8 +67,8 @@ const BG_ICONS: { name: string; size: number; rotate: string; style: object; opa
 ];
 
 const ROLES = [
-  { key: 'CREATOR'  as const, label: 'Creator', sub: 'Influencer & creator', icon: 'camera-outline'    as const, grad: [COLORS.brinjal1, COLORS.brinjal2] as const },
-  { key: 'BUSINESS' as const, label: 'Brand', sub: 'Company & brand',     icon: 'briefcase-outline' as const, grad: [COLORS.accent, '#EA580C'] as const },
+  { key: 'CREATOR'  as const, label: 'Creator', sub: 'Influencer & creator', icon: 'camera'    as const, grad: [COLORS.brinjal1, COLORS.brinjal2] as const },
+  { key: 'BUSINESS' as const, label: 'Brand', sub: 'Company & brand',     icon: 'briefcase' as const, grad: [COLORS.accent, '#EA580C'] as const },
 ];
 
 const PW_RULES = [
@@ -410,7 +410,7 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
         <View style={s.modalOverlay}>
           <View style={[s.modalSheet, s.suspendedSheet]}>
             <View style={s.suspendedIconWrap}>
-              <Ionicons name="lock-closed" size={26} color="#EF4444" />
+              <FontAwesome5 name="lock" size={22} color="#EF4444" solid />
             </View>
             <Text style={s.modalTitle}>{t('auth.login.suspendedTitle')}</Text>
             <Text style={s.modalSub}>{t('auth.login.suspendedMessage')}</Text>
@@ -504,7 +504,7 @@ function SignupForm({ onGooglePress, googleLoading, googleError, onFacebookPress
                 colors={active ? r.grad : ['#F5F3FF', '#EDE9FE']}
                 style={[s.roleIconBox, active && { shadowColor: tint, shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 5 }]}
                 start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
-                <Ionicons name={r.icon} size={26} color={active ? '#fff' : '#8B5CF6'} />
+                <FontAwesome5 name={r.icon} size={22} color={active ? '#fff' : '#8B5CF6'} solid />
               </LinearGradient>
               <Text style={s.roleLabel}>{roleLabel}</Text>
               <Text style={[s.roleSub, { color: active ? tint : '#9CA3AF' }]}>{roleSub}</Text>
@@ -853,6 +853,7 @@ export default function LoginScreen() {
               <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                 key={lang}
                 style={[s.langBtn, language === lang && s.langBtnActive]}
+                hitSlop={6}
                 onPress={() => setLanguage(lang)}>
                 <Text style={s.langFlag}>{flag}</Text>
               </Pressable>
@@ -958,7 +959,7 @@ export default function LoginScreen() {
                     style={({ pressed }) => [s.roleCard, { transform: [{ scale: pressed ? 0.97 : 1 }] }]}
                     onPress={() => void handleRoleSelect(r.key)}>
                     <LinearGradient colors={r.grad} style={s.roleIconBox} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
-                      <Ionicons name={r.icon} size={26} color="#fff" />
+                      <FontAwesome5 name={r.icon} size={22} color="#fff" solid />
                     </LinearGradient>
                     <Text style={[s.roleLabel, { color: '#111827' }]}>{roleLabel}</Text>
                     <Text style={[s.roleSub, { color: '#9CA3AF' }]}>{roleSub}</Text>
@@ -986,17 +987,17 @@ const s = StyleSheet.create({
   // Aurora glow blobs — soft two-tone (purple + warm orange) light sources instead of
   // scattered decorative icons, echoing the app icon's own purple-triangle/orange-ring duo.
   auroraLayer:  { position: 'absolute', top: 0, left: 0, right: 0, height: 420, overflow: 'hidden' },
-  auroraBlob:   { position: 'absolute', borderRadius: 999 },
+  auroraBlob:   { position: 'absolute', borderRadius: RADIUS.full },
   auroraBlobA:  { width: 280, height: 280, backgroundColor: 'rgba(255,255,255,0.05)', top: -90, right: -70 },
   auroraBlobB:  { width: 220, height: 220, backgroundColor: 'rgba(249,115,22,0.16)', top: 80, left: -90 },
   auroraBlobC:  { width: 160, height: 160, backgroundColor: 'rgba(255,255,255,0.04)', top: 250, right: 40 },
   bgIcon:       { position: 'absolute' },
 
-  logoGlowRing: { padding: 6, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.10)', shadowColor: '#FFC581', shadowOpacity: 0.35, shadowRadius: 20, shadowOffset: { width: 0, height: 0 }, elevation: 6 },
-  logoBadgeCard: { backgroundColor: '#fff', borderRadius: 999, paddingHorizontal: 16, paddingVertical: 10, shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 14, shadowOffset: { width: 0, height: 6 }, elevation: 8 },
+  logoGlowRing: { padding: 6, borderRadius: RADIUS.full, backgroundColor: 'rgba(255,255,255,0.10)', shadowColor: '#FFC581', shadowOpacity: 0.35, shadowRadius: 20, shadowOffset: { width: 0, height: 0 }, elevation: 6 },
+  logoBadgeCard: { backgroundColor: '#fff', borderRadius: RADIUS.full, paddingHorizontal: 16, paddingVertical: 10, ...SHADOW.floating, shadowColor: '#000' },
   logoImage: { width: 104, height: 104 / (1740 / 620) },
   langRow:  { flexDirection: 'row', gap: 6, justifyContent: 'flex-end', marginBottom: 6 },
-  langBtn:  { width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(255,255,255,0.12)', justifyContent: 'center', alignItems: 'center' },
+  langBtn:  { width: 34, height: 34, borderRadius: RADIUS.full, backgroundColor: 'rgba(255,255,255,0.12)', justifyContent: 'center', alignItems: 'center' },
   langBtnActive: { backgroundColor: 'rgba(255,255,255,0.28)', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.5)' },
   langFlag: { fontSize: 15 },
 
@@ -1011,19 +1012,19 @@ const s = StyleSheet.create({
 
   // Floating card — visible gradient margin on every side (not an edge-to-edge sheet),
   // fully rounded corners on all four corners for a "card floating in the aurora" feel.
-  cardOuter:  { borderRadius: 30, shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 24, shadowOffset: { width: 0, height: 12 }, elevation: 14 },
-  cardInner:  { borderRadius: 30, overflow: 'hidden', backgroundColor: '#fff' },
+  cardOuter:  { borderRadius: RADIUS.xl, ...SHADOW.floating, shadowColor: '#000' },
+  cardInner:  { borderRadius: RADIUS.xl, overflow: 'hidden', backgroundColor: '#fff' },
   cardBody:   { paddingHorizontal: 22, paddingTop: 22, paddingBottom: 26 },
 
   // Pill-shaped segmented tab
-  tabBar:       { flexDirection: 'row', backgroundColor: '#F3EFFB', borderRadius: 999, padding: 4, marginBottom: 22, gap: 2 },
-  tabBtn:       { flex: 1, height: 44, borderRadius: 999, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
+  tabBar:       { flexDirection: 'row', backgroundColor: '#F3EFFB', borderRadius: RADIUS.full, padding: 4, marginBottom: 22, gap: 2 },
+  tabBtn:       { flex: 1, height: 44, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
   tabBtnActive: { shadowColor: P1, shadowOpacity: 0.2, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
-  tabBtnGrad:   { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 999 },
+  tabBtnGrad:   { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: RADIUS.full },
   tabBtnText:   { fontSize: 14, fontFamily: F.semibold, zIndex: 1 },
 
   // Banners
-  banner:     { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12, borderRadius: 14, borderWidth: 1, marginBottom: 16 },
+  banner:     { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12, borderRadius: RADIUS.md, borderWidth: 1, marginBottom: 16 },
   bannerText: { fontSize: 13, flex: 1, fontFamily: F.medium },
 
   // Remember me
@@ -1037,37 +1038,37 @@ const s = StyleSheet.create({
   fieldLabelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   fieldLabel:    { fontSize: 13, fontFamily: F.semibold, color: '#374151' },
   forgotText:    { fontSize: 12, fontFamily: F.semibold, color: P2 },
-  field:         { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 18, paddingHorizontal: 5, height: 54, gap: 4, borderColor: 'transparent', backgroundColor: '#F3EFFB' },
+  field:         { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: RADIUS.lg, paddingHorizontal: 5, height: 54, gap: 4, borderColor: 'transparent', backgroundColor: '#F3EFFB' },
   fieldFocused:  { borderColor: P2, backgroundColor: '#fff', shadowColor: P2, shadowOpacity: 0.14, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
-  fieldIconWrap: { width: 38, height: 38, borderRadius: 19, justifyContent: 'center', alignItems: 'center', marginLeft: 4 },
+  fieldIconWrap: { width: 38, height: 38, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', marginLeft: 4 },
   fieldInput:    { flex: 1, height: 50, fontSize: 15, fontFamily: F.regular, color: '#111827', textAlignVertical: 'center' },
   eyeBtn:        { paddingHorizontal: 12 },
   fieldErrRow:   { flexDirection: 'row', alignItems: 'center', gap: 4 },
   fieldErrText:  { fontSize: 11, color: '#EF4444', fontFamily: F.medium },
-  domainSuggestBoxOuter: { borderRadius: 16, shadowColor: '#4C1D95', shadowOpacity: 0.15, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
-  domainSuggestBox:      { borderWidth: 1, borderColor: '#E8E0F8', borderRadius: 16, overflow: 'hidden', backgroundColor: '#fff' },
+  domainSuggestBoxOuter: { borderRadius: RADIUS.md, shadowColor: '#4C1D95', shadowOpacity: 0.15, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
+  domainSuggestBox:      { borderWidth: 1, borderColor: '#E8E0F8', borderRadius: RADIUS.md, overflow: 'hidden', backgroundColor: '#fff' },
   domainSuggestItem:     { paddingHorizontal: 14, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#F0EBFB' },
   domainSuggestText:     { fontSize: 14, fontFamily: F.regular, color: '#6B7280' },
   domainSuggestTextBold: { fontFamily: F.semibold, color: '#374151' },
 
   // Role cards
   roleRow:       { flexDirection: 'row', gap: 14, marginBottom: 22 },
-  roleCard:      { flex: 1, borderRadius: 22, borderWidth: 1.5, borderColor: '#ECEAF5', padding: 18, gap: 10, alignItems: 'center', position: 'relative' },
+  roleCard:      { flex: 1, borderRadius: RADIUS.lg, borderWidth: 1.5, borderColor: '#ECEAF5', padding: 18, gap: 10, alignItems: 'center', position: 'relative' },
   roleCardActive:{ shadowOpacity: 0.16, shadowRadius: 16, shadowOffset: { width: 0, height: 6 }, elevation: 6 },
-  roleTintOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 22 },
-  roleIconBox:   { width: 58, height: 58, borderRadius: 29, justifyContent: 'center', alignItems: 'center' },
+  roleTintOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: RADIUS.lg },
+  roleIconBox:   { width: 58, height: 58, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
   roleLabel:     { fontSize: 14, fontFamily: F.bold, textAlign: 'center', color: '#111827' },
   roleSub:       { fontSize: 11.5, fontFamily: F.regular, textAlign: 'center', lineHeight: 16 },
-  roleCheck:     { position: 'absolute', top: -8, right: -8, width: 26, height: 26, borderRadius: 13, justifyContent: 'center', alignItems: 'center', borderWidth: 2.5, borderColor: '#fff', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
+  roleCheck:     { position: 'absolute', top: -8, right: -8, width: 26, height: 26, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', borderWidth: 2.5, borderColor: '#fff', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
 
   // Password rules
   rulesRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginTop: -8 },
-  rulePill: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 999, borderWidth: 1, paddingHorizontal: 8, paddingVertical: 4 },
+  rulePill: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: RADIUS.full, borderWidth: 1, paddingHorizontal: 8, paddingVertical: 4 },
   ruleText: { fontSize: 11, fontFamily: F.medium },
 
   // Button — full pill shape with a warm glow shadow
-  primaryBtnWrap: { borderRadius: 999, marginBottom: 20, shadowColor: P1, shadowOpacity: 0.25, shadowRadius: 14, shadowOffset: { width: 0, height: 6 }, elevation: 7 },
-  primaryBtn:     { height: 54, borderRadius: 999, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  primaryBtnWrap: { borderRadius: RADIUS.full, marginBottom: 20, shadowColor: P1, shadowOpacity: 0.25, shadowRadius: 14, shadowOffset: { width: 0, height: 6 }, elevation: 7 },
+  primaryBtn:     { height: 54, borderRadius: RADIUS.full, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   primaryBtnText: { fontSize: 16, color: '#fff', fontFamily: F.bold, letterSpacing: 0.3 },
 
   // Divider
@@ -1077,21 +1078,21 @@ const s = StyleSheet.create({
 
   // Social row (Google + Facebook side by side) — same pill family as the primary button
   socialRow:      { flexDirection: 'row', gap: 12, marginBottom: 12 },
-  socialBtn:      { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 52, borderRadius: 999, borderWidth: 1.5, borderColor: '#DDD6FE', backgroundColor: '#FAFAFE', shadowColor: '#4C1D95', shadowOpacity: 0.06, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 1 },
+  socialBtn:      { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 52, borderRadius: RADIUS.full, borderWidth: 1.5, borderColor: '#DDD6FE', backgroundColor: '#FAFAFE', shadowColor: '#4C1D95', shadowOpacity: 0.06, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 1 },
   socialBtnFull:  { flex: 0, marginBottom: 12 },
   socialBtnText:  { fontSize: 14, fontFamily: F.semibold, color: '#374151' },
-  socialBtnFb:    { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 52, borderRadius: 999, borderWidth: 1.5, borderColor: '#BFDBFE', backgroundColor: '#EFF6FF' },
+  socialBtnFb:    { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 52, borderRadius: RADIUS.full, borderWidth: 1.5, borderColor: '#BFDBFE', backgroundColor: '#EFF6FF' },
   socialBtnFbText:{ fontSize: 14, fontFamily: F.semibold, color: '#1D4ED8' },
-  googleBadge:    { width: 22, height: 22, borderRadius: 11, backgroundColor: '#4285F4', justifyContent: 'center', alignItems: 'center' },
+  googleBadge:    { width: 22, height: 22, borderRadius: RADIUS.full, backgroundColor: '#4285F4', justifyContent: 'center', alignItems: 'center' },
   googleG:        { color: '#fff', fontSize: 12, fontFamily: F.bold },
-  fbBadge:        { width: 22, height: 22, borderRadius: 11, backgroundColor: '#1877F2', justifyContent: 'center', alignItems: 'center' },
+  fbBadge:        { width: 22, height: 22, borderRadius: RADIUS.full, backgroundColor: '#1877F2', justifyContent: 'center', alignItems: 'center' },
   fbF:            { color: '#fff', fontSize: 13, fontFamily: F.bold },
-  spinner:        { width: 18, height: 18, borderRadius: 9, borderWidth: 2, borderColor: '#DDD6FE', borderTopColor: P2 },
+  spinner:        { width: 18, height: 18, borderRadius: RADIUS.full, borderWidth: 2, borderColor: '#DDD6FE', borderTopColor: P2 },
 
   // Role modal
   modalOverlay:    { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  modalSheet:      { backgroundColor: '#fff', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, paddingBottom: 36, gap: 4 },
-  modalHandle:     { width: 40, height: 4, borderRadius: 2, backgroundColor: '#DDD6FE', alignSelf: 'center', marginBottom: 20 },
+  modalSheet:      { backgroundColor: '#fff', borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl, padding: 24, paddingBottom: 36, gap: 4 },
+  modalHandle:     { width: 40, height: 4, borderRadius: RADIUS.full, backgroundColor: '#DDD6FE', alignSelf: 'center', marginBottom: 20 },
   modalTitle:      { fontSize: 20, fontFamily: F.bold, color: P1, textAlign: 'center' },
   modalSub:        { fontSize: 14, fontFamily: F.regular, color: '#6B7280', textAlign: 'center', marginBottom: 20 },
   modalCancel:     { marginTop: 16, alignItems: 'center', padding: 12 },
@@ -1099,8 +1100,8 @@ const s = StyleSheet.create({
 
   // Suspended-account modal
   suspendedSheet:          { alignItems: 'center', paddingTop: 8 },
-  suspendedIconWrap:       { width: 56, height: 56, borderRadius: 28, backgroundColor: '#FEF2F2', justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
-  suspendedContactBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: P2, borderRadius: 999, paddingVertical: 14, paddingHorizontal: 20, width: '100%', marginTop: 4 },
+  suspendedIconWrap:       { width: 56, height: 56, borderRadius: RADIUS.full, backgroundColor: '#FEF2F2', justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
+  suspendedContactBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: P2, borderRadius: RADIUS.full, paddingVertical: 14, paddingHorizontal: 20, width: '100%', marginTop: 4 },
   suspendedContactBtnText: { fontSize: 15, fontFamily: F.semibold, color: '#fff' },
 
   terms:  { fontSize: 12, color: '#9CA3AF', lineHeight: 18, textAlign: 'center', fontFamily: F.regular, marginBottom: 8 },

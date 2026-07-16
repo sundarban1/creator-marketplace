@@ -68,8 +68,8 @@ function ContactForm() {
   }
 
   function fieldClass(field: ContactField) {
-    return `w-full border-b bg-transparent px-0.5 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none ${
-      errors[field] ? 'border-red-400' : 'border-white/20 focus:border-white'
+    return `w-full border-b bg-transparent px-0.5 py-2.5 text-sm text-white placeholder:text-white/30 focus-visible:outline-none ${
+      errors[field] ? 'border-red-400' : 'border-white/20 focus:border-white focus-visible:border-violet'
     }`;
   }
 
@@ -101,7 +101,7 @@ function ContactForm() {
       <button
         type="submit"
         disabled={status === 'submitting'}
-        className="mt-2 flex items-center justify-center gap-2 rounded-md border border-white/30 px-5 py-2.5 text-xs font-semibold uppercase tracking-wide text-white transition-colors hover:border-white disabled:opacity-60 sm:col-span-2"
+        className="mt-2 flex items-center justify-center gap-2 rounded-md border border-white/30 px-5 py-2.5 text-xs font-semibold uppercase tracking-wide text-white transition-colors hover:border-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet disabled:opacity-60 sm:col-span-2"
       >
         <Send size={13} />
         {status === 'submitting' ? t.submittingBtn : t.submitBtn}

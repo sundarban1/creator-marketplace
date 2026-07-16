@@ -13,13 +13,13 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { BackButton } from '@/components/BackButton';
 import { EmptyState } from '@/components/EmptyState';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { campaignService } from '@/services/campaign';
-import { F } from '@/utilities/constants';
+import { F, RADIUS, SHADOW } from '@/utilities/constants';
 
 type WS = 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED';
 type PS = 'UNPAID' | 'PAID' | 'RELEASED';
@@ -167,13 +167,13 @@ function ProposalCard({
       {/* Rate row */}
       {isFree ? (
         <View style={[styles.freeTag, { backgroundColor: FREE_LIGHT }]}>
-          <Ionicons name="gift-outline" size={14} color={FREE_ACCENT} />
+          <FontAwesome5 name="gift" size={12} color={FREE_ACCENT} solid />
           <Text style={[styles.freeTagText, { color: FREE_ACCENT }]}>{t('campaignProposals.freeParticipation')}</Text>
         </View>
       ) : (
         <View style={styles.rateRow}>
           <View style={[styles.ratePill, { backgroundColor: PAID_LIGHT }]}>
-            <Ionicons name="cash-outline" size={14} color={PAID_ACCENT} />
+            <FontAwesome5 name="money-bill-wave" size={12} color={PAID_ACCENT} solid />
             <Text style={[styles.rateAmount, { color: PAID_ACCENT }]}>{p.proposedRate}</Text>
           </View>
           <Text style={[styles.rateLabel, { color: C.textSecondary }]}>{t('campaignProposals.proposedRate')}</Text>
@@ -363,19 +363,19 @@ function ConfirmModal({
 
 const cm = StyleSheet.create({
   backdrop:     { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 },
-  sheet:        { width: '100%', borderRadius: 24, padding: 24, alignItems: 'center', gap: 12, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 24, shadowOffset: { width: 0, height: 8 }, elevation: 12 },
-  iconCircle:   { width: 72, height: 72, borderRadius: 36, justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
+  sheet:        { width: '100%', borderRadius: RADIUS.xl, padding: 24, alignItems: 'center', gap: 12, ...SHADOW.floating },
+  iconCircle:   { width: 72, height: 72, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
   title:        { fontSize: 20, fontFamily: F.bold, textAlign: 'center' },
   creatorName:  { fontSize: 14, fontFamily: F.semibold, textAlign: 'center', marginTop: -4 },
   body:         { fontSize: 13, fontFamily: F.regular, textAlign: 'center', lineHeight: 20 },
-  warningBox:   { flexDirection: 'row', alignItems: 'flex-start', gap: 8, borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, width: '100%' },
+  warningBox:   { flexDirection: 'row', alignItems: 'flex-start', gap: 8, borderWidth: 1, borderRadius: RADIUS.md, paddingHorizontal: 12, paddingVertical: 10, width: '100%' },
   warningText:  { flex: 1, fontSize: 12, fontFamily: F.medium, lineHeight: 18 },
-  capacityRow:  { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, width: '100%' },
+  capacityRow:  { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: RADIUS.sm, paddingHorizontal: 12, paddingVertical: 8, width: '100%' },
   capacityText: { fontSize: 12, fontFamily: F.semibold },
   actions:      { flexDirection: 'row', gap: 10, width: '100%', marginTop: 4 },
-  cancelBtn:    { flex: 1, height: 46, borderRadius: 12, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center' },
+  cancelBtn:    { flex: 1, height: 46, borderRadius: RADIUS.md, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center' },
   cancelText:   { fontSize: 14, fontFamily: F.semibold },
-  confirmBtn:   { flex: 1, height: 46, borderRadius: 12, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6 },
+  confirmBtn:   { flex: 1, height: 46, borderRadius: RADIUS.md, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6 },
   confirmText:  { fontSize: 14, color: '#fff', fontFamily: F.bold },
 });
 
@@ -525,7 +525,7 @@ export default function CampaignProposalsScreen() {
           <Text style={styles.headerTitle} numberOfLines={2}>{campaignTitle}</Text>
           <View style={styles.headerBadgeRow}>
             <View style={[styles.typeBadge, { backgroundColor: accentBg }]}>
-              <Ionicons name={isFree ? 'gift-outline' : 'cash-outline'} size={12} color={accent} />
+              <FontAwesome5 name={isFree ? 'gift' : 'money-bill-wave'} size={10} color={accent} solid />
               <Text style={[styles.typeBadgeText, { color: accent }]}>
                 {isFree ? t('campaignProposals.badgeFreeEvent') : t('campaignProposals.badgePaidEvent')}
               </Text>
@@ -654,8 +654,8 @@ const styles = StyleSheet.create({
   // ── Gradient header ──────────────────────────────────────────────────────────
   gradientHeader: {
     paddingBottom: 16,
-    borderBottomLeftRadius: 16,
-    borderBottomRightRadius: 16,
+    borderBottomLeftRadius: RADIUS.lg,
+    borderBottomRightRadius: RADIUS.lg,
     overflow: 'hidden',
   },
 
@@ -669,7 +669,7 @@ const styles = StyleSheet.create({
   },
   totalPill: {
     backgroundColor: 'rgba(255,255,255,0.18)',
-    borderRadius: 20,
+    borderRadius: RADIUS.full,
     paddingHorizontal: 12,
     paddingVertical: 5,
   },
@@ -678,9 +678,9 @@ const styles = StyleSheet.create({
   headerBody: { paddingHorizontal: 16, paddingTop: 8, gap: 8 },
   headerTitle: { fontSize: 20, color: '#fff', fontFamily: F.bold, lineHeight: 24 },
   headerBadgeRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  typeBadge:     { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
+  typeBadge:     { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: RADIUS.full, paddingHorizontal: 10, paddingVertical: 4 },
   typeBadgeText: { fontSize: 11, fontFamily: F.bold },
-  platformPill:  { backgroundColor: 'rgba(255,255,255,0.18)', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
+  platformPill:  { backgroundColor: 'rgba(255,255,255,0.18)', borderRadius: RADIUS.full, paddingHorizontal: 10, paddingVertical: 4 },
   platformText:  { fontSize: 11, color: '#fff', fontFamily: F.semibold },
 
   statStrip: {
@@ -689,7 +689,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginTop: 14,
     backgroundColor: 'rgba(255,255,255,0.12)',
-    borderRadius: 14,
+    borderRadius: RADIUS.md,
     paddingVertical: 10,
   },
   statStripItem:    { flex: 1, alignItems: 'center', gap: 2 },
@@ -703,9 +703,9 @@ const styles = StyleSheet.create({
   // ── Filter bar ───────────────────────────────────────────────────────────────
   filterBar:    { borderBottomWidth: StyleSheet.hairlineWidth },
   filterScroll: { paddingHorizontal: 16, paddingVertical: 10, gap: 8 },
-  filterChip:   { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 7 },
+  filterChip:   { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1.5, borderRadius: RADIUS.full, paddingHorizontal: 12, paddingVertical: 7 },
   filterChipText:      { fontSize: 13, fontFamily: F.semibold },
-  filterChipBadge:     { borderRadius: 10, minWidth: 20, height: 20, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 5 },
+  filterChipBadge:     { borderRadius: RADIUS.full, minWidth: 20, height: 20, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 5 },
   filterChipBadgeText: { fontSize: 11, fontFamily: F.bold },
 
   // ── List ─────────────────────────────────────────────────────────────────────
@@ -714,49 +714,45 @@ const styles = StyleSheet.create({
 
   // ── Proposal card ─────────────────────────────────────────────────────────────
   card: {
-    borderRadius: 16,
+    borderRadius: RADIUS.lg,
     borderLeftWidth: 4,
     padding: 14,
     gap: 10,
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
+    ...SHADOW.card,
   },
   cardHeader:     { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
-  avatar:         { width: 46, height: 46, borderRadius: 23, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  avatar:         { width: 46, height: 46, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   avatarText:     { fontSize: 15, fontFamily: F.bold },
   creatorMeta:    { flex: 1, gap: 3 },
   creatorName:    { fontSize: 14, fontFamily: F.bold },
   locationRow:    { flexDirection: 'row', alignItems: 'center', gap: 3 },
   locationText:   { fontSize: 11, fontFamily: F.regular },
   cardHeaderRight:{ alignItems: 'flex-end', gap: 4 },
-  statusBadge:    { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
+  statusBadge:    { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingVertical: 4 },
   statusText:     { fontSize: 11, fontFamily: F.bold },
   timeText:       { fontSize: 10, fontFamily: F.regular },
 
   cardDivider: { height: StyleSheet.hairlineWidth },
 
-  coverWrap:   { flexDirection: 'row', alignItems: 'flex-start', gap: 8, borderRadius: 10, padding: 10 },
+  coverWrap:   { flexDirection: 'row', alignItems: 'flex-start', gap: 8, borderRadius: RADIUS.sm, padding: 10 },
   coverLetter: { fontSize: 12, lineHeight: 18, fontStyle: 'italic', fontFamily: F.regular },
   seeMoreBtn:  { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 4 },
   seeMoreText: { fontSize: 12, fontFamily: F.bold },
 
   rateRow:    { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  ratePill:   { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6 },
+  ratePill:   { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: RADIUS.sm, paddingHorizontal: 10, paddingVertical: 6 },
   rateAmount: { fontSize: 14, fontFamily: F.bold },
   rateLabel:  { fontSize: 11, fontFamily: F.regular },
 
-  freeTag:     { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 7 },
+  freeTag:     { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: RADIUS.sm, paddingHorizontal: 10, paddingVertical: 7 },
   freeTagText: { fontSize: 13, fontFamily: F.bold },
 
   actions:    { flexDirection: 'row', gap: 10 },
-  declineBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 11, borderRadius: 12, borderWidth: 1.5 },
-  acceptBtn:  { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 11, borderRadius: 12 },
+  declineBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 11, borderRadius: RADIUS.md, borderWidth: 1.5 },
+  acceptBtn:  { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 11, borderRadius: RADIUS.md },
   actionText: { fontSize: 13, fontFamily: F.bold },
 
-  startProjectBtn:    { flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 12, paddingVertical: 11, paddingHorizontal: 14, marginTop: 10 },
+  startProjectBtn:    { flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: RADIUS.md, paddingVertical: 11, paddingHorizontal: 14, marginTop: 10 },
   startProjectBtnTxt: { fontSize: 13, color: '#fff', fontFamily: F.bold },
 
 });

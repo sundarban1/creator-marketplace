@@ -18,7 +18,7 @@ function SceneFrame({
   children: React.ReactNode;
 }) {
   return (
-    <div className="relative h-full w-full bg-ink">
+    <div className="relative h-full w-full bg-gradient-to-br from-ink via-ink to-violet-dark/50">
       <video
         key={videoId}
         className="absolute inset-0 h-full w-full object-cover"

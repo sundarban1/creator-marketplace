@@ -21,10 +21,11 @@ import { useAuth } from '@/context/AuthContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/components/Toast';
+import { Button } from '@/components/Button';
 import { creatorService } from '@/services/creator';
 import type { Category } from '@/services/profile';
 import { categoryService } from '@/services/category';
-import { F } from '@/utilities/constants';
+import { F, RADIUS, SHADOW } from '@/utilities/constants';
 
 const PLACES_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY ?? '';
 
@@ -426,7 +427,7 @@ export default function EditProfileScreen() {
                         style={[
                           styles.chip,
                           selected
-                            ? { backgroundColor: '#4f46e5' }
+                            ? { backgroundColor: C.brinjal1 }
                             : { backgroundColor: C.background, borderColor: C.border, borderWidth: 1.5 },
                         ]}
                         onPress={() =>
@@ -444,12 +445,9 @@ export default function EditProfileScreen() {
           </>
         )}
 
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-          style={[styles.saveBtn, { backgroundColor: saving ? C.border : C.brinjal1 }]}
-          onPress={handleSave}
-          disabled={saving}>
-          {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>{t('profile.editCreator.saveBtn')}</Text>}
-        </Pressable>
+        <View style={styles.saveBtnWrap}>
+          <Button label={t('profile.editCreator.saveBtn')} onPress={handleSave} loading={saving} />
+        </View>
 
         <View style={{ height: 32 }} />
       </ScrollView>
@@ -468,29 +466,28 @@ export default function EditProfileScreen() {
 const styles = StyleSheet.create({
   container:  { flex: 1 },
   center:     { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  gradientTopBar: { overflow: 'hidden', borderBottomLeftRadius: 20, borderBottomRightRadius: 20 },
+  gradientTopBar: { overflow: 'hidden', borderBottomLeftRadius: RADIUS.lg, borderBottomRightRadius: RADIUS.lg },
   topBar:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
   topTitle:   { fontSize: 20, fontFamily: F.bold, lineHeight: 24 },
   content:    { paddingBottom: 24 },
   sectionHeader: { fontSize: 11, letterSpacing: 0, marginTop: 20, marginBottom: 6, marginHorizontal: 20, fontFamily: F.bold },
-  card:       { marginHorizontal: 16, borderRadius: 14, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2, overflow: 'hidden' },
+  card:       { marginHorizontal: 16, borderRadius: RADIUS.md, ...SHADOW.card, overflow: 'hidden' },
   field:      { padding: 16, gap: 6 },
   divider:    { height: 1 },
   label:      { fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: F.bold },
-  input:      { borderRadius: 10, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, fontFamily: F.regular },
-  textarea:   { borderRadius: 10, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, minHeight: 100, fontFamily: F.regular },
-  usernameRow:   { flexDirection: 'row', alignItems: 'center', borderRadius: 10, borderWidth: 1.5, paddingHorizontal: 12, gap: 6 },
+  input:      { borderRadius: RADIUS.sm, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, fontFamily: F.regular },
+  textarea:   { borderRadius: RADIUS.sm, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, minHeight: 100, fontFamily: F.regular },
+  usernameRow:   { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.sm, borderWidth: 1.5, paddingHorizontal: 12, gap: 6 },
   atSign:        { fontSize: 14, fontFamily: F.semibold },
   usernameInput: { flex: 1, fontSize: 14, paddingVertical: 10, fontFamily: F.regular },
   usernameHint:  { fontSize: 11, fontFamily: F.regular, marginTop: 2 },
   charCount:  { fontSize: 11, textAlign: 'right', fontFamily: F.regular },
-  locationBtn:    { flexDirection: 'row', alignItems: 'center', borderRadius: 10, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 12, gap: 8 },
+  locationBtn:    { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.sm, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 12, gap: 8 },
   locationBtnTxt: { flex: 1, fontSize: 14, lineHeight: 20, fontFamily: F.regular },
   locationArrow:  { fontSize: 20, color: '#9CA3AF' },
   clearLocation:  { fontSize: 12, marginTop: 2, fontFamily: F.semibold },
   chipGrid:   { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
-  chip:       { borderRadius: 20, paddingHorizontal: 12, paddingVertical: 7 },
+  chip:       { borderRadius: RADIUS.full, paddingHorizontal: 12, paddingVertical: 7 },
   chipText:   { fontSize: 13, fontFamily: F.semibold },
-  saveBtn:    { marginHorizontal: 16, marginTop: 20, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
-  saveBtnText:{ fontSize: 15, color: '#fff', fontFamily: F.bold },
+  saveBtnWrap:{ marginHorizontal: 16, marginTop: 20 },
 });

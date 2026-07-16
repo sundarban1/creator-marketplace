@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { legalService, type LegalDocument, type LegalSlug } from '@/services/legal';
-import { F } from '@/utilities/constants';
+import { F, RADIUS, SHADOW } from '@/utilities/constants';
 
 const META: Record<LegalSlug, { titleKey: string; icon: keyof typeof Ionicons.glyphMap }> = {
   'terms':          { titleKey: 'legalScreen.termsTitle',   icon: 'document-text-outline' },
@@ -156,18 +156,18 @@ const styles = StyleSheet.create({
   headerTitle:  { fontSize: 17, fontFamily: F.bold },
 
   errorText:    { fontSize: 15, textAlign: 'center', fontFamily: F.medium },
-  retryBtn:     { borderRadius: 12, paddingHorizontal: 24, paddingVertical: 10, marginTop: 4 },
+  retryBtn:     { borderRadius: RADIUS.md, paddingHorizontal: 24, paddingVertical: 12, marginTop: 4 },
   retryBtnText: { color: '#fff', fontSize: 14, fontFamily: F.bold },
 
   scroll:   { padding: 16, paddingBottom: 40 },
-  sections: { gap: 10 },
+  sections: { gap: 12 },
 
-  updatedRow:  { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, borderWidth: 1, marginBottom: 12 },
+  updatedRow:  { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: RADIUS.md, paddingHorizontal: 14, paddingVertical: 10, borderWidth: 1, marginBottom: 12 },
   updatedText: { fontSize: 12, fontFamily: F.medium },
 
-  accordionCard:   { borderRadius: 14, borderWidth: 1.5, overflow: 'hidden' },
-  accordionHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14 },
-  indexBadge:      { width: 26, height: 26, borderRadius: 8, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  accordionCard:   { borderRadius: RADIUS.md, borderWidth: 1.5, overflow: 'hidden', ...SHADOW.card },
+  accordionHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14, minHeight: 44 },
+  indexBadge:      { width: 26, height: 26, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   indexText:       { fontSize: 12, fontFamily: F.bold },
   sectionEmoji:    { fontSize: 18 },
   accordionTitle:  { flex: 1, fontSize: 14, fontFamily: F.bold },

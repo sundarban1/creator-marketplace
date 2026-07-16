@@ -1,8 +1,8 @@
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BackButton } from '@/components/BackButton';
 import { RangeDropdown } from '@/components/RangeDropdown';
-import { useCallback, useState } from 'react';
+import { useCallback, useState, type ReactNode } from 'react';
 import { useFocusEffect } from 'expo-router';
 import {
   ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View,
@@ -15,7 +15,7 @@ import { StackedBar } from '@/components/charts/StackedBar';
 import {
   analyticsService, type ApiBrandAnalytics, type AnalyticsRange,
 } from '@/services/analytics';
-import { F } from '@/utilities/constants';
+import { F, RADIUS, SHADOW } from '@/utilities/constants';
 
 const RANGES: { value: AnalyticsRange; labelKey: string }[] = [
   { value: '7d',   labelKey: 'analytics.range7d' },
@@ -39,13 +39,13 @@ function fmtBucket(bucket: string): string {
 }
 
 function StatTile({ icon, label, value, C }: {
-  icon: string; label: string; value: string;
+  icon: ReactNode; label: string; value: string;
   C: ReturnType<typeof useAppColors>;
 }) {
   return (
     <View style={[s.tile, { backgroundColor: C.surface, borderColor: C.border }]}>
       <View style={[s.tileIconWrap, { backgroundColor: C.primaryLight }]}>
-        <Ionicons name={icon as never} size={17} color={C.brinjal1} />
+        {icon}
       </View>
       <Text style={[s.tileValue, { color: C.text }]} numberOfLines={1}>{value}</Text>
       <Text style={[s.tileLabel, { color: C.textSecondary }]} numberOfLines={1}>{label}</Text>
@@ -119,14 +119,14 @@ export default function BusinessAnalyticsScreen() {
         >
           {/* Stat grid */}
           <View style={s.grid}>
-            <StatTile icon="megaphone-outline" label={t('analytics.totalEvents')} value={totals.campaignsCreated.toLocaleString()} C={C} />
-            <StatTile icon="trending-up-outline" label={t('analytics.activeEvents')} value={totals.activeCampaigns.toLocaleString()} C={C} />
-            <StatTile icon="checkmark-circle-outline" label={t('analytics.completedEvents')} value={totals.completedCampaigns.toLocaleString()} C={C} />
-            <StatTile icon="wallet-outline" label={t('analytics.totalSpend')} value={fmtCurrency(totals.totalSpend)} C={C} />
-            <StatTile icon="send-outline" label={t('analytics.applicationsReceived')} value={totals.applicationsReceived.toLocaleString()} C={C} />
-            <StatTile icon="person-add-outline" label={t('analytics.creatorsHired')} value={totals.creatorsHired.toLocaleString()} C={C} />
-            <StatTile icon="star-outline" label={t('analytics.avgRatingGiven')} value={totals.averageRatingGiven.toFixed(1)} C={C} />
-            <StatTile icon="time-outline" label={t('analytics.responseTime')} value={`${totals.responseTimeAvgMins} min`} C={C} />
+            <StatTile icon={<FontAwesome5 name="bullhorn" size={15} color={C.brinjal1} solid />} label={t('analytics.totalEvents')} value={totals.campaignsCreated.toLocaleString()} C={C} />
+            <StatTile icon={<FontAwesome5 name="chart-line" size={15} color={C.brinjal1} solid />} label={t('analytics.activeEvents')} value={totals.activeCampaigns.toLocaleString()} C={C} />
+            <StatTile icon={<Ionicons name="checkmark-circle-outline" size={17} color={C.brinjal1} />} label={t('analytics.completedEvents')} value={totals.completedCampaigns.toLocaleString()} C={C} />
+            <StatTile icon={<FontAwesome5 name="wallet" size={15} color={C.brinjal1} solid />} label={t('analytics.totalSpend')} value={fmtCurrency(totals.totalSpend)} C={C} />
+            <StatTile icon={<FontAwesome5 name="paper-plane" size={15} color={C.brinjal1} solid />} label={t('analytics.applicationsReceived')} value={totals.applicationsReceived.toLocaleString()} C={C} />
+            <StatTile icon={<FontAwesome5 name="user-plus" size={15} color={C.brinjal1} solid />} label={t('analytics.creatorsHired')} value={totals.creatorsHired.toLocaleString()} C={C} />
+            <StatTile icon={<FontAwesome5 name="star" size={15} color={C.brinjal1} solid />} label={t('analytics.avgRatingGiven')} value={totals.averageRatingGiven.toFixed(1)} C={C} />
+            <StatTile icon={<Ionicons name="time-outline" size={17} color={C.brinjal1} />} label={t('analytics.responseTime')} value={`${totals.responseTimeAvgMins} min`} C={C} />
           </View>
 
           {/* Monthly spending */}
@@ -155,7 +155,7 @@ export default function BusinessAnalyticsScreen() {
 const s = StyleSheet.create({
   container: { flex: 1 },
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  gradientTopBar: { overflow: 'hidden', borderBottomLeftRadius: 16, borderBottomRightRadius: 16 },
+  gradientTopBar: { overflow: 'hidden', borderBottomLeftRadius: RADIUS.lg, borderBottomRightRadius: RADIUS.lg },
   topBar:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
   topTitle:  { fontSize: 16, fontFamily: F.bold },
 
@@ -164,11 +164,11 @@ const s = StyleSheet.create({
   content: { padding: 16, paddingTop: 0, paddingBottom: 32, gap: 16 },
 
   grid:        { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  tile:        { width: '47%', borderRadius: 18, borderWidth: 1, padding: 14, gap: 6, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
-  tileIconWrap:{ width: 34, height: 34, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginBottom: 2 },
+  tile:        { width: '47%', borderRadius: RADIUS.lg, borderWidth: 1, padding: 14, gap: 6, ...SHADOW.card },
+  tileIconWrap:{ width: 34, height: 34, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center', marginBottom: 2 },
   tileValue:   { fontSize: 19, fontFamily: F.bold },
   tileLabel:   { fontSize: 11, fontFamily: F.medium },
 
-  card:      { borderRadius: 18, padding: 18, gap: 16, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
+  card:      { borderRadius: RADIUS.lg, padding: 18, gap: 16, ...SHADOW.card },
   cardTitle: { fontSize: 14, fontFamily: F.bold },
 });

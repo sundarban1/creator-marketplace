@@ -25,7 +25,7 @@ import { LocationSearchPicker, type LocationFilter } from '@/components/Location
 import { businessService, type BusinessListItem } from '@/services/business';
 import { useFavoriteBusinesses } from '@/hooks/useFavoriteBusinesses';
 import { useToast } from '@/components/Toast';
-import { F } from '@/utilities/constants';
+import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { useCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { usePlatforms } from '@/hooks/usePlatforms';
 
@@ -142,7 +142,7 @@ function ExploreFilterModal({
 
 const fm = StyleSheet.create({
   chipGrid:        { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  filterChip:      { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1.5, borderRadius: 22, paddingHorizontal: 14, paddingVertical: 9 },
+  filterChip:      { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1.5, borderRadius: RADIUS.full, paddingHorizontal: 14, paddingVertical: 9 },
   filterChipText:  { fontSize: 13, fontFamily: F.medium },
 });
 
@@ -538,7 +538,7 @@ export default function ExploreBusinessesScreen() {
 
 const styles = StyleSheet.create({
   container:      { flex: 1 },
-  gradientHeader: { borderBottomLeftRadius: 16, borderBottomRightRadius: 16, overflow: 'hidden' },
+  gradientHeader: { borderBottomLeftRadius: RADIUS.lg, borderBottomRightRadius: RADIUS.lg, overflow: 'hidden' },
 
   // Header
   header:         { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 10, paddingBottom: 12, gap: 12 },
@@ -546,20 +546,20 @@ const styles = StyleSheet.create({
   heading:        { fontSize: 20, fontFamily: F.bold, color: '#fff', lineHeight: 24 },
   headingSub:     { fontSize: 12, fontFamily: F.regular },
   countTxt:       { fontSize: 12, fontFamily: F.semibold, paddingHorizontal: 16, marginTop: 6, marginBottom: 2, textAlign: 'right' },
-  favLink:        { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(255,255,255,0.22)', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 6 },
+  favLink:        { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(255,255,255,0.22)', borderRadius: RADIUS.full, paddingHorizontal: 10, paddingVertical: 6 },
   favLinkText:    { fontSize: 12, color: '#fff', fontFamily: F.bold },
 
   // Search row
   searchRow:      { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 12 },
-  searchBox:      { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 9, borderRadius: 16, borderWidth: 1.5, paddingHorizontal: 14, height: 50 },
+  searchBox:      { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 9, borderRadius: RADIUS.lg, borderWidth: 1.5, paddingHorizontal: 14, height: 50 },
   searchInput:    { flex: 1, fontSize: 15, fontFamily: F.regular },
-  filterBtn:      { width: 50, height: 50, borderRadius: 16, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center' },
-  filterCountBadge: { position: 'absolute', top: -4, right: -4, minWidth: 16, height: 16, borderRadius: 8, paddingHorizontal: 3, backgroundColor: '#EF4444', justifyContent: 'center', alignItems: 'center' },
+  filterBtn:      { width: 50, height: 50, borderRadius: RADIUS.lg, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center' },
+  filterCountBadge: { position: 'absolute', top: -4, right: -4, minWidth: 16, height: 16, borderRadius: RADIUS.full, paddingHorizontal: 3, backgroundColor: '#EF4444', justifyContent: 'center', alignItems: 'center' },
   filterCountBadgeTxt: { fontSize: 9, fontFamily: F.extrabold, color: '#fff' },
 
   // Active filter pills
   activePills:    { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', paddingHorizontal: 16, paddingBottom: 8, gap: 8 },
-  activePill:     { flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1.5, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5 },
+  activePill:     { flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1.5, borderRadius: RADIUS.full, paddingHorizontal: 12, paddingVertical: 5 },
   activePillText: { fontSize: 12, fontFamily: F.semibold },
   clearAllText:   { fontSize: 12, fontFamily: F.bold },
 
@@ -570,7 +570,7 @@ const styles = StyleSheet.create({
   footerLoading:  { paddingVertical: 20 },
 
   // Card
-  card:           { flexDirection: 'row', borderRadius: 20, overflow: 'hidden', shadowColor: '#000', shadowOpacity: 0.07, shadowRadius: 14, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
+  card:           { flexDirection: 'row', borderRadius: RADIUS.lg, overflow: 'hidden', ...SHADOW.raised },
   cardAccent:     { width: 4 },
   cardBody:       { flex: 1, padding: 16, gap: 12 },
   cardTop:        { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
@@ -580,13 +580,13 @@ const styles = StyleSheet.create({
   desc:           { fontSize: 13, lineHeight: 19, fontFamily: F.regular },
 
   // Heart (top-right inside cardTop)
-  heartBtn:       { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  heartBtn:       { width: 34, height: 34, borderRadius: RADIUS.sm, alignItems: 'center', justifyContent: 'center' },
 
   chipTxt:        { fontSize: 11, fontFamily: F.bold },
 
   // One consolidated stat row: primary category + active events
   statRow:          { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, paddingTop: 12, borderTopWidth: StyleSheet.hairlineWidth },
-  catPill:          { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5, flexShrink: 1 },
+  catPill:          { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: RADIUS.sm, paddingHorizontal: 10, paddingVertical: 5, flexShrink: 1 },
   campaignStat:     { flexDirection: 'row', alignItems: 'center', gap: 5 },
   campaignStatTxt:  { fontSize: 12, fontFamily: F.bold },
 });

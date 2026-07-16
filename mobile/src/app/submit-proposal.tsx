@@ -23,7 +23,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { campaignService } from '@/services/campaign';
 import { creatorService } from '@/services/creator';
-import { F } from '@/utilities/constants';
+import { F, RADIUS, SHADOW } from '@/utilities/constants';
 
 // At least one of these must be present before a creator can apply — brands
 // evaluating a proposal need to see the creator's actual content somewhere.
@@ -373,29 +373,29 @@ const styles = StyleSheet.create({
   headerTitle:     { fontSize: 16, fontFamily: F.bold },
   scroll:          { padding: 20, gap: 16, paddingBottom: 48 },
 
-  campaignBadge:   { borderRadius: 14, padding: 16, gap: 6, borderLeftWidth: 4 },
-  badgeLabel:      { fontSize: 10, textTransform: 'uppercase', letterSpacing: 0, fontFamily: F.bold },
-  campaignTitle:   { fontSize: 16, fontFamily: F.bold },
+  campaignBadge:   { borderRadius: RADIUS.lg, padding: 16, gap: 6, borderLeftWidth: 4, ...SHADOW.card },
+  badgeLabel:      { fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: F.bold },
+  campaignTitle:   { fontSize: 17, fontFamily: F.extrabold },
   campaignBrand:   { fontSize: 13, fontFamily: F.regular },
-  budgetPill:      { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20, marginTop: 2 },
+  budgetPill:      { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 5, borderRadius: RADIUS.full, marginTop: 2 },
   budgetText:      { fontSize: 13, fontFamily: F.bold },
 
-  tipCard:         { flexDirection: 'row', borderRadius: 12, borderWidth: 1, padding: 12, gap: 10, alignItems: 'flex-start' },
+  tipCard:         { flexDirection: 'row', borderRadius: RADIUS.md, borderWidth: 1, padding: 14, gap: 10, alignItems: 'flex-start' },
   tipText:         { flex: 1, fontSize: 12, lineHeight: 18, fontFamily: F.regular },
 
-  form:            { gap: 18 },
+  form:            { gap: 20 },
   fieldGroup:      { gap: 6 },
   coverLabelRow:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   fieldLabel:      { fontSize: 13, fontFamily: F.semibold },
-  regenBtn:        { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20, borderWidth: 1 },
+  regenBtn:        { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: RADIUS.full, borderWidth: 1 },
   regenText:       { fontSize: 11, fontFamily: F.bold },
 
-  textareaWrap:    { borderWidth: 1.5, borderRadius: 12, overflow: 'hidden' },
+  textareaWrap:    { borderWidth: 1.5, borderRadius: RADIUS.md, overflow: 'hidden' },
   textarea:        { paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, minHeight: 160, fontFamily: F.regular },
   fieldMeta:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 4 },
   fieldError:      { fontSize: 12, flex: 1, fontFamily: F.medium },
   charHint:        { fontSize: 11, fontFamily: F.regular },
 
-  errorSummary:    { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderRadius: 10, padding: 12 },
+  errorSummary:    { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderRadius: RADIUS.sm, padding: 12 },
   errorSummaryText:{ fontSize: 13, textAlign: 'center', fontFamily: F.medium },
 });

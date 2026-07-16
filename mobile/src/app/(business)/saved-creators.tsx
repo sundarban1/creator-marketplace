@@ -15,7 +15,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { creatorService, type SavedCreatorItem } from '@/services/creator';
 import { EmptyState } from '@/components/EmptyState';
-import { F } from '@/utilities/constants';
+import { F, RADIUS, SHADOW } from '@/utilities/constants';
 
 function Avatar({ name, size = 48, C }: { name: string; size?: number; C: ReturnType<typeof useAppColors> }) {
   const initials = name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
@@ -164,9 +164,9 @@ export default function SavedCreatorsScreen() {
 
 const s = StyleSheet.create({
   container: { flex: 1 },
-  gradientHeader: { paddingBottom: 14, borderBottomLeftRadius: 16, borderBottomRightRadius: 16, overflow: 'hidden' },
+  gradientHeader: { paddingBottom: 14, borderBottomLeftRadius: RADIUS.lg, borderBottomRightRadius: RADIUS.lg, overflow: 'hidden' },
   header:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 10, paddingBottom: 0 },
-  backBtn:   { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center' },
+  backBtn:   { width: 38, height: 38, borderRadius: RADIUS.full, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center' },
   heading:   { fontSize: 20, color: '#fff', fontFamily: F.bold, lineHeight: 24 },
   subheading:{ fontSize: 12, color: 'rgba(255,255,255,0.8)', marginTop: 2, fontFamily: F.regular },
 
@@ -174,12 +174,12 @@ const s = StyleSheet.create({
   list:   { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 40, gap: 12 },
   listEmpty: { flexGrow: 1 },
 
-  card:     { borderRadius: 16, borderWidth: 1, overflow: 'hidden' },
+  card:     { borderRadius: RADIUS.lg, borderWidth: 1, overflow: 'hidden', ...SHADOW.card },
   cardMain: { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 14 },
   info:     { flex: 1, gap: 3 },
   nameRow:  { flexDirection: 'row', alignItems: 'center', gap: 6 },
   name:     { fontSize: 15, fontFamily: F.bold, flex: 1 },
-  verifiedBadge: { borderRadius: 8, paddingHorizontal: 5, paddingVertical: 1 },
+  verifiedBadge: { borderRadius: RADIUS.full, paddingHorizontal: 5, paddingVertical: 1 },
   locationRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   location:  { fontSize: 12, fontFamily: F.regular },
   followers: { fontSize: 12, fontFamily: F.regular },

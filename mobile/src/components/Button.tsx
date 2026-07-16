@@ -2,7 +2,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppColors } from '@/context/ThemeContext';
-import { F } from '@/utilities/constants';
+import { F, RADIUS, SHADOW } from '@/utilities/constants';
 
 type ButtonProps = {
   label: string;
@@ -119,12 +119,12 @@ export function Button({
 }
 
 const styles = StyleSheet.create({
-  base:        { borderRadius: 14, overflow: 'hidden' },
+  base:        { borderRadius: RADIUS.md, overflow: 'hidden' },
   fullWidth:   { alignSelf: 'stretch' },
-  gradient:    { height: 52, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24, shadowColor: '#4F46E5', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
-  inner:       { flexDirection: 'row', alignItems: 'center', gap: 7 },
-  secondaryBtn:{ height: 52, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 },
-  dangerBtn:   { height: 52, borderWidth: 1.5, borderColor: '#EF4444', backgroundColor: '#FEF2F2', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 },
+  gradient:    { height: 54, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 26, ...SHADOW.raised },
+  inner:       { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  secondaryBtn:{ height: 54, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 26 },
+  dangerBtn:   { height: 54, borderWidth: 1.5, borderColor: '#EF4444', backgroundColor: '#FEF2F2', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 26 },
   labelPrimary:  { fontSize: 15, color: '#fff', letterSpacing: 0.3 },
   labelSecondary:{ fontSize: 15, letterSpacing: 0.2 },
   labelDanger:   { fontSize: 15, color: '#EF4444', letterSpacing: 0.2 },

@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useRef } from 'react';
 import { Animated, Image, StyleSheet, Text, View } from 'react-native';
 import { useLanguage } from '@/context/LanguageContext';
-import { F } from '@/utilities/constants';
+import { F, RADIUS } from '@/utilities/constants';
 
 const PINK    = '#E8527A';
 const TEAL    = '#2EC4C4';
@@ -219,8 +219,8 @@ const styles = StyleSheet.create({
 
   center: { alignItems: 'center', zIndex: 10 },
 
-  roleRow:     { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 32, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 7, backgroundColor: 'rgba(0,0,0,0.03)', borderWidth: 1, borderColor: 'rgba(0,0,0,0.07)' },
-  chip:        { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, borderWidth: 1 },
+  roleRow:     { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 32, borderRadius: RADIUS.full, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: 'rgba(0,0,0,0.03)', borderWidth: 1, borderColor: 'rgba(0,0,0,0.07)' },
+  chip:        { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 4, borderRadius: RADIUS.full, borderWidth: 1 },
   chipText:    { fontSize: 12, letterSpacing: 0.3, fontFamily: F.bold },
   chipDivider: { width: 1, height: 14, backgroundColor: 'rgba(0,0,0,0.12)' },
 

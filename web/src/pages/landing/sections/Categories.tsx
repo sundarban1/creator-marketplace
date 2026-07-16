@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { fadeUp, stagger, VP } from '../lib/motion';
+import { fadeUp, stagger, VP, PILL_HOVER } from '../lib/motion';
 import { SECTION_IDS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
 import { getCategoryStyle } from '../lib/categoryIcons';
@@ -38,7 +38,7 @@ export function Categories({ stats }: { stats: LandingStats | null }) {
               return (
                 <motion.div
                   key={i}
-                  whileHover={{ y: -3, scale: 1.05 }}
+                  whileHover={PILL_HOVER}
                   className="group flex flex-shrink-0 items-center gap-3 rounded-2xl border border-ink/10 bg-white px-4 py-3.5 shadow-[0_2px_8px_rgba(20,17,16,0.03)] transition-shadow duration-300 hover:shadow-[0_14px_28px_-10px_rgba(20,17,16,0.16)]"
                 >
                   <span

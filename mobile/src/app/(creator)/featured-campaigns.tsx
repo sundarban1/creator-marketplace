@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { FontAwesome5 } from '@expo/vector-icons';
 import { BackButton } from '@/components/BackButton';
 import {
   ActivityIndicator,
@@ -16,7 +15,8 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { campaignService } from '@/services/campaign';
 import type { Campaign } from '@/types';
-import { F } from '@/utilities/constants';
+import { EmptyState } from '@/components/EmptyState';
+import { F, RADIUS } from '@/utilities/constants';
 
 const PAGE_SIZE = 6;
 
@@ -101,10 +101,7 @@ export default function FeaturedCampaignsScreen() {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brinjal1} />}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
           ListEmptyComponent={
-            <View style={styles.emptyWrap}>
-              <FontAwesome5 name="star" size={44} color={C.textSecondary} solid style={styles.emptyIcon} />
-              <Text style={[styles.emptyTitle, { color: C.text }]}>{t('creator.featuredCampaigns.empty')}</Text>
-            </View>
+            <EmptyState faIcon="star" title={t('creator.featuredCampaigns.empty')} />
           }
           ListFooterComponent={
             page < totalPages ? (
@@ -143,12 +140,9 @@ const styles = StyleSheet.create({
   errorWrap: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12 },
   errorText: { color: '#DC2626', fontSize: 14, fontFamily: F.regular },
   retryText: { fontSize: 14, fontFamily: F.bold },
-  emptyWrap: { paddingTop: 80, alignItems: 'center', gap: 10 },
-  emptyIcon: { opacity: 0.6 },
-  emptyTitle: { fontSize: 16, fontFamily: F.bold },
   loadMoreBtn: {
-    marginTop: 20, marginHorizontal: 20, height: 46,
-    borderRadius: 12, justifyContent: 'center', alignItems: 'center',
+    marginTop: 20, marginHorizontal: 20, height: 48,
+    borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center',
   },
   loadMoreText: { fontSize: 14, fontFamily: F.bold },
   endText: { textAlign: 'center', fontSize: 12, marginTop: 20, marginBottom: 8, fontFamily: F.regular },

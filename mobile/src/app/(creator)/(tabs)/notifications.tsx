@@ -13,7 +13,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useNotificationBadge } from '@/context/NotificationContext';
 import { notificationService } from '@/services/notifications';
 import { getSocket } from '@/lib/socket';
-import { F } from '@/utilities/constants';
+import { F, RADIUS } from '@/utilities/constants';
 import type { AppNotification } from '@/types';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
@@ -246,7 +246,7 @@ export default function NotificationsScreen() {
             </Text>
           </View>
           {unreadCount > 0 && (
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={handleMarkAll} style={[styles.markAllBtn, { borderColor: 'rgba(255,255,255,0.5)' }]}>
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} hitSlop={6} onPress={handleMarkAll} style={[styles.markAllBtn, { borderColor: 'rgba(255,255,255,0.5)' }]}>
               <Text style={styles.markAllText}>{t('notifications.markAllRead')}</Text>
             </Pressable>
           )}
@@ -259,7 +259,7 @@ export default function NotificationsScreen() {
         </View>
       ) : error ? (
         <EmptyState
-          icon="alert-circle-outline"
+          faIcon="exclamation-triangle"
           title={t('notifications.loadFailedTitle')}
           subtitle={error}
           action={{ label: t('notifications.retry'), onPress: () => loadNotifications() }}
@@ -281,7 +281,7 @@ export default function NotificationsScreen() {
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             <EmptyState
-              icon="notifications-outline"
+              faIcon="bell"
               title={t('notifications.emptyTitle')}
               subtitle={t('notifications.emptySub')}
             />
@@ -294,11 +294,11 @@ export default function NotificationsScreen() {
 
 const styles = StyleSheet.create({
   container:  { flex: 1 },
-  gradientHeader: { borderBottomLeftRadius: 16, borderBottomRightRadius: 16, overflow: 'hidden' },
+  gradientHeader: { borderBottomLeftRadius: RADIUS.lg, borderBottomRightRadius: RADIUS.lg, overflow: 'hidden' },
   headerRow:  { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingTop: 14, paddingBottom: 14 },
   heading:    { fontSize: 20, fontFamily: F.bold, color: '#fff', lineHeight: 24 },
   subheading: { fontSize: 13, marginTop: 2, fontFamily: F.regular, color: 'rgba(255,255,255,0.75)' },
-  markAllBtn: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 12, borderWidth: 1 },
+  markAllBtn: { paddingHorizontal: 14, paddingVertical: 7, minHeight: 32, justifyContent: 'center', borderRadius: RADIUS.sm, borderWidth: 1 },
   markAllText:{ fontSize: 12, fontFamily: F.semibold, color: '#fff' },
   center:     { flex: 1, alignItems: 'center', justifyContent: 'center' },
   list:       { paddingBottom: 32 },
@@ -309,14 +309,14 @@ const styles = StyleSheet.create({
   item:       { flexDirection: 'row', paddingVertical: 16, paddingHorizontal: 20, borderBottomWidth: 1, gap: 14, alignItems: 'flex-start' },
   accentBar:  { position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, borderRadius: 2 },
 
-  iconWrap:   { width: 46, height: 46, borderRadius: 23, justifyContent: 'center', alignItems: 'center', flexShrink: 0, marginTop: 1 },
+  iconWrap:   { width: 46, height: 46, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', flexShrink: 0, marginTop: 1 },
 
   itemContent:{ flex: 1, gap: 5 },
   titleRow:   { flexDirection: 'row', alignItems: 'center', gap: 8 },
   itemTitle:  { fontSize: 14, flex: 1, fontFamily: F.bold, lineHeight: 20 },
-  unreadDot:  { width: 7, height: 7, borderRadius: 4, flexShrink: 0 },
+  unreadDot:  { width: 7, height: 7, borderRadius: RADIUS.full, flexShrink: 0 },
 
-  labelChip:     { alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 },
+  labelChip:     { alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 2, borderRadius: RADIUS.sm },
   labelChipText: { fontSize: 10, letterSpacing: 0.3, fontFamily: F.bold },
 
   itemBody:   { fontSize: 13, lineHeight: 19, fontFamily: F.regular },

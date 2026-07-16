@@ -11,14 +11,14 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage, type TFn } from '@/context/LanguageContext';
 import { campaignService } from '@/services/campaign';
 import { TabSlider } from '@/components/TabSlider';
 import { EmptyState } from '@/components/EmptyState';
 import { useScrollToTopOnTabPress } from '@/hooks/useScrollToTopOnTabPress';
-import { F } from '@/utilities/constants';
+import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { TabColors } from '@/utilities/tabColors';
 
 type WS = 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED';
@@ -132,7 +132,7 @@ function CampaignEventCard({ item }: { item: CampaignCard }) {
       {/* Type + platform row */}
       <View style={styles.cardTopRow}>
         <View style={[styles.typeBadge, { backgroundColor: accentBg }]}>
-          <Ionicons name={isFree ? 'gift-outline' : 'cash-outline'} size={12} color={accent} />
+          <FontAwesome5 name={isFree ? 'gift' : 'money-bill-wave'} size={10} color={accent} solid />
           <Text style={[styles.typeBadgeText, { color: accent }]}>
             {isFree ? t('proposal.business.typeFreeEvent') : t('proposal.business.typePaidCampaign')}
           </Text>
@@ -363,32 +363,28 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
-  gradientHeader: { borderBottomLeftRadius: 16, borderBottomRightRadius: 16, overflow: 'hidden' },
+  gradientHeader: { borderBottomLeftRadius: RADIUS.lg, borderBottomRightRadius: RADIUS.lg, overflow: 'hidden' },
   headerContent:  { paddingHorizontal: 20, paddingTop: 14, paddingBottom: 14 },
   pageTitle:      { fontSize: 20, color: '#fff', fontFamily: F.bold, lineHeight: 24 },
   pageSub:        { fontSize: 13, color: 'rgba(255,255,255,0.75)', fontFamily: F.regular, marginTop: 2 },
 
-  filterRow: { shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
+  filterRow: { ...SHADOW.card },
 
   list:      { paddingTop: 16, paddingHorizontal: 20, paddingBottom: 40 },
   listEmpty: { flexGrow: 1 },
   footerLoading: { paddingVertical: 20 },
 
   card: {
-    borderRadius: 16,
+    borderRadius: RADIUS.lg,
     borderLeftWidth: 4,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
+    ...SHADOW.card,
   },
   cardTopRow:    { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8 },
   cardTopSpacer: { flex: 1 },
-  typeBadge:     { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
+  typeBadge:     { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: RADIUS.full, paddingHorizontal: 10, paddingVertical: 4 },
   typeBadgeText: { fontSize: 11, fontFamily: F.bold },
-  platformPill:  { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
+  platformPill:  { borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingVertical: 3 },
   platformText:  { fontSize: 11, fontFamily: F.semibold },
 
   cardTitle: { fontSize: 15, lineHeight: 20, paddingHorizontal: 16, paddingBottom: 10, fontFamily: F.bold },
@@ -402,11 +398,11 @@ const styles = StyleSheet.create({
   nudge:     { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, paddingVertical: 8 },
   nudgeText: { fontSize: 12, fontFamily: F.semibold },
 
-  startWorkBtn:     { flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: 16, marginBottom: 14, marginTop: 6, paddingVertical: 13, paddingHorizontal: 14, borderRadius: 14 },
-  btnIconBadge:     { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.22)', justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  startWorkBtn:     { flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: 16, marginBottom: 14, marginTop: 6, paddingVertical: 13, paddingHorizontal: 14, borderRadius: RADIUS.md },
+  btnIconBadge:     { width: 40, height: 40, borderRadius: RADIUS.full, backgroundColor: 'rgba(255,255,255,0.22)', justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   btnTextBlock:     { flex: 1, gap: 2 },
   startWorkBtnTxt:  { fontSize: 14, color: '#fff', fontFamily: F.bold },
   startWorkBtnSub:  { fontSize: 11, color: 'rgba(255,255,255,0.75)', fontFamily: F.regular },
-  btnArrow:         { width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  btnArrow:         { width: 28, height: 28, borderRadius: RADIUS.full, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
 
 });

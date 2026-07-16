@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useRef, useState, type ReactNod
 import { Ionicons } from '@expo/vector-icons';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { F } from '@/utilities/constants';
+import { F, RADIUS, SHADOW } from '@/utilities/constants';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -120,13 +120,9 @@ const styles = StyleSheet.create({
     left: 14,
     right: 14,
     zIndex: 9999,
-    borderRadius: 14,
+    borderRadius: RADIUS.md,
     borderWidth: 1,
-    shadowColor: '#000',
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 12,
+    ...SHADOW.floating,
   },
   inner:   { flexDirection: 'row', alignItems: 'flex-start', padding: 14, gap: 10 },
   icon:    { marginTop: 1 },

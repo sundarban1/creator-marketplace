@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { messagingEvents } from '@/lib/messagingEvents';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Image as ExpoImage } from 'expo-image';
 import { useEffect, useRef, useState } from 'react';
@@ -27,7 +27,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { chatService, toMessage } from '@/services/chat';
 import { getSocket } from '@/lib/socket';
 import { incomingMessageEvents } from '@/lib/incomingMessageEvents';
-import { F } from '@/utilities/constants';
+import { F, RADIUS } from '@/utilities/constants';
 import { CHAT_EMOJIS } from '@/utilities/chatEmojis';
 import { formatPresence } from '@/utilities/presence';
 import {
@@ -142,9 +142,9 @@ function TypingDots({ avatarName, color }: { avatarName: string; color: string }
 
 const td = StyleSheet.create({
   row:     { flexDirection: 'row', alignItems: 'flex-end', gap: 8, paddingHorizontal: 16, paddingBottom: 6 },
-  mini:    { width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
+  mini:    { width: 28, height: 28, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
   miniTxt: { color: '#fff', fontSize: 10, fontFamily: F.bold },
-  bubble:  { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 12, borderRadius: 18, borderBottomLeftRadius: 4, borderWidth: StyleSheet.hairlineWidth },
+  bubble:  { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 12, borderRadius: RADIUS.lg, borderBottomLeftRadius: 4, borderWidth: StyleSheet.hairlineWidth },
   dot:     { width: 7, height: 7, borderRadius: 3.5 },
 });
 
@@ -217,7 +217,7 @@ function MessageBubble({
                 ? { backgroundColor: C.brinjal1 }
                 : { backgroundColor: C.surface, borderColor: C.border, borderWidth: StyleSheet.hairlineWidth },
             ]}>
-            <Ionicons name="document-text-outline" size={22} color={isSent ? '#fff' : C.brinjal1} />
+            <FontAwesome5 name="file-alt" size={19} color={isSent ? '#fff' : C.brinjal1} />
             <Text numberOfLines={1} style={[s.fileNameTxt, { color: isSent ? '#fff' : C.text }]}>
               {msg.attachmentName ?? 'File'}
             </Text>
@@ -553,7 +553,7 @@ export default function BusinessChatRoomScreen() {
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
       {/* ── Header ── */}
       <LinearGradient colors={['#4c1d95', '#6d28d9', '#7c3aed']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.header}>
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={s.backBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/(business)/messages' as never)}>
+        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={s.backBtn} hitSlop={4} onPress={() => router.canGoBack() ? router.back() : router.replace('/(business)/messages' as never)}>
           <Ionicons name="chevron-back" size={22} color="#fff" />
         </Pressable>
         {personAvatar && !personAvatarFailed ? (
@@ -727,8 +727,8 @@ const s = StyleSheet.create({
 
   // Header
   header:          { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, gap: 10 },
-  backBtn:         { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' },
-  headerAvatar:    { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: 'rgba(255,255,255,0.4)' },
+  backBtn:         { width: 38, height: 38, borderRadius: RADIUS.full, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' },
+  headerAvatar:    { width: 40, height: 40, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: 'rgba(255,255,255,0.4)' },
   headerAvatarTxt: { color: '#fff', fontSize: 14, fontFamily: F.bold },
   headerInfo:      { flex: 1 },
   headerSubRow:    { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 1 },
@@ -749,39 +749,39 @@ const s = StyleSheet.create({
   // Date separator
   dateSepWrap: { flexDirection: 'row', alignItems: 'center', marginVertical: 12, paddingHorizontal: 16, gap: 8 },
   dateSep:     { flex: 1, height: StyleSheet.hairlineWidth },
-  datePill:    { borderRadius: 10, paddingHorizontal: 10, paddingVertical: 4 },
+  datePill:    { borderRadius: RADIUS.sm, paddingHorizontal: 10, paddingVertical: 4 },
   dateTxt:     { fontSize: 11, fontFamily: F.medium },
 
   // Bubbles
   bubbleRow:         { flexDirection: 'row', alignItems: 'flex-end', gap: 6, marginVertical: 1, paddingHorizontal: 4 },
   bubbleRowSent:     { justifyContent: 'flex-end' },
   bubbleRowReceived: { justifyContent: 'flex-start' },
-  msgAvatar:    { width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center', marginBottom: 2 },
+  msgAvatar:    { width: 28, height: 28, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', marginBottom: 2 },
   msgAvatarTxt: { color: '#fff', fontSize: 10, fontFamily: F.bold },
   avatarSpacer: { width: 28 },
   bubbleWrap:         { maxWidth: '75%' },
   bubbleWrapSent:     { alignItems: 'flex-end' },
   bubbleWrapReceived: { alignItems: 'flex-start' },
-  bubble:         { borderRadius: 18, paddingHorizontal: 14, paddingVertical: 10 },
+  bubble:         { borderRadius: RADIUS.lg, paddingHorizontal: 14, paddingVertical: 10 },
   bubbleSent:     { borderBottomRightRadius: 4 },
   bubbleReceived: { borderBottomLeftRadius: 4, borderWidth: StyleSheet.hairlineWidth },
-  deletedBubble: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: StyleSheet.hairlineWidth, borderRadius: 18 },
+  deletedBubble: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: StyleSheet.hairlineWidth, borderRadius: RADIUS.lg },
   deletedTxt: { fontSize: 13, fontFamily: F.regular, fontStyle: 'italic' },
   bubbleTxt:  { fontSize: 15, lineHeight: 22, fontFamily: F.regular },
   bubbleMeta: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 3, paddingHorizontal: 2 },
   bubbleTime: { fontSize: 10, fontFamily: F.regular },
 
   // Attachments
-  imageBubble:          { width: 210, height: 210, borderRadius: 16, overflow: 'hidden' },
+  imageBubble:          { width: 210, height: 210, borderRadius: RADIUS.lg, overflow: 'hidden' },
   attachmentImage:      { width: '100%', height: '100%' },
   imageUploadingOverlay:{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'center', alignItems: 'center' },
   captionBubble:        { marginTop: 4 },
-  fileBubble:           { flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 12, maxWidth: 220 },
+  fileBubble:           { flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: RADIUS.lg, paddingHorizontal: 14, paddingVertical: 12, maxWidth: 220 },
   fileNameTxt:          { flex: 1, fontSize: 13, fontFamily: F.medium },
 
   // Empty
   emptyWrap:  { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10, paddingHorizontal: 32, paddingVertical: 80 },
-  emptyIcon:  { width: 72, height: 72, borderRadius: 36, justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
+  emptyIcon:  { width: 72, height: 72, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
   emptyTitle: { fontSize: 16, fontFamily: F.bold, textAlign: 'center' },
   emptyHint:  { fontSize: 13, fontFamily: F.regular, textAlign: 'center', lineHeight: 19 },
   retryBtn:     { marginTop: 6, paddingHorizontal: 20, paddingVertical: 10 },
@@ -790,10 +790,10 @@ const s = StyleSheet.create({
   // Input
   inputBar:  { flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: 10, paddingVertical: 10, paddingBottom: 16, borderTopWidth: StyleSheet.hairlineWidth, gap: 6 },
   iconBtn:   { width: 36, height: 44, justifyContent: 'center', alignItems: 'center' },
-  inputWrap: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 44, maxHeight: 120, borderWidth: 1.5, borderRadius: 22, paddingHorizontal: 12, paddingVertical: 8 },
+  inputWrap: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 44, maxHeight: 120, borderWidth: 1.5, borderRadius: RADIUS.full, paddingHorizontal: 12, paddingVertical: 8 },
   input:     { flex: 1, fontSize: 15, fontFamily: F.regular, paddingVertical: 2 },
   charCount: { fontSize: 10, fontFamily: F.regular },
-  sendBtn:   { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center' },
+  sendBtn:   { width: 44, height: 44, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
 
   // Emoji panel
   emojiPanel: { height: 260, borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: 8, paddingTop: 8 },

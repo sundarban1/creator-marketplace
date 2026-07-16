@@ -23,7 +23,7 @@ import { campaignService } from '@/services/campaign';
 import { creatorService, type SavedCreatorItem } from '@/services/creator';
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
 import type { Campaign } from '@/types';
-import { F } from '@/utilities/constants';
+import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { TabColors } from '@/utilities/tabColors';
 
 type Application = {
@@ -332,7 +332,7 @@ export default function CampaignsScreen() {
                         <Ionicons name="globe-outline" size={12} color={C.textSecondary} />
                         <Text style={[styles.meta, { color: C.textSecondary }]}>{c.platform}</Text>
                         <Text style={[styles.metaDot, { color: C.border }]}>·</Text>
-                        <Ionicons name="cash-outline" size={12} color={C.textSecondary} />
+                        <FontAwesome5 name="money-bill-wave" size={11} color={C.textSecondary} />
                         <Text style={[styles.meta, { color: C.textSecondary }]}>{c.budget}</Text>
                       </View>
                       {(c.status === 'draft') ? (
@@ -373,7 +373,7 @@ export default function CampaignsScreen() {
                           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                             style={({ pressed }) => [styles.inviteBtn, { backgroundColor: C.primaryLight }, pressed && { opacity: 0.7 }]}
                             onPress={() => openInvite(c)}>
-                            <Ionicons name="person-add-outline" size={13} color={C.brinjal1} />
+                            <FontAwesome5 name="user-plus" size={12} color={C.brinjal1} />
                             <Text style={[styles.inviteBtnText, { color: C.brinjal1 }]}>{t('campaigns.invite')}</Text>
                           </Pressable>
                         )}
@@ -417,7 +417,7 @@ export default function CampaignsScreen() {
                 {inviteCampaign?.title}
               </Text>
             </View>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.modalClose, { backgroundColor: C.background }]} onPress={() => setInviteCampaign(null)}>
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} hitSlop={8} style={[styles.modalClose, { backgroundColor: C.background }]} onPress={() => setInviteCampaign(null)}>
               <Ionicons name="close" size={16} color={C.textSecondary} />
             </Pressable>
           </View>
@@ -434,7 +434,7 @@ export default function CampaignsScreen() {
             <View style={styles.center}><ActivityIndicator size="small" color={C.brinjal1} /></View>
           ) : savedCreators.length === 0 ? (
             <View style={styles.modalEmpty}>
-              <Ionicons name="bookmark-outline" size={40} color={C.textSecondary} />
+              <FontAwesome5 name="bookmark" size={34} color={C.textSecondary} />
               <Text style={[styles.modalEmptyText, { color: C.textSecondary }]}>{t('campaigns.noSavedCreators')}</Text>
               <Text style={[styles.modalEmptyHint, { color: C.textSecondary }]}>
                 {t('campaigns.noSavedCreatorsSub')}
@@ -515,6 +515,7 @@ export default function CampaignsScreen() {
               </Text>
             </View>
             <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+              hitSlop={8}
               style={[styles.modalClose, { backgroundColor: C.background }]}
               onPress={() => setSelectedCampaign(null)}>
               <Ionicons name="close" size={16} color={C.textSecondary} />
@@ -528,7 +529,7 @@ export default function CampaignsScreen() {
               </View>
             ) : applications.length === 0 ? (
               <View style={styles.modalEmpty}>
-                <Ionicons name="mail-open-outline" size={40} color={C.textSecondary} />
+                <FontAwesome5 name="envelope-open-text" size={34} color={C.textSecondary} />
                 <Text style={[styles.modalEmptyText, { color: C.textSecondary }]}>{t('campaigns.noProposalsYet')}</Text>
               </View>
             ) : (
@@ -569,7 +570,7 @@ export default function CampaignsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 60 },
-  gradientHeader: { borderBottomLeftRadius: 16, borderBottomRightRadius: 16, overflow: 'hidden' },
+  gradientHeader: { borderBottomLeftRadius: RADIUS.lg, borderBottomRightRadius: RADIUS.lg, overflow: 'hidden' },
 
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
@@ -578,10 +579,10 @@ const styles = StyleSheet.create({
   headerLeft: { gap: 3 },
   pageTitle: { fontSize: 20, fontFamily: F.bold, lineHeight: 24 },
   pageSub:   { fontSize: 13, fontFamily: F.regular },
-  newBtn: { borderRadius: 12, paddingHorizontal: 14, paddingVertical: 9 },
+  newBtn: { borderRadius: RADIUS.sm, paddingHorizontal: 14, paddingVertical: 9, minHeight: 40, justifyContent: 'center' },
   newBtnText: { color: '#fff', fontSize: 13, fontFamily: F.bold },
 
-  filterRow: { shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
+  filterRow: { ...SHADOW.card },
 
   list: { paddingHorizontal: 20, paddingTop: 14, gap: 12, paddingBottom: 40 },
   listEmpty: { flexGrow: 1 },
@@ -589,60 +590,58 @@ const styles = StyleSheet.create({
 
   emptyWrap: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24, paddingVertical: 16 },
   emptyCard: {
-    width: '100%', borderRadius: 24, borderWidth: 1,
+    width: '100%', borderRadius: RADIUS.xl, borderWidth: 1,
     alignItems: 'center', paddingHorizontal: 28, paddingVertical: 36, gap: 10,
     overflow: 'hidden',
-    shadowColor: '#4F46E5', shadowOpacity: 0.06, shadowRadius: 16,
-    shadowOffset: { width: 0, height: 4 }, elevation: 3,
+    ...SHADOW.card,
   },
-  emptyDot1: { position: 'absolute', width: 120, height: 120, borderRadius: 60, top: -40, right: -30, opacity: 0.5 },
-  emptyDot2: { position: 'absolute', width: 80, height: 80, borderRadius: 40, bottom: -25, left: -20, opacity: 0.4 },
-  emptyIconCircle: { width: 80, height: 80, borderRadius: 40, justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
+  emptyDot1: { position: 'absolute', width: 120, height: 120, borderRadius: RADIUS.full, top: -40, right: -30, opacity: 0.5 },
+  emptyDot2: { position: 'absolute', width: 80, height: 80, borderRadius: RADIUS.full, bottom: -25, left: -20, opacity: 0.4 },
+  emptyIconCircle: { width: 80, height: 80, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
   emptyTitle: { fontSize: 18, textAlign: 'center', fontFamily: F.bold },
   emptySub: { fontSize: 13, textAlign: 'center', lineHeight: 20, fontFamily: F.regular, paddingHorizontal: 8 },
-  emptyCreateBtn: { flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 10, borderRadius: 14, paddingHorizontal: 22, paddingVertical: 12 },
+  emptyCreateBtn: { flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 10, borderRadius: RADIUS.md, paddingHorizontal: 22, paddingVertical: 12 },
   emptyCreateBtnText: { color: '#fff', fontSize: 14, fontFamily: F.bold },
   emptySwitchRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
   emptySwitchText: { fontSize: 12, fontFamily: F.regular },
   emptySwitchLink: { fontSize: 12, fontFamily: F.bold },
 
   card: {
-    borderRadius: 14,
-    shadowColor: '#4F46E5', shadowOpacity: 0.05, shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 }, elevation: 4, overflow: 'hidden',
+    borderRadius: RADIUS.md,
+    ...SHADOW.card,
+    overflow: 'hidden',
     flexDirection: 'row',
   },
   cardAccent: { width: 4 },
   cardContent: { flex: 1 },
   cardMain: { flexDirection: 'row', alignItems: 'center', padding: 14, gap: 12 },
-  thumb: { width: 60, height: 60, borderRadius: 14, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  thumb: { width: 60, height: 60, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   body: { flex: 1, gap: 5 },
   title: { fontSize: 14, fontFamily: F.bold },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   metaDot: { fontSize: 12 },
-  badge: { borderRadius: 10, paddingHorizontal: 9, paddingVertical: 4 },
+  badge: { borderRadius: RADIUS.sm, paddingHorizontal: 9, paddingVertical: 4 },
   badgeText: { fontSize: 11, fontFamily: F.bold },
   meta: { fontSize: 12, fontFamily: F.regular },
   statRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  statPill: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
+  statPill: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingVertical: 4 },
   stat: { fontSize: 12, fontFamily: F.semibold },
   draftNote: { fontSize: 11, fontStyle: 'italic', fontFamily: F.regular },
 
   footerDivider: { height: 1, marginHorizontal: 12 },
   footerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 9 },
-  footerBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  footerBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 40, paddingVertical: 4 },
   footerBtnText: { fontSize: 12, fontFamily: F.bold },
-  inviteBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, marginLeft: 'auto' },
+  inviteBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: RADIUS.sm, paddingHorizontal: 10, paddingVertical: 6, marginLeft: 'auto', minHeight: 40 },
   inviteBtnText: { fontSize: 12, fontFamily: F.bold },
 
   modalBackdrop: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)' },
   modalSheet: {
     position: 'absolute', left: 0, right: 0, bottom: 0,
-    borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '75%',
-    shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 20,
-    shadowOffset: { width: 0, height: -4 }, elevation: 20,
+    borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl, maxHeight: '75%',
+    ...SHADOW.floating,
   },
-  modalHandle: { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginTop: 12, marginBottom: 4 },
+  modalHandle: { width: 40, height: 4, borderRadius: RADIUS.full, alignSelf: 'center', marginTop: 12, marginBottom: 4 },
   modalHeader: {
     flexDirection: 'row', alignItems: 'flex-start',
     paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1,
@@ -650,21 +649,21 @@ const styles = StyleSheet.create({
   modalHeaderText: { flex: 1 },
   modalTitle: { fontSize: 17, fontFamily: F.bold },
   modalSubtitle: { fontSize: 13, marginTop: 2, fontFamily: F.regular },
-  modalClose: { width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
+  modalClose: { width: 28, height: 28, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
   modalList: { padding: 16, gap: 12, paddingBottom: 40 },
   modalEmpty: { alignItems: 'center', paddingTop: 40, paddingHorizontal: 24, gap: 10 },
   modalEmptyText: { fontSize: 14, fontFamily: F.regular },
 
   proposalCard: {
     flexDirection: 'row', alignItems: 'center',
-    borderRadius: 14, padding: 12, gap: 12, borderWidth: 1,
+    borderRadius: RADIUS.md, padding: 12, gap: 12, borderWidth: 1,
   },
-  proposalAvatar: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  proposalAvatar: { width: 44, height: 44, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   proposalAvatarText: { fontSize: 14, fontFamily: F.bold },
   proposalBody: { flex: 1, gap: 3 },
   proposalTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   proposalName: { fontSize: 14, fontFamily: F.bold },
-  proposalBadge: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
+  proposalBadge: { borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingVertical: 3 },
   proposalBadgeText: { fontSize: 11, fontFamily: F.bold },
   proposalSubRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   proposalSub: { fontSize: 12, fontFamily: F.regular },
@@ -676,24 +675,24 @@ const styles = StyleSheet.create({
   inviteSuccessHint: { fontSize: 13, textAlign: 'center', fontFamily: F.regular },
 
   modalEmptyHint: { fontSize: 12, textAlign: 'center', fontFamily: F.regular },
-  goSaveBtn: { marginTop: 4, maxWidth: '100%', borderRadius: 12, paddingHorizontal: 20, paddingVertical: 10 },
+  goSaveBtn: { marginTop: 4, maxWidth: '100%', borderRadius: RADIUS.md, paddingHorizontal: 20, paddingVertical: 10 },
   goSaveBtnText: { color: '#fff', fontSize: 13, fontFamily: F.bold },
 
-  selectionBanner: { paddingHorizontal: 16, paddingVertical: 8, marginHorizontal: 16, marginTop: 10, borderRadius: 10 },
+  selectionBanner: { paddingHorizontal: 16, paddingVertical: 8, marginHorizontal: 16, marginTop: 10, borderRadius: RADIUS.sm },
   selectionText: { fontSize: 13, fontFamily: F.bold },
 
   creatorPickRow: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    borderRadius: 14, borderWidth: 1.5, padding: 12,
+    borderRadius: RADIUS.md, borderWidth: 1.5, padding: 12,
   },
-  pickAvatar: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  pickAvatar: { width: 44, height: 44, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   pickAvatarText: { color: '#fff', fontSize: 14, fontFamily: F.bold },
   pickInfo: { flex: 1, gap: 2 },
   pickName: { fontSize: 14, fontFamily: F.bold },
   pickSub: { fontSize: 12, fontFamily: F.regular },
-  checkbox: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  checkbox: { width: 22, height: 22, borderRadius: RADIUS.full, borderWidth: 2, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
 
   inviteFooter: { borderTopWidth: 1, paddingHorizontal: 16, paddingVertical: 14 },
-  sendInviteBtn: { borderRadius: 14, paddingVertical: 14, alignItems: 'center' },
+  sendInviteBtn: { borderRadius: RADIUS.md, paddingVertical: 14, alignItems: 'center' },
   sendInviteBtnText: { color: '#fff', fontSize: 15, fontFamily: F.bold },
 });

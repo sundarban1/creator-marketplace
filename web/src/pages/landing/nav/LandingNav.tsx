@@ -64,9 +64,13 @@ export function LandingNav() {
               <button
                 key={l.id}
                 onClick={() => go(l.id)}
-                className="text-xs font-semibold uppercase tracking-wide text-ink-soft transition-colors hover:text-ink"
+                className="group relative rounded pb-0.5 text-xs font-semibold uppercase tracking-wide text-ink-soft transition-colors hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-violet"
               >
                 {d.nav.links[l.key]}
+                <span
+                  aria-hidden
+                  className="absolute bottom-0 left-0 h-[1.5px] w-full origin-left scale-x-0 bg-gradient-to-r from-violet to-brand-orange transition-transform duration-300 ease-out group-hover:scale-x-100 group-focus-visible:scale-x-100"
+                />
               </button>
             ))}
           </nav>
@@ -75,7 +79,7 @@ export function LandingNav() {
             <LanguageSwitch dark />
           </div>
 
-          <button onClick={() => setOpen((v) => !v)} aria-label="Toggle menu" className="text-ink lg:hidden">
+          <button onClick={() => setOpen((v) => !v)} aria-label="Toggle menu" className="rounded text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet lg:hidden">
             {open ? <X size={22} /> : <Menu size={22} />}
           </button>
         </div>
@@ -95,7 +99,7 @@ export function LandingNav() {
                 <button
                   key={l.id}
                   onClick={() => go(l.id)}
-                  className="py-2.5 text-left font-serif text-4xl italic text-ink/85 hover:text-ink"
+                  className="rounded py-2.5 text-left font-serif text-4xl italic text-ink/85 hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-violet"
                 >
                   {d.nav.links[l.key]}
                 </button>

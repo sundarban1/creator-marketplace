@@ -1,5 +1,5 @@
 import { router, useFocusEffect } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useCallback, useState } from 'react';
 import {
@@ -15,12 +15,12 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { businessService, type BusinessListItem } from '@/services/business';
 import { useFavoriteBusinesses } from '@/hooks/useFavoriteBusinesses';
-import { F } from '@/utilities/constants';
+import { F, RADIUS, SHADOW } from '@/utilities/constants';
 
 function Avatar({ name, size = 48, C }: { name: string; size?: number; C: ReturnType<typeof useAppColors> }) {
   const initials = name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
   return (
-    <View style={[av.wrap, { width: size, height: size, borderRadius: size / 2, backgroundColor: '#F97316' }]}>
+    <View style={[av.wrap, { width: size, height: size, borderRadius: RADIUS.full, backgroundColor: '#F97316' }]}>
       <Text style={[av.text, { fontSize: size * 0.35, color: '#fff', fontWeight: '700' }]}>{initials}</Text>
     </View>
   );
@@ -67,7 +67,7 @@ function BusinessCard({ item, onRemove }: { item: BusinessListItem; onRemove: ()
       <View style={[s.divider, { backgroundColor: C.border }]} />
 
       <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={s.removeRow} onPress={onRemove}>
-        <Ionicons name="heart-outline" size={15} color="#EF4444" />
+        <FontAwesome5 name="heart" solid size={13} color="#EF4444" />
         <Text style={s.removeText}>{t('favoriteBrands.removeConfirm')}</Text>
       </Pressable>
     </View>
@@ -108,7 +108,7 @@ export default function FavoriteBusinessesScreen() {
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
       <LinearGradient colors={['#312e81', '#4f46e5', '#8b5cf6']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.gradientHeader}>
         <View style={s.header}>
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={s.backBtn} onPress={() => router.back()}>
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={s.backBtn} hitSlop={4} onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={22} color="#fff" />
           </Pressable>
           <View style={{ alignItems: 'center', gap: 2 }}>
@@ -140,7 +140,7 @@ export default function FavoriteBusinessesScreen() {
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             <View style={s.empty}>
-              <Ionicons name="heart-outline" size={48} color={C.textSecondary} style={s.emptyIcon} />
+              <FontAwesome5 name="heart" size={40} color={C.textSecondary} style={s.emptyIcon} />
               <Text style={[s.emptyTitle, { color: C.text }]}>{t('favoriteBrands.empty')}</Text>
               <Text style={[s.emptyHint, { color: C.textSecondary }]}>
                 {t('favoriteBrands.emptySub')}
@@ -160,9 +160,9 @@ export default function FavoriteBusinessesScreen() {
 
 const s = StyleSheet.create({
   container: { flex: 1 },
-  gradientHeader: { paddingBottom: 14, borderBottomLeftRadius: 16, borderBottomRightRadius: 16, overflow: 'hidden' },
+  gradientHeader: { paddingBottom: 14, borderBottomLeftRadius: RADIUS.lg, borderBottomRightRadius: RADIUS.lg, overflow: 'hidden' },
   header:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 10, paddingBottom: 0 },
-  backBtn:   { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center' },
+  backBtn:   { width: 38, height: 38, borderRadius: RADIUS.full, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center' },
   heading:   { fontSize: 20, color: '#fff', fontFamily: F.bold, lineHeight: 24 },
   subheading:{ fontSize: 12, color: 'rgba(255,255,255,0.8)', marginTop: 2, fontFamily: F.regular },
 
@@ -170,12 +170,12 @@ const s = StyleSheet.create({
   list:   { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 40, gap: 12 },
   listEmpty: { flexGrow: 1 },
 
-  card:     { borderRadius: 16, borderWidth: 1, overflow: 'hidden' },
+  card:     { borderRadius: RADIUS.md, borderWidth: 1, overflow: 'hidden', ...SHADOW.card },
   cardMain: { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 14 },
   info:     { flex: 1, gap: 3 },
   nameRow:  { flexDirection: 'row', alignItems: 'center', gap: 6 },
   name:     { fontSize: 15, fontFamily: F.bold, flex: 1 },
-  verifiedBadge: { borderRadius: 8, paddingHorizontal: 5, paddingVertical: 1 },
+  verifiedBadge: { borderRadius: RADIUS.sm, paddingHorizontal: 5, paddingVertical: 1 },
   verifiedText:  { fontSize: 10, color: '#2E7D32', fontFamily: F.bold },
   categories:{ fontSize: 11, fontFamily: F.semibold },
   desc:      { fontSize: 12, fontFamily: F.regular, lineHeight: 17 },
@@ -189,6 +189,6 @@ const s = StyleSheet.create({
   emptyIcon:  { marginBottom: 2 },
   emptyTitle: { fontSize: 18, fontFamily: F.bold },
   emptyHint:  { fontSize: 13, textAlign: 'center', lineHeight: 20, fontFamily: F.regular },
-  emptyBtn:   { borderRadius: 14, paddingHorizontal: 28, paddingVertical: 12, marginTop: 8 },
+  emptyBtn:   { borderRadius: RADIUS.md, paddingHorizontal: 28, paddingVertical: 12, marginTop: 8, minHeight: 44, justifyContent: 'center', alignItems: 'center' },
   emptyBtnText: { color: '#fff', fontSize: 14, fontFamily: F.bold },
 });

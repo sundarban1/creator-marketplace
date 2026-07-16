@@ -25,7 +25,7 @@ import { useLanguage, type TFn } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import { chatService } from '@/services/chat';
-import { F } from '@/utilities/constants';
+import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { TabColors } from '@/utilities/tabColors';
 import type { ApiMessage } from '@/lib/api';
 import type { Conversation } from '@/types';
@@ -427,7 +427,7 @@ const s = StyleSheet.create({
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
   // Header
-  gradientHeader: { borderBottomLeftRadius: 16, borderBottomRightRadius: 16, overflow: 'hidden' },
+  gradientHeader: { borderBottomLeftRadius: RADIUS.lg, borderBottomRightRadius: RADIUS.lg, overflow: 'hidden' },
   header:         { paddingHorizontal: 20, paddingTop: 14, paddingBottom: 14 },
   heading:        { fontSize: 20, fontFamily: F.bold, color: '#fff', lineHeight: 24 },
   headingSub:     { fontSize: 13, fontFamily: F.regular, color: 'rgba(255,255,255,0.75)', marginTop: 2 },
@@ -438,18 +438,18 @@ const s = StyleSheet.create({
   footerLoading: { paddingVertical: 20 },
 
   // Pending card
-  reqCard:     { borderRadius: 14, borderWidth: 1.5, padding: 14, gap: 12, shadowRadius: 6, shadowOpacity: 0.04, shadowOffset: { width: 0, height: 2 }, elevation: 2, overflow: 'hidden' },
-  reqStripe:   { position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, borderTopLeftRadius: 14, borderBottomLeftRadius: 14 },
+  reqCard:     { borderRadius: RADIUS.md, borderWidth: 1.5, padding: 14, gap: 12, ...SHADOW.card, overflow: 'hidden' },
+  reqStripe:   { position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, borderTopLeftRadius: RADIUS.md, borderBottomLeftRadius: RADIUS.md },
   reqTop:      { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
   reqInfo:     { flex: 1, gap: 4 },
   reqNameRow:  { flexDirection: 'row', alignItems: 'center', gap: 8 },
   reqName:     { flex: 1, fontSize: 15, fontFamily: F.bold },
-  waitBadge:   { flexDirection: 'row', alignItems: 'center', gap: 3, borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3 },
+  waitBadge:   { flexDirection: 'row', alignItems: 'center', gap: 3, borderRadius: RADIUS.sm, paddingHorizontal: 7, paddingVertical: 3 },
   waitBadgeTxt:{ fontSize: 10, fontFamily: F.bold },
   reqTime:     { fontSize: 11, fontFamily: F.regular },
-  reqMsgBox:   { flexDirection: 'row', alignItems: 'flex-start', gap: 8, borderRadius: 12, padding: 12, borderWidth: StyleSheet.hairlineWidth },
+  reqMsgBox:   { flexDirection: 'row', alignItems: 'flex-start', gap: 8, borderRadius: RADIUS.md, padding: 12, borderWidth: StyleSheet.hairlineWidth },
   reqMsg:      { flex: 1, fontSize: 13, lineHeight: 19, fontFamily: F.regular },
-  waitingNote: { flexDirection: 'row', alignItems: 'center', gap: 7, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9, borderWidth: StyleSheet.hairlineWidth },
+  waitingNote: { flexDirection: 'row', alignItems: 'center', gap: 7, borderRadius: RADIUS.sm, paddingHorizontal: 12, paddingVertical: 9, borderWidth: StyleSheet.hairlineWidth },
   waitingNoteTxt: { flex: 1, fontSize: 12, fontFamily: F.medium, },
 
   // Chat list
@@ -464,10 +464,10 @@ const s = StyleSheet.create({
     paddingHorizontal: 16,
     gap: 12,
   },
-  stripe:         { position: 'absolute', left: 0, top: 8, bottom: 8, width: 3, backgroundColor: ACCENT, borderRadius: 2 },
+  stripe:         { position: 'absolute', left: 0, top: 8, bottom: 8, width: 3, backgroundColor: ACCENT, borderRadius: RADIUS.full },
   avatarWrap:     { position: 'relative' },
-  avatarRing:     { position: 'absolute', top: -3, left: -3, right: -3, bottom: -3, borderRadius: 29, borderWidth: 2 },
-  avatarBadge:    { position: 'absolute', top: -4, right: -4, minWidth: 20, height: 20, borderRadius: 10, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 4, borderWidth: 2, borderColor: '#fff' },
+  avatarRing:     { position: 'absolute', top: -3, left: -3, right: -3, bottom: -3, borderRadius: RADIUS.full, borderWidth: 2 },
+  avatarBadge:    { position: 'absolute', top: -4, right: -4, minWidth: 20, height: 20, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 4, borderWidth: 2, borderColor: '#fff' },
   avatarBadgeTxt: { color: '#fff', fontSize: 10, fontFamily: F.bold, lineHeight: 12 },
   content:        { flex: 1, gap: 3 },
   rowTop:         { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
@@ -475,7 +475,7 @@ const s = StyleSheet.create({
   nameUnread:     { fontFamily: F.bold, },
   time:           { fontSize: 11, fontFamily: F.regular, flexShrink: 0 },
   timeUnread:     { fontFamily: F.semibold, },
-  campaignPill:    { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
+  campaignPill:    { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', borderRadius: RADIUS.sm, paddingHorizontal: 6, paddingVertical: 2 },
   campaignPillTxt: { fontSize: 10, fontFamily: F.semibold, maxWidth: 180 },
   rowBottom:      { flexDirection: 'row', alignItems: 'center', gap: 6 },
   preview:        { flex: 1, fontSize: 13, fontFamily: F.regular },

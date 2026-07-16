@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { authService } from '@/services/auth';
-import { F } from '@/utilities/constants';
+import { F, RADIUS, SHADOW } from '@/utilities/constants';
 
 const OTP_LENGTH = 6;
 const RESEND_SECONDS = 30;
@@ -132,12 +132,12 @@ export default function ResetOtpScreen() {
         <View style={styles.hero}>
           <View style={styles.bubble1} />
           <View style={styles.bubble2} />
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.back} onPress={() => router.canGoBack() ? router.back() : router.replace('/forgot-password')}>
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} hitSlop={8} style={styles.back} onPress={() => router.canGoBack() ? router.back() : router.replace('/forgot-password')}>
             <Text style={styles.backArrow}>‹</Text>
           </Pressable>
           <View style={styles.heroContent}>
             <View style={styles.iconWrap}>
-              <Ionicons name={channel === 'email' ? 'mail' : 'phone-portrait'} size={26} color="#fff" />
+              <FontAwesome5 name={channel === 'email' ? 'envelope' : 'mobile-alt'} size={22} color="#fff" solid />
             </View>
             <Text style={styles.heroTitle}>{channel === 'email' ? t('auth.resetOtp.titleEmail') : t('auth.resetOtp.titlePhone')}</Text>
             <Text style={styles.heroSub}>
@@ -224,19 +224,19 @@ const styles = StyleSheet.create({
   hero: { paddingBottom: 36, overflow: 'hidden' },
   bubble1: { position: 'absolute', width: 200, height: 200, borderRadius: 100, backgroundColor: 'rgba(255,255,255,0.07)', top: -60, right: -50 },
   bubble2: { position: 'absolute', width: 120, height: 120, borderRadius: 60, backgroundColor: 'rgba(255,255,255,0.06)', bottom: 0, left: -30 },
-  back: { margin: 16, width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center' },
+  back: { margin: 16, width: 38, height: 38, borderRadius: RADIUS.full, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center' },
   backArrow: { fontSize: 26, color: '#fff', lineHeight: 30 },
   heroContent: { alignItems: 'center', paddingHorizontal: 24, gap: 10 },
-  iconWrap: { width: 68, height: 68, borderRadius: 34, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
+  iconWrap: { width: 68, height: 68, borderRadius: RADIUS.full, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
   heroTitle: { fontSize: 22, color: '#fff', textAlign: 'center', fontFamily: F.bold },
   heroSub: { fontSize: 14, color: 'rgba(255,255,255,0.78)', textAlign: 'center', lineHeight: 22, fontFamily: F.regular },
   heroPhone: { color: '#fff', fontFamily: F.bold },
-  card: { flex: 1, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, paddingTop: 36, alignItems: 'center' },
+  card: { flex: 1, borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl, padding: 24, paddingTop: 36, alignItems: 'center' },
   otpRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
-  otpBox: { width: 46, height: 58, borderRadius: 12, borderWidth: 2, textAlign: 'center', fontSize: 22, fontFamily: F.bold },
-  errorBanner: { width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderRadius: 10, padding: 12, marginBottom: 14 },
+  otpBox: { width: 46, height: 58, borderRadius: RADIUS.sm, borderWidth: 2, textAlign: 'center', fontSize: 22, fontFamily: F.bold },
+  errorBanner: { width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderRadius: RADIUS.sm, padding: 12, marginBottom: 14 },
   errorText: { fontSize: 13, textAlign: 'center', fontFamily: F.semibold },
-  verifyBtn: { width: '100%', borderRadius: 14, paddingVertical: 15, alignItems: 'center', marginBottom: 20, shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 5 },
+  verifyBtn: { width: '100%', borderRadius: RADIUS.md, paddingVertical: 15, alignItems: 'center', marginBottom: 20, ...SHADOW.raised },
   verifyBtnDisabled: { opacity: 0.45 },
   verifyBtnText: { color: '#fff', fontSize: 16, fontFamily: F.bold },
   loadingRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
