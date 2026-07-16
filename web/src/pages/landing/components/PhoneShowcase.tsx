@@ -56,7 +56,7 @@ function CreatorAppScene() {
         </Badge>
       </div>
       <div className="absolute inset-x-0 bottom-0 px-4 pb-4">
-        <p className="text-xs font-medium text-white">&ldquo;Let&rsquo;s see what campaigns are live today&rdquo;</p>
+        <p className="text-xs font-medium text-white">&ldquo;Find your next job in Kolab&rdquo;</p>
         <p className="mt-0.5 text-[11px] text-white/70">Anjali Gurung &middot; Creator, Kathmandu</p>
       </div>
     </SceneFrame>
@@ -111,7 +111,7 @@ function ClothingScene() {
         </Badge>
       </div>
       <div className="absolute inset-x-0 bottom-0 px-4 pb-4">
-        <p className="text-xs font-medium text-white">&ldquo;Hey Guys, Today we are checking out&hellip;&rdquo;</p>
+        <p className="text-xs font-medium text-white">&ldquo;Hey guys, how are you?&rdquo;</p>
         <p className="mt-0.5 text-[11px] text-white/70">Pesal &middot; Itahari, Nepal</p>
       </div>
     </SceneFrame>
