@@ -136,6 +136,26 @@ function isTokenStaleOrExpired(expiresAt: Date | null): boolean {
   return expiresAt.getTime() - Date.now() < 10 * 60 * 1000;
 }
 
+// Encodes which Google OAuth client minted the token, since refreshing it later has
+// to reuse that exact client ID (see resolveGoogleRefreshCredentials below) — Google
+// rejects a refresh_token grant made under a different client ID than the one that
+// issued it. Shared by both creator and business YouTube connect.
+export function googleOauthConnectionType(clientPlatform?: 'ios' | 'android' | 'web'): string {
+  return clientPlatform ? `google_${clientPlatform}` : 'google';
+}
+
+// Android/iOS are public clients (no secret, verified via package name/bundle ID +
+// key hash instead) — sending a secret for them would just be ignored, but sending
+// the WRONG client_id is what actually breaks the refresh with invalid_client. Rows
+// connected before clientPlatform was tracked (oauthConnectionType === 'google') fall
+// back to the Web client/secret — that's only correct for the (refresh-token-less)
+// web flow, so those legacy rows may need a one-time reconnect to self-heal.
+function resolveGoogleRefreshCredentials(oauthConnectionType: string | null): { clientId: string; clientSecret?: string } {
+  if (oauthConnectionType === 'google_android') return { clientId: env.GOOGLE_ANDROID_CLIENT_ID ?? '' };
+  if (oauthConnectionType === 'google_ios') return { clientId: env.GOOGLE_IOS_CLIENT_ID ?? '' };
+  return { clientId: env.GOOGLE_WEB_CLIENT_ID ?? '', clientSecret: env.GOOGLE_CLIENT_SECRET ?? '' };
+}
+
 async function fetchYoutubeSubscriberCount(accessToken: string): Promise<number> {
   const res = await fetch(
     'https://www.googleapis.com/youtube/v3/channels?part=statistics&mine=true',
@@ -453,7 +473,10 @@ export class CreatorService {
   // token (first-time consent with access_type=offline) — when present, they're
   // persisted so refreshYoutubeFollowers can keep the subscriber count current on
   // its own long after this access token expires, with no reconnect needed.
-  async connectYoutubeAccount(userId: string, accessToken: string, refreshToken?: string, expiresIn?: number) {
+  async connectYoutubeAccount(
+    userId: string, accessToken: string, refreshToken?: string, expiresIn?: number,
+    clientPlatform?: 'ios' | 'android' | 'web',
+  ) {
     const profile = await this.repo.findByUserId(userId);
     if (!profile) throw new AppError('Creator profile not found', 404);
 
@@ -467,7 +490,7 @@ export class CreatorService {
       accessToken,
       refreshToken,
       tokenExpiresAt: expiresIn ? new Date(Date.now() + expiresIn * 1000) : undefined,
-      oauthConnectionType: 'google',
+      oauthConnectionType: googleOauthConnectionType(clientPlatform),
     });
     return toSocialAccountDto(account);
   }
@@ -769,12 +792,13 @@ export class CreatorService {
   private async refreshYoutubeFollowers(account: RawSocialAccountRow): Promise<RefreshResult> {
     let accessToken = account.accessToken!;
     if (isTokenStaleOrExpired(account.tokenExpiresAt) && account.refreshToken) {
+      const { clientId, clientSecret } = resolveGoogleRefreshCredentials(account.oauthConnectionType);
       const refreshRes = await fetch('https://oauth2.googleapis.com/token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({
-          client_id: env.GOOGLE_WEB_CLIENT_ID ?? '',
-          client_secret: env.GOOGLE_CLIENT_SECRET ?? '',
+          client_id: clientId,
+          ...(clientSecret ? { client_secret: clientSecret } : {}),
           refresh_token: account.refreshToken,
           grant_type: 'refresh_token',
         }),

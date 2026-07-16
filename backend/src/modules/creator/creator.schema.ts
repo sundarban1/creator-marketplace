@@ -46,6 +46,10 @@ export const connectYoutubeAccountSchema = z.object({
   // refreshYoutubeFollowers.
   refreshToken: z.string().optional(),
   expiresIn: z.number().optional(),
+  // Which OAuth client actually minted the token — refreshing later must reuse this
+  // exact client ID (see creator.service.ts refreshYoutubeFollowers). Absent only for
+  // pre-existing rows connected before this field was added.
+  clientPlatform: z.enum(['ios', 'android', 'web']).optional(),
 });
 
 export const listFacebookPagesSchema = z.object({

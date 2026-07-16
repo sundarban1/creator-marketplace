@@ -156,7 +156,9 @@ export class CreatorController {
 
   async connectYoutubeAccount(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const account = await creatorService.connectYoutubeAccount(req.user!.id, req.body.accessToken);
+      const account = await creatorService.connectYoutubeAccount(
+        req.user!.id, req.body.accessToken, req.body.refreshToken, req.body.expiresIn, req.body.clientPlatform,
+      );
       success(res, account, 'YouTube account connected', 201);
     } catch (err) {
       next(err);

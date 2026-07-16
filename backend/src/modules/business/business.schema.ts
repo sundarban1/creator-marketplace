@@ -60,6 +60,7 @@ export const connectYoutubeAccountSchema = z.object({
   accessToken: z.string().min(1, 'Access token is required'),
   refreshToken: z.string().optional(),
   expiresIn: z.number().optional(),
+  clientPlatform: z.enum(['ios', 'android', 'web']).optional(),
 });
 
 export const listFacebookPagesSchema = z.object({

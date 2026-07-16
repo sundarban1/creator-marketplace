@@ -55,8 +55,15 @@ const envSchema = z.object({
   // Google OAuth (YouTube connect) — only needed server-side to mint a fresh access
   // token from a stored refresh token once the original one expires; the initial
   // connect itself happens entirely client-side and needs no secret.
+  // On native (Android/iOS), the refresh token is minted under the platform-specific
+  // client ID (a public client, no secret) rather than the Web client — refreshing it
+  // later has to use that SAME client ID or Google rejects it with invalid_client. Web
+  // client ID/secret are only relevant for the implicit-flow web connect, which never
+  // actually receives a refresh token in the first place (see useGoogleAccessToken.ts).
   GOOGLE_WEB_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
+  GOOGLE_ANDROID_CLIENT_ID: z.string().optional(),
+  GOOGLE_IOS_CLIENT_ID: z.string().optional(),
   // Custom URL scheme the TikTok/Instagram callbacks redirect back into on mobile (see app.json "scheme")
   APP_SCHEME: z.string().default('kolab'),
   // Sparrow SMS (Nepal) — not wired up yet; sendSms() logs instead of sending until both are set.

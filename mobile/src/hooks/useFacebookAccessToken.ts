@@ -43,6 +43,8 @@ export function useFacebookAccessToken(scopes: string[]) {
     onSuccessRef.current = onSuccess;
     setError('');
     setLoading(true);
+    // TEMP: log the redirect URI so it can be added to Facebook's Valid OAuth Redirect URIs.
+    console.log('[Facebook OAuth] redirectUri:', request?.redirectUri);
     void promptAsync({ preferEphemeralSession: true });
   }
 

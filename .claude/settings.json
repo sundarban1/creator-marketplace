@@ -320,7 +320,16 @@
       "Bash(curl -sL \"https://images.pexels.com/videos/13929683/adult-beautiful-business-child-13929683.jpeg?auto=compress&w=500&h=300&dpr=1\" -o v5_influencers.jpg)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" -L \"https://videos.pexels.com/video-files/13929641/13929641-sd_540_960_24fps.mp4\")",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" -L -A \"Mozilla/5.0 \\(Macintosh; Intel Mac OS X 10_15_7\\) AppleWebKit/537.36 \\(KHTML, like Gecko\\) Chrome/120.0 Safari/537.36\" \"https://videos.pexels.com/video-files/13929641/13929641-sd_540_960_24fps.mp4\")",
-      "Bash(curl -sI \"https://videos.pexels.com/video-files/12433102/12433102-sd_640_360_30fps.mp4\")"
+      "Bash(curl -sI \"https://videos.pexels.com/video-files/12433102/12433102-sd_640_360_30fps.mp4\")",
+      "Bash(python3 -c \"import json; json.load\\(open\\('eas.json'\\)\\); print\\('valid JSON'\\)\")",
+      "Bash(keytool -exportcert -alias androiddebugkey -keystore debug.keystore -storepass android -keypass android)",
+      "Bash(openssl sha1 *)",
+      "Bash(openssl base64 *)",
+      "Bash(xxd -r -p)",
+      "Bash(curl -sL \"https://images.pexels.com/videos/7581209/pexels-photo-7581209.jpeg?auto=compress&w=500&h=300&dpr=1\" -o h1_office.jpg)",
+      "Bash(curl -sL \"https://images.pexels.com/videos/7581165/pexels-photo-7581165.jpeg?auto=compress&w=500&h=300&dpr=1\" -o h2_paper.jpg)",
+      "Bash(curl -sL \"https://images.pexels.com/videos/7820473/administration-adult-art-book-series-7820473.jpeg?auto=compress&w=500&h=300&dpr=1\" -o h3_hotel.jpg)",
+      "Bash(curl -sL \"https://images.pexels.com/videos/7599312/pexels-photo-7599312.jpeg?auto=compress&w=500&h=300&dpr=1\" -o h4_hallway.jpg)"
     ],
     "additionalDirectories": [
       "/Users/sundarban/Documents/projects/marketplace/content",

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { BadgeCheck, Camera, Package, Phone, Smartphone, Star, Wallet } from 'lucide-react';
+import { BadgeCheck, Camera, Hotel, MonitorSmartphone, Package, Smartphone, Star, Wallet } from 'lucide-react';
 
 const SCENE_DURATION = 4600;
 
@@ -95,20 +95,37 @@ function FoodScene() {
   );
 }
 
-function CallScene() {
+function HotelScene() {
   return (
-    <SceneFrame videoId="8061373" file="8061373-sd_960_540_25fps.mp4">
+    <SceneFrame videoId="7581209" file="7581209-sd_960_540_30fps.mp4">
       <div className="absolute inset-x-0 top-0 flex items-center px-4 pt-3">
         <Badge>
-          <Phone size={11} />
-          Brand call
+          <Hotel size={11} />
+          Client pitch
         </Badge>
       </div>
       <div className="absolute inset-x-0 bottom-0 px-4 pb-4">
         <p className="flex items-center gap-1.5 text-xs font-medium text-white">
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-          Talking with Himal Coffee
+          <Camera size={12} className="shrink-0" />
+          Pitching a reel concept to Hotel Mustang&rsquo;s owner
         </p>
+      </div>
+    </SceneFrame>
+  );
+}
+
+function TechScene() {
+  return (
+    <SceneFrame videoId="7581165" file="7581165-sd_960_540_30fps.mp4">
+      <div className="absolute inset-x-0 top-0 flex items-center px-4 pt-3">
+        <Badge>
+          <MonitorSmartphone size={11} />
+          Explaining features
+        </Badge>
+      </div>
+      <div className="absolute inset-x-0 bottom-0 px-4 pb-4">
+        <p className="text-xs font-medium text-white">&ldquo;Here&rsquo;s how the booking flow works&rdquo;</p>
+        <p className="mt-0.5 text-[11px] text-white/70">Walking the founder through the app</p>
       </div>
     </SceneFrame>
   );
@@ -187,7 +204,7 @@ function ContentScene() {
   );
 }
 
-const SCENES = [CreatorAppScene, PaymentScene, ProductScene, FoodScene, CallScene, ContentScene];
+const SCENES = [CreatorAppScene, HotelScene, ProductScene, FoodScene, TechScene, PaymentScene, ContentScene];
 
 export function PhoneShowcase() {
   const [active, setActive] = useState(0);
