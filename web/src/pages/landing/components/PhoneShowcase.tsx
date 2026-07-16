@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { BadgeCheck, Camera, Hotel, Mic, Package, Smartphone, Star, Utensils, Wallet } from 'lucide-react';
+import { BadgeCheck, Camera, Hotel, Mic, Package, Shirt, Smartphone, Star, Utensils, Wallet } from 'lucide-react';
 
 const SCENE_DURATION = 4600;
 
@@ -9,20 +9,23 @@ function pexels(id: string, file: string) {
 }
 
 function SceneFrame({
-  videoId,
-  file,
+  videoKey,
+  src,
+  poster,
   children,
 }: {
-  videoId: string;
-  file: string;
+  videoKey: string;
+  src: string;
+  poster?: string;
   children: React.ReactNode;
 }) {
   return (
     <div className="relative h-full w-full bg-gradient-to-br from-ink via-ink to-violet-dark/50">
       <video
-        key={videoId}
+        key={videoKey}
         className="absolute inset-0 h-full w-full object-cover"
-        src={pexels(videoId, file)}
+        src={src}
+        poster={poster}
         autoPlay
         muted
         loop
@@ -45,7 +48,7 @@ function Badge({ children }: { children: React.ReactNode }) {
 
 function CreatorAppScene() {
   return (
-    <SceneFrame videoId="12433102" file="12433102-sd_640_360_30fps.mp4">
+    <SceneFrame videoKey="12433102" src={pexels('12433102', '12433102-sd_640_360_30fps.mp4')}>
       <div className="absolute inset-x-0 top-0 flex items-center px-4 pt-3">
         <Badge>
           <Smartphone size={11} />
@@ -62,7 +65,7 @@ function CreatorAppScene() {
 
 function ProductScene() {
   return (
-    <SceneFrame videoId="13929641" file="13929641-sd_540_960_24fps.mp4">
+    <SceneFrame videoKey="13929641" src={pexels('13929641', '13929641-sd_540_960_24fps.mp4')}>
       <div className="absolute inset-x-0 top-0 flex items-center px-4 pt-3">
         <Badge>
           <Package size={11} />
@@ -79,7 +82,7 @@ function ProductScene() {
 
 function FoodScene() {
   return (
-    <SceneFrame videoId="7351722" file="7351722-sd_640_360_24fps.mp4">
+    <SceneFrame videoKey="7351722" src={pexels('7351722', '7351722-sd_640_360_24fps.mp4')}>
       <div className="absolute inset-x-0 top-0 flex items-center px-4 pt-3">
         <Badge>Reviewing</Badge>
       </div>
@@ -95,9 +98,84 @@ function FoodScene() {
   );
 }
 
+function ClothingScene() {
+  return (
+    <SceneFrame
+      videoKey="cld-6mfqhq"
+      src="https://res.cloudinary.com/drpuqrfyn/video/upload/du_6/v1784197977/WhatsApp_Video_2026-07-16_at_22.02.44_online-video-cutter.com_wgej6q.mp4"
+    >
+      <div className="absolute inset-x-0 top-0 flex items-center px-4 pt-3">
+        <Badge>
+          <Shirt size={11} />
+          Client shoot
+        </Badge>
+      </div>
+      <div className="absolute inset-x-0 bottom-0 px-4 pb-4">
+        <p className="text-xs font-medium text-white">&ldquo;Presenting the new collection&rdquo;</p>
+        <p className="mt-0.5 text-[11px] text-white/70">Pesal &middot; Itahari, Nepal</p>
+      </div>
+    </SceneFrame>
+  );
+}
+
+function OnSetScene() {
+  return (
+    <SceneFrame videoKey="10145285" src={pexels('10145285', '10145285-hd_1080_1920_30fps.mp4')}>
+      <div className="absolute inset-x-0 top-0 flex items-center px-4 pt-3">
+        <Badge>
+          <Camera size={11} />
+          On set
+        </Badge>
+      </div>
+      <div className="absolute inset-x-0 bottom-0 px-4 pb-4">
+        <p className="text-xs font-medium text-white">Another shoot day, another brand</p>
+        <p className="mt-0.5 text-[11px] text-white/70">Creator, Nepal</p>
+      </div>
+    </SceneFrame>
+  );
+}
+
+function BehindScenesScene() {
+  return (
+    <SceneFrame videoKey="14075778" src={pexels('14075778', '14075778-hd_1080_1920_30fps.mp4')}>
+      <div className="absolute inset-x-0 top-0 flex items-center px-4 pt-3">
+        <Badge>
+          <Smartphone size={11} />
+          Behind the scenes
+        </Badge>
+      </div>
+      <div className="absolute inset-x-0 bottom-0 px-4 pb-4">
+        <p className="text-xs font-medium text-white">Getting today&rsquo;s content ready</p>
+        <p className="mt-0.5 text-[11px] text-white/70">Creator, Nepal</p>
+      </div>
+    </SceneFrame>
+  );
+}
+
+function StyleScene() {
+  return (
+    <SceneFrame videoKey="30550627" src={pexels('30550627', '13086324_1080_1920_25fps.mp4')}>
+      <div className="absolute inset-x-0 top-0 flex items-center px-4 pt-3">
+        <Badge>
+          <Shirt size={11} />
+          Style content
+        </Badge>
+      </div>
+      <div className="absolute inset-x-0 bottom-0 px-4 pb-4">
+        <p className="text-xs font-medium text-white">&ldquo;Today&rsquo;s fit check&rdquo;</p>
+        <p className="mt-0.5 text-[11px] text-white/70">Street style creator</p>
+      </div>
+    </SceneFrame>
+  );
+}
+
 function MomoScene() {
   return (
-    <SceneFrame videoId="37069651" file="15704072_1080_1920_60fps.mp4">
+    <SceneFrame
+      videoKey="37069651"
+      src={pexels('37069651', '15704072_1080_1920_60fps.mp4')}
+      poster="https://images.pexels.com/videos/37069651/pexels-photo-37069651.jpeg?auto=compress&w=900&h=1600&dpr=1"
+    >
       <div className="absolute inset-x-0 top-0 flex items-center px-4 pt-3">
         <Badge>
           <Utensils size={11} />
@@ -119,7 +197,7 @@ function MomoScene() {
 
 function HotelScene() {
   return (
-    <SceneFrame videoId="7581209" file="7581209-sd_960_540_30fps.mp4">
+    <SceneFrame videoKey="7581209" src={pexels('7581209', '7581209-sd_960_540_30fps.mp4')}>
       <div className="absolute inset-x-0 top-0 flex items-center px-4 pt-3">
         <Badge>
           <Hotel size={11} />
@@ -138,7 +216,7 @@ function HotelScene() {
 
 function BlogScene() {
   return (
-    <SceneFrame videoId="33048634" file="14085816_1920_1080_25fps.mp4">
+    <SceneFrame videoKey="33048634" src={pexels('33048634', '14085816_1920_1080_25fps.mp4')}>
       <div className="absolute inset-x-0 top-0 flex items-center px-4 pt-3">
         <Badge>
           <Mic size={11} />
@@ -162,7 +240,7 @@ function PaymentScene() {
   }, []);
 
   return (
-    <SceneFrame videoId="4326533" file="4326533-sd_960_540_25fps.mp4">
+    <SceneFrame videoKey="4326533" src={pexels('4326533', '4326533-sd_960_540_25fps.mp4')}>
       <div className="absolute inset-x-0 top-0 flex items-center px-4 pt-3">
         <Badge>
           <Wallet size={11} />
@@ -203,7 +281,7 @@ function ContentScene() {
   const ss = String(seconds % 60).padStart(2, '0');
 
   return (
-    <SceneFrame videoId="13929683" file="13929683-sd_540_960_24fps.mp4">
+    <SceneFrame videoKey="13929683" src={pexels('13929683', '13929683-sd_540_960_24fps.mp4')}>
       <div className="absolute inset-x-0 top-0 flex items-center justify-between px-4 pt-3">
         <div className="flex items-center gap-1.5 rounded-full bg-black/40 px-2.5 py-1 backdrop-blur-sm">
           <motion.span
@@ -226,7 +304,10 @@ function ContentScene() {
   );
 }
 
-const SCENES = [CreatorAppScene, MomoScene, ProductScene, FoodScene, PaymentScene, BlogScene, HotelScene, ContentScene];
+const SCENES = [
+  CreatorAppScene, MomoScene, ProductScene, FoodScene, PaymentScene, BlogScene,
+  HotelScene, ClothingScene, OnSetScene, BehindScenesScene, StyleScene, ContentScene,
+];
 
 export function PhoneShowcase() {
   const [active, setActive] = useState(0);

@@ -7,7 +7,7 @@ import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { BackButton } from '@/components/BackButton';
 import { creatorService } from '@/services/creator';
 import { authService } from '@/services/auth';
-import { useLanguage, type TFn } from '@/context/LanguageContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { API_BASE, request } from '@/lib/api';
 import {
   ActivityIndicator,
@@ -162,19 +162,6 @@ function fmt(n: string): string {
   if (v >= 1_000_000) return (v / 1_000_000).toFixed(1) + 'M';
   if (v >= 1_000) return (v / 1_000).toFixed(1) + 'K';
   return v.toString();
-}
-
-// Surfaces the automatic background refresh (see creator.service.ts
-// refreshStaleSocialAccountsForCreator / jobs/refreshSocialFollowers.ts) as a plain
-// "Updated 3h ago" line — there's no manual sync action to show instead.
-function syncedAgo(iso: string | null | undefined, t: TFn): string | null {
-  if (!iso) return null;
-  const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
-  if (mins < 1) return t('creatorSettings.syncedJustNow');
-  if (mins < 60) return t('creatorSettings.syncedMinutesAgo', { n: mins });
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return t('creatorSettings.syncedHoursAgo', { n: hrs });
-  return t('creatorSettings.syncedDaysAgo', { n: Math.floor(hrs / 24) });
 }
 
 // ── Themed helpers ────────────────────────────────────────────
@@ -1283,7 +1270,6 @@ export default function CreatorSettingsScreen() {
             const isLive = OAUTH_LIVE_PLATFORM_IDS.has(p.id);
             const isConnecting = connectingPlatform === p.id;
             const isLast = idx === CONNECTABLE_SOCIAL_PLATFORMS.length - 1;
-            const syncedLabel = acct?.connectedViaOAuth ? syncedAgo(acct.followersSyncedAt, t) : null;
             return (
               <View key={p.id} style={[styles.row, styles.socialRow, !isLast && { borderBottomWidth: 1, borderBottomColor: C.border }]}>
                 <View style={[styles.socialIconWrap, { backgroundColor: p.color + '18' }]}>
@@ -1305,11 +1291,6 @@ export default function CreatorSettingsScreen() {
                           </Text>
                         </View>
                       </View>
-                      {syncedLabel && (
-                        <Text style={[styles.socialSyncedText, { color: C.textSecondary }]}>
-                          {t('creatorSettings.syncedPrefix', { time: syncedLabel })}
-                        </Text>
-                      )}
                     </>
                   ) : (
                     <>
@@ -2503,7 +2484,6 @@ const styles = StyleSheet.create({
   socialMetaRow: { flexDirection: 'row', marginTop: 3, marginBottom: 2 },
   socialFollowerBadge: { borderRadius: RADIUS.full, paddingHorizontal: 8, paddingVertical: 2 },
   socialFollowerBadgeText: { fontSize: 11, fontFamily: F.bold },
-  socialSyncedText: { fontSize: 10, fontFamily: F.regular, marginTop: 1 },
 
   // Form section title (kept for other uses)
   formSectionTitle: { fontSize: 15, marginBottom: 16, fontFamily: F.bold },

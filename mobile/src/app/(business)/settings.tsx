@@ -79,15 +79,6 @@ function fmtCount(n: string): string {
   return v.toString();
 }
 
-function syncedAgo(iso: string | null | undefined, t: (key: string, params?: Record<string, string | number>) => string): string | null {
-  if (!iso) return null;
-  const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
-  if (mins < 1) return t('businessSettings.syncedJustNow');
-  if (mins < 60) return t('businessSettings.syncedMinutesAgo', { n: mins });
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return t('businessSettings.syncedHoursAgo', { n: hrs });
-  return t('businessSettings.syncedDaysAgo', { n: Math.floor(hrs / 24) });
-}
 const MOCK_SAVED_CREATORS = [
   { id: 's1', name: 'Sarah Johnson',  handle: '@sarahjcreates',  followers: '28.4K', category: 'Lifestyle', avatar: 'SJ', avatarBg: '#EDE9FE', avatarColor: '#4F46E5', notes: '' },
   { id: 's2', name: 'James Liu',      handle: '@jamesliu_nz',    followers: '63.2K', category: 'Tech',      avatar: 'JL', avatarBg: '#FFF7ED', avatarColor: '#D97706', notes: 'Great engagement rate' },
@@ -1717,7 +1708,6 @@ export default function BusinessSettingsScreen() {
             const isLive = OAUTH_LIVE_PLATFORM_IDS.has(p.id);
             const isConnecting = connectingPlatform === p.id;
             const isLast = idx === CONNECTABLE_SOCIAL_PLATFORMS.length - 1;
-            const syncedLabel = acct?.connectedViaOAuth ? syncedAgo(acct.followersSyncedAt, t) : null;
             return (
               <View key={p.id} style={[styles.row, styles.socialRow, !isLast && { borderBottomWidth: 1, borderBottomColor: C.border }]}>
                 <View style={[styles.socialIconWrap, { backgroundColor: p.color + '18' }]}>
@@ -1739,11 +1729,6 @@ export default function BusinessSettingsScreen() {
                           </Text>
                         </View>
                       </View>
-                      {syncedLabel && (
-                        <Text style={[styles.socialSyncedText, { color: C.textSecondary }]}>
-                          {t('businessSettings.syncedPrefix', { time: syncedLabel })}
-                        </Text>
-                      )}
                     </>
                   ) : (
                     <>
@@ -2247,7 +2232,6 @@ const styles = StyleSheet.create({
   socialMetaRow: { flexDirection: 'row', marginTop: 3, marginBottom: 2 },
   socialFollowerBadge: { borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingVertical: 2 },
   socialFollowerBadgeText: { fontSize: 11, fontFamily: F.bold },
-  socialSyncedText: { fontSize: 10, fontFamily: F.regular, marginTop: 1 },
 
   // ── Facebook/Instagram Page picker ──────────────────────────────────────────
   pagePickerSheet: {
