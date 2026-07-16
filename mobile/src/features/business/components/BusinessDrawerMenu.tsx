@@ -7,7 +7,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { profileService } from '@/services/profile';
 import { F } from '@/utilities/constants';
-import { formatPhoneDisplay } from '@/utilities/phone';
+import { formatPhoneDisplay, isValidNepaliPhone } from '@/utilities/phone';
 
 const DRAWER_W = 280;
 
@@ -79,7 +79,7 @@ export function BusinessDrawerMenu({ visible, user, onClose, onLogout }: Props) 
 
   if (!rendered) return null;
 
-  const displayName = businessName || (user?.name ?? 'Business').replace(/^\+977\s*/, '');
+  const displayName = businessName || (user?.name && !isValidNepaliPhone(user.name) ? user.name : 'Business');
   const displayAvatar = logoUrl || user?.avatar;
   const initial = displayName[0].toUpperCase();
   const identityLine = user?.phone ? formatPhoneDisplay(user.phone) : (user?.email ?? '');

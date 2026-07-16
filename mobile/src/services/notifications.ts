@@ -60,8 +60,10 @@ export const notificationService = {
 
       const tokenData = await Notifications.getExpoPushTokenAsync();
       await request('PUT', '/api/notifications/push-token', { token: tokenData.data });
-    } catch {
-      // Native module not available in this build — push notifications skipped
+    } catch (err) {
+      // Common causes: FCM/APNs not configured for this build, no network,
+      // or push-token endpoint rejecting the request — log so this isn't silent.
+      console.warn('[push] registerPushToken failed:', err);
     }
   },
 };

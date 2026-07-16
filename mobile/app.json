@@ -16,7 +16,7 @@
         "CFBundleURLTypes": [
           {
             "CFBundleURLSchemes": [
-              "fb1241262111343589"
+              "fb1740519673635792"
             ]
           },
           {
@@ -25,7 +25,7 @@
             ]
           }
         ],
-        "FacebookAppID": "1241262111343589",
+        "FacebookAppID": "1740519673635792",
         "FacebookDisplayName": "kolab"
       }
     },
@@ -47,7 +47,8 @@
           "apiKey": "AIzaSyAJrdBTZyJH0Sxku7uG-_V4x5lSv4xWii0"
         }
       },
-      "package": "com.sundarban.kolab"
+      "package": "com.sundarban.kolab",
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "output": "static",

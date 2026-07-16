@@ -18,6 +18,7 @@ import { displayCategory } from '@/features/creator/data/filterOptions';
 import { useCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { usePlatforms, getPlatformMeta } from '@/hooks/usePlatforms';
 import { EmptyState } from '@/components/EmptyState';
+import { isValidNepaliPhone } from '@/utilities/phone';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useScrollToTopOnTabPress } from '@/hooks/useScrollToTopOnTabPress';
 import { TabSlider } from '@/components/TabSlider';
@@ -39,6 +40,10 @@ type SortOption = 'date-latest' | 'date-oldest' | 'price-low' | 'price-high';
 
 export default function HomeScreen() {
   const { user } = useAuth();
+  // Phone-only signups default `name` to the raw phone number until the user sets
+  // a real one — never show that in the header (as text, or as the avatar's
+  // first-letter fallback initial, which would render a bare "+").
+  const displayName = user?.name && !isValidNepaliPhone(user.name) ? user.name : 'Creator';
   const { openDrawer } = useContext(DrawerContext);
   const { t, languageVersion } = useLanguage();
   const C = useAppColors();
@@ -461,7 +466,7 @@ export default function HomeScreen() {
               </Pressable>
               <View>
                 <Text style={styles.greeting}>{t('creator.home.greeting')}</Text>
-                <Text style={styles.brandName} numberOfLines={1}>{(user?.name ?? 'Creator').replace(/^\+977\s*/, '')}</Text>
+                <Text style={styles.brandName} numberOfLines={1}>{displayName}</Text>
               </View>
             </View>
 
@@ -477,7 +482,7 @@ export default function HomeScreen() {
                     <Image source={{ uri: user.avatar }} style={styles.avatarImage} resizeMode="cover" />
                   ) : (
                     <View style={[styles.avatarFallback, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
-                      <Text style={styles.avatarInitial}>{(user?.name ?? 'C').trim()[0].toUpperCase()}</Text>
+                      <Text style={styles.avatarInitial}>{displayName.trim()[0].toUpperCase()}</Text>
                     </View>
                   )}
                 </View>

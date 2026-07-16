@@ -22,6 +22,12 @@ export function connectSocket(token: string): Socket {
     timeout: 10000,
   });
 
+  // Connection failures here were previously invisible on-device — this is
+  // the only signal we get on a physical device without a debugger attached.
+  _socket.on('connect', () => console.log('[socket] connected', _socket?.id));
+  _socket.on('connect_error', (err) => console.warn('[socket] connect_error:', err.message));
+  _socket.on('disconnect', (reason) => console.log('[socket] disconnected:', reason));
+
   return _socket;
 }
 

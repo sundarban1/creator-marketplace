@@ -75,14 +75,14 @@ services:
       - key: TIKTOK_CLIENT_SECRET
         sync: false
       - key: TIKTOK_REDIRECT_URI
-        value: https://creator-marketplace-api.onrender.com/api/creator/social-accounts/tiktok/callback
+        value: https://marketplace-backend-ofge.onrender.com/api/creator/social-accounts/tiktok/callback
       - key: APP_SCHEME
         value: kolab
 
       # ── Facebook Login (creator social-account OAuth connect) — App ID is public,
       # already embedded in the mobile client; only the secret needs the dashboard ──
       - key: FACEBOOK_APP_ID
-        value: "1241262111343589"
+        value: "1740519673635792"
       - key: FACEBOOK_APP_SECRET
         sync: false
 
@@ -92,14 +92,14 @@ services:
       - key: INSTAGRAM_APP_SECRET
         sync: false
       - key: INSTAGRAM_REDIRECT_URI
-        value: https://creator-marketplace-api.onrender.com/api/creator/social-accounts/instagram-login/callback
+        value: https://marketplace-backend-ofge.onrender.com/api/creator/social-accounts/instagram-login/callback
 
       # ── Google OAuth (YouTube connect token refresh). Client IDs are public, already
       # embedded in the mobile client; only the Web client's secret needs the dashboard.
       # Android/iOS client IDs have no secret (public/native clients) but ARE required —
       # native refresh tokens are minted under them, not the Web client.
       - key: GOOGLE_WEB_CLIENT_ID
-        value: "543768819635-eggb88dhu2i747tqghdtqrb56ocme19m.apps.googleusercontent.com"
+        value: "543768819635-f201e9a0pe6uegkhvm9fcnjm6hf8b2g5.apps.googleusercontent.com"
       - key: GOOGLE_CLIENT_SECRET
         sync: false
       - key: GOOGLE_ANDROID_CLIENT_ID

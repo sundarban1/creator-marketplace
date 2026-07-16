@@ -11,6 +11,7 @@ import { useDrawer } from '@/context/DrawerContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { F } from '@/utilities/constants';
+import { isValidNepaliPhone } from '@/utilities/phone';
 import { campaignService } from '@/services/campaign';
 import { useNotificationBadge } from '@/context/NotificationContext';
 import { notificationService } from '@/services/notifications';
@@ -48,6 +49,10 @@ export default function BusinessHomeScreen() {
   const [fetchError, setFetchError] = useState('');
   const [missingFields, setMissingFields] = useState<string[]>([]);
   const [businessName, setBusinessName] = useState('');
+  // Phone-only signups default `name` to the raw phone number until the user sets
+  // a real one — never show that in the header (as text, or as the avatar's
+  // first-letter fallback initial, which would render a bare "+").
+  const displayName = businessName || (user?.name && !isValidNepaliPhone(user.name) ? user.name : 'Business');
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [referralBannerDismissed, setReferralBannerDismissed] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
@@ -146,7 +151,7 @@ export default function BusinessHomeScreen() {
               </Pressable>
               <View>
                 <Text style={[styles.greeting, { color: 'rgba(255,255,255,0.7)' }]}>{getGreeting()}</Text>
-                <Text style={[styles.brandName, { color: '#fff' }]} numberOfLines={1}>{businessName || (user?.name ?? 'Business').replace(/^\+977\s*/, '')}</Text>
+                <Text style={[styles.brandName, { color: '#fff' }]} numberOfLines={1}>{displayName}</Text>
               </View>
             </View>
             <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.avatarCircle, { borderColor: 'rgba(255,255,255,0.5)', borderWidth: 2.5 }]} onPress={() => router.push('/(business)/profile')}>
@@ -158,7 +163,7 @@ export default function BusinessHomeScreen() {
                   <Image source={{ uri: user.avatar }} style={styles.avatarImage} resizeMode="cover" />
                 ) : (
                   <View style={[styles.avatarFallback, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
-                    <Text style={styles.avatarInitial}>{(businessName || user?.name || 'B').trim()[0].toUpperCase()}</Text>
+                    <Text style={styles.avatarInitial}>{displayName.trim()[0].toUpperCase()}</Text>
                   </View>
                 )}
               </View>
