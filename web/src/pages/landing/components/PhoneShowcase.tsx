@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { BadgeCheck, Camera, Hotel, Mic, Package, Smartphone, Star, Wallet } from 'lucide-react';
+import { BadgeCheck, Camera, Hotel, Mic, Package, Smartphone, Star, Utensils, Wallet } from 'lucide-react';
 
 const SCENE_DURATION = 4600;
 
@@ -90,6 +90,28 @@ function FoodScene() {
           ))}
         </div>
         <p className="mt-1 text-xs font-medium text-white">Worth the hype &mdash; ordering again</p>
+      </div>
+    </SceneFrame>
+  );
+}
+
+function MomoScene() {
+  return (
+    <SceneFrame videoId="37069651" file="15704072_1080_1920_60fps.mp4">
+      <div className="absolute inset-x-0 top-0 flex items-center px-4 pt-3">
+        <Badge>
+          <Utensils size={11} />
+          Momo &amp; chowmein review
+        </Badge>
+      </div>
+      <div className="absolute inset-x-0 bottom-0 px-4 pb-4">
+        <div className="flex items-center gap-0.5">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Star key={i} size={12} className="fill-brand-orange text-brand-orange" />
+          ))}
+        </div>
+        <p className="mt-1 text-xs font-medium text-white">&ldquo;This jhol momo is unreal&rdquo;</p>
+        <p className="mt-0.5 text-[11px] text-white/70">Sabina Tamang &middot; Food creator</p>
       </div>
     </SceneFrame>
   );
@@ -204,7 +226,7 @@ function ContentScene() {
   );
 }
 
-const SCENES = [CreatorAppScene, PaymentScene, ProductScene, FoodScene, BlogScene, HotelScene, ContentScene];
+const SCENES = [CreatorAppScene, MomoScene, ProductScene, FoodScene, PaymentScene, BlogScene, HotelScene, ContentScene];
 
 export function PhoneShowcase() {
   const [active, setActive] = useState(0);

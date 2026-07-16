@@ -332,7 +332,15 @@
       "Bash(curl -sL \"https://images.pexels.com/videos/7599312/pexels-photo-7599312.jpeg?auto=compress&w=500&h=300&dpr=1\" -o h4_hallway.jpg)",
       "Bash(curl -sL \"https://images.pexels.com/videos/33048634/ring-light-33048634.jpeg?auto=compress&w=500&h=300&dpr=1\" -o b1_ringlight.jpg)",
       "Bash(curl -sL \"https://images.pexels.com/videos/7482042/pexels-photo-7482042.jpeg?auto=compress&w=500&h=300&dpr=1\" -o b2_woman.jpg)",
-      "Bash(curl -sL \"https://images.pexels.com/videos/8360178/blogger-challenge-content-creating-8360178.jpeg?auto=compress&w=500&h=300&dpr=1\" -o b3_blogger.jpg)"
+      "Bash(curl -sL \"https://images.pexels.com/videos/8360178/blogger-challenge-content-creating-8360178.jpeg?auto=compress&w=500&h=300&dpr=1\" -o b3_blogger.jpg)",
+      "Bash(curl -sL \"https://images.pexels.com/videos/8107488/pexels-photo-8107488.jpeg?auto=compress&w=500&h=300&dpr=1\" -o n1.jpg)",
+      "Bash(curl -sL \"https://images.pexels.com/videos/8107383/pexels-photo-8107383.jpeg?auto=compress&w=500&h=300&dpr=1\" -o n2.jpg)",
+      "Bash(curl -sL \"https://images.pexels.com/videos/7437534/pexels-photo-7437534.jpeg?auto=compress&w=500&h=300&dpr=1\" -o n3.jpg)",
+      "Bash(curl -sL \"https://images.pexels.com/videos/7299351/asian-food-chicken-chinese-chinese-cuisine-7299351.jpeg?auto=compress&w=500&h=300&dpr=1\" -o /private/tmp/claude-501/-Users-sundarban-Documents-projects-marketplace/43a6bc7f-9fab-4e50-82ff-5476d5981094/scratchpad/n4.jpg)",
+      "Bash(curl -sL \"https://images.pexels.com/videos/7361667/pexels-photo-7361667.jpeg?auto=compress&w=500&h=300&dpr=1\" -o /private/tmp/claude-501/-Users-sundarban-Documents-projects-marketplace/43a6bc7f-9fab-4e50-82ff-5476d5981094/scratchpad/n5.jpg)",
+      "Bash(curl -sL \"https://images.pexels.com/videos/33607844/bara-lentil-nepali-newari-33607844.jpeg?auto=compress&w=500&h=300&dpr=1\" -o /private/tmp/claude-501/-Users-sundarban-Documents-projects-marketplace/43a6bc7f-9fab-4e50-82ff-5476d5981094/scratchpad/n6.jpg)",
+      "Bash(curl -sL \"https://images.pexels.com/videos/7594449/pexels-photo-7594449.jpeg?auto=compress&w=500&h=300&dpr=1\" -o /private/tmp/claude-501/-Users-sundarban-Documents-projects-marketplace/43a6bc7f-9fab-4e50-82ff-5476d5981094/scratchpad/n7.jpg)",
+      "Bash(curl -sL \"https://images.pexels.com/videos/37069651/pexels-photo-37069651.jpeg?auto=compress&w=500&h=300&dpr=1\" -o /private/tmp/claude-501/-Users-sundarban-Documents-projects-marketplace/43a6bc7f-9fab-4e50-82ff-5476d5981094/scratchpad/n8.jpg)"
     ],
     "additionalDirectories": [
       "/Users/sundarban/Documents/projects/marketplace/content",
