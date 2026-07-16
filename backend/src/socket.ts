@@ -1,11 +1,13 @@
 import { Server } from 'socket.io';
 import type { Server as HttpServer } from 'http';
-import { verifyAccessToken } from './utils/jwt';
+import { verifyAccessToken, verifyVisitorChatToken } from './utils/jwt';
 import { MessagingService } from './modules/messaging/messaging.service';
+import { VisitorChatService, visitorChatRoom, ADMIN_VISITOR_CHATS_ROOM } from './modules/visitorChat/visitorChat.service';
 import prisma from './prisma';
 import type { Role } from '@prisma/client';
 
 const messagingService = new MessagingService();
+const visitorChatService = new VisitorChatService();
 
 let io: Server | null = null;
 
@@ -26,6 +28,19 @@ export function initSocket(httpServer: HttpServer): Server {
 
   io.use((socket, next) => {
     const token = socket.handshake.auth?.token as string | undefined;
+    const visitorToken = socket.handshake.auth?.visitorToken as string | undefined;
+
+    if (visitorToken) {
+      try {
+        const payload = verifyVisitorChatToken(visitorToken);
+        socket.data.isVisitor = true;
+        socket.data.visitorChatId = payload.chatId;
+        return next();
+      } catch {
+        return next(new Error('Invalid visitor token'));
+      }
+    }
+
     if (!token) return next(new Error('No token'));
     try {
       const payload = verifyAccessToken(token);
@@ -38,10 +53,37 @@ export function initSocket(httpServer: HttpServer): Server {
   });
 
   io.on('connection', (socket) => {
+    // Anonymous landing-page visitor chat — a completely separate connection
+    // type from the authenticated-user flow below (no userId/role at all).
+    if (socket.data.isVisitor) {
+      const chatId = socket.data.visitorChatId as string;
+      void socket.join(visitorChatRoom(chatId));
+
+      socket.on('visitor-message:send', ({ content }: { content: string }) => {
+        if (!content?.trim()) return;
+        void visitorChatService.sendVisitorMessage(chatId, content.trim()).catch(() => {
+          socket.emit('visitor-chat:error', { chatId });
+        });
+      });
+      return;
+    }
+
     const userId = socket.data.userId as string;
     const role   = socket.data.role   as string;
     socket.join(`user:${userId}`);
     socket.join(`role:${role}`);   // 'role:CREATOR' | 'role:BUSINESS'
+
+    // Admins also join the shared visitor-chats room so every admin dashboard
+    // sees new website-visitor chats/messages live, and can reply to any of them.
+    if (role === 'ADMIN') {
+      void socket.join(ADMIN_VISITOR_CHATS_ROOM);
+      socket.on('admin-message:send', ({ chatId, content }: { chatId: string; content: string }) => {
+        if (!chatId?.trim() || !content?.trim()) return;
+        void visitorChatService.sendAdminMessage(chatId, userId, content.trim()).catch(() => {
+          socket.emit('visitor-chat:error', { chatId });
+        });
+      });
+    }
 
     // Tell anyone currently watching this user's presence that they just came online.
     // (No DB write here — lastSeenAt only matters once the user goes offline.)
@@ -112,4 +154,8 @@ export function emitToUser(userId: string, event: string, data: unknown): void {
 
 export function emitToRole(role: string, event: string, data: unknown): void {
   io?.to(`role:${role}`).emit(event, data);
+}
+
+export function emitToRoom(room: string, event: string, data: unknown): void {
+  io?.to(room).emit(event, data);
 }

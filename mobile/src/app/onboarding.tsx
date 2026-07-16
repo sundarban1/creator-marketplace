@@ -78,18 +78,39 @@ export default function OnboardingScreen() {
   const [step1Error,     setStep1Error]     = useState('');
   const step1ScrollRef = useRef<ScrollView>(null);
   const locationFocusedRef = useRef(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   // Location sits at the bottom of the step-1 form, right above the submit
   // button — Android's adjustResize shrinks the window when the keyboard
   // opens but never auto-scrolls a mid-form field into the new viewport, so
-  // without this the field ends up hidden behind the keyboard. keyboardDidShow
-  // (rather than the input's onFocus) fires after that resize has actually
-  // happened, so scrollToEnd lands correctly against the shrunk viewport.
+  // without this the field (and its Places suggestion dropdown) ends up
+  // hidden behind the keyboard, Instagram-chat-input style is what we want:
+  // the field should end up sitting just above the keyboard.
+  //
+  // Two parts make that reliable on both platforms:
+  //  1. `keyboardHeight` pads the ScrollView's content so there's always
+  //     enough scrollable room below the field to actually scroll it into
+  //     view — without this, a short form (name/username/gender/location)
+  //     can be shorter than the keyboard-shrunk viewport, so scrollToEnd()
+  //     is a no-op because the ScrollView has nothing to scroll.
+  //  2. The scroll itself is retried a beat after keyboardDidShow (rather
+  //     than fired once, synchronously) since the extra padding above needs
+  //     a layout pass to land before scrollToEnd's extent calculation
+  //     accounts for it — firing too early scrolls against the old, shorter
+  //     content size and undershoots.
   useEffect(() => {
-    const sub = Keyboard.addListener('keyboardDidShow', () => {
-      if (locationFocusedRef.current) step1ScrollRef.current?.scrollToEnd({ animated: true });
+    const showSub = Keyboard.addListener('keyboardDidShow', (e) => {
+      setKeyboardHeight(e.endCoordinates.height);
+      if (locationFocusedRef.current) {
+        step1ScrollRef.current?.scrollToEnd({ animated: true });
+        setTimeout(() => step1ScrollRef.current?.scrollToEnd({ animated: true }), 80);
+      }
     });
-    return () => sub.remove();
+    const hideSub = Keyboard.addListener('keyboardDidHide', () => setKeyboardHeight(0));
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
   }, []);
 
   // Step 2 — categories
@@ -255,7 +276,7 @@ export default function OnboardingScreen() {
 
         {/* ────────── Step 1: Profile basics ────────── */}
         {step === 1 && (
-          <ScrollView ref={step1ScrollRef} style={styles.flex} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
+          <ScrollView ref={step1ScrollRef} style={styles.flex} contentContainerStyle={[styles.scrollContent, keyboardHeight > 0 && { paddingBottom: keyboardHeight + 32 }]} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
 
             {step1Error ? (
               <View style={[styles.errorBanner, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}>

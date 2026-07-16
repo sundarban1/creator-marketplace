@@ -58,3 +58,19 @@ export function signOAuthState(payload: OAuthStatePayload): string {
 export function verifyOAuthState(token: string): OAuthStatePayload & JwtPayload {
   return jwt.verify(token, env.JWT_ACCESS_SECRET + '_oauth_state') as OAuthStatePayload & JwtPayload;
 }
+
+// Identifies an anonymous website visitor's chat session (landing-page floating
+// widget) — no user account exists, so this token (not a real access token) is
+// what proves "this browser owns this chat" for both REST calls and the socket
+// handshake. Long-lived so a returning visitor keeps their conversation.
+export interface VisitorChatPayload {
+  chatId: string;
+}
+
+export function signVisitorChatToken(payload: VisitorChatPayload): string {
+  return jwt.sign(payload, env.JWT_ACCESS_SECRET + '_visitor_chat', { expiresIn: '30d' });
+}
+
+export function verifyVisitorChatToken(token: string): VisitorChatPayload & JwtPayload {
+  return jwt.verify(token, env.JWT_ACCESS_SECRET + '_visitor_chat') as VisitorChatPayload & JwtPayload;
+}

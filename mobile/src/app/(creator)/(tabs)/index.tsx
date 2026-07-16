@@ -609,7 +609,18 @@ export default function HomeScreen() {
             </View>
             <View style={styles.bannerText}>
               <Text style={[styles.bannerTitle, { color: C.text }]}>{t('referral.homeBannerTitle')}</Text>
-              <Text style={[styles.bannerSub, { color: C.textSecondary }]} numberOfLines={1}>{t('referral.homeBannerSub')}</Text>
+              <Text style={[styles.bannerSub, { color: C.textSecondary }]} numberOfLines={1}>
+                {(() => {
+                  const [prefix, suffix] = t('referral.homeBannerSub').split('{{amount}}');
+                  return (
+                    <>
+                      {prefix}
+                      <Text style={styles.bannerSubAmount}>{t('referral.homeBannerAmount')}</Text>
+                      {suffix}
+                    </>
+                  );
+                })()}
+              </Text>
             </View>
             <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.bannerClose} onPress={() => setReferralBannerDismissed(true)} hitSlop={10}>
               <Ionicons name="close" size={16} color={C.textSecondary} />
@@ -904,6 +915,7 @@ const styles = StyleSheet.create({
   bannerText:    { flex: 1, gap: 2 },
   bannerTitle:   { fontSize: 13, fontFamily: F.semibold },
   bannerSub:     { fontSize: 12, fontFamily: F.regular, lineHeight: 17, opacity: 0.75 },
+  bannerSubAmount: { fontSize: 13, fontFamily: F.bold, color: '#EC4899', opacity: 1 },
   bannerClose:   { position: 'absolute', top: 8, right: 8, padding: 4 },
 
   // ── Error ──

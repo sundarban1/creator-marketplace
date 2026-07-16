@@ -38,6 +38,7 @@ model User {
   supportRequests  SupportRequest[]
   reviewsGiven     Review[]          @relation("ReviewFrom")
   reviewsReceived  Review[]          @relation("ReviewTo")
+  visitorMessages  VisitorMessage[]
 
   @@index([role])
   @@map("users")
@@ -733,4 +734,49 @@ model Platform {
   updatedAt DateTime       @updatedAt
 
   @@map("platforms")
+}
+
+enum VisitorChatStatus {
+  OPEN
+  CLOSED
+}
+
+enum VisitorMessageSender {
+  VISITOR
+  ADMIN
+}
+
+// Real-time chat between an anonymous website visitor (landing page floating
+// widget, identified only by the name/email/phone they give when starting a
+// chat — no account, no login) and any admin. Deliberately separate from
+// Conversation/Message (creator<->business chat), which requires both sides
+// to be authenticated platform users.
+model VisitorChat {
+  id            String            @id @default(cuid())
+  name          String
+  email         String?
+  phone         String?
+  status        VisitorChatStatus @default(OPEN)
+  createdAt     DateTime          @default(now())
+  lastMessageAt DateTime?
+  visitorSeenAt DateTime?
+  adminSeenAt   DateTime?
+  messages      VisitorMessage[]
+
+  @@index([status, lastMessageAt(sort: Desc)])
+  @@map("visitor_chats")
+}
+
+model VisitorMessage {
+  id        String               @id @default(cuid())
+  chatId    String
+  sender    VisitorMessageSender
+  adminId   String?
+  content   String
+  createdAt DateTime             @default(now())
+  chat      VisitorChat          @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  admin     User?                @relation(fields: [adminId], references: [id])
+
+  @@index([chatId, createdAt])
+  @@map("visitor_messages")
 }

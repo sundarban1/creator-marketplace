@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { Sidebar } from '../components/Sidebar';
 import { Topbar } from '../components/Topbar';
+import { AdminChatWidget } from '../components/AdminChatWidget';
 
 function resolveTitle(pathname: string): string {
   if (pathname === '/categories/new') return 'New Category';
@@ -41,6 +42,7 @@ export function DashboardLayout() {
           <Outlet />
         </main>
       </div>
+      <AdminChatWidget />
     </div>
   );
 }

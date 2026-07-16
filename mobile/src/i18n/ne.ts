@@ -423,7 +423,8 @@ const ne = {
 
   referral: {
     homeBannerTitle: 'साथीलाई बोलाउनुहोस्',
-    homeBannerSub: 'क्रिएटर साथीलाई बोलाउनुहोस् र रु. ५०० कमाउनुहोस्',
+    homeBannerSub: 'क्रिएटर साथीलाई बोलाउनुहोस् र {{amount}} कमाउनुहोस्',
+    homeBannerAmount: 'रु. ५००',
     headerTitle: 'साथीलाई बोलाउनुहोस्',
     loading: 'लोड हुँदैछ…',
     loadError: 'रेफरल जानकारी लोड हुन सकेन। फेरि प्रयास गर्नुहोस्।',

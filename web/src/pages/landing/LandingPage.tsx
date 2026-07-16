@@ -3,6 +3,7 @@ import { useLandingStats } from './hooks/useLandingStats';
 import { LandingLanguageProvider } from './context/LanguageContext';
 import { CursorSparkles } from './components/CursorSparkles';
 import { ScrollProgress } from './components/ScrollProgress';
+import { ChatWidget } from './components/ChatWidget';
 import { LandingNav } from './nav/LandingNav';
 import { LandingFooter } from './nav/LandingFooter';
 import { Hero } from './sections/Hero';
@@ -33,6 +34,7 @@ function LandingPageInner() {
       <Stories />
       <FinalCTA />
       <LandingFooter />
+      <ChatWidget />
     </div>
   );
 }

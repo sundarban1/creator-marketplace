@@ -157,6 +157,29 @@ export interface LandingStats {
   categories: { id: string; name: string }[];
 }
 
+export interface VisitorMessage {
+  id: string;
+  chatId: string;
+  sender: 'VISITOR' | 'ADMIN';
+  adminId: string | null;
+  content: string;
+  createdAt: string;
+}
+
+export interface VisitorChat {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  status: 'OPEN' | 'CLOSED';
+  createdAt: string;
+  lastMessageAt: string | null;
+  visitorSeenAt: string | null;
+  adminSeenAt: string | null;
+  messages?: VisitorMessage[];
+  _count?: { messages: number };
+}
+
 export interface ApiPlatform {
   id: string;
   icon: string;
@@ -678,5 +701,22 @@ export const api = {
   public: {
     landingStats: () =>
       request<LandingStats>('GET', '/api/public/landing-stats'),
+  },
+
+  visitorChat: {
+    list: (params?: { status?: 'OPEN' | 'CLOSED'; page?: number; limit?: number }) =>
+      request<VisitorChat[]>('GET', '/api/admin/visitor-chats', undefined, params as Record<string, string | number | undefined>),
+
+    getMessages: (chatId: string) =>
+      request<VisitorMessage[]>('GET', `/api/admin/visitor-chats/${chatId}/messages`),
+
+    sendMessage: (chatId: string, content: string) =>
+      request<VisitorMessage>('POST', `/api/admin/visitor-chats/${chatId}/messages`, { content }),
+
+    markSeen: (chatId: string) =>
+      request<VisitorChat>('PUT', `/api/admin/visitor-chats/${chatId}/seen`),
+
+    updateStatus: (chatId: string, status: 'OPEN' | 'CLOSED') =>
+      request<VisitorChat>('PATCH', `/api/admin/visitor-chats/${chatId}/status`, { status }),
   },
 };
