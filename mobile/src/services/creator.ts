@@ -219,8 +219,11 @@ export const creatorService = {
   // refreshToken/expiresIn are only present when Google actually issued a refresh
   // token — the backend persists them so the subscriber count can keep refreshing
   // itself automatically afterwards (see useGoogleAccessToken.ts).
-  async connectYoutubeAccount(accessToken: string, refreshToken?: string, expiresIn?: number): Promise<ApiSocialAccount> {
-    const res = await request<ApiSocialAccount>('POST', '/api/creator/social-accounts/youtube/connect', { accessToken, refreshToken, expiresIn });
+  async connectYoutubeAccount(
+    accessToken: string, refreshToken?: string, expiresIn?: number,
+    clientPlatform?: 'ios' | 'android' | 'web',
+  ): Promise<ApiSocialAccount> {
+    const res = await request<ApiSocialAccount>('POST', '/api/creator/social-accounts/youtube/connect', { accessToken, refreshToken, expiresIn, clientPlatform });
     return res.data;
   },
 

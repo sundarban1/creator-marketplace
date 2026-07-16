@@ -3,7 +3,7 @@ import { logger } from '../../config/logger';
 import { toBusinessProfileDto, toPublicBusinessDto, toBusinessListItemDto, toPrivateBusinessDto } from './business.dto';
 import { toSocialAccountDto } from '../creator/creator.dto';
 import { BusinessRepository } from './business.repository';
-import { CreatorService, exchangeForLongLivedFacebookToken, fetchYoutubeChannel } from '../creator/creator.service';
+import { CreatorService, exchangeForLongLivedFacebookToken, fetchYoutubeChannel, googleOauthConnectionType } from '../creator/creator.service';
 import { PlatformRepository } from '../platform/platform.repository';
 import type { UpdateBusinessProfileInput, AddSocialAccountInput, UpdateSocialAccountInput } from './business.schema';
 import { translateFields, translateMany } from '../../utils/translation';
@@ -157,7 +157,10 @@ export class BusinessService {
     await this.repo.deleteSocialAccount(accountId);
   }
 
-  async connectYoutubeAccount(userId: string, accessToken: string, refreshToken?: string, expiresIn?: number) {
+  async connectYoutubeAccount(
+    userId: string, accessToken: string, refreshToken?: string, expiresIn?: number,
+    clientPlatform?: 'ios' | 'android' | 'web',
+  ) {
     const profile = await this.repo.findByUserId(userId);
     if (!profile) throw new AppError('Business profile not found', 404);
 
@@ -171,7 +174,7 @@ export class BusinessService {
       accessToken,
       refreshToken,
       tokenExpiresAt: expiresIn ? new Date(Date.now() + expiresIn * 1000) : undefined,
-      oauthConnectionType: 'google',
+      oauthConnectionType: googleOauthConnectionType(clientPlatform),
     });
     return toSocialAccountDto(account);
   }

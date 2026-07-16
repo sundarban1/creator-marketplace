@@ -564,8 +564,8 @@ export default function CreatorSettingsScreen() {
 
   function handleConnectYoutube() {
     setConnectingPlatform('youtube');
-    youtubeAuth.prompt((accessToken, refreshToken, expiresIn) => {
-      creatorService.connectYoutubeAccount(accessToken, refreshToken, expiresIn)
+    youtubeAuth.prompt((accessToken, refreshToken, expiresIn, clientPlatform) => {
+      creatorService.connectYoutubeAccount(accessToken, refreshToken, expiresIn, clientPlatform)
         .then((account) => {
           setSocialAccounts((prev) => {
             const without = prev.filter((a) => a.platform !== 'youtube');

@@ -12,7 +12,16 @@ function reversedIosClientId(clientId: string): string {
   return `com.googleusercontent.apps.${clientId.replace('.apps.googleusercontent.com', '')}`;
 }
 
-type GoogleTokenSuccess = (accessToken: string, refreshToken?: string, expiresIn?: number) => void;
+type GoogleTokenSuccess = (
+  accessToken: string, refreshToken?: string, expiresIn?: number,
+  clientPlatform?: 'ios' | 'android' | 'web',
+) => void;
+
+// Android/iOS OAuth clients are public clients (no secret) tied to a specific package
+// name/bundle ID — the backend must refresh a native-minted token under this SAME
+// client ID later, so it's threaded through to connectYoutubeAccount. See env.ts's
+// GOOGLE_ANDROID_CLIENT_ID/GOOGLE_IOS_CLIENT_ID comment on the backend for why.
+const CLIENT_PLATFORM = Platform.OS === 'ios' || Platform.OS === 'android' ? Platform.OS : 'web';
 
 /**
  * Requests a Google access token with the given scopes (beyond the basic
@@ -59,7 +68,7 @@ export function useGoogleAccessToken(scopes: string[]) {
     if (!response) return;
     if (response.type === 'success' && response.authentication?.accessToken) {
       // Implicit flow (web) — no refresh token possible here, see doc comment above.
-      onSuccessRef.current?.(response.authentication.accessToken);
+      onSuccessRef.current?.(response.authentication.accessToken, undefined, undefined, CLIENT_PLATFORM);
       setLoading(false);
     } else if (response.type === 'success' && response.params?.code) {
       // Authorization Code flow (native default) — exchange it ourselves;
@@ -79,7 +88,7 @@ export function useGoogleAccessToken(scopes: string[]) {
         Google.discovery,
       )
         .then((token) => {
-          if (token.accessToken) onSuccessRef.current?.(token.accessToken, token.refreshToken, token.expiresIn);
+          if (token.accessToken) onSuccessRef.current?.(token.accessToken, token.refreshToken, token.expiresIn, CLIENT_PLATFORM);
           else setError('Google authorization failed. Please try again.');
         })
         .catch(() => setError('Google authorization failed. Please try again.'))

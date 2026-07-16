@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { BadgeCheck, Camera, Hotel, MonitorSmartphone, Package, Smartphone, Star, Wallet } from 'lucide-react';
+import { BadgeCheck, Camera, Hotel, Mic, Package, Smartphone, Star, Wallet } from 'lucide-react';
 
 const SCENE_DURATION = 4600;
 
@@ -114,18 +114,18 @@ function HotelScene() {
   );
 }
 
-function TechScene() {
+function BlogScene() {
   return (
-    <SceneFrame videoId="7581165" file="7581165-sd_960_540_30fps.mp4">
+    <SceneFrame videoId="33048634" file="14085816_1920_1080_25fps.mp4">
       <div className="absolute inset-x-0 top-0 flex items-center px-4 pt-3">
         <Badge>
-          <MonitorSmartphone size={11} />
-          Explaining features
+          <Mic size={11} />
+          Blogging live
         </Badge>
       </div>
       <div className="absolute inset-x-0 bottom-0 px-4 pb-4">
-        <p className="text-xs font-medium text-white">&ldquo;Here&rsquo;s how the booking flow works&rdquo;</p>
-        <p className="mt-0.5 text-[11px] text-white/70">Walking the founder through the app</p>
+        <p className="text-xs font-medium text-white">&ldquo;Okay guys, today we&rsquo;re unboxing&hellip;&rdquo;</p>
+        <p className="mt-0.5 text-[11px] text-white/70">Prakash Shrestha &middot; Tech blogger</p>
       </div>
     </SceneFrame>
   );
@@ -204,7 +204,7 @@ function ContentScene() {
   );
 }
 
-const SCENES = [CreatorAppScene, HotelScene, ProductScene, FoodScene, TechScene, PaymentScene, ContentScene];
+const SCENES = [CreatorAppScene, PaymentScene, ProductScene, FoodScene, BlogScene, HotelScene, ContentScene];
 
 export function PhoneShowcase() {
   const [active, setActive] = useState(0);

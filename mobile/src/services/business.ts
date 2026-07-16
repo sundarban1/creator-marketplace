@@ -135,8 +135,11 @@ export const businessService = {
     await request('DELETE', `/api/business/social-accounts/${id}`);
   },
 
-  async connectYoutubeAccount(accessToken: string, refreshToken?: string, expiresIn?: number): Promise<ApiSocialAccount> {
-    const res = await request<ApiSocialAccount>('POST', '/api/business/social-accounts/youtube/connect', { accessToken, refreshToken, expiresIn });
+  async connectYoutubeAccount(
+    accessToken: string, refreshToken?: string, expiresIn?: number,
+    clientPlatform?: 'ios' | 'android' | 'web',
+  ): Promise<ApiSocialAccount> {
+    const res = await request<ApiSocialAccount>('POST', '/api/business/social-accounts/youtube/connect', { accessToken, refreshToken, expiresIn, clientPlatform });
     return res.data;
   },
 
