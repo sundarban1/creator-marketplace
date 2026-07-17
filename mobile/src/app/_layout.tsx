@@ -91,6 +91,7 @@ function RootNavigator() {
       <Stack.Screen name="campaign-detail" options={{ presentation: 'card' }} />
       <Stack.Screen name="submit-proposal" options={{ presentation: 'modal' }} />
       <Stack.Screen name="create-campaign" options={{ presentation: 'modal' }} />
+      <Stack.Screen name="video-player" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
     </Stack>
   );
 }

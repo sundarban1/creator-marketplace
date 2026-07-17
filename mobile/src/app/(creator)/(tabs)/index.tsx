@@ -920,7 +920,7 @@ const styles = StyleSheet.create({
   bannerText:    { flex: 1, gap: 2 },
   bannerTitle:   { fontSize: 13, fontFamily: F.semibold },
   bannerSub:     { fontSize: 12, fontFamily: F.regular, lineHeight: 17, opacity: 0.75 },
-  bannerSubAmount: { fontSize: 13, fontFamily: F.bold, color: '#EC4899', opacity: 1 },
+  bannerSubAmount: { fontSize: 15, fontFamily: F.extrabold, color: '#059669', opacity: 1 },
   bannerClose:   { position: 'absolute', top: 8, right: 8, padding: 4 },
 
   // ── Error ──

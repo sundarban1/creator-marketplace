@@ -78,35 +78,29 @@ export default function OnboardingScreen() {
   const [step1Error,     setStep1Error]     = useState('');
   const step1ScrollRef = useRef<ScrollView>(null);
   const locationFocusedRef = useRef(false);
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
 
   // Location sits at the bottom of the step-1 form, right above the submit
-  // button — Android's adjustResize shrinks the window when the keyboard
-  // opens but never auto-scrolls a mid-form field into the new viewport, so
-  // without this the field (and its Places suggestion dropdown) ends up
-  // hidden behind the keyboard, Instagram-chat-input style is what we want:
-  // the field should end up sitting just above the keyboard.
+  // button. iOS already handles this correctly on its own — the ScrollView's
+  // `automaticallyAdjustKeyboardInsets` (below) auto-scrolls a focused field
+  // above the keyboard, and stacking a manual scrollToEnd on top of that was
+  // exactly what caused the form to shoot up too far (both mechanisms
+  // compensating for the same keyboard at once). So this effect is
+  // Android-only: adjustResize shrinks the window when the keyboard opens but
+  // never auto-scrolls a mid-form field into the new (shrunk) viewport, so
+  // without this the field ends up hidden behind the keyboard there.
   //
-  // Two parts make that reliable on both platforms:
-  //  1. `keyboardHeight` pads the ScrollView's content so there's always
-  //     enough scrollable room below the field to actually scroll it into
-  //     view — without this, a short form (name/username/gender/location)
-  //     can be shorter than the keyboard-shrunk viewport, so scrollToEnd()
-  //     is a no-op because the ScrollView has nothing to scroll.
-  //  2. The scroll itself is retried a beat after keyboardDidShow (rather
-  //     than fired once, synchronously) since the extra padding above needs
-  //     a layout pass to land before scrollToEnd's extent calculation
-  //     accounts for it — firing too early scrolls against the old, shorter
-  //     content size and undershoots.
+  // `keyboardVisible` adds a small fixed buffer (not the full keyboard height —
+  // that was the other source of the overshoot) so a short form has somewhere
+  // to scroll to; scrollToEnd only fires once the keyboard has actually
+  // finished resizing the window, so it lands correctly on the first try.
   useEffect(() => {
-    const showSub = Keyboard.addListener('keyboardDidShow', (e) => {
-      setKeyboardHeight(e.endCoordinates.height);
-      if (locationFocusedRef.current) {
-        step1ScrollRef.current?.scrollToEnd({ animated: true });
-        setTimeout(() => step1ScrollRef.current?.scrollToEnd({ animated: true }), 80);
-      }
+    if (Platform.OS !== 'android') return;
+    const showSub = Keyboard.addListener('keyboardDidShow', () => {
+      setKeyboardVisible(true);
+      if (locationFocusedRef.current) step1ScrollRef.current?.scrollToEnd({ animated: true });
     });
-    const hideSub = Keyboard.addListener('keyboardDidHide', () => setKeyboardHeight(0));
+    const hideSub = Keyboard.addListener('keyboardDidHide', () => setKeyboardVisible(false));
     return () => {
       showSub.remove();
       hideSub.remove();
@@ -248,7 +242,13 @@ export default function OnboardingScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      {/* No `behavior` prop here — the step-1 ScrollView's `automaticallyAdjustKeyboardInsets`
+          already handles iOS precisely on its own (auto-scrolls whichever field is focused
+          just above the keyboard). Adding KeyboardAvoidingView's `padding` behavior on top of
+          that double-compensates for the same keyboard — that's what was producing the gap
+          between the Continue button and the keyboard. Android has no such prop; it relies on
+          adjustResize (AndroidManifest) + the manual scrollToEnd effect above. */}
+      <KeyboardAvoidingView style={styles.flex}>
 
       {/* ── Top bar ── */}
       <View style={styles.topBar}>
@@ -276,7 +276,7 @@ export default function OnboardingScreen() {
 
         {/* ────────── Step 1: Profile basics ────────── */}
         {step === 1 && (
-          <ScrollView ref={step1ScrollRef} style={styles.flex} contentContainerStyle={[styles.scrollContent, keyboardHeight > 0 && { paddingBottom: keyboardHeight + 32 }]} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
+          <ScrollView ref={step1ScrollRef} style={styles.flex} contentContainerStyle={[styles.scrollContent, keyboardVisible && { paddingBottom: 24 }]} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
 
             {step1Error ? (
               <View style={[styles.errorBanner, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}>
@@ -394,7 +394,6 @@ export default function OnboardingScreen() {
                 <Text style={styles.primaryBtnText}>{t('onboarding.continueBtn')}</Text>
               )}
             </Pressable>
-            <Text style={[styles.finishNote, { color: C.textSecondary }]}>{t('onboarding.requiredFooter')}</Text>
 
           </ScrollView>
         )}
@@ -528,7 +527,6 @@ const styles = StyleSheet.create({
   primaryBtn: { borderRadius: RADIUS.md, paddingVertical: 15, alignItems: 'center', ...SHADOW.raised, marginBottom: 12 },
   primaryBtnDisabled: { opacity: 0.45, shadowOpacity: 0, elevation: 0 },
   primaryBtnText: { color: '#fff', fontSize: 16, fontFamily: F.bold },
-  finishNote: { textAlign: 'center', fontSize: 12, marginTop: 4, fontFamily: F.regular },
 
   successContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 },
   successContent: { alignItems: 'center', gap: 16 },

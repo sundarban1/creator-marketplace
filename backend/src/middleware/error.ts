@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { ZodError } from 'zod';
 import { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
 import { Prisma } from '@prisma/client';
+import multer from 'multer';
 
 // req.log is normally always set by pinoHttp, but errors can originate before it
 // runs (e.g. a malformed body). Falls back to console so logging itself never throws
@@ -106,6 +107,21 @@ export function errorHandler(
     res.status(400).json({
       success: false,
       message: 'Invalid data provided',
+    });
+    return;
+  }
+
+  // Multer upload errors (file too large, too many files, etc.) — previously fell
+  // through to the generic 500 below since MulterError isn't an AppError. The video
+  // upload's 200MB cap (middleware/upload.ts) made this the single most likely
+  // rejection path in the app, worth a clean 400 instead of an opaque 500.
+  if (err instanceof multer.MulterError) {
+    const message = err.code === 'LIMIT_FILE_SIZE'
+      ? 'File is too large'
+      : err.message;
+    res.status(400).json({
+      success: false,
+      message,
     });
     return;
   }

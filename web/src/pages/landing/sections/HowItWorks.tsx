@@ -32,22 +32,24 @@ export function HowItWorks() {
             const Icon = ICONS[i] ?? FaUserPlus;
             const accent = i % 2 === 0 ? 'violet' : 'brand-orange';
             return (
-              <motion.div
-                key={i}
-                variants={fadeUp}
-                whileHover={CARD_HOVER}
-                className="group rounded-3xl border border-ink/10 bg-white p-6 shadow-[0_2px_10px_rgba(20,17,16,0.04)] transition-shadow duration-300 hover:shadow-[0_20px_40px_-14px_rgba(123,92,245,0.2)]"
-              >
-                <span
-                  className={`flex h-11 w-11 items-center justify-center rounded-2xl text-white transition-transform duration-300 group-hover:scale-110 ${
-                    accent === 'violet' ? 'bg-gradient-to-br from-violet to-violet-dark' : 'bg-gradient-to-br from-brand-orange to-violet'
-                  }`}
+              <div key={i} className="flex flex-col items-center">
+                <motion.div
+                  variants={fadeUp}
+                  whileHover={CARD_HOVER}
+                  className="group w-full rounded-3xl border border-ink/10 bg-white p-6 shadow-[0_2px_10px_rgba(20,17,16,0.04)] transition-shadow duration-300 hover:shadow-[0_20px_40px_-14px_rgba(123,92,245,0.2)]"
                 >
-                  <Icon size={18} />
-                </span>
-                <h3 className="mt-4 text-lg font-bold text-ink">{step.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-ink-soft">{step.desc}</p>
-              </motion.div>
+                  <span
+                    className={`flex h-11 w-11 items-center justify-center rounded-2xl text-white transition-transform duration-300 group-hover:scale-110 ${
+                      accent === 'violet' ? 'bg-gradient-to-br from-violet to-violet-dark' : 'bg-gradient-to-br from-brand-orange to-violet'
+                    }`}
+                  >
+                    <Icon size={18} />
+                  </span>
+                  <h3 className="mt-4 text-lg font-bold text-ink">{step.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-ink-soft">{step.desc}</p>
+                </motion.div>
+                <p className="mt-4 text-center font-serif text-xl font-bold italic tracking-wide text-ink">Step {i + 1}</p>
+              </div>
             );
           })}
         </motion.div>

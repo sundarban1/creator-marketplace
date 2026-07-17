@@ -125,9 +125,15 @@ export interface ApiMessage {
   conversationId: string;
   senderId:       string;
   content:        string;
-  type:           'TEXT' | 'IMAGE' | 'FILE';
+  type:           'TEXT' | 'IMAGE' | 'FILE' | 'VIDEO';
   attachmentUrl:  string | null;
   attachmentName: string | null;
+  attachmentThumbnailUrl?: string | null;
+  attachmentDurationSec?:  number | null;
+  attachmentWidth?:        number | null;
+  attachmentHeight?:       number | null;
+  attachmentSize?:         number | null;
+  attachmentFormat?:       string | null;
   createdAt:      string;
   isDeleted?:     boolean;
   sender:         { id: string; email: string; role: string };

@@ -1,7 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Animated, Keyboard, KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage, type TFn } from '@/context/LanguageContext';
@@ -106,7 +106,10 @@ export default function ResetPasswordScreen() {
       </View>
 
       {/* ── Card ── */}
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      {/* No `behavior` prop — the ScrollView's `automaticallyAdjustKeyboardInsets` already
+          handles iOS precisely on its own; stacking KeyboardAvoidingView's `padding` on top
+          of that double-compensates for the same keyboard, pushing content up too far. */}
+      <KeyboardAvoidingView style={styles.flex}>
         <ScrollView
           ref={scrollRef}
           style={[styles.card, { backgroundColor: C.background }]}

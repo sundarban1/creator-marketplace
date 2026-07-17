@@ -5,7 +5,6 @@ import {
   Animated,
   Keyboard,
   KeyboardAvoidingView,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -153,7 +152,10 @@ export default function BusinessOnboardingScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      {/* No `behavior` prop — the ScrollViews below already use `automaticallyAdjustKeyboardInsets`,
+          which handles iOS precisely on its own; stacking KeyboardAvoidingView's `padding` on top
+          of that double-compensates for the same keyboard, pushing content up too far. */}
+      <KeyboardAvoidingView style={styles.flex}>
 
       {/* ── Top bar ── */}
       <View style={styles.topBar}>

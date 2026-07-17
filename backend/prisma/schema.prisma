@@ -408,8 +408,14 @@ model Message {
   senderId       String
   content        String
   type           MessageType  @default(TEXT)
-  attachmentUrl  String?
-  attachmentName String?
+  attachmentUrl           String?
+  attachmentName          String?
+  attachmentThumbnailUrl  String?   // Cloudinary-derived jpg poster frame — VIDEO only
+  attachmentDurationSec   Int?
+  attachmentWidth         Int?
+  attachmentHeight        Int?
+  attachmentSize          Int?      // bytes
+  attachmentFormat        String?
   createdAt      DateTime     @default(now())
   // "Delete for everyone" (sender-only, no time limit) — the row is kept so
   // history/pagination doesn't shift, but the content is tombstoned in the DTO.
@@ -639,6 +645,7 @@ enum MessageType {
   TEXT
   IMAGE
   FILE
+  VIDEO
 }
 
 enum ApplicationStatus {

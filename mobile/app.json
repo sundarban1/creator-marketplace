@@ -91,7 +91,8 @@
           "photosPermission": "Allow kolab to access your photos to update your profile picture.",
           "cameraPermission": "Allow kolab to use your camera to take a profile photo."
         }
-      ]
+      ],
+      "expo-video"
     ],
     "experiments": {
       "typedRoutes": true,

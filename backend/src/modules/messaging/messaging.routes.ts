@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { MessagingController } from './messaging.controller';
 import { authenticate } from '../../middleware/auth';
 import { validate } from '../../middleware/validate';
-import { uploadChatFile } from '../../middleware/upload';
+import { uploadChatFile, uploadChatVideo } from '../../middleware/upload';
 import { startConversationSchema, sendMessageSchema } from './messaging.schema';
 
 const router = Router();
@@ -26,6 +26,9 @@ router.get('/conversations/:id/messages',            ctrl.getMessages.bind(ctrl)
 router.post('/conversations/:id/messages',           validate(sendMessageSchema), ctrl.sendMessage.bind(ctrl));
 // Image / file attachment — multipart upload, field name "file", optional "caption" text field
 router.post('/conversations/:id/attachments',        uploadChatFile.single('file'), ctrl.sendAttachment.bind(ctrl));
+// Video attachment — separate route/multer instance (disk storage, 200MB cap) rather than
+// folding into the route above, since video needs very different upload handling
+router.post('/conversations/:id/attachments/video',  uploadChatVideo.single('file'), ctrl.sendVideoAttachment.bind(ctrl));
 // Delete a single message — body: { forEveryone?: boolean } (sender-only; defaults to "delete for me")
 router.delete('/conversations/:id/messages/:messageId', ctrl.deleteMessage.bind(ctrl));
 // Delete (hide) the whole conversation from the caller's own inbox only

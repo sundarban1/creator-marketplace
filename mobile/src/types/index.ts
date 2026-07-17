@@ -94,11 +94,22 @@ export type Message = {
   senderId: string;
   text: string;
   timestamp: string;
-  status: 'sending' | 'sent' | 'delivered' | 'read';
-  type: 'TEXT' | 'IMAGE' | 'FILE';
+  status: 'sending' | 'sent' | 'delivered' | 'read' | 'compressing' | 'uploading' | 'failed';
+  type: 'TEXT' | 'IMAGE' | 'FILE' | 'VIDEO';
   attachmentUrl?: string | null;
   attachmentName?: string | null;
+  attachmentThumbnailUrl?: string | null;
+  attachmentDurationSec?: number | null;
+  attachmentWidth?: number | null;
+  attachmentHeight?: number | null;
+  attachmentSize?: number | null;
+  attachmentFormat?: string | null;
   isDeleted?: boolean;
+  // Local-only — never round-trips through the server. Kept on the message object
+  // so Retry can re-run the upload without reopening the picker.
+  localUri?: string;
+  uploadProgress?: number; // 0..1, meaningful only while status === 'uploading'
+  retryCount?: number;
 };
 
 export type AppNotification = {

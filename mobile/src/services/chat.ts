@@ -1,3 +1,4 @@
+import * as FileSystem from 'expo-file-system/legacy';
 import { request, API_BASE }                from '@/lib/api';
 import type { ApiConversation, ApiMessage } from '@/lib/api';
 import type { Conversation, Message }       from '@/types';
@@ -46,7 +47,56 @@ export function toMessage(api: ApiMessage): Message {
     type:           api.type ?? 'TEXT',
     attachmentUrl:  api.attachmentUrl,
     attachmentName: api.attachmentName,
+    attachmentThumbnailUrl: api.attachmentThumbnailUrl ?? null,
+    attachmentDurationSec:  api.attachmentDurationSec ?? null,
+    attachmentWidth:        api.attachmentWidth ?? null,
+    attachmentHeight:       api.attachmentHeight ?? null,
+    attachmentSize:         api.attachmentSize ?? null,
+    attachmentFormat:       api.attachmentFormat ?? null,
     isDeleted:      api.isDeleted ?? false,
+  };
+}
+
+// ── Video upload task ───────────────────────────────────────────────────────────
+
+// Real upload-progress reporting — unlike sendAttachment below (plain fetch(), no
+// progress), video uses FileSystem.createUploadTask so the UI can show an actual
+// percentage, and so the returned task can be cancelled mid-upload.
+export function createVideoUploadTask(
+  conversationId: string,
+  fileUri: string,
+  mimeType: string,
+  caption: string | undefined,
+  onProgress: (fraction: number) => void,
+): { start: () => Promise<Message>; cancel: () => void } {
+  const token = storage.get(ACCESS_TOKEN_KEY) ?? '';
+  const task = FileSystem.createUploadTask(
+    `${API_BASE}/api/messaging/conversations/${conversationId}/attachments/video`,
+    fileUri,
+    {
+      httpMethod: 'POST',
+      uploadType: FileSystem.FileSystemUploadType.MULTIPART,
+      fieldName: 'file',
+      mimeType,
+      parameters: caption?.trim() ? { caption: caption.trim() } : undefined,
+      headers: { Authorization: `Bearer ${token}` },
+    },
+    (data) => {
+      if (data.totalBytesExpectedToSend > 0) onProgress(data.totalBytesSent / data.totalBytesExpectedToSend);
+    },
+  );
+
+  return {
+    start: async () => {
+      const res = await task.uploadAsync();
+      if (!res || res.status < 200 || res.status >= 300) {
+        const parsed = res?.body ? (JSON.parse(res.body) as { message?: string }) : {};
+        throw new Error(parsed.message ?? 'Video upload failed');
+      }
+      const parsed = JSON.parse(res.body) as { data: ApiMessage };
+      return toMessage(parsed.data);
+    },
+    cancel: () => { void task.cancelAsync(); },
   };
 }
 

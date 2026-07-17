@@ -3,6 +3,7 @@ import { messagingEvents } from '@/lib/messagingEvents';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Image as ExpoImage } from 'expo-image';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import { useEffect, useRef, useState } from 'react';
 import {
   Alert,
@@ -24,15 +25,16 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
-import { chatService, toMessage } from '@/services/chat';
+import { chatService, toMessage, createVideoUploadTask } from '@/services/chat';
+import { compressVideo } from '@/utilities/uploadVideo';
 import { getSocket } from '@/lib/socket';
 import { incomingMessageEvents } from '@/lib/incomingMessageEvents';
 import { F, RADIUS } from '@/utilities/constants';
 import { CHAT_EMOJIS } from '@/utilities/chatEmojis';
 import { formatPresence } from '@/utilities/presence';
 import {
-  pickImageFromLibrary, pickImageFromCamera, pickDocumentAttachment, promptAttachmentChoice,
-  type PickedAttachment,
+  pickImageFromLibrary, pickImageFromCamera, pickDocumentAttachment, pickVideoFromLibrary, promptAttachmentChoice,
+  type PickedAttachment, type PickedVideo,
 } from '@/utilities/chatAttachments';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import type { Message } from '@/types';
@@ -53,6 +55,17 @@ function initials(name: string) {
 
 function formatTime(ts: string) {
   return new Date(ts).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+}
+
+function formatDuration(sec: number): string {
+  const m = Math.floor(sec / 60);
+  const s = Math.round(sec % 60);
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+function isTransientNetworkError(e: unknown): boolean {
+  const msg = e instanceof Error ? e.message : '';
+  return !/limit|not supported|not allowed/i.test(msg);
 }
 
 function formatDateLabel(ts: string): string {
@@ -148,19 +161,33 @@ const td = StyleSheet.create({
   dot:     { width: 7, height: 7, borderRadius: 3.5 },
 });
 
+// ── Local video preview (pending/failed only) — see the creator chat screen's
+// identical component for the full rationale (paused/muted first-frame preview,
+// swapped for a plain cached thumbnail once sent). ──
+
+function LocalVideoPreview({ uri, style }: { uri: string; style: object }) {
+  const player = useVideoPlayer(uri, (p) => {
+    p.muted = true;
+    p.pause();
+  });
+  return <VideoView player={player} style={style as never} nativeControls={false} contentFit="cover" />;
+}
+
 // ── Message Bubble ─────────────────────────────────────────────────────────────
 
 function MessageBubble({
-  msg, isSent, showAvatar, isLast, personName, personColor, onLongPress,
+  msg, isSent, showAvatar, isLast, personName, personColor, onLongPress, onRetryVideo, onDeleteFailed,
 }: {
   msg: Message; isSent: boolean; showAvatar: boolean; isLast: boolean;
   personName: string; personColor: string; onLongPress: () => void;
+  onRetryVideo: (msg: Message) => void; onDeleteFailed: (id: string) => void;
 }) {
   const C = useAppColors();
   const { t } = useLanguage();
   const isPending = msg.id.startsWith('temp-');
   const isImage   = msg.type === 'IMAGE' && !!msg.attachmentUrl;
   const isFile    = msg.type === 'FILE'  && !!msg.attachmentUrl;
+  const isVideo   = msg.type === 'VIDEO' && !!msg.attachmentUrl;
 
   if (msg.isDeleted) {
     return (
@@ -223,6 +250,54 @@ function MessageBubble({
             </Text>
             {isPending && <ActivityIndicator size="small" color={isSent ? '#fff' : C.brinjal1} />}
           </Pressable>
+        ) : isVideo ? (
+          <Pressable
+            onPress={() => {
+              if (isPending || msg.status === 'failed') return;
+              router.push({ pathname: '/video-player', params: { url: msg.attachmentUrl!, thumbnail: msg.attachmentThumbnailUrl ?? '' } });
+            }}>
+            <View style={s.imageBubble}>
+              {isPending || msg.status === 'failed'
+                ? <LocalVideoPreview uri={msg.localUri ?? msg.attachmentUrl!} style={s.attachmentImage} />
+                : <ExpoImage source={{ uri: msg.attachmentThumbnailUrl ?? undefined }} style={s.attachmentImage} contentFit="cover" />}
+              {msg.status !== 'compressing' && msg.status !== 'uploading' && msg.status !== 'failed' && (
+                <View style={s.videoPlayOverlay}>
+                  <Ionicons name="play-circle" size={44} color="#fff" />
+                </View>
+              )}
+              {msg.attachmentDurationSec != null && msg.status !== 'failed' && (
+                <View style={s.durationBadge}>
+                  <Text style={s.durationBadgeTxt}>{formatDuration(msg.attachmentDurationSec)}</Text>
+                </View>
+              )}
+              {msg.status === 'compressing' && (
+                <View style={s.imageUploadingOverlay}>
+                  <ActivityIndicator size="small" color="#fff" />
+                  <Text style={s.videoStatusTxt}>{t('messages.compressingVideo')}</Text>
+                </View>
+              )}
+              {msg.status === 'uploading' && (
+                <View style={s.imageUploadingOverlay}>
+                  <ActivityIndicator size="small" color="#fff" />
+                  <Text style={s.videoStatusTxt}>{Math.round((msg.uploadProgress ?? 0) * 100)}%</Text>
+                </View>
+              )}
+              {msg.status === 'failed' && (
+                <View style={s.imageUploadingOverlay}>
+                  <Ionicons name="alert-circle" size={22} color="#fff" />
+                  <Text style={s.videoStatusTxt}>{t('messages.uploadFailed')}</Text>
+                  <View style={s.failedActions}>
+                    <Pressable style={s.failedBtn} onPress={() => onRetryVideo(msg)}>
+                      <Text style={s.failedBtnTxt}>{t('messages.retry')}</Text>
+                    </Pressable>
+                    <Pressable style={s.failedBtn} onPress={() => onDeleteFailed(msg.id)}>
+                      <Text style={s.failedBtnTxt}>{t('common.delete')}</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              )}
+            </View>
+          </Pressable>
         ) : (
           <View style={[
             s.bubble,
@@ -271,6 +346,7 @@ export default function BusinessChatRoomScreen() {
   const listRef         = useRef<FlatList>(null);
   const inputRef        = useRef<TextInput>(null);
   const isSending       = useRef(false);
+  const uploadTasks     = useRef<Record<string, { start: () => Promise<Message>; cancel: () => void }>>({});
   const typingTimer     = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isTypingEmitted = useRef(false);
   const seenTimer       = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -520,6 +596,66 @@ export default function BusinessChatRoomScreen() {
     }
   }
 
+  function updateMsg(id: string, patch: Partial<Message>) {
+    setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, ...patch } : m)));
+  }
+
+  async function runVideoSend(msg: Message) {
+    try {
+      updateMsg(msg.id, { status: 'compressing' });
+      const compressedUri = await compressVideo(msg.localUri!);
+      updateMsg(msg.id, { status: 'uploading', uploadProgress: 0, localUri: compressedUri });
+
+      const task = createVideoUploadTask(id, compressedUri, 'video/mp4', msg.text,
+        (p) => updateMsg(msg.id, { uploadProgress: p }));
+      uploadTasks.current[msg.id] = task;
+
+      updateMsg(msg.id, { status: 'sending' });
+      const serverMsg = await task.start();
+      setMessages((prev) => {
+        const without = prev.filter((m) => m.id !== msg.id);
+        return without.some((m) => m.id === serverMsg.id) ? without : [...without, serverMsg];
+      });
+    } catch (e) {
+      const attempt = (msg.retryCount ?? 0) + 1;
+      if (isTransientNetworkError(e) && attempt <= 3) {
+        updateMsg(msg.id, { retryCount: attempt });
+        await runVideoSend({ ...msg, retryCount: attempt });
+        return;
+      }
+      updateMsg(msg.id, { status: 'failed', retryCount: attempt });
+    } finally {
+      delete uploadTasks.current[msg.id];
+    }
+  }
+
+  async function handleSendVideoAttachment(video: PickedVideo) {
+    if (isSending.current) return;
+    const tempId = `temp-${Date.now()}`;
+    const caption = text.trim();
+
+    const socket = getSocket();
+    if (socket && isTypingEmitted.current) {
+      socket.emit('typing:stop', { conversationId: id });
+      isTypingEmitted.current = false;
+    }
+    if (typingTimer.current) clearTimeout(typingTimer.current);
+
+    const optimistic: Message = {
+      id: tempId, conversationId: id,
+      senderId: user?.id ?? '', text: caption,
+      timestamp: new Date().toISOString(), status: 'compressing',
+      type: 'VIDEO',
+      attachmentUrl: video.uri, attachmentDurationSec: video.durationSec,
+      attachmentWidth: video.width, attachmentHeight: video.height,
+      localUri: video.uri, uploadProgress: 0, retryCount: 0,
+    };
+    setMessages((prev) => [...prev, optimistic]);
+    setText('');
+    scrollToBottom();
+    await runVideoSend(optimistic);
+  }
+
   async function handleCameraPress() {
     const file = await pickImageFromCamera();
     if (file) void handleSendAttachment(file, 'IMAGE');
@@ -530,6 +666,9 @@ export default function BusinessChatRoomScreen() {
     if (choice === 'gallery') {
       const file = await pickImageFromLibrary();
       if (file) void handleSendAttachment(file, 'IMAGE');
+    } else if (choice === 'video') {
+      const video = await pickVideoFromLibrary();
+      if (video) void handleSendVideoAttachment(video);
     } else if (choice === 'document') {
       const file = await pickDocumentAttachment();
       if (file) void handleSendAttachment(file, file.mimeType.startsWith('image/') ? 'IMAGE' : 'FILE');
@@ -628,6 +767,8 @@ export default function BusinessChatRoomScreen() {
                 showAvatar={item.showAvatar} isLast={item.isLast}
                 personName={personName} personColor={personColor}
                 onLongPress={() => handleMessageLongPress(item.msg)}
+                onRetryVideo={(msg) => void runVideoSend(msg)}
+                onDeleteFailed={(msgId) => setMessages((prev) => prev.filter((m) => m.id !== msgId))}
               />
             );
           }}
@@ -774,8 +915,15 @@ const s = StyleSheet.create({
   // Attachments
   imageBubble:          { width: 210, height: 210, borderRadius: RADIUS.lg, overflow: 'hidden' },
   attachmentImage:      { width: '100%', height: '100%' },
-  imageUploadingOverlay:{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'center', alignItems: 'center' },
+  imageUploadingOverlay:{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'center', alignItems: 'center', gap: 6 },
   captionBubble:        { marginTop: 4 },
+  videoPlayOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center' },
+  durationBadge:    { position: 'absolute', bottom: 8, right: 8, backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: RADIUS.sm, paddingHorizontal: 6, paddingVertical: 2 },
+  durationBadgeTxt: { color: '#fff', fontSize: 11, fontFamily: F.semibold },
+  videoStatusTxt:   { color: '#fff', fontSize: 12, fontFamily: F.semibold },
+  failedActions:    { flexDirection: 'row', gap: 8, marginTop: 4 },
+  failedBtn:        { paddingHorizontal: 12, paddingVertical: 5, borderRadius: RADIUS.full, backgroundColor: '#fff' },
+  failedBtnTxt:     { color: '#111827', fontSize: 11, fontFamily: F.semibold },
   fileBubble:           { flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: RADIUS.lg, paddingHorizontal: 14, paddingVertical: 12, maxWidth: 220 },
   fileNameTxt:          { flex: 1, fontSize: 13, fontFamily: F.medium },
 

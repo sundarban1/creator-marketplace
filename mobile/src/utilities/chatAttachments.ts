@@ -1,11 +1,24 @@
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system/legacy';
 import { Alert, ActionSheetIOS, Platform } from 'react-native';
 import { compressImage } from '@/utilities/uploadImage';
 
 export type PickedAttachment = { uri: string; name: string; mimeType: string };
 
+export type PickedVideo = {
+  uri: string;
+  name: string;
+  mimeType: string;
+  durationSec: number;
+  width: number;
+  height: number;
+  sizeBytes: number;
+};
+
 const CHAT_IMAGE_MAX_SIZE_BYTES = 20 * 1024 * 1024; // matches backend uploadChatFile limit
+const CHAT_VIDEO_MAX_DURATION_SEC = 120; // matches backend's 2-minute cap
+const CHAT_VIDEO_MAX_SIZE_BYTES = 200 * 1024 * 1024; // matches backend uploadChatVideo limit
 
 async function toPickedImage(asset: ImagePicker.ImagePickerAsset): Promise<PickedAttachment> {
   const { uri, mimeType } = await compressImage(asset, false);
@@ -35,6 +48,43 @@ export async function pickImageFromCamera(): Promise<PickedAttachment | null> {
   return toPickedImage(result.assets[0]!);
 }
 
+export async function pickVideoFromLibrary(): Promise<PickedVideo | null> {
+  const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  if (status !== 'granted') {
+    Alert.alert('Permission required', 'Please allow access to your photo library in Settings.');
+    return null;
+  }
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ['videos'],
+    videoMaxDuration: CHAT_VIDEO_MAX_DURATION_SEC, // iOS enforces this at the picker; Android doesn't, so re-checked below regardless
+  });
+  if (result.canceled) return null;
+  const asset = result.assets[0]!;
+
+  const durationSec = Math.round((asset.duration ?? 0) / 1000);
+  if (durationSec > CHAT_VIDEO_MAX_DURATION_SEC) {
+    Alert.alert('Video too long', 'Please choose a video under 2 minutes.');
+    return null;
+  }
+
+  const info = await FileSystem.getInfoAsync(asset.uri);
+  const sizeBytes = info.exists ? (info.size ?? 0) : 0;
+  if (sizeBytes > CHAT_VIDEO_MAX_SIZE_BYTES) {
+    Alert.alert('Video too large', 'Please choose a video under 200 MB.');
+    return null;
+  }
+
+  return {
+    uri: asset.uri,
+    name: `video_${Date.now()}.${asset.uri.split('.').pop() ?? 'mp4'}`,
+    mimeType: asset.mimeType ?? 'video/mp4',
+    durationSec,
+    width: asset.width,
+    height: asset.height,
+    sizeBytes,
+  };
+}
+
 export async function pickDocumentAttachment(): Promise<PickedAttachment | null> {
   const result = await DocumentPicker.getDocumentAsync({
     type: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -51,16 +101,17 @@ export async function pickDocumentAttachment(): Promise<PickedAttachment | null>
   return { uri: asset.uri, name: asset.name, mimeType: asset.mimeType ?? 'application/octet-stream' };
 }
 
-export function promptAttachmentChoice(): Promise<'gallery' | 'document' | null> {
+export function promptAttachmentChoice(): Promise<'gallery' | 'video' | 'document' | null> {
   return new Promise((resolve) => {
     if (Platform.OS === 'ios') {
       ActionSheetIOS.showActionSheetWithOptions(
-        { options: ['Photo', 'Document', 'Cancel'], cancelButtonIndex: 2 },
-        (idx) => resolve(idx === 0 ? 'gallery' : idx === 1 ? 'document' : null),
+        { options: ['Photo', 'Video', 'Document', 'Cancel'], cancelButtonIndex: 3 },
+        (idx) => resolve(idx === 0 ? 'gallery' : idx === 1 ? 'video' : idx === 2 ? 'document' : null),
       );
     } else {
       Alert.alert('Add Attachment', undefined, [
         { text: 'Photo',    onPress: () => resolve('gallery') },
+        { text: 'Video',    onPress: () => resolve('video') },
         { text: 'Document', onPress: () => resolve('document') },
         { text: 'Cancel',   style: 'cancel', onPress: () => resolve(null) },
       ]);

@@ -7,7 +7,7 @@ import { MessagingRepository } from './messaging.repository';
 import { notificationService, sendExpoPush } from '../notifications/notification.service';
 import { analyticsService } from '../analytics/analytics.service';
 import { emitToUser } from '../../socket';
-import { uploadImage as uploadToCloudinary, uploadRawFile } from '../../utils/cloudinary';
+import { uploadImage as uploadToCloudinary, uploadRawFile, uploadVideo, videoThumbnailUrl, deleteVideo } from '../../utils/cloudinary';
 import type { StartConversationInput, SendMessageInput } from './messaging.schema';
 
 const ATTACHMENT_IMAGE_TRANSFORMATION = [{ width: 1600, crop: 'limit' }];
@@ -246,7 +246,18 @@ export class MessagingService {
     conversation: NonNullable<Awaited<ReturnType<MessagingRepository['findConversationById']>>>,
     userId: string,
     role: Role,
-    data: { content: string; type?: 'TEXT' | 'IMAGE' | 'FILE'; attachmentUrl?: string; attachmentName?: string },
+    data: {
+      content: string;
+      type?: 'TEXT' | 'IMAGE' | 'FILE' | 'VIDEO';
+      attachmentUrl?: string;
+      attachmentName?: string;
+      attachmentThumbnailUrl?: string;
+      attachmentDurationSec?: number;
+      attachmentWidth?: number;
+      attachmentHeight?: number;
+      attachmentSize?: number;
+      attachmentFormat?: string;
+    },
     pushBody: string,
   ) {
     const conversationId = conversation.id;
@@ -312,6 +323,48 @@ export class MessagingService {
       type,
       attachmentUrl:  url,
       attachmentName: file.originalname,
+    }, pushBody);
+  }
+
+  // Video follows the same shape as sendAttachment above but as its own method rather
+  // than folded in: it needs a disk-path upload (uploadChatVideo writes to tmpdir, see
+  // middleware/upload.ts) instead of a buffer, a duration check the server itself
+  // enforces post-upload (never trusting whatever the client claimed pre-upload), and a
+  // Cloudinary-derived thumbnail — none of which apply to the image/file path.
+  async sendVideoAttachment(
+    conversationId: string,
+    userId: string,
+    role: Role,
+    file: Express.Multer.File,
+    caption?: string,
+  ) {
+    const conversation = await this.prepareSend(conversationId, userId, role);
+
+    const publicId = `video_${conversationId}_${Date.now()}`;
+    const uploaded  = await uploadVideo(file.path, 'messages/attachments', publicId);
+
+    // Client-side picker already caps duration at 120s, but the server is the
+    // only source of truth — if a client lied (or the picker was bypassed),
+    // delete the asset we just paid to store and reject the message.
+    if (uploaded.durationSec > 125) {
+      await deleteVideo(`messages/attachments/${publicId}`);
+      throw new AppError('Video exceeds the 2 minute limit', 400);
+    }
+
+    const content  = caption?.trim() ?? '';
+    const pushBody = content || '🎥 Video';
+
+    return this.persistAndBroadcast(conversation, userId, role, {
+      content,
+      type: 'VIDEO',
+      attachmentUrl:          uploaded.secureUrl,
+      attachmentName:         file.originalname,
+      attachmentThumbnailUrl: videoThumbnailUrl(uploaded.secureUrl),
+      attachmentDurationSec:  uploaded.durationSec,
+      attachmentWidth:        uploaded.width,
+      attachmentHeight:       uploaded.height,
+      attachmentSize:         uploaded.bytes,
+      attachmentFormat:       uploaded.format,
     }, pushBody);
   }
 

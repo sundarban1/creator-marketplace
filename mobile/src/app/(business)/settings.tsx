@@ -9,7 +9,6 @@ import {
   Keyboard,
   KeyboardAvoidingView,
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -151,7 +150,7 @@ function NavRow({ ionIcon, faIcon, ionIconColor, label, sub, value, badge, onPre
           <FontAwesome5 name={faIcon} size={16} color={danger ? C.error : iColor} />
         </View>
       ) : null}
-      <View style={{ flex: 1 }}>
+      <View style={sub ? styles.navTextColWithSub : styles.navTextCol}>
         <Text style={[styles.rowLabel, { color: danger ? C.error : C.text }]}>{label}</Text>
         {sub ? <Text style={[styles.rowSub, { color: C.textSecondary }]}>{sub}</Text> : null}
       </View>
@@ -2018,7 +2017,10 @@ export default function BusinessSettingsScreen() {
           </View>
         </LinearGradient>
 
-        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        {/* No `behavior` prop — the ScrollView's `automaticallyAdjustKeyboardInsets` already
+            handles iOS precisely on its own; stacking KeyboardAvoidingView's `padding` on top
+            of that double-compensates for the same keyboard, pushing content up too far. */}
+        <KeyboardAvoidingView style={{ flex: 1 }}>
         <ScrollView
           ref={scrollRef}
           style={styles.scroll}
@@ -2096,8 +2098,22 @@ const styles = StyleSheet.create({
 
   row: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 13, gap: 12 },
   rowIconNode: { width: 24, alignItems: 'center' },
-  rowLabel: { flex: 1, fontSize: 15, fontFamily: F.medium },
-  rowSub: { fontSize: 12, marginTop: 1, fontFamily: F.regular },
+  // `includeFontPadding: false` (Android only prop, harmless no-op on iOS) strips the extra
+  // vertical padding Android adds above/below custom-font glyphs by default — without it, a
+  // single-line label next to a precisely-centered icon box reads as vertically off-center
+  // even though the flex `alignItems: 'center'` math is correct.
+  // No `flex: 1` here — the wrapping navTextCol/navTextColWithSub View now owns that (see below),
+  // so this Text sizes to its natural content height and can be genuinely centered within it.
+  rowLabel: { fontSize: 15, lineHeight: 18, fontFamily: F.medium, includeFontPadding: false },
+  rowSub: { fontSize: 12, lineHeight: 15, marginTop: 1, fontFamily: F.regular, includeFontPadding: false },
+  // Single-line rows (no `sub`) get a fixed height matching navIonIconWrap (34) with its own
+  // `justifyContent: 'center'` — this centers the text against a box of the exact same known
+  // height as the icon, so the two are guaranteed pixel-aligned regardless of any font-metric
+  // quirks, rather than relying on the row's `alignItems: 'center'` measuring each child's own
+  // (font-metric-dependent) content height. Two-line rows (`sub` present) keep flexible height —
+  // there, centering the icon against the full label+sub block is the correct look, not a bug.
+  navTextCol: { flex: 1, height: 34, justifyContent: 'center' },
+  navTextColWithSub: { flex: 1 },
   navRight: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   navArrow: { fontSize: 18 },
   navValue: { fontSize: 14, fontFamily: F.regular },

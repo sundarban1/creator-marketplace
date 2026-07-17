@@ -6,7 +6,6 @@ import { BackButton } from '@/components/BackButton';
 import {
   Keyboard,
   KeyboardAvoidingView,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -175,8 +174,6 @@ export default function SubmitProposalScreen() {
     ? t('proposal.portfolioInvalidError')
     : undefined;
 
-  const hasErrors = !!coverError || !!rateError || !!portError;
-
   function handleRegenerate() {
     setCoverLetter(generateTemplate(category ?? '', campaignTitle ?? '', brand ?? ''));
   }
@@ -184,7 +181,6 @@ export default function SubmitProposalScreen() {
   async function handleSubmit() {
     setSubmitted(true);
     if (coverLetterLen < 50 || isRateInvalid || (portfolio.trim() && !isValidUrl(portfolio.trim()))) {
-      toast.warning(t('proposal.fixErrorsWarning'));
       return;
     }
 
@@ -223,7 +219,12 @@ export default function SubmitProposalScreen() {
         <View style={{ width: 40 }} />
       </LinearGradient>
 
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      {/* No `behavior` prop here — the ScrollView's `automaticallyAdjustKeyboardInsets`
+          already handles iOS precisely on its own (auto-scrolls whichever field is focused
+          just above the keyboard). Adding KeyboardAvoidingView's `padding` behavior on top of
+          that double-compensates for the same keyboard — that's what was producing the gap
+          between the submit button and the keyboard. */}
+      <KeyboardAvoidingView style={styles.flex}>
         <ScrollView
           ref={scrollRef}
           contentContainerStyle={styles.scroll}
@@ -334,15 +335,6 @@ export default function SubmitProposalScreen() {
               error={portError}
             />
 
-            {hasErrors && submitted && (
-              <View style={[styles.errorSummary, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}>
-                <Ionicons name="close-circle" size={16} color="#EF4444" />
-                <Text style={[styles.errorSummaryText, { color: '#EF4444', flex: 1 }]}>
-                  Please fix the errors above before submitting.
-                </Text>
-              </View>
-            )}
-
             <Button label={loading ? t('proposal.submitting') : t('proposal.submit')} onPress={handleSubmit} loading={loading} />
           </View>
         </ScrollView>
@@ -395,7 +387,4 @@ const styles = StyleSheet.create({
   fieldMeta:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 4 },
   fieldError:      { fontSize: 12, flex: 1, fontFamily: F.medium },
   charHint:        { fontSize: 11, fontFamily: F.regular },
-
-  errorSummary:    { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderRadius: RADIUS.sm, padding: 12 },
-  errorSummaryText:{ fontSize: 13, textAlign: 'center', fontFamily: F.medium },
 });

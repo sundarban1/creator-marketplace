@@ -8,7 +8,6 @@ import {
   Image,
   KeyboardAvoidingView,
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -1238,7 +1237,10 @@ export default function CreateCampaignScreen() {
         <View style={[s.progressFill, { width: phase === 'setup' ? '50%' : '100%', backgroundColor: C.brinjal1 }]} />
       </View>
 
-      <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      {/* No `behavior` prop — the ScrollView's `automaticallyAdjustKeyboardInsets` already
+          handles iOS precisely on its own; stacking KeyboardAvoidingView's `padding` on top
+          of that double-compensates for the same keyboard, pushing content up too far. */}
+      <KeyboardAvoidingView style={s.flex}>
         <ScrollView
           ref={scrollRef}
           contentContainerStyle={s.scroll}

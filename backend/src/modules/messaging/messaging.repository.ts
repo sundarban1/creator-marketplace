@@ -249,9 +249,15 @@ export class MessagingRepository {
     conversationId: string;
     senderId: string;
     content: string;
-    type?: 'TEXT' | 'IMAGE' | 'FILE';
+    type?: 'TEXT' | 'IMAGE' | 'FILE' | 'VIDEO';
     attachmentUrl?: string;
     attachmentName?: string;
+    attachmentThumbnailUrl?: string;
+    attachmentDurationSec?: number;
+    attachmentWidth?: number;
+    attachmentHeight?: number;
+    attachmentSize?: number;
+    attachmentFormat?: string;
   }) {
     const msg = await prisma.message.create({
       data,

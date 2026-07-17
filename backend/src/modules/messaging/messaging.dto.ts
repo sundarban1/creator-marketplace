@@ -3,9 +3,15 @@ export interface MessageDto {
   conversationId: string;
   senderId: string;
   content: string;
-  type: 'TEXT' | 'IMAGE' | 'FILE';
+  type: 'TEXT' | 'IMAGE' | 'FILE' | 'VIDEO';
   attachmentUrl: string | null;
   attachmentName: string | null;
+  attachmentThumbnailUrl: string | null;
+  attachmentDurationSec: number | null;
+  attachmentWidth: number | null;
+  attachmentHeight: number | null;
+  attachmentSize: number | null;
+  attachmentFormat: string | null;
   createdAt: string;
   isDeleted?: boolean;
   sender?: { id: string; email: string; role: string };
@@ -37,9 +43,15 @@ type RawMessage = {
   conversationId: string;
   senderId: string;
   content: string;
-  type: 'TEXT' | 'IMAGE' | 'FILE';
+  type: 'TEXT' | 'IMAGE' | 'FILE' | 'VIDEO';
   attachmentUrl: string | null;
   attachmentName: string | null;
+  attachmentThumbnailUrl?: string | null;
+  attachmentDurationSec?: number | null;
+  attachmentWidth?: number | null;
+  attachmentHeight?: number | null;
+  attachmentSize?: number | null;
+  attachmentFormat?: string | null;
   createdAt: Date;
   deletedAt?: Date | null;
   sender?: { id: string; email: string; role: string };
@@ -55,6 +67,12 @@ export function toMessageDto(m: RawMessage): MessageDto {
     type:           m.type,
     attachmentUrl:  isDeleted ? null : m.attachmentUrl,
     attachmentName: isDeleted ? null : m.attachmentName,
+    attachmentThumbnailUrl: isDeleted ? null : (m.attachmentThumbnailUrl ?? null),
+    attachmentDurationSec:  isDeleted ? null : (m.attachmentDurationSec ?? null),
+    attachmentWidth:        isDeleted ? null : (m.attachmentWidth ?? null),
+    attachmentHeight:       isDeleted ? null : (m.attachmentHeight ?? null),
+    attachmentSize:         isDeleted ? null : (m.attachmentSize ?? null),
+    attachmentFormat:       isDeleted ? null : (m.attachmentFormat ?? null),
     createdAt:      m.createdAt.toISOString(),
   };
   if (isDeleted) dto.isDeleted = true;
