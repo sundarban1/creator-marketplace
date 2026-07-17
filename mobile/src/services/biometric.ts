@@ -24,13 +24,22 @@ export async function getBiometricLabel(): Promise<BiometricLabel> {
   return 'Biometrics';
 }
 
-export async function authenticate(promptMessage: string): Promise<boolean> {
-  const result = await LocalAuthentication.authenticateAsync({
+// Dedupe concurrent calls so overlapping triggers (e.g. BiometricGateScreen's
+// auto-unlock-on-mount racing a tap on the still-visible "Unlock" button before
+// React re-renders with checking=true) never open a second native prompt on top
+// of the first — that's what shows up as Face ID/fingerprint asking repeatedly.
+let inFlight: Promise<boolean> | null = null;
+
+export function authenticate(promptMessage: string): Promise<boolean> {
+  if (inFlight) return inFlight;
+  inFlight = LocalAuthentication.authenticateAsync({
     promptMessage,
     cancelLabel: 'Use password instead',
     disableDeviceFallback: false,
-  });
-  return result.success;
+  })
+    .then((result) => result.success)
+    .finally(() => { inFlight = null; });
+  return inFlight;
 }
 
 export function isBiometricLoginEnabled(): boolean {

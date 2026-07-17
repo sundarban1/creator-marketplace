@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FontAwesome5 } from '@expo/vector-icons';
@@ -20,11 +20,17 @@ export function BiometricGateScreen({ onUnlock }: Props) {
   const [label, setLabel] = useState<BiometricLabel>('Biometrics');
   const [checking, setChecking] = useState(false);
   const [failed, setFailed] = useState(false);
+  // Synchronous guard — `checking` alone isn't enough since the button stays
+  // visible/tappable until the next render actually applies setChecking(true).
+  const inProgressRef = useRef(false);
 
   async function tryUnlock() {
+    if (inProgressRef.current) return;
+    inProgressRef.current = true;
     setChecking(true);
     setFailed(false);
     const ok = await authenticate(`Unlock kolab${user?.name ? ` — ${user.name}` : ''}`);
+    inProgressRef.current = false;
     setChecking(false);
     if (ok) onUnlock();
     else setFailed(true);

@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { LandingLanguageProvider, useLandingLanguage } from './context/LanguageContext';
 import { LandingFooter } from './nav/LandingFooter';
@@ -30,6 +31,13 @@ function StandaloneHeader() {
 }
 
 function StandalonePageShellInner({ children }: { children: React.ReactNode }) {
+  // These pages are entered via in-app <Link> navigation from a scrolled-down
+  // landing page — React Router doesn't reset scroll position on its own, so
+  // without this the new page opens wherever the user had scrolled to.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   return (
     <div className="min-h-screen bg-paper font-display">
       <StandaloneHeader />
