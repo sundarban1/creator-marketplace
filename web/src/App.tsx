@@ -6,6 +6,8 @@ import { NotificationProvider } from './context/NotificationContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { DashboardLayout } from './layouts/DashboardLayout';
 import { LandingPage } from './pages/landing/LandingPage';
+import { PrivacyPage, TermsPage } from './pages/landing/LegalDocPage';
+import { SupportPage } from './pages/landing/SupportPage';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
 import { Users } from './pages/Users';
@@ -52,6 +54,9 @@ export default function App() {
       <AuthProvider>
         <Routes>
           <Route path="/" element={<LandingPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/support" element={<SupportPage />} />
           <Route path="/admin" element={<Navigate to="/dashboard" replace />} />
           <Route path="/login" element={<Login />} />
           <Route element={<ProtectedRoute />}>

@@ -144,6 +144,25 @@ export const en = {
       errorMessageTooShort: 'Message must be at least 10 characters.',
     },
   },
+
+  legalPages: {
+    backToHome: '← Back to home',
+    lastUpdated: 'Last updated {{date}}',
+    privacyTitle: 'Privacy Policy',
+    termsTitle: 'Terms of Service',
+    emptyTitle: 'Content coming soon',
+    emptyBody: "This page hasn't been published yet. Check back soon.",
+    loadError: "Couldn't load this page. Please try again.",
+  },
+
+  supportPage: {
+    title: 'Support',
+    subtitle: 'Answers to common questions, and a direct line to us if you need more.',
+    faqHeading: 'Frequently asked questions',
+    faqEmpty: "No FAQs published yet — reach out below and we'll help directly.",
+    contactHeading: 'Still need help?',
+    contactSub: "Send us a message and we'll get back to you.",
+  },
 };
 
 export type LandingDict = typeof en;

@@ -703,6 +703,10 @@ export const api = {
       request<LandingStats>('GET', '/api/public/landing-stats'),
     comingSoon: () =>
       request<{ comingSoon: boolean }>('GET', '/api/public/coming-soon'),
+    legalDoc: (slug: 'privacy-policy' | 'terms' | 'guidelines') =>
+      request<{ sections: LegalSection[]; lastUpdated: string | null }>('GET', `/api/legal/${slug}`),
+    faqs: () =>
+      request<HelpArticle[]>('GET', '/api/faq'),
   },
 
   visitorChat: {
