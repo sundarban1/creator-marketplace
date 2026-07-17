@@ -4,12 +4,15 @@ import { fadeUp, scaleIn, stagger } from '../lib/motion';
 import { SECTION_IDS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
 import { AppStoreBadges } from '../components/AppStoreBadges';
+import { ComingSoonBadge } from '../components/ComingSoonBadge';
 import { PhoneShowcase } from '../components/PhoneShowcase';
 import { useLenisScroll } from '../hooks/useLenis';
+import { useComingSoon } from '../hooks/useComingSoon';
 
 export function Hero() {
   const { d } = useLandingLanguage();
   const { scrollTo } = useLenisScroll();
+  const comingSoon = useComingSoon();
 
   return (
     <section id={SECTION_IDS.hero} className="relative overflow-hidden bg-paper pt-44 pb-28">
@@ -50,7 +53,7 @@ export function Hero() {
             </motion.p>
 
             <motion.div variants={fadeUp} className="mt-10 flex justify-center lg:justify-start">
-              <AppStoreBadges />
+              {comingSoon ? <ComingSoonBadge /> : <AppStoreBadges />}
             </motion.div>
           </motion.div>
 

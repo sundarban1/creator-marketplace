@@ -701,6 +701,8 @@ export const api = {
   public: {
     landingStats: () =>
       request<LandingStats>('GET', '/api/public/landing-stats'),
+    comingSoon: () =>
+      request<{ comingSoon: boolean }>('GET', '/api/public/coming-soon'),
   },
 
   visitorChat: {

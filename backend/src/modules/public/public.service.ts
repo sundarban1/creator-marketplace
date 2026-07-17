@@ -10,4 +10,8 @@ export class PublicService {
   async getLandingStats() {
     return this.repo.getLandingStats();
   }
+
+  async getComingSoon() {
+    return this.repo.getComingSoon();
+  }
 }

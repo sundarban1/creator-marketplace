@@ -13,4 +13,13 @@ export class PublicController {
       next(err);
     }
   }
+
+  async comingSoon(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const comingSoon = await publicService.getComingSoon();
+      success(res, { comingSoon }, 'Coming soon status retrieved');
+    } catch (err) {
+      next(err);
+    }
+  }
 }

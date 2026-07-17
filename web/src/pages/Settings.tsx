@@ -81,6 +81,7 @@ function InputField({
 // ── Default settings ───────────────────────────────────────────────────────────
 
 const DEFAULTS: PlatformSettings = {
+  'platform.comingSoon':         false,
   'registration.enabled':        true,
   'creator.onboarding':          true,
   'business.onboarding':         true,
@@ -213,6 +214,7 @@ export function Settings() {
 
         {/* Platform */}
         <SectionCard title="Platform Settings" subtitle="Core controls for registration and onboarding">
+          <Toggle label="Coming Soon Mode"      description="Hide the App Store / Google Play download buttons on the public landing page and show a Coming Soon badge instead" value={bool('platform.comingSoon')} onChange={(v) => toggle('platform.comingSoon', v)} />
           <Toggle label="User Registration"     description="Allow new users to sign up on the platform"                      value={bool('registration.enabled')}  onChange={(v) => toggle('registration.enabled', v)} />
           <Toggle label="Creator Onboarding"    description="Enable the creator onboarding flow for new users"                value={bool('creator.onboarding')}    onChange={(v) => toggle('creator.onboarding', v)} />
           <Toggle label="Business Onboarding"   description="Enable business registration and onboarding"                     value={bool('business.onboarding')}   onChange={(v) => toggle('business.onboarding', v)} />

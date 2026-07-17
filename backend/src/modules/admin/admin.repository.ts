@@ -4,6 +4,7 @@ import prisma from '../../prisma';
 // ── Default platform settings ──────────────────────────────────────────────────
 
 const DEFAULTS: Record<string, unknown> = {
+  'platform.comingSoon':           false,
   'registration.enabled':          true,
   'creator.onboarding':            true,
   'business.onboarding':           true,

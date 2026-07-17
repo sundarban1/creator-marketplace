@@ -14,4 +14,10 @@ export class PublicRepository {
     ]);
     return { totalCreators, totalBusinesses, categories };
   }
+
+  async getComingSoon(): Promise<boolean> {
+    const row = await prisma.platformSetting.findUnique({ where: { key: 'platform.comingSoon' } });
+    if (!row) return false;
+    try { return JSON.parse(row.value) === true; } catch { return false; }
+  }
 }

@@ -2,10 +2,13 @@ import { motion } from 'framer-motion';
 import { fadeUp, stagger, VP } from '../lib/motion';
 import { useLandingLanguage } from '../context/LanguageContext';
 import { AppStoreBadges } from '../components/AppStoreBadges';
+import { ComingSoonBadge } from '../components/ComingSoonBadge';
 import { SectionWave } from '../components/SectionWave';
+import { useComingSoon } from '../hooks/useComingSoon';
 
 export function FinalCTA() {
   const { d } = useLandingLanguage();
+  const comingSoon = useComingSoon();
 
   return (
     <section className="relative overflow-hidden bg-ink py-32 text-white">
@@ -23,7 +26,7 @@ export function FinalCTA() {
             {d.finalCta.sub}
           </motion.p>
           <motion.div variants={fadeUp} className="mt-11">
-            <AppStoreBadges variant="light" />
+            {comingSoon ? <ComingSoonBadge variant="light" /> : <AppStoreBadges variant="light" />}
           </motion.div>
         </motion.div>
       </div>
