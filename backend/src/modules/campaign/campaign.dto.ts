@@ -80,6 +80,7 @@ export interface ApplicationDto {
     campaignType?: string;
     paymentStatus?: string;
     paidAt?: string | null;
+    featureImageUrl?: string | null;
     business?: { id?: string; businessName: string | null; logoUrl: string | null };
   } | null;
   creator?: {
@@ -218,6 +219,7 @@ type RawApplication = {
     campaignType?: string;
     paymentStatus?: string;
     paidAt?: Date | null;
+    featureImageUrl?: string | null;
     business?: { id?: string; businessName: string | null; logoUrl: string | null };
   } | null;
   creator?: {

@@ -10,7 +10,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useDrawer } from '@/context/DrawerContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
-import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { GRADIENTS, F, RADIUS, SHADOW } from '@/utilities/constants';
 import { isValidNepaliPhone } from '@/utilities/phone';
 import { campaignService } from '@/services/campaign';
 import { useNotificationBadge } from '@/context/NotificationContext';
@@ -18,6 +18,7 @@ import { notificationService } from '@/services/notifications';
 import { profileService } from '@/services/profile';
 import type { Campaign } from '@/types';
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
+import { getTemplateImage } from '@/features/creator/data/templateImages';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { TabColors } from '@/utilities/tabColors';
 
@@ -139,7 +140,7 @@ export default function BusinessHomeScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#7c3aed" />}>
 
         {/* ── Gradient header ── */}
-        <LinearGradient colors={['#1e1b4b', '#4338ca', '#7c3aed']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.gradientHeader}>
+        <LinearGradient colors={GRADIENTS.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.gradientHeader}>
 
           {/* Menu · Greeting · Avatar */}
           <View style={styles.header}>
@@ -193,7 +194,7 @@ export default function BusinessHomeScreen() {
         <View style={styles.quickActionsRow}>
           {([
             { icon: 'add-circle-outline' as const,  label: t('business.home.quickActionCreate'),    bg: '#EDE9FE', color: '#7C3AED', route: '/create-campaign' },
-            { icon: 'document-text-outline' as const, label: t('business.home.quickActionProposals'), bg: '#DCFCE7', color: '#059669', route: '/(business)/proposals' },
+            { icon: 'people-outline' as const,       label: t('business.home.quickActionCreators'),      bg: '#DCFCE7', color: '#059669', route: '/(business)/explore-creators' },
             { icon: 'chatbubbles-outline'as const,  label: t('business.home.quickActionMessages'),  bg: '#DBEAFE', color: '#2563EB', route: '/(business)/messages' },
             { icon: 'briefcase-outline'  as const,  label: t('business.home.quickActionEvents'),    bg: '#FEF3C7', color: '#D97706', route: '/(business)/campaigns' },
           ]).map(({ icon, label, bg, color, route }) => (
@@ -255,17 +256,6 @@ export default function BusinessHomeScreen() {
           </View>
         ) : null}
 
-        {/* ── Find creators banner ── */}
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.findBanner} onPress={() => router.push('/(business)/explore-creators')}>
-          <View style={styles.findIconWrap}>
-            <Ionicons name="people-outline" size={22} color="#059669" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.findTitle, { color: '#059669' }]}>{t('business.home.exploreCreators')}</Text>
-            <Text style={[styles.findSub, { color: '#059669' }]}>{t('business.home.exploreCreatorsSub')}</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={18} color="#059669" />
-        </Pressable>
 
         {/* ── Refer a business banner ── */}
         {!referralBannerDismissed && (
@@ -320,6 +310,7 @@ export default function BusinessHomeScreen() {
             {recent.map((c) => {
               const meta = getCategoryMeta(allCategories, c.categoryKey ?? c.category);
               const st = STATUS_STYLE[c.status ?? 'draft'] ?? STATUS_STYLE.draft;
+              const cardImage = c.featureImageUrl ?? getTemplateImage(c.template, c.categoryKey ?? c.category);
               return (
                 <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                   key={c.id}
@@ -327,6 +318,9 @@ export default function BusinessHomeScreen() {
                   onPress={() => router.push({ pathname: '/campaign-detail', params: { campaignId: c.id } })}>
                   <View style={[styles.thumb, { backgroundColor: meta.bg }]}>
                     <FontAwesome5 name={meta.icon} size={20} color={meta.color} />
+                    {cardImage && (
+                      <Image source={{ uri: cardImage }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+                    )}
                   </View>
                   <View style={styles.campaignBody}>
                     <View style={styles.campaignTitleRow}>
@@ -414,12 +408,6 @@ const styles = StyleSheet.create({
   errorText: { color: '#DC2626', fontSize: 13, flex: 1, fontFamily: F.medium },
   retryText: { fontSize: 13, marginLeft: 12, fontFamily: F.bold },
 
-  // Find banner
-  findBanner: { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.lg, marginHorizontal: 20, marginTop: 14, marginBottom: 4, paddingHorizontal: 16, paddingVertical: 14, gap: 12, backgroundColor: '#F0FDF4', borderWidth: 1, borderColor: '#BBF7D0' },
-  findIconWrap: { width: 38, height: 38, borderRadius: RADIUS.md, backgroundColor: '#D1FAE5', justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
-  findTitle: { fontSize: 14, fontFamily: F.bold },
-  findSub:   { fontSize: 11, fontFamily: F.regular, marginTop: 1 },
-
   // Type filter
   typeFilterWrap: { marginBottom: 12, ...SHADOW.card },
 
@@ -433,7 +421,7 @@ const styles = StyleSheet.create({
 
   campaignList: { paddingHorizontal: 20, gap: 12 },
   campaignCard: { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.md, padding: 14, gap: 12, ...SHADOW.card, overflow: 'hidden' },
-  thumb: { width: 72, height: 72, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  thumb: { width: 72, height: 72, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center', flexShrink: 0, overflow: 'hidden' },
   campaignBody: { flex: 1, gap: 5 },
   campaignTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
   campaignTitle: { fontSize: 14, flex: 1, fontFamily: F.bold },

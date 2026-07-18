@@ -22,11 +22,11 @@ import { campaignService } from '@/services/campaign';
 import { profileService } from '@/services/profile';
 import { useCategories } from '@/hooks/useCategories';
 import { usePlatforms } from '@/hooks/usePlatforms';
-import { getTemplateImage, DEFAULT_TEMPLATE_IMAGE } from '@/features/creator/data/templateImages';
+import { FeatureImagePicker } from '@/features/creator/components/FeatureImagePicker';
 import { PlacesAutocompleteInput, type PlacePrediction } from '@/components/PlacesAutocompleteInput';
 import { pickAndUpload } from '@/utilities/uploadImage';
 import { RecommendedCreatorsModal } from '@/features/business/components/RecommendedCreatorsModal';
-import { F, RADIUS, SHADOW, buildPlaceDetailsUrl } from '@/utilities/constants';
+import { GRADIENTS, F, RADIUS, SHADOW, buildPlaceDetailsUrl } from '@/utilities/constants';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -762,51 +762,6 @@ function SectionCard({ title, sub, children, colors }: {
 
 // ─── FeatureImagePicker ───────────────────────────────────────────────────────
 
-function FeatureImagePicker({ imageUrl, category, uploading, onPick, onClear, colors }: {
-  imageUrl: string | null; category: string; uploading: boolean; onPick: () => void; onClear: () => void;
-  colors: ReturnType<typeof useAppColors>;
-}) {
-  const C = colors;
-  const previewImage = imageUrl ?? getTemplateImage(category, category) ?? DEFAULT_TEMPLATE_IMAGE;
-
-  return (
-    <View style={fi.wrap}>
-      <View style={fi.preview}>
-        <Image source={{ uri: previewImage }} style={StyleSheet.absoluteFill} resizeMode="cover" />
-        {imageUrl && (
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} hitSlop={8} style={[fi.clearBtn, { opacity: uploading ? 0.5 : 1 }]} onPress={onClear} disabled={uploading}>
-            <Ionicons name="close" size={16} color="#fff" />
-          </Pressable>
-        )}
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-          hitSlop={8}
-          style={[fi.cameraBtn, { backgroundColor: C.brinjal1, opacity: uploading ? 0.7 : 1 }]}
-          onPress={onPick}
-          disabled={uploading}>
-          {uploading
-            ? <ActivityIndicator size="small" color="#fff" />
-            : <FontAwesome5 name="camera" size={14} color="#fff" solid />}
-        </Pressable>
-      </View>
-    </View>
-  );
-}
-
-const fi = StyleSheet.create({
-  wrap:    { alignItems: 'center' },
-  preview: { width: '100%', aspectRatio: 16 / 9, borderRadius: RADIUS.md, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' },
-  cameraBtn: {
-    position: 'absolute', bottom: 10, right: 10,
-    width: 36, height: 36, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center',
-    ...SHADOW.raised,
-  },
-  clearBtn: {
-    position: 'absolute', top: 10, right: 10,
-    width: 28, height: 28, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center',
-    backgroundColor: 'rgba(17,24,39,0.65)',
-  },
-});
-
 const sc = StyleSheet.create({
   card:  { borderRadius: RADIUS.lg, padding: 16, gap: 10, ...SHADOW.card },
   title: { fontSize: 14, fontFamily: F.bold },
@@ -1217,7 +1172,7 @@ export default function CreateCampaignScreen() {
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
 
       {/* Header */}
-      <LinearGradient colors={['#1e1b4b', '#4338ca', '#7c3aed']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.header}>
+      <LinearGradient colors={GRADIENTS.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.header}>
         <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
           onPress={() => phase === 'review' ? setPhase('setup') : (router.canGoBack() ? router.back() : router.replace('/(business)/'))}
           style={[s.backBtn, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>

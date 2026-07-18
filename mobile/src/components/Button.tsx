@@ -1,5 +1,4 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppColors } from '@/context/ThemeContext';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
@@ -33,23 +32,18 @@ export function Button({
         disabled={isDisabled}
         style={({ pressed }) => [
           styles.base,
+          styles.primaryBtn,
           fullWidth && styles.fullWidth,
-          { opacity: isDisabled ? 0.55 : pressed ? 0.88 : 1 },
+          { backgroundColor: C.brinjal1, opacity: isDisabled ? 0.55 : pressed ? 0.88 : 1 },
         ]}>
-        <LinearGradient
-          colors={[C.brinjal1, '#7C3AED']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.gradient}>
-          {loading ? (
-            <ActivityIndicator color="#fff" size="small" />
-          ) : (
-            <View style={styles.inner}>
-              {icon && <Ionicons name={icon} size={17} color="#fff" />}
-              <Text style={[styles.labelPrimary, { fontFamily: F.bold }]}>{label}</Text>
-            </View>
-          )}
-        </LinearGradient>
+        {loading ? (
+          <ActivityIndicator color="#fff" size="small" />
+        ) : (
+          <View style={styles.inner}>
+            {icon && <Ionicons name={icon} size={17} color="#fff" />}
+            <Text style={[styles.labelPrimary, { fontFamily: F.bold }]}>{label}</Text>
+          </View>
+        )}
       </Pressable>
     );
   }
@@ -119,9 +113,9 @@ export function Button({
 }
 
 const styles = StyleSheet.create({
-  base:        { borderRadius: RADIUS.md, overflow: 'hidden' },
+  base:        { borderRadius: RADIUS.full, overflow: 'hidden' },
   fullWidth:   { alignSelf: 'stretch' },
-  gradient:    { height: 54, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 26, ...SHADOW.raised },
+  primaryBtn:  { height: 54, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 26, ...SHADOW.raised },
   inner:       { flexDirection: 'row', alignItems: 'center', gap: 8 },
   secondaryBtn:{ height: 54, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 26 },
   dangerBtn:   { height: 54, borderWidth: 1.5, borderColor: '#EF4444', backgroundColor: '#FEF2F2', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 26 },

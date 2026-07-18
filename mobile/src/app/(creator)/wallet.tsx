@@ -12,7 +12,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/components/Toast';
 import { walletService, type ApiWalletSummary, type ApiWithdrawal } from '@/services/wallet';
 import { WithdrawModal } from '@/features/creator/components/WithdrawModal';
-import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { GRADIENTS, F, RADIUS, SHADOW } from '@/utilities/constants';
 
 const METHOD_META: Record<string, { icon: string; color: string }> = {
   esewa:   { icon: 'wallet', color: '#60BB46' },
@@ -55,7 +55,7 @@ export default function WalletScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
-      <LinearGradient colors={['#312e81', '#4f46e5', '#8b5cf6']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.gradientTopBar}>
+      <LinearGradient colors={GRADIENTS.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.gradientTopBar}>
         <View style={styles.topBar}>
           <BackButton fallback="/(creator)/" />
           <Text style={[styles.topTitle, { color: '#fff' }]}>{t('wallet.headerTitle')}</Text>

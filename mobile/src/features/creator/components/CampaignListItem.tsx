@@ -1,9 +1,11 @@
 import { router } from 'expo-router';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage, type TFn } from '@/context/LanguageContext';
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
+import { getTemplateImage } from '@/features/creator/data/templateImages';
 import type { Campaign } from '@/types';
 import { F } from '@/utilities/constants';
 
@@ -41,6 +43,7 @@ export function CampaignListItem({ campaign }: { campaign: Campaign }) {
   const { t } = useLanguage();
   const { categories } = useAllCategories();
   const catMeta = getCategoryMeta(categories, campaign.categoryKey ?? campaign.category);
+  const cardImage = campaign.featureImageUrl ?? getTemplateImage(campaign.template, campaign.categoryKey ?? campaign.category);
 
   function goToDetail() {
     router.push({ pathname: '/campaign-detail', params: { campaignId: campaign.id } });
@@ -55,6 +58,9 @@ export function CampaignListItem({ campaign }: { campaign: Campaign }) {
       <View style={styles.thumbWrap}>
         <View style={[styles.listThumb, { backgroundColor: catMeta.bg }]}>
           <FontAwesome5 name={catMeta.icon} size={22} color={catMeta.color} />
+          {cardImage && (
+            <Image source={{ uri: cardImage }} style={StyleSheet.absoluteFill} contentFit="cover" />
+          )}
         </View>
         {campaign.campaignType === 'OPEN_EVENT' ? (
           <View style={[styles.typeBadge, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}>

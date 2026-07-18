@@ -44,22 +44,20 @@ const LANG_OPTIONS: { lang: Lang; flag: string }[] = [
   { lang: 'ne', flag: '🇳🇵' },
 ];
 
-const P1 = '#4C1D95';
-const P2 = '#6D28D9';
-const P3 = '#7C3AED';
-
-// The screen's full-bleed background is a solid brinjal wash (the app's brand
-// indigo) rather than the old violet aurora — light/white text and translucent
-// white surfaces sit on top of it for contrast, same structure as before, just
-// re-keyed to brinjal.
-const BRINJAL       = '#4F46E5';
-const BRINJAL_LIGHT = '#6D63EB';
-const BRINJAL_DARK  = '#3730A3';
+// Soft pastel wash + card-less, minimal-border layout (per the reference design) —
+// brinjal/orange stay the brand accents (logo badge, active tab, button glow,
+// highlight word) rather than covering the whole screen the way the old solid
+// aurora did.
+const BRINJAL      = '#4F46E5';
+const BRINJAL_PALE = '#EDEBFC';
+const ORANGE       = '#ED651C';
+const TEXT_DARK     = '#221E3A';
+const MUTED         = '#8B87A8';
 
 // Content-creator/brand iconography scattered across the gradient background — random
 // per-icon opacity (computed once at module load, so it's stable across re-renders
 // rather than flickering) gives the scatter a less mechanical, hand-placed feel.
-function scatterOpacity() { return Math.round((Math.random() * 0.14 + 0.08) * 100) / 100; }
+function scatterOpacity() { return Math.round((Math.random() * 0.07 + 0.05) * 100) / 100; }
 
 const BG_ICONS: { name: string; size: number; rotate: string; style: object; opacity: number }[] = [
   { name: 'camera',           size: 30, rotate: '-14deg', style: { top: 10,  left: '6%'  }, opacity: scatterOpacity() },
@@ -105,26 +103,11 @@ function getPwErrorKey(p: string): string | undefined {
 }
 
 // ── Headline highlight word ───────────────────────────────────────────────────
-// Solid orange fill, set inside a soft translucent-white pill so it pops
-// against the solid brinjal page background.
-function GradientHighlight({ text, style }: { text: string; style: any }) {
-  return (
-    <View style={gh.pill}>
-      <Text style={[style, gh.text]}>{text}</Text>
-    </View>
-  );
+// Solid fill in a given accent color — no background of its own, since the
+// whole tagline now sits inside one shared white pill (see heroTaglinePill).
+function GradientHighlight({ text, style, color }: { text: string; style: any; color: string }) {
+  return <Text style={[style, { color }]}>{text}</Text>;
 }
-
-const gh = StyleSheet.create({
-  pill: {
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    borderRadius: RADIUS.md,
-    paddingLeft: 9,
-    paddingRight: 11,
-    paddingVertical: 1,
-  },
-  text: { color: '#FFAD33' },
-});
 
 // ── Input field ───────────────────────────────────────────────────────────────
 
@@ -150,7 +133,7 @@ function Field({
   const shadow = anim.interpolate({ inputRange: [0, 1], outputRange: [0, 1] });
   const border = anim.interpolate({
     inputRange:  [0, 1],
-    outputRange: [error ? '#FECACA' : '#E8E0F8', error ? '#EF4444' : P2],
+    outputRange: [error ? '#FECACA' : '#E8E0F8', error ? '#EF4444' : BRINJAL],
   });
 
   return (
@@ -164,8 +147,8 @@ function Field({
         { borderColor: border },
         focused && s.fieldFocused,
       ]}>
-        <View style={[s.fieldIconWrap, { backgroundColor: focused ? `${P2}15` : '#F3F4F6' }]}>
-          <Ionicons name={icon} size={16} color={focused ? P2 : '#9CA3AF'} />
+        <View style={[s.fieldIconWrap, { backgroundColor: focused ? `${BRINJAL}15` : '#F3F4F6' }]}>
+          <Ionicons name={icon} size={16} color={focused ? BRINJAL : '#9CA3AF'} />
         </View>
         <TextInput
           style={s.fieldInput}
@@ -186,7 +169,7 @@ function Field({
         />
         {secureTextEntry && (
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => setHidden(h => !h)} hitSlop={10} style={s.eyeBtn}>
-            <Ionicons name={hidden ? 'eye-outline' : 'eye-off-outline'} size={18} color={focused ? P2 : '#9CA3AF'} />
+            <Ionicons name={hidden ? 'eye-outline' : 'eye-off-outline'} size={18} color={focused ? BRINJAL : '#9CA3AF'} />
           </Pressable>
         )}
       </Animated.View>
@@ -328,28 +311,28 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
           placeholder={t('auth.login.passwordEnterPlaceholder')} secureTextEntry error={pwErr}
           rightSlot={
             <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => router.push('/forgot-password')}>
-              <Text style={[s.forgotText, { color: P2 }]}>{t('auth.login.forgotPassword')}</Text>
+              <Text style={s.forgotText}>{t('auth.login.forgotPassword')}</Text>
             </Pressable>
           }
         />
       </View>
 
       <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={s.rememberRow} onPress={() => setRememberMe((v) => !v)} hitSlop={8}>
-        <Ionicons name={rememberMe ? 'checkbox' : 'square-outline'} size={19} color={rememberMe ? P2 : '#9CA3AF'} />
+        <Ionicons name={rememberMe ? 'checkbox' : 'square-outline'} size={19} color={rememberMe ? BRINJAL : '#9CA3AF'} />
         <Text style={s.rememberText}>{t('auth.login.rememberMe')}</Text>
       </Pressable>
 
       <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
         onPress={handleLogin} disabled={loading}
         style={({ pressed }) => [s.primaryBtnWrap, { opacity: pressed ? 0.92 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] }]}>
-        <LinearGradient colors={[P3, P1]} style={s.primaryBtn} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
+        <View style={[s.primaryBtn, { backgroundColor: BRINJAL }]}>
           {loading
             ? <Ionicons name="sync" size={18} color="#fff" />
             : <>
                 <Text style={s.primaryBtnText}>{t('auth.login.loginBtn')}</Text>
                 <Ionicons name="arrow-forward" size={16} color="rgba(255,255,255,0.8)" />
               </>}
-        </LinearGradient>
+        </View>
       </Pressable>
 
       {biometricReady && (
@@ -362,7 +345,7 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
           onPress={handleBiometricLogin} disabled={biometricLoading}>
           {biometricLoading
             ? <View style={s.spinner} />
-            : <FontAwesome5 name={biometricLabel === 'Face ID' ? 'smile' : 'fingerprint'} size={17} color={P2} />}
+            : <FontAwesome5 name={biometricLabel === 'Face ID' ? 'smile' : 'fingerprint'} size={17} color={BRINJAL} />}
           <Text style={s.socialBtnText}>
             {biometricLoading ? t('auth.login.signingIn') : t('auth.login.biometricLoginBtn', { biometricLabel })}
           </Text>
@@ -560,14 +543,14 @@ function SignupForm({ onGooglePress, googleLoading, googleError, onFacebookPress
       <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
         onPress={handleCreate} disabled={loading}
         style={({ pressed }) => [s.primaryBtnWrap, { opacity: pressed ? 0.92 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] }]}>
-        <LinearGradient colors={[P3, P1]} style={s.primaryBtn} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
+        <View style={[s.primaryBtn, { backgroundColor: BRINJAL }]}>
           {loading
             ? <Ionicons name="sync" size={18} color="#fff" />
             : <>
                 <Text style={s.primaryBtnText}>{t('auth.signup.createAccountBtn')}</Text>
                 <Ionicons name="arrow-forward" size={16} color="rgba(255,255,255,0.8)" />
               </>}
-        </LinearGradient>
+        </View>
       </Pressable>
 
       <View style={s.divider}>
@@ -610,9 +593,9 @@ function SignupForm({ onGooglePress, googleLoading, googleError, onFacebookPress
 
       <Text style={s.terms}>
         {t('auth.signup.termsPrefix')}{' '}
-        <Text style={{ color: P2, fontFamily: F.semibold }} onPress={() => router.push('/legal?type=terms' as never)}>{t('auth.signup.termsLink')}</Text>
+        <Text style={{ color: BRINJAL, fontFamily: F.semibold }} onPress={() => router.push('/legal?type=terms' as never)}>{t('auth.signup.termsLink')}</Text>
         {' '}{t('auth.signup.termsAnd')}{' '}
-        <Text style={{ color: P2, fontFamily: F.semibold }} onPress={() => router.push('/legal?type=privacy-policy' as never)}>{t('auth.signup.privacyLink')}</Text>.
+        <Text style={{ color: BRINJAL, fontFamily: F.semibold }} onPress={() => router.push('/legal?type=privacy-policy' as never)}>{t('auth.signup.privacyLink')}</Text>.
       </Text>
     </View>
   );
@@ -639,9 +622,9 @@ export default function LoginScreen() {
     return (
       <>
         <Text style={s.heroTagline}>{t('auth.login.heroTaglinePrefix')}</Text>
-        <GradientHighlight text={t('auth.login.heroTaglineBrands')} style={s.heroTaglineHighlight} />
+        <GradientHighlight text={t('auth.login.heroTaglineBrands')} style={s.heroTaglineHighlight} color={BRINJAL} />
         <Text style={s.heroTagline}>{t('auth.login.heroTaglineMiddle')}</Text>
-        <GradientHighlight text={t('auth.login.heroTaglineCreators')} style={s.heroTaglineHighlight} />
+        <GradientHighlight text={t('auth.login.heroTaglineCreators')} style={s.heroTaglineHighlight} color={ORANGE} />
         {!!t('auth.login.heroTaglineSuffix') && (
           <Text style={s.heroTagline}>{t('auth.login.heroTaglineSuffix')}</Text>
         )}
@@ -825,10 +808,11 @@ export default function LoginScreen() {
 
   return (
     <View style={s.root}>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
 
-      {/* Full-bleed brinjal gradient — the whole screen is the "aurora", not just a top strip */}
-      <LinearGradient colors={[BRINJAL_LIGHT, BRINJAL, BRINJAL_DARK]} style={StyleSheet.absoluteFill} start={{ x: 0.1, y: 0 }} end={{ x: 0.85, y: 1 }} pointerEvents="none" />
+      {/* Soft pastel wash (brinjal → white → warm peach) instead of a bold
+          full-bleed color — the reference's light, airy feel. */}
+      <LinearGradient colors={[BRINJAL_PALE, '#FAF9FF', '#FFF3E6']} style={StyleSheet.absoluteFill} start={{ x: 0.1, y: 0 }} end={{ x: 0.85, y: 1 }} pointerEvents="none" />
       <View style={s.auroraLayer} pointerEvents="none">
         <View style={[s.auroraBlob, s.auroraBlobA]} />
         <View style={[s.auroraBlob, s.auroraBlobB]} />
@@ -838,7 +822,7 @@ export default function LoginScreen() {
             key={i}
             name={icon.name as any}
             size={icon.size}
-            color="#ffffff"
+            color={BRINJAL}
             style={[s.bgIcon, icon.style, { opacity: icon.opacity, transform: [{ rotate: icon.rotate }] }]}
           />
         ))}
@@ -863,15 +847,11 @@ export default function LoginScreen() {
             ))}
           </View>
 
-          {/* Logo in a glowing badge, tagline below */}
+          {/* Logo sits directly on the page background, tagline below. */}
           <View style={s.heroCenter}>
-            <View style={s.logoGlowRing}>
-              <View style={s.logoBadgeCard}>
-                <Image source={require('@/assets/images/logo.png')} style={s.logoImage} resizeMode="contain" />
-              </View>
-            </View>
+            <Image source={require('@/assets/images/logo.png')} style={s.logoImage} resizeMode="contain" />
             {/* Row of independent word chunks rather than one flowing <Text> paragraph —
-                the highlighted words render inside their own pill View, which can't sit
+                the highlighted words render in their own accent color, which can't sit
                 inline inside a Text run the way nested <Text> can, so each word lays out
                 as a flex item instead. An invisible unwrapped copy measures the row's
                 natural width; the visible copy is scaled down (never reflowed) to
@@ -903,17 +883,16 @@ export default function LoginScreen() {
             <View style={s.cardInner}>
               <View style={s.cardBody}>
 
-                {/* Pill-shaped segmented tab */}
+                {/* Minimal segmented tab — a soft white pill lifts the active
+                    label instead of a bold gradient fill, matching the
+                    reference's clean, low-contrast tab treatment. */}
                 <View style={s.tabBar}>
                   {(['login', 'signup'] as const).map((tabKey) => (
                     <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                       key={tabKey}
                       style={[s.tabBtn, tab === tabKey && s.tabBtnActive]}
                       onPress={() => setTab(tabKey)}>
-                      {tab === tabKey && (
-                        <LinearGradient colors={[P3, P1]} style={s.tabBtnGrad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} />
-                      )}
-                      <Text style={[s.tabBtnText, { color: tab === tabKey ? '#fff' : '#8B7EA8' }]}>
+                      <Text style={[s.tabBtnText, { color: tab === tabKey ? BRINJAL : MUTED }]}>
                         {tabKey === 'login' ? t('auth.login.tabLogin') : t('auth.login.tabSignup')}
                       </Text>
                     </Pressable>
@@ -939,7 +918,7 @@ export default function LoginScreen() {
 
           {/* Footer */}
           <View style={s.footer}>
-            <Ionicons name="shield-checkmark-outline" size={12} color="rgba(255,255,255,0.65)" />
+            <Ionicons name="shield-checkmark-outline" size={12} color={MUTED} />
             <Text style={s.footerText}>{t('auth.login.footer')}</Text>
           </View>
 
@@ -983,7 +962,7 @@ export default function LoginScreen() {
 }
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: BRINJAL_DARK },
+  root: { flex: 1, backgroundColor: '#FAF9FF' },
   flex: { flex: 1 },
 
   scrollContent: { flexGrow: 1, paddingHorizontal: 20 },
@@ -992,17 +971,15 @@ const s = StyleSheet.create({
   // scattered decorative icons, echoing the app icon's own purple-triangle/orange-ring duo.
   auroraLayer:  { position: 'absolute', top: 0, left: 0, right: 0, height: 420, overflow: 'hidden' },
   auroraBlob:   { position: 'absolute', borderRadius: RADIUS.full },
-  auroraBlobA:  { width: 280, height: 280, backgroundColor: 'rgba(255,255,255,0.05)', top: -90, right: -70 },
-  auroraBlobB:  { width: 220, height: 220, backgroundColor: 'rgba(249,115,22,0.16)', top: 80, left: -90 },
-  auroraBlobC:  { width: 160, height: 160, backgroundColor: 'rgba(255,255,255,0.04)', top: 250, right: 40 },
+  auroraBlobA:  { width: 280, height: 280, backgroundColor: 'rgba(79,70,229,0.06)', top: -90, right: -70 },
+  auroraBlobB:  { width: 220, height: 220, backgroundColor: 'rgba(255,173,51,0.14)', top: 80, left: -90 },
+  auroraBlobC:  { width: 160, height: 160, backgroundColor: 'rgba(79,70,229,0.05)', top: 250, right: 40 },
   bgIcon:       { position: 'absolute' },
 
-  logoGlowRing: { padding: 6, borderRadius: RADIUS.full, backgroundColor: 'rgba(255,255,255,0.10)', shadowColor: '#FFC581', shadowOpacity: 0.35, shadowRadius: 20, shadowOffset: { width: 0, height: 0 }, elevation: 6 },
-  logoBadgeCard: { backgroundColor: '#fff', borderRadius: RADIUS.full, paddingHorizontal: 16, paddingVertical: 10, ...SHADOW.floating, shadowColor: '#000' },
-  logoImage: { width: 104, height: 104 / (1740 / 620) },
+  logoImage: { width: 152, height: 152 / (1740 / 620) },
   langRow:  { flexDirection: 'row', gap: 6, justifyContent: 'flex-end', marginBottom: 6 },
-  langBtn:  { width: 34, height: 34, borderRadius: RADIUS.full, backgroundColor: 'rgba(255,255,255,0.12)', justifyContent: 'center', alignItems: 'center' },
-  langBtnActive: { backgroundColor: 'rgba(255,255,255,0.28)', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.5)' },
+  langBtn:  { width: 34, height: 34, borderRadius: RADIUS.full, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center', shadowColor: BRINJAL, shadowOpacity: 0.08, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 1 },
+  langBtnActive: { backgroundColor: BRINJAL_PALE, borderWidth: 1.5, borderColor: '#C7C3F2' },
   langFlag: { fontSize: 15 },
 
   heroCenter:  { alignItems: 'center', marginTop: 8, marginBottom: 28, gap: 16, position: 'relative' },
@@ -1011,24 +988,26 @@ const s = StyleSheet.create({
   heroTaglineMeasure: { position: 'absolute', top: 0, opacity: 0, flexDirection: 'row', alignItems: 'center', gap: 8 },
   heroTaglineClip: { width: '100%', overflow: 'hidden', alignItems: 'center' },
   heroTaglineRow:  { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  heroTagline: { fontSize: 20, color: 'rgba(255,255,255,0.9)', fontFamily: F.semibold, letterSpacing: 0.3 },
-  heroTaglineHighlight: { fontSize: 27, fontFamily: F.boldItalic, fontStyle: 'italic', letterSpacing: 0.1 },
+  heroTagline: { fontSize: 20, color: TEXT_DARK, fontFamily: F.semibold, letterSpacing: 0.3 },
+  heroTaglineHighlight: { fontSize: 22, fontFamily: F.boldItalic, fontStyle: 'italic', letterSpacing: 0.1 },
 
   // Floating card — visible margin on every side (not an edge-to-edge sheet),
   // fully rounded corners on all four corners for a "card floating on the page"
   // feel. A hairline border pulls extra weight now that the page itself is
   // light too — the shadow alone doesn't read as strongly against a light wash
   // as it did against the old dark-purple background.
-  cardOuter:  { borderRadius: RADIUS.xl, ...SHADOW.floating, shadowColor: '#000' },
-  cardInner:  { borderRadius: RADIUS.xl, overflow: 'hidden', backgroundColor: '#fff' },
+  // Much lighter touch than a boxed "card" — a soft, wide, low shadow so the
+  // form reads as gently lifted off the page rather than sitting in a hard
+  // container, closer to the reference's card-less "floating on gradient" feel.
+  cardOuter:  { borderRadius: RADIUS.xl, shadowColor: BRINJAL, shadowOpacity: 0.08, shadowRadius: 30, shadowOffset: { width: 0, height: 14 }, elevation: 3 },
+  cardInner:  { borderRadius: RADIUS.xl, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.92)' },
   cardBody:   { paddingHorizontal: 22, paddingTop: 22, paddingBottom: 26 },
 
   // Pill-shaped segmented tab
-  tabBar:       { flexDirection: 'row', backgroundColor: '#F3EFFB', borderRadius: RADIUS.full, padding: 4, marginBottom: 22, gap: 2 },
-  tabBtn:       { flex: 1, height: 44, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
-  tabBtnActive: { shadowColor: P1, shadowOpacity: 0.2, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
-  tabBtnGrad:   { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: RADIUS.full },
-  tabBtnText:   { fontSize: 14, fontFamily: F.semibold, zIndex: 1 },
+  tabBar:       { flexDirection: 'row', backgroundColor: '#F5F3FA', borderRadius: RADIUS.full, padding: 4, marginBottom: 22, gap: 2 },
+  tabBtn:       { flex: 1, height: 44, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
+  tabBtnActive: { backgroundColor: '#fff', shadowColor: BRINJAL, shadowOpacity: 0.14, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 3 },
+  tabBtnText:   { fontSize: 14, fontFamily: F.semibold },
 
   // Banners
   banner:     { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12, borderRadius: RADIUS.md, borderWidth: 1, marginBottom: 16 },
@@ -1044,9 +1023,9 @@ const s = StyleSheet.create({
   fieldWrap:     { gap: 6 },
   fieldLabelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   fieldLabel:    { fontSize: 13, fontFamily: F.semibold, color: '#374151' },
-  forgotText:    { fontSize: 12, fontFamily: F.semibold, color: P2 },
-  field:         { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: RADIUS.lg, paddingHorizontal: 5, height: 54, gap: 4, borderColor: 'transparent', backgroundColor: '#F3EFFB' },
-  fieldFocused:  { borderColor: P2, backgroundColor: '#fff', shadowColor: P2, shadowOpacity: 0.14, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
+  forgotText:    { fontSize: 12, fontFamily: F.semibold, color: BRINJAL },
+  field:         { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: RADIUS.lg, paddingHorizontal: 5, height: 54, gap: 4, borderColor: 'transparent', backgroundColor: '#F8F7FB' },
+  fieldFocused:  { borderColor: BRINJAL, backgroundColor: '#fff', shadowColor: BRINJAL, shadowOpacity: 0.12, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
   fieldIconWrap: { width: 38, height: 38, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', marginLeft: 4 },
   fieldInput:    { flex: 1, height: 50, fontSize: 15, fontFamily: F.regular, color: '#111827', textAlignVertical: 'center' },
   eyeBtn:        { paddingHorizontal: 12 },
@@ -1073,8 +1052,8 @@ const s = StyleSheet.create({
   rulePill: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: RADIUS.full, borderWidth: 1, paddingHorizontal: 8, paddingVertical: 4 },
   ruleText: { fontSize: 11, fontFamily: F.medium },
 
-  // Button — full pill shape with a warm glow shadow
-  primaryBtnWrap: { borderRadius: RADIUS.full, marginBottom: 20, shadowColor: P1, shadowOpacity: 0.25, shadowRadius: 14, shadowOffset: { width: 0, height: 6 }, elevation: 7 },
+  // Button — full pill shape, solid brinjal fill with a matching soft glow shadow
+  primaryBtnWrap: { borderRadius: RADIUS.full, marginBottom: 20, shadowColor: BRINJAL, shadowOpacity: 0.35, shadowRadius: 16, shadowOffset: { width: 0, height: 8 }, elevation: 7 },
   primaryBtn:     { height: 54, borderRadius: RADIUS.full, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   primaryBtnText: { fontSize: 16, color: '#fff', fontFamily: F.bold, letterSpacing: 0.3 },
 
@@ -1094,13 +1073,13 @@ const s = StyleSheet.create({
   googleG:        { color: '#fff', fontSize: 12, fontFamily: F.bold },
   fbBadge:        { width: 22, height: 22, borderRadius: RADIUS.full, backgroundColor: '#1877F2', justifyContent: 'center', alignItems: 'center' },
   fbF:            { color: '#fff', fontSize: 13, fontFamily: F.bold },
-  spinner:        { width: 18, height: 18, borderRadius: RADIUS.full, borderWidth: 2, borderColor: '#DDD6FE', borderTopColor: P2 },
+  spinner:        { width: 18, height: 18, borderRadius: RADIUS.full, borderWidth: 2, borderColor: '#DDD6FE', borderTopColor: BRINJAL },
 
   // Role modal
   modalOverlay:    { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   modalSheet:      { backgroundColor: '#fff', borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl, padding: 24, paddingBottom: 36, gap: 4 },
   modalHandle:     { width: 40, height: 4, borderRadius: RADIUS.full, backgroundColor: '#DDD6FE', alignSelf: 'center', marginBottom: 20 },
-  modalTitle:      { fontSize: 20, fontFamily: F.bold, color: P1, textAlign: 'center' },
+  modalTitle:      { fontSize: 20, fontFamily: F.bold, color: TEXT_DARK, textAlign: 'center' },
   modalSub:        { fontSize: 14, fontFamily: F.regular, color: '#6B7280', textAlign: 'center', marginBottom: 20 },
   modalCancel:     { marginTop: 16, alignItems: 'center', padding: 12 },
   modalCancelText: { fontSize: 15, fontFamily: F.semibold, color: '#9CA3AF' },
@@ -1108,11 +1087,11 @@ const s = StyleSheet.create({
   // Suspended-account modal
   suspendedSheet:          { alignItems: 'center', paddingTop: 8 },
   suspendedIconWrap:       { width: 56, height: 56, borderRadius: RADIUS.full, backgroundColor: '#FEF2F2', justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
-  suspendedContactBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: P2, borderRadius: RADIUS.full, paddingVertical: 14, paddingHorizontal: 20, width: '100%', marginTop: 4 },
+  suspendedContactBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: BRINJAL, borderRadius: RADIUS.full, paddingVertical: 14, paddingHorizontal: 20, width: '100%', marginTop: 4 },
   suspendedContactBtnText: { fontSize: 15, fontFamily: F.semibold, color: '#fff' },
 
   terms:  { fontSize: 12, color: '#9CA3AF', lineHeight: 18, textAlign: 'center', fontFamily: F.regular, marginBottom: 8 },
 
   footer:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, marginTop: 16 },
-  footerText: { fontSize: 11, color: 'rgba(255,255,255,0.65)', fontFamily: F.regular },
+  footerText: { fontSize: 11, color: MUTED, fontFamily: F.regular },
 });

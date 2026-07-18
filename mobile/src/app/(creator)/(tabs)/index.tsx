@@ -28,7 +28,7 @@ import { creatorService } from '@/services/creator';
 import { getSocket } from '@/lib/socket';
 import { storage } from '@/utilities/storage';
 import { getCurrentLocation, geocodeAddress, type LatLng } from '@/utilities/geolocation';
-import { ACCESS_TOKEN_KEY, F, RADIUS, SHADOW } from '@/utilities/constants';
+import { GRADIENTS, ACCESS_TOKEN_KEY, F, RADIUS, SHADOW } from '@/utilities/constants';
 import { TabColors } from '@/utilities/tabColors';
 import type { Campaign } from '@/types';
 
@@ -455,7 +455,7 @@ export default function HomeScreen() {
         ListHeaderComponent={
           <>
         {/* ── Gradient header ── */}
-        <LinearGradient colors={['#312e81', '#4f46e5', '#8b5cf6']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.gradientHeader}>
+        <LinearGradient colors={GRADIENTS.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.gradientHeader}>
 
           <View style={styles.header}>
             <View style={styles.headerLeft}>

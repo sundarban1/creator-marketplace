@@ -15,7 +15,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { creatorService, type SavedCreatorItem } from '@/services/creator';
 import { EmptyState } from '@/components/EmptyState';
-import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { GRADIENTS, F, RADIUS, SHADOW } from '@/utilities/constants';
 
 function Avatar({ name, size = 48, C }: { name: string; size?: number; C: ReturnType<typeof useAppColors> }) {
   const initials = name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
@@ -116,7 +116,7 @@ export default function SavedCreatorsScreen() {
 
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
-      <LinearGradient colors={['#1e1b4b', '#4338ca', '#7c3aed']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.gradientHeader}>
+      <LinearGradient colors={GRADIENTS.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.gradientHeader}>
         <View style={s.header}>
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={s.backBtn} onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={22} color="#fff" />

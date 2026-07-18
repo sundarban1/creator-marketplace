@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { router } from 'expo-router';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Image } from 'expo-image';
 import {
   ActivityIndicator,
   FlatList,
@@ -22,8 +23,9 @@ import { useScrollToTopOnTabPress } from '@/hooks/useScrollToTopOnTabPress';
 import { campaignService } from '@/services/campaign';
 import { creatorService, type SavedCreatorItem } from '@/services/creator';
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
+import { getTemplateImage } from '@/features/creator/data/templateImages';
 import type { Campaign } from '@/types';
-import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { GRADIENTS, F, RADIUS, SHADOW } from '@/utilities/constants';
 import { TabColors } from '@/utilities/tabColors';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
@@ -205,7 +207,7 @@ export default function CampaignsScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
-      <LinearGradient colors={['#1e1b4b', '#4338ca', '#7c3aed']} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientHeader}>
+      <LinearGradient colors={GRADIENTS.hero} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientHeader}>
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <Text style={[styles.pageTitle, { color: '#fff' }]}>{t('campaigns.title')}</Text>
@@ -292,6 +294,7 @@ export default function CampaignsScreen() {
             const st = STATUS_CFG[c.status ?? 'draft'];
             const meta = getCategoryMeta(allCategories, c.categoryKey ?? c.category);
             const bg = meta.bg;
+            const cardImage = c.featureImageUrl ?? getTemplateImage(c.template, c.categoryKey ?? c.category);
             return (
               <View style={[styles.card, { backgroundColor: C.surface }]}>
                 <View style={[styles.cardAccent, { backgroundColor: st.color }]} />
@@ -301,6 +304,9 @@ export default function CampaignsScreen() {
                     onPress={() => router.push({ pathname: '/campaign-detail', params: { campaignId: c.id } })}>
                     <View style={[styles.thumb, { backgroundColor: bg }]}>
                       <FontAwesome5 name={meta.icon} size={22} color={meta.color} />
+                      {cardImage && (
+                        <Image source={{ uri: cardImage }} style={StyleSheet.absoluteFill} contentFit="cover" />
+                      )}
                     </View>
                     <View style={styles.body}>
                       <Text style={[styles.title, { color: C.text }]} numberOfLines={1}>{c.title}</Text>
@@ -524,7 +530,7 @@ const styles = StyleSheet.create({
   cardAccent: { width: 4 },
   cardContent: { flex: 1 },
   cardMain: { flexDirection: 'row', alignItems: 'center', padding: 14, gap: 12 },
-  thumb: { width: 60, height: 60, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  thumb: { width: 60, height: 60, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center', flexShrink: 0, overflow: 'hidden' },
   body: { flex: 1, gap: 5 },
   title: { fontSize: 14, fontFamily: F.bold },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },

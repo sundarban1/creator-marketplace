@@ -22,7 +22,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { campaignService } from '@/services/campaign';
 import { creatorService } from '@/services/creator';
-import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { GRADIENTS, F, RADIUS, SHADOW } from '@/utilities/constants';
 
 // At least one of these must be present before a creator can apply — brands
 // evaluating a proposal need to see the creator's actual content somewhere.
@@ -213,7 +213,7 @@ export default function SubmitProposalScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
-      <LinearGradient colors={['#312e81', '#4f46e5', '#8b5cf6']} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientHeader}>
+      <LinearGradient colors={GRADIENTS.hero} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientHeader}>
         <BackButton fallback="/(creator)/" />
         <Text style={[styles.headerTitle, { color: '#fff' }]}>{t('proposal.title')}</Text>
         <View style={{ width: 40 }} />

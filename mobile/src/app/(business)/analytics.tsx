@@ -15,7 +15,7 @@ import { StackedBar } from '@/components/charts/StackedBar';
 import {
   analyticsService, type ApiBrandAnalytics, type AnalyticsRange,
 } from '@/services/analytics';
-import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { GRADIENTS, F, RADIUS, SHADOW } from '@/utilities/constants';
 
 const RANGES: { value: AnalyticsRange; labelKey: string }[] = [
   { value: '7d',   labelKey: 'analytics.range7d' },
@@ -91,7 +91,7 @@ export default function BusinessAnalyticsScreen() {
 
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
-      <LinearGradient colors={['#1e1b4b', '#4338ca', '#7c3aed']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.gradientTopBar}>
+      <LinearGradient colors={GRADIENTS.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.gradientTopBar}>
         <View style={s.topBar}>
           <BackButton fallback="/(business)/" />
           <Text style={[s.topTitle, { color: '#fff' }]}>{t('analytics.headerTitle')}</Text>

@@ -25,7 +25,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage, type TFn } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { chatService } from '@/services/chat';
-import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { GRADIENTS, F, RADIUS, SHADOW } from '@/utilities/constants';
 import { TabColors } from '@/utilities/tabColors';
 import type { ApiMessage } from '@/lib/api';
 import type { Conversation } from '@/types';
@@ -362,7 +362,7 @@ export default function CreatorMessagesScreen() {
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
       {/* ── Gradient header ── */}
       <LinearGradient
-        colors={['#312e81', '#4f46e5', '#8b5cf6']}
+        colors={GRADIENTS.hero}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={s.gradientHeader}>

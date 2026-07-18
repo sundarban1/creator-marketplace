@@ -16,7 +16,7 @@ import { creatorService, type ApiCreatorProfile } from '@/services/creator';
 import { campaignService } from '@/services/campaign';
 import { useFavoriteBusinesses } from '@/hooks/useFavoriteBusinesses';
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
-import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { GRADIENTS, F, RADIUS, SHADOW } from '@/utilities/constants';
 import { pickAndUpload } from '@/utilities/uploadImage';
 
 const PLATFORM_MAP: Record<string, { platform: string; color: string; iconName: string }> = {
@@ -155,7 +155,7 @@ export default function CreatorProfileScreen() {
               {displayAvatar ? (
                 <Image source={{ uri: displayAvatar }} style={s.avatar} />
               ) : (
-                <LinearGradient colors={['#7C3AED', '#EC4899']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.avatar}>
+                <LinearGradient colors={GRADIENTS.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.avatar}>
                   <Text style={s.avatarInitial}>{displayName[0].toUpperCase()}</Text>
                 </LinearGradient>
               )}

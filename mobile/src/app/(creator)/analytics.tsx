@@ -14,7 +14,7 @@ import { BarChart } from '@/components/charts/BarChart';
 import {
   analyticsService, type ApiCreatorAnalytics, type AnalyticsRange,
 } from '@/services/analytics';
-import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { GRADIENTS, F, RADIUS, SHADOW } from '@/utilities/constants';
 
 const RANGES: { value: AnalyticsRange; labelKey: string }[] = [
   { value: '7d',   labelKey: 'analytics.range7d' },
@@ -100,7 +100,7 @@ export default function CreatorAnalyticsScreen() {
 
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
-      <LinearGradient colors={['#312e81', '#4f46e5', '#8b5cf6']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.gradientTopBar}>
+      <LinearGradient colors={GRADIENTS.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.gradientTopBar}>
         <View style={s.topBar}>
           <BackButton fallback="/(creator)/" />
           <Text style={[s.topTitle, { color: '#fff' }]}>{t('analytics.headerTitle')}</Text>

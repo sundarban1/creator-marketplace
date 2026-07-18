@@ -17,7 +17,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useToast } from '@/components/Toast';
 import { profileService } from '@/services/profile';
 import { useCategories } from '@/hooks/useCategories';
-import { F, RADIUS } from '@/utilities/constants';
+import { GRADIENTS, F, RADIUS } from '@/utilities/constants';
 
 const MAX = 5;
 
@@ -78,7 +78,7 @@ export default function EditBusinessCategoriesScreen() {
 
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
-      <LinearGradient colors={['#1e1b4b', '#4338ca', '#7c3aed']} start={{x:0,y:0}} end={{x:1,y:1}} style={s.gradientTopBar}>
+      <LinearGradient colors={GRADIENTS.hero} start={{x:0,y:0}} end={{x:1,y:1}} style={s.gradientTopBar}>
         <View style={s.topBar}>
           <BackButton fallback="/(business)/profile" />
           <Text style={[s.topTitle, { color: '#fff' }]}>{t('editCategoriesBusiness.title')}</Text>

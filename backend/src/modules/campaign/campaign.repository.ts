@@ -398,7 +398,7 @@ export class CampaignRepository {
             select: { id: true, fullName: true, avatarUrl: true, location: true },
           },
           campaign: {
-            select: { id: true, title: true, platforms: true, campaignType: true, paymentStatus: true },
+            select: { id: true, title: true, platforms: true, campaignType: true, paymentStatus: true, featureImageUrl: true },
           },
         },
       }),
@@ -471,6 +471,7 @@ export class CampaignRepository {
               campaignType: true,
               paymentStatus: true,
               paidAt: true,
+              featureImageUrl: true,
               business: { select: { id: true, businessName: true, logoUrl: true } },
             },
           },

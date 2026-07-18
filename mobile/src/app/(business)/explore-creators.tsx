@@ -24,7 +24,7 @@ import { LocationSearchPicker, type LocationEntry } from '@/components/LocationS
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage, type TFn } from '@/context/LanguageContext';
 import { creatorService, type ApiCreatorListItem } from '@/services/creator';
-import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { GRADIENTS, F, RADIUS, SHADOW } from '@/utilities/constants';
 import { getIconColor } from '@/features/creator/data/filterOptions';
 import { useAllCategories, useCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { usePlatforms, getPlatformMeta } from '@/hooks/usePlatforms';
@@ -499,7 +499,7 @@ export default function ExploreCreatorsScreen() {
 
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
-      <LinearGradient colors={['#1e1b4b', '#4338ca', '#7c3aed']} start={{x:0,y:0}} end={{x:1,y:1}} style={s.gradientHeader}>
+      <LinearGradient colors={GRADIENTS.hero} start={{x:0,y:0}} end={{x:1,y:1}} style={s.gradientHeader}>
         {/* Header */}
         <View style={s.header}>
           <BackButton fallback="/(business)/" />
@@ -696,7 +696,7 @@ const s = StyleSheet.create({
   chip: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: RADIUS.full, borderWidth: 1.5 },
   chipText: { fontSize: 12, fontFamily: F.semibold },
 
-  countText: { fontSize: 12, fontFamily: F.semibold, paddingHorizontal: 20, marginTop: 8, marginBottom: 4 },
+  countText: { fontSize: 12, fontFamily: F.semibold, paddingHorizontal: 20, marginTop: 8, marginBottom: 4, textAlign: 'right' },
 
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, paddingHorizontal: 32 },
   loadingText: { fontSize: 14, fontFamily: F.regular },

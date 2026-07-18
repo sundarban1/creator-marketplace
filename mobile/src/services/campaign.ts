@@ -317,6 +317,7 @@ export const campaignService = {
         id: string; title: string; platforms: string[];
         campaignType: 'PAID_CAMPAIGN' | 'OPEN_EVENT';
         paymentStatus: 'UNPAID' | 'PAID' | 'RELEASED';
+        featureImageUrl?: string;
       };
       creator: { id: string; fullName: string; avatarUrl: string | null; location: string | null };
     }>;
@@ -326,7 +327,7 @@ export const campaignService = {
       id: string; status: string; proposedRate: number; coverLetter: string; createdAt: string;
       workStatus?: string;
       paymentStatus?: string;
-      campaign: { id: string; title: string; platforms: string[]; campaignType?: string; paymentStatus?: string };
+      campaign: { id: string; title: string; platforms: string[]; campaignType?: string; paymentStatus?: string; featureImageUrl?: string | null };
       creator: { id: string; fullName: string; avatarUrl: string | null; location: string | null };
     }>>('GET', '/api/campaigns/applications/business', undefined, {
       page:         params?.page  ?? 1,
@@ -349,6 +350,7 @@ export const campaignService = {
           platforms: a.campaign.platforms,
           campaignType: (a.campaign.campaignType ?? 'PAID_CAMPAIGN') as 'PAID_CAMPAIGN' | 'OPEN_EVENT',
           paymentStatus: (a.campaign.paymentStatus ?? 'UNPAID') as 'UNPAID' | 'PAID' | 'RELEASED',
+          featureImageUrl: a.campaign.featureImageUrl ?? undefined,
         },
         creator: a.creator,
       })),
@@ -449,6 +451,7 @@ export const campaignService = {
       campaignType:     'PAID_CAMPAIGN' | 'OPEN_EVENT';
       paymentStatus:    'UNPAID' | 'PAID' | 'RELEASED';
       paidAt:           string | null;
+      featureImageUrl:  string | undefined;
     }>;
     total: number;
   }> {
@@ -464,7 +467,7 @@ export const campaignService = {
       paidAt?:         string | null;
       campaign:     {
         id: string; title: string; campaignType?: string;
-        paymentStatus?: string; paidAt?: string | null;
+        paymentStatus?: string; paidAt?: string | null; featureImageUrl?: string | null;
         business: { id: string; businessName: string };
       };
     }>>('GET', '/api/campaigns/applications/my', undefined, {
@@ -490,6 +493,7 @@ export const campaignService = {
         campaignType:    (a.campaign.campaignType ?? 'PAID_CAMPAIGN') as 'PAID_CAMPAIGN' | 'OPEN_EVENT',
         paymentStatus:   (a.paymentStatus ?? a.campaign.paymentStatus ?? 'UNPAID') as 'UNPAID' | 'PAID' | 'RELEASED',
         paidAt:          a.paidAt ?? a.campaign.paidAt ?? null,
+        featureImageUrl: a.campaign.featureImageUrl ?? undefined,
       })),
       total: res.pagination?.total ?? res.data.length,
     };

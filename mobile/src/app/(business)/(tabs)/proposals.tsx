@@ -18,7 +18,7 @@ import { campaignService } from '@/services/campaign';
 import { TabSlider } from '@/components/TabSlider';
 import { EmptyState } from '@/components/EmptyState';
 import { useScrollToTopOnTabPress } from '@/hooks/useScrollToTopOnTabPress';
-import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { GRADIENTS, F, RADIUS, SHADOW } from '@/utilities/constants';
 import { TabColors } from '@/utilities/tabColors';
 
 type WS = 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED';
@@ -302,7 +302,7 @@ export default function ProposalsScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
       <LinearGradient
-        colors={['#312e81', '#4f46e5', '#8b5cf6']}
+        colors={GRADIENTS.hero}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.gradientHeader}>

@@ -1,6 +1,5 @@
 import { router, Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
 import {
   Platform,
@@ -144,14 +143,9 @@ function CustomTabBar({
                 on top of it. */}
             <View style={[tabS.createNotch, { backgroundColor: C.background }]}>
               <Pressable onPress={() => router.push('/create-campaign')} hitSlop={6}>
-                <LinearGradient
-                  colors={['#8b7cf8', '#4f46e5', '#5b21b6']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={tabS.createBtn}
-                >
+                <View style={[tabS.createBtn, { backgroundColor: C.brinjal1 }]}>
                   <Ionicons name="add" size={26} color="#fff" />
-                </LinearGradient>
+                </View>
               </Pressable>
             </View>
           </View>,

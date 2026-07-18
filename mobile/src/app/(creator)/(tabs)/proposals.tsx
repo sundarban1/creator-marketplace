@@ -1,6 +1,7 @@
 import { router, useFocusEffect } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -18,7 +19,7 @@ import { useLanguage, type TFn } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { useScrollToTopOnTabPress } from '@/hooks/useScrollToTopOnTabPress';
 import { campaignService } from '@/services/campaign';
-import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { GRADIENTS, F, RADIUS, SHADOW } from '@/utilities/constants';
 import { TabColors } from '@/utilities/tabColors';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -41,6 +42,7 @@ type Proposal = {
   workStatus:      WS;
   campaignType:    'PAID_CAMPAIGN' | 'OPEN_EVENT';
   paymentStatus:   'UNPAID' | 'PAID' | 'RELEASED';
+  featureImageUrl: string | undefined;
 };
 
 // ─── Config ───────────────────────────────────────────────────────────────────
@@ -106,6 +108,9 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
         <View style={styles.topRow}>
           <View style={[styles.brandAvatar, { backgroundColor: `${accentColor}18` }]}>
             <Text style={[styles.brandInitials, { color: accentColor }]}>{brandInitials(proposal.brand)}</Text>
+            {proposal.featureImageUrl && (
+              <Image source={{ uri: proposal.featureImageUrl }} style={StyleSheet.absoluteFill} contentFit="cover" />
+            )}
           </View>
           <View style={styles.brandBlock}>
             <Text style={[styles.brandName, { color: C.text }]} numberOfLines={1}>{proposal.brand}</Text>
@@ -298,7 +303,7 @@ export default function ProposalsScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
 
       {/* ── Gradient header ── */}
-      <LinearGradient colors={['#312e81', '#4f46e5', '#8b5cf6']} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientHeader}>
+      <LinearGradient colors={GRADIENTS.hero} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientHeader}>
 
         <View style={styles.headerContent}>
           <Text style={styles.heading}>{t('creator.proposals.heading')}</Text>
@@ -381,7 +386,7 @@ const styles = StyleSheet.create({
 
   // Top row
   topRow:       { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  brandAvatar:  { width: 42, height: 42, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  brandAvatar:  { width: 42, height: 42, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center', flexShrink: 0, overflow: 'hidden' },
   brandInitials:{ fontSize: 15, fontFamily: F.bold },
   brandBlock:   { flex: 1, gap: 2 },
   brandName:    { fontSize: 14, fontFamily: F.bold },

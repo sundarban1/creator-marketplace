@@ -44,7 +44,7 @@ import type { FacebookPageOption } from '@/services/creator';
 import { useAppColors, useIsDark } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/components/Toast';
-import { COLORS, F, RADIUS, SHADOW } from '@/utilities/constants';
+import { GRADIENTS, COLORS, F, RADIUS, SHADOW } from '@/utilities/constants';
 import { pickAndUpload } from '@/utilities/uploadImage';
 import { formatPhoneDisplay, getAccountIdentityLine, isValidNepaliPhone, normalizePhoneForSubmit } from '@/utilities/phone';
 import {
@@ -2244,7 +2244,7 @@ export default function CreatorSettingsScreen() {
   return (
     <ColorCtx.Provider value={C}>
       <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
-        <LinearGradient colors={['#F97316', '#EF4444', '#EC4899']} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientTopBar}>
+        <LinearGradient colors={GRADIENTS.hero} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientTopBar}>
           {/* Top bar */}
           <View style={styles.topBar}>
             <BackButton onPress={handleBack} />

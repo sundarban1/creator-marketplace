@@ -29,7 +29,7 @@ import { chatService, toMessage, createVideoUploadTask } from '@/services/chat';
 import { compressVideo } from '@/utilities/uploadVideo';
 import { getSocket } from '@/lib/socket';
 import { incomingMessageEvents } from '@/lib/incomingMessageEvents';
-import { F, RADIUS } from '@/utilities/constants';
+import { GRADIENTS, F, RADIUS } from '@/utilities/constants';
 import { CHAT_EMOJIS } from '@/utilities/chatEmojis';
 import { formatPresence } from '@/utilities/presence';
 import {
@@ -691,7 +691,7 @@ export default function BusinessChatRoomScreen() {
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
       {/* ── Header ── */}
-      <LinearGradient colors={['#4c1d95', '#6d28d9', '#7c3aed']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.header}>
+      <LinearGradient colors={GRADIENTS.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.header}>
         <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={s.backBtn} hitSlop={4} onPress={() => router.canGoBack() ? router.back() : router.replace('/(business)/messages' as never)}>
           <Ionicons name="chevron-back" size={22} color="#fff" />
         </Pressable>

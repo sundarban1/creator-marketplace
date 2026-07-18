@@ -2,9 +2,11 @@ import { createContext, useContext, useState, type ReactNode } from 'react';
 import { useColorScheme } from 'react-native';
 import { COLORS } from '@/utilities/constants';
 
+// brinjal1/brinjal2 are hue-matched to the light theme's brinjal (#4F46E5) —
+// lightened for legibility against a dark surface, rather than an unrelated violet.
 export const DARK_COLORS: typeof COLORS = {
-  brinjal1:    '#7C6FCD',
-  brinjal2:    '#5B4FC8',
+  brinjal1:    '#7C74EE',
+  brinjal2:    '#5B52D6',
   primaryLight:'#2D2B52',
   accent:      '#FB923C',
   accentLight: '#431407',

@@ -19,7 +19,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { campaignService } from '@/services/campaign';
-import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { GRADIENTS, F, RADIUS, SHADOW } from '@/utilities/constants';
 
 type WS = 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED';
 type PS = 'UNPAID' | 'PAID' | 'RELEASED';
@@ -504,7 +504,7 @@ export default function CampaignProposalsScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
       {/* Gradient header */}
       <LinearGradient
-        colors={['#1e1b4b', '#4338ca', '#7c3aed']}
+        colors={GRADIENTS.hero}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.gradientHeader}>

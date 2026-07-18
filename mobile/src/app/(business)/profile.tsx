@@ -21,7 +21,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { profileService, type BusinessProfile } from '@/services/profile';
 import { campaignService } from '@/services/campaign';
-import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { GRADIENTS, F, RADIUS, SHADOW } from '@/utilities/constants';
 import { pickAndUpload } from '@/utilities/uploadImage';
 import { formatPhoneDisplay } from '@/utilities/phone';
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
@@ -123,7 +123,7 @@ export default function BusinessProfileScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 60 }}>
 
         {/* ── Hero ── */}
-        <LinearGradient colors={['#1e1b4b', '#4338ca', '#7c3aed']} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.hero}>
+        <LinearGradient colors={GRADIENTS.hero} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.hero}>
           <View style={styles.heroBubble1} />
           <View style={styles.heroBubble2} />
           <View style={styles.heroInner}>
@@ -139,6 +139,12 @@ export default function BusinessProfileScreen() {
                 <Text style={styles.heroName} numberOfLines={2}>{name}</Text>
                 {(profile?.fullyVerified || profile?.isVerified) && <VerifiedBadge size={16} />}
               </View>
+              {!!profile?.location && (
+                <View style={styles.heroLocationRow}>
+                  <Ionicons name="location-sharp" size={12} color="rgba(255,255,255,0.85)" />
+                  <Text style={styles.heroLocation} numberOfLines={1}>{profile.location}</Text>
+                </View>
+              )}
               <View style={styles.heroStats}>
                 <View style={styles.heroStat}>
                   <Text style={styles.heroStatValue}>{activeCampaigns}</Text>
@@ -322,6 +328,8 @@ const styles = StyleSheet.create({
   heroMeta:         { flex: 1, paddingTop: 4 },
   heroNameRow:      { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' },
   heroName:         { fontSize: 20, color: '#fff', lineHeight: 28, marginBottom: 6, fontFamily: F.bold, flexShrink: 1 },
+  heroLocationRow:  { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 8 },
+  heroLocation:     { fontSize: 12, color: 'rgba(255,255,255,0.85)', fontFamily: F.medium, flexShrink: 1 },
   heroStats:        { flexDirection: 'row', alignItems: 'center', gap: 12 },
   heroStat:         { alignItems: 'center' },
   heroStatValue:    { fontSize: 16, color: '#fff', fontFamily: F.bold },

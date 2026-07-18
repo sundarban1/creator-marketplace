@@ -30,7 +30,7 @@ import { businessService, type PaymentHistoryEntry } from '@/services/business';
 import { authService } from '@/services/auth';
 import { profileService } from '@/services/profile';
 import type { FacebookPageOption } from '@/services/creator';
-import { COLORS, F, RADIUS, SHADOW } from '@/utilities/constants';
+import { GRADIENTS, COLORS, F, RADIUS, SHADOW } from '@/utilities/constants';
 import { request } from '@/lib/api';
 import { pickAndUpload } from '@/utilities/uploadImage';
 import { useCategories } from '@/hooks/useCategories';
@@ -2006,7 +2006,7 @@ export default function BusinessSettingsScreen() {
   return (
     <ColorCtx.Provider value={C}>
       <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
-        <LinearGradient colors={['#4F46E5', '#7C3AED', '#9333EA']} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientTopBar}>
+        <LinearGradient colors={GRADIENTS.hero} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientTopBar}>
           {/* Top bar */}
           <View style={styles.topBar}>
             <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.backBtn, { backgroundColor: 'rgba(255,255,255,0.2)', borderColor: 'rgba(255,255,255,0.4)' }]} onPress={handleBack}>

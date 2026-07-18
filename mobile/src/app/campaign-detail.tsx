@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Image } from 'expo-image';
 import { BackButton } from '@/components/BackButton';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -21,12 +22,15 @@ import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { getIconColor } from '@/features/creator/data/filterOptions';
+import { getTemplateImage } from '@/features/creator/data/templateImages';
+import { FeatureImagePicker } from '@/features/creator/components/FeatureImagePicker';
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { usePlatforms } from '@/hooks/usePlatforms';
 import { PlacesAutocompleteInput } from '@/components/PlacesAutocompleteInput';
 import { campaignService } from '@/services/campaign';
 import type { Campaign } from '@/types';
-import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { GRADIENTS, F, RADIUS, SHADOW } from '@/utilities/constants';
+import { pickAndUpload } from '@/utilities/uploadImage';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -213,6 +217,7 @@ const cal = StyleSheet.create({
 type EditForm = {
   title: string;
   description: string;
+  featureImageUrl: string | null;
   platforms: string[];
   contentType: string;
   deliverables: string;
@@ -275,7 +280,7 @@ export default function CampaignDetailScreen() {
   const [calOpen, setCalOpen] = useState(false);
   const [eventCalOpen, setEventCalOpen] = useState(false);
   const [editForm, setEditForm] = useState<EditForm>({
-    title: '', description: '', platforms: [],
+    title: '', description: '', featureImageUrl: null, platforms: [],
     contentType: '', deliverables: '',
     status: 'active', budgetMin: '', budgetMax: '', deadline: null,
     location: '', isFeatured: false,
@@ -283,6 +288,24 @@ export default function CampaignDetailScreen() {
   });
   const [editErrors, setEditErrors] = useState<EditErrors>({});
   const [saving, setSaving] = useState(false);
+  const [featureImageUploading, setFeatureImageUploading] = useState(false);
+
+  async function handlePickFeatureImage() {
+    if (featureImageUploading) return;
+    setFeatureImageUploading(true);
+    try {
+      const result = await pickAndUpload('campaign-feature');
+      if (result?.url) updateEdit('featureImageUrl', result.url);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : t('createEvent.featureImageUploadFailed'), 'error');
+    } finally {
+      setFeatureImageUploading(false);
+    }
+  }
+
+  function handleClearFeatureImage() {
+    updateEdit('featureImageUrl', null);
+  }
 
   // Once a proposal has been submitted, the terms it was submitted against
   // (price, platform, deliverables) are locked — everything else stays editable.
@@ -293,6 +316,7 @@ export default function CampaignDetailScreen() {
     setEditForm({
       title:        campaign.title,
       description:  campaign.description ?? '',
+      featureImageUrl: campaign.featureImageUrl ?? null,
       platforms:    campaign.platforms ?? [],
       contentType:  campaign.contentType,
       deliverables: campaign.deliverables ?? '',
@@ -354,6 +378,7 @@ export default function CampaignDetailScreen() {
         await campaignService.update(campaign!.id, {
           title:       editForm.title.trim(),
           description: editForm.description.trim() || undefined,
+          featureImageUrl: editForm.featureImageUrl,
           status:      editForm.status,
           deadline:    editForm.deadline!.toISOString(),
           isFeatured:  editForm.isFeatured,
@@ -366,6 +391,7 @@ export default function CampaignDetailScreen() {
         await campaignService.update(campaign!.id, {
           title:        editForm.title.trim(),
           description:  editForm.description.trim() || undefined,
+          featureImageUrl: editForm.featureImageUrl,
           platforms:    editForm.platforms,
           contentType:  editForm.contentType,
           deliverables: editForm.deliverables.trim(),
@@ -423,7 +449,7 @@ export default function CampaignDetailScreen() {
   if (loading) {
     return (
       <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
-        <LinearGradient colors={['#312e81', '#4f46e5', '#8b5cf6']} start={{x:0,y:0}} end={{x:1,y:0}} style={s.gradientHeader}>
+        <LinearGradient colors={GRADIENTS.hero} start={{x:0,y:0}} end={{x:1,y:0}} style={s.gradientHeader}>
           <BackButton />
           <Text style={[s.headerTitle, { color: '#fff' }]}>{t('campaignDetail.headerTitle')}</Text>
           <View style={{ width: 40 }} />
@@ -450,12 +476,13 @@ export default function CampaignDetailScreen() {
   const catMeta = getCategoryMeta(allCategories, campaign.categoryKey ?? campaign.category);
   const heroBg  = catMeta.bg;
   const posted  = daysAgo(campaign.createdAt);
+  const heroImage = campaign.featureImageUrl ?? getTemplateImage(campaign.template, campaign.categoryKey ?? campaign.category);
 
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
 
       {/* Header */}
-      <LinearGradient colors={['#312e81', '#4f46e5', '#8b5cf6']} start={{x:0,y:0}} end={{x:1,y:0}} style={s.gradientHeader}>
+      <LinearGradient colors={GRADIENTS.hero} start={{x:0,y:0}} end={{x:1,y:0}} style={s.gradientHeader}>
         <BackButton />
         <Text style={[s.headerTitle, { color: '#fff' }]}>{t('campaignDetail.headerTitle')}</Text>
         <View style={{ width: 40 }} />
@@ -466,6 +493,10 @@ export default function CampaignDetailScreen() {
         {/* Hero */}
         <View style={[s.hero, { backgroundColor: heroBg }]}>
           <FontAwesome5 name={catMeta.icon} size={56} color={catMeta.color} />
+          {heroImage && (
+            <Image source={{ uri: heroImage }} style={StyleSheet.absoluteFill} contentFit="cover" />
+          )}
+          {heroImage && <View style={[StyleSheet.absoluteFill, s.heroImgOverlay]} />}
           <View style={[s.heroBadge, { backgroundColor: C.badgeFeatured }]}>
             <Text style={s.heroBadgeTxt}>{campaign.category.toUpperCase()}</Text>
           </View>
@@ -731,6 +762,16 @@ export default function CampaignDetailScreen() {
                   placeholderTextColor={C.textSecondary}
                 />
                 {editErrors.title ? <Text style={em.errTxt}>{editErrors.title}</Text> : null}
+
+                <Text style={[em.label, { color: C.text, marginTop: 16 }]}>{t('createEvent.secFeatureImageTitle')}</Text>
+                <FeatureImagePicker
+                  imageUrl={editForm.featureImageUrl}
+                  category={campaign?.categoryKey ?? campaign?.category ?? ''}
+                  uploading={featureImageUploading}
+                  onPick={handlePickFeatureImage}
+                  onClear={handleClearFeatureImage}
+                  colors={C}
+                />
 
                 <Text style={[em.label, { color: C.text, marginTop: 16 }]}>
                   {t('campaignDetail.fieldDescription')} <Text style={[em.optional, { color: C.textSecondary }]}>{t('campaignDetail.fieldOptional')}</Text>
@@ -1060,7 +1101,8 @@ const s = StyleSheet.create({
 
   scroll: { paddingBottom: 20 },
 
-  hero:         { height: 180, justifyContent: 'center', alignItems: 'center', position: 'relative' },
+  hero:         { height: 180, justifyContent: 'center', alignItems: 'center', position: 'relative', overflow: 'hidden' },
+  heroImgOverlay: { backgroundColor: 'rgba(0,0,0,0.28)' },
   heroBadge:    { position: 'absolute', top: 14, left: 16, paddingHorizontal: 10, paddingVertical: 5, borderRadius: RADIUS.sm },
   heroNewBadge: { position: 'absolute', top: 14, right: 16, paddingHorizontal: 10, paddingVertical: 5, borderRadius: RADIUS.sm },
   heroBadgeTxt: { fontSize: 10, color: '#fff', letterSpacing: 0.5, fontFamily: F.bold },

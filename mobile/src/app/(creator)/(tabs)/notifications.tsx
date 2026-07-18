@@ -13,7 +13,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useNotificationBadge } from '@/context/NotificationContext';
 import { notificationService } from '@/services/notifications';
 import { getSocket } from '@/lib/socket';
-import { F, RADIUS } from '@/utilities/constants';
+import { GRADIENTS, F, RADIUS } from '@/utilities/constants';
 import type { AppNotification } from '@/types';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
@@ -235,7 +235,7 @@ export default function NotificationsScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
-      <LinearGradient colors={['#312e81', '#4f46e5', '#8b5cf6']} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientHeader}>
+      <LinearGradient colors={GRADIENTS.hero} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientHeader}>
         <View style={styles.headerRow}>
           <View style={{ flex: 1 }}>
             <Text style={styles.heading}>{t('notifications.heading')}</Text>

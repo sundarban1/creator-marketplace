@@ -19,7 +19,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/components/Toast';
 import { profileService } from '@/services/profile';
 import { LocationSearchModal } from '@/components/LocationSearchModal';
-import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { GRADIENTS, F, RADIUS, SHADOW } from '@/utilities/constants';
 
 function generateBusinessDescription(name: string, cats: string[]): string {
   if (cats.length === 0) return '';
@@ -106,7 +106,7 @@ export default function EditBusinessProfileScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
-      <LinearGradient colors={['#1e1b4b', '#4338ca', '#7c3aed']} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientTopBar}>
+      <LinearGradient colors={GRADIENTS.hero} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientTopBar}>
         <View style={styles.topBar}>
           <BackButton fallback="/(business)/profile" />
           <Text style={[styles.topTitle, { color: '#fff' }]}>{t('profile.editBusiness.headerTitle')}</Text>

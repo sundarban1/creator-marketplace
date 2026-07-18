@@ -22,7 +22,7 @@ import { useToast } from '@/components/Toast';
 import { Button } from '@/components/Button';
 import { LocationSearchModal } from '@/components/LocationSearchModal';
 import { creatorService } from '@/services/creator';
-import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { GRADIENTS, F, RADIUS, SHADOW } from '@/utilities/constants';
 
 // ─── EditProfileScreen ────────────────────────────────────────────────────────
 
@@ -149,7 +149,7 @@ export default function EditProfileScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
-      <LinearGradient colors={['#312e81', '#4f46e5', '#8b5cf6']} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientTopBar}>
+      <LinearGradient colors={GRADIENTS.hero} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientTopBar}>
         <View style={styles.topBar}>
           <BackButton fallback="/(creator)/profile" />
           <Text style={[styles.topTitle, { color: '#fff' }]}>{t('profile.editCreator.headerTitle')}</Text>
