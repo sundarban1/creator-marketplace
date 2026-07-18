@@ -1456,7 +1456,7 @@ export default function BusinessSettingsScreen() {
                     <FontAwesome5 name={m.icon} size={16} color={m.color} />
                   </View>
                 )}
-                <Text style={[styles.rowLabel, { color: C.text }]}>{m.label}</Text>
+                <Text style={[styles.rowLabel, { color: C.text, flex: 1 }]}>{m.label}</Text>
                 <View style={[styles.checkboxOuter, { borderColor: selected ? C.brinjal1 : C.border, backgroundColor: selected ? C.brinjal1 : 'transparent' }]}>
                   {selected ? <Ionicons name="checkmark" size={13} color="#fff" /> : null}
                 </View>

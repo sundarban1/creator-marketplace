@@ -2401,7 +2401,9 @@ const styles = StyleSheet.create({
   // flex `alignItems: 'center'` math on the row is correct.
   // No `flex: 1` here — the wrapping navTextCol View now owns that (see below), so this
   // Text sizes to its natural content height and can be genuinely centered within it.
-  rowLabel: { flex: 1, fontSize: 15, lineHeight: 18, fontFamily: F.medium, includeFontPadding: false },
+  // Poppins' glyphs sit high within their own line box, so even a height-matched centered
+  // box (navTextCol below) still reads a few px above the icon's true center — nudge down.
+  rowLabel: { flex: 1, fontSize: 15, lineHeight: 18, fontFamily: F.medium, includeFontPadding: false, marginTop: 9 },
   // Fixed height matching navIonIconWrap (34) with its own `justifyContent: 'center'` — this
   // centers the label against a box of the exact same known height as the icon, so the two are
   // guaranteed pixel-aligned regardless of any font-metric quirks, rather than relying on the
@@ -2419,7 +2421,7 @@ const styles = StyleSheet.create({
   accordionHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
   accordionIconWrap: { width: 30, height: 30, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   accordionEmoji: { fontSize: 15 },
-  accordionTitle: { flex: 1, fontSize: 14, lineHeight: 20, fontFamily: F.bold },
+  accordionTitle: { flex: 1, fontSize: 14, lineHeight: 20, fontFamily: F.bold, marginTop: 9 },
   accordionChevronWrap: { width: 26, height: 26, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   accordionBody: { fontSize: 13, lineHeight: 21, paddingHorizontal: 14, paddingBottom: 14, paddingTop: 12, borderTopWidth: 1, fontFamily: F.regular },
 

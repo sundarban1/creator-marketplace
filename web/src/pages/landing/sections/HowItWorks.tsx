@@ -48,7 +48,7 @@ export function HowItWorks() {
                   <h3 className="mt-4 text-lg font-bold text-ink">{step.title}</h3>
                   <p className="mt-2 text-sm leading-relaxed text-ink-soft">{step.desc}</p>
                 </motion.div>
-                <p className="mt-4 text-center font-serif text-xl font-bold italic tracking-wide text-ink">Step {i + 1}</p>
+                <p className="mt-4 text-center font-serif text-xl font-bold italic tracking-wide text-ink">{d.how.stepLabel} {i + 1}</p>
               </div>
             );
           })}

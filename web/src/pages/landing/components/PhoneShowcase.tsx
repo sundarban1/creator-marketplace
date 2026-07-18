@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { BadgeCheck, Camera, Hotel, Mic, Package, Shirt, Smartphone, Star, Utensils, Wallet } from 'lucide-react';
+import { useLandingLanguage } from '../context/LanguageContext';
 
 const SCENE_DURATION = 4600;
 
@@ -47,44 +48,47 @@ function Badge({ children }: { children: React.ReactNode }) {
 }
 
 function CreatorAppScene() {
+  const { d } = useLandingLanguage();
   return (
     <SceneFrame videoKey="12433102" src={pexels('12433102', '12433102-sd_640_360_30fps.mp4')}>
       <div className="absolute inset-x-0 top-0 flex items-center px-4 pt-3">
         <Badge>
           <Smartphone size={11} />
-          Opening Kolab
+          {d.phoneShowcase.creatorApp.badge}
         </Badge>
       </div>
       <div className="absolute inset-x-0 bottom-0 px-4 pb-4">
-        <p className="text-xs font-medium text-white">&ldquo;Find your next job in Kolab&rdquo;</p>
-        <p className="mt-0.5 text-[11px] text-white/70">Anjali Gurung &middot; Creator, Kathmandu</p>
+        <p className="text-xs font-medium text-white">{d.phoneShowcase.creatorApp.quote}</p>
+        <p className="mt-0.5 text-[11px] text-white/70">{d.phoneShowcase.creatorApp.caption}</p>
       </div>
     </SceneFrame>
   );
 }
 
 function ProductScene() {
+  const { d } = useLandingLanguage();
   return (
     <SceneFrame videoKey="13929641" src={pexels('13929641', '13929641-sd_540_960_24fps.mp4')}>
       <div className="absolute inset-x-0 top-0 flex items-center px-4 pt-3">
         <Badge>
           <Package size={11} />
-          Displaying product
+          {d.phoneShowcase.product.badge}
         </Badge>
       </div>
       <div className="absolute inset-x-0 bottom-0 px-4 pb-4">
-        <p className="text-xs font-medium text-white">&ldquo;Here&rsquo;s the one I&rsquo;ve been using&rdquo;</p>
-        <p className="mt-0.5 text-[11px] text-white/70">Sponsored by Himal Coffee</p>
+        <p className="text-xs font-medium text-white">{d.phoneShowcase.product.quote}</p>
+        <p className="mt-0.5 text-[11px] text-white/70">{d.phoneShowcase.product.caption}</p>
       </div>
     </SceneFrame>
   );
 }
 
 function FoodScene() {
+  const { d } = useLandingLanguage();
   return (
     <SceneFrame videoKey="7351722" src={pexels('7351722', '7351722-sd_640_360_24fps.mp4')}>
       <div className="absolute inset-x-0 top-0 flex items-center px-4 pt-3">
-        <Badge>Reviewing</Badge>
+        <Badge>{d.phoneShowcase.food.badge}</Badge>
       </div>
       <div className="absolute inset-x-0 bottom-0 px-4 pb-4">
         <div className="flex items-center gap-0.5">
@@ -92,13 +96,14 @@ function FoodScene() {
             <Star key={i} size={12} className="fill-brand-orange text-brand-orange" />
           ))}
         </div>
-        <p className="mt-1 text-xs font-medium text-white">Worth the hype &mdash; ordering again</p>
+        <p className="mt-1 text-xs font-medium text-white">{d.phoneShowcase.food.caption}</p>
       </div>
     </SceneFrame>
   );
 }
 
 function ClothingScene() {
+  const { d } = useLandingLanguage();
   return (
     <SceneFrame
       videoKey="cld-6mfqhq"
@@ -107,69 +112,73 @@ function ClothingScene() {
       <div className="absolute inset-x-0 top-0 flex items-center px-4 pt-3">
         <Badge>
           <Mic size={11} />
-          Creator Pitching
+          {d.phoneShowcase.clothing.badge}
         </Badge>
       </div>
       <div className="absolute inset-x-0 bottom-0 px-4 pb-4">
-        <p className="text-xs font-medium text-white">&ldquo;Hey guys, how are you?&rdquo;</p>
-        <p className="mt-0.5 text-[11px] text-white/70">Pesal &middot; Itahari, Nepal</p>
+        <p className="text-xs font-medium text-white">{d.phoneShowcase.clothing.quote}</p>
+        <p className="mt-0.5 text-[11px] text-white/70">{d.phoneShowcase.clothing.caption}</p>
       </div>
     </SceneFrame>
   );
 }
 
 function OnSetScene() {
+  const { d } = useLandingLanguage();
   return (
     <SceneFrame videoKey="10145285" src={pexels('10145285', '10145285-hd_1080_1920_30fps.mp4')}>
       <div className="absolute inset-x-0 top-0 flex items-center px-4 pt-3">
         <Badge>
           <Camera size={11} />
-          On set
+          {d.phoneShowcase.onSet.badge}
         </Badge>
       </div>
       <div className="absolute inset-x-0 bottom-0 px-4 pb-4">
-        <p className="text-xs font-medium text-white">Another shoot day, another brand</p>
-        <p className="mt-0.5 text-[11px] text-white/70">Creator, Nepal</p>
+        <p className="text-xs font-medium text-white">{d.phoneShowcase.onSet.caption}</p>
+        <p className="mt-0.5 text-[11px] text-white/70">{d.phoneShowcase.onSet.sub}</p>
       </div>
     </SceneFrame>
   );
 }
 
 function BehindScenesScene() {
+  const { d } = useLandingLanguage();
   return (
     <SceneFrame videoKey="14075778" src={pexels('14075778', '14075778-hd_1080_1920_30fps.mp4')}>
       <div className="absolute inset-x-0 top-0 flex items-center px-4 pt-3">
         <Badge>
           <Smartphone size={11} />
-          Behind the scenes
+          {d.phoneShowcase.behindScenes.badge}
         </Badge>
       </div>
       <div className="absolute inset-x-0 bottom-0 px-4 pb-4">
-        <p className="text-xs font-medium text-white">Getting today&rsquo;s content ready</p>
-        <p className="mt-0.5 text-[11px] text-white/70">Creator, Nepal</p>
+        <p className="text-xs font-medium text-white">{d.phoneShowcase.behindScenes.caption}</p>
+        <p className="mt-0.5 text-[11px] text-white/70">{d.phoneShowcase.behindScenes.sub}</p>
       </div>
     </SceneFrame>
   );
 }
 
 function StyleScene() {
+  const { d } = useLandingLanguage();
   return (
     <SceneFrame videoKey="30550627" src={pexels('30550627', '13086324_1080_1920_25fps.mp4')}>
       <div className="absolute inset-x-0 top-0 flex items-center px-4 pt-3">
         <Badge>
           <Shirt size={11} />
-          Style content
+          {d.phoneShowcase.style.badge}
         </Badge>
       </div>
       <div className="absolute inset-x-0 bottom-0 px-4 pb-4">
-        <p className="text-xs font-medium text-white">&ldquo;Today&rsquo;s fit check&rdquo;</p>
-        <p className="mt-0.5 text-[11px] text-white/70">Street style creator</p>
+        <p className="text-xs font-medium text-white">{d.phoneShowcase.style.quote}</p>
+        <p className="mt-0.5 text-[11px] text-white/70">{d.phoneShowcase.style.caption}</p>
       </div>
     </SceneFrame>
   );
 }
 
 function MomoScene() {
+  const { d } = useLandingLanguage();
   return (
     <SceneFrame
       videoKey="37069651"
@@ -179,7 +188,7 @@ function MomoScene() {
       <div className="absolute inset-x-0 top-0 flex items-center px-4 pt-3">
         <Badge>
           <Utensils size={11} />
-          Momo &amp; chowmein review
+          {d.phoneShowcase.momo.badge}
         </Badge>
       </div>
       <div className="absolute inset-x-0 bottom-0 px-4 pb-4">
@@ -188,26 +197,27 @@ function MomoScene() {
             <Star key={i} size={12} className="fill-brand-orange text-brand-orange" />
           ))}
         </div>
-        <p className="mt-1 text-xs font-medium text-white">&ldquo;This jhol momo is unreal&rdquo;</p>
-        <p className="mt-0.5 text-[11px] text-white/70">Sabina Tamang &middot; Food creator</p>
+        <p className="mt-1 text-xs font-medium text-white">{d.phoneShowcase.momo.quote}</p>
+        <p className="mt-0.5 text-[11px] text-white/70">{d.phoneShowcase.momo.caption}</p>
       </div>
     </SceneFrame>
   );
 }
 
 function HotelScene() {
+  const { d } = useLandingLanguage();
   return (
     <SceneFrame videoKey="7581209" src={pexels('7581209', '7581209-sd_960_540_30fps.mp4')}>
       <div className="absolute inset-x-0 top-0 flex items-center px-4 pt-3">
         <Badge>
           <Hotel size={11} />
-          Client pitch
+          {d.phoneShowcase.hotel.badge}
         </Badge>
       </div>
       <div className="absolute inset-x-0 bottom-0 px-4 pb-4">
         <p className="flex items-center gap-1.5 text-xs font-medium text-white">
           <Camera size={12} className="shrink-0" />
-          Pitching a reel concept to Hotel Mustang&rsquo;s owner
+          {d.phoneShowcase.hotel.caption}
         </p>
       </div>
     </SceneFrame>
@@ -215,23 +225,25 @@ function HotelScene() {
 }
 
 function BlogScene() {
+  const { d } = useLandingLanguage();
   return (
     <SceneFrame videoKey="33048634" src={pexels('33048634', '14085816_1920_1080_25fps.mp4')}>
       <div className="absolute inset-x-0 top-0 flex items-center px-4 pt-3">
         <Badge>
           <Mic size={11} />
-          Blogging live
+          {d.phoneShowcase.blog.badge}
         </Badge>
       </div>
       <div className="absolute inset-x-0 bottom-0 px-4 pb-4">
-        <p className="text-xs font-medium text-white">&ldquo;Okay guys, today we&rsquo;re unboxing&hellip;&rdquo;</p>
-        <p className="mt-0.5 text-[11px] text-white/70">Prakash Shrestha &middot; Tech blogger</p>
+        <p className="text-xs font-medium text-white">{d.phoneShowcase.blog.quote}</p>
+        <p className="mt-0.5 text-[11px] text-white/70">{d.phoneShowcase.blog.caption}</p>
       </div>
     </SceneFrame>
   );
 }
 
 function PaymentScene() {
+  const { d } = useLandingLanguage();
   const [show, setShow] = useState(false);
 
   useEffect(() => {
@@ -244,7 +256,7 @@ function PaymentScene() {
       <div className="absolute inset-x-0 top-0 flex items-center px-4 pt-3">
         <Badge>
           <Wallet size={11} />
-          Payment released
+          {d.phoneShowcase.payment.badge}
         </Badge>
       </div>
       <div className="absolute inset-x-4 bottom-4">
@@ -258,8 +270,8 @@ function PaymentScene() {
             >
               <BadgeCheck size={18} className="shrink-0 text-emerald-500" />
               <div className="leading-tight">
-                <p className="text-xs font-semibold text-ink">+ Rs 15,000 received</p>
-                <p className="text-[10px] text-ink-soft">Escrow released &middot; eSewa</p>
+                <p className="text-xs font-semibold text-ink">{d.phoneShowcase.payment.amount}</p>
+                <p className="text-[10px] text-ink-soft">{d.phoneShowcase.payment.caption}</p>
               </div>
             </motion.div>
           )}
@@ -270,6 +282,7 @@ function PaymentScene() {
 }
 
 function ContentScene() {
+  const { d } = useLandingLanguage();
   const [seconds, setSeconds] = useState(0);
 
   useEffect(() => {
@@ -290,7 +303,7 @@ function ContentScene() {
             transition={{ duration: 1, repeat: Infinity }}
           />
           <span className="text-[10px] font-semibold tracking-widest text-white">
-            REC {mm}:{ss}
+            {d.phoneShowcase.content.recLabel} {mm}:{ss}
           </span>
         </div>
         <span className="rounded-full bg-white/15 p-1.5 backdrop-blur-sm">
@@ -298,7 +311,7 @@ function ContentScene() {
         </span>
       </div>
       <div className="absolute inset-x-0 bottom-0 px-4 pb-4">
-        <Badge>Making content</Badge>
+        <Badge>{d.phoneShowcase.content.badge}</Badge>
       </div>
     </SceneFrame>
   );

@@ -168,9 +168,9 @@ const styles = StyleSheet.create({
   accordionCard:   { borderRadius: RADIUS.md, borderWidth: 1.5, overflow: 'hidden', ...SHADOW.card },
   accordionHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14, minHeight: 44 },
   indexBadge:      { width: 26, height: 26, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
-  indexText:       { fontSize: 12, fontFamily: F.bold },
+  indexText:       { fontSize: 12, fontFamily: F.bold, marginTop: 4 },
   sectionEmoji:    { fontSize: 18 },
-  accordionTitle:  { flex: 1, fontSize: 14, fontFamily: F.bold },
+  accordionTitle:  { flex: 1, fontSize: 14, fontFamily: F.bold, marginTop: 9 },
   accordionBody:   { fontSize: 14, lineHeight: 22, paddingHorizontal: 14, paddingBottom: 14, paddingTop: 12, borderTopWidth: 1, fontFamily: F.regular },
 
   footer:     { alignItems: 'center', paddingTop: 20 },

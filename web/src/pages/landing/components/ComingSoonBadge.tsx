@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { FaApple, FaGooglePlay } from 'react-icons/fa6';
+import { useLandingLanguage } from '../context/LanguageContext';
 
 interface ComingSoonBadgeProps {
   variant?: 'dark' | 'light';
@@ -11,6 +12,7 @@ interface ComingSoonBadgeProps {
 // Coming Soon mode is toggled off later, but muted and non-interactive
 // (no href, no hover-lift) so it never reads as a broken/dead button.
 export function ComingSoonBadge({ variant = 'dark', className = '' }: ComingSoonBadgeProps) {
+  const { d } = useLandingLanguage();
   const isDark = variant === 'dark';
 
   return (
@@ -30,7 +32,7 @@ export function ComingSoonBadge({ variant = 'dark', className = '' }: ComingSoon
           animate={{ opacity: [1, 0.35, 1] }}
           transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
         />
-        Coming Soon
+        {d.comingSoonBadge.label}
       </span>
     </div>
   );

@@ -92,7 +92,7 @@ export function LandingNav() {
 
           <button
             onClick={() => setOpen((v) => !v)}
-            aria-label="Toggle menu"
+            aria-label={d.nav.toggleMenuAriaLabel}
             className="rounded-full p-1.5 text-ink transition-colors duration-300 hover:bg-ink/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet lg:hidden"
           >
             {open ? <X size={22} /> : <Menu size={22} />}

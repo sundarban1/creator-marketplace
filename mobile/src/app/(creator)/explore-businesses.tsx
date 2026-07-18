@@ -63,6 +63,8 @@ function ExploreFilterModal({
   const { platforms: allPlatforms } = usePlatforms();
 
   const activeChips: ActiveFilterChip[] = [];
+  if (tempPlatform) activeChips.push({ key: 'platform', label: tempPlatform, onClear: () => setTempPlatform('') });
+  if (tempCategory) activeChips.push({ key: 'category', label: tempCategory, onClear: () => setTempCategory('') });
   for (const loc of tempLocation) {
     activeChips.push({
       key: `loc-${loc.label}`,
@@ -70,8 +72,6 @@ function ExploreFilterModal({
       onClear: () => setTempLocation(tempLocation.filter((l) => l.label !== loc.label)),
     });
   }
-  if (tempPlatform) activeChips.push({ key: 'platform', label: tempPlatform, onClear: () => setTempPlatform('') });
-  if (tempCategory) activeChips.push({ key: 'category', label: tempCategory, onClear: () => setTempCategory('') });
 
   const applyLabel = activeChips.length > 0
     ? t('explore.businesses.filterApplyCount', { n: activeChips.length })
@@ -89,16 +89,6 @@ function ExploreFilterModal({
     >
       <ActiveFilterChips chips={activeChips} />
 
-      {/* Location */}
-      <View>
-        <FilterSectionHeader
-          icon="location-outline"
-          label={t('explore.businesses.filterLocation')}
-          hint={t('explore.businesses.filterLocationCount', { n: tempLocation.length })}
-        />
-        <LocationSearchPicker selected={tempLocation} onSelect={setTempLocation} />
-      </View>
-
       {/* Platform */}
       <View>
         <FilterSectionHeader icon="phone-portrait-outline" label={t('explore.businesses.filterPlatform')} />
@@ -109,9 +99,9 @@ function ExploreFilterModal({
               <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                 key={p.id}
                 onPress={() => setTempPlatform(active ? '' : p.name)}
-                style={[fm.filterChip, { borderColor: active ? C.brinjal1 : C.border, backgroundColor: active ? C.primaryLight : C.background }]}>
-                <FontAwesome5 name={p.icon} size={12} color={active ? C.brinjal1 : C.textSecondary} />
-                <Text style={[fm.filterChipText, { color: active ? C.brinjal1 : C.text, fontWeight: active ? '700' : '400' }]}>{p.name}</Text>
+                style={[fm.filterChip, { borderColor: active ? p.color : C.border, backgroundColor: active ? p.iconBg : C.background }]}>
+                <FontAwesome5 name={p.icon} size={12} color={active ? p.color : C.textSecondary} />
+                <Text style={[fm.filterChipText, { color: active ? p.color : C.text, fontWeight: active ? '700' : '400' }]}>{p.name}</Text>
               </Pressable>
             );
           })}
@@ -128,13 +118,23 @@ function ExploreFilterModal({
               <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                 key={cat.id}
                 onPress={() => setTempCategory(active ? '' : cat.name)}
-                style={[fm.filterChip, { borderColor: active ? C.brinjal1 : C.border, backgroundColor: active ? C.primaryLight : C.background }]}>
-                <FontAwesome5 name={cat.icon} size={12} color={active ? C.brinjal1 : C.textSecondary} />
-                <Text style={[fm.filterChipText, { color: active ? C.brinjal1 : C.text, fontWeight: active ? '700' : '400' }]}>{cat.name}</Text>
+                style={[fm.filterChip, { borderColor: active ? cat.color : C.border, backgroundColor: active ? cat.iconBg : C.background }]}>
+                <FontAwesome5 name={cat.icon} size={12} color={active ? cat.color : C.textSecondary} />
+                <Text style={[fm.filterChipText, { color: active ? cat.color : C.text, fontWeight: active ? '700' : '400' }]}>{cat.name}</Text>
               </Pressable>
             );
           })}
         </View>
+      </View>
+
+      {/* Location */}
+      <View>
+        <FilterSectionHeader
+          icon="location-outline"
+          label={t('explore.businesses.filterLocation')}
+          hint={t('explore.businesses.filterLocationCount', { n: tempLocation.length })}
+        />
+        <LocationSearchPicker selected={tempLocation} onSelect={setTempLocation} />
       </View>
     </FilterSheet>
   );

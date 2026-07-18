@@ -4,6 +4,7 @@ import { MessageCircle, X, Send } from 'lucide-react';
 import type { Socket } from 'socket.io-client';
 import { visitorChatApi, type VisitorMessage } from '../lib/visitorChatApi';
 import { connectVisitorSocket, disconnectVisitorSocket } from '../lib/visitorSocket';
+import { useLandingLanguage } from '../context/LanguageContext';
 
 const STORAGE_KEY = 'kolab_visitor_chat';
 
@@ -31,6 +32,7 @@ function addMessage(prev: VisitorMessage[], message: VisitorMessage): VisitorMes
 }
 
 export function ChatWidget() {
+  const { d } = useLandingLanguage();
   const [open, setOpen] = useState(false);
   const [session, setSession] = useState<StoredSession | null>(loadSession);
   const [messages, setMessages] = useState<VisitorMessage[]>([]);
@@ -91,8 +93,8 @@ export function ChatWidget() {
     e.preventDefault();
     const name = form.name.trim();
     const contact = form.contact.trim();
-    if (!name) return setFormError('Please enter your name.');
-    if (!contact) return setFormError('Please enter your email or phone number.');
+    if (!name) return setFormError(d.chatWidget.errorNameRequired);
+    if (!contact) return setFormError(d.chatWidget.errorContactRequired);
 
     setFormError('');
     setStarting(true);
@@ -107,7 +109,7 @@ export function ChatWidget() {
       setSession(next);
       setMessages([]);
     } catch {
-      setFormError('Something went wrong. Please try again.');
+      setFormError(d.chatWidget.errorGeneric);
     } finally {
       setStarting(false);
     }
@@ -144,27 +146,27 @@ export function ChatWidget() {
           >
             <div className="flex items-center justify-between bg-ink px-5 py-4 text-white">
               <div>
-                <p className="font-serif text-base italic">Chat with Kolab</p>
-                <p className="text-xs text-white/50">We typically reply within a few hours</p>
+                <p className="font-serif text-base italic">{d.chatWidget.headerTitle}</p>
+                <p className="text-xs text-white/50">{d.chatWidget.headerSubtitle}</p>
               </div>
-              <button onClick={() => setOpen(false)} aria-label="Close chat" className="text-white/70 hover:text-white">
+              <button onClick={() => setOpen(false)} aria-label={d.chatWidget.closeAriaLabel} className="text-white/70 hover:text-white">
                 <X size={18} />
               </button>
             </div>
 
             {!session ? (
               <form onSubmit={handleStart} className="flex flex-1 flex-col justify-center gap-3 p-6">
-                <p className="mb-1 text-sm text-ink-soft">Tell us who you are and we'll start the conversation.</p>
+                <p className="mb-1 text-sm text-ink-soft">{d.chatWidget.introText}</p>
                 <input
                   value={form.name}
                   onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                  placeholder="Your name"
+                  placeholder={d.chatWidget.namePlaceholder}
                   className="rounded-xl border border-ink/15 px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-soft/50 focus:border-violet focus:outline-none"
                 />
                 <input
                   value={form.contact}
                   onChange={(e) => setForm((f) => ({ ...f, contact: e.target.value }))}
-                  placeholder="Email or phone number"
+                  placeholder={d.chatWidget.contactPlaceholder}
                   className="rounded-xl border border-ink/15 px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-soft/50 focus:border-violet focus:outline-none"
                 />
                 {formError && <p className="text-xs text-red-500">{formError}</p>}
@@ -173,14 +175,14 @@ export function ChatWidget() {
                   disabled={starting}
                   className="mt-1 rounded-xl bg-gradient-to-r from-violet to-brand-orange py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet disabled:opacity-60"
                 >
-                  {starting ? 'Starting…' : 'Start chat'}
+                  {starting ? d.chatWidget.starting : d.chatWidget.startChat}
                 </button>
               </form>
             ) : (
               <>
                 <div ref={scrollRef} className="flex-1 space-y-2.5 overflow-y-auto p-4">
                   {messages.length === 0 && (
-                    <p className="mt-6 text-center text-xs text-ink-soft/60">Send a message to get started.</p>
+                    <p className="mt-6 text-center text-xs text-ink-soft/60">{d.chatWidget.emptyMessages}</p>
                   )}
                   {messages.map((m) => (
                     <div key={m.id} className={`flex ${m.sender === 'VISITOR' ? 'justify-end' : 'justify-start'}`}>
@@ -198,13 +200,13 @@ export function ChatWidget() {
                   <input
                     value={draft}
                     onChange={(e) => setDraft(e.target.value)}
-                    placeholder="Type a message…"
+                    placeholder={d.chatWidget.messagePlaceholder}
                     className="flex-1 rounded-full border border-ink/15 px-4 py-2.5 text-sm text-ink placeholder:text-ink-soft/50 focus:border-violet focus:outline-none"
                   />
                   <button
                     type="submit"
                     disabled={sending || !draft.trim()}
-                    aria-label="Send message"
+                    aria-label={d.chatWidget.sendAriaLabel}
                     className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet to-brand-orange text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet disabled:opacity-50"
                   >
                     <Send size={15} />
@@ -220,7 +222,7 @@ export function ChatWidget() {
         onClick={toggleOpen}
         whileHover={{ scale: 1.06 }}
         whileTap={{ scale: 0.95 }}
-        aria-label={open ? 'Close chat' : 'Open chat'}
+        aria-label={open ? d.chatWidget.closeAriaLabel : d.chatWidget.openAriaLabel}
         className="relative flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-violet to-brand-orange text-white shadow-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet"
       >
         {open ? <X size={22} /> : <MessageCircle size={22} />}

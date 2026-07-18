@@ -9,7 +9,7 @@ import { api, type LegalSection } from '../../lib/api';
 type LegalSlug = 'privacy-policy' | 'terms';
 
 function LegalDocContent({ slug }: { slug: LegalSlug }) {
-  const { d } = useLandingLanguage();
+  const { d, lang } = useLandingLanguage();
   const [sections, setSections] = useState<LegalSection[] | null>(null);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const [error, setError] = useState(false);
@@ -43,7 +43,7 @@ function LegalDocContent({ slug }: { slug: LegalSlug }) {
 
       {lastUpdated && (
         <motion.p variants={fadeUp} className="mt-3 text-sm text-ink-soft">
-          {d.legalPages.lastUpdated.replace('{{date}}', new Date(lastUpdated).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }))}
+          {d.legalPages.lastUpdated.replace('{{date}}', new Date(lastUpdated).toLocaleDateString(lang === 'ne' ? 'ne-NP' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' }))}
         </motion.p>
       )}
 

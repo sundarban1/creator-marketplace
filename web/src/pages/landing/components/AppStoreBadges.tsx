@@ -1,4 +1,5 @@
 import { FaApple, FaGooglePlay } from 'react-icons/fa6';
+import { useLandingLanguage } from '../context/LanguageContext';
 
 // Real store URLs aren't published yet — badges link to '#' as placeholders
 // until the app is live, so update APP_STORE_URL/PLAY_STORE_URL then.
@@ -11,6 +12,7 @@ interface AppStoreBadgesProps {
 }
 
 export function AppStoreBadges({ variant = 'dark', className = '' }: AppStoreBadgesProps) {
+  const { d } = useLandingLanguage();
   const isDark = variant === 'dark';
   const badgeClass = isDark
     ? 'bg-ink text-white hover:bg-ink/85'
@@ -24,8 +26,8 @@ export function AppStoreBadges({ variant = 'dark', className = '' }: AppStoreBad
       >
         <FaApple size={17} />
         <span className="flex flex-col items-start leading-none">
-          <span className="text-[9px] font-medium uppercase tracking-wide opacity-70">Download on the</span>
-          <span>App Store</span>
+          <span className="text-[9px] font-medium uppercase tracking-wide opacity-70">{d.appStoreBadges.downloadOnThe}</span>
+          <span>{d.appStoreBadges.appStore}</span>
         </span>
       </a>
       <a
@@ -34,8 +36,8 @@ export function AppStoreBadges({ variant = 'dark', className = '' }: AppStoreBad
       >
         <FaGooglePlay size={15} />
         <span className="flex flex-col items-start leading-none">
-          <span className="text-[9px] font-medium uppercase tracking-wide opacity-70">Get it on</span>
-          <span>Google Play</span>
+          <span className="text-[9px] font-medium uppercase tracking-wide opacity-70">{d.appStoreBadges.getItOn}</span>
+          <span>{d.appStoreBadges.googlePlay}</span>
         </span>
       </a>
     </div>

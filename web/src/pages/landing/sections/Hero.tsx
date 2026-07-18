@@ -9,11 +9,13 @@ import { ComingSoonBadge } from '../components/ComingSoonBadge';
 import { PhoneShowcase } from '../components/PhoneShowcase';
 import { useLenisScroll } from '../hooks/useLenis';
 import { useComingSoon } from '../hooks/useComingSoon';
+import { useHeadlineTypewriter } from '../hooks/useHeadlineTypewriter';
 
 export function Hero() {
   const { d } = useLandingLanguage();
   const { scrollTo } = useLenisScroll();
   const comingSoon = useComingSoon();
+  const typed = useHeadlineTypewriter(d.hero.headlinePairs);
 
   return (
     <section id={SECTION_IDS.hero} className="relative overflow-hidden bg-paper pt-44 pb-28">
@@ -43,15 +45,39 @@ export function Hero() {
               variants={fadeUp}
               className="text-balance mt-6 font-serif text-5xl font-medium leading-[1.03] tracking-tight text-ink sm:text-6xl lg:text-7xl"
             >
-              {d.hero.headlinePrefix}{' '}
-              <em className="text-violet underline decoration-violet/30 decoration-2 underline-offset-8">
-                {d.hero.headlineBrands}
-              </em>{' '}
-              {d.hero.headlineMiddle}{' '}
-              <em className="text-brand-orange underline decoration-brand-orange/30 decoration-2 underline-offset-8">
-                {d.hero.headlineCreators}
-              </em>
-              {!!d.hero.headlineSuffix && <> {d.hero.headlineSuffix}</>}
+              {/* Screen readers get one stable sentence instead of the rapidly
+                  retyping text below, which is hidden from assistive tech. */}
+              <span className="sr-only">
+                {d.hero.headlinePrefix} {d.hero.headlineBrands} {d.hero.headlineMiddle} {d.hero.headlineCreators}
+                {!!d.hero.headlineSuffix && ` ${d.hero.headlineSuffix}`}
+              </span>
+              <span aria-hidden="true">
+                {d.hero.headlinePrefix}{' '}
+                <em className="relative inline-grid align-baseline text-left text-violet underline decoration-violet/30 decoration-2 underline-offset-8">
+                  {/* Invisible copies of every word this slot ever cycles through, stacked
+                      in the same grid cell — the box sizes itself to the widest one, so
+                      typing/deleting a shorter or longer word never changes this element's
+                      width. That's what keeps "Where"/"Meet" from shifting position. */}
+                  {d.hero.headlinePairs.map((p, i) => (
+                    <span key={i} aria-hidden className="invisible whitespace-nowrap [grid-area:1/1]">{p.a}</span>
+                  ))}
+                  <span className="whitespace-nowrap [grid-area:1/1]">
+                    {typed.a}
+                    <span className="animate-pulse">▏</span>
+                  </span>
+                </em>{' '}
+                {d.hero.headlineMiddle}{' '}
+                <em className="relative inline-grid align-baseline text-left text-brand-orange underline decoration-brand-orange/30 decoration-2 underline-offset-8">
+                  {d.hero.headlinePairs.map((p, i) => (
+                    <span key={i} aria-hidden className="invisible whitespace-nowrap [grid-area:1/1]">{p.b}</span>
+                  ))}
+                  <span className="whitespace-nowrap [grid-area:1/1]">
+                    {typed.b}
+                    <span className="animate-pulse">▏</span>
+                  </span>
+                </em>
+                {!!d.hero.headlineSuffix && <> {d.hero.headlineSuffix}</>}
+              </span>
             </motion.h1>
 
             <motion.p variants={fadeUp} className="mx-auto mt-8 max-w-lg text-lg leading-relaxed text-ink-soft lg:mx-0">
@@ -85,7 +111,7 @@ export function Hero() {
               <span className="flex h-7 w-7 items-center justify-center rounded-full bg-violet/10 text-violet">
                 <FaIdBadge size={13} />
               </span>
-              Verified creators
+              {d.hero.credentialVerified}
             </span>
 
             <span aria-hidden className="hidden h-4 w-px bg-ink/10 sm:block" />
@@ -94,7 +120,7 @@ export function Hero() {
               <span className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-orange/10 text-brand-orange">
                 <FaLock size={12} />
               </span>
-              Escrow-protected payments
+              {d.hero.credentialEscrow}
             </span>
 
             <span aria-hidden className="hidden h-4 w-px bg-ink/10 sm:block" />
@@ -103,21 +129,21 @@ export function Hero() {
               <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-violet/15 to-brand-orange/15 text-violet">
                 <FaHeart size={12} />
               </span>
-              Built for Nepali Creators &amp; Brands
+              {d.hero.credentialBuiltFor}
             </span>
           </div>
         </motion.div>
       </div>
 
       <motion.button
-        aria-label="Scroll to explore"
+        aria-label={d.hero.scrollAriaLabel}
         onClick={() => scrollTo(`#${SECTION_IDS.trust}`)}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1, duration: 0.6 }}
         className="absolute bottom-6 left-1/2 hidden -translate-x-1/2 flex-col items-center gap-1.5 text-ink-soft/60 transition-colors hover:text-ink-soft sm:flex"
       >
-        <span className="text-[10px] font-semibold uppercase tracking-widest">Scroll</span>
+        <span className="text-[10px] font-semibold uppercase tracking-widest">{d.hero.scrollLabel}</span>
         <motion.span animate={{ y: [0, 6, 0] }} transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}>
           <ChevronDown size={16} />
         </motion.span>

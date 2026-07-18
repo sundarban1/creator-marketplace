@@ -10,6 +10,7 @@ export const ne: LandingDict = {
       contact: 'सम्पर्क',
     },
     cta: 'सुरु गर्नुहोस्',
+    toggleMenuAriaLabel: 'मेनु टगल गर्नुहोस्',
   },
 
   hero: {
@@ -19,9 +20,20 @@ export const ne: LandingDict = {
     headlineMiddle: 'र',
     headlineCreators: 'क्रिएटरहरू',
     headlineSuffix: 'भेट्छन्',
+    headlinePairs: [
+      { a: 'ब्रान्डहरू', b: 'क्रिएटरहरू' },
+      { a: 'विचारहरू', b: 'सिर्जनशीलता' },
+      { a: 'ब्रान्डहरू', b: 'प्रतिभा' },
+      { a: 'क्रिएटरहरू', b: 'सफलता' },
+    ],
     sub: 'Kolab ले नेपाली क्रिएटरहरूलाई भुक्तानी हुने क्याम्पेनका लागि ब्रान्डहरूसँग जोड्छ — खोज्नुहोस्, सहकार्य गर्नुहोस्, र पैसा कमाउनुहोस्, सबै एउटै ठाउँमा।',
     ctaCreator: 'क्रिएटरको रूपमा जोडिनुहोस्',
     ctaBusiness: 'क्रिएटर भाडामा लिनुहोस्',
+    credentialVerified: 'प्रमाणित क्रिएटरहरू',
+    credentialEscrow: 'एस्क्रो-सुरक्षित भुक्तानी',
+    credentialBuiltFor: 'नेपाली क्रिएटर र ब्रान्डका लागि बनेको',
+    scrollAriaLabel: 'हेर्नका लागि स्क्रोल गर्नुहोस्',
+    scrollLabel: 'स्क्रोल',
   },
 
   trust: {
@@ -35,6 +47,7 @@ export const ne: LandingDict = {
   how: {
     eyebrow: 'कसरी काम गर्छ',
     heading: 'साइन अपदेखि भुक्तानीसम्म, चार चरणमा',
+    stepLabel: 'चरण',
     steps: [
       { title: 'प्रोफाइल बनाउनुहोस्', desc: 'क्रिएटरहरूले सामाजिक खाता जोड्छन्। ब्रान्डले व्यवसाय प्रोफाइल बनाउँछ।' },
       { title: 'खोज्नुहोस् र आवेदन दिनुहोस्', desc: 'ब्रान्डले क्याम्पेन पोस्ट गर्छ, क्रिएटरले आवेदन दिन्छ, वा ब्रान्डले सिधै आमन्त्रित गर्छ।' },
@@ -166,5 +179,49 @@ export const ne: LandingDict = {
     faqEmpty: 'अझै कुनै FAQ प्रकाशित भएको छैन — तलबाट सम्पर्क गर्नुहोस्, हामी सिधै मद्दत गर्नेछौं।',
     contactHeading: 'अझै मद्दत चाहियो?',
     contactSub: 'हामीलाई सन्देश पठाउनुहोस्, हामी चाँडै जवाफ दिनेछौं।',
+  },
+
+  appStoreBadges: {
+    downloadOnThe: 'डाउनलोड गर्नुहोस्',
+    appStore: 'App Store',
+    getItOn: 'उपलब्ध छ',
+    googlePlay: 'Google Play',
+  },
+
+  comingSoonBadge: {
+    label: 'चाँडै आउँदैछ',
+  },
+
+  chatWidget: {
+    errorNameRequired: 'कृपया आफ्नो नाम लेख्नुहोस्।',
+    errorContactRequired: 'कृपया आफ्नो इमेल वा फोन नम्बर लेख्नुहोस्।',
+    errorGeneric: 'केही गडबड भयो। फेरि प्रयास गर्नुहोस्।',
+    headerTitle: 'Kolab सँग च्याट गर्नुहोस्',
+    headerSubtitle: 'हामी सामान्यतया केही घण्टाभित्र जवाफ दिन्छौं',
+    closeAriaLabel: 'च्याट बन्द गर्नुहोस्',
+    openAriaLabel: 'च्याट खोल्नुहोस्',
+    introText: 'तपाईं को हुनुहुन्छ भन्नुहोस्, हामी कुराकानी सुरु गर्छौं।',
+    namePlaceholder: 'तपाईंको नाम',
+    contactPlaceholder: 'इमेल वा फोन नम्बर',
+    starting: 'सुरु गर्दै…',
+    startChat: 'च्याट सुरु गर्नुहोस्',
+    emptyMessages: 'सुरु गर्न सन्देश पठाउनुहोस्।',
+    messagePlaceholder: 'सन्देश टाइप गर्नुहोस्…',
+    sendAriaLabel: 'सन्देश पठाउनुहोस्',
+  },
+
+  phoneShowcase: {
+    creatorApp: { badge: 'Kolab खोल्दै', quote: '“Kolab मा आफ्नो अर्को काम फेला पार्नुहोस्”', caption: 'अञ्जली गुरुङ · क्रिएटर, काठमाडौं' },
+    product: { badge: 'प्रोडक्ट देखाउँदै', quote: '“यो नै हो जुन म प्रयोग गरिरहेकी छु”', caption: 'हिमाल कफीद्वारा स्पन्सर्ड' },
+    food: { badge: 'समीक्षा गर्दै', caption: 'साँच्चै रमाइलो — फेरि अर्डर गर्दैछु' },
+    clothing: { badge: 'क्रिएटर पिचिङ', quote: '“है, कस्तो हुनुहुन्छ?”', caption: 'पेसल · इटहरी, नेपाल' },
+    onSet: { badge: 'सेटमा', caption: 'अर्को शूट दिन, अर्को ब्रान्ड', sub: 'क्रिएटर, नेपाल' },
+    behindScenes: { badge: 'पर्दा पछाडि', caption: 'आजको सामग्री तयार पार्दै', sub: 'क्रिएटर, नेपाल' },
+    style: { badge: 'स्टाइल सामग्री', quote: '“आजको फिट चेक”', caption: 'स्ट्रिट स्टाइल क्रिएटर' },
+    momo: { badge: 'मोमो र चाउचाउ समीक्षा', quote: '“यो झोल मोमो त कमाल छ”', caption: 'साबिना तामाङ · फुड क्रिएटर' },
+    hotel: { badge: 'ग्राहक प्रस्तुति', caption: 'होटल मस्ट्याङका मालिकलाई रिल कन्सेप्ट प्रस्तुत गर्दै' },
+    blog: { badge: 'लाइभ ब्लगिङ', quote: '“है साथीहरू, आज हामी अनबक्सिङ गर्दैछौं…”', caption: 'प्रकाश श्रेष्ठ · टेक ब्लगर' },
+    payment: { badge: 'भुक्तानी रिलिज भयो', amount: '+ रु १५,००० प्राप्त भयो', caption: 'एस्क्रो रिलिज भयो · eSewa' },
+    content: { recLabel: 'रेक', badge: 'सामग्री बनाउँदै' },
   },
 };

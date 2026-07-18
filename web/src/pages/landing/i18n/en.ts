@@ -8,6 +8,7 @@ export const en = {
       contact: 'Contact',
     },
     cta: 'Get started',
+    toggleMenuAriaLabel: 'Toggle menu',
   },
 
   hero: {
@@ -17,9 +18,22 @@ export const en = {
     headlineMiddle: 'Meet',
     headlineCreators: 'Creators',
     headlineSuffix: '',
+    // Cycled by a typewriter effect in the two colored headline slots — "Where"
+    // and "Meet" stay fixed, these two words type/delete together in sync.
+    headlinePairs: [
+      { a: 'Brands', b: 'Creators' },
+      { a: 'Ideas', b: 'Creativity' },
+      { a: 'Brands', b: 'Talent' },
+      { a: 'Creators', b: 'Success' },
+    ],
     sub: 'Kolab connects Nepali creators with brands for paid campaigns — discover opportunities, collaborate, and get paid, all in one place.',
     ctaCreator: 'Join as Creator',
     ctaBusiness: 'Hire Creators',
+    credentialVerified: 'Verified creators',
+    credentialEscrow: 'Escrow-protected payments',
+    credentialBuiltFor: 'Built for Nepali Creators & Brands',
+    scrollAriaLabel: 'Scroll to explore',
+    scrollLabel: 'Scroll',
   },
 
   trust: {
@@ -34,6 +48,7 @@ export const en = {
   how: {
     eyebrow: 'How it works',
     heading: 'From sign-up to payout, in four steps',
+    stepLabel: 'Step',
     steps: [
       { title: 'Create your profile', desc: 'Creators connect their social accounts. Brands set up a business profile.' },
       { title: 'Discover & apply', desc: 'Brands post campaigns, creators apply, or brands invite creators directly.' },
@@ -165,6 +180,50 @@ export const en = {
     faqEmpty: "No FAQs published yet — reach out below and we'll help directly.",
     contactHeading: 'Still need help?',
     contactSub: "Send us a message and we'll get back to you.",
+  },
+
+  appStoreBadges: {
+    downloadOnThe: 'Download on the',
+    appStore: 'App Store',
+    getItOn: 'Get it on',
+    googlePlay: 'Google Play',
+  },
+
+  comingSoonBadge: {
+    label: 'Coming Soon',
+  },
+
+  chatWidget: {
+    errorNameRequired: 'Please enter your name.',
+    errorContactRequired: 'Please enter your email or phone number.',
+    errorGeneric: 'Something went wrong. Please try again.',
+    headerTitle: 'Chat with Kolab',
+    headerSubtitle: 'We typically reply within a few hours',
+    closeAriaLabel: 'Close chat',
+    openAriaLabel: 'Open chat',
+    introText: "Tell us who you are and we'll start the conversation.",
+    namePlaceholder: 'Your name',
+    contactPlaceholder: 'Email or phone number',
+    starting: 'Starting…',
+    startChat: 'Start chat',
+    emptyMessages: 'Send a message to get started.',
+    messagePlaceholder: 'Type a message…',
+    sendAriaLabel: 'Send message',
+  },
+
+  phoneShowcase: {
+    creatorApp: { badge: 'Opening Kolab', quote: '“Find your next job in Kolab”', caption: 'Anjali Gurung · Creator, Kathmandu' },
+    product: { badge: 'Displaying product', quote: '“Here’s the one I’ve been using”', caption: 'Sponsored by Himal Coffee' },
+    food: { badge: 'Reviewing', caption: 'Worth the hype — ordering again' },
+    clothing: { badge: 'Creator Pitching', quote: '“Hey guys, how are you?”', caption: 'Pesal · Itahari, Nepal' },
+    onSet: { badge: 'On set', caption: 'Another shoot day, another brand', sub: 'Creator, Nepal' },
+    behindScenes: { badge: 'Behind the scenes', caption: 'Getting today’s content ready', sub: 'Creator, Nepal' },
+    style: { badge: 'Style content', quote: '“Today’s fit check”', caption: 'Street style creator' },
+    momo: { badge: 'Momo & chowmein review', quote: '“This jhol momo is unreal”', caption: 'Sabina Tamang · Food creator' },
+    hotel: { badge: 'Client pitch', caption: 'Pitching a reel concept to Hotel Mustang’s owner' },
+    blog: { badge: 'Blogging live', quote: '“Okay guys, today we’re unboxing…”', caption: 'Prakash Shrestha · Tech blogger' },
+    payment: { badge: 'Payment released', amount: '+ Rs 15,000 received', caption: 'Escrow released · eSewa' },
+    content: { recLabel: 'REC', badge: 'Making content' },
   },
 };
 
