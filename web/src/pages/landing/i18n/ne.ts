@@ -118,7 +118,7 @@ export const ne: LandingDict = {
   },
 
   footer: {
-    tagline: 'जहाँ क्रिएटर र ब्रान्डहरू सहकार्य गर्छन्।',
+    tagline: 'जहाँ ब्रान्डहरू र क्रिएटरहरू भेट्छन्।',
     privacy: 'गोपनीयता',
     terms: 'सर्तहरू',
     support: 'सहयोग',

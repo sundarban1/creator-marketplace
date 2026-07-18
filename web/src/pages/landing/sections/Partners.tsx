@@ -1,7 +1,6 @@
-import type { CSSProperties } from 'react';
 import { motion } from 'framer-motion';
 import { FaInstagram, FaTiktok, FaYoutube, FaFacebook } from 'react-icons/fa6';
-import { fadeUp, VP } from '../lib/motion';
+import { fadeUp, VP, PILL_HOVER } from '../lib/motion';
 import { SECTION_IDS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
 import { useAutoScroll } from '../hooks/useAutoScroll';
@@ -28,28 +27,24 @@ const LOGOS: LogoItem[] = [
   { type: 'text', name: 'Bagmati Textiles' },
 ];
 
+// Same rounded-card-in-a-marquee treatment as the Categories section (colored
+// icon badge + label, white card, soft shadow) instead of the old plain
+// grayscale-wordmark row — reads as one consistent "chip" language site-wide.
 function LogoBadge({ item }: { item: LogoItem }) {
-  if (item.type === 'icon') {
-    const { Icon, name, color } = item;
-    return (
-      <div
-        style={{ '--brand': color } as CSSProperties}
-        className="flex flex-shrink-0 items-center gap-2 whitespace-nowrap text-ink/35 grayscale transition-all duration-300 hover:text-[var(--brand)] hover:grayscale-0"
-      >
-        <Icon size={20} />
-        <span className="text-sm font-semibold">{name}</span>
-      </div>
-    );
-  }
+  const color = item.color ?? '#6B6560'; // falls back to ink-soft for uncolored placeholder brands
   return (
-    <span
-      style={item.color ? ({ '--brand': item.color } as CSSProperties) : undefined}
-      className={`flex-shrink-0 whitespace-nowrap text-base font-bold tracking-tight text-ink/35 transition-colors duration-300 ${
-        item.color ? 'hover:text-[var(--brand)]' : 'hover:text-ink'
-      }`}
+    <motion.div
+      whileHover={PILL_HOVER}
+      className="group flex flex-shrink-0 items-center gap-3 rounded-2xl border border-ink/10 bg-white px-4 py-3.5 shadow-[0_2px_8px_rgba(20,17,16,0.03)] transition-shadow duration-300 hover:shadow-[0_14px_28px_-10px_rgba(20,17,16,0.16)]"
     >
-      {item.name}
-    </span>
+      <span
+        style={{ backgroundColor: `${color}1A`, color }}
+        className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-110"
+      >
+        {item.type === 'icon' ? <item.Icon size={16} /> : <span className="text-sm font-bold">{item.name[0]}</span>}
+      </span>
+      <span className="whitespace-nowrap text-sm font-semibold text-ink">{item.name}</span>
+    </motion.div>
   );
 }
 
@@ -71,10 +66,10 @@ export function Partners() {
 
       <div
         ref={scrollRef}
-        className="scrollbar-hide flex gap-14 overflow-x-hidden px-6 [mask-image:linear-gradient(to_right,transparent,black_8%,black_92%,transparent)]"
+        className="scrollbar-hide flex gap-3 overflow-x-hidden px-6 [mask-image:linear-gradient(to_right,transparent,black_6%,black_94%,transparent)]"
       >
         {[LOGOS, LOGOS].map((group, gi) => (
-          <div key={gi} aria-hidden={gi === 1} className="flex flex-shrink-0 items-center gap-14">
+          <div key={gi} aria-hidden={gi === 1} className="flex flex-shrink-0 gap-3">
             {group.map((item, i) => (
               <LogoBadge key={i} item={item} />
             ))}

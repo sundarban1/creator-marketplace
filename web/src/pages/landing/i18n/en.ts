@@ -117,7 +117,7 @@ export const en = {
   },
 
   footer: {
-    tagline: 'Where creators and brands collaborate.',
+    tagline: 'Where Brands Meet Creators.',
     privacy: 'Privacy',
     terms: 'Terms',
     support: 'Support',
