@@ -26,14 +26,6 @@ import type { Campaign } from '@/types';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { TabColors } from '@/utilities/tabColors';
 
-type Application = {
-  id: string;
-  status: 'pending' | 'accepted' | 'rejected';
-  proposedRate: string;
-  createdAt: string;
-  creator: { fullName: string; avatarUrl: string | null; location: string | null };
-};
-
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
 const FILTERS = ['All', 'Active', 'Draft', 'Closed'] as const;
@@ -52,16 +44,6 @@ const STATUS_CFG = {
   draft:  { bg: TabColors.warning.bg,  color: TabColors.warning.color  },
   closed: { bg: TabColors.closed.bg,   color: TabColors.closed.color   },
 } as const;
-
-const PROPOSAL_STATUS_CFG = {
-  pending:  { bg: TabColors.warning.bg,  color: TabColors.warning.color,  label: 'Pending'  },
-  accepted: { bg: TabColors.positive.bg, color: TabColors.positive.color, label: 'Accepted' },
-  rejected: { bg: TabColors.danger.bg,   color: TabColors.danger.color,   label: 'Rejected' },
-} as const;
-
-function initials(name: string) {
-  return name.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase();
-}
 
 const PAGE_SIZE = 10;
 type FilterKey = typeof FILTERS[number];
@@ -87,10 +69,6 @@ export default function CampaignsScreen() {
   const loadingMoreRef = useRef(false);
   const listRef = useRef<FlatList<Campaign>>(null);
   useScrollToTopOnTabPress('campaigns', () => listRef.current?.scrollToOffset({ offset: 0, animated: true }));
-
-  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
-  const [applications, setApplications] = useState<Application[]>([]);
-  const [appsLoading, setAppsLoading] = useState(false);
 
   // Invite flow
   const [inviteCampaign, setInviteCampaign]       = useState<Campaign | null>(null);
@@ -204,18 +182,16 @@ export default function CampaignsScreen() {
     }
   }
 
-  async function openProposals(c: Campaign) {
-    setSelectedCampaign(c);
-    setApplications([]);
-    setAppsLoading(true);
-    try {
-      const data = await campaignService.getApplications(c.id);
-      setApplications(data);
-    } catch {
-      setApplications([]);
-    } finally {
-      setAppsLoading(false);
-    }
+  function openProposals(c: Campaign) {
+    router.push({
+      pathname: '/(business)/campaign-proposals',
+      params: {
+        campaignId:    c.id,
+        campaignTitle: c.title,
+        campaignType:  c.campaignType ?? 'PAID_CAMPAIGN',
+        platform:      c.platforms.join(', '),
+      },
+    });
   }
 
   const CAMP_TABS = [
@@ -496,73 +472,6 @@ export default function CampaignsScreen() {
           )}
         </View>
       </Modal>
-
-      {/* Proposals bottom sheet */}
-      <Modal
-        visible={!!selectedCampaign}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setSelectedCampaign(null)}>
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.modalBackdrop} onPress={() => setSelectedCampaign(null)} />
-        <View style={[styles.modalSheet, { backgroundColor: C.surface }]}>
-          <View style={[styles.modalHandle, { backgroundColor: C.border }]} />
-
-          <View style={[styles.modalHeader, { borderBottomColor: C.border }]}>
-            <View style={styles.modalHeaderText}>
-              <Text style={[styles.modalTitle, { color: C.text }]}>{t('campaigns.proposalsTitle')}</Text>
-              <Text style={[styles.modalSubtitle, { color: C.textSecondary }]} numberOfLines={1}>
-                {selectedCampaign?.title}
-              </Text>
-            </View>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-              hitSlop={8}
-              style={[styles.modalClose, { backgroundColor: C.background }]}
-              onPress={() => setSelectedCampaign(null)}>
-              <Ionicons name="close" size={16} color={C.textSecondary} />
-            </Pressable>
-          </View>
-
-          <ScrollView contentContainerStyle={styles.modalList} showsVerticalScrollIndicator={false}>
-            {appsLoading ? (
-              <View style={styles.center}>
-                <ActivityIndicator size="small" color={C.brinjal1} />
-              </View>
-            ) : applications.length === 0 ? (
-              <View style={styles.modalEmpty}>
-                <FontAwesome5 name="envelope-open-text" size={34} color={C.textSecondary} />
-                <Text style={[styles.modalEmptyText, { color: C.textSecondary }]}>{t('campaigns.noProposalsYet')}</Text>
-              </View>
-            ) : (
-              applications.map((a) => {
-                const ps = PROPOSAL_STATUS_CFG[a.status];
-                const abbr = initials(a.creator.fullName);
-                return (
-                  <View key={a.id} style={[styles.proposalCard, { backgroundColor: C.background, borderColor: C.border }]}>
-                    <View style={[styles.proposalAvatar, { backgroundColor: C.primaryLight }]}>
-                      <Text style={[styles.proposalAvatarText, { color: C.brinjal1 }]}>{abbr}</Text>
-                    </View>
-                    <View style={styles.proposalBody}>
-                      <View style={styles.proposalTopRow}>
-                        <Text style={[styles.proposalName, { color: C.text }]}>{a.creator.fullName}</Text>
-                        <View style={[styles.proposalBadge, { backgroundColor: ps.bg }]}>
-                          <Text style={[styles.proposalBadgeText, { color: ps.color }]}>{ps.label}</Text>
-                        </View>
-                      </View>
-                      {a.creator.location ? (
-                        <View style={styles.proposalSubRow}>
-                          <Ionicons name="location" size={11} color={C.textSecondary} />
-                          <Text style={[styles.proposalSub, { color: C.textSecondary }]}>{a.creator.location}</Text>
-                        </View>
-                      ) : null}
-                      <Text style={[styles.proposalRate, { color: C.brinjal1 }]}>{a.proposedRate}</Text>
-                    </View>
-                  </View>
-                );
-              })
-            )}
-          </ScrollView>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 }
@@ -653,21 +562,6 @@ const styles = StyleSheet.create({
   modalList: { padding: 16, gap: 12, paddingBottom: 40 },
   modalEmpty: { alignItems: 'center', paddingTop: 40, paddingHorizontal: 24, gap: 10 },
   modalEmptyText: { fontSize: 14, fontFamily: F.regular },
-
-  proposalCard: {
-    flexDirection: 'row', alignItems: 'center',
-    borderRadius: RADIUS.md, padding: 12, gap: 12, borderWidth: 1,
-  },
-  proposalAvatar: { width: 44, height: 44, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
-  proposalAvatarText: { fontSize: 14, fontFamily: F.bold },
-  proposalBody: { flex: 1, gap: 3 },
-  proposalTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  proposalName: { fontSize: 14, fontFamily: F.bold },
-  proposalBadge: { borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingVertical: 3 },
-  proposalBadgeText: { fontSize: 11, fontFamily: F.bold },
-  proposalSubRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  proposalSub: { fontSize: 12, fontFamily: F.regular },
-  proposalRate: { fontSize: 13, marginTop: 2, fontFamily: F.bold },
 
   // Invite modal
   inviteSuccess: { alignItems: 'center', paddingVertical: 48, gap: 10 },

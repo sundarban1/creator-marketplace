@@ -22,7 +22,6 @@ type IoniconName = keyof typeof Ionicons.glyphMap;
 const TAB_CONFIG: Record<string, { icon: IoniconName; iconActive: IoniconName; label: string; color?: string }> = {
   index:         { icon: 'home-outline',          iconActive: 'home',          label: 'Home' },
   campaigns:     { icon: 'briefcase-outline',     iconActive: 'briefcase',     label: 'Events',    color: '#059669' },
-  proposals:     { icon: 'document-text-outline', iconActive: 'document-text', label: 'Proposals', color: '#7C3AED' },
   messages:      { icon: 'chatbubble-outline',    iconActive: 'chatbubble',    label: 'Messages',  color: '#2563EB' },
   notifications: { icon: 'notifications-outline', iconActive: 'notifications', label: 'Activity',  color: '#D97706' },
 };
@@ -56,7 +55,6 @@ function CustomTabBar({
   const labelMap: Record<string, string> = {
     index:         t('business.tab.home'),
     campaigns:     t('business.tab.events'),
-    proposals:     t('business.tab.proposals'),
     messages:      t('business.tab.messages'),
     notifications: t('business.tab.notifications'),
   };
@@ -270,7 +268,11 @@ export default function BusinessTabsLayout() {
         >
           <Tabs.Screen name="index"    options={{ title: t('business.tab.home') }} />
           <Tabs.Screen name="campaigns" options={{ title: t('business.tab.events') }} />
-          <Tabs.Screen name="proposals" options={{ title: t('business.tab.proposals') }} />
+          {/* proposals.tsx stays a reachable route (linked from the home
+              quick actions and the pending-proposals banner) but is no
+              longer a bottom-tab destination — per-campaign proposals now
+              open via campaign-proposals.tsx from each event card instead. */}
+          <Tabs.Screen name="proposals" options={{ href: null }} />
           <Tabs.Screen
             name="messages"
             listeners={({ navigation }) => ({
