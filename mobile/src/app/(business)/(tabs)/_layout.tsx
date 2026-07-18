@@ -1,8 +1,9 @@
 import { router, Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useRef, useState } from 'react';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useState } from 'react';
 import {
-  Animated, Dimensions, PanResponder, Platform,
+  Platform,
   Pressable, StyleSheet, Text, View,
 } from 'react-native';
 import { useAuth } from '@/context/AuthContext';
@@ -68,7 +69,7 @@ function CustomTabBar({
 
   return (
     <View style={[tabS.bar, { backgroundColor: C.surface, borderTopColor: C.border }]}>
-      {tabs.map((route) => {
+      {tabs.flatMap((route) => {
         const focused = state.routes[state.index]?.name === route.name;
         const cfg     = TAB_CONFIG[route.name]!;
         const label   = labelMap[route.name] ?? cfg.label;
@@ -88,7 +89,7 @@ function CustomTabBar({
           }
         }
 
-        return (
+        const tabItem = (
           <Pressable
             key={route.key}
             onPress={onPress}
@@ -130,6 +131,31 @@ function CustomTabBar({
             {focused && <View style={[tabS.dot, { backgroundColor: color }]} />}
           </Pressable>
         );
+
+        // Raised circular "create event" button, docked between Events and
+        // Messages — replaces the old free-floating draggable FAB with a
+        // fixed spot nested in a notch cut into the bar itself.
+        if (route.name !== 'campaigns') return [tabItem];
+        return [
+          tabItem,
+          <View key="create-event" style={tabS.createWrap}>
+            {/* Backdrop circle matches the page background, so it reads as a
+                notch carved into the bar rather than a button just sitting
+                on top of it. */}
+            <View style={[tabS.createNotch, { backgroundColor: C.background }]}>
+              <Pressable onPress={() => router.push('/create-campaign')} hitSlop={6}>
+                <LinearGradient
+                  colors={['#8b7cf8', '#4f46e5', '#5b21b6']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={tabS.createBtn}
+                >
+                  <Ionicons name="add" size={26} color="#fff" />
+                </LinearGradient>
+              </Pressable>
+            </View>
+          </View>,
+        ];
       })}
     </View>
   );
@@ -192,65 +218,38 @@ const tabS = StyleSheet.create({
     fontWeight: '700',
     color: '#fff',
   },
+  createWrap: {
+    width: 84,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+  },
+  createNotch: {
+    width: 72,
+    height: 72,
+    borderRadius: RADIUS.full,
+    marginTop: -36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  createBtn: {
+    width: 64,
+    height: 64,
+    borderRadius: RADIUS.full,
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+    borderWidth: 3,
+    borderColor: '#fff',
+  },
 });
-
-// ── FAB setup ─────────────────────────────────────────────────────────────────
-
-const FAB_SIZE = 58;
-const { width: SW, height: SH } = Dimensions.get('window');
-const TAB_H = Platform.OS === 'ios' ? 84 : 64;
-const FAB_INIT = {
-  x: SW - FAB_SIZE - 20,
-  y: (SH - TAB_H) / 2 - FAB_SIZE / 2,
-};
 
 // ── Layout ────────────────────────────────────────────────────────────────────
 
 export default function BusinessTabsLayout() {
   const { user, logout } = useAuth();
   const { t } = useLanguage();
-  const C = useAppColors();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const { badgeCount: notifBadge, chatBadgeCount: badgeCount } = useNotificationBadge();
-
-  // Draggable FAB
-  const fabPos    = useRef(new Animated.ValueXY(FAB_INIT)).current;
-  const fabIsDrag = useRef(false);
-
-  const fabPR = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder:  () => true,
-      onPanResponderGrant: () => {
-        fabPos.setOffset({
-          x: (fabPos.x as any)._value,
-          y: (fabPos.y as any)._value,
-        });
-        fabPos.setValue({ x: 0, y: 0 });
-        fabIsDrag.current = false;
-      },
-      onPanResponderMove: (_, gs) => {
-        if (Math.abs(gs.dx) > 4 || Math.abs(gs.dy) > 4) fabIsDrag.current = true;
-        fabPos.setValue({ x: gs.dx, y: gs.dy });
-      },
-      onPanResponderRelease: () => {
-        fabPos.flattenOffset();
-        const cx = (fabPos.x as any)._value as number;
-        const cy = (fabPos.y as any)._value as number;
-        const clampX = Math.max(8, Math.min(cx, SW - FAB_SIZE - 8));
-        const clampY = Math.max(40, Math.min(cy, SH - TAB_H - FAB_SIZE - 8));
-        if (clampX !== cx || clampY !== cy) {
-          Animated.spring(fabPos, {
-            toValue: { x: clampX, y: clampY },
-            useNativeDriver: false,
-            bounciness: 8,
-          }).start();
-        }
-        if (!fabIsDrag.current) router.push('/create-campaign');
-        fabIsDrag.current = false;
-      },
-    })
-  ).current;
 
   return (
     <DrawerContext.Provider value={{ openDrawer: () => setDrawerOpen(true) }}>
@@ -284,19 +283,9 @@ export default function BusinessTabsLayout() {
             options={{ title: t('business.tab.messages') }}
           />
           <Tabs.Screen name="notifications" options={{ title: t('business.tab.notifications') }} />
-          {/* create.tsx is navigated via FAB, not a visible tab */}
+          {/* create.tsx is navigated via the create button docked in the tab bar, not a visible tab */}
           <Tabs.Screen name="create" options={{ href: null }} />
         </Tabs>
-
-        {/* Draggable FAB */}
-        <Animated.View
-          style={[fabS.wrap, { transform: fabPos.getTranslateTransform() }]}
-          {...fabPR.panHandlers}
-        >
-          <View style={[fabS.circle, { backgroundColor: C.brinjal1 }]}>
-            <Ionicons name="add" size={26} color="#fff" />
-          </View>
-        </Animated.View>
 
         <BusinessDrawerMenu
           visible={drawerOpen}
@@ -308,26 +297,3 @@ export default function BusinessTabsLayout() {
     </DrawerContext.Provider>
   );
 }
-
-const fabS = StyleSheet.create({
-  wrap: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    zIndex: 300,
-  },
-  circle: {
-    width: FAB_SIZE,
-    height: FAB_SIZE,
-    borderRadius: RADIUS.full,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2.5,
-    borderColor: '#fff',
-    ...SHADOW.floating,
-    shadowColor: '#1e1b4b',
-    shadowOpacity: 0.4,
-    shadowOffset: { width: 2, height: 5 },
-    elevation: 14,
-  },
-});

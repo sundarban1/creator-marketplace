@@ -28,6 +28,8 @@ export interface ApiCreatorProfile {
   fullyVerified: boolean;
   citizenshipDocUrl: string | null;
   citizenshipStatus: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
+  panDocUrl: string | null;
+  panDocStatus: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
   user: { id: string; email: string; phone: string | null; role: string; isEmailVerified: boolean; isPhoneVerified: boolean };
 }
 

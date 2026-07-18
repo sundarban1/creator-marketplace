@@ -156,6 +156,13 @@ export class CreatorRepository {
     });
   }
 
+  async updatePan(userId: string, docUrl: string) {
+    return prisma.creatorProfile.update({
+      where: { userId },
+      data:  { panDocUrl: docUrl, panDocStatus: 'PENDING', panDocUploadedAt: new Date() },
+    });
+  }
+
   async update(userId: string, data: Partial<{
     username:    string;
     fullName:    string;

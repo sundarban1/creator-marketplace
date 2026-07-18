@@ -130,6 +130,8 @@ const options: swaggerJsdoc.Options = {
             prefBudgetMax: { type: 'number', nullable: true },
             citizenshipDocUrl: { type: 'string', format: 'uri', nullable: true },
             citizenshipStatus: { type: 'string', enum: ['NONE', 'PENDING', 'APPROVED', 'REJECTED'] },
+            panDocUrl: { type: 'string', format: 'uri', nullable: true },
+            panDocStatus: { type: 'string', enum: ['NONE', 'PENDING', 'APPROVED', 'REJECTED'] },
             createdAt: { type: 'string', format: 'date-time' },
             updatedAt: { type: 'string', format: 'date-time' },
             user: {

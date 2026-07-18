@@ -71,6 +71,9 @@ model CreatorProfile {
   citizenshipDocUrl     String?
   citizenshipStatus     CitizenshipStatus  @default(NONE)
   citizenshipUploadedAt DateTime?
+  panDocUrl             String?
+  panDocStatus          DocumentStatus     @default(NONE)
+  panDocUploadedAt      DateTime?
   applications         Application[]
   conversations        Conversation[]       @relation("CreatorConversations")
   user                 User                 @relation(fields: [userId], references: [id], onDelete: Cascade)

@@ -6,7 +6,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-export type UploadFolder = 'creators/avatars' | 'businesses/logos' | 'creators/citizenship' | 'businesses/pan' | 'businesses/company-reg' | 'campaigns/features' | 'messages/attachments';
+export type UploadFolder = 'creators/avatars' | 'businesses/logos' | 'creators/citizenship' | 'creators/pan' | 'businesses/pan' | 'businesses/company-reg' | 'campaigns/features' | 'messages/attachments';
 
 const DEFAULT_TRANSFORMATION = [{ width: 400, height: 400, crop: 'fill', gravity: 'face' }];
 

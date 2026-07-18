@@ -314,6 +314,22 @@ export class CreatorController {
     }
   }
 
+  async uploadPan(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.file) throw new AppError('No image file provided', 400);
+      const docUrl = await uploadToCloudinary(
+        req.file.buffer,
+        'creators/pan',
+        `pan_${req.user!.id}`,
+        [],
+      );
+      const profile = await creatorService.uploadPan(req.user!.id, docUrl);
+      success(res, { docUrl: profile.panDocUrl, panDocStatus: profile.panDocStatus }, 'PAN document uploaded');
+    } catch (err) {
+      next(err);
+    }
+  }
+
   async getMyAnalytics(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const result = await analyticsService.getCreatorAnalytics(req.user!.id, req.query['range']);

@@ -107,6 +107,7 @@ router.get('/username-available', ctrl.checkUsernameAvailability.bind(ctrl));
 router.put('/profile', validate(updateCreatorProfileSchema), ctrl.updateProfile.bind(ctrl));
 router.post('/avatar', uploadImage.single('avatar'), ctrl.uploadAvatar.bind(ctrl));
 router.post('/citizenship', uploadImage.single('document'), ctrl.uploadCitizenship.bind(ctrl));
+router.post('/pan', uploadImage.single('document'), ctrl.uploadPan.bind(ctrl));
 
 /**
  * @swagger

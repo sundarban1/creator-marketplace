@@ -381,6 +381,10 @@ export default function CreatorSettingsScreen() {
   const [creatorIsVerified, setCreatorIsVerified] = useState(false);
   const [citizenshipUploading, setCitizenshipUploading] = useState(false);
 
+  // PAN verification
+  const [panStatus, setPanStatus] = useState<'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED'>('NONE');
+  const [panUploading, setPanUploading] = useState(false);
+
   // Phone verification sub-page
   const [phoneSubPage, setPhoneSubPage] = useState<'input' | 'otp' | null>(null);
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -468,6 +472,7 @@ export default function CreatorSettingsScreen() {
       if (profile.user?.isPhoneVerified != null) setPhoneVerified(profile.user.isPhoneVerified);
       if (profile.user?.phone) setVerifiedPhoneNumber(formatPhoneDisplay(profile.user.phone));
       if (profile.citizenshipStatus) setCitizenshipStatus(profile.citizenshipStatus);
+      if (profile.panDocStatus) setPanStatus(profile.panDocStatus);
       setCreatorIsVerified(profile.isVerified === true);
     }).catch(() => {});
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1746,6 +1751,21 @@ export default function CreatorSettingsScreen() {
       }
     }
 
+    async function handleUploadPan() {
+      setPanUploading(true);
+      try {
+        const result = await pickAndUpload('creator-pan');
+        if (result) {
+          setPanStatus(result.status ?? 'PENDING');
+          toast.success(t('creatorSettings.panUploadSuccess'));
+        }
+      } catch {
+        toast.error(t('creatorSettings.panUploadFailed'));
+      } finally {
+        setPanUploading(false);
+      }
+    }
+
     return (
       <>
         <SectionHeader title={t('creatorSettings.loginPasswordSection')} />
@@ -2044,6 +2064,35 @@ export default function CreatorSettingsScreen() {
                 </View>
               )}
               {!citizenshipUploading && citizenshipStatus !== 'PENDING' && citizenshipStatus !== 'APPROVED' && (
+                <Text style={[styles.navArrow, { color: C.textSecondary }]}>›</Text>
+              )}
+            </View>
+          </Pressable>
+
+          {/* PAN upload row */}
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            style={[styles.row, { borderBottomWidth: 1, borderBottomColor: C.border }]}
+            disabled={panUploading || panStatus === 'PENDING' || panStatus === 'APPROVED'}
+            onPress={handleUploadPan}>
+            <View style={[styles.navIonIconWrap, { backgroundColor: '#6366F118' }]}>
+              <Ionicons name="document-text-outline" size={18} color="#6366F1" />
+            </View>
+            <Text style={[styles.rowLabel, { color: C.text }]}>{t('creatorSettings.uploadPanLabel')}</Text>
+            <View style={styles.navRight}>
+              {panUploading ? (
+                <ActivityIndicator size="small" color={C.brinjal1} />
+              ) : panStatus === 'APPROVED' ? (
+                <View style={styles.verifiedBadge}><Text style={[styles.badgeText, { color: C.active }]}>{t('creatorSettings.panApproved')}</Text></View>
+              ) : panStatus === 'PENDING' ? (
+                <View style={[styles.soonBadge, { backgroundColor: '#FEF3C7' }]}><Text style={[styles.badgeText, { color: '#D97706' }]}>{t('creatorSettings.panPending')}</Text></View>
+              ) : panStatus === 'REJECTED' ? (
+                <View style={[styles.soonBadge, { backgroundColor: '#FEE2E2' }]}><Text style={[styles.badgeText, { color: '#DC2626' }]}>{t('creatorSettings.panRejected')}</Text></View>
+              ) : (
+                <View style={[styles.chip, { borderColor: C.brinjal1, backgroundColor: C.primaryLight, paddingHorizontal: 8, paddingVertical: 2 }]}>
+                  <Text style={[styles.chipText, { color: C.brinjal1, fontSize: 12 }]}>{t('creatorSettings.panNotUploaded')}</Text>
+                </View>
+              )}
+              {!panUploading && panStatus !== 'PENDING' && panStatus !== 'APPROVED' && (
                 <Text style={[styles.navArrow, { color: C.textSecondary }]}>›</Text>
               )}
             </View>

@@ -9,12 +9,13 @@ import { API_BASE } from '@/lib/api';
 import { storage } from '@/utilities/storage';
 import { ACCESS_TOKEN_KEY } from '@/utilities/constants';
 
-export type UploadTarget = 'creator-avatar' | 'business-logo' | 'creator-citizenship' | 'business-pan' | 'business-company-reg' | 'campaign-feature';
+export type UploadTarget = 'creator-avatar' | 'business-logo' | 'creator-citizenship' | 'creator-pan' | 'business-pan' | 'business-company-reg' | 'campaign-feature';
 
 const TARGET_CONFIG: Record<UploadTarget, { path: string; field: string; aspect?: [number, number]; isDocument?: boolean }> = {
   'creator-avatar':      { path: '/api/creator/avatar',      field: 'avatar',   aspect: [1, 1]  },
   'business-logo':       { path: '/api/business/logo',       field: 'logo',     aspect: [1, 1]  },
   'creator-citizenship': { path: '/api/creator/citizenship', field: 'document', isDocument: true },
+  'creator-pan':             { path: '/api/creator/pan',                       field: 'document', isDocument: true },
   'business-pan':            { path: '/api/business/documents/pan',         field: 'document', isDocument: true },
   'business-company-reg':    { path: '/api/business/documents/company-reg', field: 'document', isDocument: true },
   'campaign-feature':        { path: '/api/campaigns/feature-image',        field: 'image', aspect: [16, 9] },
