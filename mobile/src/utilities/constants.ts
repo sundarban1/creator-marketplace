@@ -33,11 +33,12 @@ export const COLORS = {
 
 // Poppins font families — loaded globally in src/app/_layout.tsx
 export const F = {
-  regular:   'Poppins-Regular',
-  medium:    'Poppins-Medium',
-  semibold:  'Poppins-SemiBold',
-  bold:      'Poppins-Bold',
-  extrabold: 'Poppins-ExtraBold',
+  regular:    'Poppins-Regular',
+  medium:     'Poppins-Medium',
+  semibold:   'Poppins-SemiBold',
+  bold:       'Poppins-Bold',
+  boldItalic: 'Poppins-BoldItalic',
+  extrabold:  'Poppins-ExtraBold',
 };
 
 // Shared corner-radius scale — screens previously hand-rolled one-off values

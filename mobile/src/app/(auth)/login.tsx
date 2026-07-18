@@ -2,7 +2,6 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
-import MaskedView from '@react-native-masked-view/masked-view';
 import { useRef, useState, useEffect } from 'react';
 import {
   Animated,
@@ -49,19 +48,18 @@ const P1 = '#4C1D95';
 const P2 = '#6D28D9';
 const P3 = '#7C3AED';
 
-// Light, easy-on-the-eyes page background — the aurora gradient used to cover
-// the whole screen in bold purple; now it's a soft tint of the app's brinjal
-// brand color, with full-strength brinjal/orange kept as accents (buttons,
-// links, the scattered icon texture) rather than the dominant surface color.
-const BRINJAL   = '#4F46E5';
-const BG_PAGE   = '#EEEDFC';
-const TEXT_DARK = '#231F45';
-const MUTED     = '#8783B0';
+// The screen's full-bleed background is a solid brinjal wash (the app's brand
+// indigo) rather than the old violet aurora — light/white text and translucent
+// white surfaces sit on top of it for contrast, same structure as before, just
+// re-keyed to brinjal.
+const BRINJAL       = '#4F46E5';
+const BRINJAL_LIGHT = '#6D63EB';
+const BRINJAL_DARK  = '#3730A3';
 
 // Content-creator/brand iconography scattered across the gradient background — random
 // per-icon opacity (computed once at module load, so it's stable across re-renders
 // rather than flickering) gives the scatter a less mechanical, hand-placed feel.
-function scatterOpacity() { return Math.round((Math.random() * 0.08 + 0.05) * 100) / 100; }
+function scatterOpacity() { return Math.round((Math.random() * 0.14 + 0.08) * 100) / 100; }
 
 const BG_ICONS: { name: string; size: number; rotate: string; style: object; opacity: number }[] = [
   { name: 'camera',           size: 30, rotate: '-14deg', style: { top: 10,  left: '6%'  }, opacity: scatterOpacity() },
@@ -106,30 +104,26 @@ function getPwErrorKey(p: string): string | undefined {
   if (!/[0-9]/.test(p)) return 'auth.signup.pwErrorNumber';
 }
 
-// ── Gradient / 3D headline word ─────────────────────────────────────────────────
-// Text can't be gradient-filled natively in RN, so the glyphs are used as a mask over
-// a LinearGradient (MaskedView). The "3D" read comes from two darker, offset copies of
-// the same word rendered underneath the masked layer — a cheap extrusion/emboss trick,
-// since there's no real depth renderer available here.
-
+// ── Headline highlight word ───────────────────────────────────────────────────
+// Solid orange fill, set inside a soft translucent-white pill so it pops
+// against the solid brinjal page background.
 function GradientHighlight({ text, style }: { text: string; style: any }) {
   return (
-    <View style={gh.wrap}>
-      <Text style={[style, gh.depthFar]}>{text}</Text>
-      <Text style={[style, gh.depthNear]}>{text}</Text>
-      <MaskedView maskElement={<Text style={style}>{text}</Text>}>
-        <LinearGradient colors={['#FFE9C2', '#FFC581', '#F97316']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
-          <Text style={[style, { opacity: 0 }]}>{text}</Text>
-        </LinearGradient>
-      </MaskedView>
+    <View style={gh.pill}>
+      <Text style={[style, gh.text]}>{text}</Text>
     </View>
   );
 }
 
 const gh = StyleSheet.create({
-  wrap:      { position: 'relative' },
-  depthFar:  { position: 'absolute', top: 3.5, left: 3.5, color: '#7C2D12', opacity: 0.5, textShadowColor: 'transparent' },
-  depthNear: { position: 'absolute', top: 1.75, left: 1.75, color: '#C2410C', opacity: 0.65, textShadowColor: 'transparent' },
+  pill: {
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderRadius: RADIUS.md,
+    paddingLeft: 9,
+    paddingRight: 11,
+    paddingVertical: 1,
+  },
+  text: { color: '#FFAD33' },
 });
 
 // ── Input field ───────────────────────────────────────────────────────────────
@@ -831,12 +825,10 @@ export default function LoginScreen() {
 
   return (
     <View style={s.root}>
-      <StatusBar style="dark" />
+      <StatusBar style="light" />
 
-      {/* Soft light wash, not a bold full-bleed gradient — the brinjal/orange duo
-          now lives in the subtle blobs and scattered icon texture instead of
-          being the dominant surface color. */}
-      <LinearGradient colors={['#E4E2FA', BG_PAGE, '#FAF9FF']} style={StyleSheet.absoluteFill} start={{ x: 0.1, y: 0 }} end={{ x: 0.85, y: 1 }} pointerEvents="none" />
+      {/* Full-bleed brinjal gradient — the whole screen is the "aurora", not just a top strip */}
+      <LinearGradient colors={[BRINJAL_LIGHT, BRINJAL, BRINJAL_DARK]} style={StyleSheet.absoluteFill} start={{ x: 0.1, y: 0 }} end={{ x: 0.85, y: 1 }} pointerEvents="none" />
       <View style={s.auroraLayer} pointerEvents="none">
         <View style={[s.auroraBlob, s.auroraBlobA]} />
         <View style={[s.auroraBlob, s.auroraBlobB]} />
@@ -846,7 +838,7 @@ export default function LoginScreen() {
             key={i}
             name={icon.name as any}
             size={icon.size}
-            color={BRINJAL}
+            color="#ffffff"
             style={[s.bgIcon, icon.style, { opacity: icon.opacity, transform: [{ rotate: icon.rotate }] }]}
           />
         ))}
@@ -879,10 +871,11 @@ export default function LoginScreen() {
               </View>
             </View>
             {/* Row of independent word chunks rather than one flowing <Text> paragraph —
-                MaskedView (used for the gradient words below) can't sit inline inside a
-                Text run the way nested <Text> can, so each word lays out as a flex item.
-                An invisible unwrapped copy measures the row's natural width; the visible
-                copy is scaled down (never reflowed) to guarantee it always fits one line. */}
+                the highlighted words render inside their own pill View, which can't sit
+                inline inside a Text run the way nested <Text> can, so each word lays out
+                as a flex item instead. An invisible unwrapped copy measures the row's
+                natural width; the visible copy is scaled down (never reflowed) to
+                guarantee it always fits one line. */}
             <View style={s.heroTaglineMeasure} pointerEvents="none" onLayout={(e) => setTaglineNaturalWidth(e.nativeEvent.layout.width)}>
               {renderTaglineWords()}
             </View>
@@ -946,7 +939,7 @@ export default function LoginScreen() {
 
           {/* Footer */}
           <View style={s.footer}>
-            <Ionicons name="shield-checkmark-outline" size={12} color={MUTED} />
+            <Ionicons name="shield-checkmark-outline" size={12} color="rgba(255,255,255,0.65)" />
             <Text style={s.footerText}>{t('auth.login.footer')}</Text>
           </View>
 
@@ -990,7 +983,7 @@ export default function LoginScreen() {
 }
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: BG_PAGE },
+  root: { flex: 1, backgroundColor: BRINJAL_DARK },
   flex: { flex: 1 },
 
   scrollContent: { flexGrow: 1, paddingHorizontal: 20 },
@@ -999,17 +992,17 @@ const s = StyleSheet.create({
   // scattered decorative icons, echoing the app icon's own purple-triangle/orange-ring duo.
   auroraLayer:  { position: 'absolute', top: 0, left: 0, right: 0, height: 420, overflow: 'hidden' },
   auroraBlob:   { position: 'absolute', borderRadius: RADIUS.full },
-  auroraBlobA:  { width: 280, height: 280, backgroundColor: 'rgba(79,70,229,0.07)', top: -90, right: -70 },
-  auroraBlobB:  { width: 220, height: 220, backgroundColor: 'rgba(249,115,22,0.10)', top: 80, left: -90 },
-  auroraBlobC:  { width: 160, height: 160, backgroundColor: 'rgba(79,70,229,0.05)', top: 250, right: 40 },
+  auroraBlobA:  { width: 280, height: 280, backgroundColor: 'rgba(255,255,255,0.05)', top: -90, right: -70 },
+  auroraBlobB:  { width: 220, height: 220, backgroundColor: 'rgba(249,115,22,0.16)', top: 80, left: -90 },
+  auroraBlobC:  { width: 160, height: 160, backgroundColor: 'rgba(255,255,255,0.04)', top: 250, right: 40 },
   bgIcon:       { position: 'absolute' },
 
-  logoGlowRing: { padding: 6, borderRadius: RADIUS.full, backgroundColor: 'rgba(79,70,229,0.08)', shadowColor: '#FFC581', shadowOpacity: 0.3, shadowRadius: 18, shadowOffset: { width: 0, height: 0 }, elevation: 5 },
+  logoGlowRing: { padding: 6, borderRadius: RADIUS.full, backgroundColor: 'rgba(255,255,255,0.10)', shadowColor: '#FFC581', shadowOpacity: 0.35, shadowRadius: 20, shadowOffset: { width: 0, height: 0 }, elevation: 6 },
   logoBadgeCard: { backgroundColor: '#fff', borderRadius: RADIUS.full, paddingHorizontal: 16, paddingVertical: 10, ...SHADOW.floating, shadowColor: '#000' },
   logoImage: { width: 104, height: 104 / (1740 / 620) },
   langRow:  { flexDirection: 'row', gap: 6, justifyContent: 'flex-end', marginBottom: 6 },
-  langBtn:  { width: 34, height: 34, borderRadius: RADIUS.full, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center', shadowColor: BRINJAL, shadowOpacity: 0.08, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 1 },
-  langBtnActive: { backgroundColor: '#E4E2FA', borderWidth: 1.5, borderColor: '#C7C3F2' },
+  langBtn:  { width: 34, height: 34, borderRadius: RADIUS.full, backgroundColor: 'rgba(255,255,255,0.12)', justifyContent: 'center', alignItems: 'center' },
+  langBtnActive: { backgroundColor: 'rgba(255,255,255,0.28)', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.5)' },
   langFlag: { fontSize: 15 },
 
   heroCenter:  { alignItems: 'center', marginTop: 8, marginBottom: 28, gap: 16, position: 'relative' },
@@ -1018,16 +1011,16 @@ const s = StyleSheet.create({
   heroTaglineMeasure: { position: 'absolute', top: 0, opacity: 0, flexDirection: 'row', alignItems: 'center', gap: 8 },
   heroTaglineClip: { width: '100%', overflow: 'hidden', alignItems: 'center' },
   heroTaglineRow:  { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  heroTagline: { fontSize: 20, color: TEXT_DARK, fontFamily: F.semibold, letterSpacing: 0.3 },
-  heroTaglineHighlight: { fontSize: 26, fontFamily: F.extrabold, letterSpacing: 0.2 },
+  heroTagline: { fontSize: 20, color: 'rgba(255,255,255,0.9)', fontFamily: F.semibold, letterSpacing: 0.3 },
+  heroTaglineHighlight: { fontSize: 27, fontFamily: F.boldItalic, fontStyle: 'italic', letterSpacing: 0.1 },
 
   // Floating card — visible margin on every side (not an edge-to-edge sheet),
   // fully rounded corners on all four corners for a "card floating on the page"
   // feel. A hairline border pulls extra weight now that the page itself is
   // light too — the shadow alone doesn't read as strongly against a light wash
   // as it did against the old dark-purple background.
-  cardOuter:  { borderRadius: RADIUS.xl, ...SHADOW.floating, shadowColor: BRINJAL, shadowOpacity: 0.12 },
-  cardInner:  { borderRadius: RADIUS.xl, overflow: 'hidden', backgroundColor: '#fff', borderWidth: 1, borderColor: '#E7E5FA' },
+  cardOuter:  { borderRadius: RADIUS.xl, ...SHADOW.floating, shadowColor: '#000' },
+  cardInner:  { borderRadius: RADIUS.xl, overflow: 'hidden', backgroundColor: '#fff' },
   cardBody:   { paddingHorizontal: 22, paddingTop: 22, paddingBottom: 26 },
 
   // Pill-shaped segmented tab
@@ -1121,5 +1114,5 @@ const s = StyleSheet.create({
   terms:  { fontSize: 12, color: '#9CA3AF', lineHeight: 18, textAlign: 'center', fontFamily: F.regular, marginBottom: 8 },
 
   footer:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, marginTop: 16 },
-  footerText: { fontSize: 11, color: MUTED, fontFamily: F.regular },
+  footerText: { fontSize: 11, color: 'rgba(255,255,255,0.65)', fontFamily: F.regular },
 });
