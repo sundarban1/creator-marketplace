@@ -10,7 +10,7 @@ import { authService } from '@/services/auth';
 import { creatorService } from '@/services/creator';
 import { profileService } from '@/services/profile';
 import { useCategories } from '@/hooks/useCategories';
-import { PlacesAutocompleteInput } from '@/components/PlacesAutocompleteInput';
+import { LocationSearchModal } from '@/components/LocationSearchModal';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
 
 const TOTAL_STEPS = 2;
@@ -70,6 +70,9 @@ export default function OnboardingScreen() {
   const [username,  setUsername]  = useState('');
   const [gender,    setGender]    = useState('');
   const [location, setLocation] = useState('');
+  const [locationLat, setLocationLat] = useState<number | null>(null);
+  const [locationLng, setLocationLng] = useState<number | null>(null);
+  const [locationModalOpen, setLocationModalOpen] = useState(false);
   const [usernameSuggestions, setUsernameSuggestions] = useState<string[]>([]);
   const usernameSuggestDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const usernameSuggestRequestId = useRef(0);
@@ -77,11 +80,12 @@ export default function OnboardingScreen() {
   const [step1Loading,   setStep1Loading]   = useState(false);
   const [step1Error,     setStep1Error]     = useState('');
   const step1ScrollRef = useRef<ScrollView>(null);
-  const locationFocusedRef = useRef(false);
+  const usernameFocusedRef = useRef(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
 
-  // Location sits at the bottom of the step-1 form, right above the submit
-  // button. iOS already handles this correctly on its own — the ScrollView's
+  // Username is the last text field in the step-1 form (Gender below it uses
+  // chips, not the keyboard), right above the submit button. iOS already
+  // handles this correctly on its own — the ScrollView's
   // `automaticallyAdjustKeyboardInsets` (below) auto-scrolls a focused field
   // above the keyboard, and stacking a manual scrollToEnd on top of that was
   // exactly what caused the form to shoot up too far (both mechanisms
@@ -98,7 +102,7 @@ export default function OnboardingScreen() {
     if (Platform.OS !== 'android') return;
     const showSub = Keyboard.addListener('keyboardDidShow', () => {
       setKeyboardVisible(true);
-      if (locationFocusedRef.current) step1ScrollRef.current?.scrollToEnd({ animated: true });
+      if (usernameFocusedRef.current) step1ScrollRef.current?.scrollToEnd({ animated: true });
     });
     const hideSub = Keyboard.addListener('keyboardDidHide', () => setKeyboardVisible(false));
     return () => {
@@ -166,8 +170,11 @@ export default function OnboardingScreen() {
     });
   }
 
-  function handleLocationChange(text: string) {
-    setLocation(text);
+  function handleLocationSelect(address: string, lat: number, lng: number) {
+    setLocation(address);
+    setLocationLat(lat || null);
+    setLocationLng(lng || null);
+    setLocationModalOpen(false);
     setStep1Error('');
   }
 
@@ -182,6 +189,8 @@ export default function OnboardingScreen() {
         username: username.trim(),
         gender:   gender || undefined,
         location: location.trim(),
+        locationLat: locationLat ?? undefined,
+        locationLng: locationLng ?? undefined,
       });
       updateUser({ name: fullName.trim() });
       setStep(2);
@@ -293,12 +302,26 @@ export default function OnboardingScreen() {
                   style={[styles.formInput, { backgroundColor: C.surface, borderColor: fullNameError ? C.error : C.border, color: C.text }]}
                   value={fullName}
                   onChangeText={handleFullNameChange}
-                  onFocus={() => { locationFocusedRef.current = false; }}
+                  onFocus={() => { usernameFocusedRef.current = false; }}
                   placeholder={t('onboarding.fullNamePlaceholder')}
                   placeholderTextColor={C.textSecondary}
                   autoCapitalize="words"
                 />
                 {fullNameError && <Text style={[styles.fieldError, { color: C.error }]}>{fullNameError}</Text>}
+              </View>
+
+              {/* Location */}
+              <View style={styles.formGroup}>
+                <Text style={[styles.formLabel, { color: C.text }]}>{t('onboarding.locationLabel')} <Text style={{ color: C.error }}>*</Text></Text>
+                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                  style={[styles.locationBtn, { backgroundColor: C.surface, borderColor: locationError ? C.error : C.border }]}
+                  onPress={() => setLocationModalOpen(true)}>
+                  <Text style={[styles.locationBtnTxt, { color: location ? C.text : C.textSecondary }]} numberOfLines={2}>
+                    {location || t('onboarding.locationPlaceholder')}
+                  </Text>
+                  <Text style={styles.locationArrow}>›</Text>
+                </Pressable>
+                {locationError && <Text style={[styles.fieldError, { color: C.error }]}>{locationError}</Text>}
               </View>
 
               {/* Username */}
@@ -313,7 +336,7 @@ export default function OnboardingScreen() {
                       setStep1Error('');
                       setUsername(v.replace(/[^a-zA-Z0-9_]/g, '').slice(0, 20));
                     }}
-                    onFocus={() => { locationFocusedRef.current = false; }}
+                    onFocus={() => { usernameFocusedRef.current = true; }}
                     placeholder={t('onboarding.usernamePlaceholder')}
                     placeholderTextColor={C.textSecondary}
                     autoCapitalize="none"
@@ -364,20 +387,6 @@ export default function OnboardingScreen() {
                 {genderError && <Text style={[styles.fieldError, { color: C.error }]}>{genderError}</Text>}
               </View>
 
-              {/* Location */}
-              <View style={[styles.formGroup, { zIndex: 10 }]}>
-                <Text style={[styles.formLabel, { color: C.text }]}>{t('onboarding.locationLabel')} <Text style={{ color: C.error }}>*</Text></Text>
-                <PlacesAutocompleteInput
-                  value={location}
-                  onChangeText={handleLocationChange}
-                  placeholder={t('onboarding.locationPlaceholder')}
-                  types="geocode"
-                  autoCapitalize="words"
-                  error={locationError}
-                  onFocus={() => { locationFocusedRef.current = true; }}
-                />
-              </View>
-
             </View>
 
             <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
@@ -397,6 +406,13 @@ export default function OnboardingScreen() {
 
           </ScrollView>
         )}
+
+        <LocationSearchModal
+          visible={locationModalOpen}
+          initialValue={location}
+          onSelect={handleLocationSelect}
+          onClose={() => setLocationModalOpen(false)}
+        />
 
         {/* ────────── Step 2: Categories ────────── */}
         {step === 2 && (
@@ -498,6 +514,10 @@ const styles = StyleSheet.create({
   formInput: { borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 13, fontSize: 15, fontFamily: F.regular },
   fieldError: { fontSize: 12, fontFamily: F.medium },
   fieldHint: { fontSize: 11, fontFamily: F.regular },
+
+  locationBtn: { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 13, gap: 8 },
+  locationBtnTxt: { flex: 1, fontSize: 15, lineHeight: 20, fontFamily: F.regular },
+  locationArrow: { fontSize: 20, color: '#9CA3AF' },
 
   usernameRow: { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 14 },
   atSign: { fontSize: 16, marginRight: 2, fontFamily: F.bold },

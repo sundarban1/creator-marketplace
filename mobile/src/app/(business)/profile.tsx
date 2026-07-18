@@ -117,9 +117,7 @@ export default function BusinessProfileScreen() {
       <View style={[styles.navBar, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
         <BackButton fallback="/(business)/" />
         <Text style={[styles.navTitle, { color: C.text }]} numberOfLines={1}>{name}</Text>
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.editNavBtn, { backgroundColor: C.primaryLight }]} onPress={() => router.push('/(business)/edit-profile' as never)}>
-          <Text style={[styles.editNavText, { color: C.brinjal1 }]}>{t('common.edit')}</Text>
-        </Pressable>
+        <View style={{ width: 44 }} />
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 60 }}>
@@ -277,6 +275,10 @@ export default function BusinessProfileScreen() {
               <View style={styles.infoHeader}>
                 <Ionicons name="pricetag" size={16} color={C.brinjal1} />
                 <Text style={[styles.infoTitle, { color: C.text }]}>{t('profile.industries')}</Text>
+                <View style={{ flex: 1 }} />
+                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => router.push('/(business)/edit-categories' as never)} hitSlop={8}>
+                  <Text style={[styles.infoManage, { color: C.brinjal1 }]}>{t('profile.manage')}</Text>
+                </Pressable>
               </View>
               <View style={styles.categoriesWrap}>
                 {profile!.categories.map((cat) => {
@@ -293,7 +295,7 @@ export default function BusinessProfileScreen() {
           ) : (
             <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
               style={[styles.emptyField, { backgroundColor: C.surface, borderColor: C.border }]}
-              onPress={() => router.push('/(business)/edit-profile' as never)}>
+              onPress={() => router.push('/(business)/edit-categories' as never)}>
               <Text style={[styles.emptyFieldText, { color: C.textSecondary }]}>{t('profile.addCategories')}</Text>
             </Pressable>
           )}
@@ -310,8 +312,6 @@ const styles = StyleSheet.create({
   center:           { flex: 1, alignItems: 'center', justifyContent: 'center' },
   navBar:           { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 8, borderBottomWidth: 1 },
   navTitle:         { flex: 1, fontSize: 15, textAlign: 'center', fontFamily: F.bold },
-  editNavBtn:       { borderRadius: RADIUS.sm, paddingHorizontal: 14, paddingVertical: 7 },
-  editNavText:      { fontSize: 13, fontFamily: F.bold },
 
   cameraBadge:      { position: 'absolute', bottom: 2, right: 2, width: 28, height: 28, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#fff' },
 
@@ -337,6 +337,7 @@ const styles = StyleSheet.create({
   infoCard:         { borderRadius: RADIUS.lg, padding: 16, gap: 10, ...SHADOW.card },
   infoHeader:       { flexDirection: 'row', alignItems: 'center', gap: 8 },
   infoTitle:        { fontSize: 14, fontFamily: F.bold },
+  infoManage:       { fontSize: 13, fontFamily: F.bold },
   aboutText:        { fontSize: 14, lineHeight: 22, fontFamily: F.regular },
   contactRow:       { flexDirection: 'row', alignItems: 'center', gap: 8 },
   contactText:      { fontSize: 14, fontFamily: F.regular },

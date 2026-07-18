@@ -53,6 +53,8 @@ export const profileService = {
     fullName?:   string;
     bio?:        string;
     location?:   string;
+    locationLat?: number;
+    locationLng?: number;
     phone?:      string;
     gender?:     string;
     avatarUrl?:  string;

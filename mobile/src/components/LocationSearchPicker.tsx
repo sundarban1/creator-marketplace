@@ -1,20 +1,15 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { F } from '@/utilities/constants';
+import { LocationSearchModal } from '@/components/LocationSearchModal';
 
 export type LocationEntry = { label: string; lat: number | null; lng: number | null };
 export type LocationFilter = LocationEntry[];
 
-const PLACES_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY ?? '';
 const MAX_LOCS = 3;
-
-type Prediction = {
-  place_id: string;
-  structured_formatting: { main_text: string; secondary_text: string };
-};
 
 export function LocationSearchPicker({
   selected,
@@ -25,10 +20,7 @@ export function LocationSearchPicker({
 }) {
   const C = useAppColors();
   const { t } = useLanguage();
-  const [query, setQuery] = useState('');
-  const [predictions, setPredictions] = useState<Prediction[]>([]);
-  const [searching, setSearching] = useState(false);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
 
   // 'Remote' is a data sentinel compared against campaign/creator location
   // elsewhere in the app — keep it untranslated in the stored label, only
@@ -49,49 +41,10 @@ export function LocationSearchPicker({
     onSelect(selected.filter((l) => l.label !== label));
   }
 
-  function handleSearchChange(text: string) {
-    setQuery(text);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (!text.trim()) { setPredictions([]); return; }
-    debounceRef.current = setTimeout(() => fetchPredictions(text), 350);
-  }
-
-  async function fetchPredictions(text: string) {
-    if (!PLACES_KEY) return;
-    setSearching(true);
-    try {
-      const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(text)}&key=${PLACES_KEY}&language=en&types=(cities)&components=country:np`;
-      const res = await fetch(url);
-      const data = (await res.json()) as { predictions: Prediction[]; status: string };
-      setPredictions(data.status === 'OK' ? data.predictions : []);
-    } catch {
-      setPredictions([]);
-    } finally {
-      setSearching(false);
-    }
-  }
-
-  async function handleSelectPrediction(pred: Prediction) {
-    const label = pred.structured_formatting.main_text;
-    if (selected.some((l) => l.label === label)) return;
-    setQuery('');
-    setPredictions([]);
-    try {
-      const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${pred.place_id}&fields=geometry&key=${PLACES_KEY}`;
-      const res = await fetch(url);
-      const data = (await res.json()) as {
-        result: { geometry: { location: { lat: number; lng: number } } };
-        status: string;
-      };
-      if (data.status === 'OK') {
-        const { lat, lng } = data.result.geometry.location;
-        onSelect([...selected, { label, lat, lng }]);
-      } else {
-        onSelect([...selected, { label, lat: null, lng: null }]);
-      }
-    } catch {
-      onSelect([...selected, { label, lat: null, lng: null }]);
-    }
+  function handleLocationSelect(address: string, lat: number, lng: number) {
+    setModalOpen(false);
+    if (atMax || selected.some((l) => l.label === address)) return;
+    onSelect([...selected, { label: address, lat: lat || null, lng: lng || null }]);
   }
 
   return (
@@ -122,46 +75,24 @@ export function LocationSearchPicker({
         ))}
       </View>
 
-      {/* Search input — hidden when limit reached */}
+      {/* Trigger — matches the edit-profile location field: a tappable box
+          that opens the full search modal, instead of an inline dropdown. */}
       {!atMax && (
-        <>
-          <View style={[ls.searchRow, { backgroundColor: C.background, borderColor: C.border }]}>
-            <Ionicons name="search" size={15} color={C.textSecondary} />
-            <TextInput
-              style={[ls.searchInput, { color: C.text }]}
-              value={query}
-              onChangeText={handleSearchChange}
-              placeholder={t('filterModal.searchCityPlaceholder')}
-              placeholderTextColor={C.textSecondary}
-              returnKeyType="search"
-            />
-            {searching
-              ? <ActivityIndicator size="small" color={C.brinjal1} />
-              : query.length > 0
-              ? <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => { setQuery(''); setPredictions([]); }} hitSlop={8}>
-                  <Ionicons name="close" size={15} color={C.textSecondary} />
-                </Pressable>
-              : null}
-          </View>
-
-          {predictions.length > 0 && (
-            <View style={[ls.dropdown, { backgroundColor: C.surface, borderColor: C.border }]}>
-              {predictions.slice(0, 5).map((pred, idx) => (
-                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                  key={pred.place_id}
-                  style={[ls.dropRow, { borderBottomColor: idx < Math.min(predictions.length, 5) - 1 ? C.border : 'transparent' }]}
-                  onPress={() => handleSelectPrediction(pred)}>
-                  <Ionicons name="location" size={16} color={C.textSecondary} />
-                  <View style={ls.dropTexts}>
-                    <Text style={[ls.dropMain, { color: C.text }]}>{pred.structured_formatting.main_text}</Text>
-                    <Text style={[ls.dropSec, { color: C.textSecondary }]} numberOfLines={1}>{pred.structured_formatting.secondary_text}</Text>
-                  </View>
-                </Pressable>
-              ))}
-            </View>
-          )}
-        </>
+        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+          style={[ls.addBtn, { backgroundColor: C.background, borderColor: C.border }]}
+          onPress={() => setModalOpen(true)}>
+          <Ionicons name="search" size={15} color={C.textSecondary} />
+          <Text style={[ls.addBtnTxt, { color: C.textSecondary }]}>{t('filterModal.searchCityPlaceholder')}</Text>
+          <Text style={[ls.addBtnArrow, { color: C.textSecondary }]}>›</Text>
+        </Pressable>
       )}
+
+      <LocationSearchModal
+        visible={modalOpen}
+        initialValue=""
+        onSelect={handleLocationSelect}
+        onClose={() => setModalOpen(false)}
+      />
     </View>
   );
 }
@@ -173,11 +104,7 @@ const ls = StyleSheet.create({
   selectedChips:   { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   selectedChip:    { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1.5 },
   selectedChipText:{ fontSize: 13, fontFamily: F.semibold },
-  searchRow:       { flexDirection: 'row', alignItems: 'center', borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 12, height: 40, gap: 8 },
-  searchInput:     { flex: 1, fontSize: 14, fontFamily: F.regular },
-  dropdown:        { borderRadius: 12, borderWidth: 1.5, overflow: 'hidden' },
-  dropRow:         { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 10, gap: 10, borderBottomWidth: 1 },
-  dropTexts:       { flex: 1 },
-  dropMain:        { fontSize: 14, fontFamily: F.semibold },
-  dropSec:         { fontSize: 11, marginTop: 1, fontFamily: F.regular },
+  addBtn:          { flexDirection: 'row', alignItems: 'center', borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 12, gap: 8 },
+  addBtnTxt:       { flex: 1, fontSize: 14, fontFamily: F.regular },
+  addBtnArrow:     { fontSize: 20 },
 });

@@ -13,6 +13,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { creatorService, type ApiCreatorProfile } from '@/services/creator';
+import { campaignService } from '@/services/campaign';
 import { useFavoriteBusinesses } from '@/hooks/useFavoriteBusinesses';
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
@@ -69,9 +70,21 @@ export default function CreatorProfileScreen() {
   const { categories: allCategories } = useAllCategories();
   const [profile, setProfile]           = useState<ApiCreatorProfile | null>(null);
   const [avatarUploading, setUploading] = useState(false);
+  const [eventCounts, setEventCounts]   = useState({ completed: 0, inProgress: 0 });
 
   useFocusEffect(useCallback(() => {
     creatorService.getProfile().then(setProfile).catch(() => {});
+    // Only ACCEPTED applications carry a meaningful workStatus/paymentStatus —
+    // "completed" requires the payment to have actually been released, not just
+    // the work marked done, so COMPLETED alone isn't enough.
+    campaignService.getMyApplications({ status: 'ACCEPTED', limit: 50 })
+      .then(({ proposals }) => {
+        setEventCounts({
+          completed:  proposals.filter((p) => p.workStatus === 'COMPLETED' && p.paymentStatus === 'RELEASED').length,
+          inProgress: proposals.filter((p) => p.workStatus === 'IN_PROGRESS').length,
+        });
+      })
+      .catch(() => {});
   }, []));
 
   async function handleAvatarPress() {
@@ -191,8 +204,8 @@ export default function CreatorProfileScreen() {
           {/* Stats strip */}
           <View style={[s.statsStrip, { borderTopColor: C.border }]}>
             <View style={s.statItem}>
-              <Text style={[s.statValue, { color: C.text }]}>{richAccounts.length}</Text>
-              <Text style={[s.statLabel, { color: C.textSecondary }]}>{t('profile.platforms')}</Text>
+              <Text style={[s.statValue, { color: C.text }]}>{eventCounts.completed}</Text>
+              <Text style={[s.statLabel, { color: C.textSecondary }]}>{t('profile.completedEvents')}</Text>
             </View>
             <View style={[s.statDivider, { backgroundColor: C.border }]} />
             <View style={s.statItem}>
@@ -201,10 +214,8 @@ export default function CreatorProfileScreen() {
             </View>
             <View style={[s.statDivider, { backgroundColor: C.border }]} />
             <View style={s.statItem}>
-              <Text style={[s.statValue, { color: C.text }]}>
-                {profile?.categories?.length ?? 0}
-              </Text>
-              <Text style={[s.statLabel, { color: C.textSecondary }]}>{t('profile.categories')}</Text>
+              <Text style={[s.statValue, { color: C.text }]}>{eventCounts.inProgress}</Text>
+              <Text style={[s.statLabel, { color: C.textSecondary }]}>{t('profile.inProgressEvents')}</Text>
             </View>
           </View>
         </View>

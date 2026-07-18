@@ -5,9 +5,7 @@ import { BackButton } from '@/components/BackButton';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  FlatList,
   KeyboardAvoidingView,
-  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -22,173 +20,9 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/components/Toast';
 import { Button } from '@/components/Button';
+import { LocationSearchModal } from '@/components/LocationSearchModal';
 import { creatorService } from '@/services/creator';
-import type { Category } from '@/services/profile';
-import { categoryService } from '@/services/category';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
-
-const PLACES_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY ?? '';
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-type Prediction = {
-  place_id: string;
-  description: string;
-  structured_formatting: {
-    main_text: string;
-    secondary_text: string;
-  };
-};
-
-// ─── LocationSearchModal ──────────────────────────────────────────────────────
-
-function LocationSearchModal({
-  visible,
-  initialValue,
-  onSelect,
-  onClose,
-}: {
-  visible: boolean;
-  initialValue: string;
-  onSelect: (address: string, lat: number, lng: number) => void;
-  onClose: () => void;
-}) {
-  const C = useAppColors();
-  const { t } = useLanguage();
-  const [query, setQuery] = useState('');
-  const [predictions, setPredictions] = useState<Prediction[]>([]);
-  const [searching, setSearching] = useState(false);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    if (visible) {
-      setQuery(initialValue);
-      setPredictions([]);
-    }
-  }, [visible, initialValue]);
-
-  function handleChangeText(text: string) {
-    setQuery(text);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (!text.trim()) { setPredictions([]); return; }
-    debounceRef.current = setTimeout(() => fetchPredictions(text), 350);
-  }
-
-  async function fetchPredictions(text: string) {
-    if (!PLACES_KEY) { setPredictions([]); return; }
-    setSearching(true);
-    try {
-      const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(text)}&key=${PLACES_KEY}&language=en&components=country:np`;
-      const res = await fetch(url);
-      const data = (await res.json()) as { predictions: Prediction[]; status: string };
-      setPredictions(data.status === 'OK' ? data.predictions : []);
-    } catch {
-      setPredictions([]);
-    } finally {
-      setSearching(false);
-    }
-  }
-
-  async function handleSelectPrediction(prediction: Prediction) {
-    if (!PLACES_KEY) {
-      onSelect(prediction.description, 0, 0);
-      return;
-    }
-    try {
-      const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${prediction.place_id}&fields=geometry,formatted_address&key=${PLACES_KEY}`;
-      const res = await fetch(url);
-      const data = (await res.json()) as {
-        result: { geometry: { location: { lat: number; lng: number } }; formatted_address: string };
-        status: string;
-      };
-      if (data.status === 'OK') {
-        onSelect(
-          data.result.formatted_address,
-          data.result.geometry.location.lat,
-          data.result.geometry.location.lng,
-        );
-      } else {
-        onSelect(prediction.description, 0, 0);
-      }
-    } catch {
-      onSelect(prediction.description, 0, 0);
-    }
-  }
-
-  return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <SafeAreaView style={[lsm.container, { backgroundColor: C.background }]} edges={['top']}>
-        <View style={[lsm.topBar, { borderBottomColor: C.border, backgroundColor: C.background }]}>
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={onClose}>
-            <Text style={[lsm.cancelTxt, { color: C.brinjal1 }]}>{t('profile.editCreator.locationModalCancel')}</Text>
-          </Pressable>
-          <Text style={[lsm.title, { color: C.text }]}>{t('profile.editCreator.locationModalTitle')}</Text>
-          <View style={{ width: 56 }} />
-        </View>
-
-        <View style={[lsm.inputRow, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
-          <Ionicons name="search" size={16} color="#9CA3AF" style={{ marginRight: 8 }} />
-          <TextInput
-            style={[lsm.input, { color: C.text }]}
-            value={query}
-            onChangeText={handleChangeText}
-            placeholder={t('profile.editCreator.locationModalPlaceholder')}
-            placeholderTextColor={C.textSecondary}
-            autoFocus
-            returnKeyType="search"
-            clearButtonMode="while-editing"
-          />
-          {searching && <ActivityIndicator size="small" color={C.brinjal1} style={{ marginRight: 12 }} />}
-        </View>
-
-        <FlatList
-          data={predictions}
-          keyExtractor={(item) => item.place_id}
-          keyboardShouldPersistTaps="handled"
-          renderItem={({ item }) => (
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-              style={[lsm.row, { borderBottomColor: C.border }]}
-              onPress={() => handleSelectPrediction(item)}>
-              <Ionicons name="location" size={18} color="#9CA3AF" />
-              <View style={lsm.rowText}>
-                <Text style={[lsm.mainTxt, { color: C.text }]}>{item.structured_formatting.main_text}</Text>
-                <Text style={[lsm.secTxt, { color: C.textSecondary }]} numberOfLines={1}>
-                  {item.structured_formatting.secondary_text}
-                </Text>
-              </View>
-            </Pressable>
-          )}
-          ListEmptyComponent={
-            query.trim() && !searching ? (
-              <View style={lsm.empty}>
-                <Text style={[lsm.emptyTxt, { color: C.textSecondary }]}>{t('profile.editCreator.locationModalNoResults')}</Text>
-              </View>
-            ) : null
-          }
-        />
-      </SafeAreaView>
-    </Modal>
-  );
-}
-
-const lsm = StyleSheet.create({
-  container:  { flex: 1 },
-  topBar:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1 },
-  cancelTxt:  { fontSize: 15, fontWeight: '600' },
-  title:      { fontSize: 16, fontWeight: '700' },
-  inputRow:   { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, borderBottomWidth: 1 },
-  searchEmoji:{ fontSize: 16, marginRight: 8 },
-  input:      { flex: 1, fontSize: 15, paddingVertical: 14 },
-  banner:     { marginHorizontal: 16, marginTop: 10, borderRadius: 8, padding: 10 },
-  bannerTxt:  { fontSize: 12, color: '#6B5000' },
-  row:        { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, gap: 12 },
-  pin:        { fontSize: 18, flexShrink: 0 },
-  rowText:    { flex: 1, gap: 2 },
-  mainTxt:    { fontSize: 14, fontWeight: '600' },
-  secTxt:     { fontSize: 12 },
-  empty:      { paddingVertical: 40, alignItems: 'center' },
-  emptyTxt:   { fontSize: 14 },
-});
 
 // ─── EditProfileScreen ────────────────────────────────────────────────────────
 
@@ -212,15 +46,10 @@ export default function EditProfileScreen() {
   const [locationLng, setLocationLng] = useState<number | null>(null);
   const [locationModalOpen, setLocationModalOpen] = useState(false);
   const [categories, setCategories] = useState<string[]>([]);
-  const [allCategories, setAllCategories] = useState<Category[]>([]);
 
   useEffect(() => {
-    Promise.all([
-      creatorService.getProfile(),
-      categoryService.getCategories('CREATOR'),
-    ])
-      .then(([profile, apiCats]) => {
-        const cats: Category[] = apiCats.map((c) => ({ emoji: c.icon, label: c.name }));
+    creatorService.getProfile()
+      .then((profile) => {
         setFullName(profile.fullName ?? '');
         setUsername(profile.username ?? '');
         setOriginalUsername(profile.username ?? '');
@@ -229,7 +58,6 @@ export default function EditProfileScreen() {
         setLocationLat(profile.locationLat ?? null);
         setLocationLng(profile.locationLng ?? null);
         setCategories(profile.categories ?? []);
-        setAllCategories(cats);
       })
       .catch(() => toast.error(t('profile.editCreator.loadError')))
       .finally(() => setLoading(false));
@@ -410,40 +238,6 @@ export default function EditProfileScreen() {
           </View>
 
         </View>
-
-        {/* ── Content Categories ── */}
-        {allCategories.length > 0 && (
-          <>
-            <Text style={[styles.sectionHeader, { color: C.textSecondary }]}>{t('profile.editCreator.sectionCategories')}</Text>
-            <View style={[styles.card, { backgroundColor: C.surface }]}>
-              <View style={styles.field}>
-                <Text style={[styles.label, { color: C.textSecondary }]}>{t('profile.editCreator.categoriesHint')}</Text>
-                <View style={styles.chipGrid}>
-                  {allCategories.map(({ emoji, label }) => {
-                    const selected = categories.includes(label);
-                    return (
-                      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                        key={label}
-                        style={[
-                          styles.chip,
-                          selected
-                            ? { backgroundColor: C.brinjal1 }
-                            : { backgroundColor: C.background, borderColor: C.border, borderWidth: 1.5 },
-                        ]}
-                        onPress={() =>
-                          setCategories((prev) =>
-                            prev.includes(label) ? prev.filter((c) => c !== label) : [...prev, label],
-                          )
-                        }>
-                        <Text style={[styles.chipText, { color: selected ? '#fff' : C.text }]}>{emoji} {label}</Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              </View>
-            </View>
-          </>
-        )}
 
         <View style={styles.saveBtnWrap}>
           <Button label={t('profile.editCreator.saveBtn')} onPress={handleSave} loading={saving} />

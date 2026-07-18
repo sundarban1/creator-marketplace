@@ -17,9 +17,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/components/Toast';
-import { profileService, type Category } from '@/services/profile';
-import { categoryService } from '@/services/category';
-import { PlacesAutocompleteInput } from '@/components/PlacesAutocompleteInput';
+import { profileService } from '@/services/profile';
+import { LocationSearchModal } from '@/components/LocationSearchModal';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
 
 function generateBusinessDescription(name: string, cats: string[]): string {
@@ -44,35 +43,29 @@ export default function EditBusinessProfileScreen() {
   const [descriptionManuallyEdited, setDescriptionManuallyEdited] = useState(false);
   const [website, setWebsite]                   = useState('');
   const [location, setLocation]                 = useState('');
+  const [locationLat, setLocationLat]           = useState<number | null>(null);
+  const [locationLng, setLocationLng]           = useState<number | null>(null);
+  const [locationModalOpen, setLocationModalOpen] = useState(false);
   const [categories, setCategories]             = useState<string[]>([]);
-  const [allCategories, setAllCategories]       = useState<Category[]>([]);
 
   useEffect(() => {
-    Promise.all([
-      profileService.getBusinessProfile(),
-      categoryService.getCategories('BUSINESS'),
-    ])
-      .then(([profile, apiCats]) => {
-        const cats: Category[] = apiCats.map((c) => ({ emoji: c.icon, label: c.name }));
+    profileService.getBusinessProfile()
+      .then((profile) => {
         setBusinessName(profile.businessName ?? '');
         setDescription(profile.description ?? '');
         setWebsite(profile.website ?? '');
         setLocation(profile.location ?? '');
         setCategories(profile.categories ?? []);
-        setAllCategories(cats);
       })
       .catch(() => toast.error(t('profile.editBusiness.loadError')))
       .finally(() => setLoading(false));
   }, []);
 
-  function toggleCategory(cat: string) {
-    setCategories((prev) => {
-      const next = prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat];
-      if (!descriptionManuallyEdited && !description.trim()) {
-        setDescription(generateBusinessDescription(businessName, next));
-      }
-      return next;
-    });
+  function handleLocationSelect(address: string, lat: number, lng: number) {
+    setLocation(address);
+    setLocationLat(lat || null);
+    setLocationLng(lng || null);
+    setLocationModalOpen(false);
   }
 
   function handleRegenerateDescription() {
@@ -186,43 +179,21 @@ export default function EditBusinessProfileScreen() {
 
           <View style={styles.field}>
             <Text style={[styles.label, { color: C.textSecondary }]}>{t('profile.editBusiness.locationLabel')}</Text>
-            <PlacesAutocompleteInput
-              value={location}
-              onChangeText={setLocation}
-              placeholder={t('profile.editBusiness.locationPlaceholder')}
-              types="geocode"
-              autoCorrect={false}
-            />
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+              style={[styles.locationBtn, { backgroundColor: C.background, borderColor: C.border }]}
+              onPress={() => setLocationModalOpen(true)}>
+              <Text style={[styles.locationBtnTxt, { color: location ? C.text : C.textSecondary }]} numberOfLines={2}>
+                {location || t('profile.editBusiness.locationPlaceholder')}
+              </Text>
+              <Text style={styles.locationArrow}>›</Text>
+            </Pressable>
+            {location ? (
+              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => { setLocation(''); setLocationLat(null); setLocationLng(null); }}>
+                <Text style={[styles.clearLocation, { color: C.error ?? '#EF4444' }]}>{t('profile.editCreator.clearLocation')}</Text>
+              </Pressable>
+            ) : null}
           </View>
 
-        </View>
-
-        {/* ── Industry Categories ── */}
-        <Text style={[styles.sectionHeader, { color: C.textSecondary }]}>{t('profile.editBusiness.sectionCategories')}</Text>
-        <View style={[styles.card, { backgroundColor: C.surface }]}>
-          <View style={styles.field}>
-            <Text style={[styles.subHint, { color: C.textSecondary }]}>
-              {t('profile.editBusiness.categoriesHint')}
-            </Text>
-            <View style={styles.chipGrid}>
-              {allCategories.map(({ emoji, label }) => {
-                const selected = categories.includes(label);
-                return (
-                  <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                    key={label}
-                    style={[
-                      styles.chip,
-                      selected
-                        ? { backgroundColor: C.brinjal1 }
-                        : { backgroundColor: C.background, borderColor: C.border, borderWidth: 1.5 },
-                    ]}
-                    onPress={() => toggleCategory(label)}>
-                    <Text style={[styles.chipText, { color: selected ? '#fff' : C.text }]}>{emoji} {label}</Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </View>
         </View>
 
         {/* ── Save ── */}
@@ -238,6 +209,13 @@ export default function EditBusinessProfileScreen() {
         <View style={{ height: 32 }} />
       </ScrollView>
       </KeyboardAvoidingView>
+
+      <LocationSearchModal
+        visible={locationModalOpen}
+        initialValue={location}
+        onSelect={handleLocationSelect}
+        onClose={() => setLocationModalOpen(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -257,16 +235,16 @@ const styles = StyleSheet.create({
   labelRow:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   regenerateBtn: { borderRadius: RADIUS.sm, paddingHorizontal: 10, paddingVertical: 4 },
   regenerateBtnText: { fontSize: 11, fontFamily: F.semibold },
-  subHint:       { fontSize: 12, lineHeight: 18, fontFamily: F.regular },
   input:         { borderRadius: RADIUS.sm, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, fontFamily: F.regular },
   textarea:      { borderRadius: RADIUS.sm, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, minHeight: 100, fontFamily: F.regular },
   charCount:     { fontSize: 11, textAlign: 'right', fontFamily: F.regular },
   suggestBox:    { borderRadius: RADIUS.sm, borderWidth: 1.5, marginTop: 4, overflow: 'hidden' },
   suggestItem:   { paddingHorizontal: 12, paddingVertical: 11 },
   suggestText:   { fontSize: 13, fontFamily: F.regular },
-  chipGrid:      { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
-  chip:          { borderRadius: RADIUS.full, paddingHorizontal: 14, paddingVertical: 8 },
-  chipText:      { fontSize: 13, fontFamily: F.semibold },
+  locationBtn:    { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.sm, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 12, gap: 8 },
+  locationBtnTxt: { flex: 1, fontSize: 14, lineHeight: 20, fontFamily: F.regular },
+  locationArrow:  { fontSize: 20, color: '#9CA3AF' },
+  clearLocation:  { fontSize: 12, marginTop: 2, fontFamily: F.semibold },
   saveBtn:       { marginHorizontal: 16, marginTop: 20, borderRadius: RADIUS.md, paddingVertical: 14, alignItems: 'center' },
   saveBtnText:   { fontSize: 15, color: '#fff', fontFamily: F.bold },
 });

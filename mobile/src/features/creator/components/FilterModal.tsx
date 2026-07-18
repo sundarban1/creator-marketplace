@@ -342,7 +342,17 @@ export function FilterModal({
     >
       <ActiveFilterChips chips={activeChips} />
 
-      {/* Event Type — fastest, most decisive filter, so it leads */}
+      {/* Location */}
+      <View>
+        <FilterSectionHeader
+          icon="location-outline"
+          label={t('filterModal.sectionLocation')}
+          hint={t('filterModal.locationsAllowed', { n: tempLocation.length, max: MAX_LOCS })}
+        />
+        <LocationSearchPicker selected={tempLocation} onSelect={setTempLocation} />
+      </View>
+
+      {/* Event Type */}
       <View>
         <FilterSectionHeader icon="pricetag-outline" label={t('filterModal.sectionEventType')} />
         <FilterChipGroup
@@ -392,16 +402,6 @@ export function FilterModal({
             <DateRangePicker dateFrom={tempDateFrom} dateTo={tempDateTo} onFromChange={setTempDateFrom} onToChange={setTempDateTo} />
           </View>
         )}
-      </View>
-
-      {/* Location */}
-      <View>
-        <FilterSectionHeader
-          icon="location-outline"
-          label={t('filterModal.sectionLocation')}
-          hint={t('filterModal.locationsAllowed', { n: tempLocation.length, max: MAX_LOCS })}
-        />
-        <LocationSearchPicker selected={tempLocation} onSelect={setTempLocation} />
       </View>
     </FilterSheet>
   );
