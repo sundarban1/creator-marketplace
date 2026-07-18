@@ -31,7 +31,6 @@ export const createCampaignSchema = z.object({
   targetAudience:       z.array(z.string()).default([]),
   hashtags:             z.array(z.string()).default([]),
   sampleCaption:        z.string().max(600).optional(),
-  callToAction:         z.string().max(150).optional(),
   approvalRequirements: z.string().max(400).optional(),
   aiGenerated:           z.boolean().optional().default(false),
   aiPrompt:              z.string().max(500).optional(),

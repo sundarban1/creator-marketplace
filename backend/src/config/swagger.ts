@@ -246,7 +246,6 @@ const options: swaggerJsdoc.Options = {
             targetAudience: { type: 'array', items: { type: 'string' } },
             hashtags: { type: 'array', items: { type: 'string' } },
             sampleCaption: { type: 'string', nullable: true },
-            callToAction: { type: 'string', nullable: true },
             approvalRequirements: { type: 'string', nullable: true },
             aiGenerated: { type: 'boolean', example: false },
             aiPrompt: { type: 'string', nullable: true },

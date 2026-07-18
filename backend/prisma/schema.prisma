@@ -294,7 +294,6 @@ model Campaign {
   targetAudience         String[]      @default([])
   hashtags               String[]      @default([])
   sampleCaption          String?
-  callToAction           String?
   approvalRequirements   String?
   aiGenerated            Boolean       @default(false)
   aiPrompt               String?

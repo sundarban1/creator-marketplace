@@ -16,12 +16,12 @@ export function Categories({ stats }: { stats: LandingStats | null }) {
 
   return (
     <section id={SECTION_IDS.categories} className="bg-paper py-28">
-      <div className="mx-auto mb-14 max-w-lg px-6">
+      <div className="mx-auto mb-14 max-w-2xl px-6">
         <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()}>
           <motion.p variants={fadeUp} className="font-serif text-base italic text-ink-soft">
             {d.categories.eyebrow}
           </motion.p>
-          <motion.h2 variants={fadeUp} className="text-balance mt-3 font-serif text-3xl font-medium text-ink md:text-4xl">
+          <motion.h2 variants={fadeUp} className="mt-3 whitespace-nowrap font-serif text-2xl font-medium text-ink sm:text-3xl md:text-4xl">
             {d.categories.heading}
           </motion.h2>
         </motion.div>

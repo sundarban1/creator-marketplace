@@ -680,14 +680,6 @@ export default function CampaignDetailScreen() {
           </View>
         )}
 
-        {/* 7. Call to Action */}
-        {campaign.callToAction && (
-          <View style={[s.card, { backgroundColor: C.surface }]}>
-            <Text style={[s.sectionLabel, { color: C.textSecondary }]}>{t('campaignDetail.sectionCallToAction')}</Text>
-            <Text style={[s.description, { color: C.text }]}>{campaign.callToAction}</Text>
-          </View>
-        )}
-
         {/* Approval Requirements */}
         {campaign.approvalRequirements && (
           <View style={[s.card, { backgroundColor: C.surface }]}>

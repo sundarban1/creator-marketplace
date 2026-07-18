@@ -16,11 +16,11 @@ export function Audience() {
         <div className="mesh-blob absolute right-[5%] bottom-0 h-[340px] w-[340px] rounded-full bg-brand-orange/[0.1] blur-[110px]" style={{ animationDelay: '2.5s' }} />
       </div>
       <div className="mx-auto max-w-5xl px-6">
-        <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="mb-16 max-w-lg">
+        <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="mb-16 max-w-2xl">
           <motion.p variants={fadeUp} className="font-serif text-base italic text-white/50">
             {d.audience.eyebrow}
           </motion.p>
-          <motion.h2 variants={fadeUp} className="text-balance mt-3 font-serif text-3xl font-medium md:text-4xl">
+          <motion.h2 variants={fadeUp} className="mt-3 whitespace-nowrap font-serif text-2xl font-medium sm:text-3xl md:text-4xl">
             {d.audience.heading}
           </motion.h2>
         </motion.div>

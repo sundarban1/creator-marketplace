@@ -325,9 +325,10 @@ export class CreatorService {
           ? analytics.completedCampaigns / analytics.applicationsAccepted
           : undefined;
         const averageRating = analytics && analytics.reviewCount > 0 ? analytics.averageRating : undefined;
+        const completedEvents = analytics?.completedCampaigns ?? 0;
         const topFollowers = c.socialAccounts.reduce((max, a) => Math.max(max, a.followers), 0);
 
-        return { ...c, distanceKm, completionRate, averageRating, topFollowers };
+        return { ...c, distanceKm, completionRate, averageRating, completedEvents, topFollowers };
       })
       .sort((a, b) => scoreCandidate(b, params) - scoreCandidate(a, params))
       .slice(0, limit);

@@ -14,8 +14,11 @@ export const ne: LandingDict = {
 
   hero: {
     eyebrow: 'नेपालको क्रिएटर मार्केटप्लेस',
-    headline: 'जहाँ क्रिएटर र ब्रान्डहरू',
-    headlineEmphasis: 'सहकार्य गर्छन्',
+    headlinePrefix: 'जहाँ',
+    headlineBrands: 'ब्रान्डहरू',
+    headlineMiddle: 'र',
+    headlineCreators: 'क्रिएटरहरू',
+    headlineSuffix: 'भेट्छन्',
     sub: 'Kolab ले नेपाली क्रिएटरहरूलाई भुक्तानी हुने क्याम्पेनका लागि ब्रान्डहरूसँग जोड्छ — खोज्नुहोस्, सहकार्य गर्नुहोस्, र पैसा कमाउनुहोस्, सबै एउटै ठाउँमा।',
     ctaCreator: 'क्रिएटरको रूपमा जोडिनुहोस्',
     ctaBusiness: 'क्रिएटर भाडामा लिनुहोस्',

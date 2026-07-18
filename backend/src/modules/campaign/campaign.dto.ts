@@ -35,7 +35,6 @@ export interface CampaignDto {
   targetAudience: string[];
   hashtags: string[];
   sampleCaption: string | null;
-  callToAction: string | null;
   approvalRequirements: string | null;
   aiGenerated: boolean;
   aiPrompt: string | null;
@@ -129,7 +128,6 @@ type RawCampaign = {
   targetAudience: string[];
   hashtags: string[];
   sampleCaption: string | null;
-  callToAction: string | null;
   approvalRequirements: string | null;
   aiGenerated: boolean;
   aiPrompt: string | null;
@@ -177,7 +175,6 @@ export function toCampaignDto(c: RawCampaign): CampaignDto {
     targetAudience:       c.targetAudience ?? [],
     hashtags:             c.hashtags ?? [],
     sampleCaption:        c.sampleCaption,
-    callToAction:         c.callToAction,
     approvalRequirements: c.approvalRequirements,
     aiGenerated:           c.aiGenerated,
     aiPrompt:              c.aiPrompt,

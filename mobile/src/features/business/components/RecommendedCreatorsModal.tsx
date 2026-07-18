@@ -4,8 +4,9 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { usePlatforms, getPlatformMeta } from '@/hooks/usePlatforms';
 import { creatorService, type ApiCreatorListItem } from '@/services/creator';
-import { F } from '@/utilities/constants';
+import { F, RADIUS } from '@/utilities/constants';
 
 type Props = {
   visible: boolean;
@@ -18,11 +19,6 @@ type Props = {
   onDone: () => void;
 };
 
-function formatDistance(km: number): string {
-  if (km < 1) return `${Math.round(km * 1000)} m`;
-  return `${km.toFixed(1)} km`;
-}
-
 function formatFollowers(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
@@ -32,6 +28,7 @@ function formatFollowers(n: number): string {
 export function RecommendedCreatorsModal({ visible, campaignId, category, lat, lng, budgetMin, budgetMax, onDone }: Props) {
   const C = useAppColors();
   const { t } = useLanguage();
+  const { platforms } = usePlatforms();
 
   const [loading, setLoading] = useState(true);
   const [creators, setCreators] = useState<ApiCreatorListItem[]>([]);
@@ -126,51 +123,55 @@ export function RecommendedCreatorsModal({ visible, campaignId, category, lat, l
             <ScrollView contentContainerStyle={s.list} showsVerticalScrollIndicator={false}>
               {creators.map((creator) => {
                 const sel = selected.has(creator.id);
-                const topAcc = [...creator.socialAccounts].sort((a, b) => b.followers - a.followers)[0];
                 const abbr = (creator.fullName ?? 'C').split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
+                const sortedAccounts = [...creator.socialAccounts].sort((a, b) => b.followers - a.followers);
                 return (
                   <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                     key={creator.id}
-                    style={[s.row, { backgroundColor: '#fff', borderColor: sel ? C.brinjal1 : C.border }]}
+                    style={[s.card, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? `${C.brinjal1}0A` : '#fff' }]}
                     onPress={() => toggle(creator.id)}>
-                    {creator.avatarUrl ? (
-                      <Image source={{ uri: creator.avatarUrl }} style={s.avatarImg} contentFit="cover" />
-                    ) : (
-                      <View style={[s.avatar, { backgroundColor: C.brinjal1 }]}>
-                        <Text style={s.avatarText}>{abbr}</Text>
-                      </View>
-                    )}
-                    <View style={s.info}>
-                      <Text style={[s.name, { color: C.text }]} numberOfLines={1}>{creator.fullName ?? 'Creator'}</Text>
-                      <View style={s.metaRow}>
-                        {topAcc && (
-                          <Text style={[s.sub, { color: C.textSecondary }]} numberOfLines={1}>
-                            {topAcc.platform} · {formatFollowers(topAcc.followers)}
-                          </Text>
-                        )}
-                        {creator.distanceKm != null && (
-                          <View style={s.distanceTag}>
-                            <Ionicons name="navigate" size={9} color={C.brinjal1} />
-                            <Text style={[s.distanceText, { color: C.brinjal1 }]}>{formatDistance(creator.distanceKm)}</Text>
+
+                    <View style={s.cardTop}>
+                      {creator.avatarUrl ? (
+                        <Image source={{ uri: creator.avatarUrl }} style={s.avatarImg} contentFit="cover" />
+                      ) : (
+                        <View style={[s.avatar, { backgroundColor: C.brinjal1 }]}>
+                          <Text style={s.avatarText}>{abbr}</Text>
+                        </View>
+                      )}
+
+                      <View style={s.info}>
+                        <View style={s.nameRow}>
+                          <Text style={[s.name, { color: C.text }]} numberOfLines={1}>{creator.fullName ?? 'Creator'}</Text>
+                          {(creator.fullyVerified || creator.isVerified) && (
+                            <Ionicons name="checkmark-circle" size={14} color="#3B82F6" />
+                          )}
+                          <View style={s.completedRow}>
+                            <FontAwesome5 name="trophy" size={10} color="#D97706" solid />
+                            <Text style={[s.completedText, { color: C.textSecondary }]}>
+                              {creator.completedEvents ?? 0} {t('createEvent.eventsCompleted')}
+                            </Text>
+                          </View>
+                        </View>
+
+                        {sortedAccounts.length > 0 && (
+                          <View style={s.socialRow}>
+                            {sortedAccounts.map((acc) => {
+                              const meta = getPlatformMeta(platforms, acc.platform);
+                              return (
+                                <View key={acc.platform} style={[s.socialBadge, { backgroundColor: meta.bg }]}>
+                                  <FontAwesome5 name={meta.icon} size={11} color={meta.color} />
+                                  <Text style={[s.socialFollowers, { color: meta.color }]}>{formatFollowers(acc.followers)}</Text>
+                                </View>
+                              );
+                            })}
                           </View>
                         )}
                       </View>
-                      {(creator.averageRating != null || creator.completionRate != null) && (
-                        <View style={s.metaRow}>
-                          {creator.averageRating != null && (
-                            <View style={s.ratingTag}>
-                              <Ionicons name="star" size={10} color="#F59E0B" />
-                              <Text style={[s.ratingText, { color: C.textSecondary }]}>{creator.averageRating.toFixed(1)}</Text>
-                            </View>
-                          )}
-                          {creator.completionRate != null && (
-                            <Text style={[s.sub, { color: C.textSecondary }]}>{creator.completionRate}% {t('createEvent.completionRate')}</Text>
-                          )}
-                        </View>
-                      )}
-                    </View>
-                    <View style={[s.checkbox, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? C.brinjal1 : 'transparent' }]}>
-                      {sel && <Ionicons name="checkmark" size={14} color="#fff" />}
+
+                      <View style={[s.checkbox, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? C.brinjal1 : 'transparent' }]}>
+                        {sel && <Ionicons name="checkmark" size={14} color="#fff" />}
+                      </View>
                     </View>
                   </Pressable>
                 );
@@ -222,19 +223,22 @@ const s = StyleSheet.create({
   selectedCount: { fontSize: 12, fontFamily: F.bold },
 
   list: { paddingHorizontal: 16, paddingBottom: 16, gap: 10 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 14, borderWidth: 1.5, padding: 12 },
-  avatar: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
-  avatarImg: { width: 40, height: 40, borderRadius: 20, flexShrink: 0 },
-  avatarText: { color: '#fff', fontSize: 13, fontFamily: F.bold },
-  info: { flex: 1, gap: 3 },
-  name: { fontSize: 14, fontFamily: F.bold },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
-  sub: { fontSize: 12, fontFamily: F.regular },
-  distanceTag: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-  distanceText: { fontSize: 11, fontFamily: F.bold },
-  ratingTag: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-  ratingText: { fontSize: 12, fontFamily: F.bold },
-  checkbox: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+
+  card: { borderRadius: RADIUS.lg, borderWidth: 1.5, overflow: 'hidden' },
+  cardTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, padding: 12 },
+  avatar: { width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  avatarImg: { width: 48, height: 48, borderRadius: 24, flexShrink: 0 },
+  avatarText: { color: '#fff', fontSize: 15, fontFamily: F.bold },
+  info: { flex: 1, gap: 8, paddingTop: 2 },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
+  name: { fontSize: 15, fontFamily: F.bold, flexShrink: 1 },
+  completedRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  completedText: { fontSize: 12, fontFamily: F.medium },
+  checkbox: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, justifyContent: 'center', alignItems: 'center', flexShrink: 0, marginTop: 2 },
+
+  socialRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  socialBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: RADIUS.full, paddingHorizontal: 9, paddingVertical: 5 },
+  socialFollowers: { fontSize: 12, fontFamily: F.bold },
 
   footer: { flexDirection: 'row', alignItems: 'center', gap: 12, borderTopWidth: 1, paddingHorizontal: 16, paddingVertical: 14 },
   skipLink: { paddingVertical: 10, paddingHorizontal: 4 },

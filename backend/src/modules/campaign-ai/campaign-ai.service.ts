@@ -67,7 +67,6 @@ Respond with a JSON object with EXACTLY these keys:
 - deliverables: string, a short comma-separated description of expected content (e.g. "1 Instagram Reel, 2 Instagram Stories")
 - hashtags: string[] (3-8 relevant hashtags, no # needed but allowed)
 - sampleCaption: string, a ready-to-use example caption a creator could post
-- callToAction: string, a short call-to-action phrase for the campaign
 - approvalRequirements: string, one sentence about whether/how the brand wants to review content before it's posted
 - location: string or null, a city/area if inferable, otherwise null
 - needsInput: string[] (0-2), keys from this exact list you were NOT confident about and think the brand should double check: ["location","budgetMin","budgetMax","creatorsNeeded","deadline","platform","category"]. Only include a key here if you genuinely had to guess — always still fill in your best-guess value for it regardless.

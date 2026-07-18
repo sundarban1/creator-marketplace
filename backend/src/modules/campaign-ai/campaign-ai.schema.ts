@@ -39,7 +39,6 @@ export const aiCampaignDraftSchema = z.object({
   deliverables: z.string().min(1).max(300),
   hashtags: z.array(z.string().regex(/^#?[A-Za-z0-9_]+$/).max(40)).min(1).max(10),
   sampleCaption: z.string().min(5).max(600),
-  callToAction: z.string().min(3).max(150),
   approvalRequirements: z.string().min(3).max(400),
   location: z.string().max(120).nullable().default(null),
   needsInput: z.array(z.enum(NEEDS_INPUT_FIELDS)).max(2).default([]),

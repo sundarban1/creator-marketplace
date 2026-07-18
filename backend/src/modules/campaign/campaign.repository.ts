@@ -34,7 +34,6 @@ export class CampaignRepository {
     targetAudience?: string[];
     hashtags?: string[];
     sampleCaption?: string;
-    callToAction?: string;
     approvalRequirements?: string;
     aiGenerated?: boolean;
     aiPrompt?: string;

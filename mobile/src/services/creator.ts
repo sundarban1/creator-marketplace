@@ -87,6 +87,7 @@ export interface ApiCreatorListItem {
   distanceKm?: number;
   averageRating?: number;
   completionRate?: number;
+  completedEvents?: number;
 }
 
 export interface ApiCreatorListResponse {

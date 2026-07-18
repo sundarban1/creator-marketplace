@@ -44,6 +44,10 @@ const LANG_OPTIONS: { lang: Lang; flag: string }[] = [
   { lang: 'ne', flag: '🇳🇵' },
 ];
 
+// Facebook Login is wired up but hidden for now (Meta app config isn't ready
+// yet) — flip this back on once that's sorted, no other code changes needed.
+const FACEBOOK_LOGIN_ENABLED = false;
+
 // Soft pastel wash + card-less, minimal-border layout (per the reference design) —
 // brinjal/orange stay the brand accents (logo badge, active tab, button glow,
 // highlight word) rather than covering the whole screen the way the old solid
@@ -358,35 +362,45 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
         <View style={[s.dividerLine, { backgroundColor: '#EDE9FE' }]} />
       </View>
 
-      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-        style={({ pressed }) => [
-          s.socialBtn, s.socialBtnFull,
-          googleLoading && { opacity: 0.6 },
-          pressed && !googleLoading && { transform: [{ scale: 0.98 }], backgroundColor: '#F3F0FC' },
-        ]}
-        onPress={onGooglePress} disabled={googleLoading}>
-        {googleLoading
-          ? <View style={s.spinner} />
-          : <View style={s.googleBadge}><Text style={s.googleG}>G</Text></View>}
-        <Text style={s.socialBtnText}>{googleLoading ? t('auth.login.signingIn') : t('auth.login.continueGoogle')}</Text>
-      </Pressable>
-      {/* Facebook login — commented out until FB app is configured
       <View style={s.socialRow}>
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[s.socialBtn, googleLoading && { opacity: 0.6 }]} onPress={onGooglePress} disabled={googleLoading}>
-          {googleLoading ? <View style={s.spinner} /> : <View style={s.googleBadge}><Text style={s.googleG}>G</Text></View>}
-          <Text style={s.socialBtnText}>{googleLoading ? 'Signing in…' : 'Google'}</Text>
+        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+          style={({ pressed }) => [
+            s.socialBtn,
+            googleLoading && { opacity: 0.6 },
+            pressed && !googleLoading && { transform: [{ scale: 0.98 }], backgroundColor: '#F3F0FC' },
+          ]}
+          onPress={onGooglePress} disabled={googleLoading}>
+          {googleLoading
+            ? <View style={s.spinner} />
+            : <View style={s.googleBadge}><Text style={s.googleG}>G</Text></View>}
+          <Text style={s.socialBtnText}>{googleLoading ? t('auth.login.signingIn') : 'Google'}</Text>
         </Pressable>
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[s.socialBtnFb, facebookLoading && { opacity: 0.6 }]} onPress={onFacebookPress} disabled={facebookLoading}>
-          {facebookLoading ? <View style={s.spinner} /> : <View style={s.fbBadge}><Text style={s.fbF}>f</Text></View>}
-          <Text style={s.socialBtnFbText}>{facebookLoading ? 'Signing in…' : 'Facebook'}</Text>
-        </Pressable>
+        {FACEBOOK_LOGIN_ENABLED && (
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            style={({ pressed }) => [
+              s.socialBtnFb,
+              facebookLoading && { opacity: 0.6 },
+              pressed && !facebookLoading && { transform: [{ scale: 0.98 }] },
+            ]}
+            onPress={onFacebookPress} disabled={facebookLoading}>
+            {facebookLoading
+              ? <View style={s.spinner} />
+              : <View style={s.fbBadge}><Text style={s.fbF}>f</Text></View>}
+            <Text style={s.socialBtnFbText}>{facebookLoading ? t('auth.login.signingIn') : 'Facebook'}</Text>
+          </Pressable>
+        )}
       </View>
-      */}
 
       {!!googleError && (
         <View style={[s.banner, { backgroundColor: '#FFF1F2', borderColor: '#FECDD3' }]}>
           <Ionicons name="alert-circle" size={15} color="#EF4444" />
           <Text style={[s.bannerText, { color: '#EF4444' }]}>{googleError}</Text>
+        </View>
+      )}
+      {FACEBOOK_LOGIN_ENABLED && !!facebookError && (
+        <View style={[s.banner, { backgroundColor: '#FFF1F2', borderColor: '#FECDD3' }]}>
+          <Ionicons name="alert-circle" size={15} color="#EF4444" />
+          <Text style={[s.bannerText, { color: '#EF4444' }]}>{facebookError}</Text>
         </View>
       )}
 
@@ -559,35 +573,45 @@ function SignupForm({ onGooglePress, googleLoading, googleError, onFacebookPress
         <View style={[s.dividerLine, { backgroundColor: '#EDE9FE' }]} />
       </View>
 
-      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-        style={({ pressed }) => [
-          s.socialBtn, s.socialBtnFull,
-          googleLoading && { opacity: 0.6 },
-          pressed && !googleLoading && { transform: [{ scale: 0.98 }], backgroundColor: '#F3F0FC' },
-        ]}
-        onPress={onGooglePress} disabled={googleLoading}>
-        {googleLoading
-          ? <View style={s.spinner} />
-          : <View style={s.googleBadge}><Text style={s.googleG}>G</Text></View>}
-        <Text style={s.socialBtnText}>{googleLoading ? t('auth.login.signingIn') : t('auth.signup.continueGoogle')}</Text>
-      </Pressable>
-      {/* Facebook login — commented out until FB app is configured
       <View style={s.socialRow}>
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[s.socialBtn, googleLoading && { opacity: 0.6 }]} onPress={onGooglePress} disabled={googleLoading}>
-          {googleLoading ? <View style={s.spinner} /> : <View style={s.googleBadge}><Text style={s.googleG}>G</Text></View>}
-          <Text style={s.socialBtnText}>{googleLoading ? 'Signing in…' : 'Google'}</Text>
+        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+          style={({ pressed }) => [
+            s.socialBtn,
+            googleLoading && { opacity: 0.6 },
+            pressed && !googleLoading && { transform: [{ scale: 0.98 }], backgroundColor: '#F3F0FC' },
+          ]}
+          onPress={onGooglePress} disabled={googleLoading}>
+          {googleLoading
+            ? <View style={s.spinner} />
+            : <View style={s.googleBadge}><Text style={s.googleG}>G</Text></View>}
+          <Text style={s.socialBtnText}>{googleLoading ? t('auth.login.signingIn') : 'Google'}</Text>
         </Pressable>
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[s.socialBtnFb, facebookLoading && { opacity: 0.6 }]} onPress={onFacebookPress} disabled={facebookLoading}>
-          {facebookLoading ? <View style={s.spinner} /> : <View style={s.fbBadge}><Text style={s.fbF}>f</Text></View>}
-          <Text style={s.socialBtnFbText}>{facebookLoading ? 'Signing in…' : 'Facebook'}</Text>
-        </Pressable>
+        {FACEBOOK_LOGIN_ENABLED && (
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            style={({ pressed }) => [
+              s.socialBtnFb,
+              facebookLoading && { opacity: 0.6 },
+              pressed && !facebookLoading && { transform: [{ scale: 0.98 }] },
+            ]}
+            onPress={onFacebookPress} disabled={facebookLoading}>
+            {facebookLoading
+              ? <View style={s.spinner} />
+              : <View style={s.fbBadge}><Text style={s.fbF}>f</Text></View>}
+            <Text style={s.socialBtnFbText}>{facebookLoading ? t('auth.login.signingIn') : 'Facebook'}</Text>
+          </Pressable>
+        )}
       </View>
-      */}
 
       {!!googleError && (
         <View style={[s.banner, { backgroundColor: '#FFF1F2', borderColor: '#FECDD3' }]}>
           <Ionicons name="alert-circle" size={15} color="#EF4444" />
           <Text style={[s.bannerText, { color: '#EF4444' }]}>{googleError}</Text>
+        </View>
+      )}
+      {FACEBOOK_LOGIN_ENABLED && !!facebookError && (
+        <View style={[s.banner, { backgroundColor: '#FFF1F2', borderColor: '#FECDD3' }]}>
+          <Ionicons name="alert-circle" size={15} color="#EF4444" />
+          <Text style={[s.bannerText, { color: '#EF4444' }]}>{facebookError}</Text>
         </View>
       )}
 
@@ -677,6 +701,9 @@ export default function LoginScreen() {
     webClientId:     process.env.EXPO_PUBLIC_FACEBOOK_APP_ID ?? 'unset',
     iosClientId:     process.env.EXPO_PUBLIC_FACEBOOK_APP_ID ?? 'unset',
     androidClientId: process.env.EXPO_PUBLIC_FACEBOOK_APP_ID ?? 'unset',
+    // Facebook's OAuth dialog rejects the request with "This app needs at
+    // least one supported permission" if no scope is sent at all.
+    scopes: ['public_profile', 'email'],
   });
 
   useEffect(() => {

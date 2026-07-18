@@ -28,7 +28,6 @@
       "deliverables": "1 Instagram Reel, 2 Instagram Stories",
       "hashtags": ["CoffeeLovers", "NewBrew", "CafeVibes", "SupportLocal"],
       "sampleCaption": "Found my new favorite morning ritual ☕️ This new blend has the smoothest finish - if you're a coffee person you need to try this.",
-      "callToAction": "Visit us this week and tag us in your coffee moment",
       "approvalRequirements": "Brand will review draft content within 24 hours before it's posted",
       "location": null,
       "needsInput": ["location"]
@@ -61,7 +60,6 @@
       "deliverables": "1 TikTok/Reel, 3 Instagram Story frames",
       "hashtags": ["Foodie", "NewMenu", "DineLocal", "MustTry"],
       "sampleCaption": "This new menu is NOT playing around 🔥 Every dish we tried was better than the last - full review in my stories!",
-      "callToAction": "Book a table this month and try the new menu",
       "approvalRequirements": "Brand will review content before posting to ensure dishes are represented accurately",
       "location": null,
       "needsInput": ["location"]
@@ -94,7 +92,6 @@
       "deliverables": "2 Instagram Posts, 1 Reel",
       "hashtags": ["NewCollection", "StyleDrop", "OOTD", "FashionFinds"],
       "sampleCaption": "Obsessed with how this new drop fits 😍 Styled it two ways - swipe to see both looks!",
-      "callToAction": "Shop the new collection - link in bio",
       "approvalRequirements": "Brand will review styling and photos before the post goes live",
       "location": null,
       "needsInput": ["location"]
@@ -127,7 +124,6 @@
       "deliverables": "1 Reel, 2 Instagram Stories",
       "hashtags": ["FitnessJourney", "TrainWithUs", "GymLife", "HealthyLifestyle"],
       "sampleCaption": "First session done and I already feel the difference 💪 The coaching here is next level - full experience in my story.",
-      "callToAction": "Book your free trial session this week",
       "approvalRequirements": "Brand will review the session recap before posting",
       "location": null,
       "needsInput": ["location"]
@@ -160,7 +156,6 @@
       "deliverables": "1 Reel, 2 Instagram Stories",
       "hashtags": ["GlowUp", "SkincareRoutine", "BeautyFinds", "HonestReview"],
       "sampleCaption": "Been using this for a week and my skin already feels different ✨ Full routine breakdown in my stories.",
-      "callToAction": "Try it yourself - link in bio for a discount",
       "approvalRequirements": "Brand will review the content before it's posted",
       "location": null,
       "needsInput": ["location"]
@@ -192,7 +187,6 @@
       "deliverables": "1 Instagram Reel, 2 Instagram Stories",
       "hashtags": ["NewBrand", "MustTry", "SupportLocal"],
       "sampleCaption": "Just discovered this and had to share 👀 If you're into this kind of thing, you're going to love it.",
-      "callToAction": "Check it out and see for yourself",
       "approvalRequirements": "Brand will review draft content before it's posted",
       "location": null,
       "needsInput": ["location", "budgetMin"]

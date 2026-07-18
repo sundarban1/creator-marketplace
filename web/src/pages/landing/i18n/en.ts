@@ -12,8 +12,11 @@ export const en = {
 
   hero: {
     eyebrow: "Nepal's creator marketplace",
-    headline: 'Where creators and brands',
-    headlineEmphasis: 'collaborate',
+    headlinePrefix: 'Where',
+    headlineBrands: 'Brands',
+    headlineMiddle: 'Meet',
+    headlineCreators: 'Creators',
+    headlineSuffix: '',
     sub: 'Kolab connects Nepali creators with brands for paid campaigns — discover, collaborate, and get paid, all in one place.',
     ctaCreator: 'Join as Creator',
     ctaBusiness: 'Hire Creators',

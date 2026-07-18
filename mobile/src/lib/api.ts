@@ -93,7 +93,6 @@ export interface ApiCampaign {
   targetAudience?:       string[];
   hashtags?:             string[];
   sampleCaption?:        string | null;
-  callToAction?:         string | null;
   approvalRequirements?: string | null;
   aiGenerated?:           boolean;
   aiSuggestedCategories?: string[];

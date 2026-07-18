@@ -215,7 +215,6 @@ type FormData = {
   targetAudience: string[];
   hashtags: string[];
   sampleCaption: string;
-  callToAction: string;
   approvalRequirements: string;
   aiGenerated: boolean;
   aiPrompt: string;
@@ -826,7 +825,6 @@ export default function CreateCampaignScreen() {
     targetAudience: [],
     hashtags: [],
     sampleCaption: '',
-    callToAction: '',
     approvalRequirements: '',
     aiGenerated: false,
     aiPrompt: '',
@@ -925,7 +923,6 @@ export default function CreateCampaignScreen() {
       targetAudience: [],
       hashtags: [],
       sampleCaption: '',
-      callToAction: '',
       approvalRequirements: '',
       aiGenerated: false,
       aiPrompt: '',
@@ -966,7 +963,6 @@ export default function CreateCampaignScreen() {
         targetAudience:       draft.targetAudience,
         hashtags:             draft.hashtags,
         sampleCaption:        draft.sampleCaption,
-        callToAction:         draft.callToAction,
         approvalRequirements: draft.approvalRequirements,
         aiDeliverables:       draft.deliverables,
         aiGenerated:           true,
@@ -1075,7 +1071,6 @@ export default function CreateCampaignScreen() {
       contentGuidelines:    form.contentGuidelines,
       targetAudience:       form.targetAudience,
       hashtags:             form.hashtags,
-      callToAction:         form.callToAction || undefined,
       aiGenerated:           form.aiGenerated,
       aiPrompt:              form.aiGenerated ? form.aiPrompt : undefined,
       aiSuggestedCategories: form.aiGenerated ? form.aiSuggestedCategories : undefined,
@@ -1554,17 +1549,6 @@ export default function CreateCampaignScreen() {
                         <Ionicons name="add" size={20} color="#fff" />
                       </Pressable>
                     </View>
-                  </SectionCard>
-
-                  {/* Call to Action */}
-                  <SectionCard title={t('createEvent.secCallToActionTitle')} sub={t('createEvent.secCallToActionSub')} colors={C}>
-                    <TextInput
-                      style={[s.textarea, { backgroundColor: C.background, borderColor: C.border, color: C.text, minHeight: 70 }]}
-                      value={form.callToAction}
-                      onChangeText={(v) => update('callToAction', v)}
-                      multiline
-                      placeholderTextColor={C.textSecondary}
-                    />
                   </SectionCard>
 
                   {/* AI-only: Budget (raw editable range, replaces preset chips) */}

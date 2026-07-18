@@ -308,7 +308,6 @@ export interface ApiCampaignDetail {
   targetAudience?:       string[];
   hashtags?:             string[];
   sampleCaption?:        string | null;
-  callToAction?:         string | null;
   approvalRequirements?: string | null;
   aiGenerated?:           boolean;
   aiPrompt?:              string | null;

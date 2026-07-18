@@ -12,11 +12,11 @@ export function HowItWorks() {
   return (
     <section id={SECTION_IDS.how} className="bg-paper py-28">
       <div className="mx-auto max-w-5xl px-6">
-        <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="mb-16 max-w-lg">
+        <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="mb-16 max-w-2xl">
           <motion.p variants={fadeUp} className="font-serif text-base italic text-ink-soft">
             {d.how.eyebrow}
           </motion.p>
-          <motion.h2 variants={fadeUp} className="text-balance mt-3 font-serif text-3xl font-medium text-ink md:text-4xl">
+          <motion.h2 variants={fadeUp} className="mt-3 whitespace-nowrap font-serif text-xl font-medium text-ink sm:text-2xl md:text-3xl lg:text-4xl">
             {d.how.heading}
           </motion.h2>
         </motion.div>

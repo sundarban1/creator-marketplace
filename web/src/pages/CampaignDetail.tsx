@@ -452,14 +452,6 @@ export function CampaignDetail() {
               </div>
             )}
 
-            {/* Call to Action */}
-            {campaign.callToAction && (
-              <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Call to Action</p>
-                <p className="text-sm text-gray-700 leading-relaxed">{campaign.callToAction}</p>
-              </div>
-            )}
-
             {/* Approval Requirements */}
             {campaign.approvalRequirements && (
               <div>

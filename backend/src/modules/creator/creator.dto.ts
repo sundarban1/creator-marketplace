@@ -97,6 +97,7 @@ export interface CreatorListItemDto {
   // undefined everywhere else (explore/search doesn't compute these per-row).
   averageRating?: number;
   completionRate?: number;
+  completedEvents?: number;
 }
 
 type RawSocialAccount = {
@@ -244,6 +245,7 @@ type RawCreatorListItem = {
   distanceKm?: number;
   averageRating?: number;
   completionRate?: number;
+  completedEvents?: number;
   user: { isEmailVerified: boolean; isPhoneVerified: boolean } | null;
 };
 
@@ -262,5 +264,6 @@ export function toCreatorListItemDto(p: RawCreatorListItem): CreatorListItemDto 
   if (p.distanceKm != null) dto.distanceKm = Math.round(p.distanceKm * 10) / 10;
   if (p.averageRating != null) dto.averageRating = Math.round(p.averageRating * 10) / 10;
   if (p.completionRate != null) dto.completionRate = Math.round(p.completionRate * 100);
+  if (p.completedEvents != null) dto.completedEvents = p.completedEvents;
   return dto;
 }

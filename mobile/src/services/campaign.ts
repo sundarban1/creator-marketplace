@@ -18,7 +18,6 @@ export interface AiCampaignDraft {
   deliverables: string;
   hashtags: string[];
   sampleCaption: string;
-  callToAction: string;
   approvalRequirements: string;
   location: string | null;
   needsInput: string[];
@@ -103,7 +102,6 @@ export function toCampaign(api: ApiCampaign): Campaign {
     targetAudience:       api.targetAudience ?? [],
     hashtags:             api.hashtags ?? [],
     sampleCaption:        api.sampleCaption ?? undefined,
-    callToAction:         api.callToAction ?? undefined,
     approvalRequirements: api.approvalRequirements ?? undefined,
     aiGenerated:           api.aiGenerated ?? false,
     aiSuggestedCategories: api.aiSuggestedCategories ?? [],
@@ -239,7 +237,6 @@ export const campaignService = {
     targetAudience?:       string[];
     hashtags?:             string[];
     sampleCaption?:        string;
-    callToAction?:         string;
     approvalRequirements?: string;
     aiGenerated?:           boolean;
     aiPrompt?:              string;

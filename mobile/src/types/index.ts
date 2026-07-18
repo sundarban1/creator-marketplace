@@ -53,7 +53,6 @@ export type Campaign = {
   targetAudience?:       string[];
   hashtags?:             string[];
   sampleCaption?:        string;
-  callToAction?:         string;
   approvalRequirements?: string;
   aiGenerated?:           boolean;
   aiSuggestedCategories?: string[];

@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { ChevronDown } from 'lucide-react';
+import { FaIdBadge, FaLock, FaHeart } from 'react-icons/fa6';
 import { fadeUp, scaleIn, stagger } from '../lib/motion';
 import { SECTION_IDS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
@@ -42,10 +43,15 @@ export function Hero() {
               variants={fadeUp}
               className="text-balance mt-6 font-serif text-5xl font-medium leading-[1.03] tracking-tight text-ink sm:text-6xl lg:text-7xl"
             >
-              {d.hero.headline}{' '}
-              <em className="bg-gradient-to-r from-violet to-brand-orange bg-clip-text text-transparent not-italic">
-                {d.hero.headlineEmphasis}
+              {d.hero.headlinePrefix}{' '}
+              <em className="text-violet underline decoration-violet/30 decoration-2 underline-offset-8">
+                {d.hero.headlineBrands}
+              </em>{' '}
+              {d.hero.headlineMiddle}{' '}
+              <em className="text-brand-orange underline decoration-brand-orange/30 decoration-2 underline-offset-8">
+                {d.hero.headlineCreators}
               </em>
+              {!!d.hero.headlineSuffix && <> {d.hero.headlineSuffix}</>}
             </motion.h1>
 
             <motion.p variants={fadeUp} className="mx-auto mt-8 max-w-lg text-lg leading-relaxed text-ink-soft lg:mx-0">
@@ -72,14 +78,33 @@ export function Hero() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5, duration: 0.6 }}
-          className="mt-20 border-t border-ink/10 pt-6"
+          className="mt-20 border-t border-ink/10 pt-8"
         >
-          <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-xs font-medium uppercase tracking-widest text-ink-soft">
-            <span>Verified creators</span>
-            <span className="text-ink/20">·</span>
-            <span>Escrow-protected payments</span>
-            <span className="text-ink/20">·</span>
-            <span>eSewa &middot; Khalti &middot; Fonepay</span>
+          <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-4">
+            <span className="flex items-center gap-2.5 text-sm font-semibold text-ink">
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-violet/10 text-violet">
+                <FaIdBadge size={13} />
+              </span>
+              Verified creators
+            </span>
+
+            <span aria-hidden className="hidden h-4 w-px bg-ink/10 sm:block" />
+
+            <span className="flex items-center gap-2.5 text-sm font-semibold text-ink">
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-orange/10 text-brand-orange">
+                <FaLock size={12} />
+              </span>
+              Escrow-protected payments
+            </span>
+
+            <span aria-hidden className="hidden h-4 w-px bg-ink/10 sm:block" />
+
+            <span className="flex items-center gap-2.5 text-sm font-semibold text-ink">
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-violet/15 to-brand-orange/15 text-violet">
+                <FaHeart size={12} />
+              </span>
+              Built for Nepali Creators &amp; Brands
+            </span>
           </div>
         </motion.div>
       </div>
