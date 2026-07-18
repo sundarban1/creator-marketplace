@@ -1804,7 +1804,7 @@ export default function CreatorSettingsScreen() {
                     autoCapitalize="none"
                   />
                   <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => setShowNewPw((v) => !v)} style={styles.eyeBtn} hitSlop={8}>
-                    <Ionicons name={showNewPw ? 'eye-off-outline' : 'eye-outline'} size={20} color={C.textSecondary} />
+                    <FontAwesome5 name={showNewPw ? 'eye-slash' : 'eye'} size={17} color={C.textSecondary} />
                   </Pressable>
                 </View>
                 {pwError ? <Text style={[styles.fieldError, { color: C.error }]}>{pwError}</Text> : null}
@@ -1825,7 +1825,7 @@ export default function CreatorSettingsScreen() {
                     autoCapitalize="none"
                   />
                   <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => setShowConfirmPw((v) => !v)} style={styles.eyeBtn} hitSlop={8}>
-                    <Ionicons name={showConfirmPw ? 'eye-off-outline' : 'eye-outline'} size={20} color={C.textSecondary} />
+                    <FontAwesome5 name={showConfirmPw ? 'eye-slash' : 'eye'} size={17} color={C.textSecondary} />
                   </Pressable>
                 </View>
                 {cPwError ? <Text style={[styles.fieldError, { color: C.error }]}>{cPwError}</Text> : null}
@@ -2401,7 +2401,7 @@ const styles = StyleSheet.create({
   // flex `alignItems: 'center'` math on the row is correct.
   // No `flex: 1` here — the wrapping navTextCol View now owns that (see below), so this
   // Text sizes to its natural content height and can be genuinely centered within it.
-  rowLabel: { fontSize: 15, lineHeight: 18, fontFamily: F.medium, includeFontPadding: false },
+  rowLabel: { flex: 1, fontSize: 15, lineHeight: 18, fontFamily: F.medium, includeFontPadding: false },
   // Fixed height matching navIonIconWrap (34) with its own `justifyContent: 'center'` — this
   // centers the label against a box of the exact same known height as the icon, so the two are
   // guaranteed pixel-aligned regardless of any font-metric quirks, rather than relying on the

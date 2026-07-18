@@ -1,4 +1,3 @@
-import * as FileSystem from 'expo-file-system/legacy';
 import { request, API_BASE }                from '@/lib/api';
 import type { ApiConversation, ApiMessage } from '@/lib/api';
 import type { Conversation, Message }       from '@/types';
@@ -59,9 +58,14 @@ export function toMessage(api: ApiMessage): Message {
 
 // ── Video upload task ───────────────────────────────────────────────────────────
 
-// Real upload-progress reporting — unlike sendAttachment below (plain fetch(), no
-// progress), video uses FileSystem.createUploadTask so the UI can show an actual
-// percentage, and so the returned task can be cancelled mid-upload.
+// Uses XMLHttpRequest (real upload-progress reporting via xhr.upload.onprogress,
+// same as the fetch-based multipart uploads elsewhere in the app) rather than
+// expo-file-system's native background upload task. The native task is a
+// separate OS-level uploader (okhttp on Android) that sends `Expect:
+// 100-continue` by default — through Render's/Cloudflare's proxy chain that
+// consistently got the connection killed mid-upload ("Request aborted" on the
+// server) even for small files, while every other JS-fetch-based upload in
+// this app worked fine. XHR keeps the same request path as those.
 export function createVideoUploadTask(
   conversationId: string,
   fileUri: string,
@@ -70,33 +74,37 @@ export function createVideoUploadTask(
   onProgress: (fraction: number) => void,
 ): { start: () => Promise<Message>; cancel: () => void } {
   const token = storage.get(ACCESS_TOKEN_KEY) ?? '';
-  const task = FileSystem.createUploadTask(
-    `${API_BASE}/api/messaging/conversations/${conversationId}/attachments/video`,
-    fileUri,
-    {
-      httpMethod: 'POST',
-      uploadType: FileSystem.FileSystemUploadType.MULTIPART,
-      fieldName: 'file',
-      mimeType,
-      parameters: caption?.trim() ? { caption: caption.trim() } : undefined,
-      headers: { Authorization: `Bearer ${token}` },
-    },
-    (data) => {
-      if (data.totalBytesExpectedToSend > 0) onProgress(data.totalBytesSent / data.totalBytesExpectedToSend);
-    },
-  );
+  let xhr: XMLHttpRequest | null = null;
 
   return {
-    start: async () => {
-      const res = await task.uploadAsync();
-      if (!res || res.status < 200 || res.status >= 300) {
-        const parsed = res?.body ? (JSON.parse(res.body) as { message?: string }) : {};
-        throw new Error(parsed.message ?? 'Video upload failed');
-      }
-      const parsed = JSON.parse(res.body) as { data: ApiMessage };
-      return toMessage(parsed.data);
-    },
-    cancel: () => { void task.cancelAsync(); },
+    start: () => new Promise<Message>((resolve, reject) => {
+      xhr = new XMLHttpRequest();
+      xhr.open('POST', `${API_BASE}/api/messaging/conversations/${conversationId}/attachments/video`);
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable && e.total > 0) onProgress(e.loaded / e.total);
+      };
+
+      xhr.onload = () => {
+        let parsed: { data?: ApiMessage; message?: string } = {};
+        try { parsed = JSON.parse(xhr!.responseText); } catch { /* falls through to generic error below */ }
+        if (xhr!.status >= 200 && xhr!.status < 300 && parsed.data) {
+          resolve(toMessage(parsed.data));
+        } else {
+          reject(new Error(parsed.message ?? 'Video upload failed'));
+        }
+      };
+      xhr.onerror   = () => reject(new Error('Video upload failed'));
+      xhr.onabort   = () => reject(new Error('Video upload cancelled'));
+      xhr.ontimeout = () => reject(new Error('Video upload timed out'));
+
+      const form = new FormData();
+      form.append('file', { uri: fileUri, name: `video_${Date.now()}.mp4`, type: mimeType } as unknown as Blob);
+      if (caption?.trim()) form.append('caption', caption.trim());
+      xhr.send(form);
+    }),
+    cancel: () => { xhr?.abort(); },
   };
 }
 

@@ -1003,7 +1003,7 @@ const s = StyleSheet.create({
   auroraBlobC:  { width: 160, height: 160, backgroundColor: 'rgba(79,70,229,0.05)', top: 250, right: 40 },
   bgIcon:       { position: 'absolute' },
 
-  logoImage: { width: 152, height: 152 / (1740 / 620) },
+  logoImage: { width: 168, height: 168 / (1740 / 620) },
   langRow:  { flexDirection: 'row', gap: 6, justifyContent: 'flex-end', marginBottom: 6 },
   langBtn:  { width: 34, height: 34, borderRadius: RADIUS.full, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center', shadowColor: BRINJAL, shadowOpacity: 0.08, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 1 },
   langBtnActive: { backgroundColor: BRINJAL_PALE, borderWidth: 1.5, borderColor: '#C7C3F2' },
