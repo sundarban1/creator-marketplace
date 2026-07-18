@@ -18,17 +18,33 @@ import { useAuth } from '@/context/AuthContext';
 import { LanguageProvider } from '@/context/LanguageContext';
 import { AppThemeProvider, useIsDark } from '@/context/ThemeContext';
 import { NotificationProvider } from '@/context/NotificationContext';
+import { PlatformSettingsProvider, usePlatformFlags } from '@/context/PlatformSettingsContext';
 import { SplashScreen } from '@/components/SplashScreen';
 import { BiometricGateScreen } from '@/components/BiometricGateScreen';
 import { OfflineBanner } from '@/components/OfflineBanner';
 import { ToastProvider } from '@/components/Toast';
 import { isBiometricLoginEnabled } from '@/services/biometric';
+import { authService } from '@/services/auth';
+import type { UserRole } from '@/types';
 
 // Handles auth-based redirects for both login AND logout
 function RootNavigator() {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, updateUser } = useAuth();
+  const { flags } = usePlatformFlags();
   const segments = useSegments();
   const router = useRouter();
+
+  function onboardingEnabledFor(role: UserRole): boolean {
+    return role === 'CREATOR' ? flags.creatorOnboardingEnabled : flags.businessOnboardingEnabled;
+  }
+
+  // Persists the bypass (not just a one-render skip) so that if the admin
+  // toggle is flipped back on later, an already-active user isn't suddenly
+  // routed into onboarding on their next render.
+  function skipOnboarding() {
+    authService.completeOnboarding().catch(() => {});
+    updateUser({ isFirstLogin: false });
+  }
   // Snapshotted once when auth finishes loading (i.e. at cold start) rather than
   // read live on every render — otherwise flipping the Settings toggle ON mid-session
   // would immediately arm the gate and yank the user out of whatever screen they're
@@ -57,13 +73,19 @@ function RootNavigator() {
     if (!user && !inAuthGroup && !isPublic) {
       router.replace('/login');
     } else if (user && inAuthGroup) {
-      if (user.isFirstLogin === true) {
+      if (user.isFirstLogin === true && onboardingEnabledFor(user.role)) {
         router.replace(user.role === 'CREATOR' ? '/onboarding' : '/business-onboarding');
       } else {
+        if (user.isFirstLogin === true) skipOnboarding();
         router.replace(user.role === 'CREATOR' ? '/(creator)/' : '/(business)/');
       }
     } else if (user && user.isFirstLogin === true && !inOnboarding) {
-      router.replace(user.role === 'CREATOR' ? '/onboarding' : '/business-onboarding');
+      if (onboardingEnabledFor(user.role)) {
+        router.replace(user.role === 'CREATOR' ? '/onboarding' : '/business-onboarding');
+      } else {
+        skipOnboarding();
+        router.replace(user.role === 'CREATOR' ? '/(creator)/' : '/(business)/');
+      }
     } else if (user && user.isFirstLogin !== true && onSplash) {
       // Landed on the splash screen (e.g. after the Stack remounted) while
       // already fully signed in — send them home instead of leaving them
@@ -71,7 +93,7 @@ function RootNavigator() {
       // in-app screens like campaign-detail/submit-proposal/create-campaign.
       router.replace(user.role === 'CREATOR' ? '/(creator)/' : '/(business)/');
     }
-  }, [user, isLoading, segments]);
+  }, [user, isLoading, segments, flags.creatorOnboardingEnabled, flags.businessOnboardingEnabled]);
 
   // Gate the whole app behind biometric unlock on cold start when the user has
   // it enabled — sits after the redirect effect above (so navigation state is
@@ -100,17 +122,19 @@ function RootNavigator() {
 function RootLayoutInner() {
   const { isDark } = useIsDark();
   return (
-    <AuthProvider>
-      <NotificationProvider>
-        <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
-          {/* Default status bar for plain-background screens — light-headered
-              auth screens override this locally with their own <StatusBar style="light" />. */}
-          <StatusBar style={isDark ? 'light' : 'dark'} />
-          <RootNavigator />
-          <OfflineBanner />
-        </ThemeProvider>
-      </NotificationProvider>
-    </AuthProvider>
+    <PlatformSettingsProvider>
+      <AuthProvider>
+        <NotificationProvider>
+          <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
+            {/* Default status bar for plain-background screens — light-headered
+                auth screens override this locally with their own <StatusBar style="light" />. */}
+            <StatusBar style={isDark ? 'light' : 'dark'} />
+            <RootNavigator />
+            <OfflineBanner />
+          </ThemeProvider>
+        </NotificationProvider>
+      </AuthProvider>
+    </PlatformSettingsProvider>
   );
 }
 

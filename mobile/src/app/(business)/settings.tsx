@@ -23,6 +23,7 @@ import { isPaymentMethodId } from '@/utilities/paymentMethods';
 import { formatPhoneDisplay, isValidNepaliPhone, normalizePhoneForSubmit } from '@/utilities/phone';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
+import { usePlatformFlags } from '@/context/PlatformSettingsContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/components/Toast';
 import { useAppColors, useIsDark } from '@/context/ThemeContext';
@@ -196,6 +197,7 @@ export default function BusinessSettingsScreen() {
   const C: ColorsType = useAppColors();
   const toast = useToast();
   const { language, setLanguage, t } = useLanguage();
+  const { flags } = usePlatformFlags();
   const { categories: businessCategoryOptions } = useCategories('BUSINESS');
   const { categories: creatorCategoryOptions } = useCategories('CREATOR');
   const { platforms: platformOptions } = usePlatforms();
@@ -896,7 +898,7 @@ export default function BusinessSettingsScreen() {
           </View>
         </Card>
         <HintCard>
-          <Text style={[styles.hintText, { color: C.brinjal1 }]}>{t('businessSettings.supportEmailHint')}</Text>
+          <Text style={[styles.hintText, { color: C.brinjal1 }]}>{t('businessSettings.supportEmailHint', { email: flags.supportEmail ?? 'support@creatormarket.com' })}</Text>
         </HintCard>
       </>
     );

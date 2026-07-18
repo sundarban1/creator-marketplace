@@ -13,6 +13,7 @@ import {
 } from '../../utils/jwt';
 import { sendPasswordResetOtpEmail, sendOtpEmail, sendWelcomeEmail } from '../../utils/email';
 import { AuthRepository } from './auth.repository';
+import { AdminRepository } from '../admin/admin.repository';
 import { ReferralService } from '../referral/referral.service';
 import { BusinessReferralService } from '../business-referral/business-referral.service';
 import { notificationService } from '../notifications/notification.service';
@@ -59,13 +60,28 @@ function makePlaceholderEmail(phone: string): string {
 
 export class AuthService {
   private repo: AuthRepository;
+  private adminRepo: AdminRepository;
   private referralService: ReferralService;
   private businessReferralService: BusinessReferralService;
 
   constructor() {
     this.repo = new AuthRepository();
+    this.adminRepo = new AdminRepository();
     this.referralService = new ReferralService();
     this.businessReferralService = new BusinessReferralService();
+  }
+
+  private async assertRegistrationEnabled(role: 'CREATOR' | 'BUSINESS'): Promise<void> {
+    const key = role === 'CREATOR' ? 'creator.registrationEnabled' : 'business.registrationEnabled';
+    const enabled = await this.adminRepo.getSetting(key);
+    if (enabled === false) {
+      throw new AppError(
+        role === 'CREATOR'
+          ? 'Creator registration is currently closed. Please check back later.'
+          : 'Business registration is currently closed. Please check back later.',
+        403,
+      );
+    }
   }
 
   // Issues + persists an OTP for the given channel, sending it for real on the
@@ -83,6 +99,8 @@ export class AuthService {
   }
 
   async register(input: RegisterInput, deviceId?: string) {
+    await this.assertRegistrationEnabled(input.role);
+
     const channel: Channel = input.email ? 'email' : 'phone';
 
     if (channel === 'email') {
@@ -412,6 +430,8 @@ export class AuthService {
       return { needsRole: true as const, email: gUser.email, name: gUser.name ?? gUser.email.split('@')[0] };
     }
 
+    await this.assertRegistrationEnabled(input.role);
+
     const hashedPassword = await hashPassword(crypto.randomBytes(32).toString('hex'));
 
     let createdUser;
@@ -465,6 +485,8 @@ export class AuthService {
     if (!input.role) {
       return { needsRole: true as const, email: fbUser.email, name: fbUser.name ?? fbUser.email.split('@')[0] };
     }
+
+    await this.assertRegistrationEnabled(input.role);
 
     const hashedPassword = await hashPassword(crypto.randomBytes(32).toString('hex'));
 

@@ -28,7 +28,7 @@ function generateBusinessDescription(name: string, cats: string[]): string {
     : cats.slice(0, -1).join(', ') + ' and ' + cats[cats.length - 1];
   const catLower = catStr.toLowerCase();
   const brandName = name.trim() || 'We';
-  return `${brandName} is a ${catStr} brand passionate about delivering quality products and experiences that make a real difference for our customers.\n\nWe love partnering with creators who share our values and help us connect with the right audience through authentic, engaging content. If you create content around ${catLower}, we would love to collaborate with you!`;
+  return `${brandName} is a ${catStr} business passionate about delivering quality products and experiences that make a real difference for our customers.\n\nWe love partnering with creators who share our values and help us connect with the right audience through authentic, engaging content. If you create content around ${catLower}, we would love to collaborate with you!`;
 }
 
 export default function EditBusinessProfileScreen() {

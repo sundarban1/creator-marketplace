@@ -12,6 +12,8 @@ import {
   getCampaigns,
   getCampaignDetail,
   updateCampaignStatus,
+  approveCampaign,
+  rejectCampaign,
   getSettings,
   updateSettings,
   getConversationStats,
@@ -51,6 +53,8 @@ router.patch('/businesses/:id/reject', rejectBusiness);
 router.get('/campaigns', getCampaigns);
 router.get('/campaigns/:id', getCampaignDetail);
 router.patch('/campaigns/:id/status', updateCampaignStatus);
+router.post('/campaigns/:id/approve', approveCampaign);
+router.post('/campaigns/:id/reject', rejectCampaign);
 router.patch('/applications/:id/release-payment', releasePayment);
 
 router.get('/analytics/:userId', getUserAnalytics);

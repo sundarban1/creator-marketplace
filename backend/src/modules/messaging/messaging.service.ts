@@ -4,6 +4,7 @@ import { toConversationDto, toMessageDto } from './messaging.dto';
 import { CreatorRepository } from '../creator/creator.repository';
 import { BusinessRepository } from '../business/business.repository';
 import { MessagingRepository } from './messaging.repository';
+import { AdminRepository } from '../admin/admin.repository';
 import { notificationService, sendExpoPush } from '../notifications/notification.service';
 import { analyticsService } from '../analytics/analytics.service';
 import { emitToUser } from '../../socket';
@@ -16,11 +17,19 @@ export class MessagingService {
   private repo:         MessagingRepository;
   private creatorRepo:  CreatorRepository;
   private businessRepo: BusinessRepository;
+  private adminRepo:    AdminRepository;
 
   constructor() {
     this.repo         = new MessagingRepository();
     this.creatorRepo  = new CreatorRepository();
     this.businessRepo = new BusinessRepository();
+    this.adminRepo    = new AdminRepository();
+  }
+
+  private async assertMessagingEnabled(): Promise<void> {
+    if ((await this.adminRepo.getSetting('messaging.enabled')) === false) {
+      throw new AppError('Messaging is currently disabled by the platform.', 403);
+    }
   }
 
   // ── Profile resolution ─────────────────────────────────────────────────────
@@ -71,6 +80,8 @@ export class MessagingService {
   // ── Start / find conversation ──────────────────────────────────────────────
 
   async startConversation(userId: string, role: Role, input: StartConversationInput) {
+    await this.assertMessagingEnabled();
+
     if (role === 'BUSINESS') {
       const business     = await this.resolveBusiness(userId);
       const otherCreator = await this.creatorRepo.findByUserId(input.otherUserId);
@@ -219,6 +230,8 @@ export class MessagingService {
   }
 
   private async prepareSend(conversationId: string, userId: string, role: Role) {
+    await this.assertMessagingEnabled();
+
     const conversation = await this.repo.findConversationById(conversationId);
     if (!conversation) throw new AppError('Conversation not found', 404);
     await this.verifyConversationAccess(conversation, userId, role);

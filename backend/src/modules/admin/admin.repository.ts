@@ -5,11 +5,13 @@ import prisma from '../../prisma';
 
 const DEFAULTS: Record<string, unknown> = {
   'platform.comingSoon':           false,
-  'registration.enabled':          true,
+  'business.registrationEnabled':  true,
+  'creator.registrationEnabled':   true,
   'creator.onboarding':            true,
   'business.onboarding':           true,
-  'campaign.autoApproval':         false,
+  'campaign.autoApproval':         true,
   'payment.escrow':                true,
+  'platform.commission':           12,
   'messaging.enabled':             true,
   'messaging.directMessages':      true,
   'messaging.pushNotifications':   true,
@@ -304,6 +306,20 @@ export class AdminRepository {
       where: { id: campaignId },
       data:  { status },
       select: { id: true, title: true, status: true },
+    });
+  }
+
+  async findCampaignForApproval(campaignId: string) {
+    return prisma.campaign.findUnique({
+      where: { id: campaignId },
+      include: { business: { select: { id: true, userId: true, businessName: true } } },
+    });
+  }
+
+  async approveCampaign(campaignId: string) {
+    return prisma.campaign.update({
+      where: { id: campaignId },
+      data:  { status: 'ACTIVE' },
     });
   }
 

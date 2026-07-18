@@ -43,6 +43,7 @@ import * as WebBrowser from 'expo-web-browser';
 import type { FacebookPageOption } from '@/services/creator';
 import { useAppColors, useIsDark } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
+import { usePlatformFlags } from '@/context/PlatformSettingsContext';
 import { useToast } from '@/components/Toast';
 import { GRADIENTS, COLORS, F, RADIUS, SHADOW } from '@/utilities/constants';
 import { pickAndUpload } from '@/utilities/uploadImage';
@@ -289,6 +290,7 @@ export default function CreatorSettingsScreen() {
   const { user, logout, updateUser } = useAuth();
   const { isDark, toggleDark } = useIsDark();
   const { language, setLanguage, t } = useLanguage();
+  const { flags } = usePlatformFlags();
   const { section } = useLocalSearchParams<{ section?: string }>();
   const C: ColorsType = useAppColors();
   const toast = useToast();
@@ -1032,7 +1034,7 @@ export default function CreatorSettingsScreen() {
           </View>
         </Card>
         <View style={[styles.hintCard, { backgroundColor: C.primaryLight }]}>
-          <Text style={[styles.hintText, { color: C.brinjal1 }]}>{t('creatorSettings.supportEmailHint')}</Text>
+          <Text style={[styles.hintText, { color: C.brinjal1 }]}>{t('creatorSettings.supportEmailHint', { email: flags.supportEmail ?? 'support@creatormarket.com' })}</Text>
         </View>
       </>
     );

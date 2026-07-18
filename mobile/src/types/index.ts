@@ -36,7 +36,7 @@ export type Campaign = {
   proposals: number;
   isNew: boolean;
   isFeatured: boolean;
-  status?: 'active' | 'draft' | 'closed';
+  status?: 'active' | 'draft' | 'closed' | 'pending_approval';
   location?: string;
   createdAt: string;
   campaignType?: 'PAID_CAMPAIGN' | 'OPEN_EVENT';

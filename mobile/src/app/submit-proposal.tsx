@@ -254,7 +254,7 @@ export default function SubmitProposalScreen() {
           <View style={[styles.tipCard, { backgroundColor: C.surface, borderColor: C.border }]}>
             <FontAwesome5 name="lightbulb" size={16} color="#D97706" solid />
             <Text style={[styles.tipText, { color: C.textSecondary }]}>
-              A strong cover letter that mentions the brand, your experience, and a clear idea performs best.
+              A strong cover letter that mentions the business, your experience, and a clear idea performs best.
             </Text>
           </View>
 
@@ -345,7 +345,7 @@ export default function SubmitProposalScreen() {
         type="info"
         icon="link-outline"
         title="Add a Social Link First"
-        body="Brands want to see your work before accepting a proposal. Add at least one Facebook, Instagram, or TikTok profile to your account, then come back and submit."
+        body="Businesses want to see your work before accepting a proposal. Add at least one Facebook, Instagram, or TikTok profile to your account, then come back and submit."
         confirmLabel="Add Social Link"
         cancelLabel="Not Now"
         onConfirm={() => {

@@ -149,6 +149,32 @@ export async function updateCampaignStatus(req: Request, res: Response, next: Ne
   }
 }
 
+// POST /api/admin/campaigns/:id/approve
+export async function approveCampaign(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { id } = req.params;
+    const campaign = await service.approveCampaign(id);
+    return success(res, campaign, 'Campaign approved');
+  } catch (err) {
+    next(err);
+  }
+}
+
+// POST /api/admin/campaigns/:id/reject
+export async function rejectCampaign(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body as { reason?: string };
+    if (!reason || !reason.trim()) {
+      throw new AppError('Rejection reason is required', 400);
+    }
+    const campaign = await service.rejectCampaign(id, reason.trim());
+    return success(res, campaign, 'Campaign rejected');
+  } catch (err) {
+    next(err);
+  }
+}
+
 // ── Settings ───────────────────────────────────────────────────────────────────
 
 // GET /api/admin/settings

@@ -81,7 +81,7 @@ export interface ApiCampaign {
   location?:     string | null;
   budgetMin:     number;
   budgetMax:     number;
-  status:        'DRAFT' | 'ACTIVE' | 'PAUSED' | 'CLOSED';
+  status:        'DRAFT' | 'PENDING_APPROVAL' | 'ACTIVE' | 'PAUSED' | 'CLOSED';
   isFeatured:    boolean;
   creatorsNeeded?: number;
   createdAt:     string;

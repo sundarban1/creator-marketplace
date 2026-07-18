@@ -30,6 +30,9 @@ export interface CampaignDto {
   paymentStatus: string;
   paidAt: string | null;
   paymentMethod: string | null;
+  // Platform commission %, snapshotted at creation — added on top of what the
+  // business pays; creators always receive the full proposedRate.
+  commissionRate: number | null;
   objective: string | null;
   contentGuidelines: string[];
   targetAudience: string[];
@@ -56,6 +59,10 @@ export interface ApplicationDto {
   campaignId: string;
   coverLetter: string;
   proposedRate: number;
+  // Derived from proposedRate + the campaign's snapshotted commissionRate —
+  // the amount the business actually pays, on top of the creator's full rate.
+  platformFee: number;
+  businessTotal: number;
   timeline: string;
   socialHandles: Record<string, string>;
   portfolioUrl: string | null;
@@ -80,6 +87,7 @@ export interface ApplicationDto {
     paymentStatus?: string;
     paidAt?: string | null;
     featureImageUrl?: string | null;
+    commissionRate?: number | null;
     business?: { id?: string; businessName: string | null; logoUrl: string | null };
   } | null;
   creator?: {
@@ -123,6 +131,7 @@ type RawCampaign = {
   paymentStatus: string;
   paidAt: Date | null;
   paymentMethod: string | null;
+  commissionRate: number | null;
   objective: string | null;
   contentGuidelines: string[];
   targetAudience: string[];
@@ -170,6 +179,7 @@ export function toCampaignDto(c: RawCampaign): CampaignDto {
     paymentStatus:  c.paymentStatus,
     paidAt:         c.paidAt ? c.paidAt.toISOString() : null,
     paymentMethod:  c.paymentMethod,
+    commissionRate: c.commissionRate ?? null,
     objective:            c.objective,
     contentGuidelines:    c.contentGuidelines ?? [],
     targetAudience:       c.targetAudience ?? [],
@@ -217,6 +227,7 @@ type RawApplication = {
     paymentStatus?: string;
     paidAt?: Date | null;
     featureImageUrl?: string | null;
+    commissionRate?: number | null;
     business?: { id?: string; businessName: string | null; logoUrl: string | null };
   } | null;
   creator?: {
@@ -231,11 +242,15 @@ type RawApplication = {
 };
 
 export function toApplicationDto(a: RawApplication): ApplicationDto {
+  const commissionRate = a.campaign?.commissionRate ?? 0;
+  const platformFee = Math.round(a.proposedRate * (commissionRate / 100) * 100) / 100;
   const dto: ApplicationDto = {
     id:              a.id,
     campaignId:      a.campaignId,
     coverLetter:     a.coverLetter,
     proposedRate:    a.proposedRate,
+    platformFee,
+    businessTotal:   a.proposedRate + platformFee,
     timeline:        a.timeline,
     socialHandles:   (a.socialHandles ?? {}) as Record<string, string>,
     portfolioUrl:    a.portfolioUrl,

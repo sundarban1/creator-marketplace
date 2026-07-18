@@ -5,6 +5,7 @@ import { BusinessRepository } from '../business/business.repository';
 import { CreatorRepository } from '../creator/creator.repository';
 import { CampaignRepository } from './campaign.repository';
 import { FavoriteRepository } from '../creator/favorite.repository';
+import { AdminRepository } from '../admin/admin.repository';
 import { notificationService } from '../notifications/notification.service';
 import { analyticsService } from '../analytics/analytics.service';
 import { MessagingService } from '../messaging/messaging.service';
@@ -73,12 +74,43 @@ export class CampaignService {
   private businessRepo: BusinessRepository;
   private creatorRepo:  CreatorRepository;
   private favoriteRepo: FavoriteRepository;
+  private adminRepo:    AdminRepository;
 
   constructor() {
     this.repo         = new CampaignRepository();
     this.businessRepo = new BusinessRepository();
     this.creatorRepo  = new CreatorRepository();
     this.favoriteRepo = new FavoriteRepository();
+    this.adminRepo    = new AdminRepository();
+  }
+
+  // A requested 'ACTIVE' publish is downgraded to 'PENDING_APPROVAL' when the
+  // admin has turned off campaign.autoApproval — the event then stays
+  // invisible to creators until an admin approves it (see AdminService).
+  private async resolvePublishStatus(requested: 'DRAFT' | 'ACTIVE'): Promise<'DRAFT' | 'ACTIVE' | 'PENDING_APPROVAL'> {
+    if (requested !== 'ACTIVE') return requested;
+    const autoApproval = await this.adminRepo.getSetting('campaign.autoApproval');
+    return autoApproval === false ? 'PENDING_APPROVAL' : 'ACTIVE';
+  }
+
+  // Broadcasts a newly-live campaign to creators — shared by create(), the
+  // publish-a-draft path in update(), and AdminService.approveCampaign().
+  fanOutNewCampaign(campaign: ReturnType<typeof toCampaignDto>, business: { id: string; businessName: string | null }, userId: string) {
+    analyticsService.incrCampaignPublished(userId);
+    emitToRole('CREATOR', 'campaign:new', campaign);
+
+    this.favoriteRepo.getCreatorUserIdsForBusiness(business.id).then((userIds) => {
+      if (userIds.length === 0) return;
+      const notifications = userIds.map((uid) => ({
+        userId:  uid,
+        type:    'new_campaign',
+        title:   `${business.businessName} posted a new campaign`,
+        body:    `${campaign.title} — ${campaign.category}`,
+        refId:   campaign.id,
+        refType: 'campaign',
+      }));
+      return notificationService.createMany(notifications);
+    }).catch(() => {});
   }
 
   async create(userId: string, input: CreateCampaignInput) {
@@ -87,9 +119,16 @@ export class CampaignService {
       throw new AppError('Business profile not found', 404);
     }
 
+    const [resolvedStatus, commissionRate] = await Promise.all([
+      this.resolvePublishStatus(input.status),
+      this.adminRepo.getSetting('platform.commission').then((v) => Number(v) || 0),
+    ]);
+
     const raw = await this.repo.create({
       businessId: business.id,
       ...input,
+      status:     resolvedStatus,
+      commissionRate,
       deadline:  new Date(input.deadline),
       eventDate: input.eventDate ? new Date(input.eventDate) : undefined,
     });
@@ -104,24 +143,7 @@ export class CampaignService {
     }).catch(() => {});
 
     if (raw.status === 'ACTIVE') {
-      analyticsService.incrCampaignPublished(userId);
-
-      // Broadcast new active campaign to all connected creators in real time
-      emitToRole('CREATOR', 'campaign:new', campaign);
-
-      // Notify creators who have favorited this business
-      this.favoriteRepo.getCreatorUserIdsForBusiness(business.id).then((userIds) => {
-        if (userIds.length === 0) return;
-        const notifications = userIds.map((uid) => ({
-          userId:  uid,
-          type:    'new_campaign',
-          title:   `${business.businessName} posted a new campaign`,
-          body:    `${raw.title} — ${raw.category}`,
-          refId:   raw.id,
-          refType: 'campaign',
-        }));
-        return notificationService.createMany(notifications);
-      }).catch(() => {});
+      this.fanOutNewCampaign(campaign, business, userId);
     }
 
     return campaign;
@@ -203,30 +225,25 @@ export class CampaignService {
       }
     }
 
+    // Publishing a draft (or reactivating a non-active campaign) goes through the
+    // same auto-approval gate as a brand-new campaign.
+    const resolvedStatus = input.status === 'ACTIVE'
+      ? await this.resolvePublishStatus('ACTIVE')
+      : input.status;
+
     const updated = await this.repo.update(id, {
       ...input,
+      status:    resolvedStatus,
       deadline:  input.deadline  ? new Date(input.deadline)  : undefined,
       eventDate: input.eventDate ? new Date(input.eventDate) : undefined,
     });
 
     const dto = toCampaignDto(updated);
 
-    // Publishing a draft (or reactivating a non-active campaign) — same fan-out as a brand-new campaign
-    if (input.status === 'ACTIVE' && campaign.status !== 'ACTIVE') {
-      emitToRole('CREATOR', 'campaign:new', dto);
-
-      this.favoriteRepo.getCreatorUserIdsForBusiness(business.id).then((userIds) => {
-        if (userIds.length === 0) return;
-        const notifications = userIds.map((uid) => ({
-          userId:  uid,
-          type:    'new_campaign',
-          title:   `${business.businessName} posted a new campaign`,
-          body:    `${updated.title} — ${updated.category}`,
-          refId:   updated.id,
-          refType: 'campaign',
-        }));
-        return notificationService.createMany(notifications);
-      }).catch(() => {});
+    // Same fan-out as a brand-new campaign — only fires once the resolved status
+    // actually lands on ACTIVE (i.e. auto-approval didn't downgrade it to pending).
+    if (resolvedStatus === 'ACTIVE' && campaign.status !== 'ACTIVE') {
+      this.fanOutNewCampaign(dto, business, userId);
     }
 
     return dto;

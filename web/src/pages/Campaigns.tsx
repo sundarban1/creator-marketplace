@@ -18,9 +18,17 @@ const PLATFORM_COLORS: Record<string, string> = {
   Twitter:   'text-sky-600 bg-sky-50',
 };
 
-const STATUS_FILTERS = ['All', 'ACTIVE', 'PAUSED', 'CLOSED'] as const;
+const STATUS_FILTERS = ['All', 'PENDING_APPROVAL', 'ACTIVE', 'PAUSED', 'CLOSED'] as const;
+const STATUS_FILTER_LABELS: Record<(typeof STATUS_FILTERS)[number], string> = {
+  All: 'All',
+  PENDING_APPROVAL: 'Pending Review',
+  ACTIVE: 'ACTIVE',
+  PAUSED: 'PAUSED',
+  CLOSED: 'CLOSED',
+};
 
 function mapStatus(s: string): string {
+  if (s === 'PENDING_APPROVAL') return 'pending';
   return s.toLowerCase();
 }
 
@@ -181,7 +189,7 @@ export function Campaigns() {
                   : 'text-gray-500 hover:text-gray-700'
               }`}
             >
-              {s}
+              {STATUS_FILTER_LABELS[s]}
             </button>
           ))}
         </div>

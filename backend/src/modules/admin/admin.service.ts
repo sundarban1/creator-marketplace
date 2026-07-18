@@ -5,6 +5,8 @@ import { isCreatorProfileComplete } from '../referral/referral.service';
 import { BusinessReferralRepository } from '../business-referral/business-referral.repository';
 import { isBusinessProfileComplete, REFERRAL_HOLD_DAYS } from '../business-referral/business-referral.service';
 import { CampaignRepository } from '../campaign/campaign.repository';
+import { CampaignService } from '../campaign/campaign.service';
+import { toCampaignDto } from '../campaign/campaign.dto';
 import { MessagingService } from '../messaging/messaging.service';
 import { notificationService } from '../notifications/notification.service';
 import { analyticsService } from '../analytics/analytics.service';
@@ -17,6 +19,7 @@ export class AdminService {
   private referralRepo: ReferralRepository;
   private businessReferralRepo: BusinessReferralRepository;
   private campaignRepo: CampaignRepository;
+  private campaignService: CampaignService;
   private messagingService: MessagingService;
 
   constructor() {
@@ -24,6 +27,7 @@ export class AdminService {
     this.referralRepo = new ReferralRepository();
     this.businessReferralRepo = new BusinessReferralRepository();
     this.campaignRepo = new CampaignRepository();
+    this.campaignService = new CampaignService();
     this.messagingService = new MessagingService();
   }
 
@@ -65,6 +69,50 @@ export class AdminService {
 
   setCampaignStatus(campaignId: string, status: CampaignStatus) {
     return this.repo.updateCampaignStatus(campaignId, status);
+  }
+
+  async approveCampaign(campaignId: string) {
+    const campaign = await this.repo.findCampaignForApproval(campaignId);
+    if (!campaign) throw new AppError('Campaign not found', 404);
+    if (campaign.status !== 'PENDING_APPROVAL') {
+      throw new AppError('Campaign is not pending approval', 400);
+    }
+
+    const updated = await this.repo.approveCampaign(campaignId);
+    const dto = toCampaignDto(updated);
+    this.campaignService.fanOutNewCampaign(dto, campaign.business, campaign.business.userId);
+
+    notificationService.create({
+      userId:  campaign.business.userId,
+      type:    'campaign_approved',
+      title:   '✅ Event Approved',
+      body:    `Your event "${campaign.title}" has been approved and is now live.`,
+      refId:   campaignId,
+      refType: 'campaign',
+    }).catch(() => {});
+
+    return dto;
+  }
+
+  async rejectCampaign(campaignId: string, reason: string) {
+    const campaign = await this.repo.findCampaignForApproval(campaignId);
+    if (!campaign) throw new AppError('Campaign not found', 404);
+    if (campaign.status !== 'PENDING_APPROVAL') {
+      throw new AppError('Campaign is not pending approval', 400);
+    }
+
+    const updated = await this.repo.updateCampaignStatus(campaignId, 'CANCELLED');
+
+    notificationService.create({
+      userId:  campaign.business.userId,
+      type:    'campaign_rejected',
+      title:   '❌ Event Not Approved',
+      body:    `Your event "${campaign.title}" was not approved: ${reason}`,
+      refId:   campaignId,
+      refType: 'campaign',
+    }).catch(() => {});
+
+    return updated;
   }
 
   removeUser(userId: string) {
@@ -168,6 +216,9 @@ export class AdminService {
     if (app.paymentStatus === 'RELEASED') throw new AppError('Payment has already been released', 400);
     if (app.paymentStatus !== 'PAID') throw new AppError('No escrow payment is held for this application', 400);
 
+    // Creators always receive the full proposedRate on release — the platform
+    // commission (snapshotted on the campaign at creation) is charged to the
+    // business on top of the rate, not deducted from the creator's payout.
     const updated = await this.campaignRepo.releaseApplicationPayment(appId, adminUserId);
     const creatorUserId = app.creator.userId;
     const businessUserId = app.campaign.business.userId;

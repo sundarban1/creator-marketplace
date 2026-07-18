@@ -82,10 +82,11 @@ function InputField({
 
 const DEFAULTS: PlatformSettings = {
   'platform.comingSoon':         false,
-  'registration.enabled':        true,
+  'business.registrationEnabled': true,
+  'creator.registrationEnabled':  true,
   'creator.onboarding':          true,
   'business.onboarding':         true,
-  'campaign.autoApproval':       false,
+  'campaign.autoApproval':       true,
   'payment.escrow':              true,
   'messaging.enabled':           true,
   'messaging.directMessages':    true,
@@ -215,10 +216,11 @@ export function Settings() {
         {/* Platform */}
         <SectionCard title="Platform Settings" subtitle="Core controls for registration and onboarding">
           <Toggle label="Coming Soon Mode"      description="Hide the App Store / Google Play download buttons on the public landing page and show a Coming Soon badge instead" value={bool('platform.comingSoon')} onChange={(v) => toggle('platform.comingSoon', v)} />
-          <Toggle label="User Registration"     description="Allow new users to sign up on the platform"                      value={bool('registration.enabled')}  onChange={(v) => toggle('registration.enabled', v)} />
+          <Toggle label="Business Registration" description="Allow new businesses to sign up on the platform"                  value={bool('business.registrationEnabled')} onChange={(v) => toggle('business.registrationEnabled', v)} />
+          <Toggle label="Creator Registration"  description="Allow new creators to sign up on the platform"                   value={bool('creator.registrationEnabled')}  onChange={(v) => toggle('creator.registrationEnabled', v)} />
           <Toggle label="Creator Onboarding"    description="Enable the creator onboarding flow for new users"                value={bool('creator.onboarding')}    onChange={(v) => toggle('creator.onboarding', v)} />
-          <Toggle label="Business Onboarding"   description="Enable business registration and onboarding"                     value={bool('business.onboarding')}   onChange={(v) => toggle('business.onboarding', v)} />
-          <Toggle label="Event Auto-Approval"    description="Automatically approve events that meet all criteria"             value={bool('campaign.autoApproval')} onChange={(v) => toggle('campaign.autoApproval', v)} />
+          <Toggle label="Business Onboarding"   description="Enable the business onboarding flow for new users"               value={bool('business.onboarding')}   onChange={(v) => toggle('business.onboarding', v)} />
+          <Toggle label="Event Auto-Approval"    description="When off, new events go into a pending-review queue and stay hidden from creators until an admin approves them" value={bool('campaign.autoApproval')} onChange={(v) => toggle('campaign.autoApproval', v)} />
           <Toggle label="Payment Escrow"         description="Hold payments in escrow until event completion is confirmed"      value={bool('payment.escrow')}        onChange={(v) => toggle('payment.escrow', v)} />
         </SectionCard>
 

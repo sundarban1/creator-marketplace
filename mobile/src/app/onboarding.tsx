@@ -21,7 +21,7 @@ function generateCreatorBio(categories: string[]): string {
   const catStr = categories.length === 1
     ? categories[0]
     : categories.slice(0, -1).join(', ') + ' and ' + categories[categories.length - 1];
-  return `I'm a ${catStr} content creator passionate about sharing authentic stories and engaging experiences. I love collaborating with brands that align with my values to create content that truly connects with audiences and drives meaningful results.`;
+  return `I'm a ${catStr} content creator passionate about sharing authentic stories and engaging experiences. I love collaborating with businesses that align with my values to create content that truly connects with audiences and drives meaningful results.`;
 }
 
 function generateUsernameCandidates(name: string): string[] {

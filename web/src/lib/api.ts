@@ -264,6 +264,8 @@ export interface ApiApplication {
   id:            string;
   coverLetter:   string;
   proposedRate:  number;
+  platformFee?:  number;
+  businessTotal?: number;
   timeline:      string;
   portfolioUrl?: string | null;
   status:        string;
@@ -313,6 +315,7 @@ export interface ApiCampaignDetail {
   aiPrompt?:              string | null;
   aiSuggestedCategories?: string[];
   aiSuggestedPlatforms?:  string[];
+  commissionRate?: number | null;
   createdAt:      string;
   updatedAt:      string;
   business: {
@@ -395,6 +398,17 @@ export type ApiUserAnalytics =
   | ({ role: 'BUSINESS' } & ApiBrandAnalytics);
 
 export type PlatformSettings = Record<string, boolean | string | number>;
+
+export interface PlatformFlags {
+  businessRegistrationEnabled: boolean;
+  creatorRegistrationEnabled:  boolean;
+  businessOnboardingEnabled:   boolean;
+  creatorOnboardingEnabled:    boolean;
+  messagingEnabled:            boolean;
+  supportEmail?:               string;
+  platformCommission:          number;
+  comingSoon:                  boolean;
+}
 
 export interface ApiConversationAdmin {
   id:            string;
@@ -555,6 +569,12 @@ export const api = {
     updateCampaignStatus: (id: string, status: string) =>
       request<ApiCampaign>('PATCH', `/api/admin/campaigns/${id}/status`, { status }),
 
+    approveCampaign: (id: string) =>
+      request<ApiCampaign>('POST', `/api/admin/campaigns/${id}/approve`),
+
+    rejectCampaign: (id: string, reason: string) =>
+      request<ApiCampaign>('POST', `/api/admin/campaigns/${id}/reject`, { reason }),
+
     getSettings: () =>
       request<PlatformSettings>('GET', '/api/admin/settings'),
 
@@ -702,6 +722,8 @@ export const api = {
       request<LandingStats>('GET', '/api/public/landing-stats'),
     comingSoon: () =>
       request<{ comingSoon: boolean }>('GET', '/api/public/coming-soon'),
+    platformFlags: () =>
+      request<PlatformFlags>('GET', '/api/public/platform-flags'),
     legalDoc: (slug: 'privacy-policy' | 'terms' | 'guidelines') =>
       request<{ sections: LegalSection[]; lastUpdated: string | null }>('GET', `/api/legal/${slug}`),
     faqs: () =>

@@ -201,7 +201,7 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
         {proposal.status !== 'accepted' && (
           <View style={[styles.footerRow, { borderTopColor: C.border }]}>
             <Text style={[styles.footerTxt, { color: cfg.color }]}>
-              {proposal.status === 'pending' ? 'Awaiting brand response' : 'Application was not accepted'}
+              {proposal.status === 'pending' ? 'Awaiting business response' : 'Application was not accepted'}
             </Text>
             <Ionicons name="chevron-forward" size={13} color={C.textSecondary} />
           </View>

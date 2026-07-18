@@ -25,6 +25,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
+import { usePlatformFlags } from '@/context/PlatformSettingsContext';
 import { chatService, toMessage, createVideoUploadTask } from '@/services/chat';
 import { compressVideo } from '@/utilities/uploadVideo';
 import { getSocket } from '@/lib/socket';
@@ -333,6 +334,7 @@ export default function BusinessChatRoomScreen() {
   const { t }    = useLanguage();
   const C        = useAppColors();
   const insets   = useSafeAreaInsets();
+  const { flags } = usePlatformFlags();
 
   const [messages, setMessages]       = useState<Message[]>([]);
   const [messagesError, setMessagesError] = useState('');
@@ -803,7 +805,12 @@ export default function BusinessChatRoomScreen() {
         />
 
         {/* ── Input bar ── */}
-        {status === 'ACCEPTED' && (
+        {status === 'ACCEPTED' && !flags.messagingEnabled && (
+          <View style={[s.inputBar, { backgroundColor: C.surface, borderTopColor: C.border, paddingBottom: insets.bottom + 8, justifyContent: 'center' }]}>
+            <Text style={[s.charCount, { color: C.textSecondary }]}>{t('messages.messagingDisabled')}</Text>
+          </View>
+        )}
+        {status === 'ACCEPTED' && flags.messagingEnabled && (
           <>
             <View style={[s.inputBar, { backgroundColor: C.surface, borderTopColor: C.border, paddingBottom: emojiOpen ? 8 : insets.bottom + 8 }]}>
               <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={s.iconBtn} onPress={handleCameraPress} hitSlop={4}>

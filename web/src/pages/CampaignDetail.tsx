@@ -96,8 +96,9 @@ function buildTimeline(campaign: ApiCampaignDetail) {
 
 // ── Application row ───────────────────────────────────────────────────────────
 
-function ApplicationRow({ app, onReleased, showToast }: {
+function ApplicationRow({ app, commissionRate, onReleased, showToast }: {
   app: ApiApplication;
+  commissionRate?: number | null;
   onReleased: () => void;
   showToast: (msg: string, ok?: boolean) => void;
 }) {
@@ -143,7 +144,14 @@ function ApplicationRow({ app, onReleased, showToast }: {
           <p className="text-xs text-gray-500 truncate">{app.creator.user.email}</p>
         </div>
         <div className="flex items-center gap-3 flex-shrink-0">
-          <span className="text-sm font-semibold text-gray-800">NPR {app.proposedRate.toLocaleString()}</span>
+          <div className="text-right">
+            <span className="text-sm font-semibold text-gray-800">NPR {app.proposedRate.toLocaleString()}</span>
+            {!!commissionRate && (
+              <p className="text-[10px] text-gray-400 leading-none mt-0.5">
+                +{commissionRate}% fee · business pays {Math.round(app.proposedRate * (1 + commissionRate / 100)).toLocaleString()}
+              </p>
+            )}
+          </div>
           <div className="flex items-center gap-1">
             {appStatusIcon(app.status)}
             <StatusBadge status={appStatusBadge(app.status)} />
@@ -214,6 +222,10 @@ export function CampaignDetail() {
   const navigate   = useNavigate();
   const [statusChanging, setStatusChanging] = useState(false);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
+  const [approving, setApproving] = useState(false);
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
+  const [rejecting, setRejecting] = useState(false);
 
   const { data, loading, error, refetch } = useApi(() => api.admin.campaignDetail(id!));
   const campaign = data?.data ?? null;
@@ -234,6 +246,35 @@ export function CampaignDetail() {
       showToast((e as Error).message ?? 'Failed to update status.', false);
     } finally {
       setStatusChanging(false);
+    }
+  }
+
+  async function handleApprove() {
+    setApproving(true);
+    try {
+      await api.admin.approveCampaign(id!);
+      showToast('Event approved and is now live.');
+      refetch();
+    } catch (e) {
+      showToast((e as Error).message ?? 'Failed to approve event.', false);
+    } finally {
+      setApproving(false);
+    }
+  }
+
+  async function handleReject() {
+    if (!rejectReason.trim()) return;
+    setRejecting(true);
+    try {
+      await api.admin.rejectCampaign(id!, rejectReason.trim());
+      showToast('Event rejected.');
+      setShowRejectModal(false);
+      setRejectReason('');
+      refetch();
+    } catch (e) {
+      showToast((e as Error).message ?? 'Failed to reject event.', false);
+    } finally {
+      setRejecting(false);
     }
   }
 
@@ -281,7 +322,7 @@ export function CampaignDetail() {
                   <Star size={11} /> Featured
                 </span>
               )}
-              <StatusBadge status={campaign.status.toLowerCase()} />
+              <StatusBadge status={campaign.status === 'PENDING_APPROVAL' ? 'pending' : campaign.status.toLowerCase()} />
             </div>
             <p className="text-sm text-gray-500 mt-0.5">{campaign.business.businessName} · {isEvent ? 'Open Event' : 'Paid Event'}</p>
           </div>
@@ -289,19 +330,63 @@ export function CampaignDetail() {
 
         {/* Status management */}
         <div className="flex items-center gap-2 flex-shrink-0">
-          <span className="text-xs text-gray-500">Status:</span>
-          <select
-            value={campaign.status}
-            onChange={(e) => handleStatusChange(e.target.value)}
-            disabled={statusChanging}
-            className="text-xs font-medium border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
-          >
-            {CAMPAIGN_STATUSES.map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
+          {campaign.status === 'PENDING_APPROVAL' ? (
+            <>
+              <button
+                onClick={handleApprove}
+                disabled={approving}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-60 transition-colors"
+              >
+                <CheckCircle2 size={14} />
+                {approving ? 'Approving…' : 'Approve'}
+              </button>
+              <button
+                onClick={() => setShowRejectModal(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-white border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+              >
+                <XCircle size={14} />
+                Reject
+              </button>
+            </>
+          ) : (
+            <>
+              <span className="text-xs text-gray-500">Status:</span>
+              <select
+                value={campaign.status}
+                onChange={(e) => handleStatusChange(e.target.value)}
+                disabled={statusChanging}
+                className="text-xs font-medium border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
+              >
+                {CAMPAIGN_STATUSES.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            </>
+          )}
         </div>
       </div>
+
+      <ConfirmModal
+        open={showRejectModal}
+        title="Reject this event?"
+        body="The business will be notified with the reason below. This cannot be undone."
+        confirmLabel="Reject event"
+        variant="danger"
+        loading={rejecting}
+        confirmDisabled={!rejectReason.trim()}
+        extra={
+          <textarea
+            autoFocus
+            rows={3}
+            value={rejectReason}
+            onChange={(e) => setRejectReason(e.target.value)}
+            placeholder="Reason for rejection (shown to the business)…"
+            className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-400 resize-none"
+          />
+        }
+        onConfirm={handleReject}
+        onCancel={() => { setShowRejectModal(false); setRejectReason(''); }}
+      />
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
 
@@ -321,6 +406,9 @@ export function CampaignDetail() {
                 { icon: Calendar,   label: 'Deadline', value: fmt(campaign.deadline) },
                 { icon: Users,      label: 'Needed',   value: `${campaign.creatorsNeeded} creator${campaign.creatorsNeeded !== 1 ? 's' : ''}` },
                 { icon: Target,     label: 'Platform', value: campaign.platforms.length ? campaign.platforms.join(', ') : '—' },
+                ...(campaign.commissionRate != null
+                  ? [{ icon: Wallet, label: 'Platform Fee', value: `${campaign.commissionRate}% (business pays on top)` }]
+                  : []),
               ].map(({ icon: Icon, label, value }) => (
                 <div key={label} className="bg-gray-50 rounded-lg px-3 py-3">
                   <div className="flex items-center gap-1.5 text-gray-400 mb-1">
@@ -496,7 +584,7 @@ export function CampaignDetail() {
             ) : (
               <div className="space-y-2">
                 {campaign.applications.map((app) => (
-                  <ApplicationRow key={app.id} app={app} onReleased={refetch} showToast={showToast} />
+                  <ApplicationRow key={app.id} app={app} commissionRate={campaign.commissionRate} onReleased={refetch} showToast={showToast} />
                 ))}
               </div>
             )}

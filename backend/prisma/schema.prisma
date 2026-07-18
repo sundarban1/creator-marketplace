@@ -276,6 +276,13 @@ model Campaign {
   budgetMax      Float
   paymentType    String
   status         CampaignStatus  @default(ACTIVE)
+  // Snapshotted from the platform.commission admin setting at creation time,
+  // so later changes to the global rate never retroactively affect an
+  // already-posted event. Null on campaigns created before this field existed.
+  // Added on top of what the business pays — creators always receive the
+  // full proposedRate; the platform fee is the business's cost, not a
+  // deduction from the creator's payout.
+  commissionRate Float?
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   isFeatured     Boolean         @default(false)
@@ -631,6 +638,7 @@ enum Role {
 
 enum CampaignStatus {
   DRAFT
+  PENDING_APPROVAL
   ACTIVE
   PAUSED
   CLOSED

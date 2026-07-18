@@ -47,9 +47,10 @@ function formatFollowers(n: number): string {
   return String(n);
 }
 
-function mapStatus(s: 'DRAFT' | 'ACTIVE' | 'PAUSED' | 'CLOSED'): Campaign['status'] {
+function mapStatus(s: 'DRAFT' | 'PENDING_APPROVAL' | 'ACTIVE' | 'PAUSED' | 'CLOSED'): Campaign['status'] {
   if (s === 'ACTIVE') return 'active';
   if (s === 'CLOSED') return 'closed';
+  if (s === 'PENDING_APPROVAL') return 'pending_approval';
   return 'draft'; // DRAFT and PAUSED both surface as 'draft' in the mobile UI
 }
 

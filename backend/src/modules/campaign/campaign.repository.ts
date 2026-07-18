@@ -28,7 +28,8 @@ export class CampaignRepository {
     eventDate?: Date;
     venue?: string;
     benefits?: string[];
-    status?: 'DRAFT' | 'ACTIVE';
+    status?: 'DRAFT' | 'ACTIVE' | 'PENDING_APPROVAL';
+    commissionRate?: number;
     objective?: string;
     contentGuidelines?: string[];
     targetAudience?: string[];
@@ -397,7 +398,7 @@ export class CampaignRepository {
             select: { id: true, fullName: true, avatarUrl: true, location: true },
           },
           campaign: {
-            select: { id: true, title: true, platforms: true, campaignType: true, paymentStatus: true, featureImageUrl: true },
+            select: { id: true, title: true, platforms: true, campaignType: true, paymentStatus: true, featureImageUrl: true, commissionRate: true },
           },
         },
       }),

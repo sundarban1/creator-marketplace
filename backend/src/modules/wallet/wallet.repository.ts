@@ -6,6 +6,8 @@ export class WalletRepository {
   }
 
   async sumProposedRateByPaymentStatus(creatorId: string, paymentStatus: 'PAID' | 'RELEASED') {
+    // Creators always receive the full proposedRate — the platform commission
+    // is charged to the business on top of it, not deducted from the payout.
     const result = await prisma.application.aggregate({
       where: { creatorId, paymentStatus },
       _sum: { proposedRate: true },

@@ -544,7 +544,7 @@ export default function HomeScreen() {
         <View style={styles.quickActionsRow}>
           {([
             { icon: 'document-text-outline', label: 'Proposals', bg: '#EDE9FE', color: '#7C3AED', route: '/(creator)/(tabs)/proposals' },
-            { icon: 'storefront-outline',    label: 'Brands',    bg: '#DCFCE7', color: '#059669', route: '/(creator)/explore-businesses' },
+            { icon: 'storefront-outline',    label: 'Businesses', bg: '#DCFCE7', color: '#059669', route: '/(creator)/explore-businesses' },
             { icon: 'chatbubbles-outline',   label: 'Messages',  bg: '#DBEAFE', color: '#2563EB', route: '/(creator)/(tabs)/messages' },
             { icon: 'heart-outline',         label: 'Saved',     bg: '#FEE2E2', color: '#DC2626', route: '/(creator)/favorite-businesses' },
           ] as const).map(({ icon, label, bg, color, route }) => (

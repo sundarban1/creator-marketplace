@@ -26,6 +26,7 @@ const STATUS_STYLE = {
   active: { bg: TabColors.positive.bg, color: TabColors.positive.color, statusKey: 'business.home.statusActive' as const },
   draft:  { bg: TabColors.warning.bg,  color: TabColors.warning.color,  statusKey: 'business.home.statusPaused' as const },
   closed: { bg: TabColors.closed.bg,   color: TabColors.closed.color,   statusKey: 'business.home.statusClosed' as const },
+  pending_approval: { bg: TabColors.warning.bg, color: TabColors.warning.color, statusKey: 'business.home.statusPendingApproval' as const },
 };
 
 export default function BusinessHomeScreen() {

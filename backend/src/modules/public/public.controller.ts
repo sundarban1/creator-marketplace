@@ -22,4 +22,13 @@ export class PublicController {
       next(err);
     }
   }
+
+  async platformFlags(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const flags = await publicService.getPlatformFlags();
+      success(res, flags, 'Platform flags retrieved');
+    } catch (err) {
+      next(err);
+    }
+  }
 }

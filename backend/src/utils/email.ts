@@ -2,6 +2,10 @@ import nodemailer from 'nodemailer';
 import { Resend } from 'resend';
 import { env } from '../config/env';
 import { logger } from '../config/logger';
+import { AdminRepository } from '../modules/admin/admin.repository';
+
+const adminRepo = new AdminRepository();
+const DEFAULT_SUPPORT_EMAIL = 'support@creatormarket.com';
 
 const FROM_NAME    = 'CreatorMarket';
 const FROM_ADDRESS = env.EMAIL_USERNAME ?? 'no-reply@creatormarket.com';
@@ -588,6 +592,7 @@ export async function sendVerificationRejectedEmail(email: string, name: string,
 }
 
 export async function sendAccountDeletedEmail(email: string, name: string): Promise<void> {
+  const supportEmail = (await adminRepo.getSetting('platform.supportEmail')) as string | null;
   const html = wrapLayout(`
     <h2 style="color:#DC2626;font-size:22px;font-weight:700;margin:0 0 8px;">Your account has been deleted</h2>
     <p style="color:#6b7280;font-size:15px;margin:0 0 20px;line-height:1.6;">
@@ -599,7 +604,7 @@ export async function sendAccountDeletedEmail(email: string, name: string): Prom
       </p>
     </div>
     <p style="color:#9ca3af;font-size:13px;margin:0;">
-      If you believe this was done in error, please contact us immediately at support@creatormarket.com.np.
+      If you believe this was done in error, please contact us immediately at ${escapeHtml(supportEmail || DEFAULT_SUPPORT_EMAIL)}.
     </p>
   `);
   await sendEmail(email, 'Your CreatorMarket account has been deleted', html);

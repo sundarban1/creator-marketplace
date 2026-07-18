@@ -25,7 +25,10 @@ import * as WebBrowser from 'expo-web-browser';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { usePlatformFlags } from '@/context/PlatformSettingsContext';
 import { authService } from '@/services/auth';
+
+const DEFAULT_SUPPORT_EMAIL = 'support@creatormarket.com';
 import type { Lang } from '@/i18n';
 import { COLORS, F, RADIUS, SHADOW } from '@/utilities/constants';
 import { isValidNepaliPhone, normalizePhoneForSubmit } from '@/utilities/phone';
@@ -77,7 +80,7 @@ const BG_ICONS: { name: string; size: number; rotate: string; style: object; opa
 
 const ROLES = [
   { key: 'CREATOR'  as const, label: 'Creator', sub: 'Influencer & creator', icon: 'camera'    as const, grad: [COLORS.brinjal1, COLORS.brinjal2] as const },
-  { key: 'BUSINESS' as const, label: 'Brand', sub: 'Company & brand',     icon: 'briefcase' as const, grad: [COLORS.accent, '#EA580C'] as const },
+  { key: 'BUSINESS' as const, label: 'Business', sub: 'Company & business', icon: 'briefcase' as const, grad: [COLORS.accent, '#EA580C'] as const },
 ];
 
 const PW_RULES = [
@@ -223,6 +226,7 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
 }) {
   const { login, reloadUser } = useAuth();
   const { t }     = useLanguage();
+  const { flags } = usePlatformFlags();
 
   const [identifierInput, setIdentifierInput] = useState('');
   const [password,   setPassword]   = useState('');
@@ -416,7 +420,7 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
             <Text style={s.modalSub}>{t('auth.login.suspendedMessage')}</Text>
             <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
               style={s.suspendedContactBtn}
-              onPress={() => Linking.openURL('mailto:support@creatormarket.com')}>
+              onPress={() => Linking.openURL(`mailto:${flags.supportEmail ?? DEFAULT_SUPPORT_EMAIL}`)}>
               <Ionicons name="mail-outline" size={16} color="#fff" />
               <Text style={s.suspendedContactBtnText}>{t('auth.login.suspendedContactBtn')}</Text>
             </Pressable>

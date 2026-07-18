@@ -45,6 +45,7 @@ const STATUS_CFG = {
   active: { bg: TabColors.positive.bg, color: TabColors.positive.color },
   draft:  { bg: TabColors.warning.bg,  color: TabColors.warning.color  },
   closed: { bg: TabColors.closed.bg,   color: TabColors.closed.color   },
+  pending_approval: { bg: TabColors.warning.bg, color: TabColors.warning.color },
 } as const;
 
 const PAGE_SIZE = 10;
@@ -329,7 +330,9 @@ export default function CampaignsScreen() {
                           </View>
                           <View style={[styles.badge, { backgroundColor: st.bg }]}>
                             <Text style={[styles.badgeText, { color: st.color }]}>
-                              {c.status === 'active' ? t('campaigns.statusActive') : c.status === 'draft' ? t('campaigns.statusDraft') : t('campaigns.statusClosed')}
+                              {c.status === 'active' ? t('campaigns.statusActive')
+                                : c.status === 'pending_approval' ? t('campaigns.statusPendingApproval')
+                                : t('campaigns.statusClosed')}
                             </Text>
                           </View>
                         </View>

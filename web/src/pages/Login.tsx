@@ -1,7 +1,10 @@
-import { useState, type FormEvent } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Eye, EyeOff, Lock, Mail, AlertCircle, Users, Megaphone, CreditCard, ShieldOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { api } from '../lib/api';
+
+const DEFAULT_SUPPORT_EMAIL = 'support@creatormarket.com';
 
 const FEATURES = [
   { icon: Users, text: 'Manage creators & businesses in one place' },
@@ -33,6 +36,13 @@ export function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [suspendedModal, setSuspendedModal] = useState(false);
+  const [supportEmail, setSupportEmail] = useState(DEFAULT_SUPPORT_EMAIL);
+
+  useEffect(() => {
+    api.public.platformFlags()
+      .then((res) => { if (res.data.supportEmail) setSupportEmail(res.data.supportEmail); })
+      .catch(() => {});
+  }, []);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -242,7 +252,7 @@ export function Login() {
               Your account has been suspended by an admin. Please contact support if you believe this is a mistake.
             </p>
             <a
-              href="mailto:support@creatormarket.com"
+              href={`mailto:${supportEmail}`}
               className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl transition-colors mb-3"
             >
               <Mail size={16} /> Contact Admin
