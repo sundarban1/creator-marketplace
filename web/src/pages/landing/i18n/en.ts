@@ -17,7 +17,7 @@ export const en = {
     headlineMiddle: 'Meet',
     headlineCreators: 'Creators',
     headlineSuffix: '',
-    sub: 'Kolab connects Nepali creators with brands for paid campaigns — discover, collaborate, and get paid, all in one place.',
+    sub: 'Kolab connects Nepali creators with brands for paid campaigns — discover opportunities, collaborate, and get paid, all in one place.',
     ctaCreator: 'Join as Creator',
     ctaBusiness: 'Hire Creators',
   },
