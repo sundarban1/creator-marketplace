@@ -190,7 +190,7 @@ export default function VerifyScreen() {
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
             style={styles.back}
             hitSlop={8}
-            onPress={() => (router.canGoBack() ? router.back() : router.replace('/signup'))}>
+            onPress={() => (router.canGoBack() ? router.back() : router.replace('/login?tab=signup' as never))}>
             <Text style={styles.backArrow}>‹</Text>
           </Pressable>
           <View style={styles.heroContent}>

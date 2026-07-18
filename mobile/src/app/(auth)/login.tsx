@@ -49,10 +49,19 @@ const P1 = '#4C1D95';
 const P2 = '#6D28D9';
 const P3 = '#7C3AED';
 
+// Light, easy-on-the-eyes page background — the aurora gradient used to cover
+// the whole screen in bold purple; now it's a soft tint of the app's brinjal
+// brand color, with full-strength brinjal/orange kept as accents (buttons,
+// links, the scattered icon texture) rather than the dominant surface color.
+const BRINJAL   = '#4F46E5';
+const BG_PAGE   = '#EEEDFC';
+const TEXT_DARK = '#231F45';
+const MUTED     = '#8783B0';
+
 // Content-creator/brand iconography scattered across the gradient background — random
 // per-icon opacity (computed once at module load, so it's stable across re-renders
 // rather than flickering) gives the scatter a less mechanical, hand-placed feel.
-function scatterOpacity() { return Math.round((Math.random() * 0.14 + 0.08) * 100) / 100; }
+function scatterOpacity() { return Math.round((Math.random() * 0.08 + 0.05) * 100) / 100; }
 
 const BG_ICONS: { name: string; size: number; rotate: string; style: object; opacity: number }[] = [
   { name: 'camera',           size: 30, rotate: '-14deg', style: { top: 10,  left: '6%'  }, opacity: scatterOpacity() },
@@ -822,10 +831,12 @@ export default function LoginScreen() {
 
   return (
     <View style={s.root}>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
 
-      {/* Full-bleed gradient — the whole screen is the "aurora", not just a top strip */}
-      <LinearGradient colors={[P3, P2, P1]} style={StyleSheet.absoluteFill} start={{ x: 0.1, y: 0 }} end={{ x: 0.85, y: 1 }} pointerEvents="none" />
+      {/* Soft light wash, not a bold full-bleed gradient — the brinjal/orange duo
+          now lives in the subtle blobs and scattered icon texture instead of
+          being the dominant surface color. */}
+      <LinearGradient colors={['#E4E2FA', BG_PAGE, '#FAF9FF']} style={StyleSheet.absoluteFill} start={{ x: 0.1, y: 0 }} end={{ x: 0.85, y: 1 }} pointerEvents="none" />
       <View style={s.auroraLayer} pointerEvents="none">
         <View style={[s.auroraBlob, s.auroraBlobA]} />
         <View style={[s.auroraBlob, s.auroraBlobB]} />
@@ -835,7 +846,7 @@ export default function LoginScreen() {
             key={i}
             name={icon.name as any}
             size={icon.size}
-            color="#ffffff"
+            color={BRINJAL}
             style={[s.bgIcon, icon.style, { opacity: icon.opacity, transform: [{ rotate: icon.rotate }] }]}
           />
         ))}
@@ -935,7 +946,7 @@ export default function LoginScreen() {
 
           {/* Footer */}
           <View style={s.footer}>
-            <Ionicons name="shield-checkmark-outline" size={12} color="rgba(255,255,255,0.65)" />
+            <Ionicons name="shield-checkmark-outline" size={12} color={MUTED} />
             <Text style={s.footerText}>{t('auth.login.footer')}</Text>
           </View>
 
@@ -979,7 +990,7 @@ export default function LoginScreen() {
 }
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: P1 },
+  root: { flex: 1, backgroundColor: BG_PAGE },
   flex: { flex: 1 },
 
   scrollContent: { flexGrow: 1, paddingHorizontal: 20 },
@@ -988,17 +999,17 @@ const s = StyleSheet.create({
   // scattered decorative icons, echoing the app icon's own purple-triangle/orange-ring duo.
   auroraLayer:  { position: 'absolute', top: 0, left: 0, right: 0, height: 420, overflow: 'hidden' },
   auroraBlob:   { position: 'absolute', borderRadius: RADIUS.full },
-  auroraBlobA:  { width: 280, height: 280, backgroundColor: 'rgba(255,255,255,0.05)', top: -90, right: -70 },
-  auroraBlobB:  { width: 220, height: 220, backgroundColor: 'rgba(249,115,22,0.16)', top: 80, left: -90 },
-  auroraBlobC:  { width: 160, height: 160, backgroundColor: 'rgba(255,255,255,0.04)', top: 250, right: 40 },
+  auroraBlobA:  { width: 280, height: 280, backgroundColor: 'rgba(79,70,229,0.07)', top: -90, right: -70 },
+  auroraBlobB:  { width: 220, height: 220, backgroundColor: 'rgba(249,115,22,0.10)', top: 80, left: -90 },
+  auroraBlobC:  { width: 160, height: 160, backgroundColor: 'rgba(79,70,229,0.05)', top: 250, right: 40 },
   bgIcon:       { position: 'absolute' },
 
-  logoGlowRing: { padding: 6, borderRadius: RADIUS.full, backgroundColor: 'rgba(255,255,255,0.10)', shadowColor: '#FFC581', shadowOpacity: 0.35, shadowRadius: 20, shadowOffset: { width: 0, height: 0 }, elevation: 6 },
+  logoGlowRing: { padding: 6, borderRadius: RADIUS.full, backgroundColor: 'rgba(79,70,229,0.08)', shadowColor: '#FFC581', shadowOpacity: 0.3, shadowRadius: 18, shadowOffset: { width: 0, height: 0 }, elevation: 5 },
   logoBadgeCard: { backgroundColor: '#fff', borderRadius: RADIUS.full, paddingHorizontal: 16, paddingVertical: 10, ...SHADOW.floating, shadowColor: '#000' },
   logoImage: { width: 104, height: 104 / (1740 / 620) },
   langRow:  { flexDirection: 'row', gap: 6, justifyContent: 'flex-end', marginBottom: 6 },
-  langBtn:  { width: 34, height: 34, borderRadius: RADIUS.full, backgroundColor: 'rgba(255,255,255,0.12)', justifyContent: 'center', alignItems: 'center' },
-  langBtnActive: { backgroundColor: 'rgba(255,255,255,0.28)', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.5)' },
+  langBtn:  { width: 34, height: 34, borderRadius: RADIUS.full, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center', shadowColor: BRINJAL, shadowOpacity: 0.08, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 1 },
+  langBtnActive: { backgroundColor: '#E4E2FA', borderWidth: 1.5, borderColor: '#C7C3F2' },
   langFlag: { fontSize: 15 },
 
   heroCenter:  { alignItems: 'center', marginTop: 8, marginBottom: 28, gap: 16, position: 'relative' },
@@ -1007,13 +1018,16 @@ const s = StyleSheet.create({
   heroTaglineMeasure: { position: 'absolute', top: 0, opacity: 0, flexDirection: 'row', alignItems: 'center', gap: 8 },
   heroTaglineClip: { width: '100%', overflow: 'hidden', alignItems: 'center' },
   heroTaglineRow:  { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  heroTagline: { fontSize: 20, color: 'rgba(255,255,255,0.9)', fontFamily: F.semibold, letterSpacing: 0.3 },
+  heroTagline: { fontSize: 20, color: TEXT_DARK, fontFamily: F.semibold, letterSpacing: 0.3 },
   heroTaglineHighlight: { fontSize: 26, fontFamily: F.extrabold, letterSpacing: 0.2 },
 
-  // Floating card — visible gradient margin on every side (not an edge-to-edge sheet),
-  // fully rounded corners on all four corners for a "card floating in the aurora" feel.
-  cardOuter:  { borderRadius: RADIUS.xl, ...SHADOW.floating, shadowColor: '#000' },
-  cardInner:  { borderRadius: RADIUS.xl, overflow: 'hidden', backgroundColor: '#fff' },
+  // Floating card — visible margin on every side (not an edge-to-edge sheet),
+  // fully rounded corners on all four corners for a "card floating on the page"
+  // feel. A hairline border pulls extra weight now that the page itself is
+  // light too — the shadow alone doesn't read as strongly against a light wash
+  // as it did against the old dark-purple background.
+  cardOuter:  { borderRadius: RADIUS.xl, ...SHADOW.floating, shadowColor: BRINJAL, shadowOpacity: 0.12 },
+  cardInner:  { borderRadius: RADIUS.xl, overflow: 'hidden', backgroundColor: '#fff', borderWidth: 1, borderColor: '#E7E5FA' },
   cardBody:   { paddingHorizontal: 22, paddingTop: 22, paddingBottom: 26 },
 
   // Pill-shaped segmented tab
@@ -1107,5 +1121,5 @@ const s = StyleSheet.create({
   terms:  { fontSize: 12, color: '#9CA3AF', lineHeight: 18, textAlign: 'center', fontFamily: F.regular, marginBottom: 8 },
 
   footer:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, marginTop: 16 },
-  footerText: { fontSize: 11, color: 'rgba(255,255,255,0.65)', fontFamily: F.regular },
+  footerText: { fontSize: 11, color: MUTED, fontFamily: F.regular },
 });
