@@ -1569,6 +1569,7 @@ const en = {
     presetUnder10k: 'Under Rs 10K',
     preset10kTo50k: 'Rs 10K–50K',
     preset50kPlus: 'Rs 50K+',
+    viewProfile: 'View Profile',
     businesses: {
       filterTitle: 'Filters',
       filterResetAll: 'Reset all',
@@ -1598,6 +1599,7 @@ const en = {
       noEventsYet: 'No events yet',
       exploreCreatorsSub: 'Find the perfect creator for your event',
       noDescription: 'No description provided',
+      viewBusiness: 'View Business',
     },
   },
 
@@ -2086,8 +2088,8 @@ const en = {
     followersSuffix:           'followers',
     openChat: 'Open Chat',
     requestSent:               '⏳  Request Sent',
-    sendMessage:               '✉️  Send Message',
-    messageRequestTitle:       'Send Message Request',
+    sendMessage:               'Send Collaboration Request',
+    messageRequestTitle:       'Send Collaboration Request',
     messageRequestSubtitle:    'Write an optional message to introduce yourself. {{name}} will see this when deciding to accept.',
     messageRequestPlaceholder: 'Type your message…',
     messageRequestDefault:     'Hello {{firstName}}, I would like to collaborate with you...',

@@ -189,7 +189,13 @@ function CampaignEventCard({ item }: { item: CampaignCard }) {
         const cfg = workspaceBtnConfig(item.acceptedWorkStatus, item.acceptedPaymentStatus, t);
         return (
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-            style={({ pressed }) => [styles.startWorkBtn, { backgroundColor: cfg.color, opacity: pressed ? 0.88 : 1 }]}
+            style={({ pressed }) => [
+              styles.startWorkBtn,
+              {
+                backgroundColor: cfg.color, opacity: pressed ? 0.88 : 1, shadowColor: cfg.color,
+                shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6,
+              },
+            ]}
             onPress={(e) => {
               e.stopPropagation();
               router.push({
@@ -398,7 +404,7 @@ const styles = StyleSheet.create({
   nudge:     { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, paddingVertical: 8 },
   nudgeText: { fontSize: 12, fontFamily: F.semibold },
 
-  startWorkBtn:     { flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: 16, marginBottom: 14, marginTop: 6, paddingVertical: 13, paddingHorizontal: 14, borderRadius: RADIUS.md },
+  startWorkBtn:     { flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: 16, marginBottom: 14, marginTop: 6, paddingVertical: 13, paddingHorizontal: 14, borderRadius: RADIUS.full },
   btnIconBadge:     { width: 40, height: 40, borderRadius: RADIUS.full, backgroundColor: 'rgba(255,255,255,0.22)', justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   btnTextBlock:     { flex: 1, gap: 2 },
   startWorkBtnTxt:  { fontSize: 14, color: '#fff', fontFamily: F.bold },

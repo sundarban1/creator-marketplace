@@ -123,7 +123,15 @@ export default function WalletScreen() {
                     {isPaymentMethodId(tx.method) ? (
                       <PaymentMethodIcon method={tx.method} size={36} />
                     ) : (
-                      <View style={[styles.txIconWrap, { backgroundColor: `${meta.color}18` }]}>
+                      <View
+                        style={[
+                          styles.txIconWrap,
+                          {
+                            backgroundColor: `${meta.color}18`, shadowColor: meta.color,
+                            shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                          },
+                        ]}
+                      >
                         <FontAwesome5 name={meta.icon} size={14} color={meta.color} />
                       </View>
                     )}

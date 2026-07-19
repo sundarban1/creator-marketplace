@@ -282,10 +282,10 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, on
   // Business: payment required
   if (!paid && ws === 'NONE' && !isCreator) return (
     <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#EF4444' }]}>
-      <View style={[ac.iconBg, { backgroundColor: '#FEF2F2' }]}><FontAwesome5 name="credit-card" size={22} color="#EF4444" solid /></View>
+      <View style={[ac.iconBg, { backgroundColor: '#FEF2F2', shadowColor: '#EF4444', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="credit-card" size={22} color="#EF4444" solid /></View>
       <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acPaymentRequiredTitle')}</Text>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acPaymentRequiredSub')}</Text>
-      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[ac.btn, { backgroundColor: '#EF4444' }]} onPress={onPay}>
+      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[ac.btn, { backgroundColor: '#EF4444', shadowColor: '#EF4444', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]} onPress={onPay}>
         <FontAwesome5 name="credit-card" size={14} color="#fff" solid />
         <Text style={ac.btnTxt}>{t('activityTimeline.acPayNowBtn')}</Text>
       </Pressable>
@@ -295,7 +295,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, on
   // Creator: waiting for payment
   if (!paid && ws === 'NONE' && isCreator) return (
     <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#D97706' }]}>
-      <View style={[ac.iconBg, { backgroundColor: '#FFF7ED' }]}><Ionicons name="time-outline" size={26} color="#D97706" /></View>
+      <View style={[ac.iconBg, { backgroundColor: '#FFF7ED', shadowColor: '#D97706', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><Ionicons name="time-outline" size={26} color="#D97706" /></View>
       <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acWaitingPaymentTitle')}</Text>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acWaitingPaymentSub')}</Text>
     </View>
@@ -304,7 +304,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, on
   // Business: payment done, waiting on creator
   if (paid && ws === 'NONE' && !isCreator) return (
     <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#0EA5E9' }]}>
-      <View style={[ac.iconBg, { backgroundColor: '#E0F2FE' }]}><Ionicons name="hourglass-outline" size={26} color="#0EA5E9" /></View>
+      <View style={[ac.iconBg, { backgroundColor: '#E0F2FE', shadowColor: '#0EA5E9', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><Ionicons name="hourglass-outline" size={26} color="#0EA5E9" /></View>
       <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acWaitingCreatorTitle')}</Text>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{isFree ? t('activityTimeline.acWaitingCreatorSubFree') : t('activityTimeline.acWaitingCreatorSubPaid')}</Text>
     </View>
@@ -313,10 +313,10 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, on
   // Creator: ready to start
   if (paid && ws === 'NONE' && isCreator) return (
     <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#7C3AED' }]}>
-      <View style={[ac.iconBg, { backgroundColor: '#EEF2FF' }]}><FontAwesome5 name="rocket" size={22} color="#7C3AED" solid /></View>
+      <View style={[ac.iconBg, { backgroundColor: '#EEF2FF', shadowColor: '#7C3AED', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="rocket" size={22} color="#7C3AED" solid /></View>
       <Text style={[ac.heading, { color: C.text }]}>{isFree ? t('activityTimeline.acReadyFreeTitle') : t('activityTimeline.acReadyPaidTitle')}</Text>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{isFree ? t('activityTimeline.acReadyFreeSub') : t('activityTimeline.acReadyPaidSub')}</Text>
-      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[ac.btn, { backgroundColor: '#7C3AED', opacity: submitting ? 0.75 : 1 }]} onPress={onStartWork} disabled={submitting}>
+      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[ac.btn, { backgroundColor: '#7C3AED', opacity: submitting ? 0.75 : 1, shadowColor: '#7C3AED', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]} onPress={onStartWork} disabled={submitting}>
         {submitting
           ? <ActivityIndicator size="small" color="#fff" />
           : <><FontAwesome5 name="rocket" size={14} color="#fff" solid /><Text style={ac.btnTxt}>{t('activityTimeline.acStartBtn')}</Text></>}
@@ -327,7 +327,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, on
   // Business: creator working
   if (ws === 'IN_PROGRESS' && !isCreator) return (
     <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#7C3AED' }]}>
-      <View style={[ac.iconBg, { backgroundColor: '#EEF2FF' }]}><Ionicons name="play-circle-outline" size={26} color="#7C3AED" /></View>
+      <View style={[ac.iconBg, { backgroundColor: '#EEF2FF', shadowColor: '#7C3AED', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><Ionicons name="play-circle-outline" size={26} color="#7C3AED" /></View>
       <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acCreatorWorkingTitle')}</Text>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acCreatorWorkingSub')}</Text>
     </View>
@@ -336,10 +336,10 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, on
   // Creator: upload deliverables
   if (ws === 'IN_PROGRESS' && isCreator) return (
     <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#7C3AED' }]}>
-      <View style={[ac.iconBg, { backgroundColor: '#EEF2FF' }]}><Ionicons name="cloud-upload-outline" size={26} color="#7C3AED" /></View>
+      <View style={[ac.iconBg, { backgroundColor: '#EEF2FF', shadowColor: '#7C3AED', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><Ionicons name="cloud-upload-outline" size={26} color="#7C3AED" /></View>
       <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acUploadTitle')}</Text>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acUploadSub')}</Text>
-      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[ac.btn, { backgroundColor: '#7C3AED' }]} onPress={onUpload}>
+      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[ac.btn, { backgroundColor: '#7C3AED', shadowColor: '#7C3AED', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]} onPress={onUpload}>
         <Ionicons name="cloud-upload-outline" size={16} color="#fff" />
         <Text style={ac.btnTxt}>{t('activityTimeline.acUploadBtn')}</Text>
       </Pressable>
@@ -349,19 +349,19 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, on
   // Business: review submitted work
   if (ws === 'SUBMITTED' && !isCreator) return (
     <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#D97706' }]}>
-      <View style={[ac.iconBg, { backgroundColor: '#FFF7ED' }]}><Ionicons name="eye-outline" size={26} color="#D97706" /></View>
+      <View style={[ac.iconBg, { backgroundColor: '#FFF7ED', shadowColor: '#D97706', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><Ionicons name="eye-outline" size={26} color="#D97706" /></View>
       <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acSubmittedTitle')}</Text>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acSubmittedSub')}</Text>
-      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[ac.btn, { backgroundColor: '#D97706' }]} onPress={onReview}>
+      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[ac.btn, { backgroundColor: '#D97706', shadowColor: '#D97706', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]} onPress={onReview}>
         <Ionicons name="eye-outline" size={16} color="#fff" />
         <Text style={ac.btnTxt}>{t('activityTimeline.acReviewBtn')}</Text>
       </Pressable>
       <View style={ac.btnRow}>
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[ac.btn, { flex: 1, backgroundColor: '#EF4444' }]} onPress={onRevision}>
+        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[ac.btn, { flex: 1, backgroundColor: '#EF4444', shadowColor: '#EF4444', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]} onPress={onRevision}>
           <Ionicons name="create-outline" size={15} color="#fff" />
           <Text style={ac.btnTxt}>{t('activityTimeline.acRevisionBtn')}</Text>
         </Pressable>
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[ac.btn, { flex: 1, backgroundColor: '#16A34A', opacity: submitting ? 0.75 : 1 }]} onPress={onApprove} disabled={submitting}>
+        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[ac.btn, { flex: 1, backgroundColor: '#16A34A', opacity: submitting ? 0.75 : 1, shadowColor: '#16A34A', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]} onPress={onApprove} disabled={submitting}>
           {submitting ? <ActivityIndicator size="small" color="#fff" /> : <>
             <Ionicons name="checkmark-done-outline" size={15} color="#fff" />
             <Text style={ac.btnTxt}>{t('activityTimeline.acApproveBtn')}</Text>
@@ -374,7 +374,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, on
   // Creator: awaiting review
   if (ws === 'SUBMITTED' && isCreator) return (
     <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#0EA5E9' }]}>
-      <View style={[ac.iconBg, { backgroundColor: '#E0F2FE' }]}><Ionicons name="hourglass-outline" size={26} color="#0EA5E9" /></View>
+      <View style={[ac.iconBg, { backgroundColor: '#E0F2FE', shadowColor: '#0EA5E9', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><Ionicons name="hourglass-outline" size={26} color="#0EA5E9" /></View>
       <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acAwaitingReviewTitle')}</Text>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acAwaitingReviewSub')}</Text>
     </View>
@@ -384,7 +384,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, on
   // card immediately (no separate "confirm receipt" step required).
   if (paymentStatus === 'RELEASED') return (
     <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#16A34A' }]}>
-      <View style={[ac.iconBg, { backgroundColor: '#DCFCE7' }]}><Ionicons name="checkmark-done-circle-outline" size={26} color="#16A34A" /></View>
+      <View style={[ac.iconBg, { backgroundColor: '#DCFCE7', shadowColor: '#16A34A', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><Ionicons name="checkmark-done-circle-outline" size={26} color="#16A34A" /></View>
       <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acProjectCompleteTitle')}</Text>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{isCreator ? t('activityTimeline.acProjectCompleteCreatorSub') : t('activityTimeline.acProjectCompleteBizSub')}</Text>
     </View>
@@ -393,7 +393,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, on
   // APPROVED, payment still held — business: admin will release it
   if (!isCreator) return (
     <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#16A34A' }]}>
-      <View style={[ac.iconBg, { backgroundColor: '#DCFCE7' }]}><Ionicons name="checkmark-done-circle-outline" size={26} color="#16A34A" /></View>
+      <View style={[ac.iconBg, { backgroundColor: '#DCFCE7', shadowColor: '#16A34A', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><Ionicons name="checkmark-done-circle-outline" size={26} color="#16A34A" /></View>
       <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acApprovedBizTitle')}</Text>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acApprovedBizSub')}</Text>
     </View>
@@ -402,7 +402,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, on
   // APPROVED, payment still held — creator: admin will release it
   return (
     <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#16A34A' }]}>
-      <View style={[ac.iconBg, { backgroundColor: '#DCFCE7' }]}><FontAwesome5 name="trophy" size={22} color="#16A34A" solid /></View>
+      <View style={[ac.iconBg, { backgroundColor: '#DCFCE7', shadowColor: '#16A34A', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="trophy" size={22} color="#16A34A" solid /></View>
       <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acApprovedCreatorTitle')}</Text>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acApprovedCreatorSub')}</Text>
     </View>
@@ -695,7 +695,15 @@ export default function CampaignWorkspaceScreen() {
         {/* ── Campaign Summary Card ── */}
         <View style={[s.card, { backgroundColor: C.surface }]}>
           <View style={s.summaryRow}>
-            <View style={[s.thumb, { backgroundColor: '#EEF2FF' }]}>
+            <View
+              style={[
+                s.thumb,
+                {
+                  backgroundColor: '#EEF2FF', shadowColor: '#7C3AED',
+                  shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5,
+                },
+              ]}
+            >
               <Ionicons name="megaphone-outline" size={26} color="#7C3AED" />
             </View>
             <View style={{ flex: 1 }}>
@@ -896,7 +904,7 @@ export default function CampaignWorkspaceScreen() {
             </Pressable>
           ))}
         </View>
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[sh.primaryBtn, { backgroundColor: '#7C3AED', opacity: submitting ? 0.75 : 1 }]} onPress={handlePay} disabled={submitting}>
+        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[sh.primaryBtn, { backgroundColor: '#7C3AED', opacity: submitting ? 0.75 : 1, shadowColor: '#7C3AED', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]} onPress={handlePay} disabled={submitting}>
           {submitting ? <ActivityIndicator size="small" color="#fff" /> : <Text style={sh.primaryBtnTxt}>{t('activityTimeline.modalPayConfirmBtn', { amount: total.toLocaleString() })}</Text>}
         </Pressable>
       </Sheet>
@@ -952,7 +960,7 @@ export default function CampaignWorkspaceScreen() {
             />
           </View>
         </View>
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[sh.primaryBtn, { backgroundColor: '#7C3AED', opacity: submitting ? 0.75 : 1 }]} onPress={handleSubmitWork} disabled={submitting}>
+        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[sh.primaryBtn, { backgroundColor: '#7C3AED', opacity: submitting ? 0.75 : 1, shadowColor: '#7C3AED', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]} onPress={handleSubmitWork} disabled={submitting}>
           {submitting ? <ActivityIndicator size="small" color="#fff" /> : <><Ionicons name="cloud-upload-outline" size={17} color="#fff" /><Text style={sh.primaryBtnTxt}>{t('activityTimeline.modalUploadSubmitBtn')}</Text></>}
         </Pressable>
       </Sheet>
@@ -963,7 +971,12 @@ export default function CampaignWorkspaceScreen() {
         {/* Submitted links — top */}
         <View style={rv.section}>
           <View style={rv.sectionHeader}>
-            <View style={[rv.sectionIcon, { backgroundColor: '#F5F3FF' }]}>
+            <View
+              style={[
+                rv.sectionIcon,
+                { backgroundColor: '#F5F3FF', shadowColor: '#7C3AED', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
+              ]}
+            >
               <Ionicons name="link" size={14} color="#7C3AED" />
             </View>
             <Text style={rv.sectionTitle}>{t('activityTimeline.modalReviewLinksSection')}</Text>
@@ -993,7 +1006,12 @@ export default function CampaignWorkspaceScreen() {
         {deliverables.length > 0 && (
           <View style={[rv.section, { marginTop: 14 }]}>
             <View style={rv.sectionHeader}>
-              <View style={[rv.sectionIcon, { backgroundColor: '#FFF7ED' }]}>
+              <View
+                style={[
+                  rv.sectionIcon,
+                  { backgroundColor: '#FFF7ED', shadowColor: '#D97706', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
+                ]}
+              >
                 <Ionicons name="list" size={14} color="#D97706" />
               </View>
               <Text style={rv.sectionTitle}>{t('activityTimeline.modalReviewDeliverablesSection')}</Text>
@@ -1014,13 +1032,13 @@ export default function CampaignWorkspaceScreen() {
         {/* Action buttons */}
         <View style={{ flexDirection: 'row', gap: 10, marginTop: 20 }}>
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-            style={[sh.primaryBtn, { flex: 1, backgroundColor: '#D97706' }]}
+            style={[sh.primaryBtn, { flex: 1, backgroundColor: '#D97706', shadowColor: '#D97706', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]}
             onPress={() => { setShowReview(false); setTimeout(() => setShowRevision(true), 200); }}>
             <Ionicons name="create-outline" size={15} color="#fff" />
             <Text style={sh.primaryBtnTxt}>{t('activityTimeline.acRevisionBtn')}</Text>
           </Pressable>
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-            style={[sh.primaryBtn, { flex: 1, backgroundColor: '#16A34A', opacity: submitting ? 0.75 : 1 }]}
+            style={[sh.primaryBtn, { flex: 1, backgroundColor: '#16A34A', opacity: submitting ? 0.75 : 1, shadowColor: '#16A34A', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]}
             disabled={submitting}
             onPress={() => { setShowReview(false); handleApprove(); }}>
             {submitting
@@ -1044,7 +1062,7 @@ export default function CampaignWorkspaceScreen() {
             multiline
           />
         </View>
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[sh.primaryBtn, { backgroundColor: '#D97706', opacity: submitting ? 0.75 : 1 }]} onPress={handleRevision} disabled={submitting}>
+        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[sh.primaryBtn, { backgroundColor: '#D97706', opacity: submitting ? 0.75 : 1, shadowColor: '#D97706', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]} onPress={handleRevision} disabled={submitting}>
           {submitting ? <ActivityIndicator size="small" color="#fff" /> : <Text style={sh.primaryBtnTxt}>{t('activityTimeline.modalRevisionSendBtn')}</Text>}
         </Pressable>
       </Sheet>
@@ -1085,7 +1103,7 @@ export default function CampaignWorkspaceScreen() {
             <Text style={[sh.primaryBtnTxt, { color: '#374151' }]}>{t('activityTimeline.modalCancelKeepBtn')}</Text>
           </Pressable>
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-            style={[sh.primaryBtn, { flex: 1, backgroundColor: '#EF4444', opacity: submitting ? 0.75 : 1 }]}
+            style={[sh.primaryBtn, { flex: 1, backgroundColor: '#EF4444', opacity: submitting ? 0.75 : 1, shadowColor: '#EF4444', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]}
             onPress={handleCancelEvent}
             disabled={submitting}
           >
@@ -1204,7 +1222,7 @@ const ac = StyleSheet.create({
   heading:{ fontSize: 16, fontFamily: F.bold },
   sub:    { fontSize: 13, fontFamily: F.regular, lineHeight: 19 },
   btnRow: { flexDirection: 'row', gap: 10, marginTop: 4 },
-  btn:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, borderRadius: RADIUS.md, paddingVertical: 13, marginTop: 4 },
+  btn:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, borderRadius: RADIUS.full, paddingVertical: 13, marginTop: 4 },
   btnTxt: { fontSize: 14, fontFamily: F.bold, color: '#fff' },
 });
 
@@ -1234,7 +1252,7 @@ const sh = StyleSheet.create({
   methodTxt:    { fontSize: 14, fontFamily: F.semibold },
   inputLabel:   { fontSize: 12, fontFamily: F.semibold, color: '#374151', marginBottom: 6 },
   input:        { borderWidth: 1, borderColor: '#E5E7EB', borderRadius: RADIUS.sm, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, fontFamily: F.regular, textAlignVertical: 'top' },
-  primaryBtn:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: RADIUS.md, paddingVertical: 15 },
+  primaryBtn:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: RADIUS.full, paddingVertical: 15 },
   primaryBtnTxt:{ fontSize: 15, fontFamily: F.bold, color: '#fff' },
   infoBox:      { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderRadius: RADIUS.sm, padding: 10 },
   infoTxt:      { fontSize: 12, fontFamily: F.semibold, flex: 1 },

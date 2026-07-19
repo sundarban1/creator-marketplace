@@ -255,7 +255,15 @@ export default function CampaignsScreen() {
                 <View style={[styles.emptyDot2, { backgroundColor: EMPTY_CFG[activeFilter].iconBg }]} />
 
                 {/* Icon */}
-                <View style={[styles.emptyIconCircle, { backgroundColor: EMPTY_CFG[activeFilter].iconBg }]}>
+                <View
+                  style={[
+                    styles.emptyIconCircle,
+                    {
+                      backgroundColor: EMPTY_CFG[activeFilter].iconBg, shadowColor: EMPTY_CFG[activeFilter].iconColor,
+                      shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5,
+                    },
+                  ]}
+                >
                   <Ionicons
                     name={EMPTY_CFG[activeFilter].icon}
                     size={36}
@@ -274,7 +282,13 @@ export default function CampaignsScreen() {
                 {/* Create button */}
                 {EMPTY_CFG[activeFilter].showCreate && (
                   <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                    style={[styles.emptyCreateBtn, { backgroundColor: EMPTY_CFG[activeFilter].iconColor }]}
+                    style={[
+                      styles.emptyCreateBtn,
+                      {
+                        backgroundColor: EMPTY_CFG[activeFilter].iconColor, shadowColor: EMPTY_CFG[activeFilter].iconColor,
+                        shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6,
+                      },
+                    ]}
                     onPress={() => router.push('/create-campaign')}>
                     <Ionicons name="add-circle-outline" size={16} color="#fff" />
                     <Text style={styles.emptyCreateBtnText}>{t('campaigns.createNewEvent')}</Text>
@@ -425,7 +439,13 @@ export default function CampaignsScreen() {
                 {t('campaigns.noSavedCreatorsSub')}
               </Text>
               <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                style={[styles.goSaveBtn, { backgroundColor: C.brinjal1 }]}
+                style={[
+                  styles.goSaveBtn,
+                  {
+                    backgroundColor: C.brinjal1, shadowColor: C.brinjal1,
+                    shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6,
+                  },
+                ]}
                 onPress={() => { setInviteCampaign(null); router.push('/(business)/saved-creators'); }}>
                 <Text style={styles.goSaveBtnText}>{t('campaigns.viewSavedCreators')}</Text>
               </Pressable>
@@ -469,7 +489,13 @@ export default function CampaignsScreen() {
               </ScrollView>
               <View style={[styles.inviteFooter, { borderTopColor: C.border }]}>
                 <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                  style={[styles.sendInviteBtn, { backgroundColor: selectedCreators.size > 0 ? C.brinjal1 : C.border }]}
+                  style={[
+                    styles.sendInviteBtn,
+                    { backgroundColor: selectedCreators.size > 0 ? C.brinjal1 : C.border },
+                    selectedCreators.size > 0 && {
+                      shadowColor: C.brinjal1, shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6,
+                    },
+                  ]}
                   onPress={handleSendInvites}
                   disabled={selectedCreators.size === 0 || inviteSending}>
                   <Text style={styles.sendInviteBtnText}>
@@ -518,7 +544,7 @@ const styles = StyleSheet.create({
   emptyIconCircle: { width: 80, height: 80, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
   emptyTitle: { fontSize: 18, textAlign: 'center', fontFamily: F.bold },
   emptySub: { fontSize: 13, textAlign: 'center', lineHeight: 20, fontFamily: F.regular, paddingHorizontal: 8 },
-  emptyCreateBtn: { flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 10, borderRadius: RADIUS.md, paddingHorizontal: 22, paddingVertical: 12 },
+  emptyCreateBtn: { flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 10, borderRadius: RADIUS.full, paddingHorizontal: 22, paddingVertical: 12 },
   emptyCreateBtnText: { color: '#fff', fontSize: 14, fontFamily: F.bold },
   emptySwitchRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
   emptySwitchText: { fontSize: 12, fontFamily: F.regular },
@@ -578,7 +604,7 @@ const styles = StyleSheet.create({
   inviteSuccessHint: { fontSize: 13, textAlign: 'center', fontFamily: F.regular },
 
   modalEmptyHint: { fontSize: 12, textAlign: 'center', fontFamily: F.regular },
-  goSaveBtn: { marginTop: 4, maxWidth: '100%', borderRadius: RADIUS.md, paddingHorizontal: 20, paddingVertical: 10 },
+  goSaveBtn: { marginTop: 4, maxWidth: '100%', borderRadius: RADIUS.full, paddingHorizontal: 20, paddingVertical: 10 },
   goSaveBtnText: { color: '#fff', fontSize: 13, fontFamily: F.bold },
 
   selectionBanner: { paddingHorizontal: 16, paddingVertical: 8, marginHorizontal: 16, marginTop: 10, borderRadius: RADIUS.sm },
@@ -596,6 +622,6 @@ const styles = StyleSheet.create({
   checkbox: { width: 22, height: 22, borderRadius: RADIUS.full, borderWidth: 2, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
 
   inviteFooter: { borderTopWidth: 1, paddingHorizontal: 16, paddingVertical: 14 },
-  sendInviteBtn: { borderRadius: RADIUS.md, paddingVertical: 14, alignItems: 'center' },
+  sendInviteBtn: { borderRadius: RADIUS.full, paddingVertical: 14, alignItems: 'center' },
   sendInviteBtnText: { color: '#fff', fontSize: 15, fontFamily: F.bold },
 });

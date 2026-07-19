@@ -217,7 +217,13 @@ function ProposalCard({
         const cfg = projectBtnConfig(p.workStatus, p.paymentStatus, t);
         return (
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-            style={({ pressed }) => [styles.startProjectBtn, { backgroundColor: cfg.color, opacity: pressed ? 0.88 : 1 }]}
+            style={({ pressed }) => [
+              styles.startProjectBtn,
+              {
+                backgroundColor: cfg.color, opacity: pressed ? 0.88 : 1, shadowColor: cfg.color,
+                shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6,
+              },
+            ]}
             onPress={() => onStartProject && onStartProject(p)}>
             <Ionicons name={cfg.icon} size={16} color="#fff" />
             <Text style={styles.startProjectBtnTxt}>{cfg.label}</Text>
@@ -276,7 +282,15 @@ function ConfirmModal({
         <View style={[cm.sheet, { backgroundColor: C.surface }]}>
 
           {/* Icon */}
-          <View style={[cm.iconCircle, { backgroundColor: iconBg }]}>
+          <View
+            style={[
+              cm.iconCircle,
+              {
+                backgroundColor: iconBg, shadowColor: iconColor,
+                shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5,
+              },
+            ]}
+          >
             <Ionicons name={iconName} size={36} color={iconColor} />
           </View>
 
@@ -752,7 +766,7 @@ const styles = StyleSheet.create({
   acceptBtn:  { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 11, borderRadius: RADIUS.md },
   actionText: { fontSize: 13, fontFamily: F.bold },
 
-  startProjectBtn:    { flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: RADIUS.md, paddingVertical: 11, paddingHorizontal: 14, marginTop: 10 },
+  startProjectBtn:    { flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: RADIUS.full, paddingVertical: 11, paddingHorizontal: 14, marginTop: 10 },
   startProjectBtnTxt: { fontSize: 13, color: '#fff', fontFamily: F.bold },
 
 });

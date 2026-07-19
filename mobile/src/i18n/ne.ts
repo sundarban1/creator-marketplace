@@ -1563,6 +1563,7 @@ const ne = {
     presetUnder10k: 'रु १०K भन्दा कम',
     preset10kTo50k: 'रु १०K–५०K',
     preset50kPlus: 'रु ५०K+',
+    viewProfile: 'प्रोफाइल हेर्नुहोस्',
     businesses: {
       filterTitle: 'फिल्टरहरू',
       filterResetAll: 'सबै रिसेट',
@@ -1592,6 +1593,7 @@ const ne = {
       noEventsYet: 'अहिलेसम्म कुनै इभेन्ट छैन',
       exploreCreatorsSub: 'तपाईंको इभेन्टका लागि सबैभन्दा राम्रो क्रिएटर भेट्टाउनुहोस्',
       noDescription: 'कुनै विवरण छैन',
+      viewBusiness: 'व्यवसाय हेर्नुहोस्',
     },
   },
 
@@ -2083,8 +2085,8 @@ const ne = {
     followersSuffix: 'फलोअर',
     openChat: 'च्याट खोल्नुहोस्',
     requestSent: '⏳  रिक्वेस्ट पठाइयो',
-    sendMessage: '✉️  मेसेज पठाउनुहोस्',
-    messageRequestTitle: 'मेसेज रिक्वेस्ट पठाउनुहोस्',
+    sendMessage: 'सहकार्य अनुरोध पठाउनुहोस्',
+    messageRequestTitle: 'सहकार्य अनुरोध पठाउनुहोस्',
     messageRequestSubtitle: 'आफ्नो परिचय दिने छोटो मेसेज लेख्नुहोस् (अप्सनल)। उहाँले स्वीकार गर्नु अघि यो देख्नुहुन्छ।',
     messageRequestPlaceholder: 'आफ्नो मेसेज लेख्नुहोस्…',
     messageRequestDefault: 'नमस्ते {{firstName}}, म तपाईंसँग सहकार्य गर्न चाहन्छु...',

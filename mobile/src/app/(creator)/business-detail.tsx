@@ -324,7 +324,15 @@ export default function BusinessDetailScreen() {
           {business.description ? (
             <View style={[styles.infoCard, { backgroundColor: C.surface }]}>
               <View style={styles.infoCardHeader}>
-                <View style={[styles.infoIconBox, { backgroundColor: C.primaryLight }]}>
+                <View
+                  style={[
+                    styles.infoIconBox,
+                    {
+                      backgroundColor: C.primaryLight, shadowColor: C.brinjal1,
+                      shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                    },
+                  ]}
+                >
                   <Ionicons name="document-text-outline" size={16} color={C.brinjal1} />
                 </View>
                 <Text style={[styles.infoCardTitle, { color: C.text }]}>{t('businessDetail.sectionAbout')}</Text>
@@ -337,7 +345,15 @@ export default function BusinessDetailScreen() {
           {business.stats && (
             <View style={[styles.infoCard, { backgroundColor: C.surface }]}>
               <View style={styles.infoCardHeader}>
-                <View style={[styles.infoIconBox, { backgroundColor: C.primaryLight }]}>
+                <View
+                  style={[
+                    styles.infoIconBox,
+                    {
+                      backgroundColor: C.primaryLight, shadowColor: C.brinjal1,
+                      shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                    },
+                  ]}
+                >
                   <Ionicons name="stats-chart-outline" size={15} color={C.brinjal1} />
                 </View>
                 <Text style={[styles.infoCardTitle, { color: C.text }]}>{t('businessDetail.sectionPerformance')}</Text>
@@ -365,7 +381,15 @@ export default function BusinessDetailScreen() {
             <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
               style={[styles.websiteCard, { backgroundColor: C.surface, borderColor: C.border }]}
               onPress={() => Linking.openURL(business.website!)}>
-              <View style={[styles.websiteIconBox, { backgroundColor: C.primaryLight }]}>
+              <View
+                style={[
+                  styles.websiteIconBox,
+                  {
+                    backgroundColor: C.primaryLight, shadowColor: C.brinjal1,
+                    shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                  },
+                ]}
+              >
                 <Ionicons name="globe" size={20} color={C.brinjal1} />
               </View>
               <View style={styles.websiteText}>
@@ -383,7 +407,15 @@ export default function BusinessDetailScreen() {
             <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
               style={[styles.websiteCard, { backgroundColor: C.surface, borderColor: C.border }]}
               onPress={() => Linking.openURL(`tel:${business.phone}`)}>
-              <View style={[styles.websiteIconBox, { backgroundColor: C.primaryLight }]}>
+              <View
+                style={[
+                  styles.websiteIconBox,
+                  {
+                    backgroundColor: C.primaryLight, shadowColor: C.brinjal1,
+                    shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                  },
+                ]}
+              >
                 <Ionicons name="call" size={18} color={C.brinjal1} />
               </View>
               <View style={styles.websiteText}>
@@ -398,7 +430,15 @@ export default function BusinessDetailScreen() {
           {business.categories.length > 0 && (
             <View style={[styles.infoCard, { backgroundColor: C.surface }]}>
               <View style={styles.infoCardHeader}>
-                <View style={[styles.infoIconBox, { backgroundColor: C.primaryLight }]}>
+                <View
+                  style={[
+                    styles.infoIconBox,
+                    {
+                      backgroundColor: C.primaryLight, shadowColor: C.brinjal1,
+                      shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                    },
+                  ]}
+                >
                   <Ionicons name="pricetag" size={15} color={C.brinjal1} />
                 </View>
                 <Text style={[styles.infoCardTitle, { color: C.text }]}>{t('businessDetail.sectionIndustries')}</Text>
@@ -449,7 +489,13 @@ export default function BusinessDetailScreen() {
       {/* Sticky message bar */}
       <View style={[styles.msgBar, { backgroundColor: C.surface, borderTopColor: C.border }]}>
         {convStatus === 'ACCEPTED' ? (
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.msgBtn, { backgroundColor: C.brinjal1 }]} onPress={openChat}>
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[
+              styles.msgBtn,
+              {
+                backgroundColor: C.brinjal1, shadowColor: C.brinjal1,
+                shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6,
+              },
+            ]} onPress={openChat}>
             <FontAwesome5 name="comment-dots" size={16} color="#fff" solid />
             <Text style={styles.msgBtnText}>{t('businessDetail.openChat')}</Text>
           </Pressable>
@@ -458,7 +504,13 @@ export default function BusinessDetailScreen() {
             <Text style={[styles.msgBtnText, { color: '#fff' }]}>{t('businessDetail.requestSent')}</Text>
           </View>
         ) : (
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.msgBtn, { backgroundColor: C.brinjal1 }]} onPress={() => setShowMsgModal(true)}>
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[
+              styles.msgBtn,
+              {
+                backgroundColor: C.brinjal1, shadowColor: C.brinjal1,
+                shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6,
+              },
+            ]} onPress={() => setShowMsgModal(true)}>
             <Text style={styles.msgBtnText}>{t('businessDetail.sendMessage')}</Text>
           </Pressable>
         )}
@@ -490,7 +542,13 @@ export default function BusinessDetailScreen() {
             />
             <Text style={[styles.modalCounter, { color: C.textSecondary }]}>{requestMsg.length}/500</Text>
             <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-              style={[styles.modalSendBtn, { backgroundColor: sendingMsg ? C.border : C.brinjal1 }]}
+              style={[
+                styles.modalSendBtn,
+                {
+                  backgroundColor: sendingMsg ? C.border : C.brinjal1, shadowColor: C.brinjal1,
+                  shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6,
+                },
+              ]}
               onPress={handleSendMessageRequest}
               disabled={sendingMsg}>
               <Text style={styles.modalSendText}>{sendingMsg ? t('businessDetail.sendingLabel') : t('businessDetail.sendRequestBtn')}</Text>
@@ -577,7 +635,7 @@ const styles = StyleSheet.create({
 
   // Sticky message bar
   msgBar:                { paddingHorizontal: 20, paddingVertical: 14, borderTopWidth: 1 },
-  msgBtn:                { borderRadius: RADIUS.md, height: 52, flexDirection: 'row', gap: 8, justifyContent: 'center', alignItems: 'center' },
+  msgBtn:                { borderRadius: RADIUS.full, height: 52, flexDirection: 'row', gap: 8, justifyContent: 'center', alignItems: 'center' },
   msgBtnText:            { color: '#fff', fontSize: 16, fontFamily: F.bold },
 
   // Request modal
@@ -591,6 +649,6 @@ const styles = StyleSheet.create({
   modalSubtitle:         { fontSize: 13, lineHeight: 20, fontFamily: F.regular },
   modalInput:            { borderRadius: RADIUS.sm, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, minHeight: 100, textAlignVertical: 'top', fontFamily: F.regular },
   modalCounter:          { fontSize: 11, textAlign: 'right', marginTop: -6, fontFamily: F.regular },
-  modalSendBtn:          { borderRadius: RADIUS.md, height: 52, justifyContent: 'center', alignItems: 'center' },
+  modalSendBtn:          { borderRadius: RADIUS.full, height: 52, justifyContent: 'center', alignItems: 'center' },
   modalSendText:         { color: '#fff', fontSize: 16, fontFamily: F.bold },
 });

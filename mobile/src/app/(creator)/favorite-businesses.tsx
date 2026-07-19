@@ -17,10 +17,16 @@ import { businessService, type BusinessListItem } from '@/services/business';
 import { useFavoriteBusinesses } from '@/hooks/useFavoriteBusinesses';
 import { GRADIENTS, F, RADIUS, SHADOW } from '@/utilities/constants';
 
-function Avatar({ name, size = 48, C }: { name: string; size?: number; C: ReturnType<typeof useAppColors> }) {
+function Avatar({ name, size = 52, C }: { name: string; size?: number; C: ReturnType<typeof useAppColors> }) {
   const initials = name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
   return (
-    <View style={[av.wrap, { width: size, height: size, borderRadius: RADIUS.full, backgroundColor: '#F97316' }]}>
+    <View style={[
+      av.wrap,
+      {
+        width: size, height: size, borderRadius: RADIUS.full, backgroundColor: '#F97316',
+        shadowColor: '#F97316', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+      },
+    ]}>
       <Text style={[av.text, { fontSize: size * 0.35, color: '#fff', fontWeight: '700' }]}>{initials}</Text>
     </View>
   );
@@ -33,7 +39,7 @@ function BusinessCard({ item, onRemove }: { item: BusinessListItem; onRemove: ()
   const name = item.businessName ?? 'Business';
 
   return (
-    <View style={[s.card, { backgroundColor: C.surface, borderColor: C.border }]}>
+    <View style={[s.card, { backgroundColor: C.surface }]}>
       <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
         style={s.cardMain}
         onPress={() => router.push({ pathname: '/(creator)/business-detail', params: { id: item.id } })}>
@@ -146,7 +152,13 @@ export default function FavoriteBusinessesScreen() {
                 {t('favoriteBrands.emptySub')}
               </Text>
               <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                style={[s.emptyBtn, { backgroundColor: '#F97316' }]}
+                style={[
+                  s.emptyBtn,
+                  {
+                    backgroundColor: '#F97316', shadowColor: '#F97316',
+                    shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6,
+                  },
+                ]}
                 onPress={() => router.push('/(creator)/explore-businesses')}>
                 <Text style={s.emptyBtnText}>{t('favoriteBrands.browseCTA')}</Text>
               </Pressable>
@@ -170,18 +182,18 @@ const s = StyleSheet.create({
   list:   { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 40, gap: 12 },
   listEmpty: { flexGrow: 1 },
 
-  card:     { borderRadius: RADIUS.md, borderWidth: 1, overflow: 'hidden', ...SHADOW.card },
+  card:     { borderRadius: RADIUS.lg, overflow: 'hidden', ...SHADOW.raised },
   cardMain: { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 14 },
   info:     { flex: 1, gap: 3 },
   nameRow:  { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  name:     { fontSize: 15, fontFamily: F.bold, flex: 1 },
-  verifiedBadge: { borderRadius: RADIUS.sm, paddingHorizontal: 5, paddingVertical: 1 },
+  name:     { fontSize: 16, letterSpacing: -0.3, fontFamily: F.bold, flex: 1 },
+  verifiedBadge: { borderRadius: RADIUS.full, paddingHorizontal: 5, paddingVertical: 1 },
   verifiedText:  { fontSize: 10, color: '#2E7D32', fontFamily: F.bold },
   categories:{ fontSize: 11, fontFamily: F.semibold },
   desc:      { fontSize: 12, fontFamily: F.regular, lineHeight: 17 },
   campaigns: { fontSize: 12, fontFamily: F.regular },
 
-  divider:    { height: 1 },
+  divider:    { height: 1, marginHorizontal: 16 },
   removeRow:  { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 12 },
   removeText: { fontSize: 13, color: '#EF4444', fontFamily: F.semibold },
 
@@ -189,6 +201,6 @@ const s = StyleSheet.create({
   emptyIcon:  { marginBottom: 2 },
   emptyTitle: { fontSize: 18, fontFamily: F.bold },
   emptyHint:  { fontSize: 13, textAlign: 'center', lineHeight: 20, fontFamily: F.regular },
-  emptyBtn:   { borderRadius: RADIUS.md, paddingHorizontal: 28, paddingVertical: 12, marginTop: 8, minHeight: 44, justifyContent: 'center', alignItems: 'center' },
+  emptyBtn:   { borderRadius: RADIUS.full, paddingHorizontal: 28, paddingVertical: 12, marginTop: 8, minHeight: 44, justifyContent: 'center', alignItems: 'center' },
   emptyBtnText: { color: '#fff', fontSize: 14, fontFamily: F.bold },
 });

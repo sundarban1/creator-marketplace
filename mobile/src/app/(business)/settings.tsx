@@ -117,7 +117,15 @@ function SwitchRow({ label, faIcon, faIconColor, iconNode, sub, value, onChange,
       {iconNode ? (
         <View style={styles.rowIconNode}>{iconNode}</View>
       ) : faIcon ? (
-        <View style={[styles.navIonIconWrap, { backgroundColor: iColor + '18' }]}>
+        <View
+          style={[
+            styles.navIonIconWrap,
+            {
+              backgroundColor: iColor + '18', shadowColor: iColor,
+              shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+            },
+          ]}
+        >
           <FontAwesome5 name={faIcon} size={16} color={iColor} />
         </View>
       ) : null}
@@ -140,15 +148,32 @@ type NavRowProps = { ionIcon?: keyof typeof Ionicons.glyphMap; faIcon?: string; 
 function NavRow({ ionIcon, faIcon, ionIconColor, label, sub, value, badge, onPress, danger = false, isLast = false }: NavRowProps) {
   const C = useContext(ColorCtx);
   const iColor = ionIconColor ?? C.brinjal1;
+  const rowIconColor = danger ? C.error : iColor;
   return (
     <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.row, !isLast && { borderBottomWidth: 1, borderBottomColor: C.border }]} onPress={onPress}>
       {ionIcon ? (
-        <View style={[styles.navIonIconWrap, { backgroundColor: (danger ? C.error : iColor) + '18' }]}>
-          <Ionicons name={ionIcon} size={18} color={danger ? C.error : iColor} />
+        <View
+          style={[
+            styles.navIonIconWrap,
+            {
+              backgroundColor: rowIconColor + '18', shadowColor: rowIconColor,
+              shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+            },
+          ]}
+        >
+          <Ionicons name={ionIcon} size={18} color={rowIconColor} />
         </View>
       ) : faIcon ? (
-        <View style={[styles.navIonIconWrap, { backgroundColor: (danger ? C.error : iColor) + '18' }]}>
-          <FontAwesome5 name={faIcon} size={16} color={danger ? C.error : iColor} />
+        <View
+          style={[
+            styles.navIonIconWrap,
+            {
+              backgroundColor: rowIconColor + '18', shadowColor: rowIconColor,
+              shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+            },
+          ]}
+        >
+          <FontAwesome5 name={faIcon} size={16} color={rowIconColor} />
         </View>
       ) : null}
       <View style={sub ? styles.navTextColWithSub : styles.navTextCol}>
@@ -892,7 +917,15 @@ export default function BusinessSettingsScreen() {
                 textAlignVertical="top"
               />
             </View>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.primaryBtn, { backgroundColor: C.brinjal1, opacity: supportMsg.trim() ? 1 : 0.45 }]} onPress={handleSupportSubmit}>
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+              style={[
+                styles.primaryBtn,
+                {
+                  backgroundColor: C.brinjal1, opacity: supportMsg.trim() ? 1 : 0.45,
+                  shadowColor: C.brinjal1, shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6,
+                },
+              ]}
+              onPress={handleSupportSubmit}>
               <Text style={styles.primaryBtnText}>{t('businessSettings.sendMessageBtn')}</Text>
             </Pressable>
           </View>
@@ -942,7 +975,15 @@ export default function BusinessSettingsScreen() {
                 textAlignVertical="top"
               />
             </View>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.primaryBtn, { backgroundColor: C.error, opacity: reportDesc.trim() ? 1 : 0.45 }]} onPress={handleReportSubmit}>
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+              style={[
+                styles.primaryBtn,
+                {
+                  backgroundColor: C.error, opacity: reportDesc.trim() ? 1 : 0.45,
+                  shadowColor: C.error, shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6,
+                },
+              ]}
+              onPress={handleReportSubmit}>
               <Text style={styles.primaryBtnText}>{t('businessSettings.submitReportBtn')}</Text>
             </Pressable>
           </View>
@@ -1075,7 +1116,15 @@ export default function BusinessSettingsScreen() {
 
         {/* Actions */}
         <View style={styles.actionGroup}>
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.primaryBtn, { backgroundColor: C.brinjal1 }]} onPress={handleSaveProfile}>
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            style={[
+              styles.primaryBtn,
+              {
+                backgroundColor: C.brinjal1, shadowColor: C.brinjal1,
+                shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6,
+              },
+            ]}
+            onPress={handleSaveProfile}>
             <Text style={styles.primaryBtnText}>{t('businessSettings.saveChangesBtn')}</Text>
           </Pressable>
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.secondaryBtn, { borderColor: C.brinjal1 }]}>
@@ -1098,7 +1147,15 @@ export default function BusinessSettingsScreen() {
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
             style={[styles.row, { borderBottomWidth: 1, borderBottomColor: C.border }]}
             onPress={() => setShowChangePassword((v) => !v)}>
-            <View style={[styles.navIonIconWrap, { backgroundColor: '#6366F118' }]}>
+            <View
+              style={[
+                styles.navIonIconWrap,
+                {
+                  backgroundColor: '#6366F118', shadowColor: '#6366F1',
+                  shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                },
+              ]}
+            >
               <FontAwesome5 name="key" size={16} color="#6366F1" />
             </View>
             <Text style={[styles.rowLabel, { color: C.text, flex: 1 }]}>{t('businessSettings.changePasswordLabel')}</Text>
@@ -1156,7 +1213,15 @@ export default function BusinessSettingsScreen() {
                 {cPwError ? <Text style={[styles.fieldError, { color: C.error }]}>{cPwError}</Text> : null}
               </View>
 
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.primaryBtn, { backgroundColor: C.brinjal1 }]} onPress={handleChangePassword}>
+              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                style={[
+                  styles.primaryBtn,
+                  {
+                    backgroundColor: C.brinjal1, shadowColor: C.brinjal1,
+                    shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6,
+                  },
+                ]}
+                onPress={handleChangePassword}>
                 <Text style={styles.primaryBtnText}>{t('businessSettings.updatePasswordBtn')}</Text>
               </Pressable>
               <Text style={[styles.rowSub, { color: C.textSecondary }]}>{t('businessSettings.passwordHint')}</Text>
@@ -1169,7 +1234,15 @@ export default function BusinessSettingsScreen() {
               style={[styles.row, { borderBottomWidth: 1, borderBottomColor: C.border }]}
               onPress={() => { setEmailStage('enter-email'); setEmailInput(''); setEmailError(''); }}
             >
-              <View style={[styles.navIonIconWrap, { backgroundColor: '#0891B218' }]}>
+              <View
+                style={[
+                  styles.navIonIconWrap,
+                  {
+                    backgroundColor: '#0891B218', shadowColor: '#0891B2',
+                    shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                  },
+                ]}
+              >
                 <FontAwesome5 name="envelope" size={16} color="#0891B2" />
               </View>
               <View style={{ flex: 1 }}>
@@ -1183,7 +1256,15 @@ export default function BusinessSettingsScreen() {
           )}
           {emailStage === 'verified' && (
             <View style={[styles.row, { borderBottomWidth: 1, borderBottomColor: C.border }]}>
-              <View style={[styles.navIonIconWrap, { backgroundColor: '#0891B218' }]}>
+              <View
+                style={[
+                  styles.navIonIconWrap,
+                  {
+                    backgroundColor: '#0891B218', shadowColor: '#0891B2',
+                    shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                  },
+                ]}
+              >
                 <FontAwesome5 name="envelope" size={16} color="#0891B2" />
               </View>
               <View style={{ flex: 1 }}>
@@ -1199,9 +1280,17 @@ export default function BusinessSettingsScreen() {
             <View style={[{ borderBottomWidth: 1, borderBottomColor: C.border, paddingHorizontal: 16, paddingVertical: 14, gap: 10 }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                 <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <View style={[styles.navIonIconWrap, { backgroundColor: '#0891B218' }]}>
-                <FontAwesome5 name="envelope" size={16} color="#0891B2" />
-              </View>
+                  <View
+                    style={[
+                      styles.navIonIconWrap,
+                      {
+                        backgroundColor: '#0891B218', shadowColor: '#0891B2',
+                        shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                      },
+                    ]}
+                  >
+                    <FontAwesome5 name="envelope" size={16} color="#0891B2" />
+                  </View>
                   <Text style={[styles.rowLabel, { color: C.text, flexShrink: 1 }]} numberOfLines={1} ellipsizeMode="tail">{t('businessSettings.verifyEmailTitle')}</Text>
                 </View>
                 <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => { setEmailStage('idle'); setEmailInput(''); setEmailError(''); }} hitSlop={10} disabled={emailLoading} style={{ flexShrink: 0, marginLeft: 8 }}>
@@ -1231,9 +1320,17 @@ export default function BusinessSettingsScreen() {
           {emailStage === 'enter-otp' && (
             <View style={[{ borderBottomWidth: 1, borderBottomColor: C.border, paddingHorizontal: 16, paddingVertical: 14, gap: 10 }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <View style={[styles.navIonIconWrap, { backgroundColor: '#0891B218' }]}>
-                <FontAwesome5 name="envelope" size={16} color="#0891B2" />
-              </View>
+                <View
+                  style={[
+                    styles.navIonIconWrap,
+                    {
+                      backgroundColor: '#0891B218', shadowColor: '#0891B2',
+                      shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                    },
+                  ]}
+                >
+                  <FontAwesome5 name="envelope" size={16} color="#0891B2" />
+                </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.rowLabel, { color: C.text }]}>{t('businessSettings.enterVerificationCode')}</Text>
                   <Text style={[styles.rowSub, { color: C.textSecondary }]}>{t('businessSettings.sentToEmail', { email: emailInput })}</Text>
@@ -1280,7 +1377,15 @@ export default function BusinessSettingsScreen() {
               style={[styles.row, { borderBottomWidth: 1, borderBottomColor: C.border }]}
               onPress={() => { setPhoneStage('enter-phone'); setPhoneInput(''); setPhoneError(''); }}
             >
-              <View style={[styles.navIonIconWrap, { backgroundColor: '#10B98118' }]}>
+              <View
+                style={[
+                  styles.navIonIconWrap,
+                  {
+                    backgroundColor: '#10B98118', shadowColor: '#10B981',
+                    shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                  },
+                ]}
+              >
                 <FontAwesome5 name="phone-alt" size={16} color="#10B981" />
               </View>
               <View style={{ flex: 1 }}>
@@ -1294,7 +1399,15 @@ export default function BusinessSettingsScreen() {
           )}
           {phoneStage === 'verified' && (
             <View style={[styles.row, { borderBottomWidth: 1, borderBottomColor: C.border }]}>
-              <View style={[styles.navIonIconWrap, { backgroundColor: '#10B98118' }]}>
+              <View
+                style={[
+                  styles.navIonIconWrap,
+                  {
+                    backgroundColor: '#10B98118', shadowColor: '#10B981',
+                    shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                  },
+                ]}
+              >
                 <FontAwesome5 name="phone-alt" size={16} color="#10B981" />
               </View>
               <View style={{ flex: 1 }}>
@@ -1310,7 +1423,15 @@ export default function BusinessSettingsScreen() {
             <View style={[{ borderBottomWidth: 1, borderBottomColor: C.border, paddingHorizontal: 16, paddingVertical: 14, gap: 10 }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                 <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <View style={[styles.navIonIconWrap, { backgroundColor: '#10B98118' }]}>
+                  <View
+                    style={[
+                      styles.navIonIconWrap,
+                      {
+                        backgroundColor: '#10B98118', shadowColor: '#10B981',
+                        shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                      },
+                    ]}
+                  >
                     <FontAwesome5 name="phone-alt" size={16} color="#10B981" />
                   </View>
                   <Text style={[styles.rowLabel, { color: C.text, flexShrink: 1 }]} numberOfLines={1} ellipsizeMode="tail">{t('businessSettings.verifyPhoneTitle')}</Text>
@@ -1340,7 +1461,15 @@ export default function BusinessSettingsScreen() {
           {phoneStage === 'enter-otp' && (
             <View style={[{ borderBottomWidth: 1, borderBottomColor: C.border, paddingHorizontal: 16, paddingVertical: 14, gap: 10 }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <View style={[styles.navIonIconWrap, { backgroundColor: '#10B98118' }]}>
+                <View
+                  style={[
+                    styles.navIonIconWrap,
+                    {
+                      backgroundColor: '#10B98118', shadowColor: '#10B981',
+                      shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                    },
+                  ]}
+                >
                   <FontAwesome5 name="phone-alt" size={16} color="#10B981" />
                 </View>
                 <View style={{ flex: 1 }}>
@@ -1659,7 +1788,15 @@ export default function BusinessSettingsScreen() {
               style={[styles.row, idx < arr.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}
               disabled={doc.uploading || doc.status === 'PENDING' || doc.status === 'APPROVED'}
               onPress={doc.upload}>
-              <View style={[styles.navIonIconWrap, { backgroundColor: '#6366F118' }]}>
+              <View
+                style={[
+                  styles.navIonIconWrap,
+                  {
+                    backgroundColor: '#6366F118', shadowColor: '#6366F1',
+                    shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                  },
+                ]}
+              >
                 <FontAwesome5 name={doc.icon} size={16} color="#6366F1" />
               </View>
               <View style={{ flex: 1 }}>
@@ -1711,7 +1848,15 @@ export default function BusinessSettingsScreen() {
             const isLast = idx === CONNECTABLE_SOCIAL_PLATFORMS.length - 1;
             return (
               <View key={p.id} style={[styles.row, styles.socialRow, !isLast && { borderBottomWidth: 1, borderBottomColor: C.border }]}>
-                <View style={[styles.socialIconWrap, { backgroundColor: p.color + '18' }]}>
+                <View
+                  style={[
+                    styles.socialIconWrap,
+                    {
+                      backgroundColor: p.color + '18', shadowColor: p.color,
+                      shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                    },
+                  ]}
+                >
                   <FontAwesome5 name={p.iconName} size={20} color={p.color} />
                 </View>
                 <View style={{ flex: 1 }}>
@@ -1936,7 +2081,15 @@ export default function BusinessSettingsScreen() {
         <SectionHeader title={t('businessSettings.aboutSection')} />
         <Card>
           <View style={[styles.row, { borderBottomWidth: 1, borderBottomColor: C.border }]}>
-            <View style={[styles.navIonIconWrap, { backgroundColor: '#6366F118' }]}>
+            <View
+              style={[
+                styles.navIonIconWrap,
+                {
+                  backgroundColor: '#6366F118', shadowColor: '#6366F1',
+                  shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                },
+              ]}
+            >
               <FontAwesome5 name="info-circle" size={16} color="#6366F1" />
             </View>
             <Text style={[styles.rowLabel, { color: C.text }]}>{t('businessSettings.appVersionLabel')}</Text>
@@ -1986,7 +2139,15 @@ export default function BusinessSettingsScreen() {
         <Card>
           <SwitchRow faIcon="moon" faIconColor="#6366F1" label={t('businessSettings.darkModeLabel')} value={isDark} onChange={toggleDark} />
           <View style={[styles.row, { borderTopWidth: 0, borderBottomWidth: 1, borderBottomColor: C.border }]}>
-            <View style={[styles.navIonIconWrap, { backgroundColor: '#6366F118' }]}>
+            <View
+              style={[
+                styles.navIonIconWrap,
+                {
+                  backgroundColor: '#6366F118', shadowColor: '#6366F1',
+                  shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                },
+              ]}
+            >
               <FontAwesome5 name="info-circle" size={16} color="#6366F1" />
             </View>
             <Text style={[styles.rowLabel, { color: C.text }]}>{t('businessSettings.appVersionLabel')}</Text>
@@ -2136,7 +2297,7 @@ const styles = StyleSheet.create({
   socialInput: { flex: 1, fontSize: 14, fontFamily: F.regular },
 
   actionGroup: { marginHorizontal: 16, marginTop: 20, gap: 10 },
-  primaryBtn: { borderRadius: RADIUS.md, paddingVertical: 14, alignItems: 'center' },
+  primaryBtn: { borderRadius: RADIUS.full, paddingVertical: 14, alignItems: 'center' },
   primaryBtnText: { color: '#fff', fontSize: 15, fontFamily: F.bold },
   secondaryBtn: { borderRadius: RADIUS.md, paddingVertical: 13, alignItems: 'center', borderWidth: 1.5 },
   secondaryBtnText: { fontSize: 15, fontFamily: F.bold },

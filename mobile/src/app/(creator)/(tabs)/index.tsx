@@ -527,7 +527,11 @@ export default function HomeScreen() {
               }}
             />
             <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-              style={[styles.filterBtn, { backgroundColor: isFilterActive ? C.brinjal1 : C.primaryLight }]}
+              style={[
+                styles.filterBtn,
+                { backgroundColor: isFilterActive ? C.brinjal1 : C.primaryLight },
+                isFilterActive && { shadowColor: C.brinjal1, shadowOpacity: 0.35, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 5 },
+              ]}
               onPress={openFilter}
               hitSlop={6}>
               <Ionicons name="options-outline" size={18} color={isFilterActive ? '#fff' : C.brinjal1} />
@@ -552,7 +556,15 @@ export default function HomeScreen() {
               key={label}
               style={[styles.quickAction, { backgroundColor: C.surface, borderColor: C.border }]}
               onPress={() => router.push(route as never)}>
-              <View style={[styles.quickActionIcon, { backgroundColor: bg }]}>
+              <View
+                style={[
+                  styles.quickActionIcon,
+                  {
+                    backgroundColor: bg, shadowColor: color,
+                    shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5,
+                  },
+                ]}
+              >
                 <Ionicons name={icon} size={20} color={color} />
               </View>
               <Text style={[styles.quickActionLabel, { color: C.text }]}>{label}</Text>
@@ -565,7 +577,15 @@ export default function HomeScreen() {
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
             style={[styles.banner, { backgroundColor: C.surface, borderLeftColor: C.brinjal1 }]}
             onPress={() => router.push('/(creator)/profile')}>
-            <View style={[styles.bannerIconBox, { backgroundColor: C.primaryLight }]}>
+            <View
+              style={[
+                styles.bannerIconBox,
+                {
+                  backgroundColor: C.primaryLight, shadowColor: C.brinjal1,
+                  shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                },
+              ]}
+            >
               <Ionicons name="person-outline" size={20} color={C.brinjal1} />
             </View>
             <View style={styles.bannerText}>
@@ -585,7 +605,12 @@ export default function HomeScreen() {
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
             style={styles.attentionBanner}
             onPress={() => router.push('/(creator)/(tabs)/proposals')}>
-            <View style={styles.attentionIconWrap}>
+            <View
+              style={[
+                styles.attentionIconWrap,
+                { shadowColor: '#D97706', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
+              ]}
+            >
               <Ionicons name="alert-circle" size={18} color="#D97706" />
             </View>
             <View style={{ flex: 1 }}>
@@ -609,7 +634,15 @@ export default function HomeScreen() {
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
             style={[styles.banner, { backgroundColor: C.surface, borderLeftColor: '#EC4899' }]}
             onPress={() => router.push('/(creator)/referral')}>
-            <View style={[styles.bannerIconBox, { backgroundColor: '#FCE7F3' }]}>
+            <View
+              style={[
+                styles.bannerIconBox,
+                {
+                  backgroundColor: '#FCE7F3', shadowColor: '#EC4899',
+                  shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                },
+              ]}
+            >
               <Ionicons name="gift-outline" size={20} color="#EC4899" />
             </View>
             <View style={styles.bannerText}>
@@ -794,7 +827,15 @@ export default function HomeScreen() {
                 <Ionicons name="navigate-outline" size={32} color={C.textSecondary} />
                 <Text style={[styles.featuredEmptyTitle, { color: C.text }]}>{t('creator.home.noEventsWithinKm', { km: nearbyRadiusKm })}</Text>
                 {nearbyRadiusKm < 100 && (
-                  <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.expandRadiusBtn, { backgroundColor: C.brinjal1 }]} onPress={handleExpandNearbyRadius}>
+                  <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                    style={[
+                      styles.expandRadiusBtn,
+                      {
+                        backgroundColor: C.brinjal1, shadowColor: C.brinjal1,
+                        shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6,
+                      },
+                    ]}
+                    onPress={handleExpandNearbyRadius}>
                     <Text style={styles.expandRadiusBtnText}>{t('creator.home.expandToKm', { km: RADIUS_PRESETS.find((r) => r > nearbyRadiusKm) ?? 100 })}</Text>
                   </Pressable>
                 )}
@@ -904,14 +945,14 @@ const styles = StyleSheet.create({
   },
   searchIcon:      { marginRight: 8 },
   searchInput:     { flex: 1, fontSize: 14, fontFamily: F.regular },
-  filterBtn:       { width: 36, height: 36, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center' },
+  filterBtn:       { width: 36, height: 36, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center' },
   filterCountBadge: { position: 'absolute', top: -4, right: -4, minWidth: 16, height: 16, borderRadius: RADIUS.full, paddingHorizontal: 3, backgroundColor: '#EF4444', justifyContent: 'center', alignItems: 'center' },
   filterCountBadgeTxt: { fontSize: 9, fontFamily: F.extrabold, color: '#fff' },
 
   // ── Quick Actions ──
   quickActionsRow:  { flexDirection: 'row', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 4, gap: 10 },
-  quickAction:      { flex: 1, alignItems: 'center', borderRadius: RADIUS.lg, paddingVertical: 12, gap: 6, borderWidth: 1, ...SHADOW.card },
-  quickActionIcon:  { width: 40, height: 40, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center' },
+  quickAction:      { flex: 1, alignItems: 'center', borderRadius: RADIUS.lg, paddingVertical: 14, gap: 8, borderWidth: 1, ...SHADOW.card },
+  quickActionIcon:  { width: 44, height: 44, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center' },
   quickActionLabel: { fontSize: 11, fontFamily: F.medium, textAlign: 'center' },
 
   // ── Banner ──
@@ -951,7 +992,7 @@ const styles = StyleSheet.create({
   loadingText: { fontSize: 14, fontFamily: F.regular },
 
   // ── Featured ──
-  featuredRow:       { paddingHorizontal: 20, gap: 16, marginBottom: 0 },
+  featuredRow:       { paddingHorizontal: 20, gap: 8, marginTop: 16, marginBottom: 16 },
   featuredEmpty:     { marginHorizontal: 20, marginBottom: 0, borderRadius: RADIUS.md, borderWidth: 1.5, borderStyle: 'dashed', padding: 24, alignItems: 'center', gap: 8 },
   featuredEmptyTitle:{ fontSize: 14, fontFamily: F.bold, textAlign: 'center' },
   featuredEmptySub:  { fontSize: 12, fontFamily: F.regular, textAlign: 'center', lineHeight: 18 },
@@ -961,7 +1002,7 @@ const styles = StyleSheet.create({
   nearbyTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 },
   nearbyChip: { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1, borderRadius: RADIUS.full, paddingHorizontal: 10, paddingVertical: 5, flexShrink: 1 },
   nearbyChipText: { fontSize: 11, fontFamily: F.bold, flexShrink: 1 },
-  expandRadiusBtn: { borderRadius: RADIUS.md, paddingHorizontal: 16, paddingVertical: 10, minHeight: 40, justifyContent: 'center', alignItems: 'center', marginTop: 4 },
+  expandRadiusBtn: { borderRadius: RADIUS.full, paddingHorizontal: 20, paddingVertical: 10, minHeight: 40, justifyContent: 'center', alignItems: 'center', marginTop: 4 },
   expandRadiusBtnText: { color: '#fff', fontSize: 13, fontFamily: F.bold },
 
   // ── Attention banner ──

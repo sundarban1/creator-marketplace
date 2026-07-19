@@ -44,7 +44,15 @@ function StatTile({ icon, label, value, C }: {
 }) {
   return (
     <View style={[s.tile, { backgroundColor: C.surface, borderColor: C.border }]}>
-      <View style={[s.tileIconWrap, { backgroundColor: C.primaryLight }]}>
+      <View
+        style={[
+          s.tileIconWrap,
+          {
+            backgroundColor: C.primaryLight, shadowColor: C.brinjal1,
+            shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+          },
+        ]}
+      >
         {icon}
       </View>
       <Text style={[s.tileValue, { color: C.text }]} numberOfLines={1}>{value}</Text>

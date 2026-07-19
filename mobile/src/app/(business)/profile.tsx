@@ -131,7 +131,15 @@ export default function BusinessProfileScreen() {
                   <Text style={s.avatarInitial}>{displayName[0].toUpperCase()}</Text>
                 </LinearGradient>
               )}
-              <View style={[s.cameraBadge, { backgroundColor: C.brinjal1 }]}>
+              <View
+                style={[
+                  s.cameraBadge,
+                  {
+                    backgroundColor: C.brinjal1, shadowColor: C.brinjal1,
+                    shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                  },
+                ]}
+              >
                 {logoUploading
                   ? <ActivityIndicator size="small" color="#fff" />
                   : <Ionicons name="camera" size={13} color="#fff" />}
@@ -208,7 +216,15 @@ export default function BusinessProfileScreen() {
               <View style={s.cardList}>
                 {hasPhone && (
                   <View style={[s.contactRow, { backgroundColor: C.background, borderColor: C.border }]}>
-                    <View style={[s.platformBubble, { backgroundColor: C.brinjal1 + '18' }]}>
+                    <View
+                      style={[
+                        s.platformBubble,
+                        {
+                          backgroundColor: C.brinjal1 + '18', shadowColor: C.brinjal1,
+                          shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                        },
+                      ]}
+                    >
                       <Ionicons name="call" size={16} color={C.brinjal1} />
                     </View>
                     <Text style={[s.contactText, { color: C.text }]}>{formatPhoneDisplay(profile!.user!.phone!)}</Text>
@@ -216,7 +232,15 @@ export default function BusinessProfileScreen() {
                 )}
                 {(hasVerifiedEmail || !hasPhone) && (
                   <View style={[s.contactRow, { backgroundColor: C.background, borderColor: C.border }]}>
-                    <View style={[s.platformBubble, { backgroundColor: C.brinjal1 + '18' }]}>
+                    <View
+                      style={[
+                        s.platformBubble,
+                        {
+                          backgroundColor: C.brinjal1 + '18', shadowColor: C.brinjal1,
+                          shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                        },
+                      ]}
+                    >
                       <Ionicons name="mail" size={16} color={C.brinjal1} />
                     </View>
                     <Text style={[s.contactText, { color: C.text }]}>{profile?.user?.email ?? user?.email ?? '—'}</Text>
@@ -233,7 +257,15 @@ export default function BusinessProfileScreen() {
             <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
               style={[s.contactRow, { backgroundColor: C.background, borderColor: C.border }]}
               onPress={() => Linking.openURL(profile.website!)}>
-              <View style={[s.platformBubble, { backgroundColor: C.brinjal1 + '18' }]}>
+              <View
+                style={[
+                  s.platformBubble,
+                  {
+                    backgroundColor: C.brinjal1 + '18', shadowColor: C.brinjal1,
+                    shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                  },
+                ]}
+              >
                 <Ionicons name="globe" size={16} color={C.brinjal1} />
               </View>
               <Text style={[s.contactText, { color: C.brinjal1, flex: 1 }]} numberOfLines={1}>
@@ -320,7 +352,15 @@ function EmptyState({
       <FontAwesome5 name={icon} solid size={28} color={C.border} />
       <Text style={[s.emptyTitle, { color: C.text }]}>{title}</Text>
       <Text style={[s.emptyHint, { color: C.textSecondary }]}>{hint}</Text>
-      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[s.emptyCta, { backgroundColor: C.brinjal1 }]} onPress={onPress}>
+      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+        style={[
+          s.emptyCta,
+          {
+            backgroundColor: C.brinjal1, shadowColor: C.brinjal1,
+            shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6,
+          },
+        ]}
+        onPress={onPress}>
         <Text style={s.emptyCtaText}>{cta}</Text>
       </Pressable>
     </View>
@@ -401,6 +441,6 @@ const s = StyleSheet.create({
                   borderWidth: 1.5, borderRadius: RADIUS.lg, borderStyle: 'dashed' },
   emptyTitle:   { fontSize: 14, fontFamily: F.bold },
   emptyHint:    { fontSize: 12, textAlign: 'center', lineHeight: 18, fontFamily: F.regular },
-  emptyCta:     { borderRadius: RADIUS.md, paddingHorizontal: 20, paddingVertical: 9, minHeight: 40, justifyContent: 'center', alignItems: 'center', marginTop: 4 },
+  emptyCta:     { borderRadius: RADIUS.full, paddingHorizontal: 20, paddingVertical: 9, minHeight: 40, justifyContent: 'center', alignItems: 'center', marginTop: 4 },
   emptyCtaText: { fontSize: 13, color: '#fff', fontFamily: F.bold },
 });

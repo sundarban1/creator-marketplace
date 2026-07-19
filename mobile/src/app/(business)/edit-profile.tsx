@@ -198,7 +198,11 @@ export default function EditBusinessProfileScreen() {
 
         {/* ── Save ── */}
         <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-          style={[styles.saveBtn, { backgroundColor: saving ? C.border : C.brinjal1 }]}
+          style={[
+            styles.saveBtn,
+            { backgroundColor: saving ? C.border : C.brinjal1 },
+            !saving && { shadowColor: C.brinjal1, shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 },
+          ]}
           onPress={handleSave}
           disabled={saving}>
           {saving
@@ -245,6 +249,6 @@ const styles = StyleSheet.create({
   locationBtnTxt: { flex: 1, fontSize: 14, lineHeight: 20, fontFamily: F.regular },
   locationArrow:  { fontSize: 20, color: '#9CA3AF' },
   clearLocation:  { fontSize: 12, marginTop: 2, fontFamily: F.semibold },
-  saveBtn:       { marginHorizontal: 16, marginTop: 20, borderRadius: RADIUS.md, paddingVertical: 14, alignItems: 'center' },
+  saveBtn:       { marginHorizontal: 16, marginTop: 20, borderRadius: RADIUS.full, paddingVertical: 14, alignItems: 'center' },
   saveBtnText:   { fontSize: 15, color: '#fff', fontFamily: F.bold },
 });

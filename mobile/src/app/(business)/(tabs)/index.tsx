@@ -201,7 +201,15 @@ export default function BusinessHomeScreen() {
           ]).map(({ icon, label, bg, color, route }) => (
             <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} key={label} style={[styles.quickAction, { backgroundColor: C.surface, borderColor: C.border }]}
               onPress={() => router.push(route as never)}>
-              <View style={[styles.quickActionIcon, { backgroundColor: bg }]}>
+              <View
+                style={[
+                  styles.quickActionIcon,
+                  {
+                    backgroundColor: bg, shadowColor: color,
+                    shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5,
+                  },
+                ]}
+              >
                 <Ionicons name={icon} size={20} color={color} />
               </View>
               <Text style={[styles.quickActionLabel, { color: C.text }]}>{label}</Text>
@@ -214,7 +222,15 @@ export default function BusinessHomeScreen() {
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
             style={[styles.banner, { backgroundColor: C.surface, borderLeftColor: C.brinjal1 }]}
             onPress={() => router.push('/(business)/edit-profile' as never)}>
-            <View style={[styles.bannerIconBox, { backgroundColor: C.primaryLight }]}>
+            <View
+              style={[
+                styles.bannerIconBox,
+                {
+                  backgroundColor: C.primaryLight, shadowColor: C.brinjal1,
+                  shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                },
+              ]}
+            >
               <Ionicons name="business-outline" size={20} color={C.brinjal1} />
             </View>
             <View style={styles.bannerText}>
@@ -232,7 +248,12 @@ export default function BusinessHomeScreen() {
         {/* ── Attention banner (shown when proposals are pending) ── */}
         {!loading && stats.proposals > 0 && (
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.attentionBanner} onPress={() => router.push('/(business)/proposals')}>
-            <View style={styles.attentionIconWrap}>
+            <View
+              style={[
+                styles.attentionIconWrap,
+                { shadowColor: '#D97706', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
+              ]}
+            >
               <Ionicons name="alert-circle" size={18} color="#D97706" />
             </View>
             <View style={{ flex: 1 }}>
@@ -263,7 +284,15 @@ export default function BusinessHomeScreen() {
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
             style={[styles.banner, { backgroundColor: C.surface, borderLeftColor: '#EC4899' }]}
             onPress={() => router.push('/(business)/refer')}>
-            <View style={[styles.bannerIconBox, { backgroundColor: '#FCE7F3' }]}>
+            <View
+              style={[
+                styles.bannerIconBox,
+                {
+                  backgroundColor: '#FCE7F3', shadowColor: '#EC4899',
+                  shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                },
+              ]}
+            >
               <Ionicons name="gift-outline" size={20} color="#EC4899" />
             </View>
             <View style={styles.bannerText}>
@@ -302,7 +331,15 @@ export default function BusinessHomeScreen() {
             <Ionicons name="document-text" size={48} color={C.textSecondary} />
             <Text style={[styles.emptyTitle, { color: C.text }]}>{t('business.home.noEventsTitle')}</Text>
             <Text style={[styles.emptyHint, { color: C.textSecondary }]}>{t('business.home.noEventsSub')}</Text>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.emptyBtn, { backgroundColor: C.brinjal1 }]} onPress={() => router.push('/create-campaign')}>
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+              style={[
+                styles.emptyBtn,
+                {
+                  backgroundColor: C.brinjal1, shadowColor: C.brinjal1,
+                  shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6,
+                },
+              ]}
+              onPress={() => router.push('/create-campaign')}>
               <Text style={styles.emptyBtnText}>{t('business.home.createEventBtn')}</Text>
             </Pressable>
           </View>
@@ -381,8 +418,8 @@ const styles = StyleSheet.create({
 
   // Quick actions
   quickActionsRow:  { flexDirection: 'row', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 4, gap: 10 },
-  quickAction:      { flex: 1, alignItems: 'center', borderRadius: RADIUS.lg, paddingVertical: 12, gap: 6, borderWidth: 1, ...SHADOW.card },
-  quickActionIcon:  { width: 40, height: 40, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center' },
+  quickAction:      { flex: 1, alignItems: 'center', borderRadius: RADIUS.lg, paddingVertical: 14, gap: 8, borderWidth: 1, ...SHADOW.card },
+  quickActionIcon:  { width: 44, height: 44, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center' },
   quickActionLabel: { fontSize: 11, fontFamily: F.medium, textAlign: 'center' },
 
   // Profile completion banner
@@ -440,6 +477,6 @@ const styles = StyleSheet.create({
   emptyWrap: { alignItems: 'center', paddingVertical: 48, gap: 10, paddingHorizontal: 32 },
   emptyTitle: { fontSize: 17, fontFamily: F.bold },
   emptyHint: { fontSize: 13, textAlign: 'center', lineHeight: 20, fontFamily: F.regular },
-  emptyBtn: { borderRadius: RADIUS.md, paddingHorizontal: 28, paddingVertical: 13, marginTop: 8 },
+  emptyBtn: { borderRadius: RADIUS.full, paddingHorizontal: 28, paddingVertical: 13, marginTop: 8 },
   emptyBtnText: { color: '#fff', fontSize: 14, fontFamily: F.bold },
 });

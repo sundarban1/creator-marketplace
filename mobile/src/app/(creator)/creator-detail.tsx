@@ -306,7 +306,15 @@ export default function CreatorPeerDetailScreen() {
                     key={p.key}
                     style={[s.socialRow, { borderColor: C.border }]}
                     onPress={() => canOpen ? Linking.openURL(p.profileUrl!).catch(() => {}) : null}>
-                    <View style={[s.socialIconWrap, { backgroundColor: info.color }]}>
+                    <View
+                      style={[
+                        s.socialIconWrap,
+                        {
+                          backgroundColor: info.color, shadowColor: info.color,
+                          shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                        },
+                      ]}
+                    >
                       <FontAwesome5 name={info.iconName} size={18} color="#fff" />
                     </View>
                     <View style={s.socialInfo}>
@@ -356,7 +364,15 @@ export default function CreatorPeerDetailScreen() {
                   key={link.id}
                   style={[s.portfolioRow, { borderColor: C.border }]}
                   onPress={() => Linking.openURL(link.url).catch(() => {})}>
-                  <View style={[s.portfolioIconWrap, { backgroundColor: C.primaryLight }]}>
+                  <View
+                    style={[
+                      s.portfolioIconWrap,
+                      {
+                        backgroundColor: C.primaryLight, shadowColor: C.brinjal1,
+                        shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                      },
+                    ]}
+                  >
                     <Ionicons name="link" size={16} color={C.brinjal1} />
                   </View>
                   <Text style={[s.portfolioLabel, { color: C.text }]} numberOfLines={1}>{link.label}</Text>
@@ -372,7 +388,13 @@ export default function CreatorPeerDetailScreen() {
       {/* Sticky action bar */}
       <View style={[msgBtn.bar, { backgroundColor: C.surface, borderTopColor: C.border, paddingBottom: Math.max(14, insets.bottom) }]}>
         {convStatus === 'ACCEPTED' ? (
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[msgBtn.btn, { backgroundColor: C.brinjal1 }]} onPress={openChat}>
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[
+              msgBtn.btn,
+              {
+                backgroundColor: C.brinjal1, shadowColor: C.brinjal1,
+                shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6,
+              },
+            ]} onPress={openChat}>
             <FontAwesome5 name="comment-dots" size={16} color="#fff" solid />
             <Text style={msgBtn.txt}>{t('creatorDetailExtra.openChat')}</Text>
           </Pressable>
@@ -381,7 +403,13 @@ export default function CreatorPeerDetailScreen() {
             <Text style={[msgBtn.txt, { color: '#fff' }]}>{t('creatorDetailExtra.requestSent')}</Text>
           </View>
         ) : (
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[msgBtn.btn, { backgroundColor: C.brinjal1 }]} onPress={openRequestModal}>
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[
+              msgBtn.btn,
+              {
+                backgroundColor: C.brinjal1, shadowColor: C.brinjal1,
+                shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6,
+              },
+            ]} onPress={openRequestModal}>
             <Text style={msgBtn.txt}>{t('creatorDetailExtra.sendMessage')}</Text>
           </Pressable>
         )}
@@ -413,7 +441,13 @@ export default function CreatorPeerDetailScreen() {
             />
             <Text style={[rm.counter, { color: C.textSecondary }]}>{requestMsg.length}/500</Text>
             <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-              style={[rm.sendBtn, { backgroundColor: sending ? C.border : C.brinjal1 }]}
+              style={[
+                rm.sendBtn,
+                {
+                  backgroundColor: sending ? C.border : C.brinjal1, shadowColor: C.brinjal1,
+                  shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6,
+                },
+              ]}
               onPress={handleSendRequest}
               disabled={sending}>
               <Text style={rm.sendTxt}>{sending ? t('creatorDetailExtra.sendingLabel') : t('creatorDetailExtra.sendRequestBtn')}</Text>
@@ -492,7 +526,7 @@ const s = StyleSheet.create({
 // Message button bar
 const msgBtn = StyleSheet.create({
   bar: { paddingHorizontal: 20, paddingVertical: 14, borderTopWidth: 1 },
-  btn: { borderRadius: RADIUS.md, height: 52, flexDirection: 'row', gap: 8, justifyContent: 'center', alignItems: 'center' },
+  btn: { borderRadius: RADIUS.full, height: 52, flexDirection: 'row', gap: 8, justifyContent: 'center', alignItems: 'center' },
   txt: { color: '#fff', fontSize: 16, fontFamily: F.bold },
 });
 
@@ -508,6 +542,6 @@ const rm = StyleSheet.create({
   subtitle:{ fontSize: 13, lineHeight: 20, fontFamily: F.regular },
   input:   { borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, minHeight: 100, textAlignVertical: 'top', fontFamily: F.regular },
   counter: { fontSize: 11, textAlign: 'right', marginTop: -6, fontFamily: F.regular },
-  sendBtn: { borderRadius: RADIUS.md, height: 52, justifyContent: 'center', alignItems: 'center' },
+  sendBtn: { borderRadius: RADIUS.full, height: 52, justifyContent: 'center', alignItems: 'center' },
   sendTxt: { color: '#fff', fontSize: 16, fontFamily: F.bold },
 });

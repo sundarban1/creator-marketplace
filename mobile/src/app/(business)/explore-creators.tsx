@@ -256,20 +256,21 @@ const fm = StyleSheet.create({
 
 // ─── Creator Avatar ───────────────────────────────────────────────────────────
 
-function CreatorAvatar({ avatarUrl, bg }: { avatarUrl: string | null; bg: string }) {
+function CreatorAvatar({ avatarUrl, bg, ringColor }: { avatarUrl: string | null; bg: string; ringColor: string }) {
   const [failed, setFailed] = useState(false);
+  const ring = { borderWidth: 2, borderColor: ringColor };
   if (avatarUrl && !failed) {
     return (
       <Image
         source={{ uri: avatarUrl }}
-        style={s.avatar}
+        style={[s.avatar, ring]}
         contentFit="cover"
         onError={() => setFailed(true)}
       />
     );
   }
   return (
-    <View style={[s.avatar, s.avatarPlaceholder, { backgroundColor: bg }]}>
+    <View style={[s.avatar, s.avatarPlaceholder, { backgroundColor: bg }, ring]}>
       <View style={s.avatarIconWrap}>
         <Ionicons name="person" size={30} color="rgba(91,33,182,0.55)" />
       </View>
@@ -285,6 +286,7 @@ function CreatorCard({ creator, isSaved, onToggleSave }: {
   onToggleSave: () => void;
 }) {
   const C = useAppColors();
+  const { t } = useLanguage();
   const { categories: allCategories } = useAllCategories();
   const { platforms: allPlatforms } = usePlatforms();
   const meta = firstCategoryMeta(allCategories, creator.categories);
@@ -298,11 +300,10 @@ function CreatorCard({ creator, isSaved, onToggleSave }: {
     <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
       style={({ pressed }) => [s.card, { backgroundColor: C.surface }, pressed && { opacity: 0.92 }]}
       onPress={() => router.push({ pathname: '/(business)/creator-detail', params: { id: creator.id } })}>
-      <View style={[s.cardAccent, { backgroundColor: meta.color }]} />
       <View style={s.cardBody}>
         {/* Header row */}
         <View style={s.cardHeader}>
-          <CreatorAvatar avatarUrl={creator.avatarUrl} bg={meta.bg} />
+          <CreatorAvatar avatarUrl={creator.avatarUrl} bg={meta.bg} ringColor={meta.color} />
 
           <View style={s.cardMeta}>
             <View style={s.nameRow}>
@@ -318,7 +319,11 @@ function CreatorCard({ creator, isSaved, onToggleSave }: {
           </View>
 
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-            style={[s.saveBtn, { backgroundColor: isSaved ? C.primaryLight : C.background, borderColor: isSaved ? C.brinjal1 : C.border }]}
+            style={[
+              s.saveBtn,
+              { backgroundColor: isSaved ? C.primaryLight : C.background, borderColor: isSaved ? C.brinjal1 : C.border },
+              isSaved && { shadowColor: C.brinjal1, shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
+            ]}
             onPress={onToggleSave}
             hitSlop={8}>
             <Ionicons name={isSaved ? 'bookmark' : 'bookmark-outline'} size={18} color={isSaved ? C.brinjal1 : C.textSecondary} />
@@ -330,8 +335,8 @@ function CreatorCard({ creator, isSaved, onToggleSave }: {
           <Text style={[s.bio, { color: C.textSecondary }]} numberOfLines={2}>{creator.bio}</Text>
         ) : null}
 
-        {/* One consolidated stat row: primary category + top platform reach */}
-        <View style={[s.statRow, { borderTopColor: C.border }]}>
+        {/* One consolidated stat row: primary category + top platform reach — a soft tray, not a divider line */}
+        <View style={[s.statRow, { backgroundColor: C.background }]}>
           {creator.categories.length > 0 && (
             <View style={[s.catPill, { backgroundColor: meta.bg }]}>
               <FontAwesome5 name={meta.icon} size={10} color={meta.color} />
@@ -345,6 +350,11 @@ function CreatorCard({ creator, isSaved, onToggleSave }: {
               <Text style={[s.platformCount, { color: C.text }]}>{formatFollowers(topAccount.followers)}</Text>
             </View>
           ) : null}
+        </View>
+
+        <View style={[s.viewBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }]}>
+          <Text style={s.viewBtnText}>{t('explore.viewProfile')}</Text>
+          <Ionicons name="arrow-forward" size={14} color="#fff" />
         </View>
       </View>
     </Pressable>
@@ -536,7 +546,11 @@ export default function ExploreCreatorsScreen() {
           )}
         </View>
         <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-          style={[s.filterBtn, { backgroundColor: filterActive ? C.brinjal1 : C.surface, borderColor: filterActive ? C.brinjal1 : C.border }]}
+          style={[
+            s.filterBtn,
+            { backgroundColor: filterActive ? C.brinjal1 : C.surface, borderColor: filterActive ? C.brinjal1 : C.border },
+            filterActive && { shadowColor: C.brinjal1, shadowOpacity: 0.35, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 5 },
+          ]}
           onPress={openFilter}>
           <Ionicons name="options-outline" size={20} color={filterActive ? '#fff' : C.brinjal1} />
           {filterActive && (
@@ -708,25 +722,32 @@ const s = StyleSheet.create({
 
   list: { paddingHorizontal: 20, paddingBottom: 40, gap: 14 },
 
-  card: { flexDirection: 'row', borderRadius: RADIUS.lg, overflow: 'hidden', ...SHADOW.card },
-  cardAccent: { width: 4 },
-  cardBody: { flex: 1, padding: 14, gap: 10 },
+  card: { borderRadius: RADIUS.lg, overflow: 'hidden', ...SHADOW.raised },
+  cardBody: { padding: 16, gap: 12 },
   cardHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   avatar: { width: 60, height: 60, borderRadius: RADIUS.md, flexShrink: 0 },
   avatarPlaceholder: { justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
   avatarIconWrap: { alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' },
   cardMeta: { flex: 1, gap: 4, justifyContent: 'center' },
-  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  name: { fontSize: 15, flexShrink: 1, fontFamily: F.bold },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
+  name: { fontSize: 16, flexShrink: 1, letterSpacing: -0.3, fontFamily: F.bold },
   locationRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   location: { fontSize: 12, fontFamily: F.regular },
   platformStat: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   platformCount: { fontSize: 12, fontFamily: F.bold },
-  saveBtn: { width: 34, height: 34, borderRadius: RADIUS.sm, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  saveBtn: { width: 36, height: 36, borderRadius: RADIUS.full, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   bio: { fontSize: 13, lineHeight: 19, fontFamily: F.regular },
-  statRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, paddingTop: 10, borderTopWidth: StyleSheet.hairlineWidth },
-  catPill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 5, borderRadius: RADIUS.sm, flexShrink: 1 },
+  statRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, borderRadius: RADIUS.md, paddingHorizontal: 10, paddingVertical: 8 },
+  catPill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 5, borderRadius: RADIUS.full, flexShrink: 1 },
   catLabel: { fontSize: 11, fontFamily: F.bold, flexShrink: 1 },
+
+  // CTA — echoes the bold pill button on the home page's Featured/Nearby cards
+  viewBtn: {
+    height: 38, borderRadius: RADIUS.full, marginTop: 2,
+    flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6,
+    shadowOpacity: 0.3, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5,
+  },
+  viewBtnText: { color: '#fff', fontSize: 13, fontFamily: F.bold },
 
   footerWrap: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 20, marginTop: 8, marginBottom: 36, gap: 10 },
   footerLine: { flex: 1, height: 1 },

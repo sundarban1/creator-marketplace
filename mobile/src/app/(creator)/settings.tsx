@@ -194,7 +194,15 @@ function SwitchRow({ label, faIcon, faIconColor, value, onChange, isLast = false
   return (
     <View style={[styles.row, !isLast && { borderBottomWidth: 1, borderBottomColor: C.border }]}>
       {faIcon ? (
-        <View style={[styles.navIonIconWrap, { backgroundColor: iColor + '18' }]}>
+        <View
+          style={[
+            styles.navIonIconWrap,
+            {
+              backgroundColor: iColor + '18', shadowColor: iColor,
+              shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+            },
+          ]}
+        >
           <FontAwesome5 name={faIcon as any} size={16} color={iColor} />
         </View>
       ) : null}
@@ -217,11 +225,27 @@ function NavRow({ faIcon, faIconColor, ionIcon, ionIconColor, label, value, onPr
   return (
     <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.row, !isLast && { borderBottomWidth: 1, borderBottomColor: C.border }]} onPress={onPress}>
       {ionIcon ? (
-        <View style={[styles.navIonIconWrap, { backgroundColor: iColor + '18' }]}>
+        <View
+          style={[
+            styles.navIonIconWrap,
+            {
+              backgroundColor: iColor + '18', shadowColor: iColor,
+              shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+            },
+          ]}
+        >
           <Ionicons name={ionIcon} size={18} color={iColor} />
         </View>
       ) : faIcon ? (
-        <View style={[styles.navIonIconWrap, { backgroundColor: (danger ? C.error : iColor) + '18' }]}>
+        <View
+          style={[
+            styles.navIonIconWrap,
+            {
+              backgroundColor: (danger ? C.error : iColor) + '18', shadowColor: danger ? C.error : iColor,
+              shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+            },
+          ]}
+        >
           <FontAwesome5 name={faIcon as any} size={16} color={danger ? C.error : iColor} />
         </View>
       ) : null}
@@ -265,7 +289,15 @@ function AccordionRow({ title, body, iconColor, icon, emoji, open, onToggle }: A
       style={[styles.accordionCard, { backgroundColor: C.surface, borderColor: open ? iconColor : C.border }]}
       onPress={onToggle}>
       <View style={styles.accordionHeader}>
-        <View style={[styles.accordionIconWrap, { backgroundColor: iconColor + '18' }]}>
+        <View
+          style={[
+            styles.accordionIconWrap,
+            {
+              backgroundColor: iconColor + '18', shadowColor: iconColor,
+              shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+            },
+          ]}
+        >
           {emoji ? (
             <Text style={styles.accordionEmoji}>{emoji}</Text>
           ) : icon ? (
@@ -1026,7 +1058,13 @@ export default function CreatorSettingsScreen() {
               />
             </View>
             <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-              style={[styles.saveBtn, { backgroundColor: C.brinjal1, opacity: (supportMsg.trim() && supportTopic && !supportSubmitting) ? 1 : 0.45 }]}
+              style={[
+                styles.saveBtn,
+                {
+                  backgroundColor: C.brinjal1, opacity: (supportMsg.trim() && supportTopic && !supportSubmitting) ? 1 : 0.45,
+                  shadowColor: C.brinjal1, shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6,
+                },
+              ]}
               onPress={handleSupportSubmit}
               disabled={supportSubmitting}>
               <Text style={styles.saveBtnText}>{supportSubmitting ? t('creatorSettings.sendingMsg') : t('creatorSettings.sendMessageBtn')}</Text>
@@ -1078,7 +1116,13 @@ export default function CreatorSettingsScreen() {
               />
             </View>
             <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-              style={[styles.saveBtn, { backgroundColor: C.error, opacity: (reportDesc.trim() && reportType && !reportSubmitting) ? 1 : 0.45 }]}
+              style={[
+                styles.saveBtn,
+                {
+                  backgroundColor: C.error, opacity: (reportDesc.trim() && reportType && !reportSubmitting) ? 1 : 0.45,
+                  shadowColor: C.error, shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6,
+                },
+              ]}
               onPress={handleReportSubmit}
               disabled={reportSubmitting}>
               <Text style={styles.saveBtnText}>{reportSubmitting ? t('creatorSettings.submittingReport') : t('creatorSettings.submitReportBtn')}</Text>
@@ -1281,7 +1325,15 @@ export default function CreatorSettingsScreen() {
             const isLast = idx === CONNECTABLE_SOCIAL_PLATFORMS.length - 1;
             return (
               <View key={p.id} style={[styles.row, styles.socialRow, !isLast && { borderBottomWidth: 1, borderBottomColor: C.border }]}>
-                <View style={[styles.socialIconWrap, { backgroundColor: p.color + '18' }]}>
+                <View
+                  style={[
+                    styles.socialIconWrap,
+                    {
+                      backgroundColor: p.color + '18', shadowColor: p.color,
+                      shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                    },
+                  ]}
+                >
                   <PlatformIcon iconName={p.iconName} size={20} color={p.color} />
                 </View>
                 <View style={{ flex: 1 }}>
@@ -1552,7 +1604,15 @@ export default function CreatorSettingsScreen() {
               const isLast = idx === portfolio.length - 1;
               return (
                 <View key={item.id} style={[styles.row, styles.socialRow, !isLast && { borderBottomWidth: 1, borderBottomColor: C.border }]}>
-                  <View style={[styles.socialIconWrap, { backgroundColor: cfg.color + '18' }]}>
+                  <View
+                    style={[
+                      styles.socialIconWrap,
+                      {
+                        backgroundColor: cfg.color + '18', shadowColor: cfg.color,
+                        shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                      },
+                    ]}
+                  >
                     <PlatformIcon iconName={cfg.iconName} iconLib={cfg.iconLib} size={20} color={cfg.color} />
                   </View>
                   <View style={{ flex: 1 }}>
@@ -1775,7 +1835,15 @@ export default function CreatorSettingsScreen() {
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
             style={[styles.row, { borderBottomWidth: 1, borderBottomColor: C.border }]}
             onPress={() => setShowChangePassword((v) => !v)}>
-            <View style={[styles.navIonIconWrap, { backgroundColor: '#D9770618' }]}>
+            <View
+              style={[
+                styles.navIonIconWrap,
+                {
+                  backgroundColor: '#D9770618', shadowColor: '#D97706',
+                  shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                },
+              ]}
+            >
               <FontAwesome5 name="key" size={16} color="#D97706" />
             </View>
             <Text style={[styles.rowLabel, { color: C.text }]}>{t('creatorSettings.subChangePassword')}</Text>
@@ -1833,7 +1901,15 @@ export default function CreatorSettingsScreen() {
                 {cPwError ? <Text style={[styles.fieldError, { color: C.error }]}>{cPwError}</Text> : null}
               </View>
 
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.saveBtn, { backgroundColor: C.brinjal1 }]} onPress={handleChangePassword}>
+              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                style={[
+                  styles.saveBtn,
+                  {
+                    backgroundColor: C.brinjal1,
+                    shadowColor: C.brinjal1, shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6,
+                  },
+                ]}
+                onPress={handleChangePassword}>
                 <Text style={styles.saveBtnText}>{t('creatorSettings.updatePasswordBtn')}</Text>
               </Pressable>
 
@@ -1863,7 +1939,15 @@ export default function CreatorSettingsScreen() {
               if (emailVerified !== false) return;
               if (emailSubPage) closeEmail(); else setEmailSubPage('input');
             }}>
-            <View style={[styles.navIonIconWrap, { backgroundColor: '#0891B218' }]}>
+            <View
+              style={[
+                styles.navIonIconWrap,
+                {
+                  backgroundColor: '#0891B218', shadowColor: '#0891B2',
+                  shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                },
+              ]}
+            >
               <Ionicons name="mail-outline" size={18} color="#0891B2" />
             </View>
             <Text style={[styles.rowLabel, { color: C.text }]}>{t('creatorSettings.emailLabel')}</Text>
@@ -1904,7 +1988,13 @@ export default function CreatorSettingsScreen() {
                 />
               </View>
               <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                style={[styles.saveBtn, { backgroundColor: C.brinjal1, opacity: (emailInput.trim() && !emailOtpLoading) ? 1 : 0.45 }]}
+                style={[
+                  styles.saveBtn,
+                  {
+                    backgroundColor: C.brinjal1, opacity: (emailInput.trim() && !emailOtpLoading) ? 1 : 0.45,
+                    shadowColor: C.brinjal1, shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6,
+                  },
+                ]}
                 onPress={handleRequestEmailOtp}
                 disabled={emailOtpLoading || !emailInput.trim()}>
                 <Text style={styles.saveBtnText}>{emailOtpLoading ? t('creatorSettings.sendingOtp') : t('creatorSettings.sendVerificationCode')}</Text>
@@ -1937,7 +2027,13 @@ export default function CreatorSettingsScreen() {
                 />
               </View>
               <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                style={[styles.saveBtn, { backgroundColor: C.brinjal1, opacity: (emailOtp.length === 6 && !emailOtpLoading) ? 1 : 0.45 }]}
+                style={[
+                  styles.saveBtn,
+                  {
+                    backgroundColor: C.brinjal1, opacity: (emailOtp.length === 6 && !emailOtpLoading) ? 1 : 0.45,
+                    shadowColor: C.brinjal1, shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6,
+                  },
+                ]}
                 onPress={handleVerifyEmailOtp}
                 disabled={emailOtpLoading || emailOtp.length < 6}>
                 <Text style={styles.saveBtnText}>{emailOtpLoading ? t('creatorSettings.verifyingOtp') : t('creatorSettings.verifyBtnLabel')}</Text>
@@ -1953,7 +2049,15 @@ export default function CreatorSettingsScreen() {
               if (phoneVerified === true) return;
               if (phoneSubPage) closePhone(); else setPhoneSubPage('input');
             }}>
-            <View style={[styles.navIonIconWrap, { backgroundColor: '#10B98118' }]}>
+            <View
+              style={[
+                styles.navIonIconWrap,
+                {
+                  backgroundColor: '#10B98118', shadowColor: '#10B981',
+                  shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                },
+              ]}
+            >
               <Ionicons name="call-outline" size={18} color="#10B981" />
             </View>
             <View style={{ flex: 1 }}>
@@ -1998,7 +2102,13 @@ export default function CreatorSettingsScreen() {
                 />
               </View>
               <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                style={[styles.saveBtn, { backgroundColor: C.brinjal1, opacity: (phoneNumber.trim() && !phoneLoading) ? 1 : 0.45 }]}
+                style={[
+                  styles.saveBtn,
+                  {
+                    backgroundColor: C.brinjal1, opacity: (phoneNumber.trim() && !phoneLoading) ? 1 : 0.45,
+                    shadowColor: C.brinjal1, shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6,
+                  },
+                ]}
                 onPress={handleRequestPhoneOtp}
                 disabled={phoneLoading || !phoneNumber.trim()}>
                 <Text style={styles.saveBtnText}>{phoneLoading ? t('creatorSettings.sendingOtp') : t('creatorSettings.sendVerificationCode')}</Text>
@@ -2031,7 +2141,13 @@ export default function CreatorSettingsScreen() {
                 />
               </View>
               <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                style={[styles.saveBtn, { backgroundColor: C.brinjal1, opacity: (phoneOtp.length === 6 && !phoneLoading) ? 1 : 0.45 }]}
+                style={[
+                  styles.saveBtn,
+                  {
+                    backgroundColor: C.brinjal1, opacity: (phoneOtp.length === 6 && !phoneLoading) ? 1 : 0.45,
+                    shadowColor: C.brinjal1, shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6,
+                  },
+                ]}
                 onPress={handleVerifyPhoneOtp}
                 disabled={phoneLoading || phoneOtp.length < 6}>
                 <Text style={styles.saveBtnText}>{phoneLoading ? t('creatorSettings.verifyingOtp') : t('creatorSettings.verifyBtnLabel')}</Text>
@@ -2047,7 +2163,15 @@ export default function CreatorSettingsScreen() {
             style={[styles.row, { borderBottomWidth: 1, borderBottomColor: C.border }]}
             disabled={citizenshipUploading || citizenshipStatus === 'PENDING' || citizenshipStatus === 'APPROVED'}
             onPress={handleUploadCitizenship}>
-            <View style={[styles.navIonIconWrap, { backgroundColor: '#6366F118' }]}>
+            <View
+              style={[
+                styles.navIonIconWrap,
+                {
+                  backgroundColor: '#6366F118', shadowColor: '#6366F1',
+                  shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                },
+              ]}
+            >
               <Ionicons name="card-outline" size={18} color="#6366F1" />
             </View>
             <Text style={[styles.rowLabel, { color: C.text }]}>{t('creatorSettings.uploadCitizenshipLabel')}</Text>
@@ -2076,7 +2200,15 @@ export default function CreatorSettingsScreen() {
             style={[styles.row, { borderBottomWidth: 1, borderBottomColor: C.border }]}
             disabled={panUploading || panStatus === 'PENDING' || panStatus === 'APPROVED'}
             onPress={handleUploadPan}>
-            <View style={[styles.navIonIconWrap, { backgroundColor: '#6366F118' }]}>
+            <View
+              style={[
+                styles.navIonIconWrap,
+                {
+                  backgroundColor: '#6366F118', shadowColor: '#6366F1',
+                  shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                },
+              ]}
+            >
               <Ionicons name="document-text-outline" size={18} color="#6366F1" />
             </View>
             <Text style={[styles.rowLabel, { color: C.text }]}>{t('creatorSettings.uploadPanLabel')}</Text>
@@ -2102,7 +2234,15 @@ export default function CreatorSettingsScreen() {
 
           {/* Creator Badge row */}
           <View style={styles.row}>
-            <View style={[styles.navIonIconWrap, { backgroundColor: '#F59E0B18' }]}>
+            <View
+              style={[
+                styles.navIonIconWrap,
+                {
+                  backgroundColor: '#F59E0B18', shadowColor: '#F59E0B',
+                  shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                },
+              ]}
+            >
               <Ionicons name="ribbon-outline" size={18} color="#F59E0B" />
             </View>
             <Text style={[styles.rowLabel, { color: C.text }]}>{t('creatorSettings.creatorBadgeLabel')}</Text>
@@ -2229,7 +2369,15 @@ export default function CreatorSettingsScreen() {
         <Card>
           <SwitchRow faIcon="moon" faIconColor="#6366F1" label={t('creatorSettings.darkModeLabel')} value={isDark} onChange={toggleDark} />
           <View style={[styles.row, { borderBottomWidth: 1, borderBottomColor: C.border }]}>
-            <View style={[styles.navIonIconWrap, { backgroundColor: '#3B82F618' }]}>
+            <View
+              style={[
+                styles.navIonIconWrap,
+                {
+                  backgroundColor: '#3B82F618', shadowColor: '#3B82F6',
+                  shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                },
+              ]}
+            >
               <FontAwesome5 name="info-circle" size={16} color="#3B82F6" />
             </View>
             <Text style={[styles.rowLabel, { color: C.text }]}>{t('creatorSettings.appVersionLabel')}</Text>
@@ -2292,7 +2440,15 @@ export default function CreatorSettingsScreen() {
         <Modal visible={showDeactivateModal} transparent animationType="fade" onRequestClose={() => setShowDeactivateModal(false)}>
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.confirmOverlay} onPress={() => { if (!accountActionLoading) setShowDeactivateModal(false); }}>
             <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.confirmCard, { backgroundColor: C.surface }]} onPress={() => {}}>
-              <View style={[styles.confirmIconWrap, { backgroundColor: '#FFF7ED' }]}>
+              <View
+                style={[
+                  styles.confirmIconWrap,
+                  {
+                    backgroundColor: '#FFF7ED', shadowColor: '#F59E0B',
+                    shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                  },
+                ]}
+              >
                 <FontAwesome5 name="pause-circle" size={26} color="#F59E0B" />
               </View>
               <Text style={[styles.confirmTitle, { color: C.text }]}>{t('creatorSettings.deactivateTitle')}</Text>
@@ -2305,7 +2461,13 @@ export default function CreatorSettingsScreen() {
                   <Text style={[styles.confirmCancelText, { color: C.text }]}>{t('common.cancel')}</Text>
                 </Pressable>
                 <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                  style={[styles.confirmActionBtn, { backgroundColor: '#F97316', opacity: accountActionLoading ? 0.6 : 1 }]}
+                  style={[
+                    styles.confirmActionBtn,
+                    {
+                      backgroundColor: '#F97316', opacity: accountActionLoading ? 0.6 : 1,
+                      shadowColor: '#F97316', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                    },
+                  ]}
                   onPress={confirmDeactivate}
                   disabled={accountActionLoading}>
                   <Text style={styles.confirmActionText}>{accountActionLoading ? t('creatorSettings.deactivatingBtn') : t('creatorSettings.deactivateConfirmBtn')}</Text>
@@ -2323,7 +2485,15 @@ export default function CreatorSettingsScreen() {
                 <FontAwesome5 name="exclamation-triangle" size={14} color="#DC2626" solid />
                 <Text style={[styles.dangerBannerText, { color: '#DC2626' }]}>{t('creatorSettings.deletePermanentWarning')}</Text>
               </View>
-              <View style={[styles.confirmIconWrap, { backgroundColor: '#FEF2F2' }]}>
+              <View
+                style={[
+                  styles.confirmIconWrap,
+                  {
+                    backgroundColor: '#FEF2F2', shadowColor: '#DC2626',
+                    shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                  },
+                ]}
+              >
                 <FontAwesome5 name="trash-alt" size={26} color="#DC2626" />
               </View>
               <Text style={[styles.confirmTitle, { color: '#DC2626' }]}>{t('creatorSettings.deleteTitle')}</Text>
@@ -2343,7 +2513,13 @@ export default function CreatorSettingsScreen() {
                   <Text style={[styles.confirmCancelText, { color: C.text }]}>{t('common.cancel')}</Text>
                 </Pressable>
                 <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                  style={[styles.confirmActionBtn, { backgroundColor: '#DC2626', opacity: accountActionLoading ? 0.6 : 1 }]}
+                  style={[
+                    styles.confirmActionBtn,
+                    {
+                      backgroundColor: '#DC2626', opacity: accountActionLoading ? 0.6 : 1,
+                      shadowColor: '#DC2626', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                    },
+                  ]}
                   onPress={confirmDelete}
                   disabled={accountActionLoading}>
                   <Text style={styles.confirmActionText}>{accountActionLoading ? t('creatorSettings.deletingBtn') : t('creatorSettings.deleteConfirmBtn')}</Text>
@@ -2564,7 +2740,7 @@ const styles = StyleSheet.create({
   formTextarea: { borderRadius: RADIUS.sm, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, minHeight: 120, fontFamily: F.regular },
   fieldError: { fontSize: 12, fontFamily: F.medium },
   formActions: { flexDirection: 'row', gap: 8 },
-  saveBtn: { borderRadius: RADIUS.sm, paddingVertical: 11, alignItems: 'center' },
+  saveBtn: { borderRadius: RADIUS.full, paddingVertical: 11, alignItems: 'center' },
   saveBtnText: { fontSize: 14, color: '#fff', fontFamily: F.bold },
   cancelBtn: { borderRadius: RADIUS.sm, paddingVertical: 11, alignItems: 'center' },
   cancelBtnText: { fontSize: 14, fontFamily: F.semibold },

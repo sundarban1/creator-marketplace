@@ -45,7 +45,15 @@ function StatTile({ icon, label, value, sub, subPositive, C }: {
   return (
     <View style={[s.tile, { backgroundColor: C.surface, borderColor: C.border }]}>
       <View style={s.tileHeader}>
-        <View style={[s.tileIconWrap, { backgroundColor: C.primaryLight }]}>
+        <View
+          style={[
+            s.tileIconWrap,
+            {
+              backgroundColor: C.primaryLight, shadowColor: C.brinjal1,
+              shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5,
+            },
+          ]}
+        >
           {icon === 'star-outline'
             ? <FontAwesome5 name="star" solid size={14} color={C.brinjal1} />
             : <Ionicons name={icon as never} size={17} color={C.brinjal1} />}

@@ -8,11 +8,11 @@ import { displayCategory } from '@/features/creator/data/filterOptions';
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { getTemplateImage } from '@/features/creator/data/templateImages';
 import type { Campaign } from '@/types';
-import { F } from '@/utilities/constants';
+import { F, RADIUS, SHADOW } from '@/utilities/constants';
 
 
-const CARD_W    = 216;
-const CARD_IMG_H = 148;
+const CARD_W    = 244;
+const CARD_IMG_H = 188;
 
 function timeAgo(iso: string, t: TFn): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -59,7 +59,7 @@ export function FeaturedCard({ campaign }: { campaign: Campaign }) {
       onPress={goToDetail}>
       <View style={[styles.featCard, { backgroundColor: C.surface }]}>
 
-        {/* ── Image ── */}
+        {/* ── Image — full-bleed, minimal chrome ── */}
         <View style={[styles.featImg, { backgroundColor: catMeta.bg }]}>
           {/* Category icon always shown as background */}
           <FontAwesome5 name={catMeta.icon} size={48} color={catMeta.color} style={styles.featImgIcon} />
@@ -68,48 +68,47 @@ export function FeaturedCard({ campaign }: { campaign: Campaign }) {
           {cardImage && (
             <Image source={{ uri: cardImage }} style={StyleSheet.absoluteFill} contentFit="cover" />
           )}
-          {cardImage && <View style={styles.imgOverlay} />}
 
-          {/* Category badge — top left */}
-          <View style={[styles.badge, { backgroundColor: C.badgeFeatured }]}>
+          {/* Category badge — top left, translucent pill */}
+          <View style={styles.badge}>
             <Text style={styles.badgeText}>{displayCategory(campaign.category).toUpperCase()}</Text>
           </View>
 
-          {/* NEW tag — top right */}
+          {/* NEW tag — top right, translucent pill */}
           {campaign.isNew && (
             <View style={[styles.newTag, { backgroundColor: C.badgeNew }]}>
               <Text style={styles.badgeText}>{t('campaignCard.new')}</Text>
             </View>
           )}
-
-          {/* Brand pill — bottom left */}
-          <View style={styles.brandPill}>
-            <View style={[styles.brandAvatar, { backgroundColor: C.brinjal1 }]}>
-              <Text style={styles.brandAvatarText}>{campaign.brand[0]}</Text>
-            </View>
-            <Text style={styles.brandPillName} numberOfLines={1}>{campaign.brand}</Text>
-          </View>
-
         </View>
 
         {/* ── Body ── */}
         <View style={styles.featBody}>
+          {/* Brand row */}
+          <View style={styles.brandRow}>
+            <View style={[styles.brandAvatar, { backgroundColor: C.brinjal1 }]}>
+              <Text style={styles.brandAvatarText}>{campaign.brand[0]}</Text>
+            </View>
+            <Text style={[styles.brandName, { color: C.textSecondary }]} numberOfLines={1}>{campaign.brand}</Text>
+          </View>
+
+          {/* Title — the card's editorial focal point */}
           <Text style={[styles.featTitle, { color: C.text }]} numberOfLines={2}>
             {campaign.title}
           </Text>
 
-          {/* Budget chip */}
-          <View style={[styles.budgetChip, { backgroundColor: C.primaryLight, alignSelf: 'flex-start' }]}>
-            <Text style={[styles.budgetText, { color: C.brinjal1 }]} numberOfLines={1}>{campaign.budget}</Text>
+          {/* Location — paired tightly under the title */}
+          <View style={styles.locationRow}>
+            <Ionicons name="location-outline" size={12} color={C.textSecondary} />
+            <Text style={[styles.locationText, { color: C.textSecondary }]} numberOfLines={1}>
+              {campaign.location ?? t('campaignCard.nepalFallback')}
+            </Text>
           </View>
 
-          {/* Location + type row */}
+          {/* Budget + type */}
           <View style={styles.metaRow}>
-            <View style={styles.deadlineRow}>
-              <Ionicons name="location-outline" size={11} color={C.textSecondary} />
-              <Text style={[styles.metaText, { color: C.textSecondary }]} numberOfLines={1}>
-                {campaign.location ?? t('campaignCard.nepalFallback')}
-              </Text>
+            <View style={[styles.budgetChip, { backgroundColor: C.primaryLight }]}>
+              <Text style={[styles.budgetText, { color: C.brinjal1 }]} numberOfLines={1}>{campaign.budget}</Text>
             </View>
             {campaign.campaignType === 'OPEN_EVENT' ? (
               <View style={[styles.typePill, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}>
@@ -122,7 +121,7 @@ export function FeaturedCard({ campaign }: { campaign: Campaign }) {
             )}
           </View>
 
-          {/* Posted + expiry row */}
+          {/* Posted + expiry */}
           {(() => {
             const expiry = expiryLabel(campaign.deadline, t);
             return (
@@ -143,8 +142,9 @@ export function FeaturedCard({ campaign }: { campaign: Campaign }) {
             );
           })()}
 
-          <View style={[styles.applyBtn, { backgroundColor: C.brinjal1 }]}>
+          <View style={[styles.applyBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }]}>
             <Text style={styles.applyBtnText}>{t('campaignCard.applyNow')}</Text>
+            <Ionicons name="arrow-forward" size={14} color="#fff" />
           </View>
         </View>
       </View>
@@ -156,43 +156,47 @@ export function FeaturedCard({ campaign }: { campaign: Campaign }) {
 const styles = StyleSheet.create({
   featCardWrap: {
     width: CARD_W,
-    shadowColor: '#000', shadowOpacity: 0.09, shadowRadius: 14,
-    shadowOffset: { width: 0, height: 5 }, elevation: 6,
+    ...SHADOW.floating,
+    shadowColor: '#000',
   },
-  featCard:    { width: CARD_W, borderRadius: 20, overflow: 'hidden' },
+  featCard:    { width: CARD_W, borderRadius: RADIUS.md, overflow: 'hidden' },
   featImg:     { width: CARD_W, height: CARD_IMG_H, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
   featImgIcon: { opacity: 0.35 },
-  imgOverlay:  { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.18)' },
 
-  badge:     { position: 'absolute', top: 10, left: 10, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
-  badgeText: { fontSize: 9, color: '#fff', letterSpacing: 0.6, fontFamily: F.extrabold },
-  newTag:    { position: 'absolute', top: 10, right: 10, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
-
-  brandPill: {
-    position: 'absolute', bottom: 10, left: 10,
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: 'rgba(255,255,255,0.93)',
-    borderRadius: 20, paddingHorizontal: 8, paddingVertical: 4,
-    maxWidth: CARD_W - 60,
+  badge: {
+    position: 'absolute', top: 12, left: 12,
+    backgroundColor: 'rgba(17,24,39,0.55)',
+    paddingHorizontal: 9, paddingVertical: 4, borderRadius: RADIUS.full,
   },
-  brandAvatar:     { width: 20, height: 20, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
+  badgeText: { fontSize: 9, color: '#fff', letterSpacing: 0.4, fontFamily: F.semibold },
+  newTag:    { position: 'absolute', top: 12, right: 12, paddingHorizontal: 9, paddingVertical: 4, borderRadius: RADIUS.full },
+
+  featBody:  { padding: 14, gap: 6 },
+
+  brandRow:        { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 },
+  brandAvatar:     { width: 18, height: 18, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
   brandAvatarText: { fontSize: 9, color: '#fff', fontFamily: F.extrabold },
-  brandPillName:   { fontSize: 11, flexShrink: 1, color: '#111', fontFamily: F.semibold },
+  brandName:       { fontSize: 11, fontFamily: F.medium, flexShrink: 1 },
 
-  featBody:  { padding: 14, gap: 9 },
-  featTitle: { fontSize: 14, lineHeight: 20, fontFamily: F.bold },
+  featTitle: { fontSize: 16, lineHeight: 22, fontFamily: F.bold },
 
-  budgetChip:  { borderRadius: 8, paddingHorizontal: 9, paddingVertical: 4 },
-  budgetText:  { fontSize: 13, fontFamily: F.extrabold },
+  locationRow:  { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 4 },
+  locationText: { fontSize: 12, fontFamily: F.medium, flexShrink: 1 },
 
   metaRow:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 },
-  metaText:    { fontSize: 11, fontFamily: F.regular, flexShrink: 1 },
   deadlineRow: { flexDirection: 'row', alignItems: 'center', gap: 3, flexShrink: 0 },
   deadlineText:{ fontSize: 11, fontFamily: F.medium },
 
-  typePill:     { borderRadius: 8, paddingHorizontal: 7, paddingVertical: 2, borderWidth: 1, flexShrink: 0 },
+  budgetChip:  { borderRadius: RADIUS.sm, paddingHorizontal: 9, paddingVertical: 4 },
+  budgetText:  { fontSize: 13, fontFamily: F.extrabold },
+
+  typePill:     { borderRadius: RADIUS.sm, paddingHorizontal: 7, paddingVertical: 2, borderWidth: 1, flexShrink: 0 },
   typePillText: { fontSize: 10, fontFamily: F.bold },
 
-  applyBtn:     { height: 38, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginTop: 2 },
+  applyBtn: {
+    height: 40, borderRadius: RADIUS.full, marginTop: 4,
+    flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6,
+    shadowOpacity: 0.32, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5,
+  },
   applyBtnText: { color: '#fff', fontSize: 13, fontFamily: F.bold },
 });

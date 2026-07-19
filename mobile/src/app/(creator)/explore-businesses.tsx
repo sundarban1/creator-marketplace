@@ -148,14 +148,15 @@ const fm = StyleSheet.create({
 
 // ─── Business Avatar ──────────────────────────────────────────────────────────
 
-function BusinessAvatar({ name, logoUrl, size = 56 }: { name: string; logoUrl: string | null; size?: number }) {
+function BusinessAvatar({ name, logoUrl, size = 60, ringColor }: { name: string; logoUrl: string | null; size?: number; ringColor?: string }) {
   const C = useAppColors();
   const initials = name.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+  const ring = ringColor ? { borderWidth: 2, borderColor: ringColor } : null;
   if (logoUrl) {
-    return <Image source={{ uri: logoUrl }} style={{ width: size, height: size, borderRadius: size * 0.28 }} contentFit="cover" />;
+    return <Image source={{ uri: logoUrl }} style={[{ width: size, height: size, borderRadius: RADIUS.md }, ring]} contentFit="cover" />;
   }
   return (
-    <View style={{ width: size, height: size, borderRadius: size * 0.28, backgroundColor: C.primaryLight, alignItems: 'center', justifyContent: 'center' }}>
+    <View style={[{ width: size, height: size, borderRadius: RADIUS.md, backgroundColor: C.primaryLight, alignItems: 'center', justifyContent: 'center' }, ring]}>
       <Text style={{ fontSize: size * 0.36, color: C.brinjal1, fontFamily: F.bold }}>{initials}</Text>
     </View>
   );
@@ -183,11 +184,10 @@ function BusinessCard({
     <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
       style={[styles.card, { backgroundColor: C.surface }]}
       onPress={() => router.push({ pathname: '/(creator)/business-detail', params: { id: item.id } } as never)}>
-      <View style={[styles.cardAccent, { backgroundColor: primaryMeta?.color ?? C.brinjal1 }]} />
       <View style={styles.cardBody}>
         {/* Top section */}
         <View style={styles.cardTop}>
-          <BusinessAvatar name={item.businessName} logoUrl={item.logoUrl} size={56} />
+          <BusinessAvatar name={item.businessName} logoUrl={item.logoUrl} ringColor={primaryMeta?.color ?? C.brinjal1} />
 
           <View style={styles.cardInfo}>
             <View style={styles.nameRow}>
@@ -207,7 +207,11 @@ function BusinessCard({
 
           {/* Heart */}
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-            style={[styles.heartBtn, { backgroundColor: isFavorited ? '#FEE2E2' : C.background }]}
+            style={[
+              styles.heartBtn,
+              { backgroundColor: isFavorited ? '#FEE2E2' : C.background },
+              isFavorited && { shadowColor: '#EF4444', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
+            ]}
             onPress={(e) => { e.stopPropagation(); onToggleFavorite(); }}
             hitSlop={10}>
             <Ionicons
@@ -219,7 +223,7 @@ function BusinessCard({
         </View>
 
         {/* One consolidated stat row: primary category + active events */}
-        <View style={[styles.statRow, { borderTopColor: C.border }]}>
+        <View style={[styles.statRow, { backgroundColor: C.background }]}>
           {primaryMeta && (
             <View style={[styles.catPill, { backgroundColor: primaryMeta.bg }]}>
               <FontAwesome5 name={primaryMeta.icon} size={10} color={primaryMeta.color} />
@@ -233,6 +237,11 @@ function BusinessCard({
               {hasEvents ? t('explore.businesses.campaignsBadge', { n: item._count.campaigns }) : t('explore.businesses.noEventsYet')}
             </Text>
           </View>
+        </View>
+
+        <View style={[styles.viewBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }]}>
+          <Text style={styles.viewBtnText}>{t('explore.businesses.viewBusiness')}</Text>
+          <Ionicons name="arrow-forward" size={14} color="#fff" />
         </View>
       </View>
     </Pressable>
@@ -422,7 +431,11 @@ export default function ExploreBusinessesScreen() {
           )}
         </View>
         <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-          style={[styles.filterBtn, { backgroundColor: isFilterActive ? C.brinjal1 : C.surface, borderColor: isFilterActive ? C.brinjal1 : C.border }]}
+          style={[
+            styles.filterBtn,
+            { backgroundColor: isFilterActive ? C.brinjal1 : C.surface, borderColor: isFilterActive ? C.brinjal1 : C.border },
+            isFilterActive && { shadowColor: C.brinjal1, shadowOpacity: 0.35, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 5 },
+          ]}
           onPress={openFilter}>
           <Ionicons name="options-outline" size={20} color={isFilterActive ? '#fff' : C.brinjal1} />
           {isFilterActive && (
@@ -570,9 +583,8 @@ const styles = StyleSheet.create({
   footerLoading:  { paddingVertical: 20 },
 
   // Card
-  card:           { flexDirection: 'row', borderRadius: RADIUS.lg, overflow: 'hidden', ...SHADOW.raised },
-  cardAccent:     { width: 4 },
-  cardBody:       { flex: 1, padding: 16, gap: 12 },
+  card:           { borderRadius: RADIUS.lg, overflow: 'hidden', ...SHADOW.raised },
+  cardBody:       { padding: 16, gap: 12 },
   cardTop:        { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
   cardInfo:       { flex: 1, gap: 4 },
   nameRow:        { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
@@ -580,13 +592,21 @@ const styles = StyleSheet.create({
   desc:           { fontSize: 13, lineHeight: 19, fontFamily: F.regular },
 
   // Heart (top-right inside cardTop)
-  heartBtn:       { width: 34, height: 34, borderRadius: RADIUS.sm, alignItems: 'center', justifyContent: 'center' },
+  heartBtn:       { width: 36, height: 36, borderRadius: RADIUS.full, alignItems: 'center', justifyContent: 'center' },
 
   chipTxt:        { fontSize: 11, fontFamily: F.bold },
 
-  // One consolidated stat row: primary category + active events
-  statRow:          { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, paddingTop: 12, borderTopWidth: StyleSheet.hairlineWidth },
-  catPill:          { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: RADIUS.sm, paddingHorizontal: 10, paddingVertical: 5, flexShrink: 1 },
+  // One consolidated stat row: primary category + active events — a soft tray, not a divider line
+  statRow:          { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, borderRadius: RADIUS.md, paddingHorizontal: 10, paddingVertical: 8 },
+  catPill:          { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: RADIUS.full, paddingHorizontal: 10, paddingVertical: 5, flexShrink: 1 },
   campaignStat:     { flexDirection: 'row', alignItems: 'center', gap: 5 },
   campaignStatTxt:  { fontSize: 12, fontFamily: F.bold },
+
+  // CTA — echoes the bold pill button on the home page's Featured/Nearby cards
+  viewBtn: {
+    height: 38, borderRadius: RADIUS.full, marginTop: 2,
+    flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6,
+    shadowOpacity: 0.3, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5,
+  },
+  viewBtnText: { color: '#fff', fontSize: 13, fontFamily: F.bold },
 });

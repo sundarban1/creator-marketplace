@@ -97,7 +97,7 @@ export const en = {
 
   collaboration: {
     heading: 'Creators discover each other too',
-    sub: 'Search fellow creators who match your interests — by location or category anywhere in Nepal — send a message request, and start the conversation, ready for your next collaboration.',
+    sub: 'Search fellow creators collaboration request who match your interests — by location or category anywhere in Nepal — send a message request, and start the conversation, ready for your next collaboration.',
     creatorOneLabel: 'Creator 1',
     creatorTwoLabel: 'Creator 2',
     cities: [

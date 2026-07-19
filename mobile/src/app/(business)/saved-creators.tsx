@@ -17,10 +17,16 @@ import { creatorService, type SavedCreatorItem } from '@/services/creator';
 import { EmptyState } from '@/components/EmptyState';
 import { GRADIENTS, F, RADIUS, SHADOW } from '@/utilities/constants';
 
-function Avatar({ name, size = 48, C }: { name: string; size?: number; C: ReturnType<typeof useAppColors> }) {
+function Avatar({ name, size = 52, C }: { name: string; size?: number; C: ReturnType<typeof useAppColors> }) {
   const initials = name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
   return (
-    <View style={[av.wrap, { width: size, height: size, borderRadius: size / 2, backgroundColor: C.brinjal1 }]}>
+    <View style={[
+      av.wrap,
+      {
+        width: size, height: size, borderRadius: size / 2, backgroundColor: C.brinjal1,
+        shadowColor: C.brinjal1, shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+      },
+    ]}>
       <Text style={[av.text, { fontSize: size * 0.35, color: '#fff', fontWeight: '700' }]}>{initials}</Text>
     </View>
   );
@@ -41,7 +47,7 @@ function CreatorCard({ item, onRemove }: { item: SavedCreatorItem; onRemove: () 
   const topAccount = creator.socialAccounts.sort((a, b) => b.followers - a.followers)[0];
 
   return (
-    <View style={[s.card, { backgroundColor: C.surface, borderColor: C.border }]}>
+    <View style={[s.card, { backgroundColor: C.surface }]}>
       <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
         style={s.cardMain}
         onPress={() => router.push({ pathname: '/(business)/creator-detail', params: { id: creator.id } })}>
@@ -174,18 +180,18 @@ const s = StyleSheet.create({
   list:   { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 40, gap: 12 },
   listEmpty: { flexGrow: 1 },
 
-  card:     { borderRadius: RADIUS.lg, borderWidth: 1, overflow: 'hidden', ...SHADOW.card },
+  card:     { borderRadius: RADIUS.lg, overflow: 'hidden', ...SHADOW.raised },
   cardMain: { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 14 },
   info:     { flex: 1, gap: 3 },
   nameRow:  { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  name:     { fontSize: 15, fontFamily: F.bold, flex: 1 },
+  name:     { fontSize: 16, letterSpacing: -0.3, fontFamily: F.bold, flex: 1 },
   verifiedBadge: { borderRadius: RADIUS.full, paddingHorizontal: 5, paddingVertical: 1 },
   locationRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   location:  { fontSize: 12, fontFamily: F.regular },
   followers: { fontSize: 12, fontFamily: F.regular },
   categories:{ fontSize: 11, fontFamily: F.semibold },
 
-  divider:    { height: 1 },
+  divider:    { height: 1, marginHorizontal: 16 },
   removeRow:  { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 12 },
   removeText: { fontSize: 13, color: '#EF4444', fontFamily: F.semibold },
 
