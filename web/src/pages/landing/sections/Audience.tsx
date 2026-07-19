@@ -41,7 +41,9 @@ export function Audience() {
                   <li key={j} className="flex items-start gap-3 text-sm leading-relaxed text-white/60">
                     <span
                       className={`mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white ${
-                        i === 0 ? 'bg-violet' : 'bg-brand-orange'
+                        i === 0
+                          ? 'bg-violet shadow-[0_2px_6px_rgba(123,92,245,0.5)]'
+                          : 'bg-brand-orange shadow-[0_2px_6px_rgba(249,115,22,0.5)]'
                       }`}
                     >
                       {j + 1}

@@ -36,11 +36,13 @@ export function HowItWorks() {
                 <motion.div
                   variants={fadeUp}
                   whileHover={CARD_HOVER}
-                  className="group w-full rounded-3xl border border-ink/10 bg-white p-6 shadow-[0_2px_10px_rgba(20,17,16,0.04)] transition-shadow duration-300 hover:shadow-[0_20px_40px_-14px_rgba(123,92,245,0.2)]"
+                  className="group w-full rounded-2xl border border-ink/10 bg-white p-6 shadow-[0_2px_10px_rgba(20,17,16,0.04)] transition-shadow duration-300 hover:shadow-[0_20px_40px_-14px_rgba(123,92,245,0.2)]"
                 >
                   <span
                     className={`flex h-11 w-11 items-center justify-center rounded-2xl text-white transition-transform duration-300 group-hover:scale-110 ${
-                      accent === 'violet' ? 'bg-gradient-to-br from-violet to-violet-dark' : 'bg-gradient-to-br from-brand-orange to-violet'
+                      accent === 'violet'
+                        ? 'bg-gradient-to-br from-violet to-violet-dark shadow-[0_8px_20px_-6px_rgba(123,92,245,0.5)]'
+                        : 'bg-gradient-to-br from-brand-orange to-violet shadow-[0_8px_20px_-6px_rgba(249,115,22,0.5)]'
                     }`}
                   >
                     <Icon size={18} />

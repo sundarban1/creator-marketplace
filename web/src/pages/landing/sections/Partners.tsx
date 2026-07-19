@@ -38,7 +38,7 @@ function LogoBadge({ item }: { item: LogoItem }) {
       className="group flex flex-shrink-0 items-center gap-3 rounded-2xl border border-ink/10 bg-white px-4 py-3.5 shadow-[0_2px_8px_rgba(20,17,16,0.03)] transition-shadow duration-300 hover:shadow-[0_14px_28px_-10px_rgba(20,17,16,0.16)]"
     >
       <span
-        style={{ backgroundColor: `${color}1A`, color }}
+        style={{ backgroundColor: `${color}1A`, color, boxShadow: `0 4px 10px -2px ${color}66` }}
         className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-110"
       >
         {item.type === 'icon' ? <item.Icon size={16} /> : <span className="text-sm font-bold">{item.name[0]}</span>}

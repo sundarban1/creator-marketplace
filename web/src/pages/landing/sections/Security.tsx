@@ -40,7 +40,11 @@ export function Security() {
         >
           {d.security.points.map((point, i) => {
             const Icon = ICONS[i] ?? FaFingerprint;
-            const accent = i % 2 === 0 ? 'text-violet' : 'text-brand-orange';
+            const isViolet = i % 2 === 0;
+            const accent = isViolet ? 'text-violet' : 'text-brand-orange';
+            const glow = isViolet
+              ? 'shadow-[0_6px_16px_-4px_rgba(123,92,245,0.4)]'
+              : 'shadow-[0_6px_16px_-4px_rgba(249,115,22,0.4)]';
             return (
               <motion.div
                 key={i}
@@ -48,7 +52,7 @@ export function Security() {
                 whileHover={CARD_HOVER}
                 className="group rounded-2xl border border-white/10 bg-white/[0.04] p-5 backdrop-blur-sm transition-all duration-300 hover:border-white/25 hover:bg-white/[0.07]"
               >
-                <span className={`flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 ${accent} transition-transform duration-300 group-hover:scale-110`}>
+                <span className={`flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 ${accent} ${glow} transition-transform duration-300 group-hover:scale-110`}>
                   <Icon size={16} />
                 </span>
                 <h3 className="mt-4 text-sm font-bold text-white">{point.title}</h3>

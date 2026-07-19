@@ -87,7 +87,7 @@ export function Collaboration() {
             <CityLabel cities={cities} offset={0} className="text-[11px] font-semibold uppercase tracking-wide text-violet" />
             <motion.span
               whileHover={CARD_HOVER}
-              className="flex h-16 w-16 items-center justify-center rounded-full border border-ink/10 bg-white text-violet shadow-[0_8px_20px_-8px_rgba(20,17,16,0.14)]"
+              className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-violet/25 bg-white text-violet shadow-[0_10px_24px_-8px_rgba(123,92,245,0.35)]"
             >
               <FaUser size={20} />
             </motion.span>
@@ -121,7 +121,7 @@ export function Collaboration() {
             <CityLabel cities={cities} offset={rightOffset} className="text-[11px] font-semibold uppercase tracking-wide text-brand-orange" />
             <motion.span
               whileHover={CARD_HOVER}
-              className="flex h-16 w-16 items-center justify-center rounded-full border border-ink/10 bg-white text-brand-orange shadow-[0_8px_20px_-8px_rgba(20,17,16,0.14)]"
+              className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-brand-orange/25 bg-white text-brand-orange shadow-[0_10px_24px_-8px_rgba(249,115,22,0.35)]"
             >
               <FaUser size={20} />
             </motion.span>

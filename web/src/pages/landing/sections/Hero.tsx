@@ -108,7 +108,7 @@ export function Hero() {
         >
           <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-4">
             <span className="flex items-center gap-2.5 text-sm font-semibold text-ink">
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-violet/10 text-violet">
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-violet/10 text-violet shadow-[0_3px_8px_-2px_rgba(123,92,245,0.4)]">
                 <FaIdBadge size={13} />
               </span>
               {d.hero.credentialVerified}
@@ -117,7 +117,7 @@ export function Hero() {
             <span aria-hidden className="hidden h-4 w-px bg-ink/10 sm:block" />
 
             <span className="flex items-center gap-2.5 text-sm font-semibold text-ink">
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-orange/10 text-brand-orange">
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-orange/10 text-brand-orange shadow-[0_3px_8px_-2px_rgba(249,115,22,0.4)]">
                 <FaLock size={12} />
               </span>
               {d.hero.credentialEscrow}
@@ -126,7 +126,7 @@ export function Hero() {
             <span aria-hidden className="hidden h-4 w-px bg-ink/10 sm:block" />
 
             <span className="flex items-center gap-2.5 text-sm font-semibold text-ink">
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-violet/15 to-brand-orange/15 text-violet">
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-violet/15 to-brand-orange/15 text-violet shadow-[0_3px_8px_-2px_rgba(123,92,245,0.3)]">
                 <FaHeart size={12} />
               </span>
               {d.hero.credentialBuiltFor}

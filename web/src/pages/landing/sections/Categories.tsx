@@ -50,7 +50,7 @@ export function Categories({ stats }: { stats: LandingStats | null }) {
                   className="group flex items-center gap-2 rounded-xl border border-ink/10 bg-white px-3 py-2 shadow-[0_2px_8px_rgba(20,17,16,0.03)] transition-shadow duration-300 hover:shadow-[0_14px_28px_-10px_rgba(20,17,16,0.16)]"
                 >
                   <span
-                    style={{ backgroundColor: `${color}1A`, color }}
+                    style={{ backgroundColor: `${color}1A`, color, boxShadow: `0 4px 10px -2px ${color}66` }}
                     className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-lg transition-transform duration-300 group-hover:scale-110"
                   >
                     <Icon size={12} />
