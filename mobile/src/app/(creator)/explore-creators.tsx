@@ -19,29 +19,20 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FilterSheet, FilterSectionHeader, ActiveFilterChips, type ActiveFilterChip } from '@/components/FilterSheet';
-import { BudgetRangePicker, matchBudgetPreset, type BudgetPreset } from '@/components/BudgetRangePicker';
 import { LocationSearchPicker, type LocationEntry } from '@/components/LocationSearchPicker';
 import { useAppColors } from '@/context/ThemeContext';
-import { useLanguage, type TFn } from '@/context/LanguageContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { creatorService, type ApiCreatorListItem } from '@/services/creator';
 import { GRADIENTS, F, RADIUS, SHADOW } from '@/utilities/constants';
-import { getIconColor } from '@/features/creator/data/filterOptions';
 import { useAllCategories, useCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { usePlatforms, getPlatformMeta } from '@/hooks/usePlatforms';
 import type { ApiCategory } from '@/services/category';
 
 const PAGE_SIZE = 10;
-const SLIDER_MIN = 1000;
-const SLIDER_MAX = 100000;
 const MAX_LOCS = 3;
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-function formatRate(v: number): string {
-  if (v >= 100000) return `Rs ${(v / 100000).toFixed(1)}L`;
-  if (v >= 1000)   return `Rs ${(v / 1000).toFixed(0)}K`;
-  return `Rs ${v}`;
-}
 /** First admin category (in order) that matches one of a creator's category labels. */
 function firstCategoryMeta(categories: ApiCategory[], creatorCats: string[]) {
   for (const name of creatorCats) {
@@ -59,32 +50,16 @@ function toggle<T>(arr: T[], item: T): T[] {
   return arr.includes(item) ? arr.filter((x) => x !== item) : [...arr, item];
 }
 
-// Same "fast path first" concept as every other range filter in the app —
-// scaled to this screen's own rate range (Rs 1K–1L), not the campaign-budget
-// scale used on the home feed.
-function budgetPresets(t: TFn): BudgetPreset[] {
-  return [
-    { key: 'any',     min: SLIDER_MIN, max: SLIDER_MAX, label: t('explore.presetAnyRate')     },
-    { key: 'u10k',    min: SLIDER_MIN, max: 10000,      label: t('explore.presetUnder10k')    },
-    { key: '10to50k', min: 10000,      max: 50000,      label: t('explore.preset10kTo50k')    },
-    { key: '50kp',    min: 50000,      max: SLIDER_MAX, label: t('explore.preset50kPlus')      },
-  ];
-}
-
 // ─── Filter state ─────────────────────────────────────────────────────────────
 
 type FilterState = {
   locations: LocationEntry[];
-  priceMin: number;
-  priceMax: number;
   platforms: string[];
   categories: string[];
 };
 
 const DEFAULT_FILTER: FilterState = {
   locations: [],
-  priceMin: SLIDER_MIN,
-  priceMax: SLIDER_MAX,
   platforms: [],
   categories: [],
 };
@@ -92,7 +67,6 @@ const DEFAULT_FILTER: FilterState = {
 function filterActiveCount(f: FilterState) {
   return [
     f.locations.length > 0,
-    f.priceMin > SLIDER_MIN || f.priceMax < SLIDER_MAX,
     f.platforms.length > 0,
     f.categories.length > 0,
   ].filter(Boolean).length;
@@ -120,13 +94,10 @@ function ExploreFilterModal({
   const { t } = useLanguage();
   const { categories: allCategories } = useAllCategories();
   const { platforms: allPlatforms } = usePlatforms();
-  const BUDGET_PRESETS = budgetPresets(t);
 
   function set<K extends keyof FilterState>(key: K, val: FilterState[K]) {
     setTemp({ ...temp, [key]: val });
   }
-
-  const matchedBudget = matchBudgetPreset(BUDGET_PRESETS, temp.priceMin, temp.priceMax);
 
   const activeChips: ActiveFilterChip[] = [];
   for (const loc of temp.locations) {
@@ -134,13 +105,6 @@ function ExploreFilterModal({
       key: `loc-${loc.label}`,
       label: loc.label === 'Remote' ? t('filterModal.remote') : loc.label,
       onClear: () => set('locations', temp.locations.filter((l) => l.label !== loc.label)),
-    });
-  }
-  if (!matchedBudget || matchedBudget.key !== 'any') {
-    activeChips.push({
-      key: 'budget',
-      label: matchedBudget ? matchedBudget.label : `${formatRate(temp.priceMin)}–${temp.priceMax >= SLIDER_MAX ? `${formatRate(SLIDER_MAX)}+` : formatRate(temp.priceMax)}`,
-      onClear: () => { set('priceMin', SLIDER_MIN); set('priceMax', SLIDER_MAX); },
     });
   }
   for (const p of temp.platforms) {
@@ -193,31 +157,6 @@ function ExploreFilterModal({
         </View>
       )}
 
-      {/* Location */}
-      <View>
-        <FilterSectionHeader
-          icon="location-outline"
-          label={t('explore.location')}
-          hint={t('explore.locationsAllowed', { count: temp.locations.length, max: MAX_LOCS })}
-        />
-        <LocationSearchPicker selected={temp.locations} onSelect={(v) => set('locations', v)} />
-      </View>
-
-      {/* Budget — one-tap presets first, precise slider tucked behind "Custom" */}
-      <View>
-        <FilterSectionHeader icon="cash-outline" label={t('explore.priceRange')} />
-        <BudgetRangePicker
-          visible={visible}
-          presets={BUDGET_PRESETS}
-          min={temp.priceMin}
-          max={temp.priceMax}
-          onChange={(min, max) => setTemp({ ...temp, priceMin: min, priceMax: max })}
-          sliderMin={SLIDER_MIN}
-          sliderMax={SLIDER_MAX}
-          customLabel={t('filterModal.customLabel')}
-        />
-      </View>
-
       {/* Platform — sourced from the admin platform catalog so every supported
           platform is always selectable, not just ones a creator already connected. */}
       {allPlatforms.length > 0 && (
@@ -243,6 +182,16 @@ function ExploreFilterModal({
           </View>
         </View>
       )}
+
+      {/* Location — kept last */}
+      <View>
+        <FilterSectionHeader
+          icon="location-outline"
+          label={t('explore.location')}
+          hint={t('explore.locationsAllowed', { count: temp.locations.length, max: MAX_LOCS })}
+        />
+        <LocationSearchPicker selected={temp.locations} onSelect={(v) => set('locations', v)} />
+      </View>
     </FilterSheet>
   );
 }
@@ -396,8 +345,6 @@ export default function ExploreCreatorPeersScreen() {
         location: locationText || undefined,
         categories: filter.categories.length ? filter.categories : undefined,
         platforms: filter.platforms.length ? filter.platforms : undefined,
-        priceMin: filter.priceMin > SLIDER_MIN ? filter.priceMin : undefined,
-        priceMax: filter.priceMax < SLIDER_MAX ? filter.priceMax : undefined,
       });
       setTotal(res.total);
       setCreators((prev) => {
@@ -453,8 +400,6 @@ export default function ExploreCreatorPeersScreen() {
       setActiveFilter({ ...activeFilter, platforms: activeFilter.platforms.filter((p) => p !== value) });
     } else if (key === 'categories' && value !== undefined) {
       setActiveFilter({ ...activeFilter, categories: activeFilter.categories.filter((c) => c !== value) });
-    } else if (key === 'priceMin' || key === 'priceMax') {
-      setActiveFilter({ ...activeFilter, priceMin: SLIDER_MIN, priceMax: SLIDER_MAX });
     }
   }
 
@@ -515,13 +460,6 @@ export default function ExploreCreatorPeersScreen() {
               <Ionicons name="close" size={12} color={C.brinjal1} />
             </Pressable>
           ))}
-          {(activeFilter.priceMin > SLIDER_MIN || activeFilter.priceMax < SLIDER_MAX) && (
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => removeActiveFilter('priceMin')} style={[s.chip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
-              <FontAwesome5 name="wallet" size={11} color={getIconColor('wallet')} />
-              <Text style={[s.chipText, { color: C.brinjal1 }]}>{formatRate(activeFilter.priceMin)}–{activeFilter.priceMax >= SLIDER_MAX ? `${formatRate(SLIDER_MAX)}+` : formatRate(activeFilter.priceMax)}</Text>
-              <Ionicons name="close" size={12} color={C.brinjal1} />
-            </Pressable>
-          )}
           {activeFilter.platforms.map((p) => {
             const meta = getPlatformMeta(allPlatforms, p);
             const label = allPlatforms.find((x) => x.key === p)?.name ?? p;

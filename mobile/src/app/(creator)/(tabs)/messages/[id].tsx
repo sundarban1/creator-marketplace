@@ -371,8 +371,8 @@ export default function CreatorChatRoomScreen() {
                 .catch(() => {});
             } else {
               Alert.alert(
-                t('messages.blockConfirmTitle', { name }),
-                t('messages.blockConfirmBody', { name }),
+                t('messages.blockConfirmTitle', { name: name ?? '' }),
+                t('messages.blockConfirmBody', { name: name ?? '' }),
                 [
                   { text: t('common.cancel'), style: 'cancel' },
                   {

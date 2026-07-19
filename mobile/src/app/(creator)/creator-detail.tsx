@@ -138,7 +138,7 @@ export default function CreatorPeerDetailScreen() {
   function openChat() {
     if (!convId || !profile) return;
     router.push({
-      pathname: '/(creator)/messages/[id]',
+      pathname: '/(creator)/messages/[id]' as never,
       params: { id: convId, name: profile.fullName ?? profile.username ?? 'Creator', status: convStatus ?? 'ACCEPTED', participantRole: 'CREATOR' },
     });
   }

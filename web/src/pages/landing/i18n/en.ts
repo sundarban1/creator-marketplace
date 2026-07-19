@@ -96,9 +96,10 @@ export const en = {
   },
 
   collaboration: {
-    heading: 'Discover creators who match your interests',
-    sub: 'Search by location or category anywhere in Nepal, send a message request, and start the conversation — ready for your next collaboration.',
-    caption: 'Discover · Message · Collaborate',
+    heading: 'Creators discover each other too',
+    sub: 'Search fellow creators who match your interests — by location or category anywhere in Nepal — send a message request, and start the conversation, ready for your next collaboration.',
+    creatorOneLabel: 'Creator 1',
+    creatorTwoLabel: 'Creator 2',
     cities: [
       'Biratnagar', 'Dharan', 'Kathmandu', 'Pokhara', 'Nepalgunj', 'Dang',
       'Butwal', 'Itahari', 'Dhankuta', 'Nagarkot', 'Dhulikhel', 'Bhaktapur',

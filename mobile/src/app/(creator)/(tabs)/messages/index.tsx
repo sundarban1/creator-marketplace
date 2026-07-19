@@ -239,7 +239,7 @@ function ChatCard({ conv, onDelete }: { conv: Conversation; onDelete: (id: strin
         {/* Avatar + badge */}
         <View style={s.avatarWrap}>
           {hasUnread && <View style={[s.avatarRing, { borderColor: ACCENT }]} pointerEvents="none" />}
-          <Avatar name={conv.participantName} imageUrl={conv.participantAvatar} size={50} />
+          <Avatar name={conv.participantName} imageUrl={conv.participantAvatar} size={50} role={conv.participantRole} />
           {hasUnread && (
             <View style={[s.avatarBadge, { backgroundColor: ACCENT }]}>
               <Text style={s.avatarBadgeTxt}>{conv.unreadCount > 99 ? '99+' : conv.unreadCount}</Text>

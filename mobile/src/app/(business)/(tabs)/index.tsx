@@ -219,7 +219,7 @@ export default function BusinessHomeScreen() {
             </View>
             <View style={styles.bannerText}>
               <Text style={[styles.bannerTitle, { color: C.text }]}>{t('business.home.completeProfile')}</Text>
-              <Text style={[styles.bannerSub, { color: C.textSecondary }]} numberOfLines={2}>
+              <Text style={[styles.bannerSub, { color: C.error }]} numberOfLines={2}>
                 {t('business.home.missingFieldsPrefix', { fields: missingFields.join(' · ') })}
               </Text>
             </View>

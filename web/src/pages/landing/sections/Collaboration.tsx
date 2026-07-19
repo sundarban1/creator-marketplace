@@ -91,6 +91,7 @@ export function Collaboration() {
             >
               <FaUser size={20} />
             </motion.span>
+            <span className="text-[11px] font-semibold text-ink-soft">{d.collaboration.creatorOneLabel}</span>
           </div>
 
           <div className="relative mx-3 mt-[27px] h-px flex-1 bg-gradient-to-r from-violet/50 via-ink/15 to-brand-orange/50">
@@ -124,12 +125,9 @@ export function Collaboration() {
             >
               <FaUser size={20} />
             </motion.span>
+            <span className="text-[11px] font-semibold text-ink-soft">{d.collaboration.creatorTwoLabel}</span>
           </div>
         </motion.div>
-
-        <motion.p variants={fadeUp} className="mt-5 text-xs font-semibold uppercase tracking-[0.2em] text-ink-soft/70">
-          {d.collaboration.caption}
-        </motion.p>
       </motion.div>
     </section>
   );
