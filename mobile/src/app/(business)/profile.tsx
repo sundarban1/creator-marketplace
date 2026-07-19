@@ -1,7 +1,6 @@
 import { router, useFocusEffect } from 'expo-router';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { BackButton } from '@/components/BackButton';
 import { VerifiedBadge } from '@/components/VerifiedBadge';
 import { useCallback, useState } from 'react';
 import {
@@ -21,36 +20,11 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { profileService, type BusinessProfile } from '@/services/profile';
 import { campaignService } from '@/services/campaign';
+import { creatorService } from '@/services/creator';
 import { GRADIENTS, F, RADIUS, SHADOW } from '@/utilities/constants';
 import { pickAndUpload } from '@/utilities/uploadImage';
 import { formatPhoneDisplay } from '@/utilities/phone';
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
-
-function BusinessAvatar({ name, logoUrl, size = 88, uploading, onPress }: {
-  name: string; logoUrl: string | null; size?: number;
-  uploading?: boolean; onPress?: () => void;
-}) {
-  const C = useAppColors();
-  const letter = (name?.[0] ?? '?').toUpperCase();
-  const radius = size / 2;
-  return (
-    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={onPress} disabled={uploading} style={{ position: 'relative' }}>
-      <View style={{ width: size, height: size, borderRadius: radius, backgroundColor: 'rgba(255,255,255,0.25)', alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: '#fff', overflow: 'hidden' }}>
-        {logoUrl ? (
-          <Image source={{ uri: logoUrl }} style={{ width: size, height: size, borderRadius: radius }} />
-        ) : (
-          <Text style={{ fontSize: size * 0.38, fontWeight: '700', color: '#fff' }}>{letter}</Text>
-        )}
-      </View>
-      {/* Camera badge — matches creator profile */}
-      <View style={[styles.cameraBadge, { backgroundColor: C.brinjal1 }]}>
-        {uploading
-          ? <ActivityIndicator size="small" color="#fff" />
-          : <Ionicons name="camera" size={13} color="#fff" />}
-      </View>
-    </Pressable>
-  );
-}
 
 export default function BusinessProfileScreen() {
   const { user, updateUser } = useAuth();
@@ -58,10 +32,11 @@ export default function BusinessProfileScreen() {
   const { t } = useLanguage();
   const { categories: allCategories } = useAllCategories();
   const toast = useToast();
-  const [profile, setProfile]               = useState<BusinessProfile | null>(null);
+  const [profile, setProfile]                 = useState<BusinessProfile | null>(null);
   const [activeCampaigns, setActiveCampaigns] = useState(0);
-  const [loading, setLoading]               = useState(true);
-  const [logoUploading, setLogoUploading]   = useState(false);
+  const [savedCreatorsCount, setSavedCreatorsCount] = useState(0);
+  const [logoUploading, setLogoUploading]     = useState(false);
+  const [coverUploading, setCoverUploading]   = useState(false);
 
   async function handleLogoPress() {
     setLogoUploading(true);
@@ -79,292 +54,353 @@ export default function BusinessProfileScreen() {
     }
   }
 
+  async function handleCoverPress() {
+    setCoverUploading(true);
+    try {
+      const result = await pickAndUpload('business-cover');
+      if (result) {
+        setProfile((p) => p ? { ...p, coverImageUrl: result.url } : p);
+      }
+    } catch (err) {
+      console.error('[cover upload]', err);
+      toast.error(err instanceof Error && err.message ? err.message : t('profile.uploadFailed'));
+    } finally {
+      setCoverUploading(false);
+    }
+  }
+
   useFocusEffect(
     useCallback(() => {
-      setLoading(true);
-      Promise.all([
-        profileService.getBusinessProfile(),
-        campaignService.listMy().catch(() => ({ campaigns: [] })),
-      ])
-        .then(([prof, { campaigns }]) => {
-          setProfile(prof);
-          setActiveCampaigns(campaigns.filter((c) => c.status === 'active').length);
-        })
-        .catch(() => {})
-        .finally(() => setLoading(false));
+      profileService.getBusinessProfile().then(setProfile).catch(() => {});
+      campaignService.listMy()
+        .then(({ campaigns }) => setActiveCampaigns(campaigns.filter((c) => c.status === 'active').length))
+        .catch(() => {});
+      creatorService.getSavedCreators()
+        .then((creators) => setSavedCreatorsCount(creators.length))
+        .catch(() => {});
     }, []),
   );
 
-  if (loading) {
-    return (
-      <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
-        <View style={[styles.navBar, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
-          <BackButton fallback="/(business)/" />
-          <Text style={[styles.navTitle, { color: C.text }]}>{t('profileExtra.navTitle')}</Text>
-          <View style={{ width: 44 }} />
-        </View>
-        <View style={styles.center}><ActivityIndicator size="large" color={C.brinjal1} /></View>
-      </SafeAreaView>
-    );
-  }
-
-  const name = profile?.businessName ?? user?.name ?? 'Business';
-  const joinedYear = profile?.createdAt ? new Date(profile.createdAt).getFullYear() : '—';
+  const displayName = profile?.businessName ?? user?.name ?? 'Business';
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
-      {/* Nav bar */}
-      <View style={[styles.navBar, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
-        <BackButton fallback="/(business)/" />
-        <Text style={[styles.navTitle, { color: C.text }]} numberOfLines={1}>{name}</Text>
-        <View style={{ width: 44 }} />
-      </View>
-
+    <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 60 }}>
 
-        {/* ── Hero ── */}
-        <LinearGradient colors={GRADIENTS.hero} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.hero}>
-          <View style={styles.heroBubble1} />
-          <View style={styles.heroBubble2} />
-          <View style={styles.heroInner}>
-            <BusinessAvatar
-              name={name}
-              logoUrl={profile?.logoUrl ?? null}
-              size={88}
-              uploading={logoUploading}
-              onPress={handleLogoPress}
-            />
-            <View style={styles.heroMeta}>
-              <View style={styles.heroNameRow}>
-                <Text style={styles.heroName} numberOfLines={2}>{name}</Text>
-                {(profile?.fullyVerified || profile?.isVerified) && <VerifiedBadge size={16} />}
-              </View>
-              {!!profile?.location && (
-                <View style={styles.heroLocationRow}>
-                  <Ionicons name="location-sharp" size={12} color="rgba(255,255,255,0.85)" />
-                  <Text style={styles.heroLocation} numberOfLines={1}>{profile.location}</Text>
-                </View>
-              )}
-              <View style={styles.heroStats}>
-                <View style={styles.heroStat}>
-                  <Text style={styles.heroStatValue}>{activeCampaigns}</Text>
-                  <Text style={styles.heroStatLabel}>{t('profile.active')}</Text>
-                </View>
-                <View style={styles.heroStatDivider} />
-                <View style={styles.heroStat}>
-                  <Text style={styles.heroStatValue}>{joinedYear}</Text>
-                  <Text style={styles.heroStatLabel}>{t('profile.joined')}</Text>
-                </View>
-                {(profile?.categories.length ?? 0) > 0 && (
-                  <>
-                    <View style={styles.heroStatDivider} />
-                    <View style={styles.heroStat}>
-                      <Text style={styles.heroStatValue}>{profile!.categories.length}</Text>
-                      <Text style={styles.heroStatLabel}>{t('profile.sectors')}</Text>
-                    </View>
-                  </>
-                )}
-              </View>
-            </View>
+        {/* ── Hero Cover ── */}
+        <LinearGradient
+          colors={GRADIENTS.hero}
+          start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+          style={s.cover}>
+          {profile?.coverImageUrl ? (
+            <Image source={{ uri: profile.coverImageUrl }} style={StyleSheet.absoluteFill} />
+          ) : (
+            <>
+              {/* Decorative bubbles */}
+              <View style={[s.bubble, s.bubble1]} />
+              <View style={[s.bubble, s.bubble2]} />
+              <View style={[s.bubble, s.bubble3]} />
+            </>
+          )}
+
+          {/* Top bar */}
+          <View style={s.topBar}>
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={s.topIconBtn} hitSlop={4}
+              onPress={() => (router.canGoBack() ? router.back() : router.replace('/(business)/' as never))}>
+              <Ionicons name="chevron-back" size={22} color="#fff" />
+            </Pressable>
+            <Text style={s.topTitle}>{t('profile.myProfile')}</Text>
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={s.topIconBtn} hitSlop={4}
+              onPress={handleCoverPress} disabled={coverUploading}>
+              {coverUploading
+                ? <ActivityIndicator size="small" color="#fff" />
+                : <Ionicons name="camera" size={18} color="#fff" />}
+            </Pressable>
           </View>
         </LinearGradient>
 
-        <View style={styles.body}>
-          {/* Edit Profile CTA */}
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-            style={[styles.editCta, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 + '33' }]}
-            onPress={() => router.push('/(business)/edit-profile' as never)}>
-            <Ionicons name="create" size={22} color={C.brinjal1} />
-            <View style={styles.editCtaText}>
-              <Text style={[styles.editCtaTitle, { color: C.text }]}>{t('profile.editBusinessBtn')}</Text>
-              <Text style={[styles.editCtaSub, { color: C.textSecondary }]}>{t('profile.editBusinessSub')}</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={22} color={C.brinjal1} />
-          </Pressable>
-
-          {/* Analytics CTA */}
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-            style={[styles.editCta, { backgroundColor: C.surface, borderColor: C.border }]}
-            onPress={() => router.push('/(business)/analytics' as never)}>
-            <Ionicons name="stats-chart" size={22} color={C.brinjal1} />
-            <View style={styles.editCtaText}>
-              <Text style={[styles.editCtaTitle, { color: C.text }]}>{t('analytics.headerTitle')}</Text>
-              <Text style={[styles.editCtaSub, { color: C.textSecondary }]}>{t('analytics.viewInsights')}</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={22} color={C.brinjal1} />
-          </Pressable>
-
-          {/* About */}
-          {profile?.description ? (
-            <View style={[styles.infoCard, { backgroundColor: C.surface }]}>
-              <View style={styles.infoHeader}>
-                <Ionicons name="document-text" size={16} color={C.brinjal1} />
-                <Text style={[styles.infoTitle, { color: C.text }]}>{t('profile.about')}</Text>
+        {/* ── Logo card (overlaps cover) ── */}
+        <View style={[s.profileCard, { backgroundColor: C.surface }]}>
+          {/* Logo */}
+          <View style={s.avatarArea}>
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={handleLogoPress} disabled={logoUploading} style={s.avatarPressable}>
+              {profile?.logoUrl ? (
+                <Image source={{ uri: profile.logoUrl }} style={s.avatar} />
+              ) : (
+                <LinearGradient colors={GRADIENTS.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.avatar}>
+                  <Text style={s.avatarInitial}>{displayName[0].toUpperCase()}</Text>
+                </LinearGradient>
+              )}
+              <View style={[s.cameraBadge, { backgroundColor: C.brinjal1 }]}>
+                {logoUploading
+                  ? <ActivityIndicator size="small" color="#fff" />
+                  : <Ionicons name="camera" size={13} color="#fff" />}
               </View>
-              <Text style={[styles.aboutText, { color: C.text }]}>{profile.description}</Text>
-            </View>
-          ) : (
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-              style={[styles.emptyField, { backgroundColor: C.surface, borderColor: C.border }]}
-              onPress={() => router.push('/(business)/edit-profile' as never)}>
-              <Text style={[styles.emptyFieldText, { color: C.textSecondary }]}>{t('profile.addDescription')}</Text>
             </Pressable>
-          )}
-
-          {/* Contact */}
-          <View style={[styles.infoCard, { backgroundColor: C.surface }]}>
-            <View style={styles.infoHeader}>
-              <Ionicons name="mail" size={16} color={C.brinjal1} />
-              <Text style={[styles.infoTitle, { color: C.text }]}>{t('profile.contact')}</Text>
-            </View>
-            {(() => {
-              const hasPhone = !!profile?.user?.phone;
-              const hasVerifiedEmail = !!profile?.user?.isEmailVerified;
-              if (hasPhone && hasVerifiedEmail) {
-                return (
-                  <>
-                    <View style={styles.contactRow}>
-                      <Ionicons name="call-outline" size={14} color={C.textSecondary} />
-                      <Text style={[styles.contactText, { color: C.text }]}>{formatPhoneDisplay(profile!.user!.phone!)}</Text>
-                    </View>
-                    <View style={[styles.contactRow, { marginTop: 4 }]}>
-                      <Ionicons name="mail-outline" size={14} color={C.textSecondary} />
-                      <Text style={[styles.contactText, { color: C.text }]}>{profile!.user!.email}</Text>
-                    </View>
-                  </>
-                );
-              }
-              if (hasPhone) {
-                return (
-                  <View style={styles.contactRow}>
-                    <Ionicons name="call-outline" size={14} color={C.textSecondary} />
-                    <Text style={[styles.contactText, { color: C.text }]}>{formatPhoneDisplay(profile!.user!.phone!)}</Text>
-                  </View>
-                );
-              }
-              return (
-                <View style={styles.contactRow}>
-                  <Ionicons name="mail-outline" size={14} color={C.textSecondary} />
-                  <Text style={[styles.contactText, { color: C.text }]}>{profile?.user?.email ?? user?.email ?? '—'}</Text>
-                </View>
-              );
-            })()}
           </View>
 
-          {/* Website */}
+          {/* Identity */}
+          <View style={s.nameRow}>
+            <Text style={[s.name, { color: C.text }]} numberOfLines={2}>{displayName}</Text>
+            {(profile?.fullyVerified || profile?.isVerified) && <VerifiedBadge size={16} />}
+          </View>
+          {profile?.location ? (
+            <View style={s.locationRow}>
+              <Ionicons name="location-sharp" size={13} color={C.brinjal1} />
+              <Text style={[s.location, { color: C.textSecondary }]}>{profile.location}</Text>
+            </View>
+          ) : null}
+
+          {/* Edit profile / Analytics buttons */}
+          <View style={s.actionRow}>
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+              style={[s.editBtn, { borderColor: C.brinjal1 }]}
+              onPress={() => router.push('/(business)/edit-profile' as never)}>
+              <Ionicons name="create-outline" size={15} color={C.brinjal1} />
+              <Text style={[s.editBtnText, { color: C.brinjal1 }]}>{t('profile.editBusinessBtn')}</Text>
+            </Pressable>
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+              style={[s.editBtn, { borderColor: C.brinjal1 }]}
+              onPress={() => router.push('/(business)/analytics' as never)}>
+              <Ionicons name="stats-chart-outline" size={15} color={C.brinjal1} />
+              <Text style={[s.editBtnText, { color: C.brinjal1 }]}>{t('analytics.headerTitle')}</Text>
+            </Pressable>
+          </View>
+
+          {/* Stats strip */}
+          <View style={[s.statsStrip, { borderTopColor: C.border }]}>
+            <View style={s.statItem}>
+              <Text style={[s.statValue, { color: C.text }]}>{activeCampaigns}</Text>
+              <Text style={[s.statLabel, { color: C.textSecondary }]}>{t('profile.active')}</Text>
+            </View>
+            <View style={[s.statDivider, { backgroundColor: C.border }]} />
+            <View style={s.statItem}>
+              <Text style={[s.statValue, { color: C.text }]}>{savedCreatorsCount}</Text>
+              <Text style={[s.statLabel, { color: C.textSecondary }]}>{t('profile.savedCreators')}</Text>
+            </View>
+            <View style={[s.statDivider, { backgroundColor: C.border }]} />
+            <View style={s.statItem}>
+              <Text style={[s.statValue, { color: C.text }]}>{profile?.favoritedByCount ?? 0}</Text>
+              <Text style={[s.statLabel, { color: C.textSecondary }]}>{t('profile.favoritedByCreators')}</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* ── About ── */}
+        <SectionCard title={t('profile.about')} action={{ label: t('common.edit'), onPress: () => router.push('/(business)/edit-profile' as never) }} C={C}>
+          {profile?.description ? (
+            <Text style={[s.aboutText, { color: C.text }]}>{profile.description}</Text>
+          ) : (
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+              style={[s.emptyField, { borderColor: C.border }]}
+              onPress={() => router.push('/(business)/edit-profile' as never)}>
+              <Text style={[s.emptyFieldText, { color: C.textSecondary }]}>{t('profile.addDescription')}</Text>
+            </Pressable>
+          )}
+        </SectionCard>
+
+        {/* ── Contact ── */}
+        <SectionCard title={t('profile.contact')} C={C}>
+          {(() => {
+            const hasPhone = !!profile?.user?.phone;
+            const hasVerifiedEmail = !!profile?.user?.isEmailVerified;
+            return (
+              <View style={s.cardList}>
+                {hasPhone && (
+                  <View style={[s.contactRow, { backgroundColor: C.background, borderColor: C.border }]}>
+                    <View style={[s.platformBubble, { backgroundColor: C.brinjal1 + '18' }]}>
+                      <Ionicons name="call" size={16} color={C.brinjal1} />
+                    </View>
+                    <Text style={[s.contactText, { color: C.text }]}>{formatPhoneDisplay(profile!.user!.phone!)}</Text>
+                  </View>
+                )}
+                {(hasVerifiedEmail || !hasPhone) && (
+                  <View style={[s.contactRow, { backgroundColor: C.background, borderColor: C.border }]}>
+                    <View style={[s.platformBubble, { backgroundColor: C.brinjal1 + '18' }]}>
+                      <Ionicons name="mail" size={16} color={C.brinjal1} />
+                    </View>
+                    <Text style={[s.contactText, { color: C.text }]}>{profile?.user?.email ?? user?.email ?? '—'}</Text>
+                  </View>
+                )}
+              </View>
+            );
+          })()}
+        </SectionCard>
+
+        {/* ── Website ── */}
+        <SectionCard title={t('profile.website')} action={{ label: profile?.website ? t('common.edit') : t('profile.addBtn'), onPress: () => router.push('/(business)/edit-profile' as never) }} C={C}>
           {profile?.website ? (
             <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-              style={[styles.websiteCard, { backgroundColor: C.surface, borderColor: C.border }]}
+              style={[s.contactRow, { backgroundColor: C.background, borderColor: C.border }]}
               onPress={() => Linking.openURL(profile.website!)}>
-              <View style={[styles.websiteIconBox, { backgroundColor: C.primaryLight }]}>
-                <Ionicons name="globe" size={20} color={C.brinjal1} />
+              <View style={[s.platformBubble, { backgroundColor: C.brinjal1 + '18' }]}>
+                <Ionicons name="globe" size={16} color={C.brinjal1} />
               </View>
-              <View style={styles.websiteTextWrap}>
-                <Text style={[styles.websiteLabel, { color: C.textSecondary }]}>{t('profile.website')}</Text>
-                <Text style={[styles.websiteUrl, { color: C.brinjal1 }]} numberOfLines={1}>
-                  {profile.website.replace(/^https?:\/\//, '')}
-                </Text>
-              </View>
-              <Ionicons name="open-outline" size={18} color={C.textSecondary} />
+              <Text style={[s.contactText, { color: C.brinjal1, flex: 1 }]} numberOfLines={1}>
+                {profile.website.replace(/^https?:\/\//, '')}
+              </Text>
+              <Ionicons name="open-outline" size={16} color={C.textSecondary} />
             </Pressable>
           ) : (
             <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-              style={[styles.emptyField, { backgroundColor: C.surface, borderColor: C.border }]}
+              style={[s.emptyField, { borderColor: C.border }]}
               onPress={() => router.push('/(business)/edit-profile' as never)}>
-              <Text style={[styles.emptyFieldText, { color: C.textSecondary }]}>{t('profile.addWebsite')}</Text>
+              <Text style={[s.emptyFieldText, { color: C.textSecondary }]}>{t('profile.addWebsite')}</Text>
             </Pressable>
           )}
+        </SectionCard>
 
-          {/* Industries */}
+        {/* ── Industries ── */}
+        <SectionCard
+          title={t('profile.industries')}
+          action={{ label: profile?.categories?.length ? t('common.edit') : t('profile.addBtn'), onPress: () => router.push('/(business)/edit-categories' as never) }}
+          C={C}>
           {(profile?.categories.length ?? 0) > 0 ? (
-            <View style={[styles.infoCard, { backgroundColor: C.surface }]}>
-              <View style={styles.infoHeader}>
-                <Ionicons name="pricetag" size={16} color={C.brinjal1} />
-                <Text style={[styles.infoTitle, { color: C.text }]}>{t('profile.industries')}</Text>
-                <View style={{ flex: 1 }} />
-                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => router.push('/(business)/edit-categories' as never)} hitSlop={8}>
-                  <Text style={[styles.infoManage, { color: C.brinjal1 }]}>{t('profile.manage')}</Text>
-                </Pressable>
-              </View>
-              <View style={styles.categoriesWrap}>
-                {profile!.categories.map((cat) => {
-                  const meta = getCategoryMeta(allCategories, cat);
-                  return (
-                    <View key={cat} style={[styles.categoryChip, { backgroundColor: meta.bg }]}>
-                      <FontAwesome5 name={meta.icon} size={11} color={meta.color} />
-                      <Text style={[styles.categoryChipText, { color: meta.color }]}>{cat}</Text>
-                    </View>
-                  );
-                })}
-              </View>
+            <View style={s.chipWrap}>
+              {profile!.categories.map((cat) => {
+                const meta = getCategoryMeta(allCategories, cat);
+                return (
+                  <View key={cat} style={[s.chip, { backgroundColor: meta.bg }]}>
+                    <FontAwesome5 name={meta.icon} size={11} color={meta.color} />
+                    <Text style={[s.chipText, { color: meta.color }]}>{cat}</Text>
+                  </View>
+                );
+              })}
             </View>
           ) : (
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-              style={[styles.emptyField, { backgroundColor: C.surface, borderColor: C.border }]}
-              onPress={() => router.push('/(business)/edit-categories' as never)}>
-              <Text style={[styles.emptyFieldText, { color: C.textSecondary }]}>{t('profile.addCategories')}</Text>
-            </Pressable>
+            <EmptyState
+              icon="store"
+              title={t('profile.noIndustriesYet')}
+              hint={t('profile.industriesHint')}
+              cta={t('profile.addIndustries')}
+              onPress={() => router.push('/(business)/edit-categories' as never)}
+              C={C} />
           )}
+        </SectionCard>
 
-          {/* Quick actions */}
-        </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  container:        { flex: 1 },
-  center:           { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  navBar:           { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 8, borderBottomWidth: 1 },
-  navTitle:         { flex: 1, fontSize: 15, textAlign: 'center', fontFamily: F.bold },
+// ── Shared sub-components ─────────────────────────────────────────────────────
 
-  cameraBadge:      { position: 'absolute', bottom: 2, right: 2, width: 28, height: 28, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#fff' },
+function SectionCard({
+  title, action, children, C,
+}: {
+  title: string;
+  action?: { label: string; onPress: () => void };
+  children: React.ReactNode;
+  C: ReturnType<typeof useAppColors>;
+}) {
+  return (
+    <View style={[s.sectionCard, { backgroundColor: C.surface }]}>
+      <View style={s.sectionHeader}>
+        <Text style={[s.sectionTitle, { color: C.text }]}>{title}</Text>
+        {action && (
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={action.onPress} hitSlop={8}>
+            <Text style={[s.sectionAction, { color: C.brinjal1 }]}>{action.label}</Text>
+          </Pressable>
+        )}
+      </View>
+      {children}
+    </View>
+  );
+}
 
-  hero:             { paddingHorizontal: 20, paddingTop: 28, paddingBottom: 32, overflow: 'hidden' },
-  heroBubble1:      { position: 'absolute', width: 220, height: 220, borderRadius: RADIUS.full, backgroundColor: 'rgba(255,255,255,0.07)', top: -70, right: -50 },
-  heroBubble2:      { position: 'absolute', width: 140, height: 140, borderRadius: RADIUS.full, backgroundColor: 'rgba(255,255,255,0.06)', bottom: -30, left: -30 },
-  heroInner:        { flexDirection: 'row', alignItems: 'flex-start', gap: 16 },
-  heroMeta:         { flex: 1, paddingTop: 4 },
-  heroNameRow:      { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' },
-  heroName:         { fontSize: 20, color: '#fff', lineHeight: 28, marginBottom: 6, fontFamily: F.bold, flexShrink: 1 },
-  heroLocationRow:  { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 8 },
-  heroLocation:     { fontSize: 12, color: 'rgba(255,255,255,0.85)', fontFamily: F.medium, flexShrink: 1 },
-  heroStats:        { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  heroStat:         { alignItems: 'center' },
-  heroStatValue:    { fontSize: 16, color: '#fff', fontFamily: F.bold },
-  heroStatLabel:    { fontSize: 10, textTransform: 'uppercase', marginTop: 1, color: 'rgba(255,255,255,0.75)', fontFamily: F.semibold },
-  heroStatDivider:  { width: 1, height: 28, backgroundColor: 'rgba(255,255,255,0.25)' },
+function EmptyState({
+  icon, title, hint, cta, onPress, C,
+}: {
+  icon: string; title: string; hint: string; cta: string;
+  onPress: () => void;
+  C: ReturnType<typeof useAppColors>;
+}) {
+  return (
+    <View style={[s.emptyWrap, { borderColor: C.border }]}>
+      <FontAwesome5 name={icon} solid size={28} color={C.border} />
+      <Text style={[s.emptyTitle, { color: C.text }]}>{title}</Text>
+      <Text style={[s.emptyHint, { color: C.textSecondary }]}>{hint}</Text>
+      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[s.emptyCta, { backgroundColor: C.brinjal1 }]} onPress={onPress}>
+        <Text style={s.emptyCtaText}>{cta}</Text>
+      </Pressable>
+    </View>
+  );
+}
 
-  body:             { padding: 16, gap: 12 },
-  editCta:          { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.lg, padding: 14, gap: 12, borderWidth: 1, ...SHADOW.card },
-  editCtaText:      { flex: 1 },
-  editCtaTitle:     { fontSize: 14, fontFamily: F.bold },
-  editCtaSub:       { fontSize: 12, marginTop: 2, fontFamily: F.regular },
+// ── Styles ────────────────────────────────────────────────────────────────────
 
-  infoCard:         { borderRadius: RADIUS.lg, padding: 16, gap: 10, ...SHADOW.card },
-  infoHeader:       { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  infoTitle:        { fontSize: 14, fontFamily: F.bold },
-  infoManage:       { fontSize: 13, fontFamily: F.bold },
-  aboutText:        { fontSize: 14, lineHeight: 22, fontFamily: F.regular },
-  contactRow:       { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  contactText:      { fontSize: 14, fontFamily: F.regular },
+const s = StyleSheet.create({
+  container: { flex: 1 },
 
-  emptyField:       { borderRadius: RADIUS.md, borderWidth: 1.5, borderStyle: 'dashed', padding: 16, alignItems: 'center' },
-  emptyFieldText:   { fontSize: 13, fontFamily: F.medium },
+  // Cover
+  cover:    { height: 180, overflow: 'hidden' },
+  bubble:   { position: 'absolute', borderRadius: RADIUS.full, backgroundColor: 'rgba(255,255,255,0.08)' },
+  bubble1:  { width: 160, height: 160, top: -50, right: -30 },
+  bubble2:  { width: 100, height: 100, bottom: -20, left: 30 },
+  bubble3:  { width: 60,  height: 60,  top: 20,   left: -20  },
+  topBar:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 10 },
+  topTitle: { fontSize: 20, color: '#fff', fontFamily: F.bold, lineHeight: 24 },
+  topIconBtn: { width: 38, height: 38, borderRadius: RADIUS.full, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center' },
 
-  websiteCard:      { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.lg, padding: 14, gap: 12, borderWidth: 1, ...SHADOW.card },
-  websiteIconBox:   { width: 44, height: 44, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
-  websiteTextWrap:  { flex: 1 },
-  websiteLabel:     { fontSize: 10, textTransform: 'uppercase', marginBottom: 2, fontFamily: F.bold },
-  websiteUrl:       { fontSize: 13, fontFamily: F.semibold },
+  // Profile card (floats over cover)
+  profileCard: { marginHorizontal: 16, marginTop: -60, borderRadius: RADIUS.xl, padding: 20, alignItems: 'center', gap: 6,
+                 ...SHADOW.floating },
 
-  categoriesWrap:   { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  categoryChip:     { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: RADIUS.full, paddingHorizontal: 12, paddingVertical: 6 },
-  categoryChipText: { fontSize: 12, fontFamily: F.bold },
+  // Logo
+  avatarArea:     { marginTop: -50, marginBottom: 6, alignItems: 'center', alignSelf: 'center' },
+  avatarPressable:{ position: 'relative', alignItems: 'center', justifyContent: 'center' },
+  avatar:         { width: 96, height: 96, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center',
+                    borderWidth: 4, borderColor: '#fff', overflow: 'hidden' },
+  avatarInitial:  { fontSize: 38, color: '#fff', fontFamily: F.bold, textAlign: 'center', lineHeight: 96 },
+  cameraBadge:    { position: 'absolute', bottom: 2, right: 2, width: 28, height: 28, borderRadius: RADIUS.full,
+                    justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#fff' },
 
-  sectionDivider:   { height: 1, marginVertical: 4 },
-  quickRow:         { flexDirection: 'row', gap: 10 },
-  quickBtn:         { flex: 1, borderRadius: RADIUS.md, paddingVertical: 14, alignItems: 'center', gap: 6, ...SHADOW.card },
-  quickLabel:       { fontSize: 11, fontFamily: F.semibold },
+  // Identity
+  nameRow:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
+  name:        { fontSize: 22, fontFamily: F.bold, textAlign: 'center' },
+  locationRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
+  location:    { fontSize: 13, fontFamily: F.regular },
+
+  actionRow:   { flexDirection: 'row', gap: 10, marginTop: 12 },
+  editBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, minHeight: 40,
+                 borderWidth: 1.5, borderRadius: RADIUS.md, paddingHorizontal: 14, paddingVertical: 8 },
+  editBtnText: { fontSize: 13, fontFamily: F.bold },
+
+  // Stats strip
+  statsStrip:   { flexDirection: 'row', alignItems: 'center', width: '100%', marginTop: 16,
+                  paddingTop: 16, borderTopWidth: 1 },
+  statItem:     { flex: 1, minWidth: 0, alignItems: 'center', gap: 2 },
+  statValue:    { fontSize: 18, fontFamily: F.bold, textAlign: 'center' },
+  statLabel:    { fontSize: 11, fontFamily: F.medium, textAlign: 'center' },
+  statDivider:  { width: 1, height: 32, flexShrink: 0 },
+
+  // Section cards
+  sectionCard:   { marginHorizontal: 16, marginTop: 12, borderRadius: RADIUS.lg, padding: 18, ...SHADOW.card },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
+  sectionTitle:  { fontSize: 15, fontFamily: F.bold },
+  sectionAction: { fontSize: 13, fontFamily: F.bold },
+  aboutText:     { fontSize: 14, lineHeight: 22, fontFamily: F.regular },
+
+  // Category chips
+  chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  chip:     { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 7, borderRadius: RADIUS.sm },
+  chipText: { fontSize: 13, fontFamily: F.semibold },
+
+  // Contact / website rows
+  cardList:      { gap: 10 },
+  contactRow:    { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: RADIUS.md, padding: 12, borderWidth: 1 },
+  platformBubble:{ width: 36, height: 36, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  contactText:   { fontSize: 14, fontFamily: F.medium },
+
+  // Empty field (single-value prompt)
+  emptyField:     { borderRadius: RADIUS.md, borderWidth: 1.5, borderStyle: 'dashed', padding: 16, alignItems: 'center' },
+  emptyFieldText: { fontSize: 13, fontFamily: F.medium },
+
+  // Empty state (list-style prompt)
+  emptyWrap:    { alignItems: 'center', gap: 8, paddingVertical: 20, paddingHorizontal: 12,
+                  borderWidth: 1.5, borderRadius: RADIUS.lg, borderStyle: 'dashed' },
+  emptyTitle:   { fontSize: 14, fontFamily: F.bold },
+  emptyHint:    { fontSize: 12, textAlign: 'center', lineHeight: 18, fontFamily: F.regular },
+  emptyCta:     { borderRadius: RADIUS.md, paddingHorizontal: 20, paddingVertical: 9, minHeight: 40, justifyContent: 'center', alignItems: 'center', marginTop: 4 },
+  emptyCtaText: { fontSize: 13, color: '#fff', fontFamily: F.bold },
 });

@@ -34,6 +34,43 @@ export class MessagingController {
     } catch (err) { next(err); }
   }
 
+  async startCreatorConversation(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const conversation = await messagingService.startCreatorConversation(
+        req.user!.id, req.body.otherUserId, req.body.requestMessage,
+      );
+      success(res, conversation, 'Message request sent', 201);
+    } catch (err) { next(err); }
+  }
+
+  async checkCreatorConversation(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await messagingService.checkCreatorConversation(req.user!.id, req.params.creatorProfileId);
+      success(res, result ?? null);
+    } catch (err) { next(err); }
+  }
+
+  async blockConversation(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await messagingService.blockInConversation(req.params.id, req.user!.id, req.user!.role);
+      success(res, result, 'Blocked');
+    } catch (err) { next(err); }
+  }
+
+  async unblockConversation(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await messagingService.unblockInConversation(req.params.id, req.user!.id, req.user!.role);
+      success(res, result, 'Unblocked');
+    } catch (err) { next(err); }
+  }
+
+  async getBlockStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await messagingService.getBlockStatus(req.params.id, req.user!.id, req.user!.role);
+      success(res, result);
+    } catch (err) { next(err); }
+  }
+
   async respondToRequest(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const action = req.params.action as 'accept' | 'decline';

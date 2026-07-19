@@ -53,6 +53,44 @@ export class CreatorController {
     }
   }
 
+  // Creator browsing OTHER creators (not businesses) — mirrors listCreators/
+  // getCreatorPublicProfile above but excludes the viewer's own profile, since
+  // unlike the business use case, a creator's own profile can otherwise appear
+  // in their own results.
+  async listPeerCreators(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const page = parseInt(String(req.query.page ?? '1'), 10);
+      const limit = parseInt(String(req.query.limit ?? '10'), 10);
+      const search = req.query.search as string | undefined;
+      const location = req.query.location as string | undefined;
+      const categoriesRaw = req.query.categories as string | undefined;
+      const platformsRaw = req.query.platforms as string | undefined;
+      const categories = categoriesRaw ? categoriesRaw.split(',').filter(Boolean) : undefined;
+      const platforms = platformsRaw ? platformsRaw.split(',').filter(Boolean) : undefined;
+      const priceMin = req.query.priceMin ? parseFloat(String(req.query.priceMin)) : undefined;
+      const priceMax = req.query.priceMax ? parseFloat(String(req.query.priceMax)) : undefined;
+      const viewer = await creatorService.findByUserId(req.user!.id);
+      const result = await creatorService.listCreators({
+        page, limit, search, categories, location, platforms, priceMin, priceMax,
+        excludeId: viewer?.id, lang: req.language,
+      });
+      success(res, result, 'Creators retrieved');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async getPeerCreatorProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      // No viewerUserId passed through — that param drives the business-side
+      // profile-view analytics counter, which doesn't apply to creator<->creator views.
+      const profile = await creatorService.getCreatorPublicProfile(req.params.id, req.language);
+      success(res, profile, 'Creator profile retrieved');
+    } catch (err) {
+      next(err);
+    }
+  }
+
   async getCreatorFilterOptions(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const options = await creatorService.getFilterOptions();
@@ -293,6 +331,21 @@ export class CreatorController {
       );
       const profile = await creatorService.updateProfile(req.user!.id, { avatarUrl });
       success(res, { avatarUrl: profile.avatarUrl }, 'Avatar updated');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async uploadCoverImage(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.file) throw new AppError('No image file provided', 400);
+      const coverImageUrl = await uploadToCloudinary(
+        req.file.buffer,
+        'creators/covers',
+        `creator_cover_${req.user!.id}`,
+      );
+      const profile = await creatorService.updateProfile(req.user!.id, { coverImageUrl });
+      success(res, { coverImageUrl: profile.coverImageUrl }, 'Cover image updated');
     } catch (err) {
       next(err);
     }

@@ -9,6 +9,7 @@ export class CreatorRepository {
     platforms?: string[];
     priceMin?: number;
     priceMax?: number;
+    excludeId?: string;
     page: number;
     limit: number;
   }) {
@@ -20,6 +21,7 @@ export class CreatorRepository {
     }
     if (filters.categories?.length) where.categories = { hasSome: filters.categories };
     if (filters.location) where.location = { contains: filters.location, mode: 'insensitive' };
+    if (filters.excludeId) where.id = { not: filters.excludeId };
 
     if (filters.platforms?.length) {
       where.socialAccounts = { some: { platform: { in: filters.platforms } } };
@@ -109,6 +111,7 @@ export class CreatorRepository {
       include: {
         user: { select: { id: true, email: true, phone: true, role: true, isEmailVerified: true, isPhoneVerified: true, isOnboarded: true } },
         socialAccounts: { orderBy: { createdAt: 'asc' } },
+        _count: { select: { savedBy: true } },
       },
     });
   }
@@ -171,6 +174,7 @@ export class CreatorRepository {
     locationLat: number;
     locationLng: number;
     avatarUrl:   string;
+    coverImageUrl: string;
     categories:  string[];
     nearbyRadiusKm:        number;
     nearbyUseHomeLocation: boolean;

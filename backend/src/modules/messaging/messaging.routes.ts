@@ -3,7 +3,7 @@ import { MessagingController } from './messaging.controller';
 import { authenticate } from '../../middleware/auth';
 import { validate } from '../../middleware/validate';
 import { uploadChatFile, uploadChatVideo } from '../../middleware/upload';
-import { startConversationSchema, sendMessageSchema } from './messaging.schema';
+import { startConversationSchema, startCreatorConversationSchema, sendMessageSchema } from './messaging.schema';
 
 const router = Router();
 const ctrl   = new MessagingController();
@@ -19,9 +19,17 @@ router.get('/conversations/check/:creatorProfileId', ctrl.checkConversation.bind
 // Badge count
 router.get('/badge-count',                           ctrl.getBadgeCount.bind(ctrl));
 
+// Creator <-> creator message requests (parallel to the routes above, not overloaded)
+router.post('/conversations/creator',                       validate(startCreatorConversationSchema), ctrl.startCreatorConversation.bind(ctrl));
+router.get('/conversations/check-creator/:creatorProfileId', ctrl.checkCreatorConversation.bind(ctrl));
+
 // Per-conversation routes
 router.post('/conversations/:id/:action(accept|decline)', ctrl.respondToRequest.bind(ctrl));
 router.put('/conversations/:id/seen',                ctrl.markSeen.bind(ctrl));
+// Block/unblock the other party — only meaningful for creator<->creator conversations
+router.post('/conversations/:id/block',              ctrl.blockConversation.bind(ctrl));
+router.delete('/conversations/:id/block',            ctrl.unblockConversation.bind(ctrl));
+router.get('/conversations/:id/block-status',        ctrl.getBlockStatus.bind(ctrl));
 router.get('/conversations/:id/messages',            ctrl.getMessages.bind(ctrl));
 router.post('/conversations/:id/messages',           validate(sendMessageSchema), ctrl.sendMessage.bind(ctrl));
 // Image / file attachment — multipart upload, field name "file", optional "caption" text field

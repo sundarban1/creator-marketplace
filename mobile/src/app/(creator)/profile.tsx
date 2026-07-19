@@ -70,7 +70,8 @@ export default function CreatorProfileScreen() {
   const { categories: allCategories } = useAllCategories();
   const [profile, setProfile]           = useState<ApiCreatorProfile | null>(null);
   const [avatarUploading, setUploading] = useState(false);
-  const [eventCounts, setEventCounts]   = useState({ completed: 0, inProgress: 0 });
+  const [coverUploading, setCoverUploading] = useState(false);
+  const [eventCounts, setEventCounts]   = useState({ completed: 0 });
 
   useFocusEffect(useCallback(() => {
     creatorService.getProfile().then(setProfile).catch(() => {});
@@ -80,8 +81,7 @@ export default function CreatorProfileScreen() {
     campaignService.getMyApplications({ status: 'ACCEPTED', limit: 50 })
       .then(({ proposals }) => {
         setEventCounts({
-          completed:  proposals.filter((p) => p.workStatus === 'COMPLETED' && p.paymentStatus === 'RELEASED').length,
-          inProgress: proposals.filter((p) => p.workStatus === 'IN_PROGRESS').length,
+          completed: proposals.filter((p) => p.workStatus === 'COMPLETED' && p.paymentStatus === 'RELEASED').length,
         });
       })
       .catch(() => {});
@@ -100,6 +100,21 @@ export default function CreatorProfileScreen() {
       toast.error(err instanceof Error && err.message ? err.message : t('profile.uploadFailed'));
     } finally {
       setUploading(false);
+    }
+  }
+
+  async function handleCoverPress() {
+    setCoverUploading(true);
+    try {
+      const result = await pickAndUpload('creator-cover');
+      if (result) {
+        setProfile((p) => p ? { ...p, coverImageUrl: result.url } : p);
+      }
+    } catch (err) {
+      console.error('[cover upload]', err);
+      toast.error(err instanceof Error && err.message ? err.message : t('profile.uploadFailed'));
+    } finally {
+      setCoverUploading(false);
     }
   }
 
@@ -128,14 +143,23 @@ export default function CreatorProfileScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 60 }}>
 
         {/* ── Hero Cover ── */}
-        <LinearGradient
-          colors={['#7C3AED', '#EC4899', '#F97316']}
-          start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-          style={s.cover}>
-          {/* Decorative bubbles */}
-          <View style={[s.bubble, s.bubble1]} />
-          <View style={[s.bubble, s.bubble2]} />
-          <View style={[s.bubble, s.bubble3]} />
+        <View style={s.cover}>
+          {profile?.coverImageUrl ? (
+            <>
+              <Image source={{ uri: profile.coverImageUrl }} style={StyleSheet.absoluteFill} />
+              <View style={[StyleSheet.absoluteFill, s.coverScrim]} />
+            </>
+          ) : (
+            <LinearGradient
+              colors={['#7C3AED', '#EC4899', '#F97316']}
+              start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+              style={StyleSheet.absoluteFill}>
+              {/* Decorative bubbles */}
+              <View style={[s.bubble, s.bubble1]} />
+              <View style={[s.bubble, s.bubble2]} />
+              <View style={[s.bubble, s.bubble3]} />
+            </LinearGradient>
+          )}
 
           {/* Top bar */}
           <View style={s.topBar}>
@@ -143,9 +167,13 @@ export default function CreatorProfileScreen() {
               <Ionicons name="chevron-back" size={22} color="#fff" />
             </Pressable>
             <Text style={s.topTitle}>{t('profile.myProfile')}</Text>
-            <View style={{ width: 36 }} />
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={s.topIconBtn} hitSlop={4} onPress={handleCoverPress} disabled={coverUploading}>
+              {coverUploading
+                ? <ActivityIndicator size="small" color="#fff" />
+                : <Ionicons name="camera" size={18} color="#fff" />}
+            </Pressable>
           </View>
-        </LinearGradient>
+        </View>
 
         {/* ── Avatar card (overlaps cover) ── */}
         <View style={[s.profileCard, { backgroundColor: C.surface }]}>
@@ -214,39 +242,11 @@ export default function CreatorProfileScreen() {
             </View>
             <View style={[s.statDivider, { backgroundColor: C.border }]} />
             <View style={s.statItem}>
-              <Text style={[s.statValue, { color: C.text }]}>{eventCounts.inProgress}</Text>
-              <Text style={[s.statLabel, { color: C.textSecondary }]}>{t('profile.inProgressEvents')}</Text>
+              <Text style={[s.statValue, { color: C.text }]}>{profile?.savedByBusinessCount ?? 0}</Text>
+              <Text style={[s.statLabel, { color: C.textSecondary }]}>{t('profile.savedByBusinesses')}</Text>
             </View>
           </View>
         </View>
-
-        {/* ── Categories ── */}
-        <SectionCard
-          title={t('profile.contentCategories')}
-          action={{ label: profile?.categories?.length ? t('common.edit') : t('profile.addBtn'), onPress: () => router.push('/(creator)/edit-categories') }}
-          C={C}>
-          {profile?.categories?.length ? (
-            <View style={s.chipWrap}>
-              {profile.categories.map((cat) => {
-                const meta = getCategoryMeta(allCategories, cat);
-                return (
-                  <View key={cat} style={[s.chip, { backgroundColor: C.primaryLight }]}>
-                    <FontAwesome5 name={meta.icon} size={11} color={meta.color} />
-                    <Text style={[s.chipText, { color: C.brinjal1 }]}>{cat}</Text>
-                  </View>
-                );
-              })}
-            </View>
-          ) : (
-            <EmptyState
-              icon="th-large"
-              title={t('profile.noCategoriesYet')}
-              hint={t('profile.categoriesHint')}
-              cta={t('profile.addContentCategories')}
-              onPress={() => router.push('/(creator)/edit-categories')}
-              C={C} />
-          )}
-        </SectionCard>
 
         {/* ── Social Accounts ── */}
         <SectionCard
@@ -284,6 +284,34 @@ export default function CreatorProfileScreen() {
               hint={t('profile.socialHint')}
               cta={t('profile.addAccount')}
               onPress={() => router.push('/(creator)/settings?section=social' as never)}
+              C={C} />
+          )}
+        </SectionCard>
+
+        {/* ── Categories ── */}
+        <SectionCard
+          title={t('profile.contentCategories')}
+          action={{ label: profile?.categories?.length ? t('common.edit') : t('profile.addBtn'), onPress: () => router.push('/(creator)/edit-categories') }}
+          C={C}>
+          {profile?.categories?.length ? (
+            <View style={s.chipWrap}>
+              {profile.categories.map((cat) => {
+                const meta = getCategoryMeta(allCategories, cat);
+                return (
+                  <View key={cat} style={[s.chip, { backgroundColor: C.primaryLight }]}>
+                    <FontAwesome5 name={meta.icon} size={11} color={meta.color} />
+                    <Text style={[s.chipText, { color: C.brinjal1 }]}>{cat}</Text>
+                  </View>
+                );
+              })}
+            </View>
+          ) : (
+            <EmptyState
+              icon="th-large"
+              title={t('profile.noCategoriesYet')}
+              hint={t('profile.categoriesHint')}
+              cta={t('profile.addContentCategories')}
+              onPress={() => router.push('/(creator)/edit-categories')}
               C={C} />
           )}
         </SectionCard>
@@ -385,6 +413,7 @@ const s = StyleSheet.create({
 
   // Cover
   cover:    { height: 180, overflow: 'hidden' },
+  coverScrim: { backgroundColor: 'rgba(0,0,0,0.28)' },
   bubble:   { position: 'absolute', borderRadius: RADIUS.full, backgroundColor: 'rgba(255,255,255,0.08)' },
   bubble1:  { width: 160, height: 160, top: -50, right: -30 },
   bubble2:  { width: 100, height: 100, bottom: -20, left: 30 },

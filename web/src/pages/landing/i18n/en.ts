@@ -25,6 +25,7 @@ export const en = {
       { a: 'Ideas', b: 'Creativity' },
       { a: 'Brands', b: 'Talent' },
       { a: 'Creators', b: 'Success' },
+      { a: 'Creators', b: 'Creators' },
     ],
     sub: 'Kolab connects Nepali creators with brands for paid campaigns — discover opportunities, collaborate, and get paid, all in one place.',
     ctaCreator: 'Join as Creator',
@@ -92,6 +93,11 @@ export const en = {
       'Fitness & Health', 'Beauty', 'Lifestyle', 'Music', 'Photography',
       'Education', 'Entertainment',
     ],
+  },
+
+  collaboration: {
+    heading: 'Discover creators who match your interests',
+    sub: 'Search by location or category anywhere in Nepal, send a message request, and start the conversation — ready for your next collaboration.',
   },
 
   partners: {

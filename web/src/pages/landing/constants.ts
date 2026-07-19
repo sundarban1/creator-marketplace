@@ -17,6 +17,7 @@ export const SECTION_IDS = {
   how: 'how',
   audience: 'audience',
   categories: 'categories',
+  collaboration: 'collaboration',
   partners: 'partners',
   security: 'security',
   stories: 'stories',

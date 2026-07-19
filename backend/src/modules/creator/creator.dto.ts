@@ -31,6 +31,7 @@ export interface CreatorProfileDto {
   nearbyRadiusKm: number;
   nearbyUseHomeLocation: boolean;
   avatarUrl: string | null;
+  coverImageUrl: string | null;
   categories: string[];
   socialLinks: Record<string, string>;
   portfolioLinks: Array<{ id: string; label: string; url: string }>;
@@ -57,6 +58,8 @@ export interface CreatorProfileDto {
     isOnboarded: boolean;
   } | null;
   socialAccounts: SocialAccountDto[];
+  // How many businesses currently have this creator in their saved-creators list.
+  savedByBusinessCount: number;
 }
 
 export interface PublicCreatorDto {
@@ -142,6 +145,7 @@ type RawCreatorProfile = {
   nearbyRadiusKm: number;
   nearbyUseHomeLocation: boolean;
   avatarUrl: string | null;
+  coverImageUrl: string | null;
   categories: string[];
   socialLinks: Prisma.JsonValue;
   portfolioLinks: Prisma.JsonValue;
@@ -159,6 +163,7 @@ type RawCreatorProfile = {
   updatedAt: Date;
   user?: { id: string; email: string; phone: string | null; role: string; isEmailVerified: boolean; isPhoneVerified: boolean; isOnboarded: boolean } | null;
   socialAccounts?: RawSocialAccount[];
+  _count?: { savedBy: number };
 };
 
 export function toCreatorProfileDto(p: RawCreatorProfile): CreatorProfileDto {
@@ -174,6 +179,7 @@ export function toCreatorProfileDto(p: RawCreatorProfile): CreatorProfileDto {
     nearbyRadiusKm:        p.nearbyRadiusKm,
     nearbyUseHomeLocation: p.nearbyUseHomeLocation,
     avatarUrl:     p.avatarUrl,
+    coverImageUrl: p.coverImageUrl,
     categories:    p.categories,
     socialLinks:   (p.socialLinks ?? {}) as Record<string, string>,
     portfolioLinks: (p.portfolioLinks ?? []) as Array<{ id: string; label: string; url: string }>,
@@ -192,6 +198,7 @@ export function toCreatorProfileDto(p: RawCreatorProfile): CreatorProfileDto {
     updatedAt:     p.updatedAt.toISOString(),
     user:          p.user ?? null,
     socialAccounts: (p.socialAccounts ?? []).map(toSocialAccountDto),
+    savedByBusinessCount: p._count?.savedBy ?? 0,
   };
 }
 

@@ -39,9 +39,29 @@ model User {
   reviewsGiven     Review[]          @relation("ReviewFrom")
   reviewsReceived  Review[]          @relation("ReviewTo")
   visitorMessages  VisitorMessage[]
+  blocksMade       Block[]           @relation("BlocksMade")
+  blocksReceived   Block[]           @relation("BlocksReceived")
 
   @@index([role])
   @@map("users")
+}
+
+// Generic User<->User block, currently only surfaced for creator<->creator
+// conversations (see messaging.service.ts assertNotBlocked) — kept generic
+// rather than creator-scoped so it can extend to other pairings later
+// without another migration.
+model Block {
+  id        String   @id @default(cuid())
+  blockerId String
+  blockedId String
+  createdAt DateTime @default(now())
+
+  blocker User @relation("BlocksMade",     fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked User @relation("BlocksReceived", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerId, blockedId])
+  @@index([blockedId])
+  @@map("blocks")
 }
 
 model CreatorProfile {
@@ -51,6 +71,7 @@ model CreatorProfile {
   bio                String?
   location           String?
   avatarUrl          String?
+  coverImageUrl      String?
   categories         String[]
   socialLinks        Json               @default("{}")
   portfolioLinks     Json               @default("[]")
@@ -76,6 +97,7 @@ model CreatorProfile {
   panDocUploadedAt      DateTime?
   applications         Application[]
   conversations        Conversation[]       @relation("CreatorConversations")
+  conversationsAsCreator2 Conversation[]    @relation("Creator2Conversations")
   user                 User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   favoriteBusinesses   FavoriteBusiness[]
   socialAccounts       SocialAccount[]
@@ -193,6 +215,7 @@ model BusinessProfile {
   businessName        String?
   description         String?
   logoUrl             String?
+  coverImageUrl       String?
   website             String?
   categories          String[]
   panNo               String?
@@ -377,7 +400,13 @@ model Review {
 model Conversation {
   id             String             @id @default(cuid())
   creatorId      String
-  businessId     String
+  // Second creator side for creator<->creator conversations — null for
+  // creator<->business rows (businessId set instead). When set, canonical
+  // ordering is enforced at the repository layer: creatorId always holds the
+  // lexicographically smaller of the two creator-profile ids, creatorId2 the
+  // larger, so the pair is deterministic regardless of who initiates.
+  creatorId2     String?
+  businessId     String?
   campaignId     String?
   createdAt      DateTime           @default(now())
   status         ConversationStatus @default(PENDING)
@@ -389,23 +418,28 @@ model Conversation {
   lastMessageAt  DateTime?
   businessSeenAt DateTime?
   creatorSeenAt  DateTime?
+  creator2SeenAt DateTime?
   // "Delete conversation" is per-side only (like Messenger/Instagram) — hiding it
   // from one participant's inbox never affects the other's copy. Both flags reset
   // to false the moment a new message is sent, so the thread reappears for
   // whichever side had hidden it.
   hiddenForCreator  Boolean         @default(false)
   hiddenForBusiness Boolean         @default(false)
-  business       BusinessProfile    @relation("BusinessConversations", fields: [businessId], references: [id], onDelete: Cascade)
+  hiddenForCreator2 Boolean         @default(false)
+  business       BusinessProfile?   @relation("BusinessConversations", fields: [businessId], references: [id], onDelete: Cascade)
+  creator2       CreatorProfile?    @relation("Creator2Conversations", fields: [creatorId2], references: [id], onDelete: Cascade)
   campaign       Campaign?          @relation(fields: [campaignId], references: [id])
   creator        CreatorProfile     @relation("CreatorConversations", fields: [creatorId], references: [id], onDelete: Cascade)
   messages       Message[]
 
   @@unique([creatorId, businessId])
+  @@unique([creatorId, creatorId2])
   // Covers the inbox list query (messaging.repository.ts findConversationsByCreator/
   // findConversationsByBusiness): filter by side + hidden flag, ordered by
   // lastMessageAt. The old standalone @@index([businessId]) is superseded — a
   // composite index still serves businessId-only lookups via its leading column.
   @@index([creatorId, hiddenForCreator, lastMessageAt(sort: Desc)])
+  @@index([creatorId2, hiddenForCreator2, lastMessageAt(sort: Desc)])
   @@index([businessId, hiddenForBusiness, lastMessageAt(sort: Desc)])
   @@index([lastMessageAt(sort: Desc)])
   @@map("conversations")
@@ -434,6 +468,7 @@ model Message {
   // the other participant's copy or the underlying content.
   hiddenForCreator  Boolean      @default(false)
   hiddenForBusiness Boolean      @default(false)
+  hiddenForCreator2 Boolean      @default(false)
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   sender         User         @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
 

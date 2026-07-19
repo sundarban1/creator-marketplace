@@ -43,6 +43,8 @@ export type BusinessDetail = BusinessListItem & {
   hideContactDetails:  boolean;
   allowDirectMessages: boolean;
   stats:               BusinessPublicStats | null;
+  favoritedByCount:    number;
+  savedCreatorsCount:  number;
   isPrivate?:          false;
 };
 

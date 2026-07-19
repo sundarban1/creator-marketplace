@@ -11,6 +11,7 @@ import { TrustStats } from './sections/TrustStats';
 import { HowItWorks } from './sections/HowItWorks';
 import { Audience } from './sections/Audience';
 import { Categories } from './sections/Categories';
+import { Collaboration } from './sections/Collaboration';
 import { Partners } from './sections/Partners';
 import { Security } from './sections/Security';
 import { Stories } from './sections/Stories';
@@ -29,6 +30,7 @@ function LandingPageInner() {
       <Partners />
       <HowItWorks />
       <Audience />
+      <Collaboration />
       <Categories stats={stats} />
       <Security />
       <Stories />

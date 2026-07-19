@@ -9,11 +9,13 @@ import { API_BASE } from '@/lib/api';
 import { storage } from '@/utilities/storage';
 import { ACCESS_TOKEN_KEY } from '@/utilities/constants';
 
-export type UploadTarget = 'creator-avatar' | 'business-logo' | 'creator-citizenship' | 'creator-pan' | 'business-pan' | 'business-company-reg' | 'campaign-feature';
+export type UploadTarget = 'creator-avatar' | 'creator-cover' | 'business-logo' | 'business-cover' | 'creator-citizenship' | 'creator-pan' | 'business-pan' | 'business-company-reg' | 'campaign-feature';
 
 const TARGET_CONFIG: Record<UploadTarget, { path: string; field: string; aspect?: [number, number]; isDocument?: boolean }> = {
   'creator-avatar':      { path: '/api/creator/avatar',      field: 'avatar',   aspect: [1, 1]  },
+  'creator-cover':       { path: '/api/creator/cover',       field: 'cover',    aspect: [16, 9] },
   'business-logo':       { path: '/api/business/logo',       field: 'logo',     aspect: [1, 1]  },
+  'business-cover':      { path: '/api/business/cover',      field: 'cover',    aspect: [16, 9] },
   'creator-citizenship': { path: '/api/creator/citizenship', field: 'document', isDocument: true },
   'creator-pan':             { path: '/api/creator/pan',                       field: 'document', isDocument: true },
   'business-pan':            { path: '/api/business/documents/pan',         field: 'document', isDocument: true },
@@ -170,7 +172,7 @@ async function uploadAsset(asset: ImagePicker.ImagePickerAsset, target: UploadTa
   if (!res.ok) throw new Error(json.message ?? 'Upload failed');
 
   return {
-    url: json.data.avatarUrl ?? json.data.logoUrl ?? json.data.docUrl ?? json.data.imageUrl ?? '',
+    url: json.data.avatarUrl ?? json.data.coverImageUrl ?? json.data.logoUrl ?? json.data.docUrl ?? json.data.imageUrl ?? '',
     // Only document uploads (pan/company-reg/citizenship) return a status —
     // the server, not the client, is the source of truth for review state.
     status: (json.data.panDocStatus ?? json.data.companyRegDocStatus ?? json.data.citizenshipStatus) as DocStatus | undefined,

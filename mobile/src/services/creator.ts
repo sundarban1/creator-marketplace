@@ -15,6 +15,7 @@ export interface ApiCreatorProfile {
   nearbyRadiusKm: number;
   nearbyUseHomeLocation: boolean;
   avatarUrl: string | null;
+  coverImageUrl: string | null;
   categories: string[];
   portfolioLinks: { id: string; label: string; url: string }[];
   socialLinks: Record<string, string | null> | null;
@@ -31,6 +32,7 @@ export interface ApiCreatorProfile {
   panDocUrl: string | null;
   panDocStatus: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
   user: { id: string; email: string; phone: string | null; role: string; isEmailVerified: boolean; isPhoneVerified: boolean };
+  savedByBusinessCount: number;
 }
 
 export interface FacebookPageOption {

@@ -56,6 +56,12 @@ router.use(authenticate, authorize('CREATOR'));
 router.get('/profile', ctrl.getProfile.bind(ctrl));
 router.get('/username-available', ctrl.checkUsernameAvailability.bind(ctrl));
 
+// Creator browsing other creators (self excluded) — parallel to
+// business.routes.ts's GET /creators / GET /creators/:id, which are gated to
+// BUSINESS only and can't be reused directly for a CREATOR viewer.
+router.get('/peers',     ctrl.listPeerCreators.bind(ctrl));
+router.get('/peers/:id', ctrl.getPeerCreatorProfile.bind(ctrl));
+
 /**
  * @swagger
  * /api/creator/profile:
@@ -106,6 +112,7 @@ router.get('/username-available', ctrl.checkUsernameAvailability.bind(ctrl));
  */
 router.put('/profile', validate(updateCreatorProfileSchema), ctrl.updateProfile.bind(ctrl));
 router.post('/avatar', uploadImage.single('avatar'), ctrl.uploadAvatar.bind(ctrl));
+router.post('/cover', uploadImage.single('cover'), ctrl.uploadCoverImage.bind(ctrl));
 router.post('/citizenship', uploadImage.single('document'), ctrl.uploadCitizenship.bind(ctrl));
 router.post('/pan', uploadImage.single('document'), ctrl.uploadPan.bind(ctrl));
 

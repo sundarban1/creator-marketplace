@@ -13,6 +13,17 @@ import type { StartConversationInput, SendMessageInput } from './messaging.schem
 
 const ATTACHMENT_IMAGE_TRANSFORMATION = [{ width: 1600, crop: 'limit' }];
 
+type Participant = { userId: string; name: string; badgeRole: 'CREATOR' | 'BUSINESS'; profileId: string };
+
+type ConversationWithParties = {
+  creatorId: string;
+  creatorId2: string | null;
+  businessId: string | null;
+  creator: { userId: string; fullName: string | null };
+  creator2?: { userId: string; fullName: string | null } | null;
+  business?: { userId: string; businessName: string | null } | null;
+};
+
 export class MessagingService {
   private repo:         MessagingRepository;
   private creatorRepo:  CreatorRepository;
@@ -47,18 +58,73 @@ export class MessagingService {
   }
 
   private async verifyConversationAccess(
-    conversation: { creatorId: string; businessId: string },
+    conversation: { creatorId: string; creatorId2: string | null; businessId: string | null },
     userId: string,
     role: Role,
   ) {
     if (role === 'ADMIN') return;
     if (role === 'CREATOR') {
       const creator = await this.resolveCreator(userId);
-      if (creator.id !== conversation.creatorId) throw new AppError('Access denied', 403);
+      if (creator.id !== conversation.creatorId && creator.id !== conversation.creatorId2) throw new AppError('Access denied', 403);
     } else if (role === 'BUSINESS') {
       const business = await this.resolveBusiness(userId);
       if (business.id !== conversation.businessId) throw new AppError('Access denied', 403);
     }
+  }
+
+  // Resolves the two participants of a conversation regardless of shape —
+  // creator<->business (businessId set) or creator<->creator (creatorId2 set).
+  // Replaces direct access to conversation.creator/conversation.business, which
+  // would throw on a creator<->creator row since business is null there.
+  private participantsOf(conversation: ConversationWithParties): [Participant, Participant] {
+    const a: Participant = {
+      userId: conversation.creator.userId,
+      name: conversation.creator.fullName ?? 'Creator',
+      badgeRole: 'CREATOR',
+      profileId: conversation.creatorId,
+    };
+    const b: Participant = conversation.creatorId2 != null
+      ? {
+          userId: conversation.creator2!.userId,
+          name: conversation.creator2!.fullName ?? 'Creator',
+          badgeRole: 'CREATOR',
+          profileId: conversation.creatorId2,
+        }
+      : {
+          userId: conversation.business!.userId,
+          name: conversation.business!.businessName ?? 'Business',
+          badgeRole: 'BUSINESS',
+          profileId: conversation.businessId!,
+        };
+    return [a, b];
+  }
+
+  // Resolves the correct per-side "hidden for me" field. For pre-existing
+  // creator<->business rows (creator2 always undefined/null) this collapses
+  // to the original two-way ternary — zero behavior change.
+  private hiddenFieldFor(
+    conversation: { creator2?: { userId: string } | null },
+    userId: string,
+    role: Role,
+  ): 'hiddenForCreator' | 'hiddenForBusiness' | 'hiddenForCreator2' {
+    if (role === 'CREATOR' && userId === conversation.creator2?.userId) return 'hiddenForCreator2';
+    return role === 'CREATOR' ? 'hiddenForCreator' : 'hiddenForBusiness';
+  }
+
+  // Resolves the correct per-side "seen at" field — same zero-change guarantee
+  // for existing rows as hiddenFieldFor above.
+  private seenFieldFor(
+    conversation: { creator2?: { userId: string } | null },
+    userId: string,
+    role: Role,
+  ): 'businessSeenAt' | 'creatorSeenAt' | 'creator2SeenAt' {
+    if (role === 'BUSINESS') return 'businessSeenAt';
+    return userId === conversation.creator2?.userId ? 'creator2SeenAt' : 'creatorSeenAt';
+  }
+
+  private async assertNotBlocked(userIdA: string, userIdB: string): Promise<void> {
+    const block = await this.repo.findBlockBetween(userIdA, userIdB);
+    if (block) throw new AppError('You cannot message this user.', 403);
   }
 
   // ── Conversation list ──────────────────────────────────────────────────────
@@ -67,7 +133,7 @@ export class MessagingService {
     if (role === 'CREATOR') {
       const creator = await this.resolveCreator(userId);
       const { conversations, total } = await this.repo.findConversationsByCreator(creator.id, status, page, limit);
-      return { conversations: conversations.map((c) => toConversationDto(c, 'CREATOR')), total };
+      return { conversations: conversations.map((c) => toConversationDto(c, 'CREATOR', creator.id)), total };
     }
     if (role === 'BUSINESS') {
       const business = await this.resolveBusiness(userId);
@@ -94,7 +160,7 @@ export class MessagingService {
       );
       // Notify creator of new pending message request
       emitToUser(otherCreator.userId, 'conversation:update', { conversationId: conv.id });
-      return toConversationDto(conv);
+      return toConversationDto(conv, 'BUSINESS');
     }
 
     if (role === 'CREATOR') {
@@ -112,7 +178,7 @@ export class MessagingService {
         userId,
       );
       emitToUser(otherBusiness.userId, 'conversation:update', { conversationId: conv.id });
-      return toConversationDto(conv);
+      return toConversationDto(conv, 'CREATOR', creator.id);
     }
 
     throw new AppError('Unauthorized', 403);
@@ -131,48 +197,107 @@ export class MessagingService {
     return null;
   }
 
+  // ── Creator <-> creator (parallel to startConversation/checkConversation
+  // above — kept separate rather than overloaded, so the existing
+  // creator<->business code path is untouched) ───────────────────────────────
+
+  async startCreatorConversation(userId: string, otherUserId: string, requestMessage?: string) {
+    await this.assertMessagingEnabled();
+
+    const creator      = await this.resolveCreator(userId);
+    const otherCreator = await this.creatorRepo.findByUserId(otherUserId);
+    if (!otherCreator) throw new AppError('Creator not found', 404);
+    if (otherCreator.id === creator.id) throw new AppError('You cannot message yourself', 400);
+
+    await this.assertNotBlocked(userId, otherUserId);
+
+    const conv = await this.repo.findOrCreateCreatorConversation(creator.id, otherCreator.id, requestMessage, userId);
+    emitToUser(otherCreator.userId, 'conversation:update', { conversationId: conv.id });
+    return toConversationDto(conv, 'CREATOR', creator.id);
+  }
+
+  async checkCreatorConversation(userId: string, otherCreatorProfileId: string) {
+    const creator = await this.resolveCreator(userId);
+    return this.repo.findCreatorConversationBetween(creator.id, otherCreatorProfileId);
+  }
+
+  // ── Blocking (creator<->creator conversations only) ────────────────────────
+
+  async blockInConversation(conversationId: string, userId: string, role: Role) {
+    if (role !== 'CREATOR') throw new AppError('Access denied', 403);
+    const conversation = await this.repo.findConversationById(conversationId);
+    if (!conversation) throw new AppError('Conversation not found', 404);
+    await this.verifyConversationAccess(conversation, userId, role);
+    if (conversation.creatorId2 == null) throw new AppError('Blocking is only available for creator-to-creator conversations', 400);
+
+    const [pA, pB] = this.participantsOf(conversation);
+    const otherUserId = userId === pA.userId ? pB.userId : pA.userId;
+    await this.repo.createBlock(userId, otherUserId);
+    emitToUser(otherUserId, 'conversation:update', { conversationId });
+    return { blocked: true };
+  }
+
+  async unblockInConversation(conversationId: string, userId: string, role: Role) {
+    if (role !== 'CREATOR') throw new AppError('Access denied', 403);
+    const conversation = await this.repo.findConversationById(conversationId);
+    if (!conversation) throw new AppError('Conversation not found', 404);
+    await this.verifyConversationAccess(conversation, userId, role);
+    if (conversation.creatorId2 == null) throw new AppError('Blocking is only available for creator-to-creator conversations', 400);
+
+    const [pA, pB] = this.participantsOf(conversation);
+    const otherUserId = userId === pA.userId ? pB.userId : pA.userId;
+    await this.repo.removeBlock(userId, otherUserId);
+    return { blocked: false };
+  }
+
+  async getBlockStatus(conversationId: string, userId: string, role: Role) {
+    const conversation = await this.repo.findConversationById(conversationId);
+    if (!conversation) throw new AppError('Conversation not found', 404);
+    await this.verifyConversationAccess(conversation, userId, role);
+    if (conversation.creatorId2 == null) return { blockedByMe: false, blockedByOther: false };
+
+    const [pA, pB] = this.participantsOf(conversation);
+    const otherUserId = userId === pA.userId ? pB.userId : pA.userId;
+    const [blockedByMe, blockedByOther] = await Promise.all([
+      this.repo.isBlockedBy(userId, otherUserId),
+      this.repo.isBlockedBy(otherUserId, userId),
+    ]);
+    return { blockedByMe, blockedByOther };
+  }
+
   // ── Request accept / decline ───────────────────────────────────────────────
 
   async respondToRequest(conversationId: string, userId: string, role: Role, action: 'accept' | 'decline') {
+    if (role !== 'CREATOR' && role !== 'BUSINESS') throw new AppError('Access denied', 403);
+
     const conversation = await this.repo.findConversationById(conversationId);
     if (!conversation) throw new AppError('Conversation not found', 404);
     if (conversation.status !== 'PENDING') throw new AppError('Request is not pending', 400);
 
-    // Whichever side (creator or business) received the request may respond
-    if (role === 'CREATOR') {
-      const creator = await this.resolveCreator(userId);
-      if (creator.id !== conversation.creatorId) throw new AppError('Access denied', 403);
-    } else if (role === 'BUSINESS') {
-      const business = await this.resolveBusiness(userId);
-      if (business.id !== conversation.businessId) throw new AppError('Access denied', 403);
-    } else {
-      throw new AppError('Access denied', 403);
-    }
+    // Whichever side (creator, creator2, or business) received the request may respond
+    await this.verifyConversationAccess(conversation, userId, role);
 
     const newStatus: ConversationStatus = action === 'accept' ? 'ACCEPTED' : 'DECLINED';
     await this.repo.updateStatus(conversationId, newStatus);
 
-    const [creator, business] = await Promise.all([
-      this.creatorRepo.findById(conversation.creatorId),
-      this.businessRepo.findById(conversation.businessId),
-    ]);
+    const [pA, pB] = this.participantsOf(conversation);
+    const responder = userId === pA.userId ? pA : pB;
+    const recipient = responder === pA ? pB : pA;
 
-    if (action === 'accept' && creator && business) {
-      const responderName    = role === 'CREATOR' ? creator.fullName : business.businessName;
-      const recipientUserId  = role === 'CREATOR' ? business.userId : creator.userId;
+    if (action === 'accept') {
       notificationService.create({
-        userId:  recipientUserId,
+        userId:  recipient.userId,
         type:    'message_request_accepted',
-        title:   `${responderName} accepted your message request`,
+        title:   `${responder.name} accepted your message request`,
         body:    'You can now start chatting.',
-        refId:   role === 'CREATOR' ? creator.id : business.id,
-        refType: role === 'CREATOR' ? 'creator_profile' : 'business_profile',
+        refId:   responder.profileId,
+        refType: responder.badgeRole === 'CREATOR' ? 'creator_profile' : 'business_profile',
       }).catch(() => {});
     }
 
     // Notify both sides to refresh their conversation list
-    if (business) emitToUser(business.userId, 'conversation:update', { conversationId });
-    if (creator) emitToUser(creator.userId, 'conversation:update', { conversationId });
+    emitToUser(pA.userId, 'conversation:update', { conversationId });
+    emitToUser(pB.userId, 'conversation:update', { conversationId });
 
     return { status: newStatus };
   }
@@ -183,7 +308,8 @@ export class MessagingService {
     const conversation = await this.repo.findConversationById(conversationId);
     if (!conversation) throw new AppError('Conversation not found', 404);
     await this.verifyConversationAccess(conversation, userId, role);
-    const { messages: raw, total } = await this.repo.findMessages(conversationId, page, Math.min(limit, 200), role);
+    const hiddenField = role === 'ADMIN' ? null : this.hiddenFieldFor(conversation, userId, role);
+    const { messages: raw, total } = await this.repo.findMessages(conversationId, page, Math.min(limit, 200), hiddenField);
     return { messages: raw.map(toMessageDto), total, page, limit };
   }
 
@@ -197,7 +323,7 @@ export class MessagingService {
     const message = await this.repo.findMessageById(messageId);
     if (!message || message.conversationId !== conversationId) throw new AppError('Message not found', 404);
 
-    const field = role === 'CREATOR' ? 'hiddenForCreator' : 'hiddenForBusiness';
+    const field = this.hiddenFieldFor(conversation, userId, role);
     await this.repo.hideMessageForUser(messageId, field);
   }
 
@@ -213,9 +339,8 @@ export class MessagingService {
     await this.repo.softDeleteMessage(messageId, userId);
 
     // Live-update whichever side didn't just perform the delete.
-    const recipientUserId = userId === conversation.creator.userId
-      ? conversation.business.userId
-      : conversation.creator.userId;
+    const [pA, pB] = this.participantsOf(conversation);
+    const recipientUserId = userId === pA.userId ? pB.userId : pA.userId;
     emitToUser(recipientUserId, 'message:deleted', { conversationId, messageId });
   }
 
@@ -225,7 +350,7 @@ export class MessagingService {
     if (!conversation) throw new AppError('Conversation not found', 404);
     await this.verifyConversationAccess(conversation, userId, role);
 
-    const field = role === 'CREATOR' ? 'hiddenForCreator' : 'hiddenForBusiness';
+    const field = this.hiddenFieldFor(conversation, userId, role);
     await this.repo.hideConversationForUser(conversationId, field);
   }
 
@@ -235,6 +360,12 @@ export class MessagingService {
     const conversation = await this.repo.findConversationById(conversationId);
     if (!conversation) throw new AppError('Conversation not found', 404);
     await this.verifyConversationAccess(conversation, userId, role);
+
+    if (conversation.creatorId2 != null) {
+      const [pA, pB] = this.participantsOf(conversation);
+      const otherUserId = userId === pA.userId ? pB.userId : pA.userId;
+      await this.assertNotBlocked(userId, otherUserId);
+    }
 
     if (conversation.status === 'PENDING') {
       throw new AppError('Cannot send messages until the request is accepted', 403);
@@ -280,27 +411,25 @@ export class MessagingService {
     // Mark the conversation as seen for the sender immediately so their own
     // badge count stays at zero (prevents the flash caused by the race between
     // refreshChatBadge and markSeen on the client).
-    const senderSeenField = role === 'BUSINESS' ? 'businessSeenAt' : 'creatorSeenAt';
+    const senderSeenField = this.seenFieldFor(conversation, userId, role);
     await this.repo.updateSeenAt(conversationId, senderSeenField);
 
+    const [pA, pB] = this.participantsOf(conversation);
+    const sender    = userId === pA.userId ? pA : pB;
+    const recipient = sender === pA ? pB : pA;
+
     // Compute updated badge counts for both sides (after seenAt was updated above)
-    const [creatorBadge, businessBadge] = await Promise.all([
-      this.repo.getBadgeCount(conversation.creatorId, 'CREATOR'),
-      this.repo.getBadgeCount(conversation.businessId, 'BUSINESS'),
+    const [senderBadge, recipientBadge] = await Promise.all([
+      this.repo.getBadgeCount(sender.profileId, sender.badgeRole),
+      this.repo.getBadgeCount(recipient.profileId, recipient.badgeRole),
     ]);
 
     // Push message + updated badge count to both participants in real-time
-    emitToUser(conversation.creator.userId,  'message:new', { conversationId, message, chatBadgeCount: creatorBadge.count });
-    emitToUser(conversation.business.userId, 'message:new', { conversationId, message, chatBadgeCount: businessBadge.count });
+    emitToUser(sender.userId,    'message:new', { conversationId, message, chatBadgeCount: senderBadge.count });
+    emitToUser(recipient.userId, 'message:new', { conversationId, message, chatBadgeCount: recipientBadge.count });
 
     // Push notification (no DB record — message notifications do not appear in the bell)
-    const recipientUserId = userId === conversation.creator.userId
-      ? conversation.business.userId
-      : conversation.creator.userId;
-    const senderName = userId === conversation.creator.userId
-      ? (conversation.creator.fullName ?? 'Creator')
-      : (conversation.business.businessName ?? 'Business');
-    sendExpoPush(recipientUserId, senderName, pushBody.slice(0, 100)).catch(() => {});
+    sendExpoPush(recipient.userId, sender.name, pushBody.slice(0, 100)).catch(() => {});
 
     return message;
   }
@@ -421,7 +550,7 @@ export class MessagingService {
     if (!conversation) throw new AppError('Conversation not found', 404);
     await this.verifyConversationAccess(conversation, userId, role);
 
-    const field = role === 'BUSINESS' ? 'businessSeenAt' : 'creatorSeenAt';
+    const field = this.seenFieldFor(conversation, userId, role);
     await this.repo.updateSeenAt(conversationId, field);
   }
 

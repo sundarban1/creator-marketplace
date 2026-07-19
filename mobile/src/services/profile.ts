@@ -14,6 +14,7 @@ export type BusinessProfile = {
   businessName: string;
   description:  string | null;
   logoUrl:      string | null;
+  coverImageUrl: string | null;
   website:      string | null;
   phone:        string | null;
   categories:   string[];
@@ -33,6 +34,7 @@ export type BusinessProfile = {
   companyRegDocUrl:    string | null;
   companyRegDocStatus: DocStatus;
   verificationRejectReason: string | null;
+  favoritedByCount: number;
   user: { email: string; phone: string | null; isEmailVerified: boolean; isPhoneVerified: boolean };
 };
 
@@ -67,6 +69,7 @@ export const profileService = {
     businessName?:  string;
     description?:   string;
     logoUrl?:       string;
+    coverImageUrl?: string;
     website?:       string;
     phone?:         string;
     panNo?:         string;

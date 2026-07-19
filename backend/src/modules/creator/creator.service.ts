@@ -279,12 +279,13 @@ export class CreatorService {
     platforms?: string[];
     priceMin?: number;
     priceMax?: number;
+    excludeId?: string;
     lang?: string;
   }) {
-    const { page, limit, search, categories, location, platforms, priceMin, priceMax, lang = 'en' } = params;
+    const { page, limit, search, categories, location, platforms, priceMin, priceMax, excludeId, lang = 'en' } = params;
     const { creators: raw, total } = await this.repo.findMany({
       page, limit: Math.min(limit, 20),
-      search, categories, location, platforms, priceMin, priceMax,
+      search, categories, location, platforms, priceMin, priceMax, excludeId,
     });
     const dtos = raw.map(toCreatorListItemDto);
     const creators = await translateMany(dtos, [...CREATOR_FIELDS], lang);
@@ -370,6 +371,12 @@ export class CreatorService {
     const profile = await this.repo.findByUserId(userId);
     if (!profile) throw new AppError('Creator profile not found', 404);
     return toCreatorProfileDto(profile);
+  }
+
+  // Thin resolver used to self-exclude the viewer from the peer-creators
+  // browse list — returns null rather than throwing if no profile exists yet.
+  async findByUserId(userId: string) {
+    return this.repo.findByUserId(userId);
   }
 
   async updateProfile(userId: string, input: UpdateCreatorProfileInput) {

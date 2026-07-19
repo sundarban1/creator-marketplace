@@ -20,7 +20,8 @@ export interface MessageDto {
 export interface ConversationDto {
   id: string;
   creatorId: string;
-  businessId: string;
+  creatorId2: string | null;
+  businessId: string | null;
   campaignId: string | null;
   status: string;
   requestMessage: string | null;
@@ -28,9 +29,16 @@ export interface ConversationDto {
   createdAt: string;
   unreadCount: number;
   creator?: { fullName: string | null; avatarUrl: string | null; userId?: string } | null;
+  creator2?: { fullName: string | null; avatarUrl: string | null; userId?: string } | null;
   business?: { businessName: string | null; logoUrl: string | null; userId?: string } | null;
   campaign?: { title: string } | null;
   messages?: MessageDto[];
+  // Real, server-computed discriminator for "who's on the other end" — the
+  // mobile client used to guess this (always assuming BUSINESS for a creator
+  // viewer), which silently broke for creator<->creator conversations.
+  otherPartyRole: 'CREATOR' | 'BUSINESS';
+  otherPartyProfileId: string;
+  otherParty: { fullName: string | null; avatarUrl: string | null; userId?: string } | null;
 }
 
 type RawCampaign = {
@@ -83,15 +91,18 @@ export function toMessageDto(m: RawMessage): MessageDto {
 type RawConversation = {
   id: string;
   creatorId: string;
-  businessId: string;
+  creatorId2?: string | null;
+  businessId: string | null;
   campaignId: string | null;
   status: string;
   requestMessage: string | null;
   lastMessageAt: Date | null;
   creatorSeenAt?: Date | null;
+  creator2SeenAt?: Date | null;
   businessSeenAt?: Date | null;
   createdAt: Date;
   creator?: { fullName: string | null; avatarUrl: string | null; userId?: string } | null;
+  creator2?: { fullName: string | null; avatarUrl: string | null; userId?: string } | null;
   business?: { businessName: string | null; logoUrl: string | null; userId?: string } | null;
   campaign?: RawCampaign | null;
   messages?: RawMessage[];
@@ -100,25 +111,45 @@ type RawConversation = {
 export function toConversationDto(
   c: RawConversation,
   role?: 'CREATOR' | 'BUSINESS',
+  viewerCreatorId?: string,
 ): ConversationDto {
+  const isViewerOnCreator2Side = viewerCreatorId != null && c.creatorId2 === viewerCreatorId;
+
   let unreadCount = 0;
   if (c.lastMessageAt) {
-    const seenAt = role === 'CREATOR' ? c.creatorSeenAt : role === 'BUSINESS' ? c.businessSeenAt : undefined;
+    const seenAt = role === 'BUSINESS' ? c.businessSeenAt
+      : role === 'CREATOR' ? (isViewerOnCreator2Side ? c.creator2SeenAt : c.creatorSeenAt)
+      : undefined;
     if (!seenAt || c.lastMessageAt > seenAt) unreadCount = 1;
   }
+
+  const otherPartyRole: 'CREATOR' | 'BUSINESS' = c.creatorId2 != null
+    ? 'CREATOR'
+    : (role === 'CREATOR' ? 'BUSINESS' : 'CREATOR');
+  const otherParty = c.creatorId2 != null
+    ? (isViewerOnCreator2Side ? c.creator : c.creator2) ?? null
+    : (role === 'CREATOR' ? c.business ?? null : c.creator ?? null);
+  const otherPartyProfileId = c.creatorId2 != null
+    ? (isViewerOnCreator2Side ? c.creatorId : c.creatorId2)
+    : (role === 'CREATOR' ? c.businessId! : c.creatorId);
 
   const dto: ConversationDto = {
     id:             c.id,
     creatorId:      c.creatorId,
-    businessId:     c.businessId,
+    creatorId2:     c.creatorId2 ?? null,
+    businessId:     c.businessId ?? null,
     campaignId:     c.campaignId,
     status:         c.status,
     requestMessage: c.requestMessage,
     lastMessageAt:  c.lastMessageAt ? c.lastMessageAt.toISOString() : null,
     createdAt:      c.createdAt.toISOString(),
     unreadCount,
+    otherPartyRole,
+    otherPartyProfileId,
+    otherParty,
   };
   if (c.creator  != null) dto.creator  = c.creator;
+  if (c.creator2 != null) dto.creator2 = c.creator2;
   if (c.business != null) dto.business = c.business;
   // Once the creator's work on this campaign is COMPLETED, or the admin has
   // RELEASED payment for it (which happens before the creator's own COMPLETED

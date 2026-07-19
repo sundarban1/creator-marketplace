@@ -8,6 +8,7 @@ export const updateCreatorProfileSchema = z.object({
   locationLat: z.number().optional(),
   locationLng: z.number().optional(),
   avatarUrl:   z.string().url('Invalid avatar URL').optional(),
+  coverImageUrl: z.string().url('Invalid cover image URL').optional(),
   categories:  z.array(z.string()).optional(),
   nearbyRadiusKm:        z.number().int().min(1).max(200).optional(),
   nearbyUseHomeLocation: z.boolean().optional(),

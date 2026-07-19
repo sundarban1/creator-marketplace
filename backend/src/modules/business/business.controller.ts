@@ -71,6 +71,21 @@ export class BusinessController {
     }
   }
 
+  async uploadCoverImage(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.file) throw new AppError('No image file provided', 400);
+      const coverImageUrl = await uploadToCloudinary(
+        req.file.buffer,
+        'businesses/covers',
+        `business_cover_${req.user!.id}`,
+      );
+      const profile = await businessService.updateProfile(req.user!.id, { coverImageUrl });
+      success(res, { coverImageUrl: profile.coverImageUrl }, 'Cover image updated');
+    } catch (err) {
+      next(err);
+    }
+  }
+
   async uploadPanDoc(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.file) throw new AppError('No image file provided', 400);

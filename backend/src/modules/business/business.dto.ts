@@ -7,6 +7,7 @@ export interface BusinessProfileDto {
   businessName: string | null;
   description: string | null;
   logoUrl: string | null;
+  coverImageUrl: string | null;
   website: string | null;
   categories: string[];
   panNo: string | null;
@@ -30,6 +31,7 @@ export interface BusinessProfileDto {
   verificationRejectReason: string | null;
   createdAt: string;
   updatedAt: string;
+  favoritedByCount: number;
   user: { id: string; email: string; phone: string | null; role: string; isEmailVerified: boolean; isPhoneVerified: boolean } | null;
 }
 
@@ -69,6 +71,8 @@ export interface PublicBusinessDto {
     _count: { applications: number };
   }>;
   _count: { campaigns: number };
+  favoritedByCount: number;
+  savedCreatorsCount: number;
 }
 
 export interface BusinessListItemDto {
@@ -89,6 +93,7 @@ type RawBusinessProfile = {
   businessName: string | null;
   description: string | null;
   logoUrl: string | null;
+  coverImageUrl?: string | null;
   website: string | null;
   categories: string[];
   panNo: string | null;
@@ -111,6 +116,7 @@ type RawBusinessProfile = {
   verificationRejectReason?: string | null;
   createdAt: Date;
   updatedAt: Date;
+  _count?: { favoritedBy: number };
   user?: { id: string; email: string; phone: string | null; role: string; isEmailVerified: boolean; isPhoneVerified: boolean } | null;
 };
 
@@ -121,6 +127,7 @@ export function toBusinessProfileDto(b: RawBusinessProfile): BusinessProfileDto 
     businessName:        b.businessName,
     description:         b.description,
     logoUrl:             b.logoUrl,
+    coverImageUrl:       b.coverImageUrl ?? null,
     website:             b.website,
     categories:          b.categories,
     panNo:               b.panNo,
@@ -144,6 +151,7 @@ export function toBusinessProfileDto(b: RawBusinessProfile): BusinessProfileDto 
     verificationRejectReason: b.verificationRejectReason ?? null,
     createdAt:           b.createdAt.toISOString(),
     updatedAt:           b.updatedAt.toISOString(),
+    favoritedByCount:    b._count?.favoritedBy ?? 0,
     user:                b.user ?? null,
   };
 }
@@ -177,7 +185,7 @@ type RawPublicBusiness = {
     location: string | null;
     _count: { applications: number };
   }>;
-  _count: { campaigns: number };
+  _count: { campaigns: number; favoritedBy?: number; savedCreators?: number };
   user: { isEmailVerified: boolean; isPhoneVerified: boolean } | null;
 };
 
@@ -198,7 +206,9 @@ export function toPublicBusinessDto(b: RawPublicBusiness): PublicBusinessDto {
     allowDirectMessages: b.allowDirectMessages,
     createdAt:           b.createdAt.toISOString(),
     campaigns:           b.campaigns.map((c) => ({ ...c, deadline: c.deadline.toISOString() })),
-    _count:              b._count,
+    _count:              { campaigns: b._count.campaigns },
+    favoritedByCount:    b._count.favoritedBy ?? 0,
+    savedCreatorsCount:  b._count.savedCreators ?? 0,
   };
 }
 

@@ -262,8 +262,6 @@ export default function BusinessDetailScreen() {
     );
   }
 
-  const joinedYear = new Date(business.createdAt).getFullYear();
-
   const isFavorited = id ? favoriteIds.has(id) : false;
 
   async function handleToggleFavorite() {
@@ -308,18 +306,14 @@ export default function BusinessDetailScreen() {
                 </View>
                 <View style={[styles.heroStatDivider, { backgroundColor: C.border }]} />
                 <View style={styles.heroStat}>
-                  <Text style={[styles.heroStatValue, { color: C.brinjal1 }]}>{joinedYear}</Text>
-                  <Text style={[styles.heroStatLabel, { color: C.textSecondary }]}>{t('businessDetail.statJoined')}</Text>
+                  <Text style={[styles.heroStatValue, { color: C.brinjal1 }]}>{business.savedCreatorsCount}</Text>
+                  <Text style={[styles.heroStatLabel, { color: C.textSecondary }]}>{t('businessDetail.statSavedCreators')}</Text>
                 </View>
-                {business.categories.length > 0 && (
-                  <>
-                    <View style={[styles.heroStatDivider, { backgroundColor: C.border }]} />
-                    <View style={styles.heroStat}>
-                      <Text style={[styles.heroStatValue, { color: C.brinjal1 }]}>{business.categories.length}</Text>
-                      <Text style={[styles.heroStatLabel, { color: C.textSecondary }]}>{t('businessDetail.statSectors')}</Text>
-                    </View>
-                  </>
-                )}
+                <View style={[styles.heroStatDivider, { backgroundColor: C.border }]} />
+                <View style={styles.heroStat}>
+                  <Text style={[styles.heroStatValue, { color: C.brinjal1 }]}>{business.favoritedByCount}</Text>
+                  <Text style={[styles.heroStatLabel, { color: C.textSecondary }]}>{t('businessDetail.statFavoritedBy')}</Text>
+                </View>
               </View>
             </View>
           </View>
@@ -520,11 +514,11 @@ const styles = StyleSheet.create({
   heroMeta:              { flex: 1, paddingTop: 4 },
   heroNameRow:           { marginBottom: 6, flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' },
   heroName:              { fontSize: 22, lineHeight: 28, fontFamily: F.bold, flexShrink: 1 },
-  heroStats:             { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  heroStat:              { alignItems: 'center' },
-  heroStatValue:         { fontSize: 18, fontFamily: F.bold },
-  heroStatLabel:         { fontSize: 10, textTransform: 'uppercase', marginTop: 1, fontFamily: F.semibold },
-  heroStatDivider:       { width: 1, height: 28 },
+  heroStats:             { flexDirection: 'row', alignItems: 'flex-start', gap: 6 },
+  heroStat:              { flex: 1, minWidth: 0, alignItems: 'center' },
+  heroStatValue:         { fontSize: 18, fontFamily: F.bold, textAlign: 'center' },
+  heroStatLabel:         { fontSize: 10, textTransform: 'uppercase', marginTop: 1, fontFamily: F.semibold, textAlign: 'center' },
+  heroStatDivider:       { width: 1, height: 28, flexShrink: 0 },
 
   body:                  { padding: 16, gap: 12 },
   infoCard:              { borderRadius: RADIUS.lg, padding: 16, gap: 12 },

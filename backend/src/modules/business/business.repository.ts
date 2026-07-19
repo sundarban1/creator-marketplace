@@ -99,7 +99,13 @@ export class BusinessRepository {
             _count: { select: { applications: true } },
           },
         },
-        _count: { select: { campaigns: { where: { status: 'ACTIVE' } } } },
+        _count: {
+          select: {
+            campaigns: { where: { status: 'ACTIVE' } },
+            favoritedBy: true,
+            savedCreators: true,
+          },
+        },
       },
     });
   }
@@ -109,6 +115,7 @@ export class BusinessRepository {
       where: { userId },
       include: {
         user: { select: { id: true, email: true, phone: true, role: true, isEmailVerified: true, isPhoneVerified: true } },
+        _count: { select: { favoritedBy: true } },
       },
     });
   }
@@ -125,6 +132,7 @@ export class BusinessRepository {
       businessName: string;
       description: string | null;
       logoUrl: string | null;
+      coverImageUrl: string | null;
       website: string | null;
       categories: string[];
       panNo: string | null;

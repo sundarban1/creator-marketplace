@@ -39,6 +39,7 @@ router.post('/campaigns/:campaignId/invite', savedCtrl.inviteCreators.bind(saved
 router.get('/profile', ctrl.getProfile.bind(ctrl));
 router.put('/profile', validate(updateBusinessProfileSchema), ctrl.updateProfile.bind(ctrl));
 router.post('/logo', uploadImage.single('logo'), ctrl.uploadLogo.bind(ctrl));
+router.post('/cover', uploadImage.single('cover'), ctrl.uploadCoverImage.bind(ctrl));
 router.post('/documents/pan',         uploadImage.single('document'), ctrl.uploadPanDoc.bind(ctrl));
 router.post('/documents/company-reg', uploadImage.single('document'), ctrl.uploadCompanyRegDoc.bind(ctrl));
 router.get('/payment-history', ctrl.getPaymentHistory.bind(ctrl));
