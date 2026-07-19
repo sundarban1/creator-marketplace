@@ -160,6 +160,37 @@ export const creatorService = {
     return res.data;
   },
 
+  // Creator browsing OTHER creators — mirrors listCreators/getCreatorPublicProfile
+  // above but hits the CREATOR-accessible routes (self excluded server-side).
+  async listPeerCreators(params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    location?: string;
+    categories?: string[];
+    platforms?: string[];
+    priceMin?: number;
+    priceMax?: number;
+  }): Promise<ApiCreatorListResponse> {
+    const query = new URLSearchParams();
+    if (params?.page) query.set('page', String(params.page));
+    if (params?.limit) query.set('limit', String(params.limit));
+    if (params?.search) query.set('search', params.search);
+    if (params?.location) query.set('location', params.location);
+    if (params?.categories?.length) query.set('categories', params.categories.join(','));
+    if (params?.platforms?.length) query.set('platforms', params.platforms.join(','));
+    if (params?.priceMin !== undefined) query.set('priceMin', String(params.priceMin));
+    if (params?.priceMax !== undefined) query.set('priceMax', String(params.priceMax));
+    const qs = query.toString();
+    const res = await request<ApiCreatorListResponse>('GET', `/api/creator/peers${qs ? `?${qs}` : ''}`);
+    return res.data;
+  },
+
+  async getPeerCreatorProfile(id: string): Promise<ApiCreatorPublicProfile> {
+    const res = await request<ApiCreatorPublicProfile>('GET', `/api/creator/peers/${id}`);
+    return res.data;
+  },
+
   async getProfile(): Promise<ApiCreatorProfile> {
     const res = await request<ApiCreatorProfile>('GET', '/api/creator/profile');
     return res.data;

@@ -210,9 +210,17 @@ export default function NotificationsScreen() {
       }
     } else if (n.type === 'creator_saved') {
       // just acknowledge — no deep link needed
-    } else if (n.type === 'message_request_accepted' || n.type === 'business_favorited') {
+    } else if (n.type === 'message_request_accepted') {
       if (n.refId) {
-        router.push({ pathname: '/(business)/creator-detail', params: { id: n.refId } });
+        if (n.refType === 'creator_profile') {
+          router.push({ pathname: '/(creator)/creator-detail', params: { id: n.refId } });
+        } else if (n.refType === 'business_profile') {
+          router.push({ pathname: '/(creator)/business-detail', params: { id: n.refId } });
+        }
+      }
+    } else if (n.type === 'business_favorited') {
+      if (n.refId) {
+        router.push({ pathname: '/(creator)/business-detail', params: { id: n.refId } });
       }
     } else if (n.type === 'new_campaign') {
       if (n.refId) {

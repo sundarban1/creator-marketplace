@@ -337,14 +337,61 @@ function MessageBubble({
 // ── Screen ────────────────────────────────────────────────────────────────────
 
 export default function CreatorChatRoomScreen() {
-  const { id, name, avatar, userId: participantUserId, status: urlStatus, focusInput, campaignTitle } = useLocalSearchParams<{
-    id: string; name?: string; avatar?: string; userId?: string; status?: string; focusInput?: string; campaignTitle?: string;
+  const { id, name, avatar, userId: participantUserId, status: urlStatus, focusInput, campaignTitle, participantRole } = useLocalSearchParams<{
+    id: string; name?: string; avatar?: string; userId?: string; status?: string; focusInput?: string; campaignTitle?: string; participantRole?: string;
   }>();
   const { user } = useAuth();
   const { t }    = useLanguage();
   const C        = useAppColors();
   const insets   = useSafeAreaInsets();
   const { flags } = usePlatformFlags();
+
+  const [blockStatus, setBlockStatus] = useState<{ blockedByMe: boolean; blockedByOther: boolean } | null>(null);
+
+  useEffect(() => {
+    if (participantRole === 'CREATOR' && id) {
+      chatService.getBlockStatus(id).then(setBlockStatus).catch(() => {});
+    }
+  }, [id, participantRole]);
+
+  function handleBlockMenuPress() {
+    const isBlocked = blockStatus?.blockedByMe;
+    Alert.alert(
+      name ?? '',
+      undefined,
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: isBlocked ? t('messages.unblock') : t('messages.block'),
+          style: 'destructive',
+          onPress: () => {
+            if (isBlocked) {
+              chatService.unblockConversation(id)
+                .then(() => setBlockStatus((prev) => ({ blockedByMe: false, blockedByOther: prev?.blockedByOther ?? false })))
+                .catch(() => {});
+            } else {
+              Alert.alert(
+                t('messages.blockConfirmTitle', { name }),
+                t('messages.blockConfirmBody', { name }),
+                [
+                  { text: t('common.cancel'), style: 'cancel' },
+                  {
+                    text: t('messages.block'),
+                    style: 'destructive',
+                    onPress: () => {
+                      chatService.blockConversation(id)
+                        .then(() => setBlockStatus((prev) => ({ blockedByMe: true, blockedByOther: prev?.blockedByOther ?? false })))
+                        .catch(() => {});
+                    },
+                  },
+                ],
+              );
+            }
+          },
+        },
+      ],
+    );
+  }
 
   const [messages, setMessages]       = useState<Message[]>([]);
   const [messagesError, setMessagesError] = useState('');
@@ -755,6 +802,11 @@ export default function CreatorChatRoomScreen() {
                   : null;
               })()}
         </View>
+        {participantRole === 'CREATOR' && (
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={s.backBtn} hitSlop={4} onPress={handleBlockMenuPress}>
+            <Ionicons name="ellipsis-vertical" size={20} color="#fff" />
+          </Pressable>
+        )}
       </LinearGradient>
 
       {/* ── Campaign banner ── */}
@@ -863,7 +915,14 @@ export default function CreatorChatRoomScreen() {
             <Text style={[s.charCount, { color: C.textSecondary }]}>{t('messages.messagingDisabled')}</Text>
           </View>
         )}
-        {status === 'ACCEPTED' && flags.messagingEnabled && (
+        {status === 'ACCEPTED' && flags.messagingEnabled && (blockStatus?.blockedByMe || blockStatus?.blockedByOther) && (
+          <View style={[s.inputBar, { backgroundColor: C.surface, borderTopColor: C.border, paddingBottom: insets.bottom + 8, justifyContent: 'center' }]}>
+            <Text style={[s.charCount, { color: C.textSecondary }]}>
+              {blockStatus.blockedByMe ? t('messages.youBlockedUser') : t('messages.blockedByOther')}
+            </Text>
+          </View>
+        )}
+        {status === 'ACCEPTED' && flags.messagingEnabled && !blockStatus?.blockedByMe && !blockStatus?.blockedByOther && (
           <>
             <View style={[s.inputBar, { backgroundColor: C.surface, borderTopColor: C.border, paddingBottom: emojiOpen ? 8 : insets.bottom + 8 }]}>
               <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={s.iconBtn} onPress={handleCameraPress} hitSlop={4}>

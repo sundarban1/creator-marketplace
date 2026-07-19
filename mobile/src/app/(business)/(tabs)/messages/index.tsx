@@ -244,7 +244,7 @@ export default function BusinessChatListScreen() {
   async function loadTab(tabKey: Tab, page: number, replace: boolean) {
     if (!replace) setTabData((prev) => ({ ...prev, [tabKey]: { ...prev[tabKey], loadingMore: true } }));
     const status = tabKey === 'pending' ? 'PENDING' : 'ACCEPTED';
-    const { conversations, total } = await chatService.getConversations('BUSINESS', status, { page, limit: PAGE_SIZE });
+    const { conversations, total } = await chatService.getConversations(status, { page, limit: PAGE_SIZE });
     setTabData((prev) => {
       const prevItems = replace ? [] : prev[tabKey].items;
       const seen = new Set(prevItems.map((c) => c.id));

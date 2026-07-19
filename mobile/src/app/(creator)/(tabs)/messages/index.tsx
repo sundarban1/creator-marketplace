@@ -62,28 +62,41 @@ function formatTime(iso: string, t: TFn) {
 
 // ── Avatar ────────────────────────────────────────────────────────────────────
 
-function Avatar({ name, imageUrl, size = 50 }: { name: string; imageUrl?: string | null; size?: number }) {
+function Avatar({ name, imageUrl, size = 50, role }: { name: string; imageUrl?: string | null; size?: number; role?: 'CREATOR' | 'BUSINESS' }) {
   const [failed, setFailed] = useState(false);
+  const badge = role && (
+    <View style={[av.roleBadge, { backgroundColor: role === 'BUSINESS' ? '#2563EB' : '#059669' }]}>
+      <Text style={av.roleBadgeTxt}>{role === 'BUSINESS' ? 'B' : 'C'}</Text>
+    </View>
+  );
   if (imageUrl && !failed) {
     return (
-      <Image
-        source={{ uri: imageUrl }}
-        style={{ width: size, height: size, borderRadius: RADIUS.full }}
-        contentFit="cover"
-        onError={() => setFailed(true)}
-      />
+      <View style={{ width: size, height: size }}>
+        <Image
+          source={{ uri: imageUrl }}
+          style={{ width: size, height: size, borderRadius: RADIUS.full }}
+          contentFit="cover"
+          onError={() => setFailed(true)}
+        />
+        {badge}
+      </View>
     );
   }
   const color = avatarColor(name);
   return (
-    <View style={[av.wrap, { width: size, height: size, borderRadius: RADIUS.full, backgroundColor: color }]}>
-      <Text style={[av.text, { fontSize: size * 0.36 }]}>{initials(name)}</Text>
+    <View style={{ width: size, height: size }}>
+      <View style={[av.wrap, { width: size, height: size, borderRadius: RADIUS.full, backgroundColor: color }]}>
+        <Text style={[av.text, { fontSize: size * 0.36 }]}>{initials(name)}</Text>
+      </View>
+      {badge}
     </View>
   );
 }
 const av = StyleSheet.create({
   wrap: { justifyContent: 'center', alignItems: 'center' },
   text: { color: '#fff', fontFamily: F.bold },
+  roleBadge: { position: 'absolute', bottom: -2, right: -2, width: 16, height: 16, borderRadius: 8, justifyContent: 'center', alignItems: 'center', borderWidth: 1.5, borderColor: '#fff' },
+  roleBadgeTxt: { color: '#fff', fontSize: 9, fontFamily: F.bold },
 });
 
 // ── Request Card ──────────────────────────────────────────────────────────────
@@ -111,7 +124,7 @@ function RequestCard({ conv, onRespond }: { conv: Conversation; onRespond: () =>
 
       {/* Top: avatar + info + new badge */}
       <View style={s.reqTop}>
-        <Avatar name={conv.participantName} imageUrl={conv.participantAvatar} size={48} />
+        <Avatar name={conv.participantName} imageUrl={conv.participantAvatar} size={48} role={conv.participantRole} />
         <View style={s.reqInfo}>
           <View style={s.reqNameRow}>
             <Text style={[s.reqName, { color: C.text }]} numberOfLines={1}>{conv.participantName}</Text>
@@ -217,7 +230,7 @@ function ChatCard({ conv, onDelete }: { conv: Conversation; onDelete: (id: strin
         onPress={() =>
           router.push({
             pathname: '/(creator)/messages/[id]' as never,
-            params: { id: conv.id, name: conv.participantName, avatar: conv.participantAvatar ?? '', userId: conv.participantUserId ?? '', status: conv.status, campaignTitle: conv.campaignTitle ?? '' },
+            params: { id: conv.id, name: conv.participantName, avatar: conv.participantAvatar ?? '', userId: conv.participantUserId ?? '', status: conv.status, campaignTitle: conv.campaignTitle ?? '', participantRole: conv.participantRole },
           })
         }>
         {/* Left accent stripe */}
@@ -291,8 +304,8 @@ export default function CreatorMessagesScreen() {
     if (!silent) setLoading(true);
     try {
       const [pending, accepted] = await Promise.all([
-        chatService.getConversations('CREATOR', 'PENDING'),
-        chatService.getConversations('CREATOR', 'ACCEPTED'),
+        chatService.getConversations('PENDING'),
+        chatService.getConversations('ACCEPTED'),
       ]);
       setRequests(pending.conversations);
       setChats(accepted.conversations.sort((a, b) => new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime()));

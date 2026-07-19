@@ -187,7 +187,7 @@ export default function BusinessDetailScreen() {
     if (!business || business.isPrivate) return;
     setSendingMsg(true);
     try {
-      const conv = await chatService.sendMessageRequest(business.userId, requestMsg.trim() || undefined, undefined, 'CREATOR');
+      const conv = await chatService.sendMessageRequest(business.userId, requestMsg.trim() || undefined);
       setConvId(conv.id);
       setConvStatus(conv.status);
       setShowMsgModal(false);

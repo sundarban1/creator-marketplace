@@ -6,25 +6,16 @@ import { ACCESS_TOKEN_KEY }  from '@/utilities/constants';
 
 // ── Transformers ────────────────────────────────────────────────────────────────
 
-function toConversation(api: ApiConversation, currentUserRole: 'CREATOR' | 'BUSINESS'): Conversation {
-  const lastMsg   = api.messages?.[0];
-  const isCreator = currentUserRole === 'CREATOR';
-
-  const participantName   = isCreator
-    ? (api.business?.businessName ?? 'Business')
-    : (api.creator?.fullName      ?? 'Creator');
-  const participantAvatar = isCreator
-    ? (api.business?.logoUrl  ?? undefined)
-    : (api.creator?.avatarUrl ?? undefined);
-  const participantUserId = isCreator ? api.business?.userId : api.creator?.userId;
+function toConversation(api: ApiConversation): Conversation {
+  const lastMsg = api.messages?.[0];
 
   return {
     id:              api.id,
-    participantId:   isCreator ? api.businessId : api.creatorId,
-    participantName,
-    participantAvatar,
-    participantUserId,
-    participantRole: isCreator ? 'BUSINESS' : 'CREATOR',
+    participantId:   api.otherPartyProfileId,
+    participantName:   api.otherParty?.fullName ?? (api.otherPartyRole === 'BUSINESS' ? 'Business' : 'Creator'),
+    participantAvatar: api.otherParty?.avatarUrl ?? undefined,
+    participantUserId: api.otherParty?.userId,
+    participantRole: api.otherPartyRole,
     status:          api.status ?? 'ACCEPTED',
     requestMessage:  api.requestMessage,
     lastMessage:     lastMsg?.content ?? api.requestMessage ?? '',
@@ -112,7 +103,6 @@ export function createVideoUploadTask(
 
 export const chatService = {
   async getConversations(
-    currentUserRole: 'CREATOR' | 'BUSINESS',
     status?: 'PENDING' | 'ACCEPTED' | 'DECLINED',
     params?: { page?: number; limit?: number },
   ): Promise<{ conversations: Conversation[]; total: number }> {
@@ -122,7 +112,7 @@ export const chatService = {
       { status, page: params?.page ?? 1, limit: params?.limit ?? 100 },
     );
     return {
-      conversations: res.data.map((c) => toConversation(c, currentUserRole)),
+      conversations: res.data.map(toConversation),
       total: res.pagination?.total ?? res.data.length,
     };
   },
@@ -131,13 +121,12 @@ export const chatService = {
     otherUserId: string,
     requestMessage?: string,
     campaignId?: string,
-    currentUserRole: 'CREATOR' | 'BUSINESS' = 'BUSINESS',
   ): Promise<Conversation> {
     const res = await request<ApiConversation>(
       'POST', '/api/messaging/conversations',
       { otherUserId, requestMessage, campaignId },
     );
-    return toConversation(res.data, currentUserRole);
+    return toConversation(res.data);
   },
 
   async checkConversation(
@@ -145,6 +134,41 @@ export const chatService = {
   ): Promise<{ id: string; status: 'PENDING' | 'ACCEPTED' | 'DECLINED' } | null> {
     const res = await request<{ id: string; status: 'PENDING' | 'ACCEPTED' | 'DECLINED' } | null>(
       'GET', `/api/messaging/conversations/check/${creatorProfileId}`,
+    );
+    return res.data;
+  },
+
+  // ── Creator <-> creator (parallel to the above, not merged — the backend
+  // route/logic genuinely differs, see messaging.service.ts) ─────────────────
+
+  async sendCreatorMessageRequest(otherUserId: string, requestMessage?: string): Promise<Conversation> {
+    const res = await request<ApiConversation>(
+      'POST', '/api/messaging/conversations/creator',
+      { otherUserId, requestMessage },
+    );
+    return toConversation(res.data);
+  },
+
+  async checkCreatorConversation(
+    creatorProfileId: string,
+  ): Promise<{ id: string; status: 'PENDING' | 'ACCEPTED' | 'DECLINED' } | null> {
+    const res = await request<{ id: string; status: 'PENDING' | 'ACCEPTED' | 'DECLINED' } | null>(
+      'GET', `/api/messaging/conversations/check-creator/${creatorProfileId}`,
+    );
+    return res.data;
+  },
+
+  async blockConversation(conversationId: string): Promise<void> {
+    await request('POST', `/api/messaging/conversations/${conversationId}/block`);
+  },
+
+  async unblockConversation(conversationId: string): Promise<void> {
+    await request('DELETE', `/api/messaging/conversations/${conversationId}/block`);
+  },
+
+  async getBlockStatus(conversationId: string): Promise<{ blockedByMe: boolean; blockedByOther: boolean }> {
+    const res = await request<{ blockedByMe: boolean; blockedByOther: boolean }>(
+      'GET', `/api/messaging/conversations/${conversationId}/block-status`,
     );
     return res.data;
   },

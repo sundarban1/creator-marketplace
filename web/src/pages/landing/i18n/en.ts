@@ -98,6 +98,17 @@ export const en = {
   collaboration: {
     heading: 'Discover creators who match your interests',
     sub: 'Search by location or category anywhere in Nepal, send a message request, and start the conversation — ready for your next collaboration.',
+    caption: 'Discover · Message · Collaborate',
+    cities: [
+      'Biratnagar', 'Dharan', 'Kathmandu', 'Pokhara', 'Nepalgunj', 'Dang',
+      'Butwal', 'Itahari', 'Dhankuta', 'Nagarkot', 'Dhulikhel', 'Bhaktapur',
+      'Lalitpur', 'Bharatpur', 'Hetauda', 'Damak', 'Birtamod', 'Mechinagar',
+      'Janakpur', 'Birgunj', 'Kalaiya', 'Lahan', 'Rajbiraj', 'Gaur',
+      'Bhairahawa', 'Ghorahi', 'Tulsipur', 'Taulihawa', 'Kohalpur', 'Dhangadhi',
+      'Tikapur', 'Mahendranagar', 'Attariya', 'Surkhet', 'Baglung', 'Beni',
+      'Kushma', 'Gorkha', 'Waling', 'Banepa', 'Panauti', 'Bidur',
+      'Sindhuli', 'Ilam',
+    ],
   },
 
   partners: {

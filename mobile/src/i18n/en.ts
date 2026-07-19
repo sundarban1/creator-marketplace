@@ -1531,6 +1531,7 @@ const en = {
   explore: {
     exploreCreators: 'Explore Creators',
     exploreBrands: 'Explore Businesses',
+    creatorPeersSub: 'Connect and collaborate with other creators',
     saved: 'Saved',
     favorites: 'Favorites',
     searchCreators: 'Search creators…',

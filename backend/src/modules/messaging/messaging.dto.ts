@@ -126,9 +126,17 @@ export function toConversationDto(
   const otherPartyRole: 'CREATOR' | 'BUSINESS' = c.creatorId2 != null
     ? 'CREATOR'
     : (role === 'CREATOR' ? 'BUSINESS' : 'CREATOR');
-  const otherParty = c.creatorId2 != null
+  // Normalized to a single {fullName, avatarUrl, userId} shape regardless of
+  // whether the other side is a creator or a business (business rows carry
+  // businessName/logoUrl instead) — the mobile client reads one shape only.
+  const otherPartyRaw = c.creatorId2 != null
     ? (isViewerOnCreator2Side ? c.creator : c.creator2) ?? null
     : (role === 'CREATOR' ? c.business ?? null : c.creator ?? null);
+  const otherParty = otherPartyRaw == null ? null : (
+    'businessName' in otherPartyRaw
+      ? { fullName: otherPartyRaw.businessName, avatarUrl: otherPartyRaw.logoUrl, userId: otherPartyRaw.userId }
+      : { fullName: otherPartyRaw.fullName, avatarUrl: otherPartyRaw.avatarUrl, userId: otherPartyRaw.userId }
+  );
   const otherPartyProfileId = c.creatorId2 != null
     ? (isViewerOnCreator2Side ? c.creatorId : c.creatorId2)
     : (role === 'CREATOR' ? c.businessId! : c.creatorId);

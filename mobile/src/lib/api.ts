@@ -106,7 +106,8 @@ export interface ApiCampaign {
 export interface ApiConversation {
   id:             string;
   creatorId:      string;
-  businessId:     string;
+  creatorId2?:    string | null;
+  businessId:     string | null;
   campaignId?:    string | null;
   status:         'PENDING' | 'ACCEPTED' | 'DECLINED';
   requestMessage?: string | null;
@@ -114,9 +115,13 @@ export interface ApiConversation {
   createdAt:      string;
   unreadCount:    number;
   creator?:       { fullName: string; avatarUrl: string | null; userId?: string };
+  creator2?:      { fullName: string; avatarUrl: string | null; userId?: string };
   business?:      { businessName: string; logoUrl: string | null; userId?: string };
   campaign?:      { title: string } | null;
   messages:       ApiMessage[];
+  otherPartyRole: 'CREATOR' | 'BUSINESS';
+  otherPartyProfileId: string;
+  otherParty:     { fullName: string | null; avatarUrl: string | null; userId?: string } | null;
 }
 
 export interface ApiMessage {
