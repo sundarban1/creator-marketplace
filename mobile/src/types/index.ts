@@ -109,6 +109,11 @@ export type Message = {
   localUri?: string;
   uploadProgress?: number; // 0..1, meaningful only while status === 'uploading'
   retryCount?: number;
+  // Diagnostic only — real reason the last upload attempt failed (HTTP status,
+  // network error, etc). Surfaced in the failed-attachment bubble since the
+  // generic "Upload failed" label alone gives no way to tell a server rejection
+  // apart from a dropped connection.
+  errorDetail?: string;
 };
 
 export type AppNotification = {

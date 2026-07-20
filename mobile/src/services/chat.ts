@@ -83,10 +83,15 @@ export function createVideoUploadTask(
         if (xhr!.status >= 200 && xhr!.status < 300 && parsed.data) {
           resolve(toMessage(parsed.data));
         } else {
-          reject(new Error(parsed.message ?? 'Video upload failed'));
+          // Keep the server's own message (used by isTransientNetworkError to
+          // decide whether to auto-retry) but tag the HTTP status on so a real
+          // rejection (400/413/500) is distinguishable from a dropped connection
+          // once it reaches the failed-bubble UI as errorDetail.
+          const reason = parsed.message ?? xhr!.statusText ?? 'Video upload failed';
+          reject(new Error(`${reason} (HTTP ${xhr!.status})`));
         }
       };
-      xhr.onerror   = () => reject(new Error('Video upload failed'));
+      xhr.onerror   = () => reject(new Error('Video upload failed — network request failed'));
       xhr.onabort   = () => reject(new Error('Video upload cancelled'));
       xhr.ontimeout = () => reject(new Error('Video upload timed out'));
 

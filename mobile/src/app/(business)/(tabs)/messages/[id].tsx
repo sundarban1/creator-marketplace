@@ -286,6 +286,9 @@ function MessageBubble({
                 <View style={s.imageUploadingOverlay}>
                   <Ionicons name="alert-circle" size={22} color="#fff" />
                   <Text style={s.videoStatusTxt}>{t('messages.uploadFailed')}</Text>
+                  {msg.errorDetail && (
+                    <Text style={s.videoStatusDetailTxt} numberOfLines={2}>{msg.errorDetail}</Text>
+                  )}
                   <View style={s.failedActions}>
                     <Pressable style={s.failedBtn} onPress={() => onRetryVideo(msg)}>
                       <Text style={s.failedBtnTxt}>{t('messages.retry')}</Text>
@@ -619,12 +622,13 @@ export default function BusinessChatRoomScreen() {
       });
     } catch (e) {
       const attempt = (msg.retryCount ?? 0) + 1;
+      const detail = e instanceof Error ? e.message : undefined;
       if (isTransientNetworkError(e) && attempt <= 3) {
-        updateMsg(msg.id, { retryCount: attempt });
+        updateMsg(msg.id, { retryCount: attempt, errorDetail: detail });
         await runVideoSend({ ...msg, retryCount: attempt });
         return;
       }
-      updateMsg(msg.id, { status: 'failed', retryCount: attempt });
+      updateMsg(msg.id, { status: 'failed', retryCount: attempt, errorDetail: detail });
     } finally {
       delete uploadTasks.current[msg.id];
     }
@@ -927,6 +931,7 @@ const s = StyleSheet.create({
   durationBadge:    { position: 'absolute', bottom: 8, right: 8, backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: RADIUS.sm, paddingHorizontal: 6, paddingVertical: 2 },
   durationBadgeTxt: { color: '#fff', fontSize: 11, fontFamily: F.semibold },
   videoStatusTxt:   { color: '#fff', fontSize: 12, fontFamily: F.semibold },
+  videoStatusDetailTxt: { color: 'rgba(255,255,255,0.75)', fontSize: 10, fontFamily: F.regular, textAlign: 'center', paddingHorizontal: 10, marginTop: 2 },
   failedActions:    { flexDirection: 'row', gap: 8, marginTop: 4 },
   failedBtn:        { paddingHorizontal: 12, paddingVertical: 5, borderRadius: RADIUS.full, backgroundColor: '#fff' },
   failedBtnTxt:     { color: '#111827', fontSize: 11, fontFamily: F.semibold },
