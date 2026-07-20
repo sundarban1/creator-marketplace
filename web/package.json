@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build && npm run prerender",
+    "build": "tsc -b && vite build && npx playwright install chromium && npm run prerender",
     "build:no-prerender": "tsc -b && vite build",
     "prerender": "node scripts/prerender.mjs",
     "lint": "eslint .",
