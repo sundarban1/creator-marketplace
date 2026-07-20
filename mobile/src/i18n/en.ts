@@ -230,7 +230,7 @@ const en = {
       resendBtn: 'Resend Code',
       resending: 'Sending…',
       expiryHint: 'Code expires in 10 minutes',
-      spamHint: 'Check your spam folder',
+      spamHint: "Don't see it? Please check your spam or promotions folder too.",
       incompleteError: 'Please enter all {{length}} digits.',
       resendError: 'Failed to resend code.',
       successTitle: 'Account Verified!',

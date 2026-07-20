@@ -12,22 +12,22 @@ type Props = {
 };
 
 // Single source of truth for every creator sub-page's title bar — back
-// chevron, visible title, and an optional right-side action, same position
-// on every screen.
+// chevron, centered title, optional right-side action, same position on
+// every screen. The right slot keeps the same min-width as the back button
+// so the title stays visually centered when there's no action there.
 export function PageHeader({ title, backFallback, onBack, rightSlot }: Props) {
   const C = useAppColors();
   return (
     <View style={styles.row} accessibilityRole="header" accessibilityLabel={title}>
       <BackButton fallback={backFallback} onPress={onBack} />
       <Text style={[styles.title, { color: C.text }]} numberOfLines={1}>{title}</Text>
-      {rightSlot ? <View style={styles.right}>{rightSlot}</View> : <View style={styles.spacer} />}
+      <View style={styles.right}>{rightSlot}</View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  row:     { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, gap: 12 },
-  title:   { flex: 1, fontSize: 20, fontFamily: F.bold, lineHeight: 24 },
-  spacer:  { flex: 1 },
-  right:   { marginLeft: 8 },
+  row:   { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, gap: 12 },
+  title: { flex: 1, textAlign: 'center', fontSize: 18, fontFamily: F.bold },
+  right: { minWidth: 40, alignItems: 'flex-end' },
 });

@@ -124,7 +124,19 @@ async function main() {
   console.log(`[prerender] done — ${ROUTES.length} routes prerendered.`);
 }
 
-main().catch((err) => {
-  console.error('[prerender] failed:', err);
-  process.exitCode = 1;
-});
+main()
+  .then(() => {
+    // Force-exit rather than letting the event loop drain on its own —
+    // if the spawned `vite preview` process (or a lingering pipe/socket
+    // from it) doesn't fully die even after preview.kill(), Node just
+    // hangs forever with nothing left to do. That's silent in a local
+    // terminal (you'd eventually Ctrl+C), but on Render it means the
+    // build never returns control and gets killed by the build timeout
+    // with no error logged — indistinguishable from the script itself
+    // failing, except every route already crawled and wrote cleanly.
+    process.exit(0);
+  })
+  .catch((err) => {
+    console.error('[prerender] failed:', err);
+    process.exit(1);
+  });

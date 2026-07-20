@@ -279,8 +279,17 @@ export default function VerifyScreen() {
           </View>
 
           <Text style={[styles.hint, { color: C.textSecondary }]}>
-            {t('auth.verify.expiryHint')}{channel === 'email' ? ` · ${t('auth.verify.spamHint')}` : ''}
+            {t('auth.verify.expiryHint')}
           </Text>
+
+          {channel === 'email' && (
+            <View style={[styles.spamNote, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 + '30' }]}>
+              <Ionicons name="mail-unread-outline" size={16} color={C.brinjal1} />
+              <Text style={[styles.spamNoteText, { color: C.brinjal1 }]}>
+                {t('auth.verify.spamHint')}
+              </Text>
+            </View>
+          )}
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -343,7 +352,18 @@ const styles = StyleSheet.create({
   resendTimer: { fontSize: 14, fontFamily: F.semibold },
   resendLink: { fontSize: 14, fontFamily: F.bold },
 
-  hint: { fontSize: 12, textAlign: 'center', opacity: 0.7, fontFamily: F.regular },
+  hint: { fontSize: 12, textAlign: 'center', opacity: 0.7, fontFamily: F.regular, marginBottom: 12 },
+  spamNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    alignSelf: 'stretch',
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+  },
+  spamNoteText: { flex: 1, fontSize: 12.5, lineHeight: 18, fontFamily: F.medium },
 
   successContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 },
   successContent: { alignItems: 'center', gap: 16 },

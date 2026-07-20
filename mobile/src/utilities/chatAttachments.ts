@@ -105,13 +105,14 @@ export function promptAttachmentChoice(): Promise<'gallery' | 'video' | 'documen
   return new Promise((resolve) => {
     if (Platform.OS === 'ios') {
       ActionSheetIOS.showActionSheetWithOptions(
-        { options: ['Photo', 'Video', 'Document', 'Cancel'], cancelButtonIndex: 3 },
-        (idx) => resolve(idx === 0 ? 'gallery' : idx === 1 ? 'video' : idx === 2 ? 'document' : null),
+        // Video option hidden from UI for now (upload reliability issue) — code below kept intact.
+        { options: ['Photo', /* 'Video', */ 'Document', 'Cancel'], cancelButtonIndex: 2 },
+        (idx) => resolve(idx === 0 ? 'gallery' : idx === 1 ? 'document' : null),
       );
     } else {
       Alert.alert('Add Attachment', undefined, [
         { text: 'Photo',    onPress: () => resolve('gallery') },
-        { text: 'Video',    onPress: () => resolve('video') },
+        // { text: 'Video', onPress: () => resolve('video') }, // hidden from UI for now (upload reliability issue)
         { text: 'Document', onPress: () => resolve('document') },
         { text: 'Cancel',   style: 'cancel', onPress: () => resolve(null) },
       ]);
