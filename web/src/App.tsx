@@ -8,6 +8,18 @@ import { DashboardLayout } from './layouts/DashboardLayout';
 import { LandingPage } from './pages/landing/LandingPage';
 import { PrivacyPage, TermsPage } from './pages/landing/LegalDocPage';
 import { SupportPage } from './pages/landing/SupportPage';
+import { NotFoundPage } from './pages/landing/NotFoundPage';
+import { CreatorMarketplaceNepalPage } from './pages/landing/content/CreatorMarketplaceNepalPage';
+import { ContentCreatorsPage } from './pages/landing/content/ContentCreatorsPage';
+import { BrandsPage } from './pages/landing/content/BrandsPage';
+import { InfluencerMarketingNepalPage } from './pages/landing/content/InfluencerMarketingNepalPage';
+import { BrandCollaborationNepalPage } from './pages/landing/content/BrandCollaborationNepalPage';
+import { TikTokCreatorsPage } from './pages/landing/content/TikTokCreatorsPage';
+import { InstagramCreatorsPage } from './pages/landing/content/InstagramCreatorsPage';
+import { YouTubeCreatorsPage } from './pages/landing/content/YouTubeCreatorsPage';
+import { FacebookCreatorsPage } from './pages/landing/content/FacebookCreatorsPage';
+import { InfluencersPage } from './pages/landing/content/InfluencersPage';
+import { FindCampaignsPage } from './pages/landing/content/FindCampaignsPage';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
 import { Users } from './pages/Users';
@@ -57,6 +69,17 @@ export default function App() {
           <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/support" element={<SupportPage />} />
+          <Route path="/creator-marketplace-nepal" element={<CreatorMarketplaceNepalPage />} />
+          <Route path="/content-creators" element={<ContentCreatorsPage />} />
+          <Route path="/brands" element={<BrandsPage />} />
+          <Route path="/influencer-marketing-nepal" element={<InfluencerMarketingNepalPage />} />
+          <Route path="/brand-collaboration-nepal" element={<BrandCollaborationNepalPage />} />
+          <Route path="/tiktok-creators" element={<TikTokCreatorsPage />} />
+          <Route path="/instagram-creators" element={<InstagramCreatorsPage />} />
+          <Route path="/youtube-creators" element={<YouTubeCreatorsPage />} />
+          <Route path="/facebook-creators" element={<FacebookCreatorsPage />} />
+          <Route path="/influencers" element={<InfluencersPage />} />
+          <Route path="/find-campaigns" element={<FindCampaignsPage />} />
           <Route path="/admin" element={<Navigate to="/dashboard" replace />} />
           <Route path="/login" element={<Login />} />
           <Route element={<ProtectedRoute />}>
@@ -89,6 +112,7 @@ export default function App() {
               </Route>
             </Route>
           </Route>
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

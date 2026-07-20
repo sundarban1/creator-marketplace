@@ -15,68 +15,41 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { businessService, type BusinessListItem } from '@/services/business';
 import { useFavoriteBusinesses } from '@/hooks/useFavoriteBusinesses';
-import { GRADIENTS, F, RADIUS, SHADOW } from '@/utilities/constants';
-
-function Avatar({ name, size = 52, C }: { name: string; size?: number; C: ReturnType<typeof useAppColors> }) {
-  const initials = name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
-  return (
-    <View style={[
-      av.wrap,
-      {
-        width: size, height: size, borderRadius: RADIUS.full, backgroundColor: '#F97316',
-        shadowColor: '#F97316', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
-      },
-    ]}>
-      <Text style={[av.text, { fontSize: size * 0.35, color: '#fff', fontWeight: '700' }]}>{initials}</Text>
-    </View>
-  );
-}
-const av = StyleSheet.create({ wrap: { justifyContent: 'center', alignItems: 'center' }, text: {} });
+import { ListRowSkeleton } from '@/components/ListRowSkeleton';
+import { SavedListCard } from '@/components/SavedListCard';
+import { GRADIENTS, F, RADIUS } from '@/utilities/constants';
 
 function BusinessCard({ item, onRemove }: { item: BusinessListItem; onRemove: () => void }) {
   const C = useAppColors();
   const { t } = useLanguage();
   const name = item.businessName ?? 'Business';
+  const initials = name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
 
   return (
-    <View style={[s.card, { backgroundColor: C.surface }]}>
-      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-        style={s.cardMain}
-        onPress={() => router.push({ pathname: '/(creator)/business-detail', params: { id: item.id } })}>
-        <Avatar name={name} C={C} />
-        <View style={s.info}>
-          <View style={s.nameRow}>
-            <Text style={[s.name, { color: C.text }]} numberOfLines={1}>{name}</Text>
-            {item.isVerified && (
-              <View style={[s.verifiedBadge, { backgroundColor: '#E6F4EA' }]}>
-                <Ionicons name="checkmark" size={11} color="#16A34A" />
-              </View>
-            )}
-          </View>
-          {item.categories.length > 0 && (
-            <Text style={[s.categories, { color: C.brinjal1 }]} numberOfLines={1}>
-              {item.categories.slice(0, 3).join(' · ')}
-            </Text>
-          )}
-          {item.description ? (
-            <Text style={[s.desc, { color: C.textSecondary }]} numberOfLines={2}>{item.description}</Text>
-          ) : null}
-          <Text style={[s.campaigns, { color: C.textSecondary }]}>
-            {item._count.campaigns !== 1
-              ? t('favoriteBrands.campaignsPlural', { count: item._count.campaigns })
-              : t('favoriteBrands.campaigns', { count: item._count.campaigns })}
-          </Text>
-        </View>
-        <Ionicons name="chevron-forward" size={18} color={C.border} />
-      </Pressable>
-
-      <View style={[s.divider, { backgroundColor: C.border }]} />
-
-      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={s.removeRow} onPress={onRemove}>
-        <FontAwesome5 name="heart" solid size={13} color="#EF4444" />
-        <Text style={s.removeText}>{t('favoriteBrands.removeConfirm')}</Text>
-      </Pressable>
-    </View>
+    <SavedListCard
+      avatarInitials={initials}
+      accentColor="#F97316"
+      name={name}
+      verified={item.isVerified}
+      onPress={() => router.push({ pathname: '/(creator)/business-detail', params: { id: item.id } })}
+      removeLabel={t('favoriteBrands.removeConfirm')}
+      removeIcon={<FontAwesome5 name="heart" solid size={13} color="#EF4444" />}
+      onRemove={onRemove}
+    >
+      {item.categories.length > 0 && (
+        <Text style={[s.categories, { color: C.brinjal1 }]} numberOfLines={1}>
+          {item.categories.slice(0, 3).join(' · ')}
+        </Text>
+      )}
+      {item.description ? (
+        <Text style={[s.desc, { color: C.textSecondary }]} numberOfLines={2}>{item.description}</Text>
+      ) : null}
+      <Text style={[s.campaigns, { color: C.textSecondary }]}>
+        {item._count.campaigns !== 1
+          ? t('favoriteBrands.campaignsPlural', { count: item._count.campaigns })
+          : t('favoriteBrands.campaigns', { count: item._count.campaigns })}
+      </Text>
+    </SavedListCard>
   );
 }
 
@@ -132,8 +105,8 @@ export default function FavoriteBusinessesScreen() {
       </LinearGradient>
 
       {loading ? (
-        <View style={s.center}>
-          <ActivityIndicator size="large" color="#F97316" />
+        <View style={s.list}>
+          {[0, 1, 2, 3, 4].map((i) => <ListRowSkeleton key={i} />)}
         </View>
       ) : (
         <FlatList
@@ -182,20 +155,9 @@ const s = StyleSheet.create({
   list:   { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 40, gap: 12 },
   listEmpty: { flexGrow: 1 },
 
-  card:     { borderRadius: RADIUS.lg, overflow: 'hidden', ...SHADOW.raised },
-  cardMain: { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 14 },
-  info:     { flex: 1, gap: 3 },
-  nameRow:  { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  name:     { fontSize: 16, letterSpacing: -0.3, fontFamily: F.bold, flex: 1 },
-  verifiedBadge: { borderRadius: RADIUS.full, paddingHorizontal: 5, paddingVertical: 1 },
-  verifiedText:  { fontSize: 10, color: '#2E7D32', fontFamily: F.bold },
   categories:{ fontSize: 11, fontFamily: F.semibold },
   desc:      { fontSize: 12, fontFamily: F.regular, lineHeight: 17 },
   campaigns: { fontSize: 12, fontFamily: F.regular },
-
-  divider:    { height: 1, marginHorizontal: 16 },
-  removeRow:  { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 12 },
-  removeText: { fontSize: 13, color: '#EF4444', fontFamily: F.semibold },
 
   empty:      { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40, gap: 12 },
   emptyIcon:  { marginBottom: 2 },

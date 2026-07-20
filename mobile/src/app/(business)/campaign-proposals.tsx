@@ -16,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { BackButton } from '@/components/BackButton';
 import { EmptyState } from '@/components/EmptyState';
+import { ListRowSkeleton } from '@/components/ListRowSkeleton';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { campaignService } from '@/services/campaign';
@@ -616,8 +617,8 @@ export default function CampaignProposalsScreen() {
       />
 
       {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color={accent} />
+        <View style={styles.list}>
+          {[0, 1, 2, 3, 4].map((i) => <ListRowSkeleton key={i} />)}
         </View>
       ) : (
         <FlatList

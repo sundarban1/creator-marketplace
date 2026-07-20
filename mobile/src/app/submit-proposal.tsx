@@ -161,7 +161,7 @@ export default function SubmitProposalScreen() {
   const isRateInvalid  = !isFreeEvent && (!proposedRate || proposedRate <= 0 || rateOutOfRange);
 
   const coverError = submitted && coverLetterLen < 50
-    ? `Cover letter must be at least 50 characters (${coverLetterLen}/50)`
+    ? `Please write at least 50 characters (${coverLetterLen}/50)`
     : undefined;
   const rateError  = !isFreeEvent && submitted
     ? (!proposedRate || proposedRate <= 0)
@@ -254,7 +254,7 @@ export default function SubmitProposalScreen() {
           <View style={[styles.tipCard, { backgroundColor: C.surface, borderColor: C.border }]}>
             <FontAwesome5 name="lightbulb" size={16} color="#D97706" solid />
             <Text style={[styles.tipText, { color: C.textSecondary }]}>
-              A strong cover letter that mentions the business, your experience, and a clear idea performs best.
+              A strong answer that mentions the business, your experience, and a clear idea performs best.
             </Text>
           </View>
 

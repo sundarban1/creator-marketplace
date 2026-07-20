@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { EmptyState } from '@/components/EmptyState';
+import { ListRowSkeleton } from '@/components/ListRowSkeleton';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useScrollToTopOnTabPress } from '@/hooks/useScrollToTopOnTabPress';
 import { useAuth } from '@/context/AuthContext';
@@ -262,8 +263,8 @@ export default function NotificationsScreen() {
       </LinearGradient>
 
       {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color={C.brinjal1} />
+        <View style={{ padding: 16, gap: 12 }}>
+          {[0, 1, 2, 3, 4, 5].map((i) => <ListRowSkeleton key={i} avatarSize={40} />)}
         </View>
       ) : error ? (
         <EmptyState

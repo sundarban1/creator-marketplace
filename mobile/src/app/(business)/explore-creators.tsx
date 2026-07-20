@@ -1,11 +1,11 @@
 import { router, useFocusEffect } from 'expo-router';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Image } from 'expo-image';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { BackButton } from '@/components/BackButton';
 import { EmptyState } from '@/components/EmptyState';
-import { VerifiedBadge } from '@/components/VerifiedBadge';
+import { EntityCard } from '@/components/EntityCard';
+import { ExploreCardSkeleton } from '@/components/ExploreCardSkeleton';
 import {
   ActivityIndicator,
   FlatList,
@@ -24,7 +24,7 @@ import { LocationSearchPicker, type LocationEntry } from '@/components/LocationS
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage, type TFn } from '@/context/LanguageContext';
 import { creatorService, type ApiCreatorListItem } from '@/services/creator';
-import { GRADIENTS, F, RADIUS, SHADOW } from '@/utilities/constants';
+import { GRADIENTS, F, RADIUS } from '@/utilities/constants';
 import { getIconColor } from '@/features/creator/data/filterOptions';
 import { useAllCategories, useCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { usePlatforms, getPlatformMeta } from '@/hooks/usePlatforms';
@@ -256,28 +256,6 @@ const fm = StyleSheet.create({
 
 // ─── Creator Avatar ───────────────────────────────────────────────────────────
 
-function CreatorAvatar({ avatarUrl, bg, ringColor }: { avatarUrl: string | null; bg: string; ringColor: string }) {
-  const [failed, setFailed] = useState(false);
-  const ring = { borderWidth: 2, borderColor: ringColor };
-  if (avatarUrl && !failed) {
-    return (
-      <Image
-        source={{ uri: avatarUrl }}
-        style={[s.avatar, ring]}
-        contentFit="cover"
-        onError={() => setFailed(true)}
-      />
-    );
-  }
-  return (
-    <View style={[s.avatar, s.avatarPlaceholder, { backgroundColor: bg }, ring]}>
-      <View style={s.avatarIconWrap}>
-        <Ionicons name="person" size={30} color="rgba(91,33,182,0.55)" />
-      </View>
-    </View>
-  );
-}
-
 // ─── Creator Card ─────────────────────────────────────────────────────────────
 
 function CreatorCard({ creator, isSaved, onToggleSave }: {
@@ -297,67 +275,36 @@ function CreatorCard({ creator, isSaved, onToggleSave }: {
   const extraCats = creator.categories.length - 1;
 
   return (
-    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-      style={({ pressed }) => [s.card, { backgroundColor: C.surface }, pressed && { opacity: 0.92 }]}
-      onPress={() => router.push({ pathname: '/(business)/creator-detail', params: { id: creator.id } })}>
-      <View style={s.cardBody}>
-        {/* Header row */}
-        <View style={s.cardHeader}>
-          <CreatorAvatar avatarUrl={creator.avatarUrl} bg={meta.bg} ringColor={meta.color} />
-
-          <View style={s.cardMeta}>
-            <View style={s.nameRow}>
-              <Text style={[s.name, { color: C.text }]} numberOfLines={1}>{creator.fullName ?? 'Creator'}</Text>
-              {(creator.fullyVerified || creator.isVerified) && <VerifiedBadge size={14} />}
-            </View>
-            {creator.location ? (
-              <View style={s.locationRow}>
-                <Ionicons name="location-outline" size={12} color={C.textSecondary} />
-                <Text style={[s.location, { color: C.textSecondary }]} numberOfLines={1}>{creator.location}</Text>
-              </View>
-            ) : null}
-          </View>
-
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-            style={[
-              s.saveBtn,
-              { backgroundColor: isSaved ? C.primaryLight : C.background, borderColor: isSaved ? C.brinjal1 : C.border },
-              isSaved && { shadowColor: C.brinjal1, shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
-            ]}
-            onPress={onToggleSave}
-            hitSlop={8}>
-            <Ionicons name={isSaved ? 'bookmark' : 'bookmark-outline'} size={18} color={isSaved ? C.brinjal1 : C.textSecondary} />
-          </Pressable>
-        </View>
-
-        {/* Bio */}
-        {creator.bio ? (
-          <Text style={[s.bio, { color: C.textSecondary }]} numberOfLines={2}>{creator.bio}</Text>
-        ) : null}
-
-        {/* One consolidated stat row: primary category + top platform reach — a soft tray, not a divider line */}
-        <View style={[s.statRow, { backgroundColor: C.background }]}>
-          {creator.categories.length > 0 && (
-            <View style={[s.catPill, { backgroundColor: meta.bg }]}>
-              <FontAwesome5 name={meta.icon} size={10} color={meta.color} />
-              <Text style={[s.catLabel, { color: meta.color }]} numberOfLines={1}>{creator.categories[0]}</Text>
-              {extraCats > 0 && <Text style={[s.catLabel, { color: meta.color }]}>+{extraCats}</Text>}
-            </View>
-          )}
-          {topAccount && topPlatform ? (
-            <View style={s.platformStat}>
-              <FontAwesome5 name={topPlatform.icon} size={12} color={topPlatform.color} />
-              <Text style={[s.platformCount, { color: C.text }]}>{formatFollowers(topAccount.followers)}</Text>
-            </View>
-          ) : null}
-        </View>
-
-        <View style={[s.viewBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }]}>
-          <Text style={s.viewBtnText}>{t('explore.viewProfile')}</Text>
-          <Ionicons name="arrow-forward" size={14} color="#fff" />
-        </View>
-      </View>
-    </Pressable>
+    <EntityCard
+      avatarUrl={creator.avatarUrl}
+      avatarBg={meta.bg}
+      ringColor={meta.color}
+      name={creator.fullName ?? 'Creator'}
+      verified={creator.fullyVerified || creator.isVerified}
+      locationText={creator.location ?? undefined}
+      bio={creator.bio ?? undefined}
+      categoryLabel={creator.categories.length > 0 ? creator.categories[0] : undefined}
+      categoryIcon={meta.icon}
+      categoryColor={meta.color}
+      categoryBg={meta.bg}
+      extraCount={extraCats}
+      stat={topAccount && topPlatform ? {
+        icon: topPlatform.icon,
+        color: topPlatform.color,
+        text: formatFollowers(topAccount.followers),
+      } : undefined}
+      ctaLabel={t('explore.viewProfile')}
+      onPress={() => router.push({ pathname: '/(business)/creator-detail', params: { id: creator.id } })}
+      action={{
+        active: isSaved,
+        onToggle: onToggleSave,
+        activeIcon: 'bookmark',
+        inactiveIcon: 'bookmark-outline',
+        activeColor: C.brinjal1,
+        activeBg: C.primaryLight,
+        bordered: true,
+      }}
+    />
   );
 }
 
@@ -614,9 +561,8 @@ export default function ExploreCreatorsScreen() {
 
       {/* Content */}
       {loading ? (
-        <View style={s.centered}>
-          <ActivityIndicator size="large" color={C.brinjal1} />
-          <Text style={[s.loadingText, { color: C.textSecondary }]}>{t('explore.findingCreators')}</Text>
+        <View style={s.list}>
+          {[0, 1, 2, 3, 4].map((i) => <ExploreCardSkeleton key={i} />)}
         </View>
       ) : error ? (
         <EmptyState
@@ -721,33 +667,6 @@ const s = StyleSheet.create({
   clearBtn: { borderRadius: RADIUS.full, borderWidth: 1.5, paddingHorizontal: 16, paddingVertical: 8, marginTop: 4 },
 
   list: { paddingHorizontal: 20, paddingBottom: 40, gap: 14 },
-
-  card: { borderRadius: RADIUS.lg, overflow: 'hidden', ...SHADOW.raised },
-  cardBody: { padding: 16, gap: 12 },
-  cardHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-  avatar: { width: 60, height: 60, borderRadius: RADIUS.md, flexShrink: 0 },
-  avatarPlaceholder: { justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
-  avatarIconWrap: { alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' },
-  cardMeta: { flex: 1, gap: 4, justifyContent: 'center' },
-  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
-  name: { fontSize: 16, flexShrink: 1, letterSpacing: -0.3, fontFamily: F.bold },
-  locationRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  location: { fontSize: 12, fontFamily: F.regular },
-  platformStat: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  platformCount: { fontSize: 12, fontFamily: F.bold },
-  saveBtn: { width: 36, height: 36, borderRadius: RADIUS.full, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
-  bio: { fontSize: 13, lineHeight: 19, fontFamily: F.regular },
-  statRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, borderRadius: RADIUS.md, paddingHorizontal: 10, paddingVertical: 8 },
-  catPill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 5, borderRadius: RADIUS.full, flexShrink: 1 },
-  catLabel: { fontSize: 11, fontFamily: F.bold, flexShrink: 1 },
-
-  // CTA — echoes the bold pill button on the home page's Featured/Nearby cards
-  viewBtn: {
-    height: 38, borderRadius: RADIUS.full, marginTop: 2,
-    flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6,
-    shadowOpacity: 0.3, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5,
-  },
-  viewBtnText: { color: '#fff', fontSize: 13, fontFamily: F.bold },
 
   footerWrap: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 20, marginTop: 8, marginBottom: 36, gap: 10 },
   footerLine: { flex: 1, height: 1 },

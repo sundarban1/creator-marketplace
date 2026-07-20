@@ -146,9 +146,18 @@ export default function BusinessHomeScreen() {
           {/* Menu · Greeting · Avatar */}
           <View style={styles.header}>
             <View style={styles.headerLeft}>
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.menuBtn} onPress={openDrawer} hitSlop={6}>
-                <View style={styles.menuBtnInner}>
-                  <Ionicons name="menu" size={22} color="#fff" />
+              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.avatarCircle, { borderColor: 'rgba(255,255,255,0.5)', borderWidth: 2.5 }]} onPress={() => router.push('/(business)/profile')}>
+                {/* Clipping lives on its own layer — Android's elevation shadow doesn't
+                    composite correctly with overflow:hidden + a translucent child background
+                    on the same view. */}
+                <View style={styles.avatarClip}>
+                  {user?.avatar ? (
+                    <Image source={{ uri: user.avatar }} style={styles.avatarImage} resizeMode="cover" />
+                  ) : (
+                    <View style={[styles.avatarFallback, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
+                      <Text style={styles.avatarInitial}>{displayName.trim()[0].toUpperCase()}</Text>
+                    </View>
+                  )}
                 </View>
               </Pressable>
               <View>
@@ -156,18 +165,9 @@ export default function BusinessHomeScreen() {
                 <Text style={[styles.brandName, { color: '#fff' }]} numberOfLines={1}>{displayName}</Text>
               </View>
             </View>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.avatarCircle, { borderColor: 'rgba(255,255,255,0.5)', borderWidth: 2.5 }]} onPress={() => router.push('/(business)/profile')}>
-              {/* Clipping lives on its own layer — Android's elevation shadow doesn't
-                  composite correctly with overflow:hidden + a translucent child background
-                  on the same view. */}
-              <View style={styles.avatarClip}>
-                {user?.avatar ? (
-                  <Image source={{ uri: user.avatar }} style={styles.avatarImage} resizeMode="cover" />
-                ) : (
-                  <View style={[styles.avatarFallback, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
-                    <Text style={styles.avatarInitial}>{displayName.trim()[0].toUpperCase()}</Text>
-                  </View>
-                )}
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.menuBtn} onPress={openDrawer} hitSlop={6}>
+              <View style={styles.menuBtnInner}>
+                <Ionicons name="menu" size={22} color="#fff" />
               </View>
             </Pressable>
           </View>

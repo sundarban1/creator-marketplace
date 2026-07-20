@@ -10,6 +10,10 @@ import { getTemplateImage } from '@/features/creator/data/templateImages';
 import type { Campaign } from '@/types';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
 
+// Featured and Nearby used to be two byte-for-byte-identical card components,
+// differing only in their top-right tag (a "NEW" badge vs. a distance pill).
+// One component, one `variant`, instead of two files to keep in sync.
+
 const CARD_W    = 244;
 const CARD_IMG_H = 188;
 
@@ -46,7 +50,7 @@ function formatDistance(km: number, t: TFn): string {
   return t('campaignCard.kmAway', { n: km.toFixed(1) });
 }
 
-export function NearbyCard({ campaign }: { campaign: Campaign }) {
+export function CampaignCard({ campaign, variant }: { campaign: Campaign; variant: 'featured' | 'nearby' }) {
   const C = useAppColors();
   const { t } = useLanguage();
   const { categories } = useAllCategories();
@@ -65,8 +69,10 @@ export function NearbyCard({ campaign }: { campaign: Campaign }) {
 
         {/* ── Image — full-bleed, minimal chrome ── */}
         <View style={[styles.img, { backgroundColor: catMeta.bg }]}>
-          <FontAwesome5 name={catMeta.icon} size={44} color={catMeta.color} style={styles.imgIcon} />
+          {/* Category icon always shown as background */}
+          <FontAwesome5 name={catMeta.icon} size={48} color={catMeta.color} style={styles.imgIcon} />
 
+          {/* Overlay template image when available */}
           {cardImage && (
             <Image source={{ uri: cardImage }} style={StyleSheet.absoluteFill} contentFit="cover" />
           )}
@@ -76,13 +82,20 @@ export function NearbyCard({ campaign }: { campaign: Campaign }) {
             <Text style={styles.badgeText}>{displayCategory(campaign.category).toUpperCase()}</Text>
           </View>
 
-          {/* Distance badge — top right. This is the one piece of info that
-              makes this row different from Featured, so it's the most prominent tag. */}
-          {campaign.distanceKm != null && (
-            <View style={styles.distanceTag}>
-              <Ionicons name="navigate" size={10} color="#fff" />
-              <Text style={styles.distanceTagText}>{formatDistance(campaign.distanceKm, t)}</Text>
-            </View>
+          {/* Top-right tag — the one thing that differs between variants */}
+          {variant === 'featured' ? (
+            campaign.isNew && (
+              <View style={[styles.newTag, { backgroundColor: C.badgeNew }]}>
+                <Text style={styles.badgeText}>{t('campaignCard.new')}</Text>
+              </View>
+            )
+          ) : (
+            campaign.distanceKm != null && (
+              <View style={styles.distanceTag}>
+                <Ionicons name="navigate" size={10} color="#fff" />
+                <Text style={styles.distanceTagText}>{formatDistance(campaign.distanceKm, t)}</Text>
+              </View>
+            )
           )}
         </View>
 
@@ -125,6 +138,7 @@ export function NearbyCard({ campaign }: { campaign: Campaign }) {
             )}
           </View>
 
+          {/* Posted + expiry */}
           {(() => {
             const expiry = expiryLabel(campaign.deadline, t);
             return (
@@ -172,6 +186,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 9, paddingVertical: 4, borderRadius: RADIUS.full,
   },
   badgeText: { fontSize: 9, color: '#fff', letterSpacing: 0.4, fontFamily: F.semibold },
+  newTag:    { position: 'absolute', top: 12, right: 12, paddingHorizontal: 9, paddingVertical: 4, borderRadius: RADIUS.full },
 
   distanceTag: {
     position: 'absolute', top: 12, right: 12,

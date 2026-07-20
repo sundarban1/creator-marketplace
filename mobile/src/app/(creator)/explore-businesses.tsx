@@ -1,9 +1,8 @@
 import { router } from 'expo-router';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Image } from 'expo-image';
 import { BackButton } from '@/components/BackButton';
-import { VerifiedBadge } from '@/components/VerifiedBadge';
+import { EntityCard } from '@/components/EntityCard';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -19,13 +18,14 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FilterSheet, FilterSectionHeader, ActiveFilterChips, type ActiveFilterChip } from '@/components/FilterSheet';
 import { EmptyState } from '@/components/EmptyState';
+import { ExploreCardSkeleton } from '@/components/ExploreCardSkeleton';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { LocationSearchPicker, type LocationFilter } from '@/components/LocationSearchPicker';
 import { businessService, type BusinessListItem } from '@/services/business';
 import { useFavoriteBusinesses } from '@/hooks/useFavoriteBusinesses';
 import { useToast } from '@/components/Toast';
-import { GRADIENTS, F, RADIUS, SHADOW } from '@/utilities/constants';
+import { GRADIENTS, F, RADIUS } from '@/utilities/constants';
 import { useCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { usePlatforms } from '@/hooks/usePlatforms';
 
@@ -146,22 +146,6 @@ const fm = StyleSheet.create({
   filterChipText:  { fontSize: 13, fontFamily: F.medium },
 });
 
-// ─── Business Avatar ──────────────────────────────────────────────────────────
-
-function BusinessAvatar({ name, logoUrl, size = 60, ringColor }: { name: string; logoUrl: string | null; size?: number; ringColor?: string }) {
-  const C = useAppColors();
-  const initials = name.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase();
-  const ring = ringColor ? { borderWidth: 2, borderColor: ringColor } : null;
-  if (logoUrl) {
-    return <Image source={{ uri: logoUrl }} style={[{ width: size, height: size, borderRadius: RADIUS.md }, ring]} contentFit="cover" />;
-  }
-  return (
-    <View style={[{ width: size, height: size, borderRadius: RADIUS.md, backgroundColor: C.primaryLight, alignItems: 'center', justifyContent: 'center' }, ring]}>
-      <Text style={{ fontSize: size * 0.36, color: C.brinjal1, fontFamily: F.bold }}>{initials}</Text>
-    </View>
-  );
-}
-
 // ─── Business Card ────────────────────────────────────────────────────────────
 
 function BusinessCard({
@@ -179,72 +163,40 @@ function BusinessCard({
   const primaryMeta = item.categories.length > 0 ? getCategoryMeta(businessCategories, item.categories[0]) : null;
   const extraCats = item.categories.length - 1;
   const hasEvents = item._count.campaigns > 0;
+  const initials = item.businessName.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase();
 
   return (
-    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-      style={[styles.card, { backgroundColor: C.surface }]}
-      onPress={() => router.push({ pathname: '/(creator)/business-detail', params: { id: item.id } } as never)}>
-      <View style={styles.cardBody}>
-        {/* Top section */}
-        <View style={styles.cardTop}>
-          <BusinessAvatar name={item.businessName} logoUrl={item.logoUrl} ringColor={primaryMeta?.color ?? C.brinjal1} />
-
-          <View style={styles.cardInfo}>
-            <View style={styles.nameRow}>
-              <Text style={[styles.bizName, { color: C.text }]} numberOfLines={1}>
-                {item.businessName}
-              </Text>
-              {(item.fullyVerified || item.isVerified) && <VerifiedBadge size={14} />}
-            </View>
-            {item.description ? (
-              <Text style={[styles.desc, { color: C.textSecondary }]} numberOfLines={2}>
-                {item.description}
-              </Text>
-            ) : (
-              <Text style={[styles.desc, { color: C.textSecondary, fontStyle: 'italic' }]}>{t('explore.businesses.noDescription')}</Text>
-            )}
-          </View>
-
-          {/* Heart */}
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-            style={[
-              styles.heartBtn,
-              { backgroundColor: isFavorited ? '#FEE2E2' : C.background },
-              isFavorited && { shadowColor: '#EF4444', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
-            ]}
-            onPress={(e) => { e.stopPropagation(); onToggleFavorite(); }}
-            hitSlop={10}>
-            <Ionicons
-              name={isFavorited ? 'heart' : 'heart-outline'}
-              size={18}
-              color={isFavorited ? '#EF4444' : C.textSecondary}
-            />
-          </Pressable>
-        </View>
-
-        {/* One consolidated stat row: primary category + active events */}
-        <View style={[styles.statRow, { backgroundColor: C.background }]}>
-          {primaryMeta && (
-            <View style={[styles.catPill, { backgroundColor: primaryMeta.bg }]}>
-              <FontAwesome5 name={primaryMeta.icon} size={10} color={primaryMeta.color} />
-              <Text style={[styles.chipTxt, { color: primaryMeta.color }]} numberOfLines={1}>{item.categories[0]}</Text>
-              {extraCats > 0 && <Text style={[styles.chipTxt, { color: primaryMeta.color }]}>+{extraCats}</Text>}
-            </View>
-          )}
-          <View style={styles.campaignStat}>
-            <Ionicons name="megaphone-outline" size={13} color={hasEvents ? C.brinjal1 : C.textSecondary} />
-            <Text style={[styles.campaignStatTxt, { color: hasEvents ? C.brinjal1 : C.textSecondary }]}>
-              {hasEvents ? t('explore.businesses.campaignsBadge', { n: item._count.campaigns }) : t('explore.businesses.noEventsYet')}
-            </Text>
-          </View>
-        </View>
-
-        <View style={[styles.viewBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }]}>
-          <Text style={styles.viewBtnText}>{t('explore.businesses.viewBusiness')}</Text>
-          <Ionicons name="arrow-forward" size={14} color="#fff" />
-        </View>
-      </View>
-    </Pressable>
+    <EntityCard
+      avatarUrl={item.logoUrl}
+      avatarBg={C.primaryLight}
+      initials={initials}
+      ringColor={primaryMeta?.color ?? C.brinjal1}
+      name={item.businessName}
+      verified={item.fullyVerified || item.isVerified}
+      description={item.description || t('explore.businesses.noDescription')}
+      descriptionItalic={!item.description}
+      categoryLabel={primaryMeta ? item.categories[0] : undefined}
+      categoryIcon={primaryMeta?.icon}
+      categoryColor={primaryMeta?.color}
+      categoryBg={primaryMeta?.bg}
+      extraCount={extraCats}
+      stat={{
+        icon: 'megaphone-outline',
+        iconSet: 'ionicons',
+        color: hasEvents ? C.brinjal1 : C.textSecondary,
+        text: hasEvents ? t('explore.businesses.campaignsBadge', { n: item._count.campaigns }) : t('explore.businesses.noEventsYet'),
+      }}
+      ctaLabel={t('explore.businesses.viewBusiness')}
+      onPress={() => router.push({ pathname: '/(creator)/business-detail', params: { id: item.id } } as never)}
+      action={{
+        active: isFavorited,
+        onToggle: onToggleFavorite,
+        activeIcon: 'heart',
+        inactiveIcon: 'heart-outline',
+        activeColor: '#EF4444',
+        activeBg: '#FEE2E2',
+      }}
+    />
   );
 }
 
@@ -493,9 +445,8 @@ export default function ExploreBusinessesScreen() {
       )}
 
       {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color={C.brinjal1} />
-          <Text style={[styles.loadingText, { color: C.textSecondary }]}>{t('explore.businesses.loading')}</Text>
+        <View style={styles.list}>
+          {[0, 1, 2, 3, 4].map((i) => <ExploreCardSkeleton key={i} />)}
         </View>
       ) : error ? (
         <EmptyState faIcon="exclamation-triangle" title={t('explore.businesses.loadError')} subtitle={error} action={{ label: t('explore.businesses.retry'), onPress: () => fetchBusinesses() }} />
@@ -581,32 +532,4 @@ const styles = StyleSheet.create({
   list:           { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 48, gap: 14 },
   listEmpty:      { flexGrow: 1 },
   footerLoading:  { paddingVertical: 20 },
-
-  // Card
-  card:           { borderRadius: RADIUS.lg, overflow: 'hidden', ...SHADOW.raised },
-  cardBody:       { padding: 16, gap: 12 },
-  cardTop:        { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
-  cardInfo:       { flex: 1, gap: 4 },
-  nameRow:        { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
-  bizName:        { fontSize: 16, flexShrink: 1, letterSpacing: -0.3, fontFamily: F.bold },
-  desc:           { fontSize: 13, lineHeight: 19, fontFamily: F.regular },
-
-  // Heart (top-right inside cardTop)
-  heartBtn:       { width: 36, height: 36, borderRadius: RADIUS.full, alignItems: 'center', justifyContent: 'center' },
-
-  chipTxt:        { fontSize: 11, fontFamily: F.bold },
-
-  // One consolidated stat row: primary category + active events — a soft tray, not a divider line
-  statRow:          { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, borderRadius: RADIUS.md, paddingHorizontal: 10, paddingVertical: 8 },
-  catPill:          { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: RADIUS.full, paddingHorizontal: 10, paddingVertical: 5, flexShrink: 1 },
-  campaignStat:     { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  campaignStatTxt:  { fontSize: 12, fontFamily: F.bold },
-
-  // CTA — echoes the bold pill button on the home page's Featured/Nearby cards
-  viewBtn: {
-    height: 38, borderRadius: RADIUS.full, marginTop: 2,
-    flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6,
-    shadowOpacity: 0.3, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5,
-  },
-  viewBtnText: { color: '#fff', fontSize: 13, fontFamily: F.bold },
 });

@@ -15,23 +15,9 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { creatorService, type SavedCreatorItem } from '@/services/creator';
 import { EmptyState } from '@/components/EmptyState';
-import { GRADIENTS, F, RADIUS, SHADOW } from '@/utilities/constants';
-
-function Avatar({ name, size = 52, C }: { name: string; size?: number; C: ReturnType<typeof useAppColors> }) {
-  const initials = name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
-  return (
-    <View style={[
-      av.wrap,
-      {
-        width: size, height: size, borderRadius: size / 2, backgroundColor: C.brinjal1,
-        shadowColor: C.brinjal1, shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
-      },
-    ]}>
-      <Text style={[av.text, { fontSize: size * 0.35, color: '#fff', fontWeight: '700' }]}>{initials}</Text>
-    </View>
-  );
-}
-const av = StyleSheet.create({ wrap: { justifyContent: 'center', alignItems: 'center' }, text: {} });
+import { ListRowSkeleton } from '@/components/ListRowSkeleton';
+import { SavedListCard } from '@/components/SavedListCard';
+import { GRADIENTS, F, RADIUS } from '@/utilities/constants';
 
 function formatFollowers(n: number): string {
   if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
@@ -45,49 +31,36 @@ function CreatorCard({ item, onRemove }: { item: SavedCreatorItem; onRemove: () 
   const { creator } = item;
   const name = creator.fullName ?? 'Creator';
   const topAccount = creator.socialAccounts.sort((a, b) => b.followers - a.followers)[0];
+  const initials = name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
 
   return (
-    <View style={[s.card, { backgroundColor: C.surface }]}>
-      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-        style={s.cardMain}
-        onPress={() => router.push({ pathname: '/(business)/creator-detail', params: { id: creator.id } })}>
-        <Avatar name={name} C={C} />
-        <View style={s.info}>
-          <View style={s.nameRow}>
-            <Text style={[s.name, { color: C.text }]} numberOfLines={1}>{name}</Text>
-            {creator.isVerified && (
-              <View style={[s.verifiedBadge, { backgroundColor: '#E6F4EA' }]}>
-                <Ionicons name="checkmark" size={11} color="#16A34A" />
-              </View>
-            )}
-          </View>
-          {creator.location ? (
-            <View style={s.locationRow}>
-              <Ionicons name="location" size={10} color={C.textSecondary} />
-              <Text style={[s.location, { color: C.textSecondary }]} numberOfLines={1}>{creator.location}</Text>
-            </View>
-          ) : null}
-          {topAccount ? (
-            <Text style={[s.followers, { color: C.textSecondary }]}>
-              {topAccount.platform} · {formatFollowers(topAccount.followers)} {t('savedCreators.followersSuffix')}
-            </Text>
-          ) : null}
-          {creator.categories.length > 0 && (
-            <Text style={[s.categories, { color: C.brinjal1 }]} numberOfLines={1}>
-              {creator.categories.slice(0, 3).join(' · ')}
-            </Text>
-          )}
+    <SavedListCard
+      avatarInitials={initials}
+      accentColor={C.brinjal1}
+      name={name}
+      verified={creator.isVerified}
+      onPress={() => router.push({ pathname: '/(business)/creator-detail', params: { id: creator.id } })}
+      removeLabel={t('savedCreators.removeFromSaved')}
+      removeIcon={<Ionicons name="bookmark-outline" size={15} color="#EF4444" />}
+      onRemove={onRemove}
+    >
+      {creator.location ? (
+        <View style={s.locationRow}>
+          <Ionicons name="location" size={10} color={C.textSecondary} />
+          <Text style={[s.location, { color: C.textSecondary }]} numberOfLines={1}>{creator.location}</Text>
         </View>
-        <Ionicons name="chevron-forward" size={18} color={C.border} />
-      </Pressable>
-
-      <View style={[s.divider, { backgroundColor: C.border }]} />
-
-      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={s.removeRow} onPress={onRemove}>
-        <Ionicons name="bookmark-outline" size={15} color="#EF4444" />
-        <Text style={s.removeText}>{t('savedCreators.removeFromSaved')}</Text>
-      </Pressable>
-    </View>
+      ) : null}
+      {topAccount ? (
+        <Text style={[s.followers, { color: C.textSecondary }]}>
+          {topAccount.platform} · {formatFollowers(topAccount.followers)} {t('savedCreators.followersSuffix')}
+        </Text>
+      ) : null}
+      {creator.categories.length > 0 && (
+        <Text style={[s.categories, { color: C.brinjal1 }]} numberOfLines={1}>
+          {creator.categories.slice(0, 3).join(' · ')}
+        </Text>
+      )}
+    </SavedListCard>
   );
 }
 
@@ -142,8 +115,8 @@ export default function SavedCreatorsScreen() {
       </LinearGradient>
 
       {loading ? (
-        <View style={s.center}>
-          <ActivityIndicator size="large" color={C.brinjal1} />
+        <View style={s.list}>
+          {[0, 1, 2, 3, 4].map((i) => <ListRowSkeleton key={i} />)}
         </View>
       ) : (
         <FlatList
@@ -180,19 +153,8 @@ const s = StyleSheet.create({
   list:   { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 40, gap: 12 },
   listEmpty: { flexGrow: 1 },
 
-  card:     { borderRadius: RADIUS.lg, overflow: 'hidden', ...SHADOW.raised },
-  cardMain: { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 14 },
-  info:     { flex: 1, gap: 3 },
-  nameRow:  { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  name:     { fontSize: 16, letterSpacing: -0.3, fontFamily: F.bold, flex: 1 },
-  verifiedBadge: { borderRadius: RADIUS.full, paddingHorizontal: 5, paddingVertical: 1 },
   locationRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   location:  { fontSize: 12, fontFamily: F.regular },
   followers: { fontSize: 12, fontFamily: F.regular },
   categories:{ fontSize: 11, fontFamily: F.semibold },
-
-  divider:    { height: 1, marginHorizontal: 16 },
-  removeRow:  { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 12 },
-  removeText: { fontSize: 13, color: '#EF4444', fontFamily: F.semibold },
-
 });

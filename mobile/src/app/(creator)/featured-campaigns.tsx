@@ -16,6 +16,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { campaignService } from '@/services/campaign';
 import type { Campaign } from '@/types';
 import { EmptyState } from '@/components/EmptyState';
+import { ListRowSkeleton } from '@/components/ListRowSkeleton';
 import { F, RADIUS } from '@/utilities/constants';
 
 const PAGE_SIZE = 6;
@@ -81,9 +82,8 @@ export default function FeaturedCampaignsScreen() {
       </View>
 
       {loading ? (
-        <View style={styles.loadingWrap}>
-          <ActivityIndicator size="large" color={C.brinjal1} />
-          <Text style={[styles.loadingText, { color: C.textSecondary }]}>{t('creator.featuredCampaigns.loading')}</Text>
+        <View style={[styles.list, { gap: 12 }]}>
+          {[0, 1, 2, 3, 4].map((i) => <ListRowSkeleton key={i} avatarSize={72} avatarRadius={16} withBadge />)}
         </View>
       ) : error ? (
         <View style={styles.errorWrap}>

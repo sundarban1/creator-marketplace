@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { TabSlider } from '@/components/TabSlider';
 import { EmptyState } from '@/components/EmptyState';
+import { ListRowSkeleton } from '@/components/ListRowSkeleton';
 import { SwipeableChatRow } from '@/components/SwipeableChatRow';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useScrollToTopOnTabPress } from '@/hooks/useScrollToTopOnTabPress';
@@ -366,8 +367,8 @@ export default function BusinessChatListScreen() {
       />
 
       {loading ? (
-        <View style={s.center}>
-          <ActivityIndicator size="large" color={ACCENT} />
+        <View style={s.reqList}>
+          {[0, 1, 2, 3, 4].map((i) => <ListRowSkeleton key={i} />)}
         </View>
       ) : error ? (
         <EmptyState

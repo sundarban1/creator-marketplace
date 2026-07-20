@@ -6,6 +6,8 @@ import { ScrollProgress } from './components/ScrollProgress';
 import { ChatWidget } from './components/ChatWidget';
 import { LandingNav } from './nav/LandingNav';
 import { LandingFooter } from './nav/LandingFooter';
+import { SEO } from '../../lib/seo/SEO';
+import { organizationSchema, websiteSchema } from '../../lib/seo/schema';
 import { Hero } from './sections/Hero';
 import { TrustStats } from './sections/TrustStats';
 import { HowItWorks } from './sections/HowItWorks';
@@ -22,6 +24,19 @@ function LandingPageInner() {
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-white font-display">
+      <SEO
+        title="Kolab – Nepal's Creator Marketplace | Connect Brands & Content Creators"
+        description="Kolab helps Nepali brands discover verified content creators, influencers, TikTok creators, Instagram creators, YouTubers and collaborate on paid campaigns."
+        path="/"
+        keywords={[
+          'creator marketplace Nepal', 'content creator Nepal', 'influencer Nepal', 'Nepal influencer platform',
+          'hire creator Nepal', 'hire influencer Nepal', 'brand collaboration Nepal', 'creator collaboration',
+          'creator marketing Nepal', 'digital creator Nepal', 'social media creator Nepal', 'TikTok creator Nepal',
+          'Instagram influencer Nepal', 'YouTube creator Nepal', 'Facebook creator Nepal', 'brand campaign Nepal',
+          'creator jobs Nepal', 'influencer marketing Nepal', 'creator platform Nepal', 'OurKolab', 'Kolab Nepal',
+        ]}
+        jsonLd={[organizationSchema(), websiteSchema()]}
+      />
       <CursorSparkles />
       <ScrollProgress />
       <LandingNav />

@@ -17,6 +17,7 @@ import { useLanguage, type TFn } from '@/context/LanguageContext';
 import { campaignService } from '@/services/campaign';
 import { TabSlider } from '@/components/TabSlider';
 import { EmptyState } from '@/components/EmptyState';
+import { ListRowSkeleton } from '@/components/ListRowSkeleton';
 import { useScrollToTopOnTabPress } from '@/hooks/useScrollToTopOnTabPress';
 import { GRADIENTS, F, RADIUS, SHADOW } from '@/utilities/constants';
 import { TabColors } from '@/utilities/tabColors';
@@ -328,8 +329,8 @@ export default function ProposalsScreen() {
       </View>
 
       {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color={C.brinjal1} />
+        <View style={styles.list}>
+          {[0, 1, 2, 3, 4].map((i) => <ListRowSkeleton key={i} avatarRadius={RADIUS.md} withBadge />)}
         </View>
       ) : (
         <FlatList

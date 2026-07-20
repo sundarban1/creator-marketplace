@@ -12,6 +12,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/components/Toast';
 import { walletService, type ApiWalletSummary, type ApiWithdrawal } from '@/services/wallet';
 import { WithdrawModal } from '@/features/creator/components/WithdrawModal';
+import { Skeleton } from '@/components/Skeleton';
 import { GRADIENTS, F, RADIUS, SHADOW } from '@/utilities/constants';
 
 const METHOD_META: Record<string, { icon: string; color: string }> = {
@@ -64,8 +65,23 @@ export default function WalletScreen() {
       </LinearGradient>
 
       {loading || !summary ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color={C.brinjal1} />
+        <View style={styles.content}>
+          <Skeleton width="100%" height={150} radius={RADIUS.lg} />
+          <Skeleton width="100%" height={48} radius={RADIUS.md} style={{ marginTop: 4 }} />
+          <Skeleton width="100%" height={44} radius={RADIUS.md} />
+          <Skeleton width={100} height={11} style={{ marginTop: 12, marginBottom: 2 }} />
+          <View style={[styles.card, { backgroundColor: C.surface }]}>
+            {[0, 1, 2].map((i) => (
+              <View key={i} style={[styles.txRow, i > 0 && { borderTopWidth: 1, borderTopColor: C.border }]}>
+                <Skeleton width={36} height={36} radius={RADIUS.full} />
+                <View style={styles.txInfo}>
+                  <Skeleton width="50%" height={13} />
+                  <Skeleton width="35%" height={11} style={{ marginTop: 6 }} />
+                </View>
+                <Skeleton width={70} height={14} />
+              </View>
+            ))}
+          </View>
         </View>
       ) : (
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>

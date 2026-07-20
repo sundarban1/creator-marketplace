@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Animated, Dimensions, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
@@ -9,7 +9,7 @@ import { profileService } from '@/services/profile';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { formatPhoneDisplay, isValidNepaliPhone } from '@/utilities/phone';
 
-const DRAWER_W = 280;
+const SCREEN_H = Dimensions.get('window').height;
 
 type NavItem = {
   iconName: keyof typeof Ionicons.glyphMap;
@@ -48,7 +48,7 @@ export function BusinessDrawerMenu({ visible, user, onClose, onLogout }: Props) 
   const insets = useSafeAreaInsets();
   const C = useAppColors();
   const { t } = useLanguage();
-  const slideAnim = useRef(new Animated.Value(-DRAWER_W)).current;
+  const slideAnim = useRef(new Animated.Value(SCREEN_H)).current;
   const backdropOpacity = useRef(new Animated.Value(0)).current;
   const [rendered, setRendered] = useState(false);
   const [businessName, setBusinessName] = useState('');
@@ -66,15 +66,15 @@ export function BusinessDrawerMenu({ visible, user, onClose, onLogout }: Props) 
   useEffect(() => {
     if (visible) {
       setRendered(true);
-      slideAnim.setValue(-DRAWER_W);
+      slideAnim.setValue(SCREEN_H);
       backdropOpacity.setValue(0);
       Animated.parallel([
-        Animated.timing(slideAnim, { toValue: 0, duration: 260, useNativeDriver: true }),
-        Animated.timing(backdropOpacity, { toValue: 1, duration: 200, useNativeDriver: true }),
+        Animated.timing(slideAnim, { toValue: 0, duration: 280, useNativeDriver: true }),
+        Animated.timing(backdropOpacity, { toValue: 1, duration: 220, useNativeDriver: true }),
       ]).start();
     } else if (rendered) {
       Animated.parallel([
-        Animated.timing(slideAnim, { toValue: -DRAWER_W, duration: 220, useNativeDriver: true }),
+        Animated.timing(slideAnim, { toValue: SCREEN_H, duration: 220, useNativeDriver: true }),
         Animated.timing(backdropOpacity, { toValue: 0, duration: 180, useNativeDriver: true }),
       ]).start(() => setRendered(false));
     }
@@ -98,9 +98,13 @@ export function BusinessDrawerMenu({ visible, user, onClose, onLogout }: Props) 
         <Animated.View style={[styles.backdrop, { opacity: backdropOpacity, flex: 1 }]} />
       </Pressable>
 
-      <Animated.View style={[styles.panel, { backgroundColor: C.surface, transform: [{ translateX: slideAnim }] }]}>
+      <Animated.View style={[styles.panel, { backgroundColor: C.surface, transform: [{ translateY: slideAnim }] }]}>
         {/* Header */}
-        <View style={[styles.header, { paddingTop: insets.top + 20, backgroundColor: C.brinjal2 }]}>
+        <View style={[styles.header, { backgroundColor: C.brinjal2 }]}>
+          <Pressable style={styles.handleRow} onPress={onClose} hitSlop={10}>
+            <Ionicons name="chevron-down" size={20} color="rgba(255,255,255,0.6)" />
+          </Pressable>
+
           <View style={styles.userRow}>
             {displayAvatar ? (
               <Image source={{ uri: displayAvatar }} style={styles.avatarCircle} />
@@ -117,7 +121,7 @@ export function BusinessDrawerMenu({ visible, user, onClose, onLogout }: Props) 
         </View>
 
         {/* Nav */}
-        <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false} bounces={false} contentContainerStyle={styles.scrollContent}>
           {NAV_GROUPS.map((group) => (
             <View key={group.labelKey}>
               <View style={[styles.navGroup, { backgroundColor: C.surface, borderColor: C.border }]}>
@@ -161,12 +165,13 @@ export function BusinessDrawerMenu({ visible, user, onClose, onLogout }: Props) 
 const styles = StyleSheet.create({
   backdrop: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.45)' },
   panel: {
-    position: 'absolute', top: 0, bottom: 0, left: 0, width: DRAWER_W,
-    borderTopRightRadius: RADIUS.xl, borderBottomRightRadius: RADIUS.xl, overflow: 'hidden',
-    ...SHADOW.floating, shadowOffset: { width: 6, height: 0 }, flexDirection: 'column',
+    position: 'absolute', left: 0, right: 0, bottom: 0, maxHeight: '85%',
+    borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl, overflow: 'hidden',
+    ...SHADOW.floating, shadowOffset: { width: 0, height: -6 }, flexDirection: 'column',
   },
+  handleRow: { alignItems: 'center', paddingTop: 8, paddingBottom: 4 },
   header: { paddingHorizontal: 20, paddingBottom: 20 },
-  userRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  userRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 8 },
   avatarCircle: {
     width: 48, height: 48, borderRadius: RADIUS.full,
     backgroundColor: 'rgba(255,255,255,0.25)',
@@ -176,7 +181,7 @@ const styles = StyleSheet.create({
   avatarInitial: { fontSize: 19, color: '#fff', fontFamily: F.extrabold },
   userName: { fontSize: 15, color: '#fff', marginBottom: 2, fontFamily: F.bold },
   userEmail: { fontSize: 11, color: 'rgba(255,255,255,0.7)', fontFamily: F.regular },
-  scroll: { flex: 1 },
+  scroll: { flexGrow: 0 },
   scrollContent: { paddingTop: 8, paddingBottom: 18 },
   navGroup: { marginHorizontal: 12, marginVertical: 4, borderRadius: RADIUS.md, borderWidth: 1, overflow: 'hidden' },
   navItem: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 11, minHeight: 44 },

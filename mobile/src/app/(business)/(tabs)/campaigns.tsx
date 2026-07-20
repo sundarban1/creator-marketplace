@@ -24,6 +24,7 @@ import { campaignService } from '@/services/campaign';
 import { creatorService, type SavedCreatorItem } from '@/services/creator';
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { getTemplateImage } from '@/features/creator/data/templateImages';
+import { ListRowSkeleton } from '@/components/ListRowSkeleton';
 import type { Campaign } from '@/types';
 import { GRADIENTS, F, RADIUS, SHADOW } from '@/utilities/constants';
 import { TabColors } from '@/utilities/tabColors';
@@ -233,8 +234,8 @@ export default function CampaignsScreen() {
 
       {/* Campaign list */}
       {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color={C.brinjal1} />
+        <View style={styles.list}>
+          {[0, 1, 2, 3, 4].map((i) => <ListRowSkeleton key={i} avatarSize={64} avatarRadius={RADIUS.md} withBadge />)}
         </View>
       ) : (
         <FlatList

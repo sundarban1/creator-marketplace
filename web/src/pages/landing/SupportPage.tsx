@@ -6,6 +6,8 @@ import { useLandingLanguage } from './context/LanguageContext';
 import { fadeUp, stagger } from './lib/motion';
 import { ContactForm } from './components/ContactForm';
 import { api, type HelpArticle } from '../../lib/api';
+import { SEO } from '../../lib/seo/SEO';
+import { faqSchema, webPageSchema } from '../../lib/seo/schema';
 
 function FaqAccordionItem({ faq }: { faq: HelpArticle }) {
   const [open, setOpen] = useState(false);
@@ -50,6 +52,15 @@ function SupportContent() {
 
   return (
     <motion.div initial="hidden" animate="show" variants={stagger()}>
+      <SEO
+        title="Support & FAQs"
+        description="Get help with Kolab, Nepal's creator marketplace. Find answers to common questions or contact our support team directly."
+        path="/support"
+        jsonLd={[
+          webPageSchema({ path: '/support', title: 'Support & FAQs | Kolab', description: 'Help and frequently asked questions for Kolab users.' }),
+          ...(faqs && faqs.length > 0 ? [faqSchema(faqs.map((f) => ({ question: f.question, answer: f.answer })))] : []),
+        ]}
+      />
       <motion.p variants={fadeUp} className="font-serif text-sm italic text-ink-soft">
         <a href="/" className="hover:text-ink">{d.legalPages.backToHome}</a>
       </motion.p>

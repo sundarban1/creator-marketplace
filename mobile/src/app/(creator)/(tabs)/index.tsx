@@ -9,8 +9,8 @@ import { DrawerContext } from '@/context/DrawerContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { CampaignListItem } from '@/features/creator/components/CampaignListItem';
-import { FeaturedCard } from '@/features/creator/components/FeaturedCard';
-import { NearbyCard } from '@/features/creator/components/NearbyCard';
+import { CampaignCard } from '@/features/creator/components/CampaignCard';
+import { CampaignCardSkeleton } from '@/features/creator/components/CampaignCardSkeleton';
 import { NearbyLocationSheet, type NearbySource } from '@/features/creator/components/NearbyLocationSheet';
 import { FilterModal } from '@/features/creator/components/FilterModal';
 import type { EventTypeFilter, LocationFilter } from '@/features/creator/components/FilterModal';
@@ -459,9 +459,17 @@ export default function HomeScreen() {
 
           <View style={styles.header}>
             <View style={styles.headerLeft}>
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.menuBtn} onPress={openDrawer} hitSlop={6}>
-                <View style={styles.menuBtnInner}>
-                  <Ionicons name="menu" size={22} color="#fff" />
+              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                style={[styles.avatarCircle, { borderColor: 'rgba(255,255,255,0.5)', borderWidth: 2.5 }]}
+                onPress={() => router.push('/(creator)/profile')}>
+                <View style={styles.avatarClip}>
+                  {user?.avatar ? (
+                    <Image source={{ uri: user.avatar }} style={styles.avatarImage} resizeMode="cover" />
+                  ) : (
+                    <View style={[styles.avatarFallback, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
+                      <Text style={styles.avatarInitial}>{displayName.trim()[0].toUpperCase()}</Text>
+                    </View>
+                  )}
                 </View>
               </Pressable>
               <View>
@@ -471,20 +479,9 @@ export default function HomeScreen() {
             </View>
 
             <View style={styles.headerRight}>
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                style={[styles.avatarCircle, { borderColor: 'rgba(255,255,255,0.5)', borderWidth: 2.5 }]}
-                onPress={() => router.push('/(creator)/profile')}>
-                {/* Clipping lives on its own layer — Android's elevation shadow doesn't
-                    composite correctly with overflow:hidden + a translucent child background
-                    on the same view. */}
-                <View style={styles.avatarClip}>
-                  {user?.avatar ? (
-                    <Image source={{ uri: user.avatar }} style={styles.avatarImage} resizeMode="cover" />
-                  ) : (
-                    <View style={[styles.avatarFallback, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
-                      <Text style={styles.avatarInitial}>{displayName.trim()[0].toUpperCase()}</Text>
-                    </View>
-                  )}
+              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.menuBtn} onPress={openDrawer} hitSlop={6}>
+                <View style={styles.menuBtnInner}>
+                  <Ionicons name="menu" size={22} color="#fff" />
                 </View>
               </Pressable>
             </View>
@@ -749,10 +746,20 @@ export default function HomeScreen() {
 
         {/* ── Featured / Loading ── */}
         {loading ? (
-          <View style={styles.loadingWrap}>
-            <ActivityIndicator size="large" color={C.brinjal1} />
-            <Text style={[styles.loadingText, { color: C.textSecondary }]}>{t('creator.home.loading')}</Text>
-          </View>
+          <>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: C.text }]}>{t('creator.home.featuredEvents')}</Text>
+            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.featuredRow}>
+              {[0, 1, 2].map((i) => <CampaignCardSkeleton key={i} />)}
+            </ScrollView>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: C.text }]}>{t('creator.home.nearbyEvents')}</Text>
+            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.featuredRow}>
+              {[0, 1, 2].map((i) => <CampaignCardSkeleton key={i} />)}
+            </ScrollView>
+          </>
         ) : (
           <>
             <View style={styles.sectionHeader}>
@@ -770,7 +777,7 @@ export default function HomeScreen() {
                 contentContainerStyle={styles.featuredRow}
                 onScroll={handleFeaturedScroll}
                 scrollEventThrottle={16}>
-                {visibleFeatured.map((c) => <FeaturedCard key={c.id} campaign={c} />)}
+                {visibleFeatured.map((c) => <CampaignCard key={c.id} campaign={c} variant="featured" />)}
                 {featuredVisibleCount < featured.length && (
                   <View style={styles.featuredLoadingMore}>
                     <ActivityIndicator size="small" color={C.brinjal1} />
@@ -809,12 +816,12 @@ export default function HomeScreen() {
             </View>
 
             {nearbyLoading ? (
-              <View style={styles.loadingWrap}>
-                <ActivityIndicator size="small" color={C.brinjal1} />
-              </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.featuredRow}>
+                {[0, 1, 2].map((i) => <CampaignCardSkeleton key={i} />)}
+              </ScrollView>
             ) : nearbyCampaigns.length > 0 ? (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.featuredRow}>
-                {nearbyCampaigns.map((c) => <NearbyCard key={c.id} campaign={c} />)}
+                {nearbyCampaigns.map((c) => <CampaignCard key={c.id} campaign={c} variant="nearby" />)}
               </ScrollView>
             ) : nearbyLocationDenied && !nearbyHomeCoords ? (
               <View style={[styles.featuredEmpty, { backgroundColor: C.surface, borderColor: C.border }]}>
@@ -930,7 +937,7 @@ const styles = StyleSheet.create({
   menuBtnInner: { width: 38, height: 38, borderRadius: RADIUS.sm, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center' },
   greeting:     { fontSize: 12, marginBottom: 2, fontFamily: F.medium, color: 'rgba(255,255,255,0.75)' },
   brandName:    { fontSize: 20, fontFamily: F.bold, color: '#fff', maxWidth: 180, letterSpacing: -0.3 },
-  avatarCircle: { width: 44, height: 44, borderRadius: RADIUS.full, shadowOpacity: 0.4, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
+  avatarCircle: { width: 44, height: 44, borderRadius: RADIUS.full },
   avatarClip:   { width: '100%', height: '100%', borderRadius: RADIUS.full, overflow: 'hidden' },
   avatarImage:  { width: '100%', height: '100%' },
   avatarFallback: { width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center' },

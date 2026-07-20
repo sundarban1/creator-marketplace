@@ -6,7 +6,7 @@ import { LandingFooter } from './nav/LandingFooter';
 // Lightweight header for standalone pages (Privacy, Terms, Support) — separate
 // from LandingNav because that one's links scroll to in-page anchors
 // (#hero, #trust, ...) that only exist on the single-page home route.
-function StandaloneHeader() {
+export function StandaloneHeader() {
   const { lang, setLang } = useLandingLanguage();
   return (
     <header className="border-b border-ink/10 bg-paper/80 backdrop-blur-md">

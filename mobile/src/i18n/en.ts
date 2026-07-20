@@ -718,7 +718,7 @@ const en = {
   proposal: {
     title: 'Submit Proposal',
     applyingTo: 'Applying to',
-    coverLetter: 'Cover Letter * (min 50 chars)',
+    coverLetter: 'Why should you hire me? * (min 50 chars)',
     coverLetterPlaceholder:
       "Introduce yourself and explain why you're the perfect fit for this event...",
     charCount: '{{count}} / 800',
@@ -733,7 +733,7 @@ const en = {
     submit: 'Submit Proposal',
     successTitle: 'Proposal Submitted!',
     successBody: 'Your proposal for "{{title}}" has been sent to {{brand}}.',
-    shortLetterError: 'Cover letter must be at least 50 characters.',
+    shortLetterError: 'Please write at least 50 characters.',
     noRateError: 'Please enter your proposed rate.',
     rateInvalidError: 'Enter a valid amount (e.g. 5000)',
     rateRangeError: 'Enter an amount between Rs. {{min}} and Rs. {{max}}',

@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { EmptyState } from '@/components/EmptyState';
+import { ListRowSkeleton } from '@/components/ListRowSkeleton';
 import { TabSlider } from '@/components/TabSlider';
 import { useLanguage, type TFn } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
@@ -319,9 +320,8 @@ export default function ProposalsScreen() {
 
       {/* ── Content ── */}
       {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color={C.brinjal1} />
-          <Text style={[styles.loadingText, { color: C.textSecondary }]}>{t('proposal.creator.loading')}</Text>
+        <View style={styles.list}>
+          {[0, 1, 2, 3, 4].map((i) => <ListRowSkeleton key={i} withBadge />)}
         </View>
       ) : error ? (
         <EmptyState

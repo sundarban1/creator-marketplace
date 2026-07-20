@@ -5,6 +5,8 @@ import { StandalonePageShell } from './StandalonePageShell';
 import { useLandingLanguage } from './context/LanguageContext';
 import { fadeUp, stagger } from './lib/motion';
 import { api, type LegalSection } from '../../lib/api';
+import { SEO } from '../../lib/seo/SEO';
+import { webPageSchema } from '../../lib/seo/schema';
 
 type LegalSlug = 'privacy-policy' | 'terms';
 
@@ -84,6 +86,12 @@ function LegalDocContent({ slug }: { slug: LegalSlug }) {
 export function PrivacyPage() {
   return (
     <StandalonePageShell>
+      <SEO
+        title="Privacy Policy"
+        description="Read how Kolab, Nepal's creator marketplace, collects, uses, and protects the data of brands and content creators using the platform."
+        path="/privacy"
+        jsonLd={webPageSchema({ path: '/privacy', title: 'Privacy Policy | Kolab', description: "How Kolab collects, uses, and protects your data." })}
+      />
       <LegalDocContent slug="privacy-policy" />
     </StandalonePageShell>
   );
@@ -92,6 +100,12 @@ export function PrivacyPage() {
 export function TermsPage() {
   return (
     <StandalonePageShell>
+      <SEO
+        title="Terms of Service"
+        description="The terms and conditions for using Kolab, Nepal's creator marketplace connecting brands with content creators and influencers."
+        path="/terms"
+        jsonLd={webPageSchema({ path: '/terms', title: 'Terms of Service | Kolab', description: "Kolab's terms and conditions for brands and creators." })}
+      />
       <LegalDocContent slug="terms" />
     </StandalonePageShell>
   );

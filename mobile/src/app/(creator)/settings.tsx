@@ -198,8 +198,7 @@ function SwitchRow({ label, faIcon, faIconColor, value, onChange, isLast = false
           style={[
             styles.navIonIconWrap,
             {
-              backgroundColor: iColor + '18', shadowColor: iColor,
-              shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+              backgroundColor: iColor + '18',
             },
           ]}
         >
@@ -229,8 +228,7 @@ function NavRow({ faIcon, faIconColor, ionIcon, ionIconColor, label, value, onPr
           style={[
             styles.navIonIconWrap,
             {
-              backgroundColor: iColor + '18', shadowColor: iColor,
-              shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+              backgroundColor: iColor + '18',
             },
           ]}
         >
@@ -241,8 +239,7 @@ function NavRow({ faIcon, faIconColor, ionIcon, ionIconColor, label, value, onPr
           style={[
             styles.navIonIconWrap,
             {
-              backgroundColor: (danger ? C.error : iColor) + '18', shadowColor: danger ? C.error : iColor,
-              shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+              backgroundColor: (danger ? C.error : iColor) + '18',
             },
           ]}
         >
@@ -293,8 +290,7 @@ function AccordionRow({ title, body, iconColor, icon, emoji, open, onToggle }: A
           style={[
             styles.accordionIconWrap,
             {
-              backgroundColor: iconColor + '18', shadowColor: iconColor,
-              shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+              backgroundColor: iconColor + '18',
             },
           ]}
         >
@@ -1329,8 +1325,7 @@ export default function CreatorSettingsScreen() {
                   style={[
                     styles.socialIconWrap,
                     {
-                      backgroundColor: p.color + '18', shadowColor: p.color,
-                      shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                      backgroundColor: p.color + '18',
                     },
                   ]}
                 >
@@ -1608,8 +1603,7 @@ export default function CreatorSettingsScreen() {
                     style={[
                       styles.socialIconWrap,
                       {
-                        backgroundColor: cfg.color + '18', shadowColor: cfg.color,
-                        shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                        backgroundColor: cfg.color + '18',
                       },
                     ]}
                   >
@@ -1839,8 +1833,7 @@ export default function CreatorSettingsScreen() {
               style={[
                 styles.navIonIconWrap,
                 {
-                  backgroundColor: '#D9770618', shadowColor: '#D97706',
-                  shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                  backgroundColor: '#D9770618',
                 },
               ]}
             >
@@ -1943,8 +1936,7 @@ export default function CreatorSettingsScreen() {
               style={[
                 styles.navIonIconWrap,
                 {
-                  backgroundColor: '#0891B218', shadowColor: '#0891B2',
-                  shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                  backgroundColor: '#0891B218',
                 },
               ]}
             >
@@ -2053,8 +2045,7 @@ export default function CreatorSettingsScreen() {
               style={[
                 styles.navIonIconWrap,
                 {
-                  backgroundColor: '#10B98118', shadowColor: '#10B981',
-                  shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                  backgroundColor: '#10B98118',
                 },
               ]}
             >
@@ -2167,8 +2158,7 @@ export default function CreatorSettingsScreen() {
               style={[
                 styles.navIonIconWrap,
                 {
-                  backgroundColor: '#6366F118', shadowColor: '#6366F1',
-                  shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                  backgroundColor: '#6366F118',
                 },
               ]}
             >
@@ -2204,8 +2194,7 @@ export default function CreatorSettingsScreen() {
               style={[
                 styles.navIonIconWrap,
                 {
-                  backgroundColor: '#6366F118', shadowColor: '#6366F1',
-                  shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                  backgroundColor: '#6366F118',
                 },
               ]}
             >
@@ -2238,8 +2227,7 @@ export default function CreatorSettingsScreen() {
               style={[
                 styles.navIonIconWrap,
                 {
-                  backgroundColor: '#F59E0B18', shadowColor: '#F59E0B',
-                  shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                  backgroundColor: '#F59E0B18',
                 },
               ]}
             >
@@ -2373,8 +2361,7 @@ export default function CreatorSettingsScreen() {
               style={[
                 styles.navIonIconWrap,
                 {
-                  backgroundColor: '#3B82F618', shadowColor: '#3B82F6',
-                  shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                  backgroundColor: '#3B82F618',
                 },
               ]}
             >
@@ -2444,8 +2431,7 @@ export default function CreatorSettingsScreen() {
                 style={[
                   styles.confirmIconWrap,
                   {
-                    backgroundColor: '#FFF7ED', shadowColor: '#F59E0B',
-                    shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                    backgroundColor: '#FFF7ED',
                   },
                 ]}
               >
@@ -2489,8 +2475,7 @@ export default function CreatorSettingsScreen() {
                 style={[
                   styles.confirmIconWrap,
                   {
-                    backgroundColor: '#FEF2F2', shadowColor: '#DC2626',
-                    shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                    backgroundColor: '#FEF2F2',
                   },
                 ]}
               >

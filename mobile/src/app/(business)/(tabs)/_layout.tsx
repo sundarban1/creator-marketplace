@@ -179,6 +179,7 @@ const tabS = StyleSheet.create({
     width: 46,
     height: 32,
     borderRadius: RADIUS.md,
+    overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
