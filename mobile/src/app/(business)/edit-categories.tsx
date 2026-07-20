@@ -1,6 +1,5 @@
 import { router } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useState } from 'react';
 import { BackButton } from '@/components/BackButton';
 import {
@@ -17,7 +16,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useToast } from '@/components/Toast';
 import { profileService } from '@/services/profile';
 import { useCategories } from '@/hooks/useCategories';
-import { GRADIENTS, F, RADIUS } from '@/utilities/constants';
+import { F, RADIUS } from '@/utilities/constants';
 
 const MAX = 5;
 
@@ -78,20 +77,18 @@ export default function EditBusinessCategoriesScreen() {
 
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
-      <LinearGradient colors={GRADIENTS.hero} start={{x:0,y:0}} end={{x:1,y:1}} style={s.gradientTopBar}>
-        <View style={s.topBar}>
-          <BackButton fallback="/(business)/profile" />
-          <Text style={[s.topTitle, { color: '#fff' }]}>{t('editCategoriesBusiness.title')}</Text>
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-            style={[s.saveBtn, { backgroundColor: saving ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.25)' }]}
-            onPress={handleSave}
-            disabled={saving}>
-            {saving
-              ? <ActivityIndicator color="#fff" size="small" />
-              : <Text style={s.saveBtnTxt}>{t('editCategoriesBusiness.save')}</Text>}
-          </Pressable>
-        </View>
-      </LinearGradient>
+      <View style={s.topBar}>
+        <BackButton fallback="/(business)/profile" />
+        <Text style={[s.topTitle, { color: C.text }]}>{t('editCategoriesBusiness.title')}</Text>
+        <Pressable android_ripple={{ color: 'rgba(255,255,255,0.2)' }}
+          style={[s.saveBtn, { backgroundColor: saving ? C.brinjal1 + 'AA' : C.brinjal1 }]}
+          onPress={handleSave}
+          disabled={saving}>
+          {saving
+            ? <ActivityIndicator color="#fff" size="small" />
+            : <Text style={s.saveBtnTxt}>{t('editCategoriesBusiness.save')}</Text>}
+        </Pressable>
+      </View>
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -137,7 +134,6 @@ export default function EditBusinessCategoriesScreen() {
 const s = StyleSheet.create({
   container: { flex: 1 },
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  gradientTopBar: { overflow: 'hidden', borderBottomLeftRadius: RADIUS.lg, borderBottomRightRadius: RADIUS.lg },
   topBar:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
   topTitle:  { fontSize: 20, fontFamily: F.bold, lineHeight: 24 },
   saveBtn:   { borderRadius: RADIUS.sm, paddingHorizontal: 16, paddingVertical: 8, minWidth: 56, minHeight: 40, alignItems: 'center', justifyContent: 'center' },

@@ -1,7 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { messagingEvents } from '@/lib/messagingEvents';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Image as ExpoImage } from 'expo-image';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useEffect, useRef, useState } from 'react';
@@ -30,7 +29,7 @@ import { chatService, toMessage, createVideoUploadTask } from '@/services/chat';
 import { compressVideo } from '@/utilities/uploadVideo';
 import { getSocket } from '@/lib/socket';
 import { incomingMessageEvents } from '@/lib/incomingMessageEvents';
-import { GRADIENTS, F, RADIUS } from '@/utilities/constants';
+import { F, RADIUS } from '@/utilities/constants';
 import { CHAT_EMOJIS } from '@/utilities/chatEmojis';
 import { formatPresence } from '@/utilities/presence';
 import {
@@ -693,38 +692,38 @@ export default function BusinessChatRoomScreen() {
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
       {/* ── Header ── */}
-      <LinearGradient colors={GRADIENTS.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.header}>
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={s.backBtn} hitSlop={4} onPress={() => router.canGoBack() ? router.back() : router.replace('/(business)/messages' as never)}>
-          <Ionicons name="chevron-back" size={22} color="#fff" />
+      <View style={[s.header, { backgroundColor: C.surface, borderBottomColor: C.border, borderBottomWidth: 1 }]}>
+        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[s.backBtn, { backgroundColor: C.background }]} hitSlop={4} onPress={() => router.canGoBack() ? router.back() : router.replace('/(business)/messages' as never)}>
+          <Ionicons name="chevron-back" size={22} color={C.text} />
         </Pressable>
         {personAvatar && !personAvatarFailed ? (
-          <ExpoImage source={{ uri: personAvatar }} style={s.headerAvatar} contentFit="cover" onError={() => setPersonAvatarFailed(true)} />
+          <ExpoImage source={{ uri: personAvatar }} style={[s.headerAvatar, { borderColor: C.border }]} contentFit="cover" onError={() => setPersonAvatarFailed(true)} />
         ) : (
-          <View style={[s.headerAvatar, { backgroundColor: personColor }]}>
+          <View style={[s.headerAvatar, { backgroundColor: personColor, borderColor: C.border }]}>
             <Text style={s.headerAvatarTxt}>{initials(personName)}</Text>
           </View>
         )}
         <View style={s.headerInfo}>
-          <Text style={s.headerName} numberOfLines={1}>{personName}</Text>
+          <Text style={[s.headerName, { color: C.text }]} numberOfLines={1}>{personName}</Text>
           {otherTyping
-            ? <Text style={[s.headerSub, { color: '#C4B5FD' }]}>typing…</Text>
+            ? <Text style={[s.headerSub, { color: C.brinjal1 }]}>typing…</Text>
             : isPending
             ? (
               <View style={s.headerSubRow}>
-                <Ionicons name="time-outline" size={11} color="#FCD34D" />
-                <Text style={[s.headerSub, { color: '#FCD34D', marginTop: 0 }]}>{t('messages.waitingResponse')}</Text>
+                <Ionicons name="time-outline" size={11} color={C.draft} />
+                <Text style={[s.headerSub, { color: C.draft, marginTop: 0 }]}>{t('messages.waitingResponse')}</Text>
               </View>
             )
             : isDeclined
-            ? <Text style={[s.headerSub, { color: '#FCA5A5' }]}>{t('messages.requestDeclined')}</Text>
+            ? <Text style={[s.headerSub, { color: C.error }]}>{t('messages.requestDeclined')}</Text>
             : (() => {
                 const label = presence ? formatPresence(t, presence.online, presence.lastSeenAt) : null;
                 return label
-                  ? <Text style={[s.headerSub, { color: presence?.online ? '#86EFAC' : 'rgba(255,255,255,0.7)' }]}>{label}</Text>
+                  ? <Text style={[s.headerSub, { color: presence?.online ? C.active : C.textSecondary }]}>{label}</Text>
                   : null;
               })()}
         </View>
-      </LinearGradient>
+      </View>
 
       {/* ── Campaign banner ── */}
       {!!campaignTitle && (
@@ -875,12 +874,12 @@ const s = StyleSheet.create({
 
   // Header
   header:          { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, gap: 10 },
-  backBtn:         { width: 38, height: 38, borderRadius: RADIUS.full, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' },
-  headerAvatar:    { width: 40, height: 40, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: 'rgba(255,255,255,0.4)' },
+  backBtn:         { width: 38, height: 38, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
+  headerAvatar:    { width: 40, height: 40, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', borderWidth: 2 },
   headerAvatarTxt: { color: '#fff', fontSize: 14, fontFamily: F.bold },
   headerInfo:      { flex: 1 },
   headerSubRow:    { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 1 },
-  headerName:      { color: '#fff', fontSize: 16, fontFamily: F.bold },
+  headerName:      { fontSize: 16, fontFamily: F.bold },
   headerSub:       { fontSize: 11, fontFamily: F.medium, marginTop: 1 },
 
   // Campaign banner

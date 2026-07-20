@@ -1,6 +1,5 @@
 import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
@@ -11,13 +10,14 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { BackButton } from '@/components/BackButton';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { creatorService, type SavedCreatorItem } from '@/services/creator';
 import { EmptyState } from '@/components/EmptyState';
 import { ListRowSkeleton } from '@/components/ListRowSkeleton';
 import { SavedListCard } from '@/components/SavedListCard';
-import { GRADIENTS, F, RADIUS } from '@/utilities/constants';
+import { F, RADIUS } from '@/utilities/constants';
 
 function formatFollowers(n: number): string {
   if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
@@ -95,24 +95,20 @@ export default function SavedCreatorsScreen() {
 
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
-      <LinearGradient colors={GRADIENTS.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.gradientHeader}>
-        <View style={s.header}>
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={s.backBtn} onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={22} color="#fff" />
-          </Pressable>
-          <View style={{ alignItems: 'center', gap: 2 }}>
-            <Text style={s.heading}>{t('savedCreators.title')}</Text>
-            {items.length > 0 && (
-              <Text style={s.subheading}>
-                {items.length !== 1
-                  ? t('savedCreators.creatorsSaved', { n: items.length })
-                  : t('savedCreators.creatorSaved', { n: items.length })}
-              </Text>
-            )}
-          </View>
-          <View style={{ width: 38 }} />
+      <View style={s.header}>
+        <BackButton />
+        <View style={{ alignItems: 'center', gap: 2 }}>
+          <Text style={[s.heading, { color: C.text }]}>{t('savedCreators.title')}</Text>
+          {items.length > 0 && (
+            <Text style={[s.subheading, { color: C.textSecondary }]}>
+              {items.length !== 1
+                ? t('savedCreators.creatorsSaved', { n: items.length })
+                : t('savedCreators.creatorSaved', { n: items.length })}
+            </Text>
+          )}
         </View>
-      </LinearGradient>
+        <View style={{ width: 38 }} />
+      </View>
 
       {loading ? (
         <View style={s.list}>
@@ -143,11 +139,9 @@ export default function SavedCreatorsScreen() {
 
 const s = StyleSheet.create({
   container: { flex: 1 },
-  gradientHeader: { paddingBottom: 14, borderBottomLeftRadius: RADIUS.lg, borderBottomRightRadius: RADIUS.lg, overflow: 'hidden' },
-  header:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 10, paddingBottom: 0 },
-  backBtn:   { width: 38, height: 38, borderRadius: RADIUS.full, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center' },
-  heading:   { fontSize: 20, color: '#fff', fontFamily: F.bold, lineHeight: 24 },
-  subheading:{ fontSize: 12, color: 'rgba(255,255,255,0.8)', marginTop: 2, fontFamily: F.regular },
+  header:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 10, paddingBottom: 14 },
+  heading:   { fontSize: 20, fontFamily: F.bold, lineHeight: 24 },
+  subheading:{ fontSize: 12, marginTop: 2, fontFamily: F.regular },
 
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   list:   { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 40, gap: 12 },

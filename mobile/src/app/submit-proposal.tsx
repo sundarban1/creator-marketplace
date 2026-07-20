@@ -1,8 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useRef, useState } from 'react';
-import { BackButton } from '@/components/BackButton';
+import { PageHeader } from '@/features/creator/components/PageHeader';
 import {
   Keyboard,
   KeyboardAvoidingView,
@@ -22,7 +21,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { campaignService } from '@/services/campaign';
 import { creatorService } from '@/services/creator';
-import { GRADIENTS, F, RADIUS, SHADOW } from '@/utilities/constants';
+import { F, RADIUS, SHADOW } from '@/utilities/constants';
 
 // At least one of these must be present before a creator can apply — brands
 // evaluating a proposal need to see the creator's actual content somewhere.
@@ -213,11 +212,7 @@ export default function SubmitProposalScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
-      <LinearGradient colors={GRADIENTS.hero} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientHeader}>
-        <BackButton fallback="/(creator)/" />
-        <Text style={[styles.headerTitle, { color: '#fff' }]}>{t('proposal.title')}</Text>
-        <View style={{ width: 40 }} />
-      </LinearGradient>
+      <PageHeader title={t('proposal.title')} backFallback="/(creator)/" />
 
       {/* No `behavior` prop here — the ScrollView's `automaticallyAdjustKeyboardInsets`
           already handles iOS precisely on its own (auto-scrolls whichever field is focused
@@ -361,8 +356,6 @@ export default function SubmitProposalScreen() {
 const styles = StyleSheet.create({
   container:       { flex: 1 },
   flex:            { flex: 1 },
-  gradientHeader:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
-  headerTitle:     { fontSize: 16, fontFamily: F.bold },
   scroll:          { padding: 20, gap: 16, paddingBottom: 48 },
 
   campaignBadge:   { borderRadius: RADIUS.lg, padding: 16, gap: 6, borderLeftWidth: 4, ...SHADOW.card },

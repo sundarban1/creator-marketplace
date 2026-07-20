@@ -718,7 +718,7 @@ const en = {
   proposal: {
     title: 'Submit Proposal',
     applyingTo: 'Applying to',
-    coverLetter: 'Why should you hire me? * (min 50 chars)',
+    coverLetter: 'Why choose me? * (min 50 chars)',
     coverLetterPlaceholder:
       "Introduce yourself and explain why you're the perfect fit for this event...",
     charCount: '{{count}} / 800',

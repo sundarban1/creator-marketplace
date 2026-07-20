@@ -1,5 +1,4 @@
 import { router } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
 import { BackButton } from '@/components/BackButton';
 import { useEffect, useState } from 'react';
 import {
@@ -19,7 +18,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/components/Toast';
 import { profileService } from '@/services/profile';
 import { LocationSearchModal } from '@/components/LocationSearchModal';
-import { GRADIENTS, F, RADIUS, SHADOW } from '@/utilities/constants';
+import { F, RADIUS, SHADOW } from '@/utilities/constants';
 
 function generateBusinessDescription(name: string, cats: string[]): string {
   if (cats.length === 0) return '';
@@ -106,13 +105,11 @@ export default function EditBusinessProfileScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
-      <LinearGradient colors={GRADIENTS.hero} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientTopBar}>
-        <View style={styles.topBar}>
-          <BackButton fallback="/(business)/profile" />
-          <Text style={[styles.topTitle, { color: '#fff' }]}>{t('profile.editBusiness.headerTitle')}</Text>
-          <View style={{ width: 38 }} />
-        </View>
-      </LinearGradient>
+      <View style={styles.topBar}>
+        <BackButton fallback="/(business)/profile" />
+        <Text style={[styles.topTitle, { color: C.text }]}>{t('profile.editBusiness.headerTitle')}</Text>
+        <View style={{ width: 38 }} />
+      </View>
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView
@@ -227,7 +224,6 @@ export default function EditBusinessProfileScreen() {
 const styles = StyleSheet.create({
   container:     { flex: 1 },
   center:        { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  gradientTopBar: { overflow: 'hidden', borderBottomLeftRadius: RADIUS.lg, borderBottomRightRadius: RADIUS.lg },
   topBar:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
   topTitle:      { fontSize: 20, fontFamily: F.bold, lineHeight: 24 },
   content:       { paddingBottom: 24 },

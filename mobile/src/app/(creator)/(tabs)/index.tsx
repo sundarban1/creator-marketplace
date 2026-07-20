@@ -1,5 +1,4 @@
 import { router, useFocusEffect } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -28,7 +27,7 @@ import { creatorService } from '@/services/creator';
 import { getSocket } from '@/lib/socket';
 import { storage } from '@/utilities/storage';
 import { getCurrentLocation, geocodeAddress, type LatLng } from '@/utilities/geolocation';
-import { GRADIENTS, ACCESS_TOKEN_KEY, F, RADIUS, SHADOW } from '@/utilities/constants';
+import { ACCESS_TOKEN_KEY, F, RADIUS, SHADOW } from '@/utilities/constants';
 import { TabColors } from '@/utilities/tabColors';
 import type { Campaign } from '@/types';
 
@@ -454,39 +453,36 @@ export default function HomeScreen() {
         }
         ListHeaderComponent={
           <>
-        {/* ── Gradient header ── */}
-        <LinearGradient colors={GRADIENTS.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.gradientHeader}>
-
-          <View style={styles.header}>
-            <View style={styles.headerLeft}>
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                style={[styles.avatarCircle, { borderColor: 'rgba(255,255,255,0.5)', borderWidth: 2.5 }]}
-                onPress={() => router.push('/(creator)/profile')}>
-                <View style={styles.avatarClip}>
-                  {user?.avatar ? (
-                    <Image source={{ uri: user.avatar }} style={styles.avatarImage} resizeMode="cover" />
-                  ) : (
-                    <View style={[styles.avatarFallback, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
-                      <Text style={styles.avatarInitial}>{displayName.trim()[0].toUpperCase()}</Text>
-                    </View>
-                  )}
-                </View>
-              </Pressable>
-              <View>
-                <Text style={styles.greeting}>{t('creator.home.greeting')}</Text>
-                <Text style={styles.brandName} numberOfLines={1}>{displayName}</Text>
+        {/* ── Header ── */}
+        <View style={styles.header}>
+          <View style={styles.headerLeft}>
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+              style={[styles.avatarCircle, { borderColor: C.brinjal1 + '30', borderWidth: 2.5 }, SHADOW.card]}
+              onPress={() => router.push('/(creator)/profile')}>
+              <View style={styles.avatarClip}>
+                {user?.avatar ? (
+                  <Image source={{ uri: user.avatar }} style={styles.avatarImage} resizeMode="cover" />
+                ) : (
+                  <View style={[styles.avatarFallback, { backgroundColor: C.primaryLight }]}>
+                    <Text style={[styles.avatarInitial, { color: C.brinjal1 }]}>{displayName.trim()[0].toUpperCase()}</Text>
+                  </View>
+                )}
               </View>
-            </View>
-
-            <View style={styles.headerRight}>
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.menuBtn} onPress={openDrawer} hitSlop={6}>
-                <View style={styles.menuBtnInner}>
-                  <Ionicons name="menu" size={22} color="#fff" />
-                </View>
-              </Pressable>
+            </Pressable>
+            <View>
+              <Text style={[styles.greeting, { color: C.textSecondary }]}>{t('creator.home.greeting')}</Text>
+              <Text style={[styles.brandName, { color: C.text }]} numberOfLines={1}>{displayName}</Text>
             </View>
           </View>
-        </LinearGradient>
+
+          <View style={styles.headerRight}>
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.menuBtn} onPress={openDrawer} hitSlop={6}>
+              <View style={[styles.menuBtnInner, { backgroundColor: C.surface, borderColor: C.border, borderWidth: 1 }, SHADOW.card]}>
+                <Ionicons name="menu" size={22} color={C.text} />
+              </View>
+            </Pressable>
+          </View>
+        </View>
 
         {/* ── Search bar ── */}
         <View style={styles.searchRow}>
@@ -928,20 +924,18 @@ const styles = StyleSheet.create({
   scrollContent: { paddingBottom: 40 },
 
   // ── Header ──
-  gradientHeader: { borderBottomLeftRadius: RADIUS.lg, borderBottomRightRadius: RADIUS.lg, overflow: 'hidden' },
-
-  header:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 14 },
+  header:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 14 },
   headerLeft:   { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
   headerRight:  { flexDirection: 'row', alignItems: 'center', gap: 10 },
   menuBtn:      { padding: 0 },
-  menuBtnInner: { width: 38, height: 38, borderRadius: RADIUS.sm, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center' },
-  greeting:     { fontSize: 12, marginBottom: 2, fontFamily: F.medium, color: 'rgba(255,255,255,0.75)' },
-  brandName:    { fontSize: 20, fontFamily: F.bold, color: '#fff', maxWidth: 180, letterSpacing: -0.3 },
+  menuBtnInner: { width: 38, height: 38, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center' },
+  greeting:     { fontSize: 12, marginBottom: 2, fontFamily: F.medium },
+  brandName:    { fontSize: 20, fontFamily: F.bold, maxWidth: 180, letterSpacing: -0.3 },
   avatarCircle: { width: 44, height: 44, borderRadius: RADIUS.full },
   avatarClip:   { width: '100%', height: '100%', borderRadius: RADIUS.full, overflow: 'hidden' },
   avatarImage:  { width: '100%', height: '100%' },
   avatarFallback: { width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center' },
-  avatarInitial:  { fontSize: 18, color: '#fff', fontFamily: F.extrabold },
+  avatarInitial:  { fontSize: 18, fontFamily: F.extrabold },
 
   // ── Search ──
   searchRow: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 4 },

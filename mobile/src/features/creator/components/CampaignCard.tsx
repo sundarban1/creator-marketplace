@@ -1,6 +1,7 @@
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage, type TFn } from '@/context/LanguageContext';
@@ -63,9 +64,9 @@ export function CampaignCard({ campaign, variant }: { campaign: Campaign; varian
 
   return (
     <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-      style={({ pressed }) => [styles.cardWrap, pressed && { opacity: 0.88 }]}
+      style={({ pressed }) => [styles.cardWrap, pressed && { opacity: 0.88, transform: [{ scale: 0.98 }] }]}
       onPress={goToDetail}>
-      <View style={[styles.card, { backgroundColor: C.surface }]}>
+      <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
 
         {/* ── Image — full-bleed, minimal chrome ── */}
         <View style={[styles.img, { backgroundColor: catMeta.bg }]}>
@@ -76,6 +77,13 @@ export function CampaignCard({ campaign, variant }: { campaign: Campaign; varian
           {cardImage && (
             <Image source={{ uri: cardImage }} style={StyleSheet.absoluteFill} contentFit="cover" />
           )}
+
+          {/* Top scrim — keeps the badges legible over bright photos */}
+          <LinearGradient
+            colors={['rgba(0,0,0,0.32)', 'transparent']}
+            style={styles.imgScrim}
+            pointerEvents="none"
+          />
 
           {/* Category badge — top left, translucent pill */}
           <View style={styles.badge}>
@@ -103,7 +111,7 @@ export function CampaignCard({ campaign, variant }: { campaign: Campaign; varian
         <View style={styles.body}>
           {/* Brand row */}
           <View style={styles.brandRow}>
-            <View style={[styles.brandAvatar, { backgroundColor: C.brinjal1 }]}>
+            <View style={[styles.brandAvatar, { backgroundColor: C.brinjal1, borderColor: C.surface }]}>
               <Text style={styles.brandAvatarText}>{campaign.brand[0]}</Text>
             </View>
             <Text style={[styles.brandName, { color: C.textSecondary }]} numberOfLines={1}>{campaign.brand}</Text>
@@ -173,12 +181,13 @@ export function CampaignCard({ campaign, variant }: { campaign: Campaign; varian
 const styles = StyleSheet.create({
   cardWrap: {
     width: CARD_W,
-    ...SHADOW.floating,
-    shadowColor: '#000',
+    ...SHADOW.raised,
+    shadowColor: '#0F172A',
   },
-  card: { width: CARD_W, borderRadius: RADIUS.md, overflow: 'hidden' },
+  card: { width: CARD_W, borderRadius: RADIUS.lg, overflow: 'hidden', borderWidth: 1 },
   img:  { width: CARD_W, height: CARD_IMG_H, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
   imgIcon: { opacity: 0.35 },
+  imgScrim: { position: 'absolute', top: 0, left: 0, right: 0, height: 56 },
 
   badge: {
     position: 'absolute', top: 12, left: 12,
@@ -199,8 +208,8 @@ const styles = StyleSheet.create({
   body:  { padding: 14, gap: 6 },
 
   brandRow:        { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 },
-  brandAvatar:     { width: 18, height: 18, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
-  brandAvatarText: { fontSize: 9, color: '#fff', fontFamily: F.extrabold },
+  brandAvatar:     { width: 20, height: 20, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', borderWidth: 1.5 },
+  brandAvatarText: { fontSize: 10, color: '#fff', fontFamily: F.extrabold },
   brandName:       { fontSize: 11, fontFamily: F.medium, flexShrink: 1 },
 
   title: { fontSize: 16, lineHeight: 22, fontFamily: F.bold },

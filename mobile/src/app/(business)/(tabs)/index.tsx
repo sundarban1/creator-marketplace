@@ -1,5 +1,4 @@
 import { router, useFocusEffect } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -10,7 +9,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useDrawer } from '@/context/DrawerContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
-import { GRADIENTS, F, RADIUS, SHADOW } from '@/utilities/constants';
+import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { isValidNepaliPhone } from '@/utilities/phone';
 import { campaignService } from '@/services/campaign';
 import { useNotificationBadge } from '@/context/NotificationContext';
@@ -140,56 +139,52 @@ export default function BusinessHomeScreen() {
         contentContainerStyle={styles.scroll}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#7c3aed" />}>
 
-        {/* ── Gradient header ── */}
-        <LinearGradient colors={GRADIENTS.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.gradientHeader}>
-
-          {/* Menu · Greeting · Avatar */}
-          <View style={styles.header}>
-            <View style={styles.headerLeft}>
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.avatarCircle, { borderColor: 'rgba(255,255,255,0.5)', borderWidth: 2.5 }]} onPress={() => router.push('/(business)/profile')}>
-                {/* Clipping lives on its own layer — Android's elevation shadow doesn't
-                    composite correctly with overflow:hidden + a translucent child background
-                    on the same view. */}
-                <View style={styles.avatarClip}>
-                  {user?.avatar ? (
-                    <Image source={{ uri: user.avatar }} style={styles.avatarImage} resizeMode="cover" />
-                  ) : (
-                    <View style={[styles.avatarFallback, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
-                      <Text style={styles.avatarInitial}>{displayName.trim()[0].toUpperCase()}</Text>
-                    </View>
-                  )}
-                </View>
-              </Pressable>
-              <View>
-                <Text style={[styles.greeting, { color: 'rgba(255,255,255,0.7)' }]}>{getGreeting()}</Text>
-                <Text style={[styles.brandName, { color: '#fff' }]} numberOfLines={1}>{displayName}</Text>
+        {/* ── Header ── */}
+        <View style={styles.header}>
+          <View style={styles.headerLeft}>
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.avatarCircle, { borderColor: C.brinjal1 + '30', borderWidth: 2.5 }, SHADOW.card]} onPress={() => router.push('/(business)/profile')}>
+              {/* Clipping lives on its own layer — Android's elevation shadow doesn't
+                  composite correctly with overflow:hidden + a translucent child background
+                  on the same view. */}
+              <View style={styles.avatarClip}>
+                {user?.avatar ? (
+                  <Image source={{ uri: user.avatar }} style={styles.avatarImage} resizeMode="cover" />
+                ) : (
+                  <View style={[styles.avatarFallback, { backgroundColor: C.primaryLight }]}>
+                    <Text style={[styles.avatarInitial, { color: C.brinjal1 }]}>{displayName.trim()[0].toUpperCase()}</Text>
+                  </View>
+                )}
               </View>
+            </Pressable>
+            <View>
+              <Text style={[styles.greeting, { color: C.textSecondary }]}>{getGreeting()}</Text>
+              <Text style={[styles.brandName, { color: C.text }]} numberOfLines={1}>{displayName}</Text>
             </View>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.menuBtn} onPress={openDrawer} hitSlop={6}>
-              <View style={styles.menuBtnInner}>
-                <Ionicons name="menu" size={22} color="#fff" />
-              </View>
-            </Pressable>
           </View>
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.menuBtn} onPress={openDrawer} hitSlop={6}>
+            <View style={[styles.menuBtnInner, { backgroundColor: C.surface, borderColor: C.border, borderWidth: 1 }, SHADOW.card]}>
+              <Ionicons name="menu" size={22} color={C.text} />
+            </View>
+          </Pressable>
+        </View>
 
-          {/* Stats strip */}
-          <View style={styles.statsStrip}>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.statStripItem} onPress={() => router.push('/(business)/campaigns')}>
-              <Text style={styles.statStripVal}>{stats.active}</Text>
-              <Text style={styles.statStripLabel}>{t('business.home.statStripActive')}</Text>
-            </Pressable>
-            <View style={styles.statStripDiv} />
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.statStripItem} onPress={() => router.push('/(business)/campaigns')}>
-              <Text style={styles.statStripVal}>{stats.total}</Text>
-              <Text style={styles.statStripLabel}>{t('business.home.statStripTotal')}</Text>
-            </Pressable>
-            <View style={styles.statStripDiv} />
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.statStripItem} onPress={() => router.push('/(business)/campaigns')}>
-              <Text style={styles.statStripVal}>{stats.completed}</Text>
-              <Text style={styles.statStripLabel}>{t('business.home.statStripCompleted')}</Text>
-            </Pressable>
-          </View>
-        </LinearGradient>
+        {/* Stats strip */}
+        <View style={[styles.statsStrip, { backgroundColor: C.surface, borderColor: C.border, borderWidth: 1 }, SHADOW.card]}>
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.statStripItem} onPress={() => router.push('/(business)/campaigns')}>
+            <Text style={[styles.statStripVal, { color: C.text }]}>{stats.active}</Text>
+            <Text style={[styles.statStripLabel, { color: C.textSecondary }]}>{t('business.home.statStripActive')}</Text>
+          </Pressable>
+          <View style={[styles.statStripDiv, { backgroundColor: C.border }]} />
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.statStripItem} onPress={() => router.push('/(business)/campaigns')}>
+            <Text style={[styles.statStripVal, { color: C.text }]}>{stats.total}</Text>
+            <Text style={[styles.statStripLabel, { color: C.textSecondary }]}>{t('business.home.statStripTotal')}</Text>
+          </Pressable>
+          <View style={[styles.statStripDiv, { backgroundColor: C.border }]} />
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.statStripItem} onPress={() => router.push('/(business)/campaigns')}>
+            <Text style={[styles.statStripVal, { color: C.text }]}>{stats.completed}</Text>
+            <Text style={[styles.statStripLabel, { color: C.textSecondary }]}>{t('business.home.statStripCompleted')}</Text>
+          </Pressable>
+        </View>
 
         {/* ── Quick Actions ── */}
         <View style={styles.quickActionsRow}>
@@ -398,23 +393,22 @@ const styles = StyleSheet.create({
   scroll: { paddingBottom: 40 },
 
   // Header
-  gradientHeader: { paddingBottom: 14, borderBottomLeftRadius: RADIUS.lg, borderBottomRightRadius: RADIUS.lg, overflow: 'hidden' },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingHorizontal: 20, paddingTop: 14, paddingBottom: 18 },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
   menuBtn: { padding: 0 },
-  menuBtnInner: { width: 38, height: 38, borderRadius: RADIUS.md, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center' },
+  menuBtnInner: { width: 38, height: 38, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center' },
   greeting: { fontSize: 12, marginBottom: 3, fontFamily: F.medium },
   brandName: { fontSize: 20, fontFamily: F.bold, maxWidth: 180, letterSpacing: -0.3 },
-  avatarCircle: { width: 44, height: 44, borderRadius: RADIUS.full, shadowOpacity: 0.4, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
+  avatarCircle: { width: 44, height: 44, borderRadius: RADIUS.full },
   avatarClip:   { width: '100%', height: '100%', borderRadius: RADIUS.full, overflow: 'hidden' },
   avatarImage: { width: '100%', height: '100%' },
   avatarFallback: { width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center' },
-  avatarInitial:  { fontSize: 18, color: '#fff', fontFamily: F.extrabold },
-  statsStrip: { flexDirection: 'row', marginHorizontal: 20, marginBottom: 4, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: RADIUS.lg, paddingVertical: 12 },
+  avatarInitial:  { fontSize: 18, fontFamily: F.extrabold },
+  statsStrip: { flexDirection: 'row', marginHorizontal: 20, marginBottom: 4, borderRadius: RADIUS.lg, paddingVertical: 12 },
   statStripItem: { flex: 1, alignItems: 'center' },
-  statStripVal: { fontSize: 20, color: '#fff', fontFamily: F.bold },
-  statStripLabel: { fontSize: 10, color: 'rgba(255,255,255,0.7)', fontFamily: F.medium, marginTop: 2 },
-  statStripDiv: { width: 1, backgroundColor: 'rgba(255,255,255,0.2)', marginVertical: 4 },
+  statStripVal: { fontSize: 20, fontFamily: F.bold },
+  statStripLabel: { fontSize: 10, fontFamily: F.medium, marginTop: 2 },
+  statStripDiv: { width: 1, marginVertical: 4 },
 
   // Quick actions
   quickActionsRow:  { flexDirection: 'row', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 4, gap: 10 },

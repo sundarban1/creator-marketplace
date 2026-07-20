@@ -11,12 +11,12 @@ const CARD_IMG_H = 188;
 export function CampaignCardSkeleton() {
   const C = useAppColors();
   return (
-    <View style={[styles.wrap, { ...SHADOW.floating, shadowColor: '#000' }]}>
-      <View style={[styles.card, { backgroundColor: C.surface }]}>
+    <View style={[styles.wrap, { ...SHADOW.raised, shadowColor: '#0F172A' }]}>
+      <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
         <Skeleton width={CARD_W} height={CARD_IMG_H} radius={0} />
         <View style={styles.body}>
           <View style={styles.brandRow}>
-            <Skeleton width={18} height={18} radius={RADIUS.full} />
+            <Skeleton width={20} height={20} radius={RADIUS.full} />
             <Skeleton width={70} height={11} />
           </View>
           <Skeleton width="90%" height={16} style={{ marginTop: 2 }} />
@@ -35,7 +35,7 @@ export function CampaignCardSkeleton() {
 
 const styles = StyleSheet.create({
   wrap: { width: CARD_W },
-  card: { width: CARD_W, borderRadius: RADIUS.md, overflow: 'hidden' },
+  card: { width: CARD_W, borderRadius: RADIUS.lg, overflow: 'hidden', borderWidth: 1 },
   body: { padding: 14 },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10 },

@@ -1,6 +1,5 @@
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { BackButton } from '@/components/BackButton';
+import { PageHeader } from '@/features/creator/components/PageHeader';
 import { RangeDropdown } from '@/components/RangeDropdown';
 import { useCallback, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
@@ -14,7 +13,7 @@ import { BarChart } from '@/components/charts/BarChart';
 import {
   analyticsService, type ApiCreatorAnalytics, type AnalyticsRange,
 } from '@/services/analytics';
-import { GRADIENTS, F, RADIUS, SHADOW } from '@/utilities/constants';
+import { F, RADIUS, SHADOW } from '@/utilities/constants';
 
 const RANGES: { value: AnalyticsRange; labelKey: string }[] = [
   { value: '7d',   labelKey: 'analytics.range7d' },
@@ -108,13 +107,7 @@ export default function CreatorAnalyticsScreen() {
 
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
-      <LinearGradient colors={GRADIENTS.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.gradientTopBar}>
-        <View style={s.topBar}>
-          <BackButton fallback="/(creator)/" />
-          <Text style={[s.topTitle, { color: '#fff' }]}>{t('analytics.headerTitle')}</Text>
-          <View style={{ width: 38 }} />
-        </View>
-      </LinearGradient>
+      <PageHeader title={t('analytics.headerTitle')} backFallback="/(creator)/" />
 
       <View style={s.rangeRow}>
         <RangeDropdown
@@ -154,19 +147,19 @@ export default function CreatorAnalyticsScreen() {
           </View>
 
           {/* Earnings trend */}
-          <View style={[s.card, { backgroundColor: C.surface }]}>
+          <View style={[s.card, { backgroundColor: C.surface, borderColor: C.border }]}>
             <Text style={[s.cardTitle, { color: C.text }]}>{t('analytics.earningsTrend')}</Text>
             <BarChart data={earningsChart} valueFormatter={(v) => `Rs.${Math.round(v / 1000)}k`} />
           </View>
 
           {/* Campaign activity */}
-          <View style={[s.card, { backgroundColor: C.surface }]}>
+          <View style={[s.card, { backgroundColor: C.surface, borderColor: C.border }]}>
             <Text style={[s.cardTitle, { color: C.text }]}>{t('analytics.campaignActivity')}</Text>
             <BarChart data={activityChart} barColor={C.active} />
           </View>
 
           {/* Referrals */}
-          <View style={[s.card, { backgroundColor: C.surface }]}>
+          <View style={[s.card, { backgroundColor: C.surface, borderColor: C.border }]}>
             <Text style={[s.cardTitle, { color: C.text }]}>{t('analytics.referralProgram')}</Text>
             <View style={s.referralGrid}>
               <View style={[s.referralItem, { backgroundColor: C.background, borderColor: C.border }]}>
@@ -189,7 +182,7 @@ export default function CreatorAnalyticsScreen() {
           </View>
 
           {totals.profileCompletion.missing.length > 0 && (
-            <View style={[s.card, { backgroundColor: C.surface }]}>
+            <View style={[s.card, { backgroundColor: C.surface, borderColor: C.border }]}>
               <Text style={[s.cardTitle, { color: C.text }]}>{t('analytics.missingSections')}</Text>
               <View style={s.missingWrap}>
                 {totals.profileCompletion.missing.map((m) => (
@@ -209,9 +202,6 @@ export default function CreatorAnalyticsScreen() {
 const s = StyleSheet.create({
   container: { flex: 1 },
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  gradientTopBar: { overflow: 'hidden', borderBottomLeftRadius: RADIUS.lg, borderBottomRightRadius: RADIUS.lg },
-  topBar:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
-  topTitle:  { fontSize: 16, fontFamily: F.bold },
 
   rangeRow: { flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 16, paddingVertical: 14 },
 
@@ -226,7 +216,7 @@ const s = StyleSheet.create({
   tileValue:   { fontSize: 19, fontFamily: F.bold, marginTop: 2 },
   tileLabel:   { fontSize: 11, fontFamily: F.medium },
 
-  card:      { borderRadius: RADIUS.lg, padding: 18, gap: 16, ...SHADOW.card },
+  card:      { borderRadius: RADIUS.lg, borderWidth: 1, padding: 18, gap: 16, ...SHADOW.card },
   cardTitle: { fontSize: 14, fontFamily: F.bold },
 
   referralGrid:  { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },

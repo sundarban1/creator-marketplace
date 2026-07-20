@@ -2,9 +2,8 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { PaymentMethodIcon } from '@/components/PaymentMethodIcon';
 import { isPaymentMethodId } from '@/utilities/paymentMethods';
-import { LinearGradient } from 'expo-linear-gradient';
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
-import { BackButton } from '@/components/BackButton';
+import { PageHeader } from '@/features/creator/components/PageHeader';
 import { creatorService } from '@/services/creator';
 import { authService } from '@/services/auth';
 import { useLanguage } from '@/context/LanguageContext';
@@ -45,7 +44,7 @@ import { useAppColors, useIsDark } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import { usePlatformFlags } from '@/context/PlatformSettingsContext';
 import { useToast } from '@/components/Toast';
-import { GRADIENTS, COLORS, F, RADIUS, SHADOW } from '@/utilities/constants';
+import { COLORS, F, RADIUS, SHADOW } from '@/utilities/constants';
 import { pickAndUpload } from '@/utilities/uploadImage';
 import { formatPhoneDisplay, getAccountIdentityLine, isValidNepaliPhone, normalizePhoneForSubmit } from '@/utilities/phone';
 import {
@@ -2381,14 +2380,7 @@ export default function CreatorSettingsScreen() {
   return (
     <ColorCtx.Provider value={C}>
       <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
-        <LinearGradient colors={GRADIENTS.hero} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientTopBar}>
-          {/* Top bar */}
-          <View style={styles.topBar}>
-            <BackButton onPress={handleBack} />
-            <Text style={[styles.topTitle, { color: '#fff' }]}>{topTitle}</Text>
-            <View style={{ width: 36 }} />
-          </View>
-        </LinearGradient>
+        <PageHeader title={topTitle} onBack={handleBack} />
 
         {/* No `behavior` prop — the ScrollView's `automaticallyAdjustKeyboardInsets` already
             handles iOS precisely on its own; stacking KeyboardAvoidingView's `padding` on top
@@ -2535,20 +2527,13 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { flex: 1 },
   scrollContent: { paddingTop: 16, paddingBottom: 24 },
-  gradientTopBar: { overflow: 'hidden', borderBottomLeftRadius: RADIUS.lg, borderBottomRightRadius: RADIUS.lg },
-
-  topBar: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingVertical: 12,
-  },
-  topTitle: { fontSize: 20, fontFamily: F.bold, lineHeight: 24 },
 
   sectionHeader: {
     fontSize: 11,
     letterSpacing: 0, marginTop: 20, marginBottom: 6, marginHorizontal: 20, fontFamily: F.bold,
   },
   card: {
-    marginHorizontal: 16, borderRadius: RADIUS.md,
+    marginHorizontal: 16, borderRadius: RADIUS.lg,
     ...SHADOW.card, overflow: 'hidden',
   },
   hintCard: { marginHorizontal: 16, borderRadius: RADIUS.sm, padding: 12, marginTop: 8, marginBottom: 4 },
@@ -2578,7 +2563,7 @@ const styles = StyleSheet.create({
   navIonIconWrap: { width: 34, height: 34, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center' },
 
   accordionCard: {
-    borderRadius: RADIUS.md, borderWidth: 1.5, overflow: 'hidden', backgroundColor: 'transparent',
+    borderRadius: RADIUS.lg, borderWidth: 1.5, overflow: 'hidden', backgroundColor: 'transparent',
     ...SHADOW.card,
   },
   accordionHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
@@ -2605,7 +2590,7 @@ const styles = StyleSheet.create({
   // Language (improved)
   langCard: {
     flexDirection: 'row', alignItems: 'center', gap: 14,
-    borderRadius: RADIUS.md, borderWidth: 2, padding: 16,
+    borderRadius: RADIUS.lg, borderWidth: 2, padding: 16,
     ...SHADOW.card,
   },
   langFlag: { fontSize: 32 },
@@ -2760,7 +2745,7 @@ const styles = StyleSheet.create({
   verifiedBadge: { backgroundColor: '#DCFCE7', borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingVertical: 3 },
 
   // FAQ / legal
-  faqCard: { borderRadius: RADIUS.md, padding: 14, gap: 6, ...SHADOW.card },
+  faqCard: { borderRadius: RADIUS.lg, padding: 14, gap: 6, ...SHADOW.card },
   faqQ: { fontSize: 14, lineHeight: 20, fontFamily: F.bold },
   faqA: { fontSize: 13, lineHeight: 19, fontFamily: F.regular },
   helpSkeletonQ: { height: 14, borderRadius: RADIUS.sm, marginBottom: 8, width: '80%' },
@@ -2772,7 +2757,7 @@ const styles = StyleSheet.create({
   legalSection: { paddingVertical: 14, borderBottomWidth: 1, gap: 6 },
   legalTitle: { fontSize: 14, fontFamily: F.bold },
   legalBody: { fontSize: 13, lineHeight: 20, fontFamily: F.regular },
-  guideCard: { borderRadius: RADIUS.md, padding: 16, gap: 8, marginBottom: 10, ...SHADOW.card },
+  guideCard: { borderRadius: RADIUS.lg, padding: 16, gap: 8, marginBottom: 10, ...SHADOW.card },
   guideHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   guideIcon: { fontSize: 22 },
   guideTitle: { fontSize: 15, fontFamily: F.bold },

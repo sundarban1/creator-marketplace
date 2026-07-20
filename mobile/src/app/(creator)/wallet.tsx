@@ -1,7 +1,6 @@
 import { router } from 'expo-router';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { BackButton } from '@/components/BackButton';
+import { PageHeader } from '@/features/creator/components/PageHeader';
 import { PaymentMethodIcon } from '@/components/PaymentMethodIcon';
 import { isPaymentMethodId } from '@/utilities/paymentMethods';
 import { useEffect, useState } from 'react';
@@ -13,7 +12,7 @@ import { useToast } from '@/components/Toast';
 import { walletService, type ApiWalletSummary, type ApiWithdrawal } from '@/services/wallet';
 import { WithdrawModal } from '@/features/creator/components/WithdrawModal';
 import { Skeleton } from '@/components/Skeleton';
-import { GRADIENTS, F, RADIUS, SHADOW } from '@/utilities/constants';
+import { F, RADIUS, SHADOW } from '@/utilities/constants';
 
 const METHOD_META: Record<string, { icon: string; color: string }> = {
   esewa:   { icon: 'wallet', color: '#60BB46' },
@@ -56,13 +55,7 @@ export default function WalletScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
-      <LinearGradient colors={GRADIENTS.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.gradientTopBar}>
-        <View style={styles.topBar}>
-          <BackButton fallback="/(creator)/" />
-          <Text style={[styles.topTitle, { color: '#fff' }]}>{t('wallet.headerTitle')}</Text>
-          <View style={{ width: 38 }} />
-        </View>
-      </LinearGradient>
+      <PageHeader title={t('wallet.headerTitle')} backFallback="/(creator)/" />
 
       {loading || !summary ? (
         <View style={styles.content}>
@@ -70,7 +63,7 @@ export default function WalletScreen() {
           <Skeleton width="100%" height={48} radius={RADIUS.md} style={{ marginTop: 4 }} />
           <Skeleton width="100%" height={44} radius={RADIUS.md} />
           <Skeleton width={100} height={11} style={{ marginTop: 12, marginBottom: 2 }} />
-          <View style={[styles.card, { backgroundColor: C.surface }]}>
+          <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
             {[0, 1, 2].map((i) => (
               <View key={i} style={[styles.txRow, i > 0 && { borderTopWidth: 1, borderTopColor: C.border }]}>
                 <Skeleton width={36} height={36} radius={RADIUS.full} />
@@ -125,13 +118,13 @@ export default function WalletScreen() {
           {/* Statement */}
           <Text style={[styles.sectionHeader, { color: C.textSecondary }]}>{t('wallet.statementTitle')}</Text>
           {transactions.length === 0 ? (
-            <View style={[styles.emptyWrap, { backgroundColor: C.surface }]}>
+            <View style={[styles.emptyWrap, { backgroundColor: C.surface, borderColor: C.border }]}>
               <Ionicons name="receipt-outline" size={32} color={C.textSecondary} />
               <Text style={[styles.emptyTitle, { color: C.text }]}>{t('wallet.noTransactionsYet')}</Text>
               <Text style={[styles.emptyHint, { color: C.textSecondary }]}>{t('wallet.noTransactionsHint')}</Text>
             </View>
           ) : (
-            <View style={[styles.card, { backgroundColor: C.surface }]}>
+            <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
               {transactions.map((tx, i) => {
                 const meta = METHOD_META[tx.method] ?? { icon: 'credit-card', color: C.brinjal1 };
                 return (
@@ -181,9 +174,6 @@ export default function WalletScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  gradientTopBar: { overflow: 'hidden', borderBottomLeftRadius: RADIUS.lg, borderBottomRightRadius: RADIUS.lg },
-  topBar:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
-  topTitle:  { fontSize: 16, fontFamily: F.bold },
   content:   { padding: 16, paddingBottom: 32, gap: 12 },
 
   balanceCard: { borderRadius: RADIUS.lg, padding: 20, gap: 4, ...SHADOW.raised },
@@ -202,8 +192,8 @@ const styles = StyleSheet.create({
   manageBtnText: { fontSize: 13, fontFamily: F.semibold },
 
   sectionHeader: { fontSize: 11, letterSpacing: 0.5, textTransform: 'uppercase', fontFamily: F.bold, marginTop: 8 },
-  card: { borderRadius: RADIUS.md, ...SHADOW.card },
-  emptyWrap: { alignItems: 'center', borderRadius: RADIUS.md, paddingVertical: 32, paddingHorizontal: 16, gap: 8, ...SHADOW.card },
+  card: { borderRadius: RADIUS.lg, borderWidth: 1, overflow: 'hidden', ...SHADOW.card },
+  emptyWrap: { alignItems: 'center', borderRadius: RADIUS.lg, borderWidth: 1, paddingVertical: 32, paddingHorizontal: 16, gap: 8, ...SHADOW.card },
   emptyTitle: { fontSize: 14, fontFamily: F.bold },
   emptyHint: { fontSize: 12, textAlign: 'center', fontFamily: F.regular },
 

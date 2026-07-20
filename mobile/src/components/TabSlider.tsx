@@ -94,7 +94,7 @@ export function TabSlider({ tabs, active, onChange, justify = false }: Props) {
         <View style={s.row}>
           {tabItems}
           <Animated.View
-            style={[s.indicator, { backgroundColor: `${activeColor}1F`, left: indicatorX, width: indicatorW }]}
+            style={[s.indicator, { backgroundColor: `${activeColor}33`, left: indicatorX, width: indicatorW }]}
             pointerEvents="none"
           />
         </View>
@@ -111,7 +111,7 @@ export function TabSlider({ tabs, active, onChange, justify = false }: Props) {
           >
             {tabItems}
             <Animated.View
-              style={[s.indicator, { backgroundColor: `${activeColor}1F`, left: indicatorX, width: indicatorW }]}
+              style={[s.indicator, { backgroundColor: `${activeColor}33`, left: indicatorX, width: indicatorW }]}
               pointerEvents="none"
             />
           </ScrollView>

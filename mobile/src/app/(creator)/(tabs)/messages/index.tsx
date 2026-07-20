@@ -1,5 +1,4 @@
 import { router, useFocusEffect } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -26,7 +25,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage, type TFn } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { chatService } from '@/services/chat';
-import { GRADIENTS, F, RADIUS, SHADOW } from '@/utilities/constants';
+import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { TabColors } from '@/utilities/tabColors';
 import type { ApiMessage } from '@/lib/api';
 import type { Conversation } from '@/types';
@@ -224,7 +223,7 @@ function ChatCard({ conv, onDelete }: { conv: Conversation; onDelete: (id: strin
       <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
         style={({ pressed }) => [
           s.card,
-          { backgroundColor: pressed ? C.surface : C.background },
+          { backgroundColor: pressed ? C.surface : '#fff' },
         ]}
         onLongPress={handleLongPress}
         delayLongPress={400}
@@ -234,51 +233,31 @@ function ChatCard({ conv, onDelete }: { conv: Conversation; onDelete: (id: strin
             params: { id: conv.id, name: conv.participantName, avatar: conv.participantAvatar ?? '', userId: conv.participantUserId ?? '', status: conv.status, campaignTitle: conv.campaignTitle ?? '', participantRole: conv.participantRole },
           })
         }>
-        {/* Left accent stripe */}
-        {hasUnread && <View style={s.stripe} />}
+        {/* Avatar — plain, no ring/stripe/badge clutter */}
+        <Avatar name={conv.participantName} imageUrl={conv.participantAvatar} size={56} role={conv.participantRole} />
 
-        {/* Avatar + badge */}
-        <View style={s.avatarWrap}>
-          {hasUnread && <View style={[s.avatarRing, { borderColor: ACCENT }]} pointerEvents="none" />}
-          <Avatar name={conv.participantName} imageUrl={conv.participantAvatar} size={50} role={conv.participantRole} />
-          {hasUnread && (
-            <View style={[s.avatarBadge, { backgroundColor: ACCENT }]}>
-              <Text style={s.avatarBadgeTxt}>{conv.unreadCount > 99 ? '99+' : conv.unreadCount}</Text>
-            </View>
-          )}
-        </View>
-
-        {/* Content */}
+        {/* Content — two lines, Instagram-style: name, then preview · time */}
         <View style={s.content}>
-          <View style={s.rowTop}>
-            <Text
-              style={[s.name, { color: C.text }, hasUnread && s.nameUnread]}
-              numberOfLines={1}>
-              {conv.participantName}
-            </Text>
-            <Text style={[s.time, { color: hasUnread ? ACCENT : C.textSecondary }, hasUnread && s.timeUnread]}>
-              {formatTime(conv.lastMessageTime, t)}
-            </Text>
-          </View>
-
-          {conv.campaignTitle ? (
-            <View style={[s.campaignPill, { backgroundColor: '#E0F2FE' }]}>
-              <Ionicons name="briefcase-outline" size={10} color={ACCENT} />
-              <Text style={[s.campaignPillTxt, { color: ACCENT }]} numberOfLines={1}>{conv.campaignTitle}</Text>
-            </View>
-          ) : null}
+          <Text
+            style={[s.name, { color: C.text }, hasUnread && s.nameUnread]}
+            numberOfLines={1}>
+            {conv.participantName}
+          </Text>
 
           <View style={s.rowBottom}>
+            {conv.campaignTitle ? (
+              <Ionicons name="briefcase" size={12} color={hasUnread ? C.text : C.textSecondary} style={s.previewIcon} />
+            ) : null}
             <Text
               style={[s.preview, { color: hasUnread ? C.text : C.textSecondary }, hasUnread && s.previewUnread]}
               numberOfLines={1}>
-              {conv.lastMessage || t('messages.noMessagesYet')}
+              {(conv.lastMessage || t('messages.noMessagesYet')) + ' · ' + formatTime(conv.lastMessageTime, t)}
             </Text>
-            {!hasUnread && (
-              <Ionicons name="checkmark-done-outline" size={14} color={C.textSecondary} />
-            )}
           </View>
         </View>
+
+        {/* Unread indicator — single dot, no numeric badge */}
+        {hasUnread && <View style={[s.unreadDot, { backgroundColor: ACCENT }]} />}
       </Pressable>
     </SwipeableChatRow>
   );
@@ -373,29 +352,11 @@ export default function CreatorMessagesScreen() {
   const totalUnread = chats.reduce((acc, c) => acc + (c.unreadCount ?? 0), 0);
 
   return (
-    <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
-      {/* ── Gradient header ── */}
-      <LinearGradient
-        colors={GRADIENTS.hero}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={s.gradientHeader}>
-
-        <View style={s.header}>
-          <View>
-            <Text style={s.heading}>{t('messages.heading')}</Text>
-            <Text style={s.headingSub}>
-              {requests.length > 0
-                ? requests.length !== 1
-                  ? t('messages.pendingRequests', { n: requests.length })
-                  : t('messages.pendingRequest', { n: requests.length })
-                : totalUnread > 0
-                ? t('messages.unreadCount', { n: totalUnread })
-                : t('messages.yourConversations')}
-            </Text>
-          </View>
-        </View>
-      </LinearGradient>
+    <SafeAreaView style={[s.container, { backgroundColor: '#fff' }]} edges={['top']}>
+      {/* ── Header ── */}
+      <View style={s.header}>
+        <Text style={[s.heading, { color: C.text }]}>{t('messages.heading')}</Text>
+      </View>
 
       {/* ── Tab slider ── */}
       <TabSlider
@@ -464,10 +425,8 @@ const s = StyleSheet.create({
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
   // Header
-  gradientHeader: { borderBottomLeftRadius: RADIUS.lg, borderBottomRightRadius: RADIUS.lg, overflow: 'hidden' },
   header:         { paddingHorizontal: 20, paddingTop: 14, paddingBottom: 14 },
-  heading:        { fontSize: 20, fontFamily: F.bold, color: '#fff', lineHeight: 24 },
-  headingSub:     { fontSize: 13, fontFamily: F.regular, color: 'rgba(255,255,255,0.75)', marginTop: 2 },
+  heading:        { fontSize: 20, fontFamily: F.bold, lineHeight: 24 },
 
   // Request list
   reqList:  { padding: 16, gap: 12, paddingBottom: 40 },
@@ -486,6 +445,8 @@ const s = StyleSheet.create({
   reqMsgBox:   { flexDirection: 'row', alignItems: 'flex-start', gap: 8, borderRadius: RADIUS.md, padding: 12, borderWidth: StyleSheet.hairlineWidth },
   reqMsg:      { flex: 1, fontSize: 13, lineHeight: 19, fontFamily: F.regular },
   reqMsgEmpty: { flex: 1, fontSize: 13, fontStyle: 'italic', fontFamily: F.regular },
+  campaignPill:    { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', borderRadius: RADIUS.sm, paddingHorizontal: 6, paddingVertical: 2 },
+  campaignPillTxt: { fontSize: 10, fontFamily: F.semibold, maxWidth: 180 },
   reqActions:  { flexDirection: 'row', gap: 10 },
   declineBtn:  { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, borderRadius: RADIUS.md, borderWidth: 1.5, height: 44 },
   declineTxt:  { fontSize: 13, fontFamily: F.semibold },
@@ -494,31 +455,23 @@ const s = StyleSheet.create({
 
   // Chat list
   chatList: { paddingBottom: 40 },
-  sep:      { height: StyleSheet.hairlineWidth, backgroundColor: 'transparent', marginLeft: 82 },
+  sep:      { height: StyleSheet.hairlineWidth, marginLeft: 86 },
 
-  // Chat card
+  // Chat card — Instagram-style: plain avatar, name line, preview+time line, unread dot
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 10,
     paddingHorizontal: 16,
-    gap: 12,
+    gap: 14,
   },
-  stripe:      { position: 'absolute', left: 0, top: 8, bottom: 8, width: 3, backgroundColor: ACCENT, borderRadius: 2 },
-  avatarWrap:  { position: 'relative' },
-  avatarRing:  { position: 'absolute', top: -3, left: -3, right: -3, bottom: -3, borderRadius: RADIUS.full, borderWidth: 2 },
-  avatarBadge: { position: 'absolute', top: -4, right: -4, minWidth: 20, height: 20, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 4, borderWidth: 2, borderColor: '#fff' },
-  avatarBadgeTxt: { color: '#fff', fontSize: 10, fontFamily: F.bold, lineHeight: 12 },
-  content:     { flex: 1, gap: 3 },
-  rowTop:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-  name:        { flex: 1, fontSize: 15, fontFamily: F.semibold },
+  content:     { flex: 1, gap: 4 },
+  name:        { fontSize: 15, fontFamily: F.semibold },
   nameUnread:  { fontFamily: F.bold, },
-  time:        { fontSize: 11, fontFamily: F.regular, flexShrink: 0 },
-  timeUnread:  { fontFamily: F.semibold, },
-  campaignPill:    { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', borderRadius: RADIUS.sm, paddingHorizontal: 6, paddingVertical: 2 },
-  campaignPillTxt: { fontSize: 10, fontFamily: F.semibold, maxWidth: 180 },
-  rowBottom:   { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  rowBottom:   { flexDirection: 'row', alignItems: 'center' },
+  previewIcon: { marginRight: 4 },
   preview:     { flex: 1, fontSize: 13, fontFamily: F.regular },
   previewUnread: { fontFamily: F.medium },
+  unreadDot:   { width: 9, height: 9, borderRadius: RADIUS.full, flexShrink: 0 },
 
 });

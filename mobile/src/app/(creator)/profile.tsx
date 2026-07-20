@@ -16,7 +16,7 @@ import { creatorService, type ApiCreatorProfile } from '@/services/creator';
 import { campaignService } from '@/services/campaign';
 import { useFavoriteBusinesses } from '@/hooks/useFavoriteBusinesses';
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
-import { GRADIENTS, F, RADIUS, SHADOW } from '@/utilities/constants';
+import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { pickAndUpload } from '@/utilities/uploadImage';
 
 const PLATFORM_MAP: Record<string, { platform: string; color: string; iconName: string }> = {
@@ -183,9 +183,9 @@ export default function CreatorProfileScreen() {
               {displayAvatar ? (
                 <Image source={{ uri: displayAvatar }} style={s.avatar} />
               ) : (
-                <LinearGradient colors={GRADIENTS.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.avatar}>
-                  <Text style={s.avatarInitial}>{displayName[0].toUpperCase()}</Text>
-                </LinearGradient>
+                <View style={[s.avatar, { backgroundColor: C.primaryLight }]}>
+                  <Text style={[s.avatarInitial, { color: C.brinjal1 }]}>{displayName[0].toUpperCase()}</Text>
+                </View>
               )}
               <View
                 style={[
@@ -399,7 +399,7 @@ function SectionCard({
   C: ReturnType<typeof useAppColors>;
 }) {
   return (
-    <View style={[s.sectionCard, { backgroundColor: C.surface }]}>
+    <View style={[s.sectionCard, { backgroundColor: C.surface, borderColor: C.border }]}>
       <View style={s.sectionHeader}>
         <Text style={[s.sectionTitle, { color: C.text }]}>{title}</Text>
         <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={action.onPress} hitSlop={8}>
@@ -489,7 +489,7 @@ const s = StyleSheet.create({
   statDivider:  { width: 1, height: 32 },
 
   // Section cards
-  sectionCard:   { marginHorizontal: 16, marginTop: 12, borderRadius: RADIUS.lg, padding: 18, ...SHADOW.card },
+  sectionCard:   { marginHorizontal: 16, marginTop: 12, borderRadius: RADIUS.lg, borderWidth: 1, padding: 18, ...SHADOW.card },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
   sectionTitle:  { fontSize: 15, fontFamily: F.bold },
   sectionAction: { fontSize: 13, fontFamily: F.bold },

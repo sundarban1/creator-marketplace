@@ -1,8 +1,7 @@
 import { router } from 'expo-router';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { BackButton } from '@/components/BackButton';
+import { PageHeader } from '@/features/creator/components/PageHeader';
 import { EmptyState } from '@/components/EmptyState';
 import { EntityCard } from '@/components/EntityCard';
 import { ExploreCardSkeleton } from '@/components/ExploreCardSkeleton';
@@ -23,7 +22,7 @@ import { LocationSearchPicker, type LocationEntry } from '@/components/LocationS
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { creatorService, type ApiCreatorListItem } from '@/services/creator';
-import { GRADIENTS, F, RADIUS } from '@/utilities/constants';
+import { F, RADIUS } from '@/utilities/constants';
 import { useAllCategories, useCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { usePlatforms, getPlatformMeta } from '@/hooks/usePlatforms';
 import type { ApiCategory } from '@/services/category';
@@ -361,17 +360,7 @@ export default function ExploreCreatorPeersScreen() {
 
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
-      <LinearGradient colors={GRADIENTS.hero} start={{x:0,y:0}} end={{x:1,y:1}} style={s.gradientHeader}>
-        {/* Header */}
-        <View style={s.header}>
-          <BackButton fallback="/(creator)/(tabs)" />
-          <View style={s.headerMiddle}>
-            <Text style={[s.headerTitle, { color: '#fff' }]}>{t('explore.exploreCreators')}</Text>
-            <Text style={s.headerSub}>{t('explore.creatorPeersSub')}</Text>
-          </View>
-          <View style={{ width: 36 }} />
-        </View>
-      </LinearGradient>
+      <PageHeader title={t('explore.exploreCreators')} backFallback="/(creator)/(tabs)" />
 
       {/* Search + filter — outside gradient */}
       <View style={s.searchRow}>
@@ -391,21 +380,22 @@ export default function ExploreCreatorPeersScreen() {
               <Ionicons name="close-circle" size={18} color={C.textSecondary} />
             </Pressable>
           )}
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            style={[
+              s.filterBtn,
+              { backgroundColor: filterActive ? C.brinjal1 : C.primaryLight },
+              filterActive && { shadowColor: C.brinjal1, shadowOpacity: 0.35, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 5 },
+            ]}
+            onPress={openFilter}
+            hitSlop={6}>
+            <Ionicons name="options-outline" size={18} color={filterActive ? '#fff' : C.brinjal1} />
+            {filterActive && (
+              <View style={s.filterCountBadge}>
+                <Text style={s.filterCountBadgeTxt}>{filterCount}</Text>
+              </View>
+            )}
+          </Pressable>
         </View>
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-          style={[
-            s.filterBtn,
-            { backgroundColor: filterActive ? C.brinjal1 : C.surface, borderColor: filterActive ? C.brinjal1 : C.border },
-            filterActive && { shadowColor: C.brinjal1, shadowOpacity: 0.35, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 5 },
-          ]}
-          onPress={openFilter}>
-          <Ionicons name="options-outline" size={20} color={filterActive ? '#fff' : C.brinjal1} />
-          {filterActive && (
-            <View style={s.filterCountBadge}>
-              <Text style={s.filterCountBadgeTxt}>{filterCount}</Text>
-            </View>
-          )}
-        </Pressable>
       </View>
 
       {/* Active filter chips */}
@@ -523,17 +513,12 @@ export default function ExploreCreatorPeersScreen() {
 
 const s = StyleSheet.create({
   container: { flex: 1 },
-  gradientHeader: { paddingBottom: 16, borderBottomLeftRadius: RADIUS.lg, borderBottomRightRadius: RADIUS.lg, overflow: 'hidden' },
 
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 4, gap: 12 },
-  headerMiddle: { flex: 1, alignItems: 'center', gap: 2 },
-  headerTitle: { fontSize: 20, textAlign: 'center', fontFamily: F.bold, color: '#fff', lineHeight: 24 },
-  headerSub: { fontSize: 12, color: 'rgba(255,255,255,0.75)', fontFamily: F.regular, textAlign: 'center' },
 
-  searchRow:  { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 12 },
+  searchRow:  { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12 },
   searchCard: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 9, borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 14, height: 50 },
   searchInput: { flex: 1, fontSize: 14, fontFamily: F.regular },
-  filterBtn: { width: 50, height: 50, borderRadius: RADIUS.md, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center' },
+  filterBtn: { width: 36, height: 36, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center' },
   filterCountBadge: { position: 'absolute', top: -4, right: -4, minWidth: 16, height: 16, borderRadius: RADIUS.full, paddingHorizontal: 3, backgroundColor: '#EF4444', justifyContent: 'center', alignItems: 'center' },
   filterCountBadgeTxt: { fontSize: 9, fontFamily: F.extrabold, color: '#fff' },
 

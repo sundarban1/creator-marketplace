@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { router } from 'expo-router';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
 import {
   ActivityIndicator,
@@ -26,7 +25,7 @@ import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { getTemplateImage } from '@/features/creator/data/templateImages';
 import { ListRowSkeleton } from '@/components/ListRowSkeleton';
 import type { Campaign } from '@/types';
-import { GRADIENTS, F, RADIUS, SHADOW } from '@/utilities/constants';
+import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { TabColors } from '@/utilities/tabColors';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
@@ -209,19 +208,17 @@ export default function CampaignsScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
-      <LinearGradient colors={GRADIENTS.hero} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientHeader}>
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <Text style={[styles.pageTitle, { color: '#fff' }]}>{t('campaigns.title')}</Text>
-            <Text style={[styles.pageSub, { color: 'rgba(255,255,255,0.75)' }]}>{t('campaigns.subtitle')}</Text>
-          </View>
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-            style={[styles.newBtn, { backgroundColor: 'rgba(255,255,255,0.22)' }]}
-            onPress={() => router.push('/create-campaign')}>
-            <Text style={[styles.newBtnText, { color: '#fff' }]}>{t('business.newBtn')}</Text>
-          </Pressable>
+      <View style={styles.header}>
+        <View style={styles.headerLeft}>
+          <Text style={[styles.pageTitle, { color: C.text }]}>{t('campaigns.title')}</Text>
+          <Text style={[styles.pageSub, { color: C.textSecondary }]}>{t('campaigns.subtitle')}</Text>
         </View>
-      </LinearGradient>
+        <Pressable android_ripple={{ color: 'rgba(255,255,255,0.2)' }}
+          style={[styles.newBtn, { backgroundColor: C.brinjal1 }]}
+          onPress={() => router.push('/create-campaign')}>
+          <Text style={styles.newBtnText}>{t('business.newBtn')}</Text>
+        </Pressable>
+      </View>
 
       {/* Filter tabs */}
       <View style={[styles.filterRow, { backgroundColor: C.surface }]}>
@@ -515,7 +512,6 @@ export default function CampaignsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 60 },
-  gradientHeader: { borderBottomLeftRadius: RADIUS.lg, borderBottomRightRadius: RADIUS.lg, overflow: 'hidden' },
 
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',

@@ -1,6 +1,5 @@
 import { router } from 'expo-router';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -26,7 +25,7 @@ import { FeatureImagePicker } from '@/features/creator/components/FeatureImagePi
 import { PlacesAutocompleteInput, type PlacePrediction } from '@/components/PlacesAutocompleteInput';
 import { pickAndUpload } from '@/utilities/uploadImage';
 import { RecommendedCreatorsModal } from '@/features/business/components/RecommendedCreatorsModal';
-import { GRADIENTS, F, RADIUS, SHADOW, buildPlaceDetailsUrl } from '@/utilities/constants';
+import { F, RADIUS, SHADOW, buildPlaceDetailsUrl } from '@/utilities/constants';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -1167,20 +1166,20 @@ export default function CreateCampaignScreen() {
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
 
       {/* Header */}
-      <LinearGradient colors={GRADIENTS.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.header}>
+      <View style={s.header}>
         <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
           onPress={() => phase === 'review' ? setPhase('setup') : (router.canGoBack() ? router.back() : router.replace('/(business)/'))}
-          style={[s.backBtn, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
-          <Ionicons name={phase === 'review' ? 'chevron-back' : 'close'} size={22} color="#fff" />
+          style={[s.backBtn, { backgroundColor: C.surface, borderColor: C.border, borderWidth: 1 }]}>
+          <Ionicons name={phase === 'review' ? 'chevron-back' : 'close'} size={22} color={C.text} />
         </Pressable>
         <View style={s.headerCenter}>
-          <Text style={s.headerTitle}>{t('createEvent.headerTitle')}</Text>
-          <Text style={s.headerSub}>{phase === 'setup' ? t('createEvent.headerSubSetup') : t('createEvent.headerSubReview')}</Text>
+          <Text style={[s.headerTitle, { color: C.text }]}>{t('createEvent.headerTitle')}</Text>
+          <Text style={[s.headerSub, { color: C.textSecondary }]}>{phase === 'setup' ? t('createEvent.headerSubSetup') : t('createEvent.headerSubReview')}</Text>
         </View>
-        <View style={[s.phasePill, { backgroundColor: 'rgba(255,255,255,0.25)' }]}>
-          <Text style={s.phasePillText}>{phase === 'setup' ? '1/2' : '2/2'}</Text>
+        <View style={[s.phasePill, { backgroundColor: C.primaryLight }]}>
+          <Text style={[s.phasePillText, { color: C.brinjal1 }]}>{phase === 'setup' ? '1/2' : '2/2'}</Text>
         </View>
-      </LinearGradient>
+      </View>
 
       {/* Progress */}
       <View style={[s.progressTrack, { backgroundColor: C.border }]}>
@@ -1887,10 +1886,10 @@ const s = StyleSheet.create({
   header:       { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14 },
   backBtn:      { width: 40, height: 40, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
   headerCenter: { flex: 1, alignItems: 'center' },
-  headerTitle:  { fontSize: 16, fontFamily: F.bold, color: '#fff' },
-  headerSub:    { fontSize: 11, marginTop: 1, fontFamily: F.regular, color: 'rgba(255,255,255,0.75)' },
+  headerTitle:  { fontSize: 16, fontFamily: F.bold },
+  headerSub:    { fontSize: 11, marginTop: 1, fontFamily: F.regular },
   phasePill:    { borderRadius: RADIUS.full, paddingHorizontal: 10, paddingVertical: 4 },
-  phasePillText:{ fontSize: 12, fontFamily: F.bold, color: '#fff' },
+  phasePillText:{ fontSize: 12, fontFamily: F.bold },
 
   progressTrack:{ height: 3 },
   progressFill: { height: 3 },

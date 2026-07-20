@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { router } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
 import {
   ActivityIndicator,
   FlatList,
@@ -19,7 +18,7 @@ import { TabSlider } from '@/components/TabSlider';
 import { EmptyState } from '@/components/EmptyState';
 import { ListRowSkeleton } from '@/components/ListRowSkeleton';
 import { useScrollToTopOnTabPress } from '@/hooks/useScrollToTopOnTabPress';
-import { GRADIENTS, F, RADIUS, SHADOW } from '@/utilities/constants';
+import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { TabColors } from '@/utilities/tabColors';
 
 type WS = 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED';
@@ -308,16 +307,10 @@ export default function ProposalsScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
-      <LinearGradient
-        colors={GRADIENTS.hero}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.gradientHeader}>
-        <View style={styles.headerContent}>
-          <Text style={styles.pageTitle}>{t('proposal.business.headerTitle')}</Text>
-          <Text style={styles.pageSub}>{t('proposal.business.headerSub')}</Text>
-        </View>
-      </LinearGradient>
+      <View style={styles.headerContent}>
+        <Text style={[styles.pageTitle, { color: C.text }]}>{t('proposal.business.headerTitle')}</Text>
+        <Text style={[styles.pageSub, { color: C.textSecondary }]}>{t('proposal.business.headerSub')}</Text>
+      </View>
 
       {/* Tab bar */}
       <View style={[styles.filterRow, { backgroundColor: C.surface }]}>
@@ -370,10 +363,9 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
-  gradientHeader: { borderBottomLeftRadius: RADIUS.lg, borderBottomRightRadius: RADIUS.lg, overflow: 'hidden' },
   headerContent:  { paddingHorizontal: 20, paddingTop: 14, paddingBottom: 14 },
-  pageTitle:      { fontSize: 20, color: '#fff', fontFamily: F.bold, lineHeight: 24 },
-  pageSub:        { fontSize: 13, color: 'rgba(255,255,255,0.75)', fontFamily: F.regular, marginTop: 2 },
+  pageTitle:      { fontSize: 20, fontFamily: F.bold, lineHeight: 24 },
+  pageSub:        { fontSize: 13, fontFamily: F.regular, marginTop: 2 },
 
   filterRow: { ...SHADOW.card },
 

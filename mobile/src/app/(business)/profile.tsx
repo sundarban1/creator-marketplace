@@ -21,7 +21,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { profileService, type BusinessProfile } from '@/services/profile';
 import { campaignService } from '@/services/campaign';
 import { creatorService } from '@/services/creator';
-import { GRADIENTS, F, RADIUS, SHADOW } from '@/utilities/constants';
+import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { pickAndUpload } from '@/utilities/uploadImage';
 import { formatPhoneDisplay } from '@/utilities/phone';
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
@@ -89,7 +89,7 @@ export default function BusinessProfileScreen() {
 
         {/* ── Hero Cover ── */}
         <LinearGradient
-          colors={GRADIENTS.hero}
+          colors={['#7C3AED', '#EC4899', '#F97316']}
           start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
           style={s.cover}>
           {profile?.coverImageUrl ? (
@@ -127,9 +127,9 @@ export default function BusinessProfileScreen() {
               {profile?.logoUrl ? (
                 <Image source={{ uri: profile.logoUrl }} style={s.avatar} />
               ) : (
-                <LinearGradient colors={GRADIENTS.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.avatar}>
-                  <Text style={s.avatarInitial}>{displayName[0].toUpperCase()}</Text>
-                </LinearGradient>
+                <View style={[s.avatar, { backgroundColor: C.primaryLight }]}>
+                  <Text style={[s.avatarInitial, { color: C.brinjal1 }]}>{displayName[0].toUpperCase()}</Text>
+                </View>
               )}
               <View
                 style={[

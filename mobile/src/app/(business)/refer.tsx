@@ -1,5 +1,4 @@
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { BackButton } from '@/components/BackButton';
 import { useEffect, useState } from 'react';
 import {
@@ -20,7 +19,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/components/Toast';
 import { businessReferralService, type ApiBusinessReferralOverview } from '@/services/business-referral';
-import { GRADIENTS, F, RADIUS, SHADOW } from '@/utilities/constants';
+import { F, RADIUS, SHADOW } from '@/utilities/constants';
 
 const STATUS_META: Record<string, { bg: string; text: string }> = {
   PENDING:   { bg: '#FEF3C7', text: '#92400E' },
@@ -93,13 +92,11 @@ export default function BusinessReferralScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
-      <LinearGradient colors={GRADIENTS.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.gradientTopBar}>
-        <View style={styles.topBar}>
-          <BackButton fallback="/(business)/" />
-          <Text style={[styles.topTitle, { color: '#fff' }]}>{t('businessReferral.headerTitle')}</Text>
-          <View style={{ width: 38 }} />
-        </View>
-      </LinearGradient>
+      <View style={styles.topBar}>
+        <BackButton fallback="/(business)/" />
+        <Text style={[styles.topTitle, { color: C.text }]}>{t('businessReferral.headerTitle')}</Text>
+        <View style={{ width: 38 }} />
+      </View>
 
       {loading || !overview ? (
         <View style={styles.center}>
@@ -214,7 +211,6 @@ export default function BusinessReferralScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  gradientTopBar: { overflow: 'hidden', borderBottomLeftRadius: RADIUS.lg, borderBottomRightRadius: RADIUS.lg },
   topBar:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
   topTitle:  { fontSize: 16, fontFamily: F.bold },
   content:   { padding: 16, paddingBottom: 32, gap: 16 },

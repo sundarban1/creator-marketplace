@@ -1,7 +1,6 @@
 import { router } from 'expo-router';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { BackButton } from '@/components/BackButton';
+import { PageHeader } from '@/features/creator/components/PageHeader';
 import { EntityCard } from '@/components/EntityCard';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -25,7 +24,7 @@ import { LocationSearchPicker, type LocationFilter } from '@/components/Location
 import { businessService, type BusinessListItem } from '@/services/business';
 import { useFavoriteBusinesses } from '@/hooks/useFavoriteBusinesses';
 import { useToast } from '@/components/Toast';
-import { GRADIENTS, F, RADIUS } from '@/utilities/constants';
+import { F, RADIUS } from '@/utilities/constants';
 import { useCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { usePlatforms } from '@/hooks/usePlatforms';
 
@@ -346,22 +345,18 @@ export default function ExploreBusinessesScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
-      <LinearGradient colors={GRADIENTS.hero} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientHeader}>
-        {/* ── Header ── */}
-        <View style={styles.header}>
-          <BackButton fallback="/(creator)/" />
-          <View style={styles.headerMiddle}>
-            <Text style={[styles.heading, { color: '#fff' }]}>{t('explore.businesses.headerTitle')}</Text>
-            <Text style={[styles.headingSub, { color: 'rgba(255,255,255,0.82)' }]}>{t('explore.businesses.headerSub')}</Text>
-          </View>
+      <PageHeader
+        title={t('explore.businesses.headerTitle')}
+        backFallback="/(creator)/"
+        rightSlot={
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-            style={styles.favLink}
+            style={[styles.favLink, { backgroundColor: C.surface, borderColor: C.border, borderWidth: 1 }]}
             onPress={() => router.push('/(creator)/favorite-businesses' as Parameters<typeof router.push>[0])}>
-            <Ionicons name="heart" size={15} color="#fff" />
-            <Text style={styles.favLinkText}>{t('explore.businesses.savedLink')}</Text>
+            <Ionicons name="heart" size={15} color={C.brinjal1} />
+            <Text style={[styles.favLinkText, { color: C.brinjal1 }]}>{t('explore.businesses.savedLink')}</Text>
           </Pressable>
-        </View>
-      </LinearGradient>
+        }
+      />
 
       {/* ── Search + filter ── */}
       <View style={styles.searchRow}>
@@ -381,21 +376,22 @@ export default function ExploreBusinessesScreen() {
               <Ionicons name="close-circle" size={18} color={C.textSecondary} />
             </Pressable>
           )}
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            style={[
+              styles.filterBtn,
+              { backgroundColor: isFilterActive ? C.brinjal1 : C.primaryLight },
+              isFilterActive && { shadowColor: C.brinjal1, shadowOpacity: 0.35, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 5 },
+            ]}
+            onPress={openFilter}
+            hitSlop={6}>
+            <Ionicons name="options-outline" size={18} color={isFilterActive ? '#fff' : C.brinjal1} />
+            {isFilterActive && (
+              <View style={styles.filterCountBadge}>
+                <Text style={styles.filterCountBadgeTxt}>{filterActiveCount}</Text>
+              </View>
+            )}
+          </Pressable>
         </View>
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-          style={[
-            styles.filterBtn,
-            { backgroundColor: isFilterActive ? C.brinjal1 : C.surface, borderColor: isFilterActive ? C.brinjal1 : C.border },
-            isFilterActive && { shadowColor: C.brinjal1, shadowOpacity: 0.35, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 5 },
-          ]}
-          onPress={openFilter}>
-          <Ionicons name="options-outline" size={20} color={isFilterActive ? '#fff' : C.brinjal1} />
-          {isFilterActive && (
-            <View style={styles.filterCountBadge}>
-              <Text style={styles.filterCountBadgeTxt}>{filterActiveCount}</Text>
-            </View>
-          )}
-        </Pressable>
       </View>
 
       {/* Count below search */}
@@ -502,22 +498,17 @@ export default function ExploreBusinessesScreen() {
 
 const styles = StyleSheet.create({
   container:      { flex: 1 },
-  gradientHeader: { borderBottomLeftRadius: RADIUS.lg, borderBottomRightRadius: RADIUS.lg, overflow: 'hidden' },
 
   // Header
-  header:         { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 10, paddingBottom: 12, gap: 12 },
-  headerMiddle:   { flex: 1, alignItems: 'center', gap: 2 },
-  heading:        { fontSize: 20, fontFamily: F.bold, color: '#fff', lineHeight: 24 },
-  headingSub:     { fontSize: 12, fontFamily: F.regular },
   countTxt:       { fontSize: 12, fontFamily: F.semibold, paddingHorizontal: 16, marginTop: 6, marginBottom: 2, textAlign: 'right' },
   favLink:        { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(255,255,255,0.22)', borderRadius: RADIUS.full, paddingHorizontal: 10, paddingVertical: 6 },
-  favLinkText:    { fontSize: 12, color: '#fff', fontFamily: F.bold },
+  favLinkText:    { fontSize: 12, fontFamily: F.bold },
 
   // Search row
-  searchRow:      { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 12 },
+  searchRow:      { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12 },
   searchBox:      { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 9, borderRadius: RADIUS.lg, borderWidth: 1.5, paddingHorizontal: 14, height: 50 },
   searchInput:    { flex: 1, fontSize: 15, fontFamily: F.regular },
-  filterBtn:      { width: 50, height: 50, borderRadius: RADIUS.lg, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center' },
+  filterBtn:      { width: 36, height: 36, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center' },
   filterCountBadge: { position: 'absolute', top: -4, right: -4, minWidth: 16, height: 16, borderRadius: RADIUS.full, paddingHorizontal: 3, backgroundColor: '#EF4444', justifyContent: 'center', alignItems: 'center' },
   filterCountBadgeTxt: { fontSize: 9, fontFamily: F.extrabold, color: '#fff' },
 

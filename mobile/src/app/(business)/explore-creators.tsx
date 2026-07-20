@@ -1,6 +1,5 @@
 import { router, useFocusEffect } from 'expo-router';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { BackButton } from '@/components/BackButton';
 import { EmptyState } from '@/components/EmptyState';
@@ -24,7 +23,7 @@ import { LocationSearchPicker, type LocationEntry } from '@/components/LocationS
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage, type TFn } from '@/context/LanguageContext';
 import { creatorService, type ApiCreatorListItem } from '@/services/creator';
-import { GRADIENTS, F, RADIUS } from '@/utilities/constants';
+import { F, RADIUS } from '@/utilities/constants';
 import { getIconColor } from '@/features/creator/data/filterOptions';
 import { useAllCategories, useCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { usePlatforms, getPlatformMeta } from '@/hooks/usePlatforms';
@@ -456,22 +455,20 @@ export default function ExploreCreatorsScreen() {
 
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
-      <LinearGradient colors={GRADIENTS.hero} start={{x:0,y:0}} end={{x:1,y:1}} style={s.gradientHeader}>
-        {/* Header */}
-        <View style={s.header}>
-          <BackButton fallback="/(business)/" />
-          <View style={s.headerMiddle}>
-            <Text style={[s.headerTitle, { color: '#fff' }]}>{t('explore.exploreCreators')}</Text>
-            <Text style={s.headerSub}>{t('explore.businesses.exploreCreatorsSub')}</Text>
-          </View>
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-            style={s.savedLink}
-            onPress={() => router.push('/(business)/saved-creators' as Parameters<typeof router.push>[0])}>
-            <Ionicons name="bookmark" size={14} color="#fff" />
-            <Text style={s.savedLinkText}>{t('explore.saved')}</Text>
-          </Pressable>
+      {/* Header */}
+      <View style={s.header}>
+        <BackButton fallback="/(business)/" />
+        <View style={s.headerMiddle}>
+          <Text style={[s.headerTitle, { color: C.text }]}>{t('explore.exploreCreators')}</Text>
+          <Text style={[s.headerSub, { color: C.textSecondary }]}>{t('explore.businesses.exploreCreatorsSub')}</Text>
         </View>
-      </LinearGradient>
+        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+          style={[s.savedLink, { backgroundColor: C.surface, borderColor: C.border, borderWidth: 1 }]}
+          onPress={() => router.push('/(business)/saved-creators' as Parameters<typeof router.push>[0])}>
+          <Ionicons name="bookmark" size={14} color={C.brinjal1} />
+          <Text style={[s.savedLinkText, { color: C.brinjal1 }]}>{t('explore.saved')}</Text>
+        </Pressable>
+      </View>
 
       {/* Search + filter — outside gradient */}
       <View style={s.searchRow}>
@@ -491,21 +488,22 @@ export default function ExploreCreatorsScreen() {
               <Ionicons name="close-circle" size={18} color={C.textSecondary} />
             </Pressable>
           )}
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            style={[
+              s.filterBtn,
+              { backgroundColor: filterActive ? C.brinjal1 : C.primaryLight },
+              filterActive && { shadowColor: C.brinjal1, shadowOpacity: 0.35, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 5 },
+            ]}
+            onPress={openFilter}
+            hitSlop={6}>
+            <Ionicons name="options-outline" size={18} color={filterActive ? '#fff' : C.brinjal1} />
+            {filterActive && (
+              <View style={s.filterCountBadge}>
+                <Text style={s.filterCountBadgeTxt}>{filterCount}</Text>
+              </View>
+            )}
+          </Pressable>
         </View>
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-          style={[
-            s.filterBtn,
-            { backgroundColor: filterActive ? C.brinjal1 : C.surface, borderColor: filterActive ? C.brinjal1 : C.border },
-            filterActive && { shadowColor: C.brinjal1, shadowOpacity: 0.35, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 5 },
-          ]}
-          onPress={openFilter}>
-          <Ionicons name="options-outline" size={20} color={filterActive ? '#fff' : C.brinjal1} />
-          {filterActive && (
-            <View style={s.filterCountBadge}>
-              <Text style={s.filterCountBadgeTxt}>{filterCount}</Text>
-            </View>
-          )}
-        </Pressable>
       </View>
 
       {/* Active filter chips */}
@@ -636,19 +634,17 @@ export default function ExploreCreatorsScreen() {
 
 const s = StyleSheet.create({
   container: { flex: 1 },
-  gradientHeader: { paddingBottom: 16, borderBottomLeftRadius: RADIUS.lg, borderBottomRightRadius: RADIUS.lg, overflow: 'hidden' },
-
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 4, gap: 12 },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 16, gap: 12 },
   headerMiddle: { flex: 1, alignItems: 'center', gap: 2 },
-  headerTitle: { fontSize: 20, textAlign: 'center', fontFamily: F.bold, color: '#fff', lineHeight: 24 },
-  headerSub: { fontSize: 12, color: 'rgba(255,255,255,0.75)', fontFamily: F.regular, textAlign: 'center' },
-  savedLink: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: RADIUS.full, paddingHorizontal: 10, paddingVertical: 6 },
-  savedLinkText: { fontSize: 12, color: '#fff', fontFamily: F.bold },
+  headerTitle: { fontSize: 20, textAlign: 'center', fontFamily: F.bold, lineHeight: 24 },
+  headerSub: { fontSize: 12, fontFamily: F.regular, textAlign: 'center' },
+  savedLink: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: RADIUS.full, paddingHorizontal: 10, paddingVertical: 6 },
+  savedLinkText: { fontSize: 12, fontFamily: F.bold },
 
-  searchRow:  { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 12 },
+  searchRow:  { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12 },
   searchCard: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 9, borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 14, height: 50 },
   searchInput: { flex: 1, fontSize: 14, fontFamily: F.regular },
-  filterBtn: { width: 50, height: 50, borderRadius: RADIUS.md, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center' },
+  filterBtn: { width: 36, height: 36, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center' },
   filterCountBadge: { position: 'absolute', top: -4, right: -4, minWidth: 16, height: 16, borderRadius: RADIUS.full, paddingHorizontal: 3, backgroundColor: '#EF4444', justifyContent: 'center', alignItems: 'center' },
   filterCountBadgeTxt: { fontSize: 9, fontFamily: F.extrabold, color: '#fff' },
 

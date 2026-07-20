@@ -1,7 +1,6 @@
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
-import { BackButton } from '@/components/BackButton';
+import { PageHeader } from '@/features/creator/components/PageHeader';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -21,7 +20,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/components/Toast';
 import { referralService, type ApiReferralOverview } from '@/services/referral';
-import { GRADIENTS, F, RADIUS, SHADOW } from '@/utilities/constants';
+import { F, RADIUS, SHADOW } from '@/utilities/constants';
 
 const STATUS_META: Record<string, { bg: string; text: string }> = {
   PENDING:   { bg: '#FEF3C7', text: '#92400E' },
@@ -80,13 +79,7 @@ export default function ReferralScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
-      <LinearGradient colors={GRADIENTS.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.gradientTopBar}>
-        <View style={styles.topBar}>
-          <BackButton fallback="/(creator)/" />
-          <Text style={[styles.topTitle, { color: '#fff' }]}>{t('referral.headerTitle')}</Text>
-          <View style={{ width: 38 }} />
-        </View>
-      </LinearGradient>
+      <PageHeader title={t('referral.headerTitle')} backFallback="/(creator)/" />
 
       {loading || !overview ? (
         <View style={styles.center}>
@@ -97,7 +90,7 @@ export default function ReferralScreen() {
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
 
           {/* How it works */}
-          <View style={[styles.card, { backgroundColor: C.surface }]}>
+          <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
             <Text style={[styles.cardTitle, { color: C.text }]}>{t('referral.howItWorksTitle')}</Text>
             {(['step1', 'step2', 'step3', 'step4', 'step5'] as const).map((key) => (
               <Text key={key} style={[styles.stepText, { color: C.textSecondary }]}>{t(`referral.${key}`)}</Text>
@@ -136,7 +129,7 @@ export default function ReferralScreen() {
               </View>
             </View>
           ) : (
-            <View style={[styles.card, { backgroundColor: C.surface }]}>
+            <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
               <Text style={[styles.cardTitle, { color: C.text }]}>{t('referral.haveCodeTitle')}</Text>
               <View style={styles.applyCodeRow}>
                 <TextInput
@@ -161,13 +154,13 @@ export default function ReferralScreen() {
           {/* Your referrals list */}
           <Text style={[styles.sectionHeader, { color: C.textSecondary }]}>{t('referral.yourReferralsTitle')}</Text>
           {overview.referrals.length === 0 ? (
-            <View style={[styles.emptyWrap, { backgroundColor: C.surface }]}>
+            <View style={[styles.emptyWrap, { backgroundColor: C.surface, borderColor: C.border }]}>
               <FontAwesome5 name="users" solid size={28} color={C.textSecondary} />
               <Text style={[styles.emptyTitle, { color: C.text }]}>{t('referral.noReferralsYet')}</Text>
               <Text style={[styles.emptyHint, { color: C.textSecondary }]}>{t('referral.noReferralsHint')}</Text>
             </View>
           ) : (
-            <View style={[styles.card, { backgroundColor: C.surface, paddingVertical: 4 }]}>
+            <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border, paddingVertical: 4 }]}>
               {overview.referrals.map((r, i) => (
                 <View key={r.id} style={[styles.referralRow, i > 0 && { borderTopWidth: 1, borderTopColor: C.border }]}>
                   {r.referredAvatarUrl ? (
@@ -200,12 +193,9 @@ export default function ReferralScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  gradientTopBar: { overflow: 'hidden', borderBottomLeftRadius: RADIUS.lg, borderBottomRightRadius: RADIUS.lg },
-  topBar:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
-  topTitle:  { fontSize: 16, fontFamily: F.bold },
   content:   { padding: 16, paddingBottom: 32, gap: 16 },
 
-  card: { borderRadius: RADIUS.md, padding: 16, gap: 8, ...SHADOW.card },
+  card: { borderRadius: RADIUS.lg, borderWidth: 1, padding: 16, gap: 8, ...SHADOW.card },
   cardTitle: { fontSize: 15, fontFamily: F.bold, marginBottom: 4 },
   stepText: { fontSize: 13, lineHeight: 20, fontFamily: F.regular },
   conditionNote: { fontSize: 12, fontFamily: F.medium, marginTop: 6, lineHeight: 18 },
@@ -214,7 +204,7 @@ const styles = StyleSheet.create({
 
   field: { gap: 6 },
   label: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: F.bold },
-  codeCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, borderRadius: RADIUS.md, paddingVertical: 18, ...SHADOW.raised },
+  codeCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, borderRadius: RADIUS.lg, paddingVertical: 18, ...SHADOW.raised },
   codeText: { fontSize: 24, color: '#fff', letterSpacing: 4, fontFamily: F.bold },
   shareHint: { fontSize: 11, textAlign: 'center', fontFamily: F.regular },
 
@@ -228,7 +218,7 @@ const styles = StyleSheet.create({
   applyCodeBtnText: { color: '#fff', fontSize: 13, fontFamily: F.bold },
 
   sectionHeader: { fontSize: 11, letterSpacing: 0.5, textTransform: 'uppercase', fontFamily: F.bold },
-  emptyWrap: { alignItems: 'center', borderRadius: RADIUS.md, paddingVertical: 32, paddingHorizontal: 16, gap: 8, ...SHADOW.card },
+  emptyWrap: { alignItems: 'center', borderRadius: RADIUS.lg, borderWidth: 1, paddingVertical: 32, paddingHorizontal: 16, gap: 8, ...SHADOW.card },
   emptyTitle: { fontSize: 14, fontFamily: F.bold },
   emptyHint: { fontSize: 12, textAlign: 'center', fontFamily: F.regular },
 

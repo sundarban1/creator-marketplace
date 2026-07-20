@@ -1,6 +1,5 @@
 import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -14,7 +13,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useNotificationBadge } from '@/context/NotificationContext';
 import { notificationService } from '@/services/notifications';
 import { getSocket } from '@/lib/socket';
-import { GRADIENTS, F, RADIUS } from '@/utilities/constants';
+import { F, RADIUS } from '@/utilities/constants';
 import type { AppNotification } from '@/types';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
@@ -84,7 +83,7 @@ function NotificationItem({ item, onPress }: { item: AppNotification; onPress: (
 
       {/* Type icon in a coloured circle */}
       <View style={[styles.iconWrap, { backgroundColor: cfg.iconBg }]}>
-        <Ionicons name={cfg.icon} size={20} color={cfg.iconColor} />
+        <Ionicons name={cfg.icon} size={18} color={cfg.iconColor} />
       </View>
 
       {/* Content */}
@@ -244,23 +243,14 @@ export default function NotificationsScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
-      <LinearGradient colors={GRADIENTS.hero} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientHeader}>
-        <View style={styles.headerRow}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.heading}>{t('notifications.heading')}</Text>
-            <Text style={styles.subheading}>
-              {unreadCount > 0
-                ? t('notifications.unread', { count: unreadCount })
-                : t('notifications.allCaughtUp')}
-            </Text>
-          </View>
-          {unreadCount > 0 && (
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} hitSlop={6} onPress={handleMarkAll} style={[styles.markAllBtn, { borderColor: 'rgba(255,255,255,0.5)' }]}>
-              <Text style={styles.markAllText}>{t('notifications.markAllRead')}</Text>
-            </Pressable>
-          )}
-        </View>
-      </LinearGradient>
+      <View style={styles.headerRow}>
+        <Text style={[styles.heading, { color: C.text }]}>{t('notifications.heading')}</Text>
+        {unreadCount > 0 && (
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} hitSlop={6} onPress={handleMarkAll} style={[styles.markAllBtn, { borderColor: C.brinjal1 }]}>
+            <Text style={[styles.markAllText, { color: C.brinjal1 }]}>{t('notifications.markAllRead')}</Text>
+          </Pressable>
+        )}
+      </View>
 
       {loading ? (
         <View style={{ padding: 16, gap: 12 }}>
@@ -303,31 +293,29 @@ export default function NotificationsScreen() {
 
 const styles = StyleSheet.create({
   container:  { flex: 1 },
-  gradientHeader: { borderBottomLeftRadius: RADIUS.lg, borderBottomRightRadius: RADIUS.lg, overflow: 'hidden' },
   headerRow:  { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingTop: 14, paddingBottom: 14 },
-  heading:    { fontSize: 20, fontFamily: F.bold, color: '#fff', lineHeight: 24 },
-  subheading: { fontSize: 13, marginTop: 2, fontFamily: F.regular, color: 'rgba(255,255,255,0.75)' },
+  heading:    { flex: 1, fontSize: 20, fontFamily: F.bold, lineHeight: 24 },
   markAllBtn: { paddingHorizontal: 14, paddingVertical: 7, minHeight: 32, justifyContent: 'center', borderRadius: RADIUS.sm, borderWidth: 1 },
-  markAllText:{ fontSize: 12, fontFamily: F.semibold, color: '#fff' },
+  markAllText:{ fontSize: 12, fontFamily: F.semibold },
   center:     { flex: 1, alignItems: 'center', justifyContent: 'center' },
   list:       { paddingBottom: 32 },
   listEmpty:  { flexGrow: 1 },
 
   groupLabel: { fontSize: 11, paddingHorizontal: 20, paddingTop: 20, paddingBottom: 8, textTransform: 'uppercase', letterSpacing: 0, fontFamily: F.bold },
 
-  item:       { flexDirection: 'row', paddingVertical: 16, paddingHorizontal: 20, borderBottomWidth: 1, gap: 14, alignItems: 'flex-start' },
+  item:       { flexDirection: 'row', paddingVertical: 14, paddingHorizontal: 20, borderBottomWidth: 1, gap: 12, alignItems: 'flex-start' },
   accentBar:  { position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, borderRadius: 2 },
 
-  iconWrap:   { width: 46, height: 46, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', flexShrink: 0, marginTop: 1 },
+  iconWrap:   { width: 40, height: 40, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', flexShrink: 0, marginTop: 1 },
 
-  itemContent:{ flex: 1, gap: 5 },
+  itemContent:{ flex: 1, gap: 4 },
   titleRow:   { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  itemTitle:  { fontSize: 14, flex: 1, fontFamily: F.bold, lineHeight: 20 },
-  unreadDot:  { width: 7, height: 7, borderRadius: RADIUS.full, flexShrink: 0 },
+  itemTitle:  { fontSize: 13, flex: 1, fontFamily: F.bold, lineHeight: 18 },
+  unreadDot:  { width: 6, height: 6, borderRadius: RADIUS.full, flexShrink: 0 },
 
   labelChip:     { alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 2, borderRadius: RADIUS.sm },
   labelChipText: { fontSize: 10, letterSpacing: 0.3, fontFamily: F.bold },
 
-  itemBody:   { fontSize: 13, lineHeight: 19, fontFamily: F.regular },
-  itemTime:   { fontSize: 11, opacity: 0.55, fontFamily: F.regular, marginTop: 1 },
+  itemBody:   { fontSize: 12, lineHeight: 17, fontFamily: F.regular },
+  itemTime:   { fontSize: 10, opacity: 0.55, fontFamily: F.regular, marginTop: 1 },
 });

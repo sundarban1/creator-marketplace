@@ -1,5 +1,4 @@
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { BackButton } from '@/components/BackButton';
 import { RangeDropdown } from '@/components/RangeDropdown';
 import { useCallback, useState, type ReactNode } from 'react';
@@ -15,7 +14,7 @@ import { StackedBar } from '@/components/charts/StackedBar';
 import {
   analyticsService, type ApiBrandAnalytics, type AnalyticsRange,
 } from '@/services/analytics';
-import { GRADIENTS, F, RADIUS, SHADOW } from '@/utilities/constants';
+import { F, RADIUS, SHADOW } from '@/utilities/constants';
 
 const RANGES: { value: AnalyticsRange; labelKey: string }[] = [
   { value: '7d',   labelKey: 'analytics.range7d' },
@@ -99,13 +98,11 @@ export default function BusinessAnalyticsScreen() {
 
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
-      <LinearGradient colors={GRADIENTS.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.gradientTopBar}>
-        <View style={s.topBar}>
-          <BackButton fallback="/(business)/" />
-          <Text style={[s.topTitle, { color: '#fff' }]}>{t('analytics.headerTitle')}</Text>
-          <View style={{ width: 38 }} />
-        </View>
-      </LinearGradient>
+      <View style={s.topBar}>
+        <BackButton fallback="/(business)/" />
+        <Text style={[s.topTitle, { color: C.text }]}>{t('analytics.headerTitle')}</Text>
+        <View style={{ width: 38 }} />
+      </View>
 
       <View style={s.rangeRow}>
         <RangeDropdown
@@ -163,7 +160,6 @@ export default function BusinessAnalyticsScreen() {
 const s = StyleSheet.create({
   container: { flex: 1 },
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  gradientTopBar: { overflow: 'hidden', borderBottomLeftRadius: RADIUS.lg, borderBottomRightRadius: RADIUS.lg },
   topBar:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
   topTitle:  { fontSize: 16, fontFamily: F.bold },
 

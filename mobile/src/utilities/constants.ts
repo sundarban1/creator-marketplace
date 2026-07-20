@@ -31,15 +31,6 @@ export const COLORS = {
   badgeNew:      '#064E3B',
 };
 
-// Single source of truth for the brinjal hero-header gradient — screens used
-// to each hardcode their own slightly-different indigo/violet trio (or, in a
-// few places, an unrelated orange/pink one); this replaces all of them so the
-// brand gradient is visually identical everywhere and only needs to change
-// in one place going forward.
-export const GRADIENTS = {
-  hero: ['#312e81', '#4f46e5', '#8b5cf6'] as const,
-};
-
 // Poppins font families — loaded globally in src/app/_layout.tsx
 export const F = {
   regular:    'Poppins-Regular',

@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
 import {
   ActivityIndicator,
   FlatList,
@@ -20,7 +19,7 @@ import { ListRowSkeleton } from '@/components/ListRowSkeleton';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { campaignService } from '@/services/campaign';
-import { GRADIENTS, F, RADIUS, SHADOW } from '@/utilities/constants';
+import { F, RADIUS, SHADOW } from '@/utilities/constants';
 
 type WS = 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED';
 type PS = 'UNPAID' | 'PAID' | 'RELEASED';
@@ -517,19 +516,15 @@ export default function CampaignProposalsScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
-      {/* Gradient header */}
-      <LinearGradient
-        colors={GRADIENTS.hero}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.gradientHeader}>
+      {/* Header */}
+      <View style={styles.gradientHeader}>
 
         {/* Back button row */}
         <View style={styles.headerTopRow}>
           <BackButton />
           {/* Total count pill */}
-          <View style={styles.totalPill}>
-            <Text style={styles.totalPillText}>
+          <View style={[styles.totalPill, { backgroundColor: C.surface, borderColor: C.border, borderWidth: 1 }]}>
+            <Text style={[styles.totalPillText, { color: C.text }]}>
               {t('campaignProposals.applicationCount', { n: proposals.length })}
             </Text>
           </View>
@@ -537,7 +532,7 @@ export default function CampaignProposalsScreen() {
 
         {/* Title + meta */}
         <View style={styles.headerBody}>
-          <Text style={styles.headerTitle} numberOfLines={2}>{campaignTitle}</Text>
+          <Text style={[styles.headerTitle, { color: C.text }]} numberOfLines={2}>{campaignTitle}</Text>
           <View style={styles.headerBadgeRow}>
             <View style={[styles.typeBadge, { backgroundColor: accentBg }]}>
               <FontAwesome5 name={isFree ? 'gift' : 'money-bill-wave'} size={10} color={accent} solid />
@@ -546,31 +541,31 @@ export default function CampaignProposalsScreen() {
               </Text>
             </View>
             {platform ? (
-              <View style={styles.platformPill}>
-                <Text style={styles.platformText}>{platform}</Text>
+              <View style={[styles.platformPill, { backgroundColor: C.surface, borderColor: C.border, borderWidth: 1 }]}>
+                <Text style={[styles.platformText, { color: C.text }]}>{platform}</Text>
               </View>
             ) : null}
           </View>
         </View>
 
         {/* Summary stat pills */}
-        <View style={styles.statStrip}>
+        <View style={[styles.statStrip, { backgroundColor: C.surface, borderColor: C.border, borderWidth: 1 }, SHADOW.card]}>
           <View style={styles.statStripItem}>
-            <Text style={styles.statStripNum}>{counts.pending}</Text>
-            <Text style={styles.statStripLabel}>{t('campaignProposals.statPending')}</Text>
+            <Text style={[styles.statStripNum, { color: C.text }]}>{counts.pending}</Text>
+            <Text style={[styles.statStripLabel, { color: C.textSecondary }]}>{t('campaignProposals.statPending')}</Text>
           </View>
-          <View style={[styles.statStripDivider, { backgroundColor: 'rgba(255,255,255,0.2)' }]} />
+          <View style={[styles.statStripDivider, { backgroundColor: C.border }]} />
           <View style={styles.statStripItem}>
-            <Text style={[styles.statStripNum, { color: '#6EE7B7' }]}>{counts.accepted}</Text>
-            <Text style={styles.statStripLabel}>{isFree ? t('campaignProposals.statApproved') : t('campaignProposals.statApproved')}</Text>
+            <Text style={[styles.statStripNum, { color: C.active }]}>{counts.accepted}</Text>
+            <Text style={[styles.statStripLabel, { color: C.textSecondary }]}>{isFree ? t('campaignProposals.statApproved') : t('campaignProposals.statApproved')}</Text>
           </View>
-          <View style={[styles.statStripDivider, { backgroundColor: 'rgba(255,255,255,0.2)' }]} />
+          <View style={[styles.statStripDivider, { backgroundColor: C.border }]} />
           <View style={styles.statStripItem}>
-            <Text style={[styles.statStripNum, { color: '#FCA5A5' }]}>{counts.rejected}</Text>
-            <Text style={styles.statStripLabel}>{t('campaignProposals.statDeclined')}</Text>
+            <Text style={[styles.statStripNum, { color: C.error }]}>{counts.rejected}</Text>
+            <Text style={[styles.statStripLabel, { color: C.textSecondary }]}>{t('campaignProposals.statDeclined')}</Text>
           </View>
         </View>
-      </LinearGradient>
+      </View>
 
       {/* Section label */}
       <View style={styles.sectionLabelRow}>
@@ -666,12 +661,9 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
-  // ── Gradient header ──────────────────────────────────────────────────────────
+  // ── Header ──────────────────────────────────────────────────────────
   gradientHeader: {
     paddingBottom: 16,
-    borderBottomLeftRadius: RADIUS.lg,
-    borderBottomRightRadius: RADIUS.lg,
-    overflow: 'hidden',
   },
 
   headerTopRow: {
@@ -683,33 +675,31 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
   },
   totalPill: {
-    backgroundColor: 'rgba(255,255,255,0.18)',
     borderRadius: RADIUS.full,
     paddingHorizontal: 12,
     paddingVertical: 5,
   },
-  totalPillText: { fontSize: 12, color: '#fff', fontFamily: F.semibold },
+  totalPillText: { fontSize: 12, fontFamily: F.semibold },
 
   headerBody: { paddingHorizontal: 16, paddingTop: 8, gap: 8 },
-  headerTitle: { fontSize: 20, color: '#fff', fontFamily: F.bold, lineHeight: 24 },
+  headerTitle: { fontSize: 20, fontFamily: F.bold, lineHeight: 24 },
   headerBadgeRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   typeBadge:     { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: RADIUS.full, paddingHorizontal: 10, paddingVertical: 4 },
   typeBadgeText: { fontSize: 11, fontFamily: F.bold },
-  platformPill:  { backgroundColor: 'rgba(255,255,255,0.18)', borderRadius: RADIUS.full, paddingHorizontal: 10, paddingVertical: 4 },
-  platformText:  { fontSize: 11, color: '#fff', fontFamily: F.semibold },
+  platformPill:  { borderRadius: RADIUS.full, paddingHorizontal: 10, paddingVertical: 4 },
+  platformText:  { fontSize: 11, fontFamily: F.semibold },
 
   statStrip: {
     flexDirection: 'row',
     alignItems: 'center',
     marginHorizontal: 16,
     marginTop: 14,
-    backgroundColor: 'rgba(255,255,255,0.12)',
     borderRadius: RADIUS.md,
     paddingVertical: 10,
   },
   statStripItem:    { flex: 1, alignItems: 'center', gap: 2 },
-  statStripNum:     { fontSize: 16, color: '#fff', fontFamily: F.bold },
-  statStripLabel:   { fontSize: 10, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', fontFamily: F.semibold },
+  statStripNum:     { fontSize: 16, fontFamily: F.bold },
+  statStripLabel:   { fontSize: 10, textTransform: 'uppercase', fontFamily: F.semibold },
   statStripDivider: { width: 1, height: 32 },
 
   sectionLabelRow: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 4 },

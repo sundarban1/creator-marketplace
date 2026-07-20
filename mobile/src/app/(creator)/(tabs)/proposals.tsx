@@ -1,5 +1,4 @@
 import { router, useFocusEffect } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useCallback, useRef, useState } from 'react';
@@ -20,7 +19,7 @@ import { useLanguage, type TFn } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { useScrollToTopOnTabPress } from '@/hooks/useScrollToTopOnTabPress';
 import { campaignService } from '@/services/campaign';
-import { GRADIENTS, F, RADIUS, SHADOW } from '@/utilities/constants';
+import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { TabColors } from '@/utilities/tabColors';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -303,15 +302,10 @@ export default function ProposalsScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
 
-      {/* ── Gradient header ── */}
-      <LinearGradient colors={GRADIENTS.hero} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientHeader}>
-
-        <View style={styles.headerContent}>
-          <Text style={styles.heading}>{t('creator.proposals.heading')}</Text>
-          <Text style={styles.subheading}>{t('proposal.creator.subheading')}</Text>
-        </View>
-
-      </LinearGradient>
+      {/* ── Header ── */}
+      <View style={styles.headerContent}>
+        <Text style={[styles.heading, { color: C.text }]}>{t('creator.proposals.heading')}</Text>
+      </View>
 
       {/* ── Tab bar ── */}
       <View style={[styles.tabBar, { backgroundColor: C.surface }]}>
@@ -364,10 +358,8 @@ const styles = StyleSheet.create({
   container:      { flex: 1 },
 
   // Header
-  gradientHeader: { borderBottomLeftRadius: RADIUS.lg, borderBottomRightRadius: RADIUS.lg, overflow: 'hidden' },
   headerContent:  { paddingHorizontal: 20, paddingTop: 14, paddingBottom: 14 },
-  heading:        { fontSize: 20, fontFamily: F.bold, color: '#fff', lineHeight: 24 },
-  subheading:     { fontSize: 13, fontFamily: F.regular, color: 'rgba(255,255,255,0.75)', marginTop: 2 },
+  heading:        { fontSize: 20, fontFamily: F.bold, lineHeight: 24 },
 
   // Tab bar
   tabBar: { ...SHADOW.card },

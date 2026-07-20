@@ -1,7 +1,6 @@
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { BackButton } from '@/components/BackButton';
+import { PageHeader } from '@/features/creator/components/PageHeader';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -22,7 +21,7 @@ import { useToast } from '@/components/Toast';
 import { Button } from '@/components/Button';
 import { LocationSearchModal } from '@/components/LocationSearchModal';
 import { creatorService } from '@/services/creator';
-import { GRADIENTS, F, RADIUS, SHADOW } from '@/utilities/constants';
+import { F, RADIUS, SHADOW } from '@/utilities/constants';
 
 // ─── EditProfileScreen ────────────────────────────────────────────────────────
 
@@ -149,13 +148,7 @@ export default function EditProfileScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
-      <LinearGradient colors={GRADIENTS.hero} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientTopBar}>
-        <View style={styles.topBar}>
-          <BackButton fallback="/(creator)/profile" />
-          <Text style={[styles.topTitle, { color: '#fff' }]}>{t('profile.editCreator.headerTitle')}</Text>
-          <View style={{ width: 38 }} />
-        </View>
-      </LinearGradient>
+      <PageHeader title={t('profile.editCreator.headerTitle')} backFallback="/(creator)/profile" />
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView
@@ -260,9 +253,6 @@ export default function EditProfileScreen() {
 const styles = StyleSheet.create({
   container:  { flex: 1 },
   center:     { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  gradientTopBar: { overflow: 'hidden', borderBottomLeftRadius: RADIUS.lg, borderBottomRightRadius: RADIUS.lg },
-  topBar:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
-  topTitle:   { fontSize: 20, fontFamily: F.bold, lineHeight: 24 },
   content:    { paddingBottom: 24 },
   sectionHeader: { fontSize: 11, letterSpacing: 0, marginTop: 20, marginBottom: 6, marginHorizontal: 20, fontFamily: F.bold },
   card:       { marginHorizontal: 16, borderRadius: RADIUS.md, ...SHADOW.card, overflow: 'hidden' },

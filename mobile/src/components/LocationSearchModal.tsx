@@ -10,7 +10,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 
@@ -38,6 +38,16 @@ export function LocationSearchModal({
 }) {
   const C = useAppColors();
   const { t } = useLanguage();
+  // Read insets via the hook, not <SafeAreaView>, and apply them as explicit
+  // padding below. This component is always mounted (only `visible` toggles
+  // the native Modal), so the hook's value is already correct by the time
+  // the modal first opens. <SafeAreaView> instead does its own native inset
+  // remeasurement scoped to whatever root it's rendered in — and a RN Modal
+  // renders into a separate native window from the rest of the app, so that
+  // remeasurement doesn't land in time on the modal's first-ever show (only
+  // catching up on later opens). Explicit padding from the hook sidesteps
+  // that remeasurement entirely.
+  const insets = useSafeAreaInsets();
   const [query, setQuery] = useState('');
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [searching, setSearching] = useState(false);
@@ -105,8 +115,8 @@ export function LocationSearchModal({
       animationType="slide"
       onRequestClose={onClose}
       onShow={() => inputRef.current?.focus()}>
-      <SafeAreaView style={[lsm.container, { backgroundColor: C.background }]} edges={['top']}>
-        <View style={[lsm.topBar, { borderBottomColor: C.border, backgroundColor: C.background }]}>
+      <View style={[lsm.container, { backgroundColor: C.background }]}>
+        <View style={[lsm.topBar, { paddingTop: insets.top + 20, borderBottomColor: C.border, backgroundColor: C.background }]}>
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={onClose} hitSlop={12} style={lsm.cancelBtn}>
             <Text style={[lsm.cancelTxt, { color: C.brinjal1 }]}>{t('profile.editCreator.locationModalCancel')}</Text>
           </Pressable>
@@ -154,7 +164,7 @@ export function LocationSearchModal({
             ) : null
           }
         />
-      </SafeAreaView>
+      </View>
     </Modal>
   );
 }

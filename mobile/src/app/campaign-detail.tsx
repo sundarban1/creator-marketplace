@@ -1,6 +1,5 @@
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
 import { BackButton } from '@/components/BackButton';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -29,7 +28,7 @@ import { usePlatforms } from '@/hooks/usePlatforms';
 import { PlacesAutocompleteInput } from '@/components/PlacesAutocompleteInput';
 import { campaignService } from '@/services/campaign';
 import type { Campaign } from '@/types';
-import { GRADIENTS, F, RADIUS, SHADOW } from '@/utilities/constants';
+import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { pickAndUpload } from '@/utilities/uploadImage';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -449,11 +448,11 @@ export default function CampaignDetailScreen() {
   if (loading) {
     return (
       <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
-        <LinearGradient colors={GRADIENTS.hero} start={{x:0,y:0}} end={{x:1,y:0}} style={s.gradientHeader}>
+        <View style={s.header}>
           <BackButton />
-          <Text style={[s.headerTitle, { color: '#fff' }]}>{t('campaignDetail.headerTitle')}</Text>
+          <Text style={[s.headerTitle, { color: C.text }]}>{t('campaignDetail.headerTitle')}</Text>
           <View style={{ width: 40 }} />
-        </LinearGradient>
+        </View>
         <View style={s.centered}><ActivityIndicator size="large" color={C.brinjal1} /></View>
       </SafeAreaView>
     );
@@ -482,11 +481,11 @@ export default function CampaignDetailScreen() {
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
 
       {/* Header */}
-      <LinearGradient colors={GRADIENTS.hero} start={{x:0,y:0}} end={{x:1,y:0}} style={s.gradientHeader}>
+      <View style={s.header}>
         <BackButton />
-        <Text style={[s.headerTitle, { color: '#fff' }]}>{t('campaignDetail.headerTitle')}</Text>
+        <Text style={[s.headerTitle, { color: C.text }]}>{t('campaignDetail.headerTitle')}</Text>
         <View style={{ width: 40 }} />
-      </LinearGradient>
+      </View>
 
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
 
@@ -1088,7 +1087,7 @@ const s = StyleSheet.create({
   goBackBtn: { borderRadius: RADIUS.sm, paddingHorizontal: 20, paddingVertical: 10, marginTop: 8 },
   goBackBtnTxt: { color: '#fff', fontSize: 14, fontFamily: F.bold },
 
-  gradientHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
   headerTitle: { fontSize: 17, fontFamily: F.bold },
 
   scroll: { paddingBottom: 20 },

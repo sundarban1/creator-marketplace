@@ -1,6 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import * as WebBrowser from 'expo-web-browser';
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import {
@@ -31,7 +30,7 @@ import { businessService, type PaymentHistoryEntry } from '@/services/business';
 import { authService } from '@/services/auth';
 import { profileService } from '@/services/profile';
 import type { FacebookPageOption } from '@/services/creator';
-import { GRADIENTS, COLORS, F, RADIUS, SHADOW } from '@/utilities/constants';
+import { COLORS, F, RADIUS, SHADOW } from '@/utilities/constants';
 import { request } from '@/lib/api';
 import { pickAndUpload } from '@/utilities/uploadImage';
 import { useCategories } from '@/hooks/useCategories';
@@ -2169,16 +2168,14 @@ export default function BusinessSettingsScreen() {
   return (
     <ColorCtx.Provider value={C}>
       <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
-        <LinearGradient colors={GRADIENTS.hero} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradientTopBar}>
-          {/* Top bar */}
-          <View style={styles.topBar}>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.backBtn, { backgroundColor: 'rgba(255,255,255,0.2)', borderColor: 'rgba(255,255,255,0.4)' }]} onPress={handleBack}>
-              <Text style={[styles.backArrow, { color: '#fff' }]}>‹</Text>
-            </Pressable>
-            <Text style={[styles.topTitle, { color: '#fff' }]}>{topTitle}</Text>
-            <View style={{ width: 36 }} />
-          </View>
-        </LinearGradient>
+        {/* Top bar */}
+        <View style={styles.topBar}>
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.backBtn, { backgroundColor: C.surface, borderColor: C.border }]} onPress={handleBack}>
+            <Text style={[styles.backArrow, { color: C.text }]}>‹</Text>
+          </Pressable>
+          <Text style={[styles.topTitle, { color: C.text }]}>{topTitle}</Text>
+          <View style={{ width: 36 }} />
+        </View>
 
         {/* No `behavior` prop — the ScrollView's `automaticallyAdjustKeyboardInsets` already
             handles iOS precisely on its own; stacking KeyboardAvoidingView's `padding` on top
@@ -2237,7 +2234,6 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { flex: 1 },
   scrollContent: { paddingTop: 16, paddingBottom: 24 },
-  gradientTopBar: { overflow: 'hidden', borderBottomLeftRadius: RADIUS.lg, borderBottomRightRadius: RADIUS.lg },
 
   topBar: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
