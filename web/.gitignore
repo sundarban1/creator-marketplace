@@ -8,9 +8,13 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
-dist
 dist-ssr
 *.local
+
+# dist/ IS committed (not ignored) — Render's build no longer runs Playwright
+# prerendering (its Chromium download was unreliable on Render's build network).
+# Run `npm run build` locally and commit the result before every deploy that
+# changes page content, meta tags, or routes. See scripts/prerender.mjs.
 
 # environment variables (never commit real secrets — see .env.example if present)
 .env

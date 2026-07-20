@@ -1,0 +1,55 @@
+<svg viewBox="0 0 1740 620" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="kp" x1="0" y1="90" x2="0" y2="540" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7B5CF5"/>
+      <stop offset="1" stop-color="#5B2ED6"/>
+    </linearGradient>
+    <linearGradient id="kpd" x1="0" y1="110" x2="0" y2="560" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#4A2BA8"/>
+      <stop offset="1" stop-color="#3A1E86"/>
+    </linearGradient>
+    <linearGradient id="ko" x1="0" y1="195" x2="0" y2="500" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F9A24B"/>
+      <stop offset="1" stop-color="#EF7220"/>
+    </linearGradient>
+  </defs>
+
+  <!-- ===== drop layer (3D offset) ===== -->
+  <g stroke="url(#kpd)" fill="none" stroke-width="58" stroke-linecap="round" transform="translate(0,22)">
+    <path d="M100 118 L100 512"/>
+    <path d="M232 218 L106 384 L246 510"/>
+    <path d="M855 108 L855 512"/>
+    <circle cx="1108" cy="352" r="105"/>
+    <path d="M1213 200 L1213 512"/>
+    <path d="M1348 108 L1348 512"/>
+    <circle cx="1453" cy="352" r="105"/>
+  </g>
+  <path fill="url(#kpd)" transform="translate(0,22)"
+        d="M328 252 Q328 216 360 226 L536 328 Q560 341 560 356 Q560 371 536 384 L360 486 Q328 496 328 460 Z"/>
+
+  <!-- ===== main purple letters ===== -->
+  <g stroke="url(#kp)" fill="none" stroke-width="58" stroke-linecap="round">
+    <path d="M100 118 L100 512"/>
+    <path d="M232 218 L106 384 L246 510"/>
+    <path d="M855 108 L855 512"/>
+    <circle cx="1108" cy="352" r="105"/>
+    <path d="M1213 200 L1213 512"/>
+    <path d="M1348 108 L1348 512"/>
+    <circle cx="1453" cy="352" r="105"/>
+  </g>
+
+  <!-- orange ring (behind triangle) -->
+  <circle cx="600" cy="352" r="119" fill="none" stroke="url(#ko)" stroke-width="56"/>
+
+  <!-- play triangle -->
+  <path fill="url(#kp)"
+        d="M328 234 Q328 198 360 208 L536 310 Q560 323 560 338 Q560 353 536 366 L360 468 Q328 478 328 442 Z"/>
+
+  <!-- ring segment over the triangle -->
+  <path fill="none" stroke="url(#ko)" stroke-width="56"
+        d="M 589.6 470.5 A 119 119 0 0 1 481.1 356.2"/>
+
+  <!-- highlight -->
+  <path fill="none" stroke="#FBDDBA" stroke-width="18" stroke-linecap="round" opacity="0.9"
+        d="M 512 262 A 127 127 0 0 1 679 246"/>
+</svg>

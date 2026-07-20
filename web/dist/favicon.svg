@@ -1,0 +1,44 @@
+<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="purple" x1="0" y1="290" x2="0" y2="760" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7B5CF5"/>
+      <stop offset="1" stop-color="#5B2ED6"/>
+    </linearGradient>
+    <linearGradient id="purpleDark" x1="0" y1="330" x2="0" y2="800" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#4A2BA8"/>
+      <stop offset="1" stop-color="#3A1E86"/>
+    </linearGradient>
+    <linearGradient id="orange" x1="600" y1="205" x2="600" y2="810" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F9A24B"/>
+      <stop offset="1" stop-color="#EF7220"/>
+    </linearGradient>
+    <filter id="softGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="38"/>
+    </filter>
+  </defs>
+
+  <!-- soft ambient glow -->
+  <g filter="url(#softGlow)" opacity="0.16">
+    <circle cx="600" cy="530" r="255" fill="none" stroke="#8F7BD8" stroke-width="130"/>
+    <path d="M130 360 L500 545 L500 585 L130 780 Z" fill="#8F7BD8"/>
+  </g>
+
+  <!-- 3D under-layer of triangle -->
+  <path fill="url(#purpleDark)"
+        d="M118 372 Q118 322 162 336 L498 522 Q530 540 530 562 Q530 584 498 602 L162 788 Q118 802 118 752 Z"/>
+
+  <!-- orange ring (full) -->
+  <circle cx="600" cy="505" r="242" fill="none" stroke="url(#orange)" stroke-width="108"/>
+
+  <!-- play triangle -->
+  <path fill="url(#purple)"
+        d="M118 340 Q118 290 162 304 L498 490 Q530 508 530 530 Q530 552 498 570 L162 756 Q118 770 118 720 Z"/>
+
+  <!-- ring segment drawn over the triangle (interlock effect) -->
+  <path fill="none" stroke="url(#orange)" stroke-width="108"
+        d="M 578.9 746.1 A 242 242 0 0 1 358.1 496.6"/>
+
+  <!-- glossy highlight along the top -->
+  <path fill="none" stroke="#FBDDBA" stroke-width="34" stroke-linecap="round" opacity="0.9"
+        d="M 415 330 A 258 258 0 0 1 762 290"/>
+</svg>
