@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import prisma from '../../prisma';
 
 export class FavoriteRepository {
@@ -36,9 +37,32 @@ export class FavoriteRepository {
     return rows.map((r) => r.creator.userId);
   }
 
-  async getFavoriteBusinesses(creatorId: string) {
+  async getFavoriteBusinesses(creatorId: string, filters?: {
+    category?:  string;
+    platform?:  string;
+    locations?: string[]; // OR-matched against campaign.location
+  }) {
+    const where: Prisma.FavoriteBusinessWhereInput = { creatorId };
+
+    if (filters?.category || filters?.platform || (filters?.locations && filters.locations.length > 0)) {
+      const businessWhere: Prisma.BusinessProfileWhereInput = {};
+      if (filters.category) businessWhere.categories = { has: filters.category };
+
+      if (filters.platform || (filters.locations && filters.locations.length > 0)) {
+        const campaignWhere: Prisma.CampaignWhereInput = { status: 'ACTIVE' };
+        if (filters.platform) campaignWhere.platforms = { has: filters.platform };
+        if (filters.locations && filters.locations.length > 0) {
+          campaignWhere.OR = filters.locations.map((loc) => ({
+            location: { contains: loc, mode: 'insensitive' as const },
+          }));
+        }
+        businessWhere.campaigns = { some: campaignWhere };
+      }
+      where.business = businessWhere;
+    }
+
     return prisma.favoriteBusiness.findMany({
-      where: { creatorId },
+      where,
       orderBy: { createdAt: 'desc' },
       include: {
         business: {

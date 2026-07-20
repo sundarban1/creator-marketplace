@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { PageHeader } from '@/features/creator/components/PageHeader';
+import { BackButton } from '@/components/BackButton';
 import { EmptyState } from '@/components/EmptyState';
 import { EntityCard } from '@/components/EntityCard';
 import { ExploreCardSkeleton } from '@/components/ExploreCardSkeleton';
@@ -215,11 +215,14 @@ function CreatorCard({ creator }: { creator: ApiCreatorListItem }) {
     : null;
   const topPlatform = topAccount ? getPlatformMeta(allPlatforms, topAccount.platform) : null;
   const extraCats = creator.categories.length - 1;
+  const initials = (creator.fullName ?? '').split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase();
 
   return (
     <EntityCard
       avatarUrl={creator.avatarUrl}
       avatarBg={meta.bg}
+      initials={initials || undefined}
+      circularAvatar
       ringColor={meta.color}
       name={creator.fullName ?? 'Creator'}
       verified={creator.fullyVerified || creator.isVerified}
@@ -360,11 +363,10 @@ export default function ExploreCreatorPeersScreen() {
 
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
-      <PageHeader title={t('explore.exploreCreators')} backFallback="/(creator)/(tabs)" />
-
-      {/* Search + filter — outside gradient */}
-      <View style={s.searchRow}>
-        <View style={[s.searchCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+      {/* Back button + search, same row */}
+      <View style={s.topRow} accessibilityRole="header" accessibilityLabel={t('explore.exploreCreators')}>
+        <BackButton fallback="/(creator)/(tabs)" />
+        <View style={[s.searchCard, { flex: 1, backgroundColor: C.surface, borderColor: C.border }]}>
           <Ionicons name="search-outline" size={18} color={C.textSecondary} />
           <TextInput
             style={[s.searchInput, { color: C.text }]}
@@ -515,9 +517,9 @@ const s = StyleSheet.create({
   container: { flex: 1 },
 
 
-  searchRow:  { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12 },
-  searchCard: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 9, borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 14, height: 50 },
-  searchInput: { flex: 1, fontSize: 14, fontFamily: F.regular },
+  topRow:     { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12, gap: 12 },
+  searchCard: { flexDirection: 'row', alignItems: 'center', gap: 9, borderRadius: RADIUS.lg, borderWidth: 1.5, paddingHorizontal: 14, height: 44 },
+  searchInput: { flex: 1, fontSize: 15, fontFamily: F.regular },
   filterBtn: { width: 36, height: 36, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center' },
   filterCountBadge: { position: 'absolute', top: -4, right: -4, minWidth: 16, height: 16, borderRadius: RADIUS.full, paddingHorizontal: 3, backgroundColor: '#EF4444', justifyContent: 'center', alignItems: 'center' },
   filterCountBadgeTxt: { fontSize: 9, fontFamily: F.extrabold, color: '#fff' },

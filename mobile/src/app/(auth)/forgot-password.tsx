@@ -71,7 +71,7 @@ export default function ForgotPasswordScreen() {
       {/* ── Card ── */}
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
-          style={[styles.card, { backgroundColor: C.background }]}
+          style={[styles.card, { backgroundColor: C.preLoginBackground }]}
           contentContainerStyle={styles.cardContent}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>

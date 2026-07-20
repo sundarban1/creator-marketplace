@@ -169,7 +169,7 @@ function ChatCard({ conv, onDelete }: { conv: Conversation; onDelete: (id: strin
       <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
         style={({ pressed }) => [
           s.card,
-          { backgroundColor: pressed ? C.surface : '#fff' },
+          { backgroundColor: pressed ? C.surface : C.background },
         ]}
         onLongPress={handleLongPress}
         delayLongPress={400}
@@ -317,31 +317,19 @@ export default function BusinessChatListScreen() {
   const totalUnread = chats.reduce((acc, c) => acc + (c.unreadCount ?? 0), 0);
 
   return (
-    <SafeAreaView style={[s.container, { backgroundColor: '#fff' }]} edges={['top']}>
-      {/* ── Header ── */}
-      <View style={s.header}>
-        <View>
-          <Text style={[s.heading, { color: C.text }]}>{t('messages.heading')}</Text>
-          <Text style={[s.headingSub, { color: C.textSecondary }]}>
-            {tabData.pending.total > 0
-              ? t(tabData.pending.total !== 1 ? 'messages.pendingRequests' : 'messages.pendingRequest', { n: tabData.pending.total })
-              : totalUnread > 0
-              ? t('messages.unreadCount', { n: totalUnread })
-              : t('messages.yourConversations')}
-          </Text>
-        </View>
-      </View>
-
+    <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
       {/* ── Tab slider ── */}
-      <TabSlider
-        justify
-        tabs={[
-          { key: 'chats',   label: t('messages.tabMessages'),        count: totalUnread,          color: TabColors.brand.color },
-          { key: 'pending', label: t('messages.tabPendingRequests'), count: tabData.pending.total, color: TabColors.warning.color },
-        ]}
-        active={tab}
-        onChange={(key) => setTab(key as Tab)}
-      />
+      <View style={s.tabSliderWrap}>
+        <TabSlider
+          justify
+          tabs={[
+            { key: 'chats',   label: t('messages.tabMessages'),        count: totalUnread,          color: TabColors.positive.color },
+            { key: 'pending', label: t('messages.tabPendingRequests'), count: tabData.pending.total, color: TabColors.warning.color },
+          ]}
+          active={tab}
+          onChange={(key) => setTab(key as Tab)}
+        />
+      </View>
 
       {loading ? (
         <View style={s.reqList}>
@@ -405,9 +393,7 @@ const s = StyleSheet.create({
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
   // Header
-  header:         { paddingHorizontal: 20, paddingTop: 14, paddingBottom: 14 },
-  heading:        { fontSize: 20, fontFamily: F.bold, lineHeight: 24 },
-  headingSub:     { fontSize: 13, fontFamily: F.regular, marginTop: 2 },
+  tabSliderWrap:  { paddingTop: 14 },
 
   // Pending list
   reqList:   { padding: 16, gap: 12, paddingBottom: 40 },

@@ -176,6 +176,11 @@ export const authService = {
 
   // ── Add & verify a real email on the logged-in account (phone-signup accounts) ─
 
+  async isEmailAvailable(email: string): Promise<boolean> {
+    const res = await request<{ available: boolean }>('GET', `/api/auth/email-available?email=${encodeURIComponent(email)}`);
+    return res.data.available;
+  },
+
   async requestEmailOtp(email: string): Promise<void> {
     await request('POST', '/api/auth/request-email-otp', { email });
   },

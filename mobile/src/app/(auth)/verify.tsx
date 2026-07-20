@@ -160,7 +160,7 @@ export default function VerifyScreen() {
 
   if (verified) {
     return (
-      <SafeAreaView style={[styles.successContainer, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
+      <SafeAreaView style={[styles.successContainer, { backgroundColor: C.preLoginBackground }]} edges={['top', 'bottom']}>
         <Animated.View style={[styles.successContent, { opacity: opacityAnim }]}>
           <Animated.View
             style={[
@@ -205,7 +205,7 @@ export default function VerifyScreen() {
         </View>
 
         {/* ── Card ───────────────────────────────────────────────────────────── */}
-        <View style={[styles.card, { backgroundColor: C.background }]}>
+        <View style={[styles.card, { backgroundColor: C.preLoginBackground }]}>
 
           {/* OTP boxes */}
           <View style={styles.otpRow}>

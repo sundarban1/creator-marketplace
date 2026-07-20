@@ -387,6 +387,27 @@ router.post('/verify-phone-otp',    authenticate, validate(verifyPhoneOtpSchema)
  *       200:
  *         description: Verification code sent to the email
  */
+/**
+ * @swagger
+ * /api/auth/email-available:
+ *   get:
+ *     tags: [Auth]
+ *     summary: Check whether an email is free to attach to the logged-in account
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: email
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: email
+ *     responses:
+ *       200:
+ *         description: Availability checked
+ */
+router.get('/email-available',      authenticate, ctrl.checkEmailAvailability.bind(ctrl));
+
 router.post('/request-email-otp',   authenticate, validate(requestEmailOtpSchema), ctrl.requestEmailOtp.bind(ctrl));
 
 /**

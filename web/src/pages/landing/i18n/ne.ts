@@ -165,7 +165,7 @@ export const ne: LandingDict = {
       topicLabel: 'विषय',
       topicPlaceholder: 'यो केको बारेमा हो?',
       messageLabel: 'सन्देश',
-      messagePlaceholder: 'हामीलाई थप जानकारी दिनुहोस्...',
+      messagePlaceholder: 'यो केको बारेमा हो?',
       submitBtn: 'सन्देश पठाउनुहोस्',
       submittingBtn: 'पठाइँदै...',
       successTitle: 'सन्देश पठाइयो',

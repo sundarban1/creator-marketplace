@@ -112,7 +112,7 @@ export default function ResetPasswordScreen() {
       <KeyboardAvoidingView style={styles.flex}>
         <ScrollView
           ref={scrollRef}
-          style={[styles.card, { backgroundColor: C.background }]}
+          style={[styles.card, { backgroundColor: C.preLoginBackground }]}
           contentContainerStyle={styles.cardContent}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}

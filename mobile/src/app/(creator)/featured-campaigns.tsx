@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { BackButton } from '@/components/BackButton';
+import { PageHeader } from '@/features/creator/components/PageHeader';
 import {
   ActivityIndicator,
   FlatList,
@@ -74,12 +74,7 @@ export default function FeaturedCampaignsScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
-      {/* Header */}
-      <View style={[styles.header, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
-        <BackButton fallback="/(creator)/" />
-        <Text style={[styles.headerTitle, { color: C.text }]}>{t('creator.featuredCampaigns.headerTitle')}</Text>
-        <View style={{ width: 38 }} />
-      </View>
+      <PageHeader title={t('creator.featuredCampaigns.headerTitle')} backFallback="/(creator)/" />
 
       {loading ? (
         <View style={[styles.list, { gap: 12 }]}>
@@ -127,12 +122,6 @@ export default function FeaturedCampaignsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingVertical: 14,
-    borderBottomWidth: 1,
-  },
-  headerTitle: { fontSize: 17, fontFamily: F.bold },
   list: { padding: 16, paddingBottom: 40 },
   separator: { height: 12 },
   loadingWrap: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 14 },

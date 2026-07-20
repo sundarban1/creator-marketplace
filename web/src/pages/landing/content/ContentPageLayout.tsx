@@ -27,7 +27,7 @@ interface ContentPageLayoutProps {
   eyebrow: string;
   /** Renders as the page's single <h1>. */
   heading: string;
-  intro: string;
+  intro?: string;
   /** Page-specific body — compose with ContentSection/BenefitGrid/ContentList from ../components/ContentBlocks. */
   children: ReactNode;
   faqs?: FAQItem[];
@@ -72,9 +72,11 @@ export function ContentPageLayout({ seo, breadcrumb, icon: Icon, eyebrow, headin
             {heading}
           </motion.h1>
 
-          <motion.p variants={fadeUp} className="mt-5 max-w-2xl text-lg leading-relaxed text-ink-soft">
-            {intro}
-          </motion.p>
+          {intro && (
+            <motion.p variants={fadeUp} className="mt-5 max-w-2xl text-lg leading-relaxed text-ink-soft">
+              {intro}
+            </motion.p>
+          )}
         </motion.div>
 
         <div className="mt-14 space-y-14">

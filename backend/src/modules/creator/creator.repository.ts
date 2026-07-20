@@ -182,6 +182,20 @@ export class CreatorRepository {
     return prisma.creatorProfile.update({ where: { userId }, data });
   }
 
+  async getUserEmailStatus(userId: string) {
+    return prisma.user.findUnique({ where: { id: userId }, select: { email: true, isEmailVerified: true } });
+  }
+
+  async findUserByEmail(email: string) {
+    return prisma.user.findUnique({ where: { email }, select: { id: true } });
+  }
+
+  // Sets the account email without marking it verified — verification still
+  // happens through the separate request-email-otp/verify-email-otp flow.
+  async setAccountEmail(userId: string, email: string) {
+    return prisma.user.update({ where: { id: userId }, data: { email } });
+  }
+
   async addPortfolioLink(
     userId: string,
     link: { id: string; label: string; url: string },

@@ -23,10 +23,21 @@
             "CFBundleURLSchemes": [
               "com.googleusercontent.apps.543768819635-fuslrtr8mt6bmi2jslc3h3hcqg4drhdk"
             ]
+          },
+          {
+            "CFBundleURLSchemes": [
+              "fb1740519673635792"
+            ]
+          },
+          {
+            "CFBundleURLSchemes": [
+              "com.googleusercontent.apps.543768819635-fuslrtr8mt6bmi2jslc3h3hcqg4drhdk"
+            ]
           }
         ],
         "FacebookAppID": "1740519673635792",
-        "FacebookDisplayName": "kolab"
+        "FacebookDisplayName": "kolab",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {

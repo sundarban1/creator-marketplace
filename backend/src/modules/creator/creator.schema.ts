@@ -3,6 +3,11 @@ import { z } from 'zod';
 export const updateCreatorProfileSchema = z.object({
   username:    z.string().min(3).max(20).regex(/^[a-zA-Z0-9_]+$/, 'Only letters, numbers, and underscores allowed').optional(),
   fullName:    z.string().min(2).optional(),
+  // Lets a phone-signup account set its real email during onboarding, ahead of
+  // the separate request-email-otp/verify-email-otp flow that actually verifies
+  // it later (e.g. from Settings). Not accepted once the account already has a
+  // verified email — see creator.service.ts.
+  email:       z.string().trim().toLowerCase().email('Invalid email').optional(),
   bio:         z.string().max(500).optional(),
   location:    z.string().optional(),
   locationLat: z.number().optional(),

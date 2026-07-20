@@ -37,6 +37,8 @@ type EntityCardProps = {
   avatarBg:   string;
   /** Shown as a fallback when there's no avatar. Omit to fall back to a generic person icon instead. */
   initials?:  string;
+  /** Renders the avatar as a full circle instead of the default rounded square. */
+  circularAvatar?: boolean;
   ringColor:  string;
   name:       string;
   verified:   boolean;
@@ -59,13 +61,14 @@ type EntityCardProps = {
 };
 
 export function EntityCard({
-  avatarUrl, avatarBg, initials, ringColor, name, verified,
+  avatarUrl, avatarBg, initials, circularAvatar, ringColor, name, verified,
   locationText, description, descriptionItalic, bio,
   categoryLabel, categoryIcon, categoryColor, categoryBg, extraCount = 0,
   stat, ctaLabel, onPress, action,
 }: EntityCardProps) {
   const C = useAppColors();
   const ring = { borderWidth: 2, borderColor: ringColor };
+  const avatarShape = circularAvatar ? { borderRadius: RADIUS.full } : null;
 
   let subtitle: ReactNode = null;
   if (locationText) {
@@ -85,13 +88,14 @@ export function EntityCard({
 
   return (
     <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-      style={({ pressed }) => [styles.card, { backgroundColor: C.surface, ...SHADOW.raised }, pressed && { opacity: 0.92 }]}
+      style={({ pressed }) => [styles.cardWrap, pressed && { opacity: 0.92 }]}
       onPress={onPress}>
+      <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
       <View style={styles.header}>
         {avatarUrl ? (
-          <Image source={{ uri: avatarUrl }} style={[styles.avatar, ring]} contentFit="cover" />
+          <Image source={{ uri: avatarUrl }} style={[styles.avatar, ring, avatarShape]} contentFit="cover" />
         ) : (
-          <View style={[styles.avatar, styles.avatarPlaceholder, { backgroundColor: avatarBg }, ring]}>
+          <View style={[styles.avatar, styles.avatarPlaceholder, { backgroundColor: avatarBg }, ring, avatarShape]}>
             {initials ? (
               <Text style={{ fontSize: 20, color: C.brinjal1, fontFamily: F.bold }}>{initials}</Text>
             ) : (
@@ -154,12 +158,14 @@ export function EntityCard({
         <Text style={styles.viewBtnText}>{ctaLabel}</Text>
         <Ionicons name="arrow-forward" size={14} color="#fff" />
       </View>
+      </View>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  card:   { borderRadius: RADIUS.lg, overflow: 'hidden', padding: 16, gap: 12 },
+  cardWrap: { borderRadius: RADIUS.lg, ...SHADOW.raised },
+  card:   { borderRadius: RADIUS.lg, overflow: 'hidden', borderWidth: 1, padding: 16, gap: 12 },
   header: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   avatar: { width: 60, height: 60, borderRadius: RADIUS.md, flexShrink: 0 },
   avatarPlaceholder: { justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },

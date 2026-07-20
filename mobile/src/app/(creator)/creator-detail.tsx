@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { BackButton } from '@/components/BackButton';
+import { PageHeader } from '@/features/creator/components/PageHeader';
 import { VerifiedBadge } from '@/components/VerifiedBadge';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import {
@@ -146,9 +146,7 @@ export default function CreatorPeerDetailScreen() {
   if (loading) {
     return (
       <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
-        <View style={s.topBar}>
-          <BackButton fallback="/(creator)/explore-creators" />
-        </View>
+        <PageHeader title={t('creatorDetailExtra.topTitle')} backFallback="/(creator)/explore-creators" />
         <View style={s.centered}>
           <ActivityIndicator size="large" color={C.brinjal1} />
         </View>
@@ -159,9 +157,7 @@ export default function CreatorPeerDetailScreen() {
   if (error || !profile) {
     return (
       <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
-        <View style={s.topBar}>
-          <BackButton fallback="/(creator)/explore-creators" />
-        </View>
+        <PageHeader title={t('creatorDetailExtra.topTitle')} backFallback="/(creator)/explore-creators" />
         <View style={s.centered}>
           <FontAwesome5 name="user-slash" size={40} color={C.textSecondary} style={s.errorEmoji} />
           <Text style={[s.errorTitle, { color: C.text }]}>{t('creatorDetailExtra.notFound')}</Text>
@@ -198,12 +194,7 @@ export default function CreatorPeerDetailScreen() {
 
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
-      {/* Top bar */}
-      <View style={s.topBar}>
-        <BackButton fallback="/(creator)/explore-creators" />
-        <Text style={[s.topTitle, { color: C.text }]}>{t('creatorDetailExtra.topTitle')}</Text>
-        <View style={{ width: 40 }} />
-      </View>
+      <PageHeader title={t('creatorDetailExtra.topTitle')} backFallback="/(creator)/explore-creators" />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
 
@@ -465,8 +456,6 @@ const s = StyleSheet.create({
   container: { flex: 1 },
   centered:  { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, padding: 32 },
 
-  topBar:    { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12 },
-  topTitle:  { flex: 1, fontSize: 17, textAlign: 'center', fontFamily: F.bold },
 
   scroll: { paddingBottom: 16, gap: 12 },
 

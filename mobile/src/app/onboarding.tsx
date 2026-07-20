@@ -59,14 +59,27 @@ async function resolveAvailableUsernames(name: string, max = 4): Promise<string[
   return results.filter((c): c is string => c !== null).slice(0, max);
 }
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const EMAIL_DOMAINS = ['gmail.com', 'yahoo.com', 'hotmail.com'];
+
 export default function OnboardingScreen() {
-  const { updateUser } = useAuth();
+  const { user, updateUser } = useAuth();
   const { t } = useLanguage();
   const C = useAppColors();
   const [step, setStep] = useState(1);
 
+  // Phone-signup accounts still hold a placeholder email and stay
+  // isEmailVerified: false until they add a real one — collect it here.
+  const needsEmail = !user?.isEmailVerified;
+
   // Step 1 — profile basics
   const [fullName,  setFullName]  = useState('');
+  const [email,     setEmail]     = useState('');
+  const [emailFocused, setEmailFocused] = useState(false);
+  const [emailAvailable, setEmailAvailable] = useState<boolean | null>(null);
+  const [emailChecking,  setEmailChecking]  = useState(false);
+  const emailCheckDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const emailCheckRequestId = useRef(0);
   const [username,  setUsername]  = useState('');
   const [gender,    setGender]    = useState('');
   const [location, setLocation] = useState('');
@@ -80,19 +93,21 @@ export default function OnboardingScreen() {
   const [step1Loading,   setStep1Loading]   = useState(false);
   const [step1Error,     setStep1Error]     = useState('');
   const step1ScrollRef = useRef<ScrollView>(null);
-  const usernameFocusedRef = useRef(false);
+  // Username and (for phone-signups) Email are the last text fields in the
+  // step-1 form — Gender below uses chips and Location a modal, neither opens
+  // the keyboard.
+  const lastTextFieldFocusedRef = useRef(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
 
-  // Username is the last text field in the step-1 form (Gender below it uses
-  // chips, not the keyboard), right above the submit button. iOS already
-  // handles this correctly on its own — the ScrollView's
-  // `automaticallyAdjustKeyboardInsets` (below) auto-scrolls a focused field
-  // above the keyboard, and stacking a manual scrollToEnd on top of that was
-  // exactly what caused the form to shoot up too far (both mechanisms
-  // compensating for the same keyboard at once). So this effect is
-  // Android-only: adjustResize shrinks the window when the keyboard opens but
-  // never auto-scrolls a mid-form field into the new (shrunk) viewport, so
-  // without this the field ends up hidden behind the keyboard there.
+  // Right above the submit button. iOS already handles this correctly on its
+  // own — the ScrollView's `automaticallyAdjustKeyboardInsets` (below)
+  // auto-scrolls a focused field above the keyboard, and stacking a manual
+  // scrollToEnd on top of that was exactly what caused the form to shoot up
+  // too far (both mechanisms compensating for the same keyboard at once). So
+  // this effect is Android-only: adjustResize shrinks the window when the
+  // keyboard opens but never auto-scrolls a mid-form field into the new
+  // (shrunk) viewport, so without this the field ends up hidden behind the
+  // keyboard there.
   //
   // `keyboardVisible` adds a small fixed buffer (not the full keyboard height —
   // that was the other source of the overshoot) so a short form has somewhere
@@ -102,7 +117,7 @@ export default function OnboardingScreen() {
     if (Platform.OS !== 'android') return;
     const showSub = Keyboard.addListener('keyboardDidShow', () => {
       setKeyboardVisible(true);
-      if (usernameFocusedRef.current) step1ScrollRef.current?.scrollToEnd({ animated: true });
+      if (lastTextFieldFocusedRef.current) step1ScrollRef.current?.scrollToEnd({ animated: true });
     });
     const hideSub = Keyboard.addListener('keyboardDidHide', () => setKeyboardVisible(false));
     return () => {
@@ -134,6 +149,11 @@ export default function OnboardingScreen() {
 
   // ── Step 1 validation ──
   const fullNameError = step1Submitted && !fullName.trim() ? t('onboarding.fullNameRequired') : undefined;
+  const emailError = !needsEmail || !step1Submitted ? undefined
+    : !email.trim()                    ? t('onboarding.emailRequired')
+    : !EMAIL_REGEX.test(email.trim())  ? t('onboarding.emailInvalid')
+    : emailAvailable === false         ? t('onboarding.emailTaken')
+    : undefined;
   const usernameError = step1Submitted
     ? !username.trim()                          ? t('onboarding.usernameRequired')
     : username.trim().length < 3               ? t('onboarding.usernameMinLength')
@@ -145,6 +165,7 @@ export default function OnboardingScreen() {
 
   const step1Valid =
     fullName.trim().length > 0 &&
+    (!needsEmail || (email.trim().length > 0 && EMAIL_REGEX.test(email.trim()))) &&
     username.trim().length >= 3 &&
     /^[a-zA-Z0-9_]+$/.test(username.trim()) &&
     !!gender &&
@@ -159,6 +180,25 @@ export default function OnboardingScreen() {
     usernameSuggestDebounce.current = setTimeout(async () => {
       const available = await resolveAvailableUsernames(v);
       if (requestId === usernameSuggestRequestId.current) setUsernameSuggestions(available);
+    }, 400);
+  }
+
+  function handleEmailChange(v: string) {
+    setStep1Error('');
+    setEmail(v);
+    setEmailAvailable(null);
+    if (emailCheckDebounce.current) clearTimeout(emailCheckDebounce.current);
+    const trimmed = v.trim();
+    if (!EMAIL_REGEX.test(trimmed)) { setEmailChecking(false); return; }
+    const requestId = ++emailCheckRequestId.current;
+    setEmailChecking(true);
+    emailCheckDebounce.current = setTimeout(async () => {
+      try {
+        const available = await authService.isEmailAvailable(trimmed);
+        if (requestId === emailCheckRequestId.current) setEmailAvailable(available);
+      } finally {
+        if (requestId === emailCheckRequestId.current) setEmailChecking(false);
+      }
     }, 400);
   }
 
@@ -186,13 +226,14 @@ export default function OnboardingScreen() {
     try {
       await profileService.updateCreatorProfile({
         fullName: fullName.trim(),
+        email:    needsEmail ? email.trim() : undefined,
         username: username.trim(),
         gender:   gender || undefined,
         location: location.trim(),
         locationLat: locationLat ?? undefined,
         locationLng: locationLng ?? undefined,
       });
-      updateUser({ name: fullName.trim() });
+      updateUser({ name: fullName.trim(), ...(needsEmail ? { email: email.trim() } : {}) });
       setStep(2);
     } catch (e: any) {
       setStep1Error(e.message ?? 'Failed to save. Please try again.');
@@ -226,7 +267,7 @@ export default function OnboardingScreen() {
   // ── Success screen ──
   if (finished) {
     return (
-      <SafeAreaView style={[styles.successContainer, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
+      <SafeAreaView style={[styles.successContainer, { backgroundColor: C.preLoginBackground }]} edges={['top', 'bottom']}>
         <Animated.View style={[styles.successContent, { opacity: opacityAnim }]}>
           <Animated.View style={[styles.checkCircle, { backgroundColor: C.active, shadowColor: C.active, transform: [{ scale: scaleAnim }] }]}>
             <Ionicons name="checkmark" size={52} color="#fff" />
@@ -250,7 +291,7 @@ export default function OnboardingScreen() {
   const { title, subtitle } = STEP_CONFIG[step - 1];
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: C.preLoginBackground }]} edges={['top']}>
       {/* No `behavior` prop here — the step-1 ScrollView's `automaticallyAdjustKeyboardInsets`
           already handles iOS precisely on its own (auto-scrolls whichever field is focused
           just above the keyboard). Adding KeyboardAvoidingView's `padding` behavior on top of
@@ -302,26 +343,12 @@ export default function OnboardingScreen() {
                   style={[styles.formInput, { backgroundColor: C.surface, borderColor: fullNameError ? C.error : C.border, color: C.text }]}
                   value={fullName}
                   onChangeText={handleFullNameChange}
-                  onFocus={() => { usernameFocusedRef.current = false; }}
+                  onFocus={() => { lastTextFieldFocusedRef.current = false; }}
                   placeholder={t('onboarding.fullNamePlaceholder')}
                   placeholderTextColor={C.textSecondary}
                   autoCapitalize="words"
                 />
                 {fullNameError && <Text style={[styles.fieldError, { color: C.error }]}>{fullNameError}</Text>}
-              </View>
-
-              {/* Location */}
-              <View style={styles.formGroup}>
-                <Text style={[styles.formLabel, { color: C.text }]}>{t('onboarding.locationLabel')} <Text style={{ color: C.error }}>*</Text></Text>
-                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                  style={[styles.locationBtn, { backgroundColor: C.surface, borderColor: locationError ? C.error : C.border }]}
-                  onPress={() => setLocationModalOpen(true)}>
-                  <Text style={[styles.locationBtnTxt, { color: location ? C.text : C.textSecondary }]} numberOfLines={2}>
-                    {location || t('onboarding.locationPlaceholder')}
-                  </Text>
-                  <Text style={styles.locationArrow}>›</Text>
-                </Pressable>
-                {locationError && <Text style={[styles.fieldError, { color: C.error }]}>{locationError}</Text>}
               </View>
 
               {/* Username */}
@@ -336,7 +363,7 @@ export default function OnboardingScreen() {
                       setStep1Error('');
                       setUsername(v.replace(/[^a-zA-Z0-9_]/g, '').slice(0, 20));
                     }}
-                    onFocus={() => { usernameFocusedRef.current = true; }}
+                    onFocus={() => { lastTextFieldFocusedRef.current = !needsEmail; }}
                     placeholder={t('onboarding.usernamePlaceholder')}
                     placeholderTextColor={C.textSecondary}
                     autoCapitalize="none"
@@ -363,6 +390,55 @@ export default function OnboardingScreen() {
                 )}
               </View>
 
+              {/* Email — only for phone-signup accounts, which start without a real one */}
+              {needsEmail && (
+                <View style={styles.formGroup}>
+                  <Text style={[styles.formLabel, { color: C.text }]}>{t('onboarding.emailLabel')} <Text style={{ color: C.error }}>*</Text></Text>
+                  <TextInput
+                    style={[styles.formInput, { backgroundColor: C.surface, borderColor: emailError ? C.error : C.border, color: C.text }]}
+                    value={email}
+                    onChangeText={handleEmailChange}
+                    onFocus={() => { lastTextFieldFocusedRef.current = true; setEmailFocused(true); }}
+                    onBlur={() => { setTimeout(() => setEmailFocused(false), 150); }}
+                    placeholder={t('onboarding.emailPlaceholder')}
+                    placeholderTextColor={C.textSecondary}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    keyboardType="email-address"
+                  />
+                  {emailFocused && (() => {
+                    const atIndex = email.indexOf('@');
+                    if (atIndex === -1) return null;
+                    const localPart  = email.slice(0, atIndex);
+                    const domainPart = email.slice(atIndex + 1);
+                    if (domainPart.includes('.')) return null;
+                    const suggestions = EMAIL_DOMAINS.filter((d) => d.startsWith(domainPart));
+                    if (suggestions.length === 0) return null;
+                    return (
+                      <View style={[styles.domainSuggestBox, { backgroundColor: C.surface, borderColor: C.border }]}>
+                        {suggestions.map((domain) => (
+                          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                            key={domain}
+                            style={styles.domainSuggestItem}
+                            onPress={() => handleEmailChange(`${localPart}@${domain}`)}>
+                            <Text style={[styles.domainSuggestText, { color: C.textSecondary }]}>
+                              {localPart}@<Text style={{ color: C.text, fontFamily: F.semibold }}>{domain}</Text>
+                            </Text>
+                          </Pressable>
+                        ))}
+                      </View>
+                    );
+                  })()}
+                  {emailError ? (
+                    <Text style={[styles.fieldError, { color: C.error }]}>{emailError}</Text>
+                  ) : emailChecking ? (
+                    <Text style={[styles.fieldHint, { color: C.textSecondary }]}>{t('onboarding.emailChecking')}</Text>
+                  ) : emailAvailable === true ? (
+                    <Text style={[styles.fieldHint, { color: C.active }]}>{t('onboarding.emailAvailable')}</Text>
+                  ) : null}
+                </View>
+              )}
+
               {/* Gender */}
               <View style={styles.formGroup}>
                 <Text style={[styles.formLabel, { color: C.text }]}>{t('onboarding.genderLabel')} <Text style={{ color: C.error }}>*</Text></Text>
@@ -385,6 +461,20 @@ export default function OnboardingScreen() {
                   })}
                 </View>
                 {genderError && <Text style={[styles.fieldError, { color: C.error }]}>{genderError}</Text>}
+              </View>
+
+              {/* Location — kept last */}
+              <View style={styles.formGroup}>
+                <Text style={[styles.formLabel, { color: C.text }]}>{t('onboarding.locationLabel')} <Text style={{ color: C.error }}>*</Text></Text>
+                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                  style={[styles.locationBtn, { backgroundColor: C.surface, borderColor: locationError ? C.error : C.border }]}
+                  onPress={() => setLocationModalOpen(true)}>
+                  <Text style={[styles.locationBtnTxt, { color: location ? C.text : C.textSecondary }]} numberOfLines={2}>
+                    {location || t('onboarding.locationPlaceholder')}
+                  </Text>
+                  <Text style={styles.locationArrow}>›</Text>
+                </Pressable>
+                {locationError && <Text style={[styles.fieldError, { color: C.error }]}>{locationError}</Text>}
               </View>
 
             </View>
@@ -532,6 +622,10 @@ const styles = StyleSheet.create({
   suggestionRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   suggestionChip: { borderRadius: RADIUS.full, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 6 },
   suggestionChipText: { fontSize: 13, fontFamily: F.semibold },
+
+  domainSuggestBox: { marginTop: 6, borderRadius: RADIUS.md, borderWidth: 1.5, overflow: 'hidden' },
+  domainSuggestItem: { paddingHorizontal: 14, paddingVertical: 10 },
+  domainSuggestText: { fontSize: 14, fontFamily: F.regular },
 
   selectionBadgeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
   selectionBadge: { alignSelf: 'flex-start', borderRadius: RADIUS.sm, paddingHorizontal: 12, paddingVertical: 5 },

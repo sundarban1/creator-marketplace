@@ -12,6 +12,7 @@ export const DARK_COLORS: typeof COLORS = {
   accentLight: '#431407',
   background:  '#12121E',
   surface:     '#1E1E30',
+  preLoginBackground: '#12121E',
   border:      '#2E2E45',
   borderDark:  '#3D3D58',
   text:        '#F1F5F9',

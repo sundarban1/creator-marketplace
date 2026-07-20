@@ -457,13 +457,18 @@ export default function HomeScreen() {
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-              style={[styles.avatarCircle, { borderColor: C.brinjal1 + '30', borderWidth: 2.5 }, SHADOW.card]}
+              style={[
+                styles.avatarCircle,
+                {
+                  borderColor: C.brinjal1 + '30', borderWidth: 2.5,
+                },
+              ]}
               onPress={() => router.push('/(creator)/profile')}>
               <View style={styles.avatarClip}>
                 {user?.avatar ? (
                   <Image source={{ uri: user.avatar }} style={styles.avatarImage} resizeMode="cover" />
                 ) : (
-                  <View style={[styles.avatarFallback, { backgroundColor: C.primaryLight }]}>
+                  <View style={styles.avatarFallback}>
                     <Text style={[styles.avatarInitial, { color: C.brinjal1 }]}>{displayName.trim()[0].toUpperCase()}</Text>
                   </View>
                 )}
@@ -471,13 +476,20 @@ export default function HomeScreen() {
             </Pressable>
             <View>
               <Text style={[styles.greeting, { color: C.textSecondary }]}>{t('creator.home.greeting')}</Text>
-              <Text style={[styles.brandName, { color: C.text }]} numberOfLines={1}>{displayName}</Text>
+              <Text style={[styles.brandName, { color: C.brinjal1 }]} numberOfLines={1}>{displayName}</Text>
             </View>
           </View>
 
           <View style={styles.headerRight}>
             <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.menuBtn} onPress={openDrawer} hitSlop={6}>
-              <View style={[styles.menuBtnInner, { backgroundColor: C.surface, borderColor: C.border, borderWidth: 1 }, SHADOW.card]}>
+              <View
+                style={[
+                  styles.menuBtnInner,
+                  {
+                    backgroundColor: C.surface, borderColor: C.border, borderWidth: 1,
+                  },
+                ]}
+              >
                 <Ionicons name="menu" size={22} color={C.text} />
               </View>
             </Pressable>
@@ -670,7 +682,7 @@ export default function HomeScreen() {
         ) : null}
 
         {/* ── Categories ── */}
-        <View style={[styles.sectionHeader, { marginTop: 6 }]}>
+        <View style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, { color: C.text }]}>{t('creator.home.categories')}</Text>
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoriesRow}>

@@ -373,6 +373,14 @@ export class AuthService {
     return { message: 'Phone number verified successfully' };
   }
 
+  // Live-checks an email against the DB while a phone-signup account is
+  // filling it in (onboarding, Settings) — `userId` excludes the caller's own
+  // row so re-checking an email they already hold doesn't read as taken.
+  async isEmailAvailable(email: string, userId: string) {
+    const existing = await this.repo.findUserByEmail(email);
+    return { available: !existing || existing.id === userId };
+  }
+
   // ── Add & verify a real email on an existing (phone-signup) account ─────────
 
   async requestEmailOtp(userId: string, input: RequestEmailOtpInput) {

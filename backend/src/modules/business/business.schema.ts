@@ -16,6 +16,11 @@ const businessPhoneField = z
 
 export const updateBusinessProfileSchema = z.object({
   businessName: z.string().min(2, 'Business name must be at least 2 characters').optional(),
+  // Lets a phone-signup account set its real email during onboarding, ahead of
+  // the separate request-email-otp/verify-email-otp flow that actually verifies
+  // it later (e.g. from Settings). Not accepted once the account already has a
+  // verified email — see business.service.ts.
+  email: z.string().trim().toLowerCase().email('Invalid email').optional(),
   description: z.string().max(1000).optional(),
   logoUrl: z.string().url('Invalid logo URL').optional().nullable(),
   coverImageUrl: z.string().url('Invalid cover image URL').optional().nullable(),

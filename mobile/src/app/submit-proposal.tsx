@@ -20,11 +20,14 @@ import { useToast } from '@/components/Toast';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { campaignService } from '@/services/campaign';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- used by the required-social-account check, temporarily disabled below
 import { creatorService } from '@/services/creator';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
 
 // At least one of these must be present before a creator can apply — brands
 // evaluating a proposal need to see the creator's actual content somewhere.
+// Requirement is temporarily disabled in handleSubmit(); kept for when it's re-implemented.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const REQUIRED_SOCIAL_PLATFORMS = ['facebook', 'instagram', 'tiktok'];
 
 function isValidUrl(v: string) {
@@ -185,14 +188,14 @@ export default function SubmitProposalScreen() {
 
     setLoading(true);
     try {
-      // Checked fresh at submit-time (not cached from mount) so a link added
-      // moments ago in another screen/session is picked up correctly.
-      const accounts = await creatorService.getSocialAccounts();
-      const hasRequiredSocial = accounts.some((a) => REQUIRED_SOCIAL_PLATFORMS.includes(a.platform.toLowerCase()));
-      if (!hasRequiredSocial) {
-        setShowSocialModal(true);
-        return;
-      }
+      // Social-account requirement temporarily disabled; re-enable by restoring
+      // the block below (kept for when this is implemented again).
+      // const accounts = await creatorService.getSocialAccounts();
+      // const hasRequiredSocial = accounts.some((a) => REQUIRED_SOCIAL_PLATFORMS.includes(a.platform.toLowerCase()));
+      // if (!hasRequiredSocial) {
+      //   setShowSocialModal(true);
+      //   return;
+      // }
 
       await campaignService.apply(campaignId, {
         coverLetter:  coverLetter.trim(),
@@ -365,7 +368,7 @@ const styles = StyleSheet.create({
   budgetPill:      { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 5, borderRadius: RADIUS.full, marginTop: 2 },
   budgetText:      { fontSize: 13, fontFamily: F.bold },
 
-  tipCard:         { flexDirection: 'row', borderRadius: RADIUS.md, borderWidth: 1, padding: 14, gap: 10, alignItems: 'flex-start' },
+  tipCard:         { flexDirection: 'row', borderRadius: RADIUS.lg, borderWidth: 1, padding: 14, gap: 10, alignItems: 'flex-start' },
   tipText:         { flex: 1, fontSize: 12, lineHeight: 18, fontFamily: F.regular },
 
   form:            { gap: 20 },

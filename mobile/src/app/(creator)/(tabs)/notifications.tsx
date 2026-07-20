@@ -83,7 +83,7 @@ function NotificationItem({ item, onPress }: { item: AppNotification; onPress: (
 
       {/* Type icon in a coloured circle */}
       <View style={[styles.iconWrap, { backgroundColor: cfg.iconBg }]}>
-        <Ionicons name={cfg.icon} size={18} color={cfg.iconColor} />
+        <Ionicons name={cfg.icon} size={20} color={cfg.iconColor} />
       </View>
 
       {/* Content */}
@@ -243,18 +243,17 @@ export default function NotificationsScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
-      <View style={styles.headerRow}>
-        <Text style={[styles.heading, { color: C.text }]}>{t('notifications.heading')}</Text>
-        {unreadCount > 0 && (
+      {unreadCount > 0 && (
+        <View style={styles.headerRow}>
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} hitSlop={6} onPress={handleMarkAll} style={[styles.markAllBtn, { borderColor: C.brinjal1 }]}>
             <Text style={[styles.markAllText, { color: C.brinjal1 }]}>{t('notifications.markAllRead')}</Text>
           </Pressable>
-        )}
-      </View>
+        </View>
+      )}
 
       {loading ? (
         <View style={{ padding: 16, gap: 12 }}>
-          {[0, 1, 2, 3, 4, 5].map((i) => <ListRowSkeleton key={i} avatarSize={40} />)}
+          {[0, 1, 2, 3, 4, 5].map((i) => <ListRowSkeleton key={i} avatarSize={44} />)}
         </View>
       ) : error ? (
         <EmptyState
@@ -293,29 +292,28 @@ export default function NotificationsScreen() {
 
 const styles = StyleSheet.create({
   container:  { flex: 1 },
-  headerRow:  { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingTop: 14, paddingBottom: 14 },
-  heading:    { flex: 1, fontSize: 20, fontFamily: F.bold, lineHeight: 24 },
+  headerRow:  { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', paddingHorizontal: 20, paddingTop: 14, paddingBottom: 14 },
   markAllBtn: { paddingHorizontal: 14, paddingVertical: 7, minHeight: 32, justifyContent: 'center', borderRadius: RADIUS.sm, borderWidth: 1 },
   markAllText:{ fontSize: 12, fontFamily: F.semibold },
   center:     { flex: 1, alignItems: 'center', justifyContent: 'center' },
   list:       { paddingBottom: 32 },
   listEmpty:  { flexGrow: 1 },
 
-  groupLabel: { fontSize: 11, paddingHorizontal: 20, paddingTop: 20, paddingBottom: 8, textTransform: 'uppercase', letterSpacing: 0, fontFamily: F.bold },
+  groupLabel: { fontSize: 12, paddingHorizontal: 20, paddingTop: 20, paddingBottom: 8, textTransform: 'uppercase', letterSpacing: 0, fontFamily: F.bold },
 
-  item:       { flexDirection: 'row', paddingVertical: 14, paddingHorizontal: 20, borderBottomWidth: 1, gap: 12, alignItems: 'flex-start' },
+  item:       { flexDirection: 'row', paddingVertical: 16, paddingHorizontal: 20, borderBottomWidth: 1, gap: 12, alignItems: 'flex-start' },
   accentBar:  { position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, borderRadius: 2 },
 
-  iconWrap:   { width: 40, height: 40, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', flexShrink: 0, marginTop: 1 },
+  iconWrap:   { width: 44, height: 44, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', flexShrink: 0, marginTop: 1 },
 
   itemContent:{ flex: 1, gap: 4 },
   titleRow:   { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  itemTitle:  { fontSize: 13, flex: 1, fontFamily: F.bold, lineHeight: 18 },
-  unreadDot:  { width: 6, height: 6, borderRadius: RADIUS.full, flexShrink: 0 },
+  itemTitle:  { fontSize: 14, flex: 1, fontFamily: F.bold, lineHeight: 19 },
+  unreadDot:  { width: 7, height: 7, borderRadius: RADIUS.full, flexShrink: 0 },
 
   labelChip:     { alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 2, borderRadius: RADIUS.sm },
-  labelChipText: { fontSize: 10, letterSpacing: 0.3, fontFamily: F.bold },
+  labelChipText: { fontSize: 11, letterSpacing: 0.3, fontFamily: F.bold },
 
-  itemBody:   { fontSize: 12, lineHeight: 17, fontFamily: F.regular },
-  itemTime:   { fontSize: 10, opacity: 0.55, fontFamily: F.regular, marginTop: 1 },
+  itemBody:   { fontSize: 13, lineHeight: 18, fontFamily: F.regular },
+  itemTime:   { fontSize: 11, opacity: 0.55, fontFamily: F.regular, marginTop: 1 },
 });

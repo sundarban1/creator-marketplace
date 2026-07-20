@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { AuthService } from './auth.service';
 import { success } from '../../utils/response';
-import { logError } from '../../middleware/error';
+import { logError, AppError } from '../../middleware/error';
 
 const authService = new AuthService();
 
@@ -150,6 +150,17 @@ export class AuthController {
     try {
       const result = await authService.verifyPhoneOtp(req.user!.id, req.body);
       success(res, result, result.message);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async checkEmailAvailability(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const email = req.query.email as string | undefined;
+      if (!email) throw new AppError('Email query param is required', 400);
+      const result = await authService.isEmailAvailable(email.trim().toLowerCase(), req.user!.id);
+      success(res, result, 'Email availability checked');
     } catch (err) {
       next(err);
     }

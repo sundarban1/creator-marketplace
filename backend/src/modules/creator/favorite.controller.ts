@@ -51,7 +51,15 @@ export class FavoriteController {
     try {
       const creator = await creatorRepo.findByUserId(req.user!.id);
       if (!creator) throw new AppError('Creator profile not found', 404);
-      const rows = await favoriteRepo.getFavoriteBusinesses(creator.id);
+      const { category, platform, locations } = req.query as Record<string, string>;
+      const locationList = locations
+        ? locations.split(',').map((l) => l.trim()).filter(Boolean)
+        : undefined;
+      const rows = await favoriteRepo.getFavoriteBusinesses(creator.id, {
+        category:  category || undefined,
+        platform:  platform || undefined,
+        locations: locationList && locationList.length > 0 ? locationList : undefined,
+      });
       const businesses = rows.map((r) => r.business);
       res.json({ success: true, data: businesses });
     } catch (err) { next(err); }

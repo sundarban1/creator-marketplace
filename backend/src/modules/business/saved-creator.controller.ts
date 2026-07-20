@@ -43,7 +43,15 @@ export class SavedCreatorController {
     try {
       const business = await businessRepo.findByUserId(req.user!.id);
       if (!business) throw new AppError('Business profile not found', 404);
-      const saved = await savedRepo.listSaved(business.id);
+      const search = req.query.search as string | undefined;
+      const location = req.query.location as string | undefined;
+      const categoriesRaw = req.query.categories as string | undefined;
+      const platformsRaw = req.query.platforms as string | undefined;
+      const categories = categoriesRaw ? categoriesRaw.split(',').filter(Boolean) : undefined;
+      const platforms = platformsRaw ? platformsRaw.split(',').filter(Boolean) : undefined;
+      const priceMin = req.query.priceMin ? parseFloat(String(req.query.priceMin)) : undefined;
+      const priceMax = req.query.priceMax ? parseFloat(String(req.query.priceMax)) : undefined;
+      const saved = await savedRepo.listSaved(business.id, { search, categories, location, platforms, priceMin, priceMax });
       res.json({ success: true, data: saved });
     } catch (err) { next(err); }
   }

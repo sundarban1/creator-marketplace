@@ -17,7 +17,6 @@ export function BrandsPage() {
       icon={Megaphone}
       eyebrow="For Brands"
       heading="Hire Verified Creators in Nepal"
-      intro="Kolab is where Nepali brands and businesses post campaigns and hire verified content creators — instead of cold-DMing influencers on Instagram and hoping for a reply. Post once, review proposals, and collaborate with creators who actually fit your brand."
       faqs={[
         {
           question: 'How do I hire a creator on Kolab?',

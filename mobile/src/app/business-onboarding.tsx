@@ -23,15 +23,27 @@ import { PlacesAutocompleteInput } from '@/components/PlacesAutocompleteInput';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
 
 const TOTAL_STEPS = 2;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const EMAIL_DOMAINS = ['gmail.com', 'yahoo.com', 'hotmail.com'];
 
 export default function BusinessOnboardingScreen() {
-  const { updateUser } = useAuth();
+  const { user, updateUser } = useAuth();
   const { t } = useLanguage();
   const C = useAppColors();
   const [step, setStep] = useState(1);
 
+  // Phone-signup accounts still hold a placeholder email and stay
+  // isEmailVerified: false until they add a real one — collect it here.
+  const needsEmail = !user?.isEmailVerified;
+
   // Step 1
   const [businessName, setBusinessName] = useState('');
+  const [email, setEmail] = useState('');
+  const [emailFocused, setEmailFocused] = useState(false);
+  const [emailAvailable, setEmailAvailable] = useState<boolean | null>(null);
+  const [emailChecking,  setEmailChecking]  = useState(false);
+  const emailCheckDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const emailCheckRequestId = useRef(0);
   const [location, setLocation] = useState('');
   const [step1Loading, setStep1Loading] = useState(false);
   const [step1Error, setStep1Error] = useState('');
@@ -73,6 +85,25 @@ export default function BusinessOnboardingScreen() {
     return () => clearTimeout(id);
   }, [finished]);
 
+  function handleEmailChange(v: string) {
+    setStep1Error('');
+    setEmail(v);
+    setEmailAvailable(null);
+    if (emailCheckDebounce.current) clearTimeout(emailCheckDebounce.current);
+    const trimmed = v.trim();
+    if (!EMAIL_REGEX.test(trimmed)) { setEmailChecking(false); return; }
+    const requestId = ++emailCheckRequestId.current;
+    setEmailChecking(true);
+    emailCheckDebounce.current = setTimeout(async () => {
+      try {
+        const available = await authService.isEmailAvailable(trimmed);
+        if (requestId === emailCheckRequestId.current) setEmailAvailable(available);
+      } finally {
+        if (requestId === emailCheckRequestId.current) setEmailChecking(false);
+      }
+    }, 400);
+  }
+
   function toggleCategory(label: string) {
     setSelectedCategories((prev) => {
       if (prev.includes(label)) return prev.filter((c) => c !== label);
@@ -84,14 +115,16 @@ export default function BusinessOnboardingScreen() {
   async function handleStep1Continue() {
     setStep1Submitted(true);
     if (!businessName.trim() || !location.trim()) return;
+    if (needsEmail && (!email.trim() || !EMAIL_REGEX.test(email.trim()))) return;
     setStep1Loading(true);
     setStep1Error('');
     try {
       await profileService.updateBusinessProfile({
         businessName: businessName.trim(),
+        email: needsEmail ? email.trim() : undefined,
         location: location.trim() || null,
       });
-      updateUser({ name: businessName.trim() });
+      updateUser({ name: businessName.trim(), ...(needsEmail ? { email: email.trim() } : {}) });
       setStep(2);
     } catch (e: any) {
       setStep1Error(e.message ?? 'Failed to save. Please try again.');
@@ -124,7 +157,7 @@ export default function BusinessOnboardingScreen() {
   // ── Success screen ──
   if (finished) {
     return (
-      <SafeAreaView style={[styles.successContainer, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
+      <SafeAreaView style={[styles.successContainer, { backgroundColor: C.preLoginBackground }]} edges={['top', 'bottom']}>
         <Animated.View style={[styles.successContent, { opacity: opacityAnim }]}>
           <Animated.View style={[styles.checkCircle, { backgroundColor: C.active, shadowColor: C.active, transform: [{ scale: scaleAnim }] }]}>
             <Ionicons name="checkmark" size={52} color="#fff" />
@@ -142,6 +175,11 @@ export default function BusinessOnboardingScreen() {
   }
 
   const businessNameError = step1Submitted && !businessName.trim() ? t('businessOnboarding.nameRequired') : undefined;
+  const emailError = !needsEmail || !step1Submitted ? undefined
+    : !email.trim()                    ? t('businessOnboarding.emailRequired')
+    : !EMAIL_REGEX.test(email.trim())  ? t('businessOnboarding.emailInvalid')
+    : emailAvailable === false         ? t('businessOnboarding.emailTaken')
+    : undefined;
   const locationError     = step1Submitted && !location.trim() ? t('businessOnboarding.locationRequired') : undefined;
 
   const STEP_CONFIG = [
@@ -151,7 +189,7 @@ export default function BusinessOnboardingScreen() {
   const { title, subtitle } = STEP_CONFIG[step - 1];
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: C.preLoginBackground }]} edges={['top']}>
       {/* No `behavior` prop — the ScrollViews below already use `automaticallyAdjustKeyboardInsets`,
           which handles iOS precisely on its own; stacking KeyboardAvoidingView's `padding` on top
           of that double-compensates for the same keyboard, pushing content up too far. */}
@@ -213,6 +251,57 @@ export default function BusinessOnboardingScreen() {
                 </Text>
               )}
             </View>
+
+            {/* Email — only for phone-signup accounts, which start without a real one */}
+            {needsEmail && (
+              <View style={styles.fieldGroup}>
+                <Text style={[styles.fieldLabel, { color: C.text, marginBottom: 8 }]}>
+                  {t('businessOnboarding.emailLabel')} <Text style={{ color: C.error }}>*</Text>
+                </Text>
+                <TextInput
+                  style={[styles.input, { backgroundColor: C.surface, borderColor: emailError ? C.error : C.border, color: C.text }]}
+                  value={email}
+                  onChangeText={handleEmailChange}
+                  onFocus={() => setEmailFocused(true)}
+                  onBlur={() => { setTimeout(() => setEmailFocused(false), 150); }}
+                  placeholder={t('businessOnboarding.emailPlaceholder')}
+                  placeholderTextColor={C.textSecondary}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  keyboardType="email-address"
+                />
+                {emailFocused && (() => {
+                  const atIndex = email.indexOf('@');
+                  if (atIndex === -1) return null;
+                  const localPart  = email.slice(0, atIndex);
+                  const domainPart = email.slice(atIndex + 1);
+                  if (domainPart.includes('.')) return null;
+                  const suggestions = EMAIL_DOMAINS.filter((d) => d.startsWith(domainPart));
+                  if (suggestions.length === 0) return null;
+                  return (
+                    <View style={[styles.domainSuggestBox, { backgroundColor: C.surface, borderColor: C.border }]}>
+                      {suggestions.map((domain) => (
+                        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                          key={domain}
+                          style={styles.domainSuggestItem}
+                          onPress={() => handleEmailChange(`${localPart}@${domain}`)}>
+                          <Text style={[styles.domainSuggestText, { color: C.textSecondary }]}>
+                            {localPart}@<Text style={{ color: C.text, fontFamily: F.semibold }}>{domain}</Text>
+                          </Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                  );
+                })()}
+                {emailError ? (
+                  <Text style={[styles.fieldError, { color: C.error }]}>{emailError}</Text>
+                ) : emailChecking ? (
+                  <Text style={[styles.inputHint, { color: C.textSecondary }]}>{t('businessOnboarding.emailChecking')}</Text>
+                ) : emailAvailable === true ? (
+                  <Text style={[styles.inputHint, { color: C.active }]}>{t('businessOnboarding.emailAvailable')}</Text>
+                ) : null}
+              </View>
+            )}
 
             {/* Location */}
             <View style={[styles.fieldGroup, { zIndex: 10 }]}>
@@ -358,6 +447,9 @@ const styles = StyleSheet.create({
   input: { borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 13, fontSize: 15, fontFamily: F.regular },
   textarea: { minHeight: 120, paddingTop: 13, textAlignVertical: 'top' },
   inputHint: { fontSize: 11, marginTop: 5, fontFamily: F.regular },
+  domainSuggestBox: { marginTop: 6, borderRadius: RADIUS.md, borderWidth: 1.5, overflow: 'hidden' },
+  domainSuggestItem: { paddingHorizontal: 14, paddingVertical: 10 },
+  domainSuggestText: { fontSize: 14, fontFamily: F.regular },
   charRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 },
   charCount: { fontSize: 11, alignSelf: 'flex-end', fontFamily: F.regular },
   countBadge: { borderRadius: RADIUS.sm, paddingHorizontal: 10, paddingVertical: 3 },

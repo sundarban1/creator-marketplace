@@ -53,6 +53,7 @@ export const profileService = {
   async updateCreatorProfile(data: {
     username?:   string;
     fullName?:   string;
+    email?:      string;
     bio?:        string;
     location?:   string;
     locationLat?: number;
@@ -67,6 +68,7 @@ export const profileService = {
 
   async updateBusinessProfile(data: {
     businessName?:  string;
+    email?:         string;
     description?:   string;
     logoUrl?:       string;
     coverImageUrl?: string;

@@ -150,7 +150,7 @@ export default function BusinessHomeScreen() {
                 {user?.avatar ? (
                   <Image source={{ uri: user.avatar }} style={styles.avatarImage} resizeMode="cover" />
                 ) : (
-                  <View style={[styles.avatarFallback, { backgroundColor: C.primaryLight }]}>
+                  <View style={styles.avatarFallback}>
                     <Text style={[styles.avatarInitial, { color: C.brinjal1 }]}>{displayName.trim()[0].toUpperCase()}</Text>
                   </View>
                 )}
@@ -158,11 +158,17 @@ export default function BusinessHomeScreen() {
             </Pressable>
             <View>
               <Text style={[styles.greeting, { color: C.textSecondary }]}>{getGreeting()}</Text>
-              <Text style={[styles.brandName, { color: C.text }]} numberOfLines={1}>{displayName}</Text>
+              <Text style={[styles.brandName, { color: C.brinjal1 }]} numberOfLines={1}>{displayName}</Text>
             </View>
           </View>
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.menuBtn} onPress={openDrawer} hitSlop={6}>
-            <View style={[styles.menuBtnInner, { backgroundColor: C.surface, borderColor: C.border, borderWidth: 1 }, SHADOW.card]}>
+            <View
+              style={[
+                styles.menuBtnInner,
+                { backgroundColor: C.surface, borderColor: C.border, borderWidth: 1 },
+                SHADOW.card,
+              ]}
+            >
               <Ionicons name="menu" size={22} color={C.text} />
             </View>
           </Pressable>

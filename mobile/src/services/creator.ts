@@ -298,8 +298,27 @@ export const creatorService = {
     return res.data;
   },
 
-  async getSavedCreators(): Promise<SavedCreatorItem[]> {
-    const res = await request<SavedCreatorItem[]>('GET', '/api/business/creators/saved');
+  async getSavedCreators(params?: {
+    search?: string;
+    location?: string;
+    categories?: string[];
+    platforms?: string[];
+    priceMin?: number;
+    priceMax?: number;
+  }): Promise<SavedCreatorItem[]> {
+    const res = await request<SavedCreatorItem[]>(
+      'GET',
+      '/api/business/creators/saved',
+      undefined,
+      {
+        search:     params?.search,
+        location:   params?.location,
+        categories: params?.categories?.length ? params.categories.join(',') : undefined,
+        platforms:  params?.platforms?.length ? params.platforms.join(',') : undefined,
+        priceMin:   params?.priceMin,
+        priceMax:   params?.priceMax,
+      },
+    );
     return res.data;
   },
 

@@ -302,11 +302,6 @@ export default function ProposalsScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
 
-      {/* ── Header ── */}
-      <View style={styles.headerContent}>
-        <Text style={[styles.heading, { color: C.text }]}>{t('creator.proposals.heading')}</Text>
-      </View>
-
       {/* ── Tab bar ── */}
       <View style={[styles.tabBar, { backgroundColor: C.surface }]}>
         <TabSlider tabs={tabs} active={activeTab} onChange={(k) => selectTab(k as TabKey)} />
@@ -358,11 +353,9 @@ const styles = StyleSheet.create({
   container:      { flex: 1 },
 
   // Header
-  headerContent:  { paddingHorizontal: 20, paddingTop: 14, paddingBottom: 14 },
-  heading:        { fontSize: 20, fontFamily: F.bold, lineHeight: 24 },
 
   // Tab bar
-  tabBar: { ...SHADOW.card },
+  tabBar: { marginTop: 14, ...SHADOW.card },
 
   // List
   list:      { paddingHorizontal: 16, paddingBottom: 80, gap: 12, paddingTop: 14 },

@@ -148,7 +148,7 @@ export default function ResetOtpScreen() {
         </View>
 
         {/* ── Card ── */}
-        <View style={[styles.card, { backgroundColor: C.background }]}>
+        <View style={[styles.card, { backgroundColor: C.preLoginBackground }]}>
 
           <View style={styles.otpRow}>
             {code.map((digit, i) => (

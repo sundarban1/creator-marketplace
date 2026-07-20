@@ -157,7 +157,7 @@ export default function EditProfileScreen() {
         keyboardShouldPersistTaps="handled">
 
         <Text style={[styles.sectionHeader, { color: C.textSecondary }]}>{t('profile.editCreator.sectionHeader')}</Text>
-        <View style={[styles.card, { backgroundColor: C.surface }]}>
+        <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
 
           <View style={styles.field}>
             <Text style={[styles.label, { color: C.textSecondary }]}>{t('profile.editCreator.fullNameLabel')}</Text>
@@ -255,7 +255,7 @@ const styles = StyleSheet.create({
   center:     { flex: 1, justifyContent: 'center', alignItems: 'center' },
   content:    { paddingBottom: 24 },
   sectionHeader: { fontSize: 11, letterSpacing: 0, marginTop: 20, marginBottom: 6, marginHorizontal: 20, fontFamily: F.bold },
-  card:       { marginHorizontal: 16, borderRadius: RADIUS.md, ...SHADOW.card, overflow: 'hidden' },
+  card:       { marginHorizontal: 16, borderRadius: RADIUS.lg, borderWidth: 1, ...SHADOW.card, overflow: 'hidden' },
   field:      { padding: 16, gap: 6 },
   divider:    { height: 1 },
   label:      { fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: F.bold },

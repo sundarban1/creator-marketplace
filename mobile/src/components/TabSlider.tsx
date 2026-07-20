@@ -3,7 +3,7 @@ import { Animated, LayoutChangeEvent, NativeScrollEvent, NativeSyntheticEvent, P
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAppColors } from '@/context/ThemeContext';
-import { F } from '@/utilities/constants';
+import { F, SHADOW } from '@/utilities/constants';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
@@ -71,14 +71,14 @@ export function TabSlider({ tabs, active, onChange, justify = false }: Props) {
       >
         <View style={[s.tabInner, justify && s.tabInnerCenter]}>
           {tab.icon && (
-            <Ionicons name={tab.icon} size={14} color={isActive ? tabColor : C.textSecondary} />
+            <Ionicons name={tab.icon} size={14} color={isActive ? '#fff' : C.textSecondary} />
           )}
-          <Text style={[s.tabLabel, { color: isActive ? tabColor : C.textSecondary }]}>
+          <Text style={[s.tabLabel, isActive && s.tabLabelActive, { color: isActive ? '#fff' : C.textSecondary }]}>
             {tab.label}
           </Text>
           {tab.count !== undefined && tab.count > 0 && (
-            <View style={[s.badge, { backgroundColor: isActive ? tabColor : C.border }]}>
-              <Text style={[s.badgeTxt, { color: isActive ? '#fff' : C.textSecondary }]}>
+            <View style={[s.badge, { backgroundColor: isActive ? '#fff' : C.border }]}>
+              <Text style={[s.badgeTxt, { color: isActive ? tabColor : C.textSecondary }]}>
                 {tab.count > 99 ? '99+' : tab.count}
               </Text>
             </View>
@@ -92,11 +92,11 @@ export function TabSlider({ tabs, active, onChange, justify = false }: Props) {
     <View style={[s.wrapper, { backgroundColor: C.background, borderRadius: 14 }]}>
       {justify ? (
         <View style={s.row}>
-          {tabItems}
           <Animated.View
-            style={[s.indicator, { backgroundColor: `${activeColor}33`, left: indicatorX, width: indicatorW }]}
+            style={[s.indicator, SHADOW.raised, { backgroundColor: activeColor, left: indicatorX, width: indicatorW }]}
             pointerEvents="none"
           />
+          {tabItems}
         </View>
       ) : (
         <View>
@@ -109,11 +109,11 @@ export function TabSlider({ tabs, active, onChange, justify = false }: Props) {
             scrollEventThrottle={16}
             bounces={false}
           >
-            {tabItems}
             <Animated.View
-              style={[s.indicator, { backgroundColor: `${activeColor}33`, left: indicatorX, width: indicatorW }]}
+              style={[s.indicator, SHADOW.raised, { backgroundColor: activeColor, left: indicatorX, width: indicatorW }]}
               pointerEvents="none"
             />
+            {tabItems}
           </ScrollView>
           {showLeftFade && (
             <LinearGradient
@@ -143,12 +143,13 @@ const s = StyleSheet.create({
   scroll:         { paddingHorizontal: 3, paddingBottom: 0 },
   tab:            { paddingHorizontal: 3, paddingVertical: 3 },
   tabFlex:        { flex: 1, alignItems: 'center' },
-  tabInner:       { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10 },
+  tabInner:       { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 7 },
   tabInnerCenter: { justifyContent: 'center' },
   tabLabel:       { fontSize: 13, fontFamily: F.bold },
+  tabLabelActive: { fontSize: 14 },
   badge:          { minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 5, justifyContent: 'center', alignItems: 'center' },
   badgeTxt:       { fontSize: 10, fontFamily: F.extrabold },
-  indicator:      { position: 'absolute', top: 3, bottom: 3, borderRadius: 12, zIndex: -1 },
+  indicator:      { position: 'absolute', top: 3, bottom: 3, borderRadius: 10 },
   fade:           { position: 'absolute', top: 0, bottom: 0, width: 24 },
   fadeLeft:       { left: 0 },
   fadeRight:      { right: 0 },

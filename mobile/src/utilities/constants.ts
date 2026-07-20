@@ -9,8 +9,12 @@ export const COLORS = {
   accentLight: '#FFF7ED',
 
   // Surfaces
-  background: '#F4F6FB',
+  background: '#FFFFFF',
   surface:    '#FFFFFF',
+  // Only for pre-login screens (auth + onboarding) — kept as the app's old
+  // light-grey background so those flows are unaffected by `background`
+  // above being flattened to white for the logged-in app.
+  preLoginBackground: '#F4F6FB',
 
   // Borders
   border:     '#E5E7F0',

@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import prisma from '../../prisma';
 
 export class SavedCreatorRepository {
@@ -13,9 +14,46 @@ export class SavedCreatorRepository {
     return { isSaved: true };
   }
 
-  async listSaved(businessId: string) {
+  async listSaved(businessId: string, filters?: {
+    search?:     string;
+    categories?: string[];
+    location?:   string;
+    platforms?:  string[];
+    priceMin?:   number;
+    priceMax?:   number;
+  }) {
+    // Mirrors CreatorRepository.findMany's filter logic — same scale/semantics
+    // as the "Explore Creators" filter sheet, so saved creators can be
+    // narrowed down with the identical filter modal.
+    const PRICE_MAX = 1000;
+    const where: Prisma.SavedCreatorWhereInput = { businessId };
+
+    const hasCreatorFilter = !!filters && (
+      !!filters.search || !!filters.categories?.length || !!filters.location ||
+      !!filters.platforms?.length || filters.priceMin !== undefined || filters.priceMax !== undefined
+    );
+
+    if (hasCreatorFilter && filters) {
+      const creatorWhere: Prisma.CreatorProfileWhereInput = {};
+      if (filters.search) creatorWhere.fullName = { contains: filters.search, mode: 'insensitive' };
+      if (filters.categories?.length) creatorWhere.categories = { hasSome: filters.categories };
+      if (filters.location) creatorWhere.location = { contains: filters.location, mode: 'insensitive' };
+      if (filters.platforms?.length) creatorWhere.socialAccounts = { some: { platform: { in: filters.platforms } } };
+
+      const andConditions: Prisma.CreatorProfileWhereInput[] = [];
+      if (filters.priceMin !== undefined && filters.priceMin > 0) {
+        andConditions.push({ prefBudgetMax: { gte: filters.priceMin } });
+      }
+      if (filters.priceMax !== undefined && filters.priceMax < PRICE_MAX) {
+        andConditions.push({ prefBudgetMin: { lte: filters.priceMax } });
+      }
+      if (andConditions.length) creatorWhere.AND = andConditions;
+
+      where.creator = creatorWhere;
+    }
+
     return prisma.savedCreator.findMany({
-      where: { businessId },
+      where,
       orderBy: { createdAt: 'desc' },
       include: {
         creator: {

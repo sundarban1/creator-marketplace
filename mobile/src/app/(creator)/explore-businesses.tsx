@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
-import { FontAwesome5, Ionicons } from '@expo/vector-icons';
-import { PageHeader } from '@/features/creator/components/PageHeader';
+import { Ionicons } from '@expo/vector-icons';
+import { BackButton } from '@/components/BackButton';
 import { EntityCard } from '@/components/EntityCard';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -15,135 +15,19 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { FilterSheet, FilterSectionHeader, ActiveFilterChips, type ActiveFilterChip } from '@/components/FilterSheet';
+import { BusinessFilterModal } from '@/components/BusinessFilterModal';
 import { EmptyState } from '@/components/EmptyState';
 import { ExploreCardSkeleton } from '@/components/ExploreCardSkeleton';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
-import { LocationSearchPicker, type LocationFilter } from '@/components/LocationSearchPicker';
+import { type LocationFilter } from '@/components/LocationSearchPicker';
 import { businessService, type BusinessListItem } from '@/services/business';
 import { useFavoriteBusinesses } from '@/hooks/useFavoriteBusinesses';
 import { useToast } from '@/components/Toast';
 import { F, RADIUS } from '@/utilities/constants';
 import { useCategories, getCategoryMeta } from '@/hooks/useCategories';
-import { usePlatforms } from '@/hooks/usePlatforms';
 
 type DisplayBusiness = BusinessListItem & { isFavorited: boolean };
-
-
-// ─── Filter Modal ─────────────────────────────────────────────────────────────
-
-function ExploreFilterModal({
-  visible,
-  tempLocation,
-  tempPlatform,
-  tempCategory,
-  setTempLocation,
-  setTempPlatform,
-  setTempCategory,
-  onApply,
-  onReset,
-  onClose,
-}: {
-  visible:         boolean;
-  tempLocation:    LocationFilter;
-  tempPlatform:    string;
-  tempCategory:    string;
-  setTempLocation: (v: LocationFilter) => void;
-  setTempPlatform: (v: string) => void;
-  setTempCategory: (v: string) => void;
-  onApply:         () => void;
-  onReset:         () => void;
-  onClose:         () => void;
-}) {
-  const C = useAppColors();
-  const { t } = useLanguage();
-  const { categories: businessCategories } = useCategories('BUSINESS');
-  const { platforms: allPlatforms } = usePlatforms();
-
-  const activeChips: ActiveFilterChip[] = [];
-  if (tempPlatform) activeChips.push({ key: 'platform', label: tempPlatform, onClear: () => setTempPlatform('') });
-  if (tempCategory) activeChips.push({ key: 'category', label: tempCategory, onClear: () => setTempCategory('') });
-  for (const loc of tempLocation) {
-    activeChips.push({
-      key: `loc-${loc.label}`,
-      label: loc.label === 'Remote' ? t('filterModal.remote') : loc.label,
-      onClear: () => setTempLocation(tempLocation.filter((l) => l.label !== loc.label)),
-    });
-  }
-
-  const applyLabel = activeChips.length > 0
-    ? t('explore.businesses.filterApplyCount', { n: activeChips.length })
-    : t('explore.businesses.filterShowAll');
-
-  return (
-    <FilterSheet
-      visible={visible}
-      title={t('explore.businesses.filterTitle')}
-      resetLabel={t('explore.businesses.filterResetAll')}
-      applyLabel={applyLabel}
-      onApply={onApply}
-      onReset={onReset}
-      onClose={onClose}
-    >
-      <ActiveFilterChips chips={activeChips} />
-
-      {/* Platform */}
-      <View>
-        <FilterSectionHeader icon="phone-portrait-outline" label={t('explore.businesses.filterPlatform')} />
-        <View style={fm.chipGrid}>
-          {allPlatforms.map((p) => {
-            const active = tempPlatform === p.name;
-            return (
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                key={p.id}
-                onPress={() => setTempPlatform(active ? '' : p.name)}
-                style={[fm.filterChip, { borderColor: active ? p.color : C.border, backgroundColor: active ? p.iconBg : C.background }]}>
-                <FontAwesome5 name={p.icon} size={12} color={active ? p.color : C.textSecondary} />
-                <Text style={[fm.filterChipText, { color: active ? p.color : C.text, fontWeight: active ? '700' : '400' }]}>{p.name}</Text>
-              </Pressable>
-            );
-          })}
-        </View>
-      </View>
-
-      {/* Category */}
-      <View>
-        <FilterSectionHeader icon="pricetag-outline" label={t('explore.businesses.filterCategory')} />
-        <View style={fm.chipGrid}>
-          {businessCategories.map((cat) => {
-            const active = tempCategory === cat.name;
-            return (
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                key={cat.id}
-                onPress={() => setTempCategory(active ? '' : cat.name)}
-                style={[fm.filterChip, { borderColor: active ? cat.color : C.border, backgroundColor: active ? cat.iconBg : C.background }]}>
-                <FontAwesome5 name={cat.icon} size={12} color={active ? cat.color : C.textSecondary} />
-                <Text style={[fm.filterChipText, { color: active ? cat.color : C.text, fontWeight: active ? '700' : '400' }]}>{cat.name}</Text>
-              </Pressable>
-            );
-          })}
-        </View>
-      </View>
-
-      {/* Location */}
-      <View>
-        <FilterSectionHeader
-          icon="location-outline"
-          label={t('explore.businesses.filterLocation')}
-          hint={t('explore.businesses.filterLocationCount', { n: tempLocation.length })}
-        />
-        <LocationSearchPicker selected={tempLocation} onSelect={setTempLocation} />
-      </View>
-    </FilterSheet>
-  );
-}
-
-const fm = StyleSheet.create({
-  chipGrid:        { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  filterChip:      { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1.5, borderRadius: RADIUS.full, paddingHorizontal: 14, paddingVertical: 9 },
-  filterChipText:  { fontSize: 13, fontFamily: F.medium },
-});
 
 // ─── Business Card ────────────────────────────────────────────────────────────
 
@@ -169,6 +53,7 @@ function BusinessCard({
       avatarUrl={item.logoUrl}
       avatarBg={C.primaryLight}
       initials={initials}
+      circularAvatar
       ringColor={primaryMeta?.color ?? C.brinjal1}
       name={item.businessName}
       verified={item.fullyVerified || item.isVerified}
@@ -345,22 +230,10 @@ export default function ExploreBusinessesScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
-      <PageHeader
-        title={t('explore.businesses.headerTitle')}
-        backFallback="/(creator)/"
-        rightSlot={
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-            style={[styles.favLink, { backgroundColor: C.surface, borderColor: C.border, borderWidth: 1 }]}
-            onPress={() => router.push('/(creator)/favorite-businesses' as Parameters<typeof router.push>[0])}>
-            <Ionicons name="heart" size={15} color={C.brinjal1} />
-            <Text style={[styles.favLinkText, { color: C.brinjal1 }]}>{t('explore.businesses.savedLink')}</Text>
-          </Pressable>
-        }
-      />
-
-      {/* ── Search + filter ── */}
-      <View style={styles.searchRow}>
-        <View style={[styles.searchBox, { backgroundColor: C.surface, borderColor: C.border }]}>
+      {/* ── Back button + search, top right ── */}
+      <View style={styles.topRow} accessibilityRole="header" accessibilityLabel={t('explore.businesses.headerTitle')}>
+        <BackButton fallback="/(creator)/" />
+        <View style={[styles.searchBox, { flex: 1, backgroundColor: C.surface, borderColor: C.border }]}>
           <Ionicons name="search-outline" size={18} color={C.textSecondary} />
           <TextInput
             style={[styles.searchInput, { color: C.text }]}
@@ -394,12 +267,20 @@ export default function ExploreBusinessesScreen() {
         </View>
       </View>
 
-      {/* Count below search */}
-      {!loading && businesses.length > 0 && (
-        <Text style={[styles.countTxt, { color: C.textSecondary }]}>
-          {t('explore.businesses.brandsFound', { n: total })}
-        </Text>
-      )}
+      {/* Saved link + result count — same row, below search */}
+      <View style={styles.savedRow}>
+        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+          style={[styles.favLink, { backgroundColor: C.surface, borderColor: C.border, borderWidth: 1 }]}
+          onPress={() => router.push('/(creator)/favorite-businesses' as Parameters<typeof router.push>[0])}>
+          <Ionicons name="heart" size={15} color={C.brinjal1} />
+          <Text style={[styles.favLinkText, { color: C.brinjal1 }]}>{t('explore.businesses.savedLink')}</Text>
+        </Pressable>
+        {!loading && businesses.length > 0 && (
+          <Text style={[styles.countTxt, { color: C.textSecondary }]}>
+            {t('explore.businesses.brandsFound', { n: total })}
+          </Text>
+        )}
+      </View>
 
       {/* Active filter pills */}
       {isFilterActive && (
@@ -478,7 +359,7 @@ export default function ExploreBusinessesScreen() {
         />
       )}
 
-      <ExploreFilterModal
+      <BusinessFilterModal
         visible={filterOpen}
         tempLocation={tempLocation}
         tempPlatform={tempPlatform}
@@ -500,13 +381,14 @@ const styles = StyleSheet.create({
   container:      { flex: 1 },
 
   // Header
-  countTxt:       { fontSize: 12, fontFamily: F.semibold, paddingHorizontal: 16, marginTop: 6, marginBottom: 2, textAlign: 'right' },
-  favLink:        { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(255,255,255,0.22)', borderRadius: RADIUS.full, paddingHorizontal: 10, paddingVertical: 6 },
+  countTxt:       { fontSize: 12, fontFamily: F.semibold },
+  savedRow:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, marginTop: -4, marginBottom: 4 },
+  favLink:        { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: RADIUS.full, paddingHorizontal: 10, paddingVertical: 6 },
   favLinkText:    { fontSize: 12, fontFamily: F.bold },
 
-  // Search row
-  searchRow:      { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12 },
-  searchBox:      { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 9, borderRadius: RADIUS.lg, borderWidth: 1.5, paddingHorizontal: 14, height: 50 },
+  // Top row — back button + search, top right
+  topRow:         { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12, gap: 12 },
+  searchBox:      { flexDirection: 'row', alignItems: 'center', gap: 9, borderRadius: RADIUS.lg, borderWidth: 1.5, paddingHorizontal: 14, height: 44 },
   searchInput:    { flex: 1, fontSize: 15, fontFamily: F.regular },
   filterBtn:      { width: 36, height: 36, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center' },
   filterCountBadge: { position: 'absolute', top: -4, right: -4, minWidth: 16, height: 16, borderRadius: RADIUS.full, paddingHorizontal: 3, backgroundColor: '#EF4444', justifyContent: 'center', alignItems: 'center' },

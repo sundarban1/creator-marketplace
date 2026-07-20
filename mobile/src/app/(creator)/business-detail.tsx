@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
-import { BackButton } from '@/components/BackButton';
+import { PageHeader } from '@/features/creator/components/PageHeader';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -214,11 +214,7 @@ export default function BusinessDetailScreen() {
   }
 
   const NavBar = ({ title }: { title?: string }) => (
-    <View style={[styles.navBar, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
-      <BackButton fallback="/(creator)/explore-businesses" />
-      {title ? <Text style={[styles.navTitle, { color: C.text }]} numberOfLines={1}>{title}</Text> : <View style={{ flex: 1 }} />}
-      <View style={{ width: 40 }} />
-    </View>
+    <PageHeader title={title ?? ''} backFallback="/(creator)/explore-businesses" />
   );
 
   if (loading) {
@@ -242,11 +238,7 @@ export default function BusinessDetailScreen() {
   if (business.isPrivate) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
-        <View style={[styles.navBar, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
-          <BackButton fallback="/(creator)/explore-businesses" />
-          <Text style={[styles.navTitle, { color: C.text }]} numberOfLines={1}>{business.businessName}</Text>
-          <View style={{ width: 40 }} />
-        </View>
+        <PageHeader title={business.businessName} backFallback="/(creator)/explore-businesses" />
         <View style={[styles.hero, { backgroundColor: C.primaryLight }]}>
           <View style={[styles.heroInner, { justifyContent: 'center' }]}>
             <BusinessAvatar name={business.businessName} logoUrl={business.logoUrl} size={88} />
@@ -275,18 +267,19 @@ export default function BusinessDetailScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
-      {/* Floating nav bar */}
-      <View style={[styles.navBar, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
-        <BackButton fallback="/(creator)/explore-businesses" />
-        <Text style={[styles.navTitle, { color: C.text }]} numberOfLines={1}>{business.businessName}</Text>
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.navActionBtn} onPress={handleToggleFavorite} hitSlop={10}>
-          <Ionicons
-            name={isFavorited ? 'heart' : 'heart-outline'}
-            size={22}
-            color={isFavorited ? '#EF4444' : C.textSecondary}
-          />
-        </Pressable>
-      </View>
+      <PageHeader
+        title={business.businessName}
+        backFallback="/(creator)/explore-businesses"
+        rightSlot={
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={handleToggleFavorite} hitSlop={10}>
+            <Ionicons
+              name={isFavorited ? 'heart' : 'heart-outline'}
+              size={22}
+              color={isFavorited ? '#EF4444' : C.textSecondary}
+            />
+          </Pressable>
+        }
+      />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 60 }}>
 
@@ -563,9 +556,6 @@ export default function BusinessDetailScreen() {
 const styles = StyleSheet.create({
   container:             { flex: 1 },
   center:                { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  navBar:                { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 8, borderBottomWidth: 1 },
-  navTitle:              { flex: 1, fontSize: 15, textAlign: 'center', marginHorizontal: 4, fontFamily: F.bold },
-  navActionBtn:          { width: 36, height: 36, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
 
   hero:                  { paddingHorizontal: 20, paddingTop: 28, paddingBottom: 32 },
   heroInner:             { flexDirection: 'row', alignItems: 'flex-start', gap: 16 },

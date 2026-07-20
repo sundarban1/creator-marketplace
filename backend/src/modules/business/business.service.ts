@@ -38,7 +38,16 @@ export class BusinessService {
       throw new AppError('Business profile not found', 404);
     }
 
-    return toBusinessProfileDto(await this.repo.update(userId, input));
+    const { email, ...rest } = input;
+    if (email) {
+      const account = await this.repo.getUserEmailStatus(userId);
+      if (account?.isEmailVerified) throw new AppError('Your account already has a verified email', 409);
+      const existing = await this.repo.findUserByEmail(email);
+      if (existing && existing.id !== userId) throw new AppError('This email is already in use by another account', 409);
+      await this.repo.setAccountEmail(userId, email);
+    }
+
+    return toBusinessProfileDto(await this.repo.update(userId, rest));
   }
 
   async listBusinesses(params: {

@@ -208,18 +208,6 @@ export default function CampaignsScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Text style={[styles.pageTitle, { color: C.text }]}>{t('campaigns.title')}</Text>
-          <Text style={[styles.pageSub, { color: C.textSecondary }]}>{t('campaigns.subtitle')}</Text>
-        </View>
-        <Pressable android_ripple={{ color: 'rgba(255,255,255,0.2)' }}
-          style={[styles.newBtn, { backgroundColor: C.brinjal1 }]}
-          onPress={() => router.push('/create-campaign')}>
-          <Text style={styles.newBtnText}>{t('business.newBtn')}</Text>
-        </Pressable>
-      </View>
-
       {/* Filter tabs */}
       <View style={[styles.filterRow, { backgroundColor: C.surface }]}>
         <TabSlider
@@ -309,7 +297,8 @@ export default function CampaignsScreen() {
             const bg = meta.bg;
             const cardImage = c.featureImageUrl ?? getTemplateImage(c.template, c.categoryKey ?? c.category);
             return (
-              <View style={[styles.card, { backgroundColor: C.surface }]}>
+              <View style={styles.cardWrap}>
+              <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
                 <View style={[styles.cardAccent, { backgroundColor: st.color }]} />
                 <View style={styles.cardContent}>
                   <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
@@ -391,6 +380,7 @@ export default function CampaignsScreen() {
                     </>
                   )}
                 </View>
+              </View>
               </View>
             );
           }}
@@ -513,17 +503,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 60 },
 
-  header: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: 20, paddingTop: 10, paddingBottom: 14,
-  },
-  headerLeft: { gap: 3 },
-  pageTitle: { fontSize: 20, fontFamily: F.bold, lineHeight: 24 },
-  pageSub:   { fontSize: 13, fontFamily: F.regular },
-  newBtn: { borderRadius: RADIUS.sm, paddingHorizontal: 14, paddingVertical: 9, minHeight: 40, justifyContent: 'center' },
-  newBtnText: { color: '#fff', fontSize: 13, fontFamily: F.bold },
-
-  filterRow: { ...SHADOW.card },
+  filterRow: { marginTop: 14, ...SHADOW.card },
 
   list: { paddingHorizontal: 20, paddingTop: 14, gap: 12, paddingBottom: 40 },
   listEmpty: { flexGrow: 1 },
@@ -547,10 +527,11 @@ const styles = StyleSheet.create({
   emptySwitchText: { fontSize: 12, fontFamily: F.regular },
   emptySwitchLink: { fontSize: 12, fontFamily: F.bold },
 
+  cardWrap: { borderRadius: RADIUS.md, ...SHADOW.raised },
   card: {
     borderRadius: RADIUS.md,
-    ...SHADOW.card,
     overflow: 'hidden',
+    borderWidth: 1,
     flexDirection: 'row',
   },
   cardAccent: { width: 4 },

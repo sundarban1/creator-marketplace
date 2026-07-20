@@ -3,10 +3,20 @@ import { CheckCircle2, Send } from 'lucide-react';
 import { useLandingLanguage } from '../context/LanguageContext';
 import { api } from '../../../lib/api';
 
-type ContactField = 'name' | 'email' | 'topic' | 'message';
+type ContactField = 'name' | 'email' | 'message';
 type ContactErrors = Partial<Record<ContactField, string>>;
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// `topic` is still required by the backend (used as the subject line in the
+// admin support inbox) even though there's no dedicated field for it in this
+// form anymore — derived from the message itself at submit time instead of
+// asking the user to fill in a separate "what's this about?" field.
+const TOPIC_MAX_LEN = 80;
+function deriveTopic(message: string): string {
+  const trimmed = message.trim();
+  return trimmed.length > TOPIC_MAX_LEN ? `${trimmed.slice(0, TOPIC_MAX_LEN)}…` : trimmed;
+}
 
 // Shared between the landing footer and the standalone Support page — same
 // public /api/support/contact-public endpoint, same validation. `dark` picks
@@ -15,7 +25,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export function ContactForm({ dark = true }: { dark?: boolean }) {
   const { d } = useLandingLanguage();
   const t = d.footer.contactForm;
-  const [form, setForm] = useState({ name: '', email: '', topic: '', message: '' });
+  const [form, setForm] = useState({ name: '', email: '', message: '' });
   const [errors, setErrors] = useState<ContactErrors>({});
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
 
@@ -29,7 +39,6 @@ export function ContactForm({ dark = true }: { dark?: boolean }) {
     if (!form.name.trim()) next.name = t.errorNameRequired;
     if (!form.email.trim()) next.email = t.errorEmailRequired;
     else if (!EMAIL_RE.test(form.email.trim())) next.email = t.errorEmailInvalid;
-    if (!form.topic.trim()) next.topic = t.errorTopicRequired;
     if (!form.message.trim()) next.message = t.errorMessageRequired;
     else if (form.message.trim().length < 10) next.message = t.errorMessageTooShort;
     return next;
@@ -47,9 +56,9 @@ export function ContactForm({ dark = true }: { dark?: boolean }) {
 
     setStatus('submitting');
     try {
-      await api.support.submitPublicContact(form);
+      await api.support.submitPublicContact({ ...form, topic: deriveTopic(form.message) });
       setStatus('success');
-      setForm({ name: '', email: '', topic: '', message: '' });
+      setForm({ name: '', email: '', message: '' });
       setErrors({});
     } catch {
       setStatus('error');
@@ -91,10 +100,6 @@ export function ContactForm({ dark = true }: { dark?: boolean }) {
       <div>
         <input type="email" value={form.email} onChange={(e) => update('email', e.target.value)} placeholder={t.emailPlaceholder} className={fieldClass('email')} />
         {errors.email && <p className={`mt-1 text-xs ${errorTextClass}`}>{errors.email}</p>}
-      </div>
-      <div className="sm:col-span-2">
-        <input value={form.topic} onChange={(e) => update('topic', e.target.value)} placeholder={t.topicPlaceholder} className={fieldClass('topic')} />
-        {errors.topic && <p className={`mt-1 text-xs ${errorTextClass}`}>{errors.topic}</p>}
       </div>
       <div className="sm:col-span-2">
         <textarea

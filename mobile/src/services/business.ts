@@ -104,8 +104,23 @@ export const businessService = {
     await request('PUT', '/api/business/profile', data);
   },
 
-  async getFavoriteBusinesses(): Promise<BusinessListItem[]> {
-    const res = await request<BusinessListItem[]>('GET', '/api/creator/businesses/favorites/list');
+  async getFavoriteBusinesses(params?: {
+    category?:  string;
+    platform?:  string;
+    locations?: string[]; // city labels, OR-matched
+  }): Promise<BusinessListItem[]> {
+    const res = await request<BusinessListItem[]>(
+      'GET',
+      '/api/creator/businesses/favorites/list',
+      undefined,
+      {
+        category:  params?.category,
+        platform:  params?.platform,
+        locations: params?.locations && params.locations.length > 0
+                     ? params.locations.join(',')
+                     : undefined,
+      },
+    );
     return res.data;
   },
 

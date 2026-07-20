@@ -166,7 +166,7 @@ export const en = {
       topicLabel: 'Topic',
       topicPlaceholder: "What's this about?",
       messageLabel: 'Message',
-      messagePlaceholder: 'Tell us a bit more...',
+      messagePlaceholder: "What's this about?",
       submitBtn: 'Send message',
       submittingBtn: 'Sending...',
       successTitle: 'Message sent',
