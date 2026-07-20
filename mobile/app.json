@@ -103,7 +103,8 @@
           "cameraPermission": "Allow kolab to use your camera to take a profile photo."
         }
       ],
-      "expo-video"
+      "expo-video",
+      "./plugins/withFixMapsPodfile.js"
     ],
     "experiments": {
       "typedRoutes": true,
