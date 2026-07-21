@@ -58,8 +58,8 @@ const en = {
     daysLeft: '{{n}}d left',
     weeksLeft: '{{n}}w left',
     monthsLeft: '{{n}}mo left',
-    metersAway: '{{n}} m away',
-    kmAway: '{{n}} km away',
+    metersAway: '{{n}} m',
+    kmAway: '{{n}} km',
     applyNow: 'Apply Now',
     apply: 'Apply',
     free: 'Free',
@@ -479,7 +479,8 @@ const en = {
 
   businessReferral: {
     homeBannerTitle: 'Refer a Business',
-    homeBannerSub: 'Invite a business and earn Rs. 500',
+    homeBannerSub: 'Invite a business and earn {{amount}}',
+    homeBannerAmount: 'Rs. 500',
     headerTitle: 'Refer a Business',
     loading: 'Loading…',
     loadError: 'Could not load referral info. Please try again.',

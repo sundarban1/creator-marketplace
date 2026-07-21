@@ -164,7 +164,10 @@ export class CampaignService {
     return { campaigns, total, page, limit: validatedLimit };
   }
 
-  async nearby(query: { lat: number; lng: number; radiusKm: number; page?: number; limit?: number }, lang = 'en') {
+  async nearby(query: {
+    lat: number; lng: number; radiusKm: number; page?: number; limit?: number;
+    search?: string; category?: string[]; platform?: string[];
+  }, lang = 'en') {
     const page  = query.page ?? 1;
     const limit = Math.min(query.limit ?? 10, 50);
 
@@ -174,6 +177,9 @@ export class CampaignService {
       radiusKm: query.radiusKm,
       page,
       limit,
+      search: query.search,
+      category: query.category,
+      platform: query.platform,
     });
 
     const dtos = raw.map(toCampaignDto);

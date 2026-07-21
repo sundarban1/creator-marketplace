@@ -99,14 +99,14 @@ export function DrawerMenu({ visible, user, onClose, onLogout }: Props) {
 
         {/* Nav */}
         <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false} bounces={false} contentContainerStyle={styles.scrollContent}>
-          <View style={[styles.navGroup, { backgroundColor: C.surface, borderColor: C.border }]}>
-            {ACCOUNT_ITEMS.map(({ iconName, faName, labelKey, route, color }, idx) => (
+          <View style={styles.navGroup}>
+            {ACCOUNT_ITEMS.map(({ iconName, faName, labelKey, route, color }) => (
               <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                 key={labelKey}
                 hitSlop={4}
-                style={[styles.navItem, idx < ACCOUNT_ITEMS.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}
+                style={[styles.navItem, { backgroundColor: C.surface }]}
                 onPress={() => { onClose(); router.push(route as Parameters<typeof router.push>[0]); }}>
-                <View style={[styles.navIconWrap, { backgroundColor: color + '18' }]}>
+                <View style={[styles.navIconWrap, { backgroundColor: color + '18', shadowColor: color, shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4 }]}>
                   {faName ? (
                     <FontAwesome5 name={faName} size={15} color={color} solid />
                   ) : (
@@ -153,9 +153,9 @@ const styles = StyleSheet.create({
   userEmail: { fontSize: 11, color: 'rgba(255,255,255,0.7)', fontFamily: F.regular },
   scroll: { flexGrow: 0 },
   scrollContent: { paddingTop: 8, paddingBottom: 18 },
-  navGroup: { marginHorizontal: 12, marginVertical: 4, borderRadius: RADIUS.md, borderWidth: 1, overflow: 'hidden' },
-  navItem: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 11, minHeight: 44 },
-  navIconWrap: { width: 32, height: 32, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center' },
+  navGroup: { marginHorizontal: 12, marginVertical: 4 },
+  navItem: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: RADIUS.lg, paddingHorizontal: 14, paddingVertical: 12, minHeight: 44, ...SHADOW.card },
+  navIconWrap: { width: 36, height: 36, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center' },
   navLabel: { flex: 1, fontSize: 14, fontFamily: F.semibold, letterSpacing: 0.1 },
   logout: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingVertical: 12, borderTopWidth: 1, minHeight: 44 },
   logoutText: { fontSize: 15, fontFamily: F.bold },

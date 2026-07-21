@@ -55,8 +55,8 @@ const ne = {
     daysLeft: '{{n}} दिन बाँकी',
     weeksLeft: '{{n}} हप्ता बाँकी',
     monthsLeft: '{{n}} महिना बाँकी',
-    metersAway: '{{n}} मि टाढा',
-    kmAway: '{{n}} किमी टाढा',
+    metersAway: '{{n}} मि',
+    kmAway: '{{n}} किमी',
     applyNow: 'अहिले एप्लाई गर्नुहोस्',
     apply: 'एप्लाई गर्नुहोस्',
     free: 'फ्री',
@@ -473,7 +473,8 @@ const ne = {
 
   businessReferral: {
     homeBannerTitle: 'बिजनेसलाई बोलाउनुहोस्',
-    homeBannerSub: 'व्यवसायलाई बोलाउनुहोस् र रु. ५०० कमाउनुहोस्',
+    homeBannerSub: 'व्यवसायलाई बोलाउनुहोस् र {{amount}} कमाउनुहोस्',
+    homeBannerAmount: 'रु. ५००',
     headerTitle: 'बिजनेसलाई बोलाउनुहोस्',
     loading: 'लोड हुँदैछ…',
     loadError: 'रेफरल जानकारी लोड हुन सकेन। फेरि प्रयास गर्नुहोस्।',

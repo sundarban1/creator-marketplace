@@ -187,6 +187,29 @@ export default function BusinessHomeScreen() {
           </Pressable>
         </View>
 
+        {/* ── Attention banner (shown when proposals are pending) ── */}
+        {!loading && stats.proposals > 0 && (
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.attentionBanner} onPress={() => router.push('/(business)/proposals')}>
+            <View
+              style={[
+                styles.attentionIconWrap,
+                { shadowColor: '#D97706', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
+              ]}
+            >
+              <Ionicons name="alert-circle" size={18} color="#D97706" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.attentionTitle}>{t('business.home.attentionTitle')}</Text>
+              <Text style={styles.attentionSub}>
+                {stats.proposals === 1
+                  ? t('business.home.attentionProposalsSingular', { n: stats.proposals })
+                  : t('business.home.attentionProposalsPlural', { n: stats.proposals })}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color="#D97706" />
+          </Pressable>
+        )}
+
         {/* ── Quick Actions ── */}
         <View style={styles.quickActionsRow}>
           {([
@@ -241,29 +264,6 @@ export default function BusinessHomeScreen() {
           </Pressable>
         )}
 
-        {/* ── Attention banner (shown when proposals are pending) ── */}
-        {!loading && stats.proposals > 0 && (
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.attentionBanner} onPress={() => router.push('/(business)/proposals')}>
-            <View
-              style={[
-                styles.attentionIconWrap,
-                { shadowColor: '#D97706', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
-              ]}
-            >
-              <Ionicons name="alert-circle" size={18} color="#D97706" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.attentionTitle}>{t('business.home.attentionTitle')}</Text>
-              <Text style={styles.attentionSub}>
-                {stats.proposals === 1
-                  ? t('business.home.attentionProposalsSingular', { n: stats.proposals })
-                  : t('business.home.attentionProposalsPlural', { n: stats.proposals })}
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={16} color="#D97706" />
-          </Pressable>
-        )}
-
         {/* ── Error ── */}
         {fetchError ? (
           <View style={styles.errorCard}>
@@ -293,7 +293,18 @@ export default function BusinessHomeScreen() {
             </View>
             <View style={styles.bannerText}>
               <Text style={[styles.bannerTitle, { color: C.text }]}>{t('businessReferral.homeBannerTitle')}</Text>
-              <Text style={[styles.bannerSub, { color: C.textSecondary }]} numberOfLines={1}>{t('businessReferral.homeBannerSub')}</Text>
+              <Text style={[styles.bannerSub, { color: C.textSecondary }]} numberOfLines={1}>
+                {(() => {
+                  const [prefix, suffix] = t('businessReferral.homeBannerSub').split('{{amount}}');
+                  return (
+                    <>
+                      {prefix}
+                      <Text style={styles.bannerSubAmount}>{t('businessReferral.homeBannerAmount')}</Text>
+                      {suffix}
+                    </>
+                  );
+                })()}
+              </Text>
             </View>
             <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.bannerClose} onPress={() => setReferralBannerDismissed(true)} hitSlop={10}>
               <Ionicons name="close" size={16} color={C.textSecondary} />
@@ -437,6 +448,7 @@ const styles = StyleSheet.create({
   bannerText:    { flex: 1, gap: 2 },
   bannerTitle:   { fontSize: 13, fontFamily: F.semibold },
   bannerSub:     { fontSize: 12, fontFamily: F.regular, lineHeight: 17, opacity: 0.75 },
+  bannerSubAmount: { fontSize: 15, fontFamily: F.extrabold, color: '#059669' },
   bannerClose:   { position: 'absolute', top: 8, right: 8, padding: 4 },
 
   // Attention banner
@@ -470,7 +482,7 @@ const styles = StyleSheet.create({
   typeBadgeTextFree: { color: TabColors.info.color },
 
   campaignList: { paddingHorizontal: 20, gap: 12 },
-  campaignCard: { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.md, padding: 14, gap: 12, ...SHADOW.card, overflow: 'hidden' },
+  campaignCard: { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.lg, padding: 14, gap: 12, ...SHADOW.card, overflow: 'hidden' },
   thumb: { width: 72, height: 72, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center', flexShrink: 0, overflow: 'hidden' },
   campaignBody: { flex: 1, gap: 5 },
   campaignTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },

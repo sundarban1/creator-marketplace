@@ -142,8 +142,11 @@ export class CampaignRepository {
    * in application code, which under load testing scaled badly with radius
    * (p50 latency went from ~6ms at 10km to ~84ms at 200km on a 2k-row table).
    */
-  async findNearby(params: { lat: number; lng: number; radiusKm: number; page: number; limit: number }) {
-    const { lat, lng, radiusKm, page, limit } = params;
+  async findNearby(params: {
+    lat: number; lng: number; radiusKm: number; page: number; limit: number;
+    search?: string; category?: string[]; platform?: string[];
+  }) {
+    const { lat, lng, radiusKm, page, limit, search, category, platform } = params;
 
     const latDelta = radiusKm / 111; // ~111km per degree of latitude
     const lngDelta = radiusKm / (111 * Math.cos((lat * Math.PI) / 180) || 1);
@@ -169,20 +172,42 @@ export class CampaignRepository {
       AND c."locationLng" BETWEEN ${lng - lngDelta} AND ${lng + lngDelta}
     `;
 
+    // Mirrors findMany's filters — search/category/platform are applied on
+    // top of the bounding box so "Nearby Events" respects the same active
+    // filters as the main list instead of always showing everything nearby.
+    const extraConditions: Prisma.Sql[] = [];
+    if (search) {
+      const like = `%${search}%`;
+      extraConditions.push(Prisma.sql`(c.title ILIKE ${like} OR b."businessName" ILIKE ${like})`);
+    }
+    if (category?.length) {
+      extraConditions.push(Prisma.sql`LOWER(c.category) IN (${Prisma.join(category.map((c) => c.toLowerCase()))})`);
+    }
+    if (platform?.length) {
+      extraConditions.push(Prisma.sql`c.platforms && ARRAY[${Prisma.join(platform)}]::text[]`);
+    }
+    const extraWhere = extraConditions.length
+      ? Prisma.join(extraConditions.map((c) => Prisma.sql`AND ${c}`), ' ')
+      : Prisma.empty;
+
     const [rows, countRows] = await Promise.all([
       prisma.$queryRaw<{ id: string; distanceKm: number }[]>(Prisma.sql`
-        SELECT id, ${distanceExpr} AS "distanceKm"
+        SELECT c.id, ${distanceExpr} AS "distanceKm"
         FROM campaigns c
+        JOIN business_profiles b ON b.id = c."businessId"
         WHERE ${boundingBoxWhere}
           AND (${distanceExpr}) <= ${radiusKm}
+          ${extraWhere}
         ORDER BY "distanceKm" ASC
         LIMIT ${limit} OFFSET ${offset}
       `),
       prisma.$queryRaw<{ count: bigint }[]>(Prisma.sql`
         SELECT COUNT(*) AS count
         FROM campaigns c
+        JOIN business_profiles b ON b.id = c."businessId"
         WHERE ${boundingBoxWhere}
           AND (${distanceExpr}) <= ${radiusKm}
+          ${extraWhere}
       `),
     ]);
 

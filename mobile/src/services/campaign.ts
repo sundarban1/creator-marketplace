@@ -174,6 +174,9 @@ export const campaignService = {
     lat: number;
     lng: number;
     radiusKm?: number;
+    search?:   string;
+    category?: string[];
+    platform?: string[];
     page?:     number;
     limit?:    number;
   }): Promise<{ campaigns: Campaign[]; total: number; page: number; totalPages: number }> {
@@ -181,6 +184,9 @@ export const campaignService = {
       lat:      params.lat,
       lng:      params.lng,
       radiusKm: params.radiusKm ?? 25,
+      search:   params.search || undefined,
+      category: params.category?.length ? params.category.join(',') : undefined,
+      platform: params.platform?.length ? params.platform.join(',') : undefined,
       page:     params.page  ?? 1,
       limit:    params.limit ?? 10,
     });

@@ -102,6 +102,9 @@ export const nearbyQuerySchema = z.object({
     if (Number.isNaN(n) || n <= 0 || n > 200) { ctx.addIssue({ code: 'custom', message: 'radiusKm must be between 0 and 200' }); return z.NEVER; }
     return n;
   }),
+  search:   z.string().optional(),
+  category: z.string().optional().transform((v) => (v ? v.split(',').map((s) => s.trim()).filter(Boolean) : undefined)),
+  platform: z.string().optional().transform((v) => (v ? v.split(',').map((s) => s.trim()).filter(Boolean) : undefined)),
   page:  z.string().optional().transform((v) => (v ? parseInt(v) : 1)),
   limit: z.string().optional().transform((v) => (v ? parseInt(v) : 10)),
 });

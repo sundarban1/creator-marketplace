@@ -22,10 +22,10 @@ import { profileService } from '@/services/profile';
 import { useCategories } from '@/hooks/useCategories';
 import { usePlatforms } from '@/hooks/usePlatforms';
 import { FeatureImagePicker } from '@/features/creator/components/FeatureImagePicker';
-import { PlacesAutocompleteInput, type PlacePrediction } from '@/components/PlacesAutocompleteInput';
+import { LocationSearchModal } from '@/components/LocationSearchModal';
 import { pickAndUpload } from '@/utilities/uploadImage';
 import { RecommendedCreatorsModal } from '@/features/business/components/RecommendedCreatorsModal';
-import { F, RADIUS, SHADOW, buildPlaceDetailsUrl } from '@/utilities/constants';
+import { F, RADIUS, SHADOW } from '@/utilities/constants';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -865,15 +865,23 @@ export default function CreateCampaignScreen() {
   const [locationLat, setLocationLat] = useState<number | null>(null);
   const [locationLng, setLocationLng] = useState<number | null>(null);
 
-  async function handleLocationSelect(place: PlacePrediction) {
-    try {
-      const res = await fetch(buildPlaceDetailsUrl(place.place_id));
-      const json = await res.json();
-      if (json.status === 'OK') {
-        setLocationLat(json.result.geometry.location.lat);
-        setLocationLng(json.result.geometry.location.lng);
-      }
-    } catch { /* lat/lng just won't be captured — location text still saves fine */ }
+  // Same tap-to-open search modal used by the business's "search creators"
+  // location filter, instead of an inline autocomplete dropdown — one field
+  // (eventType is mutually exclusive between paid/open-event forms) drives
+  // whichever of `location`/`venue` is currently on screen.
+  const [locationModalOpen, setLocationModalOpen] = useState(false);
+
+  function handleLocationSelect(address: string, lat: number, lng: number) {
+    setLocationModalOpen(false);
+    setLocationLat(lat || null);
+    setLocationLng(lng || null);
+    if (form.eventType === 'OPEN_EVENT') {
+      update('venue', address);
+      if (eventErrors.venue) setEventErrors((e) => ({ ...e, venue: undefined }));
+    } else {
+      update('location', address);
+      if (aiLocationError) setAiLocationError(undefined);
+    }
   }
 
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -1265,14 +1273,15 @@ export default function CreateCampaignScreen() {
 
                   {/* Location */}
                   <SectionCard title={t('createEvent.secLocationTitle')} sub={t('createEvent.secLocationSub')} colors={C}>
-                    <PlacesAutocompleteInput
-                      value={form.location}
-                      onChangeText={(v) => { update('location', v); setLocationLat(null); setLocationLng(null); if (aiLocationError) setAiLocationError(undefined); }}
-                      onSelectPlace={handleLocationSelect}
-                      placeholder={t('createEvent.locationPlaceholder')}
-                      types="geocode"
-                      error={aiLocationError}
-                    />
+                    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                      style={[s.locationBtn, { backgroundColor: C.background, borderColor: aiLocationError ? ERROR_RED : C.border }]}
+                      onPress={() => setLocationModalOpen(true)}>
+                      <Text style={[s.locationBtnTxt, { color: form.location ? C.text : C.textSecondary }]} numberOfLines={2}>
+                        {form.location || t('createEvent.locationPlaceholder')}
+                      </Text>
+                      <Text style={s.locationArrow}>›</Text>
+                    </Pressable>
+                    {aiLocationError ? <Text style={s.errorText}>{aiLocationError}</Text> : null}
                   </SectionCard>
 
                   {/* Create Event */}
@@ -1315,14 +1324,15 @@ export default function CreateCampaignScreen() {
 
                   {/* Venue / Location */}
                   <SectionCard title={t('createEvent.secVenueTitle')} sub={t('createEvent.secVenueSub')} colors={C}>
-                    <PlacesAutocompleteInput
-                      value={form.venue}
-                      onChangeText={(v) => { update('venue', v); setLocationLat(null); setLocationLng(null); if (eventErrors.venue) setEventErrors((e) => ({ ...e, venue: undefined })); }}
-                      onSelectPlace={handleLocationSelect}
-                      placeholder={t('createEvent.locationPlaceholder')}
-                      types="geocode"
-                      error={eventErrors.venue}
-                    />
+                    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                      style={[s.locationBtn, { backgroundColor: C.background, borderColor: eventErrors.venue ? ERROR_RED : C.border }]}
+                      onPress={() => setLocationModalOpen(true)}>
+                      <Text style={[s.locationBtnTxt, { color: form.venue ? C.text : C.textSecondary }]} numberOfLines={2}>
+                        {form.venue || t('createEvent.locationPlaceholder')}
+                      </Text>
+                      <Text style={s.locationArrow}>›</Text>
+                    </Pressable>
+                    {eventErrors.venue ? <Text style={s.errorText}>{eventErrors.venue}</Text> : null}
                   </SectionCard>
 
                   {/* Capacity */}
@@ -1852,6 +1862,13 @@ export default function CreateCampaignScreen() {
         </Pressable>
       </Modal>
 
+      <LocationSearchModal
+        visible={locationModalOpen}
+        initialValue={form.eventType === 'OPEN_EVENT' ? form.venue : form.location}
+        onSelect={handleLocationSelect}
+        onClose={() => setLocationModalOpen(false)}
+      />
+
       {/* Recommended creators — shown right after publishing */}
       <RecommendedCreatorsModal
         visible={!!publishedCampaign}
@@ -1900,6 +1917,12 @@ const s = StyleSheet.create({
   input:     { borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 14, height: 50, fontSize: 15, fontFamily: F.regular },
   textarea:  { borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, minHeight: 120, textAlignVertical: 'top', fontFamily: F.regular },
   errorText: { fontSize: 12, color: ERROR_RED, fontFamily: F.regular },
+
+  // Tap-to-open location field — same pattern as the profile location editor
+  // and the "search creators" location filter, both backed by LocationSearchModal.
+  locationBtn:    { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 14, gap: 8 },
+  locationBtnTxt: { flex: 1, fontSize: 15, lineHeight: 20, fontFamily: F.regular },
+  locationArrow:  { fontSize: 20, color: '#9CA3AF' },
 
   descHeaderRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
   descHeaderText: { flex: 1 },

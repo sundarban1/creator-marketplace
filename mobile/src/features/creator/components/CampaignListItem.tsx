@@ -56,8 +56,19 @@ export function CampaignListItem({ campaign }: { campaign: Campaign }) {
       style={({ pressed }) => [styles.listCard, { backgroundColor: C.surface }, pressed && { opacity: 0.88 }]}
       onPress={goToDetail}>
 
-      {/* Thumb — type badge and platform icons both overlay the image itself */}
+      {/* Thumb — type badge sits above the image (not overlapping); platform icons overlay the image itself */}
       <View style={styles.thumbWrap}>
+        {/* Type badge — above the photo, own row so it never overlaps the image */}
+        {campaign.campaignType === 'OPEN_EVENT' ? (
+          <View style={[styles.typeBadge, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}>
+            <Text style={[styles.typeBadgeText, { color: '#059669' }]}>{t('campaignCard.free')}</Text>
+          </View>
+        ) : (
+          <View style={[styles.typeBadge, { backgroundColor: '#EEF2FF', borderColor: '#C7D2FE' }]}>
+            <Text style={[styles.typeBadgeText, { color: '#4F46E5' }]}>{t('campaignCard.paid')}</Text>
+          </View>
+        )}
+
         <View style={styles.thumbInner}>
           <View style={[styles.listThumb, { backgroundColor: catMeta.bg }]}>
             <FontAwesome5 name={catMeta.icon} size={22} color={catMeta.color} />
@@ -65,17 +76,6 @@ export function CampaignListItem({ campaign }: { campaign: Campaign }) {
               <Image source={{ uri: cardImage }} style={StyleSheet.absoluteFill} contentFit="cover" />
             )}
           </View>
-
-          {/* Type badge — pinned to the image's top-left corner, above the photo */}
-          {campaign.campaignType === 'OPEN_EVENT' ? (
-            <View style={[styles.typeBadge, styles.typeBadgeOverlay, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}>
-              <Text style={[styles.typeBadgeText, { color: '#059669' }]}>{t('campaignCard.free')}</Text>
-            </View>
-          ) : (
-            <View style={[styles.typeBadge, styles.typeBadgeOverlay, { backgroundColor: '#EEF2FF', borderColor: '#C7D2FE' }]}>
-              <Text style={[styles.typeBadgeText, { color: '#4F46E5' }]}>{t('campaignCard.paid')}</Text>
-            </View>
-          )}
 
           {/* Platform icons — float at the thumb's bottom edge, straddling it
               so half sits over the image and half dips below it. Positioned
@@ -149,7 +149,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(0,0,0,0.06)',
   },
-  thumbWrap: { flexShrink: 0, alignItems: 'center' },
+  thumbWrap: { flexShrink: 0, alignItems: 'center', gap: 4 },
   // Plain relative-position container scoped to just the image, so the type
   // badge and platform stack's absolute offsets are relative to the image
   // itself rather than the row it sits in.
@@ -184,10 +184,6 @@ const styles = StyleSheet.create({
   listDatesRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
 
   typeBadge:     { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1 },
-  typeBadgeOverlay: {
-    position: 'absolute', top: 4, left: 4,
-    shadowColor: '#0F172A', shadowOpacity: 0.25, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 3,
-  },
   typeBadgeText: { fontSize: 11, fontFamily: F.bold },
   applyBtn: {
     flexShrink: 0, alignSelf: 'center',

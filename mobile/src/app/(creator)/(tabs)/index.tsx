@@ -164,16 +164,37 @@ export default function HomeScreen() {
     }
   }
 
-  async function fetchNearby(coords: LatLng, radiusKm: number, silent = false) {
+  async function fetchNearby(
+    coords: LatLng,
+    radiusKm: number,
+    opts: { silent?: boolean; search?: string; category?: string[]; platform?: string[] } = {},
+  ) {
+    const { silent = false, search, category, platform } = opts;
     if (!silent) setNearbyLoading(true);
     try {
-      const { campaigns: data } = await campaignService.nearby({ lat: coords.lat, lng: coords.lng, radiusKm, limit: 10 });
+      const { campaigns: data } = await campaignService.nearby({
+        lat: coords.lat,
+        lng: coords.lng,
+        radiusKm,
+        search:   search   !== undefined ? search   : activeSearch,
+        category: category !== undefined ? category : activeCategories,
+        platform: platform !== undefined ? platform : activePlatforms,
+        limit: 10,
+      });
       setNearbyCampaigns(data);
     } catch {
       if (!silent) setNearbyCampaigns([]);
     } finally {
       if (!silent) setNearbyLoading(false);
     }
+  }
+
+  // Re-fetches nearby with the same search/category/platform filters just
+  // applied to the main list — mirrors resolveNearbyCoords() + nearbyRadiusKm
+  // so "Nearby Events" never drifts out of sync with the active filters.
+  function refreshNearbyWithFilters(overrides: { search?: string; category?: string[]; platform?: string[] } = {}) {
+    const coords = resolveNearbyCoords();
+    if (coords) void fetchNearby(coords, nearbyRadiusKm, overrides);
   }
 
   async function initNearby(profile: { nearbyRadiusKm: number; nearbyUseHomeLocation: boolean; location: string | null; locationLat: number | null; locationLng: number | null }) {
@@ -266,7 +287,7 @@ export default function HomeScreen() {
   useEffect(() => {
     refreshNearbyRef.current = () => {
       const coords = resolveNearbyCoords();
-      if (coords) void fetchNearby(coords, nearbyRadiusKm, true);
+      if (coords) void fetchNearby(coords, nearbyRadiusKm, { silent: true });
     };
   });
 
@@ -379,6 +400,7 @@ export default function HomeScreen() {
     setActivePlatforms([]);
     setActiveFilterTab('all');
     void fetchCampaigns({ category: [], platform: [], priceMin: 0, priceMax: SLIDER_MAX, dateFrom: null, dateTo: null, eventType: 'ALL' });
+    refreshNearbyWithFilters({ category: [], platform: [] });
   }
 
   const visibleCategories = adminCategories.map((cat) => ({
@@ -481,10 +503,12 @@ export default function HomeScreen() {
                 searchDebounce.current = setTimeout(() => {
                   setActiveSearch(text);
                   void fetchCampaigns({ search: text });
+                  refreshNearbyWithFilters({ search: text });
                 }, 400);
               } else if (!text && activeSearch) {
                 setActiveSearch('');
                 void fetchCampaigns({ search: '' });
+                refreshNearbyWithFilters({ search: '' });
               }
             }}
             onFocus={() => setSearchFocused(true)}
@@ -495,6 +519,7 @@ export default function HomeScreen() {
               if (searchDebounce.current) clearTimeout(searchDebounce.current);
               setActiveSearch(search);
               void fetchCampaigns({ search });
+              refreshNearbyWithFilters({ search });
             }}
           />
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
@@ -770,6 +795,7 @@ export default function HomeScreen() {
                     : [...activeCategories, cat.label];
                   setActiveCategories(next);
                   void fetchCampaigns({ category: next });
+                  refreshNearbyWithFilters({ category: next });
                 }}>
                 <FontAwesome5 name={cat.icon} size={13} color={isActive ? '#fff' : cat.color} />
                 <Text
@@ -808,6 +834,7 @@ export default function HomeScreen() {
                         : [...activePlatforms, p.name];
                       setActivePlatforms(next);
                       void fetchCampaigns({ platform: next });
+                      refreshNearbyWithFilters({ platform: next });
                     }}>
                     <FontAwesome5 name={meta.icon} size={13} color={isActive ? '#fff' : meta.color} />
                     <Text style={[styles.catLabel, { color: isActive ? '#fff' : C.text }]} numberOfLines={1}>{p.name}</Text>
