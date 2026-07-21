@@ -26,6 +26,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { usePlatformFlags } from '@/context/PlatformSettingsContext';
+import { useAppColors } from '@/context/ThemeContext';
 import { authService } from '@/services/auth';
 
 const DEFAULT_SUPPORT_EMAIL = 'support@creatormarket.com';
@@ -634,6 +635,7 @@ function SignupForm({ onGooglePress, googleLoading, googleError, onFacebookPress
 export default function LoginScreen() {
   const { user, reloadUser }      = useAuth();
   const { language, setLanguage, t } = useLanguage();
+  const C                         = useAppColors();
   const params                    = useLocalSearchParams<{ tab?: string; verified?: string }>();
   const insets                    = useSafeAreaInsets();
   const [tab, setTab]             = useState<'login' | 'signup'>(params.tab === 'signup' ? 'signup' : 'login');
@@ -865,12 +867,17 @@ export default function LoginScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
 
-          {/* Lang switcher */}
+          {/* Lang switcher — the selected flag gets the same circular
+              surface+shadow treatment as the home page's notification button. */}
           <View style={s.langRow}>
             {LANG_OPTIONS.map(({ lang, flag }) => (
               <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                 key={lang}
-                style={[s.langBtn, language === lang && s.langBtnActive]}
+                style={[
+                  s.langBtn,
+                  language === lang && { backgroundColor: C.surface },
+                  language === lang && SHADOW.card,
+                ]}
                 hitSlop={6}
                 onPress={() => setLanguage(lang)}>
                 <Text style={s.langFlag}>{flag}</Text>
@@ -1009,8 +1016,10 @@ const s = StyleSheet.create({
 
   logoImage: { width: 168, height: 168 / (1740 / 620) },
   langRow:  { flexDirection: 'row', gap: 6, justifyContent: 'flex-end', marginBottom: 6 },
-  langBtn:  { width: 34, height: 34, borderRadius: RADIUS.full, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center', shadowColor: BRINJAL, shadowOpacity: 0.08, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 1 },
-  langBtnActive: { backgroundColor: BRINJAL_PALE, borderWidth: 1.5, borderColor: '#C7C3F2' },
+  // Unselected flags stay plain/flat — the selected one's surface+shadow
+  // (applied inline, see render) is what sets it apart, same as the home
+  // page's notification button.
+  langBtn:  { width: 34, height: 34, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
   langFlag: { fontSize: 15 },
 
   heroCenter:  { alignItems: 'center', marginTop: 8, marginBottom: 28, gap: 16, position: 'relative' },
