@@ -233,6 +233,7 @@ export default function ProposalsScreen() {
   const [error, setError]         = useState('');
   const [activeTab, setActiveTab] = useState<TabKey>('all');
   const loadingMoreRef = useRef(false);
+  const hasLoadedOnceRef = useRef(false);
   const listRef = useRef<FlatList<Proposal>>(null);
   useScrollToTopOnTabPress('proposals', () => listRef.current?.scrollToOffset({ offset: 0, animated: true }));
 
@@ -258,7 +259,15 @@ export default function ProposalsScreen() {
   }
 
   useFocusEffect(useCallback(() => {
-    setLoading(true);
+    // Only show the full-screen skeleton on the very first load. Later
+    // focuses (e.g. coming back from campaign-detail) refresh the "all" tab
+    // silently in the background instead of flashing the skeleton again —
+    // on a slow connection (production API vs. local LAN) that reload was
+    // visible as a jarring flicker/reload every time you navigated back.
+    if (!hasLoadedOnceRef.current) {
+      hasLoadedOnceRef.current = true;
+      setLoading(true);
+    }
     void loadTab('all', 1, true);
   }, []));
 
@@ -303,7 +312,7 @@ export default function ProposalsScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
 
       {/* ── Tab bar ── */}
-      <View style={[styles.tabBar, { backgroundColor: C.surface }]}>
+      <View style={styles.tabBar}>
         <TabSlider tabs={tabs} active={activeTab} onChange={(k) => selectTab(k as TabKey)} />
       </View>
 
@@ -354,8 +363,9 @@ const styles = StyleSheet.create({
 
   // Header
 
-  // Tab bar
-  tabBar: { marginTop: 14, ...SHADOW.card },
+  // Tab bar — flush with the page, same as the home hero header: no
+  // background or shadow of its own, just spacing.
+  tabBar: { marginTop: 14 },
 
   // List
   list:      { paddingHorizontal: 16, paddingBottom: 80, gap: 12, paddingTop: 14 },

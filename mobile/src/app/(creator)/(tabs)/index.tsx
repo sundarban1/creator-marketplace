@@ -1,12 +1,12 @@
 import { router, useFocusEffect } from 'expo-router';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
-import { useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
-import { DrawerContext } from '@/context/DrawerContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
+import { useNotificationBadge } from '@/context/NotificationContext';
 import { CampaignListItem } from '@/features/creator/components/CampaignListItem';
 import { CampaignCard } from '@/features/creator/components/CampaignCard';
 import { CampaignCardSkeleton } from '@/features/creator/components/CampaignCardSkeleton';
@@ -37,13 +37,32 @@ const SLIDER_MAX = 100000;
 
 type SortOption = 'date-latest' | 'date-oldest' | 'price-low' | 'price-high';
 
+// The tab filter + "count · sort" header are rendered as synthetic rows at the
+// front of the FlatList's `data` (instead of inside ListHeaderComponent) so
+// `stickyHeaderIndices` can pin just the tab filter to the top once it's
+// scrolled to — it stays put instead of scrolling away with the rest of the
+// header content above it.
+type ListRow =
+  | { kind: 'tabFilter' }
+  | { kind: 'countSort' }
+  | { kind: 'empty' }
+  | { kind: 'campaign'; campaign: Campaign };
+
+function getInitials(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return '';
+  const first = words[0][0];
+  const last = words.length > 1 ? words[words.length - 1][0] : '';
+  return (first + last).toUpperCase();
+}
+
 export default function HomeScreen() {
   const { user } = useAuth();
   // Phone-only signups default `name` to the raw phone number until the user sets
   // a real one — never show that in the header (as text, or as the avatar's
   // first-letter fallback initial, which would render a bare "+").
   const displayName = user?.name && !isValidNepaliPhone(user.name) ? user.name : 'Creator';
-  const { openDrawer } = useContext(DrawerContext);
+  const { badgeCount: notifBadge } = useNotificationBadge();
   const { t, languageVersion } = useLanguage();
   const C = useAppColors();
 
@@ -74,7 +93,7 @@ export default function HomeScreen() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
   const searchInputRef  = useRef<TextInput>(null);
-  const listRef         = useRef<FlatList<Campaign>>(null);
+  const listRef         = useRef<FlatList<ListRow>>(null);
   const searchDebounce  = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [tempPriceMin, setTempPriceMin] = useState(0);
   const [tempPriceMax, setTempPriceMax] = useState(SLIDER_MAX);
@@ -407,6 +426,14 @@ export default function HomeScreen() {
   const visibleFeatured = featured.slice(0, featuredVisibleCount);
   const visibleList     = filteredList.slice(0, listVisibleCount);
 
+  const listRows: ListRow[] = loading ? [] : [
+    { kind: 'tabFilter' },
+    { kind: 'countSort' },
+    ...(filteredList.length === 0
+      ? [{ kind: 'empty' } as const]
+      : visibleList.map((c): ListRow => ({ kind: 'campaign', campaign: c }))),
+  ];
+
   useEffect(() => { setFeaturedVisibleCount(PAGE_SIZE); }, [campaigns]);
   useEffect(() => { setListVisibleCount(PAGE_SIZE); }, [campaigns, activeFilterTab, locationFilter, sortBy]);
 
@@ -420,6 +447,91 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
+      {/* ── Header: avatar, search bar, notifications — kept outside the list so it
+          stays floating/pinned above the content instead of scrolling away. ── */}
+      <View style={[styles.header, { backgroundColor: C.background }]}>
+        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+          style={[styles.avatarCircle, { backgroundColor: C.surface }, SHADOW.card]}
+          onPress={() => router.push('/(creator)/profile')}>
+          <View style={styles.avatarClip}>
+            {user?.avatar ? (
+              <Image source={{ uri: user.avatar }} style={styles.avatarImage} resizeMode="cover" />
+            ) : (
+              <View style={styles.avatarFallback}>
+                <Text style={[styles.avatarInitial, { color: C.brinjal1 }]}>{getInitials(displayName)}</Text>
+              </View>
+            )}
+          </View>
+        </Pressable>
+
+        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+          style={[styles.searchCard, { backgroundColor: C.surface, borderColor: C.border }, searchFocused && styles.searchCardFocused]}
+          onPress={() => searchInputRef.current?.focus()}>
+          <Ionicons name="search-outline" size={18} color={searchFocused ? C.brinjal1 : C.textSecondary} style={styles.searchIcon} />
+          <TextInput
+            ref={searchInputRef}
+            style={[styles.searchInput, { color: C.text }]}
+            placeholder={t('creator.browse.searchPlaceholder')}
+            placeholderTextColor={C.textSecondary}
+            value={search}
+            onChangeText={(text) => {
+              setSearch(text);
+              if (searchDebounce.current) clearTimeout(searchDebounce.current);
+              if (text.length >= 3) {
+                searchDebounce.current = setTimeout(() => {
+                  setActiveSearch(text);
+                  void fetchCampaigns({ search: text });
+                }, 400);
+              } else if (!text && activeSearch) {
+                setActiveSearch('');
+                void fetchCampaigns({ search: '' });
+              }
+            }}
+            onFocus={() => setSearchFocused(true)}
+            onBlur={() => setSearchFocused(false)}
+            returnKeyType="search"
+            onSubmitEditing={() => {
+              searchInputRef.current?.blur();
+              if (searchDebounce.current) clearTimeout(searchDebounce.current);
+              setActiveSearch(search);
+              void fetchCampaigns({ search });
+            }}
+          />
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            style={[
+              styles.filterBtn,
+              { backgroundColor: isFilterActive ? C.brinjal1 : C.primaryLight },
+              isFilterActive && { shadowColor: C.brinjal1, shadowOpacity: 0.35, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 5 },
+            ]}
+            onPress={openFilter}
+            hitSlop={6}>
+            <Ionicons name="options-outline" size={18} color={isFilterActive ? '#fff' : C.brinjal1} />
+            {isFilterActive && (
+              <View style={styles.filterCountBadge}>
+                <Text style={styles.filterCountBadgeTxt}>{filterActiveCount}</Text>
+              </View>
+            )}
+          </Pressable>
+        </Pressable>
+
+        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.menuBtn} onPress={() => router.push('/(creator)/notifications' as never)} hitSlop={6}>
+          <View
+            style={[
+              styles.menuBtnInner,
+              { backgroundColor: C.surface },
+              SHADOW.card,
+            ]}
+          >
+            <Ionicons name="notifications-outline" size={22} color={C.text} />
+            {notifBadge > 0 && (
+              <View style={styles.menuBadge}>
+                <Text style={styles.menuBadgeTxt}>{notifBadge > 99 ? '99+' : notifBadge}</Text>
+              </View>
+            )}
+          </View>
+        </Pressable>
+      </View>
+
       <FlatList
         ref={listRef}
         style={styles.scroll}
@@ -428,21 +540,71 @@ export default function HomeScreen() {
         onEndReached={() => setListVisibleCount((n) => Math.min(n + PAGE_SIZE, filteredList.length))}
         onEndReachedThreshold={0.4}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brinjal1} />}
-        data={loading ? [] : visibleList}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <CampaignListItem campaign={item} />}
-        ItemSeparatorComponent={() => <View style={styles.eventSeparator} />}
-        ListEmptyComponent={
-          !loading && filteredList.length === 0 ? (
-            <EmptyState
-              faIcon={campaigns.length === 0 ? 'calendar-times' : 'filter'}
-              title={t('creator.home.noEventsFound')}
-              subtitle={campaigns.length === 0
-                ? t('creator.home.noActiveEvents')
-                : t('creator.home.tryAdjustFilters')}
-              action={campaigns.length > 0 ? { label: t('creator.home.clearFilters'), onPress: resetAllFilters } : undefined}
-            />
-          ) : null
+        data={listRows}
+        keyExtractor={(row, i) => (row.kind === 'campaign' ? row.campaign.id : `${row.kind}-${i}`)}
+        // Sticky index 1, not 0 — ListHeaderComponent below always occupies
+        // index 0, so listRows[0] (the tab filter row) lands at index 1.
+        stickyHeaderIndices={[1]}
+        renderItem={({ item: row }) => {
+          switch (row.kind) {
+            case 'tabFilter':
+              return (
+                <View style={[styles.filterTabsWrap, { backgroundColor: C.background }]}>
+                  <TabSlider
+                    tabs={[
+                      { key: 'all',          label: t('creator.home.tabAll'),         icon: 'layers-outline',   color: TabColors.neutral.color },
+                      { key: 'recommended',  label: t('creator.home.tabRecommended'), icon: 'star-outline',     color: TabColors.info.color },
+                      { key: 'trending',     label: t('creator.home.tabTrending'),    icon: 'flame-outline',    color: TabColors.danger.color },
+                      { key: 'ending-soon',  label: t('creator.home.tabEndingSoon'),  icon: 'timer-outline',    color: TabColors.warning.color },
+                    ]}
+                    active={activeFilterTab}
+                    onChange={setActiveFilterTab}
+                  />
+                </View>
+              );
+            case 'countSort':
+              return (
+                <View style={styles.sectionHeader}>
+                  <Text style={[styles.sectionTitle, { color: C.text }]}>
+                    {activeFilterTab === 'all' ? 'All Events' :
+                     activeFilterTab === 'recommended' ? 'Recommended' :
+                     activeFilterTab === 'trending' ? 'Trending' : 'Ending Soon'}
+                    {filteredList.length > 0 ? `  ·  ${filteredList.length}` : ''}
+                  </Text>
+                  <RangeDropdown
+                    value={sortBy}
+                    options={[
+                      { value: 'date-latest', label: t('creator.home.sortDateLatest') },
+                      { value: 'date-oldest', label: t('creator.home.sortDateOldest') },
+                      { value: 'price-low',   label: t('creator.home.sortPriceLow') },
+                      { value: 'price-high',  label: t('creator.home.sortPriceHigh') },
+                    ]}
+                    onChange={setSortBy}
+                  />
+                </View>
+              );
+            case 'empty':
+              return (
+                <EmptyState
+                  faIcon={campaigns.length === 0 ? 'calendar-times' : 'filter'}
+                  title={t('creator.home.noEventsFound')}
+                  subtitle={campaigns.length === 0
+                    ? t('creator.home.noActiveEvents')
+                    : t('creator.home.tryAdjustFilters')}
+                  action={campaigns.length > 0 ? { label: t('creator.home.clearFilters'), onPress: resetAllFilters } : undefined}
+                />
+              );
+            case 'campaign':
+              return <CampaignListItem campaign={row.campaign} />;
+          }
+        }}
+        // Only put the 6px gap between two actual campaign rows — the tab
+        // filter / count+sort / empty-state rows already carry their own
+        // margins, so a separator there would double up the spacing.
+        ItemSeparatorComponent={({ leadingItem, trailingItem }) =>
+          leadingItem?.kind === 'campaign' && trailingItem?.kind === 'campaign'
+            ? <View style={styles.eventSeparator} />
+            : null
         }
         ListFooterComponent={
           !loading && listVisibleCount < filteredList.length ? (
@@ -453,102 +615,6 @@ export default function HomeScreen() {
         }
         ListHeaderComponent={
           <>
-        {/* ── Header ── */}
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-              style={[
-                styles.avatarCircle,
-                {
-                  borderColor: C.brinjal1 + '30', borderWidth: 2.5,
-                },
-              ]}
-              onPress={() => router.push('/(creator)/profile')}>
-              <View style={styles.avatarClip}>
-                {user?.avatar ? (
-                  <Image source={{ uri: user.avatar }} style={styles.avatarImage} resizeMode="cover" />
-                ) : (
-                  <View style={styles.avatarFallback}>
-                    <Text style={[styles.avatarInitial, { color: C.brinjal1 }]}>{displayName.trim()[0].toUpperCase()}</Text>
-                  </View>
-                )}
-              </View>
-            </Pressable>
-            <View>
-              <Text style={[styles.greeting, { color: C.textSecondary }]}>{t('creator.home.greeting')}</Text>
-              <Text style={[styles.brandName, { color: C.brinjal1 }]} numberOfLines={1}>{displayName}</Text>
-            </View>
-          </View>
-
-          <View style={styles.headerRight}>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.menuBtn} onPress={openDrawer} hitSlop={6}>
-              <View
-                style={[
-                  styles.menuBtnInner,
-                  {
-                    backgroundColor: C.surface, borderColor: C.border, borderWidth: 1,
-                  },
-                ]}
-              >
-                <Ionicons name="menu" size={22} color={C.text} />
-              </View>
-            </Pressable>
-          </View>
-        </View>
-
-        {/* ── Search bar ── */}
-        <View style={styles.searchRow}>
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-            style={[styles.searchCard, { backgroundColor: C.surface, borderColor: C.border }, searchFocused && styles.searchCardFocused]}
-            onPress={() => searchInputRef.current?.focus()}>
-            <Ionicons name="search-outline" size={18} color={searchFocused ? C.brinjal1 : C.textSecondary} style={styles.searchIcon} />
-            <TextInput
-              ref={searchInputRef}
-              style={[styles.searchInput, { color: C.text }]}
-              placeholder={t('creator.browse.searchPlaceholder')}
-              placeholderTextColor={C.textSecondary}
-              value={search}
-              onChangeText={(text) => {
-                setSearch(text);
-                if (searchDebounce.current) clearTimeout(searchDebounce.current);
-                if (text.length >= 3) {
-                  searchDebounce.current = setTimeout(() => {
-                    setActiveSearch(text);
-                    void fetchCampaigns({ search: text });
-                  }, 400);
-                } else if (!text && activeSearch) {
-                  setActiveSearch('');
-                  void fetchCampaigns({ search: '' });
-                }
-              }}
-              onFocus={() => setSearchFocused(true)}
-              onBlur={() => setSearchFocused(false)}
-              returnKeyType="search"
-              onSubmitEditing={() => {
-                searchInputRef.current?.blur();
-                if (searchDebounce.current) clearTimeout(searchDebounce.current);
-                setActiveSearch(search);
-                void fetchCampaigns({ search });
-              }}
-            />
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-              style={[
-                styles.filterBtn,
-                { backgroundColor: isFilterActive ? C.brinjal1 : C.primaryLight },
-                isFilterActive && { shadowColor: C.brinjal1, shadowOpacity: 0.35, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 5 },
-              ]}
-              onPress={openFilter}
-              hitSlop={6}>
-              <Ionicons name="options-outline" size={18} color={isFilterActive ? '#fff' : C.brinjal1} />
-              {isFilterActive && (
-                <View style={styles.filterCountBadge}>
-                  <Text style={styles.filterCountBadgeTxt}>{filterActiveCount}</Text>
-                </View>
-              )}
-            </Pressable>
-          </Pressable>
-        </View>
-
         {/* ── Quick Actions ── */}
         <View style={styles.quickActionsRow}>
           {([
@@ -856,40 +922,6 @@ export default function HomeScreen() {
                 )}
               </View>
             )}
-
-            {/* ── Tab filter ── */}
-            <View style={[styles.filterTabsWrap, { backgroundColor: C.surface }]}>
-              <TabSlider
-                tabs={[
-                  { key: 'all',          label: t('creator.home.tabAll'),         icon: 'layers-outline',   color: TabColors.neutral.color },
-                  { key: 'recommended',  label: t('creator.home.tabRecommended'), icon: 'star-outline',     color: TabColors.info.color },
-                  { key: 'trending',     label: t('creator.home.tabTrending'),    icon: 'flame-outline',    color: TabColors.danger.color },
-                  { key: 'ending-soon',  label: t('creator.home.tabEndingSoon'),  icon: 'timer-outline',    color: TabColors.warning.color },
-                ]}
-                active={activeFilterTab}
-                onChange={setActiveFilterTab}
-              />
-            </View>
-
-            {/* ── Campaign list header with count + sort ── */}
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: C.text }]}>
-                {activeFilterTab === 'all' ? 'All Events' :
-                 activeFilterTab === 'recommended' ? 'Recommended' :
-                 activeFilterTab === 'trending' ? 'Trending' : 'Ending Soon'}
-                {filteredList.length > 0 ? `  ·  ${filteredList.length}` : ''}
-              </Text>
-              <RangeDropdown
-                value={sortBy}
-                options={[
-                  { value: 'date-latest', label: t('creator.home.sortDateLatest') },
-                  { value: 'date-oldest', label: t('creator.home.sortDateOldest') },
-                  { value: 'price-low',   label: t('creator.home.sortPriceLow') },
-                  { value: 'price-high',  label: t('creator.home.sortPriceHigh') },
-                ]}
-                onChange={setSortBy}
-              />
-            </View>
           </>
         )}
           </>
@@ -936,13 +968,21 @@ const styles = StyleSheet.create({
   scrollContent: { paddingBottom: 40 },
 
   // ── Header ──
-  header:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 14 },
-  headerLeft:   { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
-  headerRight:  { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  // Avatar, search bar, and the notifications button all share this one row —
+  // avatar and notifications are fixed-width, the search bar stretches (flex:1)
+  // to fill whatever's left between them. Lives outside the FlatList (rendered
+  // as a sibling, not ListHeaderComponent) so it stays pinned at the top
+  // instead of scrolling away with the content. Same background as the page
+  // and no border/shadow — reads as part of the page, not a separate bar;
+  // pinning is purely structural (it just doesn't scroll), not a visual layer.
+  header: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    paddingHorizontal: 20, paddingTop: 12, paddingBottom: 10,
+  },
   menuBtn:      { padding: 0 },
-  menuBtnInner: { width: 38, height: 38, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center' },
-  greeting:     { fontSize: 12, marginBottom: 2, fontFamily: F.medium },
-  brandName:    { fontSize: 20, fontFamily: F.bold, maxWidth: 180, letterSpacing: -0.3 },
+  menuBtnInner: { width: 44, height: 44, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
+  menuBadge:    { position: 'absolute', top: -3, right: -3, minWidth: 16, height: 16, borderRadius: RADIUS.full, paddingHorizontal: 3, backgroundColor: '#EF4444', justifyContent: 'center', alignItems: 'center', borderWidth: 1.5, borderColor: '#fff' },
+  menuBadgeTxt: { fontSize: 8, fontFamily: F.bold, color: '#fff' },
   avatarCircle: { width: 44, height: 44, borderRadius: RADIUS.full },
   avatarClip:   { width: '100%', height: '100%', borderRadius: RADIUS.full, overflow: 'hidden' },
   avatarImage:  { width: '100%', height: '100%' },
@@ -950,8 +990,7 @@ const styles = StyleSheet.create({
   avatarInitial:  { fontSize: 18, fontFamily: F.extrabold },
 
   // ── Search ──
-  searchRow: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 4 },
-  searchCard: { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.lg, paddingHorizontal: 14, height: 52, borderWidth: 1.5 },
+  searchCard: { flex: 1, flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.lg, paddingHorizontal: 14, height: 44, borderWidth: 1.5 },
   searchCardFocused: {
     borderColor: '#7C3AED', borderWidth: 2,
     shadowColor: '#7C3AED', shadowOpacity: 0.18, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 6,
@@ -963,13 +1002,18 @@ const styles = StyleSheet.create({
   filterCountBadgeTxt: { fontSize: 9, fontFamily: F.extrabold, color: '#fff' },
 
   // ── Quick Actions ──
-  quickActionsRow:  { flexDirection: 'row', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 4, gap: 10 },
+  // paddingBottom is 0 here (and on every block below) on purpose — each block
+  // only contributes its own *leading* gap via marginTop/paddingTop. That way
+  // whichever optional cards happen to render (banner / attentionBanner /
+  // errorCard, any combination, any order) always sit SECTION_GAP apart,
+  // instead of gaps compounding or collapsing depending on what's visible.
+  quickActionsRow:  { flexDirection: 'row', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 0, gap: 10 },
   quickAction:      { flex: 1, alignItems: 'center', borderRadius: RADIUS.lg, paddingVertical: 14, gap: 8, borderWidth: 1, ...SHADOW.card },
   quickActionIcon:  { width: 44, height: 44, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center' },
   quickActionLabel: { fontSize: 11, fontFamily: F.medium, textAlign: 'center' },
 
   // ── Banner ──
-  banner:        { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.lg, marginHorizontal: 20, marginTop: 14, marginBottom: 2, padding: 14, gap: 12, ...SHADOW.card, borderLeftWidth: 4 },
+  banner:        { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.lg, marginHorizontal: 20, marginTop: 16, marginBottom: 0, padding: 14, gap: 10, ...SHADOW.card, borderLeftWidth: 4 },
   bannerIconBox: { width: 38, height: 38, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   bannerText:    { flex: 1, gap: 2 },
   bannerTitle:   { fontSize: 13, fontFamily: F.semibold },
@@ -978,7 +1022,7 @@ const styles = StyleSheet.create({
   bannerClose:   { position: 'absolute', top: 8, right: 8, padding: 4 },
 
   // ── Error ──
-  errorCard: { marginHorizontal: 20, marginBottom: 16, borderRadius: RADIUS.sm, padding: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  errorCard: { marginHorizontal: 20, marginTop: 16, marginBottom: 0, borderRadius: RADIUS.sm, padding: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   errorText:  { color: '#DC2626', fontSize: 13, flex: 1, fontFamily: F.medium },
   retryText:  { fontSize: 13, marginLeft: 12, fontFamily: F.bold },
 
@@ -1006,26 +1050,29 @@ const styles = StyleSheet.create({
 
   // ── Featured ──
   featuredRow:       { paddingHorizontal: 20, gap: 8, marginTop: 16, marginBottom: 16 },
-  featuredEmpty:     { marginHorizontal: 20, marginBottom: 0, borderRadius: RADIUS.md, borderWidth: 1.5, borderStyle: 'dashed', padding: 24, alignItems: 'center', gap: 8 },
+  featuredEmpty:     { marginHorizontal: 20, marginBottom: 16, borderRadius: RADIUS.md, borderWidth: 1.5, borderStyle: 'dashed', padding: 24, alignItems: 'center', gap: 8 },
   featuredEmptyTitle:{ fontSize: 14, fontFamily: F.bold, textAlign: 'center' },
   featuredEmptySub:  { fontSize: 12, fontFamily: F.regular, textAlign: 'center', lineHeight: 18 },
   featuredLoadingMore: { width: 60, justifyContent: 'center', alignItems: 'center' },
 
   // ── Nearby ──
-  nearbyTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 },
-  nearbyChip: { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1, borderRadius: RADIUS.full, paddingHorizontal: 10, paddingVertical: 5, flexShrink: 1 },
+  nearbyTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, flex: 1 },
+  nearbyChip: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: RADIUS.full, paddingHorizontal: 10, paddingVertical: 5, flexShrink: 1 },
   nearbyChipText: { fontSize: 11, fontFamily: F.bold, flexShrink: 1 },
   expandRadiusBtn: { borderRadius: RADIUS.full, paddingHorizontal: 20, paddingVertical: 10, minHeight: 40, justifyContent: 'center', alignItems: 'center', marginTop: 4 },
   expandRadiusBtnText: { color: '#fff', fontSize: 13, fontFamily: F.bold },
 
   // ── Attention banner ──
-  attentionBanner: { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.lg, marginHorizontal: 20, marginTop: 12, padding: 14, gap: 12, backgroundColor: '#FFFBEB', borderWidth: 1, borderColor: '#FDE68A' },
+  attentionBanner: { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.lg, marginHorizontal: 20, marginTop: 16, marginBottom: 0, padding: 14, gap: 10, backgroundColor: '#FFFBEB', borderWidth: 1, borderColor: '#FDE68A' },
   attentionIconWrap: { width: 36, height: 36, borderRadius: RADIUS.sm, backgroundColor: '#FEF3C7', justifyContent: 'center', alignItems: 'center' },
   attentionTitle: { fontSize: 13, color: '#92400E', fontFamily: F.bold },
   attentionSub: { fontSize: 11, color: '#B45309', fontFamily: F.regular, marginTop: 1 },
 
   // ── Tab filter ──
-  filterTabsWrap: { marginTop: 8, marginBottom: 4, ...SHADOW.card },
+  // No background/shadow here — matches the proposals page's tab bar, which
+  // lets TabSlider (already self-contained: page-background wrapper, shadow
+  // only on the animated active pill) sit directly on the page.
+  filterTabsWrap: { marginTop: 8, marginBottom: 4 },
 
   // ── Campaign list ──
   eventSeparator: { height: 6 },

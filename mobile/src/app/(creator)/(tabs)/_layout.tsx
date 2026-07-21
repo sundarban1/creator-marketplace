@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
+import { useContext, useState } from 'react';
 import { Dimensions, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '@/context/AuthContext';
 import { DrawerContext } from '@/context/DrawerContext';
@@ -16,11 +16,14 @@ type IoniconName = keyof typeof Ionicons.glyphMap;
 // ── Tab config ────────────────────────────────────────────────────────────────
 
 // `color` is omitted for `index` (Home) — it uses the theme's brinjal accent instead, resolved at render time.
+// The `notifications` route stays a real tab-navigator screen (reachable from the
+// header's activity button — see index.tsx), but its bottom-bar slot is repurposed
+// below to open the drawer instead, swapping places with the old header hamburger.
 const TAB_CONFIG: Record<string, { icon: IoniconName; iconActive: IoniconName; label: string; color?: string }> = {
   index:         { icon: 'home-outline',          iconActive: 'home',          label: 'Home' },
   proposals:     { icon: 'document-text-outline', iconActive: 'document-text', label: 'Proposals',  color: '#7C3AED' },
   messages:      { icon: 'chatbubble-outline',    iconActive: 'chatbubble',    label: 'Messages',   color: '#2563EB' },
-  notifications: { icon: 'notifications-outline', iconActive: 'notifications', label: 'Activity',   color: '#D97706' },
+  notifications: { icon: 'menu-outline',          iconActive: 'menu',          label: 'Menu' },
 };
 
 // ── Custom tab bar ────────────────────────────────────────────────────────────
@@ -37,15 +40,14 @@ function CustomTabBar({
   state,
   navigation,
   chatBadge,
-  notifBadge,
 }: {
   state: any;
   navigation: any;
   chatBadge: number;
-  notifBadge: number;
 }) {
   const C = useAppColors();
   const { t } = useLanguage();
+  const { openDrawer } = useContext(DrawerContext);
 
   if (isChatRoomFocused(state)) return null;
 
@@ -53,12 +55,11 @@ function CustomTabBar({
     index:         t('creator.tab.home'),
     proposals:     t('creator.tab.proposals'),
     messages:      t('creator.tab.messages'),
-    notifications: t('creator.tab.activity'),
+    notifications: t('creator.tab.menu'),
   };
 
   const badgeMap: Record<string, number> = {
-    messages:      chatBadge,
-    notifications: notifBadge,
+    messages: chatBadge,
   };
 
   const tabs = (state.routes as any[]).filter((r) => TAB_CONFIG[r.name]);
@@ -66,13 +67,17 @@ function CustomTabBar({
   return (
     <View style={[tabS.bar, { backgroundColor: C.surface, borderTopColor: C.border }]}>
       {tabs.map((route) => {
-        const focused = state.routes[state.index]?.name === route.name;
+        // The `notifications` slot now opens the drawer (swapped with the header
+        // hamburger) rather than navigating to a screen, so it never shows as "active".
+        const isMenu  = route.name === 'notifications';
+        const focused = !isMenu && state.routes[state.index]?.name === route.name;
         const cfg     = TAB_CONFIG[route.name]!;
         const label   = labelMap[route.name] ?? cfg.label;
         const badge   = badgeMap[route.name] ?? 0;
         const color   = cfg.color ?? C.brinjal1;
 
         function onPress() {
+          if (isMenu) { openDrawer(); return; }
           // Always fires, whether this tab is already focused or not — the
           // destination screen's own useScrollToTopOnTabPress listener scrolls its
           // list back up, since Tabs keeps every screen mounted (and scrolled where
@@ -198,7 +203,7 @@ export default function CreatorTabsLayout() {
   const { t } = useLanguage();
   const C = useAppColors();
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const { badgeCount: notifBadge, chatBadgeCount: badgeCount } = useNotificationBadge();
+  const { chatBadgeCount: badgeCount } = useNotificationBadge();
 
   return (
     <DrawerContext.Provider value={{ openDrawer: () => setDrawerOpen(true) }}>
@@ -210,7 +215,6 @@ export default function CreatorTabsLayout() {
               state={props.state}
               navigation={props.navigation}
               chatBadge={badgeCount}
-              notifBadge={notifBadge}
             />
           )}
         >

@@ -6,7 +6,6 @@ import { TabSlider } from '@/components/TabSlider';
 import { useScrollToTopOnTabPress } from '@/hooks/useScrollToTopOnTabPress';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
-import { useDrawer } from '@/context/DrawerContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
@@ -30,20 +29,12 @@ const STATUS_STYLE = {
 
 export default function BusinessHomeScreen() {
   const { user } = useAuth();
-  const { openDrawer } = useDrawer();
   const { t, languageVersion } = useLanguage();
   const C = useAppColors();
   const { categories: allCategories } = useAllCategories();
   const name = user?.name?.split(' ')[0] ?? 'there';
 
-  function getGreeting() {
-    const h = new Date().getHours();
-    if (h < 12) return t('business.home.goodMorning');
-    if (h < 17) return t('business.home.goodAfternoon');
-    return t('business.home.goodEvening');
-  }
-
-  const { setBadgeCount } = useNotificationBadge();
+  const { badgeCount: notifBadge, setBadgeCount } = useNotificationBadge();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -133,46 +124,50 @@ export default function BusinessHomeScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
+      {/* ── Header: avatar, centered name, notifications — kept outside the
+          ScrollView so it stays floating/pinned above the content instead of
+          scrolling away. ── */}
+      <View style={[styles.header, { backgroundColor: C.background }]}>
+        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.avatarCircle, { backgroundColor: C.surface }, SHADOW.card]} onPress={() => router.push('/(business)/profile')}>
+          {/* Clipping lives on its own layer — Android's elevation shadow doesn't
+              composite correctly with overflow:hidden + a translucent child background
+              on the same view. */}
+          <View style={styles.avatarClip}>
+            {user?.avatar ? (
+              <Image source={{ uri: user.avatar }} style={styles.avatarImage} resizeMode="cover" />
+            ) : (
+              <View style={styles.avatarFallback}>
+                <Text style={[styles.avatarInitial, { color: C.brinjal1 }]}>{displayName.trim()[0].toUpperCase()}</Text>
+              </View>
+            )}
+          </View>
+        </Pressable>
+
+        <Text style={[styles.brandName, { color: C.brinjal1 }]} numberOfLines={1}>{displayName}</Text>
+
+        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.menuBtn} onPress={() => router.push('/(business)/notifications' as never)} hitSlop={6}>
+          <View
+            style={[
+              styles.menuBtnInner,
+              { backgroundColor: C.surface },
+              SHADOW.card,
+            ]}
+          >
+            <Ionicons name="notifications-outline" size={22} color={C.text} />
+            {notifBadge > 0 && (
+              <View style={styles.menuBadge}>
+                <Text style={styles.menuBadgeTxt}>{notifBadge > 99 ? '99+' : notifBadge}</Text>
+              </View>
+            )}
+          </View>
+        </Pressable>
+      </View>
+
       <ScrollView
         ref={scrollRef}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scroll}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#7c3aed" />}>
-
-        {/* ── Header ── */}
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.avatarCircle, { borderColor: C.brinjal1 + '30', borderWidth: 2.5 }, SHADOW.card]} onPress={() => router.push('/(business)/profile')}>
-              {/* Clipping lives on its own layer — Android's elevation shadow doesn't
-                  composite correctly with overflow:hidden + a translucent child background
-                  on the same view. */}
-              <View style={styles.avatarClip}>
-                {user?.avatar ? (
-                  <Image source={{ uri: user.avatar }} style={styles.avatarImage} resizeMode="cover" />
-                ) : (
-                  <View style={styles.avatarFallback}>
-                    <Text style={[styles.avatarInitial, { color: C.brinjal1 }]}>{displayName.trim()[0].toUpperCase()}</Text>
-                  </View>
-                )}
-              </View>
-            </Pressable>
-            <View>
-              <Text style={[styles.greeting, { color: C.textSecondary }]}>{getGreeting()}</Text>
-              <Text style={[styles.brandName, { color: C.brinjal1 }]} numberOfLines={1}>{displayName}</Text>
-            </View>
-          </View>
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.menuBtn} onPress={openDrawer} hitSlop={6}>
-            <View
-              style={[
-                styles.menuBtnInner,
-                { backgroundColor: C.surface, borderColor: C.border, borderWidth: 1 },
-                SHADOW.card,
-              ]}
-            >
-              <Ionicons name="menu" size={22} color={C.text} />
-            </View>
-          </Pressable>
-        </View>
 
         {/* Stats strip */}
         <View style={[styles.statsStrip, { backgroundColor: C.surface, borderColor: C.border, borderWidth: 1 }, SHADOW.card]}>
@@ -314,7 +309,7 @@ export default function BusinessHomeScreen() {
           </Pressable>
         </View>
 
-        <View style={[styles.typeFilterWrap, { backgroundColor: C.surface }]}>
+        <View style={styles.typeFilterWrap}>
           <TabSlider
             tabs={TYPE_TABS}
             active={typeFilter}
@@ -398,13 +393,22 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { paddingBottom: 40 },
 
-  // Header
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingHorizontal: 20, paddingTop: 14, paddingBottom: 18 },
-  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
+  // Header — avatar, centered business name, and notifications all in one row.
+  // Avatar and the notifications button are both 44×44, so the name's flex:1 +
+  // textAlign:'center' lands it on the row's true center, not just the
+  // midpoint of the leftover space. Lives outside the ScrollView (see render)
+  // so it stays pinned at the top instead of scrolling away. Same background
+  // as the page and no border/shadow — reads as part of the page, not a
+  // separate bar; pinning is purely structural, not a visual layer.
+  header: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    paddingHorizontal: 20, paddingTop: 14, paddingBottom: 18,
+  },
   menuBtn: { padding: 0 },
-  menuBtnInner: { width: 38, height: 38, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center' },
-  greeting: { fontSize: 12, marginBottom: 3, fontFamily: F.medium },
-  brandName: { fontSize: 20, fontFamily: F.bold, maxWidth: 180, letterSpacing: -0.3 },
+  menuBtnInner: { width: 44, height: 44, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
+  menuBadge:    { position: 'absolute', top: -3, right: -3, minWidth: 16, height: 16, borderRadius: RADIUS.full, paddingHorizontal: 3, backgroundColor: '#EF4444', justifyContent: 'center', alignItems: 'center', borderWidth: 1.5, borderColor: '#fff' },
+  menuBadgeTxt: { fontSize: 8, fontFamily: F.bold, color: '#fff' },
+  brandName: { flex: 1, textAlign: 'center', fontSize: 20, fontFamily: F.bold, letterSpacing: -0.3 },
   avatarCircle: { width: 44, height: 44, borderRadius: RADIUS.full },
   avatarClip:   { width: '100%', height: '100%', borderRadius: RADIUS.full, overflow: 'hidden' },
   avatarImage: { width: '100%', height: '100%' },
@@ -417,13 +421,18 @@ const styles = StyleSheet.create({
   statStripDiv: { width: 1, marginVertical: 4 },
 
   // Quick actions
-  quickActionsRow:  { flexDirection: 'row', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 4, gap: 10 },
+  // paddingBottom is 0 here (and on every block below) on purpose — each block
+  // only contributes its own *leading* gap via marginTop/paddingTop. That way
+  // whichever optional cards happen to render (banner / attentionBanner /
+  // errorCard, any combination, any order) always sit the same distance apart,
+  // instead of gaps compounding or collapsing depending on what's visible.
+  quickActionsRow:  { flexDirection: 'row', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 0, gap: 10 },
   quickAction:      { flex: 1, alignItems: 'center', borderRadius: RADIUS.lg, paddingVertical: 14, gap: 8, borderWidth: 1, ...SHADOW.card },
   quickActionIcon:  { width: 44, height: 44, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center' },
   quickActionLabel: { fontSize: 11, fontFamily: F.medium, textAlign: 'center' },
 
   // Profile completion banner
-  banner:        { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.lg, marginHorizontal: 20, marginTop: 14, marginBottom: 2, padding: 14, gap: 12, ...SHADOW.card, borderLeftWidth: 4 },
+  banner:        { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.lg, marginHorizontal: 20, marginTop: 16, marginBottom: 0, padding: 14, gap: 10, ...SHADOW.card, borderLeftWidth: 4 },
   bannerIconBox: { width: 38, height: 38, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   bannerText:    { flex: 1, gap: 2 },
   bannerTitle:   { fontSize: 13, fontFamily: F.semibold },
@@ -431,7 +440,7 @@ const styles = StyleSheet.create({
   bannerClose:   { position: 'absolute', top: 8, right: 8, padding: 4 },
 
   // Attention banner
-  attentionBanner: { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.md, marginHorizontal: 20, marginTop: 16, padding: 14, gap: 12, backgroundColor: '#FFFBEB', borderWidth: 1, borderColor: '#FDE68A' },
+  attentionBanner: { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.md, marginHorizontal: 20, marginTop: 16, marginBottom: 0, padding: 14, gap: 10, backgroundColor: '#FFFBEB', borderWidth: 1, borderColor: '#FDE68A' },
   attentionIconWrap: { width: 36, height: 36, borderRadius: RADIUS.md, backgroundColor: '#FEF3C7', justifyContent: 'center', alignItems: 'center' },
   attentionTitle: { fontSize: 13, color: '#92400E', fontFamily: F.bold },
   attentionSub: { fontSize: 11, color: '#B45309', fontFamily: F.regular, marginTop: 1 },
@@ -442,12 +451,15 @@ const styles = StyleSheet.create({
   viewAll: { fontSize: 13, fontFamily: F.semibold, opacity: 0.7 },
 
   // Error
-  errorCard: { backgroundColor: '#FEE2E2', marginHorizontal: 20, marginBottom: 16, borderRadius: RADIUS.md, padding: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderLeftWidth: 4, borderLeftColor: '#EF4444' },
+  errorCard: { backgroundColor: '#FEE2E2', marginHorizontal: 20, marginTop: 16, marginBottom: 0, borderRadius: RADIUS.md, padding: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderLeftWidth: 4, borderLeftColor: '#EF4444' },
   errorText: { color: '#DC2626', fontSize: 13, flex: 1, fontFamily: F.medium },
   retryText: { fontSize: 13, marginLeft: 12, fontFamily: F.bold },
 
-  // Type filter
-  typeFilterWrap: { marginBottom: 12, ...SHADOW.card },
+  // Type filter — flush with the page (no card/shadow), horizontally aligned
+  // with Recent Events below it. TabSlider's own wrapper adds 3px of internal
+  // padding around the tabs, so the outer margin is trimmed to 17px to land
+  // the tab edges exactly on the same 20px line as the campaign cards.
+  typeFilterWrap: { marginHorizontal: 17, marginBottom: 12 },
 
   // Campaign cards
   typeBadge: { borderRadius: RADIUS.sm, paddingHorizontal: 7, paddingVertical: 3 },

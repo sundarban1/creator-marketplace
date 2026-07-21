@@ -63,13 +63,14 @@ function formatDeadline(iso: string) {
 // ─── ChipGroup ────────────────────────────────────────────────────────────────
 
 function ChipGroup({
-  options, value, onChange, colors, error,
+  options, value, onChange, colors, error, disabled,
 }: {
   options: readonly string[];
   value: string;
   onChange: (v: string) => void;
   colors: ReturnType<typeof useAppColors>;
   error?: string;
+  disabled?: boolean;
 }) {
   const C = colors;
   return (
@@ -80,7 +81,8 @@ function ChipGroup({
           return (
             <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
               key={opt}
-              style={[cg.chip, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? C.primaryLight : C.background }]}
+              disabled={disabled}
+              style={[cg.chip, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? C.primaryLight : C.background, opacity: disabled && !sel ? 0.4 : 1 }]}
               onPress={() => onChange(opt)}>
               <Text style={[cg.txt, { color: sel ? C.brinjal1 : C.textSecondary, fontWeight: sel ? '700' : '500' }]}>{opt}</Text>
             </Pressable>
@@ -307,7 +309,7 @@ export default function CampaignDetailScreen() {
   }
 
   // Once a proposal has been submitted, the terms it was submitted against
-  // (price, platform, deliverables) are locked — everything else stays editable.
+  // (price, platform, deliverables, status) are locked — everything else stays editable.
   const hasProposals = (campaign?.proposals ?? 0) > 0;
 
   function openEdit() {
@@ -942,15 +944,21 @@ export default function CampaignDetailScreen() {
                   </>
                 )}
 
-                <Text style={[em.label, { color: C.text, marginTop: 24 }]}>{t('campaignDetail.fieldStatus')}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 24 }}>
+                  <Text style={[em.label, { color: C.text }]}>{t('campaignDetail.fieldStatus')}</Text>
+                  {hasProposals && <Ionicons name="lock-closed" size={11} color={C.textSecondary} />}
+                </View>
+                {hasProposals && <Text style={[em.lockedNote, { color: C.textSecondary }]}>{t('campaignDetail.lockedFieldNote')}</Text>}
                 <ChipGroup
                   options={STATUS_OPTIONS.map((o) => t(o.labelKey))}
                   value={t(STATUS_OPTIONS.find((o) => o.value === editForm.status)?.labelKey ?? 'campaignDetail.statusActive')}
                   onChange={(label) => {
+                    if (hasProposals) return;
                     const opt = STATUS_OPTIONS.find((o) => t(o.labelKey) === label);
                     if (opt) updateEdit('status', opt.value);
                   }}
                   colors={C}
+                  disabled={hasProposals}
                 />
 
                 {/* ── Featured ── */}

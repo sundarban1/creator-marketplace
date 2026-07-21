@@ -209,7 +209,7 @@ export default function CampaignsScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
       {/* Filter tabs */}
-      <View style={[styles.filterRow, { backgroundColor: C.surface }]}>
+      <View style={styles.filterRow}>
         <TabSlider
           tabs={CAMP_TABS}
           active={activeFilter}
@@ -503,7 +503,9 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 60 },
 
-  filterRow: { marginTop: 14, ...SHADOW.card },
+  // Flush with the page, same as the creator proposals tab bar: no
+  // background or shadow of its own, just spacing.
+  filterRow: { marginTop: 14 },
 
   list: { paddingHorizontal: 20, paddingTop: 14, gap: 12, paddingBottom: 40 },
   listEmpty: { flexGrow: 1 },
