@@ -24,7 +24,7 @@ import { getIconColor } from '@/features/creator/data/filterOptions';
 import { getTemplateImage } from '@/features/creator/data/templateImages';
 import { FeatureImagePicker } from '@/features/creator/components/FeatureImagePicker';
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
-import { usePlatforms } from '@/hooks/usePlatforms';
+import { usePlatforms, getPlatformMeta } from '@/hooks/usePlatforms';
 import { PlacesAutocompleteInput } from '@/components/PlacesAutocompleteInput';
 import { campaignService } from '@/services/campaign';
 import type { Campaign } from '@/types';
@@ -532,9 +532,18 @@ export default function CampaignDetailScreen() {
             <View style={[s.verifiedBadge, { backgroundColor: C.active }]}>
               <Ionicons name="checkmark" size={10} color="#fff" />
             </View>
-            <View style={[s.platformTag, { backgroundColor: C.primaryLight, marginLeft: 'auto' }]}>
-              <Text style={[s.platformTagTxt, { color: C.brinjal1 }]}>{campaign.platforms.join(', ')}</Text>
-            </View>
+            {campaign.platforms.length > 0 && (
+              <View style={[s.platformTag, { marginLeft: 'auto' }]}>
+                {campaign.platforms.map((p) => {
+                  const meta = getPlatformMeta(allPlatforms, p);
+                  return (
+                    <View key={p} style={[s.platformTagIcon, { backgroundColor: meta.bg }]}>
+                      <FontAwesome5 name={meta.icon} size={11} color={meta.color} />
+                    </View>
+                  );
+                })}
+              </View>
+            )}
           </View>
           <Text style={[s.campaignTitle, { color: C.text }]}>{campaign.title}</Text>
           <View style={s.budgetRow}>
@@ -606,7 +615,7 @@ export default function CampaignDetailScreen() {
             <DetailRow icon="calendar-alt" label={isOpenEvent ? 'Registration Deadline' : t('campaignDetail.detailDeadline')} value={formatDeadline(campaign.deadline)} C={C} />
             {!isOpenEvent && (
               <>
-                <DetailRow icon="money-bill-wave" label={t('campaignDetail.detailBudget')}  value={campaign.budget} C={C} />
+                <DetailRow icon="wallet" label={t('campaignDetail.detailBudget')}  value={campaign.budget} C={C} />
                 {campaign.creatorsNeeded != null && (
                   <DetailRow icon="users" label={t('campaignDetail.detailCreatorsNeeded')} value={String(campaign.creatorsNeeded)} C={C} />
                 )}
@@ -1116,8 +1125,8 @@ const s = StyleSheet.create({
   brandAvatarTxt:{ fontSize: 12, color: '#fff', fontFamily: F.bold },
   brandName:     { fontSize: 14, fontFamily: F.semibold },
   verifiedBadge: { width: 16, height: 16, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
-  platformTag:   { borderRadius: RADIUS.sm, paddingHorizontal: 10, paddingVertical: 4 },
-  platformTagTxt:{ fontSize: 12, fontFamily: F.semibold },
+  platformTag:     { flexDirection: 'row', gap: 5 },
+  platformTagIcon: { width: 24, height: 24, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
   campaignTitle: { fontSize: 20, lineHeight: 26, fontFamily: F.bold },
   budgetRow:     { flexDirection: 'row', alignItems: 'center', gap: 10 },
   budget:        { fontSize: 22, fontFamily: F.bold },

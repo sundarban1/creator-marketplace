@@ -7,6 +7,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage, type TFn } from '@/context/LanguageContext';
 import { displayCategory } from '@/features/creator/data/filterOptions';
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
+import { usePlatforms, getPlatformMeta } from '@/hooks/usePlatforms';
 import { getTemplateImage } from '@/features/creator/data/templateImages';
 import type { Campaign } from '@/types';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
@@ -55,6 +56,7 @@ export function CampaignCard({ campaign, variant }: { campaign: Campaign; varian
   const C = useAppColors();
   const { t } = useLanguage();
   const { categories } = useAllCategories();
+  const { platforms: allPlatforms } = usePlatforms();
   const catMeta   = getCategoryMeta(categories, campaign.categoryKey ?? campaign.category);
   const cardImage = campaign.featureImageUrl ?? getTemplateImage(campaign.template, campaign.categoryKey ?? campaign.category);
 
@@ -172,6 +174,21 @@ export function CampaignCard({ campaign, variant }: { campaign: Campaign; varian
             <Ionicons name="arrow-forward" size={14} color="#fff" />
           </View>
         </View>
+
+        {/* Platform stack — floats on the right, straddling the image/body
+            seam so it overlaps both the photo above and the text below. */}
+        {campaign.platforms.length > 0 && (
+          <View style={styles.platformStack}>
+            {campaign.platforms.slice(0, 3).map((p) => {
+              const meta = getPlatformMeta(allPlatforms, p);
+              return (
+                <View key={p} style={[styles.platformIcon, { backgroundColor: C.surface }]}>
+                  <FontAwesome5 name={meta.icon} size={12} color={meta.color} />
+                </View>
+              );
+            })}
+          </View>
+        )}
       </View>
 
     </Pressable>
@@ -216,6 +233,19 @@ const styles = StyleSheet.create({
 
   locationRow:  { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 4 },
   locationText: { fontSize: 12, fontFamily: F.medium, flexShrink: 1 },
+
+  // Floats over the image/body seam — top is set so the stack's top edge
+  // sits inside the photo and its bottom edge dips into the body, giving
+  // the overlap. Painted last (after body in JSX) so it draws over both.
+  platformStack: {
+    position: 'absolute', top: CARD_IMG_H - 16, right: 12,
+    flexDirection: 'row', gap: 6,
+  },
+  platformIcon: {
+    width: 30, height: 30, borderRadius: RADIUS.full,
+    justifyContent: 'center', alignItems: 'center',
+    shadowColor: '#0F172A', shadowOpacity: 0.22, shadowRadius: 6, shadowOffset: { width: 0, height: 3 }, elevation: 4,
+  },
 
   metaRow:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 },
   metaItemRow:  { flexDirection: 'row', alignItems: 'center', gap: 3, flexShrink: 0 },

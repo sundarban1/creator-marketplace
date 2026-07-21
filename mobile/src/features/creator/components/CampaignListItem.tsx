@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage, type TFn } from '@/context/LanguageContext';
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
+import { usePlatforms, getPlatformMeta } from '@/hooks/usePlatforms';
 import { getTemplateImage } from '@/features/creator/data/templateImages';
 import type { Campaign } from '@/types';
 import { F } from '@/utilities/constants';
@@ -42,6 +43,7 @@ export function CampaignListItem({ campaign }: { campaign: Campaign }) {
   const C = useAppColors();
   const { t } = useLanguage();
   const { categories } = useAllCategories();
+  const { platforms: allPlatforms } = usePlatforms();
   const catMeta = getCategoryMeta(categories, campaign.categoryKey ?? campaign.category);
   const cardImage = campaign.featureImageUrl ?? getTemplateImage(campaign.template, campaign.categoryKey ?? campaign.category);
 
@@ -54,23 +56,43 @@ export function CampaignListItem({ campaign }: { campaign: Campaign }) {
       style={({ pressed }) => [styles.listCard, { backgroundColor: C.surface }, pressed && { opacity: 0.88 }]}
       onPress={goToDetail}>
 
-      {/* Thumb + type badge below */}
+      {/* Thumb — type badge and platform icons both overlay the image itself */}
       <View style={styles.thumbWrap}>
-        <View style={[styles.listThumb, { backgroundColor: catMeta.bg }]}>
-          <FontAwesome5 name={catMeta.icon} size={22} color={catMeta.color} />
-          {cardImage && (
-            <Image source={{ uri: cardImage }} style={StyleSheet.absoluteFill} contentFit="cover" />
+        <View style={styles.thumbInner}>
+          <View style={[styles.listThumb, { backgroundColor: catMeta.bg }]}>
+            <FontAwesome5 name={catMeta.icon} size={22} color={catMeta.color} />
+            {cardImage && (
+              <Image source={{ uri: cardImage }} style={StyleSheet.absoluteFill} contentFit="cover" />
+            )}
+          </View>
+
+          {/* Type badge — pinned to the image's top-left corner, above the photo */}
+          {campaign.campaignType === 'OPEN_EVENT' ? (
+            <View style={[styles.typeBadge, styles.typeBadgeOverlay, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}>
+              <Text style={[styles.typeBadgeText, { color: '#059669' }]}>{t('campaignCard.free')}</Text>
+            </View>
+          ) : (
+            <View style={[styles.typeBadge, styles.typeBadgeOverlay, { backgroundColor: '#EEF2FF', borderColor: '#C7D2FE' }]}>
+              <Text style={[styles.typeBadgeText, { color: '#4F46E5' }]}>{t('campaignCard.paid')}</Text>
+            </View>
+          )}
+
+          {/* Platform icons — float at the thumb's bottom edge, straddling it
+              so half sits over the image and half dips below it. Positioned
+              relative to thumbInner (just the image). */}
+          {campaign.platforms.length > 0 && (
+            <View style={styles.platformStackBottom}>
+              {campaign.platforms.slice(0, 3).map((p) => {
+                const meta = getPlatformMeta(allPlatforms, p);
+                return (
+                  <View key={p} style={[styles.platformIcon, { backgroundColor: C.surface }]}>
+                    <FontAwesome5 name={meta.icon} size={9} color={meta.color} />
+                  </View>
+                );
+              })}
+            </View>
           )}
         </View>
-        {campaign.campaignType === 'OPEN_EVENT' ? (
-          <View style={[styles.typeBadge, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}>
-            <Text style={[styles.typeBadgeText, { color: '#059669' }]}>{t('campaignCard.free')}</Text>
-          </View>
-        ) : (
-          <View style={[styles.typeBadge, { backgroundColor: '#EEF2FF', borderColor: '#C7D2FE' }]}>
-            <Text style={[styles.typeBadgeText, { color: '#4F46E5' }]}>{t('campaignCard.paid')}</Text>
-          </View>
-        )}
       </View>
 
       {/* Info */}
@@ -127,11 +149,27 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(0,0,0,0.06)',
   },
-  thumbWrap: { flexShrink: 0, alignItems: 'center', gap: 6 },
+  thumbWrap: { flexShrink: 0, alignItems: 'center' },
+  // Plain relative-position container scoped to just the image, so the type
+  // badge and platform stack's absolute offsets are relative to the image
+  // itself rather than the row it sits in.
+  thumbInner: {},
   listThumb: {
     width: 72, height: 72, borderRadius: 16,
     justifyContent: 'center', alignItems: 'center',
     overflow: 'hidden',
+  },
+
+  // Straddles the thumb's bottom edge — half the icon sits over the photo,
+  // half dips below it.
+  platformStackBottom: {
+    position: 'absolute', bottom: -11, left: 0, right: 0,
+    flexDirection: 'row', justifyContent: 'center', gap: 4,
+  },
+  platformIcon: {
+    width: 22, height: 22, borderRadius: 11,
+    justifyContent: 'center', alignItems: 'center',
+    shadowColor: '#0F172A', shadowOpacity: 0.22, shadowRadius: 5, shadowOffset: { width: 0, height: 2 }, elevation: 3,
   },
   listInfo:     { flex: 1, gap: 4 },
   listBrandRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
@@ -146,6 +184,10 @@ const styles = StyleSheet.create({
   listDatesRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
 
   typeBadge:     { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1 },
+  typeBadgeOverlay: {
+    position: 'absolute', top: 4, left: 4,
+    shadowColor: '#0F172A', shadowOpacity: 0.25, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 3,
+  },
   typeBadgeText: { fontSize: 11, fontFamily: F.bold },
   applyBtn: {
     flexShrink: 0, alignSelf: 'center',
