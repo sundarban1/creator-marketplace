@@ -3,14 +3,24 @@ import { categoryService, type ApiCategory } from '@/services/category';
 
 type CacheKey = 'CREATOR' | 'BUSINESS' | 'ALL';
 
+// How long a fetched list is trusted before the next mount silently refetches
+// in the background — without this, a long-running app session would never
+// notice an admin disabling/re-enabling a category until force-quit/reopened.
+const CACHE_TTL_MS = 5 * 60 * 1000;
+
 const cache: Partial<Record<CacheKey, ApiCategory[]>> = {};
+const cachedAt: Partial<Record<CacheKey, number>> = {};
 const inflight: Partial<Record<CacheKey, Promise<ApiCategory[]>>> = {};
 
+function isFresh(key: CacheKey) {
+  return cache[key] !== undefined && Date.now() - (cachedAt[key] ?? 0) < CACHE_TTL_MS;
+}
+
 function fetchScoped(key: CacheKey, scope?: 'CREATOR' | 'BUSINESS'): Promise<ApiCategory[]> {
-  if (cache[key]) return Promise.resolve(cache[key]!);
+  if (isFresh(key)) return Promise.resolve(cache[key]!);
   if (!inflight[key]) {
     inflight[key] = categoryService.getCategories(scope)
-      .then((cats) => { cache[key] = cats; return cats; })
+      .then((cats) => { cache[key] = cats; cachedAt[key] = Date.now(); return cats; })
       .finally(() => { delete inflight[key]; });
   }
   return inflight[key]!;
@@ -24,8 +34,11 @@ export function useCategories(scope: 'CREATOR' | 'BUSINESS') {
 
   useEffect(() => {
     let cancelled = false;
-    if (cache[scope]) { setCategories(cache[scope]!); setLoading(false); return; }
-    setLoading(true);
+    if (isFresh(scope)) { setCategories(cache[scope]!); setLoading(false); return; }
+    // Stale (or missing) cache — show whatever we have (if anything) without a
+    // loading flash, and quietly refetch underneath it.
+    if (cache[scope]) setCategories(cache[scope]!);
+    setLoading(!cache[scope]);
     fetchScoped(scope, scope)
       .then((cats) => { if (!cancelled) setCategories(cats); })
       .finally(() => { if (!cancelled) setLoading(false); });
@@ -43,8 +56,9 @@ export function useAllCategories() {
 
   useEffect(() => {
     let cancelled = false;
-    if (cache.ALL) { setCategories(cache.ALL); setLoading(false); return; }
-    setLoading(true);
+    if (isFresh('ALL')) { setCategories(cache.ALL!); setLoading(false); return; }
+    if (cache.ALL) setCategories(cache.ALL);
+    setLoading(!cache.ALL);
     fetchScoped('ALL')
       .then((cats) => { if (!cancelled) setCategories(cats); })
       .finally(() => { if (!cancelled) setLoading(false); });

@@ -1,14 +1,24 @@
 import { useEffect, useState } from 'react';
 import { platformService, type ApiPlatform } from '@/services/platform';
 
+// How long a fetched list is trusted before the next mount silently refetches
+// in the background — without this, a long-running app session would never
+// notice an admin disabling/re-enabling a platform until force-quit/reopened.
+const CACHE_TTL_MS = 5 * 60 * 1000;
+
 let cache: ApiPlatform[] | null = null;
+let cachedAt = 0;
 let inflight: Promise<ApiPlatform[]> | null = null;
 
+function isFresh() {
+  return cache !== null && Date.now() - cachedAt < CACHE_TTL_MS;
+}
+
 function fetchPlatforms(): Promise<ApiPlatform[]> {
-  if (cache) return Promise.resolve(cache);
+  if (isFresh()) return Promise.resolve(cache!);
   if (!inflight) {
     inflight = platformService.getPlatforms()
-      .then((platforms) => { cache = platforms; return platforms; })
+      .then((platforms) => { cache = platforms; cachedAt = Date.now(); return platforms; })
       .finally(() => { inflight = null; });
   }
   return inflight;
@@ -23,8 +33,11 @@ export function usePlatforms() {
 
   useEffect(() => {
     let cancelled = false;
-    if (cache) { setPlatforms(cache); setLoading(false); return; }
-    setLoading(true);
+    if (isFresh()) { setPlatforms(cache!); setLoading(false); return; }
+    // Stale (or missing) cache — show whatever we have (if anything) without a
+    // loading flash, and quietly refetch underneath it.
+    if (cache) setPlatforms(cache);
+    setLoading(!cache);
     fetchPlatforms()
       .then((p) => { if (!cancelled) setPlatforms(p); })
       .finally(() => { if (!cancelled) setLoading(false); });
