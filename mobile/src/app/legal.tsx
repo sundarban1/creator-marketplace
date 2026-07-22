@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
 
   header:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1 },
   headerCenter: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  headerTitle:  { fontSize: 17, fontFamily: F.bold },
+  headerTitle:  { fontSize: 18, fontFamily: F.bold },
 
   errorText:    { fontSize: 15, textAlign: 'center', fontFamily: F.medium },
   retryBtn:     { borderRadius: RADIUS.md, paddingHorizontal: 24, paddingVertical: 12, marginTop: 4 },

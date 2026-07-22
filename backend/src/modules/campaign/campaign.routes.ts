@@ -264,6 +264,20 @@ router.get('/my', authenticate, authorize('BUSINESS'), ctrl.getMyCampaigns.bind(
 
 /**
  * @swagger
+ * /api/campaigns/featured-quota:
+ *   get:
+ *     tags: [Campaign]
+ *     summary: Free "feature this event" quota for the current business (BUSINESS only)
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Free quota, how many have been used, how many remain, and the price per feature beyond that
+ */
+router.get('/featured-quota', authenticate, authorize('BUSINESS'), ctrl.getFeaturedQuota.bind(ctrl));
+
+/**
+ * @swagger
  * /api/campaigns/applications/my:
  *   get:
  *     tags: [Campaign]

@@ -450,7 +450,7 @@ export default function CampaignDetailScreen() {
   if (loading) {
     return (
       <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
-        <View style={s.header}>
+        <View style={[s.header, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
           <BackButton />
           <Text style={[s.headerTitle, { color: C.text }]}>{t('campaignDetail.headerTitle')}</Text>
           <View style={{ width: 40 }} />
@@ -483,9 +483,9 @@ export default function CampaignDetailScreen() {
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
 
       {/* Header */}
-      <View style={s.header}>
+      <View style={[s.header, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
         <BackButton />
-        <Text style={[s.headerTitle, { color: C.text }]}>{t('campaignDetail.headerTitle')}</Text>
+        <Text style={[s.headerTitle, { color: C.text }]} numberOfLines={1}>{campaign.title}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -702,7 +702,7 @@ export default function CampaignDetailScreen() {
       </ScrollView>
 
       {/* Sticky CTA */}
-      <View style={[s.ctaBar, { backgroundColor: C.surface, borderTopColor: C.border, justifyContent: 'center' }]}>
+      <View style={[s.ctaBar, { justifyContent: 'center' }]}>
         {isBusiness ? (
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
             style={({ pressed }) => [s.applyBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }, pressed && { opacity: 0.88 }]}
@@ -1104,8 +1104,8 @@ const s = StyleSheet.create({
   goBackBtn: { borderRadius: RADIUS.sm, paddingHorizontal: 20, paddingVertical: 10, marginTop: 8 },
   goBackBtnTxt: { color: '#fff', fontSize: 14, fontFamily: F.bold },
 
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
-  headerTitle: { fontSize: 17, fontFamily: F.bold },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1 },
+  headerTitle: { flex: 1, fontSize: 18, fontFamily: F.bold, textAlign: 'center' },
 
   scroll: { paddingBottom: 20 },
 
@@ -1127,9 +1127,9 @@ const s = StyleSheet.create({
   verifiedBadge: { width: 16, height: 16, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
   platformTag:     { flexDirection: 'row', gap: 5 },
   platformTagIcon: { width: 24, height: 24, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
-  campaignTitle: { fontSize: 20, lineHeight: 26, fontFamily: F.bold },
+  campaignTitle: { fontSize: 18, lineHeight: 24, fontFamily: F.bold },
   budgetRow:     { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  budget:        { fontSize: 22, fontFamily: F.bold },
+  budget:        { fontSize: 16, fontFamily: F.bold },
   typeBadge:     { borderRadius: RADIUS.sm, paddingHorizontal: 9, paddingVertical: 4, borderWidth: 1 },
   typeBadgeText: { fontSize: 12, fontFamily: F.bold },
   proposalsBadge:{ borderRadius: RADIUS.full, paddingHorizontal: 10, paddingVertical: 4 },
@@ -1159,7 +1159,7 @@ const s = StyleSheet.create({
   benefitChip:   { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: RADIUS.full, paddingHorizontal: 12, paddingVertical: 7 },
   benefitChipTxt:{ fontSize: 13, fontFamily: F.semibold },
 
-  ctaBar:        { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12, borderTopWidth: 1, gap: 16, ...SHADOW.floating, shadowOffset: { width: 0, height: -6 } },
+  ctaBar:        { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12, gap: 16 },
   ctaInfo:       { flex: 1 },
   ctaBudget:     { fontSize: 18, fontFamily: F.bold },
   ctaLabel:      { fontSize: 11, marginTop: 1, fontFamily: F.regular },

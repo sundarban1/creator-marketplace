@@ -176,7 +176,7 @@ function ChatCard({ conv, onDelete }: { conv: Conversation; onDelete: (id: strin
         onPress={() =>
           router.push({
             pathname: '/(business)/messages/[id]' as never,
-            params: { id: conv.id, name: conv.participantName, avatar: conv.participantAvatar ?? '', userId: conv.participantUserId ?? '', status: conv.status, campaignTitle: conv.campaignTitle ?? '' },
+            params: { id: conv.id, name: conv.participantName, avatar: conv.participantAvatar ?? '', userId: conv.participantUserId ?? '', participantId: conv.participantId, status: conv.status, campaignTitle: conv.campaignTitle ?? '' },
           })
         }>
         {/* Avatar — plain, no ring/stripe/badge clutter */}
@@ -195,7 +195,10 @@ function ChatCard({ conv, onDelete }: { conv: Conversation; onDelete: (id: strin
             <Text
               style={[s.preview, { color: hasUnread ? C.text : C.textSecondary }, hasUnread && s.previewUnread]}
               numberOfLines={1}>
-              {(conv.lastMessage || t('messages.noMessagesYet')) + ' · ' + formatTime(conv.lastMessageTime, t)}
+              {conv.lastMessage || t('messages.noMessagesYet')}
+            </Text>
+            <Text style={[s.previewTime, { color: hasUnread ? C.text : C.textSecondary }, hasUnread && s.previewUnread]}>
+              {' · ' + formatTime(conv.lastMessageTime, t)}
             </Text>
           </View>
         </View>
@@ -434,7 +437,8 @@ const s = StyleSheet.create({
   nameUnread:     { fontFamily: F.bold, },
   rowBottom:      { flexDirection: 'row', alignItems: 'center' },
   previewIcon:    { marginRight: 4 },
-  preview:        { flex: 1, fontSize: 13, fontFamily: F.regular },
+  preview:        { flexShrink: 1, fontSize: 13, fontFamily: F.regular },
+  previewTime:    { flexShrink: 0, fontSize: 13, fontFamily: F.regular },
   previewUnread:  { fontFamily: F.medium },
   unreadDot:      { width: 9, height: 9, borderRadius: RADIUS.full, flexShrink: 0 },
 

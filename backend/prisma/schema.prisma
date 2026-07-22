@@ -335,6 +335,12 @@ model Campaign {
   conversations  Conversation[]
   invitations    CampaignInvitation[]
 
+  // Maintained by a Postgres trigger (see migration add_campaign_fulltext_search) —
+  // Prisma can't type tsvector, so it's never written through the client, only
+  // read via $queryRaw for full-text search. GIN index + pg_trgm indexes on
+  // title/category live in that migration's raw SQL too, not modeled here.
+  searchVector Unsupported("tsvector")?
+
   @@index([businessId])
   @@index([status])
   @@index([createdAt(sort: Desc)])

@@ -44,14 +44,24 @@ export function NearbyLocationSheet({ visible, onClose, source, radiusKm, homeLa
   // animateToRegion calls (tapping Current/Home) AND genuine user drags —
   // this flag lets us tell them apart so only a real drag switches to "custom".
   const isProgrammaticMove = useRef(false);
+  // MapView also fires onRegionChangeComplete once on its own right after it
+  // lays out with initialRegion, with no user touch involved — onPanDrag only
+  // fires for an actual finger-driven pan, so it's the one reliable signal
+  // that the pin move below should count as "custom".
+  const userIsDragging = useRef(false);
 
   useEffect(() => {
     if (!visible) return;
-    setDraftSource(source);
+    // Home is the preferred starting point every time the sheet opens,
+    // regardless of whichever source was last applied — falls back to
+    // the previously applied source only when no home address is saved.
+    const initialSource: NearbySource = homeCoords ? 'home' : source;
+    setDraftSource(initialSource);
     setDraftRadius(radiusKm);
+    userIsDragging.current = false;
     const start =
-      source === 'current' ? (currentCoords ?? homeCoords) :
-      source === 'home'    ? (homeCoords ?? currentCoords) :
+      initialSource === 'current' ? (currentCoords ?? homeCoords) :
+      initialSource === 'home'    ? (homeCoords ?? currentCoords) :
       (customCoords ?? currentCoords ?? homeCoords);
     setPinCoords(start ?? FALLBACK_COORDS);
   }, [visible, source, radiusKm, currentCoords, homeCoords, customCoords]);
@@ -72,10 +82,12 @@ export function NearbyLocationSheet({ visible, onClose, source, radiusKm, homeLa
     if (isProgrammaticMove.current) {
       // This change came from moveTo() finishing its animation, not a user drag — consume the flag.
       isProgrammaticMove.current = false;
-    } else {
+    } else if (userIsDragging.current) {
       // A genuine drag — the pin no longer matches Current or Home, so neither stays selected.
       setDraftSource('custom');
+      userIsDragging.current = false;
     }
+    // Otherwise this is the map's own initial-layout region-change — not a user action, ignore it.
   }
 
   async function handleSelectCurrent() {
@@ -145,7 +157,7 @@ export function NearbyLocationSheet({ visible, onClose, source, radiusKm, homeLa
             {draftSource === 'custom' ? t('nearbyLocationSheet.customPointHint') : t('nearbyLocationSheet.dragMapHint')}
           </Text>
 
-          <View style={styles.mapWrap}>
+          <View style={[styles.mapWrap, { borderColor: draftSource === 'custom' ? C.brinjal1 : C.border }]}>
             <MapView
               ref={mapRef}
               provider={PROVIDER_GOOGLE}
@@ -156,6 +168,7 @@ export function NearbyLocationSheet({ visible, onClose, source, radiusKm, homeLa
                 latitudeDelta: DEFAULT_DELTA,
                 longitudeDelta: DEFAULT_DELTA,
               }}
+              onPanDrag={() => { userIsDragging.current = true; }}
               onRegionChangeComplete={handleRegionChangeComplete}
             />
             {/* Fixed center pin — the map pans underneath it, matching the
@@ -197,7 +210,7 @@ const styles = StyleSheet.create({
   sectionLabel: { fontSize: 11, letterSpacing: 0.6, fontFamily: F.bold },
   sectionHint:  { fontSize: 12, fontFamily: F.regular, marginTop: 2, marginBottom: 10 },
 
-  mapWrap: { height: 220, borderRadius: 16, overflow: 'hidden', marginBottom: 20 },
+  mapWrap: { height: 220, borderRadius: 16, borderWidth: 1.5, overflow: 'hidden', marginBottom: 20 },
   map: { ...StyleSheet.absoluteFill },
   pinWrap: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center', marginBottom: 36 },
 

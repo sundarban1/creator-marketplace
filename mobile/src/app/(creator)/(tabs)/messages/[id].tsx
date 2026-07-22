@@ -44,6 +44,11 @@ import type { Message } from '@/types';
 
 const AVATAR_COLORS = ['#7C3AED', '#0EA5E9', '#059669', '#D97706', '#EC4899', '#06B6D4', '#EF4444'];
 
+// Bounds for the composer's auto-grow height — MIN keeps it a one-line pill
+// at rest, MAX caps growth before the text scrolls internally.
+const MIN_INPUT_HEIGHT = 20;
+const MAX_INPUT_HEIGHT = 100;
+
 function avatarColor(name: string) {
   let h = 0;
   for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
@@ -186,14 +191,15 @@ function LocalVideoPreview({ uri, style }: { uri: string; style: object }) {
 // ── Message Bubble ─────────────────────────────────────────────────────────────
 
 function MessageBubble({
-  msg, isSent, showAvatar, isLast, personName, personColor, onLongPress, onRetryVideo, onDeleteFailed,
+  msg, isSent, showAvatar, isLast, personName, personColor, personAvatar, onLongPress, onRetryVideo, onDeleteFailed,
 }: {
   msg: Message; isSent: boolean; showAvatar: boolean; isLast: boolean;
-  personName: string; personColor: string; onLongPress: () => void;
+  personName: string; personColor: string; personAvatar?: string; onLongPress: () => void;
   onRetryVideo: (msg: Message) => void; onDeleteFailed: (id: string) => void;
 }) {
   const C = useAppColors();
   const { t } = useLanguage();
+  const [avatarFailed, setAvatarFailed] = useState(false);
   const isPending = msg.id.startsWith('temp-');
   const isImage   = msg.type === 'IMAGE' && !!msg.attachmentUrl;
   const isFile    = msg.type === 'FILE'  && !!msg.attachmentUrl;
@@ -218,9 +224,11 @@ function MessageBubble({
       onLongPress={isPending ? undefined : onLongPress} delayLongPress={350}>
       {!isSent && (
         showAvatar
-          ? <View style={[s.msgAvatar, { backgroundColor: personColor }]}>
-              <Text style={s.msgAvatarTxt}>{initials(personName)}</Text>
-            </View>
+          ? personAvatar && !avatarFailed
+            ? <ExpoImage source={{ uri: personAvatar }} style={s.msgAvatar} contentFit="cover" onError={() => setAvatarFailed(true)} />
+            : <View style={[s.msgAvatar, { backgroundColor: personColor }]}>
+                <Text style={s.msgAvatarTxt}>{initials(personName)}</Text>
+              </View>
           : <View style={s.avatarSpacer} />
       )}
       <View style={[s.bubbleWrap, isSent ? s.bubbleWrapSent : s.bubbleWrapReceived]}>
@@ -339,8 +347,8 @@ function MessageBubble({
 // ── Screen ────────────────────────────────────────────────────────────────────
 
 export default function CreatorChatRoomScreen() {
-  const { id, name, avatar, userId: participantUserId, status: urlStatus, focusInput, campaignTitle, participantRole } = useLocalSearchParams<{
-    id: string; name?: string; avatar?: string; userId?: string; status?: string; focusInput?: string; campaignTitle?: string; participantRole?: string;
+  const { id, name, avatar, userId: participantUserId, participantId, status: urlStatus, focusInput, campaignTitle, participantRole } = useLocalSearchParams<{
+    id: string; name?: string; avatar?: string; userId?: string; participantId?: string; status?: string; focusInput?: string; campaignTitle?: string; participantRole?: string;
   }>();
   const { user } = useAuth();
   const { t }    = useLanguage();
@@ -356,39 +364,34 @@ export default function CreatorChatRoomScreen() {
     }
   }, [id, participantRole]);
 
-  function handleBlockMenuPress() {
-    const isBlocked = blockStatus?.blockedByMe;
+  function openParticipantProfile() {
+    if (!participantId) return;
+    if (participantRole === 'BUSINESS') {
+      router.push({ pathname: '/(creator)/business-detail', params: { id: participantId } });
+    } else if (participantRole === 'CREATOR') {
+      router.push({ pathname: '/(creator)/creator-detail', params: { id: participantId } });
+    }
+  }
+
+  function handleBlockPress() {
+    if (blockStatus?.blockedByMe) {
+      chatService.unblockConversation(id)
+        .then(() => setBlockStatus((prev) => ({ blockedByMe: false, blockedByOther: prev?.blockedByOther ?? false })))
+        .catch(() => {});
+      return;
+    }
     Alert.alert(
-      name ?? '',
-      undefined,
+      t('messages.blockConfirmTitle', { name: name ?? '' }),
+      t('messages.blockConfirmBody', { name: name ?? '' }),
       [
         { text: t('common.cancel'), style: 'cancel' },
         {
-          text: isBlocked ? t('messages.unblock') : t('messages.block'),
+          text: t('messages.block'),
           style: 'destructive',
           onPress: () => {
-            if (isBlocked) {
-              chatService.unblockConversation(id)
-                .then(() => setBlockStatus((prev) => ({ blockedByMe: false, blockedByOther: prev?.blockedByOther ?? false })))
-                .catch(() => {});
-            } else {
-              Alert.alert(
-                t('messages.blockConfirmTitle', { name: name ?? '' }),
-                t('messages.blockConfirmBody', { name: name ?? '' }),
-                [
-                  { text: t('common.cancel'), style: 'cancel' },
-                  {
-                    text: t('messages.block'),
-                    style: 'destructive',
-                    onPress: () => {
-                      chatService.blockConversation(id)
-                        .then(() => setBlockStatus((prev) => ({ blockedByMe: true, blockedByOther: prev?.blockedByOther ?? false })))
-                        .catch(() => {});
-                    },
-                  },
-                ],
-              );
-            }
+            chatService.blockConversation(id)
+              .then(() => setBlockStatus((prev) => ({ blockedByMe: true, blockedByOther: prev?.blockedByOther ?? false })))
+              .catch(() => {});
           },
         },
       ],
@@ -401,6 +404,7 @@ export default function CreatorChatRoomScreen() {
     (urlStatus as 'PENDING' | 'ACCEPTED' | 'DECLINED') ?? 'ACCEPTED',
   );
   const [text, setText]               = useState('');
+  const [inputHeight, setInputHeight] = useState(MIN_INPUT_HEIGHT);
   const [acting, setActing]           = useState<'accept' | 'decline' | null>(null);
   const [otherTyping, setOtherTyping] = useState(false);
   const [emojiOpen, setEmojiOpen]     = useState(false);
@@ -453,7 +457,7 @@ export default function CreatorChatRoomScreen() {
 
   useEffect(() => {
     setMessages([]);
-    setText('');
+    clearComposer();
     const convStatus = (urlStatus as 'PENDING' | 'ACCEPTED' | 'DECLINED') ?? 'ACCEPTED';
     setStatus(convStatus);
     if (!id) return;
@@ -568,6 +572,14 @@ export default function CreatorChatRoomScreen() {
     if (otherTyping) scrollToBottom();
   }, [otherTyping]);
 
+  // Collapse the composer back to a single line — the native multiline
+  // TextInput doesn't shrink on its own when `text` is cleared, so every
+  // call site that clears it also resets this.
+  function clearComposer() {
+    setText('');
+    setInputHeight(MIN_INPUT_HEIGHT);
+  }
+
   function handleTextChange(val: string) {
     setText(val);
     const socket = getSocket();
@@ -619,7 +631,7 @@ export default function CreatorChatRoomScreen() {
       type: 'TEXT',
     };
     setMessages((prev) => [...prev, optimistic]);
-    setText('');
+    clearComposer();
     scrollToBottom();
 
     if (socket?.connected) {
@@ -661,7 +673,7 @@ export default function CreatorChatRoomScreen() {
       type, attachmentUrl: file.uri, attachmentName: file.name,
     };
     setMessages((prev) => [...prev, optimistic]);
-    setText('');
+    clearComposer();
     scrollToBottom();
 
     try {
@@ -734,7 +746,7 @@ export default function CreatorChatRoomScreen() {
       localUri: video.uri, uploadProgress: 0, retryCount: 0,
     };
     setMessages((prev) => [...prev, optimistic]);
-    setText('');
+    clearComposer();
     scrollToBottom();
     await runVideoSend(optimistic);
   }
@@ -774,40 +786,61 @@ export default function CreatorChatRoomScreen() {
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
       {/* ── Header ── */}
-      <View style={[s.header, { backgroundColor: C.surface, borderBottomColor: C.border, borderBottomWidth: 1 }]}>
+      <View style={[s.header, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
         <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[s.backBtn, { backgroundColor: C.background }]} hitSlop={4} onPress={() => router.canGoBack() ? router.back() : router.replace('/(creator)/messages' as never)}>
           <Ionicons name="chevron-back" size={22} color={C.text} />
         </Pressable>
-        {personAvatar && !personAvatarFailed ? (
-          <ExpoImage source={{ uri: personAvatar }} style={[s.headerAvatar, { borderColor: C.border }]} contentFit="cover" onError={() => setPersonAvatarFailed(true)} />
-        ) : (
-          <View style={[s.headerAvatar, { backgroundColor: personColor, borderColor: C.border }]}>
-            <Text style={s.headerAvatarTxt}>{initials(personName)}</Text>
+        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.08)' }}
+          style={({ pressed }) => [s.headerTouch, pressed && !!participantId && { opacity: 0.6 }]}
+          onPress={openParticipantProfile} disabled={!participantId} hitSlop={4}>
+          {personAvatar && !personAvatarFailed ? (
+            <ExpoImage source={{ uri: personAvatar }} style={[s.headerAvatar, { borderColor: C.border }]} contentFit="cover" onError={() => setPersonAvatarFailed(true)} />
+          ) : (
+            <View style={[s.headerAvatar, { backgroundColor: personColor, borderColor: C.border }]}>
+              <Text style={s.headerAvatarTxt}>{initials(personName)}</Text>
+            </View>
+          )}
+          <View style={s.headerInfo}>
+            <Text style={[s.headerName, { color: C.text }]} numberOfLines={1}>{personName}</Text>
+            {otherTyping
+              ? <Text style={[s.headerSub, { color: C.brinjal1 }]}>typing…</Text>
+              : isPending
+              ? (
+                <View style={s.headerSubRow}>
+                  <Ionicons name="time-outline" size={11} color={C.draft} />
+                  <Text style={[s.headerSub, { color: C.draft, marginTop: 0 }]}>{t('messages.requestPending')}</Text>
+                </View>
+              )
+              : isDeclined
+              ? <Text style={[s.headerSub, { color: C.error }]}>{t('messages.requestDeclined')}</Text>
+              : (() => {
+                  const label = presence ? formatPresence(t, presence.online, presence.lastSeenAt) : null;
+                  return label
+                    ? <Text style={[s.headerSub, { color: presence?.online ? C.active : C.textSecondary }]}>{label}</Text>
+                    : null;
+                })()}
           </View>
-        )}
-        <View style={s.headerInfo}>
-          <Text style={[s.headerName, { color: C.text }]} numberOfLines={1}>{personName}</Text>
-          {otherTyping
-            ? <Text style={[s.headerSub, { color: C.brinjal1 }]}>typing…</Text>
-            : isPending
-            ? (
-              <View style={s.headerSubRow}>
-                <Ionicons name="time-outline" size={11} color={C.draft} />
-                <Text style={[s.headerSub, { color: C.draft, marginTop: 0 }]}>{t('messages.requestPending')}</Text>
-              </View>
-            )
-            : isDeclined
-            ? <Text style={[s.headerSub, { color: C.error }]}>{t('messages.requestDeclined')}</Text>
-            : (() => {
-                const label = presence ? formatPresence(t, presence.online, presence.lastSeenAt) : null;
-                return label
-                  ? <Text style={[s.headerSub, { color: presence?.online ? C.active : C.textSecondary }]}>{label}</Text>
-                  : null;
-              })()}
-        </View>
-        {participantRole === 'CREATOR' && (
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[s.backBtn, { backgroundColor: C.background }]} hitSlop={4} onPress={handleBlockMenuPress}>
-            <Ionicons name="ellipsis-vertical" size={20} color={C.text} />
+        </Pressable>
+        {participantRole === 'CREATOR' && blockStatus && (
+          <Pressable
+            android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            style={[
+              s.blockBtn,
+              blockStatus.blockedByMe
+                ? { backgroundColor: '#EEF2FF', borderColor: C.brinjal1 }
+                : { backgroundColor: '#FEF2F2', borderColor: '#FCA5A5' },
+            ]}
+            hitSlop={4}
+            onPress={handleBlockPress}
+          >
+            <Ionicons
+              name={blockStatus.blockedByMe ? 'lock-open-outline' : 'ban-outline'}
+              size={13}
+              color={blockStatus.blockedByMe ? C.brinjal1 : '#EF4444'}
+            />
+            <Text style={[s.blockBtnTxt, { color: blockStatus.blockedByMe ? C.brinjal1 : '#EF4444' }]}>
+              {blockStatus.blockedByMe ? t('messages.unblock') : t('messages.block')}
+            </Text>
           </Pressable>
         )}
       </View>
@@ -875,7 +908,7 @@ export default function CreatorChatRoomScreen() {
               <MessageBubble
                 msg={item.msg} isSent={item.isSent}
                 showAvatar={item.showAvatar} isLast={item.isLast}
-                personName={personName} personColor={personColor}
+                personName={personName} personColor={personColor} personAvatar={personAvatar}
                 onLongPress={() => handleMessageLongPress(item.msg)}
                 onRetryVideo={(msg) => void runVideoSend(msg)}
                 onDeleteFailed={(msgId) => setMessages((prev) => prev.filter((m) => m.id !== msgId))}
@@ -940,9 +973,10 @@ export default function CreatorChatRoomScreen() {
                 </Pressable>
                 <TextInput
                   ref={inputRef}
-                  style={[s.input, { color: C.text }]}
+                  style={[s.input, { color: C.text, height: Math.min(Math.max(MIN_INPUT_HEIGHT, inputHeight), MAX_INPUT_HEIGHT) }]}
                   value={text}
                   onChangeText={handleTextChange}
+                  onContentSizeChange={(e) => setInputHeight(e.nativeEvent.contentSize.height)}
                   onFocus={() => setEmojiOpen(false)}
                   placeholder={t('messages.typePlaceholder')}
                   placeholderTextColor={C.textSecondary}
@@ -989,8 +1023,11 @@ const s = StyleSheet.create({
   flex:      { flex: 1 },
 
   // Header
-  header:          { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, gap: 10 },
+  header:          { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, gap: 10, borderBottomWidth: 1 },
+  headerTouch:     { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
   backBtn:         { width: 38, height: 38, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
+  blockBtn:        { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: RADIUS.full, borderWidth: 1.5, paddingHorizontal: 11, paddingVertical: 7 },
+  blockBtnTxt:     { fontSize: 12, fontFamily: F.semibold },
   headerAvatar:    { width: 40, height: 40, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', borderWidth: 2 },
   headerAvatarTxt: { color: '#fff', fontSize: 14, fontFamily: F.bold },
   headerInfo:      { flex: 1 },

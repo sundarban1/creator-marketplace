@@ -139,14 +139,14 @@ export default function CreatorDetailScreen() {
     if (!convId || !profile) return;
     router.push({
       pathname: '/(business)/messages/[id]',
-      params: { id: convId, name: profile.fullName ?? profile.username ?? 'Creator', status: convStatus ?? 'ACCEPTED' },
+      params: { id: convId, name: profile.fullName ?? profile.username ?? 'Creator', status: convStatus ?? 'ACCEPTED', participantId: profile.id },
     });
   }
 
   if (loading) {
     return (
       <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
-        <View style={s.topBar}>
+        <View style={[s.topBar, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
           <BackButton fallback="/(business)/explore-creators" />
         </View>
         <View style={s.centered}>
@@ -159,7 +159,7 @@ export default function CreatorDetailScreen() {
   if (error || !profile) {
     return (
       <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
-        <View style={s.topBar}>
+        <View style={[s.topBar, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
           <BackButton fallback="/(business)/explore-creators" />
         </View>
         <View style={s.centered}>
@@ -199,9 +199,9 @@ export default function CreatorDetailScreen() {
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
       {/* Top bar */}
-      <View style={s.topBar}>
+      <View style={[s.topBar, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
         <BackButton fallback="/(business)/explore-creators" />
-        <Text style={[s.topTitle, { color: C.text }]}>{t('creatorDetailExtra.topTitle')}</Text>
+        <Text style={[s.topTitle, { color: C.text }]} numberOfLines={1}>{profile.fullName ?? 'Creator'}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -218,12 +218,15 @@ export default function CreatorDetailScreen() {
           )}
 
           <View style={s.heroInfo}>
-            <View style={s.nameRow}>
-              <Text style={[s.heroName, { color: C.text }]}>{profile.fullName ?? 'Creator'}</Text>
-              {(profile.fullyVerified || profile.isVerified) && <VerifiedBadge size={16} />}
-            </View>
             {profile.username ? (
-              <Text style={[s.username, { color: C.textSecondary }]}>@{profile.username}</Text>
+              <View style={s.nameRow}>
+                <Text style={[s.username, { color: C.textSecondary }]}>@{profile.username}</Text>
+                {(profile.fullyVerified || profile.isVerified) && <VerifiedBadge size={16} />}
+              </View>
+            ) : (profile.fullyVerified || profile.isVerified) ? (
+              <View style={s.nameRow}>
+                <VerifiedBadge size={16} />
+              </View>
             ) : null}
             {profile.location ? (
               <View style={s.locationRow}>
@@ -467,8 +470,8 @@ const s = StyleSheet.create({
   container: { flex: 1 },
   centered:  { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, padding: 32 },
 
-  topBar:    { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12 },
-  topTitle:  { flex: 1, fontSize: 17, textAlign: 'center', fontFamily: F.bold },
+  topBar:    { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12, borderBottomWidth: 1 },
+  topTitle:  { flex: 1, fontSize: 18, textAlign: 'center', fontFamily: F.bold },
 
   scroll: { paddingBottom: 16, gap: 12 },
 
@@ -478,7 +481,6 @@ const s = StyleSheet.create({
   avatarText:   { fontSize: 26, fontFamily: F.bold },
   heroInfo:     { flex: 1, gap: 4 },
   nameRow:      { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
-  heroName:     { fontSize: 20, fontFamily: F.bold },
   username:     { fontSize: 13, fontFamily: F.regular },
   locationRow:  { flexDirection: 'row', alignItems: 'center', gap: 4 },
   location:     { fontSize: 13, fontFamily: F.regular },

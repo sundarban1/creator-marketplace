@@ -92,7 +92,7 @@ export default function BusinessReferralScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
-      <View style={styles.topBar}>
+      <View style={[styles.topBar, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
         <BackButton fallback="/(business)/" />
         <Text style={[styles.topTitle, { color: C.text }]}>{t('businessReferral.headerTitle')}</Text>
         <View style={{ width: 38 }} />
@@ -211,8 +211,8 @@ export default function BusinessReferralScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  topBar:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
-  topTitle:  { fontSize: 16, fontFamily: F.bold },
+  topBar:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1 },
+  topTitle:  { fontSize: 18, fontFamily: F.bold },
   content:   { padding: 16, paddingBottom: 32, gap: 16 },
 
   card: { borderRadius: RADIUS.md, padding: 16, gap: 8, ...SHADOW.card },

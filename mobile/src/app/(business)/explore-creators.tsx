@@ -264,7 +264,7 @@ export default function ExploreCreatorsScreen() {
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
       {/* Header — back button + search, same row */}
-      <View style={s.header} accessibilityRole="header" accessibilityLabel={t('explore.exploreCreators')}>
+      <View style={[s.header, { backgroundColor: C.surface, borderBottomColor: C.border }]} accessibilityRole="header" accessibilityLabel={t('explore.exploreCreators')}>
         <BackButton fallback="/(business)/" />
         <View style={[s.searchCard, { flex: 1, backgroundColor: C.surface, borderColor: C.border }]}>
           <Ionicons name="search-outline" size={18} color={C.textSecondary} />
@@ -436,7 +436,7 @@ export default function ExploreCreatorsScreen() {
 
 const s = StyleSheet.create({
   container: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12, gap: 12 },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12, gap: 12, borderBottomWidth: 1 },
   savedLink: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: RADIUS.full, paddingHorizontal: 10, paddingVertical: 6 },
   savedLinkText: { fontSize: 12, fontFamily: F.bold },
 
@@ -450,7 +450,7 @@ const s = StyleSheet.create({
   chip: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: RADIUS.full, borderWidth: 1.5 },
   chipText: { fontSize: 12, fontFamily: F.semibold },
 
-  metaRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, marginBottom: 8 },
+  metaRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, marginTop: 12, marginBottom: 8 },
   countText: { fontSize: 12, fontFamily: F.semibold },
 
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, paddingHorizontal: 32 },

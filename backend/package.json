@@ -13,7 +13,9 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:seed:admin": "tsx prisma/seed-admin.ts",
     "db:seed:platforms": "tsx prisma/seed-platforms.ts",
-    "db:seed:bulk": "tsx prisma/bulk-seed.ts"
+    "db:seed:bulk": "tsx prisma/bulk-seed.ts",
+    "android": "expo run:android",
+    "ios": "expo run:ios"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.110.0",
@@ -39,7 +41,10 @@
     "socket.io": "^4.8.3",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.0",
-    "zod": "^3.22.4"
+    "zod": "^3.22.4",
+    "expo": "~54.0.33",
+    "react": "19.1.0",
+    "react-native": "0.81.5"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
@@ -50,6 +55,7 @@
     "@types/node": "^20.11.5",
     "@types/node-cron": "^3.0.11",
     "@types/nodemailer": "^6.4.14",
+    "@types/react": "~19.1.10",
     "@types/swagger-jsdoc": "^6.0.4",
     "@types/swagger-ui-express": "^4.1.6",
     "pino-pretty": "^13.1.3",

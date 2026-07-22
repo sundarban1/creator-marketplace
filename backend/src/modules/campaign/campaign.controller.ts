@@ -119,6 +119,15 @@ export class CampaignController {
     }
   }
 
+  async getFeaturedQuota(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const quota = await campaignService.getFeaturedQuota(req.user!.id);
+      success(res, quota);
+    } catch (err) {
+      next(err);
+    }
+  }
+
   async apply(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const application = await campaignService.apply(req.params.id, req.user!.id, req.body);

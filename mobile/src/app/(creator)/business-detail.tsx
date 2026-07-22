@@ -195,7 +195,7 @@ export default function BusinessDetailScreen() {
       if (conv.status === 'ACCEPTED') {
         router.push({
           pathname: '/(creator)/messages/[id]' as never,
-          params: { id: conv.id, name: business.businessName, status: conv.status },
+          params: { id: conv.id, name: business.businessName, status: conv.status, participantId: business.id, participantRole: 'BUSINESS' },
         } as never);
       }
     } catch (err) {
@@ -209,7 +209,7 @@ export default function BusinessDetailScreen() {
     if (!convId || !business || business.isPrivate) return;
     router.push({
       pathname: '/(creator)/messages/[id]' as never,
-      params: { id: convId, name: business.businessName, status: convStatus ?? 'ACCEPTED' },
+      params: { id: convId, name: business.businessName, status: convStatus ?? 'ACCEPTED', participantId: business.id, participantRole: 'BUSINESS' },
     } as never);
   }
 

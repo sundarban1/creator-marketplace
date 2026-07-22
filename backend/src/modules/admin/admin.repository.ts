@@ -24,6 +24,11 @@ const DEFAULTS: Record<string, unknown> = {
   'security.ipAllowlist':          false,
   'security.auditLogging':         true,
   'security.sessionTimeout':       true,
+  // Number of events a business can feature for free before they're
+  // charged; 'featuredEvent.price' is what they'd pay per feature after
+  // that (Rs.). See CampaignService.getFeaturedQuota.
+  'featuredEvent.freeQuota':       3,
+  'featuredEvent.price':           1000,
 };
 
 export class AdminRepository {

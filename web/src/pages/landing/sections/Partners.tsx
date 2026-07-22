@@ -53,7 +53,7 @@ export function Partners() {
   const scrollRef = useAutoScroll<HTMLDivElement>(0.35);
 
   return (
-    <section id={SECTION_IDS.partners} className="border-y border-ink/10 bg-paper-dim py-16">
+    <section id={SECTION_IDS.partners} className="border-y border-ink/10 bg-white py-16">
       <motion.p
         initial="hidden"
         whileInView="show"

@@ -471,6 +471,14 @@ export default function CampaignProposalsScreen() {
             return x;
           }),
         );
+        closeModal();
+        // Straight into the project's activity timeline — no separate "Start
+        // Project" tap needed right after accepting.
+        router.push({
+          pathname: '/(business)/activity-timeline',
+          params: { campaignId, campaignTitle, applicationId: p.id },
+        });
+        return;
       } else {
         await campaignService.rejectProposal(campaignId, p.id);
         setProposals((prev) =>
@@ -517,22 +525,24 @@ export default function CampaignProposalsScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
       {/* Header */}
-      <View style={styles.gradientHeader}>
+      <View style={[styles.gradientHeader, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
 
-        {/* Back button row */}
+        {/* Back button row — title centered between the back button and a
+            same-width spacer on the right, so it's truly centered rather
+            than just centered in the leftover space next to the button. */}
         <View style={styles.headerTopRow}>
           <BackButton />
-          {/* Total count pill */}
+          <Text style={[styles.headerTitle, { color: C.text }]} numberOfLines={1}>{campaignTitle}</Text>
+          <View style={styles.headerTopRowSpacer} />
+        </View>
+
+        {/* Count pill on the left, type/platform badges pushed to the right */}
+        <View style={styles.headerBody}>
           <View style={[styles.totalPill, { backgroundColor: C.surface, borderColor: C.border, borderWidth: 1 }]}>
             <Text style={[styles.totalPillText, { color: C.text }]}>
               {t('campaignProposals.applicationCount', { n: proposals.length })}
             </Text>
           </View>
-        </View>
-
-        {/* Title + meta */}
-        <View style={styles.headerBody}>
-          <Text style={[styles.headerTitle, { color: C.text }]} numberOfLines={2}>{campaignTitle}</Text>
           <View style={styles.headerBadgeRow}>
             <View style={[styles.typeBadge, { backgroundColor: accentBg }]}>
               <FontAwesome5 name={isFree ? 'gift' : 'money-bill-wave'} size={10} color={accent} solid />
@@ -664,16 +674,19 @@ const styles = StyleSheet.create({
   // ── Header ──────────────────────────────────────────────────────────
   gradientHeader: {
     paddingBottom: 16,
+    borderBottomWidth: 1,
   },
 
   headerTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: 10,
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 4,
   },
+  headerTopRowSpacer: { width: 40 },
   totalPill: {
     borderRadius: RADIUS.full,
     paddingHorizontal: 12,
@@ -681,8 +694,8 @@ const styles = StyleSheet.create({
   },
   totalPillText: { fontSize: 12, fontFamily: F.semibold },
 
-  headerBody: { paddingHorizontal: 16, paddingTop: 8, gap: 8 },
-  headerTitle: { fontSize: 20, fontFamily: F.bold, lineHeight: 24 },
+  headerBody: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 8, gap: 8 },
+  headerTitle: { flex: 1, fontSize: 18, fontFamily: F.bold, lineHeight: 22, textAlign: 'center' },
   headerBadgeRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   typeBadge:     { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: RADIUS.full, paddingHorizontal: 10, paddingVertical: 4 },
   typeBadgeText: { fontSize: 11, fontFamily: F.bold },

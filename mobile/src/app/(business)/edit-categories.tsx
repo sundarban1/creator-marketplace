@@ -77,7 +77,7 @@ export default function EditBusinessCategoriesScreen() {
 
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
-      <View style={s.topBar}>
+      <View style={[s.topBar, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
         <BackButton fallback="/(business)/profile" />
         <Text style={[s.topTitle, { color: C.text }]}>{t('editCategoriesBusiness.title')}</Text>
         <Pressable android_ripple={{ color: 'rgba(255,255,255,0.2)' }}
@@ -134,8 +134,8 @@ export default function EditBusinessCategoriesScreen() {
 const s = StyleSheet.create({
   container: { flex: 1 },
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  topBar:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
-  topTitle:  { fontSize: 20, fontFamily: F.bold, lineHeight: 24 },
+  topBar:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1 },
+  topTitle:  { fontSize: 18, fontFamily: F.bold, lineHeight: 22 },
   saveBtn:   { borderRadius: RADIUS.sm, paddingHorizontal: 16, paddingVertical: 8, minWidth: 56, minHeight: 40, alignItems: 'center', justifyContent: 'center' },
   saveBtnTxt:{ color: '#fff', fontSize: 14, fontFamily: F.bold },
   content:   { padding: 20, paddingBottom: 48 },

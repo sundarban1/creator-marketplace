@@ -364,7 +364,7 @@ export default function ExploreCreatorPeersScreen() {
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
       {/* Back button + search, same row */}
-      <View style={s.topRow} accessibilityRole="header" accessibilityLabel={t('explore.exploreCreators')}>
+      <View style={[s.topRow, { backgroundColor: C.surface, borderBottomColor: C.border }]} accessibilityRole="header" accessibilityLabel={t('explore.exploreCreators')}>
         <BackButton fallback="/(creator)/(tabs)" />
         <View style={[s.searchCard, { flex: 1, backgroundColor: C.surface, borderColor: C.border }]}>
           <Ionicons name="search-outline" size={18} color={C.textSecondary} />
@@ -517,7 +517,7 @@ const s = StyleSheet.create({
   container: { flex: 1 },
 
 
-  topRow:     { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12, gap: 12 },
+  topRow:     { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12, gap: 12, borderBottomWidth: 1 },
   searchCard: { flexDirection: 'row', alignItems: 'center', gap: 9, borderRadius: RADIUS.lg, borderWidth: 1.5, paddingHorizontal: 14, height: 44 },
   searchInput: { flex: 1, fontSize: 15, fontFamily: F.regular },
   filterBtn: { width: 36, height: 36, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center' },

@@ -18,7 +18,7 @@ type Props = {
 export function PageHeader({ title, backFallback, onBack, rightSlot }: Props) {
   const C = useAppColors();
   return (
-    <View style={styles.row} accessibilityRole="header" accessibilityLabel={title}>
+    <View style={[styles.row, { backgroundColor: C.surface, borderBottomColor: C.border }]} accessibilityRole="header" accessibilityLabel={title}>
       <BackButton fallback={backFallback} onPress={onBack} />
       <Text style={[styles.title, { color: C.text }]} numberOfLines={1}>{title}</Text>
       <View style={styles.right}>{rightSlot}</View>
@@ -27,7 +27,7 @@ export function PageHeader({ title, backFallback, onBack, rightSlot }: Props) {
 }
 
 const styles = StyleSheet.create({
-  row:   { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, gap: 12 },
+  row:   { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, gap: 12, borderBottomWidth: 1 },
   title: { flex: 1, textAlign: 'center', fontSize: 18, fontFamily: F.bold },
   right: { minWidth: 40, alignItems: 'flex-end' },
 });

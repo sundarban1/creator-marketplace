@@ -98,7 +98,7 @@ export default function BusinessAnalyticsScreen() {
 
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
-      <View style={s.topBar}>
+      <View style={[s.topBar, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
         <BackButton fallback="/(business)/" />
         <Text style={[s.topTitle, { color: C.text }]}>{t('analytics.headerTitle')}</Text>
         <View style={{ width: 38 }} />
@@ -160,8 +160,8 @@ export default function BusinessAnalyticsScreen() {
 const s = StyleSheet.create({
   container: { flex: 1 },
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  topBar:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
-  topTitle:  { fontSize: 16, fontFamily: F.bold },
+  topBar:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1 },
+  topTitle:  { fontSize: 18, fontFamily: F.bold },
 
   rangeRow: { flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 16, paddingVertical: 14 },
 

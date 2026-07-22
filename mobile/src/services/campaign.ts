@@ -213,6 +213,11 @@ export const campaignService = {
     await request('POST', `/api/campaigns/${campaignId}/apply`, payload);
   },
 
+  async getFeaturedQuota(): Promise<{ freeQuota: number; used: number; remaining: number; price: number }> {
+    const res = await request<{ freeQuota: number; used: number; remaining: number; price: number }>('GET', '/api/campaigns/featured-quota');
+    return res.data;
+  },
+
   async create(data: {
     title: string;
     description: string;

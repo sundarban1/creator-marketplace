@@ -2169,7 +2169,7 @@ export default function BusinessSettingsScreen() {
     <ColorCtx.Provider value={C}>
       <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
         {/* Top bar */}
-        <View style={styles.topBar}>
+        <View style={[styles.topBar, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.backBtn, { backgroundColor: C.surface, borderColor: C.border }]} onPress={handleBack}>
             <Text style={[styles.backArrow, { color: C.text }]}>‹</Text>
           </Pressable>
@@ -2237,11 +2237,11 @@ const styles = StyleSheet.create({
 
   topBar: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingVertical: 12,
+    paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1,
   },
   backBtn: { width: 36, height: 36, borderRadius: RADIUS.full, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center' },
   backArrow: { fontSize: 26, lineHeight: 30 },
-  topTitle: { fontSize: 20, fontFamily: F.bold, lineHeight: 24 },
+  topTitle: { fontSize: 18, fontFamily: F.bold, lineHeight: 22 },
 
   sectionHeader: {
     fontSize: 11, letterSpacing: 0,

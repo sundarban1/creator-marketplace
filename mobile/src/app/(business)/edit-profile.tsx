@@ -105,7 +105,7 @@ export default function EditBusinessProfileScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
-      <View style={styles.topBar}>
+      <View style={[styles.topBar, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
         <BackButton fallback="/(business)/profile" />
         <Text style={[styles.topTitle, { color: C.text }]}>{t('profile.editBusiness.headerTitle')}</Text>
         <View style={{ width: 38 }} />
@@ -224,8 +224,8 @@ export default function EditBusinessProfileScreen() {
 const styles = StyleSheet.create({
   container:     { flex: 1 },
   center:        { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  topBar:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
-  topTitle:      { fontSize: 20, fontFamily: F.bold, lineHeight: 24 },
+  topBar:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1 },
+  topTitle:      { fontSize: 18, fontFamily: F.bold, lineHeight: 22 },
   content:       { paddingBottom: 24 },
   sectionHeader: { fontSize: 11, letterSpacing: 0, marginTop: 20, marginBottom: 6, marginHorizontal: 20, fontFamily: F.bold },
   card:          { marginHorizontal: 16, borderRadius: RADIUS.md, ...SHADOW.card, overflow: 'hidden' },

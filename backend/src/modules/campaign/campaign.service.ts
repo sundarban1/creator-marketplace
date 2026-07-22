@@ -93,6 +93,27 @@ export class CampaignService {
     return autoApproval === false ? 'PENDING_APPROVAL' : 'ACTIVE';
   }
 
+  // Admin-configured free-feature allowance for a business, how many it's
+  // already used, and the price to feature beyond that (no charge is taken
+  // yet — payment isn't wired up, this is purely informational/for the lock
+  // in the mobile create-event UI). Drafts don't consume quota — see
+  // CampaignRepository.countFeaturedCampaigns.
+  async getFeaturedQuota(userId: string) {
+    const business = await this.businessRepo.findByUserId(userId);
+    if (!business) throw new AppError('Business profile not found', 404);
+
+    const [freeQuotaSetting, priceSetting, used] = await Promise.all([
+      this.adminRepo.getSetting('featuredEvent.freeQuota'),
+      this.adminRepo.getSetting('featuredEvent.price'),
+      this.repo.countFeaturedCampaigns(business.id),
+    ]);
+    const freeQuota = Number(freeQuotaSetting) || 0;
+    const price     = Number(priceSetting) || 0;
+    const remaining = Math.max(0, freeQuota - used);
+
+    return { freeQuota, used, remaining, price };
+  }
+
   // Broadcasts a newly-live campaign to creators — shared by create(), the
   // publish-a-draft path in update(), and AdminService.approveCampaign().
   fanOutNewCampaign(campaign: ReturnType<typeof toCampaignDto>, business: { id: string; businessName: string | null }, userId: string) {
@@ -119,14 +140,19 @@ export class CampaignService {
       throw new AppError('Business profile not found', 404);
     }
 
-    const [resolvedStatus, commissionRate] = await Promise.all([
+    const [resolvedStatus, commissionRate, featuredAllowed] = await Promise.all([
       this.resolvePublishStatus(input.status),
       this.adminRepo.getSetting('platform.commission').then((v) => Number(v) || 0),
+      // No payment flow yet, so a request to feature beyond the free quota
+      // is silently downgraded rather than rejected — the mobile UI already
+      // disables the toggle once quota hits 0, this is just the backstop.
+      input.isFeatured ? this.getFeaturedQuota(userId).then((q) => q.remaining > 0) : Promise.resolve(true),
     ]);
 
     const raw = await this.repo.create({
       businessId: business.id,
       ...input,
+      isFeatured: input.isFeatured && featuredAllowed,
       status:     resolvedStatus,
       commissionRate,
       deadline:  new Date(input.deadline),

@@ -73,6 +73,7 @@ function summarizeDeliverables(deliverables: Record<string, number>, fallback: s
 }
 
 const ERROR_RED = '#EF4444';
+const MIN_BUDGET_PER_CREATOR = 500;
 
 const BENEFITS = [
   'Free food & drinks',
@@ -225,7 +226,7 @@ type FormData = {
   aiDeliverables: string;
 };
 
-type ReviewErrors = Partial<Record<'title' | 'deadline' | 'platform' | 'eventDate', string>>;
+type ReviewErrors = Partial<Record<'title' | 'deadline' | 'platform' | 'eventDate' | 'budget', string>>;
 type EventErrors = Partial<Record<'template' | 'capacity' | 'venue', string>>;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -766,6 +767,65 @@ const sc = StyleSheet.create({
   sub:   { fontSize: 12, lineHeight: 18, fontFamily: F.regular },
 });
 
+// ─── FeaturedToggle ───────────────────────────────────────────────────────────
+
+function FeaturedToggle({ value, onChange, quota, colors }: {
+  value: boolean;
+  onChange: (v: boolean) => void;
+  quota: { remaining: number; price: number } | null;
+  colors: ReturnType<typeof useAppColors>;
+}) {
+  const C = colors;
+  const { t } = useLanguage();
+  const locked = quota !== null && quota.remaining <= 0;
+
+  return (
+    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+      style={[
+        ft.toggle,
+        { backgroundColor: value ? '#FFF8E8' : C.surface, borderColor: value ? '#F59E0B' : C.border },
+        locked && ft.locked,
+      ]}
+      onPress={() => { if (!locked) onChange(!value); }}
+      disabled={locked}>
+      <View style={ft.left}>
+        <FontAwesome5 name="star" size={18} color="#F59E0B" solid />
+        <View style={{ flex: 1, gap: 3 }}>
+          <View style={ft.labelRow}>
+            <Text style={[ft.label, { color: C.text }]}>{t('createEvent.featuredLabel')}</Text>
+            {quota && (
+              <View style={[ft.pill, { backgroundColor: locked ? C.border : '#FEF3C7' }]}>
+                <Text style={[ft.pillText, { color: locked ? C.textSecondary : '#92400E' }]}>
+                  {locked ? `Rs. ${quota.price}` : t('createEvent.featuredRemaining', { n: quota.remaining })}
+                </Text>
+              </View>
+            )}
+          </View>
+          <Text style={[ft.sub, { color: C.textSecondary }]}>
+            {locked ? t('createEvent.featuredLockedSub', { price: quota!.price }) : t('createEvent.featuredSub')}
+          </Text>
+        </View>
+      </View>
+      <View style={[ft.switch, { backgroundColor: value ? '#F59E0B' : C.border }]}>
+        <View style={[ft.switchThumb, { left: value ? 20 : 2 }]} />
+      </View>
+    </Pressable>
+  );
+}
+
+const ft = StyleSheet.create({
+  toggle:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderRadius: RADIUS.lg, padding: 16, borderWidth: 1.5 },
+  locked:      { opacity: 0.6 },
+  left:        { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
+  labelRow:    { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  label:       { fontSize: 14, fontFamily: F.bold },
+  sub:         { fontSize: 12, lineHeight: 17, fontFamily: F.regular },
+  pill:        { borderRadius: RADIUS.full, paddingHorizontal: 8, paddingVertical: 2 },
+  pillText:    { fontSize: 10, fontFamily: F.bold },
+  switch:      { width: 44, height: 26, borderRadius: RADIUS.full, position: 'relative' },
+  switchThumb: { position: 'absolute', top: 3, width: 20, height: 20, borderRadius: RADIUS.full, backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 3, shadowOffset: { width: 0, height: 1 }, elevation: 3 },
+});
+
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function CreateCampaignScreen() {
@@ -796,6 +856,14 @@ export default function CreateCampaignScreen() {
       }
     }).catch(() => { /* location stays empty */ });
   }, []);
+
+  // Fails open (stays null → toggle isn't locked) if this errors — the
+  // backend still enforces the quota server-side on publish either way.
+  const [featuredQuota, setFeaturedQuota] = useState<{ freeQuota: number; used: number; remaining: number; price: number } | null>(null);
+  useEffect(() => {
+    campaignService.getFeaturedQuota().then(setFeaturedQuota).catch(() => {});
+  }, []);
+  const featuredLocked = featuredQuota !== null && featuredQuota.remaining <= 0;
 
   const [form, setForm] = useState<FormData>({
     template: '',
@@ -1106,6 +1174,7 @@ export default function CreateCampaignScreen() {
       if (form.platforms.length < 1) errs.platform = t('createEvent.errNoPlatform');
       else if (form.platforms.length > 3) errs.platform = t('createEvent.errMaxPlatform');
       if (!form.deadline)     errs.deadline = t('createEvent.errNoDeadline');
+      if (form.aiBudgetMin < MIN_BUDGET_PER_CREATOR) errs.budget = t('createEvent.errBudgetMin');
       if (Object.keys(errs).length > 0) { setReviewErrors(errs); return; }
       setReviewErrors({});
 
@@ -1174,7 +1243,7 @@ export default function CreateCampaignScreen() {
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
 
       {/* Header */}
-      <View style={s.header}>
+      <View style={[s.header, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
         <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
           onPress={() => phase === 'review' ? setPhase('setup') : (router.canGoBack() ? router.back() : router.replace('/(business)/'))}
           style={[s.backBtn, { backgroundColor: C.surface, borderColor: C.border, borderWidth: 1 }]}>
@@ -1567,9 +1636,12 @@ export default function CreateCampaignScreen() {
                         <View style={ai.budgetInputWrap}>
                           <Text style={[ai.budgetLabel, { color: C.textSecondary }]}>{t('createEvent.aiBudgetMinLabel')}</Text>
                           <TextInput
-                            style={[s.input, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
+                            style={[s.input, { backgroundColor: C.background, borderColor: reviewErrors.budget ? ERROR_RED : C.border, color: C.text }]}
                             value={String(form.aiBudgetMin)}
-                            onChangeText={(v) => update('aiBudgetMin', parseInt(v.replace(/[^0-9]/g, ''), 10) || 0)}
+                            onChangeText={(v) => {
+                              update('aiBudgetMin', parseInt(v.replace(/[^0-9]/g, ''), 10) || 0);
+                              if (reviewErrors.budget) setReviewErrors((e) => ({ ...e, budget: undefined }));
+                            }}
                             keyboardType="number-pad"
                           />
                         </View>
@@ -1583,6 +1655,7 @@ export default function CreateCampaignScreen() {
                           />
                         </View>
                       </View>
+                      {reviewErrors.budget && <Text style={s.errorText}>{reviewErrors.budget}</Text>}
                     </SectionCard>
                   )}
 
@@ -1620,20 +1693,12 @@ export default function CreateCampaignScreen() {
                   </SectionCard>
 
                   {/* Featured toggle */}
-                  <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                    style={[s.featuredToggle, { backgroundColor: form.isFeatured ? '#FFF8E8' : C.surface, borderColor: form.isFeatured ? '#F59E0B' : C.border }]}
-                    onPress={() => update('isFeatured', !form.isFeatured)}>
-                    <View style={s.featuredLeft}>
-                      <FontAwesome5 name="star" size={18} color="#F59E0B" solid />
-                      <View style={{ flex: 1, gap: 3 }}>
-                        <Text style={[s.featuredLabel, { color: C.text }]}>{t('createEvent.featuredLabel')}</Text>
-                        <Text style={[s.featuredSub, { color: C.textSecondary }]}>{t('createEvent.featuredSub')}</Text>
-                      </View>
-                    </View>
-                    <View style={[s.toggle, { backgroundColor: form.isFeatured ? '#F59E0B' : C.border }]}>
-                      <View style={[s.toggleThumb, { left: form.isFeatured ? 20 : 2 }]} />
-                    </View>
-                  </Pressable>
+                  <FeaturedToggle
+                    value={form.isFeatured}
+                    onChange={(v) => update('isFeatured', v)}
+                    quota={featuredQuota}
+                    colors={C}
+                  />
 
                   {/* Save as Draft */}
                   <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
@@ -1802,20 +1867,12 @@ export default function CreateCampaignScreen() {
                   </SectionCard>
 
                   {/* Featured toggle */}
-                  <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                    style={[s.featuredToggle, { backgroundColor: form.isFeatured ? '#FFF8E8' : C.surface, borderColor: form.isFeatured ? '#F59E0B' : C.border }]}
-                    onPress={() => update('isFeatured', !form.isFeatured)}>
-                    <View style={s.featuredLeft}>
-                      <FontAwesome5 name="star" size={18} color="#F59E0B" solid />
-                      <View style={{ flex: 1, gap: 3 }}>
-                        <Text style={[s.featuredLabel, { color: C.text }]}>{t('createEvent.featuredLabel')}</Text>
-                        <Text style={[s.featuredSub, { color: C.textSecondary }]}>{t('createEvent.featuredSub')}</Text>
-                      </View>
-                    </View>
-                    <View style={[s.toggle, { backgroundColor: form.isFeatured ? '#F59E0B' : C.border }]}>
-                      <View style={[s.toggleThumb, { left: form.isFeatured ? 20 : 2 }]} />
-                    </View>
-                  </Pressable>
+                  <FeaturedToggle
+                    value={form.isFeatured}
+                    onChange={(v) => update('isFeatured', v)}
+                    quota={featuredQuota}
+                    colors={C}
+                  />
 
                   {/* Actions */}
                   <View style={s.reviewActions}>
@@ -1900,10 +1957,10 @@ const s = StyleSheet.create({
   container: { flex: 1 },
   flex:      { flex: 1 },
 
-  header:       { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14 },
+  header:       { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12, borderBottomWidth: 1 },
   backBtn:      { width: 40, height: 40, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
   headerCenter: { flex: 1, alignItems: 'center' },
-  headerTitle:  { fontSize: 16, fontFamily: F.bold },
+  headerTitle:  { fontSize: 18, fontFamily: F.bold },
   headerSub:    { fontSize: 11, marginTop: 1, fontFamily: F.regular },
   phasePill:    { borderRadius: RADIUS.full, paddingHorizontal: 10, paddingVertical: 4 },
   phasePillText:{ fontSize: 12, fontFamily: F.bold },
@@ -1940,13 +1997,6 @@ const s = StyleSheet.create({
   summaryRow:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingVertical: 10, gap: 12 },
   summaryLabel: { fontSize: 13, fontFamily: F.regular, width: 72 },
   summaryValue: { flex: 1, fontSize: 13, fontFamily: F.semibold, textAlign: 'right' },
-
-  featuredToggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderRadius: RADIUS.lg, padding: 16, borderWidth: 1.5 },
-  featuredLeft:   { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
-  featuredLabel:  { fontSize: 14, fontFamily: F.bold },
-  featuredSub:    { fontSize: 12, lineHeight: 17, fontFamily: F.regular },
-  toggle:         { width: 44, height: 26, borderRadius: RADIUS.full, position: 'relative' },
-  toggleThumb:    { position: 'absolute', top: 3, width: 20, height: 20, borderRadius: RADIUS.full, backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 3, shadowOffset: { width: 0, height: 1 }, elevation: 3 },
 
   draftBtn:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderRadius: RADIUS.md, height: 50, borderWidth: 1.5, marginTop: 8 },
   draftBtnText:  { fontSize: 14, fontFamily: F.semibold },

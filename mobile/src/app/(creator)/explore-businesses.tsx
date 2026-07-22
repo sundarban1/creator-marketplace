@@ -231,7 +231,7 @@ export default function ExploreBusinessesScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
       {/* ── Back button + search, top right ── */}
-      <View style={styles.topRow} accessibilityRole="header" accessibilityLabel={t('explore.businesses.headerTitle')}>
+      <View style={[styles.topRow, { backgroundColor: C.surface, borderBottomColor: C.border }]} accessibilityRole="header" accessibilityLabel={t('explore.businesses.headerTitle')}>
         <BackButton fallback="/(creator)/" />
         <View style={[styles.searchBox, { flex: 1, backgroundColor: C.surface, borderColor: C.border }]}>
           <Ionicons name="search-outline" size={18} color={C.textSecondary} />
@@ -382,12 +382,12 @@ const styles = StyleSheet.create({
 
   // Header
   countTxt:       { fontSize: 12, fontFamily: F.semibold },
-  savedRow:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, marginTop: -4, marginBottom: 4 },
+  savedRow:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, marginTop: 12, marginBottom: 4 },
   favLink:        { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: RADIUS.full, paddingHorizontal: 10, paddingVertical: 6 },
   favLinkText:    { fontSize: 12, fontFamily: F.bold },
 
   // Top row — back button + search, top right
-  topRow:         { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12, gap: 12 },
+  topRow:         { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12, gap: 12, borderBottomWidth: 1 },
   searchBox:      { flexDirection: 'row', alignItems: 'center', gap: 9, borderRadius: RADIUS.lg, borderWidth: 1.5, paddingHorizontal: 14, height: 44 },
   searchInput:    { flex: 1, fontSize: 15, fontFamily: F.regular },
   filterBtn:      { width: 36, height: 36, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center' },

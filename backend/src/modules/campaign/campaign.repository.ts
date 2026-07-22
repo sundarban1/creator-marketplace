@@ -74,14 +74,14 @@ export class CampaignRepository {
     page: number;
     limit: number;
   }) {
-    const where: Prisma.CampaignWhereInput = {};
-
-    if (filters.search) {
-      where.OR = [
-        { title:    { contains: filters.search, mode: 'insensitive' } },
-        { business: { businessName: { contains: filters.search, mode: 'insensitive' } } },
-      ];
+    // Relevance-ranked full-text + trigram search needs raw SQL (Prisma can't
+    // express tsvector/ts_rank/similarity), so it's handled by a dedicated
+    // path that applies the same filters directly in SQL — see findManySearch.
+    if (filters.search?.trim()) {
+      return this.findManySearch({ ...filters, search: filters.search.trim() });
     }
+
+    const where: Prisma.CampaignWhereInput = {};
 
     if (filters.category?.length) {
       where.category = { in: filters.category, mode: 'insensitive' };
@@ -132,6 +132,113 @@ export class CampaignRepository {
   }
 
   /**
+   * Search path for findMany — full-text ranking (ts_rank over the weighted
+   * "searchVector" column, see the add_campaign_fulltext_search migration)
+   * combined with pg_trgm similarity on title/business name for typo
+   * tolerance (e.g. "resturant" still matches "Restaurant Launch").
+   *
+   * Every other findMany filter is re-applied here in raw SQL so a search
+   * query stays consistent with category/platform/budget/etc. filters, then
+   * ranking + pagination happen in Postgres and only the requested page of
+   * ids crosses into Node — mirrors findNearby's distance-ranked pattern
+   * below for the same reason (no in-memory sort/page over the full result).
+   */
+  private async findManySearch(filters: {
+    search: string;
+    category?: string[];
+    platform?: string[];
+    minBudget?: number;
+    maxBudget?: number;
+    status?: CampaignStatus;
+    isFeatured?: boolean;
+    deadlineFrom?: Date;
+    deadlineTo?: Date;
+    campaignType?: 'PAID_CAMPAIGN' | 'OPEN_EVENT';
+    page: number;
+    limit: number;
+  }) {
+    const { search } = filters;
+    const conditions: Prisma.Sql[] = [
+      Prisma.sql`c.status = ${filters.status ?? 'ACTIVE'}::"CampaignStatus"`,
+    ];
+    if (filters.category?.length) {
+      conditions.push(Prisma.sql`LOWER(c.category) IN (${Prisma.join(filters.category.map((v) => v.toLowerCase()))})`);
+    }
+    if (filters.platform?.length) {
+      conditions.push(Prisma.sql`c.platforms && ARRAY[${Prisma.join(filters.platform)}]::text[]`);
+    }
+    if (filters.campaignType) {
+      conditions.push(Prisma.sql`c."campaignType" = ${filters.campaignType}::"CampaignType"`);
+    }
+    if (filters.minBudget !== undefined) {
+      conditions.push(Prisma.sql`c."budgetMax" >= ${filters.minBudget}`);
+    }
+    if (filters.maxBudget !== undefined) {
+      conditions.push(Prisma.sql`c."budgetMin" <= ${filters.maxBudget}`);
+    }
+    if (filters.isFeatured !== undefined) {
+      conditions.push(Prisma.sql`c."isFeatured" = ${filters.isFeatured}`);
+    }
+    if (filters.deadlineFrom !== undefined) {
+      conditions.push(Prisma.sql`c.deadline >= ${filters.deadlineFrom}`);
+    }
+    if (filters.deadlineTo !== undefined) {
+      conditions.push(Prisma.sql`c.deadline <= ${filters.deadlineTo}`);
+    }
+
+    // similarity() takes over where plainto_tsquery finds nothing — that's
+    // what makes a misspelled "resturant" still surface "Restaurant Launch".
+    conditions.push(Prisma.sql`(
+      c."searchVector" @@ plainto_tsquery('english', ${search})
+      OR similarity(c.title, ${search}) > 0.2
+      OR similarity(b."businessName", ${search}) > 0.2
+      OR b."businessName" ILIKE ${`%${search}%`}
+    )`);
+
+    const whereSql = Prisma.join(conditions, ' AND ');
+    const rankExpr = Prisma.sql`
+      ts_rank(c."searchVector", plainto_tsquery('english', ${search}))
+      + GREATEST(similarity(c.title, ${search}), similarity(b."businessName", ${search}))
+    `;
+    const skip = (filters.page - 1) * filters.limit;
+
+    const [rows, countRows] = await Promise.all([
+      prisma.$queryRaw<{ id: string }[]>(Prisma.sql`
+        SELECT c.id
+        FROM campaigns c
+        JOIN business_profiles b ON b.id = c."businessId"
+        WHERE ${whereSql}
+        ORDER BY (${rankExpr}) DESC, c."createdAt" DESC
+        LIMIT ${filters.limit} OFFSET ${skip}
+      `),
+      prisma.$queryRaw<{ count: bigint }[]>(Prisma.sql`
+        SELECT COUNT(*) AS count
+        FROM campaigns c
+        JOIN business_profiles b ON b.id = c."businessId"
+        WHERE ${whereSql}
+      `),
+    ]);
+
+    const total = Number(countRows[0]?.count ?? 0);
+    if (rows.length === 0) return { campaigns: [], total };
+
+    const ids = rows.map((r) => r.id);
+    const hydrated = await prisma.campaign.findMany({
+      where: { id: { in: ids } },
+      include: {
+        business: { select: { businessName: true, logoUrl: true } },
+        _count: { select: { applications: true } },
+      },
+    });
+
+    // findMany doesn't preserve `in` order, so re-sort to match the rank-ranked SQL result
+    const byId = new Map(hydrated.map((c) => [c.id, c]));
+    const campaigns = ids.map((id) => byId.get(id)).filter((c): c is NonNullable<typeof c> => c != null);
+
+    return { campaigns, total };
+  }
+
+  /**
    * Nearby campaigns within radiusKm of (lat, lng), sorted by distance.
    *
    * Distance, radius filtering, sorting, and pagination all happen inside
@@ -177,8 +284,15 @@ export class CampaignRepository {
     // filters as the main list instead of always showing everything nearby.
     const extraConditions: Prisma.Sql[] = [];
     if (search) {
-      const like = `%${search}%`;
-      extraConditions.push(Prisma.sql`(c.title ILIKE ${like} OR b."businessName" ILIKE ${like})`);
+      // Same weighted full-text column + trigram fallback as findManySearch
+      // above — proximity stays the primary sort for "Nearby Events", this
+      // just decides which campaigns qualify, same as the other filters below.
+      extraConditions.push(Prisma.sql`(
+        c."searchVector" @@ plainto_tsquery('english', ${search})
+        OR similarity(c.title, ${search}) > 0.2
+        OR similarity(b."businessName", ${search}) > 0.2
+        OR b."businessName" ILIKE ${`%${search}%`}
+      )`);
     }
     if (category?.length) {
       extraConditions.push(Prisma.sql`LOWER(c.category) IN (${Prisma.join(category.map((c) => c.toLowerCase()))})`);
@@ -571,6 +685,14 @@ export class CampaignRepository {
   async countAcceptedApplications(campaignId: string): Promise<number> {
     return prisma.application.count({
       where: { campaignId, status: 'ACCEPTED' },
+    });
+  }
+
+  // Drafts don't count against the free-feature quota — only ones the
+  // business actually published. See CampaignService.getFeaturedQuota.
+  async countFeaturedCampaigns(businessId: string): Promise<number> {
+    return prisma.campaign.count({
+      where: { businessId, isFeatured: true, status: { not: 'DRAFT' } },
     });
   }
 

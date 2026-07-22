@@ -2207,7 +2207,7 @@ const en = {
     secContentGuidelinesSub:      'One guideline per line.',
     secHashtagsTitle:             'Hashtags',
     addHashtagPlaceholder:        'Add a hashtag…',
-    secAiBudgetTitle:             'Suggested Budget',
+    secAiBudgetTitle:             'Suggested Budget (Per Creator)',
     secAiBudgetSub:               'Estimated budget for this event — adjust as needed.',
     aiBudgetMinLabel:             'Minimum (Rs.)',
     aiBudgetMaxLabel:             'Maximum (Rs.)',
@@ -2283,6 +2283,8 @@ const en = {
 
     featuredLabel:  'Feature this Event',
     featuredSub:    'Appears highlighted on creator home',
+    featuredRemaining: '{{n}} remaining',
+    featuredLockedSub: 'Free features used up — Rs. {{price}} to feature this event',
 
     editInputsBtn:  'Edit Inputs',
     editEventBtn:   'Edit Event',
@@ -2310,6 +2312,7 @@ const en = {
     errNoPlatform:    'Please select at least 1 platform.',
     errMaxPlatform:   'You can select up to 3 platforms.',
     errNoDeadline:    'Please select an application deadline.',
+    errBudgetMin:     'Minimum budget is Rs. 500 per creator.',
     errNoEventDate:   'Please select an event date.',
     errNoRegDeadline: 'Please select a registration deadline.',
     errDeadlineOrder: 'Registration deadline must be before the event date.',

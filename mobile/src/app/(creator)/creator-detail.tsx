@@ -139,7 +139,7 @@ export default function CreatorPeerDetailScreen() {
     if (!convId || !profile) return;
     router.push({
       pathname: '/(creator)/messages/[id]' as never,
-      params: { id: convId, name: profile.fullName ?? profile.username ?? 'Creator', status: convStatus ?? 'ACCEPTED', participantRole: 'CREATOR' },
+      params: { id: convId, name: profile.fullName ?? profile.username ?? 'Creator', status: convStatus ?? 'ACCEPTED', participantId: profile.id, participantRole: 'CREATOR' },
     });
   }
 
@@ -194,7 +194,7 @@ export default function CreatorPeerDetailScreen() {
 
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
-      <PageHeader title={t('creatorDetailExtra.topTitle')} backFallback="/(creator)/explore-creators" />
+      <PageHeader title={profile.fullName ?? 'Creator'} backFallback="/(creator)/explore-creators" />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
 
@@ -209,12 +209,15 @@ export default function CreatorPeerDetailScreen() {
           )}
 
           <View style={s.heroInfo}>
-            <View style={s.nameRow}>
-              <Text style={[s.heroName, { color: C.text }]}>{profile.fullName ?? 'Creator'}</Text>
-              {(profile.fullyVerified || profile.isVerified) && <VerifiedBadge size={16} />}
-            </View>
             {profile.username ? (
-              <Text style={[s.username, { color: C.textSecondary }]}>@{profile.username}</Text>
+              <View style={s.nameRow}>
+                <Text style={[s.username, { color: C.textSecondary }]}>@{profile.username}</Text>
+                {(profile.fullyVerified || profile.isVerified) && <VerifiedBadge size={16} />}
+              </View>
+            ) : (profile.fullyVerified || profile.isVerified) ? (
+              <View style={s.nameRow}>
+                <VerifiedBadge size={16} />
+              </View>
             ) : null}
             {profile.location ? (
               <View style={s.locationRow}>
@@ -465,7 +468,6 @@ const s = StyleSheet.create({
   avatarText:   { fontSize: 26, fontFamily: F.bold },
   heroInfo:     { flex: 1, gap: 4 },
   nameRow:      { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
-  heroName:     { fontSize: 20, fontFamily: F.bold },
   username:     { fontSize: 13, fontFamily: F.regular },
   locationRow:  { flexDirection: 'row', alignItems: 'center', gap: 4 },
   location:     { fontSize: 13, fontFamily: F.regular },

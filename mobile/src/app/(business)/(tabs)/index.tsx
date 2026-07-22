@@ -169,24 +169,6 @@ export default function BusinessHomeScreen() {
         contentContainerStyle={styles.scroll}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#7c3aed" />}>
 
-        {/* Stats strip */}
-        <View style={[styles.statsStrip, { backgroundColor: C.surface, borderColor: C.border, borderWidth: 1 }, SHADOW.card]}>
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.statStripItem} onPress={() => router.push('/(business)/campaigns')}>
-            <Text style={[styles.statStripVal, { color: C.text }]}>{stats.active}</Text>
-            <Text style={[styles.statStripLabel, { color: C.textSecondary }]}>{t('business.home.statStripActive')}</Text>
-          </Pressable>
-          <View style={[styles.statStripDiv, { backgroundColor: C.border }]} />
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.statStripItem} onPress={() => router.push('/(business)/campaigns')}>
-            <Text style={[styles.statStripVal, { color: C.text }]}>{stats.total}</Text>
-            <Text style={[styles.statStripLabel, { color: C.textSecondary }]}>{t('business.home.statStripTotal')}</Text>
-          </Pressable>
-          <View style={[styles.statStripDiv, { backgroundColor: C.border }]} />
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.statStripItem} onPress={() => router.push('/(business)/campaigns')}>
-            <Text style={[styles.statStripVal, { color: C.text }]}>{stats.completed}</Text>
-            <Text style={[styles.statStripLabel, { color: C.textSecondary }]}>{t('business.home.statStripCompleted')}</Text>
-          </Pressable>
-        </View>
-
         {/* ── Attention banner (shown when proposals are pending) ── */}
         {!loading && stats.proposals > 0 && (
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.attentionBanner} onPress={() => router.push('/(business)/proposals')}>
@@ -357,8 +339,12 @@ export default function BusinessHomeScreen() {
               const st = STATUS_STYLE[c.status ?? 'draft'] ?? STATUS_STYLE.draft;
               const cardImage = c.featureImageUrl ?? getTemplateImage(c.template, c.categoryKey ?? c.category);
               return (
+                // Shadow lives on this outer, unclipped wrapper; the Pressable inside
+                // handles its own corner/border-left clipping via overflow:hidden — on
+                // the same view, overflow:hidden would clip the shadow right off, same
+                // fix as the events list's cardWrap/card split.
+                <View key={c.id} style={[styles.campaignCardWrap, { backgroundColor: C.surface }]}>
                 <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                  key={c.id}
                   style={({ pressed }) => [styles.campaignCard, { backgroundColor: C.surface, borderLeftWidth: 4, borderLeftColor: st.color }, pressed && { opacity: 0.9 }]}
                   onPress={() => router.push({ pathname: '/campaign-detail', params: { campaignId: c.id } })}>
                   <View style={[styles.thumb, { backgroundColor: meta.bg }]}>
@@ -390,6 +376,7 @@ export default function BusinessHomeScreen() {
                   </View>
                   <Ionicons name="chevron-forward" size={20} color={C.border} />
                 </Pressable>
+                </View>
               );
             })}
           </View>
@@ -425,11 +412,6 @@ const styles = StyleSheet.create({
   avatarImage: { width: '100%', height: '100%' },
   avatarFallback: { width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center' },
   avatarInitial:  { fontSize: 18, fontFamily: F.extrabold },
-  statsStrip: { flexDirection: 'row', marginHorizontal: 20, marginBottom: 4, borderRadius: RADIUS.lg, paddingVertical: 12 },
-  statStripItem: { flex: 1, alignItems: 'center' },
-  statStripVal: { fontSize: 20, fontFamily: F.bold },
-  statStripLabel: { fontSize: 10, fontFamily: F.medium, marginTop: 2 },
-  statStripDiv: { width: 1, marginVertical: 4 },
 
   // Quick actions
   // paddingBottom is 0 here (and on every block below) on purpose — each block
@@ -482,7 +464,11 @@ const styles = StyleSheet.create({
   typeBadgeTextFree: { color: TabColors.info.color },
 
   campaignList: { paddingHorizontal: 20, gap: 12 },
-  campaignCard: { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.lg, padding: 14, gap: 12, ...SHADOW.card, overflow: 'hidden' },
+  // Shadow (unclipped) and rounded-corner clip are split across two views —
+  // see the render-side comment for why. Matches the events list's own
+  // cardWrap/card split, and its stronger SHADOW.raised.
+  campaignCardWrap: { borderRadius: RADIUS.lg, ...SHADOW.raised },
+  campaignCard: { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.lg, padding: 14, gap: 12, overflow: 'hidden' },
   thumb: { width: 72, height: 72, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center', flexShrink: 0, overflow: 'hidden' },
   campaignBody: { flex: 1, gap: 5 },
   campaignTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },

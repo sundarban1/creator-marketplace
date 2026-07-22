@@ -451,7 +451,7 @@ const s = StyleSheet.create({
   bubble2:  { width: 100, height: 100, bottom: -20, left: 30 },
   bubble3:  { width: 60,  height: 60,  top: 20,   left: -20  },
   topBar:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 10 },
-  topTitle: { fontSize: 20, color: '#fff', fontFamily: F.bold, lineHeight: 24 },
+  topTitle: { fontSize: 18, color: '#fff', fontFamily: F.bold, lineHeight: 22 },
   topIconBtn: { width: 38, height: 38, borderRadius: RADIUS.full, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center' },
 
   // Profile card (floats over cover)

@@ -621,7 +621,7 @@ export default function CampaignWorkspaceScreen() {
         if (conv?.id) {
           router.push({
             pathname: isCreator ? '/(creator)/(tabs)/messages/[id]' : '/(business)/(tabs)/messages/[id]',
-            params: { id: conv.id, name: otherName, status: conv.status, focusInput: 'true' },
+            params: { id: conv.id, name: otherName, status: conv.status, focusInput: 'true', participantId: otherProfileId, participantRole: isCreator ? 'BUSINESS' : 'CREATOR' },
           });
           return;
         }
@@ -649,8 +649,6 @@ export default function CampaignWorkspaceScreen() {
   const isFreeEvent = campaign?.campaignType === 'OPEN_EVENT';
   const paid = isFreeEvent || app?.paymentStatus === 'PAID' || app?.paymentStatus === 'RELEASED';
   const pIdx = progressIdx(ws, paid, app?.paymentStatus);
-  const sLbl = statusLabel(ws, paid, t, app?.paymentStatus);
-  const sClr = statusColor(ws, paid, app?.paymentStatus);
   const progressLabels = getProgressLabels(t);
 
   const crFee = app?.proposedRateRaw ?? 0;
@@ -668,15 +666,9 @@ export default function CampaignWorkspaceScreen() {
       {/* ── Header ── */}
       <View style={[s.header, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
         <BackButton />
-        <View style={s.headerCenter}>
-          <Text style={[s.headerTitle, { color: C.text }]} numberOfLines={1}>
-            {campaignTitle ?? campaign?.title ?? t('activityTimeline.headerWorkspace')}
-          </Text>
-          <View style={[s.statusBadge, { backgroundColor: sClr + '18' }]}>
-            <View style={[s.statusDot, { backgroundColor: sClr }]} />
-            <Text style={[s.statusBadgeTxt, { color: sClr }]}>{sLbl}</Text>
-          </View>
-        </View>
+        <Text style={[s.headerTitle, { color: C.text }]} numberOfLines={1}>
+          {campaignTitle ?? campaign?.title ?? t('activityTimeline.headerWorkspace')}
+        </Text>
         {/* Only message icon — no three dots. Payment release is the final
             stage, so chat closes here rather than staying open indefinitely. */}
         {app?.paymentStatus === 'RELEASED' ? (
@@ -1125,14 +1117,9 @@ const s = StyleSheet.create({
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   body:     { gap: 12, paddingTop: 12, paddingHorizontal: 16 },
 
-  header:       { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 10, borderBottomWidth: 1, gap: 8 },
-  headerCenter: { flex: 1, gap: 4 },
-  headerTitle:  { fontSize: 15, fontFamily: F.bold },
+  header:       { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1, gap: 8 },
+  headerTitle:  { flex: 1, fontSize: 18, fontFamily: F.bold, textAlign: 'center' },
   iconBtn:      { padding: 8, minWidth: 40, minHeight: 40, alignItems: 'center', justifyContent: 'center' },
-
-  statusBadge:    { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', borderRadius: RADIUS.sm, paddingHorizontal: 7, paddingVertical: 3 },
-  statusDot:      { width: 6, height: 6, borderRadius: RADIUS.full },
-  statusBadgeTxt: { fontSize: 10, fontFamily: F.bold },
 
   card: { borderRadius: RADIUS.lg, padding: 16, ...TOKEN_SHADOW.card, overflow: 'hidden' },
 

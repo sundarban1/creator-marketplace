@@ -1,0 +1,5 @@
+{
+  "ios": {
+    "bundleIdentifier": "com.sundarban.marketplace-backend"
+  }
+}
