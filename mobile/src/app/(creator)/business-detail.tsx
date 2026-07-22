@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { PageHeader } from '@/features/creator/components/PageHeader';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -238,12 +239,29 @@ export default function BusinessDetailScreen() {
   if (business.isPrivate) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
-        <PageHeader title={business.businessName} backFallback="/(creator)/explore-businesses" />
-        <View style={[styles.hero, { backgroundColor: C.primaryLight }]}>
-          <View style={[styles.heroInner, { justifyContent: 'center' }]}>
-            <BusinessAvatar name={business.businessName} logoUrl={business.logoUrl} size={88} />
-            <Text style={[styles.heroName, { color: C.text, marginTop: 10 }]} numberOfLines={2}>{business.businessName}</Text>
+        <View style={styles.cover}>
+          <LinearGradient
+            colors={['#7C3AED', '#EC4899', '#F97316']}
+            start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+            style={StyleSheet.absoluteFill}>
+            <View style={[styles.bubble, styles.bubble1]} />
+            <View style={[styles.bubble, styles.bubble2]} />
+            <View style={[styles.bubble, styles.bubble3]} />
+          </LinearGradient>
+          <View style={styles.topBar}>
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.topIconBtn} hitSlop={4}
+              onPress={() => (router.canGoBack() ? router.back() : router.replace('/(creator)/explore-businesses' as never))}>
+              <Ionicons name="chevron-back" size={22} color="#fff" />
+            </Pressable>
+            <View style={styles.topTitleRow} />
+            <View style={styles.topIconSpacer} />
           </View>
+        </View>
+        <View style={[styles.profileCard, { backgroundColor: C.surface }]}>
+          <View style={styles.avatarArea}>
+            <BusinessAvatar name={business.businessName} logoUrl={business.logoUrl} size={96} />
+          </View>
+          <Text style={[styles.heroName, { color: C.text, textAlign: 'center' }]} numberOfLines={2}>{business.businessName}</Text>
         </View>
         <EmptyState
           icon="lock-closed-outline"
@@ -267,47 +285,58 @@ export default function BusinessDetailScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
-      <PageHeader
-        title={business.businessName}
-        backFallback="/(creator)/explore-businesses"
-        rightSlot={
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={handleToggleFavorite} hitSlop={10}>
-            <Ionicons
-              name={isFavorited ? 'heart' : 'heart-outline'}
-              size={22}
-              color={isFavorited ? '#EF4444' : C.textSecondary}
-            />
-          </Pressable>
-        }
-      />
-
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 60 }}>
 
-        {/* ── Hero ── */}
-        <View style={[styles.hero, { backgroundColor: C.primaryLight }]}>
-          <View style={styles.heroInner}>
-            <BusinessAvatar name={business.businessName} logoUrl={business.logoUrl} size={88} />
-            <View style={styles.heroMeta}>
-              <View style={styles.heroNameRow}>
-                <Text style={[styles.heroName, { color: C.text }]} numberOfLines={2}>{business.businessName}</Text>
-                {(business.fullyVerified || business.isVerified) && <VerifiedBadge size={16} />}
-              </View>
-              <View style={styles.heroStats}>
-                <View style={styles.heroStat}>
-                  <Text style={[styles.heroStatValue, { color: C.brinjal1 }]}>{business._count.campaigns}</Text>
-                  <Text style={[styles.heroStatLabel, { color: C.textSecondary }]}>{t('businessDetail.statActive')}</Text>
-                </View>
-                <View style={[styles.heroStatDivider, { backgroundColor: C.border }]} />
-                <View style={styles.heroStat}>
-                  <Text style={[styles.heroStatValue, { color: C.brinjal1 }]}>{business.savedCreatorsCount}</Text>
-                  <Text style={[styles.heroStatLabel, { color: C.textSecondary }]}>{t('businessDetail.statSavedCreators')}</Text>
-                </View>
-                <View style={[styles.heroStatDivider, { backgroundColor: C.border }]} />
-                <View style={styles.heroStat}>
-                  <Text style={[styles.heroStatValue, { color: C.brinjal1 }]}>{business.favoritedByCount}</Text>
-                  <Text style={[styles.heroStatLabel, { color: C.textSecondary }]}>{t('businessDetail.statFavoritedBy')}</Text>
-                </View>
-              </View>
+        {/* ── Hero Cover ── */}
+        <View style={styles.cover}>
+          <LinearGradient
+            colors={['#7C3AED', '#EC4899', '#F97316']}
+            start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+            style={StyleSheet.absoluteFill}>
+            <View style={[styles.bubble, styles.bubble1]} />
+            <View style={[styles.bubble, styles.bubble2]} />
+            <View style={[styles.bubble, styles.bubble3]} />
+          </LinearGradient>
+          <View style={styles.topBar}>
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.topIconBtn} hitSlop={4}
+              onPress={() => (router.canGoBack() ? router.back() : router.replace('/(creator)/explore-businesses' as never))}>
+              <Ionicons name="chevron-back" size={22} color="#fff" />
+            </Pressable>
+            <View style={styles.topTitleRow} />
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.topIconBtn} hitSlop={10} onPress={handleToggleFavorite}>
+              <Ionicons
+                name={isFavorited ? 'heart' : 'heart-outline'}
+                size={19}
+                color={isFavorited ? '#EF4444' : '#fff'}
+              />
+            </Pressable>
+          </View>
+        </View>
+
+        {/* ── Avatar card (overlaps cover) ── */}
+        <View style={[styles.profileCard, { backgroundColor: C.surface }]}>
+          <View style={styles.avatarArea}>
+            <BusinessAvatar name={business.businessName} logoUrl={business.logoUrl} size={96} />
+          </View>
+          <View style={styles.heroNameRow}>
+            <Text style={[styles.heroName, { color: C.text, textAlign: 'center' }]} numberOfLines={2}>{business.businessName}</Text>
+            {(business.fullyVerified || business.isVerified) && <VerifiedBadge size={16} />}
+          </View>
+
+          <View style={[styles.statsStrip, { borderTopColor: C.border }]}>
+            <View style={styles.heroStat}>
+              <Text style={[styles.heroStatValue, { color: C.text }]}>{business._count.campaigns}</Text>
+              <Text style={[styles.heroStatLabel, { color: C.textSecondary }]}>{t('businessDetail.statActive')}</Text>
+            </View>
+            <View style={[styles.heroStatDivider, { backgroundColor: C.border }]} />
+            <View style={styles.heroStat}>
+              <Text style={[styles.heroStatValue, { color: C.text }]}>{business.savedCreatorsCount}</Text>
+              <Text style={[styles.heroStatLabel, { color: C.textSecondary }]}>{t('businessDetail.statSavedCreators')}</Text>
+            </View>
+            <View style={[styles.heroStatDivider, { backgroundColor: C.border }]} />
+            <View style={styles.heroStat}>
+              <Text style={[styles.heroStatValue, { color: C.text }]}>{business.favoritedByCount}</Text>
+              <Text style={[styles.heroStatLabel, { color: C.textSecondary }]}>{t('businessDetail.statFavoritedBy')}</Text>
             </View>
           </View>
         </View>
@@ -557,12 +586,24 @@ const styles = StyleSheet.create({
   container:             { flex: 1 },
   center:                { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
-  hero:                  { paddingHorizontal: 20, paddingTop: 28, paddingBottom: 32 },
-  heroInner:             { flexDirection: 'row', alignItems: 'flex-start', gap: 16 },
-  heroMeta:              { flex: 1, paddingTop: 4 },
-  heroNameRow:           { marginBottom: 6, flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' },
+  // Hero cover
+  cover:                 { height: 180, overflow: 'hidden' },
+  bubble:                { position: 'absolute', borderRadius: RADIUS.full, backgroundColor: 'rgba(255,255,255,0.08)' },
+  bubble1:               { width: 160, height: 160, top: -50, right: -30 },
+  bubble2:               { width: 100, height: 100, bottom: -20, left: 30 },
+  bubble3:               { width: 60,  height: 60,  top: 20,   left: -20  },
+  topBar:                { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 10 },
+  topTitleRow:           { flex: 1, marginHorizontal: 8 },
+  topIconBtn:            { width: 38, height: 38, borderRadius: RADIUS.full, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center' },
+  topIconSpacer:         { width: 38, height: 38 },
+
+  // Avatar card (floats over cover)
+  profileCard:           { marginHorizontal: 16, marginTop: -60, borderRadius: RADIUS.xl, padding: 20, alignItems: 'center', gap: 6, ...SHADOW.floating },
+  avatarArea:            { marginTop: -50, marginBottom: 6, alignItems: 'center', alignSelf: 'center' },
+
+  heroNameRow:           { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: 'wrap' },
   heroName:              { fontSize: 22, lineHeight: 28, fontFamily: F.bold, flexShrink: 1 },
-  heroStats:             { flexDirection: 'row', alignItems: 'flex-start', gap: 6 },
+  statsStrip:            { flexDirection: 'row', alignItems: 'center', width: '100%', marginTop: 16, paddingTop: 16, borderTopWidth: 1 },
   heroStat:              { flex: 1, minWidth: 0, alignItems: 'center' },
   heroStatValue:         { fontSize: 18, fontFamily: F.bold, textAlign: 'center' },
   heroStatLabel:         { fontSize: 10, textTransform: 'uppercase', marginTop: 1, fontFamily: F.semibold, textAlign: 'center' },

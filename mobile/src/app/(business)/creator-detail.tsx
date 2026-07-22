@@ -2,6 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { BackButton } from '@/components/BackButton';
 import { VerifiedBadge } from '@/components/VerifiedBadge';
+import { LinearGradient } from 'expo-linear-gradient';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import {
   ActivityIndicator,
@@ -198,43 +199,54 @@ export default function CreatorDetailScreen() {
 
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
-      {/* Top bar */}
-      <View style={[s.topBar, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
-        <BackButton fallback="/(business)/explore-creators" />
-        <Text style={[s.topTitle, { color: C.text }]} numberOfLines={1}>{profile.fullName ?? 'Creator'}</Text>
-        <View style={{ width: 40 }} />
-      </View>
-
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
 
-        {/* ── Hero ── */}
-        <View style={[s.hero, { backgroundColor: C.surface }]}>
-          {profile.avatarUrl ? (
-            <Image source={{ uri: profile.avatarUrl }} style={s.avatarCircle} />
-          ) : (
-            <View style={[s.avatarCircle, { backgroundColor: avatarBg }]}>
-              <Text style={s.avatarText}>{initials}</Text>
-            </View>
-          )}
+        {/* ── Hero Cover ── */}
+        <View style={s.cover}>
+          <LinearGradient
+            colors={['#7C3AED', '#EC4899', '#F97316']}
+            start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+            style={StyleSheet.absoluteFill}>
+            <View style={[s.bubble, s.bubble1]} />
+            <View style={[s.bubble, s.bubble2]} />
+            <View style={[s.bubble, s.bubble3]} />
+          </LinearGradient>
 
-          <View style={s.heroInfo}>
-            {profile.username ? (
-              <View style={s.nameRow}>
-                <Text style={[s.username, { color: C.textSecondary }]}>@{profile.username}</Text>
-                {(profile.fullyVerified || profile.isVerified) && <VerifiedBadge size={16} />}
-              </View>
-            ) : (profile.fullyVerified || profile.isVerified) ? (
-              <View style={s.nameRow}>
-                <VerifiedBadge size={16} />
-              </View>
-            ) : null}
-            {profile.location ? (
-              <View style={s.locationRow}>
-                <Ionicons name="location" size={11} color={C.textSecondary} />
-                <Text style={[s.location, { color: C.textSecondary }]}>{profile.location}</Text>
-              </View>
-            ) : null}
+          <View style={s.coverTopBar}>
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={s.topIconBtn} hitSlop={4}
+              onPress={() => (router.canGoBack() ? router.back() : router.replace('/(business)/explore-creators' as never))}>
+              <Ionicons name="chevron-back" size={22} color="#fff" />
+            </Pressable>
+            <View style={s.coverTopTitleRow} />
+            <View style={s.topIconSpacer} />
           </View>
+        </View>
+
+        {/* ── Avatar card (overlaps cover) ── */}
+        <View style={[s.profileCard, { backgroundColor: C.surface }]}>
+          <View style={s.avatarArea}>
+            {profile.avatarUrl ? (
+              <Image source={{ uri: profile.avatarUrl }} style={s.avatar} />
+            ) : (
+              <View style={[s.avatar, { backgroundColor: avatarBg }]}>
+                <Text style={s.avatarInitial}>{initials}</Text>
+              </View>
+            )}
+          </View>
+
+          <View style={s.nameRow}>
+            <Text style={[s.name, { color: C.text }]} numberOfLines={2}>{profile.fullName ?? 'Creator'}</Text>
+            {(profile.fullyVerified || profile.isVerified) && <VerifiedBadge size={16} />}
+          </View>
+          {profile.username ? (
+            <Text style={[s.username, { color: C.textSecondary }]}>@{profile.username}</Text>
+          ) : null}
+          {profile.location ? (
+            <View style={s.locationRow}>
+              <Ionicons name="location-sharp" size={13} color={C.brinjal1} />
+              <Text style={[s.location, { color: C.textSecondary }]}>{profile.location}</Text>
+            </View>
+          ) : null}
         </View>
 
         {/* ── Stats ── */}
@@ -476,13 +488,29 @@ const s = StyleSheet.create({
   scroll: { paddingBottom: 16, gap: 12 },
 
   // Hero
-  hero:         { flexDirection: 'row', alignItems: 'center', gap: 16, paddingHorizontal: 20, paddingVertical: 24, marginHorizontal: 20, borderRadius: RADIUS.lg, ...SHADOW.card },
-  avatarCircle: { width: 72, height: 72, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
-  avatarText:   { fontSize: 26, fontFamily: F.bold },
-  heroInfo:     { flex: 1, gap: 4 },
-  nameRow:      { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
-  username:     { fontSize: 13, fontFamily: F.regular },
-  locationRow:  { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  // Hero cover
+  cover:      { height: 180, overflow: 'hidden' },
+  bubble:     { position: 'absolute', borderRadius: RADIUS.full, backgroundColor: 'rgba(255,255,255,0.08)' },
+  bubble1:    { width: 160, height: 160, top: -50, right: -30 },
+  bubble2:    { width: 100, height: 100, bottom: -20, left: 30 },
+  bubble3:    { width: 60,  height: 60,  top: 20,   left: -20  },
+  coverTopBar:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 10 },
+  coverTopTitleRow: { flex: 1, marginHorizontal: 8 },
+  topIconBtn:    { width: 38, height: 38, borderRadius: RADIUS.full, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center' },
+  topIconSpacer: { width: 38, height: 38 },
+
+  // Avatar card (floats over cover)
+  profileCard: { marginHorizontal: 16, marginTop: -72, borderRadius: RADIUS.xl, padding: 20, alignItems: 'center', gap: 6, ...SHADOW.floating },
+  avatarArea:  { marginTop: -50, marginBottom: 6, alignItems: 'center', alignSelf: 'center' },
+  avatar:      { width: 96, height: 96, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center',
+                 borderWidth: 4, borderColor: '#fff', overflow: 'hidden' },
+  avatarInitial: { fontSize: 34, fontFamily: F.bold, textAlign: 'center', lineHeight: 96, width: '100%' },
+
+  // Identity
+  nameRow:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: 'wrap' },
+  name:         { fontSize: 22, fontFamily: F.bold, textAlign: 'center' },
+  username:     { fontSize: 14, fontFamily: F.regular, marginTop: 2 },
+  locationRow:  { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
   location:     { fontSize: 13, fontFamily: F.regular },
 
   // Sections

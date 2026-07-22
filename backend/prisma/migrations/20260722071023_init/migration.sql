@@ -5,13 +5,13 @@ CREATE TYPE "ReferralStatus" AS ENUM ('PENDING', 'COMPLETED', 'EXPIRED');
 CREATE TYPE "Role" AS ENUM ('CREATOR', 'BUSINESS', 'ADMIN');
 
 -- CreateEnum
-CREATE TYPE "CampaignStatus" AS ENUM ('DRAFT', 'ACTIVE', 'PAUSED', 'CLOSED', 'CANCELLED');
+CREATE TYPE "CampaignStatus" AS ENUM ('DRAFT', 'PENDING_APPROVAL', 'ACTIVE', 'PAUSED', 'CLOSED', 'CANCELLED');
 
 -- CreateEnum
 CREATE TYPE "ConversationStatus" AS ENUM ('PENDING', 'ACCEPTED', 'DECLINED');
 
 -- CreateEnum
-CREATE TYPE "MessageType" AS ENUM ('TEXT', 'IMAGE', 'FILE');
+CREATE TYPE "MessageType" AS ENUM ('TEXT', 'IMAGE', 'FILE', 'VIDEO');
 
 -- CreateEnum
 CREATE TYPE "ApplicationStatus" AS ENUM ('PENDING', 'ACCEPTED', 'REJECTED');
@@ -43,6 +43,12 @@ CREATE TYPE "DocumentStatus" AS ENUM ('NONE', 'PENDING', 'APPROVED', 'REJECTED')
 -- CreateEnum
 CREATE TYPE "PlatformStatus" AS ENUM ('ACTIVE', 'INACTIVE');
 
+-- CreateEnum
+CREATE TYPE "VisitorChatStatus" AS ENUM ('OPEN', 'CLOSED');
+
+-- CreateEnum
+CREATE TYPE "VisitorMessageSender" AS ENUM ('VISITOR', 'ADMIN');
+
 -- CreateTable
 CREATE TABLE "users" (
     "id" TEXT NOT NULL,
@@ -60,8 +66,19 @@ CREATE TABLE "users" (
     "suspendedAt" TIMESTAMP(3),
     "pushToken" TEXT,
     "deviceId" TEXT,
+    "lastSeenAt" TIMESTAMP(3),
 
     CONSTRAINT "users_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "blocks" (
+    "id" TEXT NOT NULL,
+    "blockerId" TEXT NOT NULL,
+    "blockedId" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "blocks_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -72,6 +89,7 @@ CREATE TABLE "creator_profiles" (
     "bio" TEXT,
     "location" TEXT,
     "avatarUrl" TEXT,
+    "coverImageUrl" TEXT,
     "categories" TEXT[],
     "socialLinks" JSONB NOT NULL DEFAULT '{}',
     "portfolioLinks" JSONB NOT NULL DEFAULT '[]',
@@ -92,6 +110,9 @@ CREATE TABLE "creator_profiles" (
     "citizenshipDocUrl" TEXT,
     "citizenshipStatus" "CitizenshipStatus" NOT NULL DEFAULT 'NONE',
     "citizenshipUploadedAt" TIMESTAMP(3),
+    "panDocUrl" TEXT,
+    "panDocStatus" "DocumentStatus" NOT NULL DEFAULT 'NONE',
+    "panDocUploadedAt" TIMESTAMP(3),
 
     CONSTRAINT "creator_profiles_pkey" PRIMARY KEY ("id")
 );
@@ -128,13 +149,19 @@ CREATE TABLE "referrals" (
 -- CreateTable
 CREATE TABLE "social_accounts" (
     "id" TEXT NOT NULL,
-    "creatorProfileId" TEXT NOT NULL,
+    "creatorProfileId" TEXT,
+    "businessProfileId" TEXT,
     "platform" TEXT NOT NULL,
     "profileUrl" TEXT NOT NULL,
     "followers" INTEGER NOT NULL DEFAULT 0,
     "connectedViaOAuth" BOOLEAN NOT NULL DEFAULT false,
     "platformUserId" TEXT,
     "avatarUrl" TEXT,
+    "accessToken" TEXT,
+    "refreshToken" TEXT,
+    "tokenExpiresAt" TIMESTAMP(3),
+    "oauthConnectionType" TEXT,
+    "followersSyncedAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -158,6 +185,7 @@ CREATE TABLE "business_profiles" (
     "businessName" TEXT,
     "description" TEXT,
     "logoUrl" TEXT,
+    "coverImageUrl" TEXT,
     "website" TEXT,
     "categories" TEXT[],
     "panNo" TEXT,
@@ -182,6 +210,8 @@ CREATE TABLE "business_profiles" (
     "companyRegDocUrl" TEXT,
     "companyRegDocStatus" "DocumentStatus" NOT NULL DEFAULT 'NONE',
     "companyRegDocUploadedAt" TIMESTAMP(3),
+    "verificationRejectReason" TEXT,
+    "verificationRejectedAt" TIMESTAMP(3),
 
     CONSTRAINT "business_profiles_pkey" PRIMARY KEY ("id")
 );
@@ -226,6 +256,7 @@ CREATE TABLE "campaigns" (
     "budgetMax" DOUBLE PRECISION NOT NULL,
     "paymentType" TEXT NOT NULL,
     "status" "CampaignStatus" NOT NULL DEFAULT 'ACTIVE',
+    "commissionRate" DOUBLE PRECISION,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "isFeatured" BOOLEAN NOT NULL DEFAULT false,
@@ -244,13 +275,13 @@ CREATE TABLE "campaigns" (
     "targetAudience" TEXT[] DEFAULT ARRAY[]::TEXT[],
     "hashtags" TEXT[] DEFAULT ARRAY[]::TEXT[],
     "sampleCaption" TEXT,
-    "callToAction" TEXT,
     "approvalRequirements" TEXT,
     "aiGenerated" BOOLEAN NOT NULL DEFAULT false,
     "aiPrompt" TEXT,
     "aiSuggestedCategories" TEXT[] DEFAULT ARRAY[]::TEXT[],
     "aiSuggestedPlatforms" TEXT[] DEFAULT ARRAY[]::TEXT[],
     "aiNeedsInputFields" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "searchVector" tsvector,
 
     CONSTRAINT "campaigns_pkey" PRIMARY KEY ("id")
 );
@@ -297,7 +328,8 @@ CREATE TABLE "reviews" (
 CREATE TABLE "conversations" (
     "id" TEXT NOT NULL,
     "creatorId" TEXT NOT NULL,
-    "businessId" TEXT NOT NULL,
+    "creatorId2" TEXT,
+    "businessId" TEXT,
     "campaignId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "status" "ConversationStatus" NOT NULL DEFAULT 'PENDING',
@@ -306,6 +338,10 @@ CREATE TABLE "conversations" (
     "lastMessageAt" TIMESTAMP(3),
     "businessSeenAt" TIMESTAMP(3),
     "creatorSeenAt" TIMESTAMP(3),
+    "creator2SeenAt" TIMESTAMP(3),
+    "hiddenForCreator" BOOLEAN NOT NULL DEFAULT false,
+    "hiddenForBusiness" BOOLEAN NOT NULL DEFAULT false,
+    "hiddenForCreator2" BOOLEAN NOT NULL DEFAULT false,
 
     CONSTRAINT "conversations_pkey" PRIMARY KEY ("id")
 );
@@ -319,7 +355,18 @@ CREATE TABLE "messages" (
     "type" "MessageType" NOT NULL DEFAULT 'TEXT',
     "attachmentUrl" TEXT,
     "attachmentName" TEXT,
+    "attachmentThumbnailUrl" TEXT,
+    "attachmentDurationSec" INTEGER,
+    "attachmentWidth" INTEGER,
+    "attachmentHeight" INTEGER,
+    "attachmentSize" INTEGER,
+    "attachmentFormat" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "deletedAt" TIMESTAMP(3),
+    "deletedBy" TEXT,
+    "hiddenForCreator" BOOLEAN NOT NULL DEFAULT false,
+    "hiddenForBusiness" BOOLEAN NOT NULL DEFAULT false,
+    "hiddenForCreator2" BOOLEAN NOT NULL DEFAULT false,
 
     CONSTRAINT "messages_pkey" PRIMARY KEY ("id")
 );
@@ -532,11 +579,47 @@ CREATE TABLE "platforms" (
     CONSTRAINT "platforms_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "visitor_chats" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "email" TEXT,
+    "phone" TEXT,
+    "status" "VisitorChatStatus" NOT NULL DEFAULT 'OPEN',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "lastMessageAt" TIMESTAMP(3),
+    "visitorSeenAt" TIMESTAMP(3),
+    "adminSeenAt" TIMESTAMP(3),
+
+    CONSTRAINT "visitor_chats_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "visitor_messages" (
+    "id" TEXT NOT NULL,
+    "chatId" TEXT NOT NULL,
+    "sender" "VisitorMessageSender" NOT NULL,
+    "adminId" TEXT,
+    "content" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "visitor_messages_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "users_phone_key" ON "users"("phone");
+
+-- CreateIndex
+CREATE INDEX "users_role_idx" ON "users"("role");
+
+-- CreateIndex
+CREATE INDEX "blocks_blockedId_idx" ON "blocks"("blockedId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "blocks_blockerId_blockedId_key" ON "blocks"("blockerId", "blockedId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "creator_profiles_userId_key" ON "creator_profiles"("userId");
@@ -546,6 +629,9 @@ CREATE UNIQUE INDEX "creator_profiles_username_key" ON "creator_profiles"("usern
 
 -- CreateIndex
 CREATE UNIQUE INDEX "creator_profiles_referralCode_key" ON "creator_profiles"("referralCode");
+
+-- CreateIndex
+CREATE INDEX "creator_profiles_isVerified_idx" ON "creator_profiles"("isVerified");
 
 -- CreateIndex
 CREATE INDEX "withdrawals_creatorId_idx" ON "withdrawals"("creatorId");
@@ -560,6 +646,9 @@ CREATE INDEX "referrals_referrerId_idx" ON "referrals"("referrerId");
 CREATE UNIQUE INDEX "social_accounts_creatorProfileId_platform_key" ON "social_accounts"("creatorProfileId", "platform");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "social_accounts_businessProfileId_platform_key" ON "social_accounts"("businessProfileId", "platform");
+
+-- CreateIndex
 CREATE INDEX "profile_views_creatorId_viewedAt_idx" ON "profile_views"("creatorId", "viewedAt");
 
 -- CreateIndex
@@ -570,6 +659,9 @@ CREATE UNIQUE INDEX "business_profiles_userId_key" ON "business_profiles"("userI
 
 -- CreateIndex
 CREATE UNIQUE INDEX "business_profiles_referralCode_key" ON "business_profiles"("referralCode");
+
+-- CreateIndex
+CREATE INDEX "business_profiles_isVerified_idx" ON "business_profiles"("isVerified");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "business_referrals_referredId_key" ON "business_referrals"("referredId");
@@ -614,13 +706,22 @@ CREATE INDEX "reviews_toUserId_idx" ON "reviews"("toUserId");
 CREATE UNIQUE INDEX "reviews_applicationId_fromUserId_key" ON "reviews"("applicationId", "fromUserId");
 
 -- CreateIndex
-CREATE INDEX "conversations_businessId_idx" ON "conversations"("businessId");
+CREATE INDEX "conversations_creatorId_hiddenForCreator_lastMessageAt_idx" ON "conversations"("creatorId", "hiddenForCreator", "lastMessageAt" DESC);
+
+-- CreateIndex
+CREATE INDEX "conversations_creatorId2_hiddenForCreator2_lastMessageAt_idx" ON "conversations"("creatorId2", "hiddenForCreator2", "lastMessageAt" DESC);
+
+-- CreateIndex
+CREATE INDEX "conversations_businessId_hiddenForBusiness_lastMessageAt_idx" ON "conversations"("businessId", "hiddenForBusiness", "lastMessageAt" DESC);
 
 -- CreateIndex
 CREATE INDEX "conversations_lastMessageAt_idx" ON "conversations"("lastMessageAt" DESC);
 
 -- CreateIndex
 CREATE UNIQUE INDEX "conversations_creatorId_businessId_key" ON "conversations"("creatorId", "businessId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "conversations_creatorId_creatorId2_key" ON "conversations"("creatorId", "creatorId2");
 
 -- CreateIndex
 CREATE INDEX "messages_conversationId_createdAt_idx" ON "messages"("conversationId", "createdAt" DESC);
@@ -649,6 +750,18 @@ CREATE UNIQUE INDEX "categories_key_key" ON "categories"("key");
 -- CreateIndex
 CREATE UNIQUE INDEX "platforms_key_key" ON "platforms"("key");
 
+-- CreateIndex
+CREATE INDEX "visitor_chats_status_lastMessageAt_idx" ON "visitor_chats"("status", "lastMessageAt" DESC);
+
+-- CreateIndex
+CREATE INDEX "visitor_messages_chatId_createdAt_idx" ON "visitor_messages"("chatId", "createdAt");
+
+-- AddForeignKey
+ALTER TABLE "blocks" ADD CONSTRAINT "blocks_blockerId_fkey" FOREIGN KEY ("blockerId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "blocks" ADD CONSTRAINT "blocks_blockedId_fkey" FOREIGN KEY ("blockedId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
 -- AddForeignKey
 ALTER TABLE "creator_profiles" ADD CONSTRAINT "creator_profiles_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
@@ -663,6 +776,9 @@ ALTER TABLE "referrals" ADD CONSTRAINT "referrals_referredId_fkey" FOREIGN KEY (
 
 -- AddForeignKey
 ALTER TABLE "social_accounts" ADD CONSTRAINT "social_accounts_creatorProfileId_fkey" FOREIGN KEY ("creatorProfileId") REFERENCES "creator_profiles"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "social_accounts" ADD CONSTRAINT "social_accounts_businessProfileId_fkey" FOREIGN KEY ("businessProfileId") REFERENCES "business_profiles"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "profile_views" ADD CONSTRAINT "profile_views_creatorId_fkey" FOREIGN KEY ("creatorId") REFERENCES "creator_profiles"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -699,6 +815,9 @@ ALTER TABLE "reviews" ADD CONSTRAINT "reviews_toUserId_fkey" FOREIGN KEY ("toUse
 
 -- AddForeignKey
 ALTER TABLE "conversations" ADD CONSTRAINT "conversations_businessId_fkey" FOREIGN KEY ("businessId") REFERENCES "business_profiles"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "conversations" ADD CONSTRAINT "conversations_creatorId2_fkey" FOREIGN KEY ("creatorId2") REFERENCES "creator_profiles"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "conversations" ADD CONSTRAINT "conversations_campaignId_fkey" FOREIGN KEY ("campaignId") REFERENCES "campaigns"("id") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -744,3 +863,9 @@ ALTER TABLE "campaign_invitations" ADD CONSTRAINT "campaign_invitations_creatorI
 
 -- AddForeignKey
 ALTER TABLE "campaign_invitations" ADD CONSTRAINT "campaign_invitations_businessId_fkey" FOREIGN KEY ("businessId") REFERENCES "business_profiles"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "visitor_messages" ADD CONSTRAINT "visitor_messages_chatId_fkey" FOREIGN KEY ("chatId") REFERENCES "visitor_chats"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "visitor_messages" ADD CONSTRAINT "visitor_messages_adminId_fkey" FOREIGN KEY ("adminId") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;

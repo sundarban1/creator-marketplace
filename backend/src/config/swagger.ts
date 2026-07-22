@@ -12,7 +12,7 @@ const options: swaggerJsdoc.Options = {
         'A marketplace platform connecting creators (influencers) with businesses for campaign collaborations.',
       contact: {
         name: 'API Support',
-        email: 'support@creatormarket.com',
+        email: 'support@kolab.com.np',
       },
     },
     servers: [

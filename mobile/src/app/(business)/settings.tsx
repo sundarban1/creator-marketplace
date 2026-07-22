@@ -843,11 +843,12 @@ export default function BusinessSettingsScreen() {
   // ── Sub-page: Help Center ─────────────────────────────────────
 
   const HELP_FAQS = [
-    { q: 'How do I post an event?', a: 'Go to Events → tap the + button → fill in your event details, budget, and requirements → publish. Creators will begin applying within hours.' },
-    { q: 'How are payments handled?', a: 'Budgets are held in escrow before work begins. Once you confirm content delivery, payment is released to the creator within 5 business days.' },
-    { q: 'How do I pick the right creator?', a: 'Review their follower count, engagement rate, past work, and category match. Check proposal rate vs. your budget. Shortlisted creators stay in your pipeline.' },
-    { q: 'Can I cancel an event?', a: 'Yes, draft events can be cancelled anytime. Active events can be closed, but you may need to pay creators who have already delivered work.' },
-    { q: "What if a creator doesn't deliver?", a: 'Open a dispute from the event detail page. Our team mediates and you are eligible for a refund if the creator fails to deliver as agreed.' },
+    { q: 'How do I post an event?', a: 'Go to Events → tap the + button → fill in your event details, budget, and requirements → publish. Creators across Nepal will begin applying within hours.' },
+    { q: 'How are payments handled?', a: 'Budgets are confirmed before work begins. Once you confirm content delivery, payment is released to the creator within 5 business days via eSewa, Khalti, or FonePay.' },
+    { q: 'How do I pick the right creator?', a: 'Review their follower count, engagement rate, past work, and category match. Check proposal rate against your budget, and use Nearby Events to prioritize creators local to your city — Kathmandu, Pokhara, or anywhere else in Nepal.' },
+    { q: 'Can I cancel an event?', a: 'Yes, draft events can be cancelled anytime. Active events can be closed, but you may still need to pay creators who have already delivered work.' },
+    { q: "What if a creator doesn't deliver?", a: 'Open a dispute from the event detail page. Our Kolab support team mediates and you are eligible for a refund if the creator fails to deliver as agreed.' },
+    { q: 'How do I get my business verified?', a: 'Go to Settings → Verification and submit your company registration or PAN document. Verified businesses get a badge that builds trust with creators and improves proposal quality.' },
   ];
 
   function renderHelpCenter() {
@@ -930,7 +931,7 @@ export default function BusinessSettingsScreen() {
           </View>
         </Card>
         <HintCard>
-          <Text style={[styles.hintText, { color: C.brinjal1 }]}>{t('businessSettings.supportEmailHint', { email: flags.supportEmail ?? 'support@creatormarket.com' })}</Text>
+          <Text style={[styles.hintText, { color: C.brinjal1 }]}>{t('businessSettings.supportEmailHint', { email: flags.supportEmail ?? 'support@kolab.com.np' })}</Text>
         </HintCard>
       </>
     );
@@ -994,12 +995,13 @@ export default function BusinessSettingsScreen() {
   // ── Sub-page: FAQs ────────────────────────────────────────────
 
   const FAQS = [
-    { q: 'What is CreatorMarket for businesses?', a: 'CreatorMarket lets you find and hire local content creators for paid collaborations — video promotions, product reviews, social media marketing, and more.' },
-    { q: 'How much does it cost?', a: 'Posting events is free. A 10% platform fee applies on each completed collaboration, deducted from the event budget.' },
-    { q: 'How do I find the right creators?', a: 'Browse creator profiles by category, follower count, and platform. Or post an event and let creators apply to you.' },
-    { q: 'What payment methods are supported?', a: 'For Nepal: eSewa, Khalti, and Fonepay. For international events: Visa/Mastercard. Stripe support is coming soon.' },
+    { q: 'What is Kolab for businesses?', a: 'Kolab lets you find and hire local content creators across Nepal for paid collaborations — video promotions, product reviews, social media marketing, and more.' },
+    { q: 'How much does it cost?', a: 'Posting events is free. A 10% platform fee applies on each completed paid collaboration, deducted from the event budget.' },
+    { q: 'How do I find the right creators?', a: 'Browse creator profiles by category, follower count, platform, and location. Or post an event and let creators apply to you.' },
+    { q: 'What payment methods are supported?', a: 'For Nepal-based events: eSewa, Khalti, and FonePay. Visa/Mastercard support for international events is coming soon.' },
     { q: 'Can I run multiple events at once?', a: 'Yes. You can have multiple active events simultaneously and manage all proposals in one place.' },
-    { q: 'Is my business information secure?', a: 'Yes. We use industry-standard encryption. Your contact details can be hidden from the public profile in Privacy Settings.' },
+    { q: 'Is my business information secure?', a: 'Yes. We use industry-standard encryption. Your contact details can be hidden from your public profile in Privacy Settings.' },
+    { q: 'Can I hire creators from outside my city?', a: 'Yes — Kolab covers all of Nepal. Filter by location when browsing creators, or leave it open if you want proposals from anywhere in the country.' },
   ];
 
   function renderFAQs() {

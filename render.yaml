@@ -1,5 +1,5 @@
 databases:
-  - name: marketplace-db
+  - name: kolab-db
     plan: free
     region: oregon
     postgresMajorVersion: "16"
@@ -23,10 +23,14 @@ services:
       - key: LOG_LEVEL
         value: info
 
-      # ── Database — wired to the Render Postgres instance above ──────────────
+      # ── Database — wired to the Render Postgres instance above. After this
+      # database's first deploy (migrations run automatically via
+      # docker-entrypoint.sh), open the service's Shell tab on the Render
+      # dashboard and run `npm run db:seed` once to populate categories,
+      # platforms, the admin account, and help/FAQ/legal content. ─────────────
       - key: DATABASE_URL
         fromDatabase:
-          name: marketplace-db
+          name: kolab-db
           property: connectionString
 
       # ── Auth secrets — Render generates strong random values on first deploy ─

@@ -5,10 +5,10 @@ import { logger } from '../config/logger';
 import { AdminRepository } from '../modules/admin/admin.repository';
 
 const adminRepo = new AdminRepository();
-const DEFAULT_SUPPORT_EMAIL = 'support@creatormarket.com';
+const DEFAULT_SUPPORT_EMAIL = 'support@kolab.com.np';
 
-const FROM_NAME    = 'CreatorMarket';
-const FROM_ADDRESS = env.EMAIL_USERNAME ?? 'no-reply@creatormarket.com';
+const FROM_NAME    = 'Kolab';
+const FROM_ADDRESS = env.EMAIL_USERNAME ?? 'no-reply@kolab.com.np';
 const FROM         = `${FROM_NAME} <${FROM_ADDRESS}>`;
 
 // Resend requires the from-address to be on a domain verified with Resend —
@@ -96,7 +96,7 @@ function wrapLayout(content: string): string {
         <!-- Header -->
         <tr>
           <td style="background:#4F46E5;border-radius:12px 12px 0 0;padding:28px 32px;text-align:center;">
-            <span style="color:#fff;font-size:22px;font-weight:800;letter-spacing:-0.5px;">⚡ CreatorMarket</span>
+            <span style="color:#fff;font-size:22px;font-weight:800;letter-spacing:-0.5px;">⚡ Kolab</span>
           </td>
         </tr>
 
@@ -111,8 +111,8 @@ function wrapLayout(content: string): string {
         <tr>
           <td style="padding:20px 0;text-align:center;">
             <p style="color:#9ca3af;font-size:12px;margin:0;">
-              © 2026 CreatorMarket Pvt. Ltd., Kathmandu, Nepal<br>
-              You received this email because you have an account on CreatorMarket.
+              © 2026 Kolab Pvt. Ltd., Kathmandu, Nepal<br>
+              You received this email because you have an account on Kolab.
             </p>
           </td>
         </tr>
@@ -145,7 +145,7 @@ export async function sendOtpEmail(email: string, code: string): Promise<void> {
     </p>
   `);
 
-  await sendEmail(email, 'Your CreatorMarket verification code', html);
+  await sendEmail(email, 'Your Kolab verification code', html);
   if (env.NODE_ENV !== 'production') logger.debug({ email, code }, 'OTP email issued');
 }
 
@@ -219,7 +219,7 @@ export async function sendWelcomeEmail(
     </p>
   `);
 
-  await sendEmail(email, `Welcome to CreatorMarket, ${name}!`, html);
+  await sendEmail(email, `Welcome to Kolab, ${name}!`, html);
 }
 
 // ── Password Reset ────────────────────────────────────────────────────────────
@@ -230,7 +230,7 @@ export async function sendPasswordResetEmail(email: string, resetToken: string):
   const html = wrapLayout(`
     <h2 style="color:#111827;font-size:22px;font-weight:700;margin:0 0 8px;">Reset your password</h2>
     <p style="color:#6b7280;font-size:15px;margin:0 0 24px;line-height:1.6;">
-      We received a request to reset the password for your CreatorMarket account.
+      We received a request to reset the password for your Kolab account.
       Click the button below — this link expires in <strong>1 hour</strong>.
     </p>
 
@@ -248,14 +248,14 @@ export async function sendPasswordResetEmail(email: string, resetToken: string):
     </p>
   `);
 
-  await sendEmail(email, 'Reset your CreatorMarket password', html);
+  await sendEmail(email, 'Reset your Kolab password', html);
 }
 
 export async function sendPasswordResetOtpEmail(email: string, code: string): Promise<void> {
   const html = wrapLayout(`
     <h2 style="color:#111827;font-size:22px;font-weight:700;margin:0 0 8px;">Reset your password</h2>
     <p style="color:#6b7280;font-size:15px;margin:0 0 28px;line-height:1.6;">
-      Enter the 6-digit code below to reset your CreatorMarket password. It expires in <strong>10 minutes</strong>.
+      Enter the 6-digit code below to reset your Kolab password. It expires in <strong>10 minutes</strong>.
     </p>
 
     <div style="background:#f5f3ff;border:2px solid #4F46E5;border-radius:12px;padding:28px;text-align:center;margin-bottom:28px;">
@@ -269,7 +269,7 @@ export async function sendPasswordResetOtpEmail(email: string, code: string): Pr
     </p>
   `);
 
-  await sendEmail(email, 'Your CreatorMarket password reset code', html);
+  await sendEmail(email, 'Your Kolab password reset code', html);
   if (env.NODE_ENV !== 'production') logger.debug({ email, code }, 'Password reset OTP email issued');
 }
 
@@ -358,7 +358,7 @@ export async function sendPaymentSecuredEmail(
       <p style="margin:0;color:#16A34A;font-size:22px;font-weight:800;">NPR ${amount.toLocaleString()}</p>
     </div>
     <p style="color:#374151;font-size:15px;margin:0 0 20px;line-height:1.6;">
-      Your payment is safely held on the platform. Open the CreatorMarket app, click <strong>"Let's Create Content"</strong> to officially start working, and deliver your best work!
+      Your payment is safely held on the platform. Open the Kolab app, click <strong>"Let's Create Content"</strong> to officially start working, and deliver your best work!
     </p>
     <div style="background:#FFF7ED;border-radius:8px;padding:14px 18px;margin-bottom:24px;">
       <p style="margin:0;color:#92400E;font-size:13px;">⏰ Please start work within <strong>48 hours</strong> to keep the campaign on track.</p>
@@ -383,7 +383,7 @@ export async function sendWorkStartedEmail(
       <p style="margin:0;color:#111827;font-size:16px;font-weight:700;">${campaignTitle}</p>
     </div>
     <p style="color:#374151;font-size:15px;margin:0 0 20px;line-height:1.6;">
-      You'll receive a notification when the creator submits their deliverables for your review. Track the progress in the CreatorMarket app.
+      You'll receive a notification when the creator submits their deliverables for your review. Track the progress in the Kolab app.
     </p>
   `);
   await sendEmail(businessEmail, `🚀 ${creatorName} started on "${campaignTitle}"`, html);
@@ -411,7 +411,7 @@ export async function sendWorkSubmittedEmail(
     <div style="background:#FFF7ED;border-radius:8px;padding:14px 18px;margin-bottom:24px;">
       <p style="margin:0;color:#92400E;font-size:13px;">⏰ If no action is taken within <strong>5 days</strong>, the work will be auto-approved.</p>
     </div>
-    <p style="color:#374151;font-size:14px;margin:0;">Open the CreatorMarket app to <strong>Approve</strong> the work or <strong>Request Revisions</strong>.</p>
+    <p style="color:#374151;font-size:14px;margin:0;">Open the Kolab app to <strong>Approve</strong> the work or <strong>Request Revisions</strong>.</p>
   `);
   await sendEmail(businessEmail, `📤 ${creatorName} submitted work for "${campaignTitle}"`, html);
 }
@@ -453,7 +453,7 @@ export async function sendRevisionRequestEmail(
       <p style="margin:0 0 8px;color:#92400E;font-size:13px;font-weight:700;text-transform:uppercase;">Revision Notes</p>
       <p style="margin:0;color:#374151;font-size:15px;line-height:1.7;">${note.replace(/\n/g, '<br>')}</p>
     </div>
-    <p style="color:#374151;font-size:14px;margin:0;">Please address the feedback and resubmit via the CreatorMarket app.</p>
+    <p style="color:#374151;font-size:14px;margin:0;">Please address the feedback and resubmit via the Kolab app.</p>
   `);
   await sendEmail(creatorEmail, `✏️ Revision needed for "${campaignTitle}"`, html);
 }
@@ -516,7 +516,7 @@ export async function sendEventAcceptedEmail(
     </div>
 
     <p style="color:#374151;font-size:15px;margin:0 0 16px;line-height:1.6;">
-      Open the CreatorMarket app to view the full event details and connect with the brand.
+      Open the Kolab app to view the full event details and connect with the brand.
     </p>
     <div style="background:#FFF7ED;border-radius:8px;padding:14px 18px;">
       <p style="margin:0;color:#92400E;font-size:13px;">
@@ -534,7 +534,7 @@ export async function sendAccountSuspendedEmail(email: string, name: string): Pr
   const html = wrapLayout(`
     <h2 style="color:#DC2626;font-size:22px;font-weight:700;margin:0 0 8px;">Your account has been suspended</h2>
     <p style="color:#6b7280;font-size:15px;margin:0 0 20px;line-height:1.6;">
-      Hi <strong>${name}</strong>, your CreatorMarket account has been temporarily suspended by an administrator.
+      Hi <strong>${name}</strong>, your Kolab account has been temporarily suspended by an administrator.
     </p>
     <div style="background:#FEF2F2;border:1.5px solid #FECACA;border-radius:10px;padding:16px 20px;margin-bottom:24px;">
       <p style="margin:0;color:#991B1B;font-size:14px;line-height:1.6;">
@@ -546,20 +546,20 @@ export async function sendAccountSuspendedEmail(email: string, name: string): Pr
       This action was taken in accordance with our Terms of Service. Your data remains intact and may be reinstated upon review.
     </p>
   `);
-  await sendEmail(email, 'Your CreatorMarket account has been suspended', html);
+  await sendEmail(email, 'Your Kolab account has been suspended', html);
 }
 
 export async function sendAccountReactivatedEmail(email: string, name: string): Promise<void> {
   const html = wrapLayout(`
     <h2 style="color:#059669;font-size:22px;font-weight:700;margin:0 0 8px;">Your account has been reactivated</h2>
     <p style="color:#6b7280;font-size:15px;margin:0 0 20px;line-height:1.6;">
-      Hi <strong>${name}</strong>, great news — your CreatorMarket account has been reactivated. You can now log in and use the platform normally.
+      Hi <strong>${name}</strong>, great news — your Kolab account has been reactivated. You can now log in and use the platform normally.
     </p>
     <p style="color:#9ca3af;font-size:13px;margin:0;">
       If you have any questions, please contact our support team through the app.
     </p>
   `);
-  await sendEmail(email, 'Your CreatorMarket account has been reactivated', html);
+  await sendEmail(email, 'Your Kolab account has been reactivated', html);
 }
 
 export async function sendAccountVerifiedEmail(email: string, name: string, kind: 'creator' | 'business'): Promise<void> {
@@ -596,7 +596,7 @@ export async function sendAccountDeletedEmail(email: string, name: string): Prom
   const html = wrapLayout(`
     <h2 style="color:#DC2626;font-size:22px;font-weight:700;margin:0 0 8px;">Your account has been deleted</h2>
     <p style="color:#6b7280;font-size:15px;margin:0 0 20px;line-height:1.6;">
-      Hi <strong>${name}</strong>, your CreatorMarket account and all associated data have been permanently deleted by an administrator.
+      Hi <strong>${name}</strong>, your Kolab account and all associated data have been permanently deleted by an administrator.
     </p>
     <div style="background:#FEF2F2;border:1.5px solid #FECACA;border-radius:10px;padding:16px 20px;margin-bottom:24px;">
       <p style="margin:0;color:#991B1B;font-size:14px;line-height:1.6;">
@@ -607,7 +607,7 @@ export async function sendAccountDeletedEmail(email: string, name: string): Prom
       If you believe this was done in error, please contact us immediately at ${escapeHtml(supportEmail || DEFAULT_SUPPORT_EMAIL)}.
     </p>
   `);
-  await sendEmail(email, 'Your CreatorMarket account has been deleted', html);
+  await sendEmail(email, 'Your Kolab account has been deleted', html);
 }
 
 export async function sendCampaignCancelledEmail(

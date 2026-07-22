@@ -300,7 +300,7 @@ export class AdminService {
       }).catch(() => {});
       sendVerificationRejectedEmail(updated.user.email, name, reason, 'business').catch(() => {});
       if (updated.user.phone) {
-        sendSms(updated.user.phone, `CreatorMarket: your business verification was not approved. Reason: ${reason}`).catch(() => {});
+        sendSms(updated.user.phone, `Kolab: your business verification was not approved. Reason: ${reason}`).catch(() => {});
       }
     }
     return updated;

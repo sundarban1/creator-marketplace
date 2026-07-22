@@ -29,7 +29,7 @@ import { usePlatformFlags } from '@/context/PlatformSettingsContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { authService } from '@/services/auth';
 
-const DEFAULT_SUPPORT_EMAIL = 'support@creatormarket.com';
+const DEFAULT_SUPPORT_EMAIL = 'support@kolab.com.np';
 import type { Lang } from '@/i18n';
 import { COLORS, F, RADIUS, SHADOW } from '@/utilities/constants';
 import { isValidNepaliPhone, normalizePhoneForSubmit } from '@/utilities/phone';
