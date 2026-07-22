@@ -1562,12 +1562,14 @@ export default function CreateCampaignScreen() {
                               <View style={[dlv.counter, { borderColor: active ? C.brinjal1 : C.border, backgroundColor: C.background }]}>
                                 <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                                   style={dlv.counterBtn}
+                                  hitSlop={4}
                                   onPress={() => update('deliverables', { ...form.deliverables, [item.key]: Math.max(0, count - 1) })}>
                                   <Text style={[dlv.counterBtnTxt, { color: count <= 0 ? C.border : C.brinjal1 }]}>−</Text>
                                 </Pressable>
                                 <Text style={[dlv.counterVal, { color: active ? C.brinjal1 : C.textSecondary }]}>{count}</Text>
                                 <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                                   style={dlv.counterBtn}
+                                  hitSlop={4}
                                   onPress={() => update('deliverables', { ...form.deliverables, [item.key]: Math.min(10, count + 1) })}>
                                   <Text style={[dlv.counterBtnTxt, { color: C.brinjal1 }]}>+</Text>
                                 </Pressable>

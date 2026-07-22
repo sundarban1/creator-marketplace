@@ -2,14 +2,15 @@ import { router, Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useContext, useState } from 'react';
 import {
-  Platform,
   Pressable, StyleSheet, Text, View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
 import { DrawerContext } from '@/context/DrawerContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { BusinessDrawerMenu } from '@/features/business/components/BusinessDrawerMenu';
+import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { COLORS, RADIUS, SHADOW } from '@/utilities/constants';
 import { useNotificationBadge } from '@/context/NotificationContext';
 import { scrollToTopEvents } from '@/lib/scrollToTopEvents';
@@ -51,6 +52,13 @@ function CustomTabBar({
   const C = useAppColors();
   const { t } = useLanguage();
   const { openDrawer } = useContext(DrawerContext);
+  const insets = useSafeAreaInsets();
+  // Real home-indicator/gesture-nav inset varies a lot by device (0 on an
+  // iPhone SE or 3-button-nav Android, ~34pt on notched iPhones) — a fixed
+  // guess either wastes space or lets the bar sit under the system nav bar.
+  // The floor keeps a little breathing room under the label on devices that
+  // report 0 (physical home button / classic Android nav).
+  const bottomInset = Math.max(insets.bottom, 8);
 
   if (isChatRoomFocused(state)) return null;
 
@@ -68,7 +76,12 @@ function CustomTabBar({
   const tabs = (state.routes as any[]).filter((r) => TAB_CONFIG[r.name]);
 
   return (
-    <View style={[tabS.bar, { backgroundColor: C.surface, borderTopColor: C.border }]}>
+    <View
+      style={[
+        tabS.bar,
+        { backgroundColor: C.surface, borderTopColor: C.border, height: TAB_BAR_CONTENT_HEIGHT + bottomInset, paddingBottom: bottomInset },
+      ]}
+    >
       {tabs.flatMap((route) => {
         // The `notifications` slot now opens the drawer (swapped with the header
         // hamburger) rather than navigating to a screen, so it never shows as "active".
@@ -160,13 +173,16 @@ function CustomTabBar({
   );
 }
 
+// Height of the tab bar's actual content (icons + labels), before the
+// safe-area inset is added on top — height/paddingBottom below are computed
+// per-device from useSafeAreaInsets() instead of hardcoded here.
+const TAB_BAR_CONTENT_HEIGHT = 56;
+
 const tabS = StyleSheet.create({
   bar: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: Platform.OS === 'ios' ? 84 : 64,
     paddingTop: 8,
-    paddingBottom: Platform.OS === 'ios' ? 24 : 6,
     paddingHorizontal: 6,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopLeftRadius: RADIUS.xl,
@@ -254,37 +270,39 @@ export default function BusinessTabsLayout() {
   return (
     <DrawerContext.Provider value={{ openDrawer: () => setDrawerOpen(true) }}>
       <View style={{ flex: 1 }}>
-        <Tabs
-          screenOptions={{ headerShown: false }}
-          tabBar={(props) => (
-            <CustomTabBar
-              state={props.state}
-              navigation={props.navigation}
-              chatBadge={badgeCount}
+        <MaxWidthContainer>
+          <Tabs
+            screenOptions={{ headerShown: false }}
+            tabBar={(props) => (
+              <CustomTabBar
+                state={props.state}
+                navigation={props.navigation}
+                chatBadge={badgeCount}
+              />
+            )}
+          >
+            <Tabs.Screen name="index"    options={{ title: t('business.tab.home') }} />
+            <Tabs.Screen name="campaigns" options={{ title: t('business.tab.events') }} />
+            {/* proposals.tsx stays a reachable route (linked from the home
+                quick actions and the pending-proposals banner) but is no
+                longer a bottom-tab destination — per-campaign proposals now
+                open via campaign-proposals.tsx from each event card instead. */}
+            <Tabs.Screen name="proposals" options={{ href: null }} />
+            <Tabs.Screen
+              name="messages"
+              listeners={({ navigation }) => ({
+                tabPress: (e) => {
+                  e.preventDefault();
+                  navigation.navigate('messages', { screen: 'index' });
+                },
+              })}
+              options={{ title: t('business.tab.messages') }}
             />
-          )}
-        >
-          <Tabs.Screen name="index"    options={{ title: t('business.tab.home') }} />
-          <Tabs.Screen name="campaigns" options={{ title: t('business.tab.events') }} />
-          {/* proposals.tsx stays a reachable route (linked from the home
-              quick actions and the pending-proposals banner) but is no
-              longer a bottom-tab destination — per-campaign proposals now
-              open via campaign-proposals.tsx from each event card instead. */}
-          <Tabs.Screen name="proposals" options={{ href: null }} />
-          <Tabs.Screen
-            name="messages"
-            listeners={({ navigation }) => ({
-              tabPress: (e) => {
-                e.preventDefault();
-                navigation.navigate('messages', { screen: 'index' });
-              },
-            })}
-            options={{ title: t('business.tab.messages') }}
-          />
-          <Tabs.Screen name="notifications" options={{ title: t('business.tab.notifications') }} />
-          {/* create.tsx is navigated via the create button docked in the tab bar, not a visible tab */}
-          <Tabs.Screen name="create" options={{ href: null }} />
-        </Tabs>
+            <Tabs.Screen name="notifications" options={{ title: t('business.tab.notifications') }} />
+            {/* create.tsx is navigated via the create button docked in the tab bar, not a visible tab */}
+            <Tabs.Screen name="create" options={{ href: null }} />
+          </Tabs>
+        </MaxWidthContainer>
 
         <BusinessDrawerMenu
           visible={drawerOpen}

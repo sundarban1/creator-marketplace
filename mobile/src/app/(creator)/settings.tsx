@@ -1364,7 +1364,7 @@ export default function CreatorSettingsScreen() {
                 </View>
                 <View style={styles.socialActions}>
                   {acct ? (
-                    <Pressable style={styles.socialDisconnectBtn} onPress={() => deleteSocialAccount(acct)}>
+                    <Pressable style={styles.socialDisconnectBtn} hitSlop={8} onPress={() => deleteSocialAccount(acct)}>
                       <Ionicons name="close" size={14} color={C.error} />
                     </Pressable>
                   ) : isLive ? (
@@ -1616,7 +1616,7 @@ export default function CreatorSettingsScreen() {
                     <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.socialEditBtn, { backgroundColor: cfg.color + '15' }]} onPress={() => openPortfolioSheet(item)}>
                       <Text style={[styles.socialEditBtnText, { color: cfg.color }]}>{t('creatorSettings.editBtn')}</Text>
                     </Pressable>
-                    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.socialDisconnectBtn} onPress={() => deletePortfolio(item)}>
+                    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.socialDisconnectBtn} hitSlop={8} onPress={() => deletePortfolio(item)}>
                       <Ionicons name="close" size={14} color={C.error} />
                     </Pressable>
                   </View>

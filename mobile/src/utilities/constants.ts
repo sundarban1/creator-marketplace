@@ -66,6 +66,41 @@ export const SHADOW = {
   floating:{ shadowColor: '#0F172A', shadowOpacity: 0.16, shadowRadius: 24, shadowOffset: { width: 0, height: 10 }, elevation: 10 },
 };
 
+// Shared spacing scale — pair with RADIUS/SHADOW above instead of hand-rolling
+// one-off padding/margin/gap numbers per screen.
+export const SPACING = {
+  xs:   4,
+  sm:   8,
+  md:   12,
+  lg:   16,
+  xl:   24,
+  xxl:  32,
+  xxxl: 48,
+};
+
+// Shared type scale. Floor is 11 — iOS HIG's smallest practical size
+// ("Caption 2"); anything below that stops being reliably legible once a
+// user has bumped up their system text-size accessibility setting.
+export const FONT_SIZE = {
+  xs:   11,
+  sm:   13,
+  md:   15,
+  lg:   17,
+  xl:   20,
+  xxl:  24,
+  xxxl: 32,
+};
+
+// Caps content width on tablets / large-screen Android so cards and text
+// lines don't stretch full-bleed — every phone width is comfortably under
+// this, so it's a no-op there and only kicks in on tablet-class screens.
+export const MAX_CONTENT_WIDTH = 800;
+
+// Minimum touch target per iOS HIG (44pt) / Material Design (48dp) — when a
+// control's visual size must stay smaller than this for layout reasons, pair
+// it with a `hitSlop` that pads the tappable area out to this minimum.
+export const MIN_TOUCH_TARGET = 44;
+
 export const USER_KEY               = 'ch_user';
 export const ACCESS_TOKEN_KEY       = 'ch_access_token';
 export const REFRESH_TOKEN_KEY      = 'ch_refresh_token';

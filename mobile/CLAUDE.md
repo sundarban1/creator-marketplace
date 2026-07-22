@@ -69,14 +69,17 @@ Translations live in `src/i18n/` for English (`en.ts`) and Nepali (`ne.ts`). Use
 
 ### Theme System
 
-`src/constants/theme.ts` exports:
-- `Colors` — light/dark palettes: `text`, `background`, `backgroundElement`, `backgroundSelected`, `textSecondary`
-- `Fonts` — platform-selected font families: `sans`, `serif`, `rounded`, `mono`
-- `Spacing` — `half=2`, `one=4`, `two=8`, `three=16`, `four=24`, `five=32`, `six=64`
-- `BottomTabInset` — iOS: 50, Android: 80
-- `MaxContentWidth = 800`
+The real design-token source for all `(creator)`/`(business)`/`(auth)` screens is `src/utilities/constants.ts` (85+ consumers) — colors come from `useAppColors()` (`@/context/ThemeContext`), never read a raw color constant directly. It also exports:
+- `COLORS` — palette (`brinjal1`/`brinjal2` primary, `accent`, `border`, `text`, status colors, etc.)
+- `F` — Poppins font family names (`regular`, `medium`, `semibold`, `bold`, ...)
+- `RADIUS` — corner-radius scale: `sm=10`, `md=14`, `lg=18`, `xl=24`, `full=999`
+- `SHADOW` — elevation presets: `card`, `raised`, `floating`
+- `SPACING` — `xs=4`, `sm=8`, `md=12`, `lg=16`, `xl=24`, `xxl=32`, `xxxl=48`
+- `FONT_SIZE` — `xs=11` … `xxxl=32` (11 is a deliberate floor — below it stops being reliably legible)
+- `MAX_CONTENT_WIDTH = 800` — pair with `<MaxWidthContainer>` (`@/components/MaxWidthContainer`) to cap content width on tablets/large-screen Android; no-op on phones
+- `MIN_TOUCH_TARGET = 44` — iOS HIG / Material minimum; pair a smaller visual control with `hitSlop` to reach it
 
-Use `useTheme()` from `src/hooks/use-theme.ts`. Never read `Colors[scheme]` directly in components.
+`src/constants/theme.ts` (`Colors`/`Fonts`/`Spacing`/`useTheme()` from `src/hooks/use-theme.ts`) is legacy Expo-template scaffolding, only consumed by `themed-text.tsx`/`themed-view.tsx`/`ui/collapsible.tsx`/`explore.tsx` — do not add new screens to it, use `utilities/constants.ts` + `useAppColors()` instead.
 
 ### Component Directories
 
