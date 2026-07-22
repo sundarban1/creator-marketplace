@@ -372,18 +372,12 @@ export default function ExploreCreatorsScreen() {
           action={{ label: t('common.retry'), onPress: () => fetchCreators(1, true, activeFilter, searchDebounced) }}
         />
       ) : creators.length === 0 ? (
-        <View style={s.centered}>
-          <FontAwesome5 name="users" size={44} color={C.textSecondary} style={s.emptyIcon} />
-          <Text style={[s.emptyTitle, { color: C.text }]}>{t('explore.noCreators')}</Text>
-          <Text style={[s.emptyHint, { color: C.textSecondary }]}>
-            {filterActive || search ? t('explore.adjustFilters') : t('explore.noCreatorsYet')}
-          </Text>
-          {(filterActive || search) && (
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => { setSearch(''); setActiveFilter(DEFAULT_CREATOR_FILTER); }} style={[s.clearBtn, { borderColor: C.brinjal1 }]}>
-              <Text style={[s.linkText, { color: C.brinjal1 }]}>{t('explore.clearFilters')}</Text>
-            </Pressable>
-          )}
-        </View>
+        <EmptyState
+          faIcon="users"
+          title={t('explore.noCreators')}
+          subtitle={filterActive || search ? t('explore.adjustFilters') : t('explore.noCreatorsYet')}
+          action={(filterActive || search) ? { label: t('explore.clearFilters'), onPress: () => { setSearch(''); setActiveFilter(DEFAULT_CREATOR_FILTER); } } : undefined}
+        />
       ) : (
         <FlatList
           data={creators}
@@ -453,13 +447,7 @@ const s = StyleSheet.create({
   metaRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, marginTop: 12, marginBottom: 8 },
   countText: { fontSize: 12, fontFamily: F.semibold },
 
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, paddingHorizontal: 32 },
   loadingText: { fontSize: 14, fontFamily: F.regular },
-  linkText: { fontSize: 14, fontFamily: F.bold },
-  emptyIcon: { marginBottom: 4 },
-  emptyTitle: { fontSize: 18, fontFamily: F.bold },
-  emptyHint: { fontSize: 13, textAlign: 'center', lineHeight: 20, fontFamily: F.regular },
-  clearBtn: { borderRadius: RADIUS.full, borderWidth: 1.5, paddingHorizontal: 16, paddingVertical: 8, marginTop: 4 },
 
   list: { paddingHorizontal: 20, paddingBottom: 40, gap: 14 },
 
