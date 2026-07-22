@@ -44,9 +44,9 @@ function LandingPageInner() {
       <Hero />
       <TrustStats stats={stats} />
       <Partners />
+      <Audience />
       <HowItWorks />
       <CampaignJourney />
-      <Audience />
       <Collaboration />
       <Categories stats={stats} />
       <Security />

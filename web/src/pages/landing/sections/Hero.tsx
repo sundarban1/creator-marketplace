@@ -1,6 +1,5 @@
 import { motion } from 'framer-motion';
 import { ChevronDown } from 'lucide-react';
-import { FaIdBadge, FaLock, FaHeart } from 'react-icons/fa6';
 import { fadeUp, scaleIn, stagger } from '../lib/motion';
 import { SECTION_IDS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
@@ -98,41 +97,6 @@ export function Hero() {
             <PhoneShowcase />
           </motion.div>
         </div>
-
-        {/* Editorial rule + masthead-style credentials line */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5, duration: 0.6 }}
-          className="mt-20 border-t border-ink/10 pt-8"
-        >
-          <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-4">
-            <span className="flex items-center gap-2.5 text-sm font-semibold text-ink">
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-violet/10 text-violet shadow-[0_3px_8px_-2px_rgba(123,92,245,0.4)]">
-                <FaIdBadge size={13} />
-              </span>
-              {d.hero.credentialVerified}
-            </span>
-
-            <span aria-hidden className="hidden h-4 w-px bg-ink/10 sm:block" />
-
-            <span className="flex items-center gap-2.5 text-sm font-semibold text-ink">
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-orange/10 text-brand-orange shadow-[0_3px_8px_-2px_rgba(249,115,22,0.4)]">
-                <FaLock size={12} />
-              </span>
-              {d.hero.credentialEscrow}
-            </span>
-
-            <span aria-hidden className="hidden h-4 w-px bg-ink/10 sm:block" />
-
-            <span className="flex items-center gap-2.5 text-sm font-semibold text-ink">
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-violet/15 to-brand-orange/15 text-violet shadow-[0_3px_8px_-2px_rgba(123,92,245,0.3)]">
-                <FaHeart size={12} />
-              </span>
-              {d.hero.credentialBuiltFor}
-            </span>
-          </div>
-        </motion.div>
       </div>
 
       <motion.button

@@ -1,14 +1,31 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence, useInView } from 'framer-motion';
+import confetti from 'canvas-confetti';
 import {
-  FaHandshake, FaCreditCard, FaBell, FaBolt, FaCloudArrowUp,
+  FaBullhorn, FaPaperPlane, FaHandshake, FaCreditCard, FaBell, FaBolt, FaCloudArrowUp,
   FaMagnifyingGlass, FaSackDollar, FaCheck,
 } from 'react-icons/fa6';
 import { fadeUp, stagger, VP } from '../lib/motion';
 import { SECTION_IDS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
 
-const ICONS = [FaHandshake, FaCreditCard, FaBell, FaBolt, FaCloudArrowUp, FaMagnifyingGlass, FaSackDollar];
+const ICONS = [FaBullhorn, FaPaperPlane, FaHandshake, FaCreditCard, FaBell, FaBolt, FaCloudArrowUp, FaMagnifyingGlass, FaSackDollar];
+
+const CONFETTI_COLORS = ['#7b5cf5', '#f97316', '#10b981'];
+
+// Fires a brand-colored popper burst from wherever the given element sits on
+// screen right now — used to celebrate the last step ("Payment released")
+// completing, instead of a generic screen-center burst. `offsetY` nudges the
+// burst point down (px) without moving the actual element it's anchored to.
+function popConfettiFrom(el: HTMLElement | null, offsetY = 0) {
+  const rect = el?.getBoundingClientRect();
+  const origin = rect
+    ? { x: (rect.left + rect.width / 2) / window.innerWidth, y: (rect.top + rect.height / 2 + offsetY) / window.innerHeight }
+    : { x: 0.5, y: 0.5 };
+
+  confetti({ particleCount: 70, spread: 65, startVelocity: 42, gravity: 1.1, ticks: 200, origin, colors: CONFETTI_COLORS, scalar: 0.9 });
+  confetti({ particleCount: 40, spread: 100, startVelocity: 30, gravity: 1.1, ticks: 220, origin, colors: CONFETTI_COLORS, scalar: 0.7 });
+}
 
 // One step is "live" for this long before the timeline advances — long enough
 // to read the title + description, short enough that the loop stays engaging.
@@ -16,6 +33,10 @@ const STEP_MS = 2100;
 // Extra beats the timeline holds on the fully-completed state before looping,
 // so "payment released" doesn't flash by and reset immediately.
 const HOLD_BEATS = 2;
+// Index of the "Creator notified" step (Kolab/system-badged) in d.journey.steps
+// — confetti bursts from this step's dot. Update this if the steps array is
+// ever reordered.
+const NOTIFIED_STEP_INDEX = 4;
 
 type Role = 'brand' | 'creator' | 'system';
 
@@ -27,9 +48,10 @@ const ROLE_STYLE: Record<Role, string> = {
 
 type Status = 'pending' | 'current' | 'done';
 
-function StepDot({ Icon, status }: { Icon: (typeof ICONS)[number]; status: Status }) {
+function StepDot({ Icon, status, ref }: { Icon: (typeof ICONS)[number]; status: Status; ref?: React.Ref<HTMLSpanElement> }) {
   return (
     <span
+      ref={ref}
       className={`relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 transition-colors duration-500 ${
         status === 'done'
           ? 'border-transparent bg-emerald-500 text-white'
@@ -67,6 +89,7 @@ export function CampaignJourney() {
   const totalBeats = steps.length + HOLD_BEATS;
 
   const cardRef = useRef<HTMLDivElement>(null);
+  const notifiedDotRef = useRef<HTMLSpanElement>(null);
   const inView = useInView(cardRef, { amount: 0.5 });
   const [beat, setBeat] = useState(0);
 
@@ -75,6 +98,14 @@ export function CampaignJourney() {
     const id = setInterval(() => setBeat((b) => (b + 1) % totalBeats), STEP_MS);
     return () => clearInterval(id);
   }, [inView, totalBeats]);
+
+  // Celebrate the instant the last step ("Payment released") flips from
+  // "current" to "done" — that's exactly when `beat` first reaches
+  // `steps.length` (the hold phase begins), once per loop. Fires from the
+  // "Creator notified" dot, nudged down a bit rather than dead-on-icon.
+  useEffect(() => {
+    if (beat === steps.length) popConfettiFrom(notifiedDotRef.current, 24);
+  }, [beat, steps.length]);
 
   // -1 once the loop is holding on the "all done" beats — no step reads as current then.
   const activeIndex = beat < steps.length ? beat : -1;
@@ -109,26 +140,9 @@ export function CampaignJourney() {
           <motion.p variants={fadeUp} className="font-serif text-base italic text-ink-soft">
             {d.journey.eyebrow}
           </motion.p>
-          <motion.h2 variants={fadeUp} className="text-balance mt-3 font-serif text-3xl font-medium text-ink sm:text-4xl">
+          <motion.h2 variants={fadeUp} className="mt-3 whitespace-nowrap font-serif text-xl font-medium text-ink sm:text-2xl md:text-3xl lg:text-4xl">
             {d.journey.heading}
           </motion.h2>
-
-          <motion.div variants={fadeUp} className="mt-8 flex flex-wrap justify-center gap-3">
-            {([
-              ['creator', d.journey.legendCreator],
-              ['brand', d.journey.legendBrand],
-              ['system', d.journey.legendSystem],
-            ] as [Role, string][]).map(([role, label]) => (
-              <span key={role} className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold ${ROLE_STYLE[role]}`}>
-                <span
-                  className={`h-1.5 w-1.5 rounded-full ${
-                    role === 'brand' ? 'bg-brand-orange' : role === 'creator' ? 'bg-violet' : 'bg-ink-soft'
-                  }`}
-                />
-                {label}
-              </span>
-            ))}
-          </motion.div>
         </motion.div>
 
         {/* ── Animated horizontal timeline card ── */}
@@ -185,7 +199,7 @@ export function CampaignJourney() {
                     const role = step.role as Role;
                     return (
                       <li key={i} className="flex flex-1 flex-col items-center px-1.5 text-center">
-                        <StepDot Icon={ICONS[i] ?? FaHandshake} status={status} />
+                        <StepDot ref={i === NOTIFIED_STEP_INDEX ? notifiedDotRef : undefined} Icon={ICONS[i] ?? FaHandshake} status={status} />
                         <motion.div
                           animate={{ opacity: status === 'pending' ? 0.45 : 1 }}
                           transition={{ duration: 0.4 }}

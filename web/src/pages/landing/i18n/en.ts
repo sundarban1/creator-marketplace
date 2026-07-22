@@ -30,9 +30,6 @@ export const en = {
     sub: 'Kolab connects Nepali creators with brands for paid campaigns — discover opportunities, collaborate, and get paid, all in one place.',
     ctaCreator: 'Join as Creator',
     ctaBusiness: 'Hire Creators',
-    credentialVerified: 'Verified creators',
-    credentialEscrow: 'Escrow-protected payments',
-    credentialBuiltFor: 'Built for Nepali Creators & Brands',
     scrollAriaLabel: 'Scroll to explore',
     scrollLabel: 'Scroll',
   },
@@ -67,6 +64,8 @@ export const en = {
     legendBrand: 'Brand',
     legendSystem: 'Kolab',
     steps: [
+      { title: 'Event created', desc: 'The brand posts a campaign with its budget, goals, and requirements.', role: 'brand' },
+      { title: 'Proposal submitted', desc: 'A creator pitches their idea and rate for the campaign.', role: 'creator' },
       { title: 'Proposal accepted', desc: 'The brand accepts the pitch and the collaboration is locked in.', role: 'brand' },
       { title: 'Payment secured', desc: 'Full payment moves into escrow before any work begins — funds are protected for both sides.', role: 'brand' },
       { title: 'Creator notified', desc: "An instant alert lets the creator know it's time to start creating.", role: 'system' },
