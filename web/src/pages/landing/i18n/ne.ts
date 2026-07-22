@@ -11,6 +11,7 @@ export const ne: LandingDict = {
     },
     cta: 'सुरु गर्नुहोस्',
     toggleMenuAriaLabel: 'मेनु टगल गर्नुहोस्',
+    languageLabel: 'भाषा',
   },
 
   hero: {

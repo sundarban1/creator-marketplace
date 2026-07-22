@@ -90,6 +90,8 @@ export function CampaignJourney() {
 
   const cardRef = useRef<HTMLDivElement>(null);
   const notifiedDotRef = useRef<HTMLSpanElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const stepRefs = useRef<(HTMLLIElement | null)[]>([]);
   const inView = useInView(cardRef, { amount: 0.5 });
   const [beat, setBeat] = useState(0);
 
@@ -109,6 +111,22 @@ export function CampaignJourney() {
 
   // -1 once the loop is holding on the "all done" beats — no step reads as current then.
   const activeIndex = beat < steps.length ? beat : -1;
+
+  // Keep the horizontally-scrolling track (mobile) following the timeline: center
+  // whichever step is live so it never marches off-screen and looks "stuck". On the
+  // confetti beat, center the "Creator notified" dot instead — that's where the
+  // popper actually fires from, so the burst lands in the middle of the viewport.
+  useEffect(() => {
+    const container = scrollRef.current;
+    if (!container) return;
+    const targetIndex = beat === steps.length ? NOTIFIED_STEP_INDEX : activeIndex === -1 ? steps.length - 1 : activeIndex;
+    const target = stepRefs.current[targetIndex];
+    if (!target) return;
+    const containerRect = container.getBoundingClientRect();
+    const targetRect = target.getBoundingClientRect();
+    const offset = targetRect.left + targetRect.width / 2 - containerRect.left - containerRect.width / 2;
+    if (Math.abs(offset) > 1) container.scrollBy({ left: offset, behavior: 'smooth' });
+  }, [beat, activeIndex, steps.length]);
 
   function statusOf(i: number): Status {
     if (activeIndex === -1) return 'done';
@@ -177,7 +195,7 @@ export function CampaignJourney() {
             </div>
 
             {/* Horizontal step flow — scrolls on narrow screens */}
-            <div className="-mx-2 overflow-x-auto pb-1">
+            <div ref={scrollRef} className="-mx-2 overflow-x-auto pb-1">
               <div className="relative min-w-[720px] px-2 sm:min-w-0">
                 {/* Connector track, centered on the dots */}
                 <div
@@ -198,7 +216,7 @@ export function CampaignJourney() {
                     const status = statusOf(i);
                     const role = step.role as Role;
                     return (
-                      <li key={i} className="flex flex-1 flex-col items-center px-1.5 text-center">
+                      <li key={i} ref={(el) => { stepRefs.current[i] = el; }} className="flex flex-1 flex-col items-center px-1.5 text-center">
                         <StepDot ref={i === NOTIFIED_STEP_INDEX ? notifiedDotRef : undefined} Icon={ICONS[i] ?? FaHandshake} status={status} />
                         <motion.div
                           animate={{ opacity: status === 'pending' ? 0.45 : 1 }}

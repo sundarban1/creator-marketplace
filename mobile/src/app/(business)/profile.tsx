@@ -2,6 +2,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { VerifiedBadge } from '@/components/VerifiedBadge';
+import { SectionEmptyState } from '@/components/SectionEmptyState';
 import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
@@ -299,13 +300,12 @@ export default function BusinessProfileScreen() {
               })}
             </View>
           ) : (
-            <EmptyState
+            <SectionEmptyState
               icon="store"
               title={t('profile.noIndustriesYet')}
               hint={t('profile.industriesHint')}
               cta={t('profile.addIndustries')}
-              onPress={() => router.push('/(business)/edit-categories' as never)}
-              C={C} />
+              onPress={() => router.push('/(business)/edit-categories' as never)} />
           )}
         </SectionCard>
 
@@ -335,33 +335,6 @@ function SectionCard({
         )}
       </View>
       {children}
-    </View>
-  );
-}
-
-function EmptyState({
-  icon, title, hint, cta, onPress, C,
-}: {
-  icon: string; title: string; hint: string; cta: string;
-  onPress: () => void;
-  C: ReturnType<typeof useAppColors>;
-}) {
-  return (
-    <View style={[s.emptyWrap, { borderColor: C.border }]}>
-      <FontAwesome5 name={icon} solid size={28} color={C.border} />
-      <Text style={[s.emptyTitle, { color: C.text }]}>{title}</Text>
-      <Text style={[s.emptyHint, { color: C.textSecondary }]}>{hint}</Text>
-      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-        style={[
-          s.emptyCta,
-          {
-            backgroundColor: C.brinjal1, shadowColor: C.brinjal1,
-            shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6,
-          },
-        ]}
-        onPress={onPress}>
-        <Text style={s.emptyCtaText}>{cta}</Text>
-      </Pressable>
     </View>
   );
 }
@@ -433,12 +406,4 @@ const s = StyleSheet.create({
   // Empty field (single-value prompt)
   emptyField:     { borderRadius: RADIUS.md, borderWidth: 1.5, borderStyle: 'dashed', padding: 16, alignItems: 'center' },
   emptyFieldText: { fontSize: 13, fontFamily: F.medium },
-
-  // Empty state (list-style prompt)
-  emptyWrap:    { alignItems: 'center', gap: 8, paddingVertical: 20, paddingHorizontal: 12,
-                  borderWidth: 1.5, borderRadius: RADIUS.lg, borderStyle: 'dashed' },
-  emptyTitle:   { fontSize: 14, fontFamily: F.bold },
-  emptyHint:    { fontSize: 12, textAlign: 'center', lineHeight: 18, fontFamily: F.regular },
-  emptyCta:     { borderRadius: RADIUS.full, paddingHorizontal: 20, paddingVertical: 9, minHeight: 40, justifyContent: 'center', alignItems: 'center', marginTop: 4 },
-  emptyCtaText: { fontSize: 13, color: '#fff', fontFamily: F.bold },
 });

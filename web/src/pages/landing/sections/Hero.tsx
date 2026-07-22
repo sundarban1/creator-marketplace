@@ -42,7 +42,7 @@ export function Hero() {
 
             <motion.h1
               variants={fadeUp}
-              className="text-balance mt-6 font-serif text-5xl font-medium leading-[1.03] tracking-tight text-ink sm:text-6xl lg:text-7xl"
+              className="text-balance mt-6 font-serif text-4xl font-medium leading-[1.1] tracking-tight text-ink sm:text-6xl sm:leading-[1.03] lg:text-7xl"
             >
               {/* Screen readers get one stable sentence instead of the rapidly
                   retyping text below, which is hidden from assistive tech. */}
@@ -65,6 +65,10 @@ export function Hero() {
                     <span className="animate-pulse">▏</span>
                   </span>
                 </em>{' '}
+                {/* Forces a clean "Where Brands" / "Meet Creators" 2-line split on phones —
+                    without it, the reserved-width word boxes below overflow mid-phrase
+                    and wrap word-by-word instead. */}
+                <br className="sm:hidden" aria-hidden="true" />
                 {d.hero.headlineMiddle}{' '}
                 <em className="relative inline-grid align-baseline text-left text-brand-orange underline decoration-brand-orange/30 decoration-2 underline-offset-8">
                   {d.hero.headlinePairs.map((p, i) => (

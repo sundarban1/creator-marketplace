@@ -5,6 +5,8 @@ import { NAV_LINKS } from '../constants';
 import { useLenisScroll } from '../hooks/useLenis';
 import { useLandingLanguage } from '../context/LanguageContext';
 
+const LANGUAGE_NAMES: Record<'en' | 'ne', string> = { en: 'English', ne: 'नेपाली' };
+
 function LanguageSwitch({ dark = false }: { dark?: boolean }) {
   const { lang, setLang } = useLandingLanguage();
   return (
@@ -22,6 +24,29 @@ function LanguageSwitch({ dark = false }: { dark?: boolean }) {
           }`}
         >
           {l === 'en' ? 'EN' : 'ने'}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// Full-width, full-name segmented control used in the mobile menu overlay — the
+// compact icon-sized pill above reads as an afterthought at that scale, so this
+// gets larger touch targets and spelled-out language names instead of EN/ने.
+function LanguageSwitchMobile() {
+  const { lang, setLang } = useLandingLanguage();
+  return (
+    <div className="flex items-center gap-1.5 rounded-2xl border border-ink/10 bg-white p-1.5 shadow-[0_8px_24px_-12px_rgba(20,17,16,0.15)]">
+      {(['en', 'ne'] as const).map((l) => (
+        <button
+          key={l}
+          onClick={() => setLang(l)}
+          aria-pressed={lang === l}
+          className={`flex-1 rounded-xl px-4 py-3 text-center font-serif text-base font-bold italic transition-all duration-300 ${
+            lang === l ? 'bg-gradient-to-r from-violet to-brand-orange text-white shadow-sm' : 'text-ink-soft hover:text-ink'
+          }`}
+        >
+          {LANGUAGE_NAMES[l]}
         </button>
       ))}
     </div>
@@ -130,9 +155,15 @@ export function LandingNav() {
                 initial={{ opacity: 0, x: -16 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.08 + NAV_LINKS.length * 0.06, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                className="mt-8"
+                className="mt-10 w-full max-w-xs border-t border-ink/10 pt-6"
               >
-                <LanguageSwitch dark />
+                <p className="flex items-center gap-2 font-serif text-sm italic text-ink-soft">
+                  <span className="h-1.5 w-1.5 rounded-full bg-gradient-to-br from-violet to-brand-orange" />
+                  {d.nav.languageLabel}
+                </p>
+                <div className="mt-3">
+                  <LanguageSwitchMobile />
+                </div>
               </motion.div>
             </div>
           </motion.div>

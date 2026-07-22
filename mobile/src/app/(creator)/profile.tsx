@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { useToast } from '@/components/Toast';
 import { VerifiedBadge } from '@/components/VerifiedBadge';
+import { SectionEmptyState } from '@/components/SectionEmptyState';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
 import { useAppColors } from '@/context/ThemeContext';
@@ -294,13 +295,12 @@ export default function CreatorProfileScreen() {
               ))}
             </View>
           ) : (
-            <EmptyState
+            <SectionEmptyState
               icon="share-alt"
               title={t('profile.noSocialLinked')}
               hint={t('profile.socialHint')}
               cta={t('profile.addAccount')}
-              onPress={() => router.push('/(creator)/settings?section=social' as never)}
-              C={C} />
+              onPress={() => router.push('/(creator)/settings?section=social' as never)} />
           )}
         </SectionCard>
 
@@ -322,13 +322,12 @@ export default function CreatorProfileScreen() {
               })}
             </View>
           ) : (
-            <EmptyState
+            <SectionEmptyState
               icon="th-large"
               title={t('profile.noCategoriesYet')}
               hint={t('profile.categoriesHint')}
               cta={t('profile.addContentCategories')}
-              onPress={() => router.push('/(creator)/edit-categories')}
-              C={C} />
+              onPress={() => router.push('/(creator)/edit-categories')} />
           )}
         </SectionCard>
 
@@ -373,13 +372,12 @@ export default function CreatorProfileScreen() {
               </Pressable>
             </View>
           ) : (
-            <EmptyState
+            <SectionEmptyState
               icon="briefcase"
               title={t('profile.noPastWorkYet')}
               hint={t('profile.pastWorkHint')}
               cta={t('profile.addWorkSample')}
-              onPress={() => router.push('/(creator)/settings?section=past-work' as never)}
-              C={C} />
+              onPress={() => router.push('/(creator)/settings?section=past-work' as never)} />
           )}
         </SectionCard>
 
@@ -407,33 +405,6 @@ function SectionCard({
         </Pressable>
       </View>
       {children}
-    </View>
-  );
-}
-
-function EmptyState({
-  icon, title, hint, cta, onPress, C,
-}: {
-  icon: string; title: string; hint: string; cta: string;
-  onPress: () => void;
-  C: ReturnType<typeof useAppColors>;
-}) {
-  return (
-    <View style={[s.emptyWrap, { borderColor: C.border }]}>
-      <FontAwesome5 name={icon} solid size={28} color={C.border} />
-      <Text style={[s.emptyTitle, { color: C.text }]}>{title}</Text>
-      <Text style={[s.emptyHint, { color: C.textSecondary }]}>{hint}</Text>
-      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-        style={[
-          s.emptyCta,
-          {
-            backgroundColor: C.brinjal1, shadowColor: C.brinjal1,
-            shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6,
-          },
-        ]}
-        onPress={onPress}>
-        <Text style={s.emptyCtaText}>{cta}</Text>
-      </Pressable>
     </View>
   );
 }
@@ -514,12 +485,4 @@ const s = StyleSheet.create({
   addMoreRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, minHeight: 40,
                  borderRadius: RADIUS.md, borderWidth: 1.5, borderStyle: 'dashed', paddingVertical: 11 },
   addMoreText: { fontSize: 13, fontFamily: F.bold },
-
-  // Empty state
-  emptyWrap:    { alignItems: 'center', gap: 8, paddingVertical: 20, paddingHorizontal: 12,
-                  borderWidth: 1.5, borderRadius: RADIUS.lg, borderStyle: 'dashed' },
-  emptyTitle:   { fontSize: 14, fontFamily: F.bold },
-  emptyHint:    { fontSize: 12, textAlign: 'center', lineHeight: 18, fontFamily: F.regular },
-  emptyCta:     { borderRadius: RADIUS.full, paddingHorizontal: 20, paddingVertical: 9, minHeight: 40, justifyContent: 'center', alignItems: 'center', marginTop: 4 },
-  emptyCtaText: { fontSize: 13, color: '#fff', fontFamily: F.bold },
 });
