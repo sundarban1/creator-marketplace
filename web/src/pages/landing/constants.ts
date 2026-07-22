@@ -15,6 +15,7 @@ export const SECTION_IDS = {
   hero: 'hero',
   trust: 'trust',
   how: 'how',
+  journey: 'journey',
   audience: 'audience',
   categories: 'categories',
   collaboration: 'collaboration',

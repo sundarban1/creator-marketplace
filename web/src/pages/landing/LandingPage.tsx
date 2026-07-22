@@ -11,6 +11,7 @@ import { organizationSchema, websiteSchema } from '../../lib/seo/schema';
 import { Hero } from './sections/Hero';
 import { TrustStats } from './sections/TrustStats';
 import { HowItWorks } from './sections/HowItWorks';
+import { CampaignJourney } from './sections/CampaignJourney';
 import { Audience } from './sections/Audience';
 import { Categories } from './sections/Categories';
 import { Collaboration } from './sections/Collaboration';
@@ -44,6 +45,7 @@ function LandingPageInner() {
       <TrustStats stats={stats} />
       <Partners />
       <HowItWorks />
+      <CampaignJourney />
       <Audience />
       <Collaboration />
       <Categories stats={stats} />

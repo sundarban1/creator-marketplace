@@ -58,6 +58,25 @@ export const en = {
     ],
   },
 
+  journey: {
+    eyebrow: 'How a campaign flows',
+    heading: 'From acceptance to payout, automatically',
+    sub: 'Every campaign on Kolab moves through the same secure, escrow-backed journey — so both sides always know exactly what happens next.',
+    liveBadge: 'Live campaign',
+    legendCreator: 'Creator',
+    legendBrand: 'Brand',
+    legendSystem: 'Kolab',
+    steps: [
+      { title: 'Proposal accepted', desc: 'The brand accepts the pitch and the collaboration is locked in.', role: 'brand' },
+      { title: 'Payment secured', desc: 'Full payment moves into escrow before any work begins — funds are protected for both sides.', role: 'brand' },
+      { title: 'Creator notified', desc: "An instant alert lets the creator know it's time to start creating.", role: 'system' },
+      { title: 'Work begins', desc: 'The creator starts producing content against the agreed brief.', role: 'creator' },
+      { title: 'Deliverables uploaded', desc: 'Finished content is submitted straight from the app for review.', role: 'creator' },
+      { title: 'Brand reviews & approves', desc: 'The brand checks the work and approves it, or requests a quick revision.', role: 'brand' },
+      { title: 'Payment released', desc: "Escrow releases the funds straight to the creator's account. Done.", role: 'system' },
+    ],
+  },
+
   audience: {
     eyebrow: 'Built for both sides',
     heading: 'Whether you create or you hire',
