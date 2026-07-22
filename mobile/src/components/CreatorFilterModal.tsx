@@ -158,16 +158,6 @@ export function CreatorFilterModal({
         </View>
       )}
 
-      {/* Location */}
-      <View>
-        <FilterSectionHeader
-          icon="location-outline"
-          label={t('explore.location')}
-          hint={t('explore.locationsAllowed', { count: temp.locations.length, max: CREATOR_MAX_LOCS })}
-        />
-        <LocationSearchPicker selected={temp.locations} onSelect={(v) => set('locations', v)} />
-      </View>
-
       {/* Budget — one-tap presets first, precise slider tucked behind "Custom" */}
       <View>
         <FilterSectionHeader icon="cash-outline" label={t('explore.priceRange')} />
@@ -208,6 +198,16 @@ export function CreatorFilterModal({
           </View>
         </View>
       )}
+
+      {/* Location — kept last */}
+      <View>
+        <FilterSectionHeader
+          icon="location-outline"
+          label={t('explore.location')}
+          hint={t('explore.locationsAllowed', { count: temp.locations.length, max: CREATOR_MAX_LOCS })}
+        />
+        <LocationSearchPicker selected={temp.locations} onSelect={(v) => set('locations', v)} />
+      </View>
     </FilterSheet>
   );
 }

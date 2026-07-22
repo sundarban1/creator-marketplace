@@ -3,7 +3,6 @@ import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
 import {
   Animated,
-  Keyboard,
   KeyboardAvoidingView,
   Pressable,
   ScrollView,
@@ -19,7 +18,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { authService } from '@/services/auth';
 import { profileService } from '@/services/profile';
 import { useCategories } from '@/hooks/useCategories';
-import { PlacesAutocompleteInput } from '@/components/PlacesAutocompleteInput';
+import { LocationSearchModal } from '@/components/LocationSearchModal';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
 
 const TOTAL_STEPS = 2;
@@ -45,24 +44,13 @@ export default function BusinessOnboardingScreen() {
   const emailCheckDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const emailCheckRequestId = useRef(0);
   const [location, setLocation] = useState('');
+  const [locationLat, setLocationLat] = useState<number | null>(null);
+  const [locationLng, setLocationLng] = useState<number | null>(null);
+  const [locationModalOpen, setLocationModalOpen] = useState(false);
   const [step1Loading, setStep1Loading] = useState(false);
   const [step1Error, setStep1Error] = useState('');
   const [step1Submitted, setStep1Submitted] = useState(false);
   const step1ScrollRef = useRef<ScrollView>(null);
-  const locationFocusedRef = useRef(false);
-
-  // Location sits at the bottom of the step-1 form, right above the submit
-  // button — Android's adjustResize shrinks the window when the keyboard
-  // opens but never auto-scrolls a mid-form field into the new viewport, so
-  // without this the field ends up hidden behind the keyboard. keyboardDidShow
-  // (rather than the input's onFocus) fires after that resize has actually
-  // happened, so scrollToEnd lands correctly against the shrunk viewport.
-  useEffect(() => {
-    const sub = Keyboard.addListener('keyboardDidShow', () => {
-      if (locationFocusedRef.current) step1ScrollRef.current?.scrollToEnd({ animated: true });
-    });
-    return () => sub.remove();
-  }, []);
 
   // Step 2
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -102,6 +90,13 @@ export default function BusinessOnboardingScreen() {
         if (requestId === emailCheckRequestId.current) setEmailChecking(false);
       }
     }, 400);
+  }
+
+  function handleLocationSelect(address: string, lat: number, lng: number) {
+    setLocation(address);
+    setLocationLat(lat || null);
+    setLocationLng(lng || null);
+    setLocationModalOpen(false);
   }
 
   function toggleCategory(label: string) {
@@ -238,7 +233,6 @@ export default function BusinessOnboardingScreen() {
                 style={[styles.input, { backgroundColor: C.surface, borderColor: businessNameError ? C.error : C.border, color: C.text }]}
                 value={businessName}
                 onChangeText={(t) => { setStep1Error(''); setBusinessName(t); }}
-                onFocus={() => { locationFocusedRef.current = false; }}
                 placeholder={t('businessOnboarding.businessNamePlaceholder')}
                 placeholderTextColor={C.textSecondary}
                 autoCapitalize="words"
@@ -304,19 +298,21 @@ export default function BusinessOnboardingScreen() {
             )}
 
             {/* Location */}
-            <View style={[styles.fieldGroup, { zIndex: 10 }]}>
+            <View style={styles.fieldGroup}>
               <Text style={[styles.fieldLabel, { color: C.text, marginBottom: 8 }]}>
                 {t('businessOnboarding.locationLabel')} <Text style={{ color: C.error }}>*</Text>
               </Text>
-              <PlacesAutocompleteInput
-                value={location}
-                onChangeText={setLocation}
-                placeholder={t('businessOnboarding.locationPlaceholder')}
-                types="geocode"
-                error={locationError}
-                onFocus={() => { locationFocusedRef.current = true; }}
-              />
-              {!locationError && (
+              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                style={[styles.locationBtn, { backgroundColor: C.surface, borderColor: locationError ? C.error : C.border }]}
+                onPress={() => setLocationModalOpen(true)}>
+                <Text style={[styles.locationBtnTxt, { color: location ? C.text : C.textSecondary }]} numberOfLines={2}>
+                  {location || t('businessOnboarding.locationPlaceholder')}
+                </Text>
+                <Text style={styles.locationArrow}>›</Text>
+              </Pressable>
+              {locationError ? (
+                <Text style={[styles.fieldError, { color: C.error }]}>{locationError}</Text>
+              ) : (
                 <Text style={[styles.inputHint, { color: C.textSecondary }]}>
                   Creators will use this as a default location for your events.
                 </Text>
@@ -342,6 +338,13 @@ export default function BusinessOnboardingScreen() {
 
           </ScrollView>
         )}
+
+        <LocationSearchModal
+          visible={locationModalOpen}
+          initialValue={location}
+          onSelect={handleLocationSelect}
+          onClose={() => setLocationModalOpen(false)}
+        />
 
         {/* ────────── Step 2: Business Category ────────── */}
         {step === 2 && (
@@ -445,6 +448,9 @@ const styles = StyleSheet.create({
   fieldLabel: { fontSize: 14, fontFamily: F.bold },
   fieldError: { fontSize: 12, fontFamily: F.medium },
   input: { borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 13, fontSize: 15, fontFamily: F.regular },
+  locationBtn: { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 13, gap: 8 },
+  locationBtnTxt: { flex: 1, fontSize: 15, lineHeight: 20, fontFamily: F.regular },
+  locationArrow: { fontSize: 20, color: '#9CA3AF' },
   textarea: { minHeight: 120, paddingTop: 13, textAlignVertical: 'top' },
   inputHint: { fontSize: 11, marginTop: 5, fontFamily: F.regular },
   domainSuggestBox: { marginTop: 6, borderRadius: RADIUS.md, borderWidth: 1.5, overflow: 'hidden' },
