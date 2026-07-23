@@ -147,8 +147,11 @@ export default function CreatorDetailScreen() {
   if (loading) {
     return (
       <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
-        <View style={[s.topBar, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
-          <BackButton fallback="/(business)/explore-creators" />
+        <View style={{ backgroundColor: C.surface }}>
+          <View style={s.topBar}>
+            <BackButton fallback="/(business)/explore-creators" />
+          </View>
+          <View style={[s.headerSeparator, { backgroundColor: C.border }]} />
         </View>
         <View style={s.centered}>
           <ActivityIndicator size="large" color={C.brinjal1} />
@@ -160,8 +163,11 @@ export default function CreatorDetailScreen() {
   if (error || !profile) {
     return (
       <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
-        <View style={[s.topBar, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
-          <BackButton fallback="/(business)/explore-creators" />
+        <View style={{ backgroundColor: C.surface }}>
+          <View style={s.topBar}>
+            <BackButton fallback="/(business)/explore-creators" />
+          </View>
+          <View style={[s.headerSeparator, { backgroundColor: C.border }]} />
         </View>
         <View style={s.centered}>
           <FontAwesome5 name="user-slash" size={40} color={C.textSecondary} style={s.errorEmoji} />
@@ -482,7 +488,8 @@ const s = StyleSheet.create({
   container: { flex: 1 },
   centered:  { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, padding: 32 },
 
-  topBar:    { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12, borderBottomWidth: 1 },
+  topBar:    { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12 },
+  headerSeparator: { height: StyleSheet.hairlineWidth, marginHorizontal: 20 },
   topTitle:  { flex: 1, fontSize: 18, textAlign: 'center', fontFamily: F.bold },
 
   scroll: { paddingBottom: 16, gap: 12 },

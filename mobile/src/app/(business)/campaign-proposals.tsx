@@ -525,56 +525,59 @@ export default function CampaignProposalsScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
       {/* Header */}
-      <View style={[styles.gradientHeader, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
+      <View style={{ backgroundColor: C.surface }}>
+        <View style={styles.gradientHeader}>
 
-        {/* Back button row — title centered between the back button and a
-            same-width spacer on the right, so it's truly centered rather
-            than just centered in the leftover space next to the button. */}
-        <View style={styles.headerTopRow}>
-          <BackButton />
-          <Text style={[styles.headerTitle, { color: C.text }]} numberOfLines={1}>{campaignTitle}</Text>
-          <View style={styles.headerTopRowSpacer} />
-        </View>
-
-        {/* Count pill on the left, type/platform badges pushed to the right */}
-        <View style={styles.headerBody}>
-          <View style={[styles.totalPill, { backgroundColor: C.surface, borderColor: C.border, borderWidth: 1 }]}>
-            <Text style={[styles.totalPillText, { color: C.text }]}>
-              {t('campaignProposals.applicationCount', { n: proposals.length })}
-            </Text>
+          {/* Back button row — title centered between the back button and a
+              same-width spacer on the right, so it's truly centered rather
+              than just centered in the leftover space next to the button. */}
+          <View style={styles.headerTopRow}>
+            <BackButton />
+            <Text style={[styles.headerTitle, { color: C.text }]} numberOfLines={1}>{campaignTitle}</Text>
+            <View style={styles.headerTopRowSpacer} />
           </View>
-          <View style={styles.headerBadgeRow}>
-            <View style={[styles.typeBadge, { backgroundColor: accentBg }]}>
-              <FontAwesome5 name={isFree ? 'gift' : 'money-bill-wave'} size={10} color={accent} solid />
-              <Text style={[styles.typeBadgeText, { color: accent }]}>
-                {isFree ? t('campaignProposals.badgeFreeEvent') : t('campaignProposals.badgePaidEvent')}
+
+          {/* Count pill on the left, type/platform badges pushed to the right */}
+          <View style={styles.headerBody}>
+            <View style={[styles.totalPill, { backgroundColor: C.surface, borderColor: C.border, borderWidth: 1 }]}>
+              <Text style={[styles.totalPillText, { color: C.text }]}>
+                {t('campaignProposals.applicationCount', { n: proposals.length })}
               </Text>
             </View>
-            {platform ? (
-              <View style={[styles.platformPill, { backgroundColor: C.surface, borderColor: C.border, borderWidth: 1 }]}>
-                <Text style={[styles.platformText, { color: C.text }]}>{platform}</Text>
+            <View style={styles.headerBadgeRow}>
+              <View style={[styles.typeBadge, { backgroundColor: accentBg }]}>
+                <FontAwesome5 name={isFree ? 'gift' : 'money-bill-wave'} size={10} color={accent} solid />
+                <Text style={[styles.typeBadgeText, { color: accent }]}>
+                  {isFree ? t('campaignProposals.badgeFreeEvent') : t('campaignProposals.badgePaidEvent')}
+                </Text>
               </View>
-            ) : null}
+              {platform ? (
+                <View style={[styles.platformPill, { backgroundColor: C.surface, borderColor: C.border, borderWidth: 1 }]}>
+                  <Text style={[styles.platformText, { color: C.text }]}>{platform}</Text>
+                </View>
+              ) : null}
+            </View>
           </View>
-        </View>
 
-        {/* Summary stat pills */}
-        <View style={[styles.statStrip, { backgroundColor: C.surface, borderColor: C.border, borderWidth: 1 }, SHADOW.card]}>
-          <View style={styles.statStripItem}>
-            <Text style={[styles.statStripNum, { color: C.text }]}>{counts.pending}</Text>
-            <Text style={[styles.statStripLabel, { color: C.textSecondary }]}>{t('campaignProposals.statPending')}</Text>
-          </View>
-          <View style={[styles.statStripDivider, { backgroundColor: C.border }]} />
-          <View style={styles.statStripItem}>
-            <Text style={[styles.statStripNum, { color: C.active }]}>{counts.accepted}</Text>
-            <Text style={[styles.statStripLabel, { color: C.textSecondary }]}>{isFree ? t('campaignProposals.statApproved') : t('campaignProposals.statApproved')}</Text>
-          </View>
-          <View style={[styles.statStripDivider, { backgroundColor: C.border }]} />
-          <View style={styles.statStripItem}>
-            <Text style={[styles.statStripNum, { color: C.error }]}>{counts.rejected}</Text>
-            <Text style={[styles.statStripLabel, { color: C.textSecondary }]}>{t('campaignProposals.statDeclined')}</Text>
+          {/* Summary stat pills */}
+          <View style={[styles.statStrip, { backgroundColor: C.surface, borderColor: C.border, borderWidth: 1 }, SHADOW.card]}>
+            <View style={styles.statStripItem}>
+              <Text style={[styles.statStripNum, { color: C.text }]}>{counts.pending}</Text>
+              <Text style={[styles.statStripLabel, { color: C.textSecondary }]}>{t('campaignProposals.statPending')}</Text>
+            </View>
+            <View style={[styles.statStripDivider, { backgroundColor: C.border }]} />
+            <View style={styles.statStripItem}>
+              <Text style={[styles.statStripNum, { color: C.active }]}>{counts.accepted}</Text>
+              <Text style={[styles.statStripLabel, { color: C.textSecondary }]}>{isFree ? t('campaignProposals.statApproved') : t('campaignProposals.statApproved')}</Text>
+            </View>
+            <View style={[styles.statStripDivider, { backgroundColor: C.border }]} />
+            <View style={styles.statStripItem}>
+              <Text style={[styles.statStripNum, { color: C.error }]}>{counts.rejected}</Text>
+              <Text style={[styles.statStripLabel, { color: C.textSecondary }]}>{t('campaignProposals.statDeclined')}</Text>
+            </View>
           </View>
         </View>
+        <View style={[styles.headerSeparator, { backgroundColor: C.border }]} />
       </View>
 
       {/* Section label */}
@@ -674,8 +677,8 @@ const styles = StyleSheet.create({
   // ── Header ──────────────────────────────────────────────────────────
   gradientHeader: {
     paddingBottom: 16,
-    borderBottomWidth: 1,
   },
+  headerSeparator: { height: StyleSheet.hairlineWidth, marginHorizontal: 16 },
 
   headerTopRow: {
     flexDirection: 'row',

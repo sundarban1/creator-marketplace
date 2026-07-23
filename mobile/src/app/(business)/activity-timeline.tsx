@@ -635,10 +635,13 @@ export default function CampaignWorkspaceScreen() {
   if (loading) {
     return (
       <SafeAreaView style={[s.screen, { backgroundColor: C.background }]} edges={['top']}>
-        <View style={[s.header, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
-          <BackButton />
-          <Text style={[s.headerTitle, { color: C.text }]} numberOfLines={1}>{campaignTitle ?? t('activityTimeline.headerFallback')}</Text>
-          <View style={{ width: 44 }} />
+        <View style={{ backgroundColor: C.surface }}>
+          <View style={s.header}>
+            <BackButton />
+            <Text style={[s.headerTitle, { color: C.text }]} numberOfLines={1}>{campaignTitle ?? t('activityTimeline.headerFallback')}</Text>
+            <View style={{ width: 44 }} />
+          </View>
+          <View style={[s.headerSeparator, { backgroundColor: C.border }]} />
         </View>
         <View style={s.centered}><ActivityIndicator size="large" color="#7C3AED" /></View>
       </SafeAreaView>
@@ -664,22 +667,25 @@ export default function CampaignWorkspaceScreen() {
     <SafeAreaView style={[s.screen, { backgroundColor: C.background }]} edges={['top']}>
 
       {/* ── Header ── */}
-      <View style={[s.header, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
-        <BackButton />
-        <Text style={[s.headerTitle, { color: C.text }]} numberOfLines={1}>
-          {campaignTitle ?? campaign?.title ?? t('activityTimeline.headerWorkspace')}
-        </Text>
-        {/* Only message icon — no three dots. Payment release is the final
-            stage, so chat closes here rather than staying open indefinitely. */}
-        {app?.paymentStatus === 'RELEASED' ? (
-          <View style={s.iconBtn}>
-            <Ionicons name="chatbubble-outline" size={22} color="#D1D5DB" />
-          </View>
-        ) : (
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={s.iconBtn} onPress={handleMessage} hitSlop={6}>
-            <Ionicons name="chatbubble-outline" size={22} color="#7C3AED" />
-          </Pressable>
-        )}
+      <View style={{ backgroundColor: C.surface }}>
+        <View style={s.header}>
+          <BackButton />
+          <Text style={[s.headerTitle, { color: C.text }]} numberOfLines={1}>
+            {campaignTitle ?? campaign?.title ?? t('activityTimeline.headerWorkspace')}
+          </Text>
+          {/* Only message icon — no three dots. Payment release is the final
+              stage, so chat closes here rather than staying open indefinitely. */}
+          {app?.paymentStatus === 'RELEASED' ? (
+            <View style={s.iconBtn}>
+              <Ionicons name="chatbubble-outline" size={22} color="#D1D5DB" />
+            </View>
+          ) : (
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={s.iconBtn} onPress={handleMessage} hitSlop={6}>
+              <Ionicons name="chatbubble-outline" size={22} color="#7C3AED" />
+            </Pressable>
+          )}
+        </View>
+        <View style={[s.headerSeparator, { backgroundColor: C.border }]} />
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.body}>
@@ -1117,7 +1123,8 @@ const s = StyleSheet.create({
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   body:     { gap: 12, paddingTop: 12, paddingHorizontal: 16 },
 
-  header:       { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1, gap: 8 },
+  header:       { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, gap: 8 },
+  headerSeparator: { height: StyleSheet.hairlineWidth, marginHorizontal: 14 },
   headerTitle:  { flex: 1, fontSize: 18, fontFamily: F.bold, textAlign: 'center' },
   iconBtn:      { padding: 8, minWidth: 40, minHeight: 40, alignItems: 'center', justifyContent: 'center' },
 

@@ -92,10 +92,13 @@ export default function BusinessReferralScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
-      <View style={[styles.topBar, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
-        <BackButton fallback="/(business)/" />
-        <Text style={[styles.topTitle, { color: C.text }]}>{t('businessReferral.headerTitle')}</Text>
-        <View style={{ width: 38 }} />
+      <View style={{ backgroundColor: C.surface }}>
+        <View style={styles.topBar}>
+          <BackButton fallback="/(business)/" />
+          <Text style={[styles.topTitle, { color: C.text }]}>{t('businessReferral.headerTitle')}</Text>
+          <View style={{ width: 38 }} />
+        </View>
+        <View style={[styles.headerSeparator, { backgroundColor: C.border }]} />
       </View>
 
       {loading || !overview ? (
@@ -211,7 +214,8 @@ export default function BusinessReferralScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  topBar:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1 },
+  topBar:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
+  headerSeparator: { height: StyleSheet.hairlineWidth, marginHorizontal: 16 },
   topTitle:  { fontSize: 18, fontFamily: F.bold },
   content:   { padding: 16, paddingBottom: 32, gap: 16 },
 

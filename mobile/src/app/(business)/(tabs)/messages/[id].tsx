@@ -704,41 +704,44 @@ export default function BusinessChatRoomScreen() {
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
       {/* ── Header ── */}
-      <View style={[s.header, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[s.backBtn, { backgroundColor: C.background }]} hitSlop={4} onPress={() => router.canGoBack() ? router.back() : router.replace('/(business)/messages' as never)}>
-          <Ionicons name="chevron-back" size={22} color={C.text} />
-        </Pressable>
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.08)' }}
-          style={({ pressed }) => [s.headerTouch, pressed && !!participantId && { opacity: 0.6 }]}
-          onPress={openParticipantProfile} disabled={!participantId} hitSlop={4}>
-          {personAvatar && !personAvatarFailed ? (
-            <ExpoImage source={{ uri: personAvatar }} style={[s.headerAvatar, { borderColor: C.border }]} contentFit="cover" onError={() => setPersonAvatarFailed(true)} />
-          ) : (
-            <View style={[s.headerAvatar, { backgroundColor: personColor, borderColor: C.border }]}>
-              <Text style={s.headerAvatarTxt}>{initials(personName)}</Text>
+      <View style={{ backgroundColor: C.surface }}>
+        <View style={s.header}>
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[s.backBtn, { backgroundColor: C.background }]} hitSlop={4} onPress={() => router.canGoBack() ? router.back() : router.replace('/(business)/messages' as never)}>
+            <Ionicons name="chevron-back" size={22} color={C.text} />
+          </Pressable>
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.08)' }}
+            style={({ pressed }) => [s.headerTouch, pressed && !!participantId && { opacity: 0.6 }]}
+            onPress={openParticipantProfile} disabled={!participantId} hitSlop={4}>
+            {personAvatar && !personAvatarFailed ? (
+              <ExpoImage source={{ uri: personAvatar }} style={[s.headerAvatar, { borderColor: C.border }]} contentFit="cover" onError={() => setPersonAvatarFailed(true)} />
+            ) : (
+              <View style={[s.headerAvatar, { backgroundColor: personColor, borderColor: C.border }]}>
+                <Text style={s.headerAvatarTxt}>{initials(personName)}</Text>
+              </View>
+            )}
+            <View style={s.headerInfo}>
+              <Text style={[s.headerName, { color: C.text }]} numberOfLines={1}>{personName}</Text>
+              {otherTyping
+                ? <Text style={[s.headerSub, { color: C.brinjal1 }]}>typing…</Text>
+                : isPending
+                ? (
+                  <View style={s.headerSubRow}>
+                    <Ionicons name="time-outline" size={11} color={C.draft} />
+                    <Text style={[s.headerSub, { color: C.draft, marginTop: 0 }]}>{t('messages.waitingResponse')}</Text>
+                  </View>
+                )
+                : isDeclined
+                ? <Text style={[s.headerSub, { color: C.error }]}>{t('messages.requestDeclined')}</Text>
+                : (() => {
+                    const label = presence ? formatPresence(t, presence.online, presence.lastSeenAt) : null;
+                    return label
+                      ? <Text style={[s.headerSub, { color: presence?.online ? C.active : C.textSecondary }]}>{label}</Text>
+                      : null;
+                  })()}
             </View>
-          )}
-          <View style={s.headerInfo}>
-            <Text style={[s.headerName, { color: C.text }]} numberOfLines={1}>{personName}</Text>
-            {otherTyping
-              ? <Text style={[s.headerSub, { color: C.brinjal1 }]}>typing…</Text>
-              : isPending
-              ? (
-                <View style={s.headerSubRow}>
-                  <Ionicons name="time-outline" size={11} color={C.draft} />
-                  <Text style={[s.headerSub, { color: C.draft, marginTop: 0 }]}>{t('messages.waitingResponse')}</Text>
-                </View>
-              )
-              : isDeclined
-              ? <Text style={[s.headerSub, { color: C.error }]}>{t('messages.requestDeclined')}</Text>
-              : (() => {
-                  const label = presence ? formatPresence(t, presence.online, presence.lastSeenAt) : null;
-                  return label
-                    ? <Text style={[s.headerSub, { color: presence?.online ? C.active : C.textSecondary }]}>{label}</Text>
-                    : null;
-                })()}
-          </View>
-        </Pressable>
+          </Pressable>
+        </View>
+        <View style={[s.headerSeparator, { backgroundColor: C.border }]} />
       </View>
 
       {/* ── Campaign banner ── */}
@@ -889,7 +892,8 @@ const s = StyleSheet.create({
   flex:      { flex: 1 },
 
   // Header
-  header:          { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, gap: 10, borderBottomWidth: 1 },
+  header:          { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, gap: 10 },
+  headerSeparator: { height: StyleSheet.hairlineWidth, marginHorizontal: 14 },
   headerTouch:     { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
   backBtn:         { width: 38, height: 38, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
   headerAvatar:    { width: 40, height: 40, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', borderWidth: 2 },

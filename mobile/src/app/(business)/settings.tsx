@@ -2171,12 +2171,15 @@ export default function BusinessSettingsScreen() {
     <ColorCtx.Provider value={C}>
       <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
         {/* Top bar */}
-        <View style={[styles.topBar, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.backBtn, { backgroundColor: C.surface, borderColor: C.border }]} onPress={handleBack}>
-            <Text style={[styles.backArrow, { color: C.text }]}>‹</Text>
-          </Pressable>
-          <Text style={[styles.topTitle, { color: C.text }]}>{topTitle}</Text>
-          <View style={{ width: 36 }} />
+        <View style={{ backgroundColor: C.surface }}>
+          <View style={styles.topBar}>
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.backBtn, { backgroundColor: C.surface, borderColor: C.border }]} onPress={handleBack}>
+              <Text style={[styles.backArrow, { color: C.text }]}>‹</Text>
+            </Pressable>
+            <Text style={[styles.topTitle, { color: C.text }]}>{topTitle}</Text>
+            <View style={{ width: 36 }} />
+          </View>
+          <View style={[styles.headerSeparator, { backgroundColor: C.border }]} />
         </View>
 
         {/* No `behavior` prop — the ScrollView's `automaticallyAdjustKeyboardInsets` already
@@ -2239,8 +2242,9 @@ const styles = StyleSheet.create({
 
   topBar: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1,
+    paddingHorizontal: 16, paddingVertical: 12,
   },
+  headerSeparator: { height: StyleSheet.hairlineWidth, marginHorizontal: 16 },
   backBtn: { width: 36, height: 36, borderRadius: RADIUS.full, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center' },
   backArrow: { fontSize: 26, lineHeight: 30 },
   topTitle: { fontSize: 18, fontFamily: F.bold, lineHeight: 22 },

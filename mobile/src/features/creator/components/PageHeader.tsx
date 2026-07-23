@@ -18,16 +18,22 @@ type Props = {
 export function PageHeader({ title, backFallback, onBack, rightSlot }: Props) {
   const C = useAppColors();
   return (
-    <View style={[styles.row, { backgroundColor: C.surface, borderBottomColor: C.border }]} accessibilityRole="header" accessibilityLabel={title}>
-      <BackButton fallback={backFallback} onPress={onBack} />
-      <Text style={[styles.title, { color: C.text }]} numberOfLines={1}>{title}</Text>
-      <View style={styles.right}>{rightSlot}</View>
+    <View style={{ backgroundColor: C.surface }}>
+      <View style={styles.row} accessibilityRole="header" accessibilityLabel={title}>
+        <BackButton fallback={backFallback} onPress={onBack} />
+        <Text style={[styles.title, { color: C.text }]} numberOfLines={1}>{title}</Text>
+        <View style={styles.right}>{rightSlot}</View>
+      </View>
+      {/* Inset hairline, not edge-to-edge — same treatment as Instagram's
+          subtle content-width dividers rather than a full-bleed border. */}
+      <View style={[styles.separator, { backgroundColor: C.border }]} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  row:   { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, gap: 12, borderBottomWidth: 1 },
-  title: { flex: 1, textAlign: 'center', fontSize: 18, fontFamily: F.bold },
-  right: { minWidth: 40, alignItems: 'flex-end' },
+  row:       { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, gap: 12 },
+  title:     { flex: 1, textAlign: 'center', fontSize: 18, fontFamily: F.bold },
+  right:     { minWidth: 40, alignItems: 'flex-end' },
+  separator: { height: StyleSheet.hairlineWidth, marginHorizontal: 16 },
 });

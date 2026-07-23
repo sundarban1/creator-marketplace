@@ -201,40 +201,43 @@ export default function SavedCreatorsScreen() {
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
       {/* Header — back button + search, same row */}
-      <View style={[s.header, { backgroundColor: C.surface, borderBottomColor: C.border }]} accessibilityRole="header" accessibilityLabel={t('savedCreators.title')}>
-        <BackButton />
-        <View style={[s.searchCard, { flex: 1, backgroundColor: C.surface, borderColor: C.border }]}>
-          <Ionicons name="search-outline" size={18} color={C.textSecondary} />
-          <TextInput
-            style={[s.searchInput, { color: C.text }]}
-            placeholder={t('explore.searchCreators')}
-            placeholderTextColor={C.textSecondary}
-            value={search}
-            onChangeText={setSearch}
-            returnKeyType="search"
-            autoCorrect={false}
-          />
-          {search.length > 0 && (
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => setSearch('')} hitSlop={10}>
-              <Ionicons name="close-circle" size={18} color={C.textSecondary} />
-            </Pressable>
-          )}
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-            style={[
-              s.filterBtn,
-              { backgroundColor: filterActive ? C.brinjal1 : C.primaryLight },
-              filterActive && { shadowColor: C.brinjal1, shadowOpacity: 0.35, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 5 },
-            ]}
-            onPress={openFilter}
-            hitSlop={6}>
-            <Ionicons name="options-outline" size={18} color={filterActive ? '#fff' : C.brinjal1} />
-            {filterActive && (
-              <View style={s.filterCountBadge}>
-                <Text style={s.filterCountBadgeTxt}>{filterCount}</Text>
-              </View>
+      <View style={{ backgroundColor: C.surface }}>
+        <View style={s.header} accessibilityRole="header" accessibilityLabel={t('savedCreators.title')}>
+          <BackButton />
+          <View style={[s.searchCard, { flex: 1, backgroundColor: C.surface, borderColor: C.border }]}>
+            <Ionicons name="search-outline" size={18} color={C.textSecondary} />
+            <TextInput
+              style={[s.searchInput, { color: C.text }]}
+              placeholder={t('explore.searchCreators')}
+              placeholderTextColor={C.textSecondary}
+              value={search}
+              onChangeText={setSearch}
+              returnKeyType="search"
+              autoCorrect={false}
+            />
+            {search.length > 0 && (
+              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => setSearch('')} hitSlop={10}>
+                <Ionicons name="close-circle" size={18} color={C.textSecondary} />
+              </Pressable>
             )}
-          </Pressable>
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+              style={[
+                s.filterBtn,
+                { backgroundColor: filterActive ? C.brinjal1 : C.primaryLight },
+                filterActive && { shadowColor: C.brinjal1, shadowOpacity: 0.35, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 5 },
+              ]}
+              onPress={openFilter}
+              hitSlop={6}>
+              <Ionicons name="options-outline" size={18} color={filterActive ? '#fff' : C.brinjal1} />
+              {filterActive && (
+                <View style={s.filterCountBadge}>
+                  <Text style={s.filterCountBadgeTxt}>{filterCount}</Text>
+                </View>
+              )}
+            </Pressable>
+          </View>
         </View>
+        <View style={[s.headerSeparator, { backgroundColor: C.border }]} />
       </View>
 
       {/* Result count */}
@@ -338,7 +341,8 @@ export default function SavedCreatorsScreen() {
 
 const s = StyleSheet.create({
   container: { flex: 1 },
-  header:    { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12, gap: 12, borderBottomWidth: 1 },
+  header:    { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12, gap: 12 },
+  headerSeparator: { height: StyleSheet.hairlineWidth, marginHorizontal: 16 },
 
   searchCard: { flexDirection: 'row', alignItems: 'center', gap: 9, borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 14, height: 44 },
   searchInput: { flex: 1, fontSize: 14, fontFamily: F.regular },

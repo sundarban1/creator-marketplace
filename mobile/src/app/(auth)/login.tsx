@@ -1003,7 +1003,12 @@ const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#FAF9FF' },
   flex: { flex: 1 },
 
-  scrollContent: { flexGrow: 1, paddingHorizontal: 20 },
+  // `justifyContent: 'center'` only has an effect once flexGrow's extra space
+  // exists to distribute — i.e. on a tall/tablet screen where the content is
+  // shorter than the viewport. On a phone (or with the keyboard open) content
+  // already fills or exceeds the ScrollView, so this is a no-op and it scrolls
+  // normally, top-anchored, same as before.
+  scrollContent: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 20 },
 
   // Aurora glow blobs — soft two-tone (purple + warm orange) light sources instead of
   // scattered decorative icons, echoing the app icon's own purple-triangle/orange-ring duo.

@@ -95,6 +95,9 @@ export default function HomeScreen() {
   const searchInputRef  = useRef<TextInput>(null);
   const listRef         = useRef<FlatList<ListRow>>(null);
   const searchDebounce  = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Y-offset of the Categories section within the list content, captured via
+  // onLayout — lets us auto-scroll there while searching (see effect below).
+  const categoriesYRef  = useRef(0);
   const [tempPriceMin, setTempPriceMin] = useState(0);
   const [tempPriceMax, setTempPriceMax] = useState(SLIDER_MAX);
   const [tempLocation, setTempLocation] = useState<LocationFilter>([]);
@@ -465,6 +468,14 @@ export default function HomeScreen() {
   useEffect(() => { setFeaturedVisibleCount(PAGE_SIZE); }, [campaigns]);
   useEffect(() => { setListVisibleCount(PAGE_SIZE); }, [campaigns, activeFilterTab, locationFilter, sortBy]);
 
+  // While the search bar is focused, or a search filter is actively applied,
+  // keep the list scrolled down to Categories so it's ready to refine results.
+  // Once neither holds (blurred + search cleared), snap back to the top.
+  useEffect(() => {
+    const keepAtCategories = searchFocused || activeSearch.trim().length > 0;
+    listRef.current?.scrollToOffset({ offset: keepAtCategories ? categoriesYRef.current : 0, animated: true });
+  }, [searchFocused, activeSearch]);
+
   function handleFeaturedScroll(e: { nativeEvent: { contentOffset: { x: number }; contentSize: { width: number }; layoutMeasurement: { width: number } } }) {
     const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
     if (contentOffset.x + layoutMeasurement.width >= contentSize.width - 80) {
@@ -779,7 +790,7 @@ export default function HomeScreen() {
         ) : null}
 
         {/* ── Categories ── */}
-        <View style={styles.sectionHeader}>
+        <View style={styles.sectionHeader} onLayout={(e) => { categoriesYRef.current = e.nativeEvent.layout.y; }}>
           <Text style={[styles.sectionTitle, { color: C.text }]}>{t('creator.home.categories')}</Text>
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoriesRow}>

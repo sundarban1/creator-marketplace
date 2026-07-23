@@ -77,17 +77,20 @@ export default function EditBusinessCategoriesScreen() {
 
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
-      <View style={[s.topBar, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
-        <BackButton fallback="/(business)/profile" />
-        <Text style={[s.topTitle, { color: C.text }]}>{t('editCategoriesBusiness.title')}</Text>
-        <Pressable android_ripple={{ color: 'rgba(255,255,255,0.2)' }}
-          style={[s.saveBtn, { backgroundColor: saving ? C.brinjal1 + 'AA' : C.brinjal1 }]}
-          onPress={handleSave}
-          disabled={saving}>
-          {saving
-            ? <ActivityIndicator color="#fff" size="small" />
-            : <Text style={s.saveBtnTxt}>{t('editCategoriesBusiness.save')}</Text>}
-        </Pressable>
+      <View style={{ backgroundColor: C.surface }}>
+        <View style={s.topBar}>
+          <BackButton fallback="/(business)/profile" />
+          <Text style={[s.topTitle, { color: C.text }]}>{t('editCategoriesBusiness.title')}</Text>
+          <Pressable android_ripple={{ color: 'rgba(255,255,255,0.2)' }}
+            style={[s.saveBtn, { backgroundColor: saving ? C.brinjal1 + 'AA' : C.brinjal1 }]}
+            onPress={handleSave}
+            disabled={saving}>
+            {saving
+              ? <ActivityIndicator color="#fff" size="small" />
+              : <Text style={s.saveBtnTxt}>{t('editCategoriesBusiness.save')}</Text>}
+          </Pressable>
+        </View>
+        <View style={[s.headerSeparator, { backgroundColor: C.border }]} />
       </View>
 
       <ScrollView
@@ -134,7 +137,8 @@ export default function EditBusinessCategoriesScreen() {
 const s = StyleSheet.create({
   container: { flex: 1 },
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  topBar:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1 },
+  topBar:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
+  headerSeparator: { height: StyleSheet.hairlineWidth, marginHorizontal: 16 },
   topTitle:  { fontSize: 18, fontFamily: F.bold, lineHeight: 22 },
   saveBtn:   { borderRadius: RADIUS.sm, paddingHorizontal: 16, paddingVertical: 8, minWidth: 56, minHeight: 40, alignItems: 'center', justifyContent: 'center' },
   saveBtnTxt:{ color: '#fff', fontSize: 14, fontFamily: F.bold },

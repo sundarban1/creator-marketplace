@@ -231,40 +231,45 @@ export default function ExploreBusinessesScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
       {/* ── Back button + search, top right ── */}
-      <View style={[styles.topRow, { backgroundColor: C.surface, borderBottomColor: C.border }]} accessibilityRole="header" accessibilityLabel={t('explore.businesses.headerTitle')}>
-        <BackButton fallback="/(creator)/" />
-        <View style={[styles.searchBox, { flex: 1, backgroundColor: C.surface, borderColor: C.border }]}>
-          <Ionicons name="search-outline" size={18} color={C.textSecondary} />
-          <TextInput
-            style={[styles.searchInput, { color: C.text }]}
-            placeholder={t('explore.businesses.searchPlaceholder')}
-            placeholderTextColor={C.textSecondary}
-            value={search}
-            onChangeText={onSearchChange}
-            returnKeyType="search"
-            autoCapitalize="none"
-          />
-          {search.length > 0 && (
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => { setSearch(''); void fetchBusinesses({ search: '', silent: true }); }} hitSlop={10}>
-              <Ionicons name="close-circle" size={18} color={C.textSecondary} />
-            </Pressable>
-          )}
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-            style={[
-              styles.filterBtn,
-              { backgroundColor: isFilterActive ? C.brinjal1 : C.primaryLight },
-              isFilterActive && { shadowColor: C.brinjal1, shadowOpacity: 0.35, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 5 },
-            ]}
-            onPress={openFilter}
-            hitSlop={6}>
-            <Ionicons name="options-outline" size={18} color={isFilterActive ? '#fff' : C.brinjal1} />
-            {isFilterActive && (
-              <View style={styles.filterCountBadge}>
-                <Text style={styles.filterCountBadgeTxt}>{filterActiveCount}</Text>
-              </View>
+      <View style={{ backgroundColor: C.surface }}>
+        <View style={styles.topRow} accessibilityRole="header" accessibilityLabel={t('explore.businesses.headerTitle')}>
+          <BackButton fallback="/(creator)/" />
+          <View style={[styles.searchBox, { flex: 1, backgroundColor: C.surface, borderColor: C.border }]}>
+            <Ionicons name="search-outline" size={18} color={C.textSecondary} />
+            <TextInput
+              style={[styles.searchInput, { color: C.text }]}
+              placeholder={t('explore.businesses.searchPlaceholder')}
+              placeholderTextColor={C.textSecondary}
+              value={search}
+              onChangeText={onSearchChange}
+              returnKeyType="search"
+              autoCapitalize="none"
+            />
+            {search.length > 0 && (
+              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => { setSearch(''); void fetchBusinesses({ search: '', silent: true }); }} hitSlop={10}>
+                <Ionicons name="close-circle" size={18} color={C.textSecondary} />
+              </Pressable>
             )}
-          </Pressable>
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+              style={[
+                styles.filterBtn,
+                { backgroundColor: isFilterActive ? C.brinjal1 : C.primaryLight },
+                isFilterActive && { shadowColor: C.brinjal1, shadowOpacity: 0.35, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 5 },
+              ]}
+              onPress={openFilter}
+              hitSlop={6}>
+              <Ionicons name="options-outline" size={18} color={isFilterActive ? '#fff' : C.brinjal1} />
+              {isFilterActive && (
+                <View style={styles.filterCountBadge}>
+                  <Text style={styles.filterCountBadgeTxt}>{filterActiveCount}</Text>
+                </View>
+              )}
+            </Pressable>
+          </View>
         </View>
+        {/* Inset hairline, not edge-to-edge — same treatment as Instagram's
+            subtle content-width dividers rather than a full-bleed border. */}
+        <View style={[styles.headerSeparator, { backgroundColor: C.border }]} />
       </View>
 
       {/* Saved link + result count — same row, below search */}
@@ -387,7 +392,8 @@ const styles = StyleSheet.create({
   favLinkText:    { fontSize: 12, fontFamily: F.bold },
 
   // Top row — back button + search, top right
-  topRow:         { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12, gap: 12, borderBottomWidth: 1 },
+  topRow:         { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12, gap: 12 },
+  headerSeparator: { height: StyleSheet.hairlineWidth, marginHorizontal: 16 },
   searchBox:      { flexDirection: 'row', alignItems: 'center', gap: 9, borderRadius: RADIUS.lg, borderWidth: 1.5, paddingHorizontal: 14, height: 44 },
   searchInput:    { flex: 1, fontSize: 15, fontFamily: F.regular },
   filterBtn:      { width: 36, height: 36, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center' },
