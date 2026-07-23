@@ -476,17 +476,6 @@ export default function ExploreCreatorPeersScreen() {
           ListFooterComponent={
             loadingMore ? (
               <ActivityIndicator color={C.brinjal1} style={{ paddingVertical: 20 }} />
-            ) : !hasMore && creators.length > 0 ? (
-              <View style={s.footerWrap}>
-                <View style={[s.footerLine, { backgroundColor: C.border }]} />
-                <View style={[s.footerPill, { backgroundColor: C.surface, borderColor: C.border }]}>
-                  <Ionicons name="checkmark-done" size={13} color={C.brinjal1} />
-                  <Text style={[s.footerText, { color: C.textSecondary }]}>
-                    {total !== 1 ? t('explore.showingAllPlural', { count: total }) : t('explore.showingAll', { count: total })}
-                  </Text>
-                </View>
-                <View style={[s.footerLine, { backgroundColor: C.border }]} />
-              </View>
             ) : null
           }
         />
