@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Sparkles } from 'lucide-react';
 import { fadeUp, scaleIn, stagger } from '../lib/motion';
 import { SECTION_IDS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
@@ -35,10 +35,16 @@ export function Hero() {
       <div className="relative mx-auto max-w-6xl px-6">
         <div className="grid items-center gap-16 lg:grid-cols-[1.1fr_0.9fr] lg:gap-12">
           <motion.div initial="hidden" animate="show" variants={stagger()} className="mx-auto max-w-xl text-center lg:mx-0 lg:text-left">
-            <motion.p variants={fadeUp} className="flex items-center justify-center gap-2 font-serif text-base italic text-ink-soft lg:justify-start">
-              <span className="h-1.5 w-1.5 rounded-full bg-gradient-to-br from-violet to-brand-orange" />
-              {d.hero.eyebrow}
-            </motion.p>
+            <motion.div variants={fadeUp} className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 lg:justify-start">
+              <p className="flex items-center gap-2 font-serif text-base italic text-ink-soft">
+                <span className="h-1.5 w-1.5 rounded-full bg-gradient-to-br from-violet to-brand-orange" />
+                {d.hero.eyebrow}
+              </p>
+              <span className="inline-flex items-center gap-1 rounded-full border border-violet/20 bg-violet/5 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-violet">
+                <Sparkles size={11} />
+                {d.hero.aiBadge}
+              </span>
+            </motion.div>
 
             <motion.h1
               variants={fadeUp}

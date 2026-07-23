@@ -14,6 +14,7 @@ export const en = {
 
   hero: {
     eyebrow: "Nepal's creator marketplace",
+    aiBadge: 'AI-Enabled',
     headlinePrefix: 'Where',
     headlineBrands: 'Brands',
     headlineMiddle: 'Meet',

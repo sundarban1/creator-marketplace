@@ -16,6 +16,7 @@ export const ne: LandingDict = {
 
   hero: {
     eyebrow: 'नेपालको क्रिएटर मार्केटप्लेस',
+    aiBadge: 'AI-सक्षम',
     headlinePrefix: 'जहाँ',
     headlineBrands: 'ब्रान्डहरू',
     headlineMiddle: 'र',
