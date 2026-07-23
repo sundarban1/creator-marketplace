@@ -8,6 +8,7 @@ import {
 import { fadeUp, stagger, VP } from '../lib/motion';
 import { SECTION_IDS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
+import { SectionWave } from '../components/SectionWave';
 
 const ICONS = [FaBullhorn, FaPaperPlane, FaHandshake, FaCreditCard, FaBell, FaBolt, FaCloudArrowUp, FaMagnifyingGlass, FaSackDollar];
 
@@ -41,9 +42,9 @@ const NOTIFIED_STEP_INDEX = 4;
 type Role = 'brand' | 'creator' | 'system';
 
 const ROLE_STYLE: Record<Role, string> = {
-  brand: 'bg-brand-orange/10 text-brand-orange',
-  creator: 'bg-violet/10 text-violet',
-  system: 'bg-ink/[0.06] text-ink-soft',
+  brand: 'bg-brand-orange/15 text-brand-orange',
+  creator: 'bg-violet/15 text-violet',
+  system: 'bg-white/10 text-white/60',
 };
 
 type Status = 'pending' | 'current' | 'done';
@@ -57,7 +58,7 @@ function StepDot({ Icon, status, ref }: { Icon: (typeof ICONS)[number]; status: 
           ? 'border-transparent bg-emerald-500 text-white'
           : status === 'current'
             ? 'border-transparent bg-gradient-to-br from-violet to-violet-dark text-white shadow-[0_6px_16px_-4px_rgba(123,92,245,0.55)]'
-            : 'border-ink/15 bg-white text-ink/25'
+            : 'border-white/15 bg-white/5 text-white/25'
       }`}
     >
       {status === 'current' && (
@@ -146,29 +147,30 @@ export function CampaignJourney() {
   const halfColumn = 50 / steps.length;
 
   return (
-    <section id={SECTION_IDS.journey} className="relative overflow-hidden bg-white py-28">
+    <section id={SECTION_IDS.journey} className="relative overflow-hidden bg-ink py-28 text-white">
+      <SectionWave fill="#141110" />
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
-        <div className="mesh-blob absolute right-[-10%] top-0 h-[380px] w-[380px] rounded-full bg-brand-orange/[0.1] blur-[110px]" />
-        <div className="mesh-blob absolute left-[-8%] bottom-0 h-[320px] w-[320px] rounded-full bg-violet/[0.1] blur-[110px]" style={{ animationDelay: '2.4s' }} />
+        <div className="mesh-blob absolute right-[-10%] top-0 h-[380px] w-[380px] rounded-full bg-brand-orange/[0.12] blur-[110px]" />
+        <div className="mesh-blob absolute left-[-8%] bottom-0 h-[320px] w-[320px] rounded-full bg-violet/[0.12] blur-[110px]" style={{ animationDelay: '2.4s' }} />
       </div>
 
       <div className="relative mx-auto max-w-6xl px-6">
         {/* ── Copy ── */}
         <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()} className="mx-auto max-w-2xl text-center">
-          <motion.p variants={fadeUp} className="font-serif text-base italic text-ink-soft">
+          <motion.p variants={fadeUp} className="font-serif text-base italic text-white/50">
             {d.journey.eyebrow}
           </motion.p>
-          <motion.h2 variants={fadeUp} className="mt-3 whitespace-nowrap font-serif text-xl font-medium text-ink sm:text-2xl md:text-3xl lg:text-4xl">
+          <motion.h2 variants={fadeUp} className="mt-3 whitespace-nowrap font-serif text-xl font-medium text-white sm:text-2xl md:text-3xl lg:text-4xl">
             {d.journey.heading}
           </motion.h2>
         </motion.div>
 
         {/* ── Animated horizontal timeline card ── */}
         <motion.div ref={cardRef} initial="hidden" whileInView="show" viewport={VP} variants={fadeUp} className="mt-14">
-          <div className="rounded-3xl border border-ink/10 bg-white p-6 shadow-[0_30px_60px_-24px_rgba(20,17,16,0.18)] sm:p-8">
+          <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur-sm sm:p-8">
             {/* Story-style progress bar mirroring the phone showcase up in Hero */}
             <div className="mb-6 flex items-center gap-3">
-              <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-ink-soft">
+              <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-white/50">
                 <motion.span
                   className="h-1.5 w-1.5 rounded-full bg-emerald-500"
                   animate={{ opacity: [1, 0.35, 1] }}
@@ -179,7 +181,7 @@ export function CampaignJourney() {
             </div>
             <div className="mb-10 flex gap-1.5">
               {steps.map((_, i) => (
-                <div key={i} className="h-[3px] flex-1 overflow-hidden rounded-full bg-ink/10">
+                <div key={i} className="h-[3px] flex-1 overflow-hidden rounded-full bg-white/10">
                   {i === barSegment && activeIndex !== -1 && (
                     <motion.div
                       key={beat}
@@ -200,7 +202,7 @@ export function CampaignJourney() {
                 {/* Connector track, centered on the dots */}
                 <div
                   aria-hidden
-                  className="absolute top-[18px] h-[2px] overflow-hidden bg-ink/10"
+                  className="absolute top-[18px] h-[2px] overflow-hidden bg-white/10"
                   style={{ left: `${halfColumn}%`, right: `${halfColumn}%` }}
                 >
                   <motion.div
@@ -226,7 +228,7 @@ export function CampaignJourney() {
                           <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${ROLE_STYLE[role]}`}>
                             {role === 'brand' ? d.journey.legendBrand : role === 'creator' ? d.journey.legendCreator : d.journey.legendSystem}
                           </span>
-                          <h3 className={`mt-1.5 text-sm font-bold ${status === 'pending' ? 'text-ink/50' : 'text-ink'}`}>
+                          <h3 className={`mt-1.5 text-sm font-bold ${status === 'pending' ? 'text-white/40' : 'text-white'}`}>
                             {step.title}
                           </h3>
                         </motion.div>
