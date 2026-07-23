@@ -11,7 +11,6 @@ import { MessagingService } from '../messaging/messaging.service';
 import { notificationService } from '../notifications/notification.service';
 import { analyticsService } from '../analytics/analytics.service';
 import { sendAccountVerifiedEmail, sendVerificationRejectedEmail } from '../../utils/email';
-import { sendSms } from '../../utils/sms';
 import { AppError } from '../../middleware/error';
 
 export class AdminService {
@@ -299,9 +298,6 @@ export class AdminService {
         refType: 'business',
       }).catch(() => {});
       sendVerificationRejectedEmail(updated.user.email, name, reason, 'business').catch(() => {});
-      if (updated.user.phone) {
-        sendSms(updated.user.phone, `Kolab: your business verification was not approved. Reason: ${reason}`).catch(() => {});
-      }
     }
     return updated;
   }

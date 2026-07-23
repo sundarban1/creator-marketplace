@@ -1,6 +1,9 @@
 import { env } from '../config/env';
 import { logger } from '../config/logger';
 
+// SMS is reserved for phone-number OTPs only — signup verification and forgot-
+// password (both in auth.service.ts). Do not use this for other notifications
+// (verification results, alerts, etc.) — use email/in-app notifications instead.
 // No SMS gateway is wired up yet (same situation as the phone-OTP stub in
 // auth.service.ts). This is the single call site every SMS-sending feature
 // should go through — once SPARROW_SMS_TOKEN/SPARROW_SMS_FROM are set, it

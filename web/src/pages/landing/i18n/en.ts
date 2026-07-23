@@ -13,8 +13,7 @@ export const en = {
   },
 
   hero: {
-    eyebrow: "Nepal's creator marketplace",
-    aiBadge: 'AI-Enabled',
+    eyebrow: 'Kolab — AI-powered collaboration between brands and creators.',
     headlinePrefix: 'Where',
     headlineBrands: 'Brands',
     headlineMiddle: 'Meet',
@@ -29,7 +28,7 @@ export const en = {
       { a: 'Creators', b: 'Success' },
       { a: 'Creators', b: 'Creators' },
     ],
-    sub: 'Kolab connects Nepali creators with brands for paid campaigns — discover opportunities, collaborate, and get paid, all in one place.',
+    sub: 'Kolab connects Nepali brands and creators for paid collaborations — discover opportunities, find the right partners, collaborate, and grow, all in one place.',
     ctaCreator: 'Join as Creator',
     ctaBusiness: 'Hire Creators',
     scrollAriaLabel: 'Scroll to explore',
