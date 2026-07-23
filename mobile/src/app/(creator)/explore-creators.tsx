@@ -359,8 +359,6 @@ export default function ExploreCreatorPeersScreen() {
     }
   }
 
-  const hasMore = page < Math.ceil(total / PAGE_SIZE);
-
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
       {/* Back button + search, same row */}
@@ -516,9 +514,4 @@ const s = StyleSheet.create({
   loadingText: { fontSize: 14, fontFamily: F.regular },
 
   list: { paddingHorizontal: 20, paddingBottom: 40, gap: 14 },
-
-  footerWrap: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 20, marginTop: 8, marginBottom: 36, gap: 10 },
-  footerLine: { flex: 1, height: 1 },
-  footerPill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 7, borderRadius: RADIUS.full, borderWidth: 1 },
-  footerText: { fontSize: 12, fontFamily: F.regular },
 });

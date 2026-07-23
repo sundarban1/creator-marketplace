@@ -259,8 +259,6 @@ export default function ExploreCreatorsScreen() {
     }
   }
 
-  const hasMore = page < Math.ceil(total / PAGE_SIZE);
-
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
       {/* Header — back button + search, same row */}
@@ -397,17 +395,6 @@ export default function ExploreCreatorsScreen() {
           ListFooterComponent={
             loadingMore ? (
               <ActivityIndicator color={C.brinjal1} style={{ paddingVertical: 20 }} />
-            ) : !hasMore && creators.length > 0 ? (
-              <View style={s.footerWrap}>
-                <View style={[s.footerLine, { backgroundColor: C.border }]} />
-                <View style={[s.footerPill, { backgroundColor: C.surface, borderColor: C.border }]}>
-                  <Ionicons name="checkmark-done" size={13} color={C.brinjal1} />
-                  <Text style={[s.footerText, { color: C.textSecondary }]}>
-                    {total !== 1 ? t('explore.showingAllPlural', { count: total }) : t('explore.showingAll', { count: total })}
-                  </Text>
-                </View>
-                <View style={[s.footerLine, { backgroundColor: C.border }]} />
-              </View>
             ) : null
           }
         />
@@ -450,9 +437,4 @@ const s = StyleSheet.create({
   loadingText: { fontSize: 14, fontFamily: F.regular },
 
   list: { paddingHorizontal: 20, paddingBottom: 40, gap: 14 },
-
-  footerWrap: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 20, marginTop: 8, marginBottom: 36, gap: 10 },
-  footerLine: { flex: 1, height: 1 },
-  footerPill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 7, borderRadius: RADIUS.full, borderWidth: 1 },
-  footerText: { fontSize: 12, fontFamily: F.regular },
 });

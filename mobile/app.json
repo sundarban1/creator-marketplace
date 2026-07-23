@@ -9,6 +9,8 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "bundleIdentifier": "com.sundarban.kolab",
+      "supportsTablet": true,
+      "requireFullScreen": true,
       "config": {
         "googleMapsApiKey": "AIzaSyAJrdBTZyJH0Sxku7uG-_V4x5lSv4xWii0"
       },

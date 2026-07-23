@@ -368,6 +368,7 @@ const en = {
       messages: 'Messages',
       activity: 'Activity',
       menu: 'Menu',
+      profile: 'Profile',
     },
     home: {
       greeting: 'Hello 👋',
@@ -1578,8 +1579,6 @@ const en = {
     priceRange: 'Rate Range',
     platform: 'Platform',
     category: 'Category',
-    showingAll: 'Showing all {{count}} creator',
-    showingAllPlural: 'Showing all {{count}} creators',
     remote: 'Remote',
     searchCity: 'Search city…',
     locationsAllowed: '{{count}}/{{max}} allowed',

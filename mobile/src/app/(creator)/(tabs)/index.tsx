@@ -1,9 +1,9 @@
 import { router, useFocusEffect } from 'expo-router';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useAuth } from '@/context/AuthContext';
+import { useDrawer } from '@/context/DrawerContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { useNotificationBadge } from '@/context/NotificationContext';
@@ -17,7 +17,6 @@ import { displayCategory } from '@/features/creator/data/filterOptions';
 import { useCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { usePlatforms, getPlatformMeta } from '@/hooks/usePlatforms';
 import { EmptyState } from '@/components/EmptyState';
-import { isValidNepaliPhone } from '@/utilities/phone';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useScrollToTopOnTabPress } from '@/hooks/useScrollToTopOnTabPress';
 import { TabSlider } from '@/components/TabSlider';
@@ -48,20 +47,8 @@ type ListRow =
   | { kind: 'empty' }
   | { kind: 'campaign'; campaign: Campaign };
 
-function getInitials(name: string): string {
-  const words = name.trim().split(/\s+/).filter(Boolean);
-  if (words.length === 0) return '';
-  const first = words[0][0];
-  const last = words.length > 1 ? words[words.length - 1][0] : '';
-  return (first + last).toUpperCase();
-}
-
 export default function HomeScreen() {
-  const { user } = useAuth();
-  // Phone-only signups default `name` to the raw phone number until the user sets
-  // a real one — never show that in the header (as text, or as the avatar's
-  // first-letter fallback initial, which would render a bare "+").
-  const displayName = user?.name && !isValidNepaliPhone(user.name) ? user.name : 'Creator';
+  const { openDrawer } = useDrawer();
   const { badgeCount: notifBadge } = useNotificationBadge();
   const { t, languageVersion } = useLanguage();
   const C = useAppColors();
@@ -259,16 +246,18 @@ export default function HomeScreen() {
       .then((profile) => {
         // Photo and social links matter most for a creator's discoverability,
         // so they're checked first and lead the list. Work portfolio is a
-        // secondary nudge — it's appended last, after every other field.
+        // secondary nudge — it only appears once the creator has added a
+        // photo or a social link, so a brand-new profile isn't overwhelmed.
         const missing: string[] = [];
-        if (!profile.avatarUrl)            missing.push(t('creator.home.fieldProfilePhoto'));
+        const hasPhoto = !!profile.avatarUrl;
+        if (!hasPhoto) missing.push(t('creator.home.fieldProfilePhoto'));
         const hasLink = profile.socialLinks &&
           Object.values(profile.socialLinks).some((v) => !!v);
         if (!hasLink) missing.push(t('creator.home.fieldSocialLinks'));
         if (!profile.bio)                  missing.push(t('creator.home.fieldBio'));
         if (!profile.location)             missing.push(t('creator.home.fieldLocation'));
         if (!profile.categories?.length)   missing.push(t('creator.home.fieldCategories'));
-        if (!profile.portfolioLinks?.length) missing.push(t('creator.home.fieldPortfolio'));
+        if ((hasPhoto || hasLink) && !profile.portfolioLinks?.length) missing.push(t('creator.home.fieldPortfolio'));
         setMissingFields(missing);
         void initNearby(profile);
       })
@@ -473,20 +462,14 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
-      {/* ── Header: avatar, search bar, notifications — kept outside the list so it
-          stays floating/pinned above the content instead of scrolling away. ── */}
+      {/* ── Header: menu, search bar, notifications — kept outside the list so it
+          stays floating/pinned above the content instead of scrolling away.
+          The avatar (was here) and the hamburger (was the bottom-bar's rightmost
+          tab) have swapped places — see (tabs)/_layout.tsx for the avatar tab. ── */}
       <View style={[styles.header, { backgroundColor: C.background }]}>
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-          style={[styles.avatarCircle, { backgroundColor: C.surface }, SHADOW.card]}
-          onPress={() => router.push('/(creator)/profile')}>
-          <View style={styles.avatarClip}>
-            {user?.avatar ? (
-              <Image source={{ uri: user.avatar }} style={styles.avatarImage} resizeMode="cover" />
-            ) : (
-              <View style={styles.avatarFallback}>
-                <Text style={[styles.avatarInitial, { color: C.brinjal1 }]}>{getInitials(displayName)}</Text>
-              </View>
-            )}
+        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.menuBtn} onPress={openDrawer} hitSlop={6}>
+          <View style={[styles.menuBtnInner, { backgroundColor: C.surface }, SHADOW.card]}>
+            <Ionicons name="menu-outline" size={22} color={C.text} />
           </View>
         </Pressable>
 
@@ -999,8 +982,8 @@ const styles = StyleSheet.create({
   scrollContent: { paddingBottom: 40 },
 
   // ── Header ──
-  // Avatar, search bar, and the notifications button all share this one row —
-  // avatar and notifications are fixed-width, the search bar stretches (flex:1)
+  // Menu, search bar, and the notifications button all share this one row —
+  // menu and notifications are fixed-width, the search bar stretches (flex:1)
   // to fill whatever's left between them. Lives outside the FlatList (rendered
   // as a sibling, not ListHeaderComponent) so it stays pinned at the top
   // instead of scrolling away with the content. Same background as the page
@@ -1014,11 +997,6 @@ const styles = StyleSheet.create({
   menuBtnInner: { width: 44, height: 44, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
   menuBadge:    { position: 'absolute', top: -3, right: -3, minWidth: 16, height: 16, borderRadius: RADIUS.full, paddingHorizontal: 3, backgroundColor: '#EF4444', justifyContent: 'center', alignItems: 'center', borderWidth: 1.5, borderColor: '#fff' },
   menuBadgeTxt: { fontSize: 8, fontFamily: F.bold, color: '#fff' },
-  avatarCircle: { width: 44, height: 44, borderRadius: RADIUS.full },
-  avatarClip:   { width: '100%', height: '100%', borderRadius: RADIUS.full, overflow: 'hidden' },
-  avatarImage:  { width: '100%', height: '100%' },
-  avatarFallback: { width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center' },
-  avatarInitial:  { fontSize: 18, fontFamily: F.extrabold },
 
   // ── Search ──
   searchCard: { flex: 1, flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.lg, paddingHorizontal: 14, height: 44, borderWidth: 1.5 },

@@ -1,31 +1,40 @@
-import { Tabs } from 'expo-router';
+import { router, Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useContext, useState } from 'react';
-import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Dimensions, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
 import { DrawerContext } from '@/context/DrawerContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { DrawerMenu } from '@/features/creator/components/DrawerMenu';
-import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { useNotificationBadge } from '@/context/NotificationContext';
 import { scrollToTopEvents } from '@/lib/scrollToTopEvents';
+import { isValidNepaliPhone } from '@/utilities/phone';
 import { RADIUS, SHADOW } from '@/utilities/constants';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
+
+function getInitials(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return '';
+  const first = words[0][0];
+  const last = words.length > 1 ? words[words.length - 1][0] : '';
+  return (first + last).toUpperCase();
+}
 
 // ── Tab config ────────────────────────────────────────────────────────────────
 
 // `color` is omitted for `index` (Home) — it uses the theme's brinjal accent instead, resolved at render time.
 // The `notifications` route stays a real tab-navigator screen (reachable from the
 // header's activity button — see index.tsx), but its bottom-bar slot is repurposed
-// below to open the drawer instead, swapping places with the old header hamburger.
+// below to show the user's avatar and open the profile screen — swapped with the
+// header's avatar, which now opens the drawer (see index.tsx).
 const TAB_CONFIG: Record<string, { icon: IoniconName; iconActive: IoniconName; label: string; color?: string }> = {
   index:         { icon: 'home-outline',          iconActive: 'home',          label: 'Home' },
   proposals:     { icon: 'document-text-outline', iconActive: 'document-text', label: 'Proposals',  color: '#7C3AED' },
   messages:      { icon: 'chatbubble-outline',    iconActive: 'chatbubble',    label: 'Messages',   color: '#2563EB' },
-  notifications: { icon: 'menu-outline',          iconActive: 'menu',          label: 'Menu' },
+  notifications: { icon: 'person-outline',        iconActive: 'person',        label: 'Profile' },
 };
 
 // ── Custom tab bar ────────────────────────────────────────────────────────────
@@ -49,7 +58,7 @@ function CustomTabBar({
 }) {
   const C = useAppColors();
   const { t } = useLanguage();
-  const { openDrawer } = useContext(DrawerContext);
+  const { user } = useAuth();
   const insets = useSafeAreaInsets();
   // Real home-indicator/gesture-nav inset varies a lot by device (0 on an
   // iPhone SE or 3-button-nav Android, ~34pt on notched iPhones) — a fixed
@@ -64,12 +73,17 @@ function CustomTabBar({
     index:         t('creator.tab.home'),
     proposals:     t('creator.tab.proposals'),
     messages:      t('creator.tab.messages'),
-    notifications: t('creator.tab.menu'),
+    notifications: t('creator.tab.profile'),
   };
 
   const badgeMap: Record<string, number> = {
     messages: chatBadge,
   };
+
+  // Phone-only signups default `name` to the raw phone number until the user sets
+  // a real one — never show that as the avatar's first-letter fallback initial,
+  // which would render a bare "+".
+  const displayName = user?.name && !isValidNepaliPhone(user.name) ? user.name : 'Creator';
 
   const tabs = (state.routes as any[]).filter((r) => TAB_CONFIG[r.name]);
 
@@ -81,17 +95,19 @@ function CustomTabBar({
       ]}
     >
       {tabs.map((route) => {
-        // The `notifications` slot now opens the drawer (swapped with the header
-        // hamburger) rather than navigating to a screen, so it never shows as "active".
-        const isMenu  = route.name === 'notifications';
-        const focused = !isMenu && state.routes[state.index]?.name === route.name;
+        // The `notifications` slot now shows the avatar and opens the profile screen
+        // (swapped with the header avatar, which now opens the drawer — see
+        // index.tsx), rather than navigating to the notifications screen, so it
+        // never shows as "active".
+        const isProfile = route.name === 'notifications';
+        const focused = !isProfile && state.routes[state.index]?.name === route.name;
         const cfg     = TAB_CONFIG[route.name]!;
         const label   = labelMap[route.name] ?? cfg.label;
         const badge   = badgeMap[route.name] ?? 0;
         const color   = cfg.color ?? C.brinjal1;
 
         function onPress() {
-          if (isMenu) { openDrawer(); return; }
+          if (isProfile) { router.push('/(creator)/profile'); return; }
           // Always fires, whether this tab is already focused or not — the
           // destination screen's own useScrollToTopOnTabPress listener scrolls its
           // list back up, since Tabs keeps every screen mounted (and scrolled where
@@ -118,11 +134,21 @@ function CustomTabBar({
                 focused && { backgroundColor: `${color}18` },
               ]}
             >
-              <Ionicons
-                name={focused ? cfg.iconActive : cfg.icon}
-                size={21}
-                color={focused ? color : '#ABABBB'}
-              />
+              {isProfile ? (
+                <View style={[tabS.avatarCircle, { backgroundColor: C.primaryLight }]}>
+                  {user?.avatar ? (
+                    <Image source={{ uri: user.avatar }} style={tabS.avatarImage} resizeMode="cover" />
+                  ) : (
+                    <Text style={[tabS.avatarInitial, { color: C.brinjal1 }]}>{getInitials(displayName)}</Text>
+                  )}
+                </View>
+              ) : (
+                <Ionicons
+                  name={focused ? cfg.iconActive : cfg.icon}
+                  size={21}
+                  color={focused ? color : '#ABABBB'}
+                />
+              )}
               {badge > 0 && (
                 <View style={tabS.badge}>
                   <Text style={tabS.badgeTxt}>{badge > 99 ? '99+' : badge}</Text>
@@ -186,6 +212,16 @@ const tabS = StyleSheet.create({
     fontSize: 10.5,
     letterSpacing: 0.1,
   },
+  avatarCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: RADIUS.full,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarImage: { width: '100%', height: '100%' },
+  avatarInitial: { fontSize: 10, fontWeight: '700' },
   dot: {
     width: 4,
     height: 4,
@@ -225,32 +261,30 @@ export default function CreatorTabsLayout() {
   return (
     <DrawerContext.Provider value={{ openDrawer: () => setDrawerOpen(true) }}>
       <View style={{ flex: 1 }}>
-        <MaxWidthContainer>
-          <Tabs
-            screenOptions={{ headerShown: false }}
-            tabBar={(props) => (
-              <CustomTabBar
-                state={props.state}
-                navigation={props.navigation}
-                chatBadge={badgeCount}
-              />
-            )}
-          >
-            <Tabs.Screen name="index"    options={{ title: t('creator.tab.home') }} />
-            <Tabs.Screen name="proposals" options={{ title: t('creator.tab.proposals') }} />
-            <Tabs.Screen
-              name="messages"
-              listeners={({ navigation }) => ({
-                tabPress: (e) => {
-                  e.preventDefault();
-                  navigation.navigate('messages', { screen: 'index' });
-                },
-              })}
-              options={{ title: t('creator.tab.messages') }}
+        <Tabs
+          screenOptions={{ headerShown: false }}
+          tabBar={(props) => (
+            <CustomTabBar
+              state={props.state}
+              navigation={props.navigation}
+              chatBadge={badgeCount}
             />
-            <Tabs.Screen name="notifications" options={{ title: t('creator.tab.activity') }} />
-          </Tabs>
-        </MaxWidthContainer>
+          )}
+        >
+          <Tabs.Screen name="index"    options={{ title: t('creator.tab.home') }} />
+          <Tabs.Screen name="proposals" options={{ title: t('creator.tab.proposals') }} />
+          <Tabs.Screen
+            name="messages"
+            listeners={({ navigation }) => ({
+              tabPress: (e) => {
+                e.preventDefault();
+                navigation.navigate('messages', { screen: 'index' });
+              },
+            })}
+            options={{ title: t('creator.tab.messages') }}
+          />
+          <Tabs.Screen name="notifications" options={{ title: t('creator.tab.activity') }} />
+        </Tabs>
 
         <DrawerMenu
           visible={drawerOpen}
