@@ -362,7 +362,6 @@ const ne = {
       messages: 'मेसेज',
       activity: 'एक्टिभिटी',
       menu: 'मेनु',
-      profile: 'प्रोफाइल',
     },
     home: {
       greeting: 'नमस्ते 👋',
@@ -1573,6 +1572,8 @@ const ne = {
     priceRange: 'रेट रेन्ज',
     platform: 'प्लेटफर्म',
     category: 'क्याटेगोरी',
+    showingAll: 'सबै {{count}} क्रिएटर देखाइँदैछ',
+    showingAllPlural: 'सबै {{count}} क्रिएटर देखाइँदैछ',
     remote: 'रिमोट',
     searchCity: 'सहर खोज्नुहोस्…',
     locationsAllowed: '{{count}}/{{max}} छान्न मिल्छ',
