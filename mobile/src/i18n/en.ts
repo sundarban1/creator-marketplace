@@ -395,6 +395,7 @@ const en = {
       fieldLocation: 'Location',
       fieldCategories: 'Categories',
       fieldSocialLinks: 'Social links',
+      fieldPortfolio: 'Work portfolio',
       actionRequired: 'Action Required',
       actionStartWork: 'Payment received — start work on "{{title}}"',
       actionUploadWork: 'Upload deliverables for "{{title}}"',

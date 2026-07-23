@@ -389,6 +389,7 @@ const ne = {
       fieldLocation: 'लोकेसन',
       fieldCategories: 'क्याटेगोरीहरू',
       fieldSocialLinks: 'सोसल लिंकहरू',
+      fieldPortfolio: 'कार्य पोर्टफोलियो',
       actionRequired: 'तपाईंले गर्नुपर्ने काम',
       actionStartWork: 'पेमेन्ट आयो — "{{title}}" मा काम सुरु गर्नुहोस्',
       actionUploadWork: '"{{title}}" को काम अपलोड गर्नुहोस्',

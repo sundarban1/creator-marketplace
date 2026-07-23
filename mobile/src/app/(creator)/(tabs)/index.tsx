@@ -257,14 +257,18 @@ export default function HomeScreen() {
     void fetchCampaigns();
     creatorService.getProfile()
       .then((profile) => {
+        // Photo and social links matter most for a creator's discoverability,
+        // so they're checked first and lead the list. Work portfolio is a
+        // secondary nudge — it's appended last, after every other field.
         const missing: string[] = [];
         if (!profile.avatarUrl)            missing.push(t('creator.home.fieldProfilePhoto'));
-        if (!profile.bio)                  missing.push(t('creator.home.fieldBio'));
-        if (!profile.location)             missing.push(t('creator.home.fieldLocation'));
-        if (!profile.categories?.length)   missing.push(t('creator.home.fieldCategories'));
         const hasLink = profile.socialLinks &&
           Object.values(profile.socialLinks).some((v) => !!v);
         if (!hasLink) missing.push(t('creator.home.fieldSocialLinks'));
+        if (!profile.bio)                  missing.push(t('creator.home.fieldBio'));
+        if (!profile.location)             missing.push(t('creator.home.fieldLocation'));
+        if (!profile.categories?.length)   missing.push(t('creator.home.fieldCategories'));
+        if (!profile.portfolioLinks?.length) missing.push(t('creator.home.fieldPortfolio'));
         setMissingFields(missing);
         void initNearby(profile);
       })
