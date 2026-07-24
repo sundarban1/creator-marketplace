@@ -30,6 +30,13 @@ import { campaignService } from '@/services/campaign';
 import type { Campaign } from '@/types';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { pickAndUpload } from '@/utilities/uploadImage';
+import {
+  GOAL_OPTIONS, CREATOR_TYPES, DELIVERABLE_TYPES, DEFAULT_DELIVERABLES, summarizeDeliverables,
+} from '@/features/business/constants/campaignForm';
+import {
+  SectionCard, ChipGroup, ChipMultiGroup, PlatformChipGroup, BudgetTierPicker, Stepper,
+  DeliverablesCounterList, HashtagEditor, cg,
+} from '@/features/business/components/CampaignFormControls';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -38,7 +45,6 @@ const ERROR_RED = '#EF4444';
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const DAY_SHORT = ['Su','Mo','Tu','We','Th','Fr','Sa'];
 
-const CONTENT_TYPES = ['Reel / Short Video','Story','Static Post','Blog Article','Podcast Mention'];
 const STATUS_OPTIONS: { labelKey: string; value: NonNullable<Campaign['status']> }[] = [
   { labelKey: 'campaignDetail.statusActive', value: 'active' },
   { labelKey: 'campaignDetail.statusPaused', value: 'draft'  },
@@ -58,92 +64,6 @@ function daysAgo(iso: string) { return Math.floor((Date.now() - new Date(iso).ge
 function formatDeadline(iso: string) {
   const d = new Date(iso);
   return isNaN(d.getTime()) ? iso : d.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
-}
-
-// ─── ChipGroup ────────────────────────────────────────────────────────────────
-
-function ChipGroup({
-  options, value, onChange, colors, error, disabled,
-}: {
-  options: readonly string[];
-  value: string;
-  onChange: (v: string) => void;
-  colors: ReturnType<typeof useAppColors>;
-  error?: string;
-  disabled?: boolean;
-}) {
-  const C = colors;
-  return (
-    <View style={{ gap: 6 }}>
-      <View style={cg.wrap}>
-        {options.map((opt) => {
-          const sel = value === opt;
-          return (
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-              key={opt}
-              disabled={disabled}
-              style={[cg.chip, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? C.primaryLight : C.background, opacity: disabled && !sel ? 0.4 : 1 }]}
-              onPress={() => onChange(opt)}>
-              <Text style={[cg.txt, { color: sel ? C.brinjal1 : C.textSecondary, fontWeight: sel ? '700' : '500' }]}>{opt}</Text>
-            </Pressable>
-          );
-        })}
-      </View>
-      {error ? <Text style={cg.err}>{error}</Text> : null}
-    </View>
-  );
-}
-const cg = StyleSheet.create({
-  wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: RADIUS.full, borderWidth: 1.5 },
-  txt:  { fontSize: 13 },
-  err:  { fontSize: 12, color: ERROR_RED },
-});
-
-// ─── PlatformChipGroup (multi-select, capped, lockable) ────────────────────────
-
-function PlatformChipGroup({
-  options, values, onChange, colors, error, max, disabled,
-}: {
-  options: readonly string[];
-  values: string[];
-  onChange: (v: string[]) => void;
-  colors: ReturnType<typeof useAppColors>;
-  error?: string;
-  max: number;
-  disabled?: boolean;
-}) {
-  const C = colors;
-  function toggle(opt: string) {
-    if (disabled) return;
-    if (values.includes(opt)) { onChange(values.filter((v) => v !== opt)); return; }
-    if (values.length >= max) return;
-    onChange([...values, opt]);
-  }
-  return (
-    <View style={{ gap: 6 }}>
-      <View style={cg.wrap}>
-        {options.map((opt) => {
-          const sel = values.includes(opt);
-          const chipDisabled = disabled || (!sel && values.length >= max);
-          return (
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-              key={opt}
-              disabled={chipDisabled}
-              style={[cg.chip, {
-                borderColor: sel ? C.brinjal1 : C.border,
-                backgroundColor: sel ? C.primaryLight : C.background,
-                opacity: chipDisabled && !sel ? 0.4 : 1,
-              }]}
-              onPress={() => toggle(opt)}>
-              <Text style={[cg.txt, { color: sel ? C.brinjal1 : C.textSecondary, fontWeight: sel ? '700' : '500' }]}>{opt}</Text>
-            </Pressable>
-          );
-        })}
-      </View>
-      {error ? <Text style={cg.err}>{error}</Text> : null}
-    </View>
-  );
 }
 
 // ─── CalendarGrid ─────────────────────────────────────────────────────────────
@@ -220,8 +140,12 @@ type EditForm = {
   description: string;
   featureImageUrl: string | null;
   platforms: string[];
-  contentType: string;
-  deliverables: string;
+  goal: string;
+  deliverables: Record<string, number>;
+  targetAudience: string[];
+  hashtags: string[];
+  objective: string;
+  creatorsNeeded: string;
   status: NonNullable<Campaign['status']>;
   budgetMin: string;
   budgetMax: string;
@@ -282,7 +206,8 @@ export default function CampaignDetailScreen() {
   const [eventCalOpen, setEventCalOpen] = useState(false);
   const [editForm, setEditForm] = useState<EditForm>({
     title: '', description: '', featureImageUrl: null, platforms: [],
-    contentType: '', deliverables: '',
+    goal: GOAL_OPTIONS[0]!, deliverables: DEFAULT_DELIVERABLES, targetAudience: [], hashtags: [],
+    objective: '', creatorsNeeded: '1',
     status: 'active', budgetMin: '', budgetMax: '', deadline: null,
     location: '', isFeatured: false,
     eventDate: null, venue: '', capacity: '20', benefits: [],
@@ -312,6 +237,22 @@ export default function CampaignDetailScreen() {
   // (price, platform, deliverables, status) are locked — everything else stays editable.
   const hasProposals = (campaign?.proposals ?? 0) > 0;
 
+  // Best-effort reverse-parse of the persisted "1 Reel, 2 Story" deliverables string
+  // back into per-type counts, so the edit form's counter UI starts pre-filled instead
+  // of blank. The string was originally built by this same app's summarizeDeliverables()
+  // (format "<n> <Label>", comma-joined), so a simple regex match per type is reliable
+  // for campaigns created after this redesign — older/free-text campaigns just default
+  // to all-zero counts and the business re-sets them.
+  function parseDeliverablesString(str: string): Record<string, number> {
+    const counts = { ...DEFAULT_DELIVERABLES };
+    for (const item of DELIVERABLE_TYPES) {
+      const label = t(item.labelKey).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const match = str.match(new RegExp(`(\\d+)\\s*${label}`, 'i'));
+      if (match) counts[item.key] = parseInt(match[1]!, 10);
+    }
+    return counts;
+  }
+
   function openEdit() {
     if (!campaign) return;
     setEditForm({
@@ -319,8 +260,12 @@ export default function CampaignDetailScreen() {
       description:  campaign.description ?? '',
       featureImageUrl: campaign.featureImageUrl ?? null,
       platforms:    campaign.platforms ?? [],
-      contentType:  campaign.contentType,
-      deliverables: campaign.deliverables ?? '',
+      goal:            campaign.goals?.[0] ?? GOAL_OPTIONS[0]!,
+      deliverables:    parseDeliverablesString(campaign.deliverables ?? ''),
+      targetAudience:  campaign.targetAudience ?? [],
+      hashtags:        campaign.hashtags ?? [],
+      objective:       campaign.objective ?? '',
+      creatorsNeeded:  String(campaign.creatorsNeeded ?? 1),
       status:       campaign.status ?? 'active',
       budgetMin:    String(campaign.budgetRaw ?? ''),
       budgetMax:    String(campaign.budgetMax ?? ''),
@@ -355,8 +300,6 @@ export default function CampaignDetailScreen() {
       if (!editForm.venue.trim()) errs.venue = t('campaignDetail.errVenueRequired');
     } else {
       if (editForm.platforms.length === 0) errs.platforms  = t('campaignDetail.errPlatformRequired');
-      if (!editForm.contentType)         errs.contentType  = t('campaignDetail.errContentTypeRequired');
-      if (!editForm.deliverables.trim()) errs.deliverables = t('campaignDetail.errDeliverablesRequired');
       if (!editForm.location.trim())     errs.location     = t('campaignDetail.errLocationRequired');
       if (!editForm.budgetMin.trim() || isNaN(Number(editForm.budgetMin))) {
         errs.budgetMin = t('campaignDetail.errMinBudgetRequired');
@@ -394,8 +337,13 @@ export default function CampaignDetailScreen() {
           description:  editForm.description.trim() || undefined,
           featureImageUrl: editForm.featureImageUrl,
           platforms:    editForm.platforms,
-          contentType:  editForm.contentType,
-          deliverables: editForm.deliverables.trim(),
+          goals:        [editForm.goal],
+          contentType:  editForm.goal,
+          deliverables: summarizeDeliverables(editForm.deliverables, [editForm.goal], t),
+          targetAudience: editForm.targetAudience,
+          hashtags:       editForm.hashtags,
+          objective:      editForm.objective.trim() || undefined,
+          creatorsNeeded: Number(editForm.creatorsNeeded) || undefined,
           status:       editForm.status,
           budgetMin:    Number(editForm.budgetMin),
           budgetMax:    Number(editForm.budgetMax),
@@ -753,41 +701,40 @@ export default function CampaignDetailScreen() {
               <ScrollView style={em.body} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
 
                 {/* ── Basic Info ── */}
-                <Text style={[em.sectionHdr, { color: C.textSecondary }]}>{t('campaignDetail.editSectionBasicInfo')}</Text>
+                <SectionCard title={t('campaignDetail.fieldTitle')} colors={C}>
+                  <TextInput
+                    style={[em.input, { backgroundColor: C.background, borderColor: editErrors.title ? ERROR_RED : C.border, color: C.text }]}
+                    value={editForm.title}
+                    onChangeText={(v) => updateEdit('title', v)}
+                    placeholder={t('campaignDetail.titlePlaceholder')}
+                    placeholderTextColor={C.textSecondary}
+                  />
+                  {editErrors.title ? <Text style={em.errTxt}>{editErrors.title}</Text> : null}
+                </SectionCard>
 
-                <Text style={[em.label, { color: C.text }]}>{t('campaignDetail.fieldTitle')} <Text style={{ color: C.brinjal1 }}>*</Text></Text>
-                <TextInput
-                  style={[em.input, { backgroundColor: C.background, borderColor: editErrors.title ? ERROR_RED : C.border, color: C.text }]}
-                  value={editForm.title}
-                  onChangeText={(v) => updateEdit('title', v)}
-                  placeholder={t('campaignDetail.titlePlaceholder')}
-                  placeholderTextColor={C.textSecondary}
-                />
-                {editErrors.title ? <Text style={em.errTxt}>{editErrors.title}</Text> : null}
+                <SectionCard title={t('createEvent.secFeatureImageTitle')} colors={C}>
+                  <FeatureImagePicker
+                    imageUrl={editForm.featureImageUrl}
+                    category={campaign?.categoryKey ?? campaign?.category ?? ''}
+                    uploading={featureImageUploading}
+                    onPick={handlePickFeatureImage}
+                    onClear={handleClearFeatureImage}
+                    colors={C}
+                  />
+                </SectionCard>
 
-                <Text style={[em.label, { color: C.text, marginTop: 16 }]}>{t('createEvent.secFeatureImageTitle')}</Text>
-                <FeatureImagePicker
-                  imageUrl={editForm.featureImageUrl}
-                  category={campaign?.categoryKey ?? campaign?.category ?? ''}
-                  uploading={featureImageUploading}
-                  onPick={handlePickFeatureImage}
-                  onClear={handleClearFeatureImage}
-                  colors={C}
-                />
-
-                <Text style={[em.label, { color: C.text, marginTop: 16 }]}>
-                  {t('campaignDetail.fieldDescription')} <Text style={[em.optional, { color: C.textSecondary }]}>{t('campaignDetail.fieldOptional')}</Text>
-                </Text>
-                <TextInput
-                  style={[em.textarea, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
-                  value={editForm.description}
-                  onChangeText={(v) => updateEdit('description', v)}
-                  placeholder={t('campaignDetail.descriptionPlaceholder')}
-                  placeholderTextColor={C.textSecondary}
-                  multiline
-                  numberOfLines={3}
-                  textAlignVertical="top"
-                />
+                <SectionCard title={t('campaignDetail.fieldDescription')} colors={C}>
+                  <TextInput
+                    style={[em.textarea, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
+                    value={editForm.description}
+                    onChangeText={(v) => updateEdit('description', v)}
+                    placeholder={t('campaignDetail.descriptionPlaceholder')}
+                    placeholderTextColor={C.textSecondary}
+                    multiline
+                    numberOfLines={3}
+                    textAlignVertical="top"
+                  />
+                </SectionCard>
 
                 {isOpenEvent ? (
                   <>
@@ -847,7 +794,7 @@ export default function CampaignDetailScreen() {
                               const next = checked ? editForm.benefits.filter((x) => x !== b) : [...editForm.benefits, b];
                               updateEdit('benefits', next);
                             }}>
-                            <Text style={[cg.txt, { color: checked ? C.brinjal1 : C.textSecondary, fontWeight: checked ? '700' : '500' }]}>{b}</Text>
+                            <Text style={[cg.chipText, { color: checked ? C.brinjal1 : C.textSecondary, fontWeight: checked ? '700' : '500' }]}>{b}</Text>
                           </Pressable>
                         );
                       })}
@@ -856,119 +803,102 @@ export default function CampaignDetailScreen() {
                 ) : (
                   <>
                     {/* ── Paid Campaign fields ── */}
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 24 }}>
-                      <Text style={[em.sectionHdr, { color: C.textSecondary }]}>{t('campaignDetail.editSectionPlatform')}</Text>
-                      {hasProposals && <Ionicons name="lock-closed" size={11} color={C.textSecondary} />}
-                    </View>
-                    {hasProposals && <Text style={[em.lockedNote, { color: C.textSecondary }]}>{t('campaignDetail.lockedFieldNote')}</Text>}
-                    <PlatformChipGroup options={allPlatforms.map((p) => p.name)} values={editForm.platforms} onChange={(v) => updateEdit('platforms', v)} colors={C} error={editErrors.platforms} max={3} disabled={hasProposals} />
+                    <SectionCard title={t('createEvent.secObjectiveTitle')} sub={t('createEvent.secObjectiveSub')} colors={C}>
+                      <TextInput
+                        style={[em.textarea, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
+                        value={editForm.objective}
+                        onChangeText={(v) => updateEdit('objective', v)}
+                        multiline
+                        numberOfLines={3}
+                        textAlignVertical="top"
+                        placeholderTextColor={C.textSecondary}
+                      />
+                    </SectionCard>
 
-                    <Text style={[em.sectionHdr, { color: C.textSecondary, marginTop: 24 }]}>{t('campaignDetail.editSectionRequirements')}</Text>
+                    <SectionCard title={t('createEvent.secGoalsTitle')} sub={t('createEvent.secGoalsSub')} colors={C}>
+                      <ChipGroup options={GOAL_OPTIONS} value={editForm.goal} onChange={(v) => updateEdit('goal', v)} colors={C} />
+                    </SectionCard>
 
-                    <Text style={[em.label, { color: C.text }]}>{t('campaignDetail.fieldContentType')} <Text style={{ color: C.brinjal1 }}>*</Text></Text>
-                    <ChipGroup options={CONTENT_TYPES} value={editForm.contentType} onChange={(v) => updateEdit('contentType', v)} colors={C} error={editErrors.contentType} />
+                    <SectionCard title={t('createEvent.secTargetAudienceTitle')} sub={t('createEvent.secTargetAudienceSub')} colors={C}>
+                      <ChipMultiGroup options={CREATOR_TYPES} values={editForm.targetAudience} onChange={(v) => updateEdit('targetAudience', v)} colors={C} />
+                    </SectionCard>
 
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 16 }}>
-                      <Text style={[em.label, { color: C.text }]}>{t('campaignDetail.fieldDeliverables')} <Text style={{ color: C.brinjal1 }}>*</Text></Text>
-                      {hasProposals && <Ionicons name="lock-closed" size={11} color={C.textSecondary} />}
-                    </View>
-                    {hasProposals && <Text style={[em.lockedNote, { color: C.textSecondary }]}>{t('campaignDetail.lockedFieldNote')}</Text>}
-                    <TextInput
-                      style={[em.textarea, { backgroundColor: hasProposals ? C.border : C.background, borderColor: editErrors.deliverables ? ERROR_RED : C.border, color: C.text, opacity: hasProposals ? 0.6 : 1 }]}
-                      value={editForm.deliverables}
-                      onChangeText={(v) => updateEdit('deliverables', v)}
-                      placeholder={t('campaignDetail.deliverablesPlaceholder')}
-                      placeholderTextColor={C.textSecondary}
-                      multiline
-                      numberOfLines={3}
-                      textAlignVertical="top"
-                      editable={!hasProposals}
-                    />
-                    {editErrors.deliverables ? <Text style={em.errTxt}>{editErrors.deliverables}</Text> : null}
+                    <SectionCard
+                      title={t('campaignDetail.editSectionPlatform')}
+                      sub={hasProposals ? t('campaignDetail.lockedFieldNote') : undefined}
+                      colors={C}>
+                      <PlatformChipGroup options={allPlatforms.map((p) => p.name)} values={editForm.platforms} onChange={(v) => updateEdit('platforms', v)} colors={C} error={editErrors.platforms} max={3} disabled={hasProposals} />
+                    </SectionCard>
 
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 24 }}>
-                      <Text style={[em.sectionHdr, { color: C.textSecondary }]}>{t('campaignDetail.editSectionBudget')}</Text>
-                      {hasProposals && <Ionicons name="lock-closed" size={11} color={C.textSecondary} />}
-                    </View>
-                    {hasProposals && <Text style={[em.lockedNote, { color: C.textSecondary }]}>{t('campaignDetail.lockedFieldNote')}</Text>}
+                    <SectionCard
+                      title={t('createEvent.secDeliverablesTitle')}
+                      sub={hasProposals ? t('campaignDetail.lockedFieldNote') : t('createEvent.secDeliverablesSub')}
+                      colors={C}>
+                      <DeliverablesCounterList value={editForm.deliverables} onChange={(v) => updateEdit('deliverables', v)} colors={C} t={t} disabled={hasProposals} />
+                    </SectionCard>
 
-                    <Text style={[em.label, { color: C.text }]}>{t('campaignDetail.fieldBudget')} <Text style={{ color: C.brinjal1 }}>*</Text></Text>
-                    <View style={em.budgetRow}>
-                      <View style={{ flex: 1 }}>
-                        <View style={[em.currencyWrap, { backgroundColor: hasProposals ? C.border : C.background, borderColor: editErrors.budgetMin ? ERROR_RED : C.border, opacity: hasProposals ? 0.6 : 1 }]}>
-                          <Text style={[em.currencySymbol, { color: C.textSecondary }]}>Rs.</Text>
-                          <TextInput
-                            style={[em.currencyInput, { color: C.text }]}
-                            value={editForm.budgetMin}
-                            onChangeText={(v) => updateEdit('budgetMin', v.replace(/[^0-9.]/g, ''))}
-                            placeholder={t('campaignDetail.budgetMinPlaceholder')}
-                            placeholderTextColor={C.textSecondary}
-                            keyboardType="numeric"
-                            editable={!hasProposals}
-                          />
-                        </View>
-                        {editErrors.budgetMin ? <Text style={em.errTxt}>{editErrors.budgetMin}</Text> : null}
-                      </View>
-                      <Text style={[em.budgetDash, { color: C.textSecondary }]}>–</Text>
-                      <View style={{ flex: 1 }}>
-                        <View style={[em.currencyWrap, { backgroundColor: hasProposals ? C.border : C.background, borderColor: editErrors.budgetMax ? ERROR_RED : C.border, opacity: hasProposals ? 0.6 : 1 }]}>
-                          <Text style={[em.currencySymbol, { color: C.textSecondary }]}>Rs.</Text>
-                          <TextInput
-                            style={[em.currencyInput, { color: C.text }]}
-                            value={editForm.budgetMax}
-                            onChangeText={(v) => updateEdit('budgetMax', v.replace(/[^0-9.]/g, ''))}
-                            placeholder={t('campaignDetail.budgetMaxPlaceholder')}
-                            placeholderTextColor={C.textSecondary}
-                            keyboardType="numeric"
-                            editable={!hasProposals}
-                          />
-                        </View>
-                        {editErrors.budgetMax ? <Text style={em.errTxt}>{editErrors.budgetMax}</Text> : null}
-                      </View>
-                    </View>
+                    <SectionCard title={t('createEvent.secHashtagsTitle')} colors={C}>
+                      <HashtagEditor hashtags={editForm.hashtags} onChange={(v) => updateEdit('hashtags', v)} colors={C} t={t} />
+                    </SectionCard>
 
-                    <Text style={[em.sectionHdr, { color: C.textSecondary, marginTop: 24 }]}>{t('campaignDetail.editSectionLogistics')}</Text>
+                    <SectionCard
+                      title={t('createEvent.secBudgetTitle')}
+                      sub={hasProposals ? t('campaignDetail.lockedFieldNote') : t('createEvent.secBudgetSub')}
+                      colors={C}>
+                      <BudgetTierPicker
+                        budgetMin={Number(editForm.budgetMin) || 0}
+                        budgetMax={Number(editForm.budgetMax) || 0}
+                        onChange={(min, max) => { updateEdit('budgetMin', String(min)); updateEdit('budgetMax', String(max)); }}
+                        colors={C}
+                        error={editErrors.budgetMin || editErrors.budgetMax}
+                        disabled={hasProposals}
+                      />
+                    </SectionCard>
 
-                    <Text style={[em.label, { color: C.text }]}>{t('campaignDetail.fieldApplicationDeadline')} <Text style={{ color: C.brinjal1 }}>*</Text></Text>
-                    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                      style={[em.dateTrigger, { backgroundColor: C.background, borderColor: editErrors.deadline ? ERROR_RED : C.border }]}
-                      onPress={() => setCalOpen(true)}>
-                      <Text style={[em.dateTxt, { color: editForm.deadline ? C.text : C.textSecondary }]}>
-                        {editForm.deadline ? fmtDate(editForm.deadline) : t('campaignDetail.datePlaceholder')}
-                      </Text>
-                      <FontAwesome5 name="calendar-alt" size={14} color={C.textSecondary} />
-                    </Pressable>
-                    {editErrors.deadline ? <Text style={em.errTxt}>{editErrors.deadline}</Text> : null}
+                    <SectionCard title={t('createEvent.secCreatorsNeededTitle')} sub={t('createEvent.secCreatorsNeededSub')} colors={C}>
+                      <Stepper value={Number(editForm.creatorsNeeded) || 1} onChange={(v) => updateEdit('creatorsNeeded', String(v))} colors={C} />
+                    </SectionCard>
 
-                    <Text style={[em.label, { color: C.text, marginTop: 16 }]}>
-                      {t('campaignDetail.fieldLocation')} <Text style={{ color: C.brinjal1 }}>*</Text>
-                    </Text>
-                    <PlacesAutocompleteInput
-                      value={editForm.location}
-                      onChangeText={(v) => updateEdit('location', v)}
-                      placeholder="e.g. Kathmandu, New York or Remote"
-                      types="geocode"
-                      error={editErrors.location}
-                    />
+                    <SectionCard title={t('createEvent.secDeadlineTitle')} sub={t('createEvent.secDeadlineSub')} colors={C}>
+                      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                        style={[em.dateTrigger, { backgroundColor: C.background, borderColor: editErrors.deadline ? ERROR_RED : C.border }]}
+                        onPress={() => setCalOpen(true)}>
+                        <Text style={[em.dateTxt, { color: editForm.deadline ? C.text : C.textSecondary }]}>
+                          {editForm.deadline ? fmtDate(editForm.deadline) : t('campaignDetail.datePlaceholder')}
+                        </Text>
+                        <FontAwesome5 name="calendar-alt" size={14} color={C.textSecondary} />
+                      </Pressable>
+                      {editErrors.deadline ? <Text style={em.errTxt}>{editErrors.deadline}</Text> : null}
+                    </SectionCard>
+
+                    <SectionCard title={t('campaignDetail.fieldLocation')} colors={C}>
+                      <PlacesAutocompleteInput
+                        value={editForm.location}
+                        onChangeText={(v) => updateEdit('location', v)}
+                        placeholder="e.g. Kathmandu, New York or Remote"
+                        types="geocode"
+                        error={editErrors.location}
+                      />
+                    </SectionCard>
                   </>
                 )}
 
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 24 }}>
-                  <Text style={[em.label, { color: C.text }]}>{t('campaignDetail.fieldStatus')}</Text>
-                  {hasProposals && <Ionicons name="lock-closed" size={11} color={C.textSecondary} />}
-                </View>
-                {hasProposals && <Text style={[em.lockedNote, { color: C.textSecondary }]}>{t('campaignDetail.lockedFieldNote')}</Text>}
-                <ChipGroup
-                  options={STATUS_OPTIONS.map((o) => t(o.labelKey))}
-                  value={t(STATUS_OPTIONS.find((o) => o.value === editForm.status)?.labelKey ?? 'campaignDetail.statusActive')}
-                  onChange={(label) => {
-                    if (hasProposals) return;
-                    const opt = STATUS_OPTIONS.find((o) => t(o.labelKey) === label);
-                    if (opt) updateEdit('status', opt.value);
-                  }}
-                  colors={C}
-                  disabled={hasProposals}
-                />
+                <SectionCard
+                  title={t('campaignDetail.fieldStatus')}
+                  sub={hasProposals ? t('campaignDetail.lockedFieldNote') : undefined}
+                  colors={C}>
+                  <ChipGroup
+                    options={STATUS_OPTIONS.map((o) => t(o.labelKey))}
+                    value={t(STATUS_OPTIONS.find((o) => o.value === editForm.status)?.labelKey ?? 'campaignDetail.statusActive')}
+                    onChange={(label) => {
+                      if (hasProposals) return;
+                      const opt = STATUS_OPTIONS.find((o) => t(o.labelKey) === label);
+                      if (opt) updateEdit('status', opt.value);
+                    }}
+                    colors={C}
+                    disabled={hasProposals}
+                  />
+                </SectionCard>
 
                 {/* ── Featured ── */}
                 <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}

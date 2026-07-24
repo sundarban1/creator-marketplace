@@ -287,6 +287,9 @@ export const campaignService = {
     minFollowers?: number;
     contentType?: string;
     deliverables?: string;
+    objective?: string;
+    targetAudience?: string[];
+    hashtags?: string[];
     paymentType?: string;
     status?: Campaign['status'];
     budgetMin?: number;

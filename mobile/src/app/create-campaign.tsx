@@ -27,19 +27,15 @@ import { pickAndUpload } from '@/utilities/uploadImage';
 import { RecommendedCreatorsModal } from '@/features/business/components/RecommendedCreatorsModal';
 import { getTemplateImage } from '@/features/creator/data/templateImages';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import {
+  GOAL_OPTIONS, CREATOR_TYPES, DELIVERABLE_TYPES, DEFAULT_DELIVERABLES, summarizeDeliverables,
+} from '@/features/business/constants/campaignForm';
+import {
+  SectionCard, ChipGroup, ChipMultiGroup, PlatformChipGroup, BudgetTierPicker, Stepper,
+  DeliverablesCounterList, HashtagEditor, sc, cg,
+} from '@/features/business/components/CampaignFormControls';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-
-const CREATOR_TYPES = [
-  'Food Creator',
-  'Travel Creator',
-  'Lifestyle Creator',
-  'Fashion Creator',
-  'Tech Creator',
-  'Fitness Creator',
-  'Student Creator',
-  'Any Creator',
-];
 
 const AI_PROMPT_EXAMPLES = [
   "I want to promote my cafe's new iced coffee.",
@@ -49,40 +45,8 @@ const AI_PROMPT_EXAMPLES = [
   'Promote our mobile app to university students.',
 ];
 
-const DELIVERABLE_TYPES: { key: string; labelKey: string }[] = [
-  { key: 'REEL',                  labelKey: 'createEvent.deliverableReel' },
-  { key: 'STORY',                 labelKey: 'createEvent.deliverableStory' },
-  { key: 'PHOTO_POST',            labelKey: 'createEvent.deliverablePhotoPost' },
-  { key: 'CAROUSEL_POST',         labelKey: 'createEvent.deliverableCarouselPost' },
-  { key: 'VISIT_STORE',           labelKey: 'createEvent.deliverableVisitStore' },
-  { key: 'PRODUCT_REVIEW_VIDEO',  labelKey: 'createEvent.deliverableProductReviewVideo' },
-  { key: 'EVENT_COVERAGE_VIDEO',  labelKey: 'createEvent.deliverableEventCoverageVideo' },
-  { key: 'MENTION_IN_CAPTION',    labelKey: 'createEvent.deliverableMentionInCaption' },
-  { key: 'TAG_BUSINESS',          labelKey: 'createEvent.deliverableTagBusiness' },
-  { key: 'GOOGLE_REVIEW',         labelKey: 'createEvent.deliverableGoogleReview' },
-];
-
-const DEFAULT_DELIVERABLES: Record<string, number> = Object.fromEntries(
-  DELIVERABLE_TYPES.map((d) => [d.key, 0])
-);
-
-function summarizeDeliverables(deliverables: Record<string, number>, fallback: string[], t: TFn): string {
-  const parts = DELIVERABLE_TYPES
-    .filter((d) => (deliverables[d.key] ?? 0) > 0)
-    .map((d) => `${deliverables[d.key]} ${t(d.labelKey)}`);
-  return parts.length > 0 ? parts.join(', ') : fallback.join(', ');
-}
-
 const ERROR_RED = '#EF4444';
 const MIN_BUDGET_PER_CREATOR = 500;
-
-const GOAL_OPTIONS = ['Brand Awareness', 'More Customers', 'Sales', 'Followers & Engagement'];
-
-const BUDGET_TIERS = [
-  { key: 'SMALL',  min: 5000,  max: 10000 },
-  { key: 'MEDIUM', min: 10000, max: 25000 },
-  { key: 'LARGE',  min: 25000, max: 50000 },
-] as const;
 
 const BENEFITS = [
   'Free food & drinks',
@@ -465,211 +429,6 @@ const rg = StyleSheet.create({
   error: { fontSize: 12, color: ERROR_RED, fontFamily: F.regular },
 });
 
-// ─── ChipMultiGroup ───────────────────────────────────────────────────────────
-
-function ChipMultiGroup({
-  values, onChange, options, colors, error,
-}: {
-  values: string[];
-  onChange: (v: string[]) => void;
-  options: string[];
-  colors: ReturnType<typeof useAppColors>;
-  error?: string;
-}) {
-  const C = colors;
-  function toggle(opt: string) {
-    if (opt === 'Any Creator') { onChange(['Any Creator']); return; }
-    const next = values.filter((v) => v !== 'Any Creator');
-    if (next.includes(opt)) onChange(next.filter((v) => v !== opt));
-    else onChange([...next, opt]);
-  }
-  return (
-    <View style={{ gap: 6 }}>
-      <View style={cg.wrap}>
-        {options.map((opt) => {
-          const sel = values.includes(opt);
-          return (
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-              key={opt}
-              style={[cg.chip, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? C.primaryLight : C.surface }]}
-              onPress={() => toggle(opt)}>
-              <Text style={[cg.chipText, { color: sel ? C.brinjal1 : C.textSecondary, fontWeight: sel ? '700' : '500' }]}>{opt}</Text>
-            </Pressable>
-          );
-        })}
-      </View>
-      {error && <Text style={cg.error}>{error}</Text>}
-    </View>
-  );
-}
-
-const cg = StyleSheet.create({
-  wrap:     { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip:     { paddingHorizontal: 14, paddingVertical: 9, borderRadius: RADIUS.full, borderWidth: 1.5 },
-  chipText: { fontSize: 13, fontFamily: F.medium },
-  error:    { fontSize: 12, color: ERROR_RED, fontFamily: F.regular },
-});
-
-// ─── ChipGroup (single select) ────────────────────────────────────────────────
-
-function ChipGroup({
-  options, value, onChange, colors, error,
-}: {
-  options: readonly string[];
-  value: string;
-  onChange: (v: string) => void;
-  colors: ReturnType<typeof useAppColors>;
-  error?: string;
-}) {
-  const C = colors;
-  return (
-    <View style={{ gap: 6 }}>
-      <View style={cg.wrap}>
-        {options.map((opt) => {
-          const sel = value === opt;
-          return (
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-              key={opt}
-              style={[cg.chip, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? C.primaryLight : C.surface }]}
-              onPress={() => onChange(opt)}>
-              <Text style={[cg.chipText, { color: sel ? C.brinjal1 : C.textSecondary, fontWeight: sel ? '700' : '500' }]}>{opt}</Text>
-            </Pressable>
-          );
-        })}
-      </View>
-      {error && <Text style={cg.error}>{error}</Text>}
-    </View>
-  );
-}
-
-// ─── PlatformChipGroup (multi-select, capped) ──────────────────────────────────
-
-function PlatformChipGroup({
-  options, values, onChange, colors, error, max,
-}: {
-  options: readonly string[];
-  values: string[];
-  onChange: (v: string[]) => void;
-  colors: ReturnType<typeof useAppColors>;
-  error?: string;
-  max: number;
-}) {
-  const C = colors;
-  function toggle(opt: string) {
-    if (values.includes(opt)) { onChange(values.filter((v) => v !== opt)); return; }
-    if (values.length >= max) return;
-    onChange([...values, opt]);
-  }
-  return (
-    <View style={{ gap: 6 }}>
-      <View style={cg.wrap}>
-        {options.map((opt) => {
-          const sel = values.includes(opt);
-          const disabled = !sel && values.length >= max;
-          return (
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-              key={opt}
-              disabled={disabled}
-              style={[cg.chip, {
-                borderColor: sel ? C.brinjal1 : C.border,
-                backgroundColor: sel ? C.primaryLight : C.surface,
-                opacity: disabled ? 0.4 : 1,
-              }]}
-              onPress={() => toggle(opt)}>
-              <Text style={[cg.chipText, { color: sel ? C.brinjal1 : C.textSecondary, fontWeight: sel ? '700' : '500' }]}>{opt}</Text>
-            </Pressable>
-          );
-        })}
-      </View>
-      {error && <Text style={cg.error}>{error}</Text>}
-    </View>
-  );
-}
-
-// ─── BudgetTierPicker ───────────────────────────────────────────────────────
-
-function BudgetTierPicker({
-  budgetMin, budgetMax, onChange, colors, error,
-}: {
-  budgetMin: number;
-  budgetMax: number;
-  onChange: (min: number, max: number) => void;
-  colors: ReturnType<typeof useAppColors>;
-  error?: string;
-}) {
-  const C = colors;
-  const { t } = useLanguage();
-  const matchedTier = BUDGET_TIERS.find((tier) => tier.min === budgetMin && tier.max === budgetMax);
-  const [customForced, setCustomForced] = useState(false);
-  const isCustom = customForced || !matchedTier;
-
-  const TIER_COPY: Record<(typeof BUDGET_TIERS)[number]['key'], { label: string; range: string }> = {
-    SMALL:  { label: t('createEvent.budgetTierSmallLabel'),  range: t('createEvent.budgetTierSmallRange') },
-    MEDIUM: { label: t('createEvent.budgetTierMediumLabel'), range: t('createEvent.budgetTierMediumRange') },
-    LARGE:  { label: t('createEvent.budgetTierLargeLabel'),  range: t('createEvent.budgetTierLargeRange') },
-  };
-
-  return (
-    <View style={{ gap: 10 }}>
-      <View style={bt.grid}>
-        {BUDGET_TIERS.map((tier) => {
-          const sel = !isCustom && matchedTier?.key === tier.key;
-          return (
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-              key={tier.key}
-              style={[bt.card, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? C.primaryLight : C.surface }]}
-              onPress={() => { setCustomForced(false); onChange(tier.min, tier.max); }}>
-              <Text style={[bt.cardLabel, { color: sel ? C.brinjal1 : C.text }]}>{TIER_COPY[tier.key].label}</Text>
-              <Text style={[bt.cardRange, { color: sel ? C.brinjal1 : C.textSecondary }]}>{TIER_COPY[tier.key].range}</Text>
-            </Pressable>
-          );
-        })}
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-          style={[bt.cardFull, { borderColor: isCustom ? C.brinjal1 : C.border, backgroundColor: isCustom ? C.primaryLight : C.surface }]}
-          onPress={() => setCustomForced(true)}>
-          <Ionicons name="create-outline" size={16} color={isCustom ? C.brinjal1 : C.textSecondary} />
-          <View style={{ flex: 1 }}>
-            <Text style={[bt.cardLabel, { color: isCustom ? C.brinjal1 : C.text }]}>{t('createEvent.budgetTierCustomLabel')}</Text>
-            <Text style={[bt.cardRange, { color: isCustom ? C.brinjal1 : C.textSecondary }]}>{t('createEvent.budgetTierCustomSub')}</Text>
-          </View>
-        </Pressable>
-      </View>
-
-      {isCustom && (
-        <View style={ai.budgetRow}>
-          <View style={ai.budgetInputWrap}>
-            <Text style={[ai.budgetLabel, { color: C.textSecondary }]}>{t('createEvent.aiBudgetMinLabel')}</Text>
-            <TextInput
-              style={[s.input, { backgroundColor: C.background, borderColor: error ? ERROR_RED : C.border, color: C.text }]}
-              value={String(budgetMin)}
-              onChangeText={(v) => onChange(parseInt(v.replace(/[^0-9]/g, ''), 10) || 0, budgetMax)}
-              keyboardType="number-pad"
-            />
-          </View>
-          <View style={ai.budgetInputWrap}>
-            <Text style={[ai.budgetLabel, { color: C.textSecondary }]}>{t('createEvent.aiBudgetMaxLabel')}</Text>
-            <TextInput
-              style={[s.input, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
-              value={String(budgetMax)}
-              onChangeText={(v) => onChange(budgetMin, parseInt(v.replace(/[^0-9]/g, ''), 10) || 0)}
-              keyboardType="number-pad"
-            />
-          </View>
-        </View>
-      )}
-      {error && <Text style={s.errorText}>{error}</Text>}
-    </View>
-  );
-}
-
-const bt = StyleSheet.create({
-  grid:      { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  card:      { width: '31%', borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 10, paddingVertical: 12, alignItems: 'center', gap: 2 },
-  cardLabel: { fontSize: 13, fontFamily: F.semibold },
-  cardRange: { fontSize: 10, fontFamily: F.regular, textAlign: 'center' },
-  cardFull:  { width: '100%', flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 12 },
-});
-
 // ─── CalendarGrid ─────────────────────────────────────────────────────────────
 
 function CalendarGrid({ value, onChange, colors }: {
@@ -801,63 +560,6 @@ function DeadlinePicker({ value, onChange, error, colors, label }: {
     </>
   );
 }
-
-// ─── Stepper ─────────────────────────────────────────────────────────────────
-
-function Stepper({ value, onChange, min = 1, max = 50, colors }: {
-  value: number; onChange: (v: number) => void; min?: number; max?: number; colors: ReturnType<typeof useAppColors>;
-}) {
-  const C = colors;
-  const { t } = useLanguage();
-  return (
-    <View style={[st.wrap, { backgroundColor: C.surface, borderColor: C.border }]}>
-      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[st.btn, { backgroundColor: value <= min ? C.background : C.primaryLight }]}
-        onPress={() => onChange(Math.max(min, value - 1))} disabled={value <= min}>
-        <Text style={[st.btnTxt, { color: value <= min ? C.border : C.brinjal1 }]}>−</Text>
-      </Pressable>
-      <View style={st.center}>
-        <Text style={[st.value, { color: C.brinjal1 }]}>{value}</Text>
-        <Text style={[st.unit, { color: C.textSecondary }]}>{value !== 1 ? t('createEvent.stepperCreators') : t('createEvent.stepperCreator')}</Text>
-      </View>
-      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[st.btn, { backgroundColor: value >= max ? C.background : C.primaryLight }]}
-        onPress={() => onChange(Math.min(max, value + 1))} disabled={value >= max}>
-        <Text style={[st.btnTxt, { color: value >= max ? C.border : C.brinjal1 }]}>+</Text>
-      </Pressable>
-    </View>
-  );
-}
-
-const st = StyleSheet.create({
-  wrap:   { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.md, borderWidth: 1.5, overflow: 'hidden' },
-  btn:    { width: 52, height: 52, justifyContent: 'center', alignItems: 'center' },
-  btnTxt: { fontSize: 24, lineHeight: 28, fontFamily: F.regular },
-  center: { flex: 1, alignItems: 'center' },
-  value:  { fontSize: 24, fontFamily: F.bold },
-  unit:   { fontSize: 11, marginTop: 1, fontFamily: F.medium },
-});
-
-// ─── SectionCard ──────────────────────────────────────────────────────────────
-
-function SectionCard({ title, sub, children, colors }: {
-  title?: string; sub?: string; children: React.ReactNode; colors: ReturnType<typeof useAppColors>;
-}) {
-  const C = colors;
-  return (
-    <View style={[sc.card, { backgroundColor: C.surface }]}>
-      {title && <Text style={[sc.title, { color: C.text }]}>{title}</Text>}
-      {sub && <Text style={[sc.sub, { color: C.textSecondary }]}>{sub}</Text>}
-      {children}
-    </View>
-  );
-}
-
-// ─── FeatureImagePicker ───────────────────────────────────────────────────────
-
-const sc = StyleSheet.create({
-  card:  { borderRadius: RADIUS.lg, padding: 16, gap: 10, ...SHADOW.card },
-  title: { fontSize: 14, fontFamily: F.bold },
-  sub:   { fontSize: 12, lineHeight: 18, fontFamily: F.regular },
-});
 
 // ─── FeaturedToggle ───────────────────────────────────────────────────────────
 
@@ -1057,7 +759,6 @@ export default function CreateCampaignScreen() {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiPlaceholder] = useState(() => AI_PROMPT_EXAMPLES[Math.floor(Math.random() * AI_PROMPT_EXAMPLES.length)]);
   const [aiLocationError, setAiLocationError] = useState<string | undefined>();
-  const [newHashtag, setNewHashtag] = useState('');
   const [descSuggestLoading, setDescSuggestLoading] = useState(false);
   const [featureImageUploading, setFeatureImageUploading] = useState(false);
 
@@ -1714,80 +1415,22 @@ export default function CreateCampaignScreen() {
 
                   {/* Deliverables */}
                   <SectionCard title={t('createEvent.secDeliverablesTitle')} sub={t('createEvent.secDeliverablesSub')} colors={C}>
-                    <View style={{ gap: 2 }}>
-                      {DELIVERABLE_TYPES.map((item, i) => {
-                        const count = form.deliverables[item.key] ?? 0;
-                        const active = count > 0;
-                        return (
-                          <View
-                            key={item.key}
-                            style={[
-                              dlv.row,
-                              { borderBottomColor: C.border },
-                              i === DELIVERABLE_TYPES.length - 1 && { borderBottomWidth: 0 },
-                            ]}>
-                            <View style={[dlv.bullet, { backgroundColor: active ? C.brinjal1 : C.border }]} />
-                            <Text style={[dlv.label, { color: active ? C.text : C.textSecondary, fontFamily: active ? F.semibold : F.regular }]}>
-                              {t(item.labelKey)}
-                            </Text>
-                            <View style={[dlv.counter, { borderColor: active ? C.brinjal1 : C.border, backgroundColor: C.background }]}>
-                              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                                style={dlv.counterBtn}
-                                hitSlop={4}
-                                onPress={() => update('deliverables', { ...form.deliverables, [item.key]: Math.max(0, count - 1) })}>
-                                <Text style={[dlv.counterBtnTxt, { color: count <= 0 ? C.border : C.brinjal1 }]}>−</Text>
-                              </Pressable>
-                              <Text style={[dlv.counterVal, { color: active ? C.brinjal1 : C.textSecondary }]}>{count}</Text>
-                              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                                style={dlv.counterBtn}
-                                hitSlop={4}
-                                onPress={() => update('deliverables', { ...form.deliverables, [item.key]: Math.min(10, count + 1) })}>
-                                <Text style={[dlv.counterBtnTxt, { color: C.brinjal1 }]}>+</Text>
-                              </Pressable>
-                            </View>
-                          </View>
-                        );
-                      })}
-                    </View>
+                    <DeliverablesCounterList
+                      value={form.deliverables}
+                      onChange={(v) => update('deliverables', v)}
+                      colors={C}
+                      t={t}
+                    />
                   </SectionCard>
 
                   {/* Hashtags */}
                   <SectionCard title={t('createEvent.secHashtagsTitle')} colors={C}>
-                    <View style={ai.chipWrap}>
-                      {form.hashtags.map((tag) => (
-                        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                          key={tag}
-                          style={[ai.hashtagChip, { borderColor: C.brinjal1, backgroundColor: C.primaryLight }]}
-                          onPress={() => update('hashtags', form.hashtags.filter((h) => h !== tag))}>
-                          <Text style={[ai.hashtagChipText, { color: C.brinjal1 }]}>#{tag.replace(/^#/, '')}</Text>
-                          <Ionicons name="close" size={13} color={C.brinjal1} />
-                        </Pressable>
-                      ))}
-                    </View>
-                    <View style={ai.addChip}>
-                      <TextInput
-                        style={[ai.addChipInput, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
-                        value={newHashtag}
-                        onChangeText={setNewHashtag}
-                        placeholder={t('createEvent.addHashtagPlaceholder')}
-                        placeholderTextColor={C.textSecondary}
-                        autoCapitalize="none"
-                        onSubmitEditing={() => {
-                          const v = newHashtag.trim().replace(/^#/, '');
-                          if (v && !form.hashtags.includes(v)) update('hashtags', [...form.hashtags, v]);
-                          setNewHashtag('');
-                        }}
-                      />
-                      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                        style={[ai.addChipBtn, { backgroundColor: C.brinjal1 }]}
-                        onPress={() => {
-                          const v = newHashtag.trim().replace(/^#/, '');
-                          if (v && !form.hashtags.includes(v)) update('hashtags', [...form.hashtags, v]);
-                          setNewHashtag('');
-                        }}>
-                        <Ionicons name="add" size={20} color="#fff" />
-                      </Pressable>
-                    </View>
+                    <HashtagEditor
+                      hashtags={form.hashtags}
+                      onChange={(v) => update('hashtags', v)}
+                      colors={C}
+                      t={t}
+                    />
                   </SectionCard>
 
                   {/* Budget */}
@@ -2206,28 +1849,10 @@ const s = StyleSheet.create({
 
 });
 
-const dlv = StyleSheet.create({
-  row:        { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, borderBottomWidth: 1 },
-  bullet:     { width: 7, height: 7, borderRadius: RADIUS.full, flexShrink: 0 },
-  label:      { flex: 1, fontSize: 14 },
-  counter:    { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.sm, borderWidth: 1.5, overflow: 'hidden' },
-  counterBtn: { width: 36, height: 36, justifyContent: 'center', alignItems: 'center' },
-  counterBtnTxt: { fontSize: 20, lineHeight: 24, fontWeight: '300' },
-  counterVal: { width: 28, textAlign: 'center', fontSize: 14, fontFamily: F.bold },
-});
-
 const ai = StyleSheet.create({
   charCount:    { fontSize: 11, fontFamily: F.regular, textAlign: 'right', marginTop: 4 },
   exampleLabel: { fontSize: 11, fontFamily: F.bold, textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 4 },
   exampleChip:  { borderRadius: RADIUS.sm, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 8, maxWidth: '100%' },
   exampleChipText: { fontSize: 12, fontFamily: F.regular },
   chipWrap:     { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  hashtagChip:  { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 7, borderRadius: RADIUS.sm, borderWidth: 1.5 },
-  hashtagChipText: { fontSize: 13, fontFamily: F.medium },
-  addChip:      { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  addChipInput: { flex: 1, borderRadius: RADIUS.sm, borderWidth: 1.5, paddingHorizontal: 12, height: 40, fontSize: 13, fontFamily: F.regular },
-  addChipBtn:   { width: 40, height: 40, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center' },
-  budgetRow:    { flexDirection: 'row', gap: 10 },
-  budgetInputWrap: { flex: 1, gap: 4 },
-  budgetLabel:  { fontSize: 11, fontFamily: F.medium },
 });

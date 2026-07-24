@@ -408,6 +408,9 @@ export class CampaignRepository {
     venue: string | null;
     benefits: string[];
     eventStatus: 'OPEN' | 'FULL' | 'CLOSED';
+    objective: string;
+    targetAudience: string[];
+    hashtags: string[];
   }>) {
     return prisma.campaign.update({
       where: { id },
