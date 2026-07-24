@@ -10,6 +10,7 @@ import { DrawerContext } from '@/context/DrawerContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { BusinessDrawerMenu } from '@/features/business/components/BusinessDrawerMenu';
+import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { COLORS, RADIUS, SHADOW } from '@/utilities/constants';
 import { useNotificationBadge } from '@/context/NotificationContext';
 import { scrollToTopEvents } from '@/lib/scrollToTopEvents';
@@ -269,37 +270,39 @@ export default function BusinessTabsLayout() {
   return (
     <DrawerContext.Provider value={{ openDrawer: () => setDrawerOpen(true) }}>
       <View style={{ flex: 1 }}>
-        <Tabs
-          screenOptions={{ headerShown: false }}
-          tabBar={(props) => (
-            <CustomTabBar
-              state={props.state}
-              navigation={props.navigation}
-              chatBadge={badgeCount}
+        <MaxWidthContainer>
+          <Tabs
+            screenOptions={{ headerShown: false }}
+            tabBar={(props) => (
+              <CustomTabBar
+                state={props.state}
+                navigation={props.navigation}
+                chatBadge={badgeCount}
+              />
+            )}
+          >
+            <Tabs.Screen name="index"    options={{ title: t('business.tab.home') }} />
+            <Tabs.Screen name="campaigns" options={{ title: t('business.tab.events') }} />
+            {/* proposals.tsx stays a reachable route (linked from the home
+                quick actions and the pending-proposals banner) but is no
+                longer a bottom-tab destination — per-campaign proposals now
+                open via campaign-proposals.tsx from each event card instead. */}
+            <Tabs.Screen name="proposals" options={{ href: null }} />
+            <Tabs.Screen
+              name="messages"
+              listeners={({ navigation }) => ({
+                tabPress: (e) => {
+                  e.preventDefault();
+                  navigation.navigate('messages', { screen: 'index' });
+                },
+              })}
+              options={{ title: t('business.tab.messages') }}
             />
-          )}
-        >
-          <Tabs.Screen name="index"    options={{ title: t('business.tab.home') }} />
-          <Tabs.Screen name="campaigns" options={{ title: t('business.tab.events') }} />
-          {/* proposals.tsx stays a reachable route (linked from the home
-              quick actions and the pending-proposals banner) but is no
-              longer a bottom-tab destination — per-campaign proposals now
-              open via campaign-proposals.tsx from each event card instead. */}
-          <Tabs.Screen name="proposals" options={{ href: null }} />
-          <Tabs.Screen
-            name="messages"
-            listeners={({ navigation }) => ({
-              tabPress: (e) => {
-                e.preventDefault();
-                navigation.navigate('messages', { screen: 'index' });
-              },
-            })}
-            options={{ title: t('business.tab.messages') }}
-          />
-          <Tabs.Screen name="notifications" options={{ title: t('business.tab.notifications') }} />
-          {/* create.tsx is navigated via the create button docked in the tab bar, not a visible tab */}
-          <Tabs.Screen name="create" options={{ href: null }} />
-        </Tabs>
+            <Tabs.Screen name="notifications" options={{ title: t('business.tab.notifications') }} />
+            {/* create.tsx is navigated via the create button docked in the tab bar, not a visible tab */}
+            <Tabs.Screen name="create" options={{ href: null }} />
+          </Tabs>
+        </MaxWidthContainer>
 
         <BusinessDrawerMenu
           visible={drawerOpen}
