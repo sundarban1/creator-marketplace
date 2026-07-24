@@ -409,6 +409,7 @@ export class CampaignRepository {
     benefits: string[];
     eventStatus: 'OPEN' | 'FULL' | 'CLOSED';
     objective: string;
+    contentGuidelines: string[];
     targetAudience: string[];
     hashtags: string[];
   }>) {

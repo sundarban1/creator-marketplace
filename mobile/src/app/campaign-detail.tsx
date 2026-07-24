@@ -145,6 +145,7 @@ type EditForm = {
   targetAudience: string[];
   hashtags: string[];
   objective: string;
+  contentGuidelines: string[];
   creatorsNeeded: string;
   status: NonNullable<Campaign['status']>;
   budgetMin: string;
@@ -207,7 +208,7 @@ export default function CampaignDetailScreen() {
   const [editForm, setEditForm] = useState<EditForm>({
     title: '', description: '', featureImageUrl: null, platforms: [],
     goal: GOAL_OPTIONS[0]!, deliverables: DEFAULT_DELIVERABLES, targetAudience: [], hashtags: [],
-    objective: '', creatorsNeeded: '1',
+    objective: '', contentGuidelines: [], creatorsNeeded: '1',
     status: 'active', budgetMin: '', budgetMax: '', deadline: null,
     location: '', isFeatured: false,
     eventDate: null, venue: '', capacity: '20', benefits: [],
@@ -265,6 +266,7 @@ export default function CampaignDetailScreen() {
       targetAudience:  campaign.targetAudience ?? [],
       hashtags:        campaign.hashtags ?? [],
       objective:       campaign.objective ?? '',
+      contentGuidelines: campaign.contentGuidelines ?? [],
       creatorsNeeded:  String(campaign.creatorsNeeded ?? 1),
       status:       campaign.status ?? 'active',
       budgetMin:    String(campaign.budgetRaw ?? ''),
@@ -343,6 +345,7 @@ export default function CampaignDetailScreen() {
           targetAudience: editForm.targetAudience,
           hashtags:       editForm.hashtags,
           objective:      editForm.objective.trim() || undefined,
+          contentGuidelines: editForm.contentGuidelines.map((x) => x.trim()).filter(Boolean),
           creatorsNeeded: Number(editForm.creatorsNeeded) || undefined,
           status:       editForm.status,
           budgetMin:    Number(editForm.budgetMin),
@@ -835,6 +838,18 @@ export default function CampaignDetailScreen() {
                       sub={hasProposals ? t('campaignDetail.lockedFieldNote') : t('createEvent.secDeliverablesSub')}
                       colors={C}>
                       <DeliverablesCounterList value={editForm.deliverables} onChange={(v) => updateEdit('deliverables', v)} colors={C} t={t} disabled={hasProposals} />
+                    </SectionCard>
+
+                    <SectionCard title={t('createEvent.secContentGuidelinesTitle')} sub={t('createEvent.secContentGuidelinesSub')} colors={C}>
+                      <TextInput
+                        style={[em.textarea, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
+                        value={editForm.contentGuidelines.join('\n')}
+                        onChangeText={(v) => updateEdit('contentGuidelines', v.split('\n'))}
+                        multiline
+                        numberOfLines={4}
+                        textAlignVertical="top"
+                        placeholderTextColor={C.textSecondary}
+                      />
                     </SectionCard>
 
                     <SectionCard title={t('createEvent.secHashtagsTitle')} colors={C}>

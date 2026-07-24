@@ -288,6 +288,7 @@ export const campaignService = {
     contentType?: string;
     deliverables?: string;
     objective?: string;
+    contentGuidelines?: string[];
     targetAudience?: string[];
     hashtags?: string[];
     paymentType?: string;

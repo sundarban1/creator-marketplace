@@ -15,9 +15,11 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { WebView } from 'react-native-webview';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage, type TFn } from '@/context/LanguageContext';
 import { campaignService } from '@/services/campaign';
+import { EVENT_LOADING_SVG } from '@/lib/eventLoadingSvg';
 import { profileService } from '@/services/profile';
 import { useCategories } from '@/hooks/useCategories';
 import { usePlatforms } from '@/hooks/usePlatforms';
@@ -47,6 +49,32 @@ const AI_PROMPT_EXAMPLES = [
 
 const ERROR_RED = '#EF4444';
 const MIN_BUDGET_PER_CREATOR = 500;
+
+// Used when generateWithAi() throws outright (network down, request timeout, backend
+// error unrelated to the AI call itself) — the backend's own dummy-template fallback
+// already covers OpenAI-specific failures (bad key, quota, malformed response), so this
+// only kicks in when the whole request never came back. Keeps campaign creation working
+// end-to-end even with zero connectivity to the AI provider.
+const GENERIC_AI_TEMPLATE = {
+  title: 'New Promotional Campaign',
+  description: "Creators will create engaging content that introduces your brand to their audience, highlighting what makes it worth trying and encouraging followers to check it out.",
+  objective: 'Increase brand awareness and drive engagement',
+  contentGuidelines: [
+    'Introduce the brand naturally within the content',
+    'Highlight one clear reason to try it',
+    'Keep the tone authentic and conversational',
+    'Include a clear call-to-action in the caption',
+  ],
+  targetAudience: ['Any Creator'],
+  suggestedDurationDays: 14,
+  creatorsNeeded: 4,
+  budgetMin: 6000,
+  budgetMax: 15000,
+  deliverables: { REEL: 1, STORY: 2 } as Record<string, number>,
+  hashtags: ['NewBrand', 'MustTry', 'SupportLocal'],
+  sampleCaption: "Just discovered this and had to share \u{1F440} If you're into this kind of thing, you're going to love it.",
+  approvalRequirements: 'Brand will review draft content before it’s posted',
+};
 
 const BENEFITS = [
   'Free food & drinks',
@@ -656,6 +684,71 @@ const lh = StyleSheet.create({
   title:           { fontSize: 18, fontFamily: F.bold },
 });
 
+// ─── AiGeneratingOverlay (full-screen loader while AI drafts the event) ────────
+
+const AI_OVERLAY_STEP_KEYS = ['aiOverlayStep1', 'aiOverlayStep2', 'aiOverlayStep3', 'aiOverlayStep4'] as const;
+
+// SMIL <animate>/<animateTransform> elements in the SVG only play in a real
+// browser engine — react-native-svg doesn't execute them — so the artwork is
+// rendered through a WebView instead, which uses the platform's own engine.
+const EVENT_LOADING_HTML = `<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" /><style>html,body{margin:0;padding:0;background:transparent;overflow:hidden;height:100%;width:100%;}svg{width:100%;height:100%;display:block;}</style></head><body>${EVENT_LOADING_SVG}</body></html>`;
+
+function AiGeneratingOverlay({ visible, t }: {
+  visible: boolean;
+  t: TFn;
+}) {
+  const [stepIndex, setStepIndex] = useState(0);
+  const stepFade = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (!visible) return;
+    setStepIndex(0);
+
+    const interval = setInterval(() => {
+      Animated.sequence([
+        Animated.timing(stepFade, { toValue: 0, duration: 200, useNativeDriver: true }),
+        Animated.timing(stepFade, { toValue: 1, duration: 200, useNativeDriver: true }),
+      ]).start();
+      setStepIndex((i) => (i + 1) % AI_OVERLAY_STEP_KEYS.length);
+    }, 1800);
+
+    return () => clearInterval(interval);
+  }, [visible]);
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent>
+      <View style={ov.backdrop}>
+        <View style={ov.artWrap}>
+          {visible && (
+            <WebView
+              style={ov.art}
+              containerStyle={{ backgroundColor: 'transparent' }}
+              source={{ html: EVENT_LOADING_HTML }}
+              originWhitelist={['*']}
+              scrollEnabled={false}
+              showsVerticalScrollIndicator={false}
+              showsHorizontalScrollIndicator={false}
+              pointerEvents="none"
+            />
+          )}
+        </View>
+        <Text style={ov.title}>{t('createEvent.aiOverlayTitle')}</Text>
+        <Animated.Text style={[ov.step, { opacity: stepFade }]}>
+          {t(`createEvent.${AI_OVERLAY_STEP_KEYS[stepIndex]}`)}
+        </Animated.Text>
+      </View>
+    </Modal>
+  );
+}
+
+const ov = StyleSheet.create({
+  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.72)', alignItems: 'center', justifyContent: 'center', padding: 24 },
+  artWrap:  { width: 260, height: 260 },
+  art:      { flex: 1, backgroundColor: 'transparent' },
+  title:    { fontSize: 17, fontFamily: F.bold, textAlign: 'center', color: '#fff', marginTop: 8 },
+  step:     { fontSize: 13, fontFamily: F.regular, textAlign: 'center', color: 'rgba(255,255,255,0.75)', minHeight: 18, marginTop: 6 },
+});
+
 // ─── PreviewRow (read-only recap line, confirm screen) ─────────────────────────
 
 function PreviewRow({
@@ -902,8 +995,43 @@ export default function CreateCampaignScreen() {
       setAiPromptText('');
       setPhase('review');
       scrollRef.current?.scrollTo({ y: 0, animated: false });
-    } catch (err) {
-      showToast(err instanceof Error ? err.message : t('createEvent.aiGenerateFailed'), 'error');
+    } catch {
+      // The backend already falls back to a dummy draft for OpenAI-specific failures
+      // (bad key, quota, malformed response) — reaching this catch means the request
+      // itself never came back (network down, timeout, unrelated server error). Load a
+      // generic template locally instead of leaving the user stuck with an empty form.
+      const fallbackCategory = categoryOptions.find((c) => c.label === 'Lifestyle')?.label ?? categoryOptions[0]?.label ?? '';
+      const fallbackPlatform = platformOptions.find((p) => p === 'Instagram') ?? platformOptions[0] ?? '';
+      setForm((prev) => ({
+        ...prev,
+        template:    fallbackCategory,
+        platforms:   fallbackPlatform ? [fallbackPlatform] : [],
+        title:       GENERIC_AI_TEMPLATE.title,
+        description: GENERIC_AI_TEMPLATE.description,
+        goals:       [GOAL_OPTIONS[0]!],
+        budget:      '',
+        creatorsNeeded: GENERIC_AI_TEMPLATE.creatorsNeeded,
+        deadline:    dayStart(new Date(Date.now() + GENERIC_AI_TEMPLATE.suggestedDurationDays * 24 * 60 * 60 * 1000)),
+        objective:            GENERIC_AI_TEMPLATE.objective,
+        contentGuidelines:    GENERIC_AI_TEMPLATE.contentGuidelines,
+        targetAudience:       GENERIC_AI_TEMPLATE.targetAudience,
+        deliverables:         { ...DEFAULT_DELIVERABLES, ...GENERIC_AI_TEMPLATE.deliverables },
+        hashtags:             GENERIC_AI_TEMPLATE.hashtags,
+        sampleCaption:        GENERIC_AI_TEMPLATE.sampleCaption,
+        approvalRequirements: GENERIC_AI_TEMPLATE.approvalRequirements,
+        featureImageUrl:      prev.featureImageUrl ?? getTemplateImage(fallbackCategory, fallbackCategory) ?? null,
+        aiGenerated:           true,
+        aiPrompt:              aiPromptText.trim(),
+        aiSuggestedCategories: [],
+        aiSuggestedPlatforms:  [],
+        needsInput:            ['budgetMin', 'category'],
+        aiBudgetMin: GENERIC_AI_TEMPLATE.budgetMin,
+        aiBudgetMax: GENERIC_AI_TEMPLATE.budgetMax,
+      }));
+      setAiPromptText('');
+      setPhase('review');
+      scrollRef.current?.scrollTo({ y: 0, animated: false });
+      showToast(t('createEvent.aiGenerateFallback'), 'error');
     } finally {
       setAiLoading(false);
     }
@@ -1737,6 +1865,8 @@ export default function CreateCampaignScreen() {
         onSelect={handleLocationSelect}
         onClose={() => setLocationModalOpen(false)}
       />
+
+      <AiGeneratingOverlay visible={aiLoading} t={t} />
 
       {/* Recommended creators — shown right after publishing */}
       <RecommendedCreatorsModal

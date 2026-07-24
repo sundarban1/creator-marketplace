@@ -130,7 +130,7 @@ export default function BusinessHomeScreen() {
       {/* ── Header: avatar, centered name, notifications — kept outside the
           ScrollView so it stays floating/pinned above the content instead of
           scrolling away. ── */}
-      <View style={[styles.header, { backgroundColor: C.background }]}>
+      <View style={[styles.header, { backgroundColor: C.background, borderBottomColor: C.border }]}>
         <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.avatarCircle, { backgroundColor: C.surface }, SHADOW.card]} onPress={() => router.push('/(business)/profile')}>
           {/* Clipping lives on its own layer — Android's elevation shadow doesn't
               composite correctly with overflow:hidden + a translucent child background
@@ -165,6 +165,7 @@ export default function BusinessHomeScreen() {
           </View>
         </Pressable>
       </View>
+      <View style={[styles.headerDivider, { backgroundColor: C.border }]} />
 
       <ScrollView
         ref={scrollRef}
@@ -405,6 +406,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 10,
     paddingHorizontal: 20, paddingTop: 14, paddingBottom: 18,
   },
+  // Inset divider (not a full-bleed border) separating the header from the
+  // scrolling content — matches the gap-at-the-corners divider style used
+  // elsewhere (e.g. SavedListCard, campaigns footer).
+  headerDivider: { height: 1, marginHorizontal: 20 },
   menuBtn: { padding: 0 },
   menuBtnInner: { width: 44, height: 44, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
   menuBadge:    { position: 'absolute', top: -3, right: -3, minWidth: 16, height: 16, borderRadius: RADIUS.full, paddingHorizontal: 3, backgroundColor: '#EF4444', justifyContent: 'center', alignItems: 'center', borderWidth: 1.5, borderColor: '#fff' },

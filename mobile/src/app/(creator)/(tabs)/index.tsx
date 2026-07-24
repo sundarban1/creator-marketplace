@@ -1,7 +1,7 @@
 import { router, useFocusEffect } from 'expo-router';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, FlatList, Image, Keyboard, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableWithoutFeedback, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
@@ -486,9 +486,16 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
+      {/* Tapping anywhere outside the search bar (header buttons, list background,
+          category/platform pills, etc.) dismisses the keyboard, which blurs the
+          search input and lets the scroll-to-top effect below run — nested
+          Pressables still claim their own taps first, so this only fires for
+          taps that no other touchable handles. */}
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+      <View style={{ flex: 1 }}>
       {/* ── Header: avatar, search bar, notifications — kept outside the list so it
           stays floating/pinned above the content instead of scrolling away. ── */}
-      <View style={[styles.header, { backgroundColor: C.background }]}>
+      <View style={[styles.header, { backgroundColor: C.background, borderBottomColor: C.border }]}>
         <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
           style={[styles.avatarCircle, { backgroundColor: C.surface }, SHADOW.card]}
           onPress={() => router.push('/(creator)/profile')}>
@@ -573,6 +580,7 @@ export default function HomeScreen() {
           </View>
         </Pressable>
       </View>
+      <View style={[styles.headerDivider, { backgroundColor: C.border }]} />
 
       <FlatList
         ref={listRef}
@@ -971,6 +979,8 @@ export default function HomeScreen() {
           </>
         }
       />
+      </View>
+      </TouchableWithoutFeedback>
 
       <FilterModal
         visible={filterOpen}
@@ -1023,6 +1033,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 10,
     paddingHorizontal: 20, paddingTop: 12, paddingBottom: 10,
   },
+  // Inset divider (not a full-bleed border) separating the header from the
+  // scrolling content — matches the gap-at-the-corners divider style used
+  // elsewhere (e.g. SavedListCard, campaigns footer).
+  headerDivider: { height: 1, marginHorizontal: 20 },
   menuBtn:      { padding: 0 },
   menuBtnInner: { width: 44, height: 44, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
   menuBadge:    { position: 'absolute', top: -3, right: -3, minWidth: 16, height: 16, borderRadius: RADIUS.full, paddingHorizontal: 3, backgroundColor: '#EF4444', justifyContent: 'center', alignItems: 'center', borderWidth: 1.5, borderColor: '#fff' },

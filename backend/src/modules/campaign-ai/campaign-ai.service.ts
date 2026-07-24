@@ -39,7 +39,16 @@ function pickDummyDescription(input: SuggestDescriptionInput): string {
 const MODEL = 'gpt-5-mini';
 const REQUEST_TIMEOUT_MS = 45_000;
 
-function buildSystemPrompt(categoryNames: string[], platformNames: string[]): string {
+function buildLanguageInstruction(language: string): string {
+  return `LANGUAGE: The brand's app is currently set to "${language === 'ne' ? 'Nepali' : 'English'}".
+- If the app language is Nepali, OR the brand's prompt below is written in Nepali (Devanagari script) or romanized Nepali (Nepali words spelled out with Latin letters, e.g. "pasal", "khana ko lagi", "creator haru chaiyeko"), write title, description, objective, contentGuidelines, sampleCaption, approvalRequirements, and location (if not null) in NEPALI using proper Devanagari script — always convert romanized Nepali into Devanagari, never leave it in Latin letters.
+- Write that Nepali in simple, everyday conversational language that an ordinary person in Nepal can easily read and understand — the way Nepali is actually spoken or written in casual social-media/marketing posts. Avoid stiff, overly formal, literary, or heavily Sanskritized words.
+- Otherwise write those same fields in English.
+- Regardless of language, category, secondaryCategories, platform, secondaryPlatforms, goal, and targetAudience must always use the exact values from the lists provided — never translate or alter them.
+- hashtags must always use Latin letters/numbers only (no Devanagari) since they are literal social-media hashtags.`;
+}
+
+function buildSystemPrompt(categoryNames: string[], platformNames: string[], language: string): string {
   return `You are a campaign-brief generator for a creator-marketplace app in Nepal, connecting brands with content creators for paid promotional campaigns.
 
 Given a brand's short description of what they want to promote, generate a complete campaign brief as a single JSON object — no prose, no markdown code fences, just the raw JSON object.
@@ -72,18 +81,25 @@ Respond with a JSON object with EXACTLY these keys:
 - location: string or null, a city/area if inferable, otherwise null
 - needsInput: string[] (0-2), keys from this exact list you were NOT confident about and think the brand should double check: ["location","budgetMin","budgetMax","creatorsNeeded","deadline","platform","category"]. Only include a key here if you genuinely had to guess — always still fill in your best-guess value for it regardless.
 
+${buildLanguageInstruction(language)}
+
 Always fill in every field with your best sensible guess, even for a very short prompt — never leave a field empty or refuse to answer. Respond with ONLY the JSON object.`;
 }
 
-const DESCRIPTION_SYSTEM_PROMPT = `You are a campaign-brief copywriter for a creator-marketplace app in Nepal, connecting brands with content creators for promotional campaigns.
+function buildDescriptionSystemPrompt(language: string): string {
+  return `You are a campaign-brief copywriter for a creator-marketplace app in Nepal, connecting brands with content creators for promotional campaigns.
 
-Given a few details about a brand's event/campaign, write a single description of 2-4 sentences describing what the campaign is about and what creators should do. Respond with ONLY the description text — no labels, no quotes, no markdown, no preamble.`;
+Given a few details about a brand's event/campaign, write a single description of 2-4 sentences describing what the campaign is about and what creators should do. Respond with ONLY the description text — no labels, no quotes, no markdown, no preamble.
+
+${buildLanguageInstruction(language)}
+(For this task only the description text itself is being written, so the language rule above applies to that text.)`;
+}
 
 export class CampaignAiService {
   private categoryRepo = new CategoryRepository();
   private platformRepo = new PlatformRepository();
 
-  async suggestDescription(input: SuggestDescriptionInput): Promise<string> {
+  async suggestDescription(input: SuggestDescriptionInput, language: string = 'en'): Promise<string> {
     try {
       if (!env.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY not configured');
 
@@ -97,8 +113,10 @@ export class CampaignAiService {
       const response = await client.chat.completions.create({
         model: MODEL,
         max_completion_tokens: 300,
+        reasoning_effort: 'minimal',
+        verbosity: 'low',
         messages: [
-          { role: 'system', content: DESCRIPTION_SYSTEM_PROMPT },
+          { role: 'system', content: buildDescriptionSystemPrompt(language) },
           { role: 'user', content: parts.join('\n') },
         ],
       });
@@ -112,7 +130,7 @@ export class CampaignAiService {
     }
   }
 
-  async generateDraft(prompt: string): Promise<AiCampaignDraft & { aiSuggestedCategories: string[]; aiSuggestedPlatforms: string[]; platforms: string[] }> {
+  async generateDraft(prompt: string, language: string = 'en'): Promise<AiCampaignDraft & { aiSuggestedCategories: string[]; aiSuggestedPlatforms: string[]; platforms: string[] }> {
     const [realCategories, realPlatforms] = await Promise.all([
       this.categoryRepo.findManyPublic(CategoryScope.BUSINESS),
       this.platformRepo.findManyPublic(),
@@ -123,7 +141,7 @@ export class CampaignAiService {
     let draft: AiCampaignDraft;
     try {
       if (!env.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY not configured');
-      const raw = await this.callModel(prompt, categoryNames, platformNames);
+      const raw = await this.callModel(prompt, categoryNames, platformNames, language);
       draft = this.parseAndValidate(raw);
     } catch (err) {
       logger.warn({ err: err instanceof Error ? err.message : err }, 'OpenAI unavailable — falling back to dummy campaign draft');
@@ -132,14 +150,16 @@ export class CampaignAiService {
     return this.matchToRealTaxonomy(draft, categoryNames, platformNames);
   }
 
-  private async callModel(prompt: string, categoryNames: string[], platformNames: string[]): Promise<string> {
+  private async callModel(prompt: string, categoryNames: string[], platformNames: string[], language: string): Promise<string> {
     const client = new OpenAI({ apiKey: env.OPENAI_API_KEY, timeout: REQUEST_TIMEOUT_MS });
     const response = await client.chat.completions.create({
       model: MODEL,
       max_completion_tokens: 3000,
+      reasoning_effort: 'minimal',
+      verbosity: 'low',
       response_format: { type: 'json_object' },
       messages: [
-        { role: 'system', content: buildSystemPrompt(categoryNames, platformNames) },
+        { role: 'system', content: buildSystemPrompt(categoryNames, platformNames, language) },
         { role: 'user', content: prompt },
       ],
     });

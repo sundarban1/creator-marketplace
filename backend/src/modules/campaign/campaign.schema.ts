@@ -54,6 +54,7 @@ export const updateCampaignSchema = z.object({
   contentType: z.string().optional(),
   deliverables: z.string().optional(),
   objective: z.string().max(300).optional(),
+  contentGuidelines: z.array(z.string()).optional(),
   targetAudience: z.array(z.string()).optional(),
   hashtags: z.array(z.string()).optional(),
   deadline: z.string().datetime().optional(),
