@@ -25,6 +25,7 @@ import { FeatureImagePicker } from '@/features/creator/components/FeatureImagePi
 import { LocationSearchModal } from '@/components/LocationSearchModal';
 import { pickAndUpload } from '@/utilities/uploadImage';
 import { RecommendedCreatorsModal } from '@/features/business/components/RecommendedCreatorsModal';
+import { getTemplateImage } from '@/features/creator/data/templateImages';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -74,6 +75,14 @@ function summarizeDeliverables(deliverables: Record<string, number>, fallback: s
 
 const ERROR_RED = '#EF4444';
 const MIN_BUDGET_PER_CREATOR = 500;
+
+const GOAL_OPTIONS = ['Brand Awareness', 'More Customers', 'Sales', 'Followers & Engagement'];
+
+const BUDGET_TIERS = [
+  { key: 'SMALL',  min: 5000,  max: 10000 },
+  { key: 'MEDIUM', min: 10000, max: 25000 },
+  { key: 'LARGE',  min: 25000, max: 50000 },
+] as const;
 
 const BENEFITS = [
   'Free food & drinks',
@@ -223,7 +232,6 @@ type FormData = {
   needsInput: string[];
   aiBudgetMin: number;
   aiBudgetMax: number;
-  aiDeliverables: string;
 };
 
 type ReviewErrors = Partial<Record<'title' | 'deadline' | 'platform' | 'eventDate' | 'budget', string>>;
@@ -578,6 +586,90 @@ function PlatformChipGroup({
   );
 }
 
+// ─── BudgetTierPicker ───────────────────────────────────────────────────────
+
+function BudgetTierPicker({
+  budgetMin, budgetMax, onChange, colors, error,
+}: {
+  budgetMin: number;
+  budgetMax: number;
+  onChange: (min: number, max: number) => void;
+  colors: ReturnType<typeof useAppColors>;
+  error?: string;
+}) {
+  const C = colors;
+  const { t } = useLanguage();
+  const matchedTier = BUDGET_TIERS.find((tier) => tier.min === budgetMin && tier.max === budgetMax);
+  const [customForced, setCustomForced] = useState(false);
+  const isCustom = customForced || !matchedTier;
+
+  const TIER_COPY: Record<(typeof BUDGET_TIERS)[number]['key'], { label: string; range: string }> = {
+    SMALL:  { label: t('createEvent.budgetTierSmallLabel'),  range: t('createEvent.budgetTierSmallRange') },
+    MEDIUM: { label: t('createEvent.budgetTierMediumLabel'), range: t('createEvent.budgetTierMediumRange') },
+    LARGE:  { label: t('createEvent.budgetTierLargeLabel'),  range: t('createEvent.budgetTierLargeRange') },
+  };
+
+  return (
+    <View style={{ gap: 10 }}>
+      <View style={bt.grid}>
+        {BUDGET_TIERS.map((tier) => {
+          const sel = !isCustom && matchedTier?.key === tier.key;
+          return (
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+              key={tier.key}
+              style={[bt.card, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? C.primaryLight : C.surface }]}
+              onPress={() => { setCustomForced(false); onChange(tier.min, tier.max); }}>
+              <Text style={[bt.cardLabel, { color: sel ? C.brinjal1 : C.text }]}>{TIER_COPY[tier.key].label}</Text>
+              <Text style={[bt.cardRange, { color: sel ? C.brinjal1 : C.textSecondary }]}>{TIER_COPY[tier.key].range}</Text>
+            </Pressable>
+          );
+        })}
+        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+          style={[bt.cardFull, { borderColor: isCustom ? C.brinjal1 : C.border, backgroundColor: isCustom ? C.primaryLight : C.surface }]}
+          onPress={() => setCustomForced(true)}>
+          <Ionicons name="create-outline" size={16} color={isCustom ? C.brinjal1 : C.textSecondary} />
+          <View style={{ flex: 1 }}>
+            <Text style={[bt.cardLabel, { color: isCustom ? C.brinjal1 : C.text }]}>{t('createEvent.budgetTierCustomLabel')}</Text>
+            <Text style={[bt.cardRange, { color: isCustom ? C.brinjal1 : C.textSecondary }]}>{t('createEvent.budgetTierCustomSub')}</Text>
+          </View>
+        </Pressable>
+      </View>
+
+      {isCustom && (
+        <View style={ai.budgetRow}>
+          <View style={ai.budgetInputWrap}>
+            <Text style={[ai.budgetLabel, { color: C.textSecondary }]}>{t('createEvent.aiBudgetMinLabel')}</Text>
+            <TextInput
+              style={[s.input, { backgroundColor: C.background, borderColor: error ? ERROR_RED : C.border, color: C.text }]}
+              value={String(budgetMin)}
+              onChangeText={(v) => onChange(parseInt(v.replace(/[^0-9]/g, ''), 10) || 0, budgetMax)}
+              keyboardType="number-pad"
+            />
+          </View>
+          <View style={ai.budgetInputWrap}>
+            <Text style={[ai.budgetLabel, { color: C.textSecondary }]}>{t('createEvent.aiBudgetMaxLabel')}</Text>
+            <TextInput
+              style={[s.input, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
+              value={String(budgetMax)}
+              onChangeText={(v) => onChange(budgetMin, parseInt(v.replace(/[^0-9]/g, ''), 10) || 0)}
+              keyboardType="number-pad"
+            />
+          </View>
+        </View>
+      )}
+      {error && <Text style={s.errorText}>{error}</Text>}
+    </View>
+  );
+}
+
+const bt = StyleSheet.create({
+  grid:      { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  card:      { width: '31%', borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 10, paddingVertical: 12, alignItems: 'center', gap: 2 },
+  cardLabel: { fontSize: 13, fontFamily: F.semibold },
+  cardRange: { fontSize: 10, fontFamily: F.regular, textAlign: 'center' },
+  cardFull:  { width: '100%', flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 12 },
+});
+
 // ─── CalendarGrid ─────────────────────────────────────────────────────────────
 
 function CalendarGrid({ value, onChange, colors }: {
@@ -826,13 +918,72 @@ const ft = StyleSheet.create({
   switchThumb: { position: 'absolute', top: 3, width: 20, height: 20, borderRadius: RADIUS.full, backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 3, shadowOffset: { width: 0, height: 1 }, elevation: 3 },
 });
 
+// ─── ListingHeroCard (Airbnb-style confirm screen header) ──────────────────────
+
+function ListingHeroCard({
+  featureImageUrl, title, category, colors,
+}: {
+  featureImageUrl: string | null;
+  title: string;
+  category?: string;
+  colors: ReturnType<typeof useAppColors>;
+}) {
+  const C = colors;
+  const image = featureImageUrl ?? getTemplateImage(category, category);
+  return (
+    <View style={[lh.card, { backgroundColor: C.surface, borderColor: C.border }]}>
+      {image && <Image source={{ uri: image }} style={lh.image} resizeMode="cover" />}
+      <View style={lh.body}>
+        {category && (
+          <View style={[lh.categoryPill, { backgroundColor: C.primaryLight }]}>
+            <Text style={[lh.categoryPillText, { color: C.brinjal1 }]}>{category}</Text>
+          </View>
+        )}
+        <Text style={[lh.title, { color: C.text }]} numberOfLines={2}>{title}</Text>
+      </View>
+    </View>
+  );
+}
+
+const lh = StyleSheet.create({
+  card:            { borderRadius: RADIUS.lg, borderWidth: 1.5, overflow: 'hidden' },
+  image:           { width: '100%', height: 160 },
+  body:            { padding: 14, gap: 6 },
+  categoryPill:    { alignSelf: 'flex-start', borderRadius: RADIUS.full, paddingHorizontal: 10, paddingVertical: 3 },
+  categoryPillText:{ fontSize: 11, fontFamily: F.bold },
+  title:           { fontSize: 18, fontFamily: F.bold },
+});
+
+// ─── PreviewRow (read-only recap line, confirm screen) ─────────────────────────
+
+function PreviewRow({
+  icon, label, value, colors, last,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  value: string;
+  colors: ReturnType<typeof useAppColors>;
+  last?: boolean;
+}) {
+  const C = colors;
+  return (
+    <View style={[s.summaryRow, !last && { borderBottomWidth: 1, borderBottomColor: C.border }]}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, width: 140 }}>
+        <Ionicons name={icon} size={15} color={C.textSecondary} />
+        <Text style={[s.summaryLabel, { width: undefined, color: C.textSecondary }]}>{label}</Text>
+      </View>
+      <Text style={[s.summaryValue, { color: C.text }]} numberOfLines={3}>{value}</Text>
+    </View>
+  );
+}
+
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function CreateCampaignScreen() {
   const C = useAppColors();
   const { t, language } = useLanguage();
   const notRequiredLabel = t('createEvent.notRequired');
-  const [phase, setPhase] = useState<'setup' | 'review'>('setup');
+  const [phase, setPhase] = useState<'setup' | 'review' | 'confirm'>('setup');
   const [loading, setLoading] = useState(false);
   const [publishWarnVisible, setPublishWarnVisible] = useState(false);
   const [publishedCampaign, setPublishedCampaign] = useState<{ id: string; category: string; lat: number | null; lng: number | null; budgetMin?: number; budgetMax?: number } | null>(null);
@@ -900,7 +1051,6 @@ export default function CreateCampaignScreen() {
     needsInput: [],
     aiBudgetMin: 0,
     aiBudgetMax: 0,
-    aiDeliverables: '',
   });
 
   const [aiPromptText, setAiPromptText] = useState('');
@@ -1006,7 +1156,6 @@ export default function CreateCampaignScreen() {
       needsInput: [],
       aiBudgetMin: 0,
       aiBudgetMax: 0,
-      aiDeliverables: '',
     }));
     setReviewErrors({});
     setEventErrors({});
@@ -1029,17 +1178,18 @@ export default function CreateCampaignScreen() {
         platforms:   draft.platforms.slice(0, 3),
         title:       draft.title,
         description: draft.description,
-        goals:       prev.goals.length > 0 ? prev.goals : ['Brand Awareness'],
+        goals:       [draft.goal],
         budget:      '',
         creatorsNeeded: draft.creatorsNeeded,
         deadline:    dayStart(new Date(Date.now() + draft.suggestedDurationDays * 24 * 60 * 60 * 1000)),
         objective:            draft.objective,
         contentGuidelines:    draft.contentGuidelines,
         targetAudience:       draft.targetAudience,
+        deliverables:         { ...DEFAULT_DELIVERABLES, ...draft.deliverables },
         hashtags:             draft.hashtags,
         sampleCaption:        draft.sampleCaption,
         approvalRequirements: draft.approvalRequirements,
-        aiDeliverables:       draft.deliverables,
+        featureImageUrl:      prev.featureImageUrl ?? getTemplateImage(draft.category, draft.category) ?? null,
         aiGenerated:           true,
         aiPrompt:              aiPromptText.trim(),
         aiSuggestedCategories: draft.aiSuggestedCategories,
@@ -1134,7 +1284,7 @@ export default function CreateCampaignScreen() {
       locationLng:    locationLng ?? undefined,
       minFollowers:   0,
       contentType:    form.goals[0] ?? '',
-      deliverables:   form.aiGenerated ? form.aiDeliverables : summarizeDeliverables(form.deliverables, form.goals, t),
+      deliverables:   summarizeDeliverables(form.deliverables, form.goals, t),
       deadline:       form.deadline!.toISOString(),
       budgetMin:      budget.min,
       budgetMax:      budget.max,
@@ -1167,14 +1317,27 @@ export default function CreateCampaignScreen() {
     }
   }
 
+  function validatePaidReview(): ReviewErrors {
+    const errs: ReviewErrors = {};
+    if (!form.title.trim())        errs.title    = t('createEvent.errNoTitle');
+    if (form.platforms.length < 1) errs.platform = t('createEvent.errNoPlatform');
+    else if (form.platforms.length > 3) errs.platform = t('createEvent.errMaxPlatform');
+    if (!form.deadline)     errs.deadline = t('createEvent.errNoDeadline');
+    if (form.aiBudgetMin < MIN_BUDGET_PER_CREATOR) errs.budget = t('createEvent.errBudgetMin');
+    return errs;
+  }
+
+  function handleContinueToConfirm() {
+    const errs = validatePaidReview();
+    if (Object.keys(errs).length > 0) { setReviewErrors(errs); return; }
+    setReviewErrors({});
+    setPhase('confirm');
+    scrollRef.current?.scrollTo({ y: 0, animated: false });
+  }
+
   async function handlePublish() {
     if (form.eventType === 'PAID_CAMPAIGN') {
-      const errs: ReviewErrors = {};
-      if (!form.title.trim())        errs.title    = t('createEvent.errNoTitle');
-      if (form.platforms.length < 1) errs.platform = t('createEvent.errNoPlatform');
-      else if (form.platforms.length > 3) errs.platform = t('createEvent.errMaxPlatform');
-      if (!form.deadline)     errs.deadline = t('createEvent.errNoDeadline');
-      if (form.aiBudgetMin < MIN_BUDGET_PER_CREATOR) errs.budget = t('createEvent.errBudgetMin');
+      const errs = validatePaidReview();
       if (Object.keys(errs).length > 0) { setReviewErrors(errs); return; }
       setReviewErrors({});
 
@@ -1239,28 +1402,38 @@ export default function CreateCampaignScreen() {
 
   const selectedTemplate = categoryOptions.find((t) => t.label === form.template);
 
+  const totalPhases = form.eventType === 'PAID_CAMPAIGN' ? 3 : 2;
+  const currentPhaseNum = phase === 'setup' ? 1 : phase === 'review' ? 2 : 3;
+
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
 
       {/* Header */}
       <View style={[s.header, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
         <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-          onPress={() => phase === 'review' ? setPhase('setup') : (router.canGoBack() ? router.back() : router.replace('/(business)/'))}
+          onPress={() => {
+            if (phase === 'confirm') setPhase('review');
+            else if (phase === 'review') setPhase('setup');
+            else if (router.canGoBack()) router.back();
+            else router.replace('/(business)/');
+          }}
           style={[s.backBtn, { backgroundColor: C.surface, borderColor: C.border, borderWidth: 1 }]}>
-          <Ionicons name={phase === 'review' ? 'chevron-back' : 'close'} size={22} color={C.text} />
+          <Ionicons name={phase === 'setup' ? 'close' : 'chevron-back'} size={22} color={C.text} />
         </Pressable>
         <View style={s.headerCenter}>
           <Text style={[s.headerTitle, { color: C.text }]}>{t('createEvent.headerTitle')}</Text>
-          <Text style={[s.headerSub, { color: C.textSecondary }]}>{phase === 'setup' ? t('createEvent.headerSubSetup') : t('createEvent.headerSubReview')}</Text>
+          <Text style={[s.headerSub, { color: C.textSecondary }]}>
+            {phase === 'setup' ? t('createEvent.headerSubSetup') : phase === 'review' ? t('createEvent.headerSubReview') : t('createEvent.headerSubConfirm')}
+          </Text>
         </View>
         <View style={[s.phasePill, { backgroundColor: C.primaryLight }]}>
-          <Text style={[s.phasePillText, { color: C.brinjal1 }]}>{phase === 'setup' ? '1/2' : '2/2'}</Text>
+          <Text style={[s.phasePillText, { color: C.brinjal1 }]}>{currentPhaseNum}/{totalPhases}</Text>
         </View>
       </View>
 
       {/* Progress */}
       <View style={[s.progressTrack, { backgroundColor: C.border }]}>
-        <View style={[s.progressFill, { width: phase === 'setup' ? '50%' : '100%', backgroundColor: C.brinjal1 }]} />
+        <View style={[s.progressFill, { width: `${(currentPhaseNum / totalPhases) * 100}%`, backgroundColor: C.brinjal1 }]} />
       </View>
 
       {/* No `behavior` prop — the ScrollView's `automaticallyAdjustKeyboardInsets` already
@@ -1504,14 +1677,23 @@ export default function CreateCampaignScreen() {
                     />
                   </SectionCard>
 
+                  {/* Goal */}
+                  <SectionCard title={t('createEvent.secGoalsTitle')} sub={t('createEvent.secGoalsSub')} colors={C}>
+                    <ChipGroup
+                      options={GOAL_OPTIONS}
+                      value={form.goals[0] ?? GOAL_OPTIONS[0]!}
+                      onChange={(v) => update('goals', [v])}
+                      colors={C}
+                    />
+                  </SectionCard>
+
                   {/* Target Audience */}
                   <SectionCard title={t('createEvent.secTargetAudienceTitle')} sub={t('createEvent.secTargetAudienceSub')} colors={C}>
-                    <TextInput
-                      style={[s.textarea, { backgroundColor: C.background, borderColor: C.border, color: C.text, minHeight: 70 }]}
-                      value={form.targetAudience.join(', ')}
-                      onChangeText={(v) => update('targetAudience', v.split(',').map((x) => x.trim()).filter(Boolean))}
-                      multiline
-                      placeholderTextColor={C.textSecondary}
+                    <ChipMultiGroup
+                      options={CREATOR_TYPES}
+                      values={form.targetAudience}
+                      onChange={(v) => update('targetAudience', v)}
+                      colors={C}
                     />
                   </SectionCard>
 
@@ -1531,65 +1713,42 @@ export default function CreateCampaignScreen() {
                   </SectionCard>
 
                   {/* Deliverables */}
-                  {form.aiGenerated ? (
-                    <SectionCard title={t('createEvent.secDeliverablesTitle')} sub={t('createEvent.secDeliverablesSub')} colors={C}>
-                      <TextInput
-                        style={[s.textarea, { backgroundColor: C.background, borderColor: C.border, color: C.text, minHeight: 70 }]}
-                        value={form.aiDeliverables}
-                        onChangeText={(v) => update('aiDeliverables', v)}
-                        multiline
-                        placeholderTextColor={C.textSecondary}
-                      />
-                    </SectionCard>
-                  ) : (
-                    <SectionCard title={t('createEvent.secDeliverablesTitle')} sub={t('createEvent.secDeliverablesSub')} colors={C}>
-                      <View style={{ gap: 2 }}>
-                        {DELIVERABLE_TYPES.map((item, i) => {
-                          const count = form.deliverables[item.key] ?? 0;
-                          const active = count > 0;
-                          return (
-                            <View
-                              key={item.key}
-                              style={[
-                                dlv.row,
-                                { borderBottomColor: C.border },
-                                i === DELIVERABLE_TYPES.length - 1 && { borderBottomWidth: 0 },
-                              ]}>
-                              <View style={[dlv.bullet, { backgroundColor: active ? C.brinjal1 : C.border }]} />
-                              <Text style={[dlv.label, { color: active ? C.text : C.textSecondary, fontFamily: active ? F.semibold : F.regular }]}>
-                                {t(item.labelKey)}
-                              </Text>
-                              <View style={[dlv.counter, { borderColor: active ? C.brinjal1 : C.border, backgroundColor: C.background }]}>
-                                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                                  style={dlv.counterBtn}
-                                  hitSlop={4}
-                                  onPress={() => update('deliverables', { ...form.deliverables, [item.key]: Math.max(0, count - 1) })}>
-                                  <Text style={[dlv.counterBtnTxt, { color: count <= 0 ? C.border : C.brinjal1 }]}>−</Text>
-                                </Pressable>
-                                <Text style={[dlv.counterVal, { color: active ? C.brinjal1 : C.textSecondary }]}>{count}</Text>
-                                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                                  style={dlv.counterBtn}
-                                  hitSlop={4}
-                                  onPress={() => update('deliverables', { ...form.deliverables, [item.key]: Math.min(10, count + 1) })}>
-                                  <Text style={[dlv.counterBtnTxt, { color: C.brinjal1 }]}>+</Text>
-                                </Pressable>
-                              </View>
+                  <SectionCard title={t('createEvent.secDeliverablesTitle')} sub={t('createEvent.secDeliverablesSub')} colors={C}>
+                    <View style={{ gap: 2 }}>
+                      {DELIVERABLE_TYPES.map((item, i) => {
+                        const count = form.deliverables[item.key] ?? 0;
+                        const active = count > 0;
+                        return (
+                          <View
+                            key={item.key}
+                            style={[
+                              dlv.row,
+                              { borderBottomColor: C.border },
+                              i === DELIVERABLE_TYPES.length - 1 && { borderBottomWidth: 0 },
+                            ]}>
+                            <View style={[dlv.bullet, { backgroundColor: active ? C.brinjal1 : C.border }]} />
+                            <Text style={[dlv.label, { color: active ? C.text : C.textSecondary, fontFamily: active ? F.semibold : F.regular }]}>
+                              {t(item.labelKey)}
+                            </Text>
+                            <View style={[dlv.counter, { borderColor: active ? C.brinjal1 : C.border, backgroundColor: C.background }]}>
+                              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                                style={dlv.counterBtn}
+                                hitSlop={4}
+                                onPress={() => update('deliverables', { ...form.deliverables, [item.key]: Math.max(0, count - 1) })}>
+                                <Text style={[dlv.counterBtnTxt, { color: count <= 0 ? C.border : C.brinjal1 }]}>−</Text>
+                              </Pressable>
+                              <Text style={[dlv.counterVal, { color: active ? C.brinjal1 : C.textSecondary }]}>{count}</Text>
+                              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                                style={dlv.counterBtn}
+                                hitSlop={4}
+                                onPress={() => update('deliverables', { ...form.deliverables, [item.key]: Math.min(10, count + 1) })}>
+                                <Text style={[dlv.counterBtnTxt, { color: C.brinjal1 }]}>+</Text>
+                              </Pressable>
                             </View>
-                          );
-                        })}
-                      </View>
-                    </SectionCard>
-                  )}
-
-                  {/* Content Guidelines */}
-                  <SectionCard title={t('createEvent.secContentGuidelinesTitle')} sub={t('createEvent.secContentGuidelinesSub')} colors={C}>
-                    <TextInput
-                      style={[s.textarea, { backgroundColor: C.background, borderColor: C.border, color: C.text, minHeight: 90 }]}
-                      value={form.contentGuidelines.join('\n')}
-                      onChangeText={(v) => update('contentGuidelines', v.split('\n').map((x) => x.trim()).filter(Boolean))}
-                      multiline
-                      placeholderTextColor={C.textSecondary}
-                    />
+                          </View>
+                        );
+                      })}
+                    </View>
                   </SectionCard>
 
                   {/* Hashtags */}
@@ -1631,37 +1790,22 @@ export default function CreateCampaignScreen() {
                     </View>
                   </SectionCard>
 
-                  {/* AI-only: Budget (raw editable range, replaces preset chips) */}
-                  {form.aiGenerated && (
-                    <SectionCard title={t('createEvent.secAiBudgetTitle')} sub={t('createEvent.secAiBudgetSub')} colors={C}>
-                      <View style={ai.budgetRow}>
-                        <View style={ai.budgetInputWrap}>
-                          <Text style={[ai.budgetLabel, { color: C.textSecondary }]}>{t('createEvent.aiBudgetMinLabel')}</Text>
-                          <TextInput
-                            style={[s.input, { backgroundColor: C.background, borderColor: reviewErrors.budget ? ERROR_RED : C.border, color: C.text }]}
-                            value={String(form.aiBudgetMin)}
-                            onChangeText={(v) => {
-                              update('aiBudgetMin', parseInt(v.replace(/[^0-9]/g, ''), 10) || 0);
-                              if (reviewErrors.budget) setReviewErrors((e) => ({ ...e, budget: undefined }));
-                            }}
-                            keyboardType="number-pad"
-                          />
-                        </View>
-                        <View style={ai.budgetInputWrap}>
-                          <Text style={[ai.budgetLabel, { color: C.textSecondary }]}>{t('createEvent.aiBudgetMaxLabel')}</Text>
-                          <TextInput
-                            style={[s.input, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
-                            value={String(form.aiBudgetMax)}
-                            onChangeText={(v) => update('aiBudgetMax', parseInt(v.replace(/[^0-9]/g, ''), 10) || 0)}
-                            keyboardType="number-pad"
-                          />
-                        </View>
-                      </View>
-                      {reviewErrors.budget && <Text style={s.errorText}>{reviewErrors.budget}</Text>}
-                    </SectionCard>
-                  )}
+                  {/* Budget */}
+                  <SectionCard title={t('createEvent.secBudgetTitle')} sub={t('createEvent.secBudgetSub')} colors={C}>
+                    <BudgetTierPicker
+                      budgetMin={form.aiBudgetMin}
+                      budgetMax={form.aiBudgetMax}
+                      onChange={(min, max) => {
+                        update('aiBudgetMin', min);
+                        update('aiBudgetMax', max);
+                        if (reviewErrors.budget) setReviewErrors((e) => ({ ...e, budget: undefined }));
+                      }}
+                      colors={C}
+                      error={reviewErrors.budget}
+                    />
+                  </SectionCard>
 
-                  {/* Deadline */}
+                  {/* Applications Close */}
                   <SectionCard title={t('createEvent.secDeadlineTitle')} sub={t('createEvent.secDeadlineSub')} colors={C}>
                     <DeadlinePicker
                       value={form.deadline}
@@ -1677,21 +1821,6 @@ export default function CreateCampaignScreen() {
                   {/* Creators Needed */}
                   <SectionCard title={t('createEvent.secCreatorsNeededTitle')} sub={t('createEvent.secCreatorsNeededSub')} colors={C}>
                     <Stepper value={form.creatorsNeeded} onChange={(v) => update('creatorsNeeded', v)} colors={C} />
-                  </SectionCard>
-
-                  {/* Summary */}
-                  <SectionCard title={t('createEvent.secSummaryTitle')} colors={C}>
-                    {[
-                      { label: t('createEvent.summaryCategory'), value: selectedTemplate ? form.template : '—' },
-                      { label: t('createEvent.summaryGoals'),    value: form.goals.join(', ') || '—' },
-                      { label: t('createEvent.summaryBudget'),   value: `Rs. ${form.aiBudgetMin.toLocaleString()} – ${form.aiBudgetMax.toLocaleString()}` },
-                      { label: t('createEvent.summaryLocation'), value: form.location || t('createEvent.summaryRemote') },
-                    ].map(({ label, value }, i, arr) => (
-                      <View key={label} style={[s.summaryRow, i < arr.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}>
-                        <Text style={[s.summaryLabel, { color: C.textSecondary }]}>{label}</Text>
-                        <Text style={[s.summaryValue, { color: C.text }]} numberOfLines={2}>{value}</Text>
-                      </View>
-                    ))}
                   </SectionCard>
 
                   {/* Featured toggle */}
@@ -1720,10 +1849,10 @@ export default function CreateCampaignScreen() {
                       <Text style={[s.editBtnText, { color: C.brinjal1 }]}>{t('createEvent.editInputsBtn')}</Text>
                     </Pressable>
                     <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                      style={[s.publishBtn, { backgroundColor: loading ? C.border : C.brinjal1 }]}
-                      onPress={() => setPublishWarnVisible(true)}
-                      disabled={loading}>
-                      <Text style={s.publishBtnText}>{loading ? t('createEvent.publishingBtn') : t('createEvent.publishPaidBtn')}</Text>
+                      style={[s.publishBtn, { backgroundColor: C.brinjal1 }]}
+                      onPress={handleContinueToConfirm}>
+                      <Text style={s.publishBtnText}>{t('createEvent.continueToReviewBtn')}</Text>
+                      <Ionicons name="arrow-forward" size={18} color="#fff" />
                     </Pressable>
                   </View>
                 </>
@@ -1893,6 +2022,44 @@ export default function CreateCampaignScreen() {
               )}
             </View>
           )}
+
+          {/* ── Phase 3: Confirm (PAID_CAMPAIGN only, Airbnb-style final review) ── */}
+          {phase === 'confirm' && form.eventType === 'PAID_CAMPAIGN' && (
+            <View style={s.content}>
+              <ListingHeroCard
+                featureImageUrl={form.featureImageUrl}
+                title={form.title.trim() || t('createEvent.untitledEvent')}
+                category={selectedTemplate ? form.template : undefined}
+                colors={C}
+              />
+
+              <View style={{ gap: 2 }}>
+                <PreviewRow icon="location-outline" label={t('createEvent.summaryLocation')} value={form.location || t('createEvent.summaryRemote')} colors={C} />
+                <PreviewRow icon="people-outline" label={t('createEvent.confirmSectionWho')} value={form.targetAudience.join(', ') || '—'} colors={C} />
+                <PreviewRow icon="share-social-outline" label={t('createEvent.confirmSectionPlatforms')} value={form.platforms.join(', ') || '—'} colors={C} />
+                <PreviewRow icon="film-outline" label={t('createEvent.confirmSectionDeliverables')} value={summarizeDeliverables(form.deliverables, form.goals, t)} colors={C} />
+                <PreviewRow icon="cash-outline" label={t('createEvent.confirmSectionBudget')} value={`Rs. ${form.aiBudgetMin.toLocaleString()} – ${form.aiBudgetMax.toLocaleString()}`} colors={C} />
+                <PreviewRow icon="calendar-outline" label={t('createEvent.confirmSectionCloses')} value={form.deadline ? fmtDate(form.deadline) : '—'} colors={C} />
+                <PreviewRow icon="star-outline" label={t('createEvent.confirmSectionFeatured')} value={form.isFeatured ? t('createEvent.yes') : t('createEvent.no')} colors={C} last />
+              </View>
+
+              {/* Actions */}
+              <View style={s.reviewActions}>
+                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                  style={[s.editBtn, { borderColor: C.brinjal1 }]}
+                  onPress={() => setPhase('review')}>
+                  <Ionicons name="chevron-back" size={16} color={C.brinjal1} />
+                  <Text style={[s.editBtnText, { color: C.brinjal1 }]}>{t('createEvent.backToEditBtn')}</Text>
+                </Pressable>
+                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                  style={[s.publishBtn, { backgroundColor: loading ? C.border : C.brinjal1 }]}
+                  onPress={handlePublish}
+                  disabled={loading}>
+                  <Text style={s.publishBtnText}>{loading ? t('createEvent.publishingBtn') : t('createEvent.publishPaidBtn')}</Text>
+                </Pressable>
+              </View>
+            </View>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -2005,7 +2172,7 @@ const s = StyleSheet.create({
   reviewActions: { flexDirection: 'row', gap: 12, marginTop: 8 },
   editBtn:       { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, borderRadius: RADIUS.md, height: 54, borderWidth: 1.5 },
   editBtnText:   { fontSize: 14, fontFamily: F.bold },
-  publishBtn:    { flex: 2, borderRadius: RADIUS.md, height: 54, justifyContent: 'center', alignItems: 'center', ...SHADOW.raised },
+  publishBtn:    { flex: 2, flexDirection: 'row', gap: 6, borderRadius: RADIUS.md, height: 54, justifyContent: 'center', alignItems: 'center', ...SHADOW.raised },
   publishBtnText:{ color: '#fff', fontSize: 15, fontFamily: F.bold },
 
   warnScrim:       { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 },
@@ -2033,17 +2200,6 @@ const s = StyleSheet.create({
   // Event type info panel
   etInfoPanel: { borderRadius: RADIUS.md, padding: 12 },
   etInfoSub:   { fontSize: 12, fontFamily: F.regular, lineHeight: 18 },
-
-  // Goal chips (inline multi-select)
-  goalChip:     { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 9, borderRadius: RADIUS.full, borderWidth: 1.5 },
-  goalChipText: { fontSize: 13, fontFamily: F.medium },
-
-  // Budget grid
-  budgetGrid:         { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  budgetCard:         { width: '48%', borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 14, alignItems: 'center', justifyContent: 'center' },
-  budgetCardText:     { fontSize: 12, fontFamily: F.bold, textAlign: 'center' },
-  budgetCardFull:     { flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 16, paddingVertical: 13 },
-  budgetCardFullText: { flex: 1, fontSize: 13, fontFamily: F.semibold },
 
   eventHintBox:  { flexDirection: 'row', alignItems: 'flex-start', gap: 10, borderRadius: RADIUS.md, padding: 14 },
   eventHintText: { flex: 1, fontSize: 12, lineHeight: 18, fontFamily: F.regular },

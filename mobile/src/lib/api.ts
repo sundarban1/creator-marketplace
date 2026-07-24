@@ -234,6 +234,7 @@ export async function request<T>(
   path:    string,
   body?:   unknown,
   params?: Record<string, string | number | undefined>,
+  timeoutMs?: number,
 ): Promise<ApiEnvelope<T>> {
   // Fail fast instead of waiting out the 30s timeout when we already know
   // there's no connection — NetInfo's cached state is checked synchronously.
@@ -268,11 +269,11 @@ export async function request<T>(
   // ── Retry on 529 / 503 (server temporarily overloaded) ───────────────────
   const RETRYABLE = new Set([503, 529]);
   let attempt = 0;
-  let res = await fetchWithTimeout(url.toString(), fetchOpts());
+  let res = await fetchWithTimeout(url.toString(), fetchOpts(), timeoutMs);
   while (RETRYABLE.has(res.status) && attempt < 3) {
     await new Promise((r) => setTimeout(r, 500 * 2 ** attempt));
     attempt++;
-    res = await fetchWithTimeout(url.toString(), fetchOpts());
+    res = await fetchWithTimeout(url.toString(), fetchOpts(), timeoutMs);
   }
 
   // ── Token refresh on 401 ───────────────────────────────────────────────────
@@ -284,7 +285,7 @@ export async function request<T>(
 
     try {
       const newToken = await pendingRefresh;
-      res = await fetchWithTimeout(url.toString(), fetchOpts(newToken));
+      res = await fetchWithTimeout(url.toString(), fetchOpts(newToken), timeoutMs);
     } catch (err) {
       // Only a genuinely invalid/expired refresh token logs the user out —
       // a network/timeout failure (e.g. a cold backend) should surface as a

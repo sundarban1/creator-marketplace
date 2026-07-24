@@ -9,13 +9,14 @@ export interface AiCampaignDraft {
   category: string;
   platforms: string[];
   contentGuidelines: string[];
+  goal: string;
   targetAudience: string[];
   suggestedDurationDays: number;
   creatorsNeeded: number;
   budgetMin: number;
   budgetMax: number;
   paymentType: string;
-  deliverables: string;
+  deliverables: Record<string, number>;
   hashtags: string[];
   sampleCaption: string;
   approvalRequirements: string;
@@ -260,7 +261,9 @@ export const campaignService = {
   },
 
   async generateWithAi(prompt: string): Promise<AiCampaignDraft> {
-    const res = await request<AiCampaignDraft>('POST', '/api/campaigns/ai/generate', { prompt });
+    // Longer timeout than the default 30s — GPT-5 mini's reasoning latency on this
+    // longer structured-JSON prompt can take 20-40s (backend's own budget is 45s).
+    const res = await request<AiCampaignDraft>('POST', '/api/campaigns/ai/generate', { prompt }, undefined, 50000);
     return res.data;
   },
 

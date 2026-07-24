@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import {
   ActivityIndicator,
   FlatList,
@@ -279,6 +279,20 @@ export default function ProposalsScreen() {
   }
 
   useEffect(() => { void load(); }, [languageVersion]);
+
+  // Silently refetch (pull-to-refresh spinner, not the full skeleton) every
+  // time this tab regains focus after the initial mount — accepting/
+  // rejecting a proposal from campaign-proposals.tsx and navigating back
+  // here previously left this list showing the pre-decision status.
+  const hasFocusedOnceRef = useRef(false);
+  useFocusEffect(useCallback(() => {
+    if (!hasFocusedOnceRef.current) {
+      hasFocusedOnceRef.current = true;
+      return;
+    }
+    void load(true);
+  }, []));
+
   const onRefresh = useCallback(() => void load(true), []);
 
   function loadMore() {

@@ -1,14 +1,25 @@
 {
   "campaignTemplates": [
     {
-      "keywords": ["coffee", "cafe", "espresso", "latte", "brew", "roast"],
+      "keywords": [
+        "coffee",
+        "cafe",
+        "espresso",
+        "latte",
+        "brew",
+        "roast"
+      ],
       "title": "Sip & Share: New Coffee Launch",
       "description": "Creators will visit and feature our new coffee blend through authentic, visually engaging content. We're looking for genuine reactions and lifestyle-style shots that make viewers want to try it themselves.",
       "objective": "Build local buzz and drive foot traffic for the new coffee launch",
       "category": "Food & Beverage",
-      "secondaryCategories": ["Lifestyle"],
+      "secondaryCategories": [
+        "Lifestyle"
+      ],
       "platform": "Instagram",
-      "secondaryPlatforms": ["TikTok"],
+      "secondaryPlatforms": [
+        "TikTok"
+      ],
       "contentGuidelines": [
         "Show the coffee being made or poured",
         "Include at least one clear shot of the cup/branding",
@@ -16,31 +27,61 @@
         "Mention the flavor notes in the caption"
       ],
       "targetAudience": [
-        "Coffee enthusiasts aged 18-35",
-        "Local residents who frequent cafes",
-        "Remote workers looking for a new coffee spot"
+        "Food Creator"
       ],
       "suggestedDurationDays": 14,
       "creatorsNeeded": 4,
       "budgetMin": 8000,
       "budgetMax": 20000,
       "paymentType": "Fixed Fee",
-      "deliverables": "1 Instagram Reel, 2 Instagram Stories",
-      "hashtags": ["CoffeeLovers", "NewBrew", "CafeVibes", "SupportLocal"],
+      "deliverables": {
+        "REEL": 1,
+        "STORY": 2,
+        "PHOTO_POST": 0,
+        "CAROUSEL_POST": 0,
+        "VISIT_STORE": 0,
+        "PRODUCT_REVIEW_VIDEO": 0,
+        "EVENT_COVERAGE_VIDEO": 0,
+        "MENTION_IN_CAPTION": 0,
+        "TAG_BUSINESS": 0,
+        "GOOGLE_REVIEW": 0
+      },
+      "hashtags": [
+        "CoffeeLovers",
+        "NewBrew",
+        "CafeVibes",
+        "SupportLocal"
+      ],
       "sampleCaption": "Found my new favorite morning ritual ☕️ This new blend has the smoothest finish - if you're a coffee person you need to try this.",
       "approvalRequirements": "Brand will review draft content within 24 hours before it's posted",
       "location": null,
-      "needsInput": ["location"]
+      "needsInput": [
+        "location"
+      ],
+      "goal": "More Customers"
     },
     {
-      "keywords": ["restaurant", "food", "menu", "dish", "chef", "dining", "eatery"],
+      "keywords": [
+        "restaurant",
+        "food",
+        "menu",
+        "dish",
+        "chef",
+        "dining",
+        "eatery"
+      ],
       "title": "Taste the New Menu",
       "description": "Creators will dine in and showcase our newest menu items through short-form video and photo content, highlighting flavor, presentation, and the overall dining experience.",
       "objective": "Drive awareness and reservations for the new menu launch",
       "category": "Food & Beverage",
-      "secondaryCategories": ["Events"],
+      "secondaryCategories": [
+        "Events"
+      ],
       "platform": "Instagram",
-      "secondaryPlatforms": ["TikTok", "YouTube"],
+      "secondaryPlatforms": [
+        "TikTok",
+        "YouTube"
+      ],
       "contentGuidelines": [
         "Capture at least 2 signature dishes up close",
         "Include the restaurant's ambience/interior briefly",
@@ -48,31 +89,60 @@
         "Tag the restaurant's location"
       ],
       "targetAudience": [
-        "Local foodies aged 20-45",
-        "Families looking for weekend dining options",
-        "Food content followers in the city"
+        "Food Creator"
       ],
       "suggestedDurationDays": 21,
       "creatorsNeeded": 5,
       "budgetMin": 10000,
       "budgetMax": 25000,
       "paymentType": "Fixed Fee",
-      "deliverables": "1 TikTok/Reel, 3 Instagram Story frames",
-      "hashtags": ["Foodie", "NewMenu", "DineLocal", "MustTry"],
+      "deliverables": {
+        "REEL": 1,
+        "STORY": 3,
+        "PHOTO_POST": 0,
+        "CAROUSEL_POST": 0,
+        "VISIT_STORE": 0,
+        "PRODUCT_REVIEW_VIDEO": 0,
+        "EVENT_COVERAGE_VIDEO": 0,
+        "MENTION_IN_CAPTION": 0,
+        "TAG_BUSINESS": 0,
+        "GOOGLE_REVIEW": 0
+      },
+      "hashtags": [
+        "Foodie",
+        "NewMenu",
+        "DineLocal",
+        "MustTry"
+      ],
       "sampleCaption": "This new menu is NOT playing around 🔥 Every dish we tried was better than the last - full review in my stories!",
       "approvalRequirements": "Brand will review content before posting to ensure dishes are represented accurately",
       "location": null,
-      "needsInput": ["location"]
+      "needsInput": [
+        "location"
+      ],
+      "goal": "More Customers"
     },
     {
-      "keywords": ["clothing", "fashion", "apparel", "wear", "outfit", "boutique", "dress"],
+      "keywords": [
+        "clothing",
+        "fashion",
+        "apparel",
+        "wear",
+        "outfit",
+        "boutique",
+        "dress"
+      ],
       "title": "Style Drop: New Collection",
       "description": "Creators will style and feature pieces from our new collection in real-life outfits, showing versatility and fit through lookbook-style content.",
       "objective": "Increase visibility and sales for the new clothing collection",
       "category": "Fashion",
-      "secondaryCategories": ["Lifestyle"],
+      "secondaryCategories": [
+        "Lifestyle"
+      ],
       "platform": "Instagram",
-      "secondaryPlatforms": ["TikTok"],
+      "secondaryPlatforms": [
+        "TikTok"
+      ],
       "contentGuidelines": [
         "Style at least 2 different outfit combinations",
         "Show fit from multiple angles",
@@ -80,31 +150,60 @@
         "Keep lighting natural and true-to-color"
       ],
       "targetAudience": [
-        "Fashion-forward audience aged 18-30",
-        "Followers interested in seasonal style drops",
-        "Shoppers who value quality basics"
+        "Fashion Creator"
       ],
       "suggestedDurationDays": 14,
       "creatorsNeeded": 6,
       "budgetMin": 6000,
       "budgetMax": 18000,
       "paymentType": "Fixed Fee",
-      "deliverables": "2 Instagram Posts, 1 Reel",
-      "hashtags": ["NewCollection", "StyleDrop", "OOTD", "FashionFinds"],
+      "deliverables": {
+        "REEL": 1,
+        "STORY": 0,
+        "PHOTO_POST": 2,
+        "CAROUSEL_POST": 0,
+        "VISIT_STORE": 0,
+        "PRODUCT_REVIEW_VIDEO": 0,
+        "EVENT_COVERAGE_VIDEO": 0,
+        "MENTION_IN_CAPTION": 0,
+        "TAG_BUSINESS": 0,
+        "GOOGLE_REVIEW": 0
+      },
+      "hashtags": [
+        "NewCollection",
+        "StyleDrop",
+        "OOTD",
+        "FashionFinds"
+      ],
       "sampleCaption": "Obsessed with how this new drop fits 😍 Styled it two ways - swipe to see both looks!",
       "approvalRequirements": "Brand will review styling and photos before the post goes live",
       "location": null,
-      "needsInput": ["location"]
+      "needsInput": [
+        "location"
+      ],
+      "goal": "Sales"
     },
     {
-      "keywords": ["gym", "fitness", "workout", "training", "yoga", "wellness", "health"],
+      "keywords": [
+        "gym",
+        "fitness",
+        "workout",
+        "training",
+        "yoga",
+        "wellness",
+        "health"
+      ],
       "title": "Train With Us: Membership Push",
       "description": "Creators will experience a session at our facility and share their honest workout experience, highlighting the equipment, coaching, and overall vibe to drive membership sign-ups.",
       "objective": "Grow new membership sign-ups through authentic creator experiences",
       "category": "Health & Fitness",
-      "secondaryCategories": ["Lifestyle"],
+      "secondaryCategories": [
+        "Lifestyle"
+      ],
       "platform": "Instagram",
-      "secondaryPlatforms": ["YouTube"],
+      "secondaryPlatforms": [
+        "YouTube"
+      ],
       "contentGuidelines": [
         "Show a real training or class segment",
         "Capture the facility/equipment briefly",
@@ -112,31 +211,59 @@
         "Avoid overly polished, ad-like delivery"
       ],
       "targetAudience": [
-        "Fitness-focused audience aged 20-40",
-        "People considering a new gym or studio",
-        "Wellness-focused local community"
+        "Fitness Creator"
       ],
       "suggestedDurationDays": 21,
       "creatorsNeeded": 3,
       "budgetMin": 9000,
       "budgetMax": 22000,
       "paymentType": "Fixed Fee",
-      "deliverables": "1 Reel, 2 Instagram Stories",
-      "hashtags": ["FitnessJourney", "TrainWithUs", "GymLife", "HealthyLifestyle"],
+      "deliverables": {
+        "REEL": 1,
+        "STORY": 2,
+        "PHOTO_POST": 0,
+        "CAROUSEL_POST": 0,
+        "VISIT_STORE": 0,
+        "PRODUCT_REVIEW_VIDEO": 0,
+        "EVENT_COVERAGE_VIDEO": 0,
+        "MENTION_IN_CAPTION": 0,
+        "TAG_BUSINESS": 0,
+        "GOOGLE_REVIEW": 0
+      },
+      "hashtags": [
+        "FitnessJourney",
+        "TrainWithUs",
+        "GymLife",
+        "HealthyLifestyle"
+      ],
       "sampleCaption": "First session done and I already feel the difference 💪 The coaching here is next level - full experience in my story.",
       "approvalRequirements": "Brand will review the session recap before posting",
       "location": null,
-      "needsInput": ["location"]
+      "needsInput": [
+        "location"
+      ],
+      "goal": "More Customers"
     },
     {
-      "keywords": ["skincare", "beauty", "makeup", "cosmetic", "skin", "glow"],
+      "keywords": [
+        "skincare",
+        "beauty",
+        "makeup",
+        "cosmetic",
+        "skin",
+        "glow"
+      ],
       "title": "Glow Up: Product Feature",
       "description": "Creators will incorporate our product into their skincare/beauty routine and share honest before-and-after style content over a short period.",
       "objective": "Build trust and drive trial for the featured beauty product",
       "category": "Beauty",
-      "secondaryCategories": ["Lifestyle"],
+      "secondaryCategories": [
+        "Lifestyle"
+      ],
       "platform": "Instagram",
-      "secondaryPlatforms": ["TikTok"],
+      "secondaryPlatforms": [
+        "TikTok"
+      ],
       "contentGuidelines": [
         "Show the product being used in a real routine",
         "Share honest first impressions",
@@ -144,21 +271,38 @@
         "No exaggerated claims - keep it authentic"
       ],
       "targetAudience": [
-        "Beauty and skincare enthusiasts aged 18-35",
-        "Followers who trust routine-based reviews",
-        "Shoppers researching before purchase"
+        "Lifestyle Creator"
       ],
       "suggestedDurationDays": 14,
       "creatorsNeeded": 5,
       "budgetMin": 7000,
       "budgetMax": 19000,
       "paymentType": "Fixed Fee",
-      "deliverables": "1 Reel, 2 Instagram Stories",
-      "hashtags": ["GlowUp", "SkincareRoutine", "BeautyFinds", "HonestReview"],
+      "deliverables": {
+        "REEL": 1,
+        "STORY": 2,
+        "PHOTO_POST": 0,
+        "CAROUSEL_POST": 0,
+        "VISIT_STORE": 0,
+        "PRODUCT_REVIEW_VIDEO": 0,
+        "EVENT_COVERAGE_VIDEO": 0,
+        "MENTION_IN_CAPTION": 0,
+        "TAG_BUSINESS": 0,
+        "GOOGLE_REVIEW": 0
+      },
+      "hashtags": [
+        "GlowUp",
+        "SkincareRoutine",
+        "BeautyFinds",
+        "HonestReview"
+      ],
       "sampleCaption": "Been using this for a week and my skin already feels different ✨ Full routine breakdown in my stories.",
       "approvalRequirements": "Brand will review the content before it's posted",
       "location": null,
-      "needsInput": ["location"]
+      "needsInput": [
+        "location"
+      ],
+      "goal": "Sales"
     },
     {
       "keywords": [],
@@ -168,7 +312,9 @@
       "category": "Lifestyle",
       "secondaryCategories": [],
       "platform": "Instagram",
-      "secondaryPlatforms": ["TikTok"],
+      "secondaryPlatforms": [
+        "TikTok"
+      ],
       "contentGuidelines": [
         "Introduce the brand naturally within the content",
         "Highlight one clear reason to try it",
@@ -176,37 +322,79 @@
         "Include a clear call-to-action in the caption"
       ],
       "targetAudience": [
-        "General local audience aged 18-40",
-        "Followers who trust creator recommendations"
+        "Any Creator"
       ],
       "suggestedDurationDays": 14,
       "creatorsNeeded": 4,
       "budgetMin": 6000,
       "budgetMax": 15000,
       "paymentType": "Fixed Fee",
-      "deliverables": "1 Instagram Reel, 2 Instagram Stories",
-      "hashtags": ["NewBrand", "MustTry", "SupportLocal"],
+      "deliverables": {
+        "REEL": 1,
+        "STORY": 2,
+        "PHOTO_POST": 0,
+        "CAROUSEL_POST": 0,
+        "VISIT_STORE": 0,
+        "PRODUCT_REVIEW_VIDEO": 0,
+        "EVENT_COVERAGE_VIDEO": 0,
+        "MENTION_IN_CAPTION": 0,
+        "TAG_BUSINESS": 0,
+        "GOOGLE_REVIEW": 0
+      },
+      "hashtags": [
+        "NewBrand",
+        "MustTry",
+        "SupportLocal"
+      ],
       "sampleCaption": "Just discovered this and had to share 👀 If you're into this kind of thing, you're going to love it.",
       "approvalRequirements": "Brand will review draft content before it's posted",
       "location": null,
-      "needsInput": ["location", "budgetMin"]
+      "needsInput": [
+        "location",
+        "budgetMin"
+      ],
+      "goal": "Brand Awareness"
     }
   ],
   "descriptionTemplates": [
     {
-      "keywords": ["coffee", "cafe", "food", "restaurant", "menu", "dish"],
+      "keywords": [
+        "coffee",
+        "cafe",
+        "food",
+        "restaurant",
+        "menu",
+        "dish"
+      ],
       "text": "Creators will feature the product through authentic, appetizing content that captures the taste and experience, encouraging their audience to come try it in person."
     },
     {
-      "keywords": ["clothing", "fashion", "apparel", "wear", "outfit"],
+      "keywords": [
+        "clothing",
+        "fashion",
+        "apparel",
+        "wear",
+        "outfit"
+      ],
       "text": "Creators will style and showcase the pieces in real outfits, highlighting fit and versatility to inspire their audience to shop the collection."
     },
     {
-      "keywords": ["gym", "fitness", "workout", "wellness", "health"],
+      "keywords": [
+        "gym",
+        "fitness",
+        "workout",
+        "wellness",
+        "health"
+      ],
       "text": "Creators will share their honest experience trying the service, highlighting what makes it worth a visit and encouraging their audience to book a session."
     },
     {
-      "keywords": ["skincare", "beauty", "makeup", "cosmetic"],
+      "keywords": [
+        "skincare",
+        "beauty",
+        "makeup",
+        "cosmetic"
+      ],
       "text": "Creators will incorporate the product into their routine and share honest impressions, helping their audience understand why it's worth trying."
     },
     {

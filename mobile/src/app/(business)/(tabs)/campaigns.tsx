@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { router } from 'expo-router';
+import { useCallback, useRef, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import {
@@ -70,6 +70,9 @@ export default function CampaignsScreen() {
   const [activeFilter, setActiveFilter] = useState<FilterKey>('All');
   const [publishingId, setPublishingId] = useState<string | null>(null);
   const loadingMoreRef = useRef(false);
+  const hasLoadedOnceRef = useRef(false);
+  const activeFilterRef = useRef(activeFilter);
+  activeFilterRef.current = activeFilter;
   const listRef = useRef<FlatList<Campaign>>(null);
   useScrollToTopOnTabPress('campaigns', () => listRef.current?.scrollToOffset({ offset: 0, animated: true }));
 
@@ -106,7 +109,24 @@ export default function CampaignsScreen() {
     }
   }
 
-  useEffect(() => { loadCampaigns(); }, []);
+  useFocusEffect(useCallback(() => {
+    // Only show the full-screen skeleton on the very first load. Later
+    // focuses (e.g. coming back from create-campaign or campaign-detail)
+    // invalidate every filter tab and silently reload the one in view —
+    // otherwise a campaign created/edited/closed elsewhere would keep
+    // showing its old status/count here until the app restarted. Reads
+    // activeFilter via a ref (not a dependency) so switching filter chips
+    // while already focused doesn't re-trigger this and fight selectFilter's
+    // own load.
+    if (!hasLoadedOnceRef.current) {
+      hasLoadedOnceRef.current = true;
+      void loadCampaigns();
+      return;
+    }
+    invalidateAllTabs();
+    setLoading(true);
+    void loadTab(activeFilterRef.current, 1, true).finally(() => setLoading(false));
+  }, []));
 
   const onRefresh = useCallback(() => loadCampaigns(true), [activeFilter]);
 

@@ -1,9 +1,9 @@
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { PageHeader } from '@/features/creator/components/PageHeader';
 import { PaymentMethodIcon } from '@/components/PaymentMethodIcon';
 import { isPaymentMethodId } from '@/utilities/paymentMethods';
-import { useEffect, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
@@ -40,10 +40,20 @@ export default function WalletScreen() {
       .catch(() => toast.error(t('wallet.loadError')));
   }
 
-  useEffect(() => {
-    setLoading(true);
-    loadAll().finally(() => setLoading(false));
-  }, []);
+  const hasFocusedOnceRef = useRef(false);
+  useFocusEffect(useCallback(() => {
+    // First load shows the full skeleton; a business's payment lands after
+    // navigating away from this screen, so later focuses need to refetch
+    // too — otherwise the balance/history here would only ever update on
+    // an app restart or by making a withdrawal from this same screen.
+    if (!hasFocusedOnceRef.current) {
+      hasFocusedOnceRef.current = true;
+      setLoading(true);
+      void loadAll().finally(() => setLoading(false));
+      return;
+    }
+    void loadAll();
+  }, []));
 
   async function handleWithdraw(amount: number, method: string) {
     const updated = await walletService.withdraw(amount, method);

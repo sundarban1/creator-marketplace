@@ -55,13 +55,19 @@ export function BusinessDrawerMenu({ visible, user, onClose, onLogout }: Props) 
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
 
   useEffect(() => {
+    // Re-fetches every time the drawer opens, not just once on mount — this
+    // component stays mounted for the whole app session (shown/hidden via
+    // `visible` + animation rather than navigation), so a mount-only fetch
+    // would keep showing whatever name was set at signup even after the
+    // business edits its profile.
+    if (!visible) return;
     profileService.getBusinessProfile()
       .then((profile) => {
         setBusinessName(profile.businessName);
         setLogoUrl(profile.logoUrl);
       })
       .catch(() => {});
-  }, []);
+  }, [visible]);
 
   useEffect(() => {
     if (visible) {

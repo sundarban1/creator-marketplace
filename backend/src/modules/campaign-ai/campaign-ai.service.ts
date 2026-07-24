@@ -1,4 +1,4 @@
-import Anthropic from '@anthropic-ai/sdk';
+import OpenAI from 'openai';
 import { CategoryScope } from '@prisma/client';
 import { env } from '../../config/env';
 import { logger } from '../../config/logger';
@@ -24,7 +24,7 @@ function matchByKeywords<T extends { keywords: string[] }>(templates: T[], hayst
   return matched ?? fallback ?? templates[0];
 }
 
-// Used when the Anthropic API is unavailable (no key, auth/billing failure, timeout,
+// Used when the OpenAI API is unavailable (no key, auth/billing failure, timeout,
 // or a malformed response) so campaign creation still works end-to-end for demos/dev.
 function pickDummyDraft(prompt: string): AiCampaignDraft {
   const { keywords, ...draft } = matchByKeywords(dummy.campaignTemplates, prompt);
@@ -36,8 +36,8 @@ function pickDummyDescription(input: SuggestDescriptionInput): string {
   return matchByKeywords(dummy.descriptionTemplates, haystack).text;
 }
 
-const MODEL = 'claude-haiku-4-5-20251001';
-const REQUEST_TIMEOUT_MS = 20_000;
+const MODEL = 'gpt-5-mini';
+const REQUEST_TIMEOUT_MS = 45_000;
 
 function buildSystemPrompt(categoryNames: string[], platformNames: string[]): string {
   return `You are a campaign-brief generator for a creator-marketplace app in Nepal, connecting brands with content creators for paid promotional campaigns.
@@ -58,13 +58,14 @@ Respond with a JSON object with EXACTLY these keys:
 - platform: string, the single best platform for this campaign
 - secondaryPlatforms: string[] (0-3), other platforms worth considering
 - contentGuidelines: string[] (2-6 short bullet points)
-- targetAudience: string[] (2-5 short bullet points describing who the content should reach)
+- goal: string, EXACTLY ONE of: "Brand Awareness", "More Customers", "Sales", "Followers & Engagement" — whichever best matches the campaign's main aim
+- targetAudience: string[] (1-3 items), which CREATORS should promote this (not the end consumer) — EXACTLY from this list only: "Food Creator", "Travel Creator", "Lifestyle Creator", "Fashion Creator", "Tech Creator", "Fitness Creator", "Student Creator", "Any Creator". Use "Any Creator" alone only if no specific type fits better; never combine it with other types.
 - suggestedDurationDays: number, how many days the campaign should run (typically 7-30)
 - creatorsNeeded: number, how many creators to recruit (typically 1-10)
 - budgetMin: number, suggested minimum budget in NPR (Nepali Rupees) for the whole campaign
 - budgetMax: number, suggested maximum budget in NPR
 - paymentType: string, e.g. "Fixed Fee"
-- deliverables: string, a short comma-separated description of expected content (e.g. "1 Instagram Reel, 2 Instagram Stories")
+- deliverables: object with EXACTLY these integer keys, each 0-10: "REEL", "STORY", "PHOTO_POST", "CAROUSEL_POST", "VISIT_STORE", "PRODUCT_REVIEW_VIDEO", "EVENT_COVERAGE_VIDEO", "MENTION_IN_CAPTION", "TAG_BUSINESS", "GOOGLE_REVIEW". Each number is how many pieces of that content type EACH INDIVIDUAL creator should produce (not multiplied by creatorsNeeded, not a campaign-wide total) — keep these small and realistic, typically 1-3 for the 2-3 content types that best fit the brief, 0 for everything else. At least one key must be > 0.
 - hashtags: string[] (3-8 relevant hashtags, no # needed but allowed)
 - sampleCaption: string, a ready-to-use example caption a creator could post
 - approvalRequirements: string, one sentence about whether/how the brand wants to review content before it's posted
@@ -84,7 +85,7 @@ export class CampaignAiService {
 
   async suggestDescription(input: SuggestDescriptionInput): Promise<string> {
     try {
-      if (!env.ANTHROPIC_API_KEY) throw new Error('ANTHROPIC_API_KEY not configured');
+      if (!env.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY not configured');
 
       const parts: string[] = [];
       if (input.title) parts.push(`Title: ${input.title}`);
@@ -92,19 +93,21 @@ export class CampaignAiService {
       if (input.platform) parts.push(`Platform: ${input.platform}`);
       if (input.deliverables) parts.push(`Deliverables: ${input.deliverables}`);
 
-      const client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY, timeout: REQUEST_TIMEOUT_MS });
-      const response = await client.messages.create({
+      const client = new OpenAI({ apiKey: env.OPENAI_API_KEY, timeout: REQUEST_TIMEOUT_MS });
+      const response = await client.chat.completions.create({
         model: MODEL,
-        max_tokens: 300,
-        system: DESCRIPTION_SYSTEM_PROMPT,
-        messages: [{ role: 'user', content: parts.join('\n') }],
+        max_completion_tokens: 300,
+        messages: [
+          { role: 'system', content: DESCRIPTION_SYSTEM_PROMPT },
+          { role: 'user', content: parts.join('\n') },
+        ],
       });
-      const block = response.content[0];
-      const description = block?.type === 'text' ? block.text.trim().replace(/^["']|["']$/g, '') : '';
+      const text = response.choices[0]?.message?.content ?? '';
+      const description = text.trim().replace(/^["']|["']$/g, '');
       if (description.length < 10) throw new Error('AI description was too short');
       return description;
     } catch (err) {
-      logger.warn({ err: err instanceof Error ? err.message : err }, 'Anthropic unavailable — falling back to dummy description');
+      logger.warn({ err: err instanceof Error ? err.message : err }, 'OpenAI unavailable — falling back to dummy description');
       return pickDummyDescription(input);
     }
   }
@@ -119,29 +122,32 @@ export class CampaignAiService {
 
     let draft: AiCampaignDraft;
     try {
-      if (!env.ANTHROPIC_API_KEY) throw new Error('ANTHROPIC_API_KEY not configured');
-      const raw = await this.callClaude(prompt, categoryNames, platformNames);
+      if (!env.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY not configured');
+      const raw = await this.callModel(prompt, categoryNames, platformNames);
       draft = this.parseAndValidate(raw);
     } catch (err) {
-      logger.warn({ err: err instanceof Error ? err.message : err }, 'Anthropic unavailable — falling back to dummy campaign draft');
+      logger.warn({ err: err instanceof Error ? err.message : err }, 'OpenAI unavailable — falling back to dummy campaign draft');
       draft = pickDummyDraft(prompt);
     }
     return this.matchToRealTaxonomy(draft, categoryNames, platformNames);
   }
 
-  private async callClaude(prompt: string, categoryNames: string[], platformNames: string[]): Promise<string> {
-    const client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY, timeout: REQUEST_TIMEOUT_MS });
-    const response = await client.messages.create({
+  private async callModel(prompt: string, categoryNames: string[], platformNames: string[]): Promise<string> {
+    const client = new OpenAI({ apiKey: env.OPENAI_API_KEY, timeout: REQUEST_TIMEOUT_MS });
+    const response = await client.chat.completions.create({
       model: MODEL,
-      max_tokens: 1500,
-      system: buildSystemPrompt(categoryNames, platformNames),
-      messages: [{ role: 'user', content: prompt }],
+      max_completion_tokens: 3000,
+      response_format: { type: 'json_object' },
+      messages: [
+        { role: 'system', content: buildSystemPrompt(categoryNames, platformNames) },
+        { role: 'user', content: prompt },
+      ],
     });
-    const block = response.content[0];
-    if (!block || block.type !== 'text') {
+    const text = response.choices[0]?.message?.content;
+    if (!text) {
       throw new Error('AI response did not contain text content');
     }
-    return block.text;
+    return text;
   }
 
   private parseAndValidate(raw: string): AiCampaignDraft {
@@ -152,6 +158,11 @@ export class CampaignAiService {
     } catch (err) {
       logger.debug({ err, raw }, 'AI campaign response was not valid JSON');
       throw new Error('AI campaign response was not valid JSON');
+    }
+    // The model is asked for 0-2 needsInput entries but doesn't always obey that cap —
+    // clamp instead of rejecting an otherwise well-formed draft over a soft hint field.
+    if (parsed && typeof parsed === 'object' && Array.isArray((parsed as Record<string, unknown>).needsInput)) {
+      (parsed as Record<string, unknown>).needsInput = ((parsed as Record<string, unknown>).needsInput as unknown[]).slice(0, 2);
     }
     const result = aiCampaignDraftSchema.safeParse(parsed);
     if (!result.success) {

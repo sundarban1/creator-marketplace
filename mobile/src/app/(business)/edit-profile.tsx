@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
+import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/components/Toast';
 import { profileService } from '@/services/profile';
@@ -34,6 +35,7 @@ export default function EditBusinessProfileScreen() {
   const C = useAppColors();
   const { t } = useLanguage();
   const toast = useToast();
+  const { updateUser } = useAuth();
 
   const [loading, setLoading]                   = useState(true);
   const [saving, setSaving]                     = useState(false);
@@ -86,6 +88,11 @@ export default function EditBusinessProfileScreen() {
         location:     location.trim() || null,
         categories,
       });
+      // The saved name only lives in the backend profile record until this
+      // syncs it into AuthContext — every screen that reads user.name
+      // (home greeting, drawer, settings) would otherwise stay stuck on
+      // whatever was typed during onboarding.
+      updateUser({ name: businessName.trim() });
       toast.success(t('profile.editBusiness.saveSuccess'));
       router.back();
     } catch (err: unknown) {

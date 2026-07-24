@@ -66,6 +66,13 @@ export default function BusinessHomeScreen() {
 
   useEffect(() => {
     void fetchCampaigns();
+  }, [languageVersion]);
+
+  // Refetches on every focus (not just mount) — editing the business name in
+  // edit-profile navigates back here rather than remounting this screen, so a
+  // mount-only fetch would keep showing the name typed during onboarding.
+  useFocusEffect(useCallback(() => {
+    notificationService.getBadge().then((r) => setBadgeCount(r.count)).catch(() => {});
     profileService.getBusinessProfile()
       .then((profile) => {
         setBusinessName(profile.businessName);
@@ -78,11 +85,7 @@ export default function BusinessHomeScreen() {
         setMissingFields(missing);
       })
       .catch(() => {});
-  }, [languageVersion]);
-
-  useFocusEffect(useCallback(() => {
-    notificationService.getBadge().then((r) => setBadgeCount(r.count)).catch(() => {});
-  }, []));
+  }, [languageVersion]));
 
   // Auto-refresh the moment connectivity is restored after being offline.
   const { reconnectedAt } = useNetworkStatus();

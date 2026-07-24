@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import {
   ActivityIndicator,
   FlatList,
@@ -439,6 +439,20 @@ export default function CampaignProposalsScreen() {
   }
 
   useEffect(() => { void load(); }, [campaignId]);
+
+  // The mount/campaignId effect above won't re-fire when returning to this
+  // same campaign from activity-timeline (e.g. after marking work complete
+  // or releasing payment) — refetch silently on every later focus so those
+  // status changes actually show up here.
+  const hasFocusedOnceRef = useRef(false);
+  useFocusEffect(useCallback(() => {
+    if (!hasFocusedOnceRef.current) {
+      hasFocusedOnceRef.current = true;
+      return;
+    }
+    void load(true);
+  }, [campaignId]));
+
   const onRefresh = useCallback(() => void load(true), [campaignId]);
 
   function handleAccept(p: Proposal) {
