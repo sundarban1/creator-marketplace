@@ -134,6 +134,17 @@ export async function getCampaignDetail(req: Request, res: Response, next: NextF
   }
 }
 
+// PUT /api/admin/campaigns/:id
+export async function updateCampaign(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { id } = req.params;
+    const updated = await service.updateCampaign(id!, req.body);
+    return success(res, updated, 'Campaign updated');
+  } catch (err) {
+    next(err);
+  }
+}
+
 // PATCH /api/admin/campaigns/:id/status
 export async function updateCampaignStatus(req: Request, res: Response, next: NextFunction) {
   try {

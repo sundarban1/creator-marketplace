@@ -7,6 +7,7 @@ import { isBusinessProfileComplete, REFERRAL_HOLD_DAYS } from '../business-refer
 import { CampaignRepository } from '../campaign/campaign.repository';
 import { CampaignService } from '../campaign/campaign.service';
 import { toCampaignDto } from '../campaign/campaign.dto';
+import type { UpdateCampaignInput } from '../campaign/campaign.schema';
 import { MessagingService } from '../messaging/messaging.service';
 import { notificationService } from '../notifications/notification.service';
 import { analyticsService } from '../analytics/analytics.service';
@@ -64,6 +65,10 @@ export class AdminService {
 
   getCampaignDetail(campaignId: string) {
     return this.repo.getCampaignDetail(campaignId);
+  }
+
+  updateCampaign(campaignId: string, input: UpdateCampaignInput) {
+    return this.campaignService.updateAsAdmin(campaignId, input);
   }
 
   async setCampaignStatus(campaignId: string, status: CampaignStatus) {

@@ -5,6 +5,7 @@ import { DataTable }    from '../components/DataTable';
 import { StatusBadge }  from '../components/StatusBadge';
 import { PageHeader }   from '../components/PageHeader';
 import { Pagination }   from '../components/Pagination';
+import { EditEventModal } from '../components/EditEventModal';
 import { api, type ApiCampaign } from '../lib/api';
 import { useApi }       from '../lib/useApi';
 
@@ -42,6 +43,7 @@ export function Campaigns() {
   const [statusFilter,   setStatusFilter]   = useState<string>('All');
   const [businessFilter, setBusinessFilter] = useState<string>('All');
   const [page, setPage] = useState(1);
+  const [editId, setEditId] = useState<string | null>(null);
 
   const { data, loading, error, refetch } = useApi(() =>
     api.admin.campaigns({
@@ -154,12 +156,20 @@ export function Campaigns() {
       key:    'actions',
       header: 'Actions',
       render: (row: ApiCampaign) => (
-        <button
-          className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
-          onClick={() => navigate(`/campaigns/${row.id}`)}
-        >
-          View
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+            onClick={() => navigate(`/campaigns/${row.id}`)}
+          >
+            View
+          </button>
+          <button
+            className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+            onClick={() => setEditId(row.id)}
+          >
+            Edit
+          </button>
+        </div>
       ),
     },
   ];
@@ -227,6 +237,14 @@ export function Campaigns() {
           <DataTable columns={columns} data={pageCampaigns} keyField="id" />
           <Pagination page={page} totalPages={totalPages} total={total} limit={PAGE_SIZE} onChange={setPage} />
         </>
+      )}
+
+      {editId && (
+        <EditEventModal
+          campaignId={editId}
+          onClose={() => setEditId(null)}
+          onSaved={() => { setEditId(null); refetch(); }}
+        />
       )}
     </div>
   );

@@ -29,7 +29,7 @@ import { PlacesAutocompleteInput } from '@/components/PlacesAutocompleteInput';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { campaignService } from '@/services/campaign';
 import type { Campaign } from '@/types';
-import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { F, RADIUS, SHADOW, MAX_CONTENT_WIDTH } from '@/utilities/constants';
 import { pickAndUpload } from '@/utilities/uploadImage';
 import {
   GOAL_OPTIONS, CREATOR_TYPES, DELIVERABLE_TYPES, DEFAULT_DELIVERABLES, summarizeDeliverables,
@@ -698,7 +698,6 @@ export default function CampaignDetailScreen() {
         <View style={em.overlay}>
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={em.scrim} onPress={() => setEditOpen(false)} />
           <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={em.sheetWrap}>
-            <MaxWidthContainer>
             <View style={[em.sheet, { backgroundColor: C.surface }]}>
               <View style={[em.handle, { backgroundColor: C.border }]} />
 
@@ -951,7 +950,6 @@ export default function CampaignDetailScreen() {
                 <Text style={em.saveBtnTxt}>{saving ? t('campaignDetail.saving') : t('campaignDetail.saveChanges')}</Text>
               </Pressable>
             </View>
-            </MaxWidthContainer>
           </KeyboardAvoidingView>
         </View>
       </Modal>
@@ -1137,7 +1135,7 @@ const em = StyleSheet.create({
   overlay:   { flex: 1, justifyContent: 'flex-end' },
   scrim:     { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.45)' },
   sheetWrap: { justifyContent: 'flex-end' },
-  sheet:     { borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl, paddingHorizontal: 20, paddingBottom: 32, maxHeight: '92%' },
+  sheet:     { borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl, paddingHorizontal: 20, paddingBottom: 32, maxHeight: '92%', width: '100%', maxWidth: MAX_CONTENT_WIDTH, alignSelf: 'center' },
   calSheet:  { borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl, padding: 20, paddingBottom: 40, gap: 16 },
   handle:    { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginTop: 12, marginBottom: 16 },
 

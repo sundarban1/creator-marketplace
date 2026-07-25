@@ -314,6 +314,52 @@ export class CampaignService {
     return dto;
   }
 
+  // Admin correction of any event — unlike update(), this skips the business-owner
+  // check (an admin isn't the owner) and the FIELDS_LOCKED_AFTER_PROPOSALS gate
+  // (an admin may need to fix budget/platforms/deliverables even after creators
+  // have already applied). The close/pause integrity guards and publish fan-out
+  // still apply since those protect data consistency, not brand-editing rights.
+  async updateAsAdmin(id: string, input: UpdateCampaignInput) {
+    const campaign = await this.repo.findById(id);
+    if (!campaign) {
+      throw new AppError('Campaign not found', 404);
+    }
+
+    if (input.status === 'CLOSED' && campaign.status !== 'CLOSED') {
+      const unresolved = await this.repo.countUnresolvedApplications(id);
+      if (unresolved > 0) {
+        throw new AppError('Cannot close this event — some proposals are still pending or in progress', 400);
+      }
+    }
+
+    if (input.status === 'PAUSED' && campaign.status !== 'PAUSED') {
+      const activeWork = await this.repo.countActiveWorkApplications(id);
+      if (activeWork > 0) {
+        throw new AppError('Cannot pause this event — a creator is actively working on an accepted proposal', 400);
+      }
+    }
+
+    const resolvedStatus = input.status === 'ACTIVE'
+      ? await this.resolvePublishStatus('ACTIVE')
+      : input.status;
+
+    const updated = await this.repo.update(id, {
+      ...input,
+      status:    resolvedStatus,
+      deadline:  input.deadline  ? new Date(input.deadline)  : undefined,
+      eventDate: input.eventDate ? new Date(input.eventDate) : undefined,
+    });
+
+    const dto = toCampaignDto(updated);
+
+    if (resolvedStatus === 'ACTIVE' && campaign.status !== 'ACTIVE') {
+      const business = await this.businessRepo.findById(campaign.businessId);
+      if (business) this.fanOutNewCampaign(dto, business, business.userId);
+    }
+
+    return dto;
+  }
+
   async delete(id: string, userId: string) {
     const business = await this.businessRepo.findByUserId(userId);
     if (!business) {

@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { Role } from '@prisma/client';
 import { authenticate, authorize } from '../../middleware/auth';
+import { validate } from '../../middleware/validate';
+import { updateCampaignSchema } from '../campaign/campaign.schema';
 import {
   getStats,
   getUsers,
@@ -11,6 +13,7 @@ import {
   getBusinesses,
   getCampaigns,
   getCampaignDetail,
+  updateCampaign,
   updateCampaignStatus,
   approveCampaign,
   rejectCampaign,
@@ -53,6 +56,7 @@ router.patch('/businesses/:id/reject', rejectBusiness);
 
 router.get('/campaigns', getCampaigns);
 router.get('/campaigns/:id', getCampaignDetail);
+router.put('/campaigns/:id', validate(updateCampaignSchema), updateCampaign);
 router.patch('/campaigns/:id/status', updateCampaignStatus);
 router.post('/campaigns/:id/approve', approveCampaign);
 router.post('/campaigns/:id/reject', rejectCampaign);

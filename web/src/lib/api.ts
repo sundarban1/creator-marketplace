@@ -571,6 +571,12 @@ export const api = {
     campaignDetail: (id: string) =>
       request<ApiCampaignDetail>('GET', `/api/admin/campaigns/${id}`),
 
+    // Admin edits aren't subject to the "locked after proposals" restriction that
+    // applies to a business editing their own event — the backend route intentionally
+    // bypasses both the ownership check and the field lock.
+    updateCampaign: (id: string, data: Partial<ApiCampaignDetail>) =>
+      request<ApiCampaignDetail>('PUT', `/api/admin/campaigns/${id}`, data),
+
     verifyUser: (id: string, verified: boolean) =>
       request<ApiUser>('PATCH', `/api/admin/users/${id}/verify`, { verified }),
 
