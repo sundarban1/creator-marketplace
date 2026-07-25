@@ -20,6 +20,7 @@ import { useToast } from '@/components/Toast';
 import { profileService } from '@/services/profile';
 import { LocationSearchModal } from '@/components/LocationSearchModal';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 
 function generateBusinessDescription(name: string, cats: string[]): string {
   if (cats.length === 0) return '';
@@ -112,6 +113,7 @@ export default function EditBusinessProfileScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
+      <MaxWidthContainer>
       <View style={{ backgroundColor: C.surface }}>
         <View style={styles.topBar}>
           <BackButton fallback="/(business)/profile" />
@@ -220,6 +222,7 @@ export default function EditBusinessProfileScreen() {
         <View style={{ height: 32 }} />
       </ScrollView>
       </KeyboardAvoidingView>
+      </MaxWidthContainer>
 
       <LocationSearchModal
         visible={locationModalOpen}

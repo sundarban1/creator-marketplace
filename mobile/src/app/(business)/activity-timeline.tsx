@@ -1,6 +1,8 @@
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { BackButton } from '@/components/BackButton';
+import { getTemplateImage, DEFAULT_TEMPLATE_IMAGE } from '@/features/creator/data/templateImages';
 import { PaymentMethodIcon } from '@/components/PaymentMethodIcon';
 import { isPaymentMethodId } from '@/utilities/paymentMethods';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -16,15 +18,20 @@ import {
   Text,
   TextInput,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
-import { campaignService } from '@/services/campaign';
+import { campaignService, type DeliverableVideo } from '@/services/campaign';
 import { chatService } from '@/services/chat';
+import { useDeliverableVideoUploads } from '@/hooks/useDeliverableVideoUploads';
+import { pickDeliverableVideosFromLibrary, pickDeliverableVideoFromCamera, promptDeliverableAttachmentChoice } from '@/utilities/chatAttachments';
+import { VideoPlayerModal } from '@/components/VideoPlayerModal';
 import type { Campaign } from '@/types';
 import { F, RADIUS, SHADOW as TOKEN_SHADOW } from '@/utilities/constants';
+import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -38,6 +45,7 @@ type AppInfo = {
   proposedRateRaw: number;
   submittedAt: string | null;
   deliverableUrls: string | null;
+  deliverableVideos: DeliverableVideo[];
   creatorProfileId: string;
   creatorUserId: string;
   creatorName: string;
@@ -91,6 +99,12 @@ function fmtDate(iso?: string | null): string {
   return new Date(iso).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
+function formatDuration(sec: number): string {
+  const m = Math.floor(sec / 60);
+  const s = Math.round(sec % 60);
+  return `${m}:${s.toString().padStart(2, '0')}`;
+}
+
 function parseDeliverables(raw?: string): string[] {
   if (!raw) return [];
   return raw.split(/[,\n]/).map(s => s.trim()).filter(Boolean);
@@ -110,9 +124,11 @@ function isValidUrl(url: string): boolean {
   }
 }
 
-function validateUrls(raw: string, t: TFn): string {
+// Creator can submit a video, deliverable links, or both — only the combination
+// of "no video AND no link" is rejected. Links, if present, must all be valid URLs.
+function validateSubmission(hasVideo: boolean, raw: string, t: TFn): string {
   const lines = parseUrls(raw);
-  if (lines.length === 0) return t('activityTimeline.urlValidationAtLeastOne');
+  if (!hasVideo && lines.length === 0) return t('activityTimeline.urlValidationAtLeastOne');
   const invalid = lines.filter(u => !isValidUrl(u));
   if (invalid.length === 1) return t('activityTimeline.urlValidationInvalidOne', { url: invalid[0] });
   if (invalid.length > 1)  return t('activityTimeline.urlValidationInvalidMany', { count: invalid.length });
@@ -217,14 +233,20 @@ function buildTimeline(ws: WS, paid: boolean, campaign: Campaign | null, app: Ap
 function Sheet({ visible, onClose, title, children }: {
   visible: boolean; onClose: () => void; title: string; children: React.ReactNode;
 }) {
+  // Capped so the ScrollView below actually has a bounded height to scroll
+  // within — without a maxHeight here, a ScrollView just grows to fit its
+  // content like any other View and never activates scrolling.
+  const { height: windowHeight } = useWindowDimensions();
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={sh.overlay} onPress={onClose}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={sh.kav}>
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={sh.sheet} onPress={e => e.stopPropagation()}>
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[sh.sheet, { maxHeight: windowHeight * 0.85 }]} onPress={e => e.stopPropagation()}>
             <View style={sh.handle} />
             <Text style={sh.title}>{title}</Text>
-            {children}
+            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+              {children}
+            </ScrollView>
           </Pressable>
         </KeyboardAvoidingView>
       </Pressable>
@@ -439,12 +461,46 @@ export default function CampaignWorkspaceScreen() {
   const [uploadNotes, setUploadNotes]   = useState('');
   const [urlError, setUrlError]         = useState('');
   const [revisionNote, setRevisionNote] = useState('');
+  const [playingVideo, setPlayingVideo] = useState<DeliverableVideo | null>(null);
+
+  const videoUploads = useDeliverableVideoUploads(app?.id ?? '', app?.deliverableVideos.length ?? 0);
+  // Once a session upload finishes it's already persisted server-side (see
+  // completeDeliverableVideo) — filtered out of `app.deliverableVideos` here so
+  // it isn't shown twice if `load()` re-fetches (e.g. on refocus) while the
+  // hook's own "done" card for it is still on screen.
+  const persistedVideos = (app?.deliverableVideos ?? []).filter(v => !videoUploads.items.some(i => i.result?.publicId === v.publicId));
 
   const progressScrollRef = useRef<ScrollView>(null);
 
   function showToast(msg: string) {
     setToast(msg);
     setTimeout(() => setToast(''), 3200);
+  }
+
+  async function handleAddDeliverableVideo() {
+    if (videoUploads.remainingSlots <= 0) {
+      showToast(t('activityTimeline.videoLimitReached'));
+      return;
+    }
+    const choice = await promptDeliverableAttachmentChoice();
+    if (!choice) return;
+    if (choice === 'video-camera') {
+      const video = await pickDeliverableVideoFromCamera();
+      if (video) videoUploads.addVideos([video]);
+    } else {
+      const videos = await pickDeliverableVideosFromLibrary(videoUploads.remainingSlots);
+      if (videos.length > 0) videoUploads.addVideos(videos);
+    }
+  }
+
+  async function handleRemoveDeliverableVideo(publicId: string) {
+    if (!app) return;
+    try {
+      await campaignService.removeDeliverableVideo(app.id, publicId);
+      setApp(a => a ? { ...a, deliverableVideos: a.deliverableVideos.filter(v => v.publicId !== publicId) } : a);
+    } catch (e: any) {
+      showToast(e?.message ?? 'Could not remove video');
+    }
   }
 
   async function load() {
@@ -465,6 +521,7 @@ export default function CampaignWorkspaceScreen() {
             proposedRateRaw:  myApp.proposedRateRaw,
             submittedAt:      myApp.workSubmittedAt ?? null,
             deliverableUrls:  null,
+            deliverableVideos: myApp.deliverableVideos ?? [],
             creatorProfileId: myApp.businessId,
             creatorUserId:    myApp.businessId,
             creatorName:      myApp.brand,
@@ -495,6 +552,7 @@ export default function CampaignWorkspaceScreen() {
             proposedRateRaw:  accepted.proposedRateRaw,
             submittedAt:      accepted.submittedAt,
             deliverableUrls:  accepted.deliverableUrls,
+            deliverableVideos: accepted.deliverableVideos ?? [],
             creatorProfileId: accepted.creator.id,
             creatorUserId:    accepted.creator.userId,
             creatorName:      accepted.creator.fullName,
@@ -551,7 +609,8 @@ export default function CampaignWorkspaceScreen() {
 
   async function handleSubmitWork() {
     if (!app) return;
-    const err = validateUrls(uploadUrls, t);
+    const hasVideo = persistedVideos.length > 0 || videoUploads.items.some(i => i.status === 'done');
+    const err = validateSubmission(hasVideo, uploadUrls, t);
     if (err) { setUrlError(err); return; }
     setUrlError('');
     setSubmitting(true);
@@ -620,7 +679,7 @@ export default function CampaignWorkspaceScreen() {
         const conv = await chatService.checkConversation(otherProfileId);
         if (conv?.id) {
           router.push({
-            pathname: isCreator ? '/(creator)/(tabs)/messages/[id]' : '/(business)/(tabs)/messages/[id]',
+            pathname: (isCreator ? '/(creator)/messages/[id]' : '/(business)/messages/[id]') as never,
             params: { id: conv.id, name: otherName, status: conv.status, focusInput: 'true', participantId: otherProfileId, participantRole: isCreator ? 'BUSINESS' : 'CREATOR' },
           });
           return;
@@ -663,15 +722,20 @@ export default function CampaignWorkspaceScreen() {
   const submittedUrls  = parseUrls(app?.deliverableUrls);
   const tlEvents       = buildTimeline(ws, paid, campaign, app, isCreator, t);
 
+  const summaryImage = campaign?.featureImageUrl
+    || getTemplateImage(campaign?.template, campaign?.categoryKey ?? campaign?.category)
+    || DEFAULT_TEMPLATE_IMAGE;
+
   return (
     <SafeAreaView style={[s.screen, { backgroundColor: C.background }]} edges={['top']}>
+      <MaxWidthContainer>
 
       {/* ── Header ── */}
       <View style={{ backgroundColor: C.surface }}>
         <View style={s.header}>
           <BackButton />
           <Text style={[s.headerTitle, { color: C.text }]} numberOfLines={1}>
-            {campaignTitle ?? campaign?.title ?? t('activityTimeline.headerWorkspace')}
+            {campaign?.title || campaignTitle || t('activityTimeline.headerWorkspace')}
           </Text>
           {/* Only message icon — no three dots. Payment release is the final
               stage, so chat closes here rather than staying open indefinitely. */}
@@ -693,20 +757,16 @@ export default function CampaignWorkspaceScreen() {
         {/* ── Campaign Summary Card ── */}
         <View style={[s.card, { backgroundColor: C.surface }]}>
           <View style={s.summaryRow}>
-            <View
-              style={[
-                s.thumb,
-                {
-                  backgroundColor: '#EEF2FF', shadowColor: '#7C3AED',
-                  shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5,
-                },
-              ]}
-            >
-              <Ionicons name="megaphone-outline" size={26} color="#7C3AED" />
+            {/* Shadow lives on the outer view — Android's elevation shadow doesn't
+                composite correctly with overflow:hidden + an image on the same view. */}
+            <View style={[s.thumb, { shadowColor: '#7C3AED', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}>
+              <View style={s.thumbClip}>
+                <Image source={{ uri: summaryImage }} style={s.thumbImage} contentFit="cover" />
+              </View>
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[s.summaryTitle, { color: C.text }]} numberOfLines={2}>
-                {campaign?.title ?? campaignTitle}
+                {campaign?.title || campaignTitle}
               </Text>
               <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                 onPress={() => {
@@ -910,12 +970,75 @@ export default function CampaignWorkspaceScreen() {
       {/* ── Upload Deliverables Modal ── */}
       <Sheet visible={showUpload} onClose={() => { setShowUpload(false); setUrlError(''); }} title={t('activityTimeline.modalUploadTitle')}>
         <Text style={sh.sub}>{t('activityTimeline.modalUploadSub')}</Text>
+
+        {/* ── Upload Videos — above the links field per design ── */}
+        <View style={{ marginTop: 4 }}>
+          <Text style={sh.inputLabel}>{t('activityTimeline.modalUploadVideosLabel')}</Text>
+          <Text style={up.videosSub}>{t('activityTimeline.modalUploadVideosSub')}</Text>
+          <View style={up.videoGrid}>
+            {persistedVideos.map((v) => (
+              <View key={v.publicId} style={up.videoCard}>
+                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={up.videoThumb} onPress={() => setPlayingVideo(v)}>
+                  <Ionicons name="play-circle" size={28} color="#7C3AED" />
+                </Pressable>
+                <Text style={up.videoLabel} numberOfLines={1}>{v.label}</Text>
+                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={up.videoRemoveBtn} onPress={() => handleRemoveDeliverableVideo(v.publicId)} hitSlop={6}>
+                  <Ionicons name="close-circle" size={18} color="#EF4444" />
+                </Pressable>
+              </View>
+            ))}
+
+            {videoUploads.items.filter(i => i.status !== 'cancelled').map((item) => (
+              <View key={item.localId} style={up.videoCard}>
+                <View style={up.videoThumb}>
+                  {item.status === 'done' ? (
+                    <Ionicons name="checkmark-circle" size={28} color="#16A34A" />
+                  ) : item.status === 'failed' ? (
+                    <Ionicons name="alert-circle" size={26} color="#EF4444" />
+                  ) : (
+                    <ActivityIndicator size="small" color="#7C3AED" />
+                  )}
+                  {(item.status === 'compressing' || item.status === 'uploading') && (
+                    <View style={up.progressTrack}>
+                      <View style={[up.progressFill, { width: `${Math.round(item.progress * 100)}%` }]} />
+                    </View>
+                  )}
+                </View>
+                <Text style={up.videoLabel} numberOfLines={1}>
+                  {item.status === 'compressing' ? 'Compressing…'
+                    : item.status === 'uploading' ? `Uploading… ${Math.round(item.progress * 100)}%`
+                    : item.status === 'failed' ? (item.error ?? 'Failed')
+                    : item.status === 'done' ? (item.result?.label ?? 'Video')
+                    : 'Waiting…'}
+                </Text>
+                {item.status === 'failed' ? (
+                  <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={up.videoRemoveBtn} onPress={() => videoUploads.retry(item.localId)} hitSlop={6}>
+                    <Text style={up.retryTxt}>{t('activityTimeline.videoRetryBtn')}</Text>
+                  </Pressable>
+                ) : item.status !== 'done' ? (
+                  <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={up.videoRemoveBtn} onPress={() => videoUploads.cancel(item.localId)} hitSlop={6}>
+                    <Ionicons name="close-circle" size={18} color="#9CA3AF" />
+                  </Pressable>
+                ) : null}
+              </View>
+            ))}
+
+            {videoUploads.remainingSlots > 0 && (
+              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={up.addVideoTile} onPress={handleAddDeliverableVideo}>
+                <Ionicons name="add" size={22} color="#7C3AED" />
+                <Text style={up.addVideoTxt}>{t('activityTimeline.modalUploadAddVideoBtn')}</Text>
+              </Pressable>
+            )}
+          </View>
+        </View>
+
         <View style={{ gap: 12, marginVertical: 14 }}>
           <View>
             <Text style={sh.inputLabel}>{t('activityTimeline.modalUploadLinksLabel')}</Text>
+            <Text style={up.videosSub}>{t('activityTimeline.modalUploadLinksSub')}</Text>
             <TextInput
               style={[sh.input, { color: '#111827', height: 100, borderColor: urlError ? '#EF4444' : '#E5E7EB' }]}
-              placeholder={"https://drive.google.com/...\nhttps://youtube.com/watch?v=..."}
+              placeholder="https://drive.google.com/..."
               placeholderTextColor="#9CA3AF"
               value={uploadUrls}
               onChangeText={(t) => { setUploadUrls(t); if (urlError) setUrlError(''); }}
@@ -966,20 +1089,50 @@ export default function CampaignWorkspaceScreen() {
       {/* ── Review Deliverables Modal ── */}
       <Sheet visible={showReview} onClose={() => setShowReview(false)} title={t('activityTimeline.modalReviewTitle')}>
 
-        {/* Submitted links — top */}
-        <View style={rv.section}>
-          <View style={rv.sectionHeader}>
-            <View
-              style={[
-                rv.sectionIcon,
-                { backgroundColor: '#F5F3FF', shadowColor: '#7C3AED', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
-              ]}
-            >
-              <Ionicons name="link" size={14} color="#7C3AED" />
+        {/* Submitted videos — above links, per design */}
+        {(app?.deliverableVideos ?? []).length > 0 && (
+          <View style={rv.section}>
+            <View style={rv.sectionHeader}>
+              <View
+                style={[
+                  rv.sectionIcon,
+                  { backgroundColor: '#F0FDF4', shadowColor: '#16A34A', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
+                ]}
+              >
+                <Ionicons name="videocam" size={14} color="#16A34A" />
+              </View>
+              <Text style={rv.sectionTitle}>{t('activityTimeline.modalReviewVideosSection')}</Text>
             </View>
-            <Text style={rv.sectionTitle}>{t('activityTimeline.modalReviewLinksSection')}</Text>
+            <View style={{ gap: 8 }}>
+              {(app?.deliverableVideos ?? []).map((v) => (
+                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                  key={v.publicId}
+                  style={rv.linkRow}
+                  onPress={() => setPlayingVideo(v)}>
+                  <Ionicons name="play-circle" size={16} color="#16A34A" />
+                  <Text style={rv.linkTxt} numberOfLines={1}>{v.label} · {formatDuration(v.durationSec)}</Text>
+                  <Ionicons name="chevron-forward" size={13} color="#A78BFA" />
+                </Pressable>
+              ))}
+            </View>
           </View>
-          {submittedUrls.length > 0 ? (
+        )}
+
+        {/* Submitted links — only rendered when the creator actually submitted a link;
+            a video-only submission should show just the video section, and vice versa. */}
+        {submittedUrls.length > 0 && (
+          <View style={[rv.section, (app?.deliverableVideos ?? []).length > 0 && { marginTop: 14 }]}>
+            <View style={rv.sectionHeader}>
+              <View
+                style={[
+                  rv.sectionIcon,
+                  { backgroundColor: '#F5F3FF', shadowColor: '#7C3AED', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
+                ]}
+              >
+                <Ionicons name="link" size={14} color="#7C3AED" />
+              </View>
+              <Text style={rv.sectionTitle}>{t('activityTimeline.modalReviewLinksSection')}</Text>
+            </View>
             <View style={{ gap: 8 }}>
               {submittedUrls.map((url, idx) => (
                 <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
@@ -992,13 +1145,18 @@ export default function CampaignWorkspaceScreen() {
                 </Pressable>
               ))}
             </View>
-          ) : (
+          </View>
+        )}
+
+        {/* True empty state — neither a video nor a link was submitted */}
+        {submittedUrls.length === 0 && (app?.deliverableVideos ?? []).length === 0 && (
+          <View style={rv.section}>
             <View style={rv.noLinks}>
               <Ionicons name="link-outline" size={20} color="#D1D5DB" />
               <Text style={rv.noLinksTxt}>{t('activityTimeline.modalReviewNoLinks')}</Text>
             </View>
-          )}
-        </View>
+          </View>
+        )}
 
         {/* What needs to be delivered */}
         {deliverables.length > 0 && (
@@ -1112,6 +1270,14 @@ export default function CampaignWorkspaceScreen() {
         </View>
       </Sheet>
 
+      <VideoPlayerModal
+        visible={!!playingVideo}
+        url={playingVideo?.url ?? null}
+        title={playingVideo?.label ?? ''}
+        onClose={() => setPlayingVideo(null)}
+      />
+
+      </MaxWidthContainer>
     </SafeAreaView>
   );
 }
@@ -1131,7 +1297,9 @@ const s = StyleSheet.create({
   card: { borderRadius: RADIUS.lg, padding: 16, ...TOKEN_SHADOW.card, overflow: 'hidden' },
 
   summaryRow:   { flexDirection: 'row', gap: 12, marginBottom: 12 },
-  thumb:        { width: 68, height: 68, borderRadius: RADIUS.md, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  thumb:        { width: 68, height: 68, borderRadius: RADIUS.md, flexShrink: 0 },
+  thumbClip:    { width: '100%', height: '100%', borderRadius: RADIUS.md, overflow: 'hidden' },
+  thumbImage:   { width: '100%', height: '100%' },
   summaryTitle: { fontSize: 15, fontFamily: F.bold, lineHeight: 21, marginBottom: 3 },
   summaryBrand: { fontSize: 13, fontFamily: F.semibold, marginBottom: 6 },
   metaRow:      { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
@@ -1225,6 +1393,18 @@ const up = StyleSheet.create({
   errorTxt:       { fontSize: 12, fontFamily: F.semibold, color: '#EF4444', flex: 1 },
   linkPreview:    { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderRadius: RADIUS.sm, paddingHorizontal: 10, paddingVertical: 7 },
   linkPreviewTxt: { flex: 1, fontSize: 12, fontFamily: F.regular },
+
+  videosSub:      { fontSize: 11, fontFamily: F.regular, color: '#9CA3AF', marginBottom: 10 },
+  videoGrid:      { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  videoCard:      { width: 90, alignItems: 'center', gap: 4 },
+  videoThumb:     { width: 90, height: 70, borderRadius: RADIUS.sm, backgroundColor: '#F5F3FF', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
+  videoLabel:     { fontSize: 10.5, fontFamily: F.medium, color: '#374151', maxWidth: 90, textAlign: 'center' },
+  videoRemoveBtn: { paddingHorizontal: 4 },
+  retryTxt:       { fontSize: 11, fontFamily: F.bold, color: '#7C3AED' },
+  progressTrack:  { position: 'absolute', bottom: 0, left: 0, right: 0, height: 4, backgroundColor: 'rgba(124,58,237,0.15)' },
+  progressFill:   { height: 4, backgroundColor: '#7C3AED' },
+  addVideoTile:   { width: 90, height: 70, borderRadius: RADIUS.sm, borderWidth: 1.5, borderColor: '#DDD6FE', borderStyle: 'dashed', justifyContent: 'center', alignItems: 'center', gap: 2 },
+  addVideoTxt:    { fontSize: 10, fontFamily: F.semibold, color: '#7C3AED' },
 });
 
 const sh = StyleSheet.create({

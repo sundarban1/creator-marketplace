@@ -1,4 +1,23 @@
 import { Prisma } from '@prisma/client';
+import { z } from 'zod';
+
+// Server-verified data (built from Cloudinary's own Admin API response, never
+// from client-submitted metadata — see CampaignService.completeDeliverableVideo)
+// that drives an in-app video player on the business side. Parsed with
+// `.catch([])` wherever read, unlike the bare `as` casts used for other Json
+// columns (socialHandles, goals, ...) which are just free-text user prefs —
+// a shape mismatch here would otherwise crash the player screen.
+export const deliverableVideoSchema = z.object({
+  publicId:     z.string(),
+  url:          z.string(),
+  thumbnailUrl: z.string(),
+  durationSec:  z.number(),
+  format:       z.string(),
+  sizeBytes:    z.number(),
+  label:        z.string(),
+  uploadedAt:   z.string(),
+});
+export type DeliverableVideo = z.infer<typeof deliverableVideoSchema>;
 
 export interface CampaignDto {
   id: string;
@@ -71,6 +90,7 @@ export interface ApplicationDto {
   workNote: string | null;
   submittedAt: string | null;
   deliverableUrls: string | null;
+  deliverableVideos: DeliverableVideo[];
   paymentStatus: string;
   paidAt: string | null;
   createdAt: string;
@@ -211,6 +231,7 @@ type RawApplication = {
   workNote: string | null;
   submittedAt: Date | null;
   deliverableUrls: string | null;
+  deliverableVideos?: Prisma.JsonValue;
   paymentStatus: string;
   paidAt: Date | null;
   createdAt: Date;
@@ -259,6 +280,7 @@ export function toApplicationDto(a: RawApplication): ApplicationDto {
     workNote:        a.workNote,
     submittedAt:     a.submittedAt ? a.submittedAt.toISOString() : null,
     deliverableUrls: a.deliverableUrls,
+    deliverableVideos: z.array(deliverableVideoSchema).catch([]).parse(a.deliverableVideos ?? []),
     paymentStatus:   a.paymentStatus ?? 'UNPAID',
     paidAt:          a.paidAt ? (a.paidAt instanceof Date ? a.paidAt.toISOString() : a.paidAt) : null,
     createdAt:       a.createdAt.toISOString(),

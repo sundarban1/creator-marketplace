@@ -31,10 +31,11 @@ import { getSocket } from '@/lib/socket';
 import { notificationService } from '@/services/notifications';
 import { incomingMessageEvents } from '@/lib/incomingMessageEvents';
 import { F, RADIUS } from '@/utilities/constants';
+import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { CHAT_EMOJIS } from '@/utilities/chatEmojis';
 import { formatPresence } from '@/utilities/presence';
 import {
-  pickImageFromLibrary, pickImageFromCamera, pickDocumentAttachment, pickVideoFromLibrary, promptAttachmentChoice,
+  pickImageFromLibrary, pickImageFromCamera, pickDocumentAttachment, pickVideoFromLibrary, pickVideoFromCamera, promptAttachmentChoice,
   type PickedAttachment, type PickedVideo,
 } from '@/utilities/chatAttachments';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
@@ -73,9 +74,11 @@ function isTransientNetworkError(e: unknown): boolean {
   // A definitive rejection from the server (e.g. "exceeds 2 minute limit") throws
   // a plain Error with a specific message but no HTTP status attached the same way
   // a generic fetch/timeout failure does — treat anything that isn't clearly a
-  // validation message as transient and worth retrying.
+  // validation message as transient and worth retrying. A user-initiated cancel
+  // is deliberately excluded too — it's handled separately in runVideoSend and
+  // must never be auto-retried.
   const msg = e instanceof Error ? e.message : '';
-  return !/limit|not supported|not allowed/i.test(msg);
+  return !/limit|not supported|not allowed|cancelled/i.test(msg);
 }
 
 function formatDateLabel(ts: string): string {
@@ -191,11 +194,11 @@ function LocalVideoPreview({ uri, style }: { uri: string; style: object }) {
 // ── Message Bubble ─────────────────────────────────────────────────────────────
 
 function MessageBubble({
-  msg, isSent, showAvatar, isLast, personName, personColor, personAvatar, onLongPress, onRetryVideo, onDeleteFailed,
+  msg, isSent, showAvatar, isLast, personName, personColor, personAvatar, onLongPress, onRetryVideo, onDeleteFailed, onCancelUpload,
 }: {
   msg: Message; isSent: boolean; showAvatar: boolean; isLast: boolean;
   personName: string; personColor: string; personAvatar?: string; onLongPress: () => void;
-  onRetryVideo: (msg: Message) => void; onDeleteFailed: (id: string) => void;
+  onRetryVideo: (msg: Message) => void; onDeleteFailed: (id: string) => void; onCancelUpload: (msg: Message) => void;
 }) {
   const C = useAppColors();
   const { t } = useLanguage();
@@ -296,8 +299,14 @@ function MessageBubble({
               )}
               {msg.status === 'uploading' && (
                 <View style={s.imageUploadingOverlay}>
-                  <ActivityIndicator size="small" color="#fff" />
                   <Text style={s.videoStatusTxt}>{Math.round((msg.uploadProgress ?? 0) * 100)}%</Text>
+                  <View style={s.progressTrack}>
+                    <View style={[s.progressFill, { width: `${Math.round((msg.uploadProgress ?? 0) * 100)}%` }]} />
+                  </View>
+                  <Pressable style={s.cancelUploadBtn} onPress={() => onCancelUpload(msg)} hitSlop={8}>
+                    <Ionicons name="close" size={12} color="#fff" />
+                    <Text style={s.cancelUploadTxt}>{t('messages.cancelUpload')}</Text>
+                  </Pressable>
                 </View>
               )}
               {msg.status === 'failed' && (
@@ -711,8 +720,14 @@ export default function CreatorChatRoomScreen() {
         return without.some((m) => m.id === serverMsg.id) ? without : [...without, serverMsg];
       });
     } catch (e) {
-      const attempt = (msg.retryCount ?? 0) + 1;
       const detail = e instanceof Error ? e.message : undefined;
+      if (detail === 'Video upload cancelled') {
+        // User-initiated cancel — remove the bubble entirely rather than
+        // showing a "failed" state, and never retry.
+        setMessages((prev) => prev.filter((m) => m.id !== msg.id));
+        return;
+      }
+      const attempt = (msg.retryCount ?? 0) + 1;
       if (isTransientNetworkError(e) && attempt <= 3) {
         updateMsg(msg.id, { retryCount: attempt, errorDetail: detail });
         await runVideoSend({ ...msg, retryCount: attempt });
@@ -726,29 +741,34 @@ export default function CreatorChatRoomScreen() {
 
   async function handleSendVideoAttachment(video: PickedVideo) {
     if (isSending.current) return;
-    const tempId = `temp-${Date.now()}`;
-    const caption = text.trim();
+    isSending.current = true;
+    try {
+      const tempId = `temp-${Date.now()}`;
+      const caption = text.trim();
 
-    const socket = getSocket();
-    if (socket && isTypingEmitted.current) {
-      socket.emit('typing:stop', { conversationId: id });
-      isTypingEmitted.current = false;
+      const socket = getSocket();
+      if (socket && isTypingEmitted.current) {
+        socket.emit('typing:stop', { conversationId: id });
+        isTypingEmitted.current = false;
+      }
+      if (typingTimer.current) clearTimeout(typingTimer.current);
+
+      const optimistic: Message = {
+        id: tempId, conversationId: id,
+        senderId: user?.id ?? '', text: caption,
+        timestamp: new Date().toISOString(), status: 'compressing',
+        type: 'VIDEO',
+        attachmentUrl: video.uri, attachmentDurationSec: video.durationSec,
+        attachmentWidth: video.width, attachmentHeight: video.height,
+        localUri: video.uri, uploadProgress: 0, retryCount: 0,
+      };
+      setMessages((prev) => [...prev, optimistic]);
+      clearComposer();
+      scrollToBottom();
+      await runVideoSend(optimistic);
+    } finally {
+      isSending.current = false;
     }
-    if (typingTimer.current) clearTimeout(typingTimer.current);
-
-    const optimistic: Message = {
-      id: tempId, conversationId: id,
-      senderId: user?.id ?? '', text: caption,
-      timestamp: new Date().toISOString(), status: 'compressing',
-      type: 'VIDEO',
-      attachmentUrl: video.uri, attachmentDurationSec: video.durationSec,
-      attachmentWidth: video.width, attachmentHeight: video.height,
-      localUri: video.uri, uploadProgress: 0, retryCount: 0,
-    };
-    setMessages((prev) => [...prev, optimistic]);
-    clearComposer();
-    scrollToBottom();
-    await runVideoSend(optimistic);
   }
 
   async function handleCameraPress() {
@@ -756,13 +776,19 @@ export default function CreatorChatRoomScreen() {
     if (file) void handleSendAttachment(file, 'IMAGE');
   }
 
+  // Video is only allowed when chatting with a business — not creator<->creator.
+  const allowVideo = participantRole !== 'CREATOR';
+
   async function handleAttachmentPress() {
-    const choice = await promptAttachmentChoice();
+    const choice = await promptAttachmentChoice(allowVideo);
     if (choice === 'gallery') {
       const file = await pickImageFromLibrary();
       if (file) void handleSendAttachment(file, 'IMAGE');
-    } else if (choice === 'video') {
+    } else if (choice === 'video-library') {
       const video = await pickVideoFromLibrary();
+      if (video) void handleSendVideoAttachment(video);
+    } else if (choice === 'video-camera') {
+      const video = await pickVideoFromCamera();
       if (video) void handleSendVideoAttachment(video);
     } else if (choice === 'document') {
       const file = await pickDocumentAttachment();
@@ -782,9 +808,12 @@ export default function CreatorChatRoomScreen() {
   const isPending  = status === 'PENDING';
   const isDeclined = status === 'DECLINED';
   const listItems  = buildItems(messages, user?.id ?? '', otherTyping);
+  // Blocks starting a second video while one is already compressing/uploading/sending.
+  const hasActiveUpload = messages.some((m) => m.status === 'compressing' || m.status === 'uploading' || m.status === 'sending');
 
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
+      <MaxWidthContainer>
       {/* ── Header ── */}
       <View style={[s.header, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
         <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[s.backBtn, { backgroundColor: C.background }]} hitSlop={4} onPress={() => router.canGoBack() ? router.back() : router.replace('/(creator)/messages' as never)}>
@@ -912,6 +941,7 @@ export default function CreatorChatRoomScreen() {
                 onLongPress={() => handleMessageLongPress(item.msg)}
                 onRetryVideo={(msg) => void runVideoSend(msg)}
                 onDeleteFailed={(msgId) => setMessages((prev) => prev.filter((m) => m.id !== msgId))}
+                onCancelUpload={(msg) => uploadTasks.current[msg.id]?.cancel()}
               />
             );
           }}
@@ -964,8 +994,8 @@ export default function CreatorChatRoomScreen() {
               <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={s.iconBtn} onPress={handleCameraPress} hitSlop={4}>
                 <Ionicons name="camera-outline" size={24} color={C.brinjal1} />
               </Pressable>
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={s.iconBtn} onPress={handleAttachmentPress} hitSlop={4}>
-                <Ionicons name="images-outline" size={24} color={C.brinjal1} />
+              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={s.iconBtn} onPress={handleAttachmentPress} disabled={hasActiveUpload} hitSlop={4}>
+                <Ionicons name="images-outline" size={24} color={hasActiveUpload ? C.textSecondary : C.brinjal1} />
               </Pressable>
               <View style={[s.inputWrap, { borderColor: C.border, backgroundColor: C.background }]}>
                 <Pressable onPress={toggleEmojiPanel} hitSlop={4}>
@@ -1014,6 +1044,7 @@ export default function CreatorChatRoomScreen() {
           </>
         )}
       </KeyboardAvoidingView>
+      </MaxWidthContainer>
     </SafeAreaView>
   );
 }
@@ -1090,6 +1121,10 @@ const s = StyleSheet.create({
   failedActions:    { flexDirection: 'row', gap: 8, marginTop: 4 },
   failedBtn:        { paddingHorizontal: 12, paddingVertical: 5, borderRadius: RADIUS.full, backgroundColor: '#fff' },
   failedBtnTxt:     { color: '#111827', fontSize: 11, fontFamily: F.semibold },
+  progressTrack:    { width: '70%', height: 4, borderRadius: RADIUS.full, backgroundColor: 'rgba(255,255,255,0.3)', overflow: 'hidden' },
+  progressFill:     { height: '100%', borderRadius: RADIUS.full, backgroundColor: '#fff' },
+  cancelUploadBtn:  { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2, paddingHorizontal: 10, paddingVertical: 4, borderRadius: RADIUS.full, backgroundColor: 'rgba(255,255,255,0.2)' },
+  cancelUploadTxt:  { color: '#fff', fontSize: 11, fontFamily: F.semibold },
   fileBubble:           { flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: RADIUS.lg, paddingHorizontal: 14, paddingVertical: 12, maxWidth: 220 },
   fileNameTxt:          { flex: 1, fontSize: 13, fontFamily: F.medium },
 

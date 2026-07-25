@@ -10,6 +10,7 @@ import {
   applyToCampaignSchema,
   nearbyQuerySchema,
   submitReviewSchema,
+  deliverableVideoCompleteSchema,
 } from './campaign.schema';
 
 const router = Router();
@@ -329,6 +330,28 @@ router.put(
   authenticate,
   authorize('CREATOR'),
   ctrl.submitWork.bind(ctrl)
+);
+
+router.post(
+  '/applications/:appId/deliverables/video/signature',
+  authenticate,
+  authorize('CREATOR'),
+  ctrl.getDeliverableVideoSignature.bind(ctrl)
+);
+
+router.post(
+  '/applications/:appId/deliverables/video/complete',
+  authenticate,
+  authorize('CREATOR'),
+  validate(deliverableVideoCompleteSchema),
+  ctrl.completeDeliverableVideo.bind(ctrl)
+);
+
+router.delete(
+  '/applications/:appId/deliverables/video',
+  authenticate,
+  authorize('CREATOR'),
+  ctrl.removeDeliverableVideo.bind(ctrl)
 );
 
 router.put(

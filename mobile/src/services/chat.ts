@@ -3,6 +3,7 @@ import type { ApiConversation, ApiMessage } from '@/lib/api';
 import type { Conversation, Message }       from '@/types';
 import { storage }           from '@/utilities/storage';
 import { ACCESS_TOKEN_KEY }  from '@/utilities/constants';
+import { requestVideoUploadSignature, uploadVideoToCloudinary, completeVideoUpload } from '@/services/cloudinaryVideoUpload';
 
 // ── Transformers ────────────────────────────────────────────────────────────────
 
@@ -49,14 +50,14 @@ export function toMessage(api: ApiMessage): Message {
 
 // ── Video upload task ───────────────────────────────────────────────────────────
 
-// Uses XMLHttpRequest (real upload-progress reporting via xhr.upload.onprogress,
-// same as the fetch-based multipart uploads elsewhere in the app) rather than
-// expo-file-system's native background upload task. The native task is a
-// separate OS-level uploader (okhttp on Android) that sends `Expect:
-// 100-continue` by default — through Render's/Cloudflare's proxy chain that
-// consistently got the connection killed mid-upload ("Request aborted" on the
-// server) even for small files, while every other JS-fetch-based upload in
-// this app worked fine. XHR keeps the same request path as those.
+// Orchestrates three steps against Cloudinary directly (never through our
+// backend, which only issues the signature and later records metadata):
+//   1. Fetch a fresh signed signature (always re-fetched on every start() —
+//      including retries — so a stale/expired signature is never reused).
+//   2. Upload the video bytes straight to Cloudinary with progress + cancel.
+//   3. Tell the backend the upload succeeded so it can create the message.
+// Keeps the same external shape as the old backend-proxied version so the
+// two chat screens barely change.
 export function createVideoUploadTask(
   conversationId: string,
   fileUri: string,
@@ -64,43 +65,23 @@ export function createVideoUploadTask(
   caption: string | undefined,
   onProgress: (fraction: number) => void,
 ): { start: () => Promise<Message>; cancel: () => void } {
-  const token = storage.get(ACCESS_TOKEN_KEY) ?? '';
-  let xhr: XMLHttpRequest | null = null;
+  let cancelled = false;
+  let innerTask: ReturnType<typeof uploadVideoToCloudinary> | null = null;
 
   return {
-    start: () => new Promise<Message>((resolve, reject) => {
-      xhr = new XMLHttpRequest();
-      xhr.open('POST', `${API_BASE}/api/messaging/conversations/${conversationId}/attachments/video`);
-      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+    start: async () => {
+      if (cancelled) throw new Error('Video upload cancelled');
+      const signature = await requestVideoUploadSignature(conversationId);
+      if (cancelled) throw new Error('Video upload cancelled');
 
-      xhr.upload.onprogress = (e) => {
-        if (e.lengthComputable && e.total > 0) onProgress(e.loaded / e.total);
-      };
+      innerTask = uploadVideoToCloudinary(fileUri, mimeType, signature, onProgress);
+      const { publicId } = await innerTask.start();
+      if (cancelled) throw new Error('Video upload cancelled');
 
-      xhr.onload = () => {
-        let parsed: { data?: ApiMessage; message?: string } = {};
-        try { parsed = JSON.parse(xhr!.responseText); } catch { /* falls through to generic error below */ }
-        if (xhr!.status >= 200 && xhr!.status < 300 && parsed.data) {
-          resolve(toMessage(parsed.data));
-        } else {
-          // Keep the server's own message (used by isTransientNetworkError to
-          // decide whether to auto-retry) but tag the HTTP status on so a real
-          // rejection (400/413/500) is distinguishable from a dropped connection
-          // once it reaches the failed-bubble UI as errorDetail.
-          const reason = parsed.message ?? xhr!.statusText ?? 'Video upload failed';
-          reject(new Error(`${reason} (HTTP ${xhr!.status})`));
-        }
-      };
-      xhr.onerror   = () => reject(new Error('Video upload failed — network request failed'));
-      xhr.onabort   = () => reject(new Error('Video upload cancelled'));
-      xhr.ontimeout = () => reject(new Error('Video upload timed out'));
-
-      const form = new FormData();
-      form.append('file', { uri: fileUri, name: `video_${Date.now()}.mp4`, type: mimeType } as unknown as Blob);
-      if (caption?.trim()) form.append('caption', caption.trim());
-      xhr.send(form);
-    }),
-    cancel: () => { xhr?.abort(); },
+      const apiMessage = await completeVideoUpload(conversationId, publicId, caption);
+      return toMessage(apiMessage);
+    },
+    cancel: () => { cancelled = true; innerTask?.cancel(); },
   };
 }
 

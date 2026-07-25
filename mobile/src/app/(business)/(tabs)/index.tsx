@@ -1,11 +1,12 @@
 import { router, useFocusEffect } from 'expo-router';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { TabSlider } from '@/components/TabSlider';
 import { useScrollToTopOnTabPress } from '@/hooks/useScrollToTopOnTabPress';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
+import { DrawerContext } from '@/context/DrawerContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
@@ -18,6 +19,7 @@ import type { Campaign } from '@/types';
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { getTemplateImage } from '@/features/creator/data/templateImages';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
+import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { TabColors } from '@/utilities/tabColors';
 
 const STATUS_STYLE = {
@@ -34,7 +36,8 @@ export default function BusinessHomeScreen() {
   const { categories: allCategories } = useAllCategories();
   const name = user?.name?.split(' ')[0] ?? 'there';
 
-  const { badgeCount: notifBadge, setBadgeCount } = useNotificationBadge();
+  const { setBadgeCount } = useNotificationBadge();
+  const { openDrawer } = useContext(DrawerContext);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -102,7 +105,12 @@ export default function BusinessHomeScreen() {
   const stats = {
     active:    campaigns.filter((c) => c.status === 'active').length,
     total:     campaigns.length,
-    proposals: campaigns.reduce((sum, c) => sum + c.proposals, 0),
+    // Excludes campaigns whose project has already reached its final status
+    // (closed/completed, or payment released) — those no longer need the
+    // business's attention.
+    proposals: campaigns
+      .filter((c) => c.status !== 'closed' && c.paymentStatus !== 'RELEASED')
+      .reduce((sum, c) => sum + c.proposals, 0),
     completed: campaigns.filter((c) => c.status === 'closed').length,
   };
 
@@ -127,7 +135,8 @@ export default function BusinessHomeScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
-      {/* ── Header: avatar, centered name, notifications — kept outside the
+      <MaxWidthContainer>
+      {/* ── Header: avatar, centered name, menu button — kept outside the
           ScrollView so it stays floating/pinned above the content instead of
           scrolling away. ── */}
       <View style={[styles.header, { backgroundColor: C.background, borderBottomColor: C.border }]}>
@@ -148,7 +157,7 @@ export default function BusinessHomeScreen() {
 
         <Text style={[styles.brandName, { color: C.brinjal1 }]} numberOfLines={1}>{displayName}</Text>
 
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.menuBtn} onPress={() => router.push('/(business)/notifications' as never)} hitSlop={6}>
+        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.menuBtn} onPress={openDrawer} hitSlop={6}>
           <View
             style={[
               styles.menuBtnInner,
@@ -156,12 +165,7 @@ export default function BusinessHomeScreen() {
               SHADOW.card,
             ]}
           >
-            <Ionicons name="notifications-outline" size={22} color={C.text} />
-            {notifBadge > 0 && (
-              <View style={styles.menuBadge}>
-                <Text style={styles.menuBadgeTxt}>{notifBadge > 99 ? '99+' : notifBadge}</Text>
-              </View>
-            )}
+            <Ionicons name="menu-outline" size={22} color={C.text} />
           </View>
         </Pressable>
       </View>
@@ -387,6 +391,7 @@ export default function BusinessHomeScreen() {
         )}
 
       </ScrollView>
+      </MaxWidthContainer>
     </SafeAreaView>
   );
 }
@@ -395,8 +400,8 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { paddingBottom: 40 },
 
-  // Header — avatar, centered business name, and notifications all in one row.
-  // Avatar and the notifications button are both 44×44, so the name's flex:1 +
+  // Header — avatar, centered business name, and menu button all in one row.
+  // Avatar and the menu button are both 44×44, so the name's flex:1 +
   // textAlign:'center' lands it on the row's true center, not just the
   // midpoint of the leftover space. Lives outside the ScrollView (see render)
   // so it stays pinned at the top instead of scrolling away. Same background
@@ -412,8 +417,6 @@ const styles = StyleSheet.create({
   headerDivider: { height: 1, marginHorizontal: 20 },
   menuBtn: { padding: 0 },
   menuBtnInner: { width: 44, height: 44, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
-  menuBadge:    { position: 'absolute', top: -3, right: -3, minWidth: 16, height: 16, borderRadius: RADIUS.full, paddingHorizontal: 3, backgroundColor: '#EF4444', justifyContent: 'center', alignItems: 'center', borderWidth: 1.5, borderColor: '#fff' },
-  menuBadgeTxt: { fontSize: 8, fontFamily: F.bold, color: '#fff' },
   brandName: { flex: 1, textAlign: 'center', fontSize: 20, fontFamily: F.bold, letterSpacing: -0.3 },
   avatarCircle: { width: 44, height: 44, borderRadius: RADIUS.full },
   avatarClip:   { width: '100%', height: '100%', borderRadius: RADIUS.full, overflow: 'hidden' },

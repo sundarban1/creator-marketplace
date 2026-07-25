@@ -20,6 +20,7 @@ import { profileService } from '@/services/profile';
 import { useCategories } from '@/hooks/useCategories';
 import { LocationSearchModal } from '@/components/LocationSearchModal';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 
 const TOTAL_STEPS = 2;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -189,6 +190,7 @@ export default function BusinessOnboardingScreen() {
           which handles iOS precisely on its own; stacking KeyboardAvoidingView's `padding` on top
           of that double-compensates for the same keyboard, pushing content up too far. */}
       <KeyboardAvoidingView style={styles.flex}>
+      <MaxWidthContainer>
 
       {/* ── Top bar ── */}
       <View style={styles.topBar}>
@@ -422,6 +424,7 @@ export default function BusinessOnboardingScreen() {
           </ScrollView>
         )}
 
+      </MaxWidthContainer>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

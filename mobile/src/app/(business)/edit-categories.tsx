@@ -17,6 +17,7 @@ import { useToast } from '@/components/Toast';
 import { profileService } from '@/services/profile';
 import { useCategories } from '@/hooks/useCategories';
 import { F, RADIUS } from '@/utilities/constants';
+import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 
 const MAX = 5;
 
@@ -77,6 +78,7 @@ export default function EditBusinessCategoriesScreen() {
 
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
+      <MaxWidthContainer>
       <View style={{ backgroundColor: C.surface }}>
         <View style={s.topBar}>
           <BackButton fallback="/(business)/profile" />
@@ -130,6 +132,7 @@ export default function EditBusinessCategoriesScreen() {
           })}
         </View>
       </ScrollView>
+      </MaxWidthContainer>
     </SafeAreaView>
   );
 }

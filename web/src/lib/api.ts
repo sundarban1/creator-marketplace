@@ -248,6 +248,17 @@ export interface ApiCampaign {
   _count:    { applications: number };
 }
 
+export interface ApiPaymentTransaction {
+  id:        string;
+  type:      'ESCROW_IN' | 'PAYOUT';
+  amount:    number;
+  method:    string | null;
+  campaign:  string;
+  from:      string;
+  to:        string;
+  createdAt: string;
+}
+
 export interface ApiNotification {
   id:        string;
   userId:    string;
@@ -397,7 +408,7 @@ export type ApiUserAnalytics =
   | ({ role: 'CREATOR' } & ApiCreatorAnalytics)
   | ({ role: 'BUSINESS' } & ApiBrandAnalytics);
 
-export type PlatformSettings = Record<string, boolean | string | number>;
+export type PlatformSettings = Record<string, boolean | string | number | string[]>;
 
 export interface PlatformFlags {
   businessRegistrationEnabled: boolean;
@@ -417,7 +428,10 @@ export interface ApiConversationAdmin {
   lastMessageAt?:  string | null;
   createdAt:     string;
   creator:       { fullName: string; avatarUrl?: string | null };
-  business:      { businessName: string; logoUrl?: string | null };
+  // Exactly one of these two is set — creator↔business conversations carry
+  // `business`, creator↔creator conversations carry `creator2` instead.
+  business:      { businessName: string; logoUrl?: string | null } | null;
+  creator2?:     { fullName: string; avatarUrl?: string | null } | null;
   campaign?:     { title: string } | null;
   _count:        { messages: number };
 }
@@ -614,6 +628,10 @@ export const api = {
 
     releasePayment: (applicationId: string) =>
       request<ApiApplication>('PATCH', `/api/admin/applications/${applicationId}/release-payment`),
+
+    payments: (params?: { page?: number; limit?: number; type?: string; search?: string }) =>
+      request<ApiPaymentTransaction[]>('GET', '/api/admin/payments', undefined,
+        params as Record<string, string | number | undefined>),
 
     analytics: (userId: string, range?: AnalyticsRange) =>
       request<ApiUserAnalytics>('GET', `/api/admin/analytics/${userId}`, undefined, range ? { range } : undefined),

@@ -15,7 +15,7 @@ export function LandingFooter() {
         <div className="grid gap-12 md:grid-cols-2">
           <motion.div initial="hidden" whileInView="show" viewport={VP} variants={stagger()}>
             <motion.div variants={fadeUp} className="mb-3 flex w-fit items-center">
-              <img src="/logo.png" alt="kolab" className="h-6 w-auto object-contain" />
+              <img src="/logo.png" alt="Kolab" className="h-6 w-auto object-contain" />
             </motion.div>
             <motion.p variants={fadeUp} className="max-w-xs text-sm leading-relaxed text-ink/75">
               {d.footer.tagline}
@@ -55,7 +55,7 @@ export function LandingFooter() {
         </motion.div>
 
         <div className="mt-10 flex flex-col items-center justify-between gap-3 border-t border-ink/10 pt-6 md:flex-row">
-          <p className="text-xs text-ink/75">© {new Date().getFullYear()} kolab. {d.footer.rights}</p>
+          <p className="text-xs text-ink/75">© {new Date().getFullYear()} Kolab. {d.footer.rights}</p>
           <p className="text-xs text-ink/75">{d.footer.madeIn} 🇳🇵</p>
         </div>
       </div>

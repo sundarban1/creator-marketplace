@@ -238,15 +238,27 @@ export function Conversations() {
                       </div>
                     </td>
 
-                    {/* Business */}
+                    {/* Business, or second creator for creator↔creator conversations */}
                     <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-2.5">
-                        <Avatar name={conv.business.businessName} url={conv.business.logoUrl} size={32} />
-                        <div>
-                          <p className="font-medium text-gray-800 text-sm leading-tight">{conv.business.businessName}</p>
-                          <p className="text-xs text-gray-400">Business</p>
+                      {conv.business ? (
+                        <div className="flex items-center gap-2.5">
+                          <Avatar name={conv.business.businessName} url={conv.business.logoUrl} size={32} />
+                          <div>
+                            <p className="font-medium text-gray-800 text-sm leading-tight">{conv.business.businessName}</p>
+                            <p className="text-xs text-gray-400">Business</p>
+                          </div>
                         </div>
-                      </div>
+                      ) : conv.creator2 ? (
+                        <div className="flex items-center gap-2.5">
+                          <Avatar name={conv.creator2.fullName} url={conv.creator2.avatarUrl} size={32} />
+                          <div>
+                            <p className="font-medium text-gray-800 text-sm leading-tight">{conv.creator2.fullName}</p>
+                            <p className="text-xs text-gray-400">Creator</p>
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-gray-400">—</span>
+                      )}
                     </td>
 
                     {/* Campaign */}
@@ -335,7 +347,7 @@ export function Conversations() {
             <p className="text-sm text-gray-500 text-center mb-6">
               This will permanently delete the conversation between{' '}
               <strong>{toDelete.creator.fullName}</strong> and{' '}
-              <strong>{toDelete.business.businessName}</strong> and all{' '}
+              <strong>{toDelete.business?.businessName ?? toDelete.creator2?.fullName ?? 'the other participant'}</strong> and all{' '}
               {toDelete._count.messages} message{toDelete._count.messages !== 1 ? 's' : ''}. This cannot be undone.
             </p>
             <div className="flex gap-3">

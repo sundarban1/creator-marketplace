@@ -22,6 +22,7 @@ import { Button } from '@/components/Button';
 import { LocationSearchModal } from '@/components/LocationSearchModal';
 import { creatorService } from '@/services/creator';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 
 // ─── EditProfileScreen ────────────────────────────────────────────────────────
 
@@ -148,6 +149,7 @@ export default function EditProfileScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
+      <MaxWidthContainer>
       <PageHeader title={t('profile.editCreator.headerTitle')} backFallback="/(creator)/profile" />
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -239,6 +241,7 @@ export default function EditProfileScreen() {
         <View style={{ height: 32 }} />
       </ScrollView>
       </KeyboardAvoidingView>
+      </MaxWidthContainer>
 
       <LocationSearchModal
         visible={locationModalOpen}

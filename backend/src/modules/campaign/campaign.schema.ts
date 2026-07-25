@@ -126,9 +126,14 @@ export const submitReviewSchema = z.object({
   comment: z.string().max(1000).optional(),
 });
 
+export const deliverableVideoCompleteSchema = z.object({
+  publicId: z.string().min(1),
+});
+
 export type CreateCampaignInput = z.infer<typeof createCampaignSchema>;
 export type UpdateCampaignInput = z.infer<typeof updateCampaignSchema>;
 export type CampaignListQuery = z.infer<typeof campaignListQuerySchema>;
 export type NearbyQuery = z.infer<typeof nearbyQuerySchema>;
 export type ApplyToCampaignInput = z.infer<typeof applyToCampaignSchema>;
 export type SubmitReviewInput = z.infer<typeof submitReviewSchema>;
+export type DeliverableVideoCompleteInput = z.infer<typeof deliverableVideoCompleteSchema>;

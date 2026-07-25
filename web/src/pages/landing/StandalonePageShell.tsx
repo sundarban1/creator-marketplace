@@ -12,7 +12,7 @@ export function StandaloneHeader() {
     <header className="border-b border-ink/10 bg-paper/80 backdrop-blur-md">
       <div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-5">
         <Link to="/" className="flex items-center">
-          <img src="/logo.png" alt="kolab" className="h-6 w-auto object-contain" />
+          <img src="/logo.png" alt="Kolab" className="h-6 w-auto object-contain" />
         </Link>
         <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-wide text-ink-soft">
           {(['en', 'ne'] as const).map((l) => (

@@ -1,12 +1,12 @@
 import { router, useFocusEffect } from 'expo-router';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Image, Keyboard, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableWithoutFeedback, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
+import { DrawerContext } from '@/context/DrawerContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
-import { useNotificationBadge } from '@/context/NotificationContext';
 import { CampaignListItem } from '@/features/creator/components/CampaignListItem';
 import { CampaignCard } from '@/features/creator/components/CampaignCard';
 import { CampaignCardSkeleton } from '@/features/creator/components/CampaignCardSkeleton';
@@ -17,6 +17,7 @@ import { displayCategory } from '@/features/creator/data/filterOptions';
 import { useCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { usePlatforms, getPlatformMeta } from '@/hooks/usePlatforms';
 import { EmptyState } from '@/components/EmptyState';
+import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { isValidNepaliPhone } from '@/utilities/phone';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useScrollToTopOnTabPress } from '@/hooks/useScrollToTopOnTabPress';
@@ -62,7 +63,7 @@ export default function HomeScreen() {
   // a real one — never show that in the header (as text, or as the avatar's
   // first-letter fallback initial, which would render a bare "+").
   const displayName = user?.name && !isValidNepaliPhone(user.name) ? user.name : 'Creator';
-  const { badgeCount: notifBadge } = useNotificationBadge();
+  const { openDrawer } = useContext(DrawerContext);
   const { t, languageVersion } = useLanguage();
   const C = useAppColors();
 
@@ -470,10 +471,15 @@ export default function HomeScreen() {
 
   // While the search bar is focused, or a search filter is actively applied,
   // keep the list scrolled down to Categories so it's ready to refine results.
-  // Once neither holds (blurred + search cleared), snap back to the top.
+  // This only scrolls *down* — snapping back to the top on blur would also
+  // fire when a category/platform pill steals focus from the input (native
+  // blur-on-tap-elsewhere), which should just select the pill, not scroll.
+  // The "snap back to top" side is handled explicitly by the outside-tap
+  // dismiss handler below instead.
   useEffect(() => {
-    const keepAtCategories = searchFocused || activeSearch.trim().length > 0;
-    listRef.current?.scrollToOffset({ offset: keepAtCategories ? categoriesYRef.current : 0, animated: true });
+    if (searchFocused || activeSearch.trim().length > 0) {
+      listRef.current?.scrollToOffset({ offset: categoriesYRef.current, animated: true });
+    }
   }, [searchFocused, activeSearch]);
 
   function handleFeaturedScroll(e: { nativeEvent: { contentOffset: { x: number }; contentSize: { width: number }; layoutMeasurement: { width: number } } }) {
@@ -487,13 +493,19 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
       {/* Tapping anywhere outside the search bar (header buttons, list background,
-          category/platform pills, etc.) dismisses the keyboard, which blurs the
-          search input and lets the scroll-to-top effect below run — nested
-          Pressables still claim their own taps first, so this only fires for
-          taps that no other touchable handles. */}
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+          etc.) dismisses the keyboard and snaps the list back to the top —
+          nested Pressables (category/platform pills, buttons) still claim
+          their own taps first, so this only fires for taps that no other
+          touchable handles, and selecting a pill never triggers this. */}
+      <TouchableWithoutFeedback
+        onPress={() => {
+          Keyboard.dismiss();
+          if (!activeSearch.trim()) listRef.current?.scrollToOffset({ offset: 0, animated: true });
+        }}
+        accessible={false}>
       <View style={{ flex: 1 }}>
-      {/* ── Header: avatar, search bar, notifications — kept outside the list so it
+      <MaxWidthContainer>
+      {/* ── Header: avatar, search bar, menu button — kept outside the list so it
           stays floating/pinned above the content instead of scrolling away. ── */}
       <View style={[styles.header, { backgroundColor: C.background, borderBottomColor: C.border }]}>
         <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
@@ -563,7 +575,7 @@ export default function HomeScreen() {
           </Pressable>
         </Pressable>
 
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.menuBtn} onPress={() => router.push('/(creator)/notifications' as never)} hitSlop={6}>
+        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.menuBtn} onPress={openDrawer} hitSlop={6}>
           <View
             style={[
               styles.menuBtnInner,
@@ -571,12 +583,7 @@ export default function HomeScreen() {
               SHADOW.card,
             ]}
           >
-            <Ionicons name="notifications-outline" size={22} color={C.text} />
-            {notifBadge > 0 && (
-              <View style={styles.menuBadge}>
-                <Text style={styles.menuBadgeTxt}>{notifBadge > 99 ? '99+' : notifBadge}</Text>
-              </View>
-            )}
+            <Ionicons name="menu-outline" size={22} color={C.text} />
           </View>
         </Pressable>
       </View>
@@ -665,6 +672,35 @@ export default function HomeScreen() {
         }
         ListHeaderComponent={
           <>
+        {/* ── Pending action attention banner ── */}
+        {pendingActions.length > 0 && (
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            style={styles.attentionBanner}
+            onPress={() => router.push('/(creator)/(tabs)/proposals')}>
+            <View
+              style={[
+                styles.attentionIconWrap,
+                { shadowColor: '#D97706', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
+              ]}
+            >
+              <Ionicons name="alert-circle" size={18} color="#D97706" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.attentionTitle}>{t('creator.home.actionRequired')}</Text>
+              <Text style={styles.attentionSub} numberOfLines={1}>
+                {pendingActions.length === 1
+                  ? pendingActions[0]!.type === 'start_work'
+                    ? t('creator.home.actionStartWork', { title: pendingActions[0]!.title })
+                    : pendingActions[0]!.type === 'upload_work'
+                      ? t('creator.home.actionUploadWork', { title: pendingActions[0]!.title })
+                      : t('creator.home.actionSubmitContent', { title: pendingActions[0]!.title })
+                  : t('creator.home.actionMultiple', { n: pendingActions.length })}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color="#D97706" />
+          </Pressable>
+        )}
+
         {/* ── Quick Actions ── */}
         <View style={styles.quickActionsRow}>
           {([
@@ -718,35 +754,6 @@ export default function HomeScreen() {
             <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.bannerClose} onPress={() => setBannerDismissed(true)} hitSlop={10}>
               <Ionicons name="close" size={16} color={C.textSecondary} />
             </Pressable>
-          </Pressable>
-        )}
-
-        {/* ── Pending action attention banner ── */}
-        {pendingActions.length > 0 && (
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-            style={styles.attentionBanner}
-            onPress={() => router.push('/(creator)/(tabs)/proposals')}>
-            <View
-              style={[
-                styles.attentionIconWrap,
-                { shadowColor: '#D97706', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
-              ]}
-            >
-              <Ionicons name="alert-circle" size={18} color="#D97706" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.attentionTitle}>{t('creator.home.actionRequired')}</Text>
-              <Text style={styles.attentionSub} numberOfLines={1}>
-                {pendingActions.length === 1
-                  ? pendingActions[0]!.type === 'start_work'
-                    ? t('creator.home.actionStartWork', { title: pendingActions[0]!.title })
-                    : pendingActions[0]!.type === 'upload_work'
-                      ? t('creator.home.actionUploadWork', { title: pendingActions[0]!.title })
-                      : t('creator.home.actionSubmitContent', { title: pendingActions[0]!.title })
-                  : t('creator.home.actionMultiple', { n: pendingActions.length })}
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={16} color="#D97706" />
           </Pressable>
         )}
 
@@ -979,6 +986,7 @@ export default function HomeScreen() {
           </>
         }
       />
+      </MaxWidthContainer>
       </View>
       </TouchableWithoutFeedback>
 
@@ -1022,8 +1030,8 @@ const styles = StyleSheet.create({
   scrollContent: { paddingBottom: 40 },
 
   // ── Header ──
-  // Avatar, search bar, and the notifications button all share this one row —
-  // avatar and notifications are fixed-width, the search bar stretches (flex:1)
+  // Avatar, search bar, and the menu button all share this one row —
+  // avatar and menu button are fixed-width, the search bar stretches (flex:1)
   // to fill whatever's left between them. Lives outside the FlatList (rendered
   // as a sibling, not ListHeaderComponent) so it stays pinned at the top
   // instead of scrolling away with the content. Same background as the page
@@ -1039,8 +1047,6 @@ const styles = StyleSheet.create({
   headerDivider: { height: 1, marginHorizontal: 20 },
   menuBtn:      { padding: 0 },
   menuBtnInner: { width: 44, height: 44, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
-  menuBadge:    { position: 'absolute', top: -3, right: -3, minWidth: 16, height: 16, borderRadius: RADIUS.full, paddingHorizontal: 3, backgroundColor: '#EF4444', justifyContent: 'center', alignItems: 'center', borderWidth: 1.5, borderColor: '#fff' },
-  menuBadgeTxt: { fontSize: 8, fontFamily: F.bold, color: '#fff' },
   avatarCircle: { width: 44, height: 44, borderRadius: RADIUS.full },
   avatarClip:   { width: '100%', height: '100%', borderRadius: RADIUS.full, overflow: 'hidden' },
   avatarImage:  { width: '100%', height: '100%' },

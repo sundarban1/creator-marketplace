@@ -21,6 +21,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/components/Toast';
 import { referralService, type ApiReferralOverview } from '@/services/referral';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 
 const STATUS_META: Record<string, { bg: string; text: string }> = {
   PENDING:   { bg: '#FEF3C7', text: '#92400E' },
@@ -79,6 +80,7 @@ export default function ReferralScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
+      <MaxWidthContainer>
       <PageHeader title={t('referral.headerTitle')} backFallback="/(creator)/" />
 
       {loading || !overview ? (
@@ -186,6 +188,7 @@ export default function ReferralScreen() {
         </ScrollView>
         </KeyboardAvoidingView>
       )}
+      </MaxWidthContainer>
     </SafeAreaView>
   );
 }

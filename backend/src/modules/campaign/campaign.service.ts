@@ -1,6 +1,9 @@
 import { CampaignStatus, ApplicationStatus, CampaignType } from '@prisma/client';
+import { v2 as cloudinary } from 'cloudinary';
+import { randomUUID } from 'crypto';
 import { AppError } from '../../middleware/error';
-import { toCampaignDto, toApplicationDto } from './campaign.dto';
+import { toCampaignDto, toApplicationDto, type DeliverableVideo } from './campaign.dto';
+import { generateVideoUploadSignature, videoThumbnailUrl, videoPlaybackUrl, deleteVideo } from '../../utils/cloudinary';
 import { BusinessRepository } from '../business/business.repository';
 import { CreatorRepository } from '../creator/creator.repository';
 import { CampaignRepository } from './campaign.repository';
@@ -22,6 +25,10 @@ import {
 } from '../../utils/email';
 
 const CAMPAIGN_FIELDS = ['title', 'description', 'category', 'goals', 'platforms', 'contentType', 'deliverables', 'paymentType', 'location', 'venue', 'benefits'] as const;
+
+// MP4 (H.264/AAC) is preferred; MOV is accepted and delivered as MP4 via
+// videoPlaybackUrl. Mirrors messaging.service.ts's same allow-list.
+const ALLOWED_DELIVERABLE_VIDEO_FORMATS = new Set(['mp4', 'mov', 'qt']);
 
 // Once a creator has submitted a proposal, the terms it was submitted against
 // (price, platform, deliverables) can no longer change under them — everything
@@ -102,16 +109,22 @@ export class CampaignService {
     const business = await this.businessRepo.findByUserId(userId);
     if (!business) throw new AppError('Business profile not found', 404);
 
-    const [freeQuotaSetting, priceSetting, used] = await Promise.all([
+    const [freeQuotaSetting, priceSetting, unlimitedEmailsSetting, used] = await Promise.all([
       this.adminRepo.getSetting('featuredEvent.freeQuota'),
       this.adminRepo.getSetting('featuredEvent.price'),
+      this.adminRepo.getSetting('featuredEvent.unlimitedEmails'),
       this.repo.countFeaturedCampaigns(business.id),
     ]);
     const freeQuota = Number(freeQuotaSetting) || 0;
     const price     = Number(priceSetting) || 0;
-    const remaining = Math.max(0, freeQuota - used);
+    const unlimitedEmails = Array.isArray(unlimitedEmailsSetting) ? unlimitedEmailsSetting as string[] : [];
+    const unlimited = unlimitedEmails.some((e) => e.toLowerCase() === business.user.email.toLowerCase());
+    // A large finite sentinel, not Infinity — Infinity serializes to `null`
+    // over JSON, which would break every `remaining > 0` / `<= 0` check that
+    // already exists downstream (create(), the mobile lock/paywall UI).
+    const remaining = unlimited ? Number.MAX_SAFE_INTEGER : Math.max(0, freeQuota - used);
 
-    return { freeQuota, used, remaining, price };
+    return { freeQuota, used, remaining, price, unlimited };
   }
 
   // Broadcasts a newly-live campaign to creators — shared by create(), the
@@ -254,6 +267,26 @@ export class CampaignService {
         if (input[field] !== undefined) {
           throw new AppError(`Cannot change ${field} — proposals have already been submitted for this event`, 400);
         }
+      }
+    }
+
+    // A campaign can only be manually closed once every proposal on it has
+    // been resolved — declined, or accepted and marked COMPLETED. This is
+    // what actually takes it out of the creator-facing (ACTIVE-only) listing.
+    if (input.status === 'CLOSED' && campaign.status !== 'CLOSED') {
+      const unresolved = await this.repo.countUnresolvedApplications(id);
+      if (unresolved > 0) {
+        throw new AppError('Cannot close this event — some proposals are still pending or in progress', 400);
+      }
+    }
+
+    // Pausing is less strict than closing — a merely pending applicant or an
+    // accepted-but-not-yet-started proposal doesn't block it, but a creator
+    // actively mid-work (IN_PROGRESS/SUBMITTED) shouldn't get interrupted.
+    if (input.status === 'PAUSED' && campaign.status !== 'PAUSED') {
+      const activeWork = await this.repo.countActiveWorkApplications(id);
+      if (activeWork > 0) {
+        throw new AppError('Cannot pause this event — a creator is actively working on an accepted proposal', 400);
       }
     }
 
@@ -653,6 +686,13 @@ export class CampaignService {
     if (application.status !== 'ACCEPTED') throw new AppError('Creator must be accepted first', 400);
 
     await this.repo.payForApplication(appId);
+    await this.repo.createEscrowTransaction({
+      applicationId: appId,
+      campaignId:    application.campaignId,
+      businessId:    business.id,
+      creatorId:     application.creatorId,
+      amount:        application.proposedRate,
+    });
 
     // Notify creator
     const creatorUserId = (application.creator as any)?.userId as string | undefined;
@@ -786,6 +826,16 @@ export class CampaignService {
     if (app.campaign.business.id !== business.id) throw new AppError('Not authorized', 403);
     if (app.workStatus !== 'SUBMITTED') throw new AppError('Work has not been submitted yet', 400);
 
+    // Videos are appended (capped at 3), not wholesale-replaced like
+    // deliverableUrls — without clearing them here, a creator who filled all
+    // 3 slots in this round would have zero slots left for the revised
+    // submission. Delete the Cloudinary assets too so they don't linger
+    // unreferenced; best-effort, matching this file's existing notification/
+    // email error-swallowing convention.
+    const existingVideos = await this.repo.getDeliverableVideos(appId);
+    await Promise.all(existingVideos.map((v) => deleteVideo(v.publicId))).catch(() => {});
+    if (existingVideos.length > 0) await this.repo.clearDeliverableVideos(appId);
+
     const updated = await this.repo.requestRevision(appId, note);
 
     const creatorUserId = app.creator.userId;
@@ -805,6 +855,91 @@ export class CampaignService {
       }
     }).catch(() => {});
 
+    return toApplicationDto(updated);
+  }
+
+  // ── Deliverable videos ───────────────────────────────────────────────────────
+  // Mirrors messaging.service.ts's requestVideoUploadSignature/completeVideoAttachment
+  // pair almost exactly (see that file for the "server verifies via Cloudinary's
+  // own Admin API, never trusts client-submitted metadata" rationale) — the two
+  // differences: no duration cap (deliverable content is legitimately longer than
+  // a 2-minute chat clip; only the 200MB size cap applies, enforced client-side
+  // before upload) and a hard cap of 3 videos per application instead of unlimited
+  // messages.
+
+  private async assertCanUploadDeliverableVideo(appId: string, userId: string) {
+    const creator = await this.creatorRepo.findByUserId(userId);
+    if (!creator) throw new AppError('Creator profile not found', 404);
+
+    const app = await this.repo.findApplicationById(appId);
+    if (!app) throw new AppError('Application not found', 404);
+    if (app.creatorId !== creator.id) throw new AppError('Not authorized', 403);
+    // Ownership alone (what submitWork checks) isn't enough here — workStatus
+    // can advance to APPROVED/COMPLETED while `status` stays 'ACCEPTED' for the
+    // application's entire lifetime, so a plain status check would let a creator
+    // keep attaching videos after the business already signed off.
+    if (['APPROVED', 'COMPLETED'].includes(app.workStatus)) {
+      throw new AppError('This project has already been approved — videos can no longer be added', 400);
+    }
+    return app;
+  }
+
+  async requestDeliverableVideoSignature(appId: string, userId: string) {
+    const app = await this.assertCanUploadDeliverableVideo(appId, userId);
+    const existing = await this.repo.getDeliverableVideos(appId);
+    if (existing.length >= 3) throw new AppError('Maximum of 3 videos already uploaded for this application', 409);
+
+    const publicId = `deliverable_${appId}_${Date.now()}_${randomUUID()}`;
+    return generateVideoUploadSignature('campaigns/deliverables', publicId);
+  }
+
+  async completeDeliverableVideo(appId: string, userId: string, publicId: string) {
+    // Re-checked fresh here, not just at signature time — a 200MB upload can
+    // take minutes, during which the business could approve the work.
+    await this.assertCanUploadDeliverableVideo(appId, userId);
+
+    const expectedPrefix = 'campaigns/deliverables/deliverable_';
+    if (!publicId.startsWith(expectedPrefix) || !publicId.includes(`_${appId}_`)) {
+      throw new AppError('Invalid upload reference', 400);
+    }
+
+    let resource;
+    try {
+      resource = await cloudinary.api.resource(publicId, { resource_type: 'video' });
+    } catch {
+      throw new AppError('Could not verify the uploaded video. Please try again.', 400);
+    }
+
+    if (!ALLOWED_DELIVERABLE_VIDEO_FORMATS.has((resource.format ?? '').toLowerCase())) {
+      await deleteVideo(publicId);
+      throw new AppError('Unsupported video format. Please use MP4 or MOV.', 400);
+    }
+
+    const existing = await this.repo.getDeliverableVideos(appId);
+    const entry: DeliverableVideo = {
+      publicId,
+      url:          videoPlaybackUrl(resource.secure_url),
+      thumbnailUrl: videoThumbnailUrl(resource.secure_url),
+      durationSec:  Math.round(resource.duration ?? 0),
+      format:       'mp4', // matches url — always delivered as MP4 regardless of source format
+      sizeBytes:    resource.bytes ?? 0,
+      label:        `Video ${existing.length + 1}`,
+      uploadedAt:   new Date().toISOString(),
+    };
+
+    const appended = await this.repo.appendDeliverableVideo(appId, entry);
+    if (!appended) {
+      await deleteVideo(publicId);
+      throw new AppError('Maximum of 3 videos already uploaded for this application', 409);
+    }
+
+    return entry;
+  }
+
+  async removeDeliverableVideo(appId: string, userId: string, publicId: string) {
+    await this.assertCanUploadDeliverableVideo(appId, userId);
+    await deleteVideo(publicId).catch(() => {});
+    const updated = await this.repo.removeDeliverableVideo(appId, publicId);
     return toApplicationDto(updated);
   }
 

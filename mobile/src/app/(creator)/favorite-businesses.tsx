@@ -21,6 +21,7 @@ import { useFavoriteBusinesses } from '@/hooks/useFavoriteBusinesses';
 import { ExploreCardSkeleton } from '@/components/ExploreCardSkeleton';
 import { useCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { F, RADIUS } from '@/utilities/constants';
+import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 
 function BusinessCard({ item, onRemove }: { item: BusinessListItem; onRemove: () => void }) {
   const C = useAppColors();
@@ -143,6 +144,7 @@ export default function FavoriteBusinessesScreen() {
 
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
+      <MaxWidthContainer>
       {/* Header — back button + search, same row */}
       <View style={[s.header, { backgroundColor: C.surface, borderBottomColor: C.border }]} accessibilityRole="header" accessibilityLabel={t('favoriteBrands.title')}>
         <BackButton />
@@ -262,6 +264,7 @@ export default function FavoriteBusinessesScreen() {
           }
         />
       )}
+      </MaxWidthContainer>
 
       <BusinessFilterModal
         visible={filterOpen}

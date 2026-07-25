@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Save, RefreshCw, CheckCircle } from 'lucide-react';
+import { Save, RefreshCw, CheckCircle, Plus, X } from 'lucide-react';
 import { PageHeader } from '../components/PageHeader';
 import { api, type PlatformSettings } from '../lib/api';
 
@@ -78,6 +78,91 @@ function InputField({
   );
 }
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function EmailListField({
+  label,
+  description,
+  settingKey,
+  settings,
+  onChange,
+}: {
+  label: string;
+  description: string;
+  settingKey: string;
+  settings: PlatformSettings;
+  onChange: (key: string, value: string[]) => void;
+}) {
+  const raw = settings[settingKey];
+  const emails = Array.isArray(raw) ? raw as string[] : [];
+  const [draft, setDraft]   = useState('');
+  const [error, setError]   = useState<string | null>(null);
+
+  function addEmail() {
+    const cleaned = draft.trim().toLowerCase();
+    if (!cleaned) return;
+    if (!EMAIL_RE.test(cleaned)) { setError('Enter a valid email address'); return; }
+    if (emails.includes(cleaned)) { setError('That email is already on the list'); return; }
+    onChange(settingKey, [...emails, cleaned]);
+    setDraft('');
+    setError(null);
+  }
+
+  function removeEmail(email: string) {
+    onChange(settingKey, emails.filter((e) => e !== email));
+  }
+
+  return (
+    <div className="mb-2">
+      <label className="block text-xs font-medium text-gray-600 mb-1.5">{label}</label>
+      <p className="text-xs text-gray-500 mb-2 leading-relaxed">{description}</p>
+
+      <div className="flex gap-2 mb-2">
+        <input
+          type="email"
+          value={draft}
+          onChange={(e) => { setDraft(e.target.value); setError(null); }}
+          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addEmail(); } }}
+          placeholder="brand@example.com"
+          className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+        />
+        <button
+          type="button"
+          onClick={addEmail}
+          className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50 transition-colors"
+        >
+          <Plus size={14} />
+          Add
+        </button>
+      </div>
+      {error && <p className="text-xs text-red-600 mb-2">{error}</p>}
+
+      {emails.length > 0 ? (
+        <div className="flex flex-wrap gap-2">
+          {emails.map((email) => (
+            <span
+              key={email}
+              className="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-1 text-xs font-medium text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-full"
+            >
+              {email}
+              <button
+                type="button"
+                onClick={() => removeEmail(email)}
+                className="p-0.5 rounded-full hover:bg-indigo-100 transition-colors"
+                aria-label={`Remove ${email}`}
+              >
+                <X size={11} />
+              </button>
+            </span>
+          ))}
+        </div>
+      ) : (
+        <p className="text-xs text-gray-400">No businesses on the allowlist yet.</p>
+      )}
+    </div>
+  );
+}
+
 // ── Default settings ───────────────────────────────────────────────────────────
 
 const DEFAULTS: PlatformSettings = {
@@ -100,10 +185,11 @@ const DEFAULTS: PlatformSettings = {
   'security.ipAllowlist':        false,
   'security.auditLogging':       true,
   'security.sessionTimeout':     true,
-  'platform.name':               'kolab',
+  'platform.name':               'Kolab',
   'platform.supportEmail':       'support@collab.com',
   'platform.commission':         '12',
-  'platform.description':        'kolab connects brands with top creators for authentic events.',
+  'platform.description':        'Kolab connects brands with top creators for authentic events.',
+  'featuredEvent.unlimitedEmails': [] as string[],
 };
 
 // ── Main component ─────────────────────────────────────────────────────────────
@@ -137,6 +223,10 @@ export function Settings() {
   }
 
   function setString(key: string, value: string) {
+    setSettings((prev) => ({ ...prev, [key]: value }));
+  }
+
+  function setArray(key: string, value: string[]) {
     setSettings((prev) => ({ ...prev, [key]: value }));
   }
 
@@ -274,6 +364,17 @@ export function Settings() {
               className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition resize-none"
             />
           </div>
+        </SectionCard>
+
+        {/* Featured Events */}
+        <SectionCard title="Unlimited Featured Events" subtitle="Businesses on this list can feature unlimited events for free, bypassing the standard free-quota limit">
+          <EmailListField
+            label="Allowlisted business emails"
+            description="Must match the email the business signs in with. Case-insensitive."
+            settingKey="featuredEvent.unlimitedEmails"
+            settings={settings}
+            onChange={setArray}
+          />
         </SectionCard>
 
         {/* Security */}

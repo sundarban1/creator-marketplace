@@ -20,6 +20,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useScrollToTopOnTabPress } from '@/hooks/useScrollToTopOnTabPress';
 import { campaignService } from '@/services/campaign';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { TabColors } from '@/utilities/tabColors';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -86,10 +87,18 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
   const { t } = useLanguage();
   const [expanded, setExpanded] = useState(false);
   const cfg        = STATUS_CFG[proposal.status];
+  // Mirrors the same stage logic as activity-timeline.tsx's statusLabel() and
+  // campaign-proposals.tsx's projectBtnConfig() — the NONE stage alone doesn't
+  // say whether the creator is still waiting on payment or free to start, so
+  // pull that from paymentStatus the same way those screens do.
   const trackCfg   = proposal.workStatus === 'APPROVED' && proposal.paymentStatus === 'RELEASED'
     ? { ...TRACK_CFG.APPROVED, labelKey: 'proposal.creator.trackApprovedReleasedLabel', subKey: 'proposal.creator.trackApprovedReleasedSub' }
     : proposal.workStatus === 'APPROVED'
     ? { ...TRACK_CFG.APPROVED, labelKey: 'proposal.creator.trackApprovedPendingLabel', subKey: 'proposal.creator.trackApprovedPendingSub' }
+    : proposal.workStatus === 'NONE' && proposal.paymentStatus !== 'UNPAID'
+    ? { ...TRACK_CFG.NONE, labelKey: 'proposal.creator.trackReadyToStartLabel', subKey: 'proposal.creator.trackReadyToStartSub' }
+    : proposal.workStatus === 'NONE'
+    ? { ...TRACK_CFG.NONE, labelKey: 'proposal.creator.trackWaitingPaymentLabel', subKey: 'proposal.creator.trackWaitingPaymentSub' }
     : TRACK_CFG[proposal.workStatus];
   const isFree     = proposal.campaignType === 'OPEN_EVENT';
   const accentColor = cfg.color;
@@ -310,6 +319,7 @@ export default function ProposalsScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
+      <MaxWidthContainer>
 
       {/* ── Tab bar ── */}
       <View style={styles.tabBar}>
@@ -352,6 +362,7 @@ export default function ProposalsScreen() {
           }
         />
       )}
+      </MaxWidthContainer>
     </SafeAreaView>
   );
 }

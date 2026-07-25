@@ -24,6 +24,7 @@ import { useKeyboardOffset } from '@/hooks/useKeyboardOffset';
 import { creatorService, type ApiCreatorPublicProfile } from '@/services/creator';
 import { chatService } from '@/services/chat';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
 import type { ApiCategory } from '@/services/category';
 
@@ -195,6 +196,7 @@ export default function CreatorPeerDetailScreen() {
 
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
+      <MaxWidthContainer>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
 
         {/* ── Hero Cover ── */}
@@ -245,6 +247,14 @@ export default function CreatorPeerDetailScreen() {
           ) : null}
         </View>
 
+        {/* ── Bio ── */}
+        {profile.bio ? (
+          <View style={[s.section, { backgroundColor: C.surface }]}>
+            <SectionTitle label={t('creatorDetailExtra.sectionAbout')} color={C.textSecondary} />
+            <Text style={[s.bioText, { color: C.text }]}>{profile.bio}</Text>
+          </View>
+        ) : null}
+
         {/* ── Stats ── */}
         {profile.stats && (
           <View style={[s.section, { backgroundColor: C.surface }]}>
@@ -277,14 +287,6 @@ export default function CreatorPeerDetailScreen() {
             </View>
           </View>
         )}
-
-        {/* ── Bio ── */}
-        {profile.bio ? (
-          <View style={[s.section, { backgroundColor: C.surface }]}>
-            <SectionTitle label={t('creatorDetailExtra.sectionAbout')} color={C.textSecondary} />
-            <Text style={[s.bioText, { color: C.text }]}>{profile.bio}</Text>
-          </View>
-        ) : null}
 
         {/* ── Categories ── */}
         {profile.categories.length > 0 && (
@@ -425,6 +427,7 @@ export default function CreatorPeerDetailScreen() {
           </Pressable>
         )}
       </View>
+      </MaxWidthContainer>
 
       {/* Request message modal */}
       <Modal visible={showModal} transparent animationType="slide" onRequestClose={() => setShowModal(false)}>

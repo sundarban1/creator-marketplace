@@ -26,6 +26,7 @@ import { FeatureImagePicker } from '@/features/creator/components/FeatureImagePi
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { usePlatforms, getPlatformMeta } from '@/hooks/usePlatforms';
 import { PlacesAutocompleteInput } from '@/components/PlacesAutocompleteInput';
+import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { campaignService } from '@/services/campaign';
 import type { Campaign } from '@/types';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
@@ -338,21 +339,26 @@ export default function CampaignDetailScreen() {
           title:        editForm.title.trim(),
           description:  editForm.description.trim() || undefined,
           featureImageUrl: editForm.featureImageUrl,
-          platforms:    editForm.platforms,
           goals:        [editForm.goal],
           contentType:  editForm.goal,
-          deliverables: summarizeDeliverables(editForm.deliverables, [editForm.goal], t),
           targetAudience: editForm.targetAudience,
           hashtags:       editForm.hashtags,
           objective:      editForm.objective.trim() || undefined,
           contentGuidelines: editForm.contentGuidelines.map((x) => x.trim()).filter(Boolean),
           creatorsNeeded: Number(editForm.creatorsNeeded) || undefined,
           status:       editForm.status,
-          budgetMin:    Number(editForm.budgetMin),
-          budgetMax:    Number(editForm.budgetMax),
           deadline:     editForm.deadline!.toISOString(),
           location:     editForm.location.trim(),
           isFeatured:   editForm.isFeatured,
+          // Locked by the backend once proposals exist — only send these when
+          // the UI actually allows changing them, otherwise the whole update
+          // is rejected even for unrelated fields like title/description.
+          ...(hasProposals ? {} : {
+            platforms:    editForm.platforms,
+            deliverables: summarizeDeliverables(editForm.deliverables, [editForm.goal], t),
+            budgetMin:    Number(editForm.budgetMin),
+            budgetMax:    Number(editForm.budgetMax),
+          }),
         });
       }
       const fresh = await campaignService.getById(campaign!.id);
@@ -432,6 +438,7 @@ export default function CampaignDetailScreen() {
 
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
+      <MaxWidthContainer>
 
       {/* Header */}
       <View style={[s.header, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
@@ -684,12 +691,14 @@ export default function CampaignDetailScreen() {
           </Pressable>
         )}
       </View>
+      </MaxWidthContainer>
 
       {/* ── Edit Campaign Modal ── */}
       <Modal visible={editOpen} transparent animationType="slide" onRequestClose={() => setEditOpen(false)}>
         <View style={em.overlay}>
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={em.scrim} onPress={() => setEditOpen(false)} />
           <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={em.sheetWrap}>
+            <MaxWidthContainer>
             <View style={[em.sheet, { backgroundColor: C.surface }]}>
               <View style={[em.handle, { backgroundColor: C.border }]} />
 
@@ -942,6 +951,7 @@ export default function CampaignDetailScreen() {
                 <Text style={em.saveBtnTxt}>{saving ? t('campaignDetail.saving') : t('campaignDetail.saveChanges')}</Text>
               </Pressable>
             </View>
+            </MaxWidthContainer>
           </KeyboardAvoidingView>
         </View>
       </Modal>

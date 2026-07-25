@@ -1,6 +1,5 @@
 export type UserStatus = 'active' | 'inactive' | 'banned';
 export type CampaignStatus = 'active' | 'pending' | 'completed' | 'cancelled';
-export type PaymentStatus = 'paid' | 'pending' | 'failed' | 'refunded';
 export type ReportStatus = 'open' | 'reviewing' | 'resolved' | 'dismissed';
 
 export interface User {
@@ -49,17 +48,6 @@ export interface Campaign {
   proposals: number;
   deadline: string;
   category: string;
-}
-
-export interface Payment {
-  id: string;
-  from: string;
-  to: string;
-  amount: string;
-  status: PaymentStatus;
-  date: string;
-  method: string;
-  campaign: string;
 }
 
 export interface Report {
@@ -136,17 +124,6 @@ export const campaigns: Campaign[] = [
   { id: 'cp6', title: 'Wellness Wednesday', business: 'GreenLife Corp.', platform: 'YouTube', budget: 'Rs. 4,100', status: 'active', proposals: 14, deadline: '2024-08-15', category: 'Health' },
   { id: 'cp7', title: 'Holiday Gift Guide', business: 'NovaBrands Inc.', platform: 'TikTok', budget: 'Rs. 15,000', status: 'pending', proposals: 0, deadline: '2024-11-01', category: 'Retail' },
   { id: 'cp8', title: 'Fitness Challenge 30', business: 'GreenLife Corp.', platform: 'YouTube', budget: 'Rs. 6,000', status: 'cancelled', proposals: 9, deadline: '2024-07-01', category: 'Health' },
-];
-
-export const payments: Payment[] = [
-  { id: 'py1', from: 'StyleCo Brand', to: 'Alex Rivera', amount: 'Rs. 1,200', status: 'paid', date: '2024-06-10', method: 'Bank Transfer', campaign: 'Summer Collection Launch' },
-  { id: 'py2', from: 'NovaBrands Inc.', to: 'Mia Chen', amount: 'Rs. 2,800', status: 'paid', date: '2024-06-09', method: 'PayPal', campaign: 'Back to School Campaign' },
-  { id: 'py3', from: 'TechGadgets Inc.', to: 'Jordan Blake', amount: 'Rs. 950', status: 'failed', date: '2024-06-08', method: 'Bank Transfer', campaign: 'Tech Review Series' },
-  { id: 'py4', from: 'UrbanWear Ltd.', to: 'Sofia Ruiz', amount: 'Rs. 4,500', status: 'pending', date: '2024-06-07', method: 'Stripe', campaign: 'Urban Street Style' },
-  { id: 'py5', from: 'FoodieHub Co.', to: 'Priya Sharma', amount: 'Rs. 800', status: 'paid', date: '2024-06-06', method: 'PayPal', campaign: 'Foodie Friday Challenge' },
-  { id: 'py6', from: 'GreenLife Corp.', to: 'Marcus Lee', amount: 'Rs. 1,650', status: 'paid', date: '2024-06-05', method: 'Stripe', campaign: 'Wellness Wednesday' },
-  { id: 'py7', from: 'UrbanWear Ltd.', to: 'Aisha Khan', amount: 'Rs. 2,200', status: 'refunded', date: '2024-06-04', method: 'Bank Transfer', campaign: 'Urban Street Style' },
-  { id: 'py8', from: 'StyleCo Brand', to: 'Tyler James', amount: 'Rs. 600', status: 'pending', date: '2024-06-03', method: 'PayPal', campaign: 'Summer Collection Launch' },
 ];
 
 export const reports: Report[] = [

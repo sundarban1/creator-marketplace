@@ -9,6 +9,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { authService } from '@/services/auth';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 
 const OTP_LENGTH = 6;
 const RESEND_SECONDS = 30;
@@ -205,6 +206,7 @@ export default function VerifyScreen() {
         </View>
 
         {/* ── Card ───────────────────────────────────────────────────────────── */}
+        <MaxWidthContainer>
         <View style={[styles.card, { backgroundColor: C.preLoginBackground }]}>
 
           {/* OTP boxes */}
@@ -291,6 +293,7 @@ export default function VerifyScreen() {
             </View>
           )}
         </View>
+        </MaxWidthContainer>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

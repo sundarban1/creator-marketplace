@@ -15,6 +15,7 @@ import {
   analyticsService, type ApiBrandAnalytics, type AnalyticsRange,
 } from '@/services/analytics';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 
 const RANGES: { value: AnalyticsRange; labelKey: string }[] = [
   { value: '7d',   labelKey: 'analytics.range7d' },
@@ -98,6 +99,7 @@ export default function BusinessAnalyticsScreen() {
 
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
+      <MaxWidthContainer>
       <View style={{ backgroundColor: C.surface }}>
         <View style={s.topBar}>
           <BackButton fallback="/(business)/" />
@@ -156,6 +158,7 @@ export default function BusinessAnalyticsScreen() {
           </View>
         </ScrollView>
       )}
+      </MaxWidthContainer>
     </SafeAreaView>
   );
 }

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Modal,
   Pressable,
@@ -20,6 +21,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { campaignService } from '@/services/campaign';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 
 type WS = 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED';
 type PS = 'UNPAID' | 'PAID' | 'RELEASED';
@@ -47,7 +49,9 @@ function projectBtnConfig(ws: WS, paymentStatus: PS, t: TFn) {
   if (ws === 'APPROVED')   return { label: t('campaignProposals.awaitingPaymentRelease'), icon: 'hourglass-outline'     as const, color: '#EA580C' };
   if (ws === 'SUBMITTED')  return { label: t('campaignProposals.reviewDeliverables'),     icon: 'eye'                   as const, color: '#D97706' };
   if (ws === 'IN_PROGRESS')return { label: t('campaignProposals.creatorIsWorking'),       icon: 'brush'                 as const, color: '#7C3AED' };
-  return                          { label: t('campaignProposals.startTheProject'),        icon: 'rocket'                as const, color: '#4F46E5' };
+  if (paymentStatus === 'PAID')
+                           return { label: t('activityTimeline.statusWaitingOnCreator'),   icon: 'hourglass-outline'     as const, color: '#0EA5E9' };
+  return                          { label: t('activityTimeline.statusWaitingPayment'),     icon: 'card-outline'          as const, color: '#EF4444' };
 }
 
 type StatusFilter = 'all' | 'pending' | 'accepted' | 'rejected';
@@ -413,10 +417,15 @@ export default function CampaignProposalsScreen() {
 
   const [proposals, setProposals]       = useState<Proposal[]>([]);
   const [capacity, setCapacity]         = useState<number | null>(null);
+  // Falls back to the fetched campaign's real title when the nav param arrives
+  // empty (e.g. tapping a notification that doesn't carry a clean title).
+  const [fetchedTitle, setFetchedTitle] = useState('');
+  const [campaignStatus, setCampaignStatus] = useState<string | null>(null);
   const [loading, setLoading]           = useState(true);
   const [refreshing, setRefreshing]     = useState(false);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [actingId, setActingId]         = useState<string | null>(null);
+  const [closing, setClosing]           = useState(false);
   const [modal, setModal]               = useState<ModalState>({ visible: false, type: 'accept', proposal: null, loading: false });
 
   async function load(showRefresh = false) {
@@ -428,6 +437,8 @@ export default function CampaignProposalsScreen() {
         campaignService.getById(campaignId),
       ]);
       setCapacity((campaign as any).capacity ?? null);
+      setFetchedTitle(campaign.title ?? '');
+      setCampaignStatus(campaign.status ?? null);
       setProposals(data.map((a) => ({
         ...a,
         workStatus: (a.workStatus ?? 'NONE') as WS,
@@ -490,7 +501,7 @@ export default function CampaignProposalsScreen() {
         // Project" tap needed right after accepting.
         router.push({
           pathname: '/(business)/activity-timeline',
-          params: { campaignId, campaignTitle, applicationId: p.id },
+          params: { campaignId, campaignTitle: fetchedTitle || campaignTitle, applicationId: p.id },
         });
         return;
       } else {
@@ -512,7 +523,7 @@ export default function CampaignProposalsScreen() {
       pathname: '/(business)/activity-timeline',
       params: {
         campaignId,
-        campaignTitle,
+        campaignTitle: fetchedTitle || campaignTitle,
         applicationId: p.id,
       },
     });
@@ -524,6 +535,39 @@ export default function CampaignProposalsScreen() {
     accepted: proposals.filter((p) => p.status === 'accepted').length,
     rejected: proposals.filter((p) => p.status === 'rejected').length,
   };
+
+  // Every proposal must be resolved — declined, or accepted with the work
+  // marked COMPLETED — before the event can be manually closed. Once closed
+  // it drops out of the creator-facing (ACTIVE-only) browse listing.
+  const canClose =
+    campaignStatus === 'active' &&
+    proposals.length > 0 &&
+    proposals.every((p) => p.status === 'rejected' || (p.status === 'accepted' && p.workStatus === 'COMPLETED'));
+
+  function handleCloseCampaign() {
+    Alert.alert(
+      t('campaignProposals.closeCampaignTitle'),
+      t('campaignProposals.closeCampaignBody'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('campaignProposals.closeCampaignConfirm'),
+          style: 'destructive',
+          onPress: async () => {
+            setClosing(true);
+            try {
+              await campaignService.update(campaignId, { status: 'closed' });
+              setCampaignStatus('closed');
+            } catch (e) {
+              Alert.alert(t('common.error'), e instanceof Error ? e.message : t('campaignProposals.closeCampaignFailed'));
+            } finally {
+              setClosing(false);
+            }
+          },
+        },
+      ],
+    );
+  }
 
   const filtered =
     statusFilter === 'all' ? proposals : proposals.filter((p) => p.status === statusFilter);
@@ -538,6 +582,7 @@ export default function CampaignProposalsScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
+      <MaxWidthContainer>
       {/* Header */}
       <View style={{ backgroundColor: C.surface }}>
         <View style={styles.gradientHeader}>
@@ -547,7 +592,7 @@ export default function CampaignProposalsScreen() {
               than just centered in the leftover space next to the button. */}
           <View style={styles.headerTopRow}>
             <BackButton />
-            <Text style={[styles.headerTitle, { color: C.text }]} numberOfLines={1}>{campaignTitle}</Text>
+            <Text style={[styles.headerTitle, { color: C.text }]} numberOfLines={1}>{fetchedTitle || campaignTitle}</Text>
             <View style={styles.headerTopRowSpacer} />
           </View>
 
@@ -590,6 +635,22 @@ export default function CampaignProposalsScreen() {
               <Text style={[styles.statStripLabel, { color: C.textSecondary }]}>{t('campaignProposals.statDeclined')}</Text>
             </View>
           </View>
+
+          {canClose && (
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+              style={[styles.closeCampaignBtn, { backgroundColor: '#FEF2F2', borderColor: '#FCA5A5' }]}
+              onPress={handleCloseCampaign}
+              disabled={closing}>
+              {closing ? (
+                <ActivityIndicator size="small" color="#EF4444" />
+              ) : (
+                <>
+                  <Ionicons name="checkmark-done-circle-outline" size={16} color="#EF4444" />
+                  <Text style={[styles.closeCampaignBtnTxt, { color: '#EF4444' }]}>{t('campaignProposals.closeCampaignBtn')}</Text>
+                </>
+              )}
+            </Pressable>
+          )}
         </View>
         <View style={[styles.headerSeparator, { backgroundColor: C.border }]} />
       </View>
@@ -680,6 +741,7 @@ export default function CampaignProposalsScreen() {
           }
         />
       )}
+      </MaxWidthContainer>
     </SafeAreaView>
   );
 }
@@ -712,6 +774,12 @@ const styles = StyleSheet.create({
   totalPillText: { fontSize: 12, fontFamily: F.semibold },
 
   headerBody: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 8, gap: 8 },
+  closeCampaignBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    marginHorizontal: 16, marginTop: 12, borderWidth: 1, borderRadius: RADIUS.md,
+    paddingVertical: 10,
+  },
+  closeCampaignBtnTxt: { fontSize: 13, fontFamily: F.semibold },
   headerTitle: { flex: 1, fontSize: 18, fontFamily: F.bold, lineHeight: 22, textAlign: 'center' },
   headerBadgeRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   typeBadge:     { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: RADIUS.full, paddingHorizontal: 10, paddingVertical: 4 },

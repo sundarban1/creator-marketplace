@@ -81,7 +81,7 @@ export function Login() {
         <div className="relative">
           <div className="flex items-center gap-3 mb-12">
             <div className="bg-white rounded-xl px-3 py-2">
-              <img src="/logo.png" alt="kolab" className="h-7 w-auto" />
+              <img src="/logo.png" alt="Kolab" className="h-7 w-auto" />
             </div>
             <span className="text-white font-bold text-xl tracking-tight">Admin</span>
           </div>
@@ -118,7 +118,7 @@ export function Login() {
       <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 bg-gray-50">
         {/* Mobile logo */}
         <div className="lg:hidden flex items-center gap-2.5 mb-10">
-          <img src="/logo.png" alt="kolab" className="h-8 w-auto" />
+          <img src="/logo.png" alt="Kolab" className="h-8 w-auto" />
           <span className="text-gray-900 font-bold text-lg">Admin</span>
         </div>
 

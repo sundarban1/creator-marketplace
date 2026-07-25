@@ -13,6 +13,7 @@ import { walletService, type ApiWalletSummary, type ApiWithdrawal } from '@/serv
 import { WithdrawModal } from '@/features/creator/components/WithdrawModal';
 import { Skeleton } from '@/components/Skeleton';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 
 const METHOD_META: Record<string, { icon: string; color: string }> = {
   esewa:   { icon: 'wallet', color: '#60BB46' },
@@ -65,6 +66,7 @@ export default function WalletScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
+      <MaxWidthContainer>
       <PageHeader title={t('wallet.headerTitle')} backFallback="/(creator)/" />
 
       {loading || !summary ? (
@@ -166,6 +168,7 @@ export default function WalletScreen() {
           )}
         </ScrollView>
       )}
+      </MaxWidthContainer>
 
       {summary && (
         <WithdrawModal

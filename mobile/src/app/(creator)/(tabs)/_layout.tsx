@@ -1,6 +1,6 @@
-import { Tabs } from 'expo-router';
+import { Tabs, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useContext, useState } from 'react';
+import { useState } from 'react';
 import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
@@ -18,38 +18,30 @@ type IoniconName = keyof typeof Ionicons.glyphMap;
 // ── Tab config ────────────────────────────────────────────────────────────────
 
 // `color` is omitted for `index` (Home) — it uses the theme's brinjal accent instead, resolved at render time.
-// The `notifications` route stays a real tab-navigator screen (reachable from the
-// header's activity button — see index.tsx), but its bottom-bar slot is repurposed
-// below to open the drawer instead, swapping places with the old header hamburger.
+// The header's menu button (see index.tsx) opens the drawer; `notifications`
+// is this tab's real destination screen.
 const TAB_CONFIG: Record<string, { icon: IoniconName; iconActive: IoniconName; label: string; color?: string }> = {
   index:         { icon: 'home-outline',          iconActive: 'home',          label: 'Home' },
   proposals:     { icon: 'document-text-outline', iconActive: 'document-text', label: 'Proposals',  color: '#7C3AED' },
   messages:      { icon: 'chatbubble-outline',    iconActive: 'chatbubble',    label: 'Messages',   color: '#2563EB' },
-  notifications: { icon: 'menu-outline',          iconActive: 'menu',          label: 'Menu' },
+  notifications: { icon: 'notifications-outline', iconActive: 'notifications', label: 'Notifications' },
 };
 
 // ── Custom tab bar ────────────────────────────────────────────────────────────
-
-// Hides the tab bar while a chat conversation ([id]) is open inside the
-// messages stack, so the chat input isn't followed by a strip of dead tab-bar space.
-function isChatRoomFocused(state: any): boolean {
-  const focused = state.routes[state.index];
-  if (focused?.name !== 'messages' || !focused.state) return false;
-  return focused.state.routes[focused.state.index]?.name === '[id]';
-}
 
 function CustomTabBar({
   state,
   navigation,
   chatBadge,
+  notifBadge,
 }: {
   state: any;
   navigation: any;
   chatBadge: number;
+  notifBadge: number;
 }) {
   const C = useAppColors();
   const { t } = useLanguage();
-  const { openDrawer } = useContext(DrawerContext);
   const insets = useSafeAreaInsets();
   // Real home-indicator/gesture-nav inset varies a lot by device (0 on an
   // iPhone SE or 3-button-nav Android, ~34pt on notched iPhones) — a fixed
@@ -58,17 +50,24 @@ function CustomTabBar({
   // report 0 (physical home button / classic Android nav).
   const bottomInset = Math.max(insets.bottom, 8);
 
-  if (isChatRoomFocused(state)) return null;
+  // Hides the tab bar while a chat conversation ([id]) is open, however it
+  // was reached — a pathname check is reliable regardless of navigator
+  // entry point, unlike introspecting the messages stack's nested tab state
+  // (which a deep push from outside the tabs navigator, e.g. the activity
+  // timeline's chat button, doesn't always populate the same way).
+  const pathname = usePathname();
+  if (pathname.startsWith('/messages/')) return null;
 
   const labelMap: Record<string, string> = {
     index:         t('creator.tab.home'),
     proposals:     t('creator.tab.proposals'),
     messages:      t('creator.tab.messages'),
-    notifications: t('creator.tab.menu'),
+    notifications: t('creator.tab.activity'),
   };
 
   const badgeMap: Record<string, number> = {
-    messages: chatBadge,
+    messages:      chatBadge,
+    notifications: notifBadge,
   };
 
   const tabs = (state.routes as any[]).filter((r) => TAB_CONFIG[r.name]);
@@ -81,17 +80,13 @@ function CustomTabBar({
       ]}
     >
       {tabs.map((route) => {
-        // The `notifications` slot now opens the drawer (swapped with the header
-        // hamburger) rather than navigating to a screen, so it never shows as "active".
-        const isMenu  = route.name === 'notifications';
-        const focused = !isMenu && state.routes[state.index]?.name === route.name;
+        const focused = state.routes[state.index]?.name === route.name;
         const cfg     = TAB_CONFIG[route.name]!;
         const label   = labelMap[route.name] ?? cfg.label;
         const badge   = badgeMap[route.name] ?? 0;
         const color   = cfg.color ?? C.brinjal1;
 
         function onPress() {
-          if (isMenu) { openDrawer(); return; }
           // Always fires, whether this tab is already focused or not — the
           // destination screen's own useScrollToTopOnTabPress listener scrolls its
           // list back up, since Tabs keeps every screen mounted (and scrolled where
@@ -220,7 +215,7 @@ export default function CreatorTabsLayout() {
   const { t } = useLanguage();
   const C = useAppColors();
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const { chatBadgeCount: badgeCount } = useNotificationBadge();
+  const { chatBadgeCount, badgeCount } = useNotificationBadge();
 
   return (
     <DrawerContext.Provider value={{ openDrawer: () => setDrawerOpen(true) }}>
@@ -232,7 +227,8 @@ export default function CreatorTabsLayout() {
               <CustomTabBar
                 state={props.state}
                 navigation={props.navigation}
-                chatBadge={badgeCount}
+                chatBadge={chatBadgeCount}
+                notifBadge={badgeCount}
               />
             )}
           >

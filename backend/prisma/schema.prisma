@@ -56,7 +56,7 @@ model Block {
   blockedId String
   createdAt DateTime @default(now())
 
-  blocker User @relation("BlocksMade",     fields: [blockerId], references: [id], onDelete: Cascade)
+  blocker User @relation("BlocksMade", fields: [blockerId], references: [id], onDelete: Cascade)
   blocked User @relation("BlocksReceived", fields: [blockedId], references: [id], onDelete: Cascade)
 
   @@unique([blockerId, blockedId])
@@ -65,48 +65,49 @@ model Block {
 }
 
 model CreatorProfile {
-  id                 String             @id @default(cuid())
-  userId             String             @unique
-  fullName           String?
-  bio                String?
-  location           String?
-  avatarUrl          String?
-  coverImageUrl      String?
-  categories         String[]
-  socialLinks        Json               @default("{}")
-  portfolioLinks     Json               @default("[]")
-  isVerified         Boolean            @default(false)
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
-  username           String?            @unique
-  paymentMethods     String[]           @default([])
-  prefPlatforms      String[]           @default([])
-  prefLocations      String[]           @default([])
-  prefBudgetMin      Float              @default(0)
-  prefBudgetMax      Float              @default(500)
-  locationLat        Float?
-  locationLng        Float?
-  nearbyRadiusKm     Int                @default(25)
-  nearbyUseHomeLocation Boolean         @default(false)
-  referralCode       String?              @unique
-  citizenshipDocUrl     String?
-  citizenshipStatus     CitizenshipStatus  @default(NONE)
-  citizenshipUploadedAt DateTime?
-  panDocUrl             String?
-  panDocStatus          DocumentStatus     @default(NONE)
-  panDocUploadedAt      DateTime?
-  applications         Application[]
-  conversations        Conversation[]       @relation("CreatorConversations")
-  conversationsAsCreator2 Conversation[]    @relation("Creator2Conversations")
-  user                 User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  favoriteBusinesses   FavoriteBusiness[]
-  socialAccounts       SocialAccount[]
-  savedBy              SavedCreator[]
-  receivedInvitations  CampaignInvitation[]
-  referralsMade        Referral[]           @relation("ReferralsMade")
-  referralsReceived    Referral?            @relation("ReferralsReceived")
-  withdrawals          Withdrawal[]
-  profileViews         ProfileView[]
+  id                      String               @id @default(cuid())
+  userId                  String               @unique
+  fullName                String?
+  bio                     String?
+  location                String?
+  avatarUrl               String?
+  coverImageUrl           String?
+  categories              String[]
+  socialLinks             Json                 @default("{}")
+  portfolioLinks          Json                 @default("[]")
+  isVerified              Boolean              @default(false)
+  createdAt               DateTime             @default(now())
+  updatedAt               DateTime             @updatedAt
+  username                String?              @unique
+  paymentMethods          String[]             @default([])
+  prefPlatforms           String[]             @default([])
+  prefLocations           String[]             @default([])
+  prefBudgetMin           Float                @default(0)
+  prefBudgetMax           Float                @default(500)
+  locationLat             Float?
+  locationLng             Float?
+  nearbyRadiusKm          Int                  @default(25)
+  nearbyUseHomeLocation   Boolean              @default(false)
+  referralCode            String?              @unique
+  citizenshipDocUrl       String?
+  citizenshipStatus       CitizenshipStatus    @default(NONE)
+  citizenshipUploadedAt   DateTime?
+  panDocUrl               String?
+  panDocStatus            DocumentStatus       @default(NONE)
+  panDocUploadedAt        DateTime?
+  applications            Application[]
+  conversations           Conversation[]       @relation("CreatorConversations")
+  conversationsAsCreator2 Conversation[]       @relation("Creator2Conversations")
+  user                    User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  favoriteBusinesses      FavoriteBusiness[]
+  socialAccounts          SocialAccount[]
+  savedBy                 SavedCreator[]
+  receivedInvitations     CampaignInvitation[]
+  referralsMade           Referral[]           @relation("ReferralsMade")
+  referralsReceived       Referral?            @relation("ReferralsReceived")
+  withdrawals             Withdrawal[]
+  profileViews            ProfileView[]
+  paymentTransactions     PaymentTransaction[]
 
   @@index([isVerified])
   @@map("creator_profiles")
@@ -153,28 +154,28 @@ enum ReferralStatus {
 }
 
 model SocialAccount {
-  id               String         @id @default(cuid())
+  id                  String           @id @default(cuid())
   // Exactly one of creatorProfileId/businessProfileId is set — which one determines
   // whose Social Accounts list this row appears in.
-  creatorProfileId  String?
-  businessProfileId String?
-  platform         String
-  profileUrl       String
-  followers        Int            @default(0)
+  creatorProfileId    String?
+  businessProfileId   String?
+  platform            String
+  profileUrl          String
+  followers           Int              @default(0)
   // True once profileUrl/followers were pulled directly from the platform's API via
   // OAuth (e.g. YouTube) rather than typed in by the creator.
-  connectedViaOAuth Boolean       @default(false)
+  connectedViaOAuth   Boolean          @default(false)
   // The platform's own user/channel id — lets a reconnect find and update the same
   // row instead of erroring on the creatorProfileId+platform unique constraint.
-  platformUserId   String?
-  avatarUrl        String?
+  platformUserId      String?
+  avatarUrl           String?
   // Persisted so the follower/subscriber count can keep refreshing itself (manual
   // "Refresh" tap + the scheduled job in jobs/refreshSocialFollowers.ts) long after
   // the connect flow's own short-lived token would otherwise have expired.
   // Never exposed in any DTO — see creator.dto.ts's toSocialAccountDto allowlist.
-  accessToken      String?
-  refreshToken     String?
-  tokenExpiresAt   DateTime?
+  accessToken         String?
+  refreshToken        String?
+  tokenExpiresAt      DateTime?
   // Distinguishes HOW this row was connected when the platform alone is ambiguous —
   // 'instagram' can come from either the Facebook-Page-linked flow or Instagram's own
   // direct login, and each stores a token from a different API with a different
@@ -182,11 +183,11 @@ model SocialAccount {
   oauthConnectionType String?
   // Last time `followers` was actually re-fetched from the platform — distinct from
   // `updatedAt`, which also changes on unrelated edits (e.g. connectedViaOAuth flips).
-  followersSyncedAt DateTime?
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
-  creatorProfile   CreatorProfile?  @relation(fields: [creatorProfileId], references: [id], onDelete: Cascade)
-  businessProfile  BusinessProfile? @relation(fields: [businessProfileId], references: [id], onDelete: Cascade)
+  followersSyncedAt   DateTime?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  creatorProfile      CreatorProfile?  @relation(fields: [creatorProfileId], references: [id], onDelete: Cascade)
+  businessProfile     BusinessProfile? @relation(fields: [businessProfileId], references: [id], onDelete: Cascade)
 
   @@unique([creatorProfileId, platform])
   @@unique([businessProfileId, platform])
@@ -210,48 +211,49 @@ model ProfileView {
 }
 
 model BusinessProfile {
-  id                  String               @id @default(cuid())
-  userId              String               @unique
-  businessName        String?
-  description         String?
-  logoUrl             String?
-  coverImageUrl       String?
-  website             String?
-  categories          String[]
-  panNo               String?
-  location            String?
-  phone               String?
-  isVerified          Boolean              @default(false)
-  createdAt           DateTime             @default(now())
-  updatedAt           DateTime             @updatedAt
-  allowDirectMessages Boolean              @default(true)
-  hideContactDetails  Boolean              @default(false)
-  showPublicProfile   Boolean              @default(true)
-  paymentMethods      String[]             @default([])
-  referralCode        String?              @unique
+  id                       String               @id @default(cuid())
+  userId                   String               @unique
+  businessName             String?
+  description              String?
+  logoUrl                  String?
+  coverImageUrl            String?
+  website                  String?
+  categories               String[]
+  panNo                    String?
+  location                 String?
+  phone                    String?
+  isVerified               Boolean              @default(false)
+  createdAt                DateTime             @default(now())
+  updatedAt                DateTime             @updatedAt
+  allowDirectMessages      Boolean              @default(true)
+  hideContactDetails       Boolean              @default(false)
+  showPublicProfile        Boolean              @default(true)
+  paymentMethods           String[]             @default([])
+  referralCode             String?              @unique
   socialLinks              Json                 @default("{}")
   presenceServices         String[]             @default([])
   defaultPlatforms         String[]             @default([])
   defaultCreatorCategories String[]             @default([])
   defaultBudgetRange       String?
-  panDocUrl               String?
-  panDocStatus            DocumentStatus       @default(NONE)
-  panDocUploadedAt        DateTime?
-  companyRegDocUrl        String?
-  companyRegDocStatus     DocumentStatus       @default(NONE)
-  companyRegDocUploadedAt DateTime?
+  panDocUrl                String?
+  panDocStatus             DocumentStatus       @default(NONE)
+  panDocUploadedAt         DateTime?
+  companyRegDocUrl         String?
+  companyRegDocStatus      DocumentStatus       @default(NONE)
+  companyRegDocUploadedAt  DateTime?
   verificationRejectReason String?
-  verificationRejectedAt  DateTime?
-  user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  campaigns           Campaign[]
-  conversations       Conversation[]       @relation("BusinessConversations")
-  favoritedBy         FavoriteBusiness[]
-  savedCreators       SavedCreator[]
-  sentInvitations     CampaignInvitation[]
-  referralsMade       BusinessReferral[]   @relation("BizReferralsMade")
-  referralsReceived   BusinessReferral?    @relation("BizReferralsReceived")
-  profileViews        ProfileView[]
-  socialAccounts      SocialAccount[]
+  verificationRejectedAt   DateTime?
+  user                     User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  campaigns                Campaign[]
+  conversations            Conversation[]       @relation("BusinessConversations")
+  favoritedBy              FavoriteBusiness[]
+  savedCreators            SavedCreator[]
+  sentInvitations          CampaignInvitation[]
+  referralsMade            BusinessReferral[]   @relation("BizReferralsMade")
+  referralsReceived        BusinessReferral?    @relation("BizReferralsReceived")
+  profileViews             ProfileView[]
+  socialAccounts           SocialAccount[]
+  paymentTransactions      PaymentTransaction[]
 
   @@index([isVerified])
   @@map("business_profiles")
@@ -279,61 +281,62 @@ model BusinessReferral {
 }
 
 model Campaign {
-  id             String          @id @default(cuid())
-  businessId     String
-  title          String
-  description    String
-  template       String?
-  featureImageUrl String?
-  category       String
-  goals          Json            @default("[]")
-  platforms      String[]        @default([])
-  minFollowers   Int             @default(0)
-  contentType    String
-  deliverables   String
-  deadline       DateTime
-  location       String?
-  locationLat    Float?
-  locationLng    Float?
-  budgetMin      Float
-  budgetMax      Float
-  paymentType    String
-  status         CampaignStatus  @default(ACTIVE)
+  id                    String               @id @default(cuid())
+  businessId            String
+  title                 String
+  description           String
+  template              String?
+  featureImageUrl       String?
+  category              String
+  goals                 Json                 @default("[]")
+  platforms             String[]             @default([])
+  minFollowers          Int                  @default(0)
+  contentType           String
+  deliverables          String
+  deadline              DateTime
+  location              String?
+  locationLat           Float?
+  locationLng           Float?
+  budgetMin             Float
+  budgetMax             Float
+  paymentType           String
+  status                CampaignStatus       @default(ACTIVE)
   // Snapshotted from the platform.commission admin setting at creation time,
   // so later changes to the global rate never retroactively affect an
   // already-posted event. Null on campaigns created before this field existed.
   // Added on top of what the business pays — creators always receive the
   // full proposedRate; the platform fee is the business's cost, not a
   // deduction from the creator's payout.
-  commissionRate Float?
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  isFeatured     Boolean         @default(false)
-  creatorsNeeded Int             @default(1)
-  campaignType  CampaignType @default(PAID_CAMPAIGN)
-  capacity      Int?
-  eventDate     DateTime?
-  venue         String?
-  benefits      Json         @default("[]")
-  eventStatus   EventStatus  @default(OPEN)
-  paymentStatus PaymentStatus @default(UNPAID)
-  paidAt        DateTime?
-  paymentMethod String?
-  objective              String?
-  contentGuidelines      String[]      @default([])
-  targetAudience         String[]      @default([])
-  hashtags               String[]      @default([])
-  sampleCaption          String?
-  approvalRequirements   String?
-  aiGenerated            Boolean       @default(false)
-  aiPrompt               String?
-  aiSuggestedCategories  String[]      @default([])
-  aiSuggestedPlatforms   String[]      @default([])
-  aiNeedsInputFields     String[]      @default([])
-  applications   Application[]
-  business       BusinessProfile    @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  conversations  Conversation[]
-  invitations    CampaignInvitation[]
+  commissionRate        Float?
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+  isFeatured            Boolean              @default(false)
+  creatorsNeeded        Int                  @default(1)
+  campaignType          CampaignType         @default(PAID_CAMPAIGN)
+  capacity              Int?
+  eventDate             DateTime?
+  venue                 String?
+  benefits              Json                 @default("[]")
+  eventStatus           EventStatus          @default(OPEN)
+  paymentStatus         PaymentStatus        @default(UNPAID)
+  paidAt                DateTime?
+  paymentMethod         String?
+  objective             String?
+  contentGuidelines     String[]             @default([])
+  targetAudience        String[]             @default([])
+  hashtags              String[]             @default([])
+  sampleCaption         String?
+  approvalRequirements  String?
+  aiGenerated           Boolean              @default(false)
+  aiPrompt              String?
+  aiSuggestedCategories String[]             @default([])
+  aiSuggestedPlatforms  String[]             @default([])
+  aiNeedsInputFields    String[]             @default([])
+  applications          Application[]
+  business              BusinessProfile      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  conversations         Conversation[]
+  invitations           CampaignInvitation[]
+  paymentTransactions   PaymentTransaction[]
 
   // Maintained by a Postgres trigger (see migration add_campaign_fulltext_search) —
   // Prisma can't type tsvector, so it's never written through the client, only
@@ -351,36 +354,80 @@ model Campaign {
 }
 
 model Application {
-  id            String            @id @default(cuid())
-  campaignId    String
-  creatorId     String
-  coverLetter   String
-  proposedRate  Float
-  timeline      String
-  socialHandles Json              @default("{}")
-  portfolioUrl  String?
-  status          ApplicationStatus @default(PENDING)
-  workStatus      WorkStatus        @default(NONE)
-  workNote        String?
-  submittedAt     DateTime?
-  deliverableUrls String?
-  paymentStatus   PaymentStatus     @default(UNPAID)
-  paidAt          DateTime?
+  id                  String               @id @default(cuid())
+  campaignId          String
+  creatorId           String
+  coverLetter         String
+  proposedRate        Float
+  timeline            String
+  socialHandles       Json                 @default("{}")
+  portfolioUrl        String?
+  status              ApplicationStatus    @default(PENDING)
+  workStatus          WorkStatus           @default(NONE)
+  workNote            String?
+  submittedAt         DateTime?
+  deliverableUrls     String?
+  // Up to 3 entries: { publicId, url, thumbnailUrl, durationSec, format, sizeBytes, label, uploadedAt }.
+  // Appended via a conditional SQL update capped at 3 (see CampaignRepository.appendDeliverableVideo)
+  // rather than a plain read-modify-write, since two uploads completing near-simultaneously would
+  // otherwise race and silently drop one. Cleared (with the underlying Cloudinary assets deleted) on
+  // requestRevision — see CampaignService.requestRevision.
+  deliverableVideos   Json                 @default("[]")
+  paymentStatus       PaymentStatus        @default(UNPAID)
+  paidAt              DateTime?
   // Set only when an admin manually releases the held escrow payment —
   // brand approval no longer releases funds automatically, see approveWork().
-  releasedAt         DateTime?
-  releasedByAdminId  String?
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
-  campaign        Campaign          @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  creator       CreatorProfile    @relation(fields: [creatorId], references: [id], onDelete: Cascade)
-  reviews         Review[]
+  releasedAt          DateTime?
+  releasedByAdminId   String?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  campaign            Campaign             @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  creator             CreatorProfile       @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  reviews             Review[]
+  paymentTransactions PaymentTransaction[]
 
   @@unique([campaignId, creatorId])
   @@index([creatorId])
   @@index([creatorId, createdAt(sort: Desc)])
   @@index([campaignId, status])
   @@map("applications")
+}
+
+// One row per real money movement: a business escrowing funds for an accepted
+// creator (ESCROW_IN) or the platform releasing that escrow to the creator once
+// the project is complete (PAYOUT). Written at the same call sites that already
+// flip Application.paymentStatus (payForApplication / releaseApplicationPayment)
+// — this is an append-only ledger, not a replacement for those status fields.
+model PaymentTransaction {
+  id            String                 @id @default(cuid())
+  type          PaymentTransactionType
+  amount        Float
+  // esewa | khalti | fonepay — null until a real payment gateway is wired up;
+  // the column exists now so that integration doesn't need another migration.
+  method        String?
+  applicationId String
+  campaignId    String
+  businessId    String
+  // Set on PAYOUT only — ESCROW_IN's counterparty is the platform, not a creator.
+  creatorId     String?
+  // Set on PAYOUT only — the admin who released it (mirrors Application.releasedByAdminId).
+  adminId       String?
+  createdAt     DateTime               @default(now())
+
+  application Application     @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  campaign    Campaign        @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  business    BusinessProfile @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  creator     CreatorProfile? @relation(fields: [creatorId], references: [id], onDelete: SetNull)
+
+  @@index([applicationId])
+  @@index([campaignId])
+  @@index([createdAt(sort: Desc)])
+  @@map("payment_transactions")
+}
+
+enum PaymentTransactionType {
+  ESCROW_IN
+  PAYOUT
 }
 
 // One row per rater per completed application — a creator and a business can
@@ -404,39 +451,39 @@ model Review {
 }
 
 model Conversation {
-  id             String             @id @default(cuid())
-  creatorId      String
+  id                String             @id @default(cuid())
+  creatorId         String
   // Second creator side for creator<->creator conversations — null for
   // creator<->business rows (businessId set instead). When set, canonical
   // ordering is enforced at the repository layer: creatorId always holds the
   // lexicographically smaller of the two creator-profile ids, creatorId2 the
   // larger, so the pair is deterministic regardless of who initiates.
-  creatorId2     String?
-  businessId     String?
-  campaignId     String?
-  createdAt      DateTime           @default(now())
-  status         ConversationStatus @default(PENDING)
+  creatorId2        String?
+  businessId        String?
+  campaignId        String?
+  createdAt         DateTime           @default(now())
+  status            ConversationStatus @default(PENDING)
   // True when ACCEPTED was set automatically by a proposal-accept (no real chat
   // request/accept happened) — such conversations revert to PENDING once the
   // project completes, rather than staying open indefinitely.
-  autoAccepted   Boolean            @default(false)
-  requestMessage String?
-  lastMessageAt  DateTime?
-  businessSeenAt DateTime?
-  creatorSeenAt  DateTime?
-  creator2SeenAt DateTime?
+  autoAccepted      Boolean            @default(false)
+  requestMessage    String?
+  lastMessageAt     DateTime?
+  businessSeenAt    DateTime?
+  creatorSeenAt     DateTime?
+  creator2SeenAt    DateTime?
   // "Delete conversation" is per-side only (like Messenger/Instagram) — hiding it
   // from one participant's inbox never affects the other's copy. Both flags reset
   // to false the moment a new message is sent, so the thread reappears for
   // whichever side had hidden it.
-  hiddenForCreator  Boolean         @default(false)
-  hiddenForBusiness Boolean         @default(false)
-  hiddenForCreator2 Boolean         @default(false)
-  business       BusinessProfile?   @relation("BusinessConversations", fields: [businessId], references: [id], onDelete: Cascade)
-  creator2       CreatorProfile?    @relation("Creator2Conversations", fields: [creatorId2], references: [id], onDelete: Cascade)
-  campaign       Campaign?          @relation(fields: [campaignId], references: [id])
-  creator        CreatorProfile     @relation("CreatorConversations", fields: [creatorId], references: [id], onDelete: Cascade)
-  messages       Message[]
+  hiddenForCreator  Boolean            @default(false)
+  hiddenForBusiness Boolean            @default(false)
+  hiddenForCreator2 Boolean            @default(false)
+  business          BusinessProfile?   @relation("BusinessConversations", fields: [businessId], references: [id], onDelete: Cascade)
+  creator2          CreatorProfile?    @relation("Creator2Conversations", fields: [creatorId2], references: [id], onDelete: Cascade)
+  campaign          Campaign?          @relation(fields: [campaignId], references: [id])
+  creator           CreatorProfile     @relation("CreatorConversations", fields: [creatorId], references: [id], onDelete: Cascade)
+  messages          Message[]
 
   @@unique([creatorId, businessId])
   @@unique([creatorId, creatorId2])
@@ -452,31 +499,31 @@ model Conversation {
 }
 
 model Message {
-  id             String       @id @default(cuid())
-  conversationId String
-  senderId       String
-  content        String
-  type           MessageType  @default(TEXT)
-  attachmentUrl           String?
-  attachmentName          String?
-  attachmentThumbnailUrl  String?   // Cloudinary-derived jpg poster frame — VIDEO only
-  attachmentDurationSec   Int?
-  attachmentWidth         Int?
-  attachmentHeight        Int?
-  attachmentSize          Int?      // bytes
-  attachmentFormat        String?
-  createdAt      DateTime     @default(now())
+  id                     String       @id @default(cuid())
+  conversationId         String
+  senderId               String
+  content                String
+  type                   MessageType  @default(TEXT)
+  attachmentUrl          String?
+  attachmentName         String?
+  attachmentThumbnailUrl String? // Cloudinary-derived jpg poster frame — VIDEO only
+  attachmentDurationSec  Int?
+  attachmentWidth        Int?
+  attachmentHeight       Int?
+  attachmentSize         Int? // bytes
+  attachmentFormat       String?
+  createdAt              DateTime     @default(now())
   // "Delete for everyone" (sender-only, no time limit) — the row is kept so
   // history/pagination doesn't shift, but the content is tombstoned in the DTO.
-  deletedAt         DateTime?
-  deletedBy         String?
+  deletedAt              DateTime?
+  deletedBy              String?
   // "Delete for me" — hides the message from one side's view without touching
   // the other participant's copy or the underlying content.
-  hiddenForCreator  Boolean      @default(false)
-  hiddenForBusiness Boolean      @default(false)
-  hiddenForCreator2 Boolean      @default(false)
-  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  sender         User         @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  hiddenForCreator       Boolean      @default(false)
+  hiddenForBusiness      Boolean      @default(false)
+  hiddenForCreator2      Boolean      @default(false)
+  conversation           Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender                 User         @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
 
   @@index([conversationId, createdAt(sort: Desc)])
   @@map("messages")
@@ -510,18 +557,18 @@ model FaqArticle {
 }
 
 model SupportRequest {
-  id        String   @id @default(cuid())
-  userId    String?
+  id         String   @id @default(cuid())
+  userId     String?
   // Set only for anonymous submissions (e.g. the public landing-page contact
   // form) — logged-in submissions identify the sender via `user` instead.
   guestName  String?
   guestEmail String?
-  topic     String
-  message   String
-  status    String   @default("OPEN")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  user      User?    @relation(fields: [userId], references: [id])
+  topic      String
+  message    String
+  status     String   @default("OPEN")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User?    @relation(fields: [userId], references: [id])
 
   @@map("support_requests")
 }
@@ -647,18 +694,18 @@ model CreatorAnalytics {
 }
 
 model BrandAnalytics {
-  userId              String   @id
-  campaignsCreated    Int      @default(0)
-  activeCampaigns     Int      @default(0)
-  completedCampaigns  Int      @default(0)
-  totalSpend          Float    @default(0)
-  applicationsReceived Int     @default(0)
-  creatorsHired       Int      @default(0)
-  averageRatingGiven  Float    @default(0)
-  ratingsGivenCount   Int      @default(0)
-  responseTimeAvgMins Float    @default(0)
-  responseTimeSamples Int      @default(0)
-  updatedAt           DateTime @updatedAt
+  userId               String   @id
+  campaignsCreated     Int      @default(0)
+  activeCampaigns      Int      @default(0)
+  completedCampaigns   Int      @default(0)
+  totalSpend           Float    @default(0)
+  applicationsReceived Int      @default(0)
+  creatorsHired        Int      @default(0)
+  averageRatingGiven   Float    @default(0)
+  ratingsGivenCount    Int      @default(0)
+  responseTimeAvgMins  Float    @default(0)
+  responseTimeSamples  Int      @default(0)
+  updatedAt            DateTime @updatedAt
 
   @@map("brand_analytics")
 }

@@ -26,6 +26,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import { chatService } from '@/services/chat';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { TabColors } from '@/utilities/tabColors';
 import type { ApiMessage } from '@/lib/api';
 import type { Conversation } from '@/types';
@@ -321,6 +322,7 @@ export default function BusinessChatListScreen() {
 
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
+      <MaxWidthContainer>
       {/* ── Tab slider ── */}
       <View style={s.tabSliderWrap}>
         <TabSlider
@@ -387,6 +389,7 @@ export default function BusinessChatListScreen() {
           }
         />
       )}
+      </MaxWidthContainer>
     </SafeAreaView>
   );
 }

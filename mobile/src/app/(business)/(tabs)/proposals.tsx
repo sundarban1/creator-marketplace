@@ -19,6 +19,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { ListRowSkeleton } from '@/components/ListRowSkeleton';
 import { useScrollToTopOnTabPress } from '@/hooks/useScrollToTopOnTabPress';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { TabColors } from '@/utilities/tabColors';
 
 type WS = 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED';
@@ -321,6 +322,7 @@ export default function ProposalsScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
+      <MaxWidthContainer>
       <View style={styles.headerContent}>
         <Text style={[styles.pageTitle, { color: C.text }]}>{t('proposal.business.headerTitle')}</Text>
         <Text style={[styles.pageSub, { color: C.textSecondary }]}>{t('proposal.business.headerSub')}</Text>
@@ -369,6 +371,7 @@ export default function ProposalsScreen() {
           }
         />
       )}
+      </MaxWidthContainer>
     </SafeAreaView>
   );
 }

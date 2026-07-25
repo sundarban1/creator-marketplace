@@ -1,6 +1,6 @@
 export const en = {
   nav: {
-    whyKolab: 'Why kolab',
+    whyKolab: 'Why Kolab',
     howItWorks: 'How it works',
     features: 'Features',
     referrals: 'Referrals',
@@ -11,7 +11,7 @@ export const en = {
     badge: "Nepal's Creator × Brand Marketplace",
     headline1: 'Where Creators',
     headline2: 'Meet Brands.',
-    subtitle: 'Creators find events worth their audience. Brands find creators worth the budget. kolab makes the whole collab — proposal to payment — happen in one place.',
+    subtitle: 'Creators find events worth their audience. Brands find creators worth the budget. Kolab makes the whole collab — proposal to payment — happen in one place.',
     joinCreator: 'Join as a Creator',
     joinBrand: 'Join as a Brand',
     statCreators: 'Creators',
@@ -68,7 +68,7 @@ export const en = {
     },
   },
   value: {
-    eyebrow: 'Why kolab',
+    eyebrow: 'Why Kolab',
     heading: 'Built for real collaboration',
     prop1Title: 'Discover the right match',
     prop1Desc: 'Creators surface events that fit their niche. Brands surface creators whose audience actually matches theirs — no more cold DMs.',
@@ -82,7 +82,7 @@ export const en = {
     eyebrow: 'Simple process',
     heading: 'Three steps to your first collab',
     step1Title: 'Create your profile',
-    step1Desc: 'Sign up as a creator or a brand in minutes. Add your niche, audience stats, or event goals — kolab handles the rest.',
+    step1Desc: 'Sign up as a creator or a brand in minutes. Add your niche, audience stats, or event goals — Kolab handles the rest.',
     step2Title: 'Connect & propose',
     step2Desc: 'Browse live events or discover creators by category and platform. Send a proposal, negotiate the rate, lock the deliverables.',
     step3Title: 'Deliver & get paid',
@@ -127,7 +127,7 @@ export const en = {
     creatorReward: 'NPR 500',
     creatorRewardSub: '+ NPR 200 for them',
     creatorTitle: 'Creator → Creator',
-    creatorDesc: 'Refer a fellow creator to kolab. When they complete their first event, you both earn.',
+    creatorDesc: 'Refer a fellow creator to Kolab. When they complete their first event, you both earn.',
     creatorItems: [
       'Share your referral code from your Creator settings',
       'Your friend signs up and links your code',
@@ -137,7 +137,7 @@ export const en = {
     businessReward: 'NPR 500',
     businessRewardSub: 'for both sides',
     businessTitle: 'Business → Business',
-    businessDesc: "Know another brand that could use kolab? Refer them and earn once they're active.",
+    businessDesc: "Know another brand that could use Kolab? Refer them and earn once they're active.",
     businessItems: [
       'Share your referral code from your Business settings',
       'The brand signs up and links your code',
@@ -170,7 +170,7 @@ export const en = {
     eyebrow: 'Got questions?',
     heading: 'Frequently asked',
     items: [
-      { q: 'Is kolab free to join?', a: 'Yes — signing up is completely free for both creators and brands. We only take a small platform fee once an event is successfully completed.' },
+      { q: 'Is Kolab free to join?', a: 'Yes — signing up is completely free for both creators and brands. We only take a small platform fee once an event is successfully completed.' },
       { q: 'How do payments work?', a: 'Payments are held in escrow and released in milestones. Once a creator submits deliverables and the brand approves them, funds are released automatically.' },
       { q: 'What creators can join?', a: 'Any content creator — Instagram, YouTube, TikTok, bloggers, podcasters, and more. A minimum audience size applies to keep the marketplace credible.' },
       { q: 'How are creators verified?', a: 'We verify creators by connecting their social accounts directly, so audience size and engagement are pulled live rather than self-reported.' },
@@ -180,7 +180,7 @@ export const en = {
   },
   cta: {
     heading: 'Ready to start collaborating?',
-    subtitle: 'Join thousands of creators and brands already growing on kolab.',
+    subtitle: 'Join thousands of creators and brands already growing on Kolab.',
     download: 'Download the App',
     contact: 'Contact Us',
   },

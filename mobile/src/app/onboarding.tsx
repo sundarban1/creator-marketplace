@@ -12,6 +12,7 @@ import { profileService } from '@/services/profile';
 import { useCategories } from '@/hooks/useCategories';
 import { LocationSearchModal } from '@/components/LocationSearchModal';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 
 const TOTAL_STEPS = 2;
 const GENDER_KEYS = ['Male', 'Female', 'Non-binary', 'Prefer not to say'] as const;
@@ -299,6 +300,7 @@ export default function OnboardingScreen() {
           between the Continue button and the keyboard. Android has no such prop; it relies on
           adjustResize (AndroidManifest) + the manual scrollToEnd effect above. */}
       <KeyboardAvoidingView style={styles.flex}>
+      <MaxWidthContainer>
 
       {/* ── Top bar ── */}
       <View style={styles.topBar}>
@@ -575,6 +577,7 @@ export default function OnboardingScreen() {
           </ScrollView>
         )}
 
+      </MaxWidthContainer>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

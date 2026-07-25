@@ -1,4 +1,4 @@
-import { v2 as cloudinary, UploadApiResponse } from 'cloudinary';
+import { v2 as cloudinary } from 'cloudinary';
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -6,7 +6,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-export type UploadFolder = 'creators/avatars' | 'creators/covers' | 'businesses/logos' | 'businesses/covers' | 'creators/citizenship' | 'creators/pan' | 'businesses/pan' | 'businesses/company-reg' | 'campaigns/features' | 'messages/attachments';
+export type UploadFolder = 'creators/avatars' | 'creators/covers' | 'businesses/logos' | 'businesses/covers' | 'creators/citizenship' | 'creators/pan' | 'businesses/pan' | 'businesses/company-reg' | 'campaigns/features' | 'messages/attachments' | 'campaigns/deliverables';
 
 const DEFAULT_TRANSFORMATION = [{ width: 400, height: 400, crop: 'fill', gravity: 'face' }];
 
@@ -70,33 +70,36 @@ export type VideoUploadResult = {
   format:      string;
 };
 
-// Chunked upload from a file path (not a buffer) — pairs with uploadChatVideo's
-// disk storage in middleware/upload.ts. Cloudinary probes the actual uploaded
-// file itself (duration/width/height/bytes/format) rather than trusting
-// whatever the client claimed, since that's the only source the server should
-// persist as fact.
-export async function uploadVideo(
-  filePath: string,
-  folder: UploadFolder,
-  publicId: string,
-): Promise<VideoUploadResult> {
-  // upload_large's type signature returns `Promise<UploadApiResponse> | UploadStream`
-  // because the same overload also covers the callback-based streaming form — since no
-  // callback is passed here, it always resolves to the promise form at runtime.
-  const result = await (cloudinary.uploader.upload_large(filePath, {
-    folder,
-    public_id:     publicId,
-    overwrite:     true,
-    resource_type: 'video',
-    chunk_size:    6 * 1024 * 1024,
-  }) as Promise<UploadApiResponse>);
+export type VideoUploadSignature = {
+  cloudName: string;
+  apiKey:    string;
+  timestamp: number;
+  signature: string;
+  folder:    string;
+  publicId:  string;
+  uploadUrl: string;
+};
+
+// Signed direct-to-Cloudinary upload: the mobile client uploads the video
+// bytes straight to Cloudinary using these credentials — they never pass
+// through this server. The signature cryptographically pins timestamp/folder/
+// public_id (Cloudinary recomputes the signature server-side from whatever
+// the client actually sends and rejects a mismatch), so the client cannot
+// redirect the upload to a different folder/public_id even though those
+// values also travel as plain form fields alongside it.
+export function generateVideoUploadSignature(folder: UploadFolder, publicId: string): VideoUploadSignature {
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME!;
+  const timestamp = Math.floor(Date.now() / 1000);
+  const paramsToSign = { timestamp, folder, public_id: publicId };
+  const signature = cloudinary.utils.api_sign_request(paramsToSign, process.env.CLOUDINARY_API_SECRET!);
   return {
-    secureUrl:   result.secure_url,
-    durationSec: Math.round(result.duration ?? 0),
-    width:       result.width,
-    height:      result.height,
-    bytes:       result.bytes,
-    format:      result.format,
+    cloudName,
+    apiKey: process.env.CLOUDINARY_API_KEY!,
+    timestamp,
+    signature,
+    folder,
+    publicId,
+    uploadUrl: `https://api.cloudinary.com/v1_1/${cloudName}/video/upload`,
   };
 }
 
@@ -107,6 +110,16 @@ export function videoThumbnailUrl(secureVideoUrl: string): string {
   return secureVideoUrl
     .replace('/upload/', '/upload/so_0,w_480,h_480,c_fill,q_auto/')
     .replace(/\.[a-zA-Z0-9]+$/, '.jpg');
+}
+
+// Swapping the delivery extension to .mp4 makes Cloudinary transcode to
+// H.264/AAC MP4 on the fly (cached after the first request) regardless of
+// the source format — MOV uploads still end up as universally-playable MP4,
+// matching what every client platform (iOS/Android/web) can decode natively.
+export function videoPlaybackUrl(secureVideoUrl: string): string {
+  return secureVideoUrl
+    .replace('/upload/', '/upload/q_auto/')
+    .replace(/\.[a-zA-Z0-9]+$/, '.mp4');
 }
 
 export async function deleteVideo(publicIdWithFolder: string): Promise<void> {

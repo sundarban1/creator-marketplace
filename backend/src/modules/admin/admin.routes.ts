@@ -28,6 +28,7 @@ import {
   getBusinessReferrals,
   releaseBusinessReferral,
   getUserAnalytics,
+  getPayments,
 } from './admin.controller';
 
 const router = Router();
@@ -77,5 +78,9 @@ router.patch('/referrals/:id/release', releaseReferral);
 
 router.get('/business-referrals',              getBusinessReferrals);
 router.patch('/business-referrals/:id/release', releaseBusinessReferral);
+
+// ── Payments ─────────────────────────────────────────────────────────────────
+
+router.get('/payments', getPayments);
 
 export default router;

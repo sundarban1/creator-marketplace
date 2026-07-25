@@ -19,7 +19,7 @@ export function SectionCard({ title, sub, children, colors }: {
 }) {
   const C = colors;
   return (
-    <View style={[sc.card, { backgroundColor: C.surface }]}>
+    <View style={[sc.card, { backgroundColor: C.surface, borderColor: C.border }]}>
       {title && <Text style={[sc.title, { color: C.text }]}>{title}</Text>}
       {sub && <Text style={[sc.sub, { color: C.textSecondary }]}>{sub}</Text>}
       {children}
@@ -30,7 +30,7 @@ export function SectionCard({ title, sub, children, colors }: {
 // Exported so consumers that need a bespoke header layout (e.g. a title row with
 // an inline action button) can still match SectionCard's title/sub typography.
 export const sc = StyleSheet.create({
-  card:  { borderRadius: RADIUS.lg, padding: 16, gap: 10, ...SHADOW.card },
+  card:  { borderRadius: RADIUS.lg, padding: 16, gap: 10, borderWidth: 1, ...SHADOW.card },
   title: { fontSize: 14, fontFamily: F.bold },
   sub:   { fontSize: 12, lineHeight: 18, fontFamily: F.regular },
 });

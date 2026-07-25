@@ -1,5 +1,6 @@
 import { CampaignStatus, CampaignType, ApplicationStatus, WorkStatus, PaymentStatus, Prisma } from '@prisma/client';
 import prisma from '../../prisma';
+import type { DeliverableVideo } from './campaign.dto';
 
 export class CampaignRepository {
   async create(data: {
@@ -534,6 +535,7 @@ export class CampaignRepository {
           workNote: true,
           submittedAt: true,
           deliverableUrls: true,
+          deliverableVideos: true,
           paymentStatus: true,
           paidAt: true,
           createdAt: true,
@@ -598,6 +600,7 @@ export class CampaignRepository {
           workNote: true,
           submittedAt: true,
           deliverableUrls: true,
+          deliverableVideos: true,
           paymentStatus: true,
           paidAt: true,
           createdAt: true,
@@ -670,6 +673,47 @@ export class CampaignRepository {
     });
   }
 
+  // Conditional append rather than a plain findUnique->mutate->update: two
+  // uploads completing near-simultaneously would otherwise both read the same
+  // array and both write back N+1 entries, silently dropping one. Gating the
+  // WHERE clause on the current array length makes the 3-video cap atomic —
+  // an empty result means the cap was already reached (or hit concurrently),
+  // not that anything went wrong.
+  async appendDeliverableVideo(appId: string, entry: DeliverableVideo): Promise<boolean> {
+    const rows = await prisma.$queryRaw<{ id: string }[]>`
+      UPDATE applications
+      SET "deliverableVideos" = "deliverableVideos" || ${JSON.stringify([entry])}::jsonb
+      WHERE id = ${appId} AND jsonb_array_length("deliverableVideos") < 3
+      RETURNING id
+    `;
+    return rows.length > 0;
+  }
+
+  async removeDeliverableVideo(appId: string, publicId: string) {
+    const app = await prisma.application.findUnique({ where: { id: appId }, select: { deliverableVideos: true } });
+    const videos = ((app?.deliverableVideos as DeliverableVideo[] | null) ?? []).filter((v) => v.publicId !== publicId);
+    return prisma.application.update({
+      where: { id: appId },
+      data: { deliverableVideos: videos },
+    });
+  }
+
+  // Called from CampaignService.requestRevision — videos are appended rather
+  // than replaced (unlike deliverableUrls, which the next submitWork call
+  // overwrites wholesale), so without this a creator who filled all 3 slots
+  // in one round would have zero slots left after a revision request.
+  async clearDeliverableVideos(appId: string) {
+    return prisma.application.update({
+      where: { id: appId },
+      data: { deliverableVideos: [] },
+    });
+  }
+
+  async getDeliverableVideos(appId: string): Promise<DeliverableVideo[]> {
+    const app = await prisma.application.findUnique({ where: { id: appId }, select: { deliverableVideos: true } });
+    return (app?.deliverableVideos as DeliverableVideo[] | null) ?? [];
+  }
+
   async payForApplication(appId: string) {
     return prisma.application.update({
       where: { id: appId },
@@ -686,9 +730,77 @@ export class CampaignRepository {
     });
   }
 
+  // Ledger entry for the business escrowing funds — see PaymentTransaction's
+  // schema comment for why this exists alongside Application.paymentStatus.
+  async createEscrowTransaction(params: {
+    applicationId: string;
+    campaignId: string;
+    businessId: string;
+    creatorId: string;
+    amount: number;
+  }) {
+    return prisma.paymentTransaction.create({
+      data: {
+        type:          'ESCROW_IN',
+        amount:        params.amount,
+        applicationId: params.applicationId,
+        campaignId:    params.campaignId,
+        businessId:    params.businessId,
+        creatorId:     params.creatorId,
+      },
+    });
+  }
+
+  // Ledger entry for the platform releasing escrow to the creator.
+  async createPayoutTransaction(params: {
+    applicationId: string;
+    campaignId: string;
+    businessId: string;
+    creatorId: string;
+    adminId: string;
+    amount: number;
+  }) {
+    return prisma.paymentTransaction.create({
+      data: {
+        type:          'PAYOUT',
+        amount:        params.amount,
+        applicationId: params.applicationId,
+        campaignId:    params.campaignId,
+        businessId:    params.businessId,
+        creatorId:     params.creatorId,
+        adminId:       params.adminId,
+      },
+    });
+  }
+
   async countAcceptedApplications(campaignId: string): Promise<number> {
     return prisma.application.count({
       where: { campaignId, status: 'ACCEPTED' },
+    });
+  }
+
+  // "Unresolved" = still pending a decision, or accepted but the work isn't
+  // done yet. Used to gate manual campaign close — see CampaignService.update.
+  async countUnresolvedApplications(campaignId: string): Promise<number> {
+    return prisma.application.count({
+      where: {
+        campaignId,
+        OR: [
+          { status: 'PENDING' },
+          { status: 'ACCEPTED', workStatus: { not: 'COMPLETED' } },
+        ],
+      },
+    });
+  }
+
+  // Narrower than countUnresolvedApplications above — only counts accepted
+  // applications where the creator is actively mid-work (has started but not
+  // yet submitted/approved). Used to gate pausing a campaign: unlike closing,
+  // pausing merely a pending applicant or an accepted-but-not-yet-started
+  // proposal is fine, but interrupting a creator's active work isn't.
+  async countActiveWorkApplications(campaignId: string): Promise<number> {
+    return prisma.application.count({
+      where: { campaignId, status: 'ACCEPTED', workStatus: { in: ['IN_PROGRESS', 'SUBMITTED'] } },
     });
   }
 

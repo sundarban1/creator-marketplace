@@ -1,6 +1,18 @@
 import { request }          from '@/lib/api';
 import type { ApiCampaign } from '@/lib/api';
 import type { Campaign }    from '@/types';
+import { uploadVideoToCloudinary, type VideoUploadSignature } from '@/services/cloudinaryVideoUpload';
+
+export interface DeliverableVideo {
+  publicId:    string;
+  url:         string;
+  thumbnailUrl: string;
+  durationSec: number;
+  format:      string;
+  sizeBytes:   number;
+  label:       string;
+  uploadedAt:  string;
+}
 
 export interface AiCampaignDraft {
   title: string;
@@ -214,8 +226,8 @@ export const campaignService = {
     await request('POST', `/api/campaigns/${campaignId}/apply`, payload);
   },
 
-  async getFeaturedQuota(): Promise<{ freeQuota: number; used: number; remaining: number; price: number }> {
-    const res = await request<{ freeQuota: number; used: number; remaining: number; price: number }>('GET', '/api/campaigns/featured-quota');
+  async getFeaturedQuota(): Promise<{ freeQuota: number; used: number; remaining: number; price: number; unlimited: boolean }> {
+    const res = await request<{ freeQuota: number; used: number; remaining: number; price: number; unlimited: boolean }>('GET', '/api/campaigns/featured-quota');
     return res.data;
   },
 
@@ -386,6 +398,56 @@ export const campaignService = {
     await request('PUT', `/api/campaigns/applications/${appId}/submit`, data);
   },
 
+  // ── Deliverable videos ──────────────────────────────────────────────────────
+  // Mirrors chat.ts's createVideoUploadTask (signed direct-to-Cloudinary upload
+  // -> verify+persist) but scoped to an application instead of a conversation,
+  // with no duration cap and a 3-video ceiling enforced server-side (see
+  // CampaignService.completeDeliverableVideo). Unlike chat, compression is NOT
+  // done inside this task — useDeliverableVideoUploads (the queue hook) does it
+  // once up front and caches the result, so a retry re-uploads the same
+  // compressed file instead of recompressing the original on every attempt.
+
+  async requestDeliverableVideoSignature(appId: string): Promise<VideoUploadSignature> {
+    const res = await request<VideoUploadSignature>('POST', `/api/campaigns/applications/${appId}/deliverables/video/signature`);
+    return res.data;
+  },
+
+  async completeDeliverableVideoUpload(appId: string, publicId: string): Promise<DeliverableVideo> {
+    const res = await request<DeliverableVideo>('POST', `/api/campaigns/applications/${appId}/deliverables/video/complete`, { publicId });
+    return res.data;
+  },
+
+  async removeDeliverableVideo(appId: string, publicId: string): Promise<void> {
+    await request('DELETE', `/api/campaigns/applications/${appId}/deliverables/video`, undefined, { publicId });
+  },
+
+  // `fileUri` must already be compressed (or the original, if compression is
+  // skipped/failed upstream) — this only signs, uploads, and completes.
+  createDeliverableVideoUploadTask(
+    appId: string,
+    fileUri: string,
+    mimeType: string,
+    onProgress: (fraction: number) => void,
+  ): { start: () => Promise<DeliverableVideo>; cancel: () => void } {
+    let cancelled = false;
+    let innerTask: ReturnType<typeof uploadVideoToCloudinary> | null = null;
+
+    return {
+      start: async () => {
+        if (cancelled) throw new Error('Upload cancelled');
+        const signature = await campaignService.requestDeliverableVideoSignature(appId);
+        if (cancelled) throw new Error('Upload cancelled');
+
+        innerTask = uploadVideoToCloudinary(fileUri, mimeType, signature, onProgress);
+        const { publicId } = await innerTask.start();
+        if (cancelled) throw new Error('Upload cancelled');
+
+        return campaignService.completeDeliverableVideoUpload(appId, publicId);
+      },
+      cancel: () => { cancelled = true; innerTask?.cancel(); },
+    };
+  },
+
   async approveWork(appId: string): Promise<void> {
     await request('PUT', `/api/campaigns/applications/${appId}/approve`);
   },
@@ -420,6 +482,7 @@ export const campaignService = {
     workStatus:      'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED';
     submittedAt:     string | null;
     deliverableUrls: string | null;
+    deliverableVideos: DeliverableVideo[];
     paymentStatus:   'UNPAID' | 'PAID' | 'RELEASED';
     paidAt:          string | null;
     creator: { id: string; userId: string; fullName: string; avatarUrl: string | null; location: string | null };
@@ -427,6 +490,7 @@ export const campaignService = {
     const res = await request<Array<{
       id: string; status: string; proposedRate: number; coverLetter: string; createdAt: string;
       workStatus?: string; submittedAt?: string | null; deliverableUrls?: string | null;
+      deliverableVideos?: DeliverableVideo[];
       paymentStatus?: string; paidAt?: string | null;
       creator: { id: string; userId: string; fullName: string; avatarUrl: string | null; location: string | null };
     }>>('GET', `/api/campaigns/${campaignId}/applications`);
@@ -440,6 +504,7 @@ export const campaignService = {
       workStatus:      (a.workStatus ?? 'NONE') as 'NONE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED',
       submittedAt:     a.submittedAt ?? null,
       deliverableUrls: a.deliverableUrls ?? null,
+      deliverableVideos: a.deliverableVideos ?? [],
       paymentStatus:   (a.paymentStatus ?? 'UNPAID') as 'UNPAID' | 'PAID' | 'RELEASED',
       paidAt:          a.paidAt ?? null,
       creator:         a.creator,
@@ -468,6 +533,7 @@ export const campaignService = {
       paymentStatus:    'UNPAID' | 'PAID' | 'RELEASED';
       paidAt:           string | null;
       featureImageUrl:  string | undefined;
+      deliverableVideos: DeliverableVideo[];
     }>;
     total: number;
   }> {
@@ -479,6 +545,7 @@ export const campaignService = {
       createdAt:       string;
       workStatus?:     string;
       submittedAt?:    string | null;
+      deliverableVideos?: DeliverableVideo[];
       paymentStatus?:  string;
       paidAt?:         string | null;
       campaign:     {
@@ -510,6 +577,7 @@ export const campaignService = {
         paymentStatus:   (a.paymentStatus ?? a.campaign.paymentStatus ?? 'UNPAID') as 'UNPAID' | 'PAID' | 'RELEASED',
         paidAt:          a.paidAt ?? a.campaign.paidAt ?? null,
         featureImageUrl: a.campaign.featureImageUrl ?? undefined,
+        deliverableVideos: a.deliverableVideos ?? [],
       })),
       total: res.pagination?.total ?? res.data.length,
     };

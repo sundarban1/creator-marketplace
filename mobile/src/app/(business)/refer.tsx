@@ -20,6 +20,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/components/Toast';
 import { businessReferralService, type ApiBusinessReferralOverview } from '@/services/business-referral';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 
 const STATUS_META: Record<string, { bg: string; text: string }> = {
   PENDING:   { bg: '#FEF3C7', text: '#92400E' },
@@ -92,6 +93,7 @@ export default function BusinessReferralScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
+      <MaxWidthContainer>
       <View style={{ backgroundColor: C.surface }}>
         <View style={styles.topBar}>
           <BackButton fallback="/(business)/" />
@@ -207,6 +209,7 @@ export default function BusinessReferralScreen() {
         </ScrollView>
         </KeyboardAvoidingView>
       )}
+      </MaxWidthContainer>
     </SafeAreaView>
   );
 }

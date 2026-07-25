@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { router, useFocusEffect } from 'expo-router';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
@@ -11,6 +11,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -24,8 +25,10 @@ import { creatorService, type SavedCreatorItem } from '@/services/creator';
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { getTemplateImage } from '@/features/creator/data/templateImages';
 import { ListRowSkeleton } from '@/components/ListRowSkeleton';
+import { FilterSheet, FilterSectionHeader } from '@/components/FilterSheet';
 import type { Campaign } from '@/types';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { TabColors } from '@/utilities/tabColors';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
@@ -48,6 +51,17 @@ const STATUS_CFG = {
   pending_approval: { bg: TabColors.warning.bg, color: TabColors.warning.color },
 } as const;
 
+function timeAgo(iso: string) {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return `${days}d ago`;
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
 const PAGE_SIZE = 10;
 type FilterKey = typeof FILTERS[number];
 type TabState = { items: Campaign[]; page: number; total: number; loadingMore: boolean; loaded: boolean };
@@ -68,6 +82,24 @@ export default function CampaignsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeFilter, setActiveFilter] = useState<FilterKey>('All');
+
+  // Search + category — filtered client-side over whatever's currently
+  // loaded for the active status tab, same as every other list search in
+  // this app (explore-creators, saved-creators): no new backend support.
+  const [search, setSearch] = useState('');
+  const [searchDebounced, setSearchDebounced] = useState('');
+  const [searchFocused, setSearchFocused] = useState(false);
+  const searchInputRef = useRef<TextInput>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => setSearchDebounced(search), 400);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [search]);
+
+  const [categoryFilter, setCategoryFilter]         = useState('');
+  const [tempCategoryFilter, setTempCategoryFilter] = useState('');
+  const [categorySheetVisible, setCategorySheetVisible] = useState(false);
   const [publishingId, setPublishingId] = useState<string | null>(null);
   const loadingMoreRef = useRef(false);
   const hasLoadedOnceRef = useRef(false);
@@ -112,20 +144,31 @@ export default function CampaignsScreen() {
   useFocusEffect(useCallback(() => {
     // Only show the full-screen skeleton on the very first load. Later
     // focuses (e.g. coming back from create-campaign or campaign-detail)
-    // invalidate every filter tab and silently reload the one in view —
-    // otherwise a campaign created/edited/closed elsewhere would keep
-    // showing its old status/count here until the app restarted. Reads
-    // activeFilter via a ref (not a dependency) so switching filter chips
-    // while already focused doesn't re-trigger this and fight selectFilter's
-    // own load.
+    // refresh the tab in view silently in the background instead — clearing
+    // its items and flipping loading back to true on every refocus used to
+    // blank the list and flash the skeleton on every single back-navigation,
+    // even though nothing had changed. loadTab's own setState swaps in fresh
+    // items atomically once the fetch resolves, so the old cards just stay
+    // on screen until the new ones are ready (same pattern as the creator
+    // proposals tab). Other filter tabs are marked stale (not cleared) so a
+    // campaign created/edited/closed elsewhere still refetches next time
+    // that tab is actually opened, without touching what's on screen now.
+    // Reads activeFilter via a ref (not a dependency) so switching filter
+    // chips while already focused doesn't re-trigger this and fight
+    // selectFilter's own load.
     if (!hasLoadedOnceRef.current) {
       hasLoadedOnceRef.current = true;
       void loadCampaigns();
       return;
     }
-    invalidateAllTabs();
-    setLoading(true);
-    void loadTab(activeFilterRef.current, 1, true).finally(() => setLoading(false));
+    setTabData((prev) => {
+      const next = { ...prev };
+      for (const key of Object.keys(next) as FilterKey[]) {
+        if (key !== activeFilterRef.current) next[key] = { ...next[key], loaded: false };
+      }
+      return next;
+    });
+    void loadTab(activeFilterRef.current, 1, true);
   }, []));
 
   const onRefresh = useCallback(() => loadCampaigns(true), [activeFilter]);
@@ -225,9 +268,69 @@ export default function CampaignsScreen() {
   ];
 
   const shown = tabData[activeFilter].items;
+  const filterActive = searchDebounced.trim().length > 0 || categoryFilter.length > 0;
+  const filtered = shown.filter((c) => {
+    if (categoryFilter && c.category !== categoryFilter) return false;
+    const q = searchDebounced.trim().toLowerCase();
+    if (q && !c.title.toLowerCase().includes(q) && !(c.description ?? '').toLowerCase().includes(q)) return false;
+    return true;
+  });
+
+  function openCategorySheet() {
+    setTempCategoryFilter(categoryFilter);
+    setCategorySheetVisible(true);
+  }
+  function applyCategoryFilter() {
+    setCategoryFilter(tempCategoryFilter);
+    setCategorySheetVisible(false);
+  }
+  function clearFilters() {
+    setSearch('');
+    setSearchDebounced('');
+    setCategoryFilter('');
+  }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
+      <MaxWidthContainer>
+      {/* Search + category filter — the exact same compound pill (search
+          card with the filter button docked inside it) as the creator home
+          feed's top-header search bar, for a consistent feel. */}
+      <View style={styles.searchRow}>
+        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+          style={[styles.searchCard, { backgroundColor: C.surface, borderColor: C.border }, searchFocused && styles.searchCardFocused]}
+          onPress={() => searchInputRef.current?.focus()}>
+          <Ionicons name="search-outline" size={18} color={searchFocused ? C.brinjal1 : C.textSecondary} style={styles.searchIcon} />
+          <TextInput
+            ref={searchInputRef}
+            style={[styles.searchInput, { color: C.text }]}
+            placeholder={t('campaigns.searchPlaceholder')}
+            placeholderTextColor={C.textSecondary}
+            value={search}
+            onChangeText={setSearch}
+            onFocus={() => setSearchFocused(true)}
+            onBlur={() => setSearchFocused(false)}
+            returnKeyType="search"
+            autoCorrect={false}
+          />
+          {search.length > 0 && (
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => setSearch('')} hitSlop={10} style={{ marginRight: 6 }}>
+              <Ionicons name="close-circle" size={18} color={C.textSecondary} />
+            </Pressable>
+          )}
+          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            style={[
+              styles.filterBtn,
+              { backgroundColor: categoryFilter ? C.brinjal1 : C.primaryLight },
+              categoryFilter && { shadowColor: C.brinjal1, shadowOpacity: 0.35, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 5 },
+            ]}
+            onPress={openCategorySheet}
+            hitSlop={6}>
+            <Ionicons name="pricetag-outline" size={17} color={categoryFilter ? '#fff' : C.brinjal1} />
+          </Pressable>
+        </Pressable>
+      </View>
+
       {/* Filter tabs */}
       <View style={styles.filterRow}>
         <TabSlider
@@ -245,15 +348,25 @@ export default function CampaignsScreen() {
       ) : (
         <FlatList
           ref={listRef}
-          data={shown}
+          data={filtered}
           keyExtractor={(c) => c.id}
-          contentContainerStyle={[styles.list, shown.length === 0 && styles.listEmpty]}
+          contentContainerStyle={[styles.list, filtered.length === 0 && styles.listEmpty]}
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brinjal1} />}
           onEndReached={loadMore}
           onEndReachedThreshold={0.4}
           ListFooterComponent={tabData[activeFilter].loadingMore ? <View style={styles.footerLoading}><ActivityIndicator size="small" color={C.brinjal1} /></View> : null}
           ListEmptyComponent={
+            filterActive ? (
+              <View style={styles.noResultsWrap}>
+                <Ionicons name="search-outline" size={40} color={C.textSecondary} />
+                <Text style={[styles.emptyTitle, { color: C.text }]}>{t('campaigns.noResultsTitle')}</Text>
+                <Text style={[styles.emptySub, { color: C.textSecondary }]}>{t('campaigns.noResultsSub')}</Text>
+                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={clearFilters} style={styles.emptySwitchRow}>
+                  <Text style={[styles.emptySwitchLink, { color: C.brinjal1 }]}>{t('campaigns.clearFiltersBtn')}</Text>
+                </Pressable>
+              </View>
+            ) : (
             <View style={styles.emptyWrap}>
               <View style={[styles.emptyCard, { backgroundColor: C.surface, borderColor: C.border }]}>
                 {/* Decorative dots */}
@@ -310,6 +423,7 @@ export default function CampaignsScreen() {
                 )}
               </View>
             </View>
+            )
           }
           renderItem={({ item: c }) => {
             const st = STATUS_CFG[c.status ?? 'draft'];
@@ -321,6 +435,17 @@ export default function CampaignsScreen() {
               <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
                 <View style={[styles.cardAccent, { backgroundColor: st.color }]} />
                 <View style={styles.cardContent}>
+                  {/* Status — floated in the card's top-right corner instead
+                      of sitting inline in the body. */}
+                  {c.status !== 'draft' && (
+                    <View style={[styles.cornerBadge, { backgroundColor: st.bg }]}>
+                      <Text style={[styles.cornerBadgeText, { color: st.color }]}>
+                        {c.status === 'active' ? t('campaigns.statusActive')
+                          : c.status === 'pending_approval' ? t('campaigns.statusPendingApproval')
+                          : t('campaigns.statusClosed')}
+                      </Text>
+                    </View>
+                  )}
                   <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                     style={({ pressed }) => [styles.cardMain, pressed && { opacity: 0.88 }]}
                     onPress={() => router.push({ pathname: '/campaign-detail', params: { campaignId: c.id } })}>
@@ -331,32 +456,38 @@ export default function CampaignsScreen() {
                       )}
                     </View>
                     <View style={styles.body}>
-                      <Text style={[styles.title, { color: C.text }]} numberOfLines={1}>{c.title}</Text>
-                      <View style={styles.metaRow}>
-                        <Ionicons name="globe-outline" size={12} color={C.textSecondary} />
-                        <Text style={[styles.meta, { color: C.textSecondary }]}>{c.platform}</Text>
-                        <Text style={[styles.metaDot, { color: C.border }]}>·</Text>
-                        <FontAwesome5 name="money-bill-wave" size={11} color={C.textSecondary} />
-                        <Text style={[styles.meta, { color: C.textSecondary }]}>{c.budget}</Text>
-                      </View>
-                      {(c.status === 'draft') ? (
-                        <Text style={[styles.draftNote, { color: C.textSecondary }]}>{t('campaigns.tapToEdit')}</Text>
-                      ) : (
-                        <View style={styles.statRow}>
-                          <View style={[styles.statPill, { backgroundColor: C.primaryLight }]}>
-                            <Ionicons name="people-outline" size={12} color={C.brinjal1} />
-                            <Text style={[styles.stat, { color: C.brinjal1 }]}>
-                              {c.proposals} proposal{c.proposals !== 1 ? 's' : ''}
-                            </Text>
-                          </View>
-                          <View style={[styles.badge, { backgroundColor: st.bg }]}>
-                            <Text style={[styles.badgeText, { color: st.color }]}>
-                              {c.status === 'active' ? t('campaigns.statusActive')
-                                : c.status === 'pending_approval' ? t('campaigns.statusPendingApproval')
-                                : t('campaigns.statusClosed')}
-                            </Text>
-                          </View>
+                      <View style={styles.titleRow}>
+                        <Text style={[styles.title, { color: C.text, flexShrink: 1 }]} numberOfLines={1}>{c.title}</Text>
+                        <View style={[styles.typeBadge, c.campaignType === 'OPEN_EVENT' ? styles.typeBadgeFree : styles.typeBadgePaid]}>
+                          <Text style={[styles.typeBadgeText, c.campaignType === 'OPEN_EVENT' ? styles.typeBadgeTextFree : styles.typeBadgeTextPaid]}>
+                            {c.campaignType === 'OPEN_EVENT' ? t('business.home.badgeFree') : t('business.home.badgePaid')}
+                          </Text>
                         </View>
+                      </View>
+                      <View style={styles.metaRow}>
+                        {c.platforms.length > 0 && (
+                          <>
+                            <Ionicons name="globe-outline" size={12} color={C.textSecondary} />
+                            <Text style={[styles.meta, { color: C.textSecondary }]} numberOfLines={1}>{c.platforms.join(', ')}</Text>
+                            <Text style={[styles.metaDot, { color: C.border }]}>·</Text>
+                          </>
+                        )}
+                        {c.campaignType === 'OPEN_EVENT' ? (
+                          <>
+                            <Ionicons name="people-outline" size={12} color={C.textSecondary} />
+                            <Text style={[styles.meta, { color: C.textSecondary }]}>{t('createEvent.summaryNCreators', { n: c.capacity ?? 0 })}</Text>
+                          </>
+                        ) : (
+                          <>
+                            <FontAwesome5 name="money-bill-wave" size={11} color={C.textSecondary} />
+                            <Text style={[styles.meta, { color: C.textSecondary }]}>{c.budget}</Text>
+                          </>
+                        )}
+                        <Text style={[styles.metaDot, { color: C.border }]}>·</Text>
+                        <Text style={[styles.meta, { color: C.textSecondary }]}>{timeAgo(c.createdAt)}</Text>
+                      </View>
+                      {c.status === 'draft' && (
+                        <Text style={[styles.draftNote, { color: C.textSecondary }]}>{t('campaigns.tapToEdit')}</Text>
                       )}
                     </View>
                     <Ionicons name="chevron-forward" size={18} color={C.border} />
@@ -367,14 +498,6 @@ export default function CampaignsScreen() {
                     <>
                       <View style={[styles.footerDivider, { backgroundColor: C.border }]} />
                       <View style={styles.footerRow}>
-                        {c.proposals > 0 && (
-                          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                            style={({ pressed }) => [styles.footerBtn, pressed && { opacity: 0.7 }]}
-                            onPress={() => openProposals(c)}>
-                            <Text style={[styles.footerBtnText, { color: C.brinjal1 }]}>{t('campaigns.viewProposals')}</Text>
-                            <Ionicons name="arrow-forward" size={12} color={C.brinjal1} />
-                          </Pressable>
-                        )}
                         {c.status === 'active' && (
                           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                             style={({ pressed }) => [styles.inviteBtn, { backgroundColor: C.primaryLight }, pressed && { opacity: 0.7 }]}
@@ -396,6 +519,17 @@ export default function CampaignsScreen() {
                             <Text style={[styles.inviteBtnText, { color: C.brinjal1 }]}>{t('campaigns.publishDraft')}</Text>
                           </Pressable>
                         )}
+                        {c.proposals > 0 && (
+                          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                            style={({ pressed }) => [styles.footerBtn, styles.inviteBtn, { backgroundColor: C.primaryLight }, pressed && { opacity: 0.7 }]}
+                            onPress={() => openProposals(c)}>
+                            <Ionicons name="people-outline" size={12} color={C.brinjal1} />
+                            <Text style={[styles.inviteBtnText, { color: C.brinjal1 }]}>
+                              {t('campaigns.viewProposalsBtn', { n: c.proposals })}
+                            </Text>
+                            <Ionicons name="arrow-forward" size={12} color={C.brinjal1} />
+                          </Pressable>
+                        )}
                       </View>
                     </>
                   )}
@@ -406,6 +540,37 @@ export default function CampaignsScreen() {
           }}
         />
       )}
+
+      </MaxWidthContainer>
+
+      {/* Category filter sheet */}
+      <FilterSheet
+        visible={categorySheetVisible}
+        title={t('campaigns.filterCategoryTitle')}
+        resetLabel={t('common.reset')}
+        applyLabel={t('campaigns.filterShowResults')}
+        onApply={applyCategoryFilter}
+        onReset={() => setTempCategoryFilter('')}
+        onClose={() => setCategorySheetVisible(false)}
+      >
+        <View>
+          <FilterSectionHeader icon="pricetag-outline" label={t('campaigns.filterCategory')} />
+          <View style={styles.categoryChipGrid}>
+            {allCategories.map((cat) => {
+              const active = tempCategoryFilter === cat.name;
+              return (
+                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                  key={cat.id}
+                  onPress={() => setTempCategoryFilter(active ? '' : cat.name)}
+                  style={[styles.categoryChip, { borderColor: active ? cat.color : C.border, backgroundColor: active ? cat.iconBg : C.background }]}>
+                  <FontAwesome5 name={cat.icon} size={12} color={active ? cat.color : C.textSecondary} />
+                  <Text style={[styles.categoryChipText, { color: active ? cat.color : C.text, fontWeight: active ? '700' : '400' }]}>{cat.name}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+      </FilterSheet>
 
       {/* Invite Creators bottom sheet */}
       <Modal
@@ -523,6 +688,18 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 60 },
 
+  // Search + category filter — same compound search pill (card + docked
+  // filter button) as the creator home feed's top-header search bar.
+  searchRow:   { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 10 },
+  searchCard:  { flex: 1, flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.lg, paddingHorizontal: 14, height: 44, borderWidth: 1.5 },
+  searchCardFocused: {
+    borderColor: '#7C3AED', borderWidth: 2,
+    shadowColor: '#7C3AED', shadowOpacity: 0.18, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 6,
+  },
+  searchIcon:  { marginRight: 8 },
+  searchInput: { flex: 1, fontSize: 14, fontFamily: F.regular },
+  filterBtn:   { width: 36, height: 36, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center' },
+
   // Flush with the page, same as the creator proposals tab bar: no
   // background or shadow of its own, just spacing.
   filterRow: { marginTop: 14 },
@@ -530,6 +707,8 @@ const styles = StyleSheet.create({
   list: { paddingHorizontal: 20, paddingTop: 14, gap: 12, paddingBottom: 40 },
   listEmpty: { flexGrow: 1 },
   footerLoading: { paddingVertical: 20 },
+
+  noResultsWrap: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24, paddingVertical: 60, gap: 10 },
 
   emptyWrap: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24, paddingVertical: 16 },
   emptyCard: {
@@ -549,6 +728,11 @@ const styles = StyleSheet.create({
   emptySwitchText: { fontSize: 12, fontFamily: F.regular },
   emptySwitchLink: { fontSize: 12, fontFamily: F.bold },
 
+  // Category filter sheet chips — same shape as BusinessFilterModal's.
+  categoryChipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  categoryChip:     { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1.5, borderRadius: RADIUS.full, paddingHorizontal: 14, paddingVertical: 9 },
+  categoryChipText: { fontSize: 13, fontFamily: F.medium },
+
   cardWrap: { borderRadius: RADIUS.md, ...SHADOW.raised },
   card: {
     borderRadius: RADIUS.md,
@@ -558,25 +742,34 @@ const styles = StyleSheet.create({
   },
   cardAccent: { width: 4 },
   cardContent: { flex: 1 },
+  // Floats over the empty top-right corner above the chevron column —
+  // doesn't collide with the title row since it sits higher than the
+  // vertically-centered chevron below it.
+  cornerBadge: { position: 'absolute', top: 10, right: 10, zIndex: 1, borderRadius: RADIUS.sm, paddingHorizontal: 9, paddingVertical: 4 },
+  cornerBadgeText: { fontSize: 11, fontFamily: F.bold },
   cardMain: { flexDirection: 'row', alignItems: 'center', padding: 14, gap: 12 },
-  thumb: { width: 60, height: 60, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center', flexShrink: 0, overflow: 'hidden' },
+  thumb: { width: 66, height: 66, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center', flexShrink: 0, overflow: 'hidden' },
   body: { flex: 1, gap: 5 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   title: { fontSize: 14, fontFamily: F.bold },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  typeBadge: { borderRadius: RADIUS.sm, paddingHorizontal: 7, paddingVertical: 3 },
+  typeBadgePaid: { backgroundColor: TabColors.brand.bg },
+  typeBadgeFree: { backgroundColor: TabColors.info.bg },
+  typeBadgeText: { fontSize: 10, fontFamily: F.bold },
+  typeBadgeTextPaid: { color: TabColors.brand.color },
+  typeBadgeTextFree: { color: TabColors.info.color },
+  metaRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', rowGap: 3, gap: 5 },
   metaDot: { fontSize: 12 },
-  badge: { borderRadius: RADIUS.sm, paddingHorizontal: 9, paddingVertical: 4 },
-  badgeText: { fontSize: 11, fontFamily: F.bold },
   meta: { fontSize: 12, fontFamily: F.regular },
-  statRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  statPill: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingVertical: 4 },
-  stat: { fontSize: 12, fontFamily: F.semibold },
   draftNote: { fontSize: 11, fontStyle: 'italic', fontFamily: F.regular },
 
   footerDivider: { height: 1, marginHorizontal: 12 },
   footerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 9 },
-  footerBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 40, paddingVertical: 4 },
+  // marginLeft:'auto' keeps this pinned to the right edge even when it's the
+  // only footer action rendered (e.g. no invite/publish button alongside it).
+  footerBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 40, paddingVertical: 4, marginLeft: 'auto' },
   footerBtnText: { fontSize: 12, fontFamily: F.bold },
-  inviteBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: RADIUS.sm, paddingHorizontal: 10, paddingVertical: 6, marginLeft: 'auto', minHeight: 40 },
+  inviteBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: RADIUS.sm, paddingHorizontal: 10, paddingVertical: 6, minHeight: 40 },
   inviteBtnText: { fontSize: 12, fontFamily: F.bold },
 
   modalBackdrop: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)' },

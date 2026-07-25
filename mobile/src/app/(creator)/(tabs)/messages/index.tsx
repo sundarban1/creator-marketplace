@@ -26,6 +26,7 @@ import { useLanguage, type TFn } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { chatService } from '@/services/chat';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { TabColors } from '@/utilities/tabColors';
 import type { ApiMessage } from '@/lib/api';
 import type { Conversation } from '@/types';
@@ -356,6 +357,7 @@ export default function CreatorMessagesScreen() {
 
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
+      <MaxWidthContainer>
       {/* ── Tab slider ── */}
       <View style={s.tabSliderWrap}>
         <TabSlider
@@ -416,6 +418,7 @@ export default function CreatorMessagesScreen() {
           }
         />
       )}
+      </MaxWidthContainer>
     </SafeAreaView>
   );
 }

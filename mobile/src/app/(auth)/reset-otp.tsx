@@ -8,6 +8,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { authService } from '@/services/auth';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 
 const OTP_LENGTH = 6;
 const RESEND_SECONDS = 30;
@@ -148,6 +149,7 @@ export default function ResetOtpScreen() {
         </View>
 
         {/* ── Card ── */}
+        <MaxWidthContainer>
         <View style={[styles.card, { backgroundColor: C.preLoginBackground }]}>
 
           <View style={styles.otpRow}>
@@ -213,6 +215,7 @@ export default function ResetOtpScreen() {
             {t('auth.resetOtp.expiryHint')}{channel === 'email' ? t('auth.resetOtp.spamHint') : ''}
           </Text>
         </View>
+        </MaxWidthContainer>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

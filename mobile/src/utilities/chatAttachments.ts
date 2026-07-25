@@ -18,7 +18,14 @@ export type PickedVideo = {
 
 const CHAT_IMAGE_MAX_SIZE_BYTES = 20 * 1024 * 1024; // matches backend uploadChatFile limit
 const CHAT_VIDEO_MAX_DURATION_SEC = 120; // matches backend's 2-minute cap
-const CHAT_VIDEO_MAX_SIZE_BYTES = 200 * 1024 * 1024; // matches backend uploadChatVideo limit
+const CHAT_VIDEO_MAX_SIZE_BYTES = 200 * 1024 * 1024; // matches backend's 200MB cap
+
+// MP4 (H.264/AAC) is preferred; MOV is accepted and delivered back as MP4 by
+// the backend (see videoPlaybackUrl in backend/src/utils/cloudinary.ts).
+// Legacy/poorly-supported formats (AVI, MKV, FLV, WMV, 3GP, ...) are rejected
+// here before ever reaching the network — the backend re-checks this too in
+// case the picker is bypassed.
+const CHAT_VIDEO_ALLOWED_MIME_TYPES = ['video/mp4', 'video/quicktime'];
 
 async function toPickedImage(asset: ImagePicker.ImagePickerAsset): Promise<PickedAttachment> {
   const { uri, mimeType } = await compressImage(asset, false);
@@ -48,6 +55,48 @@ export async function pickImageFromCamera(): Promise<PickedAttachment | null> {
   return toPickedImage(result.assets[0]!);
 }
 
+// Shared by both pickers below — format/duration/size/readability checks,
+// so "record a video" and "choose from gallery" enforce identical rules.
+// `maxDurationSec` is undefined for callers with no duration cap (deliverables) —
+// both the alert copy and the check itself skip entirely rather than falling
+// back to chat's 120s, since a hardcoded fallback here would silently cap
+// deliverables too.
+async function validateAndBuildPickedVideo(asset: ImagePicker.ImagePickerAsset, maxDurationSec?: number): Promise<PickedVideo | null> {
+  const mimeType = asset.mimeType ?? 'video/mp4';
+  if (!CHAT_VIDEO_ALLOWED_MIME_TYPES.includes(mimeType)) {
+    Alert.alert('Unsupported format', 'Please use an MP4 or MOV video.');
+    return null;
+  }
+
+  const durationSec = Math.round((asset.duration ?? 0) / 1000);
+  if (maxDurationSec != null && durationSec > maxDurationSec) {
+    Alert.alert('Video too long', `Please choose a video under ${Math.round(maxDurationSec / 60)} minutes.`);
+    return null;
+  }
+
+  // Also confirms the file actually exists and is readable before we try to upload it.
+  const info = await FileSystem.getInfoAsync(asset.uri);
+  if (!info.exists) {
+    Alert.alert('Video unavailable', 'This video could not be read. Please try again.');
+    return null;
+  }
+  const sizeBytes = info.size ?? 0;
+  if (sizeBytes > CHAT_VIDEO_MAX_SIZE_BYTES) {
+    Alert.alert('Video too large', 'Please choose a video under 200 MB.');
+    return null;
+  }
+
+  return {
+    uri: asset.uri,
+    name: `video_${Date.now()}.${mimeType === 'video/quicktime' ? 'mov' : 'mp4'}`,
+    mimeType,
+    durationSec,
+    width: asset.width,
+    height: asset.height,
+    sizeBytes,
+  };
+}
+
 export async function pickVideoFromLibrary(): Promise<PickedVideo | null> {
   const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (status !== 'granted') {
@@ -59,30 +108,78 @@ export async function pickVideoFromLibrary(): Promise<PickedVideo | null> {
     videoMaxDuration: CHAT_VIDEO_MAX_DURATION_SEC, // iOS enforces this at the picker; Android doesn't, so re-checked below regardless
   });
   if (result.canceled) return null;
-  const asset = result.assets[0]!;
+  return validateAndBuildPickedVideo(result.assets[0]!, CHAT_VIDEO_MAX_DURATION_SEC);
+}
 
-  const durationSec = Math.round((asset.duration ?? 0) / 1000);
-  if (durationSec > CHAT_VIDEO_MAX_DURATION_SEC) {
-    Alert.alert('Video too long', 'Please choose a video under 2 minutes.');
+export async function pickVideoFromCamera(): Promise<PickedVideo | null> {
+  const { status } = await ImagePicker.requestCameraPermissionsAsync();
+  if (status !== 'granted') {
+    Alert.alert('Permission required', 'Please allow camera access in Settings.');
     return null;
   }
+  const result = await ImagePicker.launchCameraAsync({
+    mediaTypes: ['videos'],
+    videoMaxDuration: CHAT_VIDEO_MAX_DURATION_SEC,
+  });
+  if (result.canceled) return null;
+  return validateAndBuildPickedVideo(result.assets[0]!, CHAT_VIDEO_MAX_DURATION_SEC);
+}
 
-  const info = await FileSystem.getInfoAsync(asset.uri);
-  const sizeBytes = info.exists ? (info.size ?? 0) : 0;
-  if (sizeBytes > CHAT_VIDEO_MAX_SIZE_BYTES) {
-    Alert.alert('Video too large', 'Please choose a video under 200 MB.');
+// ── Deliverable videos ───────────────────────────────────────────────────────
+// Same format/size validation as chat, but no duration cap (deliverable
+// content is legitimately longer than a chat clip) and multi-select up to
+// however many of the 3 slots remain.
+
+export async function pickDeliverableVideosFromLibrary(remainingSlots: number): Promise<PickedVideo[]> {
+  const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  if (status !== 'granted') {
+    Alert.alert('Permission required', 'Please allow access to your photo library in Settings.');
+    return [];
+  }
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ['videos'],
+    allowsMultipleSelection: remainingSlots > 1,
+    selectionLimit: remainingSlots,
+  });
+  if (result.canceled) return [];
+
+  const picked: PickedVideo[] = [];
+  for (const asset of result.assets) {
+    const video = await validateAndBuildPickedVideo(asset);
+    if (video) picked.push(video);
+  }
+  return picked;
+}
+
+export async function pickDeliverableVideoFromCamera(): Promise<PickedVideo | null> {
+  const { status } = await ImagePicker.requestCameraPermissionsAsync();
+  if (status !== 'granted') {
+    Alert.alert('Permission required', 'Please allow camera access in Settings.');
     return null;
   }
+  const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['videos'] });
+  if (result.canceled) return null;
+  return validateAndBuildPickedVideo(result.assets[0]!);
+}
 
-  return {
-    uri: asset.uri,
-    name: `video_${Date.now()}.${asset.uri.split('.').pop() ?? 'mp4'}`,
-    mimeType: asset.mimeType ?? 'video/mp4',
-    durationSec,
-    width: asset.width,
-    height: asset.height,
-    sizeBytes,
-  };
+// allowVideo=false hides "Record Video"/"Choose Video" (creator<->creator chat
+// doesn't permit video); deliverables always allow it, capped by remainingSlots.
+export function promptDeliverableAttachmentChoice(): Promise<'video-camera' | 'video-library' | null> {
+  return new Promise((resolve) => {
+    if (Platform.OS === 'ios') {
+      const options = ['Record Video', 'Choose Video', 'Cancel'];
+      ActionSheetIOS.showActionSheetWithOptions(
+        { options, cancelButtonIndex: options.length - 1 },
+        (idx) => resolve(idx === 0 ? 'video-camera' : idx === 1 ? 'video-library' : null),
+      );
+    } else {
+      Alert.alert('Add Video', undefined, [
+        { text: 'Record Video', onPress: () => resolve('video-camera' as const) },
+        { text: 'Choose Video', onPress: () => resolve('video-library' as const) },
+        { text: 'Cancel', style: 'cancel', onPress: () => resolve(null) },
+      ]);
+    }
+  });
 }
 
 export async function pickDocumentAttachment(): Promise<PickedAttachment | null> {
@@ -101,21 +198,39 @@ export async function pickDocumentAttachment(): Promise<PickedAttachment | null>
   return { uri: asset.uri, name: asset.name, mimeType: asset.mimeType ?? 'application/octet-stream' };
 }
 
-export function promptAttachmentChoice(): Promise<'gallery' | 'video' | 'document' | null> {
+// allowVideo defaults to true; pass false to hide "Record Video"/"Choose Video"
+// (creator<->creator conversations don't permit video — only creator<->business does).
+export function promptAttachmentChoice(allowVideo = true): Promise<'gallery' | 'video-camera' | 'video-library' | 'document' | null> {
   return new Promise((resolve) => {
     if (Platform.OS === 'ios') {
+      const options = allowVideo
+        ? ['Photo', 'Record Video', 'Choose Video', 'Document', 'Cancel']
+        : ['Photo', 'Document', 'Cancel'];
       ActionSheetIOS.showActionSheetWithOptions(
-        // Video option hidden from UI for now (upload reliability issue) — code below kept intact.
-        { options: ['Photo', /* 'Video', */ 'Document', 'Cancel'], cancelButtonIndex: 2 },
-        (idx) => resolve(idx === 0 ? 'gallery' : idx === 1 ? 'document' : null),
+        { options, cancelButtonIndex: options.length - 1 },
+        (idx) => {
+          if (allowVideo) {
+            resolve(idx === 0 ? 'gallery' : idx === 1 ? 'video-camera' : idx === 2 ? 'video-library' : idx === 3 ? 'document' : null);
+          } else {
+            resolve(idx === 0 ? 'gallery' : idx === 1 ? 'document' : null);
+          }
+        },
       );
     } else {
-      Alert.alert('Add Attachment', undefined, [
-        { text: 'Photo',    onPress: () => resolve('gallery') },
-        // { text: 'Video', onPress: () => resolve('video') }, // hidden from UI for now (upload reliability issue)
-        { text: 'Document', onPress: () => resolve('document') },
-        { text: 'Cancel',   style: 'cancel', onPress: () => resolve(null) },
-      ]);
+      const buttons = allowVideo
+        ? [
+            { text: 'Photo',        onPress: () => resolve('gallery' as const) },
+            { text: 'Record Video', onPress: () => resolve('video-camera' as const) },
+            { text: 'Choose Video', onPress: () => resolve('video-library' as const) },
+            { text: 'Document',     onPress: () => resolve('document' as const) },
+            { text: 'Cancel',       style: 'cancel' as const, onPress: () => resolve(null) },
+          ]
+        : [
+            { text: 'Photo',    onPress: () => resolve('gallery' as const) },
+            { text: 'Document', onPress: () => resolve('document' as const) },
+            { text: 'Cancel',   style: 'cancel' as const, onPress: () => resolve(null) },
+          ];
+      Alert.alert('Add Attachment', undefined, buttons);
     }
   });
 }

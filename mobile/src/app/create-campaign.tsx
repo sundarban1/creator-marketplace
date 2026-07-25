@@ -29,6 +29,9 @@ import { pickAndUpload } from '@/utilities/uploadImage';
 import { RecommendedCreatorsModal } from '@/features/business/components/RecommendedCreatorsModal';
 import { getTemplateImage } from '@/features/creator/data/templateImages';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { MaxWidthContainer } from '@/components/MaxWidthContainer';
+import { TabSlider } from '@/components/TabSlider';
+import { TabColors } from '@/utilities/tabColors';
 import {
   GOAL_OPTIONS, CREATOR_TYPES, DELIVERABLE_TYPES, DEFAULT_DELIVERABLES, summarizeDeliverables,
 } from '@/features/business/constants/campaignForm';
@@ -40,11 +43,13 @@ import {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const AI_PROMPT_EXAMPLES = [
-  "I want to promote my cafe's new iced coffee.",
-  "We're launching a new clothing collection for Dashain.",
-  "Looking for travel creators to showcase our hotel in Pokhara.",
-  "Need 5 food creators to review our momo restaurant.",
-  'Promote our mobile app to university students.',
+  "Let's collaborate: Looking for 5 food vloggers to review our new cafe in Kathmandu.",
+  'Join our creator family: 3 fashion influencers needed for our upcoming Dashain outfit campaign.',
+  'Explore with us: Inviting travel vloggers to experience and review our resort in Pokhara.',
+  'Team up with us: Seeking makeup artists and creators for a get-ready-with-me collaboration.',
+  'आउनुहोस् सहकार्य गरौं: हाम्रो नयाँ शैक्षिक एप रिभ्यु गर्नका लागि ३ जना इन्फ्लुएन्सरहरूको आवश्यकता छ।',
+  'हामीसँग जोडिनुहोस्: हाम्रो फिटनेस सेन्टरको अनुभव र प्रवर्द्धन गर्नका लागि हेल्थ एण्ड फिटनेस क्रिएटरहरू खोज्दैछौं।',
+  'सहकार्यको लागि आमन्त्रण: हाम्रो अटोमोबाइल वर्कशप र गाडी सर्भिसिङको भिडियो बनाउनका लागि २ जना बाइक/कार राइडर ब्लगरहरू चाहिएको छ।',
 ];
 
 const ERROR_RED = '#EF4444';
@@ -594,12 +599,12 @@ function DeadlinePicker({ value, onChange, error, colors, label }: {
 function FeaturedToggle({ value, onChange, quota, colors }: {
   value: boolean;
   onChange: (v: boolean) => void;
-  quota: { remaining: number; price: number } | null;
+  quota: { remaining: number; price: number; unlimited: boolean } | null;
   colors: ReturnType<typeof useAppColors>;
 }) {
   const C = colors;
   const { t } = useLanguage();
-  const locked = quota !== null && quota.remaining <= 0;
+  const locked = quota !== null && !quota.unlimited && quota.remaining <= 0;
 
   return (
     <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
@@ -618,7 +623,7 @@ function FeaturedToggle({ value, onChange, quota, colors }: {
             {quota && (
               <View style={[ft.pill, { backgroundColor: locked ? C.border : '#FEF3C7' }]}>
                 <Text style={[ft.pillText, { color: locked ? C.textSecondary : '#92400E' }]}>
-                  {locked ? `Rs. ${quota.price}` : t('createEvent.featuredRemaining', { n: quota.remaining })}
+                  {quota.unlimited ? t('createEvent.featuredUnlimited') : locked ? `Rs. ${quota.price}` : t('createEvent.featuredRemaining', { n: quota.remaining })}
                 </Text>
               </View>
             )}
@@ -661,22 +666,31 @@ function ListingHeroCard({
   const C = colors;
   const image = featureImageUrl ?? getTemplateImage(category, category);
   return (
-    <View style={[lh.card, { backgroundColor: C.surface, borderColor: C.border }]}>
-      {image && <Image source={{ uri: image }} style={lh.image} resizeMode="cover" />}
-      <View style={lh.body}>
-        {category && (
-          <View style={[lh.categoryPill, { backgroundColor: C.primaryLight }]}>
-            <Text style={[lh.categoryPillText, { color: C.brinjal1 }]}>{category}</Text>
-          </View>
-        )}
-        <Text style={[lh.title, { color: C.text }]} numberOfLines={2}>{title}</Text>
+    // Shadow (unclipped) and rounded-corner clip are split across two views —
+    // same as the home feed's campaignCardWrap/campaignCard split, since
+    // overflow:hidden on the same view as the shadow clips it off on Android.
+    <View style={[lh.wrap, { backgroundColor: C.surface }]}>
+      <View style={lh.card}>
+        {image && <Image source={{ uri: image }} style={lh.image} resizeMode="cover" />}
+        <View style={lh.body}>
+          {category && (
+            <View style={[lh.categoryPill, { backgroundColor: C.primaryLight }]}>
+              <Text style={[lh.categoryPillText, { color: C.brinjal1 }]}>{category}</Text>
+            </View>
+          )}
+          <Text style={[lh.title, { color: C.text }]} numberOfLines={2}>{title}</Text>
+        </View>
       </View>
     </View>
   );
 }
 
 const lh = StyleSheet.create({
-  card:            { borderRadius: RADIUS.lg, borderWidth: 1.5, overflow: 'hidden' },
+  // Matches the home feed's campaign-card treatment — a raised shadow
+  // instead of a flat border, so the finished listing looks like it'll
+  // sit among the other cards on the home feed.
+  wrap:            { borderRadius: RADIUS.lg, ...SHADOW.raised },
+  card:            { borderRadius: RADIUS.lg, overflow: 'hidden' },
   image:           { width: '100%', height: 160 },
   body:            { padding: 14, gap: 6 },
   categoryPill:    { alignSelf: 'flex-start', borderRadius: RADIUS.full, paddingHorizontal: 10, paddingVertical: 3 },
@@ -805,11 +819,11 @@ export default function CreateCampaignScreen() {
 
   // Fails open (stays null → toggle isn't locked) if this errors — the
   // backend still enforces the quota server-side on publish either way.
-  const [featuredQuota, setFeaturedQuota] = useState<{ freeQuota: number; used: number; remaining: number; price: number } | null>(null);
+  const [featuredQuota, setFeaturedQuota] = useState<{ freeQuota: number; used: number; remaining: number; price: number; unlimited: boolean } | null>(null);
   useEffect(() => {
     campaignService.getFeaturedQuota().then(setFeaturedQuota).catch(() => {});
   }, []);
-  const featuredLocked = featuredQuota !== null && featuredQuota.remaining <= 0;
+  const featuredLocked = featuredQuota !== null && !featuredQuota.unlimited && featuredQuota.remaining <= 0;
 
   const [form, setForm] = useState<FormData>({
     template: '',
@@ -1236,6 +1250,7 @@ export default function CreateCampaignScreen() {
 
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
+      <MaxWidthContainer>
 
       {/* Header */}
       <View style={[s.header, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
@@ -1280,32 +1295,45 @@ export default function CreateCampaignScreen() {
           {phase === 'setup' && (
             <View style={s.content}>
 
-              {/* Event Type Tab Slider */}
+              {/* Event Type Tab Slider — same TabSlider + color system as the
+                  business home feed's type filter, for a consistent feel. */}
               <View style={{ gap: 12 }}>
                 <Text style={[s.stepSectionHeading, { color: C.text }]}>{t('createEvent.eventTypeHeading')}</Text>
 
-                {/* Tab bar */}
-                <View style={[s.etTabBar, { backgroundColor: C.surface, borderColor: C.border }]}>
-                  {([
-                    { type: 'PAID_CAMPAIGN' as const, icon: 'cash-outline' as const,     label: t('createEvent.tabPaidEvent') },
-                    { type: 'OPEN_EVENT'    as const, icon: 'calendar-outline' as const, label: t('createEvent.tabOpenEvent') },
-                  ]).map((tab) => {
-                    const sel = form.eventType === tab.type;
-                    return (
-                      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                        key={tab.type}
-                        style={[s.etTab, sel && { backgroundColor: C.brinjal1 }]}
-                        onPress={() => { if (form.eventType !== tab.type) resetFormForType(tab.type); }}>
-                        <Ionicons name={tab.icon} size={17} color={sel ? '#fff' : C.textSecondary} />
-                        <Text style={[s.etTabText, { color: sel ? '#fff' : C.textSecondary }]}>{tab.label}</Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
+                <TabSlider
+                  justify
+                  tabs={[
+                    { key: 'PAID_CAMPAIGN', label: t('createEvent.tabPaidEvent'), icon: 'cash-outline',     color: TabColors.brand.color },
+                    { key: 'OPEN_EVENT',    label: t('createEvent.tabOpenEvent'), icon: 'calendar-outline', color: TabColors.info.color },
+                  ]}
+                  active={form.eventType}
+                  onChange={(key) => { if (form.eventType !== key) resetFormForType(key as FormData['eventType']); }}
+                />
 
-                {/* Info panel for selected type */}
-                <View style={[s.etInfoPanel, { backgroundColor: C.primaryLight }]}>
-                  <Text style={[s.etInfoSub, { color: C.brinjal1 }]}>
+                {/* Info banner for the selected type — icon box + left accent,
+                    matching the home feed's banner/attentionBanner pattern. */}
+                <View
+                  style={[
+                    s.etInfoPanel,
+                    { backgroundColor: C.surface, borderLeftColor: form.eventType === 'PAID_CAMPAIGN' ? TabColors.brand.color : TabColors.info.color },
+                  ]}
+                >
+                  <View
+                    style={[
+                      s.etInfoIconWrap,
+                      {
+                        backgroundColor: form.eventType === 'PAID_CAMPAIGN' ? TabColors.brand.bg : TabColors.info.bg,
+                        shadowColor: form.eventType === 'PAID_CAMPAIGN' ? TabColors.brand.color : TabColors.info.color,
+                      },
+                    ]}
+                  >
+                    <Ionicons
+                      name={form.eventType === 'PAID_CAMPAIGN' ? 'cash-outline' : 'calendar-outline'}
+                      size={18}
+                      color={form.eventType === 'PAID_CAMPAIGN' ? TabColors.brand.color : TabColors.info.color}
+                    />
+                  </View>
+                  <Text style={[s.etInfoSub, { color: C.text }]}>
                     {form.eventType === 'PAID_CAMPAIGN' ? t('createEvent.paidEventSub') : t('createEvent.openEventSub')}
                   </Text>
                 </View>
@@ -1439,9 +1467,16 @@ export default function CreateCampaignScreen() {
               {/* Paid Campaign review */}
               {form.eventType === 'PAID_CAMPAIGN' && (
                 <>
-                  {/* Step 2 review header */}
+                  {/* Step 2 review header — icon box + left accent, matching
+                      the Open Event banner below and the home feed's banner style. */}
                   <View style={[s.reviewBanner, { backgroundColor: C.surface, borderLeftColor: C.brinjal1 }]}>
-                    <Text style={[s.reviewBannerHeading, { color: C.text }]}>{t('createEvent.paidBannerSub')}</Text>
+                    <View style={[s.reviewBannerIconWrap, { backgroundColor: C.primaryLight, shadowColor: C.brinjal1 }]}>
+                      <Ionicons name="sparkles-outline" size={20} color={C.brinjal1} />
+                    </View>
+                    <View style={{ flex: 1, gap: 2 }}>
+                      <Text style={[s.reviewBannerTitle, { color: C.text }]}>{t('createEvent.paidBannerTitle')}</Text>
+                      <Text style={[s.reviewBannerSub, { color: C.textSecondary }]}>{t('createEvent.paidBannerSub')}</Text>
+                    </View>
                   </View>
 
                   {/* Editable title */}
@@ -1632,9 +1667,11 @@ export default function CreateCampaignScreen() {
               {/* Open Event review */}
               {form.eventType === 'OPEN_EVENT' && (
                 <>
-                  {/* Review header */}
+                  {/* Review header — icon box + left accent, matching the home feed's banner style. */}
                   <View style={[s.reviewBanner, { backgroundColor: C.surface, borderLeftColor: C.brinjal1 }]}>
-                    <Ionicons name="eye-outline" size={20} color={C.brinjal1} />
+                    <View style={[s.reviewBannerIconWrap, { backgroundColor: C.primaryLight, shadowColor: C.brinjal1 }]}>
+                      <Ionicons name="eye-outline" size={20} color={C.brinjal1} />
+                    </View>
                     <View style={{ flex: 1, gap: 2 }}>
                       <Text style={[s.reviewBannerTitle, { color: C.text }]}>{t('createEvent.openBannerTitle')}</Text>
                       <Text style={[s.reviewBannerSub, { color: C.textSecondary }]}>{t('createEvent.openBannerSub')}</Text>
@@ -1804,7 +1841,11 @@ export default function CreateCampaignScreen() {
                 colors={C}
               />
 
-              <View style={{ gap: 2 }}>
+              {/* Summary card — same bordered/shadowed surface as every
+                  SectionCard in the form above, so the final review reads
+                  as one continuous system rather than a bare list. */}
+              <View style={[sc.card, { backgroundColor: C.surface, borderColor: C.border, gap: 2 }]}>
+                <Text style={[sc.title, { color: C.text }]}>{t('createEvent.secSummaryTitle')}</Text>
                 <PreviewRow icon="location-outline" label={t('createEvent.summaryLocation')} value={form.location || t('createEvent.summaryRemote')} colors={C} />
                 <PreviewRow icon="people-outline" label={t('createEvent.confirmSectionWho')} value={form.targetAudience.join(', ') || '—'} colors={C} />
                 <PreviewRow icon="share-social-outline" label={t('createEvent.confirmSectionPlatforms')} value={form.platforms.join(', ') || '—'} colors={C} />
@@ -1833,6 +1874,7 @@ export default function CreateCampaignScreen() {
           )}
         </ScrollView>
       </KeyboardAvoidingView>
+      </MaxWidthContainer>
 
       {/* Pre-publish warning modal */}
       <Modal visible={publishWarnVisible} transparent animationType="fade" onRequestClose={() => setPublishWarnVisible(false)}>
@@ -1931,10 +1973,10 @@ const s = StyleSheet.create({
   generateBtn:     { borderRadius: RADIUS.md, height: 54, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 8, ...SHADOW.raised },
   generateBtnText: { color: '#fff', fontSize: 15, fontFamily: F.bold },
 
-  reviewBanner:      { flexDirection: 'row', alignItems: 'flex-start', gap: 12, borderRadius: RADIUS.md, borderLeftWidth: 3, paddingVertical: 14, paddingHorizontal: 14 },
-  reviewBannerTitle: { fontSize: 14, fontFamily: F.bold },
-  reviewBannerSub:   { fontSize: 12, fontFamily: F.regular, lineHeight: 18 },
-  reviewBannerHeading: { fontSize: 17, fontFamily: F.bold, lineHeight: 23 },
+  reviewBanner:        { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: RADIUS.md, borderLeftWidth: 4, paddingVertical: 14, paddingHorizontal: 14, ...SHADOW.card },
+  reviewBannerIconWrap:{ width: 38, height: 38, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
+  reviewBannerTitle:   { fontSize: 14, fontFamily: F.bold },
+  reviewBannerSub:     { fontSize: 12, fontFamily: F.regular, lineHeight: 18 },
 
   summaryRow:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingVertical: 10, gap: 12 },
   summaryLabel: { fontSize: 13, fontFamily: F.regular, width: 72 },
@@ -1965,14 +2007,11 @@ const s = StyleSheet.create({
   stepSectionHeading: { fontSize: 15, fontFamily: F.bold },
   stepSectionSub:     { fontSize: 12, fontFamily: F.regular, lineHeight: 18, marginBottom: 4 },
 
-  // Event type tab slider
-  etTabBar:  { flexDirection: 'row', borderRadius: RADIUS.md, borderWidth: 1.5, padding: 4, gap: 4 },
-  etTab:     { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 11, borderRadius: RADIUS.sm },
-  etTabText: { fontSize: 14, fontFamily: F.bold },
-
-  // Event type info panel
-  etInfoPanel: { borderRadius: RADIUS.md, padding: 12 },
-  etInfoSub:   { fontSize: 12, fontFamily: F.regular, lineHeight: 18 },
+  // Event type info banner — icon box + left accent, matching the home
+  // feed's banner/attentionBanner pattern.
+  etInfoPanel:   { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: RADIUS.md, borderLeftWidth: 4, padding: 12, ...SHADOW.card },
+  etInfoIconWrap:{ width: 36, height: 36, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
+  etInfoSub:     { flex: 1, fontSize: 12, fontFamily: F.regular, lineHeight: 18 },
 
   eventHintBox:  { flexDirection: 'row', alignItems: 'flex-start', gap: 10, borderRadius: RADIUS.md, padding: 14 },
   eventHintText: { flex: 1, fontSize: 12, lineHeight: 18, fontFamily: F.regular },

@@ -23,6 +23,7 @@ import { campaignService } from '@/services/campaign';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- used by the required-social-account check, temporarily disabled below
 import { creatorService } from '@/services/creator';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 
 // At least one of these must be present before a creator can apply — brands
 // evaluating a proposal need to see the creator's actual content somewhere.
@@ -215,6 +216,7 @@ export default function SubmitProposalScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
+      <MaxWidthContainer>
       <PageHeader title={t('proposal.title')} backFallback="/(creator)/" />
 
       {/* No `behavior` prop here — the ScrollView's `automaticallyAdjustKeyboardInsets`
@@ -337,6 +339,7 @@ export default function SubmitProposalScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+      </MaxWidthContainer>
 
       <AppModal
         visible={showSocialModal}

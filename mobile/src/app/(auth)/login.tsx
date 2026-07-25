@@ -32,6 +32,7 @@ import { authService } from '@/services/auth';
 const DEFAULT_SUPPORT_EMAIL = 'support@kolab.com.np';
 import type { Lang } from '@/i18n';
 import { COLORS, F, RADIUS, SHADOW } from '@/utilities/constants';
+import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { isValidNepaliPhone, normalizePhoneForSubmit } from '@/utilities/phone';
 import {
   authenticate as authenticateBiometric,
@@ -378,7 +379,7 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
           {googleLoading
             ? <View style={s.spinner} />
             : <View style={s.googleBadge}><Text style={s.googleG}>G</Text></View>}
-          <Text style={s.socialBtnText}>{googleLoading ? t('auth.login.signingIn') : 'Google'}</Text>
+          <Text style={s.socialBtnText}>{googleLoading ? t('auth.login.signingIn') : t('auth.login.continueGoogle')}</Text>
         </Pressable>
         {FACEBOOK_LOGIN_ENABLED && (
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
@@ -589,7 +590,7 @@ function SignupForm({ onGooglePress, googleLoading, googleError, onFacebookPress
           {googleLoading
             ? <View style={s.spinner} />
             : <View style={s.googleBadge}><Text style={s.googleG}>G</Text></View>}
-          <Text style={s.socialBtnText}>{googleLoading ? t('auth.login.signingIn') : 'Google'}</Text>
+          <Text style={s.socialBtnText}>{googleLoading ? t('auth.login.signingIn') : t('auth.signup.continueGoogle')}</Text>
         </Pressable>
         {FACEBOOK_LOGIN_ENABLED && (
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
@@ -862,6 +863,7 @@ export default function LoginScreen() {
       </View>
 
       <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <MaxWidthContainer>
         <ScrollView
           contentContainerStyle={[s.scrollContent, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 28 }]}
           keyboardShouldPersistTaps="handled"
@@ -961,6 +963,7 @@ export default function LoginScreen() {
           </View>
 
         </ScrollView>
+        </MaxWidthContainer>
       </KeyboardAvoidingView>
 
       {/* Role selection modal — shown for new Google users */}

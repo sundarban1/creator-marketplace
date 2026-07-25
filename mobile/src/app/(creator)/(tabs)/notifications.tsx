@@ -14,6 +14,7 @@ import { useNotificationBadge } from '@/context/NotificationContext';
 import { notificationService } from '@/services/notifications';
 import { getSocket } from '@/lib/socket';
 import { F, RADIUS } from '@/utilities/constants';
+import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import type { AppNotification } from '@/types';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
@@ -219,8 +220,11 @@ export default function NotificationsScreen() {
         }
       }
     } else if (n.type === 'business_favorited') {
+      // Only ever sent to the business owner (the creator who did the
+      // favoriting is refId/refType: 'creator_profile') — route to the
+      // business-side creator-detail screen, not the creator-side one.
       if (n.refId) {
-        router.push({ pathname: '/(creator)/business-detail', params: { id: n.refId } });
+        router.push({ pathname: '/(business)/creator-detail', params: { id: n.refId } });
       }
     } else if (n.type === 'new_campaign') {
       if (n.refId) {
@@ -243,6 +247,7 @@ export default function NotificationsScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
+      <MaxWidthContainer>
       {unreadCount > 0 && (
         <View style={styles.headerRow}>
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} hitSlop={6} onPress={handleMarkAll} style={[styles.markAllBtn, { borderColor: C.brinjal1 }]}>
@@ -286,6 +291,7 @@ export default function NotificationsScreen() {
           }
         />
       )}
+      </MaxWidthContainer>
     </SafeAreaView>
   );
 }

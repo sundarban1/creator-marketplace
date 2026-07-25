@@ -66,7 +66,26 @@ export class AdminService {
     return this.repo.getCampaignDetail(campaignId);
   }
 
-  setCampaignStatus(campaignId: string, status: CampaignStatus) {
+  async setCampaignStatus(campaignId: string, status: CampaignStatus) {
+    if (status === 'CLOSED') {
+      const campaign = await this.repo.findCampaignForClose(campaignId);
+      if (!campaign) throw new AppError('Campaign not found', 404);
+
+      // Every proposal must be resolved before the event can close: a
+      // rejected proposal is already a closed matter, but a pending one
+      // still needs a decision and an accepted one still needs its work
+      // completed (workStatus COMPLETED) or its payment released — either
+      // signals the engagement is actually done.
+      const hasUnfinishedProposal = campaign.applications.some((a) =>
+        a.status !== 'REJECTED' && a.workStatus !== 'COMPLETED' && a.paymentStatus !== 'RELEASED'
+      );
+      if (hasUnfinishedProposal) {
+        throw new AppError(
+          'This event still has proposals that are pending or in progress — every proposal must be completed (or declined) before it can be closed.',
+          400,
+        );
+      }
+    }
     return this.repo.updateCampaignStatus(campaignId, status);
   }
 
@@ -219,6 +238,14 @@ export class AdminService {
     // commission (snapshotted on the campaign at creation) is charged to the
     // business on top of the rate, not deducted from the creator's payout.
     const updated = await this.campaignRepo.releaseApplicationPayment(appId, adminUserId);
+    await this.campaignRepo.createPayoutTransaction({
+      applicationId: appId,
+      campaignId:    app.campaignId,
+      businessId:    app.campaign.business.id,
+      creatorId:     app.creatorId,
+      adminId:       adminUserId,
+      amount:        app.proposedRate,
+    });
     const creatorUserId = app.creator.userId;
     const businessUserId = app.campaign.business.userId;
     analyticsService.incrPaymentReleased(creatorUserId, businessUserId, app.proposedRate);
@@ -391,5 +418,26 @@ export class AdminService {
       completedAt: new Date(),
       reviewedBy: adminUserId,
     });
+  }
+
+  // ── Payments ────────────────────────────────────────────────────────────────
+
+  async getPayments(page: number, limit: number, type?: string, search?: string) {
+    const { transactions, total } = await this.repo.getAllPaymentTransactions(page, limit, type, search);
+
+    // "From"/"To" resolve the platform-as-escrow leg that has no profile of its
+    // own — an ESCROW_IN goes business -> platform, a PAYOUT goes platform -> creator.
+    const rows = transactions.map((t) => ({
+      id:        t.id,
+      type:      t.type,
+      amount:    t.amount,
+      method:    t.method,
+      campaign:  t.campaign.title,
+      from:      t.type === 'ESCROW_IN' ? (t.business.businessName ?? 'Business') : 'Kolab (Escrow)',
+      to:        t.type === 'ESCROW_IN' ? 'Kolab (Escrow)' : (t.creator?.fullName ?? 'Creator'),
+      createdAt: t.createdAt,
+    }));
+
+    return { transactions: rows, total };
   }
 }

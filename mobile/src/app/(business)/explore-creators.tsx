@@ -10,7 +10,6 @@ import {
   FlatList,
   Pressable,
   RefreshControl,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -31,6 +30,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { creatorService, type ApiCreatorListItem } from '@/services/creator';
 import { F, RADIUS } from '@/utilities/constants';
+import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { getIconColor } from '@/features/creator/data/filterOptions';
 import { useAllCategories, useCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { usePlatforms, getPlatformMeta } from '@/hooks/usePlatforms';
@@ -261,6 +261,7 @@ export default function ExploreCreatorsScreen() {
 
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
+      <MaxWidthContainer>
       {/* Header — back button + search, same row */}
       <View style={{ backgroundColor: C.surface }}>
         <View style={s.header} accessibilityRole="header" accessibilityLabel={t('explore.exploreCreators')}>
@@ -316,9 +317,11 @@ export default function ExploreCreatorsScreen() {
         ) : <View />}
       </View>
 
-      {/* Active filter chips */}
+      {/* Active filter chips — wraps to multiple lines, doesn't scroll, so
+          the row's height is deterministic and the content below it
+          (empty state / list) never gets pushed around unpredictably. */}
       {filterActive && (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chipRow}>
+        <View style={s.chipRow}>
           {activeFilter.locations.map((loc) => (
             <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} key={loc.label} onPress={() => removeActiveFilter('locations', loc.label)} style={[s.chip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
               <Ionicons name={loc.label === 'Remote' ? 'globe-outline' : 'location'} size={12} color={C.brinjal1} />
@@ -357,51 +360,57 @@ export default function ExploreCreatorsScreen() {
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => setActiveFilter(DEFAULT_CREATOR_FILTER)} style={[s.chip, { backgroundColor: C.background, borderColor: C.border }]}>
             <Text style={[s.chipText, { color: C.textSecondary }]}>{t('common.clearAll')}</Text>
           </Pressable>
-        </ScrollView>
+        </View>
       )}
 
-      {/* Content */}
-      {loading ? (
-        <View style={s.list}>
-          {[0, 1, 2, 3, 4].map((i) => <ExploreCardSkeleton key={i} />)}
-        </View>
-      ) : error ? (
-        <EmptyState
-          icon="alert-circle-outline"
-          title={t('common.error')}
-          subtitle={error}
-          action={{ label: t('common.retry'), onPress: () => fetchCreators(1, true, activeFilter, searchDebounced) }}
-        />
-      ) : creators.length === 0 ? (
-        <EmptyState
-          faIcon="users"
-          title={t('explore.noCreators')}
-          subtitle={filterActive || search ? t('explore.adjustFilters') : t('explore.noCreatorsYet')}
-          action={(filterActive || search) ? { label: t('explore.clearFilters'), onPress: () => { setSearch(''); setActiveFilter(DEFAULT_CREATOR_FILTER); } } : undefined}
-        />
-      ) : (
-        <FlatList
-          data={creators}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={s.list}
-          showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brinjal1} />}
-          renderItem={({ item }) => (
-            <CreatorCard
-              creator={item}
-              isSaved={savedIds.has(item.id)}
-              onToggleSave={() => handleToggleSave(item.id)}
-            />
-          )}
-          onEndReached={loadMore}
-          onEndReachedThreshold={0.3}
-          ListFooterComponent={
-            loadingMore ? (
-              <ActivityIndicator color={C.brinjal1} style={{ paddingVertical: 20 }} />
-            ) : null
-          }
-        />
-      )}
+      {/* Content — always a stable flex:1 region below the header/chips, so
+          the empty state reliably centers regardless of how tall the chip
+          row above it is. */}
+      <View style={{ flex: 1 }}>
+        {loading ? (
+          <View style={s.list}>
+            {[0, 1, 2, 3, 4].map((i) => <ExploreCardSkeleton key={i} />)}
+          </View>
+        ) : error ? (
+          <EmptyState
+            icon="alert-circle-outline"
+            title={t('common.error')}
+            subtitle={error}
+            action={{ label: t('common.retry'), onPress: () => fetchCreators(1, true, activeFilter, searchDebounced) }}
+          />
+        ) : creators.length === 0 ? (
+          <EmptyState
+            faIcon="users"
+            title={t('explore.noCreators')}
+            subtitle={filterActive || search ? t('explore.adjustFilters') : t('explore.noCreatorsYet')}
+            action={(filterActive || search) ? { label: t('explore.clearFilters'), onPress: () => { setSearch(''); setActiveFilter(DEFAULT_CREATOR_FILTER); } } : undefined}
+          />
+        ) : (
+          <FlatList
+            style={{ flex: 1 }}
+            data={creators}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={s.list}
+            showsVerticalScrollIndicator={false}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brinjal1} />}
+            renderItem={({ item }) => (
+              <CreatorCard
+                creator={item}
+                isSaved={savedIds.has(item.id)}
+                onToggleSave={() => handleToggleSave(item.id)}
+              />
+            )}
+            onEndReached={loadMore}
+            onEndReachedThreshold={0.3}
+            ListFooterComponent={
+              loadingMore ? (
+                <ActivityIndicator color={C.brinjal1} style={{ paddingVertical: 20 }} />
+              ) : null
+            }
+          />
+        )}
+      </View>
+      </MaxWidthContainer>
 
       <CreatorFilterModal
         visible={filterVisible}
@@ -431,14 +440,14 @@ const s = StyleSheet.create({
   filterCountBadge: { position: 'absolute', top: -4, right: -4, minWidth: 16, height: 16, borderRadius: RADIUS.full, paddingHorizontal: 3, backgroundColor: '#EF4444', justifyContent: 'center', alignItems: 'center' },
   filterCountBadgeTxt: { fontSize: 9, fontFamily: F.extrabold, color: '#fff' },
 
-  chipRow: { paddingHorizontal: 20, paddingBottom: 8, gap: 6, flexDirection: 'row', alignItems: 'center' },
+  chipRow: { paddingHorizontal: 16, paddingBottom: 8, gap: 6, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center' },
   chip: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: RADIUS.full, borderWidth: 1.5 },
   chipText: { fontSize: 12, fontFamily: F.semibold },
 
-  metaRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, marginTop: 12, marginBottom: 8 },
+  metaRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, marginTop: 12, marginBottom: 8 },
   countText: { fontSize: 12, fontFamily: F.semibold },
 
   loadingText: { fontSize: 14, fontFamily: F.regular },
 
-  list: { paddingHorizontal: 20, paddingBottom: 40, gap: 14 },
+  list: { paddingHorizontal: 16, paddingBottom: 40, gap: 14 },
 });

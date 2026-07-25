@@ -1,6 +1,6 @@
-import { router, Tabs } from 'expo-router';
+import { router, Tabs, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useContext, useState } from 'react';
+import { useState } from 'react';
 import {
   Pressable, StyleSheet, Text, View,
 } from 'react-native';
@@ -10,6 +10,7 @@ import { DrawerContext } from '@/context/DrawerContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { BusinessDrawerMenu } from '@/features/business/components/BusinessDrawerMenu';
+import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { COLORS, RADIUS, SHADOW } from '@/utilities/constants';
 import { useNotificationBadge } from '@/context/NotificationContext';
 import { scrollToTopEvents } from '@/lib/scrollToTopEvents';
@@ -19,38 +20,30 @@ type IoniconName = keyof typeof Ionicons.glyphMap;
 // ── Tab config ────────────────────────────────────────────────────────────────
 
 // `color` is omitted for `index` (Home) — it uses the theme's brinjal accent instead, resolved at render time.
-// The `notifications` route stays a real tab-navigator screen (reachable from the
-// header's activity button — see index.tsx), but its bottom-bar slot is repurposed
-// below to open the drawer instead, swapping places with the old header hamburger.
+// The header's menu button (see index.tsx) opens the drawer; `notifications`
+// is this tab's real destination screen.
 const TAB_CONFIG: Record<string, { icon: IoniconName; iconActive: IoniconName; label: string; color?: string }> = {
   index:         { icon: 'home-outline',          iconActive: 'home',          label: 'Home' },
   campaigns:     { icon: 'briefcase-outline',     iconActive: 'briefcase',     label: 'Events',    color: '#059669' },
   messages:      { icon: 'chatbubble-outline',    iconActive: 'chatbubble',    label: 'Messages',  color: '#2563EB' },
-  notifications: { icon: 'menu-outline',          iconActive: 'menu',          label: 'Menu' },
+  notifications: { icon: 'notifications-outline', iconActive: 'notifications', label: 'Notifications' },
 };
 
 // ── Custom tab bar ────────────────────────────────────────────────────────────
-
-// Hides the tab bar while a chat conversation ([id]) is open inside the
-// messages stack, so the chat input isn't followed by a strip of dead tab-bar space.
-function isChatRoomFocused(state: any): boolean {
-  const focused = state.routes[state.index];
-  if (focused?.name !== 'messages' || !focused.state) return false;
-  return focused.state.routes[focused.state.index]?.name === '[id]';
-}
 
 function CustomTabBar({
   state,
   navigation,
   chatBadge,
+  notifBadge,
 }: {
   state: any;
   navigation: any;
   chatBadge: number;
+  notifBadge: number;
 }) {
   const C = useAppColors();
   const { t } = useLanguage();
-  const { openDrawer } = useContext(DrawerContext);
   const insets = useSafeAreaInsets();
   // Real home-indicator/gesture-nav inset varies a lot by device (0 on an
   // iPhone SE or 3-button-nav Android, ~34pt on notched iPhones) — a fixed
@@ -59,17 +52,24 @@ function CustomTabBar({
   // report 0 (physical home button / classic Android nav).
   const bottomInset = Math.max(insets.bottom, 8);
 
-  if (isChatRoomFocused(state)) return null;
+  // Hides the tab bar while a chat conversation ([id]) is open, however it
+  // was reached — a pathname check is reliable regardless of navigator
+  // entry point, unlike introspecting the messages stack's nested tab state
+  // (which a deep push from outside the tabs navigator, e.g. the activity
+  // timeline's chat button, doesn't always populate the same way).
+  const pathname = usePathname();
+  if (pathname.startsWith('/messages/')) return null;
 
   const labelMap: Record<string, string> = {
     index:         t('business.tab.home'),
     campaigns:     t('business.tab.events'),
     messages:      t('business.tab.messages'),
-    notifications: t('business.tab.menu'),
+    notifications: t('business.tab.notifications'),
   };
 
   const badgeMap: Record<string, number> = {
-    messages: chatBadge,
+    messages:      chatBadge,
+    notifications: notifBadge,
   };
 
   const tabs = (state.routes as any[]).filter((r) => TAB_CONFIG[r.name]);
@@ -82,17 +82,13 @@ function CustomTabBar({
       ]}
     >
       {tabs.flatMap((route) => {
-        // The `notifications` slot now opens the drawer (swapped with the header
-        // hamburger) rather than navigating to a screen, so it never shows as "active".
-        const isMenu  = route.name === 'notifications';
-        const focused = !isMenu && state.routes[state.index]?.name === route.name;
+        const focused = state.routes[state.index]?.name === route.name;
         const cfg     = TAB_CONFIG[route.name]!;
         const label   = labelMap[route.name] ?? cfg.label;
         const badge   = badgeMap[route.name] ?? 0;
         const color   = cfg.color ?? C.brinjal1;
 
         function onPress() {
-          if (isMenu) { openDrawer(); return; }
           // Always fires, whether this tab is already focused or not — the
           // destination screen's own useScrollToTopOnTabPress listener scrolls its
           // list back up, since Tabs keeps every screen mounted (and scrolled where
@@ -264,42 +260,45 @@ export default function BusinessTabsLayout() {
   const { user, logout } = useAuth();
   const { t } = useLanguage();
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const { chatBadgeCount: badgeCount } = useNotificationBadge();
+  const { chatBadgeCount, badgeCount } = useNotificationBadge();
 
   return (
     <DrawerContext.Provider value={{ openDrawer: () => setDrawerOpen(true) }}>
       <View style={{ flex: 1 }}>
-        <Tabs
-          screenOptions={{ headerShown: false }}
-          tabBar={(props) => (
-            <CustomTabBar
-              state={props.state}
-              navigation={props.navigation}
-              chatBadge={badgeCount}
+        <MaxWidthContainer>
+          <Tabs
+            screenOptions={{ headerShown: false }}
+            tabBar={(props) => (
+              <CustomTabBar
+                state={props.state}
+                navigation={props.navigation}
+                chatBadge={chatBadgeCount}
+                notifBadge={badgeCount}
+              />
+            )}
+          >
+            <Tabs.Screen name="index"    options={{ title: t('business.tab.home') }} />
+            <Tabs.Screen name="campaigns" options={{ title: t('business.tab.events') }} />
+            {/* proposals.tsx stays a reachable route (linked from the home
+                quick actions and the pending-proposals banner) but is no
+                longer a bottom-tab destination — per-campaign proposals now
+                open via campaign-proposals.tsx from each event card instead. */}
+            <Tabs.Screen name="proposals" options={{ href: null }} />
+            <Tabs.Screen
+              name="messages"
+              listeners={({ navigation }) => ({
+                tabPress: (e) => {
+                  e.preventDefault();
+                  navigation.navigate('messages', { screen: 'index' });
+                },
+              })}
+              options={{ title: t('business.tab.messages') }}
             />
-          )}
-        >
-          <Tabs.Screen name="index"    options={{ title: t('business.tab.home') }} />
-          <Tabs.Screen name="campaigns" options={{ title: t('business.tab.events') }} />
-          {/* proposals.tsx stays a reachable route (linked from the home
-              quick actions and the pending-proposals banner) but is no
-              longer a bottom-tab destination — per-campaign proposals now
-              open via campaign-proposals.tsx from each event card instead. */}
-          <Tabs.Screen name="proposals" options={{ href: null }} />
-          <Tabs.Screen
-            name="messages"
-            listeners={({ navigation }) => ({
-              tabPress: (e) => {
-                e.preventDefault();
-                navigation.navigate('messages', { screen: 'index' });
-              },
-            })}
-            options={{ title: t('business.tab.messages') }}
-          />
-          <Tabs.Screen name="notifications" options={{ title: t('business.tab.notifications') }} />
-          {/* create.tsx is navigated via the create button docked in the tab bar, not a visible tab */}
-          <Tabs.Screen name="create" options={{ href: null }} />
-        </Tabs>
+            <Tabs.Screen name="notifications" options={{ title: t('business.tab.notifications') }} />
+            {/* create.tsx is navigated via the create button docked in the tab bar, not a visible tab */}
+            <Tabs.Screen name="create" options={{ href: null }} />
+          </Tabs>
+        </MaxWidthContainer>
 
         <BusinessDrawerMenu
           visible={drawerOpen}

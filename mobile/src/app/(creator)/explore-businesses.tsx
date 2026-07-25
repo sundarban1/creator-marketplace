@@ -25,6 +25,7 @@ import { businessService, type BusinessListItem } from '@/services/business';
 import { useFavoriteBusinesses } from '@/hooks/useFavoriteBusinesses';
 import { useToast } from '@/components/Toast';
 import { F, RADIUS } from '@/utilities/constants';
+import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { useCategories, getCategoryMeta } from '@/hooks/useCategories';
 
 type DisplayBusiness = BusinessListItem & { isFavorited: boolean };
@@ -230,6 +231,7 @@ export default function ExploreBusinessesScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
+      <MaxWidthContainer>
       {/* ── Back button + search, top right ── */}
       <View style={{ backgroundColor: C.surface }}>
         <View style={styles.topRow} accessibilityRole="header" accessibilityLabel={t('explore.businesses.headerTitle')}>
@@ -326,43 +328,49 @@ export default function ExploreBusinessesScreen() {
         </View>
       )}
 
-      {loading ? (
-        <View style={styles.list}>
-          {[0, 1, 2, 3, 4].map((i) => <ExploreCardSkeleton key={i} />)}
-        </View>
-      ) : error ? (
-        <EmptyState faIcon="exclamation-triangle" title={t('explore.businesses.loadError')} subtitle={error} action={{ label: t('explore.businesses.retry'), onPress: () => fetchBusinesses() }} />
-      ) : (
-        <FlatList
-          data={displayItems}
-          keyExtractor={(b) => b.id}
-          renderItem={({ item }) => (
-            <BusinessCard
-              item={item}
-              isFavorited={item.isFavorited}
-              onToggleFavorite={() => { void handleToggleFavorite(item.id); }}
-            />
-          )}
-          contentContainerStyle={[styles.list, displayItems.length === 0 && styles.listEmpty]}
-          showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brinjal1} />}
-          onEndReached={() => void loadMoreBusinesses()}
-          onEndReachedThreshold={0.4}
-          ListFooterComponent={loadingMore ? (
-            <View style={styles.footerLoading}>
-              <ActivityIndicator size="small" color={C.brinjal1} />
-            </View>
-          ) : null}
-          ListEmptyComponent={
-            <EmptyState
-              faIcon="building"
-              title={t('explore.businesses.noResultsFiltered')}
-              subtitle={hasFilter ? 'Try adjusting your filters or search term.' : 'No businesses are currently hiring. Check back soon!'}
-              action={hasFilter ? { label: t('explore.businesses.clearFiltersBtn'), onPress: clearAll } : undefined}
-            />
-          }
-        />
-      )}
+      {/* Always a stable flex:1 region below the header/pills, so the empty
+          state reliably centers regardless of how tall the pill row above
+          it is. */}
+      <View style={{ flex: 1 }}>
+        {loading ? (
+          <View style={styles.list}>
+            {[0, 1, 2, 3, 4].map((i) => <ExploreCardSkeleton key={i} />)}
+          </View>
+        ) : error ? (
+          <EmptyState faIcon="exclamation-triangle" title={t('explore.businesses.loadError')} subtitle={error} action={{ label: t('explore.businesses.retry'), onPress: () => fetchBusinesses() }} />
+        ) : displayItems.length === 0 ? (
+          <EmptyState
+            faIcon="building"
+            title={t('explore.businesses.noResultsFiltered')}
+            subtitle={hasFilter ? 'Try adjusting your filters or search term.' : 'No businesses are currently hiring. Check back soon!'}
+            action={hasFilter ? { label: t('explore.businesses.clearFiltersBtn'), onPress: clearAll } : undefined}
+          />
+        ) : (
+          <FlatList
+            style={{ flex: 1 }}
+            data={displayItems}
+            keyExtractor={(b) => b.id}
+            renderItem={({ item }) => (
+              <BusinessCard
+                item={item}
+                isFavorited={item.isFavorited}
+                onToggleFavorite={() => { void handleToggleFavorite(item.id); }}
+              />
+            )}
+            contentContainerStyle={styles.list}
+            showsVerticalScrollIndicator={false}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brinjal1} />}
+            onEndReached={() => void loadMoreBusinesses()}
+            onEndReachedThreshold={0.4}
+            ListFooterComponent={loadingMore ? (
+              <View style={styles.footerLoading}>
+                <ActivityIndicator size="small" color={C.brinjal1} />
+              </View>
+            ) : null}
+          />
+        )}
+      </View>
+      </MaxWidthContainer>
 
       <BusinessFilterModal
         visible={filterOpen}
@@ -409,6 +417,5 @@ const styles = StyleSheet.create({
   center:         { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
   loadingText:    { fontSize: 14, fontFamily: F.regular },
   list:           { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 48, gap: 14 },
-  listEmpty:      { flexGrow: 1 },
   footerLoading:  { paddingVertical: 20 },
 });

@@ -29,6 +29,10 @@ const DEFAULTS: Record<string, unknown> = {
   // that (Rs.). See CampaignService.getFeaturedQuota.
   'featuredEvent.freeQuota':       3,
   'featuredEvent.price':           1000,
+  // Businesses whose account email appears here bypass the free quota above
+  // entirely — always allowed to feature, no charge. See
+  // CampaignService.getFeaturedQuota. Lowercased on comparison.
+  'featuredEvent.unlimitedEmails': [] as string[],
 };
 
 export class AdminRepository {
@@ -314,6 +318,16 @@ export class AdminRepository {
     });
   }
 
+  async findCampaignForClose(campaignId: string) {
+    return prisma.campaign.findUnique({
+      where: { id: campaignId },
+      select: {
+        id: true,
+        applications: { select: { status: true, workStatus: true, paymentStatus: true } },
+      },
+    });
+  }
+
   async findCampaignForApproval(campaignId: string) {
     return prisma.campaign.findUnique({
       where: { id: campaignId },
@@ -395,7 +409,10 @@ export class AdminRepository {
         orderBy: [{ lastMessageAt: 'desc' }, { id: 'asc' }],
         include: {
           creator:  { select: { fullName: true, avatarUrl: true } },
+          // Both nullable — a conversation is either creator↔business (business set,
+          // creator2 null) or creator↔creator (creator2 set, business null).
           business: { select: { businessName: true, logoUrl: true } },
+          creator2: { select: { fullName: true, avatarUrl: true } },
           campaign: { select: { title: true } },
           _count:   { select: { messages: true } },
         },
@@ -408,5 +425,41 @@ export class AdminRepository {
 
   async deleteConversation(id: string) {
     return prisma.conversation.delete({ where: { id } });
+  }
+
+  // ── Payments ─────────────────────────────────────────────────────────────────
+
+  async getAllPaymentTransactions(
+    page: number,
+    limit: number,
+    type?: string,
+    search?: string,
+  ) {
+    const where: Record<string, unknown> = {};
+    if (type) where['type'] = type;
+    if (search) {
+      where['OR'] = [
+        { business: { businessName: { contains: search, mode: 'insensitive' } } },
+        { creator:  { fullName:     { contains: search, mode: 'insensitive' } } },
+        { campaign: { title:        { contains: search, mode: 'insensitive' } } },
+      ];
+    }
+
+    const [transactions, total] = await Promise.all([
+      prisma.paymentTransaction.findMany({
+        where,
+        skip:    (page - 1) * limit,
+        take:    limit,
+        orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+        include: {
+          campaign: { select: { title: true } },
+          business: { select: { businessName: true } },
+          creator:  { select: { fullName: true } },
+        },
+      }),
+      prisma.paymentTransaction.count({ where }),
+    ]);
+
+    return { transactions, total };
   }
 }

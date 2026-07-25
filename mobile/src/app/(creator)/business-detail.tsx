@@ -29,6 +29,7 @@ import { chatService } from '@/services/chat';
 import { useFavoriteBusinesses } from '@/hooks/useFavoriteBusinesses';
 import { useToast } from '@/components/Toast';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 
 const PLATFORM_ICON: Record<string, { iconName: string; color: string }> = {
   Instagram: { iconName: 'instagram', color: '#E1306C' },
@@ -257,6 +258,7 @@ export default function BusinessDetailScreen() {
             <View style={styles.topIconSpacer} />
           </View>
         </View>
+        <MaxWidthContainer>
         <View style={[styles.profileCard, { backgroundColor: C.surface }]}>
           <View style={styles.avatarArea}>
             <BusinessAvatar name={business.businessName} logoUrl={business.logoUrl} size={96} />
@@ -268,6 +270,7 @@ export default function BusinessDetailScreen() {
           title={t('businessDetail.privateTitle')}
           subtitle={t('businessDetail.privateSubtitle')}
         />
+        </MaxWidthContainer>
       </SafeAreaView>
     );
   }
@@ -285,6 +288,7 @@ export default function BusinessDetailScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
+      <MaxWidthContainer>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 60 }}>
 
         {/* ── Hero Cover ── */}
@@ -537,6 +541,7 @@ export default function BusinessDetailScreen() {
           </Pressable>
         )}
       </View>
+      </MaxWidthContainer>
 
       {/* Request message modal */}
       <Modal visible={showMsgModal} transparent animationType="slide" onRequestClose={() => setShowMsgModal(false)}>

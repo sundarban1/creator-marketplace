@@ -8,6 +8,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { authService } from '@/services/auth';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { isValidNepaliPhone, normalizePhoneForSubmit } from '@/utilities/phone';
 
 type Channel = 'email' | 'phone';
@@ -70,6 +71,7 @@ export default function ForgotPasswordScreen() {
 
       {/* ── Card ── */}
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <MaxWidthContainer>
         <ScrollView
           style={[styles.card, { backgroundColor: C.preLoginBackground }]}
           contentContainerStyle={styles.cardContent}
@@ -146,6 +148,7 @@ export default function ForgotPasswordScreen() {
           </Pressable>
 
         </ScrollView>
+        </MaxWidthContainer>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

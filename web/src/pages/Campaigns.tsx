@@ -33,7 +33,7 @@ function mapStatus(s: string): string {
 }
 
 function formatBudget(min: number, max: number): string {
-  const fmt = (n: number) => `$${n.toLocaleString()}`;
+  const fmt = (n: number) => `Rs. ${n.toLocaleString()}`;
   return min === max ? fmt(min) : `${fmt(min)} – ${fmt(max)}`;
 }
 

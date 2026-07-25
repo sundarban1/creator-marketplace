@@ -350,3 +350,18 @@ export async function releaseBusinessReferral(req: Request, res: Response, next:
     next(err);
   }
 }
+
+// ── Payments ─────────────────────────────────────────────────────────────────
+
+// GET /api/admin/payments
+export async function getPayments(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { page, limit } = parsePagination(req);
+    const type   = req.query['type']   as string | undefined;
+    const search = req.query['search'] as string | undefined;
+    const { transactions, total } = await service.getPayments(page, limit, type, search);
+    return paginated(res, transactions, total, page, limit);
+  } catch (err) {
+    next(err);
+  }
+}

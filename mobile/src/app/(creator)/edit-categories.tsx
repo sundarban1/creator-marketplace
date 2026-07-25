@@ -17,6 +17,7 @@ import { useToast } from '@/components/Toast';
 import { creatorService } from '@/services/creator';
 import { useCategories } from '@/hooks/useCategories';
 import { F, RADIUS } from '@/utilities/constants';
+import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 
 const MAX = 5;
 
@@ -77,6 +78,7 @@ export default function EditCategoriesScreen() {
 
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
+      <MaxWidthContainer>
       <PageHeader
         title={t('editCategories.title')}
         backFallback="/(creator)/profile"
@@ -129,6 +131,7 @@ export default function EditCategoriesScreen() {
           })}
         </View>
       </ScrollView>
+      </MaxWidthContainer>
     </SafeAreaView>
   );
 }

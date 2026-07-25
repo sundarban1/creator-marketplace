@@ -45,6 +45,7 @@ import { useAuth } from '@/context/AuthContext';
 import { usePlatformFlags } from '@/context/PlatformSettingsContext';
 import { useToast } from '@/components/Toast';
 import { COLORS, F, RADIUS, SHADOW } from '@/utilities/constants';
+import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { pickAndUpload } from '@/utilities/uploadImage';
 import { formatPhoneDisplay, getAccountIdentityLine, isValidNepaliPhone, normalizePhoneForSubmit } from '@/utilities/phone';
 import {
@@ -2380,6 +2381,7 @@ export default function CreatorSettingsScreen() {
   return (
     <ColorCtx.Provider value={C}>
       <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
+        <MaxWidthContainer>
         <PageHeader title={topTitle} onBack={handleBack} />
 
         {/* No `behavior` prop — the ScrollView's `automaticallyAdjustKeyboardInsets` already
@@ -2413,6 +2415,7 @@ export default function CreatorSettingsScreen() {
           {!subPage && section === 'legal'      && renderLegal()}
         </ScrollView>
         </KeyboardAvoidingView>
+        </MaxWidthContainer>
 
 
         {/* ── Deactivate Account Modal ──────────────────────────── */}

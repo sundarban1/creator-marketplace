@@ -7,6 +7,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage, type TFn } from '@/context/LanguageContext';
 import { authService } from '@/services/auth';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 
 function getPasswordError(pwd: string, t: TFn): string | undefined {
   if (pwd.length < 8) return t('auth.resetPassword.pwErrorMinLength');
@@ -110,6 +111,7 @@ export default function ResetPasswordScreen() {
           handles iOS precisely on its own; stacking KeyboardAvoidingView's `padding` on top
           of that double-compensates for the same keyboard, pushing content up too far. */}
       <KeyboardAvoidingView style={styles.flex}>
+        <MaxWidthContainer>
         <ScrollView
           ref={scrollRef}
           style={[styles.card, { backgroundColor: C.preLoginBackground }]}
@@ -176,6 +178,7 @@ export default function ResetPasswordScreen() {
           </View>
 
         </ScrollView>
+        </MaxWidthContainer>
       </KeyboardAvoidingView>
 
       {/* ── Toast ── */}

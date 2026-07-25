@@ -31,6 +31,7 @@ import { authService } from '@/services/auth';
 import { profileService } from '@/services/profile';
 import type { FacebookPageOption } from '@/services/creator';
 import { COLORS, F, RADIUS, SHADOW } from '@/utilities/constants';
+import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { request } from '@/lib/api';
 import { pickAndUpload } from '@/utilities/uploadImage';
 import { useCategories } from '@/hooks/useCategories';
@@ -2170,6 +2171,7 @@ export default function BusinessSettingsScreen() {
   return (
     <ColorCtx.Provider value={C}>
       <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
+        <MaxWidthContainer>
         {/* Top bar */}
         <View style={{ backgroundColor: C.surface }}>
           <View style={styles.topBar}>
@@ -2217,6 +2219,7 @@ export default function BusinessSettingsScreen() {
           <View style={{ height: 48 }} />
         </ScrollView>
         </KeyboardAvoidingView>
+        </MaxWidthContainer>
 
         <AppModal
           visible={appModal.visible}

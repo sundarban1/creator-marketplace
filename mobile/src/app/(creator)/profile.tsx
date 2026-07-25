@@ -18,6 +18,7 @@ import { campaignService } from '@/services/campaign';
 import { useFavoriteBusinesses } from '@/hooks/useFavoriteBusinesses';
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { pickAndUpload } from '@/utilities/uploadImage';
 
 const PLATFORM_MAP: Record<string, { platform: string; color: string; iconName: string }> = {
@@ -141,6 +142,7 @@ export default function CreatorProfileScreen() {
 
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
+      <MaxWidthContainer>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 60 }}>
 
         {/* ── Hero Cover ── */}
@@ -382,6 +384,7 @@ export default function CreatorProfileScreen() {
         </SectionCard>
 
       </ScrollView>
+      </MaxWidthContainer>
     </SafeAreaView>
   );
 }

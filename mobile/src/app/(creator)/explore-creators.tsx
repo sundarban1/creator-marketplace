@@ -10,7 +10,6 @@ import {
   FlatList,
   Pressable,
   RefreshControl,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -23,6 +22,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { creatorService, type ApiCreatorListItem } from '@/services/creator';
 import { F, RADIUS } from '@/utilities/constants';
+import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { useAllCategories, useCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { usePlatforms, getPlatformMeta } from '@/hooks/usePlatforms';
 import type { ApiCategory } from '@/services/category';
@@ -361,8 +361,9 @@ export default function ExploreCreatorPeersScreen() {
 
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
+      <MaxWidthContainer>
       {/* Back button + search, same row */}
-      <View style={[s.topRow, { backgroundColor: C.surface, borderBottomColor: C.border }]} accessibilityRole="header" accessibilityLabel={t('explore.exploreCreators')}>
+      <View style={[s.topRow, { backgroundColor: C.surface }]} accessibilityRole="header" accessibilityLabel={t('explore.exploreCreators')}>
         <BackButton fallback="/(creator)/(tabs)" />
         <View style={[s.searchCard, { flex: 1, backgroundColor: C.surface, borderColor: C.border }]}>
           <Ionicons name="search-outline" size={18} color={C.textSecondary} />
@@ -397,10 +398,13 @@ export default function ExploreCreatorPeersScreen() {
           </Pressable>
         </View>
       </View>
+      <View style={[s.headerSeparator, { backgroundColor: C.border }]} />
 
-      {/* Active filter chips */}
+      {/* Active filter chips — wraps to multiple lines, doesn't scroll, so the
+          row's height is deterministic and the content below it never gets
+          pushed around unpredictably. */}
       {filterActive && (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chipRow}>
+        <View style={s.chipRow}>
           {activeFilter.locations.map((loc) => (
             <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} key={loc.label} onPress={() => removeActiveFilter('locations', loc.label)} style={[s.chip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
               <Ionicons name={loc.label === 'Remote' ? 'globe-outline' : 'location'} size={12} color={C.brinjal1} />
@@ -432,7 +436,7 @@ export default function ExploreCreatorPeersScreen() {
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => setActiveFilter(DEFAULT_FILTER)} style={[s.chip, { backgroundColor: C.background, borderColor: C.border }]}>
             <Text style={[s.chipText, { color: C.textSecondary }]}>{t('common.clearAll')}</Text>
           </Pressable>
-        </ScrollView>
+        </View>
       )}
 
       {/* Result count */}
@@ -478,6 +482,7 @@ export default function ExploreCreatorPeersScreen() {
           }
         />
       )}
+      </MaxWidthContainer>
 
       <ExploreFilterModal
         visible={filterVisible}
@@ -498,14 +503,15 @@ const s = StyleSheet.create({
   container: { flex: 1 },
 
 
-  topRow:     { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12, gap: 12, borderBottomWidth: 1 },
+  topRow:     { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12, gap: 12 },
+  headerSeparator: { height: StyleSheet.hairlineWidth, marginHorizontal: 16, marginBottom: 8 },
   searchCard: { flexDirection: 'row', alignItems: 'center', gap: 9, borderRadius: RADIUS.lg, borderWidth: 1.5, paddingHorizontal: 14, height: 44 },
   searchInput: { flex: 1, fontSize: 15, fontFamily: F.regular },
   filterBtn: { width: 36, height: 36, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center' },
   filterCountBadge: { position: 'absolute', top: -4, right: -4, minWidth: 16, height: 16, borderRadius: RADIUS.full, paddingHorizontal: 3, backgroundColor: '#EF4444', justifyContent: 'center', alignItems: 'center' },
   filterCountBadgeTxt: { fontSize: 9, fontFamily: F.extrabold, color: '#fff' },
 
-  chipRow: { paddingHorizontal: 20, paddingBottom: 8, gap: 6, flexDirection: 'row', alignItems: 'center' },
+  chipRow: { paddingHorizontal: 20, paddingBottom: 8, gap: 6, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center' },
   chip: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: RADIUS.full, borderWidth: 1.5 },
   chipText: { fontSize: 12, fontFamily: F.semibold },
 

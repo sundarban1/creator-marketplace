@@ -23,6 +23,7 @@ import { profileService, type BusinessProfile } from '@/services/profile';
 import { campaignService } from '@/services/campaign';
 import { creatorService } from '@/services/creator';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { pickAndUpload } from '@/utilities/uploadImage';
 import { formatPhoneDisplay } from '@/utilities/phone';
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
@@ -86,6 +87,7 @@ export default function BusinessProfileScreen() {
 
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
+      <MaxWidthContainer>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 60 }}>
 
         {/* ── Hero Cover ── */}
@@ -310,6 +312,7 @@ export default function BusinessProfileScreen() {
         </SectionCard>
 
       </ScrollView>
+      </MaxWidthContainer>
     </SafeAreaView>
   );
 }

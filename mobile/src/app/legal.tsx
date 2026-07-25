@@ -15,6 +15,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { legalService, type LegalDocument, type LegalSlug } from '@/services/legal';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 
 const META: Record<LegalSlug, { titleKey: string; icon: keyof typeof Ionicons.glyphMap }> = {
   'terms':          { titleKey: 'legalScreen.termsTitle',   icon: 'document-text-outline' },
@@ -64,6 +65,7 @@ export default function LegalScreen() {
 
   return (
     <SafeAreaView style={[styles.root, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
+      <MaxWidthContainer>
 
       {/* Header */}
       <View style={[styles.header, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
@@ -143,6 +145,7 @@ export default function LegalScreen() {
           </View>
         </ScrollView>
       )}
+      </MaxWidthContainer>
     </SafeAreaView>
   );
 }

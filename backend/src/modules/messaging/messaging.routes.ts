@@ -2,8 +2,8 @@ import { Router } from 'express';
 import { MessagingController } from './messaging.controller';
 import { authenticate } from '../../middleware/auth';
 import { validate } from '../../middleware/validate';
-import { uploadChatFile, uploadChatVideo } from '../../middleware/upload';
-import { startConversationSchema, startCreatorConversationSchema, sendMessageSchema } from './messaging.schema';
+import { uploadChatFile } from '../../middleware/upload';
+import { startConversationSchema, startCreatorConversationSchema, sendMessageSchema, videoCompleteSchema } from './messaging.schema';
 
 const router = Router();
 const ctrl   = new MessagingController();
@@ -34,9 +34,12 @@ router.get('/conversations/:id/messages',            ctrl.getMessages.bind(ctrl)
 router.post('/conversations/:id/messages',           validate(sendMessageSchema), ctrl.sendMessage.bind(ctrl));
 // Image / file attachment — multipart upload, field name "file", optional "caption" text field
 router.post('/conversations/:id/attachments',        uploadChatFile.single('file'), ctrl.sendAttachment.bind(ctrl));
-// Video attachment — separate route/multer instance (disk storage, 200MB cap) rather than
-// folding into the route above, since video needs very different upload handling
-router.post('/conversations/:id/attachments/video',  uploadChatVideo.single('file'), ctrl.sendVideoAttachment.bind(ctrl));
+// Video — direct-to-Cloudinary upload, not proxied through this server (avoids
+// Render request-size/timeout limits on large files). Mobile calls /signature
+// first, uploads straight to Cloudinary with the returned credentials, then
+// calls /complete so the server can verify the asset and create the message.
+router.post('/conversations/:id/attachments/video/signature', ctrl.getVideoUploadSignature.bind(ctrl));
+router.post('/conversations/:id/attachments/video/complete',  validate(videoCompleteSchema), ctrl.completeVideoAttachment.bind(ctrl));
 // Delete a single message — body: { forEveryone?: boolean } (sender-only; defaults to "delete for me")
 router.delete('/conversations/:id/messages/:messageId', ctrl.deleteMessage.bind(ctrl));
 // Delete (hide) the whole conversation from the caller's own inbox only

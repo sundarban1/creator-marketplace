@@ -1,5 +1,4 @@
 import { Request, Response, NextFunction } from 'express';
-import { promises as fs } from 'fs';
 import { ConversationStatus } from '@prisma/client';
 import { MessagingService } from './messaging.service';
 import { success, paginated } from '../../utils/response';
@@ -113,20 +112,20 @@ export class MessagingController {
     } catch (err) { next(err); }
   }
 
-  async sendVideoAttachment(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getVideoUploadSignature(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      if (!req.file) throw new AppError('No video file provided', 400);
-      const message = await messagingService.sendVideoAttachment(
-        req.params.id, req.user!.id, req.user!.role, req.file, req.body?.caption,
+      const signature = await messagingService.requestVideoUploadSignature(req.params.id, req.user!.id, req.user!.role);
+      success(res, signature, 'Signature generated');
+    } catch (err) { next(err); }
+  }
+
+  async completeVideoAttachment(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const message = await messagingService.completeVideoAttachment(
+        req.params.id, req.user!.id, req.user!.role, req.body.publicId, req.body.caption,
       );
       success(res, message, 'Video sent', 201);
-    } catch (err) {
-      next(err);
-    } finally {
-      // uploadChatVideo writes to disk (unlike the memory-backed image/file
-      // uploader above) — always clean up the temp file, success or failure.
-      if (req.file?.path) await fs.unlink(req.file.path).catch(() => {});
-    }
+    } catch (err) { next(err); }
   }
 
   async markSeen(req: Request, res: Response, next: NextFunction): Promise<void> {

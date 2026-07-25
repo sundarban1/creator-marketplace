@@ -14,6 +14,7 @@ import {
   analyticsService, type ApiCreatorAnalytics, type AnalyticsRange,
 } from '@/services/analytics';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 
 const RANGES: { value: AnalyticsRange; labelKey: string }[] = [
   { value: '7d',   labelKey: 'analytics.range7d' },
@@ -107,6 +108,7 @@ export default function CreatorAnalyticsScreen() {
 
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
+      <MaxWidthContainer>
       <PageHeader title={t('analytics.headerTitle')} backFallback="/(creator)/" />
 
       <View style={s.rangeRow}>
@@ -195,6 +197,7 @@ export default function CreatorAnalyticsScreen() {
           )}
         </ScrollView>
       )}
+      </MaxWidthContainer>
     </SafeAreaView>
   );
 }

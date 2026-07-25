@@ -5,7 +5,7 @@ import { analyticsService } from '../analytics/analytics.service';
 import { success, paginated } from '../../utils/response';
 import { uploadImage as uploadToCloudinary } from '../../utils/cloudinary';
 import { AppError } from '../../middleware/error';
-import type { SubmitReviewInput } from './campaign.schema';
+import type { SubmitReviewInput, DeliverableVideoCompleteInput } from './campaign.schema';
 
 const campaignService = new CampaignService();
 const FEATURE_IMAGE_TRANSFORMATION = [{ width: 800, height: 450, crop: 'fill' }];
@@ -256,6 +256,39 @@ export class CampaignController {
         note ?? ''
       );
       success(res, result, 'Revision requested');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async getDeliverableVideoSignature(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await campaignService.requestDeliverableVideoSignature(req.params.appId, req.user!.id);
+      success(res, result, 'Upload signature issued');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async completeDeliverableVideo(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { publicId } = req.body as DeliverableVideoCompleteInput;
+      const result = await campaignService.completeDeliverableVideo(req.params.appId, req.user!.id, publicId);
+      success(res, result, 'Video attached', 201);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // publicId is folder-qualified (e.g. "campaigns/deliverables/deliverable_xxx")
+  // — it contains a literal "/", so it travels as a query param rather than a
+  // path segment (an Express path param would only capture up to the first "/").
+  async removeDeliverableVideo(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const publicId = req.query.publicId as string;
+      if (!publicId) throw new AppError('publicId is required', 400);
+      const result = await campaignService.removeDeliverableVideo(req.params.appId, req.user!.id, publicId);
+      success(res, result, 'Video removed');
     } catch (err) {
       next(err);
     }

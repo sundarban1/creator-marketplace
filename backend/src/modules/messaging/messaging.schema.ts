@@ -20,7 +20,13 @@ export const messagesQuerySchema = z.object({
   limit: z.string().optional().transform((v) => (v ? parseInt(v) : 30)),
 });
 
+export const videoCompleteSchema = z.object({
+  publicId: z.string().min(1, 'publicId is required'),
+  caption:  z.string().max(500).optional(),
+});
+
 export type StartConversationInput        = z.infer<typeof startConversationSchema>;
 export type StartCreatorConversationInput = z.infer<typeof startCreatorConversationSchema>;
 export type SendMessageInput              = z.infer<typeof sendMessageSchema>;
 export type MessagesQuery                 = z.infer<typeof messagesQuerySchema>;
+export type VideoCompleteInput            = z.infer<typeof videoCompleteSchema>;

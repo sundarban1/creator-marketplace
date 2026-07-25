@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "kolab",
+    "name": "Kolab",
     "slug": "kolab",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -38,7 +38,7 @@
           }
         ],
         "FacebookAppID": "1740519673635792",
-        "FacebookDisplayName": "kolab",
+        "FacebookDisplayName": "Kolab",
         "ITSAppUsesNonExemptEncryption": false
       }
     },
@@ -82,14 +82,14 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Allow kolab to access your location to find nearby campaigns."
+          "locationWhenInUsePermission": "Allow Kolab to access your location to find nearby campaigns."
         }
       ],
       "expo-secure-store",
       [
         "expo-local-authentication",
         {
-          "faceIDPermission": "Allow kolab to use Face ID to quickly and securely unlock the app."
+          "faceIDPermission": "Allow Kolab to use Face ID to quickly and securely unlock the app."
         }
       ],
       [
@@ -101,11 +101,12 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow kolab to access your photos to update your profile picture.",
-          "cameraPermission": "Allow kolab to use your camera to take a profile photo."
+          "photosPermission": "Allow Kolab to access your photos to update your profile picture.",
+          "cameraPermission": "Allow Kolab to use your camera to take a profile photo."
         }
       ],
       "expo-video",
+      "expo-sharing",
       "./plugins/withFixMapsPodfile.js"
     ],
     "experiments": {

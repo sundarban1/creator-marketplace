@@ -8,7 +8,15 @@ import { AdminRepository } from '../admin/admin.repository';
 import { notificationService, sendExpoPush } from '../notifications/notification.service';
 import { analyticsService } from '../analytics/analytics.service';
 import { emitToUser } from '../../socket';
-import { uploadImage as uploadToCloudinary, uploadRawFile, uploadVideo, videoThumbnailUrl, deleteVideo } from '../../utils/cloudinary';
+import { v2 as cloudinary } from 'cloudinary';
+import { randomUUID } from 'crypto';
+import { uploadImage as uploadToCloudinary, uploadRawFile, generateVideoUploadSignature, videoThumbnailUrl, videoPlaybackUrl, deleteVideo, type VideoUploadSignature } from '../../utils/cloudinary';
+
+// MP4 (H.264/AAC) is the preferred format; MOV is accepted and delivered as
+// MP4 via videoPlaybackUrl. Legacy/poorly-supported formats (AVI, MKV, FLV,
+// WMV, 3GP, ...) are rejected even if a client bypasses the mobile-side
+// picker validation and uploads directly to Cloudinary.
+const ALLOWED_VIDEO_FORMATS = new Set(['mp4', 'mov', 'qt']);
 import type { StartConversationInput, SendMessageInput } from './messaging.schema';
 
 const ATTACHMENT_IMAGE_TRANSFORMATION = [{ width: 1600, crop: 'limit' }];
@@ -354,9 +362,11 @@ export class MessagingService {
     await this.repo.hideConversationForUser(conversationId, field);
   }
 
-  private async prepareSend(conversationId: string, userId: string, role: Role) {
-    await this.assertMessagingEnabled();
-
+  // Side-effect-free: conversation lookup + access/block/status checks only.
+  // Shared by prepareSend (an actual message send) and requestVideoUploadSignature
+  // (which only needs to know sending is *allowed* — no message exists yet, so
+  // the response-time analytics below must not fire for it).
+  private async assertConversationSendable(conversationId: string, userId: string, role: Role) {
     const conversation = await this.repo.findConversationById(conversationId);
     if (!conversation) throw new AppError('Conversation not found', 404);
     await this.verifyConversationAccess(conversation, userId, role);
@@ -373,6 +383,13 @@ export class MessagingService {
     if (conversation.status === 'DECLINED') {
       throw new AppError('This conversation request was declined', 403);
     }
+
+    return conversation;
+  }
+
+  private async prepareSend(conversationId: string, userId: string, role: Role) {
+    await this.assertMessagingEnabled();
+    const conversation = await this.assertConversationSendable(conversationId, userId, role);
 
     // Response-time analytics: only counts as a "response" if the immediately
     // preceding message came from the OTHER party — two consecutive messages
@@ -468,45 +485,81 @@ export class MessagingService {
     }, pushBody);
   }
 
-  // Video follows the same shape as sendAttachment above but as its own method rather
-  // than folded in: it needs a disk-path upload (uploadChatVideo writes to tmpdir, see
-  // middleware/upload.ts) instead of a buffer, a duration check the server itself
-  // enforces post-upload (never trusting whatever the client claimed pre-upload), and a
-  // Cloudinary-derived thumbnail — none of which apply to the image/file path.
-  async sendVideoAttachment(
+  // Video is uploaded directly from the mobile client to Cloudinary (never
+  // through this server — avoids proxying up to 200MB through Render). This
+  // method only issues the signed credentials the client needs to do that
+  // upload itself; the actual message isn't created until completeVideoAttachment
+  // runs afterward. No analytics here — nothing has been sent yet.
+  async requestVideoUploadSignature(conversationId: string, userId: string, role: Role): Promise<VideoUploadSignature> {
+    await this.assertMessagingEnabled();
+    const conversation = await this.assertConversationSendable(conversationId, userId, role);
+    // Video is only allowed in creator<->business conversations, not creator<->creator.
+    if (conversation.creatorId2 != null) throw new AppError('Video is not available in creator-to-creator conversations', 403);
+
+    const publicId = `video_${conversationId}_${Date.now()}_${randomUUID()}`;
+    return generateVideoUploadSignature('messages/attachments', publicId);
+  }
+
+  // Called after the client's direct-to-Cloudinary upload succeeds. Mirrors
+  // sendAttachment's shape but never trusts client-submitted metadata — the
+  // publicId is the only thing taken on faith (and even that is validated
+  // against this conversation below), everything else (duration/size/dimensions/
+  // format/url) is read back from Cloudinary's own Admin API, the same "server
+  // is the source of truth" principle the old disk-upload path used.
+  async completeVideoAttachment(
     conversationId: string,
     userId: string,
     role: Role,
-    file: Express.Multer.File,
+    publicId: string,
     caption?: string,
   ) {
     const conversation = await this.prepareSend(conversationId, userId, role);
+    // Video is only allowed in creator<->business conversations, not creator<->creator.
+    if (conversation.creatorId2 != null) throw new AppError('Video is not available in creator-to-creator conversations', 403);
 
-    const publicId = `video_${conversationId}_${Date.now()}`;
-    const uploaded  = await uploadVideo(file.path, 'messages/attachments', publicId);
+    const expectedPrefix = 'messages/attachments/video_';
+    if (!publicId.startsWith(expectedPrefix) || !publicId.includes(`_${conversationId}_`)) {
+      throw new AppError('Invalid upload reference', 400);
+    }
 
+    let resource;
+    try {
+      resource = await cloudinary.api.resource(publicId, { resource_type: 'video' });
+    } catch {
+      throw new AppError('Could not verify the uploaded video. Please try again.', 400);
+    }
+
+    if (!ALLOWED_VIDEO_FORMATS.has((resource.format ?? '').toLowerCase())) {
+      await deleteVideo(publicId);
+      throw new AppError('Unsupported video format. Please use MP4 or MOV.', 400);
+    }
+
+    const durationSec = Math.round(resource.duration ?? 0);
     // Client-side picker already caps duration at 120s, but the server is the
     // only source of truth — if a client lied (or the picker was bypassed),
     // delete the asset we just paid to store and reject the message.
-    if (uploaded.durationSec > 125) {
-      await deleteVideo(`messages/attachments/${publicId}`);
+    if (durationSec > 125) {
+      await deleteVideo(publicId);
       throw new AppError('Video exceeds the 2 minute limit', 400);
     }
 
     const content  = caption?.trim() ?? '';
     const pushBody = content || '🎥 Video';
+    // Always deliver as MP4/H.264+AAC for universal playback, even when the
+    // source upload was MOV — see videoPlaybackUrl for how.
+    const playbackUrl = videoPlaybackUrl(resource.secure_url);
 
     return this.persistAndBroadcast(conversation, userId, role, {
       content,
       type: 'VIDEO',
-      attachmentUrl:          uploaded.secureUrl,
-      attachmentName:         file.originalname,
-      attachmentThumbnailUrl: videoThumbnailUrl(uploaded.secureUrl),
-      attachmentDurationSec:  uploaded.durationSec,
-      attachmentWidth:        uploaded.width,
-      attachmentHeight:       uploaded.height,
-      attachmentSize:         uploaded.bytes,
-      attachmentFormat:       uploaded.format,
+      attachmentUrl:          playbackUrl,
+      attachmentName:         `${publicId.split('/').pop()}.mp4`,
+      attachmentThumbnailUrl: videoThumbnailUrl(resource.secure_url),
+      attachmentDurationSec:  durationSec,
+      attachmentWidth:        resource.width,
+      attachmentHeight:       resource.height,
+      attachmentSize:         resource.bytes,
+      attachmentFormat:       'mp4', // matches playbackUrl — always delivered as MP4 regardless of the source format
     }, pushBody);
   }
 

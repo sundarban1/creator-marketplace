@@ -18,6 +18,7 @@ import type { Campaign } from '@/types';
 import { EmptyState } from '@/components/EmptyState';
 import { ListRowSkeleton } from '@/components/ListRowSkeleton';
 import { F, RADIUS } from '@/utilities/constants';
+import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 
 const PAGE_SIZE = 6;
 
@@ -74,6 +75,7 @@ export default function FeaturedCampaignsScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
+      <MaxWidthContainer>
       <PageHeader title={t('creator.featuredCampaigns.headerTitle')} backFallback="/(creator)/" />
 
       {loading ? (
@@ -116,6 +118,7 @@ export default function FeaturedCampaignsScreen() {
           }
         />
       )}
+      </MaxWidthContainer>
     </SafeAreaView>
   );
 }

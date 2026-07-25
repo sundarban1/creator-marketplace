@@ -32,6 +32,7 @@ import { useAllCategories, useCategories, getCategoryMeta } from '@/hooks/useCat
 import { usePlatforms, getPlatformMeta } from '@/hooks/usePlatforms';
 import { getIconColor } from '@/features/creator/data/filterOptions';
 import { F, RADIUS } from '@/utilities/constants';
+import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 
 function getInitials(name: string): string {
   const words = name.trim().split(/\s+/).filter(Boolean);
@@ -200,6 +201,7 @@ export default function SavedCreatorsScreen() {
 
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
+      <MaxWidthContainer>
       {/* Header — back button + search, same row */}
       <View style={{ backgroundColor: C.surface }}>
         <View style={s.header} accessibilityRole="header" accessibilityLabel={t('savedCreators.title')}>
@@ -325,6 +327,7 @@ export default function SavedCreatorsScreen() {
           }
         />
       )}
+      </MaxWidthContainer>
 
       <CreatorFilterModal
         visible={filterVisible}
