@@ -204,6 +204,20 @@ class AuthRefreshInvalidError extends Error {}
 
 let pendingRefresh: Promise<string> | null = null;
 
+// Exposed so the socket client can force a token refresh after a stale-auth
+// reconnect rejection, without waiting for a REST call to hit a 401 first.
+export async function ensureFreshAccessToken(): Promise<string | null> {
+  if (!storage.get(REFRESH_TOKEN_KEY)) return null;
+  if (!pendingRefresh) {
+    pendingRefresh = refreshAccessToken().finally(() => { pendingRefresh = null; });
+  }
+  try {
+    return await pendingRefresh;
+  } catch {
+    return null;
+  }
+}
+
 async function refreshAccessToken(): Promise<string> {
   const rt = storage.get(REFRESH_TOKEN_KEY);
   if (!rt) throw new AuthRefreshInvalidError('No refresh token');

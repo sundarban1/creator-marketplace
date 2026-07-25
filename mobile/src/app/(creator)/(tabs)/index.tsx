@@ -99,6 +99,13 @@ export default function HomeScreen() {
   // Y-offset of the Categories section within the list content, captured via
   // onLayout — lets us auto-scroll there while searching (see effect below).
   const categoriesYRef  = useRef(0);
+  // True only while the list is actually sitting in the "scrolled down to
+  // Categories" position because of a focus/search that hasn't been snapped
+  // back yet — set when that scroll fires, cleared the moment the snap-back
+  // runs. Without this, the outside-tap handler below would re-trigger
+  // scrollToOffset(0) on *every* tap anywhere on the screen forever, not just
+  // the one tap that actually dismisses an active search.
+  const pendingSnapBackRef = useRef(false);
   const [tempPriceMin, setTempPriceMin] = useState(0);
   const [tempPriceMax, setTempPriceMax] = useState(SLIDER_MAX);
   const [tempLocation, setTempLocation] = useState<LocationFilter>([]);
@@ -479,6 +486,7 @@ export default function HomeScreen() {
   useEffect(() => {
     if (searchFocused || activeSearch.trim().length > 0) {
       listRef.current?.scrollToOffset({ offset: categoriesYRef.current, animated: true });
+      pendingSnapBackRef.current = true;
     }
   }, [searchFocused, activeSearch]);
 
@@ -500,7 +508,13 @@ export default function HomeScreen() {
       <TouchableWithoutFeedback
         onPress={() => {
           Keyboard.dismiss();
-          if (!activeSearch.trim()) listRef.current?.scrollToOffset({ offset: 0, animated: true });
+          // Only snap back once, for the tap that actually dismisses a
+          // focused/active search — any further taps elsewhere on the screen
+          // are just normal interaction with the page, not another dismissal.
+          if (pendingSnapBackRef.current && !activeSearch.trim()) {
+            listRef.current?.scrollToOffset({ offset: 0, animated: true });
+            pendingSnapBackRef.current = false;
+          }
         }}
         accessible={false}>
       <View style={{ flex: 1 }}>

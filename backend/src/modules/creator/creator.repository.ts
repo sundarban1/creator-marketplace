@@ -14,7 +14,10 @@ export class CreatorRepository {
     limit: number;
   }) {
     const PRICE_MAX = 1000;
-    const where: Prisma.CreatorProfileWhereInput = {};
+    // A creator who never finished onboarding has no fullName/categories/bio yet —
+    // showing them in Explore Creators is just a blank/broken card, so they're
+    // excluded here rather than filtered client-side (keeps pagination totals correct).
+    const where: Prisma.CreatorProfileWhereInput = { user: { isOnboarded: true } };
 
     if (filters.search) {
       where.fullName = { contains: filters.search, mode: 'insensitive' };
@@ -71,7 +74,7 @@ export class CreatorRepository {
    */
   async findRecommended(category: string) {
     return prisma.creatorProfile.findMany({
-      where: { categories: { has: category } },
+      where: { categories: { has: category }, user: { isOnboarded: true } },
       take: 50,
       orderBy: { createdAt: 'desc' },
       select: {

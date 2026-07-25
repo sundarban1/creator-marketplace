@@ -285,6 +285,15 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
       const message = e instanceof Error ? e.message : t('auth.login.requiredError');
       if (/suspended/i.test(message)) {
         setSuspendedModal(true);
+      } else if (/verify your (email|phone number)/i.test(message)) {
+        // Account exists but was never verified after signup — the backend
+        // already sent a fresh OTP as part of this same login attempt (see
+        // AuthService.login), so just take the user back to the OTP screen
+        // instead of dead-ending on a plain error banner.
+        router.push({
+          pathname: '/verify',
+          params: channel === 'email' ? { email: trimmedIdentifier } : { phone: normalizePhoneForSubmit(trimmedIdentifier) },
+        });
       } else {
         setApiError(message);
       }

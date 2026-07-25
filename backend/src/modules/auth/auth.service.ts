@@ -224,7 +224,16 @@ export class AuthService {
     if (!isValidPassword) throw new AppError(`Invalid ${channel === 'email' ? 'email' : 'phone number'} or password`, 401);
 
     const isVerified = channel === 'email' ? user.isEmailVerified : user.isPhoneVerified;
-    if (!isVerified) throw new AppError(`Please verify your ${channel === 'email' ? 'email' : 'phone number'} before logging in`, 403);
+    if (!isVerified) {
+      // Give the user a way back to verification instead of just dead-ending
+      // here — same issueOtp() signup/resendOtp already use. Guarded by
+      // hasValidOtp so a repeated login click doesn't re-send an OTP email
+      // every time while a still-valid one is already pending.
+      if (!(await this.repo.hasValidOtp(user.id))) {
+        await this.issueOtp(user.id, channel, channel === 'email' ? user.email : normalizePhone(input.phone!));
+      }
+      throw new AppError(`Please verify your ${channel === 'email' ? 'email' : 'phone number'} before logging in`, 403);
+    }
 
     // Admin-suspended accounts are blocked outright — never silently
     // reactivated. Self-deactivated accounts (suspendedAt null) still

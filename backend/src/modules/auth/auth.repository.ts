@@ -117,6 +117,17 @@ export class AuthRepository {
     });
   }
 
+  // No `code` filter, unlike findValidOtp — used to check whether one is
+  // already pending before issuing another (see AuthService.login), so a
+  // repeated login click on an unverified account doesn't spam a new OTP
+  // email every time while a still-valid one is already in flight.
+  async hasValidOtp(userId: string): Promise<boolean> {
+    const otp = await prisma.otpVerification.findFirst({
+      where: { userId, expiresAt: { gt: new Date() } },
+    });
+    return !!otp;
+  }
+
   async deleteOtpsByUserId(userId: string) {
     return prisma.otpVerification.deleteMany({ where: { userId } });
   }

@@ -72,10 +72,13 @@ export default function VerifyScreen() {
       await authService.verifyOtp(identifier, fullCode);
       if (channel === 'email') void authService.sendWelcomeEmail(email ?? '');
       setVerified(true);
-      // Hydrate AuthContext then navigate directly to the dashboard
-      const u = await reloadUser();
-      const dest = (u?.role === 'CREATOR' ? '/(creator)/' : '/(business)/') as never;
-      setTimeout(() => router.replace(dest), 1500);
+      // Let the success checkmark animation actually play before hydrating
+      // AuthContext — RootNavigator (_layout.tsx) reacts to the resulting
+      // `user` state change and routes on its own: onboarding if isFirstLogin
+      // is still true, the home tabs otherwise. No manual router.replace here
+      // — a hardcoded redirect to home previously overrode that onboarding
+      // redirect for every new signup.
+      setTimeout(() => { void reloadUser(); }, 1500);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Verification failed. Please try again.');
       setCode(Array(OTP_LENGTH).fill(''));
@@ -191,7 +194,7 @@ export default function VerifyScreen() {
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
             style={styles.back}
             hitSlop={8}
-            onPress={() => (router.canGoBack() ? router.back() : router.replace('/login?tab=signup' as never))}>
+            onPress={() => (router.canGoBack() ? router.back() : router.replace('/login' as never))}>
             <Text style={styles.backArrow}>‹</Text>
           </Pressable>
           <View style={styles.heroContent}>
