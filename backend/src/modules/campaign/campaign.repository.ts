@@ -851,9 +851,13 @@ export class CampaignRepository {
     });
   }
 
+  // Every call site already gates its send on `if (email) { ... }` — omitting
+  // opted-out users from the returned Map (rather than threading a separate
+  // flag through all 7 call sites) makes that existing check double as the
+  // emailNotificationsEnabled gate for free.
   async getUserEmails(userIds: string[]): Promise<Map<string, string>> {
     const users = await prisma.user.findMany({
-      where: { id: { in: userIds } },
+      where: { id: { in: userIds }, emailNotificationsEnabled: true },
       select: { id: true, email: true },
     });
     return new Map(users.map((u) => [u.id, u.email]));

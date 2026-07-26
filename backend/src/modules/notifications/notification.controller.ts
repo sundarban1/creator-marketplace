@@ -48,4 +48,22 @@ export class NotificationController {
       res.json({ success: true });
     } catch (err) { next(err); }
   }
+
+  async getSettings(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const settings = await notificationService.getSettings(req.user!.id);
+      res.json({ success: true, data: settings });
+    } catch (err) { next(err); }
+  }
+
+  async updateSettings(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { pushNotificationsEnabled, emailNotificationsEnabled } = req.body as {
+        pushNotificationsEnabled?: boolean;
+        emailNotificationsEnabled?: boolean;
+      };
+      const settings = await notificationService.updateSettings(req.user!.id, { pushNotificationsEnabled, emailNotificationsEnabled });
+      res.json({ success: true, data: settings });
+    } catch (err) { next(err); }
+  }
 }

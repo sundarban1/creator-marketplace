@@ -34,6 +34,11 @@ model User {
   deviceId          String?
   // Updated on socket connect/disconnect — drives the chat "Active now" / "Active Xm ago" status.
   lastSeenAt        DateTime?
+  // Per-channel opt-out — checked before every push (notification.service.ts
+  // sendExpoPush) and every transactional campaign email (campaign.service.ts).
+  // Independent of each other; either can be off while the other stays on.
+  pushNotificationsEnabled  Boolean @default(true)
+  emailNotificationsEnabled Boolean @default(true)
   businessProfile   BusinessProfile?
   creatorProfile    CreatorProfile?
   issueReports      IssueReport[]

@@ -10,6 +10,8 @@ router.use(authenticate);
 router.get('/',              ctrl.list.bind(ctrl));
 router.get('/badge',         ctrl.badge.bind(ctrl));
 router.put('/push-token',          ctrl.registerPushToken.bind(ctrl));
+router.get('/settings',            ctrl.getSettings.bind(ctrl));
+router.put('/settings',            ctrl.updateSettings.bind(ctrl));
 router.patch('/read-all',          ctrl.markAllRead.bind(ctrl));
 router.patch('/read-by-ref/:refId', ctrl.markReadByRef.bind(ctrl));
 router.patch('/:id/read',          ctrl.markRead.bind(ctrl));

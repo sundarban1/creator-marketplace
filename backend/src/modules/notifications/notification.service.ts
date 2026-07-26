@@ -4,6 +4,7 @@ import { toNotificationDto } from './notification.dto';
 import { emitToUser } from '../../socket';
 import { translateMany } from '../../utils/translation';
 import { logger } from '../../config/logger';
+import { AppError } from '../../middleware/error';
 import prisma from '../../prisma';
 
 const expo = new Expo();
@@ -13,7 +14,11 @@ const repo = new NotificationRepository();
 
 export async function sendExpoPush(userId: string, title: string, body: string) {
   try {
-    const user = await prisma.user.findUnique({ where: { id: userId }, select: { pushToken: true } });
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { pushToken: true, pushNotificationsEnabled: true } });
+    if (user?.pushNotificationsEnabled === false) {
+      logger.debug({ userId }, 'Push skipped — user has push notifications disabled');
+      return;
+    }
     const token = user?.pushToken;
     if (!token) {
       logger.debug({ userId }, 'Push skipped — no pushToken on record for user');
@@ -63,6 +68,27 @@ export const notificationService = {
 
   async registerPushToken(userId: string, token: string) {
     await prisma.user.update({ where: { id: userId }, data: { pushToken: token } });
+  },
+
+  // Per-channel opt-out, shared by BUSINESS and CREATOR — checked by
+  // sendExpoPush (push) and campaign.service.ts's email call sites (email)
+  // before every send, not just read/displayed here.
+  async getSettings(userId: string) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { pushNotificationsEnabled: true, emailNotificationsEnabled: true },
+    });
+    if (!user) throw new AppError('User not found', 404);
+    return user;
+  },
+
+  async updateSettings(userId: string, data: { pushNotificationsEnabled?: boolean; emailNotificationsEnabled?: boolean }) {
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data,
+      select: { pushNotificationsEnabled: true, emailNotificationsEnabled: true },
+    });
+    return user;
   },
 
   async create(data: {
