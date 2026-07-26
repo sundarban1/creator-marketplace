@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
@@ -411,4 +411,69 @@ const ht = StyleSheet.create({
   addChip:      { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 },
   addChipInput: { flex: 1, borderRadius: RADIUS.sm, borderWidth: 1.5, paddingHorizontal: 12, height: 40, fontSize: 13, fontFamily: F.regular },
   addChipBtn:   { width: 40, height: 40, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center' },
+});
+
+// ─── FeaturedToggle ───────────────────────────────────────────────────────────
+// Shared by create-campaign (new event) and campaign-detail's edit modal
+// (existing event) so both show the same remaining-quota pill and lock state
+// instead of the edit path silently omitting it.
+
+export function FeaturedToggle({ value, onChange, quota, colors, t }: {
+  value: boolean;
+  onChange: (v: boolean) => void;
+  // Pass null to render with no pill and no lock — used on the edit screen
+  // when the campaign is already featured, since keeping it featured never
+  // costs a quota slot and shouldn't block turning it back off/on.
+  quota: { remaining: number; price: number; unlimited: boolean } | null;
+  colors: ReturnType<typeof useAppColors>;
+  t: (key: string, vars?: Record<string, string | number>) => string;
+}) {
+  const C = colors;
+  const locked = quota !== null && !quota.unlimited && quota.remaining <= 0;
+
+  return (
+    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+      style={[
+        ft.toggle,
+        { backgroundColor: value ? '#FFF8E8' : C.surface, borderColor: value ? '#F59E0B' : C.border },
+        locked && ft.locked,
+      ]}
+      onPress={() => { if (!locked) onChange(!value); }}
+      disabled={locked}>
+      <View style={ft.left}>
+        <FontAwesome5 name="star" size={18} color="#F59E0B" solid />
+        <View style={{ flex: 1, gap: 3 }}>
+          <View style={ft.labelRow}>
+            <Text style={[ft.label, { color: C.text }]}>{t('createEvent.featuredLabel')}</Text>
+            {quota && (
+              <View style={[ft.pill, { backgroundColor: locked ? C.border : '#FEF3C7' }]}>
+                <Text style={[ft.pillText, { color: locked ? C.textSecondary : '#92400E' }]}>
+                  {quota.unlimited ? t('createEvent.featuredUnlimited') : locked ? `Rs. ${quota.price}` : t('createEvent.featuredRemaining', { n: quota.remaining })}
+                </Text>
+              </View>
+            )}
+          </View>
+          <Text style={[ft.sub, { color: C.textSecondary }]}>
+            {locked ? t('createEvent.featuredLockedSub', { price: quota!.price }) : t('createEvent.featuredSub')}
+          </Text>
+        </View>
+      </View>
+      <View style={[ft.switch, { backgroundColor: value ? '#F59E0B' : C.border }]}>
+        <View style={[ft.switchThumb, { left: value ? 20 : 2 }]} />
+      </View>
+    </Pressable>
+  );
+}
+
+const ft = StyleSheet.create({
+  toggle:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderRadius: RADIUS.lg, padding: 16, borderWidth: 1.5 },
+  locked:      { opacity: 0.6 },
+  left:        { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
+  labelRow:    { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  label:       { fontSize: 14, fontFamily: F.bold },
+  sub:         { fontSize: 12, lineHeight: 17, fontFamily: F.regular },
+  pill:        { borderRadius: RADIUS.full, paddingHorizontal: 8, paddingVertical: 2 },
+  pillText:    { fontSize: 10, fontFamily: F.bold },
+  switch:      { width: 44, height: 26, borderRadius: RADIUS.full, position: 'relative' },
+  switchThumb: { position: 'absolute', top: 3, width: 20, height: 20, borderRadius: RADIUS.full, backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 3, shadowOffset: { width: 0, height: 1 }, elevation: 3 },
 });

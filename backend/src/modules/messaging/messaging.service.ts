@@ -21,6 +21,29 @@ import type { StartConversationInput, SendMessageInput } from './messaging.schem
 
 const ATTACHMENT_IMAGE_TRANSFORMATION = [{ width: 1600, crop: 'limit' }];
 
+// Per-user messages-per-minute tracker, module-level (not a class field) so
+// it's shared across every MessagingService instance in this process —
+// socket.ts and messaging.controller.ts each construct their own instance.
+// Applies inside persistAndBroadcast, the one choke point every message type
+// (text/image/file/video, over both the REST route and the socket path) goes
+// through, so a spammer can't dodge the REST-only express-rate-limit
+// middleware (perUserMessageLimiter) by sending over the socket instead.
+const recentSendTimestamps = new Map<string, number[]>();
+const MESSAGE_RATE_WINDOW_MS = 60_000;
+
+async function assertMessageRateOk(adminRepo: AdminRepository, userId: string): Promise<void> {
+  if ((await adminRepo.getSetting('rateLimit.messages.enabled')) === false) return;
+  const maxPerMinute = Number(await adminRepo.getSetting('rateLimit.messages.maxPerMinute')) || 20;
+
+  const now = Date.now();
+  const recent = (recentSendTimestamps.get(userId) ?? []).filter((t) => now - t < MESSAGE_RATE_WINDOW_MS);
+  if (recent.length >= maxPerMinute) {
+    throw new AppError('You are sending messages too quickly. Please slow down.', 429);
+  }
+  recent.push(now);
+  recentSendTimestamps.set(userId, recent);
+}
+
 type Participant = { userId: string; name: string; badgeRole: 'CREATOR' | 'BUSINESS'; profileId: string };
 
 type ConversationWithParties = {
@@ -421,6 +444,8 @@ export class MessagingService {
     },
     pushBody: string,
   ) {
+    await assertMessageRateOk(this.adminRepo, userId);
+
     const conversationId = conversation.id;
     const raw     = await this.repo.createMessage({ conversationId, senderId: userId, ...data });
     const message = toMessageDto(raw);
@@ -453,6 +478,15 @@ export class MessagingService {
 
   async sendMessage(conversationId: string, userId: string, role: Role, input: SendMessageInput) {
     const conversation = await this.prepareSend(conversationId, userId, role);
+
+    if ((await this.adminRepo.getSetting('rateLimit.duplicateMessages.enabled')) !== false) {
+      const content = input.content.trim();
+      const lastOwn = await this.repo.findLastMessageBySender(conversationId, userId);
+      if (lastOwn && lastOwn.content === content) {
+        throw new AppError('You just sent this exact message — please wait before sending it again.', 429);
+      }
+    }
+
     return this.persistAndBroadcast(conversation, userId, role, { content: input.content }, input.content);
   }
 

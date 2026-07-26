@@ -147,11 +147,47 @@ export class CampaignService {
     }).catch(() => {});
   }
 
+  // Two admin-configurable anti-abuse gates on event creation: a rolling
+  // per-day cap (any business) and a cooldown on brand-new business accounts
+  // (anti-fraud — a business shouldn't be able to post a scam event seconds
+  // after signing up). Both fail open (skip the check) if their setting is
+  // disabled, and both read the business's own createdAt/id rather than the
+  // user's, since a BusinessProfile is created atomically with its User at
+  // signup (see AuthService.register).
+  private async assertCampaignCreationAllowed(business: { id: string; createdAt: Date }): Promise<void> {
+    const [cooldownEnabled, cooldownHours, capEnabled, maxPerDay] = await Promise.all([
+      this.adminRepo.getSetting('rateLimit.newAccountCooldown.enabled'),
+      this.adminRepo.getSetting('rateLimit.newAccountCooldown.hours').then((v) => Number(v) || 24),
+      this.adminRepo.getSetting('rateLimit.campaignCreation.enabled'),
+      this.adminRepo.getSetting('rateLimit.campaignCreation.maxPerDay').then((v) => Number(v) || 5),
+    ]);
+
+    if (cooldownEnabled !== false) {
+      const cooldownMs = cooldownHours * 60 * 60 * 1000;
+      const accountAgeMs = Date.now() - business.createdAt.getTime();
+      if (accountAgeMs < cooldownMs) {
+        const hoursLeft = Math.ceil((cooldownMs - accountAgeMs) / (60 * 60 * 1000));
+        throw new AppError(`New accounts must wait ${cooldownHours}h before creating an event. Please try again in about ${hoursLeft}h.`, 403);
+      }
+    }
+
+    if (capEnabled !== false) {
+      const startOfDay = new Date();
+      startOfDay.setHours(0, 0, 0, 0);
+      const createdToday = await this.repo.countCampaignsCreatedSince(business.id, startOfDay);
+      if (createdToday >= maxPerDay) {
+        throw new AppError(`You've reached the limit of ${maxPerDay} events created per day. Please try again tomorrow.`, 429);
+      }
+    }
+  }
+
   async create(userId: string, input: CreateCampaignInput) {
     const business = await this.businessRepo.findByUserId(userId);
     if (!business) {
       throw new AppError('Business profile not found', 404);
     }
+
+    await this.assertCampaignCreationAllowed(business);
 
     const [resolvedStatus, commissionRate, featuredAllowed] = await Promise.all([
       this.resolvePublishStatus(input.status),
@@ -296,8 +332,21 @@ export class CampaignService {
       ? await this.resolvePublishStatus('ACTIVE')
       : input.status;
 
+    // Same free-quota gate as create() — without this, a business could
+    // create a campaign unfeatured (no quota check needed there) and then
+    // flip Featured on via edit to bypass the limit indefinitely. Only
+    // checked when actually turning it on; a campaign that's already
+    // featured keeps its slot for free (countFeaturedCampaigns already
+    // counts it, so remaining wouldn't need to cover it again).
+    let resolvedIsFeatured = input.isFeatured;
+    if (input.isFeatured === true && !campaign.isFeatured) {
+      const quota = await this.getFeaturedQuota(userId);
+      resolvedIsFeatured = quota.remaining > 0;
+    }
+
     const updated = await this.repo.update(id, {
       ...input,
+      isFeatured: resolvedIsFeatured,
       status:    resolvedStatus,
       deadline:  input.deadline  ? new Date(input.deadline)  : undefined,
       eventDate: input.eventDate ? new Date(input.eventDate) : undefined,

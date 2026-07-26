@@ -3,6 +3,7 @@ import { MessagingController } from './messaging.controller';
 import { authenticate } from '../../middleware/auth';
 import { validate } from '../../middleware/validate';
 import { uploadChatFile } from '../../middleware/upload';
+import { perUserMessageLimiter } from '../../middleware/rateLimit';
 import { startConversationSchema, startCreatorConversationSchema, sendMessageSchema, videoCompleteSchema } from './messaging.schema';
 
 const router = Router();
@@ -31,7 +32,7 @@ router.post('/conversations/:id/block',              ctrl.blockConversation.bind
 router.delete('/conversations/:id/block',            ctrl.unblockConversation.bind(ctrl));
 router.get('/conversations/:id/block-status',        ctrl.getBlockStatus.bind(ctrl));
 router.get('/conversations/:id/messages',            ctrl.getMessages.bind(ctrl));
-router.post('/conversations/:id/messages',           validate(sendMessageSchema), ctrl.sendMessage.bind(ctrl));
+router.post('/conversations/:id/messages',           perUserMessageLimiter, validate(sendMessageSchema), ctrl.sendMessage.bind(ctrl));
 // Image / file attachment — multipart upload, field name "file", optional "caption" text field
 router.post('/conversations/:id/attachments',        uploadChatFile.single('file'), ctrl.sendAttachment.bind(ctrl));
 // Video — direct-to-Cloudinary upload, not proxied through this server (avoids

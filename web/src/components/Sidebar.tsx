@@ -19,6 +19,7 @@ import {
   BookOpen,
   Scale,
   Mail,
+  Gauge,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -65,7 +66,8 @@ const navGroups: NavGroup[] = [
   {
     label: 'System',
     items: [
-      { to: '/settings', label: 'Settings', icon: Settings },
+      { to: '/settings',    label: 'Settings',    icon: Settings },
+      { to: '/rate-limits', label: 'Rate Limits', icon: Gauge    },
     ],
   },
 ];

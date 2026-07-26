@@ -306,6 +306,18 @@ export class MessagingRepository {
     });
   }
 
+  // Used to block sending the exact same text twice in a row — see
+  // MessagingService.sendMessage. No dedicated senderId index exists (only
+  // [conversationId, createdAt desc]); fine at 1:1(:1) conversation volumes,
+  // not worth a migration for.
+  async findLastMessageBySender(conversationId: string, senderId: string) {
+    return prisma.message.findFirst({
+      where: { conversationId, senderId },
+      orderBy: { createdAt: 'desc' },
+      select: { content: true },
+    });
+  }
+
   async createMessage(data: {
     conversationId: string;
     senderId: string;

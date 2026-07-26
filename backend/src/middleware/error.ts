@@ -19,11 +19,17 @@ export function logError(req: Request, err: unknown, msg: string, level: 'error'
 export class AppError extends Error {
   public readonly statusCode: number;
   public readonly isOperational: boolean;
+  // Optional machine-readable payload alongside the message — e.g. the
+  // captchaRequired flag on a failed login (see AuthService.login). Kept
+  // optional/untyped here since only a couple of call sites use it; each
+  // caller documents its own shape.
+  public readonly data?: Record<string, unknown>;
 
-  constructor(message: string, statusCode: number, isOperational = true) {
+  constructor(message: string, statusCode: number, isOperational = true, data?: Record<string, unknown>) {
     super(message);
     this.statusCode = statusCode;
     this.isOperational = isOperational;
+    this.data = data;
     Object.setPrototypeOf(this, AppError.prototype);
     Error.captureStackTrace(this, this.constructor);
   }
@@ -133,6 +139,7 @@ export function errorHandler(
     res.status(err.statusCode).json({
       success: false,
       message: err.message,
+      ...(err.data ? err.data : {}),
     });
     return;
   }

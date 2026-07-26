@@ -33,6 +33,30 @@ const DEFAULTS: Record<string, unknown> = {
   // entirely — always allowed to feature, no charge. See
   // CampaignService.getFeaturedQuota. Lowercased on comparison.
   'featuredEvent.unlimitedEmails': [] as string[],
+
+  // ── Rate limits ──────────────────────────────────────────────────────────
+  // Applies equally to creators and businesses. `max` values are admin-editable
+  // live (see utils/settingsCache.ts + middleware/rateLimit.ts); the time
+  // windows noted in comments are fixed at server-start (express-rate-limit
+  // can't reconfigure windowMs per-request the way it can `limit`/`max`).
+  'rateLimit.apiRequests.enabled':        true,
+  'rateLimit.apiRequests.max':            120,  // requests per 1 minute, per IP
+  'rateLimit.otp.enabled':                true,
+  'rateLimit.otp.max':                    5,    // OTP requests per 10 minutes, per IP
+  'rateLimit.login.enabled':              true,
+  'rateLimit.login.max':                  20,   // login attempts per 15 minutes, per IP
+  'rateLimit.campaignCreation.enabled':   true,
+  'rateLimit.campaignCreation.maxPerDay': 5,    // events per business per calendar day
+  'rateLimit.messages.enabled':           true,
+  'rateLimit.messages.maxPerMinute':      20,   // chat messages per user per minute
+  'rateLimit.duplicateMessages.enabled':  true, // blocks sending the exact same message twice in a row
+  'rateLimit.newAccountCooldown.enabled': true,
+  'rateLimit.newAccountCooldown.hours':   24,   // hours after signup before a business can create an event
+  // Off by default — this only flags `captchaRequired` on the login response
+  // once the threshold is hit; there's no CAPTCHA challenge UI or provider
+  // wired up yet, so enabling it has no user-visible effect until that ships.
+  'rateLimit.captcha.enabled':                false,
+  'rateLimit.captcha.failedAttemptThreshold': 3,
 };
 
 export class AdminRepository {

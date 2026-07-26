@@ -196,13 +196,13 @@ export function CampaignJourney() {
               ))}
             </div>
 
-            {/* Horizontal step flow — scrolls on narrow screens */}
-            <div ref={scrollRef} className="-mx-2 overflow-x-auto pb-1">
-              <div className="relative min-w-[720px] px-2 sm:min-w-0">
-                {/* Connector track, centered on the dots */}
+            {/* Step flow — stacked vertically on mobile, horizontal (scrolls on narrow tablet widths) from sm up */}
+            <div ref={scrollRef} className="overflow-visible sm:-mx-2 sm:overflow-x-auto sm:pb-1">
+              <div className="relative px-2 sm:min-w-[720px]">
+                {/* Connector track, centered on the dots — horizontal variant, sm and up only */}
                 <div
                   aria-hidden
-                  className="absolute top-[18px] h-[2px] overflow-hidden bg-white/10"
+                  className="absolute top-[18px] hidden h-[2px] overflow-hidden bg-white/10 sm:block"
                   style={{ left: `${halfColumn}%`, right: `${halfColumn}%` }}
                 >
                   <motion.div
@@ -213,17 +213,35 @@ export function CampaignJourney() {
                   />
                 </div>
 
-                <ol className="relative flex">
+                <ol className="relative flex flex-col gap-6 sm:flex-row sm:gap-0">
                   {steps.map((step, i) => {
                     const status = statusOf(i);
                     const role = step.role as Role;
+                    const isLast = i === steps.length - 1;
                     return (
-                      <li key={i} ref={(el) => { stepRefs.current[i] = el; }} className="flex flex-1 flex-col items-center px-1.5 text-center">
-                        <StepDot ref={i === NOTIFIED_STEP_INDEX ? notifiedDotRef : undefined} Icon={ICONS[i] ?? FaHandshake} status={status} />
+                      <li key={i} ref={(el) => { stepRefs.current[i] = el; }} className="relative flex items-stretch gap-3 text-left sm:flex-1 sm:flex-col sm:items-center sm:gap-0 sm:px-1.5 sm:text-center">
+                        {/* Dot (+ its own connector segment down to the next step) — mobile only; sm+ the dot rejoins the row via `contents` and the shared horizontal connector above takes over */}
+                        <div className="flex flex-col items-center sm:contents">
+                          <StepDot ref={i === NOTIFIED_STEP_INDEX ? notifiedDotRef : undefined} Icon={ICONS[i] ?? FaHandshake} status={status} />
+                          {!isLast && (
+                            <div aria-hidden className="mt-1 w-[2px] flex-1 overflow-hidden rounded-full bg-white/10 sm:hidden">
+                              {i === barSegment && activeIndex !== -1 && (
+                                <motion.div
+                                  key={beat}
+                                  initial={{ height: '0%' }}
+                                  animate={{ height: '100%' }}
+                                  transition={{ duration: STEP_MS / 1000, ease: 'linear' }}
+                                  className="w-full bg-gradient-to-b from-violet to-brand-orange"
+                                />
+                              )}
+                              {(i < barSegment || activeIndex === -1) && <div className="h-full w-full bg-emerald-500" />}
+                            </div>
+                          )}
+                        </div>
                         <motion.div
                           animate={{ opacity: status === 'pending' ? 0.45 : 1 }}
                           transition={{ duration: 0.4 }}
-                          className="mt-3"
+                          className="pb-6 sm:mt-3 sm:pb-0"
                         >
                           <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${ROLE_STYLE[role]}`}>
                             {role === 'brand' ? d.journey.legendBrand : role === 'creator' ? d.journey.legendCreator : d.journey.legendSystem}

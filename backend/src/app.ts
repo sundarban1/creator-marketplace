@@ -15,6 +15,7 @@ import { swaggerSpec } from './config/swagger';
 import { errorHandler, notFoundHandler } from './middleware/error';
 import { timezoneMiddleware } from './middleware/timezone';
 import { languageMiddleware } from './middleware/language';
+import { authLimiter, otpLimiter, apiLimiter } from './middleware/rateLimit';
 import prisma from './prisma';
 import { initSocket } from './socket';
 import { startCampaignExpiryJob } from './jobs/expireCampaigns';
@@ -130,37 +131,10 @@ app.use(languageMiddleware);
 // dev's dashboard (React StrictMode double-invoking effects, hot reloads, manual retries)
 // can burn through the same budget in seconds and lock out their own login — so limits
 // are relaxed (not removed) below production thresholds when NODE_ENV isn't 'production'.
+// authLimiter/otpLimiter/apiLimiter now live in ./middleware/rateLimit.ts — their
+// `max` reads live from the admin-configurable rateLimit.* settings instead of
+// being fixed here (see the Rate Limits page in the admin dashboard).
 const isProd = env.NODE_ENV === 'production';
-
-// Strict limiter for authentication endpoints (brute-force protection)
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,  // 15 minutes
-  max: isProd ? 20 : 200,
-  message: { success: false, message: 'Too many attempts. Please try again in 15 minutes.' },
-  standardHeaders: true,
-  legacyHeaders: false,
-  skipSuccessfulRequests: false,
-});
-
-// Tighter OTP limiter
-const otpLimiter = rateLimit({
-  windowMs: 10 * 60 * 1000,  // 10 minutes
-  max: isProd ? 5 : 50,
-  message: { success: false, message: 'Too many OTP requests. Please wait 10 minutes.' },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-// General API limiter (prevents abuse but allows normal traffic)
-const apiLimiter = rateLimit({
-  windowMs: 60 * 1000,  // 1 minute
-  max: isProd ? 120 : 1000,
-  message: { success: false, message: 'Too many requests. Please slow down.' },
-  standardHeaders: true,
-  legacyHeaders: false,
-  // Skip health checks and messaging routes — chat needs high-frequency polling
-  skip: (req) => req.path === '/health' || req.path.startsWith('/api/messaging/'),
-});
 
 // Messaging routes need a much higher ceiling for real-time chat
 const messagingLimiter = rateLimit({

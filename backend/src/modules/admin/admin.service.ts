@@ -13,6 +13,7 @@ import { notificationService } from '../notifications/notification.service';
 import { analyticsService } from '../analytics/analytics.service';
 import { sendAccountVerifiedEmail, sendVerificationRejectedEmail } from '../../utils/email';
 import { AppError } from '../../middleware/error';
+import { invalidateSettingsCache } from '../../utils/settingsCache';
 
 export class AdminService {
   private repo: AdminRepository;
@@ -148,8 +149,11 @@ export class AdminService {
     return this.repo.getSettings();
   }
 
-  updateSettings(settings: Record<string, unknown>) {
-    return this.repo.upsertSettings(settings);
+  async updateSettings(settings: Record<string, unknown>) {
+    await this.repo.upsertSettings(settings);
+    // So a saved change (e.g. a rate-limit max) takes effect immediately
+    // rather than waiting out settingsCache's TTL.
+    invalidateSettingsCache();
   }
 
   getSetting(key: string) {

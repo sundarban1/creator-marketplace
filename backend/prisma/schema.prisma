@@ -8,39 +8,44 @@ datasource db {
 }
 
 model User {
-  id               String            @id @default(cuid())
-  email            String            @unique
-  password         String
-  role             Role
-  isEmailVerified  Boolean           @default(false)
-  isPhoneVerified  Boolean           @default(false)
-  refreshToken     String?
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
-  phone            String?           @unique
-  isOnboarded      Boolean           @default(false)
-  isActive         Boolean           @default(true)
+  id                String            @id @default(cuid())
+  email             String            @unique
+  password          String
+  role              Role
+  isEmailVerified   Boolean           @default(false)
+  isPhoneVerified   Boolean           @default(false)
+  refreshToken      String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  phone             String?           @unique
+  isOnboarded       Boolean           @default(false)
+  isActive          Boolean           @default(true)
   // Set only when an admin suspends this account (distinct from a user's own
   // self-deactivation, which also flips isActive false but leaves this null).
   // Login blocks outright when this is set; self-deactivated accounts still
   // auto-reactivate on next login.
-  suspendedAt      DateTime?
-  pushToken        String?
-  deviceId         String?
+  suspendedAt       DateTime?
+  // Consecutive failed-password count on login — reset to 0 on a successful
+  // login. Drives the admin-configurable CAPTCHA-after-suspicious-behaviour
+  // trigger (see AuthService.login); not a lockout by itself.
+  failedLoginCount  Int               @default(0)
+  lastFailedLoginAt DateTime?
+  pushToken         String?
+  deviceId          String?
   // Updated on socket connect/disconnect — drives the chat "Active now" / "Active Xm ago" status.
-  lastSeenAt       DateTime?
-  businessProfile  BusinessProfile?
-  creatorProfile   CreatorProfile?
-  issueReports     IssueReport[]
-  sentMessages     Message[]         @relation("MessageSender")
-  notifications    Notification[]
-  otpVerifications OtpVerification[]
-  supportRequests  SupportRequest[]
-  reviewsGiven     Review[]          @relation("ReviewFrom")
-  reviewsReceived  Review[]          @relation("ReviewTo")
-  visitorMessages  VisitorMessage[]
-  blocksMade       Block[]           @relation("BlocksMade")
-  blocksReceived   Block[]           @relation("BlocksReceived")
+  lastSeenAt        DateTime?
+  businessProfile   BusinessProfile?
+  creatorProfile    CreatorProfile?
+  issueReports      IssueReport[]
+  sentMessages      Message[]         @relation("MessageSender")
+  notifications     Notification[]
+  otpVerifications  OtpVerification[]
+  supportRequests   SupportRequest[]
+  reviewsGiven      Review[]          @relation("ReviewFrom")
+  reviewsReceived   Review[]          @relation("ReviewTo")
+  visitorMessages   VisitorMessage[]
+  blocksMade        Block[]           @relation("BlocksMade")
+  blocksReceived    Block[]           @relation("BlocksReceived")
 
   @@index([role])
   @@map("users")

@@ -65,6 +65,24 @@ export class AuthRepository {
     return prisma.user.update({ where: { id: userId }, data: { deviceId } });
   }
 
+  // Drives the admin-configurable CAPTCHA-after-suspicious-behaviour trigger
+  // — see AuthService.login.
+  async incrementFailedLogin(userId: string): Promise<number> {
+    const updated = await prisma.user.update({
+      where: { id: userId },
+      data: { failedLoginCount: { increment: 1 }, lastFailedLoginAt: new Date() },
+      select: { failedLoginCount: true },
+    });
+    return updated.failedLoginCount;
+  }
+
+  async resetFailedLogin(userId: string): Promise<void> {
+    await prisma.user.update({
+      where: { id: userId },
+      data: { failedLoginCount: 0 },
+    });
+  }
+
   async updatePassword(userId: string, hashedPassword: string) {
     return prisma.user.update({
       where: { id: userId },

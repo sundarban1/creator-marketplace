@@ -36,7 +36,7 @@ import {
 } from '@/features/business/constants/campaignForm';
 import {
   SectionCard, ChipGroup, ChipMultiGroup, PlatformChipGroup, BudgetTierPicker, Stepper,
-  DeliverablesCounterList, HashtagEditor, cg,
+  DeliverablesCounterList, HashtagEditor, FeaturedToggle, cg,
 } from '@/features/business/components/CampaignFormControls';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -217,6 +217,10 @@ export default function CampaignDetailScreen() {
   const [editErrors, setEditErrors] = useState<EditErrors>({});
   const [saving, setSaving] = useState(false);
   const [featureImageUploading, setFeatureImageUploading] = useState(false);
+  // Only relevant while the campaign isn't already featured — see the `quota`
+  // prop passed to FeaturedToggle below for why an already-featured campaign
+  // skips this entirely.
+  const [featuredQuota, setFeaturedQuota] = useState<{ remaining: number; price: number; unlimited: boolean } | null>(null);
 
   async function handlePickFeatureImage() {
     if (featureImageUploading) return;
@@ -282,6 +286,9 @@ export default function CampaignDetailScreen() {
     });
     setEditErrors({});
     setEditOpen(true);
+    if (!campaign.isFeatured) {
+      campaignService.getFeaturedQuota().then(setFeaturedQuota).catch(() => {});
+    }
   }
 
   function updateEdit<K extends keyof EditForm>(key: K, value: EditForm[K]) {
@@ -924,20 +931,15 @@ export default function CampaignDetailScreen() {
                 </SectionCard>
 
                 {/* ── Featured ── */}
-                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                  style={[em.featuredToggle, { backgroundColor: editForm.isFeatured ? '#FFF8E8' : C.background, borderColor: editForm.isFeatured ? '#F59E0B' : C.border, marginTop: 20 }]}
-                  onPress={() => updateEdit('isFeatured', !editForm.isFeatured)}>
-                  <View style={em.featuredLeft}>
-                    <FontAwesome5 name="star" size={18} color="#F59E0B" solid />
-                    <View style={{ flex: 1, gap: 2 }}>
-                      <Text style={[em.featuredLabel, { color: C.text }]}>{t('campaignDetail.featureEvent')}</Text>
-                      <Text style={[em.featuredSub, { color: C.textSecondary }]}>{t('campaignDetail.featureEventSub')}</Text>
-                    </View>
-                  </View>
-                  <View style={[em.toggle, { backgroundColor: editForm.isFeatured ? '#F59E0B' : C.border }]}>
-                    <View style={[em.toggleThumb, { left: editForm.isFeatured ? 20 : 2 }]} />
-                  </View>
-                </Pressable>
+                <View style={{ marginTop: 20 }}>
+                  <FeaturedToggle
+                    value={editForm.isFeatured}
+                    onChange={(v) => updateEdit('isFeatured', v)}
+                    quota={campaign?.isFeatured ? null : featuredQuota}
+                    colors={C}
+                    t={t}
+                  />
+                </View>
 
                 <View style={{ height: 32 }} />
               </ScrollView>
@@ -1164,13 +1166,6 @@ const em = StyleSheet.create({
 
   selectedBadge: { borderRadius: RADIUS.sm, paddingHorizontal: 12, paddingVertical: 8, marginBottom: 8 },
   selectedTxt:   { fontSize: 13, fontFamily: F.bold },
-
-  featuredToggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderRadius: RADIUS.md, padding: 14, borderWidth: 1.5 },
-  featuredLeft:   { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
-  featuredLabel:  { fontSize: 14, fontFamily: F.bold },
-  featuredSub:    { fontSize: 12, fontFamily: F.regular },
-  toggle:         { width: 44, height: 26, borderRadius: RADIUS.full, position: 'relative' },
-  toggleThumb:    { position: 'absolute', top: 3, width: 20, height: 20, borderRadius: RADIUS.full, backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 3, shadowOffset: { width: 0, height: 1 }, elevation: 3 },
 
   saveBtn:    { borderRadius: RADIUS.md, height: 54, justifyContent: 'center', alignItems: 'center', marginTop: 8 },
   saveBtnTxt: { color: '#fff', fontSize: 16, fontFamily: F.bold },

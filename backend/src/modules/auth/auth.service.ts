@@ -221,7 +221,23 @@ export class AuthService {
     if (!user) throw new AppError(`Invalid ${channel === 'email' ? 'email' : 'phone number'} or password`, 401);
 
     const isValidPassword = await comparePassword(input.password, user.password);
-    if (!isValidPassword) throw new AppError(`Invalid ${channel === 'email' ? 'email' : 'phone number'} or password`, 401);
+    if (!isValidPassword) {
+      const failedCount = await this.repo.incrementFailedLogin(user.id);
+      // Off by default (see AdminRepository DEFAULTS) — this only adds a flag
+      // to the error response once the threshold is hit; there's no CAPTCHA
+      // challenge UI or provider verification wired up yet, so turning it on
+      // has no visible effect until that ships.
+      const captchaEnabled = await this.adminRepo.getSetting('rateLimit.captcha.enabled');
+      const captchaThreshold = Number(await this.adminRepo.getSetting('rateLimit.captcha.failedAttemptThreshold')) || 3;
+      const captchaRequired = captchaEnabled === true && failedCount >= captchaThreshold;
+      throw new AppError(
+        `Invalid ${channel === 'email' ? 'email' : 'phone number'} or password`,
+        401,
+        true,
+        captchaRequired ? { captchaRequired: true } : undefined,
+      );
+    }
+    if (user.failedLoginCount > 0) await this.repo.resetFailedLogin(user.id);
 
     const isVerified = channel === 'email' ? user.isEmailVerified : user.isPhoneVerified;
     if (!isVerified) {

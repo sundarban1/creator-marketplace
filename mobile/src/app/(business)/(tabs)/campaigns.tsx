@@ -12,6 +12,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -62,6 +63,15 @@ function timeAgo(iso: string) {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
+function formatShortDate(iso: string) {
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+// Tablet/iPad: two cards per row within the MaxWidthContainer-capped width;
+// phones stay single-column. 768 matches the common iPad-portrait cutoff
+// used elsewhere for responsive breakpoints in this app's design tokens.
+const TABLET_BREAKPOINT = 768;
+
 const PAGE_SIZE = 10;
 type FilterKey = typeof FILTERS[number];
 type TabState = { items: Campaign[]; page: number; total: number; loadingMore: boolean; loaded: boolean };
@@ -76,6 +86,8 @@ export default function CampaignsScreen() {
   const { t } = useLanguage();
   const { categories: allCategories } = useAllCategories();
   const toast = useToast();
+  const { width: windowWidth } = useWindowDimensions();
+  const numColumns = windowWidth >= TABLET_BREAKPOINT ? 2 : 1;
   const [tabData, setTabData] = useState<Record<FilterKey, TabState>>({
     All: emptyTabState(), Active: emptyTabState(), Draft: emptyTabState(), Closed: emptyTabState(),
   });
@@ -342,14 +354,21 @@ export default function CampaignsScreen() {
 
       {/* Campaign list */}
       {loading ? (
-        <View style={styles.list}>
-          {[0, 1, 2, 3, 4].map((i) => <ListRowSkeleton key={i} avatarSize={64} avatarRadius={RADIUS.md} withBadge />)}
+        <View style={[styles.list, numColumns === 2 && styles.listGrid]}>
+          {[0, 1, 2, 3, 4].map((i) => (
+            <View key={i} style={numColumns === 2 && styles.cardWrapHalf}>
+              <ListRowSkeleton avatarSize={64} avatarRadius={RADIUS.md} withBadge />
+            </View>
+          ))}
         </View>
       ) : (
         <FlatList
+          key={numColumns}
           ref={listRef}
           data={filtered}
           keyExtractor={(c) => c.id}
+          numColumns={numColumns}
+          columnWrapperStyle={numColumns === 2 ? styles.columnWrapper : undefined}
           contentContainerStyle={[styles.list, filtered.length === 0 && styles.listEmpty]}
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brinjal1} />}

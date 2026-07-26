@@ -1,5 +1,6 @@
 import { Server } from 'socket.io';
 import type { Server as HttpServer } from 'http';
+import { AppError } from './middleware/error';
 import { verifyAccessToken, verifyVisitorChatToken } from './utils/jwt';
 import { MessagingService } from './modules/messaging/messaging.service';
 import { VisitorChatService, visitorChatRoom, ADMIN_VISITOR_CHATS_ROOM } from './modules/visitorChat/visitorChat.service';
@@ -139,8 +140,12 @@ export function initSocket(httpServer: HttpServer): Server {
       if (!conversationId?.trim() || !content?.trim()) return;
       void messagingService
         .sendMessage(conversationId, userId, role as Role, { content: content.trim() })
-        .catch(() => {
-          socket.emit('message:error', { conversationId });
+        .catch((err) => {
+          // Rate-limit/duplicate-message rejections carry a real message the
+          // client should show (see MessagingService.sendMessage/persistAndBroadcast)
+          // — previously this only sent a bare signal with no explanation.
+          const message = err instanceof AppError ? err.message : 'Failed to send message';
+          socket.emit('message:error', { conversationId, message });
         });
     });
   });

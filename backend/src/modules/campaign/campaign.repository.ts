@@ -812,6 +812,14 @@ export class CampaignRepository {
     });
   }
 
+  // Used by the admin-configurable "campaign creation per day" rate limit —
+  // see CampaignService.create.
+  async countCampaignsCreatedSince(businessId: string, since: Date): Promise<number> {
+    return prisma.campaign.count({
+      where: { businessId, createdAt: { gte: since } },
+    });
+  }
+
   async rejectPendingApplications(
     campaignId: string,
     excludeAppId: string
