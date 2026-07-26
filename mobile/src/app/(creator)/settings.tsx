@@ -5,6 +5,7 @@ import { isPaymentMethodId } from '@/utilities/paymentMethods';
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { PageHeader } from '@/features/creator/components/PageHeader';
 import { creatorService } from '@/services/creator';
+import { notificationService } from '@/services/notifications';
 import { authService } from '@/services/auth';
 import { useLanguage } from '@/context/LanguageContext';
 import { API_BASE, request } from '@/lib/api';
@@ -139,12 +140,13 @@ const LANGUAGE_OPTIONS = [
 ];
 
 const SECTION_TITLES: Record<string, string> = {
-  social:      'creatorSettings.sectionSocial',
-  earnings:    'creatorSettings.sectionEarnings',
-  'past-work': 'creatorSettings.sectionPastWork',
-  security:    'creatorSettings.sectionSecurity',
-  support:     'creatorSettings.sectionSupport',
-  legal:       'creatorSettings.sectionLegal',
+  social:        'creatorSettings.sectionSocial',
+  earnings:      'creatorSettings.sectionEarnings',
+  'past-work':   'creatorSettings.sectionPastWork',
+  security:      'creatorSettings.sectionSecurity',
+  notifications: 'creatorSettings.sectionNotifications',
+  support:       'creatorSettings.sectionSupport',
+  legal:         'creatorSettings.sectionLegal',
 };
 
 const SUB_PAGE_TITLES: Record<string, string> = {
@@ -187,8 +189,8 @@ function Divider() {
   return <View style={[styles.subDivider, { backgroundColor: C.border }]} />;
 }
 
-type SwitchRowProps = { label: string; faIcon?: string; faIconColor?: string; value: boolean; onChange: () => void; isLast?: boolean };
-function SwitchRow({ label, faIcon, faIconColor, value, onChange, isLast = false }: SwitchRowProps) {
+type SwitchRowProps = { label: string; faIcon?: string; faIconColor?: string; sub?: string; value: boolean; onChange: () => void; isLast?: boolean };
+function SwitchRow({ label, faIcon, faIconColor, sub, value, onChange, isLast = false }: SwitchRowProps) {
   const C = useContext(ColorCtx);
   const iColor = faIconColor ?? C.brinjal1;
   return (
@@ -205,7 +207,10 @@ function SwitchRow({ label, faIcon, faIconColor, value, onChange, isLast = false
           <FontAwesome5 name={faIcon as any} size={16} color={iColor} />
         </View>
       ) : null}
-      <Text style={[styles.rowLabel, { color: C.text }]}>{label}</Text>
+      <View style={{ flex: 1 }}>
+        <Text style={[styles.rowLabel, { color: C.text }]}>{label}</Text>
+        {sub ? <Text style={[styles.rowSub, { color: C.textSecondary }]}>{sub}</Text> : null}
+      </View>
       <Switch
         value={value}
         onValueChange={onChange}
@@ -325,6 +330,23 @@ export default function CreatorSettingsScreen() {
 
   const [subPage, setSubPage] = useState<string | null>(null);
 
+  // Notification settings (API-driven)
+  const [pushNotifEnabled, setPushNotifEnabled] = useState(true);
+  const [emailNotifEnabled, setEmailNotifEnabled] = useState(true);
+  useEffect(() => {
+    notificationService.getSettings().then((s) => {
+      setPushNotifEnabled(s.pushNotificationsEnabled);
+      setEmailNotifEnabled(s.emailNotificationsEnabled);
+    }).catch(() => {});
+  }, []);
+  async function saveNotificationSettings(patch: { pushNotificationsEnabled?: boolean; emailNotificationsEnabled?: boolean }) {
+    try {
+      await notificationService.updateSettings(patch);
+    } catch {
+      toast.error(t('creatorSettings.notifSaveFailed'));
+    }
+  }
+
   // Social accounts state (API-driven)
   type SocialAccount = { id: string; platform: string; profileUrl: string; followers: number; connectedViaOAuth?: boolean; followersSyncedAt?: string | null };
   const [socialAccounts, setSocialAccounts] = useState<SocialAccount[]>([]);
@@ -422,11 +444,17 @@ export default function CreatorSettingsScreen() {
   const [phoneLoading, setPhoneLoading] = useState(false);
 
   // Email verification sub-page — for accounts that signed up via phone and
-  // still hold a placeholder email (mirrors the phone verification flow above)
-  const [emailSubPage, setEmailSubPage] = useState<'input' | 'otp' | null>(null);
-  const [emailInput, setEmailInput] = useState('');
+  // still hold a placeholder email (mirrors the phone verification flow above).
+  // The email itself was already collected during onboarding, so this only
+  // ever prompts for the OTP — never re-asks the user to type the address.
+  const [emailSubPage, setEmailSubPage] = useState<'otp' | null>(null);
+  const [emailInput, setEmailInput] = useState(() => user?.email ?? '');
   const [emailOtp, setEmailOtp] = useState('');
   const [emailOtpLoading, setEmailOtpLoading] = useState(false);
+
+  useEffect(() => {
+    if (user?.email) setEmailInput(user.email);
+  }, [user?.email]);
 
   // Change password — inline collapsible panel (Security section)
   const [showChangePassword, setShowChangePassword] = useState(false);
@@ -499,6 +527,7 @@ export default function CreatorSettingsScreen() {
       if (profile.paymentMethods?.length) setPaymentMethods(profile.paymentMethods);
       // Email verified status from DB
       if (profile.user?.isEmailVerified != null) setEmailVerified(profile.user.isEmailVerified);
+      if (profile.user?.email) setEmailInput(profile.user.email);
       if (profile.user?.isPhoneVerified != null) setPhoneVerified(profile.user.isPhoneVerified);
       if (profile.user?.phone) setVerifiedPhoneNumber(formatPhoneDisplay(profile.user.phone));
       if (profile.citizenshipStatus) setCitizenshipStatus(profile.citizenshipStatus);
@@ -1763,7 +1792,6 @@ export default function CreatorSettingsScreen() {
       setEmailVerified(true);
       updateUser({ email: emailInput.trim() });
       setEmailSubPage(null);
-      setEmailInput('');
       setEmailOtp('');
       showToast(t('creatorSettings.emailVerifiedToast'));
     } catch (e: any) {
@@ -1771,6 +1799,45 @@ export default function CreatorSettingsScreen() {
     } finally {
       setEmailOtpLoading(false);
     }
+  }
+
+  // ── Section: Notifications ────────────────────────────────────
+
+  function renderNotifications() {
+    return (
+      <>
+        <SectionHeader title={t('creatorSettings.notificationsSection')} />
+        <Card>
+          <SwitchRow
+            faIcon="bell" faIconColor="#D97706"
+            label={t('creatorSettings.pushNotificationsLabel')}
+            sub={t('creatorSettings.pushNotificationsSub')}
+            value={pushNotifEnabled}
+            onChange={() => {
+              const next = !pushNotifEnabled;
+              setPushNotifEnabled(next);
+              saveNotificationSettings({ pushNotificationsEnabled: next });
+            }}
+          />
+          <SwitchRow
+            faIcon="envelope" faIconColor="#0891B2"
+            label={t('creatorSettings.emailNotificationsLabel')}
+            sub={t('creatorSettings.emailNotificationsSub')}
+            value={emailNotifEnabled}
+            onChange={() => {
+              const next = !emailNotifEnabled;
+              setEmailNotifEnabled(next);
+              saveNotificationSettings({ emailNotificationsEnabled: next });
+            }}
+            isLast
+          />
+        </Card>
+
+        <View style={[styles.hintCard, { backgroundColor: C.primaryLight }]}>
+          <Text style={[styles.hintText, { color: C.brinjal1 }]}>{t('creatorSettings.notifHint')}</Text>
+        </View>
+      </>
+    );
   }
 
   // ── Section: Security ─────────────────────────────────────────
@@ -1788,7 +1855,6 @@ export default function CreatorSettingsScreen() {
 
     function closeEmail() {
       setEmailSubPage(null);
-      setEmailInput('');
       setEmailOtp('');
     }
 
@@ -1865,6 +1931,7 @@ export default function CreatorSettingsScreen() {
                     placeholder={t('creatorSettings.newPasswordPlaceholder')}
                     placeholderTextColor={C.textSecondary}
                     autoCapitalize="none"
+                    numberOfLines={1}
                   />
                   <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => setShowNewPw((v) => !v)} style={styles.eyeBtn} hitSlop={8}>
                     <FontAwesome5 name={showNewPw ? 'eye-slash' : 'eye'} size={17} color={C.textSecondary} />
@@ -1886,6 +1953,7 @@ export default function CreatorSettingsScreen() {
                     placeholder={t('creatorSettings.confirmPasswordPlaceholder')}
                     placeholderTextColor={C.textSecondary}
                     autoCapitalize="none"
+                    numberOfLines={1}
                   />
                   <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => setShowConfirmPw((v) => !v)} style={styles.eyeBtn} hitSlop={8}>
                     <FontAwesome5 name={showConfirmPw ? 'eye-slash' : 'eye'} size={17} color={C.textSecondary} />
@@ -1924,13 +1992,16 @@ export default function CreatorSettingsScreen() {
 
         <SectionHeader title={t('creatorSettings.verificationSection')} />
         <Card>
+          {!(emailVerified === true && phoneVerified === true) && (
+          <>
           {/* Email row */}
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
             style={[styles.row, { borderBottomWidth: 1, borderBottomColor: C.border }]}
-            disabled={emailVerified !== false}
+            disabled={emailVerified !== false || emailOtpLoading}
             onPress={() => {
               if (emailVerified !== false) return;
-              if (emailSubPage) closeEmail(); else setEmailSubPage('input');
+              if (emailSubPage) { closeEmail(); return; }
+              handleRequestEmailOtp();
             }}>
             <View
               style={[
@@ -1942,11 +2013,18 @@ export default function CreatorSettingsScreen() {
             >
               <Ionicons name="mail-outline" size={18} color="#0891B2" />
             </View>
-            <Text style={[styles.rowLabel, { color: C.text }]}>{t('creatorSettings.emailLabel')}</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.rowLabel, { color: C.text }]}>{t('creatorSettings.emailLabel')}</Text>
+              {!!emailInput && (
+                <Text style={[styles.inlinePhonePanelSub, { color: C.textSecondary }]} numberOfLines={1} ellipsizeMode="tail">{emailInput}</Text>
+              )}
+            </View>
             {emailVerified === null ? (
               <ActivityIndicator size="small" color={C.brinjal1} />
             ) : isEmailVerified ? (
               <View style={styles.verifiedBadge}><Text style={[styles.badgeText, { color: C.active }]}>{t('creatorSettings.verifiedBadge')}</Text></View>
+            ) : emailOtpLoading && !emailSubPage ? (
+              <ActivityIndicator size="small" color={C.brinjal1} />
             ) : !emailSubPage ? (
               <View style={styles.navRight}>
                 <View style={[styles.chip, { borderColor: C.brinjal1, backgroundColor: C.primaryLight, paddingHorizontal: 8, paddingVertical: 2 }]}>
@@ -1956,43 +2034,6 @@ export default function CreatorSettingsScreen() {
               </View>
             ) : null}
           </Pressable>
-
-          {/* Inline: enter email */}
-          {emailSubPage === 'input' && (
-            <View style={[styles.inlinePhonePanel, { borderBottomColor: C.border, backgroundColor: C.background }]}>
-              <View style={styles.inlinePhonePanelHeader}>
-                <Text style={[styles.inlinePhonePanelTitle, { color: C.text, flexShrink: 1 }]} numberOfLines={1} ellipsizeMode="tail">{t('creatorSettings.enterEmailTitle')}</Text>
-                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={closeEmail} hitSlop={10} style={{ flexShrink: 0, marginLeft: 8 }}>
-                  <Ionicons name="close-circle" size={22} color={C.textSecondary} />
-                </Pressable>
-              </View>
-              <View style={[styles.pwRow, { backgroundColor: C.surface, borderColor: C.border }]}>
-                <TextInput
-                  style={[styles.pwInput, { color: C.text }]}
-                  value={emailInput}
-                  onChangeText={setEmailInput}
-                  placeholder={t('creatorSettings.emailPlaceholder')}
-                  placeholderTextColor={C.textSecondary}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  autoFocus
-                />
-              </View>
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                style={[
-                  styles.saveBtn,
-                  {
-                    backgroundColor: C.brinjal1, opacity: (emailInput.trim() && !emailOtpLoading) ? 1 : 0.45,
-                    shadowColor: C.brinjal1, shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6,
-                  },
-                ]}
-                onPress={handleRequestEmailOtp}
-                disabled={emailOtpLoading || !emailInput.trim()}>
-                <Text style={styles.saveBtnText}>{emailOtpLoading ? t('creatorSettings.sendingOtp') : t('creatorSettings.sendVerificationCode')}</Text>
-              </Pressable>
-            </View>
-          )}
 
           {/* Inline: enter email OTP */}
           {emailSubPage === 'otp' && (
@@ -2029,6 +2070,9 @@ export default function CreatorSettingsScreen() {
                 onPress={handleVerifyEmailOtp}
                 disabled={emailOtpLoading || emailOtp.length < 6}>
                 <Text style={styles.saveBtnText}>{emailOtpLoading ? t('creatorSettings.verifyingOtp') : t('creatorSettings.verifyBtnLabel')}</Text>
+              </Pressable>
+              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => { setEmailOtp(''); handleRequestEmailOtp(); }} disabled={emailOtpLoading} style={{ alignItems: 'center', paddingTop: 4 }}>
+                <Text style={[styles.cancelBtnText, { color: C.brinjal1 }]}>{t('creatorSettings.resendCode')}</Text>
               </Pressable>
             </View>
           )}
@@ -2147,6 +2191,8 @@ export default function CreatorSettingsScreen() {
                 <Text style={[styles.cancelBtnText, { color: C.brinjal1 }]}>{t('creatorSettings.resendCode')}</Text>
               </Pressable>
             </View>
+          )}
+          </>
           )}
 
           {/* Citizenship upload row */}
@@ -2410,7 +2456,8 @@ export default function CreatorSettingsScreen() {
           {!subPage && section === 'social'     && renderSocialAccounts()}
           {!subPage && section === 'earnings'   && renderEarnings()}
           {!subPage && section === 'past-work'  && renderPastWork()}
-          {!subPage && section === 'security'   && renderSecurity()}
+          {!subPage && section === 'security'      && renderSecurity()}
+          {!subPage && section === 'notifications' && renderNotifications()}
           {!subPage && section === 'support'    && renderSupport()}
           {!subPage && section === 'legal'      && renderLegal()}
         </ScrollView>
@@ -2555,6 +2602,7 @@ const styles = StyleSheet.create({
   // Poppins' glyphs sit high within their own line box, so even a height-matched centered
   // box (navTextCol below) still reads a few px above the icon's true center — nudge down.
   rowLabel: { flex: 1, fontSize: 15, lineHeight: 18, fontFamily: F.medium, includeFontPadding: false, marginTop: 9 },
+  rowSub: { fontSize: 12, lineHeight: 15, marginTop: 1, fontFamily: F.regular, includeFontPadding: false },
   // Fixed height matching navIonIconWrap (34) with its own `justifyContent: 'center'` — this
   // centers the label against a box of the exact same known height as the icon, so the two are
   // guaranteed pixel-aligned regardless of any font-metric quirks, rather than relying on the
@@ -2723,8 +2771,8 @@ const styles = StyleSheet.create({
   inlinePhonePanelTitle: { fontSize: 14, fontFamily: F.bold },
   inlinePhonePanelSub: { fontSize: 12, fontFamily: F.regular, marginTop: 2 },
 
-  pwRow: { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.sm, borderWidth: 1.5, paddingHorizontal: 12 },
-  pwInput: { flex: 1, fontSize: 14, paddingVertical: 11, fontFamily: F.regular },
+  pwRow: { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.sm, borderWidth: 1.5, paddingHorizontal: 12, height: 46 },
+  pwInput: { flex: 1, height: 44, fontSize: 14, fontFamily: F.regular, textAlignVertical: 'center', letterSpacing: 0 },
   eyeBtn: { padding: 6 },
   eyeIcon: { fontSize: 18 },
 

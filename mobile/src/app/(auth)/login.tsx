@@ -1084,7 +1084,7 @@ const s = StyleSheet.create({
   field:         { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: RADIUS.lg, paddingHorizontal: 5, height: 54, gap: 4, borderColor: 'transparent', backgroundColor: '#F8F7FB' },
   fieldFocused:  { borderColor: BRINJAL, backgroundColor: '#fff', shadowColor: BRINJAL, shadowOpacity: 0.12, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
   fieldIconWrap: { width: 38, height: 38, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', marginLeft: 4 },
-  fieldInput:    { flex: 1, height: 50, fontSize: 15, fontFamily: F.regular, color: '#111827', textAlignVertical: 'center' },
+  fieldInput:    { flex: 1, height: 50, fontSize: 15, fontFamily: F.regular, color: '#111827', textAlignVertical: 'center', letterSpacing: 0 },
   eyeBtn:        { paddingHorizontal: 12 },
   fieldErrRow:   { flexDirection: 'row', alignItems: 'center', gap: 4 },
   fieldErrText:  { fontSize: 11, color: '#EF4444', fontFamily: F.medium },

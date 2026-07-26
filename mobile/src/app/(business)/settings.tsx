@@ -27,6 +27,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/components/Toast';
 import { useAppColors, useIsDark } from '@/context/ThemeContext';
 import { businessService, type PaymentHistoryEntry } from '@/services/business';
+import { notificationService } from '@/services/notifications';
 import { authService } from '@/services/auth';
 import { profileService } from '@/services/profile';
 import type { FacebookPageOption } from '@/services/creator';
@@ -315,22 +316,24 @@ export default function BusinessSettingsScreen() {
   const [verifiedPhone,  setVerifiedPhone]  = useState(user?.phone ? formatPhoneDisplay(user.phone) : '');
 
   // ── Email verification (mirrors phone above) — for accounts that signed up
-  // via phone and still hold a placeholder email ──
+  // via phone and still hold a placeholder email. The email itself was
+  // already collected during onboarding, so 'idle' skips straight to sending
+  // the OTP instead of asking the user to type the address again ──
   type EmailVerifyStage = 'idle' | 'enter-email' | 'enter-otp' | 'verified';
   const [emailStage,     setEmailStage]     = useState<EmailVerifyStage>(user?.isEmailVerified ? 'verified' : 'idle');
-  const [emailInput,     setEmailInput]     = useState('');
+  const [emailInput,     setEmailInput]     = useState(user?.email ?? '');
   const [emailOtp,       setEmailOtp]       = useState('');
   const [emailLoading,   setEmailLoading]   = useState(false);
   const [emailError,     setEmailError]     = useState('');
   const [verifiedEmail,  setVerifiedEmail]  = useState(user?.email ?? '');
 
+  useEffect(() => {
+    if (user?.email) setEmailInput(user.email);
+  }, [user?.email]);
+
   // ── Section 3: Notifications ──
-  const [notifApplications, setNotifApplications] = useState(true);
-  const [notifMessages, setNotifMessages] = useState(true);
-  const [notifCampaignUpdates, setNotifCampaignUpdates] = useState(true);
-  const [notifCreatorAccepted, setNotifCreatorAccepted] = useState(true);
-  const [emailEnabled, setEmailEnabled] = useState(true);
-  const [emailWeeklySummary, setEmailWeeklySummary] = useState(true);
+  const [pushNotifEnabled, setPushNotifEnabled] = useState(true);
+  const [emailNotifEnabled, setEmailNotifEnabled] = useState(true);
 
   // ── Section 4: Payment ──
   const [nepalPayments, setNepalPayments] = useState<string[]>(['esewa']);
@@ -594,6 +597,10 @@ export default function BusinessSettingsScreen() {
       setShowProfilePublic(p.showPublicProfile);
       setHideContactDetails(p.hideContactDetails);
       setAllowDirectMessages(p.allowDirectMessages);
+    }).catch(() => {});
+    notificationService.getSettings().then((s) => {
+      setPushNotifEnabled(s.pushNotificationsEnabled);
+      setEmailNotifEnabled(s.emailNotificationsEnabled);
     }).catch(() => {});
     businessService.getSocialAccounts().then((accounts) => {
       setSocialAccounts(accounts.map((a) => ({ id: a.id, platform: a.platform, profileUrl: a.profileUrl, followers: a.followers, connectedViaOAuth: a.connectedViaOAuth, followersSyncedAt: a.followersSyncedAt })));
@@ -1186,6 +1193,7 @@ export default function BusinessSettingsScreen() {
                     placeholder={t('businessSettings.newPasswordPlaceholder')}
                     placeholderTextColor={C.textSecondary}
                     autoCapitalize="none"
+                    numberOfLines={1}
                   />
                   <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => setShowNewPw((v) => !v)} style={styles.eyeBtn} hitSlop={8}>
                     <Ionicons name={showNewPw ? 'eye-off-outline' : 'eye-outline'} size={20} color={C.textSecondary} />
@@ -1207,6 +1215,7 @@ export default function BusinessSettingsScreen() {
                     placeholder={t('businessSettings.confirmPasswordPlaceholder')}
                     placeholderTextColor={C.textSecondary}
                     autoCapitalize="none"
+                    numberOfLines={1}
                   />
                   <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => setShowConfirmPw((v) => !v)} style={styles.eyeBtn} hitSlop={8}>
                     <Ionicons name={showConfirmPw ? 'eye-off-outline' : 'eye-outline'} size={20} color={C.textSecondary} />
@@ -1230,11 +1239,18 @@ export default function BusinessSettingsScreen() {
             </View>
           )}
 
+          {!(emailStage === 'verified' && phoneStage === 'verified') && (
+          <>
           {/* Email verification */}
           {emailStage === 'idle' && (
             <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
               style={[styles.row, { borderBottomWidth: 1, borderBottomColor: C.border }]}
-              onPress={() => { setEmailStage('enter-email'); setEmailInput(''); setEmailError(''); }}
+              disabled={emailLoading}
+              onPress={() => {
+                setEmailError('');
+                if (user?.email) { handleSendEmailOtp(); return; }
+                setEmailStage('enter-email');
+              }}
             >
               <View
                 style={[
@@ -1249,11 +1265,15 @@ export default function BusinessSettingsScreen() {
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.rowLabel, { color: C.text }]}>{t('businessSettings.emailAddressLabel')}</Text>
-                <Text style={[styles.rowSub, { color: C.textSecondary }]}>{t('businessSettings.addVerifyEmailLabel')}</Text>
+                <Text style={[styles.rowSub, { color: C.textSecondary }]}>{user?.email || t('businessSettings.addVerifyEmailLabel')}</Text>
               </View>
-              <View style={[styles.soonBadge, { backgroundColor: C.primaryLight }]}>
-                <Text style={[styles.badgeText, { color: C.brinjal1 }]}>{t('businessSettings.addBadge')}</Text>
-              </View>
+              {emailLoading ? (
+                <ActivityIndicator size="small" color={C.brinjal1} />
+              ) : (
+                <View style={[styles.soonBadge, { backgroundColor: C.primaryLight }]}>
+                  <Text style={[styles.badgeText, { color: C.brinjal1 }]}>{user?.email ? t('businessSettings.verifyBtn') : t('businessSettings.addBadge')}</Text>
+                </View>
+              )}
             </Pressable>
           )}
           {emailStage === 'verified' && (
@@ -1338,7 +1358,7 @@ export default function BusinessSettingsScreen() {
                   <Text style={[styles.rowSub, { color: C.textSecondary }]}>{t('businessSettings.sentToEmail', { email: emailInput })}</Text>
                 </View>
                 <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                  onPress={() => { setEmailStage('idle'); setEmailOtp(''); setEmailError(''); setEmailInput(''); }}
+                  onPress={() => { setEmailStage('idle'); setEmailOtp(''); setEmailError(''); }}
                   disabled={emailLoading}
                   hitSlop={8}
                   style={[styles.otpCloseBtn, { backgroundColor: C.background, borderColor: C.border }]}>
@@ -1365,7 +1385,7 @@ export default function BusinessSettingsScreen() {
                 </Pressable>
                 <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                   style={[styles.phoneActionBtn, { backgroundColor: C.background, borderWidth: 1, borderColor: C.border }]}
-                  onPress={() => { setEmailStage('enter-email'); setEmailOtp(''); setEmailError(''); }}
+                  onPress={() => { setEmailOtp(''); setEmailError(''); handleSendEmailOtp(); }}
                   disabled={emailLoading}
                 >
                   <Text style={[styles.phoneActionBtnText, { color: C.textSecondary }]}>{t('businessSettings.resendBtn')}</Text>
@@ -1514,6 +1534,8 @@ export default function BusinessSettingsScreen() {
               </View>
             </View>
           )}
+          </>
+          )}
           {biometricSupported && (
             <SwitchRow
               faIcon={biometricLabel === 'Face ID' ? 'smile' : 'fingerprint'}
@@ -1545,18 +1567,31 @@ export default function BusinessSettingsScreen() {
   function renderNotifications() {
     return (
       <>
-        <SectionHeader title={t('businessSettings.pushNotificationsSection')} />
+        <SectionHeader title={t('businessSettings.notificationsSection')} />
         <Card>
-          <SwitchRow faIcon="clipboard-list" faIconColor="#6366F1" label={t('businessSettings.newApplicationsLabel')} sub={t('businessSettings.newApplicationsSub')} value={notifApplications} onChange={() => setNotifApplications((v) => !v)} />
-          <SwitchRow faIcon="comment-dots" faIconColor="#0891B2" label={t('businessSettings.newMessagesLabel')} sub={t('businessSettings.newMessagesSub')} value={notifMessages} onChange={() => setNotifMessages((v) => !v)} />
-          <SwitchRow faIcon="chart-bar" faIconColor="#D97706" label={t('businessSettings.eventUpdatesLabel')} sub={t('businessSettings.eventUpdatesSub')} value={notifCampaignUpdates} onChange={() => setNotifCampaignUpdates((v) => !v)} />
-          <SwitchRow faIcon="check-circle" faIconColor="#10B981" label={t('businessSettings.creatorAcceptedLabel')} sub={t('businessSettings.creatorAcceptedSub')} value={notifCreatorAccepted} onChange={() => setNotifCreatorAccepted((v) => !v)} isLast />
-        </Card>
-
-        <SectionHeader title={t('businessSettings.emailNotificationsSection')} />
-        <Card>
-          <SwitchRow faIcon="envelope" faIconColor="#0891B2" label={t('businessSettings.enableEmailsLabel')} sub={t('businessSettings.enableEmailsSub')} value={emailEnabled} onChange={() => setEmailEnabled((v) => !v)} />
-          <SwitchRow faIcon="chart-line" faIconColor="#10B981" label={t('businessSettings.weeklySummaryLabel')} sub={t('businessSettings.weeklySummarySub')} value={emailWeeklySummary} onChange={() => setEmailWeeklySummary((v) => !v)} isLast />
+          <SwitchRow
+            faIcon="bell" faIconColor="#D97706"
+            label={t('businessSettings.pushNotificationsLabel')}
+            sub={t('businessSettings.pushNotificationsSub')}
+            value={pushNotifEnabled}
+            onChange={() => {
+              const next = !pushNotifEnabled;
+              setPushNotifEnabled(next);
+              saveNotificationSettings({ pushNotificationsEnabled: next });
+            }}
+          />
+          <SwitchRow
+            faIcon="envelope" faIconColor="#0891B2"
+            label={t('businessSettings.emailNotificationsLabel')}
+            sub={t('businessSettings.emailNotificationsSub')}
+            value={emailNotifEnabled}
+            onChange={() => {
+              const next = !emailNotifEnabled;
+              setEmailNotifEnabled(next);
+              saveNotificationSettings({ emailNotificationsEnabled: next });
+            }}
+            isLast
+          />
         </Card>
 
         <HintCard>
@@ -1956,6 +1991,16 @@ export default function BusinessSettingsScreen() {
     );
   }
 
+  // ── Section: Notification Settings ─────────────────────────────
+
+  async function saveNotificationSettings(patch: { pushNotificationsEnabled?: boolean; emailNotificationsEnabled?: boolean }) {
+    try {
+      await notificationService.updateSettings(patch);
+    } catch {
+      toast.error(t('businessSettings.notifSaveFailed'));
+    }
+  }
+
   // ── Section: Privacy Settings ─────────────────────────────────
 
   async function savePrivacy(patch: { showPublicProfile?: boolean; hideContactDetails?: boolean; allowDirectMessages?: boolean }) {
@@ -2313,8 +2358,8 @@ const styles = StyleSheet.create({
   formInput: { borderRadius: RADIUS.sm, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 11, fontSize: 14, fontFamily: F.regular },
   formTextarea: { borderRadius: RADIUS.sm, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 11, fontSize: 14, minHeight: 110, fontFamily: F.regular },
   fieldError: { fontSize: 12, fontFamily: F.medium },
-  pwRow: { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.sm, borderWidth: 1.5, paddingHorizontal: 12 },
-  pwInput: { flex: 1, fontSize: 14, paddingVertical: 11, fontFamily: F.regular },
+  pwRow: { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.sm, borderWidth: 1.5, paddingHorizontal: 12, height: 46 },
+  pwInput: { flex: 1, height: 44, fontSize: 14, fontFamily: F.regular, textAlignVertical: 'center', letterSpacing: 0 },
   eyeBtn: { padding: 6 },
 
   paymentIcon: { width: 38, height: 38, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center' },

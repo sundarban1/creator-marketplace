@@ -39,6 +39,15 @@ export const notificationService = {
     return res.data;
   },
 
+  async getSettings(): Promise<{ pushNotificationsEnabled: boolean; emailNotificationsEnabled: boolean }> {
+    const res = await request<{ pushNotificationsEnabled: boolean; emailNotificationsEnabled: boolean }>('GET', '/api/notifications/settings');
+    return res.data;
+  },
+
+  async updateSettings(data: { pushNotificationsEnabled?: boolean; emailNotificationsEnabled?: boolean }): Promise<void> {
+    await request('PUT', '/api/notifications/settings', data);
+  },
+
   async registerPushToken(): Promise<void> {
     try {
       if (!Device.isDevice) return; // skip simulators

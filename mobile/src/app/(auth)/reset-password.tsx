@@ -206,6 +206,7 @@ function PasswordInput({
         secureTextEntry={!show}
         autoCapitalize="none"
         autoCorrect={false}
+        numberOfLines={1}
       />
       <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => setShow((s) => !s)} style={styles.eyeBtn}>
         <Ionicons name={show ? 'eye-off' : 'eye'} size={18} color={C.textSecondary} />
@@ -244,8 +245,8 @@ const styles = StyleSheet.create({
   fieldGroup: { gap: 6 },
   label: { fontSize: 13, fontFamily: F.bold },
   fieldError: { fontSize: 12, fontFamily: F.medium },
-  pwdRow: { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 14 },
-  pwdInput: { flex: 1, fontSize: 15, paddingVertical: 14, fontFamily: F.regular },
+  pwdRow: { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 14, height: 52 },
+  pwdInput: { flex: 1, height: 50, fontSize: 15, fontFamily: F.regular, textAlignVertical: 'center', letterSpacing: 0 },
   eyeBtn: { padding: 6 },
   btn: { borderRadius: RADIUS.md, paddingVertical: 15, alignItems: 'center', ...SHADOW.raised, marginBottom: 24 },
   btnDisabled: { opacity: 0.45, shadowOpacity: 0, elevation: 0 },

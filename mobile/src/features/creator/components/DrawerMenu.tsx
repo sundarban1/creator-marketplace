@@ -26,6 +26,7 @@ const ACCOUNT_ITEMS: NavItem[] = [
   { iconName: 'images-outline',          labelKey: 'drawer.pastWork',          route: '/(creator)/settings?section=past-work', color: '#F59E0B' },
   { iconName: 'gift-outline',   faName: 'gift',          labelKey: 'drawer.referAFriend',      route: '/(creator)/referral',                   color: '#EC4899' },
   { iconName: 'shield-checkmark-outline', faName: 'shield-alt', labelKey: 'drawer.security',   route: '/(creator)/settings?section=security',  color: '#3B82F6' },
+  { iconName: 'notifications-outline',    faName: 'bell',       labelKey: 'drawer.notifications', route: '/(creator)/settings?section=notifications', color: '#D97706' },
   { iconName: 'help-buoy-outline', faName: 'life-ring',  labelKey: 'drawer.support',            route: '/(creator)/settings?section=support',   color: '#0891B2' },
   { iconName: 'scale-outline', faName: 'balance-scale',  labelKey: 'drawer.legal',              route: '/(creator)/settings?section=legal',     color: '#6366F1' },
   { iconName: 'settings-outline',        labelKey: 'drawer.settings',          route: '/(creator)/settings',                  color: '#6B7280' },
