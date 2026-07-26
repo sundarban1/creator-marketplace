@@ -567,7 +567,9 @@ export default function CampaignsScreen() {
                       <Pressable android_ripple={{ color: 'rgba(255,255,255,0.2)' }}
                         style={({ pressed }) => [styles.buttonPrimary, { backgroundColor: C.brinjal1 }, pressed && { opacity: 0.88 }]}
                         onPress={() => openProposals(c)}>
-                        <Text style={styles.buttonTextPrimary} numberOfLines={1}>{t('campaigns.viewProposalsBtn', { n: c.proposals })}</Text>
+                        <Text style={styles.buttonTextPrimary} numberOfLines={1}>
+                          {t(c.proposals === 1 ? 'campaigns.viewProposalsBtn' : 'campaigns.viewProposalsBtnPlural', { n: c.proposals })}
+                        </Text>
                       </Pressable>
                     )}
                   </View>

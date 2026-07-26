@@ -1,7 +1,7 @@
 import { router, useFocusEffect } from 'expo-router';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { TabSlider } from '@/components/TabSlider';
 import { useScrollToTopOnTabPress } from '@/hooks/useScrollToTopOnTabPress';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -17,6 +17,7 @@ import { notificationService } from '@/services/notifications';
 import { profileService } from '@/services/profile';
 import type { Campaign } from '@/types';
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
+import { usePlatforms, getPlatformMeta } from '@/hooks/usePlatforms';
 import { getTemplateImage } from '@/features/creator/data/templateImages';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
@@ -29,11 +30,18 @@ const STATUS_STYLE = {
   pending_approval: { bg: TabColors.warning.bg, color: TabColors.warning.color, statusKey: 'business.home.statusPendingApproval' as const },
 };
 
+// Tablet/iPad: two cards per row in Recent Events, matching the events tab's
+// own grid. 768 matches the breakpoint used there.
+const TABLET_BREAKPOINT = 768;
+
 export default function BusinessHomeScreen() {
   const { user } = useAuth();
   const { t, languageVersion } = useLanguage();
   const C = useAppColors();
   const { categories: allCategories } = useAllCategories();
+  const { platforms: allPlatforms } = usePlatforms();
+  const { width: windowWidth } = useWindowDimensions();
+  const numColumns = windowWidth >= TABLET_BREAKPOINT ? 2 : 1;
   const name = user?.name?.split(' ')[0] ?? 'there';
 
   const { setBadgeCount } = useNotificationBadge();
@@ -44,6 +52,10 @@ export default function BusinessHomeScreen() {
   const [fetchError, setFetchError] = useState('');
   const [missingFields, setMissingFields] = useState<string[]>([]);
   const [businessName, setBusinessName] = useState('');
+  // Count of accepted applications actually waiting on a business action
+  // (payment due, or submitted work awaiting review) — not the raw
+  // applications total, which includes proposals nothing is blocked on.
+  const [attentionCount, setAttentionCount] = useState(0);
   // Phone-only signups default `name` to the raw phone number until the user sets
   // a real one — never show that in the header (as text, or as the avatar's
   // first-letter fallback initial, which would render a bare "+").
@@ -67,9 +79,17 @@ export default function BusinessHomeScreen() {
     }
   }
 
-  useEffect(() => {
-    void fetchCampaigns();
-  }, [languageVersion]);
+  // Refetches on every focus, not just mount — otherwise editing a campaign's
+  // title/details elsewhere (e.g. from campaign-detail) and navigating back
+  // here would keep showing this screen's stale local copy indefinitely,
+  // since campaignService has no shared cache other screens invalidate.
+  // Only the very first load shows the skeleton; later refocuses refresh
+  // silently so cards don't flash/blank on every back-navigation.
+  const hasLoadedCampaignsRef = useRef(false);
+  useFocusEffect(useCallback(() => {
+    void fetchCampaigns(!hasLoadedCampaignsRef.current);
+    hasLoadedCampaignsRef.current = true;
+  }, [languageVersion]));
 
   // Refetches on every focus (not just mount) — editing the business name in
   // edit-profile navigates back here rather than remounting this screen, so a
@@ -90,6 +110,22 @@ export default function BusinessHomeScreen() {
       .catch(() => {});
   }, [languageVersion]));
 
+  // Refetches on every focus — mirrors the creator home screen's pending-action
+  // check. Only counts applications where the ball is in the business's court:
+  // payment not yet made (paid campaigns) or submitted work not yet reviewed.
+  useFocusEffect(useCallback(() => {
+    campaignService.getBusinessProposals({ status: 'ACCEPTED', limit: 100 })
+      .then(({ proposals }) => {
+        const count = proposals.filter((p) => {
+          const needsPayment = p.workStatus === 'NONE' && p.campaign.campaignType !== 'OPEN_EVENT' && p.paymentStatus !== 'PAID' && p.paymentStatus !== 'RELEASED';
+          const needsApproval = p.workStatus === 'SUBMITTED';
+          return needsPayment || needsApproval;
+        }).length;
+        setAttentionCount(count);
+      })
+      .catch(() => {});
+  }, []));
+
   // Auto-refresh the moment connectivity is restored after being offline.
   const { reconnectedAt } = useNetworkStatus();
   useEffect(() => {
@@ -105,12 +141,6 @@ export default function BusinessHomeScreen() {
   const stats = {
     active:    campaigns.filter((c) => c.status === 'active').length,
     total:     campaigns.length,
-    // Excludes campaigns whose project has already reached its final status
-    // (closed/completed, or payment released) — those no longer need the
-    // business's attention.
-    proposals: campaigns
-      .filter((c) => c.status !== 'closed' && c.paymentStatus !== 'RELEASED')
-      .reduce((sum, c) => sum + c.proposals, 0),
     completed: campaigns.filter((c) => c.status === 'closed').length,
   };
 
@@ -177,8 +207,8 @@ export default function BusinessHomeScreen() {
         contentContainerStyle={styles.scroll}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#7c3aed" />}>
 
-        {/* ── Attention banner (shown when proposals are pending) ── */}
-        {!loading && stats.proposals > 0 && (
+        {/* ── Attention banner (shown when a business action is actually pending) ── */}
+        {!loading && attentionCount > 0 && (
           <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.attentionBanner} onPress={() => router.push('/(business)/proposals')}>
             <View
               style={[
@@ -191,9 +221,9 @@ export default function BusinessHomeScreen() {
             <View style={{ flex: 1 }}>
               <Text style={styles.attentionTitle}>{t('business.home.attentionTitle')}</Text>
               <Text style={styles.attentionSub}>
-                {stats.proposals === 1
-                  ? t('business.home.attentionProposalsSingular', { n: stats.proposals })
-                  : t('business.home.attentionProposalsPlural', { n: stats.proposals })}
+                {attentionCount === 1
+                  ? t('business.home.attentionProposalsSingular', { n: attentionCount })
+                  : t('business.home.attentionProposalsPlural', { n: attentionCount })}
               </Text>
             </View>
             <Ionicons name="chevron-forward" size={16} color="#D97706" />
@@ -341,7 +371,7 @@ export default function BusinessHomeScreen() {
             </Pressable>
           </View>
         ) : (
-          <View style={styles.campaignList}>
+          <View style={[styles.campaignList, numColumns === 2 && styles.campaignListGrid]}>
             {recent.map((c) => {
               const meta = getCategoryMeta(allCategories, c.categoryKey ?? c.category);
               const st = STATUS_STYLE[c.status ?? 'draft'] ?? STATUS_STYLE.draft;
@@ -351,38 +381,68 @@ export default function BusinessHomeScreen() {
                 // handles its own corner/border-left clipping via overflow:hidden — on
                 // the same view, overflow:hidden would clip the shadow right off, same
                 // fix as the events list's cardWrap/card split.
-                <View key={c.id} style={[styles.campaignCardWrap, { backgroundColor: C.surface }]}>
+                <View key={c.id} style={[styles.campaignCardWrap, numColumns === 2 && styles.campaignCardWrapHalf, { backgroundColor: C.surface }]}>
                 <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                  style={({ pressed }) => [styles.campaignCard, { backgroundColor: C.surface, borderLeftWidth: 4, borderLeftColor: st.color }, pressed && { opacity: 0.9 }]}
+                  style={({ pressed }) => [styles.campaignCard, { backgroundColor: C.surface, borderColor: C.border }, pressed && { opacity: 0.92 }]}
                   onPress={() => router.push({ pathname: '/campaign-detail', params: { campaignId: c.id } })}>
-                  <View style={[styles.thumb, { backgroundColor: meta.bg }]}>
-                    <FontAwesome5 name={meta.icon} size={20} color={meta.color} />
-                    {cardImage && (
-                      <Image source={{ uri: cardImage }} style={StyleSheet.absoluteFill} resizeMode="cover" />
-                    )}
-                  </View>
-                  <View style={styles.campaignBody}>
-                    <View style={styles.campaignTitleRow}>
-                      <Text style={[styles.campaignTitle, { color: C.text }]} numberOfLines={1}>{c.title}</Text>
-                      <View style={[styles.typeBadge, c.campaignType === 'OPEN_EVENT' ? styles.typeBadgeFree : styles.typeBadgePaid]}>
-                        <Text style={[styles.typeBadgeText, c.campaignType === 'OPEN_EVENT' ? styles.typeBadgeTextFree : styles.typeBadgeTextPaid]}>
-                          {c.campaignType === 'OPEN_EVENT' ? t('business.home.badgeFree') : t('business.home.badgePaid')}
-                        </Text>
-                      </View>
-                      <View style={[styles.statusBadge, { backgroundColor: st.bg }]}>
-                        <Text style={[styles.statusText, { color: st.color }]}>{t(st.statusKey)}</Text>
-                      </View>
+
+                  {/* Header — thumbnail on the left, title + tags on the right */}
+                  <View style={styles.cardHeader}>
+                    <View style={[styles.thumb, { backgroundColor: meta.bg }]}>
+                      <FontAwesome5 name={meta.icon} size={22} color={meta.color} />
+                      {cardImage && (
+                        <Image source={{ uri: cardImage }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+                      )}
                     </View>
-                    <Text style={[styles.campaignMeta, { color: C.textSecondary }]}>{c.platform} · {c.budget}</Text>
-                    <View style={styles.campaignStats}>
-                      <View style={styles.campaignStat}>
-                        <Ionicons name="people" size={12} color={C.textSecondary} />
-                        <Text style={[styles.campaignStatVal, { color: C.text }]}>{c.proposals}</Text>
-                        <Text style={[styles.campaignStatLabel, { color: C.textSecondary }]}>{t('business.home.proposalsLabel')}</Text>
+                    <View style={styles.titleSection}>
+                      <Text style={[styles.eventTitle, { color: C.text }]} numberOfLines={2}>{c.title}</Text>
+                      <View style={styles.tagContainer}>
+                        <View style={[styles.typeBadge, c.campaignType === 'OPEN_EVENT' ? styles.typeBadgeFree : styles.typeBadgePaid]}>
+                          <Text style={[styles.typeBadgeText, c.campaignType === 'OPEN_EVENT' ? styles.typeBadgeTextFree : styles.typeBadgeTextPaid]}>
+                            {c.campaignType === 'OPEN_EVENT' ? t('business.home.badgeFree') : t('business.home.badgePaid')}
+                          </Text>
+                        </View>
+                        <View style={[styles.statusBadge, { backgroundColor: st.bg }]}>
+                          <Text style={[styles.statusText, { color: st.color }]}>{t(st.statusKey)}</Text>
+                        </View>
                       </View>
                     </View>
                   </View>
-                  <Ionicons name="chevron-forward" size={20} color={C.border} />
+
+                  {/* Details */}
+                  <View style={[styles.detailsSection, { borderTopColor: C.border, borderBottomColor: C.border }]}>
+                    <View style={styles.detailRow}>
+                      <FontAwesome5 name="money-bill-wave" size={12} color={C.textSecondary} />
+                      <Text style={[styles.detailText, styles.budgetText, { color: C.text }]}>{c.budget}</Text>
+                    </View>
+                    <View style={styles.detailRow}>
+                      <Ionicons name="people" size={14} color={C.textSecondary} />
+                      <Text style={[styles.detailText, { color: C.textSecondary }]}>
+                        {c.proposals} {t('business.home.proposalsLabel')}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Platforms + View Details — platforms (if any) on the left,
+                      the CTA pinned bottom-right via the row's space-between. */}
+                  <View style={styles.cardFooter}>
+                    <View style={styles.socialPlatforms}>
+                      {c.platforms.map((p) => {
+                        const pMeta = getPlatformMeta(allPlatforms, p);
+                        return (
+                          <View key={p} style={[styles.socialIcon, { backgroundColor: pMeta.bg }]}>
+                            <FontAwesome5 name={pMeta.icon} size={12} color={pMeta.color} />
+                          </View>
+                        );
+                      })}
+                    </View>
+                    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                      style={({ pressed }) => [styles.viewDetailsBtn, { borderColor: C.brinjal1 }, pressed && { opacity: 0.7 }]}
+                      onPress={() => router.push({ pathname: '/campaign-detail', params: { campaignId: c.id } })}>
+                      <Text style={[styles.viewDetailsText, { color: C.brinjal1 }]}>{t('business.home.viewDetails')}</Text>
+                      <Ionicons name="arrow-forward" size={12} color={C.brinjal1} />
+                    </Pressable>
+                  </View>
                 </Pressable>
                 </View>
               );
@@ -475,22 +535,33 @@ const styles = StyleSheet.create({
   typeBadgeTextFree: { color: TabColors.info.color },
 
   campaignList: { paddingHorizontal: 20, gap: 12 },
+  // Tablet/iPad two-per-row grid — mirrors the events tab's listGrid/cardWrapHalf.
+  campaignListGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
   // Shadow (unclipped) and rounded-corner clip are split across two views —
   // see the render-side comment for why. Matches the events list's own
   // cardWrap/card split, and its stronger SHADOW.raised.
   campaignCardWrap: { borderRadius: RADIUS.lg, ...SHADOW.raised },
-  campaignCard: { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.lg, padding: 14, gap: 12, overflow: 'hidden' },
-  thumb: { width: 72, height: 72, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center', flexShrink: 0, overflow: 'hidden' },
-  campaignBody: { flex: 1, gap: 5 },
-  campaignTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
-  campaignTitle: { fontSize: 14, flex: 1, fontFamily: F.bold },
+  campaignCardWrapHalf: { width: '48%' },
+  campaignCard: { borderRadius: RADIUS.lg, borderWidth: 1, padding: 18, overflow: 'hidden' },
+
+  cardHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 14 },
+  thumb: { width: 64, height: 64, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center', flexShrink: 0, overflow: 'hidden' },
+  titleSection: { flex: 1, gap: 6 },
+  eventTitle: { fontSize: 16, fontFamily: F.bold, lineHeight: 21 },
+  tagContainer: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', rowGap: 6, gap: 6 },
   statusBadge: { borderRadius: RADIUS.sm, paddingHorizontal: 9, paddingVertical: 4 },
   statusText: { fontSize: 11, fontFamily: F.bold },
-  campaignMeta: { fontSize: 12, fontFamily: F.regular },
-  campaignStats: { flexDirection: 'row', gap: 8, marginTop: 2 },
-  campaignStat: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  campaignStatVal: { fontSize: 11, fontFamily: F.bold },
-  campaignStatLabel: { fontSize: 11, fontFamily: F.regular },
+
+  detailsSection: { borderTopWidth: 1, borderBottomWidth: 1, paddingVertical: 12, marginBottom: 14, gap: 10 },
+  detailRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  detailText: { fontSize: 13, fontFamily: F.regular },
+  budgetText: { fontFamily: F.bold },
+
+  cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  socialPlatforms: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, flexShrink: 1 },
+  socialIcon: { width: 32, height: 32, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center' },
+  viewDetailsBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1, borderRadius: RADIUS.full, paddingHorizontal: 12, paddingVertical: 6 },
+  viewDetailsText: { fontSize: 12, fontFamily: F.semibold },
 
   loadingWrap: { paddingVertical: 60, alignItems: 'center', gap: 14 },
   loadingText: { fontSize: 14, fontFamily: F.regular },

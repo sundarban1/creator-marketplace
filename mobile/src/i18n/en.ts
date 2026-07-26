@@ -67,6 +67,7 @@ const en = {
     new: 'NEW',
     nepalFallback: 'Nepal',
     remoteFallback: 'Remote',
+    platformsLabel: 'Platforms',
   },
 
   // Standalone /signup route — a secondary signup screen distinct from the
@@ -207,7 +208,7 @@ const en = {
       title: 'Forgot Password?',
       subtitle: "Choose email or phone\nand we'll send a reset code.",
       phoneLabel: 'Phone Number',
-      phonePlaceholder: '+977 98XXXXXXXX',
+      phonePlaceholder: '98XXXXXXXX',
       phoneHint: 'Use the phone number you registered with.',
       phoneError: 'Enter a valid phone number',
       emailLabel: 'Email',
@@ -216,6 +217,8 @@ const en = {
       emailError: 'Enter a valid email address',
       sendBtn: 'Send Reset Code',
       sending: 'Sending…',
+      codeSentInfoEmail: "If you have registered with us, you'll receive a code on your email.",
+      codeSentInfoPhone: "If you have registered with us, you'll receive a code on your phone.",
       backTo: 'Back to',
       signIn: 'Sign In',
     },
@@ -706,6 +709,7 @@ const en = {
       badgeFree: 'Free',
       badgePaid: '$ Paid',
       proposalsLabel: 'Proposals',
+      viewDetails: 'View Details',
       noEventsTitle: 'No events yet',
       noEventsSub: 'Create your first event to start working with creators.',
       createEventBtn: 'Create Event',
@@ -914,7 +918,8 @@ const en = {
     proposalsPlural: '{{count}} proposals',
     invite: 'Invite',
     viewProposals: 'View proposals',
-    viewProposalsBtn: 'View {{n}} Proposal(s)',
+    viewProposalsBtn: 'View {{n}} Proposal',
+    viewProposalsBtnPlural: 'View {{n}} Proposals',
     platformsLabel: 'Platforms',
     publishDraft: 'Publish',
     draftPublished: 'Event published!',
@@ -2513,6 +2518,7 @@ const en = {
     modalUploadAddVideoBtn:      'Add Video',
     modalUploadLinksLabel:       'Deliverable Links',
     modalUploadLinksSub:         'Add a Google Drive or YouTube link if your video is larger than 200MB',
+    modalUploadLinksPublicHint:  'Make sure your Google Drive or YouTube link is set to public — "Anyone with the link can view" — otherwise the business won\'t be able to open it.',
     modalUploadNotesLabel:       'Notes to Business',
     modalUploadNotesPlaceholder: 'Any notes or instructions...',
     modalUploadSubmitBtn:        'Submit Work',
@@ -2522,8 +2528,8 @@ const en = {
 
     // Review modal
     modalReviewTitle:               'Review Deliverables',
-    modalReviewVideosSection:       'Videos Submitted by Creator',
-    modalReviewLinksSection:        'Links Submitted by Creator',
+    modalReviewVideosSection:       'Videos Submitted by {{name}}',
+    modalReviewLinksSection:        'Links Submitted by {{name}}',
     modalReviewNoLinks:             'No links submitted yet',
     modalReviewDeliverablesSection: 'What Needs to Be Delivered',
 

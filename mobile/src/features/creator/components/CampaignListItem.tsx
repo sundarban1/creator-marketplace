@@ -4,11 +4,12 @@ import { Image } from 'expo-image';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage, type TFn } from '@/context/LanguageContext';
+import { displayCategory } from '@/features/creator/data/filterOptions';
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { usePlatforms, getPlatformMeta } from '@/hooks/usePlatforms';
 import { getTemplateImage } from '@/features/creator/data/templateImages';
 import type { Campaign } from '@/types';
-import { F } from '@/utilities/constants';
+import { F, RADIUS, SHADOW } from '@/utilities/constants';
 
 function timeAgo(iso: string, t: TFn): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -38,7 +39,6 @@ function expiryLabel(iso: string, t: TFn): { label: string; color: string } {
   return { label: t('campaignCard.monthsLeft', { n: Math.ceil(days / 30) }), color: '#6B7280' };
 }
 
-
 export function CampaignListItem({ campaign }: { campaign: Campaign }) {
   const C = useAppColors();
   const { t } = useLanguage();
@@ -46,120 +46,106 @@ export function CampaignListItem({ campaign }: { campaign: Campaign }) {
   const { platforms: allPlatforms } = usePlatforms();
   const catMeta = getCategoryMeta(categories, campaign.categoryKey ?? campaign.category);
   const cardImage = campaign.featureImageUrl ?? getTemplateImage(campaign.template, campaign.categoryKey ?? campaign.category);
+  const expiry = expiryLabel(campaign.deadline, t);
 
   function goToDetail() {
     router.push({ pathname: '/campaign-detail', params: { campaignId: campaign.id } });
   }
 
   return (
-    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-      style={({ pressed }) => [styles.listCard, { backgroundColor: C.surface }, pressed && { opacity: 0.88 }]}
-      onPress={goToDetail}>
+    <View style={[styles.cardWrap, { backgroundColor: C.surface }]}>
+      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+        style={({ pressed }) => [styles.card, { backgroundColor: C.surface, borderColor: C.border }, pressed && { opacity: 0.92 }]}
+        onPress={goToDetail}>
 
-      {/* Thumb — type badge sits above the image (not overlapping); platform icons overlay the image itself */}
-      <View style={styles.thumbWrap}>
-        {/* Type badge — above the photo, own row so it never overlaps the image */}
-        {campaign.campaignType === 'OPEN_EVENT' ? (
-          <View style={[styles.typeBadge, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}>
-            <Text style={[styles.typeBadgeText, { color: '#059669' }]}>{t('campaignCard.free')}</Text>
-          </View>
-        ) : (
-          <View style={[styles.typeBadge, { backgroundColor: '#EEF2FF', borderColor: '#C7D2FE' }]}>
-            <Text style={[styles.typeBadgeText, { color: '#4F46E5' }]}>{t('campaignCard.paid')}</Text>
-          </View>
-        )}
-
-        <View style={styles.thumbInner}>
-          <View style={[styles.listThumb, { backgroundColor: catMeta.bg }]}>
-            <FontAwesome5 name={catMeta.icon} size={22} color={catMeta.color} />
-            {cardImage && (
-              <Image source={{ uri: cardImage }} style={StyleSheet.absoluteFill} contentFit="cover" />
+        {/* Header — thumbnail on the left, title + tags on the right */}
+        <View style={styles.cardHeader}>
+          <View style={styles.thumbWrap}>
+            <View style={[styles.thumb, { backgroundColor: catMeta.bg }]}>
+              <FontAwesome5 name={catMeta.icon} size={22} color={catMeta.color} />
+              {cardImage && (
+                <Image source={{ uri: cardImage }} style={StyleSheet.absoluteFill} contentFit="cover" />
+              )}
+            </View>
+            {/* Platform icons — half over the image, half dipping below it */}
+            {campaign.platforms.length > 0 && (
+              <View style={styles.platformStackBottom}>
+                {campaign.platforms.slice(0, 3).map((p) => {
+                  const meta = getPlatformMeta(allPlatforms, p);
+                  return (
+                    <View key={p} style={[styles.platformIcon, { backgroundColor: C.surface }]}>
+                      <FontAwesome5 name={meta.icon} size={9} color={meta.color} />
+                    </View>
+                  );
+                })}
+              </View>
             )}
           </View>
-
-          {/* Platform icons — float at the thumb's bottom edge, straddling it
-              so half sits over the image and half dips below it. Positioned
-              relative to thumbInner (just the image). */}
-          {campaign.platforms.length > 0 && (
-            <View style={styles.platformStackBottom}>
-              {campaign.platforms.slice(0, 3).map((p) => {
-                const meta = getPlatformMeta(allPlatforms, p);
-                return (
-                  <View key={p} style={[styles.platformIcon, { backgroundColor: C.surface }]}>
-                    <FontAwesome5 name={meta.icon} size={9} color={meta.color} />
-                  </View>
-                );
-              })}
-            </View>
-          )}
-        </View>
-      </View>
-
-      {/* Info */}
-      <View style={styles.listInfo}>
-        <Text style={[styles.listBrandName, { color: C.textSecondary }]} numberOfLines={1}>{campaign.brand}</Text>
-        <Text style={[styles.listTitle, { color: C.text }]} numberOfLines={2}>{campaign.title}</Text>
-        <View style={styles.budgetRow}>
-          <Ionicons name="cash-outline" size={13} color={C.brinjal1} />
-          <Text style={[styles.listBudget, { color: C.brinjal1 }]}>{campaign.budget}</Text>
-        </View>
-        <View style={styles.listMetaRow}>
-          <Ionicons name="location-outline" size={12} color={C.textSecondary} />
-          <Text style={[styles.listMeta, { color: C.textSecondary }]} numberOfLines={1}>
-            {campaign.location ?? t('campaignCard.remoteFallback')}
-          </Text>
-        </View>
-        <View style={styles.listDatesRow}>
-          <View style={styles.listMetaRow}>
-            <Ionicons name="calendar-outline" size={12} color={C.textSecondary} />
-            <Text style={[styles.listMeta, { color: C.textSecondary }]}>{timeAgo(campaign.createdAt, t)}</Text>
-          </View>
-          {(() => {
-            const expiry = expiryLabel(campaign.deadline, t);
-            return (
-              <View style={styles.listMetaRow}>
-                <Ionicons name="time-outline" size={12} color={expiry.color} />
-                <Text style={[styles.listMeta, { color: expiry.color }]}>{expiry.label}</Text>
+          <View style={styles.titleSection}>
+            <Text style={[styles.eventTitle, { color: C.text }]} numberOfLines={2}>{campaign.title}</Text>
+            <View style={styles.tagContainer}>
+              <View style={[styles.tagBadge, { backgroundColor: catMeta.bg }]}>
+                <FontAwesome5 name={catMeta.icon} size={9} color={catMeta.color} />
+                <Text style={[styles.tagBadgeText, { color: catMeta.color }]} numberOfLines={1}>{displayCategory(campaign.category)}</Text>
               </View>
-            );
-          })()}
+              {campaign.campaignType === 'OPEN_EVENT' ? (
+                <View style={[styles.tagBadge, { backgroundColor: '#F0FDF4' }]}>
+                  <Text style={[styles.tagBadgeText, { color: '#059669' }]}>{t('campaignCard.free')}</Text>
+                </View>
+              ) : (
+                <View style={[styles.tagBadge, { backgroundColor: '#EEF2FF' }]}>
+                  <Text style={[styles.tagBadgeText, { color: '#4F46E5' }]}>{t('campaignCard.paid')}</Text>
+                </View>
+              )}
+            </View>
+            <Text style={[styles.postedDay, { color: C.textSecondary }]} numberOfLines={1}>
+              {campaign.brand} · {timeAgo(campaign.createdAt, t)}
+            </Text>
+          </View>
         </View>
-      </View>
 
-      {/* Apply button */}
-      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.applyBtn, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]} onPress={goToDetail}>
-        <Text style={[styles.applyBtnText, { color: C.brinjal1 }]}>{t('campaignCard.apply')}</Text>
+        {/* Details */}
+        <View style={[styles.detailsSection, { borderTopColor: C.border, borderBottomColor: C.border }]}>
+          <View style={styles.detailRow}>
+            <Ionicons name="location-outline" size={14} color={C.textSecondary} />
+            <Text style={[styles.detailText, { color: C.textSecondary }]} numberOfLines={1}>
+              {campaign.location ?? t('campaignCard.remoteFallback')}
+            </Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Ionicons name="time-outline" size={14} color={expiry.color} />
+            <Text style={[styles.detailText, { color: expiry.color }]}>{expiry.label}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Ionicons name="cash-outline" size={14} color={C.textSecondary} />
+            <Text style={[styles.detailText, styles.budgetText, { color: C.text }]}>{campaign.budget}</Text>
+          </View>
+        </View>
+
+        {/* CTA */}
+        <View style={styles.buttonContainer}>
+          <Pressable android_ripple={{ color: 'rgba(255,255,255,0.2)' }}
+            style={({ pressed }) => [styles.applyBtn, { backgroundColor: C.brinjal1 }, pressed && { opacity: 0.88 }]}
+            onPress={goToDetail}>
+            <Text style={styles.applyBtnText}>{t('campaignCard.applyNow')}</Text>
+            <Ionicons name="arrow-forward" size={14} color="#fff" />
+          </Pressable>
+        </View>
       </Pressable>
-    </Pressable>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  listCard: {
-    flexDirection: 'row',
-    borderRadius: 18,
-    padding: 14,
-    gap: 12,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.06)',
-  },
-  thumbWrap: { flexShrink: 0, alignItems: 'center', gap: 4 },
-  // Plain relative-position container scoped to just the image, so the type
-  // badge and platform stack's absolute offsets are relative to the image
-  // itself rather than the row it sits in.
-  thumbInner: {},
-  listThumb: {
-    width: 72, height: 72, borderRadius: 16,
-    justifyContent: 'center', alignItems: 'center',
-    overflow: 'hidden',
-  },
+  cardWrap: { borderRadius: RADIUS.lg, ...SHADOW.raised },
+  card: { borderRadius: RADIUS.lg, borderWidth: 1, overflow: 'hidden', padding: 18 },
 
+  cardHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 20 },
+  // Plain relative-position wrapper scoped to just the thumb, so the platform
+  // stack's absolute offset is relative to the image itself (and isn't
+  // clipped by thumb's own overflow:hidden, needed for the image corners).
+  thumbWrap: { flexShrink: 0 },
+  thumb: { width: 64, height: 64, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
   // Straddles the thumb's bottom edge — half the icon sits over the photo,
   // half dips below it.
   platformStackBottom: {
@@ -167,29 +153,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'center', gap: 4,
   },
   platformIcon: {
-    width: 22, height: 22, borderRadius: 11,
+    width: 22, height: 22, borderRadius: RADIUS.full,
     justifyContent: 'center', alignItems: 'center',
     shadowColor: '#0F172A', shadowOpacity: 0.22, shadowRadius: 5, shadowOffset: { width: 0, height: 2 }, elevation: 3,
   },
-  listInfo:     { flex: 1, gap: 4 },
-  listBrandRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  listBrandName:{ fontSize: 12, fontFamily: F.semibold, flex: 1 },
-  verifiedBadge:{ width: 14, height: 14, borderRadius: 7, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
-  verifiedIcon: { fontSize: 8, color: '#fff', fontFamily: F.bold },
-  listTitle:    { fontSize: 14, lineHeight: 20, fontFamily: F.bold },
-  budgetRow:    { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  listBudget:   { fontSize: 13, fontFamily: F.bold },
-  listMetaRow:  { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  listMeta:     { fontSize: 11, fontFamily: F.regular },
-  listDatesRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  titleSection: { flex: 1, gap: 6 },
+  eventTitle: { fontSize: 16, fontFamily: F.bold, lineHeight: 21 },
+  tagContainer: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', rowGap: 6, gap: 6 },
+  tagBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingVertical: 4 },
+  tagBadgeText: { fontSize: 11, fontFamily: F.bold },
+  postedDay: { fontSize: 12, fontFamily: F.regular },
 
-  typeBadge:     { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1 },
-  typeBadgeText: { fontSize: 11, fontFamily: F.bold },
-  applyBtn: {
-    flexShrink: 0, alignSelf: 'center',
-    borderRadius: 20, paddingVertical: 8, paddingHorizontal: 14,
-    alignItems: 'center', justifyContent: 'center', gap: 4,
-    borderWidth: 1.5,
-  },
-  applyBtnText: { fontSize: 11, fontFamily: F.bold },
+  detailsSection: { borderTopWidth: 1, borderBottomWidth: 1, paddingVertical: 12, marginBottom: 14, gap: 10 },
+  detailRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  detailText: { fontSize: 13, fontFamily: F.regular },
+  budgetText: { fontFamily: F.bold },
+
+  buttonContainer: { flexDirection: 'row' },
+  applyBtn: { flex: 1, flexDirection: 'row', minHeight: 44, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center', gap: 6 },
+  applyBtnText: { color: '#fff', fontSize: 14, fontFamily: F.bold },
 });

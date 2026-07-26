@@ -1,7 +1,7 @@
 import { router, useFocusEffect } from 'expo-router';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Image, Keyboard, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableWithoutFeedback, View } from 'react-native';
+import { ActivityIndicator, FlatList, Image, Keyboard, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
 import { DrawerContext } from '@/context/DrawerContext';
@@ -47,7 +47,12 @@ type ListRow =
   | { kind: 'tabFilter' }
   | { kind: 'countSort' }
   | { kind: 'empty' }
-  | { kind: 'campaign'; campaign: Campaign };
+  | { kind: 'campaign'; campaign: Campaign }
+  | { kind: 'campaignRow'; campaigns: Campaign[] };
+
+// Tablet/iPad: two cards per row in the All/Recommended/etc. list, matching
+// the grid used on the business events tab. Phones stay single-column.
+const TABLET_BREAKPOINT = 768;
 
 function getInitials(name: string): string {
   const words = name.trim().split(/\s+/).filter(Boolean);
@@ -66,6 +71,8 @@ export default function HomeScreen() {
   const { openDrawer } = useContext(DrawerContext);
   const { t, languageVersion } = useLanguage();
   const C = useAppColors();
+  const { width: windowWidth } = useWindowDimensions();
+  const numColumns = windowWidth >= TABLET_BREAKPOINT ? 2 : 1;
 
   const { categories: adminCategories } = useCategories('CREATOR');
   const { platforms: adminPlatforms } = usePlatforms();
@@ -465,12 +472,22 @@ export default function HomeScreen() {
   const visibleFeatured = featured.slice(0, featuredVisibleCount);
   const visibleList     = filteredList.slice(0, listVisibleCount);
 
+  // Tablet/iPad: pair campaigns up into two-per-row grid rows. Phones keep
+  // one campaign per row (numColumns === 1) exactly as before.
+  const campaignRows: ListRow[] = numColumns === 2
+    ? visibleList.reduce<ListRow[]>((rows, c, i) => {
+        if (i % 2 === 0) rows.push({ kind: 'campaignRow', campaigns: [c] });
+        else (rows[rows.length - 1] as { kind: 'campaignRow'; campaigns: Campaign[] }).campaigns.push(c);
+        return rows;
+      }, [])
+    : visibleList.map((c): ListRow => ({ kind: 'campaign', campaign: c }));
+
   const listRows: ListRow[] = loading ? [] : [
     { kind: 'tabFilter' },
     { kind: 'countSort' },
     ...(filteredList.length === 0
       ? [{ kind: 'empty' } as const]
-      : visibleList.map((c): ListRow => ({ kind: 'campaign', campaign: c }))),
+      : campaignRows),
   ];
 
   useEffect(() => { setFeaturedVisibleCount(PAGE_SIZE); }, [campaigns]);
@@ -498,25 +515,26 @@ export default function HomeScreen() {
   }
 
 
+  // Dismisses the keyboard and snaps the list back to the top — used both by
+  // the fixed header (wrapped in a Pressable, safe since it isn't scrollable)
+  // and by the list itself via onScrollBeginDrag. Deliberately NOT a
+  // TouchableWithoutFeedback wrapping the FlatList: a JS-responder touchable
+  // ancestor around a scrollable view swallows drags that start on plain
+  // background content (no nested Pressable to claim the touch first),
+  // leaving cards/pills/buttons scrollable but empty space stuck.
+  function handleOutsideDismiss() {
+    Keyboard.dismiss();
+    // Only snap back once, for the interaction that actually dismisses a
+    // focused/active search — anything after that is just normal use of the
+    // page, not another dismissal.
+    if (pendingSnapBackRef.current && !activeSearch.trim()) {
+      listRef.current?.scrollToOffset({ offset: 0, animated: true });
+      pendingSnapBackRef.current = false;
+    }
+  }
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
-      {/* Tapping anywhere outside the search bar (header buttons, list background,
-          etc.) dismisses the keyboard and snaps the list back to the top —
-          nested Pressables (category/platform pills, buttons) still claim
-          their own taps first, so this only fires for taps that no other
-          touchable handles, and selecting a pill never triggers this. */}
-      <TouchableWithoutFeedback
-        onPress={() => {
-          Keyboard.dismiss();
-          // Only snap back once, for the tap that actually dismisses a
-          // focused/active search — any further taps elsewhere on the screen
-          // are just normal interaction with the page, not another dismissal.
-          if (pendingSnapBackRef.current && !activeSearch.trim()) {
-            listRef.current?.scrollToOffset({ offset: 0, animated: true });
-            pendingSnapBackRef.current = false;
-          }
-        }}
-        accessible={false}>
       <View style={{ flex: 1 }}>
       <MaxWidthContainer>
       {/* ── Header: avatar, search bar, menu button — kept outside the list so it
@@ -608,11 +626,18 @@ export default function HomeScreen() {
         style={styles.scroll}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        keyboardDismissMode="on-drag"
+        onScrollBeginDrag={handleOutsideDismiss}
         onEndReached={() => setListVisibleCount((n) => Math.min(n + PAGE_SIZE, filteredList.length))}
         onEndReachedThreshold={0.4}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brinjal1} />}
         data={listRows}
-        keyExtractor={(row, i) => (row.kind === 'campaign' ? row.campaign.id : `${row.kind}-${i}`)}
+        key={numColumns}
+        keyExtractor={(row, i) => (
+          row.kind === 'campaign' ? row.campaign.id :
+          row.kind === 'campaignRow' ? row.campaigns.map((c) => c.id).join('-') :
+          `${row.kind}-${i}`
+        )}
         // Sticky index 1, not 0 — ListHeaderComponent below always occupies
         // index 0, so listRows[0] (the tab filter row) lands at index 1.
         stickyHeaderIndices={[1]}
@@ -666,17 +691,23 @@ export default function HomeScreen() {
                 />
               );
             case 'campaign':
-              return <CampaignListItem campaign={row.campaign} />;
+              return (
+                <View style={styles.campaignItemWrap}>
+                  <CampaignListItem campaign={row.campaign} />
+                </View>
+              );
+            case 'campaignRow':
+              return (
+                <View style={styles.campaignRowWrap}>
+                  {row.campaigns.map((c) => (
+                    <View key={c.id} style={styles.campaignRowItem}>
+                      <CampaignListItem campaign={c} />
+                    </View>
+                  ))}
+                </View>
+              );
           }
         }}
-        // Only put the 6px gap between two actual campaign rows — the tab
-        // filter / count+sort / empty-state rows already carry their own
-        // margins, so a separator there would double up the spacing.
-        ItemSeparatorComponent={({ leadingItem, trailingItem }) =>
-          leadingItem?.kind === 'campaign' && trailingItem?.kind === 'campaign'
-            ? <View style={styles.eventSeparator} />
-            : null
-        }
         ListFooterComponent={
           !loading && listVisibleCount < filteredList.length ? (
             <View style={styles.listLoadingMore}>
@@ -822,7 +853,7 @@ export default function HomeScreen() {
         <View style={styles.sectionHeader} onLayout={(e) => { categoriesYRef.current = e.nativeEvent.layout.y; }}>
           <Text style={[styles.sectionTitle, { color: C.text }]}>{t('creator.home.categories')}</Text>
         </View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoriesRow}>
+        <ScrollView horizontal nestedScrollEnabled showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoriesRow}>
           {visibleCategories.map((cat) => {
             const isActive = activeCategories.includes(cat.label);
             return (
@@ -860,7 +891,7 @@ export default function HomeScreen() {
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { color: C.text }]}>{t('creator.home.platforms')}</Text>
             </View>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.platformsRow}>
+            <ScrollView horizontal nestedScrollEnabled showsHorizontalScrollIndicator={false} contentContainerStyle={styles.platformsRow}>
               {adminPlatforms.map((p) => {
                 const meta = getPlatformMeta(adminPlatforms, p.name);
                 const isActive = activePlatforms.includes(p.name);
@@ -897,13 +928,13 @@ export default function HomeScreen() {
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { color: C.text }]}>{t('creator.home.featuredEvents')}</Text>
             </View>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.featuredRow}>
+            <ScrollView horizontal nestedScrollEnabled showsHorizontalScrollIndicator={false} contentContainerStyle={styles.featuredRow}>
               {[0, 1, 2].map((i) => <CampaignCardSkeleton key={i} />)}
             </ScrollView>
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { color: C.text }]}>{t('creator.home.nearbyEvents')}</Text>
             </View>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.featuredRow}>
+            <ScrollView horizontal nestedScrollEnabled showsHorizontalScrollIndicator={false} contentContainerStyle={styles.featuredRow}>
               {[0, 1, 2].map((i) => <CampaignCardSkeleton key={i} />)}
             </ScrollView>
           </>
@@ -911,15 +942,11 @@ export default function HomeScreen() {
           <>
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { color: C.text }]}>{t('creator.home.featuredEvents')}</Text>
-              {featured.length > 0 && (
-                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => router.push('/(creator)/featured-campaigns')}>
-                  <Text style={[styles.seeAll, { color: C.brinjal1 }]}>{t('creator.home.seeAll')}</Text>
-                </Pressable>
-              )}
             </View>
             {featured.length > 0 ? (
               <ScrollView
                 horizontal
+                nestedScrollEnabled
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.featuredRow}
                 onScroll={handleFeaturedScroll}
@@ -963,11 +990,11 @@ export default function HomeScreen() {
             </View>
 
             {nearbyLoading ? (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.featuredRow}>
+              <ScrollView horizontal nestedScrollEnabled showsHorizontalScrollIndicator={false} contentContainerStyle={styles.featuredRow}>
                 {[0, 1, 2].map((i) => <CampaignCardSkeleton key={i} />)}
               </ScrollView>
             ) : nearbyCampaigns.length > 0 ? (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.featuredRow}>
+              <ScrollView horizontal nestedScrollEnabled showsHorizontalScrollIndicator={false} contentContainerStyle={styles.featuredRow}>
                 {nearbyCampaigns.map((c) => <CampaignCard key={c.id} campaign={c} variant="nearby" />)}
               </ScrollView>
             ) : nearbyLocationDenied && !nearbyHomeCoords ? (
@@ -1002,7 +1029,6 @@ export default function HomeScreen() {
       />
       </MaxWidthContainer>
       </View>
-      </TouchableWithoutFeedback>
 
       <FilterModal
         visible={filterOpen}
@@ -1107,7 +1133,6 @@ const styles = StyleSheet.create({
   // ── Section headers ──
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginTop: 20, marginBottom: 12 },
   sectionTitle:  { fontSize: 16, fontFamily: F.bold },
-  seeAll:        { fontSize: 13, fontFamily: F.semibold, opacity: 0.7 },
 
   // ── Categories (pills) ──
   categoriesRow: { paddingHorizontal: 20, gap: 8, marginBottom: 0 },
@@ -1153,6 +1178,14 @@ const styles = StyleSheet.create({
   filterTabsWrap: { marginTop: 8, marginBottom: 4 },
 
   // ── Campaign list ──
-  eventSeparator: { height: 6 },
+  // Matches featuredRow's horizontal padding above — without this, cards here
+  // ran full-bleed edge-to-edge while every other section on this screen
+  // (including Featured Events) keeps a 20px margin from the screen edges.
+  // marginBottom (not a separator) so every card — including the last one
+  // before the footer/end of list — gets the same breathing room below it.
+  campaignItemWrap: { paddingHorizontal: 20, marginBottom: 14 },
+  // Tablet/iPad two-per-row grid — mirrors the events tab's cardWrapHalf.
+  campaignRowWrap: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20, marginBottom: 14 },
+  campaignRowItem: { width: '48%' },
   listLoadingMore: { paddingVertical: 16, alignItems: 'center' },
 });

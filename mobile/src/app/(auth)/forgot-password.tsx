@@ -6,6 +6,7 @@ import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { useToast } from '@/components/Toast';
 import { authService } from '@/services/auth';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
@@ -18,6 +19,7 @@ function isValidEmail(v: string) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.tr
 export default function ForgotPasswordScreen() {
   const C = useAppColors();
   const { t } = useLanguage();
+  const toast = useToast();
   const [channel, setChannel] = useState<Channel>('email');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -37,10 +39,12 @@ export default function ForgotPasswordScreen() {
       if (channel === 'email') {
         const trimmedEmail = email.trim().toLowerCase();
         await authService.forgotPassword({ email: trimmedEmail });
+        toast.info(t('auth.forgotPassword.codeSentInfoEmail'));
         router.push({ pathname: '/reset-otp', params: { email: trimmedEmail } });
       } else {
         const normalisedPhone = normalizePhoneForSubmit(phone);
         await authService.forgotPassword({ phone: normalisedPhone });
+        toast.info(t('auth.forgotPassword.codeSentInfoPhone'));
         router.push({ pathname: '/reset-otp', params: { phone: normalisedPhone } });
       }
     } catch (e: any) {

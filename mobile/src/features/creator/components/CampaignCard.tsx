@@ -16,8 +16,8 @@ import { F, RADIUS, SHADOW } from '@/utilities/constants';
 // differing only in their top-right tag (a "NEW" badge vs. a distance pill).
 // One component, one `variant`, instead of two files to keep in sync.
 
-const CARD_W    = 244;
-const CARD_IMG_H = 188;
+const CARD_W    = 264;
+const CARD_IMG_H = 150;
 
 function timeAgo(iso: string, t: TFn): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -59,40 +59,28 @@ export function CampaignCard({ campaign, variant }: { campaign: Campaign; varian
   const { platforms: allPlatforms } = usePlatforms();
   const catMeta   = getCategoryMeta(categories, campaign.categoryKey ?? campaign.category);
   const cardImage = campaign.featureImageUrl ?? getTemplateImage(campaign.template, campaign.categoryKey ?? campaign.category);
+  const expiry    = expiryLabel(campaign.deadline, t);
 
   function goToDetail() {
     router.push({ pathname: '/campaign-detail', params: { campaignId: campaign.id } });
   }
 
   return (
-    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-      style={({ pressed }) => [styles.cardWrap, pressed && { opacity: 0.88, transform: [{ scale: 0.98 }] }]}
-      onPress={goToDetail}>
-      <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
+    <View style={styles.cardWrap}>
+      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+        style={({ pressed }) => [styles.card, { backgroundColor: C.surface, borderColor: C.border }, pressed && { opacity: 0.92 }]}
+        onPress={goToDetail}>
 
-        {/* ── Image — full-bleed, minimal chrome ── */}
+        {/* ── Image ── */}
         <View style={[styles.img, { backgroundColor: catMeta.bg }]}>
-          {/* Category icon always shown as background */}
-          <FontAwesome5 name={catMeta.icon} size={48} color={catMeta.color} style={styles.imgIcon} />
-
-          {/* Overlay template image when available */}
+          <FontAwesome5 name={catMeta.icon} size={44} color={catMeta.color} style={styles.imgIcon} />
           {cardImage && (
             <Image source={{ uri: cardImage }} style={StyleSheet.absoluteFill} contentFit="cover" />
           )}
-
-          {/* Top scrim — keeps the badges legible over bright photos */}
-          <LinearGradient
-            colors={['rgba(0,0,0,0.32)', 'transparent']}
-            style={styles.imgScrim}
-            pointerEvents="none"
-          />
-
-          {/* Category badge — top left, translucent pill */}
+          <LinearGradient colors={['rgba(0,0,0,0.32)', 'transparent']} style={styles.imgScrim} pointerEvents="none" />
           <View style={styles.badge}>
-            <Text style={styles.badgeText}>{displayCategory(campaign.category).toUpperCase()}</Text>
+            <Text style={styles.badgeText} numberOfLines={1}>{displayCategory(campaign.category).toUpperCase()}</Text>
           </View>
-
-          {/* Top-right tag — the one thing that differs between variants */}
           {variant === 'featured' ? (
             campaign.isNew && (
               <View style={[styles.newTag, { backgroundColor: C.badgeNew }]}>
@@ -111,96 +99,71 @@ export function CampaignCard({ campaign, variant }: { campaign: Campaign; varian
 
         {/* ── Body ── */}
         <View style={styles.body}>
-          {/* Brand row */}
-          <View style={styles.brandRow}>
-            <View style={[styles.brandAvatar, { backgroundColor: C.brinjal1, borderColor: C.surface }]}>
-              <Text style={styles.brandAvatarText}>{campaign.brand[0]}</Text>
-            </View>
-            <Text style={[styles.brandName, { color: C.textSecondary }]} numberOfLines={1}>{campaign.brand}</Text>
-          </View>
-
-          {/* Title — the card's editorial focal point */}
-          <Text style={[styles.title, { color: C.text }]} numberOfLines={2}>
-            {campaign.title}
+          <Text style={[styles.title, { color: C.text }]} numberOfLines={2}>{campaign.title}</Text>
+          <Text style={[styles.brandLine, { color: C.textSecondary }]} numberOfLines={1}>
+            {campaign.brand} · {timeAgo(campaign.createdAt, t)}
           </Text>
 
-          {/* Location — paired tightly under the title */}
-          <View style={styles.locationRow}>
-            <Ionicons name="location-outline" size={12} color={C.textSecondary} />
-            <Text style={[styles.locationText, { color: C.textSecondary }]} numberOfLines={1}>
-              {campaign.location ?? t('campaignCard.nepalFallback')}
-            </Text>
-          </View>
-
-          {/* Budget + type */}
-          <View style={styles.metaRow}>
-            <View style={[styles.budgetChip, { backgroundColor: C.primaryLight }]}>
-              <Text style={[styles.budgetText, { color: C.brinjal1 }]} numberOfLines={1}>{campaign.budget}</Text>
-            </View>
+          <View style={styles.tagContainer}>
             {campaign.campaignType === 'OPEN_EVENT' ? (
-              <View style={[styles.typePill, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}>
-                <Text style={[styles.typePillText, { color: '#059669' }]}>{t('campaignCard.free')}</Text>
+              <View style={[styles.tagBadge, { backgroundColor: '#F0FDF4' }]}>
+                <Text style={[styles.tagBadgeText, { color: '#059669' }]}>{t('campaignCard.free')}</Text>
               </View>
             ) : (
-              <View style={[styles.typePill, { backgroundColor: '#EEF2FF', borderColor: '#C7D2FE' }]}>
-                <Text style={[styles.typePillText, { color: '#4F46E5' }]}>{t('campaignCard.paid')}</Text>
+              <View style={[styles.tagBadge, { backgroundColor: '#EEF2FF' }]}>
+                <Text style={[styles.tagBadgeText, { color: '#4F46E5' }]}>{t('campaignCard.paid')}</Text>
               </View>
             )}
           </View>
 
-          {/* Posted + expiry */}
-          {(() => {
-            const expiry = expiryLabel(campaign.deadline, t);
-            return (
-              <View style={styles.metaRow}>
-                <View style={styles.metaItemRow}>
-                  <Ionicons name="calendar-outline" size={11} color={C.textSecondary} />
-                  <Text style={[styles.deadlineText, { color: C.textSecondary }]}>
-                    {timeAgo(campaign.createdAt, t)}
-                  </Text>
-                </View>
-                <View style={styles.metaItemRow}>
-                  <Ionicons name="time-outline" size={11} color={expiry.color} />
-                  <Text style={[styles.deadlineText, { color: expiry.color }]} numberOfLines={1}>
-                    {expiry.label}
-                  </Text>
-                </View>
-              </View>
-            );
-          })()}
+          {/* Details */}
+          <View style={[styles.detailsSection, { borderTopColor: C.border, borderBottomColor: C.border }]}>
+            <View style={styles.detailRow}>
+              <Ionicons name="location-outline" size={13} color={C.textSecondary} />
+              <Text style={[styles.detailText, { color: C.textSecondary }]} numberOfLines={1}>
+                {campaign.location ?? t('campaignCard.nepalFallback')}
+              </Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Ionicons name="time-outline" size={13} color={expiry.color} />
+              <Text style={[styles.detailText, { color: expiry.color }]} numberOfLines={1}>{expiry.label}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Ionicons name="cash-outline" size={13} color={C.textSecondary} />
+              <Text style={[styles.detailText, styles.budgetText, { color: C.text }]} numberOfLines={1}>{campaign.budget}</Text>
+            </View>
+          </View>
 
-          <View style={[styles.applyBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }]}>
+          <Pressable android_ripple={{ color: 'rgba(255,255,255,0.2)' }}
+            style={({ pressed }) => [styles.applyBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }, pressed && { opacity: 0.88 }]}
+            onPress={goToDetail}>
             <Text style={styles.applyBtnText}>{t('campaignCard.applyNow')}</Text>
             <Ionicons name="arrow-forward" size={14} color="#fff" />
-          </View>
+          </Pressable>
         </View>
 
-        {/* Platform stack — floats on the right, straddling the image/body
-            seam so it overlaps both the photo above and the text below. */}
+        {/* Platforms — straddle the image/body seam: half over the photo,
+            half dipping into the info card. Rendered last (after the body)
+            so it paints on top of the body's own background too. */}
         {campaign.platforms.length > 0 && (
-          <View style={styles.platformStack}>
-            {campaign.platforms.slice(0, 3).map((p) => {
+          <View style={styles.platformStackBetween}>
+            {campaign.platforms.map((p) => {
               const meta = getPlatformMeta(allPlatforms, p);
               return (
                 <View key={p} style={[styles.platformIcon, { backgroundColor: C.surface }]}>
-                  <FontAwesome5 name={meta.icon} size={12} color={meta.color} />
+                  <FontAwesome5 name={meta.icon} size={11} color={meta.color} />
                 </View>
               );
             })}
           </View>
         )}
-      </View>
-
-    </Pressable>
+      </Pressable>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  cardWrap: {
-    width: CARD_W,
-    ...SHADOW.raised,
-    shadowColor: '#0F172A',
-  },
+  cardWrap: { width: CARD_W, ...SHADOW.raised, shadowColor: '#0F172A' },
   card: { width: CARD_W, borderRadius: RADIUS.lg, overflow: 'hidden', borderWidth: 1 },
   img:  { width: CARD_W, height: CARD_IMG_H, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
   imgIcon: { opacity: 0.35 },
@@ -222,43 +185,36 @@ const styles = StyleSheet.create({
   },
   distanceTagText: { fontSize: 9, color: '#fff', fontFamily: F.semibold },
 
-  body:  { padding: 14, gap: 6 },
-
-  brandRow:        { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 },
-  brandAvatar:     { width: 20, height: 20, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', borderWidth: 1.5 },
-  brandAvatarText: { fontSize: 10, color: '#fff', fontFamily: F.extrabold },
-  brandName:       { fontSize: 11, fontFamily: F.medium, flexShrink: 1 },
-
-  title: { fontSize: 16, lineHeight: 22, fontFamily: F.bold },
-
-  locationRow:  { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 4 },
-  locationText: { fontSize: 12, fontFamily: F.medium, flexShrink: 1 },
-
-  // Floats over the image/body seam — top is set so the stack's top edge
-  // sits inside the photo and its bottom edge dips into the body, giving
-  // the overlap. Painted last (after body in JSX) so it draws over both.
-  platformStack: {
-    position: 'absolute', top: CARD_IMG_H - 16, right: 12,
-    flexDirection: 'row', gap: 6,
+  // Straddles the image/body seam — top is set so the stack's center sits
+  // exactly on the image's bottom edge (half over the photo, half over the
+  // info card below it), right-aligned over the card.
+  platformStackBetween: {
+    position: 'absolute', top: CARD_IMG_H - 13, right: 14,
+    flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end', gap: 6,
   },
   platformIcon: {
-    width: 30, height: 30, borderRadius: RADIUS.full,
+    width: 26, height: 26, borderRadius: RADIUS.full,
     justifyContent: 'center', alignItems: 'center',
     shadowColor: '#0F172A', shadowOpacity: 0.22, shadowRadius: 6, shadowOffset: { width: 0, height: 3 }, elevation: 4,
   },
 
-  metaRow:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 },
-  metaItemRow:  { flexDirection: 'row', alignItems: 'center', gap: 3, flexShrink: 0 },
-  deadlineText: { fontSize: 11, fontFamily: F.medium },
+  // Extra top clearance (vs. the 14px used on every other side) so the
+  // platform stack straddling the seam above never crowds the title text.
+  body: { padding: 14, paddingTop: 22 },
+  title: { fontSize: 15, lineHeight: 20, fontFamily: F.bold, marginBottom: 3 },
+  brandLine: { fontSize: 11, fontFamily: F.medium, marginBottom: 8 },
 
-  budgetChip: { borderRadius: RADIUS.sm, paddingHorizontal: 9, paddingVertical: 4 },
-  budgetText: { fontSize: 13, fontFamily: F.extrabold },
+  tagContainer: { flexDirection: 'row', marginBottom: 10 },
+  tagBadge: { borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingVertical: 4 },
+  tagBadgeText: { fontSize: 11, fontFamily: F.bold },
 
-  typePill:     { borderRadius: RADIUS.sm, paddingHorizontal: 7, paddingVertical: 2, borderWidth: 1, flexShrink: 0 },
-  typePillText: { fontSize: 10, fontFamily: F.bold },
+  detailsSection: { borderTopWidth: 1, borderBottomWidth: 1, paddingVertical: 10, marginBottom: 10, gap: 8 },
+  detailRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  detailText: { fontSize: 12, fontFamily: F.regular, flexShrink: 1 },
+  budgetText: { fontFamily: F.bold },
 
   applyBtn: {
-    height: 40, borderRadius: RADIUS.full, marginTop: 4,
+    minHeight: 42, borderRadius: RADIUS.sm,
     flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6,
     shadowOpacity: 0.32, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5,
   },

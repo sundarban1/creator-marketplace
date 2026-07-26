@@ -25,13 +25,13 @@ const NAV_GROUPS: { labelKey: string; items: NavItem[] }[] = [
   {
     labelKey: 'drawer.accountGroup',
     items: [
-      { iconName: 'checkmark-circle-outline', labelKey: 'drawer.verification',      route: '/(business)/settings?section=verification', color: '#16A34A' },
       { iconName: 'share-social-outline',     labelKey: 'drawer.socialAccounts',    route: '/(business)/settings?section=social',        color: '#E1306C' },
+      { iconName: 'checkmark-circle-outline', labelKey: 'drawer.verification',      route: '/(business)/settings?section=verification', color: '#16A34A' },
       { iconName: 'wallet-outline', faName: 'wallet',      labelKey: 'drawer.payment',        route: '/(business)/settings?section=payment',       color: '#3B82F6' },
-      { iconName: 'shield-outline', faName: 'shield-alt',  labelKey: 'drawer.privacy',        route: '/(business)/settings?section=privacy',       color: '#4F46E5' },
-      { iconName: 'lock-closed-outline',      labelKey: 'drawer.security',          route: '/(business)/settings?section=account',       color: '#6B7280' },
       { iconName: 'gift-outline', faName: 'gift',          labelKey: 'drawer.referBusiness',   route: '/(business)/refer',                          color: '#F43F5E' },
+      { iconName: 'lock-closed-outline',      labelKey: 'drawer.security',          route: '/(business)/settings?section=account',       color: '#6B7280' },
       { iconName: 'help-buoy-outline', faName: 'life-ring', labelKey: 'drawer.support',        route: '/(business)/settings?section=support',       color: '#0891B2' },
+      { iconName: 'shield-outline', faName: 'shield-alt',  labelKey: 'drawer.privacy',        route: '/(business)/settings?section=privacy',       color: '#4F46E5' },
       { iconName: 'settings-outline',         labelKey: 'drawer.settings',          route: '/(business)/settings?section=app',           color: '#EC4899' },
     ],
   },

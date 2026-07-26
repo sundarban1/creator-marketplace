@@ -1047,6 +1047,10 @@ export default function CampaignWorkspaceScreen() {
               autoCorrect={false}
               keyboardType="url"
             />
+            <View style={[sh.infoBox, { backgroundColor: '#EEF2FF', borderColor: '#C7D2FE', marginTop: 8 }]}>
+              <Ionicons name="information-circle-outline" size={15} color="#4F46E5" />
+              <Text style={[sh.infoTxt, { color: '#4F46E5' }]}>{t('activityTimeline.modalUploadLinksPublicHint')}</Text>
+            </View>
             {urlError ? (
               <View style={up.errorRow}>
                 <Ionicons name="alert-circle" size={13} color="#EF4444" />
@@ -1101,7 +1105,7 @@ export default function CampaignWorkspaceScreen() {
               >
                 <Ionicons name="videocam" size={14} color="#16A34A" />
               </View>
-              <Text style={rv.sectionTitle}>{t('activityTimeline.modalReviewVideosSection')}</Text>
+              <Text style={rv.sectionTitle}>{t('activityTimeline.modalReviewVideosSection', { name: app?.creatorName ?? '—' })}</Text>
             </View>
             <View style={{ gap: 8 }}>
               {(app?.deliverableVideos ?? []).map((v) => (
@@ -1131,7 +1135,7 @@ export default function CampaignWorkspaceScreen() {
               >
                 <Ionicons name="link" size={14} color="#7C3AED" />
               </View>
-              <Text style={rv.sectionTitle}>{t('activityTimeline.modalReviewLinksSection')}</Text>
+              <Text style={rv.sectionTitle}>{t('activityTimeline.modalReviewLinksSection', { name: app?.creatorName ?? '—' })}</Text>
             </View>
             <View style={{ gap: 8 }}>
               {submittedUrls.map((url, idx) => (
