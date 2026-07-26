@@ -24,6 +24,7 @@ import { useScrollToTopOnTabPress } from '@/hooks/useScrollToTopOnTabPress';
 import { campaignService } from '@/services/campaign';
 import { creatorService, type SavedCreatorItem } from '@/services/creator';
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
+import { usePlatforms, getPlatformMeta } from '@/hooks/usePlatforms';
 import { getTemplateImage } from '@/features/creator/data/templateImages';
 import { ListRowSkeleton } from '@/components/ListRowSkeleton';
 import { FilterSheet, FilterSectionHeader } from '@/components/FilterSheet';
@@ -85,6 +86,7 @@ export default function CampaignsScreen() {
   const C = useAppColors();
   const { t } = useLanguage();
   const { categories: allCategories } = useAllCategories();
+  const { platforms: allPlatforms } = usePlatforms();
   const toast = useToast();
   const { width: windowWidth } = useWindowDimensions();
   const numColumns = windowWidth >= TABLET_BREAKPOINT ? 2 : 1;
@@ -447,111 +449,138 @@ export default function CampaignsScreen() {
           renderItem={({ item: c }) => {
             const st = STATUS_CFG[c.status ?? 'draft'];
             const meta = getCategoryMeta(allCategories, c.categoryKey ?? c.category);
-            const bg = meta.bg;
             const cardImage = c.featureImageUrl ?? getTemplateImage(c.template, c.categoryKey ?? c.category);
+            const dateIso = c.campaignType === 'OPEN_EVENT' ? c.eventDate : c.deadline;
+            const creatorsCount = c.campaignType === 'OPEN_EVENT' ? c.capacity : c.creatorsNeeded;
+            const hasFooterActions = c.proposals > 0 || c.status === 'active' || c.status === 'draft';
             return (
-              <View style={styles.cardWrap}>
+              <View style={[styles.cardWrap, numColumns === 2 && styles.cardWrapHalf]}>
               <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
                 <View style={[styles.cardAccent, { backgroundColor: st.color }]} />
-                <View style={styles.cardContent}>
-                  {/* Status — floated in the card's top-right corner instead
-                      of sitting inline in the body. */}
-                  {c.status !== 'draft' && (
-                    <View style={[styles.cornerBadge, { backgroundColor: st.bg }]}>
-                      <Text style={[styles.cornerBadgeText, { color: st.color }]}>
-                        {c.status === 'active' ? t('campaigns.statusActive')
-                          : c.status === 'pending_approval' ? t('campaigns.statusPendingApproval')
-                          : t('campaigns.statusClosed')}
-                      </Text>
-                    </View>
-                  )}
-                  <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                    style={({ pressed }) => [styles.cardMain, pressed && { opacity: 0.88 }]}
-                    onPress={() => router.push({ pathname: '/campaign-detail', params: { campaignId: c.id } })}>
-                    <View style={[styles.thumb, { backgroundColor: bg }]}>
+                <View style={styles.cardBody}>
+                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                  style={({ pressed }) => [styles.cardContent, pressed && { opacity: 0.92 }]}
+                  onPress={() => router.push({ pathname: '/campaign-detail', params: { campaignId: c.id } })}>
+                  {/* Header — thumbnail on the left, title + tags on the right */}
+                  <View style={styles.cardHeader}>
+                    <View style={[styles.thumb, { backgroundColor: meta.bg }]}>
                       <FontAwesome5 name={meta.icon} size={22} color={meta.color} />
                       {cardImage && (
                         <Image source={{ uri: cardImage }} style={StyleSheet.absoluteFill} contentFit="cover" />
                       )}
                     </View>
-                    <View style={styles.body}>
-                      <View style={styles.titleRow}>
-                        <Text style={[styles.title, { color: C.text, flexShrink: 1 }]} numberOfLines={1}>{c.title}</Text>
-                        <View style={[styles.typeBadge, c.campaignType === 'OPEN_EVENT' ? styles.typeBadgeFree : styles.typeBadgePaid]}>
-                          <Text style={[styles.typeBadgeText, c.campaignType === 'OPEN_EVENT' ? styles.typeBadgeTextFree : styles.typeBadgeTextPaid]}>
+                    <View style={styles.titleSection}>
+                      <Text style={[styles.eventTitle, { color: C.text }]} numberOfLines={2}>{c.title}</Text>
+                      <View style={styles.tagContainer}>
+                        <View style={[styles.tagBadge, { backgroundColor: meta.bg }]}>
+                          <FontAwesome5 name={meta.icon} size={9} color={meta.color} />
+                          <Text style={[styles.tagBadgeText, { color: meta.color }]}>{c.category}</Text>
+                        </View>
+                        <View style={[styles.tagBadge, c.campaignType === 'OPEN_EVENT' ? styles.typeBadgeFree : styles.typeBadgePaid]}>
+                          <Text style={[styles.tagBadgeText, c.campaignType === 'OPEN_EVENT' ? styles.typeBadgeTextFree : styles.typeBadgeTextPaid]}>
                             {c.campaignType === 'OPEN_EVENT' ? t('business.home.badgeFree') : t('business.home.badgePaid')}
                           </Text>
                         </View>
-                      </View>
-                      <View style={styles.metaRow}>
-                        {c.platforms.length > 0 && (
-                          <>
-                            <Ionicons name="globe-outline" size={12} color={C.textSecondary} />
-                            <Text style={[styles.meta, { color: C.textSecondary }]} numberOfLines={1}>{c.platforms.join(', ')}</Text>
-                            <Text style={[styles.metaDot, { color: C.border }]}>·</Text>
-                          </>
-                        )}
-                        {c.campaignType === 'OPEN_EVENT' ? (
-                          <>
-                            <Ionicons name="people-outline" size={12} color={C.textSecondary} />
-                            <Text style={[styles.meta, { color: C.textSecondary }]}>{t('createEvent.summaryNCreators', { n: c.capacity ?? 0 })}</Text>
-                          </>
-                        ) : (
-                          <>
-                            <FontAwesome5 name="money-bill-wave" size={11} color={C.textSecondary} />
-                            <Text style={[styles.meta, { color: C.textSecondary }]}>{c.budget}</Text>
-                          </>
-                        )}
-                        <Text style={[styles.metaDot, { color: C.border }]}>·</Text>
-                        <Text style={[styles.meta, { color: C.textSecondary }]}>{timeAgo(c.createdAt)}</Text>
-                      </View>
-                      {c.status === 'draft' && (
-                        <Text style={[styles.draftNote, { color: C.textSecondary }]}>{t('campaigns.tapToEdit')}</Text>
-                      )}
-                    </View>
-                    <Ionicons name="chevron-forward" size={18} color={C.border} />
-                  </Pressable>
-
-                  {/* Footer actions */}
-                  {(c.proposals > 0 || c.status === 'active' || c.status === 'draft') && (
-                    <>
-                      <View style={[styles.footerDivider, { backgroundColor: C.border }]} />
-                      <View style={styles.footerRow}>
-                        {c.status === 'active' && (
-                          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                            style={({ pressed }) => [styles.inviteBtn, { backgroundColor: C.primaryLight }, pressed && { opacity: 0.7 }]}
-                            onPress={() => openInvite(c)}>
-                            <FontAwesome5 name="user-plus" size={12} color={C.brinjal1} />
-                            <Text style={[styles.inviteBtnText, { color: C.brinjal1 }]}>{t('campaigns.invite')}</Text>
-                          </Pressable>
-                        )}
-                        {c.status === 'draft' && (
-                          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                            style={({ pressed }) => [styles.inviteBtn, { backgroundColor: C.primaryLight, opacity: publishingId === c.id ? 0.6 : 1 }, pressed && { opacity: 0.7 }]}
-                            disabled={publishingId === c.id}
-                            onPress={() => handlePublishDraft(c)}>
-                            {publishingId === c.id ? (
-                              <ActivityIndicator size="small" color={C.brinjal1} />
-                            ) : (
-                              <Ionicons name="cloud-upload-outline" size={13} color={C.brinjal1} />
-                            )}
-                            <Text style={[styles.inviteBtnText, { color: C.brinjal1 }]}>{t('campaigns.publishDraft')}</Text>
-                          </Pressable>
-                        )}
-                        {c.proposals > 0 && (
-                          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                            style={({ pressed }) => [styles.footerBtn, styles.inviteBtn, { backgroundColor: C.primaryLight }, pressed && { opacity: 0.7 }]}
-                            onPress={() => openProposals(c)}>
-                            <Ionicons name="people-outline" size={12} color={C.brinjal1} />
-                            <Text style={[styles.inviteBtnText, { color: C.brinjal1 }]}>
-                              {t('campaigns.viewProposalsBtn', { n: c.proposals })}
+                        {c.status !== 'draft' && (
+                          <View style={[styles.tagBadge, { backgroundColor: st.bg }]}>
+                            <Text style={[styles.tagBadgeText, { color: st.color }]}>
+                              {c.status === 'active' ? t('campaigns.statusActive')
+                                : c.status === 'pending_approval' ? t('campaigns.statusPendingApproval')
+                                : t('campaigns.statusClosed')}
                             </Text>
-                            <Ionicons name="arrow-forward" size={12} color={C.brinjal1} />
-                          </Pressable>
+                          </View>
                         )}
                       </View>
-                    </>
+                      <Text style={[styles.postedDay, { color: C.textSecondary }]}>{timeAgo(c.createdAt)}</Text>
+                    </View>
+                  </View>
+
+                  {/* Details */}
+                  <View style={[styles.detailsSection, { borderTopColor: C.border, borderBottomColor: C.border }]}>
+                    {dateIso && (
+                      <View style={styles.detailRow}>
+                        <Ionicons name="calendar-outline" size={14} color={C.textSecondary} />
+                        <Text style={[styles.detailText, { color: C.textSecondary }]}>{formatShortDate(dateIso)}</Text>
+                      </View>
+                    )}
+                    {!!creatorsCount && (
+                      <View style={styles.detailRow}>
+                        <Ionicons name="people-outline" size={14} color={C.textSecondary} />
+                        <Text style={[styles.detailText, { color: C.textSecondary }]}>{t('createEvent.summaryNCreators', { n: creatorsCount })}</Text>
+                      </View>
+                    )}
+                    {c.campaignType !== 'OPEN_EVENT' && (
+                      <View style={styles.detailRow}>
+                        <FontAwesome5 name="money-bill-wave" size={12} color={C.textSecondary} />
+                        <Text style={[styles.detailText, styles.budgetText, { color: C.text }]}>{c.budget}</Text>
+                      </View>
+                    )}
+                  </View>
+
+                  {/* Social platforms */}
+                  {c.platforms.length > 0 && (
+                    <View style={[styles.socialSection, { borderBottomColor: C.border }]}>
+                      <Text style={[styles.socialLabel, { color: C.textSecondary }]}>{t('campaigns.platformsLabel')}</Text>
+                      <View style={styles.socialPlatforms}>
+                        {c.platforms.map((p) => {
+                          const pMeta = getPlatformMeta(allPlatforms, p);
+                          return (
+                            <View key={p} style={[styles.socialIcon, { backgroundColor: pMeta.bg }]}>
+                              <FontAwesome5 name={pMeta.icon} size={13} color={pMeta.color} />
+                            </View>
+                          );
+                        })}
+                      </View>
+                    </View>
                   )}
+
+                  {c.status === 'draft' && (
+                    <Text style={[styles.draftNote, { color: C.textSecondary }]}>{t('campaigns.tapToEdit')}</Text>
+                  )}
+                </Pressable>
+
+                {/* Action buttons */}
+                {hasFooterActions && (
+                  <View style={styles.buttonContainer}>
+                    {c.status === 'active' && (
+                      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                        style={({ pressed }) => [styles.buttonSecondary, { borderColor: C.border }, pressed && { opacity: 0.7 }]}
+                        onPress={() => openInvite(c)}>
+                        <FontAwesome5 name="user-plus" size={12} color={C.text} />
+                        <Text style={[styles.buttonTextSecondary, { color: C.text }]}>{t('campaigns.invite')}</Text>
+                      </Pressable>
+                    )}
+                    {c.status === 'draft' && (
+                      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                        style={({ pressed }) => [styles.buttonSecondary, { borderColor: C.border, opacity: publishingId === c.id ? 0.6 : 1 }, pressed && { opacity: 0.7 }]}
+                        disabled={publishingId === c.id}
+                        onPress={() => handlePublishDraft(c)}>
+                        {publishingId === c.id ? (
+                          <ActivityIndicator size="small" color={C.text} />
+                        ) : (
+                          <Ionicons name="cloud-upload-outline" size={13} color={C.text} />
+                        )}
+                        <Text style={[styles.buttonTextSecondary, { color: C.text }]}>{t('campaigns.publishDraft')}</Text>
+                      </Pressable>
+                    )}
+                    {c.proposals > 0 && (
+                      <Pressable android_ripple={{ color: 'rgba(255,255,255,0.2)' }}
+                        style={({ pressed }) => [styles.buttonPrimary, { backgroundColor: C.brinjal1 }, pressed && { opacity: 0.88 }]}
+                        onPress={() => openProposals(c)}>
+                        <Text style={styles.buttonTextPrimary} numberOfLines={1}>{t('campaigns.viewProposalsBtn', { n: c.proposals })}</Text>
+                      </Pressable>
+                    )}
+                  </View>
+                )}
+
+                {/* Proposals count footer */}
+                {c.proposals > 0 && (
+                  <View style={[styles.proposalsFooter, { borderTopColor: C.border }]}>
+                    <Text style={[styles.proposalsText, { color: C.textSecondary }]}>
+                      {t(c.proposals === 1 ? 'campaigns.proposals' : 'campaigns.proposalsPlural', { count: c.proposals })}
+                    </Text>
+                  </View>
+                )}
                 </View>
               </View>
               </View>
@@ -752,44 +781,59 @@ const styles = StyleSheet.create({
   categoryChip:     { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1.5, borderRadius: RADIUS.full, paddingHorizontal: 14, paddingVertical: 9 },
   categoryChipText: { fontSize: 13, fontFamily: F.medium },
 
-  cardWrap: { borderRadius: RADIUS.md, ...SHADOW.raised },
+  // Two-per-row grid on tablet/iPad (numColumns===2) — phones stay single
+  // column (numColumns===1, cardWrapHalf unused, columnWrapperStyle unset).
+  listGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
+  columnWrapper: { justifyContent: 'space-between' },
+  cardWrap: { borderRadius: RADIUS.lg, ...SHADOW.raised },
+  cardWrapHalf: { width: '48%' },
   card: {
-    borderRadius: RADIUS.md,
+    borderRadius: RADIUS.lg,
     overflow: 'hidden',
     borderWidth: 1,
     flexDirection: 'row',
   },
   cardAccent: { width: 4 },
-  cardContent: { flex: 1 },
-  // Floats over the empty top-right corner above the chevron column —
-  // doesn't collide with the title row since it sits higher than the
-  // vertically-centered chevron below it.
-  cornerBadge: { position: 'absolute', top: 10, right: 10, zIndex: 1, borderRadius: RADIUS.sm, paddingHorizontal: 9, paddingVertical: 4 },
-  cornerBadgeText: { fontSize: 11, fontFamily: F.bold },
-  cardMain: { flexDirection: 'row', alignItems: 'center', padding: 14, gap: 12 },
-  thumb: { width: 66, height: 66, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center', flexShrink: 0, overflow: 'hidden' },
-  body: { flex: 1, gap: 5 },
-  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  title: { fontSize: 14, fontFamily: F.bold },
-  typeBadge: { borderRadius: RADIUS.sm, paddingHorizontal: 7, paddingVertical: 3 },
+  // Column wrapper for everything right of the accent stripe — the tappable
+  // content (Pressable) plus the action buttons and proposals footer below
+  // it, kept out of `card`'s own row flexDirection so they stack vertically
+  // instead of sitting beside it.
+  cardBody: { flex: 1 },
+  cardContent: { padding: 18 },
+
+  cardHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 14 },
+  titleSection: { flex: 1, gap: 6 },
+  eventTitle: { fontSize: 16, fontFamily: F.bold, lineHeight: 21 },
+  tagContainer: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', rowGap: 6, gap: 6 },
+  tagBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingVertical: 4 },
+  tagBadgeText: { fontSize: 11, fontFamily: F.bold },
   typeBadgePaid: { backgroundColor: TabColors.brand.bg },
   typeBadgeFree: { backgroundColor: TabColors.info.bg },
-  typeBadgeText: { fontSize: 10, fontFamily: F.bold },
   typeBadgeTextPaid: { color: TabColors.brand.color },
   typeBadgeTextFree: { color: TabColors.info.color },
-  metaRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', rowGap: 3, gap: 5 },
-  metaDot: { fontSize: 12 },
-  meta: { fontSize: 12, fontFamily: F.regular },
+  postedDay: { fontSize: 12, fontFamily: F.regular },
+  thumb: { width: 64, height: 64, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center', flexShrink: 0, overflow: 'hidden' },
+
+  detailsSection: { borderTopWidth: 1, borderBottomWidth: 1, paddingVertical: 12, marginBottom: 14, gap: 10 },
+  detailRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  detailText: { fontSize: 13, fontFamily: F.regular },
+  budgetText: { fontFamily: F.bold },
+
+  socialSection: { borderBottomWidth: 1, paddingBottom: 14, marginBottom: 14, gap: 10 },
+  socialLabel: { fontSize: 12, fontFamily: F.medium },
+  socialPlatforms: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  socialIcon: { width: 32, height: 32, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center' },
+
   draftNote: { fontSize: 11, fontStyle: 'italic', fontFamily: F.regular },
 
-  footerDivider: { height: 1, marginHorizontal: 12 },
-  footerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 9 },
-  // marginLeft:'auto' keeps this pinned to the right edge even when it's the
-  // only footer action rendered (e.g. no invite/publish button alongside it).
-  footerBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 40, paddingVertical: 4, marginLeft: 'auto' },
-  footerBtnText: { fontSize: 12, fontFamily: F.bold },
-  inviteBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: RADIUS.sm, paddingHorizontal: 10, paddingVertical: 6, minHeight: 40 },
-  inviteBtnText: { fontSize: 12, fontFamily: F.bold },
+  buttonContainer: { flexDirection: 'row', gap: 10, paddingHorizontal: 18, paddingBottom: 16 },
+  buttonPrimary: { flex: 1, minHeight: 42, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 12 },
+  buttonTextPrimary: { color: '#fff', fontSize: 13, fontFamily: F.bold },
+  buttonSecondary: { flex: 1, flexDirection: 'row', minHeight: 42, borderRadius: RADIUS.sm, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center', gap: 6, paddingHorizontal: 12 },
+  buttonTextSecondary: { fontSize: 13, fontFamily: F.bold },
+
+  proposalsFooter: { borderTopWidth: 1, paddingHorizontal: 18, paddingVertical: 12 },
+  proposalsText: { fontSize: 12, fontFamily: F.regular },
 
   modalBackdrop: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)' },
   modalSheet: {

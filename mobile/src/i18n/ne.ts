@@ -909,6 +909,7 @@ const ne = {
     invite: 'इन्भाइट',
     viewProposals: 'प्रपोजल हेर्नुहोस्',
     viewProposalsBtn: '{{n}} प्रपोजल हेर्नुहोस्',
+    platformsLabel: 'प्लेटफर्महरू',
     publishDraft: 'पब्लिश गर्नुहोस्',
     draftPublished: 'इभेन्ट पब्लिश भयो!',
     draftPublishFailed: 'यो ड्राफ्ट पब्लिश हुन सकेन।',

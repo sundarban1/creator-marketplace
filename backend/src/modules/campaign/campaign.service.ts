@@ -153,8 +153,12 @@ export class CampaignService {
   // after signing up). Both fail open (skip the check) if their setting is
   // disabled, and both read the business's own createdAt/id rather than the
   // user's, since a BusinessProfile is created atomically with its User at
-  // signup (see AuthService.register).
-  private async assertCampaignCreationAllowed(business: { id: string; createdAt: Date }): Promise<void> {
+  // signup (see AuthService.register). Neither applies to a DRAFT save —
+  // drafts aren't live content reaching anyone, matching the existing
+  // countFeaturedCampaigns convention of excluding drafts from quota checks.
+  private async assertCampaignCreationAllowed(business: { id: string; createdAt: Date }, requestedStatus: 'DRAFT' | 'ACTIVE'): Promise<void> {
+    if (requestedStatus === 'DRAFT') return;
+
     const [cooldownEnabled, cooldownHours, capEnabled, maxPerDay] = await Promise.all([
       this.adminRepo.getSetting('rateLimit.newAccountCooldown.enabled'),
       this.adminRepo.getSetting('rateLimit.newAccountCooldown.hours').then((v) => Number(v) || 24),
@@ -187,7 +191,7 @@ export class CampaignService {
       throw new AppError('Business profile not found', 404);
     }
 
-    await this.assertCampaignCreationAllowed(business);
+    await this.assertCampaignCreationAllowed(business, input.status);
 
     const [resolvedStatus, commissionRate, featuredAllowed] = await Promise.all([
       this.resolvePublishStatus(input.status),

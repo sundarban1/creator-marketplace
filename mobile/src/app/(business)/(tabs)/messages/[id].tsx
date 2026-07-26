@@ -446,17 +446,34 @@ export default function BusinessChatRoomScreen() {
         m.id === data.messageId ? { ...m, isDeleted: true, text: '', attachmentUrl: null, attachmentName: null } : m
       ));
     };
+    // A socket-sent text message was rejected server-side (e.g. the new
+    // messages-per-minute / duplicate-message rate limits) — the socket path
+    // never otherwise resolves on failure (no ack), so without this the
+    // optimistic bubble would sit there forever with no explanation.
+    const onMessageError = (data: { conversationId: string; message?: string }) => {
+      if (data.conversationId !== id) return;
+      isSending.current = false;
+      setMessages((prev) => {
+        const idx = [...prev].reverse().findIndex((m) => m.status === 'sending' && m.senderId === user?.id);
+        if (idx === -1) return prev;
+        const removeAt = prev.length - 1 - idx;
+        return prev.filter((_, i) => i !== removeAt);
+      });
+      Alert.alert(t('messages.sendFailedTitle'), data.message ?? t('messages.sendFailedGeneric'));
+    };
 
     socket.on('typing:start', onTypingStart);
     socket.on('typing:stop',  onTypingStop);
     socket.on('connect',      onReconnect);
     socket.on('message:deleted', onMessageDeleted);
+    socket.on('message:error', onMessageError);
 
     return () => {
       socket.off('typing:start', onTypingStart);
       socket.off('typing:stop',  onTypingStop);
       socket.off('connect',      onReconnect);
       socket.off('message:deleted', onMessageDeleted);
+      socket.off('message:error', onMessageError);
       socket.emit('leave:conversation', { conversationId: id });
       if (typingTimer.current) clearTimeout(typingTimer.current);
       if (seenTimer.current)   clearTimeout(seenTimer.current);
@@ -573,8 +590,9 @@ export default function BusinessChatRoomScreen() {
             return without.some((m) => m.id === msg.id) ? without : [...without, msg];
           });
         })
-        .catch(() => {
+        .catch((e) => {
           setMessages((prev) => prev.filter((m) => m.id !== tempId));
+          Alert.alert(t('messages.sendFailedTitle'), e instanceof Error ? e.message : t('messages.sendFailedGeneric'));
         })
         .finally(() => { isSending.current = false; });
     }

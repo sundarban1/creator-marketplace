@@ -813,10 +813,11 @@ export class CampaignRepository {
   }
 
   // Used by the admin-configurable "campaign creation per day" rate limit —
-  // see CampaignService.create.
+  // see CampaignService.create. Drafts are excluded, matching
+  // countFeaturedCampaigns' existing convention (a draft isn't live content).
   async countCampaignsCreatedSince(businessId: string, since: Date): Promise<number> {
     return prisma.campaign.count({
-      where: { businessId, createdAt: { gte: since } },
+      where: { businessId, createdAt: { gte: since }, status: { not: 'DRAFT' } },
     });
   }
 

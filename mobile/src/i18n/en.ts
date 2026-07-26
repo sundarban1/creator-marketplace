@@ -915,6 +915,7 @@ const en = {
     invite: 'Invite',
     viewProposals: 'View proposals',
     viewProposalsBtn: 'View {{n}} Proposal(s)',
+    platformsLabel: 'Platforms',
     publishDraft: 'Publish',
     draftPublished: 'Event published!',
     draftPublishFailed: 'Failed to publish this draft.',
