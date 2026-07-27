@@ -404,8 +404,8 @@ const options: swaggerJsdoc.Options = {
   // __dirname is .../src/config in dev (tsx) and .../dist/config when built.
   // swagger-jsdoc globs need to point to whichever copy actually exists.
   apis: __dirname.includes('/dist/')
-    ? [path.resolve(__dirname, '../modules/**/*.routes.js'), path.resolve(__dirname, '../app.js')]
-    : [path.resolve(__dirname, '../modules/**/*.routes.ts'), path.resolve(__dirname, '../app.ts')],
+    ? [path.resolve(__dirname, '../modules/**/*.routes.js'), path.resolve(__dirname, '../routes/health.js')]
+    : [path.resolve(__dirname, '../modules/**/*.routes.ts'), path.resolve(__dirname, '../routes/health.ts')],
 };
 
 export const swaggerSpec = swaggerJsdoc(options);

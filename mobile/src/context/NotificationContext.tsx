@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
+import * as Notifications from 'expo-notifications';
 import type { Socket } from 'socket.io-client';
 import { useAuth } from './AuthContext';
 import { connectSocket, disconnectSocket } from '@/lib/socket';
@@ -45,6 +46,16 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   function refreshChatBadge() {
     chatService.getBadgeCount().then((r) => setChatBadgeCount(r.count)).catch(() => {});
   }
+
+  // The OS app-icon badge is otherwise only ever set by an incoming push's payload
+  // (see notificationService.getBadge()/setNotificationHandler's shouldSetBadge) —
+  // nothing clears or updates it as the user reads notifications/messages in-app,
+  // so it silently gets stuck at whatever number the last push happened to carry
+  // (previously always 1 — the backend hardcoded it). Syncing it here on every
+  // change to the in-app counts keeps it accurate, including clearing to 0.
+  useEffect(() => {
+    void Notifications.setBadgeCountAsync(badgeCount + chatBadgeCount);
+  }, [badgeCount, chatBadgeCount]);
 
   useEffect(() => {
     if (!user) {

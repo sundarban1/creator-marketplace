@@ -1,5 +1,5 @@
 import rateLimit from 'express-rate-limit';
-import type { Request } from 'express';
+import type { Express, Request } from 'express';
 import { env } from '../config/env';
 import { getCachedSettings } from '../utils/settingsCache';
 
@@ -75,3 +75,67 @@ export const perUserMessageLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+// Messaging routes need a much higher ceiling for real-time chat
+const messagingLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 600,
+  message: { success: false, message: 'Too many requests. Please slow down in chat.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Upload endpoints need a higher limit (multipart payloads)
+const uploadLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 20,
+  message: { success: false, message: 'Too many upload requests.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// AI generation is slow/costly — keep this tight
+const aiGenerateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 5,
+  message: { success: false, message: 'Too many AI generation requests. Please wait a moment.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Public, unauthenticated contact form — tight limit to deter spam
+const publicContactLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: isProd ? 5 : 50,
+  message: { success: false, message: 'Too many messages sent. Please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Mounts every path-specific limiter above onto the app. Order matters only
+// in that the general /api/ limiter is applied first and more specific paths
+// layer additional limiters on top of it.
+export function applyRateLimits(app: Express): void {
+  // General limiter for all /api/* routes (messaging gets its own instead, below)
+  app.use('/api/', apiLimiter);
+  app.use('/api/messaging/', messagingLimiter);
+
+  // Auth-specific limiters
+  app.use('/api/auth/login',           authLimiter);
+  app.use('/api/auth/register',        authLimiter);
+  app.use('/api/auth/forgot-password', authLimiter);
+  app.use('/api/auth/verify-otp',      otpLimiter);
+  app.use('/api/auth/resend-otp',      otpLimiter);
+
+  // Upload endpoints
+  app.use('/api/creator/avatar',          uploadLimiter);
+  app.use('/api/business/logo',           uploadLimiter);
+  app.use('/api/campaigns/feature-image', uploadLimiter);
+
+  // AI generation
+  app.use('/api/campaigns/ai/generate',              aiGenerateLimiter);
+  app.use('/api/campaigns/ai/suggest-description',   aiGenerateLimiter);
+
+  // Public contact form
+  app.use('/api/support/contact-public', publicContactLimiter);
+}

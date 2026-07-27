@@ -12,7 +12,7 @@ const NOTIFICATION_FIELDS = ['title', 'body'] as const;
 
 const repo = new NotificationRepository();
 
-export async function sendExpoPush(userId: string, title: string, body: string) {
+export async function sendExpoPush(userId: string, title: string, body: string, chatBadgeCount = 0) {
   try {
     const user = await prisma.user.findUnique({ where: { id: userId }, select: { pushToken: true, pushNotificationsEnabled: true } });
     if (user?.pushNotificationsEnabled === false) {
@@ -29,16 +29,59 @@ export async function sendExpoPush(userId: string, title: string, body: string) 
       return;
     }
 
-    const message: ExpoPushMessage = { to: token, title, body, sound: 'default', badge: 1, channelId: 'default' };
+    // The OS app-icon badge must reflect real unread state, not a constant —
+    // previously this was hardcoded to 1, so it got set once by the first-ever
+    // push and then never changed again for the lifetime of the install (nothing
+    // clears it either — see the client-side setBadgeCountAsync sync in
+    // NotificationContext for the other half of this fix). Bell unread + chat
+    // unread (the latter passed in by callers that already computed it, e.g.
+    // messaging.service.ts's persistAndBroadcast) is the same total shown
+    // in-app across the bell and messages tabs.
+    const bellUnread = await repo.getUnreadCount(userId);
+    const badge = bellUnread + chatBadgeCount;
+
+    const message: ExpoPushMessage = { to: token, title, body, sound: 'default', badge, channelId: 'default' };
     const [ticket] = await expo.sendPushNotificationsAsync([message]);
     if (ticket?.status === 'error') {
       logger.warn({ userId, ticket }, 'Expo push ticket returned an error');
+      return;
+    }
+    // A ticket status of "ok" only means Expo accepted the message for delivery —
+    // it says nothing about whether FCM/APNs actually delivered it. Real delivery
+    // errors (DeviceNotRegistered, and critically InvalidCredentials — which fires
+    // when an Expo/EAS project's Android FCM server credentials aren't configured,
+    // a platform this stored token may or may not belong to) only surface via a
+    // follow-up receipt fetch. Without this, those failures are invisible: no log,
+    // no error, the notification just silently never arrives.
+    if (ticket?.status === 'ok' && ticket.id) {
+      scheduleReceiptCheck(userId, ticket.id);
     }
   } catch (err) {
     // Non-critical — don't let push failure break the notification flow,
     // but it must be logged or delivery failures are undiagnosable.
     logger.error({ err, userId }, 'Failed to send push notification');
   }
+}
+
+// Expo recommends checking receipts some time after the ticket is issued, not
+// immediately — FCM/APNs delivery is async on their end too. This is fire-and-forget
+// by design, matching the fire-and-forget sendExpoPush() call sites; a failed receipt
+// check here must never affect the request that triggered the original notification.
+function scheduleReceiptCheck(userId: string, ticketId: string) {
+  setTimeout(() => {
+    void expo.getPushNotificationReceiptsAsync([ticketId])
+      .then(async (receipts) => {
+        const receipt = receipts[ticketId];
+        if (!receipt || receipt.status === 'ok') return;
+        logger.warn({ userId, ticketId, receipt }, 'Expo push receipt returned an error');
+        // DeviceNotRegistered means the token is permanently dead (uninstalled app,
+        // revoked permission, etc.) — clear it so future sends stop retrying it.
+        if (receipt.details?.error === 'DeviceNotRegistered') {
+          await prisma.user.update({ where: { id: userId }, data: { pushToken: null } }).catch(() => {});
+        }
+      })
+      .catch((err) => logger.error({ err, userId, ticketId }, 'Failed to fetch push notification receipt'));
+  }, 20_000);
 }
 
 export const notificationService = {
