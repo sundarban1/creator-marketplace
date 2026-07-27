@@ -278,11 +278,11 @@ export default function ExploreCreatorsScreen() {
               autoCorrect={false}
             />
             {search.length > 0 && (
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => setSearch('')} hitSlop={10}>
+              <Pressable onPress={() => setSearch('')} hitSlop={10}>
                 <Ionicons name="close-circle" size={18} color={C.textSecondary} />
               </Pressable>
             )}
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            <Pressable
               style={[
                 s.filterBtn,
                 { backgroundColor: filterActive ? C.brinjal1 : C.primaryLight },
@@ -304,7 +304,7 @@ export default function ExploreCreatorsScreen() {
 
       {/* Result count + Saved link — same row, below search bar */}
       <View style={s.metaRow}>
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+        <Pressable
           style={[s.savedLink, { backgroundColor: C.surface, borderColor: C.border, borderWidth: 1 }]}
           onPress={() => router.push('/(business)/saved-creators' as Parameters<typeof router.push>[0])}>
           <Ionicons name="bookmark" size={14} color={C.brinjal1} />
@@ -323,14 +323,14 @@ export default function ExploreCreatorsScreen() {
       {filterActive && (
         <View style={s.chipRow}>
           {activeFilter.locations.map((loc) => (
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} key={loc.label} onPress={() => removeActiveFilter('locations', loc.label)} style={[s.chip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
+            <Pressable key={loc.label} onPress={() => removeActiveFilter('locations', loc.label)} style={[s.chip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
               <Ionicons name={loc.label === 'Remote' ? 'globe-outline' : 'location'} size={12} color={C.brinjal1} />
               <Text style={[s.chipText, { color: C.brinjal1 }]}>{loc.label}</Text>
               <Ionicons name="close" size={12} color={C.brinjal1} />
             </Pressable>
           ))}
           {(activeFilter.priceMin > CREATOR_SLIDER_MIN || activeFilter.priceMax < CREATOR_SLIDER_MAX) && (
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => removeActiveFilter('priceMin')} style={[s.chip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
+            <Pressable onPress={() => removeActiveFilter('priceMin')} style={[s.chip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
               <FontAwesome5 name="wallet" size={11} color={getIconColor('wallet')} />
               <Text style={[s.chipText, { color: C.brinjal1 }]}>{formatCreatorRate(activeFilter.priceMin)}–{activeFilter.priceMax >= CREATOR_SLIDER_MAX ? `${formatCreatorRate(CREATOR_SLIDER_MAX)}+` : formatCreatorRate(activeFilter.priceMax)}</Text>
               <Ionicons name="close" size={12} color={C.brinjal1} />
@@ -340,7 +340,7 @@ export default function ExploreCreatorsScreen() {
             const meta = getPlatformMeta(allPlatforms, p);
             const label = allPlatforms.find((x) => x.key === p)?.name ?? p;
             return (
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} key={p} onPress={() => removeActiveFilter('platforms', p)} style={[s.chip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
+              <Pressable key={p} onPress={() => removeActiveFilter('platforms', p)} style={[s.chip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
                 <FontAwesome5 name={meta.icon} size={11} color={meta.color} />
                 <Text style={[s.chipText, { color: C.brinjal1 }]}>{label}</Text>
                 <Ionicons name="close" size={12} color={C.brinjal1} />
@@ -350,14 +350,14 @@ export default function ExploreCreatorsScreen() {
           {activeFilter.categories.map((cat) => {
             const meta = getCategoryMeta(allCategories, cat);
             return (
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} key={cat} onPress={() => removeActiveFilter('categories', cat)} style={[s.chip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
+              <Pressable key={cat} onPress={() => removeActiveFilter('categories', cat)} style={[s.chip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
                 <FontAwesome5 name={meta.icon} size={11} color={meta.color} />
                 <Text style={[s.chipText, { color: C.brinjal1 }]}>{cat}</Text>
                 <Ionicons name="close" size={12} color={C.brinjal1} />
               </Pressable>
             );
           })}
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => setActiveFilter(DEFAULT_CREATOR_FILTER)} style={[s.chip, { backgroundColor: C.background, borderColor: C.border }]}>
+          <Pressable onPress={() => setActiveFilter(DEFAULT_CREATOR_FILTER)} style={[s.chip, { backgroundColor: C.background, borderColor: C.border }]}>
             <Text style={[s.chipText, { color: C.textSecondary }]}>{t('common.clearAll')}</Text>
           </Pressable>
         </View>

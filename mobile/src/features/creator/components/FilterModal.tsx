@@ -184,7 +184,7 @@ function DateRangePicker({
               <Text style={[dp.inputLabel, { color: C.textSecondary }]}>
                 {field === 'from' ? t('filterModal.fromLabel') : t('filterModal.toLabel')}
               </Text>
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+              <Pressable
                 style={[dp.inputBox, { borderColor: active ? C.brinjal1 : date ? C.brinjal1 + '60' : C.border, backgroundColor: C.background }]}
                 onPress={() => togglePicker(field)}>
                 <Text style={[dp.inputValue, { color: date ? C.text : C.textSecondary }]} numberOfLines={1}>
@@ -205,11 +205,11 @@ function DateRangePicker({
           </Text>
 
           <View style={dp.monthNav}>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={dp.navBtn} onPress={prevMonth}>
+            <Pressable style={dp.navBtn} onPress={prevMonth}>
               <Text style={[dp.navBtnTxt, { color: C.brinjal1 }]}>‹</Text>
             </Pressable>
             <Text style={[dp.monthTitle, { color: C.text }]}>{months[calMonth]} {calYear}</Text>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={dp.navBtn} onPress={nextMonth}>
+            <Pressable style={dp.navBtn} onPress={nextMonth}>
               <Text style={[dp.navBtnTxt, { color: C.brinjal1 }]}>›</Text>
             </Pressable>
           </View>
@@ -226,7 +226,7 @@ function DateRangePicker({
               const st = dayStatus(day);
               const isEnd = st === 'from' || st === 'to';
               return (
-                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                <Pressable
                   key={`d${day}`}
                   style={[dp.cell, (st === 'range' || isEnd) && { backgroundColor: C.primaryLight }]}
                   onPress={() => handleDayTap(day)}>

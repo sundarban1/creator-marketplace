@@ -89,11 +89,11 @@ function CalendarGrid({ value, onChange, colors }: {
   return (
     <View style={{ gap: 10 }}>
       <View style={cal.nav}>
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={cal.navBtn} onPress={() => calMonth === 0 ? (setCalYear(y => y-1), setCalMonth(11)) : setCalMonth(m => m-1)}>
+        <Pressable style={cal.navBtn} onPress={() => calMonth === 0 ? (setCalYear(y => y-1), setCalMonth(11)) : setCalMonth(m => m-1)}>
           <Text style={[cal.navTxt, { color: C.brinjal1 }]}>‹</Text>
         </Pressable>
         <Text style={[cal.title, { color: C.text }]}>{MONTHS[calMonth]} {calYear}</Text>
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={cal.navBtn} onPress={() => calMonth === 11 ? (setCalYear(y => y+1), setCalMonth(0)) : setCalMonth(m => m+1)}>
+        <Pressable style={cal.navBtn} onPress={() => calMonth === 11 ? (setCalYear(y => y+1), setCalMonth(0)) : setCalMonth(m => m+1)}>
           <Text style={[cal.navTxt, { color: C.brinjal1 }]}>›</Text>
         </Pressable>
       </View>
@@ -107,7 +107,7 @@ function CalendarGrid({ value, onChange, colors }: {
           const sel  = value ? sameDay(value, dayStart(new Date(calYear, calMonth, day))) : false;
           const isTd = sameDay(dayStart(new Date(calYear, calMonth, day)), today);
           return (
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} key={`d${day}`} style={cal.cell} disabled={past}
+            <Pressable key={`d${day}`} style={cal.cell} disabled={past}
               onPress={() => onChange(dayStart(new Date(calYear, calMonth, day)))}>
               <View style={[cal.circle, sel && { backgroundColor: C.brinjal1 }, isTd && !sel && { borderWidth: 1.5, borderColor: C.brinjal1 }]}>
                 <Text style={[cal.dayNum, { color: past ? C.border : sel ? '#fff' : isTd ? C.brinjal1 : C.text }, sel && { fontWeight: '700' }]}>{day}</Text>
@@ -430,7 +430,7 @@ export default function CampaignDetailScreen() {
         <View style={s.centered}>
           <FontAwesome5 name="search" size={40} color={C.textSecondary} />
           <Text style={[{ fontSize: 17, fontWeight: '600' }, { color: C.textSecondary }]}>{error || t('campaignDetail.notFound')}</Text>
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[s.goBackBtn, { backgroundColor: C.brinjal1 }]} onPress={() => router.back()}>
+          <Pressable style={[s.goBackBtn, { backgroundColor: C.brinjal1 }]} onPress={() => router.back()}>
             <Text style={s.goBackBtnTxt}>{t('campaignDetail.goBack')}</Text>
           </Pressable>
         </View>
@@ -669,7 +669,7 @@ export default function CampaignDetailScreen() {
       {/* Sticky CTA */}
       <View style={[s.ctaBar, { justifyContent: 'center' }]}>
         {isBusiness ? (
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+          <Pressable
             style={({ pressed }) => [s.applyBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }, pressed && { opacity: 0.88 }]}
             onPress={openEdit}>
             <Ionicons name="create-outline" size={16} color="#fff" />
@@ -691,7 +691,7 @@ export default function CampaignDetailScreen() {
             <Text style={s.appliedBadgeTxt}>{t('campaignDetail.alreadyApplied')}</Text>
           </View>
         ) : (
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+          <Pressable
             style={({ pressed }) => [s.applyBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }, pressed && { opacity: 0.88 }]}
             onPress={() => campaign && router.push({ pathname: '/submit-proposal', params: { campaignId: campaign.id, campaignTitle: campaign.title, brand: campaign.brand, budget: campaign.budget, budgetMin: String(campaign.budgetRaw), budgetMax: String(campaign.budgetMax ?? campaign.budgetRaw), category: campaign.category, campaignType: campaign.campaignType ?? 'PAID_CAMPAIGN' } })}>
             <Text style={s.applyBtnTxt}>{t('campaignDetail.submitProposal')}</Text>
@@ -703,7 +703,7 @@ export default function CampaignDetailScreen() {
       {/* ── Edit Campaign Modal ── */}
       <Modal visible={editOpen} transparent animationType="slide" onRequestClose={() => setEditOpen(false)}>
         <View style={em.overlay}>
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={em.scrim} onPress={() => setEditOpen(false)} />
+          <Pressable style={em.scrim} onPress={() => setEditOpen(false)} />
           <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={em.sheetWrap}>
             <View style={[em.sheet, { backgroundColor: C.surface }]}>
               <View style={[em.handle, { backgroundColor: C.border }]} />
@@ -711,7 +711,7 @@ export default function CampaignDetailScreen() {
               {/* Sheet header */}
               <View style={em.sheetHeader}>
                 <Text style={[em.sheetTitle, { color: C.text }]}>{t('campaignDetail.editEvent')}</Text>
-                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => setEditOpen(false)} hitSlop={10}>
+                <Pressable onPress={() => setEditOpen(false)} hitSlop={10}>
                   <Ionicons name="close" size={22} color={C.textSecondary} />
                 </Pressable>
               </View>
@@ -760,7 +760,7 @@ export default function CampaignDetailScreen() {
                     <Text style={[em.sectionHdr, { color: C.textSecondary, marginTop: 24 }]}>{t('campaignDetail.editSectionDetails')}</Text>
 
                     <Text style={[em.label, { color: C.text }]}>{t('campaignDetail.fieldEventDate')} <Text style={{ color: C.brinjal1 }}>*</Text></Text>
-                    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                    <Pressable
                       style={[em.dateTrigger, { backgroundColor: C.background, borderColor: editErrors.eventDate ? ERROR_RED : C.border }]}
                       onPress={() => setEventCalOpen(true)}>
                       <Text style={[em.dateTxt, { color: editForm.eventDate ? C.text : C.textSecondary }]}>
@@ -771,7 +771,7 @@ export default function CampaignDetailScreen() {
                     {editErrors.eventDate ? <Text style={em.errTxt}>{editErrors.eventDate}</Text> : null}
 
                     <Text style={[em.label, { color: C.text, marginTop: 16 }]}>{t('campaignDetail.fieldRegDeadline')} <Text style={{ color: C.brinjal1 }}>*</Text></Text>
-                    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                    <Pressable
                       style={[em.dateTrigger, { backgroundColor: C.background, borderColor: editErrors.deadline ? ERROR_RED : C.border }]}
                       onPress={() => setCalOpen(true)}>
                       <Text style={[em.dateTxt, { color: editForm.deadline ? C.text : C.textSecondary }]}>
@@ -805,7 +805,7 @@ export default function CampaignDetailScreen() {
                       {EVENT_BENEFITS.map((b) => {
                         const checked = editForm.benefits.includes(b);
                         return (
-                          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                          <Pressable
                             key={b}
                             style={[cg.chip, { borderColor: checked ? C.brinjal1 : C.border, backgroundColor: checked ? C.primaryLight : C.background }]}
                             onPress={() => {
@@ -890,7 +890,7 @@ export default function CampaignDetailScreen() {
                     </SectionCard>
 
                     <SectionCard title={t('createEvent.secDeadlineTitle')} sub={t('createEvent.secDeadlineSub')} colors={C}>
-                      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                      <Pressable
                         style={[em.dateTrigger, { backgroundColor: C.background, borderColor: editErrors.deadline ? ERROR_RED : C.border }]}
                         onPress={() => setCalOpen(true)}>
                         <Text style={[em.dateTxt, { color: editForm.deadline ? C.text : C.textSecondary }]}>
@@ -945,7 +945,7 @@ export default function CampaignDetailScreen() {
               </ScrollView>
 
               {/* Save button */}
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+              <Pressable
                 style={({ pressed }) => [em.saveBtn, { backgroundColor: saving ? C.border : C.brinjal1 }, pressed && !saving && { opacity: 0.88 }]}
                 onPress={handleSave}
                 disabled={saving}>
@@ -959,12 +959,12 @@ export default function CampaignDetailScreen() {
       {/* ── Calendar modal (deadline) ── */}
       <Modal visible={calOpen} transparent animationType="slide" onRequestClose={() => setCalOpen(false)}>
         <View style={em.overlay}>
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={em.scrim} onPress={() => setCalOpen(false)} />
+          <Pressable style={em.scrim} onPress={() => setCalOpen(false)} />
           <View style={[em.calSheet, { backgroundColor: C.surface }]}>
             <View style={[em.handle, { backgroundColor: C.border }]} />
             <View style={em.sheetHeader}>
               <Text style={[em.sheetTitle, { color: C.text }]}>{isOpenEvent ? t('campaignDetail.calendarRegDeadline') : t('campaignDetail.calendarSelectDeadline')}</Text>
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => setCalOpen(false)}>
+              <Pressable onPress={() => setCalOpen(false)}>
                 <Text style={[em.doneBtn, { color: C.brinjal1 }]}>{t('campaignDetail.doneBtn')}</Text>
               </Pressable>
             </View>
@@ -985,12 +985,12 @@ export default function CampaignDetailScreen() {
       {/* ── Calendar modal (event date) ── */}
       <Modal visible={eventCalOpen} transparent animationType="slide" onRequestClose={() => setEventCalOpen(false)}>
         <View style={em.overlay}>
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={em.scrim} onPress={() => setEventCalOpen(false)} />
+          <Pressable style={em.scrim} onPress={() => setEventCalOpen(false)} />
           <View style={[em.calSheet, { backgroundColor: C.surface }]}>
             <View style={[em.handle, { backgroundColor: C.border }]} />
             <View style={em.sheetHeader}>
               <Text style={[em.sheetTitle, { color: C.text }]}>{t('campaignDetail.calendarEventDate')}</Text>
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => setEventCalOpen(false)}>
+              <Pressable onPress={() => setEventCalOpen(false)}>
                 <Text style={[em.doneBtn, { color: C.brinjal1 }]}>{t('campaignDetail.doneBtn')}</Text>
               </Pressable>
             </View>

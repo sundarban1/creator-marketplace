@@ -106,7 +106,6 @@ function CustomTabBar({
             key={route.key}
             onPress={onPress}
             style={tabS.item}
-            android_ripple={{ color: 'transparent' }}
           >
             {/* Icon bubble */}
             <View

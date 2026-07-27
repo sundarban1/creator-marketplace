@@ -76,7 +76,7 @@ export function BusinessFilterModal({
           {allPlatforms.map((p) => {
             const active = tempPlatform === p.name;
             return (
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+              <Pressable
                 key={p.id}
                 onPress={() => setTempPlatform(active ? '' : p.name)}
                 style={[s.filterChip, { borderColor: active ? p.color : C.border, backgroundColor: active ? p.iconBg : C.background }]}>
@@ -95,7 +95,7 @@ export function BusinessFilterModal({
           {businessCategories.map((cat) => {
             const active = tempCategory === cat.name;
             return (
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+              <Pressable
                 key={cat.id}
                 onPress={() => setTempCategory(active ? '' : cat.name)}
                 style={[s.filterChip, { borderColor: active ? cat.color : C.border, backgroundColor: active ? cat.iconBg : C.background }]}>

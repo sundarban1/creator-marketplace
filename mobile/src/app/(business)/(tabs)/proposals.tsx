@@ -127,7 +127,7 @@ function CampaignEventCard({ item }: { item: CampaignCard }) {
   }
 
   return (
-    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+    <Pressable
       style={[styles.card, { backgroundColor: C.surface, borderLeftColor: accent }]}
       onPress={handlePress}>
       {/* Type + platform row */}
@@ -189,7 +189,7 @@ function CampaignEventCard({ item }: { item: CampaignCard }) {
       {item.accepted > 0 && (() => {
         const cfg = workspaceBtnConfig(item.acceptedWorkStatus, item.acceptedPaymentStatus, t);
         return (
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+          <Pressable
             style={({ pressed }) => [
               styles.startWorkBtn,
               {

@@ -177,7 +177,7 @@ function Field({
           onBlur={()  => { setTimeout(() => { setFocused(false); Animated.timing(anim, { toValue: 0, duration: 200, useNativeDriver: false }).start(); }, 150); }}
         />
         {secureTextEntry && (
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => setHidden(h => !h)} hitSlop={10} style={s.eyeBtn}>
+          <Pressable onPress={() => setHidden(h => !h)} hitSlop={10} style={s.eyeBtn}>
             <Ionicons name={hidden ? 'eye-outline' : 'eye-off-outline'} size={18} color={focused ? BRINJAL : '#9CA3AF'} />
           </Pressable>
         )}
@@ -194,7 +194,7 @@ function Field({
           <View style={s.domainSuggestBoxOuter}>
             <View style={s.domainSuggestBox}>
               {suggestions.map((domain) => (
-                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                <Pressable
                   key={domain}
                   style={s.domainSuggestItem}
                   onPress={() => onChangeText(`${localPart}@${domain}`)}>
@@ -329,19 +329,19 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
           onChangeText={(v) => { setPassword(v); setApiError(''); }}
           placeholder={t('auth.login.passwordEnterPlaceholder')} secureTextEntry error={pwErr}
           rightSlot={
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => router.push('/forgot-password')}>
+            <Pressable onPress={() => router.push('/forgot-password')}>
               <Text style={s.forgotText}>{t('auth.login.forgotPassword')}</Text>
             </Pressable>
           }
         />
       </View>
 
-      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={s.rememberRow} onPress={() => setRememberMe((v) => !v)} hitSlop={8}>
+      <Pressable style={s.rememberRow} onPress={() => setRememberMe((v) => !v)} hitSlop={8}>
         <Ionicons name={rememberMe ? 'checkbox' : 'square-outline'} size={19} color={rememberMe ? BRINJAL : '#9CA3AF'} />
         <Text style={s.rememberText}>{t('auth.login.rememberMe')}</Text>
       </Pressable>
 
-      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+      <Pressable
         onPress={handleLogin} disabled={loading}
         style={({ pressed }) => [s.primaryBtnWrap, { opacity: pressed ? 0.92 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] }]}>
         <View style={[s.primaryBtn, { backgroundColor: BRINJAL }]}>
@@ -355,7 +355,7 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
       </Pressable>
 
       {biometricReady && (
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+        <Pressable
           style={({ pressed }) => [
             s.socialBtn, s.socialBtnFull,
             biometricLoading && { opacity: 0.6 },
@@ -378,7 +378,7 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
       </View>
 
       <View style={s.socialRow}>
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+        <Pressable
           style={({ pressed }) => [
             s.socialBtn,
             googleLoading && { opacity: 0.6 },
@@ -391,7 +391,7 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
           <Text style={s.socialBtnText}>{googleLoading ? t('auth.login.signingIn') : t('auth.login.continueGoogle')}</Text>
         </Pressable>
         {FACEBOOK_LOGIN_ENABLED && (
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+          <Pressable
             style={({ pressed }) => [
               s.socialBtnFb,
               facebookLoading && { opacity: 0.6 },
@@ -429,13 +429,13 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
             </View>
             <Text style={s.modalTitle}>{t('auth.login.suspendedTitle')}</Text>
             <Text style={s.modalSub}>{t('auth.login.suspendedMessage')}</Text>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            <Pressable
               style={s.suspendedContactBtn}
               onPress={() => Linking.openURL(`mailto:${flags.supportEmail ?? DEFAULT_SUPPORT_EMAIL}`)}>
               <Ionicons name="mail-outline" size={16} color="#fff" />
               <Text style={s.suspendedContactBtnText}>{t('auth.login.suspendedContactBtn')}</Text>
             </Pressable>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={s.modalCancel} onPress={() => setSuspendedModal(false)}>
+            <Pressable style={s.modalCancel} onPress={() => setSuspendedModal(false)}>
               <Text style={s.modalCancelText}>{t('auth.login.suspendedClose')}</Text>
             </Pressable>
           </View>
@@ -503,7 +503,7 @@ function SignupForm({ onGooglePress, googleLoading, googleError, onFacebookPress
           const roleLabel = r.key === 'CREATOR' ? t('auth.signup.roleCreatorLabel') : t('auth.signup.roleBusinessLabel');
           const roleSub   = r.key === 'CREATOR' ? t('auth.signup.roleCreatorSub')   : t('auth.signup.roleBusinessSub');
           return (
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            <Pressable
               key={r.key}
               style={({ pressed }) => [
                 s.roleCard,
@@ -569,7 +569,7 @@ function SignupForm({ onGooglePress, googleLoading, googleError, onFacebookPress
         </View>
       )}
 
-      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+      <Pressable
         onPress={handleCreate} disabled={loading}
         style={({ pressed }) => [s.primaryBtnWrap, { opacity: pressed ? 0.92 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] }]}>
         <View style={[s.primaryBtn, { backgroundColor: BRINJAL }]}>
@@ -589,7 +589,7 @@ function SignupForm({ onGooglePress, googleLoading, googleError, onFacebookPress
       </View>
 
       <View style={s.socialRow}>
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+        <Pressable
           style={({ pressed }) => [
             s.socialBtn,
             googleLoading && { opacity: 0.6 },
@@ -602,7 +602,7 @@ function SignupForm({ onGooglePress, googleLoading, googleError, onFacebookPress
           <Text style={s.socialBtnText}>{googleLoading ? t('auth.login.signingIn') : t('auth.signup.continueGoogle')}</Text>
         </Pressable>
         {FACEBOOK_LOGIN_ENABLED && (
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+          <Pressable
             style={({ pressed }) => [
               s.socialBtnFb,
               facebookLoading && { opacity: 0.6 },
@@ -882,7 +882,7 @@ export default function LoginScreen() {
               surface+shadow treatment as the home page's notification button. */}
           <View style={s.langRow}>
             {LANG_OPTIONS.map(({ lang, flag }) => (
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+              <Pressable
                 key={lang}
                 style={[
                   s.langBtn,
@@ -937,7 +937,7 @@ export default function LoginScreen() {
                     reference's clean, low-contrast tab treatment. */}
                 <View style={s.tabBar}>
                   {(['login', 'signup'] as const).map((tabKey) => (
-                    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                    <Pressable
                       key={tabKey}
                       style={[s.tabBtn, tab === tabKey && s.tabBtnActive]}
                       onPress={() => setTab(tabKey)}>
@@ -987,7 +987,7 @@ export default function LoginScreen() {
                 const roleLabel = r.key === 'CREATOR' ? t('auth.signup.roleCreatorLabel') : t('auth.signup.roleBusinessLabel');
                 const roleSub   = r.key === 'CREATOR' ? t('auth.signup.roleCreatorSub')   : t('auth.signup.roleBusinessSub');
                 return (
-                  <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                  <Pressable
                     key={r.key}
                     style={({ pressed }) => [s.roleCard, { transform: [{ scale: pressed ? 0.97 : 1 }] }]}
                     onPress={() => void handleRoleSelect(r.key)}>
@@ -1000,7 +1000,7 @@ export default function LoginScreen() {
                 );
               })}
             </View>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={s.modalCancel} onPress={() => setRoleModal(false)}>
+            <Pressable style={s.modalCancel} onPress={() => setRoleModal(false)}>
               <Text style={s.modalCancelText}>{t('auth.login.roleModalCancel')}</Text>
             </Pressable>
           </View>

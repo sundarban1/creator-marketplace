@@ -73,13 +73,13 @@ export function AppModal({
 
           {/* Buttons */}
           <View style={s.actions}>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            <Pressable
               style={[s.cancelBtn, { borderColor: C.border, backgroundColor: C.background }]}
               onPress={onCancel}
               disabled={loading}>
               <Text style={[s.cancelText, { color: C.text }]}>{cancelLabel}</Text>
             </Pressable>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            <Pressable
               style={[s.confirmBtn, { backgroundColor: cfg.btnColor, opacity: loading ? 0.7 : 1 }]}
               onPress={onConfirm}
               disabled={loading}>

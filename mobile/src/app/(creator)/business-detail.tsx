@@ -85,7 +85,7 @@ function CampaignCard({ campaign, isApplied }: { campaign: BusinessActiveCampaig
   }
 
   return (
-    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+    <Pressable
       style={[styles.campaignCard, { backgroundColor: C.surface }]}
       onPress={goToDetail}>
 
@@ -126,7 +126,7 @@ function CampaignCard({ campaign, isApplied }: { campaign: BusinessActiveCampaig
             <Text style={styles.appliedPillText}>{t('businessDetail.applied')}</Text>
           </View>
         ) : (
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+          <Pressable
             style={[styles.applyNowBtn, { backgroundColor: C.brinjal1 }]}
             hitSlop={8}
             onPress={(e) => { e.stopPropagation(); goToDetail(); }}>
@@ -250,7 +250,7 @@ export default function BusinessDetailScreen() {
             <View style={[styles.bubble, styles.bubble3]} />
           </LinearGradient>
           <View style={styles.topBar}>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.topIconBtn} hitSlop={4}
+            <Pressable style={styles.topIconBtn} hitSlop={4}
               onPress={() => (router.canGoBack() ? router.back() : router.replace('/(creator)/explore-businesses' as never))}>
               <Ionicons name="chevron-back" size={22} color="#fff" />
             </Pressable>
@@ -302,12 +302,12 @@ export default function BusinessDetailScreen() {
             <View style={[styles.bubble, styles.bubble3]} />
           </LinearGradient>
           <View style={styles.topBar}>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.topIconBtn} hitSlop={4}
+            <Pressable style={styles.topIconBtn} hitSlop={4}
               onPress={() => (router.canGoBack() ? router.back() : router.replace('/(creator)/explore-businesses' as never))}>
               <Ionicons name="chevron-back" size={22} color="#fff" />
             </Pressable>
             <View style={styles.topTitleRow} />
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.topIconBtn} hitSlop={10} onPress={handleToggleFavorite}>
+            <Pressable style={styles.topIconBtn} hitSlop={10} onPress={handleToggleFavorite}>
               <Ionicons
                 name={isFavorited ? 'heart' : 'heart-outline'}
                 size={19}
@@ -404,7 +404,7 @@ export default function BusinessDetailScreen() {
 
           {/* Website — hidden when business has hideContactDetails on */}
           {business.website && !business.hideContactDetails ? (
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            <Pressable
               style={[styles.websiteCard, { backgroundColor: C.surface, borderColor: C.border }]}
               onPress={() => Linking.openURL(business.website!)}>
               <View
@@ -430,7 +430,7 @@ export default function BusinessDetailScreen() {
 
           {/* Phone — hidden when business has hideContactDetails on */}
           {business.phone && !business.hideContactDetails ? (
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            <Pressable
               style={[styles.websiteCard, { backgroundColor: C.surface, borderColor: C.border }]}
               onPress={() => Linking.openURL(`tel:${business.phone}`)}>
               <View
@@ -515,7 +515,7 @@ export default function BusinessDetailScreen() {
       {/* Sticky message bar */}
       <View style={[styles.msgBar, { backgroundColor: C.surface, borderTopColor: C.border }]}>
         {convStatus === 'ACCEPTED' ? (
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[
+          <Pressable style={[
               styles.msgBtn,
               {
                 backgroundColor: C.brinjal1, shadowColor: C.brinjal1,
@@ -530,7 +530,7 @@ export default function BusinessDetailScreen() {
             <Text style={[styles.msgBtnText, { color: '#fff' }]}>{t('businessDetail.requestSent')}</Text>
           </View>
         ) : (
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[
+          <Pressable style={[
               styles.msgBtn,
               {
                 backgroundColor: C.brinjal1, shadowColor: C.brinjal1,
@@ -546,12 +546,12 @@ export default function BusinessDetailScreen() {
       {/* Request message modal */}
       <Modal visible={showMsgModal} transparent animationType="slide" onRequestClose={() => setShowMsgModal(false)}>
         <View style={styles.modalOverlay}>
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.modalScrim} onPress={() => setShowMsgModal(false)} />
+          <Pressable style={styles.modalScrim} onPress={() => setShowMsgModal(false)} />
           <Animated.View style={[styles.modalSheet, { backgroundColor: C.surface, transform: [{ translateY: keyboardOffset }] }]}>
             <View style={[styles.modalHandle, { backgroundColor: C.border }]} />
             <View style={styles.modalTitleRow}>
               <Text style={[styles.modalTitle, { color: C.text }]}>{t('businessDetail.messageRequestTitle')}</Text>
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.modalCloseBtn, { backgroundColor: C.background }]} onPress={() => setShowMsgModal(false)} hitSlop={8}>
+              <Pressable style={[styles.modalCloseBtn, { backgroundColor: C.background }]} onPress={() => setShowMsgModal(false)} hitSlop={8}>
                 <Ionicons name="close" size={18} color={C.textSecondary} />
               </Pressable>
             </View>
@@ -568,7 +568,7 @@ export default function BusinessDetailScreen() {
               maxLength={500}
             />
             <Text style={[styles.modalCounter, { color: C.textSecondary }]}>{requestMsg.length}/500</Text>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            <Pressable
               style={[
                 styles.modalSendBtn,
                 {

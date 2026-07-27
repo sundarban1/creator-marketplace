@@ -58,7 +58,7 @@ export function BiometricGateScreen({ onUnlock }: Props) {
         {checking ? (
           <ActivityIndicator color={C.brinjal1} style={styles.spinner} />
         ) : (
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+          <Pressable
             style={[styles.primaryBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }]}
             onPress={tryUnlock}>
             <Text style={styles.primaryBtnText}>{t('biometricGate.unlockWith', { label })}</Text>

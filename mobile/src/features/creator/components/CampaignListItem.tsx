@@ -54,7 +54,7 @@ export function CampaignListItem({ campaign }: { campaign: Campaign }) {
 
   return (
     <View style={[styles.cardWrap, { backgroundColor: C.surface }]}>
-      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+      <Pressable
         style={({ pressed }) => [styles.card, { backgroundColor: C.surface, borderColor: C.border }, pressed && { opacity: 0.92 }]}
         onPress={goToDetail}>
 
@@ -124,7 +124,7 @@ export function CampaignListItem({ campaign }: { campaign: Campaign }) {
 
         {/* CTA */}
         <View style={styles.buttonContainer}>
-          <Pressable android_ripple={{ color: 'rgba(255,255,255,0.2)' }}
+          <Pressable
             style={({ pressed }) => [styles.applyBtn, { backgroundColor: C.brinjal1 }, pressed && { opacity: 0.88 }]}
             onPress={goToDetail}>
             <Text style={styles.applyBtnText}>{t('campaignCard.applyNow')}</Text>

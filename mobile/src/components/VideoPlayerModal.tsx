@@ -59,7 +59,7 @@ export function VideoPlayerModal({ visible, url, title, onClose }: Props) {
         <SafeAreaView style={s.safe} edges={['top', 'bottom']}>
           <View style={s.header}>
             <Text style={s.title} numberOfLines={1}>{title}</Text>
-            <Pressable android_ripple={{ color: 'rgba(255,255,255,0.15)' }} style={s.iconBtn} onPress={handleClose} hitSlop={8}>
+            <Pressable style={s.iconBtn} onPress={handleClose} hitSlop={8}>
               <Ionicons name="close" size={22} color="#fff" />
             </Pressable>
           </View>
@@ -75,7 +75,6 @@ export function VideoPlayerModal({ visible, url, title, onClose }: Props) {
 
           <View style={s.footer}>
             <Pressable
-              android_ripple={{ color: 'rgba(255,255,255,0.15)' }}
               style={[s.downloadBtn, downloading && { opacity: 0.6 }]}
               onPress={handleDownload}
               disabled={downloading}

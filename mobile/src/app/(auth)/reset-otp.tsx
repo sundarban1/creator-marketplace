@@ -133,7 +133,7 @@ export default function ResetOtpScreen() {
         <View style={styles.hero}>
           <View style={styles.bubble1} />
           <View style={styles.bubble2} />
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} hitSlop={8} style={styles.back} onPress={() => router.canGoBack() ? router.back() : router.replace('/forgot-password')}>
+          <Pressable hitSlop={8} style={styles.back} onPress={() => router.canGoBack() ? router.back() : router.replace('/forgot-password')}>
             <Text style={styles.backArrow}>‹</Text>
           </Pressable>
           <View style={styles.heroContent}>
@@ -184,7 +184,7 @@ export default function ResetOtpScreen() {
             </View>
           ) : null}
 
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+          <Pressable
             style={[styles.verifyBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }, (!isFilled || loading) && styles.verifyBtnDisabled]}
             onPress={handleManualVerify}
             disabled={!isFilled || loading}>
@@ -203,7 +203,7 @@ export default function ResetOtpScreen() {
             {resendTimer > 0 ? (
               <Text style={[styles.resendTimer, { color: C.textSecondary }]}>{t('auth.resetOtp.resendCountdown', { n: resendTimer })}</Text>
             ) : (
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={handleResend} disabled={resending}>
+              <Pressable onPress={handleResend} disabled={resending}>
                 <Text style={[styles.resendLink, { color: resending ? C.textSecondary : C.brinjal1 }]}>
                   {resending ? t('auth.resetOtp.resending') : t('auth.resetOtp.resendBtn')}
                 </Text>

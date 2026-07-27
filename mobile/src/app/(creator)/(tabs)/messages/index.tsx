@@ -162,7 +162,7 @@ function RequestCard({ conv, onRespond }: { conv: Conversation; onRespond: () =>
 
       {/* Actions */}
       <View style={s.reqActions}>
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+        <Pressable
           style={[s.declineBtn, { borderColor: C.border, backgroundColor: C.background }]}
           onPress={() => respond('decline')}
           disabled={acting !== null}>
@@ -175,7 +175,7 @@ function RequestCard({ conv, onRespond }: { conv: Conversation; onRespond: () =>
               </>
             )}
         </Pressable>
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+        <Pressable
           style={[s.acceptBtn, { backgroundColor: ACCENT }]}
           onPress={() => respond('accept')}
           disabled={acting !== null}>
@@ -221,7 +221,7 @@ function ChatCard({ conv, onDelete }: { conv: Conversation; onDelete: (id: strin
 
   return (
     <SwipeableChatRow onDelete={handleLongPress} deleteLabel={t('messages.deleteConversationConfirm')}>
-      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+      <Pressable
         style={({ pressed }) => [
           s.card,
           { backgroundColor: pressed ? C.surface : C.background },

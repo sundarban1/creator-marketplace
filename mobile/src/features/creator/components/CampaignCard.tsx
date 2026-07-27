@@ -67,7 +67,7 @@ export function CampaignCard({ campaign, variant }: { campaign: Campaign; varian
 
   return (
     <View style={styles.cardWrap}>
-      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+      <Pressable
         style={({ pressed }) => [styles.card, { backgroundColor: C.surface, borderColor: C.border }, pressed && { opacity: 0.92 }]}
         onPress={goToDetail}>
 
@@ -134,7 +134,7 @@ export function CampaignCard({ campaign, variant }: { campaign: Campaign; varian
             </View>
           </View>
 
-          <Pressable android_ripple={{ color: 'rgba(255,255,255,0.2)' }}
+          <Pressable
             style={({ pressed }) => [styles.applyBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }, pressed && { opacity: 0.88 }]}
             onPress={goToDetail}>
             <Text style={styles.applyBtnText}>{t('campaignCard.applyNow')}</Text>

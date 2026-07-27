@@ -87,7 +87,7 @@ export function EntityCard({
   }
 
   return (
-    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+    <Pressable
       style={({ pressed }) => [styles.cardWrap, pressed && { opacity: 0.92 }]}
       onPress={onPress}>
       <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
@@ -113,7 +113,7 @@ export function EntityCard({
         </View>
 
         {action && (
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+          <Pressable
             style={[
               styles.actionBtn,
               {

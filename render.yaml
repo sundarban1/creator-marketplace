@@ -5,9 +5,25 @@ databases:
     postgresMajorVersion: "16"
 
 services:
+  # Socket.IO cross-instance broadcast (backend/src/socket.ts's Redis adapter) —
+  # required because marketplace-backend runs on more than one instance. Without
+  # this, a chat message/typing event from a user whose socket landed on one
+  # instance never reaches a user connected to a different instance, since
+  # Socket.IO's default adapter only knows about sockets in its own process.
+  # ipAllowList: [] = no external access, reachable only from other services in
+  # this same Render account/region (matches how DATABASE_URL is wired below).
+  - type: redis
+    name: kolab-redis
+    plan: free
+    region: oregon
+    ipAllowList: []
+
   - type: web
     name: marketplace-backend
     runtime: docker
+    # NOTE: this still reads "free" but the live service on the Render dashboard
+    # has since been moved to a paid, multi-instance plan — update this to match
+    # if you want `render.yaml` to stop drifting from the dashboard.
     plan: free
     region: oregon
     dockerfilePath: ./backend/Dockerfile
@@ -37,6 +53,13 @@ services:
       - key: DATABASE_URL
         fromDatabase:
           name: kolab
+          property: connectionString
+
+      # ── Redis — backs the Socket.IO cross-instance adapter above ────────────
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: kolab-redis
           property: connectionString
 
       # ── Auth secrets — Render generates strong random values on first deploy ─

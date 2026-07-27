@@ -170,7 +170,7 @@ export default function BusinessHomeScreen() {
           ScrollView so it stays floating/pinned above the content instead of
           scrolling away. ── */}
       <View style={[styles.header, { backgroundColor: C.background, borderBottomColor: C.border }]}>
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.avatarCircle, { backgroundColor: C.surface }, SHADOW.card]} onPress={() => router.push('/(business)/profile')}>
+        <Pressable style={[styles.avatarCircle, { backgroundColor: C.surface }, SHADOW.card]} onPress={() => router.push('/(business)/profile')}>
           {/* Clipping lives on its own layer — Android's elevation shadow doesn't
               composite correctly with overflow:hidden + a translucent child background
               on the same view. */}
@@ -187,7 +187,7 @@ export default function BusinessHomeScreen() {
 
         <Text style={[styles.brandName, { color: C.brinjal1 }]} numberOfLines={1}>{displayName}</Text>
 
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.menuBtn} onPress={openDrawer} hitSlop={6}>
+        <Pressable style={styles.menuBtn} onPress={openDrawer} hitSlop={6}>
           <View
             style={[
               styles.menuBtnInner,
@@ -209,7 +209,7 @@ export default function BusinessHomeScreen() {
 
         {/* ── Attention banner (shown when a business action is actually pending) ── */}
         {!loading && attentionCount > 0 && (
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.attentionBanner} onPress={() => router.push('/(business)/proposals')}>
+          <Pressable style={styles.attentionBanner} onPress={() => router.push('/(business)/proposals')}>
             <View
               style={[
                 styles.attentionIconWrap,
@@ -238,7 +238,7 @@ export default function BusinessHomeScreen() {
             { icon: 'chatbubbles-outline'as const,  label: t('business.home.quickActionMessages'),  bg: '#DBEAFE', color: '#2563EB', route: '/(business)/messages' },
             { icon: 'briefcase-outline'  as const,  label: t('business.home.quickActionEvents'),    bg: '#FEF3C7', color: '#D97706', route: '/(business)/campaigns' },
           ]).map(({ icon, label, bg, color, route }) => (
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} key={label} style={[styles.quickAction, { backgroundColor: C.surface, borderColor: C.border }]}
+            <Pressable key={label} style={[styles.quickAction, { backgroundColor: C.surface, borderColor: C.border }]}
               onPress={() => router.push(route as never)}>
               <View
                 style={[
@@ -258,7 +258,7 @@ export default function BusinessHomeScreen() {
 
         {/* ── Profile completion banner ── */}
         {!bannerDismissed && missingFields.length > 0 && (
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+          <Pressable
             style={[styles.banner, { backgroundColor: C.surface, borderLeftColor: C.brinjal1 }]}
             onPress={() => router.push('/(business)/edit-profile' as never)}>
             <View
@@ -278,7 +278,7 @@ export default function BusinessHomeScreen() {
                 {t('business.home.missingFieldsPrefix', { fields: missingFields.join(' · ') })}
               </Text>
             </View>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.bannerClose} onPress={() => setBannerDismissed(true)} hitSlop={10}>
+            <Pressable style={styles.bannerClose} onPress={() => setBannerDismissed(true)} hitSlop={10}>
               <Ionicons name="close" size={16} color={C.textSecondary} />
             </Pressable>
           </Pressable>
@@ -288,7 +288,7 @@ export default function BusinessHomeScreen() {
         {fetchError ? (
           <View style={styles.errorCard}>
             <Text style={styles.errorText}>{fetchError}</Text>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => fetchCampaigns()}>
+            <Pressable onPress={() => fetchCampaigns()}>
               <Text style={[styles.retryText, { color: C.brinjal1 }]}>{t('business.home.retry')}</Text>
             </Pressable>
           </View>
@@ -297,7 +297,7 @@ export default function BusinessHomeScreen() {
 
         {/* ── Refer a business banner ── */}
         {!referralBannerDismissed && (
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+          <Pressable
             style={[styles.banner, { backgroundColor: C.surface, borderLeftColor: '#EC4899' }]}
             onPress={() => router.push('/(business)/refer')}>
             <View
@@ -326,7 +326,7 @@ export default function BusinessHomeScreen() {
                 })()}
               </Text>
             </View>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.bannerClose} onPress={() => setReferralBannerDismissed(true)} hitSlop={10}>
+            <Pressable style={styles.bannerClose} onPress={() => setReferralBannerDismissed(true)} hitSlop={10}>
               <Ionicons name="close" size={16} color={C.textSecondary} />
             </Pressable>
           </Pressable>
@@ -335,7 +335,7 @@ export default function BusinessHomeScreen() {
         {/* ── Recent Events ── */}
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, { color: C.text }]}>{t('business.home.recentEvents')}</Text>
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => router.push('/(business)/campaigns')}>
+          <Pressable onPress={() => router.push('/(business)/campaigns')}>
             <Text style={[styles.viewAll, { color: C.brinjal1 }]}>{t('business.home.viewAll')}</Text>
           </Pressable>
         </View>
@@ -358,7 +358,7 @@ export default function BusinessHomeScreen() {
             <Ionicons name="document-text" size={48} color={C.textSecondary} />
             <Text style={[styles.emptyTitle, { color: C.text }]}>{t('business.home.noEventsTitle')}</Text>
             <Text style={[styles.emptyHint, { color: C.textSecondary }]}>{t('business.home.noEventsSub')}</Text>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            <Pressable
               style={[
                 styles.emptyBtn,
                 {
@@ -382,7 +382,7 @@ export default function BusinessHomeScreen() {
                 // the same view, overflow:hidden would clip the shadow right off, same
                 // fix as the events list's cardWrap/card split.
                 <View key={c.id} style={[styles.campaignCardWrap, numColumns === 2 && styles.campaignCardWrapHalf, { backgroundColor: C.surface }]}>
-                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                <Pressable
                   style={({ pressed }) => [styles.campaignCard, { backgroundColor: C.surface, borderColor: C.border }, pressed && { opacity: 0.92 }]}
                   onPress={() => router.push({ pathname: '/campaign-detail', params: { campaignId: c.id } })}>
 
@@ -436,7 +436,7 @@ export default function BusinessHomeScreen() {
                         );
                       })}
                     </View>
-                    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                    <Pressable
                       style={({ pressed }) => [styles.viewDetailsBtn, { borderColor: C.brinjal1 }, pressed && { opacity: 0.7 }]}
                       onPress={() => router.push({ pathname: '/campaign-detail', params: { campaignId: c.id } })}>
                       <Text style={[styles.viewDetailsText, { color: C.brinjal1 }]}>{t('business.home.viewDetails')}</Text>

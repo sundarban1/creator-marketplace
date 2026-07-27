@@ -24,13 +24,13 @@ export function FilterSheet({ visible, title, resetLabel, applyLabel, onApply, o
   const keyboardOffset = useKeyboardOffset();
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={s.backdrop} onPress={onClose} />
+      <Pressable style={s.backdrop} onPress={onClose} />
       <Animated.View style={[s.sheet, { backgroundColor: C.surface, transform: [{ translateY: keyboardOffset }] }]}>
         <View style={[s.handle, { backgroundColor: C.border }]} />
 
         <View style={[s.header, { borderBottomColor: C.border }]}>
           <Text style={[s.title, { color: C.text }]}>{title}</Text>
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={onReset}>
+          <Pressable onPress={onReset}>
             <Text style={[s.reset, { color: C.brinjal1 }]}>{resetLabel}</Text>
           </Pressable>
         </View>
@@ -40,7 +40,7 @@ export function FilterSheet({ visible, title, resetLabel, applyLabel, onApply, o
         </ScrollView>
 
         <View style={[s.footer, { borderTopColor: C.border }]}>
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+          <Pressable
             style={({ pressed }) => [s.applyBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }, pressed && { opacity: 0.9 }]}
             onPress={onApply}>
             <Text style={s.applyTxt}>{applyLabel}</Text>
@@ -104,7 +104,7 @@ export function ActiveFilterChips({ chips }: { chips: ActiveFilterChip[] }) {
   return (
     <View style={a.row}>
       {chips.map((chip) => (
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+        <Pressable
           key={chip.key}
           style={[a.chip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}
           onPress={chip.onClear}>

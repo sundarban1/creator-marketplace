@@ -109,7 +109,7 @@ export default function WalletScreen() {
           </View>
 
           {/* Withdraw button */}
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+          <Pressable
             style={[styles.withdrawBtn, { backgroundColor: C.surface, borderColor: C.brinjal1 }]}
             onPress={() => setModalVisible(true)}>
             <Ionicons name="arrow-down-circle-outline" size={20} color={C.brinjal1} />
@@ -120,7 +120,7 @@ export default function WalletScreen() {
             <Text style={[styles.noMethodsHint, { color: C.textSecondary }]}>{t('wallet.noPaymentMethodsHint')}</Text>
           )}
 
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+          <Pressable
             style={[styles.manageBtn, { backgroundColor: C.surface, borderColor: C.border }]}
             onPress={() => router.push('/(creator)/settings?section=earnings' as never)}>
             <Ionicons name="card-outline" size={18} color={C.text} />

@@ -21,7 +21,7 @@ export function SectionEmptyState({ icon, title, hint, cta, onPress }: Props) {
       <FontAwesome5 name={icon} solid size={28} color={C.border} />
       <Text style={[styles.title, { color: C.text }]}>{title}</Text>
       <Text style={[styles.hint, { color: C.textSecondary }]}>{hint}</Text>
-      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+      <Pressable
         style={[
           styles.cta,
           {

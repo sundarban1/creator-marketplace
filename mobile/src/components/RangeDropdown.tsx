@@ -29,7 +29,6 @@ export function RangeDropdown<T extends string>({ value, options, onChange }: Ra
     <>
       <Pressable
         ref={triggerRef}
-        android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
         onPress={openMenu}
         style={[s.trigger, { backgroundColor: C.surface, borderColor: C.border }]}
       >
@@ -51,7 +50,6 @@ export function RangeDropdown<T extends string>({ value, options, onChange }: Ra
                 return (
                   <Pressable
                     key={o.value}
-                    android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                     onPress={() => { onChange(o.value); setOpen(false); }}
                     style={[s.option, active && { backgroundColor: C.primaryLight }]}
                   >

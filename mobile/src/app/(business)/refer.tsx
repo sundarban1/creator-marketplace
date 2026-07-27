@@ -125,7 +125,7 @@ export default function BusinessReferralScreen() {
           {/* Referral code */}
           <View style={styles.field}>
             <Text style={[styles.label, { color: C.textSecondary }]}>{t('businessReferral.yourCodeLabel')}</Text>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.codeCard, { backgroundColor: C.brinjal1 }]} onPress={handleShareCode}>
+            <Pressable style={[styles.codeCard, { backgroundColor: C.brinjal1 }]} onPress={handleShareCode}>
               <Text style={styles.codeText}>{overview.code}</Text>
               <Ionicons name="share-social-outline" size={20} color="#fff" />
             </Pressable>
@@ -153,7 +153,7 @@ export default function BusinessReferralScreen() {
                   autoCapitalize="characters"
                   autoCorrect={false}
                 />
-                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                <Pressable
                   style={[styles.applyCodeBtn, { backgroundColor: C.brinjal1, opacity: applying || !codeInput.trim() ? 0.6 : 1 }]}
                   disabled={applying || !codeInput.trim()}
                   onPress={handleApplyCode}>
@@ -187,7 +187,7 @@ export default function BusinessReferralScreen() {
                     <Text style={[styles.referralDate, { color: C.textSecondary }]}>{t('businessReferral.joinedOn', { date: formatDate(r.linkedAt) })}</Text>
                   </View>
                   {r.status === 'EXPIRED' ? (
-                    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                    <Pressable
                       style={[styles.resendBtn, { borderColor: C.brinjal1, opacity: resendingId === r.id ? 0.6 : 1 }]}
                       disabled={resendingId === r.id}
                       onPress={() => handleResend(r.id)}>

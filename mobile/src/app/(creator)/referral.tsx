@@ -100,7 +100,7 @@ export default function ReferralScreen() {
             <Text style={[styles.conditionNote, { color: C.brinjal1 }]}>
               {t('referral.conditionNote', { amount: overview.rewardAmount })}
             </Text>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            <Pressable
               style={styles.verifiedLinkRow}
               onPress={() => router.push('/(creator)/settings?section=security')}>
               <FontAwesome5 name="award" solid size={14} color={C.brinjal1} />
@@ -112,7 +112,7 @@ export default function ReferralScreen() {
           {/* Referral code */}
           <View style={styles.field}>
             <Text style={[styles.label, { color: C.textSecondary }]}>{t('referral.yourCodeLabel')}</Text>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.codeCard, { backgroundColor: C.brinjal1 }]} onPress={handleShareCode}>
+            <Pressable style={[styles.codeCard, { backgroundColor: C.brinjal1 }]} onPress={handleShareCode}>
               <Text style={styles.codeText}>{overview.code}</Text>
               <FontAwesome5 name="share-alt" solid size={17} color="#fff" />
             </Pressable>
@@ -143,7 +143,7 @@ export default function ReferralScreen() {
                   autoCapitalize="characters"
                   autoCorrect={false}
                 />
-                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                <Pressable
                   style={[styles.applyCodeBtn, { backgroundColor: C.brinjal1, opacity: applying || !codeInput.trim() ? 0.6 : 1 }]}
                   disabled={applying || !codeInput.trim()}
                   onPress={handleApplyCode}>

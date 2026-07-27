@@ -151,7 +151,7 @@ function NavRow({ ionIcon, faIcon, ionIconColor, label, sub, value, badge, onPre
   const iColor = ionIconColor ?? C.brinjal1;
   const rowIconColor = danger ? C.error : iColor;
   return (
-    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.row, !isLast && { borderBottomWidth: 1, borderBottomColor: C.border }]} onPress={onPress}>
+    <Pressable style={[styles.row, !isLast && { borderBottomWidth: 1, borderBottomColor: C.border }]} onPress={onPress}>
       {ionIcon ? (
         <View
           style={[
@@ -202,7 +202,7 @@ function ChipGroup({ options, selected, onToggle }: ChipGroupProps) {
       {options.map((opt) => {
         const active = selected.includes(opt);
         return (
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+          <Pressable
             key={opt}
             style={[styles.chip, { borderColor: active ? C.brinjal1 : C.border, backgroundColor: active ? C.primaryLight : C.surface }]}
             onPress={() => onToggle(opt)}>
@@ -870,7 +870,7 @@ export default function BusinessSettingsScreen() {
             const id = String(i);
             const open = expandedItems.has(id);
             return (
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+              <Pressable
                 key={i}
                 style={[styles.accordionCard, { backgroundColor: C.surface, borderColor: open ? C.brinjal1 : C.border }]}
                 onPress={() => toggleExpand(id)}>
@@ -903,7 +903,7 @@ export default function BusinessSettingsScreen() {
                 {SUPPORT_TOPICS.map((topic) => {
                   const active = supportTopic === topic;
                   return (
-                    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} key={topic} style={[styles.chip, { borderColor: active ? C.brinjal1 : C.border, backgroundColor: active ? C.primaryLight : C.surface }]} onPress={() => setSupportTopic(topic)}>
+                    <Pressable key={topic} style={[styles.chip, { borderColor: active ? C.brinjal1 : C.border, backgroundColor: active ? C.primaryLight : C.surface }]} onPress={() => setSupportTopic(topic)}>
                       <Text style={[styles.chipText, { color: active ? C.brinjal1 : C.text }]}>{topic}</Text>
                     </Pressable>
                   );
@@ -925,7 +925,7 @@ export default function BusinessSettingsScreen() {
                 textAlignVertical="top"
               />
             </View>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            <Pressable
               style={[
                 styles.primaryBtn,
                 {
@@ -961,7 +961,7 @@ export default function BusinessSettingsScreen() {
                 {REPORT_TYPES.map((rtype) => {
                   const active = reportType === rtype;
                   return (
-                    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} key={rtype} style={[styles.chip, { borderColor: active ? C.error : C.border, backgroundColor: active ? '#FEE2E2' : C.surface }]} onPress={() => setReportType(rtype)}>
+                    <Pressable key={rtype} style={[styles.chip, { borderColor: active ? C.error : C.border, backgroundColor: active ? '#FEE2E2' : C.surface }]} onPress={() => setReportType(rtype)}>
                       <Text style={[styles.chipText, { color: active ? C.error : C.text }]}>{rtype}</Text>
                     </Pressable>
                   );
@@ -983,7 +983,7 @@ export default function BusinessSettingsScreen() {
                 textAlignVertical="top"
               />
             </View>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            <Pressable
               style={[
                 styles.primaryBtn,
                 {
@@ -1019,7 +1019,7 @@ export default function BusinessSettingsScreen() {
           const id = `faq-${i}`;
           const open = expandedItems.has(id);
           return (
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            <Pressable
               key={i}
               style={[styles.accordionCard, { backgroundColor: C.surface, borderColor: open ? C.brinjal1 : C.border }]}
               onPress={() => toggleExpand(id)}>
@@ -1056,7 +1056,7 @@ export default function BusinessSettingsScreen() {
             </View>
             <View style={styles.formField}>
               <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>{t('businessSettings.businessLogoLabel')}</Text>
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.logoPicker, { backgroundColor: C.background, borderColor: C.border }]}>
+              <Pressable style={[styles.logoPicker, { backgroundColor: C.background, borderColor: C.border }]}>
                 <FontAwesome5 name="building" size={26} color={C.textSecondary} />
                 <Text style={[styles.logoPickerText, { color: C.brinjal1 }]}>{t('businessSettings.logoUploadHint')}</Text>
                 <Text style={[styles.logoPickerSub, { color: C.textSecondary }]}>{t('businessSettings.logoFormatHint')}</Text>
@@ -1072,7 +1072,7 @@ export default function BusinessSettingsScreen() {
                   const active = bizCategory.includes(cat);
                   const disabled = !active && bizCategory.length >= 3;
                   return (
-                    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                    <Pressable
                       key={cat}
                       style={[styles.chip, { borderColor: active ? C.brinjal1 : C.border, backgroundColor: active ? C.primaryLight : C.surface, opacity: disabled ? 0.4 : 1 }]}
                       onPress={() => { if (!disabled) toggleBizCategory(cat); }}>
@@ -1125,7 +1125,7 @@ export default function BusinessSettingsScreen() {
 
         {/* Actions */}
         <View style={styles.actionGroup}>
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+          <Pressable
             style={[
               styles.primaryBtn,
               {
@@ -1136,7 +1136,7 @@ export default function BusinessSettingsScreen() {
             onPress={handleSaveProfile}>
             <Text style={styles.primaryBtnText}>{t('businessSettings.saveChangesBtn')}</Text>
           </Pressable>
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.secondaryBtn, { borderColor: C.brinjal1 }]}>
+          <Pressable style={[styles.secondaryBtn, { borderColor: C.brinjal1 }]}>
             <Text style={[styles.secondaryBtnText, { color: C.brinjal1 }]}>{t('businessSettings.previewProfileBtn')}</Text>
           </Pressable>
         </View>
@@ -1153,7 +1153,7 @@ export default function BusinessSettingsScreen() {
       <>
         <SectionHeader title={t('businessSettings.loginSecuritySection')} />
         <Card>
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+          <Pressable
             style={[styles.row, { borderBottomWidth: 1, borderBottomColor: C.border }]}
             onPress={() => setShowChangePassword((v) => !v)}>
             <View
@@ -1175,7 +1175,7 @@ export default function BusinessSettingsScreen() {
             <View style={[styles.inlineForm, { borderBottomWidth: 1, borderBottomColor: C.border }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Text style={[styles.formFieldLabel, { color: C.text, fontSize: 14, flex: 1, flexShrink: 1 }]} numberOfLines={1} ellipsizeMode="tail">{t('businessSettings.setNewPasswordSection')}</Text>
-                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={closeChangePassword} hitSlop={10} style={{ flexShrink: 0, marginLeft: 8 }}>
+                <Pressable onPress={closeChangePassword} hitSlop={10} style={{ flexShrink: 0, marginLeft: 8 }}>
                   <Ionicons name="close-circle" size={22} color={C.textSecondary} />
                 </Pressable>
               </View>
@@ -1195,7 +1195,7 @@ export default function BusinessSettingsScreen() {
                     autoCapitalize="none"
                     numberOfLines={1}
                   />
-                  <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => setShowNewPw((v) => !v)} style={styles.eyeBtn} hitSlop={8}>
+                  <Pressable onPress={() => setShowNewPw((v) => !v)} style={styles.eyeBtn} hitSlop={8}>
                     <Ionicons name={showNewPw ? 'eye-off-outline' : 'eye-outline'} size={20} color={C.textSecondary} />
                   </Pressable>
                 </View>
@@ -1217,14 +1217,14 @@ export default function BusinessSettingsScreen() {
                     autoCapitalize="none"
                     numberOfLines={1}
                   />
-                  <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => setShowConfirmPw((v) => !v)} style={styles.eyeBtn} hitSlop={8}>
+                  <Pressable onPress={() => setShowConfirmPw((v) => !v)} style={styles.eyeBtn} hitSlop={8}>
                     <Ionicons name={showConfirmPw ? 'eye-off-outline' : 'eye-outline'} size={20} color={C.textSecondary} />
                   </Pressable>
                 </View>
                 {cPwError ? <Text style={[styles.fieldError, { color: C.error }]}>{cPwError}</Text> : null}
               </View>
 
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+              <Pressable
                 style={[
                   styles.primaryBtn,
                   {
@@ -1243,7 +1243,7 @@ export default function BusinessSettingsScreen() {
           <>
           {/* Email verification */}
           {emailStage === 'idle' && (
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            <Pressable
               style={[styles.row, { borderBottomWidth: 1, borderBottomColor: C.border }]}
               disabled={emailLoading}
               onPress={() => {
@@ -1315,7 +1315,7 @@ export default function BusinessSettingsScreen() {
                   </View>
                   <Text style={[styles.rowLabel, { color: C.text, flexShrink: 1 }]} numberOfLines={1} ellipsizeMode="tail">{t('businessSettings.verifyEmailTitle')}</Text>
                 </View>
-                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => { setEmailStage('idle'); setEmailInput(''); setEmailError(''); }} hitSlop={10} disabled={emailLoading} style={{ flexShrink: 0, marginLeft: 8 }}>
+                <Pressable onPress={() => { setEmailStage('idle'); setEmailInput(''); setEmailError(''); }} hitSlop={10} disabled={emailLoading} style={{ flexShrink: 0, marginLeft: 8 }}>
                   <Ionicons name="close-circle" size={22} color={C.textSecondary} />
                 </Pressable>
               </View>
@@ -1330,7 +1330,7 @@ export default function BusinessSettingsScreen() {
                 onChangeText={(v) => { setEmailInput(v); setEmailError(''); }}
               />
               {!!emailError && <Text style={[styles.phoneError, { color: C.error }]}>{emailError}</Text>}
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+              <Pressable
                 style={[styles.phoneActionBtn, { backgroundColor: C.brinjal1, opacity: emailLoading ? 0.7 : 1 }]}
                 onPress={handleSendEmailOtp}
                 disabled={emailLoading}
@@ -1357,7 +1357,7 @@ export default function BusinessSettingsScreen() {
                   <Text style={[styles.rowLabel, { color: C.text }]}>{t('businessSettings.enterVerificationCode')}</Text>
                   <Text style={[styles.rowSub, { color: C.textSecondary }]}>{t('businessSettings.sentToEmail', { email: emailInput })}</Text>
                 </View>
-                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                <Pressable
                   onPress={() => { setEmailStage('idle'); setEmailOtp(''); setEmailError(''); }}
                   disabled={emailLoading}
                   hitSlop={8}
@@ -1376,14 +1376,14 @@ export default function BusinessSettingsScreen() {
               />
               {!!emailError && <Text style={[styles.phoneError, { color: C.error }]}>{emailError}</Text>}
               <View style={{ flexDirection: 'row', gap: 8 }}>
-                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                <Pressable
                   style={[styles.phoneActionBtn, { backgroundColor: C.brinjal1, opacity: emailLoading ? 0.7 : 1 }]}
                   onPress={handleVerifyEmailOtp}
                   disabled={emailLoading}
                 >
                   <Text style={[styles.phoneActionBtnText, { color: '#fff' }]}>{emailLoading ? t('businessSettings.verifyingLabel') : t('businessSettings.verifyBtn')}</Text>
                 </Pressable>
-                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                <Pressable
                   style={[styles.phoneActionBtn, { backgroundColor: C.background, borderWidth: 1, borderColor: C.border }]}
                   onPress={() => { setEmailOtp(''); setEmailError(''); handleSendEmailOtp(); }}
                   disabled={emailLoading}
@@ -1395,7 +1395,7 @@ export default function BusinessSettingsScreen() {
           )}
           {/* Phone verification */}
           {phoneStage === 'idle' && (
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            <Pressable
               style={[styles.row, { borderBottomWidth: 1, borderBottomColor: C.border }]}
               onPress={() => { setPhoneStage('enter-phone'); setPhoneInput(''); setPhoneError(''); }}
             >
@@ -1458,7 +1458,7 @@ export default function BusinessSettingsScreen() {
                   </View>
                   <Text style={[styles.rowLabel, { color: C.text, flexShrink: 1 }]} numberOfLines={1} ellipsizeMode="tail">{t('businessSettings.verifyPhoneTitle')}</Text>
                 </View>
-                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => { setPhoneStage('idle'); setPhoneInput(''); setPhoneError(''); }} hitSlop={10} disabled={phoneLoading} style={{ flexShrink: 0, marginLeft: 8 }}>
+                <Pressable onPress={() => { setPhoneStage('idle'); setPhoneInput(''); setPhoneError(''); }} hitSlop={10} disabled={phoneLoading} style={{ flexShrink: 0, marginLeft: 8 }}>
                   <Ionicons name="close-circle" size={22} color={C.textSecondary} />
                 </Pressable>
               </View>
@@ -1471,7 +1471,7 @@ export default function BusinessSettingsScreen() {
                 onChangeText={(v) => { setPhoneInput(v.replace(/[^0-9+]/g, '')); setPhoneError(''); }}
               />
               {!!phoneError && <Text style={[styles.phoneError, { color: C.error }]}>{phoneError}</Text>}
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+              <Pressable
                 style={[styles.phoneActionBtn, { backgroundColor: C.brinjal1, opacity: phoneLoading ? 0.7 : 1 }]}
                 onPress={handleSendPhoneOtp}
                 disabled={phoneLoading}
@@ -1498,7 +1498,7 @@ export default function BusinessSettingsScreen() {
                   <Text style={[styles.rowLabel, { color: C.text }]}>{t('businessSettings.enterVerificationCode')}</Text>
                   <Text style={[styles.rowSub, { color: C.textSecondary }]}>{t('businessSettings.sentToPhone', { phone: phoneInput })}</Text>
                 </View>
-                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                <Pressable
                   onPress={() => { setPhoneStage('idle'); setPhoneOtp(''); setPhoneError(''); setPhoneInput(''); }}
                   disabled={phoneLoading}
                   hitSlop={8}
@@ -1517,14 +1517,14 @@ export default function BusinessSettingsScreen() {
               />
               {!!phoneError && <Text style={[styles.phoneError, { color: C.error }]}>{phoneError}</Text>}
               <View style={{ flexDirection: 'row', gap: 8 }}>
-                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                <Pressable
                   style={[styles.phoneActionBtn, { backgroundColor: C.brinjal1, opacity: phoneLoading ? 0.7 : 1 }]}
                   onPress={handleVerifyPhoneOtp}
                   disabled={phoneLoading}
                 >
                   <Text style={[styles.phoneActionBtnText, { color: '#fff' }]}>{phoneLoading ? t('businessSettings.verifyingLabel') : t('businessSettings.verifyBtn')}</Text>
                 </Pressable>
-                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                <Pressable
                   style={[styles.phoneActionBtn, { backgroundColor: C.background, borderWidth: 1, borderColor: C.border }]}
                   onPress={() => { setPhoneStage('enter-phone'); setPhoneOtp(''); setPhoneError(''); }}
                   disabled={phoneLoading}
@@ -1613,7 +1613,7 @@ export default function BusinessSettingsScreen() {
           {NEPAL_PAYMENTS.map((m, idx) => {
             const selected = nepalPayments.includes(m.id);
             return (
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+              <Pressable
                 key={m.id}
                 style={[styles.row, idx < NEPAL_PAYMENTS.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}
                 onPress={() => toggleAndSave(nepalPayments, setNepalPayments, m.id, (next) => profileService.updateBusinessProfile({ paymentMethods: next }))}>
@@ -1702,7 +1702,7 @@ export default function BusinessSettingsScreen() {
         <SectionHeader title={t('businessSettings.defaultBudgetSection')} />
         <Card>
           {BUDGET_RANGES.map((range, idx) => (
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            <Pressable
               key={range}
               style={[styles.row, idx < BUDGET_RANGES.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}
               onPress={() => {
@@ -1752,7 +1752,7 @@ export default function BusinessSettingsScreen() {
                     <Text style={[styles.categoryPillText, { color: C.brinjal1 }]}>{creator.category}</Text>
                   </View>
                 </View>
-                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.removeBtn, { backgroundColor: '#FEE2E2' }]} onPress={() => removeCreator(creator.id)}>
+                <Pressable style={[styles.removeBtn, { backgroundColor: '#FEE2E2' }]} onPress={() => removeCreator(creator.id)}>
                   <Text style={[styles.removeBtnText, { color: '#EF4444' }]}>{t('businessSettings.removeCreatorBtn')}</Text>
                 </Pressable>
               </View>
@@ -1774,15 +1774,15 @@ export default function BusinessSettingsScreen() {
                     placeholderTextColor={C.textSecondary}
                     autoFocus
                   />
-                  <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.noteSaveBtn, { backgroundColor: C.brinjal1 }]} onPress={() => saveNote(creator.id)}>
+                  <Pressable style={[styles.noteSaveBtn, { backgroundColor: C.brinjal1 }]} onPress={() => saveNote(creator.id)}>
                     <Text style={styles.noteSaveBtnText}>{t('businessSettings.noteSaveBtnLabel')}</Text>
                   </Pressable>
-                  <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => setEditingNoteId(null)}>
+                  <Pressable onPress={() => setEditingNoteId(null)}>
                     <Ionicons name="close" size={16} color={C.textSecondary} />
                   </Pressable>
                 </View>
               ) : (
-                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.addNoteBtn} onPress={() => { setEditingNoteId(creator.id); setNoteText(creator.notes); }}>
+                <Pressable style={styles.addNoteBtn} onPress={() => { setEditingNoteId(creator.id); setNoteText(creator.notes); }}>
                   <Text style={[styles.addNoteText, { color: C.brinjal1 }]}>{creator.notes ? t('businessSettings.editNoteLabel') : t('businessSettings.addNoteLabel')}</Text>
                 </Pressable>
               )}
@@ -1820,7 +1820,7 @@ export default function BusinessSettingsScreen() {
             { label: t('businessSettings.panRegistrationLabel'), icon: 'file-invoice', status: panDocStatus, uploading: panUploading, upload: handleUploadPan },
             { label: t('businessSettings.companyRegLabel'), icon: 'building', status: companyRegDocStatus, uploading: companyRegUploading, upload: handleUploadCompanyReg },
           ].map((doc, idx, arr) => (
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            <Pressable
               key={doc.label}
               style={[styles.row, idx < arr.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}
               disabled={doc.uploading || doc.status === 'PENDING' || doc.status === 'APPROVED'}
@@ -1930,7 +1930,7 @@ export default function BusinessSettingsScreen() {
                 </View>
                 <View style={styles.socialActions}>
                   {acct ? (
-                    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.socialDisconnectBtn} onPress={() => deleteSocialAccount(acct)} hitSlop={8}>
+                    <Pressable style={styles.socialDisconnectBtn} onPress={() => deleteSocialAccount(acct)} hitSlop={8}>
                       <Ionicons name="close" size={14} color={C.error} />
                     </Pressable>
                   ) : isLive ? (
@@ -2083,7 +2083,7 @@ export default function BusinessSettingsScreen() {
           {LANGUAGE_OPTIONS.map((lang) => {
             const active = selectedLang === lang.label;
             return (
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+              <Pressable
                 key={lang.label}
                 disabled={lang.future}
                 onPress={() => {
@@ -2163,7 +2163,7 @@ export default function BusinessSettingsScreen() {
               <Text style={[styles.accountName, { color: C.text }]}>{user?.name ?? 'Business'}</Text>
               <Text style={[styles.accountEmail, { color: C.textSecondary }]}>{user?.email ?? 'business@example.com'}</Text>
             </View>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.editBtn, { backgroundColor: C.primaryLight }]} onPress={() => router.push('/(business)/settings?section=profile' as Parameters<typeof router.push>[0])}>
+            <Pressable style={[styles.editBtn, { backgroundColor: C.primaryLight }]} onPress={() => router.push('/(business)/settings?section=profile' as Parameters<typeof router.push>[0])}>
               <Text style={[styles.editBtnText, { color: C.brinjal1 }]}>{t('businessSettings.editBtnLabel')}</Text>
             </Pressable>
           </View>
@@ -2220,7 +2220,7 @@ export default function BusinessSettingsScreen() {
         {/* Top bar */}
         <View style={{ backgroundColor: C.surface }}>
           <View style={styles.topBar}>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.backBtn, { backgroundColor: C.surface, borderColor: C.border }]} onPress={handleBack}>
+            <Pressable style={[styles.backBtn, { backgroundColor: C.surface, borderColor: C.border }]} onPress={handleBack}>
               <Text style={[styles.backArrow, { color: C.text }]}>‹</Text>
             </Pressable>
             <Text style={[styles.topTitle, { color: C.text }]}>{topTitle}</Text>

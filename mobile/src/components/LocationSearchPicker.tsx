@@ -53,7 +53,7 @@ export function LocationSearchPicker({
           kind of thing (a chosen location filter), so they shouldn't cost two
           separate rows of vertical space. */}
       <View style={ls.selectedChips}>
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+        <Pressable
           style={[ls.remoteChip, { borderColor: remoteSelected ? C.brinjal1 : C.border, backgroundColor: remoteSelected ? C.primaryLight : C.background }, !remoteSelected && atMax && { opacity: 0.35 }]}
           onPress={toggleRemote}
           disabled={!remoteSelected && atMax}>
@@ -68,7 +68,7 @@ export function LocationSearchPicker({
           <View key={loc.label} style={[ls.selectedChip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
             <Ionicons name="location" size={12} color={C.brinjal1} />
             <Text style={[ls.selectedChipText, { color: C.brinjal1 }]}>{loc.label}</Text>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => remove(loc.label)} hitSlop={8}>
+            <Pressable onPress={() => remove(loc.label)} hitSlop={8}>
               <Ionicons name="close" size={13} color={C.brinjal1} />
             </Pressable>
           </View>
@@ -78,7 +78,7 @@ export function LocationSearchPicker({
       {/* Trigger — matches the edit-profile location field: a tappable box
           that opens the full search modal, instead of an inline dropdown. */}
       {!atMax && (
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+        <Pressable
           style={[ls.addBtn, { backgroundColor: C.background, borderColor: C.border }]}
           onPress={() => setModalOpen(true)}>
           <Ionicons name="search" size={15} color={C.textSecondary} />

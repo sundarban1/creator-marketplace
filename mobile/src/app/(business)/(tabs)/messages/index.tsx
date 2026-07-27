@@ -167,7 +167,7 @@ function ChatCard({ conv, onDelete }: { conv: Conversation; onDelete: (id: strin
 
   return (
     <SwipeableChatRow onDelete={handleLongPress} deleteLabel={t('messages.deleteConversationConfirm')}>
-      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+      <Pressable
         style={({ pressed }) => [
           s.card,
           { backgroundColor: pressed ? C.surface : C.background },

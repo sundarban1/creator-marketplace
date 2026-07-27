@@ -21,7 +21,7 @@ type ChipProps = {
 export function FilterChip({ label, icon, selected, onPress, flex }: ChipProps) {
   const C = useAppColors();
   return (
-    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+    <Pressable
       style={[
         s.chip,
         flex && s.chipFlex,

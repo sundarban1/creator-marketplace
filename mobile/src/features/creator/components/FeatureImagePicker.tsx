@@ -16,11 +16,11 @@ export function FeatureImagePicker({ imageUrl, category, uploading, onPick, onCl
       <View style={fi.preview}>
         <Image source={{ uri: previewImage }} style={StyleSheet.absoluteFill} resizeMode="cover" />
         {imageUrl && (
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} hitSlop={8} style={[fi.clearBtn, { opacity: uploading ? 0.5 : 1 }]} onPress={onClear} disabled={uploading}>
+          <Pressable hitSlop={8} style={[fi.clearBtn, { opacity: uploading ? 0.5 : 1 }]} onPress={onClear} disabled={uploading}>
             <Ionicons name="close" size={16} color="#fff" />
           </Pressable>
         )}
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+        <Pressable
           hitSlop={8}
           style={[fi.cameraBtn, { backgroundColor: C.brinjal1, opacity: uploading ? 0.7 : 1 }]}
           onPress={onPick}

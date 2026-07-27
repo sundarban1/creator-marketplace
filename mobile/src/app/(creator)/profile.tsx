@@ -166,11 +166,11 @@ export default function CreatorProfileScreen() {
 
           {/* Top bar */}
           <View style={s.topBar}>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={s.topIconBtn} hitSlop={4} onPress={() => router.back()}>
+            <Pressable style={s.topIconBtn} hitSlop={4} onPress={() => router.back()}>
               <Ionicons name="chevron-back" size={22} color="#fff" />
             </Pressable>
             <Text style={s.topTitle}>{t('profile.myProfile')}</Text>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={s.topIconBtn} hitSlop={4} onPress={handleCoverPress} disabled={coverUploading}>
+            <Pressable style={s.topIconBtn} hitSlop={4} onPress={handleCoverPress} disabled={coverUploading}>
               {coverUploading
                 ? <ActivityIndicator size="small" color="#fff" />
                 : <Ionicons name="camera" size={18} color="#fff" />}
@@ -182,7 +182,7 @@ export default function CreatorProfileScreen() {
         <View style={[s.profileCard, { backgroundColor: C.surface }]}>
           {/* Avatar */}
           <View style={s.avatarArea}>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={handleAvatarPress} disabled={avatarUploading} style={s.avatarPressable}>
+            <Pressable onPress={handleAvatarPress} disabled={avatarUploading} style={s.avatarPressable}>
               {displayAvatar ? (
                 <Image source={{ uri: displayAvatar }} style={s.avatar} />
               ) : (
@@ -226,13 +226,13 @@ export default function CreatorProfileScreen() {
 
           {/* Edit profile / Analytics buttons */}
           <View style={s.actionRow}>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            <Pressable
               style={[s.editBtn, { borderColor: C.brinjal1 }]}
               onPress={() => router.push('/(creator)/edit-profile')}>
               <Ionicons name="create-outline" size={15} color={C.brinjal1} />
               <Text style={[s.editBtnText, { color: C.brinjal1 }]}>{t('profile.editProfile')}</Text>
             </Pressable>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            <Pressable
               style={[s.editBtn, { borderColor: C.brinjal1 }]}
               onPress={() => router.push('/(creator)/analytics' as never)}>
               <Ionicons name="stats-chart-outline" size={15} color={C.brinjal1} />
@@ -267,7 +267,7 @@ export default function CreatorProfileScreen() {
           {richAccounts.length > 0 ? (
             <View style={s.cardList}>
               {richAccounts.map((acc) => (
-                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                <Pressable
                   key={acc.platform}
                   style={[s.socialRow, { backgroundColor: C.background, borderColor: C.border }]}
                   onPress={() => Linking.openURL(acc.url).catch(() => {})}>
@@ -343,7 +343,7 @@ export default function CreatorProfileScreen() {
               {portfolioLinks.map((item) => {
                 const plat = detectPlatform(item.url);
                 return (
-                  <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                  <Pressable
                     key={item.id}
                     style={[s.socialRow, { backgroundColor: C.background, borderColor: C.border }]}
                     onPress={() => Linking.openURL(item.url).catch(() => {})}>
@@ -366,7 +366,7 @@ export default function CreatorProfileScreen() {
                   </Pressable>
                 );
               })}
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+              <Pressable
                 style={[s.addMoreRow, { borderColor: C.brinjal1 + '55' }]}
                 onPress={() => router.push('/(creator)/settings?section=past-work' as never)}>
                 <Ionicons name="add-circle-outline" size={16} color={C.brinjal1} />
@@ -403,7 +403,7 @@ function SectionCard({
     <View style={[s.sectionCard, { backgroundColor: C.surface, borderColor: C.border }]}>
       <View style={s.sectionHeader}>
         <Text style={[s.sectionTitle, { color: C.text }]}>{title}</Text>
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={action.onPress} hitSlop={8}>
+        <Pressable onPress={action.onPress} hitSlop={8}>
           <Text style={[s.sectionAction, { color: C.brinjal1 }]}>{action.label}</Text>
         </Pressable>
       </View>

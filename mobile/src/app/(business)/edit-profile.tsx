@@ -150,7 +150,7 @@ export default function EditBusinessProfileScreen() {
             <View style={styles.labelRow}>
               <Text style={[styles.label, { color: C.textSecondary }]}>{t('profile.editBusiness.descriptionLabel')}</Text>
               {categories.length > 0 && (
-                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={handleRegenerateDescription} style={[styles.regenerateBtn, { backgroundColor: C.primaryLight }]}>
+                <Pressable onPress={handleRegenerateDescription} style={[styles.regenerateBtn, { backgroundColor: C.primaryLight }]}>
                   <Text style={[styles.regenerateBtnText, { color: C.brinjal1 }]}>{t('profile.editBusiness.regenerateBtn')}</Text>
                 </Pressable>
               )}
@@ -188,7 +188,7 @@ export default function EditBusinessProfileScreen() {
 
           <View style={styles.field}>
             <Text style={[styles.label, { color: C.textSecondary }]}>{t('profile.editBusiness.locationLabel')}</Text>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            <Pressable
               style={[styles.locationBtn, { backgroundColor: C.background, borderColor: C.border }]}
               onPress={() => setLocationModalOpen(true)}>
               <Text style={[styles.locationBtnTxt, { color: location ? C.text : C.textSecondary }]} numberOfLines={2}>
@@ -197,7 +197,7 @@ export default function EditBusinessProfileScreen() {
               <Text style={styles.locationArrow}>›</Text>
             </Pressable>
             {location ? (
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => { setLocation(''); setLocationLat(null); setLocationLng(null); }}>
+              <Pressable onPress={() => { setLocation(''); setLocationLat(null); setLocationLng(null); }}>
                 <Text style={[styles.clearLocation, { color: C.error ?? '#EF4444' }]}>{t('profile.editCreator.clearLocation')}</Text>
               </Pressable>
             ) : null}
@@ -206,7 +206,7 @@ export default function EditBusinessProfileScreen() {
         </View>
 
         {/* ── Save ── */}
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+        <Pressable
           style={[
             styles.saveBtn,
             { backgroundColor: saving ? C.border : C.brinjal1 },

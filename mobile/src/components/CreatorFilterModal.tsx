@@ -145,7 +145,7 @@ export function CreatorFilterModal({
               const meta = getCategoryMeta(allCategories, cat);
               const sel = temp.categories.includes(cat);
               return (
-                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                <Pressable
                   key={cat}
                   onPress={() => set('categories', toggle(temp.categories, cat))}
                   style={[s.chip, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? C.primaryLight : C.background }]}>
@@ -186,7 +186,7 @@ export function CreatorFilterModal({
             {allPlatforms.map((p) => {
               const sel = temp.platforms.includes(p.key);
               return (
-                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                <Pressable
                   key={p.key}
                   onPress={() => set('platforms', toggle(temp.platforms, p.key))}
                   style={[s.chip, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? C.primaryLight : C.background }]}>

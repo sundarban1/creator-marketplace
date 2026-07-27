@@ -117,7 +117,7 @@ export function LocationSearchModal({
       onShow={() => inputRef.current?.focus()}>
       <View style={[lsm.container, { backgroundColor: C.background }]}>
         <View style={[lsm.topBar, { paddingTop: insets.top + 20, borderBottomColor: C.border, backgroundColor: C.background }]}>
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={onClose} hitSlop={12} style={lsm.cancelBtn}>
+          <Pressable onPress={onClose} hitSlop={12} style={lsm.cancelBtn}>
             <Text style={[lsm.cancelTxt, { color: C.brinjal1 }]}>{t('profile.editCreator.locationModalCancel')}</Text>
           </Pressable>
           <Text style={[lsm.title, { color: C.text }]}>{t('profile.editCreator.locationModalTitle')}</Text>
@@ -144,7 +144,7 @@ export function LocationSearchModal({
           keyExtractor={(item) => item.place_id}
           keyboardShouldPersistTaps="handled"
           renderItem={({ item }) => (
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            <Pressable
               style={[lsm.row, { borderBottomColor: C.border }]}
               onPress={() => handleSelectPrediction(item)}>
               <Ionicons name="location" size={18} color="#9CA3AF" />

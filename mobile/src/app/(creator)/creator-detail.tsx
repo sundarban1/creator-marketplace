@@ -164,7 +164,7 @@ export default function CreatorPeerDetailScreen() {
           <FontAwesome5 name="user-slash" size={40} color={C.textSecondary} style={s.errorEmoji} />
           <Text style={[s.errorTitle, { color: C.text }]}>{t('creatorDetailExtra.notFound')}</Text>
           <Text style={[s.errorHint, { color: C.textSecondary }]}>{error || t('creatorDetailExtra.notFoundSub')}</Text>
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => router.back()} style={[s.retryBtn, { borderColor: C.brinjal1 }]}>
+          <Pressable onPress={() => router.back()} style={[s.retryBtn, { borderColor: C.brinjal1 }]}>
             <Text style={[s.retryText, { color: C.brinjal1 }]}>{t('creatorDetailExtra.goBack')}</Text>
           </Pressable>
         </View>
@@ -211,7 +211,7 @@ export default function CreatorPeerDetailScreen() {
           </LinearGradient>
 
           <View style={s.topBar}>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={s.topIconBtn} hitSlop={4}
+            <Pressable style={s.topIconBtn} hitSlop={4}
               onPress={() => (router.canGoBack() ? router.back() : router.replace('/(creator)/explore-creators' as never))}>
               <Ionicons name="chevron-back" size={22} color="#fff" />
             </Pressable>
@@ -315,7 +315,7 @@ export default function CreatorPeerDetailScreen() {
                 const canOpen = !!p.profileUrl;
                 const info = getPlatformInfo(p.platform);
                 return (
-                  <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                  <Pressable
                     key={p.key}
                     style={[s.socialRow, { borderColor: C.border }]}
                     onPress={() => canOpen ? Linking.openURL(p.profileUrl!).catch(() => {}) : null}>
@@ -373,7 +373,7 @@ export default function CreatorPeerDetailScreen() {
             <SectionTitle label={t('creatorDetailExtra.sectionPortfolio')} color={C.textSecondary} />
             <View style={s.portfolioList}>
               {portfolioLinks.map((link) => (
-                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                <Pressable
                   key={link.id}
                   style={[s.portfolioRow, { borderColor: C.border }]}
                   onPress={() => Linking.openURL(link.url).catch(() => {})}>
@@ -401,7 +401,7 @@ export default function CreatorPeerDetailScreen() {
       {/* Sticky action bar */}
       <View style={[msgBtn.bar, { backgroundColor: C.surface, borderTopColor: C.border, paddingBottom: Math.max(14, insets.bottom) }]}>
         {convStatus === 'ACCEPTED' ? (
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[
+          <Pressable style={[
               msgBtn.btn,
               {
                 backgroundColor: C.brinjal1, shadowColor: C.brinjal1,
@@ -416,7 +416,7 @@ export default function CreatorPeerDetailScreen() {
             <Text style={[msgBtn.txt, { color: '#fff' }]}>{t('creatorDetailExtra.requestSent')}</Text>
           </View>
         ) : (
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[
+          <Pressable style={[
               msgBtn.btn,
               {
                 backgroundColor: C.brinjal1, shadowColor: C.brinjal1,
@@ -432,12 +432,12 @@ export default function CreatorPeerDetailScreen() {
       {/* Request message modal */}
       <Modal visible={showModal} transparent animationType="slide" onRequestClose={() => setShowModal(false)}>
         <View style={rm.overlay}>
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={rm.scrim} onPress={() => setShowModal(false)} />
+          <Pressable style={rm.scrim} onPress={() => setShowModal(false)} />
           <Animated.View style={[rm.sheet, { backgroundColor: C.surface, transform: [{ translateY: keyboardOffset }] }]}>
             <View style={[rm.handle, { backgroundColor: C.border }]} />
             <View style={rm.titleRow}>
               <Text style={[rm.title, { color: C.text }]}>{t('creatorDetailExtra.messageRequestTitle')}</Text>
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[rm.closeBtn, { backgroundColor: C.background }]} onPress={() => setShowModal(false)} hitSlop={8}>
+              <Pressable style={[rm.closeBtn, { backgroundColor: C.background }]} onPress={() => setShowModal(false)} hitSlop={8}>
                 <Ionicons name="close" size={18} color={C.textSecondary} />
               </Pressable>
             </View>
@@ -454,7 +454,7 @@ export default function CreatorPeerDetailScreen() {
               maxLength={500}
             />
             <Text style={[rm.counter, { color: C.textSecondary }]}>{requestMsg.length}/500</Text>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            <Pressable
               style={[
                 rm.sendBtn,
                 {

@@ -217,7 +217,7 @@ export default function EditProfileScreen() {
 
           <View style={styles.field}>
             <Text style={[styles.label, { color: C.textSecondary }]}>{t('profile.editCreator.locationLabel')}</Text>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            <Pressable
               style={[styles.locationBtn, { backgroundColor: C.background, borderColor: C.border }]}
               onPress={() => setLocationModalOpen(true)}>
               <Text style={[styles.locationBtnTxt, { color: location ? C.text : C.textSecondary }]} numberOfLines={2}>
@@ -226,7 +226,7 @@ export default function EditProfileScreen() {
               <Text style={styles.locationArrow}>›</Text>
             </Pressable>
             {location ? (
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => { setLocation(''); setLocationLat(null); setLocationLng(null); }}>
+              <Pressable onPress={() => { setLocation(''); setLocationLat(null); setLocationLng(null); }}>
                 <Text style={[styles.clearLocation, { color: C.error ?? '#EF4444' }]}>{t('profile.editCreator.clearLocation')}</Text>
               </Pressable>
             ) : null}

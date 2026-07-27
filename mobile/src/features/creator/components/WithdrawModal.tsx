@@ -78,7 +78,7 @@ export function WithdrawModal({ visible, onClose, availableBalance, paymentMetho
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={handleClose}>
-      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.backdrop} onPress={handleClose} />
+      <Pressable style={styles.backdrop} onPress={handleClose} />
       <Animated.View style={[styles.sheet, { backgroundColor: C.surface, transform: [{ translateY: keyboardOffset }] }]}>
         <View style={[styles.handle, { backgroundColor: C.border }]} />
 
@@ -91,7 +91,7 @@ export function WithdrawModal({ visible, onClose, availableBalance, paymentMetho
           {paymentMethods.length === 0 ? (
             <View style={styles.emptyMethods}>
               <Text style={[styles.emptyMethodsText, { color: C.textSecondary }]}>{t('wallet.noPaymentMethodsHint')}</Text>
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => { handleClose(); onManageMethods(); }}>
+              <Pressable onPress={() => { handleClose(); onManageMethods(); }}>
                 <Text style={[styles.manageLink, { color: C.brinjal1 }]}>{t('wallet.managePaymentMethods')}</Text>
               </Pressable>
             </View>
@@ -103,7 +103,7 @@ export function WithdrawModal({ visible, onClose, availableBalance, paymentMetho
                   const meta = METHOD_META[m] ?? { icon: 'credit-card', label: m, color: C.brinjal1 };
                   const active = method === m;
                   return (
-                    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                    <Pressable
                       key={m}
                       style={[
                         styles.methodChip,
@@ -149,7 +149,7 @@ export function WithdrawModal({ visible, onClose, availableBalance, paymentMetho
         {Platform.OS === 'ios' && (
           <InputAccessoryView nativeID={AMOUNT_ACCESSORY_ID}>
             <View style={[styles.accessoryBar, { backgroundColor: C.surface, borderTopColor: C.border }]}>
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => Keyboard.dismiss()} hitSlop={8}>
+              <Pressable onPress={() => Keyboard.dismiss()} hitSlop={8}>
                 <Text style={[styles.accessoryDoneText, { color: C.brinjal1 }]}>{t('wallet.keyboardDone')}</Text>
               </Pressable>
             </View>
@@ -158,7 +158,7 @@ export function WithdrawModal({ visible, onClose, availableBalance, paymentMetho
 
         {paymentMethods.length > 0 && (
           <View style={[styles.footer, { borderTopColor: C.border }]}>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            <Pressable
               style={({ pressed }) => [
                 styles.submitBtn,
                 { backgroundColor: C.brinjal1, shadowColor: C.brinjal1, opacity: submitting ? 0.7 : 1 },

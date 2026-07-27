@@ -108,11 +108,11 @@ export default function BusinessProfileScreen() {
 
           {/* Top bar */}
           <View style={s.topBar}>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={s.topIconBtn} hitSlop={4}
+            <Pressable style={s.topIconBtn} hitSlop={4}
               onPress={() => (router.canGoBack() ? router.back() : router.replace('/(business)/' as never))}>
               <Ionicons name="chevron-back" size={22} color="#fff" />
             </Pressable>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={s.topIconBtn} hitSlop={4}
+            <Pressable style={s.topIconBtn} hitSlop={4}
               onPress={handleCoverPress} disabled={coverUploading}>
               {coverUploading
                 ? <ActivityIndicator size="small" color="#fff" />
@@ -125,7 +125,7 @@ export default function BusinessProfileScreen() {
         <View style={[s.profileCard, { backgroundColor: C.surface }]}>
           {/* Logo */}
           <View style={s.avatarArea}>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={handleLogoPress} disabled={logoUploading} style={s.avatarPressable}>
+            <Pressable onPress={handleLogoPress} disabled={logoUploading} style={s.avatarPressable}>
               {profile?.logoUrl ? (
                 <Image source={{ uri: profile.logoUrl }} style={s.avatar} />
               ) : (
@@ -163,13 +163,13 @@ export default function BusinessProfileScreen() {
 
           {/* Edit profile / Analytics buttons */}
           <View style={s.actionRow}>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            <Pressable
               style={[s.editBtn, { borderColor: C.brinjal1 }]}
               onPress={() => router.push('/(business)/edit-profile' as never)}>
               <Ionicons name="create-outline" size={15} color={C.brinjal1} />
               <Text style={[s.editBtnText, { color: C.brinjal1 }]}>{t('profile.editBusinessBtn')}</Text>
             </Pressable>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            <Pressable
               style={[s.editBtn, { borderColor: C.brinjal1 }]}
               onPress={() => router.push('/(business)/analytics' as never)}>
               <Ionicons name="stats-chart-outline" size={15} color={C.brinjal1} />
@@ -201,7 +201,7 @@ export default function BusinessProfileScreen() {
           {profile?.description ? (
             <Text style={[s.aboutText, { color: C.text }]}>{profile.description}</Text>
           ) : (
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            <Pressable
               style={[s.emptyField, { borderColor: C.border }]}
               onPress={() => router.push('/(business)/edit-profile' as never)}>
               <Text style={[s.emptyFieldText, { color: C.textSecondary }]}>{t('profile.addDescription')}</Text>
@@ -256,7 +256,7 @@ export default function BusinessProfileScreen() {
         {/* ── Website ── */}
         <SectionCard title={t('profile.website')} action={{ label: profile?.website ? t('common.edit') : t('profile.addBtn'), onPress: () => router.push('/(business)/edit-profile' as never) }} C={C}>
           {profile?.website ? (
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            <Pressable
               style={[s.contactRow, { backgroundColor: C.background, borderColor: C.border }]}
               onPress={() => Linking.openURL(profile.website!)}>
               <View
@@ -276,7 +276,7 @@ export default function BusinessProfileScreen() {
               <Ionicons name="open-outline" size={16} color={C.textSecondary} />
             </Pressable>
           ) : (
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            <Pressable
               style={[s.emptyField, { borderColor: C.border }]}
               onPress={() => router.push('/(business)/edit-profile' as never)}>
               <Text style={[s.emptyFieldText, { color: C.textSecondary }]}>{t('profile.addWebsite')}</Text>
@@ -332,7 +332,7 @@ function SectionCard({
       <View style={s.sectionHeader}>
         <Text style={[s.sectionTitle, { color: C.text }]}>{title}</Text>
         {action && (
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={action.onPress} hitSlop={8}>
+          <Pressable onPress={action.onPress} hitSlop={8}>
             <Text style={[s.sectionAction, { color: C.brinjal1 }]}>{action.label}</Text>
           </Pressable>
         )}

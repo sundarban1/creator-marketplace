@@ -264,7 +264,7 @@ function DropdownPicker({
 
   return (
     <>
-      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+      <Pressable
         style={[dp.trigger, { backgroundColor: C.background, borderColor: error ? ERROR_RED : value ? C.brinjal1 : C.border }]}
         onPress={() => setOpen(true)}>
         {selectedImg ? (
@@ -283,12 +283,12 @@ function DropdownPicker({
 
       <Modal visible={open} transparent animationType="slide" onRequestClose={() => setOpen(false)}>
         <View style={dp.modalWrap}>
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={dp.scrim} onPress={() => setOpen(false)} />
+          <Pressable style={dp.scrim} onPress={() => setOpen(false)} />
           <View style={[dp.sheet, { backgroundColor: C.surface }]}>
             <View style={[dp.handle, { backgroundColor: C.border }]} />
             <View style={dp.sheetHeader}>
               <Text style={[dp.sheetTitle, { color: C.text, marginBottom: 0 }]}>{placeholder}</Text>
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => setOpen(false)} hitSlop={8}>
+              <Pressable onPress={() => setOpen(false)} hitSlop={8}>
                 <Ionicons name="close" size={22} color={C.textSecondary} />
               </Pressable>
             </View>
@@ -297,7 +297,7 @@ function DropdownPicker({
                 const sel = opt.label === value;
                 const img = imageFor ? imageFor(opt.label) : undefined;
                 return (
-                  <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                  <Pressable
                     key={opt.label}
                     style={[dp.item, { backgroundColor: sel ? C.primaryLight : 'transparent' }]}
                     onPress={() => { onChange(opt.label); setOpen(false); }}>
@@ -363,7 +363,7 @@ function MultiCheckboxDropdown({
 
   return (
     <>
-      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+      <Pressable
         style={[dp.trigger, { backgroundColor: C.background, borderColor: error ? ERROR_RED : values.length > 0 ? C.brinjal1 : C.border }]}
         onPress={() => setOpen(true)}>
         <Ionicons name="flag-outline" size={16} color={values.length > 0 ? C.brinjal1 : C.textSecondary} />
@@ -379,12 +379,12 @@ function MultiCheckboxDropdown({
 
       <Modal visible={open} transparent animationType="slide" onRequestClose={() => setOpen(false)}>
         <View style={dp.modalWrap}>
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={dp.scrim} onPress={() => setOpen(false)} />
+          <Pressable style={dp.scrim} onPress={() => setOpen(false)} />
           <View style={[dp.sheet, { backgroundColor: C.surface }]}>
             <View style={[dp.handle, { backgroundColor: C.border }]} />
             <View style={mc.sheetHeader}>
               <Text style={[dp.sheetTitle, { color: C.text, marginBottom: 0 }]}>{placeholder}</Text>
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => setOpen(false)}>
+              <Pressable onPress={() => setOpen(false)}>
                 <Text style={[mc.done, { color: C.brinjal1 }]}>{t('createEvent.multiSelectDone')}</Text>
               </Pressable>
             </View>
@@ -392,7 +392,7 @@ function MultiCheckboxDropdown({
               {options.map((opt) => {
                 const checked = values.includes(opt);
                 return (
-                  <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                  <Pressable
                     key={opt}
                     style={[mc.row, { backgroundColor: checked ? C.primaryLight : 'transparent' }]}
                     onPress={() => toggle(opt)}>
@@ -438,7 +438,7 @@ function RadioGroup({
       {options.map((opt) => {
         const sel = value === opt;
         return (
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+          <Pressable
             key={opt}
             style={[rg.row, { backgroundColor: sel ? C.primaryLight : C.background, borderColor: sel ? C.brinjal1 : C.border }]}
             onPress={() => onChange(opt)}>
@@ -486,14 +486,14 @@ function CalendarGrid({ value, onChange, colors }: {
   return (
     <View style={{ gap: 10 }}>
       <View style={cal.monthNav}>
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={cal.navBtn} onPress={() => {
+        <Pressable style={cal.navBtn} onPress={() => {
           if (calMonth === 0) { setCalYear((y) => y - 1); setCalMonth(11); }
           else setCalMonth((m) => m - 1);
         }}>
           <Text style={[cal.navTxt, { color: C.brinjal1 }]}>‹</Text>
         </Pressable>
         <Text style={[cal.monthTitle, { color: C.text }]}>{MONTHS[calMonth]} {calYear}</Text>
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={cal.navBtn} onPress={() => {
+        <Pressable style={cal.navBtn} onPress={() => {
           if (calMonth === 11) { setCalYear((y) => y + 1); setCalMonth(0); }
           else setCalMonth((m) => m + 1);
         }}>
@@ -510,7 +510,7 @@ function CalendarGrid({ value, onChange, colors }: {
           const sel = value ? sameDay(value, dayStart(new Date(calYear, calMonth, day))) : false;
           const isToday = sameDay(dayStart(new Date(calYear, calMonth, day)), today);
           return (
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} key={`d${day}`} style={cal.cell} disabled={past}
+            <Pressable key={`d${day}`} style={cal.cell} disabled={past}
               onPress={() => onChange(dayStart(new Date(calYear, calMonth, day)))}>
               <View style={[cal.dayCircle, sel && { backgroundColor: C.brinjal1 }, isToday && !sel && { borderWidth: 1.5, borderColor: C.brinjal1 }]}>
                 <Text style={[cal.dayNum, { color: past ? C.border : sel ? '#fff' : isToday ? C.brinjal1 : C.text }, sel && { fontWeight: '700' }]}>
@@ -552,14 +552,14 @@ function DeadlinePicker({ value, onChange, error, colors, label }: {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+      <Pressable
         style={[dp.trigger, { flexDirection: 'row', alignItems: 'center', borderColor: error ? ERROR_RED : value ? C.brinjal1 : C.border, backgroundColor: C.background, height: 50 }]}
         onPress={() => setOpen(true)}>
         <Text style={[{ flex: 1, fontSize: 15, fontFamily: F.regular, color: value ? C.text : C.textSecondary }]}>
           {value ? fmtDate(value) : t('createEvent.deadlineTapToSelect')}
         </Text>
         {value ? (
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} hitSlop={10} onPress={(e) => { e.stopPropagation(); onChange(null); }}>
+          <Pressable hitSlop={10} onPress={(e) => { e.stopPropagation(); onChange(null); }}>
             <Ionicons name="close-circle" size={18} color={C.textSecondary} />
           </Pressable>
         ) : (
@@ -570,12 +570,12 @@ function DeadlinePicker({ value, onChange, error, colors, label }: {
 
       <Modal visible={open} transparent animationType="slide" onRequestClose={() => setOpen(false)}>
         <View style={dp.modalWrap}>
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={dp.scrim} onPress={() => setOpen(false)} />
+          <Pressable style={dp.scrim} onPress={() => setOpen(false)} />
           <View style={[dp.sheet, { backgroundColor: C.surface }]}>
             <View style={[dp.handle, { backgroundColor: C.border }]} />
             <View style={mc.sheetHeader}>
               <Text style={[dp.sheetTitle, { color: C.text, marginBottom: 0 }]}>{label ?? t('createEvent.deadlineDefaultLabel')}</Text>
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => setOpen(false)}>
+              <Pressable onPress={() => setOpen(false)}>
                 <Text style={[mc.done, { color: C.brinjal1 }]}>{t('createEvent.deadlineDone')}</Text>
               </Pressable>
             </View>
@@ -1195,7 +1195,7 @@ export default function CreateCampaignScreen() {
 
       {/* Header */}
       <View style={[s.header, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+        <Pressable
           onPress={() => {
             if (phase === 'confirm') setPhase('review');
             else if (phase === 'review') setPhase('setup');
@@ -1300,7 +1300,7 @@ export default function CreateCampaignScreen() {
                     <Text style={[ai.exampleLabel, { color: C.textSecondary }]}>{t('createEvent.aiExamplesLabel')}</Text>
                     <View style={ai.chipWrap}>
                       {AI_PROMPT_EXAMPLES.map((ex) => (
-                        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                        <Pressable
                           key={ex}
                           style={[ai.exampleChip, { borderColor: C.border, backgroundColor: C.background }]}
                           onPress={() => setAiPromptText(ex)}
@@ -1313,7 +1313,7 @@ export default function CreateCampaignScreen() {
 
                   {/* Location */}
                   <SectionCard title={t('createEvent.secLocationTitle')} sub={t('createEvent.secLocationSub')} colors={C}>
-                    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                    <Pressable
                       style={[s.locationBtn, { backgroundColor: C.background, borderColor: aiLocationError ? ERROR_RED : C.border }]}
                       onPress={() => setLocationModalOpen(true)}>
                       <Text style={[s.locationBtnTxt, { color: form.location ? C.text : C.textSecondary }]} numberOfLines={2}>
@@ -1325,7 +1325,7 @@ export default function CreateCampaignScreen() {
                   </SectionCard>
 
                   {/* Create Event */}
-                  <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                  <Pressable
                     style={[s.generateBtn, { backgroundColor: (!aiPromptText.trim() || aiLoading) ? C.border : C.brinjal1 }]}
                     onPress={handleGenerateWithAi}
                     disabled={!aiPromptText.trim() || aiLoading}>
@@ -1364,7 +1364,7 @@ export default function CreateCampaignScreen() {
 
                   {/* Venue / Location */}
                   <SectionCard title={t('createEvent.secVenueTitle')} sub={t('createEvent.secVenueSub')} colors={C}>
-                    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                    <Pressable
                       style={[s.locationBtn, { backgroundColor: C.background, borderColor: eventErrors.venue ? ERROR_RED : C.border }]}
                       onPress={() => setLocationModalOpen(true)}>
                       <Text style={[s.locationBtnTxt, { color: form.venue ? C.text : C.textSecondary }]} numberOfLines={2}>
@@ -1390,7 +1390,7 @@ export default function CreateCampaignScreen() {
                   </View>
 
                   {/* Continue button */}
-                  <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                  <Pressable
                     style={({ pressed }) => [s.generateBtn, { backgroundColor: C.brinjal1, opacity: pressed ? 0.88 : 1 }]}
                     onPress={handleContinueEvent}>
                     <Text style={s.generateBtnText}>{t('createEvent.generateContinueBtn')}</Text>
@@ -1451,7 +1451,7 @@ export default function CreateCampaignScreen() {
                   <SectionCard colors={C}>
                     <View style={s.descHeaderRow}>
                       <Text style={[sc.title, s.descHeaderText, { color: C.text }]}>{t('createEvent.secDescPaid')}</Text>
-                      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                      <Pressable
                         style={[s.suggestBtn, { borderColor: C.brinjal1, opacity: descSuggestLoading ? 0.6 : 1 }]}
                         onPress={handleSuggestDescription}
                         disabled={descSuggestLoading}>
@@ -1580,7 +1580,7 @@ export default function CreateCampaignScreen() {
                   />
 
                   {/* Save as Draft */}
-                  <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                  <Pressable
                     style={[s.draftBtn, { borderColor: C.border, opacity: loading ? 0.6 : 1 }]}
                     onPress={handleSaveDraft}
                     disabled={loading}>
@@ -1590,13 +1590,13 @@ export default function CreateCampaignScreen() {
 
                   {/* Actions */}
                   <View style={s.reviewActions}>
-                    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                    <Pressable
                       style={[s.editBtn, { borderColor: C.brinjal1 }]}
                       onPress={() => setPhase('setup')}>
                       <Ionicons name="chevron-back" size={16} color={C.brinjal1} />
                       <Text style={[s.editBtnText, { color: C.brinjal1 }]}>{t('createEvent.editInputsBtn')}</Text>
                     </Pressable>
-                    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                    <Pressable
                       style={[s.publishBtn, { backgroundColor: C.brinjal1 }]}
                       onPress={handleContinueToConfirm}>
                       <Text style={s.publishBtnText}>{t('createEvent.continueToReviewBtn')}</Text>
@@ -1651,7 +1651,7 @@ export default function CreateCampaignScreen() {
                         <Text style={[sc.title, { color: C.text }]}>{t('createEvent.secDescOpen')}</Text>
                         <Text style={[sc.sub, { color: C.textSecondary }]}>{t('createEvent.secDescOpenSub')}</Text>
                       </View>
-                      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                      <Pressable
                         style={[s.suggestBtn, { borderColor: C.brinjal1, opacity: descSuggestLoading ? 0.6 : 1 }]}
                         onPress={handleSuggestDescription}
                         disabled={descSuggestLoading}>
@@ -1677,7 +1677,7 @@ export default function CreateCampaignScreen() {
                       {BENEFITS.map((benefit) => {
                         const checked = form.benefits.includes(benefit);
                         return (
-                          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                          <Pressable
                             key={benefit}
                             style={[cg.chip, { borderColor: checked ? C.brinjal1 : C.border, backgroundColor: checked ? C.primaryLight : C.surface }]}
                             onPress={() => {
@@ -1758,11 +1758,11 @@ export default function CreateCampaignScreen() {
 
                   {/* Actions */}
                   <View style={s.reviewActions}>
-                    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[s.editBtn, { borderColor: C.brinjal1 }]} onPress={() => setPhase('setup')}>
+                    <Pressable style={[s.editBtn, { borderColor: C.brinjal1 }]} onPress={() => setPhase('setup')}>
                       <Ionicons name="chevron-back" size={16} color={C.brinjal1} />
                       <Text style={[s.editBtnText, { color: C.brinjal1 }]}>{t('createEvent.editEventBtn')}</Text>
                     </Pressable>
-                    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                    <Pressable
                       style={[s.publishBtn, { backgroundColor: loading ? C.border : C.brinjal1 }]}
                       onPress={() => setPublishWarnVisible(true)}
                       disabled={loading}>
@@ -1800,13 +1800,13 @@ export default function CreateCampaignScreen() {
 
               {/* Actions */}
               <View style={s.reviewActions}>
-                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                <Pressable
                   style={[s.editBtn, { borderColor: C.brinjal1 }]}
                   onPress={() => setPhase('review')}>
                   <Ionicons name="chevron-back" size={16} color={C.brinjal1} />
                   <Text style={[s.editBtnText, { color: C.brinjal1 }]}>{t('createEvent.backToEditBtn')}</Text>
                 </Pressable>
-                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                <Pressable
                   style={[s.publishBtn, { backgroundColor: loading ? C.border : C.brinjal1 }]}
                   onPress={handlePublish}
                   disabled={loading}>
@@ -1821,8 +1821,8 @@ export default function CreateCampaignScreen() {
 
       {/* Pre-publish warning modal */}
       <Modal visible={publishWarnVisible} transparent animationType="fade" onRequestClose={() => setPublishWarnVisible(false)}>
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={s.warnScrim} onPress={() => setPublishWarnVisible(false)}>
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[s.warnSheet, { backgroundColor: C.surface }]} onPress={(e) => e.stopPropagation()}>
+        <Pressable style={s.warnScrim} onPress={() => setPublishWarnVisible(false)}>
+          <Pressable style={[s.warnSheet, { backgroundColor: C.surface }]} onPress={(e) => e.stopPropagation()}>
             <View style={s.warnIconWrap}>
               <Ionicons name="warning" size={32} color="#F59E0B" />
             </View>
@@ -1831,10 +1831,10 @@ export default function CreateCampaignScreen() {
               {t('createEvent.warnBodyPre')}<Text style={{ fontWeight: '700', color: C.text }}>{t('createEvent.warnBodyBold')}</Text>{t('createEvent.warnBodyPost')}
             </Text>
             <View style={s.warnActions}>
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[s.warnCancelBtn, { borderColor: C.border }]} onPress={() => setPublishWarnVisible(false)}>
+              <Pressable style={[s.warnCancelBtn, { borderColor: C.border }]} onPress={() => setPublishWarnVisible(false)}>
                 <Text style={[s.warnCancelText, { color: C.textSecondary }]}>{t('createEvent.warnGoBack')}</Text>
               </Pressable>
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+              <Pressable
                 style={[s.warnConfirmBtn, { backgroundColor: C.brinjal1 }]}
                 onPress={() => { setPublishWarnVisible(false); handlePublish(); }}>
                 <Text style={s.warnConfirmText}>{t('createEvent.warnPublishNow')}</Text>

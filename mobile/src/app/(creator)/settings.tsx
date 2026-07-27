@@ -227,7 +227,7 @@ function NavRow({ faIcon, faIconColor, ionIcon, ionIconColor, label, value, onPr
   const C = useContext(ColorCtx);
   const iColor = ionIconColor ?? faIconColor ?? C.brinjal1;
   return (
-    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.row, !isLast && { borderBottomWidth: 1, borderBottomColor: C.border }]} onPress={onPress}>
+    <Pressable style={[styles.row, !isLast && { borderBottomWidth: 1, borderBottomColor: C.border }]} onPress={onPress}>
       {ionIcon ? (
         <View
           style={[
@@ -287,7 +287,7 @@ function AccordionRow({ title, body, iconColor, icon, emoji, open, onToggle }: A
   const rotate = rotateAnim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '180deg'] });
 
   return (
-    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+    <Pressable
       style={[styles.accordionCard, { backgroundColor: C.surface, borderColor: open ? iconColor : C.border }]}
       onPress={onToggle}>
       <View style={styles.accordionHeader}>
@@ -1060,7 +1060,7 @@ export default function CreatorSettingsScreen() {
                 {SUPPORT_TOPICS.map((topic) => {
                   const active = supportTopic === topic;
                   return (
-                    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} key={topic} style={[styles.chip, { borderColor: active ? C.brinjal1 : C.border, backgroundColor: active ? C.primaryLight : C.surface }]} onPress={() => setSupportTopic(topic)}>
+                    <Pressable key={topic} style={[styles.chip, { borderColor: active ? C.brinjal1 : C.border, backgroundColor: active ? C.primaryLight : C.surface }]} onPress={() => setSupportTopic(topic)}>
                       <Text style={[styles.chipText, { color: active ? C.brinjal1 : C.text }]}>{topic}</Text>
                     </Pressable>
                   );
@@ -1082,7 +1082,7 @@ export default function CreatorSettingsScreen() {
                 textAlignVertical="top"
               />
             </View>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            <Pressable
               style={[
                 styles.saveBtn,
                 {
@@ -1118,7 +1118,7 @@ export default function CreatorSettingsScreen() {
                 {REPORT_TYPES.map((rtype) => {
                   const active = reportType === rtype;
                   return (
-                    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} key={rtype} style={[styles.chip, { borderColor: active ? C.error : C.border, backgroundColor: active ? '#FEE2E2' : C.surface }]} onPress={() => setReportType(rtype)}>
+                    <Pressable key={rtype} style={[styles.chip, { borderColor: active ? C.error : C.border, backgroundColor: active ? '#FEE2E2' : C.surface }]} onPress={() => setReportType(rtype)}>
                       <Text style={[styles.chipText, { color: active ? C.error : C.text }]}>{rtype}</Text>
                     </Pressable>
                   );
@@ -1140,7 +1140,7 @@ export default function CreatorSettingsScreen() {
                 textAlignVertical="top"
               />
             </View>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            <Pressable
               style={[
                 styles.saveBtn,
                 {
@@ -1580,7 +1580,7 @@ export default function CreatorSettingsScreen() {
                     </View>
 
                     <View style={styles.sheetActions}>
-                      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                      <Pressable
                         style={[
                           styles.sheetSaveBtn,
                           { backgroundColor: portfolioForm.type && PORTFOLIO_CONFIG[portfolioForm.type] ? PORTFOLIO_CONFIG[portfolioForm.type].color : '#6366F1', opacity: portfolioLoading ? 0.6 : 1 },
@@ -1598,7 +1598,7 @@ export default function CreatorSettingsScreen() {
                           </Text>
                         )}
                       </Pressable>
-                      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.sheetCancelBtn, { borderColor: C.border }]} onPress={resetPortfolioSheet}>
+                      <Pressable style={[styles.sheetCancelBtn, { borderColor: C.border }]} onPress={resetPortfolioSheet}>
                         <Text style={[styles.sheetCancelBtnText, { color: C.textSecondary }]}>{t('common.cancel')}</Text>
                       </Pressable>
                     </View>
@@ -1643,10 +1643,10 @@ export default function CreatorSettingsScreen() {
                     <Text style={[styles.socialUrl, { color: C.textSecondary }]} numberOfLines={1}>{item.url}</Text>
                   </View>
                   <View style={styles.socialActions}>
-                    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.socialEditBtn, { backgroundColor: cfg.color + '15' }]} onPress={() => openPortfolioSheet(item)}>
+                    <Pressable style={[styles.socialEditBtn, { backgroundColor: cfg.color + '15' }]} onPress={() => openPortfolioSheet(item)}>
                       <Text style={[styles.socialEditBtnText, { color: cfg.color }]}>{t('creatorSettings.editBtn')}</Text>
                     </Pressable>
-                    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.socialDisconnectBtn} hitSlop={8} onPress={() => deletePortfolio(item)}>
+                    <Pressable style={styles.socialDisconnectBtn} hitSlop={8} onPress={() => deletePortfolio(item)}>
                       <Ionicons name="close" size={14} color={C.error} />
                     </Pressable>
                   </View>
@@ -1657,7 +1657,7 @@ export default function CreatorSettingsScreen() {
         )}
 
         {/* Add button */}
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+        <Pressable
           style={[styles.addSocialBtn, { borderColor: '#6366F1', backgroundColor: '#6366F115' }]}
           onPress={() => openPortfolioSheet()}>
           <Text style={[styles.addSocialBtnText, { color: '#6366F1' }]}>{t('creatorSettings.addPastWorkBtn')}</Text>
@@ -1709,7 +1709,7 @@ export default function CreatorSettingsScreen() {
           {PAYMENT_METHODS.map((m, idx) => {
             const selected = paymentMethods.includes(m.id);
             return (
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+              <Pressable
                 key={m.id}
                 style={[styles.row, idx < PAYMENT_METHODS.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}
                 onPress={() => togglePayment(m.id)}>
@@ -1892,7 +1892,7 @@ export default function CreatorSettingsScreen() {
       <>
         <SectionHeader title={t('creatorSettings.loginPasswordSection')} />
         <Card>
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+          <Pressable
             style={[styles.row, { borderBottomWidth: 1, borderBottomColor: C.border }]}
             onPress={() => setShowChangePassword((v) => !v)}>
             <View
@@ -1913,7 +1913,7 @@ export default function CreatorSettingsScreen() {
             <View style={[styles.inlinePhonePanel, { borderBottomColor: C.border, backgroundColor: C.background }]}>
               <View style={styles.inlinePhonePanelHeader}>
                 <Text style={[styles.inlinePhonePanelTitle, { color: C.text, flexShrink: 1 }]} numberOfLines={1} ellipsizeMode="tail">{t('creatorSettings.setNewPasswordSection')}</Text>
-                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={closeChangePassword} hitSlop={10} style={{ flexShrink: 0, marginLeft: 8 }}>
+                <Pressable onPress={closeChangePassword} hitSlop={10} style={{ flexShrink: 0, marginLeft: 8 }}>
                   <Ionicons name="close-circle" size={22} color={C.textSecondary} />
                 </Pressable>
               </View>
@@ -1933,7 +1933,7 @@ export default function CreatorSettingsScreen() {
                     autoCapitalize="none"
                     numberOfLines={1}
                   />
-                  <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => setShowNewPw((v) => !v)} style={styles.eyeBtn} hitSlop={8}>
+                  <Pressable onPress={() => setShowNewPw((v) => !v)} style={styles.eyeBtn} hitSlop={8}>
                     <FontAwesome5 name={showNewPw ? 'eye-slash' : 'eye'} size={17} color={C.textSecondary} />
                   </Pressable>
                 </View>
@@ -1955,14 +1955,14 @@ export default function CreatorSettingsScreen() {
                     autoCapitalize="none"
                     numberOfLines={1}
                   />
-                  <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => setShowConfirmPw((v) => !v)} style={styles.eyeBtn} hitSlop={8}>
+                  <Pressable onPress={() => setShowConfirmPw((v) => !v)} style={styles.eyeBtn} hitSlop={8}>
                     <FontAwesome5 name={showConfirmPw ? 'eye-slash' : 'eye'} size={17} color={C.textSecondary} />
                   </Pressable>
                 </View>
                 {cPwError ? <Text style={[styles.fieldError, { color: C.error }]}>{cPwError}</Text> : null}
               </View>
 
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+              <Pressable
                 style={[
                   styles.saveBtn,
                   {
@@ -1995,7 +1995,7 @@ export default function CreatorSettingsScreen() {
           {!(emailVerified === true && phoneVerified === true) && (
           <>
           {/* Email row */}
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+          <Pressable
             style={[styles.row, { borderBottomWidth: 1, borderBottomColor: C.border }]}
             disabled={emailVerified !== false || emailOtpLoading}
             onPress={() => {
@@ -2043,7 +2043,7 @@ export default function CreatorSettingsScreen() {
                   <Text style={[styles.inlinePhonePanelTitle, { color: C.text }]}>{t('creatorSettings.enterOtpTitle')}</Text>
                   <Text style={[styles.inlinePhonePanelSub, { color: C.textSecondary }]}>{t('creatorSettings.sentToEmail', { email: emailInput })}</Text>
                 </View>
-                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={closeEmail} hitSlop={10} style={{ flexShrink: 0, marginLeft: 8 }}>
+                <Pressable onPress={closeEmail} hitSlop={10} style={{ flexShrink: 0, marginLeft: 8 }}>
                   <Ionicons name="close-circle" size={22} color={C.textSecondary} />
                 </Pressable>
               </View>
@@ -2059,7 +2059,7 @@ export default function CreatorSettingsScreen() {
                   autoFocus
                 />
               </View>
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+              <Pressable
                 style={[
                   styles.saveBtn,
                   {
@@ -2071,14 +2071,14 @@ export default function CreatorSettingsScreen() {
                 disabled={emailOtpLoading || emailOtp.length < 6}>
                 <Text style={styles.saveBtnText}>{emailOtpLoading ? t('creatorSettings.verifyingOtp') : t('creatorSettings.verifyBtnLabel')}</Text>
               </Pressable>
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => { setEmailOtp(''); handleRequestEmailOtp(); }} disabled={emailOtpLoading} style={{ alignItems: 'center', paddingTop: 4 }}>
+              <Pressable onPress={() => { setEmailOtp(''); handleRequestEmailOtp(); }} disabled={emailOtpLoading} style={{ alignItems: 'center', paddingTop: 4 }}>
                 <Text style={[styles.cancelBtnText, { color: C.brinjal1 }]}>{t('creatorSettings.resendCode')}</Text>
               </Pressable>
             </View>
           )}
 
           {/* Phone row */}
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+          <Pressable
             style={[styles.row, { borderBottomWidth: phoneSubPage ? 1 : 1, borderBottomColor: C.border }]}
             disabled={phoneVerified === true}
             onPress={() => {
@@ -2120,7 +2120,7 @@ export default function CreatorSettingsScreen() {
             <View style={[styles.inlinePhonePanel, { borderBottomColor: C.border, backgroundColor: C.background }]}>
               <View style={styles.inlinePhonePanelHeader}>
                 <Text style={[styles.inlinePhonePanelTitle, { color: C.text, flexShrink: 1 }]} numberOfLines={1} ellipsizeMode="tail">{t('creatorSettings.enterPhoneTitle')}</Text>
-                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={closePhone} hitSlop={10} style={{ flexShrink: 0, marginLeft: 8 }}>
+                <Pressable onPress={closePhone} hitSlop={10} style={{ flexShrink: 0, marginLeft: 8 }}>
                   <Ionicons name="close-circle" size={22} color={C.textSecondary} />
                 </Pressable>
               </View>
@@ -2136,7 +2136,7 @@ export default function CreatorSettingsScreen() {
                   autoFocus
                 />
               </View>
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+              <Pressable
                 style={[
                   styles.saveBtn,
                   {
@@ -2159,7 +2159,7 @@ export default function CreatorSettingsScreen() {
                   <Text style={[styles.inlinePhonePanelTitle, { color: C.text }]}>{t('creatorSettings.enterOtpTitle')}</Text>
                   <Text style={[styles.inlinePhonePanelSub, { color: C.textSecondary }]}>{t('creatorSettings.sentToPhone', { phone: phoneNumber })}</Text>
                 </View>
-                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={closePhone} hitSlop={10}>
+                <Pressable onPress={closePhone} hitSlop={10}>
                   <Ionicons name="close-circle" size={22} color={C.textSecondary} />
                 </Pressable>
               </View>
@@ -2175,7 +2175,7 @@ export default function CreatorSettingsScreen() {
                   autoFocus
                 />
               </View>
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+              <Pressable
                 style={[
                   styles.saveBtn,
                   {
@@ -2187,7 +2187,7 @@ export default function CreatorSettingsScreen() {
                 disabled={phoneLoading || phoneOtp.length < 6}>
                 <Text style={styles.saveBtnText}>{phoneLoading ? t('creatorSettings.verifyingOtp') : t('creatorSettings.verifyBtnLabel')}</Text>
               </Pressable>
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => { setPhoneOtp(''); setPhoneSubPage('input'); }} style={{ alignItems: 'center', paddingTop: 4 }}>
+              <Pressable onPress={() => { setPhoneOtp(''); setPhoneSubPage('input'); }} style={{ alignItems: 'center', paddingTop: 4 }}>
                 <Text style={[styles.cancelBtnText, { color: C.brinjal1 }]}>{t('creatorSettings.resendCode')}</Text>
               </Pressable>
             </View>
@@ -2196,7 +2196,7 @@ export default function CreatorSettingsScreen() {
           )}
 
           {/* Citizenship upload row */}
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+          <Pressable
             style={[styles.row, { borderBottomWidth: 1, borderBottomColor: C.border }]}
             disabled={citizenshipUploading || citizenshipStatus === 'PENDING' || citizenshipStatus === 'APPROVED'}
             onPress={handleUploadCitizenship}>
@@ -2232,7 +2232,7 @@ export default function CreatorSettingsScreen() {
           </Pressable>
 
           {/* PAN upload row */}
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+          <Pressable
             style={[styles.row, { borderBottomWidth: 1, borderBottomColor: C.border }]}
             disabled={panUploading || panStatus === 'PENDING' || panStatus === 'APPROVED'}
             onPress={handleUploadPan}>
@@ -2361,7 +2361,7 @@ export default function CreatorSettingsScreen() {
           {LANGUAGE_OPTIONS.map((lang) => {
             const active = selectedLang === lang.label;
             return (
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+              <Pressable
                 key={lang.label}
                 disabled={lang.future}
                 onPress={() => {
@@ -2467,8 +2467,8 @@ export default function CreatorSettingsScreen() {
 
         {/* ── Deactivate Account Modal ──────────────────────────── */}
         <Modal visible={showDeactivateModal} transparent animationType="fade" onRequestClose={() => setShowDeactivateModal(false)}>
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.confirmOverlay} onPress={() => { if (!accountActionLoading) setShowDeactivateModal(false); }}>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.confirmCard, { backgroundColor: C.surface }]} onPress={() => {}}>
+          <Pressable style={styles.confirmOverlay} onPress={() => { if (!accountActionLoading) setShowDeactivateModal(false); }}>
+            <Pressable style={[styles.confirmCard, { backgroundColor: C.surface }]} onPress={() => {}}>
               <View
                 style={[
                   styles.confirmIconWrap,
@@ -2482,13 +2482,13 @@ export default function CreatorSettingsScreen() {
               <Text style={[styles.confirmTitle, { color: C.text }]}>{t('creatorSettings.deactivateTitle')}</Text>
               <Text style={[styles.confirmBody, { color: C.textSecondary }]}>{t('creatorSettings.deactivateBody')}</Text>
               <View style={styles.confirmActions}>
-                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                <Pressable
                   style={[styles.confirmCancelBtn, { borderColor: C.border }]}
                   onPress={() => setShowDeactivateModal(false)}
                   disabled={accountActionLoading}>
                   <Text style={[styles.confirmCancelText, { color: C.text }]}>{t('common.cancel')}</Text>
                 </Pressable>
-                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                <Pressable
                   style={[
                     styles.confirmActionBtn,
                     {
@@ -2507,8 +2507,8 @@ export default function CreatorSettingsScreen() {
 
         {/* ── Delete Account Modal ─────────────────────────────── */}
         <Modal visible={showDeleteModal} transparent animationType="fade" onRequestClose={() => setShowDeleteModal(false)}>
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.confirmOverlay} onPress={() => { if (!accountActionLoading) setShowDeleteModal(false); }}>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[styles.confirmCard, { backgroundColor: C.surface }]} onPress={() => {}}>
+          <Pressable style={styles.confirmOverlay} onPress={() => { if (!accountActionLoading) setShowDeleteModal(false); }}>
+            <Pressable style={[styles.confirmCard, { backgroundColor: C.surface }]} onPress={() => {}}>
               <View style={[styles.dangerBanner, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}>
                 <FontAwesome5 name="exclamation-triangle" size={14} color="#DC2626" solid />
                 <Text style={[styles.dangerBannerText, { color: '#DC2626' }]}>{t('creatorSettings.deletePermanentWarning')}</Text>
@@ -2533,13 +2533,13 @@ export default function CreatorSettingsScreen() {
                 {t('creatorSettings.deleteBodyOutro')}
               </Text>
               <View style={styles.confirmActions}>
-                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                <Pressable
                   style={[styles.confirmCancelBtn, { borderColor: C.border }]}
                   onPress={() => setShowDeleteModal(false)}
                   disabled={accountActionLoading}>
                   <Text style={[styles.confirmCancelText, { color: C.text }]}>{t('common.cancel')}</Text>
                 </Pressable>
-                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                <Pressable
                   style={[
                     styles.confirmActionBtn,
                     {

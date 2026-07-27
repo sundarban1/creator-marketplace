@@ -30,7 +30,7 @@ export function SavedListCard({
 
   return (
     <View style={[styles.card, { backgroundColor: C.surface, ...SHADOW.raised }]}>
-      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.cardMain} onPress={onPress}>
+      <Pressable style={styles.cardMain} onPress={onPress}>
         <View
           style={[
             styles.avatar,
@@ -58,7 +58,7 @@ export function SavedListCard({
 
       <View style={[styles.divider, { backgroundColor: C.border }]} />
 
-      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.removeRow} onPress={onRemove}>
+      <Pressable style={styles.removeRow} onPress={onRemove}>
         {removeIcon}
         <Text style={styles.removeText}>{removeLabel}</Text>
       </Pressable>

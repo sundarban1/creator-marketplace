@@ -834,10 +834,10 @@ export default function CreatorChatRoomScreen() {
       <MaxWidthContainer>
       {/* ── Header ── */}
       <View style={[s.header, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[s.backBtn, { backgroundColor: C.background }]} hitSlop={4} onPress={() => router.canGoBack() ? router.back() : router.replace('/(creator)/messages' as never)}>
+        <Pressable style={[s.backBtn, { backgroundColor: C.background }]} hitSlop={4} onPress={() => router.canGoBack() ? router.back() : router.replace('/(creator)/messages' as never)}>
           <Ionicons name="chevron-back" size={22} color={C.text} />
         </Pressable>
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.08)' }}
+        <Pressable
           style={({ pressed }) => [s.headerTouch, pressed && !!participantId && { opacity: 0.6 }]}
           onPress={openParticipantProfile} disabled={!participantId} hitSlop={4}>
           {personAvatar && !personAvatarFailed ? (
@@ -870,7 +870,6 @@ export default function CreatorChatRoomScreen() {
         </Pressable>
         {participantRole === 'CREATOR' && blockStatus && (
           <Pressable
-            android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
             style={[
               s.blockBtn,
               blockStatus.blockedByMe
@@ -910,7 +909,7 @@ export default function CreatorChatRoomScreen() {
             </Text>
           </View>
           <View style={s.requestBarActions}>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            <Pressable
               style={[s.declineBtn, { borderColor: '#FCA5A5', backgroundColor: '#FEF2F2' }]}
               onPress={() => handleRespond('decline')}
               disabled={acting !== null}>
@@ -918,7 +917,7 @@ export default function CreatorChatRoomScreen() {
                 ? <ActivityIndicator size="small" color="#EF4444" />
                 : <><Ionicons name="close-circle-outline" size={15} color="#EF4444" /><Text style={[s.declineTxt, { color: '#EF4444' }]}>{t('messages.decline')}</Text></>}
             </Pressable>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            <Pressable
               style={[s.acceptBtn, { backgroundColor: C.brinjal1 }]}
               onPress={() => handleRespond('accept')}
               disabled={acting !== null}>
@@ -973,7 +972,7 @@ export default function CreatorChatRoomScreen() {
                 </View>
                 <Text style={[s.emptyTitle, { color: C.text }]}>{t('messages.loadMessagesFailedTitle')}</Text>
                 <Text style={[s.emptyHint, { color: C.textSecondary }]}>{messagesError}</Text>
-                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={loadMessages} style={s.retryBtn}>
+                <Pressable onPress={loadMessages} style={s.retryBtn}>
                   <Text style={[s.retryBtnText, { color: C.brinjal1 }]}>{t('messages.retry')}</Text>
                 </Pressable>
               </View>
@@ -1009,10 +1008,10 @@ export default function CreatorChatRoomScreen() {
         {status === 'ACCEPTED' && flags.messagingEnabled && !blockStatus?.blockedByMe && !blockStatus?.blockedByOther && (
           <>
             <View style={[s.inputBar, { backgroundColor: C.surface, borderTopColor: C.border, paddingBottom: emojiOpen ? 8 : insets.bottom + 8 }]}>
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={s.iconBtn} onPress={handleCameraPress} hitSlop={4}>
+              <Pressable style={s.iconBtn} onPress={handleCameraPress} hitSlop={4}>
                 <Ionicons name="camera-outline" size={24} color={C.brinjal1} />
               </Pressable>
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={s.iconBtn} onPress={handleAttachmentPress} disabled={hasActiveUpload} hitSlop={4}>
+              <Pressable style={s.iconBtn} onPress={handleAttachmentPress} disabled={hasActiveUpload} hitSlop={4}>
                 <Ionicons name="images-outline" size={24} color={hasActiveUpload ? C.textSecondary : C.brinjal1} />
               </Pressable>
               <View style={[s.inputWrap, { borderColor: C.border, backgroundColor: C.background }]}>
@@ -1036,7 +1035,7 @@ export default function CreatorChatRoomScreen() {
                   <Text style={[s.charCount, { color: C.textSecondary }]}>{1000 - text.length}</Text>
                 )}
               </View>
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+              <Pressable
                 style={[s.sendBtn, { backgroundColor: text.trim() ? C.brinjal1 : C.border }]}
                 onPress={handleSend}
                 disabled={!text.trim()}>

@@ -83,7 +83,7 @@ export default function EditBusinessCategoriesScreen() {
         <View style={s.topBar}>
           <BackButton fallback="/(business)/profile" />
           <Text style={[s.topTitle, { color: C.text }]}>{t('editCategoriesBusiness.title')}</Text>
-          <Pressable android_ripple={{ color: 'rgba(255,255,255,0.2)' }}
+          <Pressable
             style={[s.saveBtn, { backgroundColor: saving ? C.brinjal1 + 'AA' : C.brinjal1 }]}
             onPress={handleSave}
             disabled={saving}>
@@ -114,7 +114,7 @@ export default function EditBusinessCategoriesScreen() {
             const disabled = !active && categories.length >= MAX;
             const meta = catOptions.find((c) => c.name === cat);
             return (
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+              <Pressable
                 key={cat}
                 onPress={() => toggle(cat)}
                 disabled={disabled}

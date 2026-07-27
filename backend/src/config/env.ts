@@ -69,6 +69,13 @@ const envSchema = z.object({
   // Sparrow SMS (Nepal) — not wired up yet; sendSms() logs instead of sending until both are set.
   SPARROW_SMS_TOKEN: z.string().optional(),
   SPARROW_SMS_FROM: z.string().optional(),
+  // Socket.IO cross-instance broadcast — required whenever the backend runs as more
+  // than one process/instance (e.g. Render autoscaling). Without it, each instance
+  // only knows about the sockets connected to itself, so a message/typing event from
+  // a user on instance A silently never reaches a user on instance B. Optional because
+  // local dev and any single-instance deployment work fine with Socket.IO's default
+  // in-memory adapter.
+  REDIS_URL: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

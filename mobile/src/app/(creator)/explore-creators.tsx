@@ -143,7 +143,7 @@ function ExploreFilterModal({
               const meta = getCategoryMeta(allCategories, cat);
               const sel = temp.categories.includes(cat);
               return (
-                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                <Pressable
                   key={cat}
                   onPress={() => set('categories', toggle(temp.categories, cat))}
                   style={[fm.chip, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? C.primaryLight : C.background }]}>
@@ -169,7 +169,7 @@ function ExploreFilterModal({
             {allPlatforms.map((p) => {
               const sel = temp.platforms.includes(p.key);
               return (
-                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                <Pressable
                   key={p.key}
                   onPress={() => set('platforms', toggle(temp.platforms, p.key))}
                   style={[fm.chip, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? C.primaryLight : C.background }]}>
@@ -377,11 +377,11 @@ export default function ExploreCreatorPeersScreen() {
             autoCorrect={false}
           />
           {search.length > 0 && (
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => setSearch('')} hitSlop={10}>
+            <Pressable onPress={() => setSearch('')} hitSlop={10}>
               <Ionicons name="close-circle" size={18} color={C.textSecondary} />
             </Pressable>
           )}
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+          <Pressable
             style={[
               s.filterBtn,
               { backgroundColor: filterActive ? C.brinjal1 : C.primaryLight },
@@ -406,7 +406,7 @@ export default function ExploreCreatorPeersScreen() {
       {filterActive && (
         <View style={s.chipRow}>
           {activeFilter.locations.map((loc) => (
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} key={loc.label} onPress={() => removeActiveFilter('locations', loc.label)} style={[s.chip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
+            <Pressable key={loc.label} onPress={() => removeActiveFilter('locations', loc.label)} style={[s.chip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
               <Ionicons name={loc.label === 'Remote' ? 'globe-outline' : 'location'} size={12} color={C.brinjal1} />
               <Text style={[s.chipText, { color: C.brinjal1 }]}>{loc.label}</Text>
               <Ionicons name="close" size={12} color={C.brinjal1} />
@@ -416,7 +416,7 @@ export default function ExploreCreatorPeersScreen() {
             const meta = getPlatformMeta(allPlatforms, p);
             const label = allPlatforms.find((x) => x.key === p)?.name ?? p;
             return (
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} key={p} onPress={() => removeActiveFilter('platforms', p)} style={[s.chip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
+              <Pressable key={p} onPress={() => removeActiveFilter('platforms', p)} style={[s.chip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
                 <FontAwesome5 name={meta.icon} size={11} color={meta.color} />
                 <Text style={[s.chipText, { color: C.brinjal1 }]}>{label}</Text>
                 <Ionicons name="close" size={12} color={C.brinjal1} />
@@ -426,14 +426,14 @@ export default function ExploreCreatorPeersScreen() {
           {activeFilter.categories.map((cat) => {
             const meta = getCategoryMeta(allCategories, cat);
             return (
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} key={cat} onPress={() => removeActiveFilter('categories', cat)} style={[s.chip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
+              <Pressable key={cat} onPress={() => removeActiveFilter('categories', cat)} style={[s.chip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
                 <FontAwesome5 name={meta.icon} size={11} color={meta.color} />
                 <Text style={[s.chipText, { color: C.brinjal1 }]}>{cat}</Text>
                 <Ionicons name="close" size={12} color={C.brinjal1} />
               </Pressable>
             );
           })}
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => setActiveFilter(DEFAULT_FILTER)} style={[s.chip, { backgroundColor: C.background, borderColor: C.border }]}>
+          <Pressable onPress={() => setActiveFilter(DEFAULT_FILTER)} style={[s.chip, { backgroundColor: C.background, borderColor: C.border }]}>
             <Text style={[s.chipText, { color: C.textSecondary }]}>{t('common.clearAll')}</Text>
           </Pressable>
         </View>

@@ -1,10 +1,14 @@
 import { Server } from 'socket.io';
 import type { Server as HttpServer } from 'http';
+import { createClient } from 'redis';
+import { createAdapter } from '@socket.io/redis-adapter';
 import { AppError } from './middleware/error';
 import { verifyAccessToken, verifyVisitorChatToken } from './utils/jwt';
 import { MessagingService } from './modules/messaging/messaging.service';
 import { VisitorChatService, visitorChatRoom, ADMIN_VISITOR_CHATS_ROOM } from './modules/visitorChat/visitorChat.service';
 import prisma from './prisma';
+import { env } from './config/env';
+import { logger } from './config/logger';
 import type { Role } from '@prisma/client';
 
 const messagingService = new MessagingService();
@@ -17,7 +21,7 @@ async function isUserOnline(userId: string): Promise<boolean> {
   return sockets.length > 0;
 }
 
-export function initSocket(httpServer: HttpServer): Server {
+export async function initSocket(httpServer: HttpServer): Promise<Server> {
   io = new Server(httpServer, {
     cors: { origin: '*', credentials: true },
     // Polling fallback matters on physical devices — a raw WebSocket upgrade
@@ -26,6 +30,27 @@ export function initSocket(httpServer: HttpServer): Server {
     // only "works" via the REST send fallback, never receiving in real time).
     transports: ['websocket', 'polling'],
   });
+
+  // Cross-instance broadcast — without this, rooms (conv:{id}, user:{id}, etc.)
+  // only exist in the memory of whichever single process a socket happened to
+  // connect to. With more than one backend instance running (e.g. autoscaling),
+  // that silently breaks typing indicators and real-time message delivery for
+  // any two users who land on different instances — everything still works
+  // locally/single-instance because there's only ever one process to broadcast
+  // within.
+  if (env.REDIS_URL) {
+    const pubClient = createClient({ url: env.REDIS_URL });
+    const subClient = pubClient.duplicate();
+    pubClient.on('error', (err) => logger.error({ err }, 'Redis pub client error'));
+    subClient.on('error', (err) => logger.error({ err }, 'Redis sub client error'));
+    await Promise.all([pubClient.connect(), subClient.connect()]);
+    io.adapter(createAdapter(pubClient, subClient));
+    logger.info('Socket.IO Redis adapter connected — cross-instance broadcast enabled');
+  } else {
+    logger.warn('REDIS_URL not set — Socket.IO is using the default in-memory adapter. ' +
+      'This only broadcasts within a single process; if this backend ever runs more than ' +
+      'one instance, chat typing/real-time delivery will silently break across instances.');
+  }
 
   io.use((socket, next) => {
     const token = socket.handshake.auth?.token as string | undefined;

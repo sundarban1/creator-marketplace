@@ -248,11 +248,11 @@ export default function ExploreBusinessesScreen() {
               autoCapitalize="none"
             />
             {search.length > 0 && (
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => { setSearch(''); void fetchBusinesses({ search: '', silent: true }); }} hitSlop={10}>
+              <Pressable onPress={() => { setSearch(''); void fetchBusinesses({ search: '', silent: true }); }} hitSlop={10}>
                 <Ionicons name="close-circle" size={18} color={C.textSecondary} />
               </Pressable>
             )}
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            <Pressable
               style={[
                 styles.filterBtn,
                 { backgroundColor: isFilterActive ? C.brinjal1 : C.primaryLight },
@@ -276,7 +276,7 @@ export default function ExploreBusinessesScreen() {
 
       {/* Saved link + result count — same row, below search */}
       <View style={styles.savedRow}>
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+        <Pressable
           style={[styles.favLink, { backgroundColor: C.surface, borderColor: C.border, borderWidth: 1 }]}
           onPress={() => router.push('/(creator)/favorite-businesses' as Parameters<typeof router.push>[0])}>
           <Ionicons name="heart" size={15} color={C.brinjal1} />
@@ -293,7 +293,7 @@ export default function ExploreBusinessesScreen() {
       {isFilterActive && (
         <View style={styles.activePills}>
           {locations.map((loc) => (
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            <Pressable
               key={loc.label}
               style={[styles.activePill, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}
               onPress={() => {
@@ -307,7 +307,7 @@ export default function ExploreBusinessesScreen() {
             </Pressable>
           ))}
           {platform ? (
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            <Pressable
               style={[styles.activePill, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}
               onPress={() => { setPlatform(''); void fetchBusinesses({ platform: '', silent: true }); }}>
               <Text style={[styles.activePillText, { color: C.brinjal1 }]}>{platform}</Text>
@@ -315,14 +315,14 @@ export default function ExploreBusinessesScreen() {
             </Pressable>
           ) : null}
           {category ? (
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            <Pressable
               style={[styles.activePill, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}
               onPress={() => { setCategory(''); void fetchBusinesses({ category: '', silent: true }); }}>
               <Text style={[styles.activePillText, { color: C.brinjal1 }]}>{category}</Text>
               <Ionicons name="close" size={12} color={C.brinjal1} />
             </Pressable>
           ) : null}
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={clearAll}>
+          <Pressable onPress={clearAll}>
             <Text style={[styles.clearAllText, { color: C.error }]}>{t('explore.businesses.clearAll')}</Text>
           </Pressable>
         </View>

@@ -551,7 +551,7 @@ export default function HomeScreen() {
       {/* ── Header: avatar, search bar, menu button — kept outside the list so it
           stays floating/pinned above the content instead of scrolling away. ── */}
       <View style={[styles.header, { backgroundColor: C.background, borderBottomColor: C.border }]}>
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+        <Pressable
           style={[styles.avatarCircle, { backgroundColor: C.surface }, SHADOW.card]}
           onPress={() => router.push('/(creator)/profile')}>
           <View style={styles.avatarClip}>
@@ -565,7 +565,7 @@ export default function HomeScreen() {
           </View>
         </Pressable>
 
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+        <Pressable
           style={[styles.searchCard, { backgroundColor: C.surface, borderColor: C.border }, searchFocused && styles.searchCardFocused]}
           onPress={() => searchInputRef.current?.focus()}>
           <Ionicons name="search-outline" size={18} color={searchFocused ? C.brinjal1 : C.textSecondary} style={styles.searchIcon} />
@@ -601,7 +601,7 @@ export default function HomeScreen() {
               refreshNearbyWithFilters({ search });
             }}
           />
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+          <Pressable
             style={[
               styles.filterBtn,
               { backgroundColor: isFilterActive ? C.brinjal1 : C.primaryLight },
@@ -618,7 +618,7 @@ export default function HomeScreen() {
           </Pressable>
         </Pressable>
 
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.menuBtn} onPress={openDrawer} hitSlop={6}>
+        <Pressable style={styles.menuBtn} onPress={openDrawer} hitSlop={6}>
           <View
             style={[
               styles.menuBtnInner,
@@ -726,7 +726,7 @@ export default function HomeScreen() {
           <>
         {/* ── Pending action attention banner ── */}
         {pendingActions.length > 0 && (
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+          <Pressable
             style={styles.attentionBanner}
             onPress={() => router.push('/(creator)/(tabs)/proposals')}>
             <View
@@ -761,7 +761,7 @@ export default function HomeScreen() {
             { icon: 'people-outline',        label: 'Creators',  bg: '#DBEAFE', color: '#2563EB', route: '/(creator)/explore-creators' },
             { icon: 'heart-outline',         label: 'Saved',     bg: '#FEE2E2', color: '#DC2626', route: '/(creator)/favorite-businesses' },
           ] as const).map(({ icon, label, bg, color, route }) => (
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            <Pressable
               key={label}
               style={[styles.quickAction, { backgroundColor: C.surface, borderColor: C.border }]}
               onPress={() => router.push(route as never)}>
@@ -783,7 +783,7 @@ export default function HomeScreen() {
 
         {/* ── Profile completion banner ── */}
         {!bannerDismissed && missingFields.length > 0 && (
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+          <Pressable
             style={[styles.banner, { backgroundColor: C.surface, borderLeftColor: C.brinjal1 }]}
             onPress={() => router.push('/(creator)/profile')}>
             <View
@@ -803,7 +803,7 @@ export default function HomeScreen() {
                 {t('creator.home.missingFieldsPrefix', { fields: missingFields.join(' · ') })}
               </Text>
             </View>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.bannerClose} onPress={() => setBannerDismissed(true)} hitSlop={10}>
+            <Pressable style={styles.bannerClose} onPress={() => setBannerDismissed(true)} hitSlop={10}>
               <Ionicons name="close" size={16} color={C.textSecondary} />
             </Pressable>
           </Pressable>
@@ -811,7 +811,7 @@ export default function HomeScreen() {
 
         {/* ── Refer a friend banner ── */}
         {!referralBannerDismissed && (
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+          <Pressable
             style={[styles.banner, { backgroundColor: C.surface, borderLeftColor: '#EC4899' }]}
             onPress={() => router.push('/(creator)/referral')}>
             <View
@@ -840,7 +840,7 @@ export default function HomeScreen() {
                 })()}
               </Text>
             </View>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={styles.bannerClose} onPress={() => setReferralBannerDismissed(true)} hitSlop={10}>
+            <Pressable style={styles.bannerClose} onPress={() => setReferralBannerDismissed(true)} hitSlop={10}>
               <Ionicons name="close" size={16} color={C.textSecondary} />
             </Pressable>
           </Pressable>
@@ -850,7 +850,7 @@ export default function HomeScreen() {
         {fetchError ? (
           <View style={[styles.errorCard, { backgroundColor: '#FEE2E2' }]}>
             <Text style={styles.errorText}>{fetchError}</Text>
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => fetchCampaigns()}>
+            <Pressable onPress={() => fetchCampaigns()}>
               <Text style={[styles.retryText, { color: C.brinjal1 }]}>{t('creator.home.retry')}</Text>
             </Pressable>
           </View>
@@ -864,7 +864,7 @@ export default function HomeScreen() {
           {visibleCategories.map((cat) => {
             const isActive = activeCategories.includes(cat.label);
             return (
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+              <Pressable
                 key={cat.label}
                 style={[
                   styles.catPill,
@@ -903,7 +903,7 @@ export default function HomeScreen() {
                 const meta = getPlatformMeta(adminPlatforms, p.name);
                 const isActive = activePlatforms.includes(p.name);
                 return (
-                  <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                  <Pressable
                     key={p.id}
                     style={[
                       styles.catPill,
@@ -977,7 +977,7 @@ export default function HomeScreen() {
             <View style={styles.sectionHeader}>
               <View style={styles.nearbyTitleRow}>
                 <Text style={[styles.sectionTitle, { color: C.text }]}>{t('creator.home.nearbyEvents')}</Text>
-                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                <Pressable
                   style={[styles.nearbyChip, { backgroundColor: C.primaryLight, borderColor: C.border }]}
                   onPress={() => setNearbySheetOpen(true)}>
                   <Ionicons
@@ -1015,7 +1015,7 @@ export default function HomeScreen() {
                 <Ionicons name="navigate-outline" size={32} color={C.textSecondary} />
                 <Text style={[styles.featuredEmptyTitle, { color: C.text }]}>{t('creator.home.noEventsWithinKm', { km: nearbyRadiusKm })}</Text>
                 {nearbyRadiusKm < 100 && (
-                  <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                  <Pressable
                     style={[
                       styles.expandRadiusBtn,
                       {

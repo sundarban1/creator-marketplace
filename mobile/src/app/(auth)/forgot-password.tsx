@@ -61,7 +61,7 @@ export default function ForgotPasswordScreen() {
       <View style={styles.hero}>
         <View style={styles.bubble1} />
         <View style={styles.bubble2} />
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} hitSlop={8} style={styles.back} onPress={() => router.canGoBack() ? router.back() : router.replace('/login')}>
+        <Pressable hitSlop={8} style={styles.back} onPress={() => router.canGoBack() ? router.back() : router.replace('/login')}>
           <Text style={styles.backArrow}>‹</Text>
         </Pressable>
         <View style={styles.heroContent}>
@@ -87,7 +87,7 @@ export default function ForgotPasswordScreen() {
             {(['email', 'phone'] as const).map((c) => {
               const active = channel === c;
               return (
-                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                <Pressable
                   key={c}
                   onPress={() => { setChannel(c); setError(''); }}
                   style={[styles.channelTab, active && { backgroundColor: C.brinjal1 }]}>
@@ -131,7 +131,7 @@ export default function ForgotPasswordScreen() {
             {channel === 'email' ? t('auth.forgotPassword.emailHint') : t('auth.forgotPassword.phoneHint')}
           </Text>
 
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+          <Pressable
             style={[styles.btn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }, (!isValid || loading) && styles.btnDisabled]}
             onPress={handleSendOtp}
             disabled={!isValid || loading}>
@@ -145,7 +145,7 @@ export default function ForgotPasswordScreen() {
             )}
           </Pressable>
 
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => router.replace('/login')} style={styles.backToLogin}>
+          <Pressable onPress={() => router.replace('/login')} style={styles.backToLogin}>
             <Text style={[styles.backToLoginText, { color: C.textSecondary }]}>
               {t('auth.forgotPassword.backTo')} <Text style={{ color: C.brinjal1, fontWeight: '700' }}>{t('auth.forgotPassword.signIn')}</Text>
             </Text>

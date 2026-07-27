@@ -104,7 +104,7 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
   const accentColor = cfg.color;
 
   return (
-    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+    <Pressable
       style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}
       onPress={() => router.push({ pathname: '/campaign-detail', params: { campaignId: proposal.campaignId } } as never)}>
 
@@ -140,7 +140,7 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
                 {proposal.coverLetter}
               </Text>
               {proposal.coverLetter.length > 100 && (
-                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} hitSlop={8} onPress={(e) => { e.stopPropagation(); setExpanded((v) => !v); }}>
+                <Pressable hitSlop={8} onPress={(e) => { e.stopPropagation(); setExpanded((v) => !v); }}>
                   <Text style={[styles.seeMore, { color: accentColor }]}>
                     {expanded ? t('proposal.creator.seeLess') : t('proposal.creator.seeMore')}
                   </Text>
@@ -179,7 +179,7 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
               </View>
             </View>
           ) : (
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            <Pressable
               style={[styles.trackBtn, { backgroundColor: trackCfg.color }]}
               onPress={(e) => {
                 e.stopPropagation();

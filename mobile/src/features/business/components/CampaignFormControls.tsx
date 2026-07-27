@@ -54,7 +54,7 @@ export function ChipGroup({
         {options.map((opt) => {
           const sel = value === opt;
           return (
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            <Pressable
               key={opt}
               disabled={disabled}
               style={[cg.chip, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? C.primaryLight : C.surface, opacity: disabled && !sel ? 0.4 : 1 }]}
@@ -95,7 +95,7 @@ export function ChipMultiGroup({
         {options.map((opt) => {
           const sel = values.includes(opt);
           return (
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            <Pressable
               key={opt}
               disabled={disabled}
               style={[cg.chip, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? C.primaryLight : C.surface, opacity: disabled && !sel ? 0.4 : 1 }]}
@@ -137,7 +137,7 @@ export function PlatformChipGroup({
           const sel = values.includes(opt);
           const chipDisabled = disabled || (!sel && values.length >= max);
           return (
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            <Pressable
               key={opt}
               disabled={chipDisabled}
               style={[cg.chip, {
@@ -195,7 +195,7 @@ export function BudgetTierPicker({
         {BUDGET_TIERS.map((tier) => {
           const sel = !isCustom && matchedTier?.key === tier.key;
           return (
-            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+            <Pressable
               key={tier.key}
               disabled={disabled}
               style={[bt.card, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? C.primaryLight : C.surface }]}
@@ -205,7 +205,7 @@ export function BudgetTierPicker({
             </Pressable>
           );
         })}
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+        <Pressable
           disabled={disabled}
           style={[bt.cardFull, { borderColor: isCustom ? C.brinjal1 : C.border, backgroundColor: isCustom ? C.primaryLight : C.surface }]}
           onPress={() => setCustomForced(true)}>
@@ -268,7 +268,7 @@ export function Stepper({ value, onChange, min = 1, max = 50, colors }: {
   const { t } = useLanguage();
   return (
     <View style={[st.wrap, { backgroundColor: C.surface, borderColor: C.border }]}>
-      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[st.btn, { backgroundColor: value <= min ? C.background : C.primaryLight }]}
+      <Pressable style={[st.btn, { backgroundColor: value <= min ? C.background : C.primaryLight }]}
         onPress={() => onChange(Math.max(min, value - 1))} disabled={value <= min}>
         <Text style={[st.btnTxt, { color: value <= min ? C.border : C.brinjal1 }]}>−</Text>
       </Pressable>
@@ -276,7 +276,7 @@ export function Stepper({ value, onChange, min = 1, max = 50, colors }: {
         <Text style={[st.value, { color: C.brinjal1 }]}>{value}</Text>
         <Text style={[st.unit, { color: C.textSecondary }]}>{value !== 1 ? t('createEvent.stepperCreators') : t('createEvent.stepperCreator')}</Text>
       </View>
-      <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} style={[st.btn, { backgroundColor: value >= max ? C.background : C.primaryLight }]}
+      <Pressable style={[st.btn, { backgroundColor: value>= max ? C.background : C.primaryLight }]}
         onPress={() => onChange(Math.min(max, value + 1))} disabled={value >= max}>
         <Text style={[st.btnTxt, { color: value >= max ? C.border : C.brinjal1 }]}>+</Text>
       </Pressable>
@@ -321,7 +321,7 @@ export function DeliverablesCounterList({ value, onChange, colors, t, disabled }
               {t(item.labelKey)}
             </Text>
             <View style={[dlv.counter, { borderColor: active ? C.brinjal1 : C.border, backgroundColor: C.background }]}>
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+              <Pressable
                 style={dlv.counterBtn}
                 hitSlop={4}
                 disabled={disabled}
@@ -329,7 +329,7 @@ export function DeliverablesCounterList({ value, onChange, colors, t, disabled }
                 <Text style={[dlv.counterBtnTxt, { color: count <= 0 ? C.border : C.brinjal1 }]}>−</Text>
               </Pressable>
               <Text style={[dlv.counterVal, { color: active ? C.brinjal1 : C.textSecondary }]}>{count}</Text>
-              <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+              <Pressable
                 style={dlv.counterBtn}
                 hitSlop={4}
                 disabled={disabled}
@@ -375,7 +375,7 @@ export function HashtagEditor({ hashtags, onChange, colors, t }: {
     <>
       <View style={ht.chipWrap}>
         {hashtags.map((tag) => (
-          <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+          <Pressable
             key={tag}
             style={[ht.hashtagChip, { borderColor: C.brinjal1, backgroundColor: C.primaryLight }]}
             onPress={() => onChange(hashtags.filter((h) => h !== tag))}>
@@ -394,7 +394,7 @@ export function HashtagEditor({ hashtags, onChange, colors, t }: {
           autoCapitalize="none"
           onSubmitEditing={addHashtag}
         />
-        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+        <Pressable
           style={[ht.addChipBtn, { backgroundColor: C.brinjal1 }]}
           onPress={addHashtag}>
           <Ionicons name="add" size={20} color="#fff" />
@@ -432,7 +432,7 @@ export function FeaturedToggle({ value, onChange, quota, colors, t }: {
   const locked = quota !== null && !quota.unlimited && quota.remaining <= 0;
 
   return (
-    <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+    <Pressable
       style={[
         ft.toggle,
         { backgroundColor: value ? '#FFF8E8' : C.surface, borderColor: value ? '#F59E0B' : C.border },

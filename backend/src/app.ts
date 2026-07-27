@@ -303,7 +303,7 @@ async function bootstrap() {
     logger.info('Database connected');
 
     const httpServer = createServer(app);
-    initSocket(httpServer);
+    await initSocket(httpServer);
     startCampaignExpiryJob();
     startSocialFollowerRefreshJob();
 

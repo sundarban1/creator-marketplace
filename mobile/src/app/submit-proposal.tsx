@@ -266,7 +266,7 @@ export default function SubmitProposalScreen() {
                   {t('proposal.coverLetter')}
                   <Text style={{ color: C.error }}> *</Text>
                 </Text>
-                <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                <Pressable
                   style={[styles.regenBtn, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 + '55' }]}
                   onPress={handleRegenerate}
                   hitSlop={8}>
