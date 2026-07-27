@@ -38,11 +38,22 @@ const SLIDER_MAX = 100000;
 
 type SortOption = 'date-latest' | 'date-oldest' | 'price-low' | 'price-high';
 
-// The tab filter + "count · sort" header are rendered as synthetic rows at the
-// front of the FlatList's `data` (instead of inside ListHeaderComponent) so
-// `stickyHeaderIndices` can pin just the tab filter to the top once it's
-// scrolled to — it stays put instead of scrolling away with the rest of the
-// header content above it.
+// The tab filter + "count · sort" header are rendered as synthetic rows at
+// the front of the FlatList's `data` (instead of inside ListHeaderComponent)
+// so they scroll as part of the virtualized list rather than being forced
+// to stay mounted with the rest of the (much heavier) header content above.
+//
+// NOT using `stickyHeaderIndices` to pin the tab filter to the top on scroll,
+// even though that'd be the obvious way to do it: on this RN/Fabric version
+// it reliably crashes on Android with "addViewAt: failed to insert view ...
+// into parent ... index=N count=1" — sticky headers work by detaching that
+// item's native view from the list's content and reattaching it into a
+// separate overlay container outside normal React reconciliation, which was
+// consistently reproducible (100% of cold launches) until removed. Confirmed
+// via a live emulator + logcat trace pointing at
+// SurfaceMountingManager.addViewAt. If revisiting pinned-tab-filter UX later,
+// implement it by hand (an overlay View synced to this FlatList's onScroll)
+// rather than re-enabling stickyHeaderIndices.
 type ListRow =
   | { kind: 'tabFilter' }
   | { kind: 'countSort' }
@@ -632,15 +643,11 @@ export default function HomeScreen() {
         onEndReachedThreshold={0.4}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brinjal1} />}
         data={listRows}
-        key={numColumns}
         keyExtractor={(row, i) => (
           row.kind === 'campaign' ? row.campaign.id :
           row.kind === 'campaignRow' ? row.campaigns.map((c) => c.id).join('-') :
           `${row.kind}-${i}`
         )}
-        // Sticky index 1, not 0 — ListHeaderComponent below always occupies
-        // index 0, so listRows[0] (the tab filter row) lands at index 1.
-        stickyHeaderIndices={[1]}
         renderItem={({ item: row }) => {
           switch (row.kind) {
             case 'tabFilter':

@@ -65,7 +65,10 @@
     "android": "npm run prebuild && expo run:android",
     "ios": "npm run prebuild && expo run:ios",
     "web": "expo start --web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "build:apk:local": "bash scripts/build-apk.sh local",
+    "build:apk:preview": "bash scripts/build-apk.sh preview",
+    "build:apk:production": "bash scripts/build-apk.sh production"
   },
   "private": true,
   "expo": {
