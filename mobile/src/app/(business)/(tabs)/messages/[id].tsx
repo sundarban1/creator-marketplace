@@ -278,8 +278,10 @@ function MessageBubble({
               )}
               {msg.status === 'compressing' && (
                 <View style={s.imageUploadingOverlay}>
-                  <ActivityIndicator size="small" color="#fff" />
-                  <Text style={s.videoStatusTxt}>{t('messages.compressingVideo')}</Text>
+                  <Text style={s.videoStatusTxt}>{t('messages.compressingVideo')} {Math.round((msg.uploadProgress ?? 0) * 100)}%</Text>
+                  <View style={s.progressTrack}>
+                    <View style={[s.progressFill, { width: `${Math.round((msg.uploadProgress ?? 0) * 100)}%` }]} />
+                  </View>
                 </View>
               )}
               {msg.status === 'uploading' && (
@@ -341,8 +343,12 @@ function MessageBubble({
 // ── Screen ────────────────────────────────────────────────────────────────────
 
 export default function BusinessChatRoomScreen() {
-  const { id, name, avatar, userId: participantUserId, participantId, status: urlStatus, campaignTitle } = useLocalSearchParams<{
+  const {
+    id, name, avatar, userId: participantUserId, participantId, status: urlStatus, campaignTitle,
+    returnTo, campaignId, role, brand, applicationId,
+  } = useLocalSearchParams<{
     id: string; name?: string; avatar?: string; userId?: string; participantId?: string; status?: string; campaignTitle?: string;
+    returnTo?: string; campaignId?: string; role?: string; brand?: string; applicationId?: string;
   }>();
   const { user } = useAuth();
   const { t }    = useLanguage();
@@ -641,8 +647,8 @@ export default function BusinessChatRoomScreen() {
 
   async function runVideoSend(msg: Message) {
     try {
-      updateMsg(msg.id, { status: 'compressing' });
-      const compressedUri = await compressVideo(msg.localUri!);
+      updateMsg(msg.id, { status: 'compressing', uploadProgress: 0 });
+      const compressedUri = await compressVideo(msg.localUri!, (p) => updateMsg(msg.id, { uploadProgress: p }));
       updateMsg(msg.id, { status: 'uploading', uploadProgress: 0, localUri: compressedUri });
 
       const task = createVideoUploadTask(id, compressedUri, 'video/mp4', msg.text,
@@ -750,7 +756,18 @@ export default function BusinessChatRoomScreen() {
       {/* ── Header ── */}
       <View style={{ backgroundColor: C.surface }}>
         <View style={s.header}>
-          <Pressable style={[s.backBtn, { backgroundColor: C.background }]} hitSlop={4} onPress={() => router.canGoBack() ? router.back() : router.replace('/(business)/messages' as never)}>
+          <Pressable style={[s.backBtn, { backgroundColor: C.background }]} hitSlop={4} onPress={() => {
+            // Opened from Activity Timeline (outside the Messages tab's own
+            // stack) — route back there explicitly instead of router.back(),
+            // which would only pop to the Messages list.
+            if (returnTo === 'activity-timeline' && campaignId) {
+              router.replace({ pathname: '/(business)/activity-timeline' as never, params: { campaignId, campaignTitle, role, brand, applicationId } });
+            } else if (router.canGoBack()) {
+              router.back();
+            } else {
+              router.replace('/(business)/messages' as never);
+            }
+          }}>
             <Ionicons name="chevron-back" size={22} color={C.text} />
           </Pressable>
           <Pressable

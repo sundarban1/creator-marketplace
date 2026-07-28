@@ -91,7 +91,7 @@ function fmtNPT(iso?: string | null): string {
   const d = new Date(new Date(iso).getTime() + (5 * 60 + 45) * 60000);
   const date = d.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
   const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-  return `${date}\n${time}`;
+  return `${time} · ${date}`;
 }
 
 function fmtDate(iso?: string | null): string {
@@ -680,7 +680,14 @@ export default function CampaignWorkspaceScreen() {
         if (conv?.id) {
           router.push({
             pathname: (isCreator ? '/(creator)/messages/[id]' : '/(business)/messages/[id]') as never,
-            params: { id: conv.id, name: otherName, status: conv.status, focusInput: 'true', participantId: otherProfileId, participantRole: isCreator ? 'BUSINESS' : 'CREATOR' },
+            params: {
+              id: conv.id, name: otherName, status: conv.status, focusInput: 'true', participantId: otherProfileId, participantRole: isCreator ? 'BUSINESS' : 'CREATOR',
+              // Chat lives inside the Messages tab's own nested stack, so its
+              // default back() pops to the messages list, not to whichever
+              // outer-stack screen actually opened it. Passing the return
+              // target explicitly lets chat route back here instead.
+              returnTo: 'activity-timeline', campaignId, campaignTitle, role, brand, applicationId,
+            },
           });
           return;
         }
@@ -1005,7 +1012,7 @@ export default function CampaignWorkspaceScreen() {
                   )}
                 </View>
                 <Text style={up.videoLabel} numberOfLines={1}>
-                  {item.status === 'compressing' ? 'Compressing…'
+                  {item.status === 'compressing' ? `Preparing… ${Math.round(item.progress * 100)}%`
                     : item.status === 'uploading' ? `Uploading… ${Math.round(item.progress * 100)}%`
                     : item.status === 'failed' ? (item.error ?? 'Failed')
                     : item.status === 'done' ? (item.result?.label ?? 'Video')

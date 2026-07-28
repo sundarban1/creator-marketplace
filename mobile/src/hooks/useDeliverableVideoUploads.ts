@@ -64,7 +64,7 @@ export function useDeliverableVideoUploads(appId: string, existingCount: number)
       // original (potentially 200MB) source on every attempt.
       let compressedUri = item.compressedUri;
       if (!compressedUri) {
-        compressedUri = await compressVideo(item.video.uri);
+        compressedUri = await compressVideo(item.video.uri, (fraction) => updateItem(localId, { progress: fraction }));
         if (statusOf(localId) === 'cancelled') return;
         updateItem(localId, { compressedUri });
       }
