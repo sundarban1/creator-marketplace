@@ -716,7 +716,7 @@ export default function CampaignDetailScreen() {
                 </Pressable>
               </View>
 
-              <ScrollView style={em.body} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+              <ScrollView style={em.body} contentContainerStyle={em.bodyContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
 
                 {/* ── Basic Info ── */}
                 <SectionCard title={t('campaignDetail.fieldTitle')} colors={C}>
@@ -1145,7 +1145,8 @@ const em = StyleSheet.create({
   sheetTitle:  { fontSize: 17, fontFamily: F.bold },
   doneBtn:     { fontSize: 15, fontFamily: F.bold },
 
-  body: { flexGrow: 0 },
+  body:        { flexGrow: 0 },
+  bodyContent: { gap: 12 },
 
   sectionHdr: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 0, marginBottom: 12, fontFamily: F.bold },
   lockedNote: { fontSize: 11, marginTop: -8, marginBottom: 10, fontFamily: F.regular },

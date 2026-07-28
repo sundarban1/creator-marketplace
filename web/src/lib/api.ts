@@ -151,6 +151,18 @@ export interface ApiCategory {
   itemCount?: number;
 }
 
+export interface ApiSuccessStory {
+  id: string;
+  name: string;
+  role: string;
+  quote: string;
+  photoUrl: string | null;
+  order: number;
+  status: 'ACTIVE' | 'INACTIVE';
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface LandingStats {
   totalCreators: number;
   totalBusinesses: number;
@@ -522,6 +534,23 @@ async function request<T>(
   return json;
 }
 
+// Separate from request() because multipart bodies need the browser to set its
+// own `Content-Type: multipart/form-data; boundary=...` — request() always
+// JSON-serializes the body and hardcodes a JSON content type.
+async function uploadFile<T>(path: string, file: File, fieldName: string): Promise<ApiResponse<T>> {
+  const form = new FormData();
+  form.append(fieldName, file);
+  const token = getAccessToken();
+  const res = await fetch(`${BASE}${path}`, {
+    method:  'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body:    form,
+  });
+  const json = await res.json() as ApiResponse<T>;
+  if (!res.ok) throw new Error((json as { message?: string }).message ?? `Request failed (${res.status})`);
+  return json;
+}
+
 // ── API surface ────────────────────────────────────────────────────────────────
 
 export const api = {
@@ -671,6 +700,24 @@ export const api = {
 
     deletePlatform: (id: string) =>
       request<null>('DELETE', `/api/admin/platforms/${id}`),
+
+    successStories: () =>
+      request<ApiSuccessStory[]>('GET', '/api/admin/success-stories'),
+
+    createSuccessStory: (data: { name: string; role: string; quote: string; photoUrl?: string | null; order: number; status: string }) =>
+      request<ApiSuccessStory>('POST', '/api/admin/success-stories', data),
+
+    updateSuccessStory: (id: string, data: { name: string; role: string; quote: string; photoUrl?: string | null; order: number; status: string }) =>
+      request<ApiSuccessStory>('PUT', `/api/admin/success-stories/${id}`, data),
+
+    toggleSuccessStoryStatus: (id: string, status: string) =>
+      request<ApiSuccessStory>('PATCH', `/api/admin/success-stories/${id}/status`, { status }),
+
+    deleteSuccessStory: (id: string) =>
+      request<null>('DELETE', `/api/admin/success-stories/${id}`),
+
+    uploadSuccessStoryPhoto: (file: File) =>
+      uploadFile<{ photoUrl: string }>('/api/admin/success-stories/photo', file, 'photo'),
   },
 
   help: {
@@ -752,6 +799,8 @@ export const api = {
       request<{ sections: LegalSection[]; lastUpdated: string | null }>('GET', `/api/legal/${slug}`),
     faqs: () =>
       request<HelpArticle[]>('GET', '/api/faq'),
+    successStories: () =>
+      request<Pick<ApiSuccessStory, 'id' | 'name' | 'role' | 'quote' | 'photoUrl'>[]>('GET', '/api/success-stories'),
   },
 
   visitorChat: {

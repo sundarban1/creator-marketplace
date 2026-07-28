@@ -107,6 +107,7 @@
       ],
       "expo-video",
       "expo-sharing",
+      "expo-web-browser",
       "./plugins/withFixMapsPodfile.js"
     ],
     "experiments": {

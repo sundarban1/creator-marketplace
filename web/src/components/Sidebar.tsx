@@ -20,6 +20,7 @@ import {
   Scale,
   Mail,
   Gauge,
+  Quote,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -58,6 +59,7 @@ const navGroups: NavGroup[] = [
     items: [
       { to: '/help-center',   label: 'Help Center',   icon: HelpCircle    },
       { to: '/faqs',          label: 'FAQs',          icon: BookOpen      },
+      { to: '/success-stories', label: 'Success Stories', icon: Quote     },
       { to: '/get-in-touch',  label: 'Get in Touch',  icon: Mail          },
       { to: '/support-inbox', label: 'Support Inbox', icon: MessageCircle },
       { to: '/legal',         label: 'Legal',         icon: Scale         },

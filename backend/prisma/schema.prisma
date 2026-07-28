@@ -851,6 +851,27 @@ model Platform {
   @@map("platforms")
 }
 
+enum SuccessStoryStatus {
+  ACTIVE
+  INACTIVE
+}
+
+// Admin-managed testimonials shown on the public landing page's Success
+// Stories marquee — only ACTIVE rows are returned by the public endpoint.
+model SuccessStory {
+  id        String             @id @default(cuid())
+  name      String
+  role      String
+  quote     String
+  photoUrl  String?
+  order     Int                @default(0)
+  status    SuccessStoryStatus @default(ACTIVE)
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  @@map("success_stories")
+}
+
 enum VisitorChatStatus {
   OPEN
   CLOSED

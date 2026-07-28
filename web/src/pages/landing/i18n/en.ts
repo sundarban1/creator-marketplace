@@ -158,6 +158,12 @@ export const en = {
       { quote: 'We hired three creators for our launch in a single afternoon.', name: 'Himalaya Brew', role: 'Brand' },
       { quote: 'Escrow made it easy to trust a brand I had never worked with.', name: 'Anish Shrestha', role: 'Tech Creator, Pokhara' },
       { quote: 'Filtering by budget and location saved us so much time.', name: 'Dhaka Threads', role: 'Brand' },
+      { quote: 'Brands reach out to me now instead of the other way around.', name: 'Suman Gurung', role: 'Fitness Creator, Lalitpur' },
+      { quote: 'Two reels filled our tables for a whole month.', name: 'Everest Eats', role: 'Brand' },
+      { quote: 'My engagement tripled once brands started sending real products, not just cash.', name: 'Kripa Tamang', role: 'Beauty Creator, Biratnagar' },
+      { quote: 'Local creators reached buyers our ads never could.', name: 'Sagarmatha Realty', role: 'Brand' },
+      { quote: 'I finally get paid what my content is actually worth.', name: 'Bibek Rai', role: 'Travel Creator, Chitwan' },
+      { quote: 'Kolab paid for itself with our very first campaign.', name: 'Thamel Boutique', role: 'Brand' },
     ],
   },
 

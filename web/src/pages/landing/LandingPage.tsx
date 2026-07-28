@@ -1,5 +1,6 @@
 import { LenisProvider } from './hooks/useLenis';
 import { useLandingStats } from './hooks/useLandingStats';
+import { useSuccessStories } from './hooks/useSuccessStories';
 import { LandingLanguageProvider } from './context/LanguageContext';
 import { CursorSparkles } from './components/CursorSparkles';
 import { ScrollProgress } from './components/ScrollProgress';
@@ -22,6 +23,7 @@ import { FinalCTA } from './sections/FinalCTA';
 
 function LandingPageInner() {
   const stats = useLandingStats();
+  const successStories = useSuccessStories();
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-white font-display">
@@ -50,7 +52,7 @@ function LandingPageInner() {
       <Collaboration />
       <Categories stats={stats} />
       <Security />
-      <Stories />
+      <Stories stories={successStories} />
       <FinalCTA />
       <LandingFooter />
       <ChatWidget />

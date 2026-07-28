@@ -3,6 +3,7 @@ import { seedUsers } from './seeds/users';
 import { seedContent } from './seeds/content';
 import { seedCategories } from './seeds/categories';
 import { seedPlatforms } from './seeds/platforms';
+import { seedSuccessStories } from './seeds/success-stories';
 
 const prisma = new PrismaClient();
 
@@ -22,6 +23,9 @@ async function main() {
 
   console.log('\n── Content ──────────────────────────────────────────────');
   await seedContent(prisma);
+
+  console.log('\n── Success Stories ──────────────────────────────────────');
+  await seedSuccessStories(prisma);
 
   console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log('  Admin:    admin@kolab.com.np  /  Admin@123456');

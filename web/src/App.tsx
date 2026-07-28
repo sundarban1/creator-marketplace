@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom
 import { AuthProvider } from './context/AuthContext';
 import { CategoriesProvider } from './context/CategoriesContext';
 import { PlatformsProvider } from './context/PlatformsContext';
+import { SuccessStoriesProvider } from './context/SuccessStoriesContext';
 import { NotificationProvider } from './context/NotificationContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { DashboardLayout } from './layouts/DashboardLayout';
@@ -46,6 +47,9 @@ import { EditCategoryPage } from './pages/categories/EditCategoryPage';
 import { PlatformsPage } from './pages/platforms/PlatformsPage';
 import { NewPlatformPage } from './pages/platforms/NewPlatformPage';
 import { EditPlatformPage } from './pages/platforms/EditPlatformPage';
+import { SuccessStoriesPage } from './pages/success-stories/SuccessStoriesPage';
+import { NewSuccessStoryPage } from './pages/success-stories/NewSuccessStoryPage';
+import { EditSuccessStoryPage } from './pages/success-stories/EditSuccessStoryPage';
 
 // Admin-only data providers — mounted only inside the authenticated dashboard
 // so public routes (landing page, login) never trigger admin-scoped API calls.
@@ -53,9 +57,11 @@ function AdminProviders() {
   return (
     <CategoriesProvider>
       <PlatformsProvider>
-        <NotificationProvider>
-          <Outlet />
-        </NotificationProvider>
+        <SuccessStoriesProvider>
+          <NotificationProvider>
+            <Outlet />
+          </NotificationProvider>
+        </SuccessStoriesProvider>
       </PlatformsProvider>
     </CategoriesProvider>
   );
@@ -99,6 +105,9 @@ export default function App() {
                 <Route path="/platforms" element={<PlatformsPage />} />
                 <Route path="/platforms/new" element={<NewPlatformPage />} />
                 <Route path="/platforms/edit/:id" element={<EditPlatformPage />} />
+                <Route path="/success-stories" element={<SuccessStoriesPage />} />
+                <Route path="/success-stories/new" element={<NewSuccessStoryPage />} />
+                <Route path="/success-stories/edit/:id" element={<EditSuccessStoryPage />} />
                 <Route path="/payments" element={<Payments />} />
                 <Route path="/referrals" element={<Referrals />} />
                 <Route path="/reports" element={<Reports />} />
