@@ -132,7 +132,7 @@ services:
       # Android/iOS client IDs have no secret (public/native clients) but ARE required —
       # native refresh tokens are minted under them, not the Web client.
       - key: GOOGLE_WEB_CLIENT_ID
-        value: "543768819635-f201e9a0pe6uegkhvm9fcnjm6hf8b2g5.apps.googleusercontent.com"
+        value: "543768819635-6mhj10fgm73eboahjnhttogaihn068if.apps.googleusercontent.com"
       - key: GOOGLE_CLIENT_SECRET
         sync: false
       - key: GOOGLE_ANDROID_CLIENT_ID
