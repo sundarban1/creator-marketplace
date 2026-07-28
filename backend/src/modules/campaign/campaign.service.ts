@@ -937,6 +937,10 @@ export class CampaignService {
 
     const updated = await this.repo.requestRevision(appId, note);
 
+    messagingService
+      .sendRevisionRequestMessage(app.creatorId, business.id, app.campaignId, userId, note)
+      .catch(() => {});
+
     const creatorUserId = app.creator.userId;
     notificationService.create({
       userId:  creatorUserId,

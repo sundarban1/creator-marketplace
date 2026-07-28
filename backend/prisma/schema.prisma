@@ -375,6 +375,7 @@ model Application {
   status              ApplicationStatus    @default(PENDING)
   workStatus          WorkStatus           @default(NONE)
   workNote            String?
+  revisionRequestedAt DateTime?
   submittedAt         DateTime?
   deliverableUrls     String?
   // Up to 3 entries: { publicId, url, thumbnailUrl, durationSec, format, sizeBytes, label, uploadedAt }.

@@ -533,6 +533,7 @@ export class CampaignRepository {
           status: true,
           workStatus: true,
           workNote: true,
+          revisionRequestedAt: true,
           submittedAt: true,
           deliverableUrls: true,
           deliverableVideos: true,
@@ -598,6 +599,7 @@ export class CampaignRepository {
           status: true,
           workStatus: true,
           workNote: true,
+          revisionRequestedAt: true,
           submittedAt: true,
           deliverableUrls: true,
           deliverableVideos: true,
@@ -669,7 +671,7 @@ export class CampaignRepository {
   async requestRevision(appId: string, note: string) {
     return prisma.application.update({
       where: { id: appId },
-      data: { workStatus: WorkStatus.IN_PROGRESS, workNote: note },
+      data: { workStatus: WorkStatus.IN_PROGRESS, workNote: note, revisionRequestedAt: new Date() },
     });
   }
 

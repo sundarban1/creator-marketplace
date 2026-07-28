@@ -36,8 +36,10 @@ export class CreatorController {
       const lng = req.query.lng ? parseFloat(String(req.query.lng)) : undefined;
       const budgetMin = req.query.budgetMin ? parseFloat(String(req.query.budgetMin)) : undefined;
       const budgetMax = req.query.budgetMax ? parseFloat(String(req.query.budgetMax)) : undefined;
+      const platforms = req.query.platforms ? String(req.query.platforms).split(',').filter(Boolean) : undefined;
+      const minFollowers = req.query.minFollowers ? parseInt(String(req.query.minFollowers), 10) : undefined;
       const limit = req.query.limit ? parseInt(String(req.query.limit), 10) : undefined;
-      const creators = await creatorService.getRecommendedForCampaign({ category, lat, lng, budgetMin, budgetMax, limit, lang: req.language });
+      const creators = await creatorService.getRecommendedForCampaign({ category, lat, lng, budgetMin, budgetMax, platforms, minFollowers, limit, lang: req.language });
       success(res, creators, 'Recommended creators retrieved');
     } catch (err) {
       next(err);

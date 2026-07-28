@@ -183,12 +183,22 @@ export default function NotificationsScreen() {
       return;
     }
 
-    // proposal_received → show the proposals list (business only)
-    if (n.type === 'proposal_received' && n.refId && !isCreator) {
-      router.push({
-        pathname: '/(business)/campaign-proposals',
-        params: { campaignId: n.refId, campaignTitle: '', campaignType: '' },
-      });
+    // proposal_received → business sees the proposals list; creators get this
+    // same notification `type` reused for "Revision Requested" (see
+    // CampaignService.requestRevision), so route them into Activity Timeline
+    // with the feedback modal opened straight to the note.
+    if (n.type === 'proposal_received' && n.refId) {
+      if (isCreator) {
+        router.push({
+          pathname: '/(business)/activity-timeline',
+          params: { campaignId: n.refId, role: 'CREATOR', openFeedback: 'true' },
+        });
+      } else {
+        router.push({
+          pathname: '/(business)/campaign-proposals',
+          params: { campaignId: n.refId, campaignTitle: '', campaignType: '' },
+        });
+      }
       return;
     }
 

@@ -36,6 +36,8 @@ export interface CampaignDto {
   deadline: string;
   eventDate: string | null;
   location: string | null;
+  locationLat: number | null;
+  locationLng: number | null;
   budgetMin: number;
   budgetMax: number;
   status: string;
@@ -88,6 +90,7 @@ export interface ApplicationDto {
   status: string;
   workStatus: string;
   workNote: string | null;
+  revisionRequestedAt: string | null;
   submittedAt: string | null;
   deliverableUrls: string | null;
   deliverableVideos: DeliverableVideo[];
@@ -138,6 +141,8 @@ type RawCampaign = {
   deadline: Date;
   eventDate: Date | null;
   location: string | null;
+  locationLat: number | null;
+  locationLng: number | null;
   budgetMin: number;
   budgetMax: number;
   status: string;
@@ -186,6 +191,8 @@ export function toCampaignDto(c: RawCampaign): CampaignDto {
     deadline:       c.deadline.toISOString(),
     eventDate:      c.eventDate ? c.eventDate.toISOString() : null,
     location:       c.location,
+    locationLat:    c.locationLat,
+    locationLng:    c.locationLng,
     budgetMin:      c.budgetMin,
     budgetMax:      c.budgetMax,
     status:         c.status,
@@ -229,6 +236,7 @@ type RawApplication = {
   status: string;
   workStatus: string;
   workNote: string | null;
+  revisionRequestedAt: Date | null;
   submittedAt: Date | null;
   deliverableUrls: string | null;
   deliverableVideos?: Prisma.JsonValue;
@@ -278,6 +286,7 @@ export function toApplicationDto(a: RawApplication): ApplicationDto {
     status:          a.status,
     workStatus:      a.workStatus,
     workNote:        a.workNote,
+    revisionRequestedAt: a.revisionRequestedAt ? a.revisionRequestedAt.toISOString() : null,
     submittedAt:     a.submittedAt ? a.submittedAt.toISOString() : null,
     deliverableUrls: a.deliverableUrls,
     deliverableVideos: z.array(deliverableVideoSchema).catch([]).parse(a.deliverableVideos ?? []),

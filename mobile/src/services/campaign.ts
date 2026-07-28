@@ -101,6 +101,8 @@ export function toCampaign(api: ApiCampaign): Campaign {
     isFeatured:   api.isFeatured,
     status:       mapStatus(api.status),
     location:     api.location ?? undefined,
+    locationLat:  api.locationLat ?? null,
+    locationLng:  api.locationLng ?? null,
     createdAt:    api.createdAt,
     campaignType:  (api as any).campaignType ?? 'PAID_CAMPAIGN',
     eventStatus:   (api as any).eventStatus,
@@ -486,6 +488,8 @@ export const campaignService = {
     paymentStatus:   'UNPAID' | 'PAID' | 'RELEASED';
     paidAt:          string | null;
     creator: { id: string; userId: string; fullName: string; avatarUrl: string | null; location: string | null };
+    workNote:        string | null;
+    revisionRequestedAt: string | null;
   }>> {
     const res = await request<Array<{
       id: string; status: string; proposedRate: number; coverLetter: string; createdAt: string;
@@ -493,6 +497,7 @@ export const campaignService = {
       deliverableVideos?: DeliverableVideo[];
       paymentStatus?: string; paidAt?: string | null;
       creator: { id: string; userId: string; fullName: string; avatarUrl: string | null; location: string | null };
+      workNote?: string | null; revisionRequestedAt?: string | null;
     }>>('GET', `/api/campaigns/${campaignId}/applications`);
     return res.data.map((a) => ({
       id:              a.id,
@@ -508,6 +513,8 @@ export const campaignService = {
       paymentStatus:   (a.paymentStatus ?? 'UNPAID') as 'UNPAID' | 'PAID' | 'RELEASED',
       paidAt:          a.paidAt ?? null,
       creator:         a.creator,
+      workNote:        a.workNote ?? null,
+      revisionRequestedAt: a.revisionRequestedAt ?? null,
     }));
   },
 
@@ -534,6 +541,8 @@ export const campaignService = {
       paidAt:           string | null;
       featureImageUrl:  string | undefined;
       deliverableVideos: DeliverableVideo[];
+      workNote:         string | null;
+      revisionRequestedAt: string | null;
     }>;
     total: number;
   }> {
@@ -548,6 +557,8 @@ export const campaignService = {
       deliverableVideos?: DeliverableVideo[];
       paymentStatus?:  string;
       paidAt?:         string | null;
+      workNote?:       string | null;
+      revisionRequestedAt?: string | null;
       campaign:     {
         id: string; title: string; campaignType?: string;
         paymentStatus?: string; paidAt?: string | null; featureImageUrl?: string | null;
@@ -578,6 +589,8 @@ export const campaignService = {
         paidAt:          a.paidAt ?? a.campaign.paidAt ?? null,
         featureImageUrl: a.campaign.featureImageUrl ?? undefined,
         deliverableVideos: a.deliverableVideos ?? [],
+        workNote:        a.workNote ?? null,
+        revisionRequestedAt: a.revisionRequestedAt ?? null,
       })),
       total: res.pagination?.total ?? res.data.length,
     };

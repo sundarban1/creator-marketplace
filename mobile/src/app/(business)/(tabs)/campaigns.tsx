@@ -22,7 +22,7 @@ import { TabSlider } from '@/components/TabSlider';
 import { useToast } from '@/components/Toast';
 import { useScrollToTopOnTabPress } from '@/hooks/useScrollToTopOnTabPress';
 import { campaignService } from '@/services/campaign';
-import { creatorService, type SavedCreatorItem } from '@/services/creator';
+import { creatorService, type SavedCreatorItem, type ApiCreatorListItem } from '@/services/creator';
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { usePlatforms, getPlatformMeta } from '@/hooks/usePlatforms';
 import { getTemplateImage } from '@/features/creator/data/templateImages';
@@ -122,10 +122,16 @@ export default function CampaignsScreen() {
   const listRef = useRef<FlatList<Campaign>>(null);
   useScrollToTopOnTabPress('campaigns', () => listRef.current?.scrollToOffset({ offset: 0, animated: true }));
 
-  // Invite flow
+  // Invite flow — the sheet shows saved creators by default (or recommended
+  // creators automatically when there are none saved), with a link to switch
+  // between the two lists either way. Selection/send is shared across both,
+  // since inviting just needs creator ids regardless of which list they came from.
   const [inviteCampaign, setInviteCampaign]       = useState<Campaign | null>(null);
   const [savedCreators, setSavedCreators]           = useState<SavedCreatorItem[]>([]);
   const [savedLoading, setSavedLoading]             = useState(false);
+  const [listMode, setListMode]                     = useState<'saved' | 'recommended'>('saved');
+  const [recommendedCreators, setRecommendedCreators] = useState<ApiCreatorListItem[]>([]);
+  const [recommendedLoading, setRecommendedLoading]   = useState(false);
   const [selectedCreators, setSelectedCreators]     = useState<Set<string>>(new Set());
   const [inviteSending, setInviteSending]           = useState(false);
   const [inviteSuccess, setInviteSuccess]           = useState(false);
@@ -209,19 +215,60 @@ export default function CampaignsScreen() {
     setTabData({ All: emptyTabState(), Active: emptyTabState(), Draft: emptyTabState(), Closed: emptyTabState() });
   }
 
+  async function loadRecommended(c: Campaign) {
+    setRecommendedLoading(true);
+    try {
+      const results = await creatorService.getRecommendedCreators({
+        category:     c.categoryKey,
+        lat:          c.locationLat ?? undefined,
+        lng:          c.locationLng ?? undefined,
+        platforms:    c.platforms,
+        minFollowers: c.minFollowersRaw,
+        budgetMin:    c.budgetRaw,
+        budgetMax:    c.budgetMax,
+        limit: 10,
+      });
+      setRecommendedCreators(results);
+    } catch {
+      setRecommendedCreators([]);
+    } finally {
+      setRecommendedLoading(false);
+      setListMode('recommended');
+    }
+  }
+
   async function openInvite(c: Campaign) {
     setInviteCampaign(c);
     setSelectedCreators(new Set());
     setInviteSuccess(false);
+    setListMode('saved');
+    setRecommendedCreators([]);
     setSavedLoading(true);
     try {
       const data = await creatorService.getSavedCreators();
       setSavedCreators(data);
+      // Nothing saved — go straight to recommended creators instead of an
+      // empty picker.
+      if (data.length === 0) await loadRecommended(c);
     } catch {
       setSavedCreators([]);
+      await loadRecommended(c);
     } finally {
       setSavedLoading(false);
     }
+  }
+
+  function switchListMode(mode: 'saved' | 'recommended') {
+    if (mode === 'recommended' && recommendedCreators.length === 0 && !recommendedLoading && inviteCampaign) {
+      void loadRecommended(inviteCampaign);
+    } else {
+      setListMode(mode);
+    }
+  }
+
+  function goViewCreators() {
+    setInviteCampaign(null);
+    router.push('/(business)/explore-creators');
   }
 
   function toggleCreator(creatorId: string) {
@@ -654,27 +701,24 @@ export default function CampaignsScreen() {
             </View>
           ) : savedLoading ? (
             <View style={styles.center}><ActivityIndicator size="small" color={C.brinjal1} /></View>
-          ) : savedCreators.length === 0 ? (
-            <View style={styles.modalEmpty}>
-              <FontAwesome5 name="bookmark" size={34} color={C.textSecondary} />
-              <Text style={[styles.modalEmptyText, { color: C.textSecondary }]}>{t('campaigns.noSavedCreators')}</Text>
-              <Text style={[styles.modalEmptyHint, { color: C.textSecondary }]}>
-                {t('campaigns.noSavedCreatorsSub')}
-              </Text>
-              <Pressable
-                style={[
-                  styles.goSaveBtn,
-                  {
-                    backgroundColor: C.brinjal1, shadowColor: C.brinjal1,
-                    shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6,
-                  },
-                ]}
-                onPress={() => { setInviteCampaign(null); router.push('/(business)/saved-creators'); }}>
-                <Text style={styles.goSaveBtnText}>{t('campaigns.viewSavedCreators')}</Text>
-              </Pressable>
-            </View>
           ) : (
             <>
+              {savedCreators.length === 0 ? (
+                <View style={styles.inlineNotice}>
+                  <Text style={[styles.inlineNoticeTitle, { color: C.text }]}>{t('campaigns.noSavedCreatorsInline')}</Text>
+                  <Text style={[styles.inlineNoticeSub, { color: C.textSecondary }]}>{t('campaigns.recommendedBelowIntro')}</Text>
+                </View>
+              ) : (
+                <Pressable
+                  style={styles.modeSwitchRow}
+                  onPress={() => switchListMode(listMode === 'saved' ? 'recommended' : 'saved')}>
+                  <Text style={[styles.modeSwitchText, { color: C.brinjal1 }]}>
+                    {listMode === 'saved' ? t('campaigns.seeRecommendedCreators') : t('campaigns.seeSavedCreators')}
+                  </Text>
+                  <Ionicons name="chevron-forward" size={14} color={C.brinjal1} />
+                </Pressable>
+              )}
+
               {selectedCreators.size > 0 && (
                 <View style={[styles.selectionBanner, { backgroundColor: C.primaryLight }]}>
                   <Text style={[styles.selectionText, { color: C.brinjal1 }]}>
@@ -682,34 +726,55 @@ export default function CampaignsScreen() {
                   </Text>
                 </View>
               )}
-              <ScrollView contentContainerStyle={styles.modalList} showsVerticalScrollIndicator={false}>
-                {savedCreators.map(({ creator }) => {
-                  const sel = selectedCreators.has(creator.id);
-                  const topAcc = creator.socialAccounts?.sort((a, b) => b.followers - a.followers)[0];
-                  const abbr = (creator.fullName ?? 'C').split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
-                  return (
-                    <Pressable
-                      key={creator.id}
-                      style={[styles.creatorPickRow, { backgroundColor: sel ? C.primaryLight : C.background, borderColor: sel ? C.brinjal1 : C.border }]}
-                      onPress={() => toggleCreator(creator.id)}>
-                      <View style={[styles.pickAvatar, { backgroundColor: C.brinjal1 }]}>
-                        <Text style={styles.pickAvatarText}>{abbr}</Text>
-                      </View>
-                      <View style={styles.pickInfo}>
-                        <Text style={[styles.pickName, { color: C.text }]}>{creator.fullName ?? 'Creator'}</Text>
-                        {topAcc && (
-                          <Text style={[styles.pickSub, { color: C.textSecondary }]}>
-                            {topAcc.platform} · {topAcc.followers >= 1000 ? `${(topAcc.followers / 1000).toFixed(1)}K` : topAcc.followers} {t('campaigns.followersSuffix')}
-                          </Text>
-                        )}
-                      </View>
-                      <View style={[styles.checkbox, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? C.brinjal1 : 'transparent' }]}>
-                        {sel && <Ionicons name="checkmark" size={14} color="#fff" />}
-                      </View>
-                    </Pressable>
-                  );
-                })}
-              </ScrollView>
+
+              {recommendedLoading ? (
+                <View style={styles.center}><ActivityIndicator size="small" color={C.brinjal1} /></View>
+              ) : listMode === 'recommended' && recommendedCreators.length === 0 ? (
+                <View style={styles.suggestEmpty}>
+                  <FontAwesome5 name="user-friends" size={28} color={C.textSecondary} />
+                  <Text style={[styles.inlineNoticeSub, { color: C.textSecondary }]}>{t('campaigns.noSuggestedCreators')}</Text>
+                  <Pressable style={[styles.suggestConfirmBtn, { backgroundColor: C.brinjal1, marginTop: 4 }]} onPress={goViewCreators}>
+                    <Text style={styles.suggestConfirmText}>{t('campaigns.viewCreatorsBtn')}</Text>
+                  </Pressable>
+                </View>
+              ) : (
+                <ScrollView contentContainerStyle={styles.modalList} showsVerticalScrollIndicator={false}>
+                  {(listMode === 'recommended'
+                    ? recommendedCreators.map((c) => ({ id: c.id, fullName: c.fullName, isVerified: c.isVerified, socialAccounts: c.socialAccounts, distanceKm: c.distanceKm }))
+                    : savedCreators.map(({ creator }) => ({ id: creator.id, fullName: creator.fullName, isVerified: creator.isVerified, socialAccounts: creator.socialAccounts, distanceKm: undefined as number | undefined }))
+                  ).map((creator) => {
+                    const sel = selectedCreators.has(creator.id);
+                    const topAcc = [...(creator.socialAccounts ?? [])].sort((a, b) => b.followers - a.followers)[0];
+                    const abbr = (creator.fullName ?? 'C').split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
+                    return (
+                      <Pressable
+                        key={creator.id}
+                        style={[styles.creatorPickRow, { backgroundColor: sel ? C.primaryLight : C.background, borderColor: sel ? C.brinjal1 : C.border }]}
+                        onPress={() => toggleCreator(creator.id)}>
+                        <View style={[styles.pickAvatar, { backgroundColor: C.brinjal1 }]}>
+                          <Text style={styles.pickAvatarText}>{abbr}</Text>
+                        </View>
+                        <View style={styles.pickInfo}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                            <Text style={[styles.pickName, { color: C.text }]} numberOfLines={1}>{creator.fullName ?? 'Creator'}</Text>
+                            {creator.isVerified && <Ionicons name="checkmark-circle" size={13} color="#3B82F6" />}
+                          </View>
+                          {(topAcc || creator.distanceKm != null) && (
+                            <Text style={[styles.pickSub, { color: C.textSecondary }]} numberOfLines={1}>
+                              {topAcc ? `${topAcc.platform} · ${topAcc.followers >= 1000 ? `${(topAcc.followers / 1000).toFixed(1)}K` : topAcc.followers} ${t('campaigns.followersSuffix')}` : ''}
+                              {creator.distanceKm != null ? ` · ${creator.distanceKm < 1 ? '<1' : Math.round(creator.distanceKm)} km` : ''}
+                            </Text>
+                          )}
+                        </View>
+                        <View style={[styles.checkbox, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? C.brinjal1 : 'transparent' }]}>
+                          {sel && <Ionicons name="checkmark" size={14} color="#fff" />}
+                        </View>
+                      </Pressable>
+                    );
+                  })}
+                </ScrollView>
+              )}
+
               <View style={[styles.inviteFooter, { borderTopColor: C.border }]}>
                 <Pressable
                   style={[
@@ -853,17 +918,11 @@ const styles = StyleSheet.create({
   modalSubtitle: { fontSize: 13, marginTop: 2, fontFamily: F.regular },
   modalClose: { width: 28, height: 28, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
   modalList: { padding: 16, gap: 12, paddingBottom: 40 },
-  modalEmpty: { alignItems: 'center', paddingTop: 40, paddingHorizontal: 24, gap: 10 },
-  modalEmptyText: { fontSize: 14, fontFamily: F.regular },
 
   // Invite modal
   inviteSuccess: { alignItems: 'center', paddingVertical: 48, gap: 10 },
   inviteSuccessText: { fontSize: 18, fontFamily: F.bold },
   inviteSuccessHint: { fontSize: 13, textAlign: 'center', fontFamily: F.regular },
-
-  modalEmptyHint: { fontSize: 12, textAlign: 'center', fontFamily: F.regular },
-  goSaveBtn: { marginTop: 4, maxWidth: '100%', borderRadius: RADIUS.full, paddingHorizontal: 20, paddingVertical: 10 },
-  goSaveBtnText: { color: '#fff', fontSize: 13, fontFamily: F.bold },
 
   selectionBanner: { paddingHorizontal: 16, paddingVertical: 8, marginHorizontal: 16, marginTop: 10, borderRadius: RADIUS.sm },
   selectionText: { fontSize: 13, fontFamily: F.bold },
@@ -882,4 +941,14 @@ const styles = StyleSheet.create({
   inviteFooter: { borderTopWidth: 1, paddingHorizontal: 16, paddingVertical: 14 },
   sendInviteBtn: { borderRadius: RADIUS.full, paddingVertical: 14, alignItems: 'center' },
   sendInviteBtnText: { color: '#fff', fontSize: 15, fontFamily: F.bold },
+
+  // Recommended-creators inline section, within the same invite sheet.
+  inlineNotice: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 4, gap: 3, alignItems: 'center' },
+  inlineNoticeTitle: { fontSize: 14, fontFamily: F.bold, textAlign: 'center' },
+  inlineNoticeSub: { fontSize: 12, fontFamily: F.regular, textAlign: 'center' },
+  modeSwitchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: 12 },
+  modeSwitchText: { fontSize: 13, fontFamily: F.bold },
+  suggestConfirmBtn: { borderRadius: RADIUS.md, height: 44, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 },
+  suggestConfirmText: { fontSize: 13, color: '#fff', fontFamily: F.bold, textAlign: 'center' },
+  suggestEmpty: { alignItems: 'center', paddingVertical: 24, paddingHorizontal: 24, gap: 10 },
 });

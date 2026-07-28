@@ -79,6 +79,8 @@ export interface ApiCampaign {
   paymentType:   string;
   deadline:      string;
   location?:     string | null;
+  locationLat?:  number | null;
+  locationLng?:  number | null;
   budgetMin:     number;
   budgetMax:     number;
   status:        'DRAFT' | 'PENDING_APPROVAL' | 'ACTIVE' | 'PAUSED' | 'CLOSED';

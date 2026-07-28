@@ -104,17 +104,13 @@ export default function BusinessAnalyticsScreen() {
         <View style={s.topBar}>
           <BackButton fallback="/(business)/" />
           <Text style={[s.topTitle, { color: C.text }]}>{t('analytics.headerTitle')}</Text>
-          <View style={{ width: 38 }} />
+          <RangeDropdown
+            value={range}
+            options={RANGES.map((r) => ({ value: r.value, label: t(r.labelKey) }))}
+            onChange={handleRangeChange}
+          />
         </View>
         <View style={[s.headerSeparator, { backgroundColor: C.border }]} />
-      </View>
-
-      <View style={s.rangeRow}>
-        <RangeDropdown
-          value={range}
-          options={RANGES.map((r) => ({ value: r.value, label: t(r.labelKey) }))}
-          onChange={handleRangeChange}
-        />
       </View>
 
       {loading || !data || !totals || !status ? (
@@ -170,9 +166,7 @@ const s = StyleSheet.create({
   headerSeparator: { height: StyleSheet.hairlineWidth, marginHorizontal: 16 },
   topTitle:  { fontSize: 18, fontFamily: F.bold },
 
-  rangeRow: { flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 16, paddingVertical: 14 },
-
-  content: { padding: 16, paddingTop: 0, paddingBottom: 32, gap: 16 },
+  content: { padding: 16, paddingBottom: 32, gap: 16 },
 
   grid:        { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   tile:        { width: '47%', borderRadius: RADIUS.lg, borderWidth: 1, padding: 14, gap: 6, ...SHADOW.card },

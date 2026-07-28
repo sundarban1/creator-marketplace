@@ -51,6 +51,8 @@ type AppInfo = {
   creatorName: string;
   creatorAvatar: string | null;
   creatorLocation: string | null;
+  workNote: string | null;
+  revisionRequestedAt: string | null;
 };
 
 // ─── Progress steps ────────────────────────────────────────────────────────────
@@ -304,8 +306,10 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, on
   // Business: payment required
   if (!paid && ws === 'NONE' && !isCreator) return (
     <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#EF4444' }]}>
-      <View style={[ac.iconBg, { backgroundColor: '#FEF2F2', shadowColor: '#EF4444', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="credit-card" size={22} color="#EF4444" solid /></View>
-      <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acPaymentRequiredTitle')}</Text>
+      <View style={ac.headerRow}>
+        <View style={[ac.iconBg, { backgroundColor: '#FEF2F2', shadowColor: '#EF4444', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="credit-card" size={16} color="#EF4444" solid /></View>
+        <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acPaymentRequiredTitle')}</Text>
+      </View>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acPaymentRequiredSub')}</Text>
       <Pressable style={[ac.btn, { backgroundColor: '#EF4444', shadowColor: '#EF4444', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]} onPress={onPay}>
         <FontAwesome5 name="credit-card" size={14} color="#fff" solid />
@@ -317,8 +321,10 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, on
   // Creator: waiting for payment
   if (!paid && ws === 'NONE' && isCreator) return (
     <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#D97706' }]}>
-      <View style={[ac.iconBg, { backgroundColor: '#FFF7ED', shadowColor: '#D97706', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><Ionicons name="time-outline" size={26} color="#D97706" /></View>
-      <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acWaitingPaymentTitle')}</Text>
+      <View style={ac.headerRow}>
+        <View style={[ac.iconBg, { backgroundColor: '#FFF7ED', shadowColor: '#D97706', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><Ionicons name="time-outline" size={20} color="#D97706" /></View>
+        <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acWaitingPaymentTitle')}</Text>
+      </View>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acWaitingPaymentSub')}</Text>
     </View>
   );
@@ -326,8 +332,10 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, on
   // Business: payment done, waiting on creator
   if (paid && ws === 'NONE' && !isCreator) return (
     <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#0EA5E9' }]}>
-      <View style={[ac.iconBg, { backgroundColor: '#E0F2FE', shadowColor: '#0EA5E9', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><Ionicons name="hourglass-outline" size={26} color="#0EA5E9" /></View>
-      <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acWaitingCreatorTitle')}</Text>
+      <View style={ac.headerRow}>
+        <View style={[ac.iconBg, { backgroundColor: '#E0F2FE', shadowColor: '#0EA5E9', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><Ionicons name="hourglass-outline" size={20} color="#0EA5E9" /></View>
+        <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acWaitingCreatorTitle')}</Text>
+      </View>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{isFree ? t('activityTimeline.acWaitingCreatorSubFree') : t('activityTimeline.acWaitingCreatorSubPaid')}</Text>
     </View>
   );
@@ -335,8 +343,10 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, on
   // Creator: ready to start
   if (paid && ws === 'NONE' && isCreator) return (
     <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#7C3AED' }]}>
-      <View style={[ac.iconBg, { backgroundColor: '#EEF2FF', shadowColor: '#7C3AED', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="rocket" size={22} color="#7C3AED" solid /></View>
-      <Text style={[ac.heading, { color: C.text }]}>{isFree ? t('activityTimeline.acReadyFreeTitle') : t('activityTimeline.acReadyPaidTitle')}</Text>
+      <View style={ac.headerRow}>
+        <View style={[ac.iconBg, { backgroundColor: '#EEF2FF', shadowColor: '#7C3AED', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="rocket" size={16} color="#7C3AED" solid /></View>
+        <Text style={[ac.heading, { color: C.text }]}>{isFree ? t('activityTimeline.acReadyFreeTitle') : t('activityTimeline.acReadyPaidTitle')}</Text>
+      </View>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{isFree ? t('activityTimeline.acReadyFreeSub') : t('activityTimeline.acReadyPaidSub')}</Text>
       <Pressable style={[ac.btn, { backgroundColor: '#7C3AED', opacity: submitting ? 0.75 : 1, shadowColor: '#7C3AED', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]} onPress={onStartWork} disabled={submitting}>
         {submitting
@@ -349,8 +359,10 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, on
   // Business: creator working
   if (ws === 'IN_PROGRESS' && !isCreator) return (
     <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#7C3AED' }]}>
-      <View style={[ac.iconBg, { backgroundColor: '#EEF2FF', shadowColor: '#7C3AED', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><Ionicons name="play-circle-outline" size={26} color="#7C3AED" /></View>
-      <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acCreatorWorkingTitle')}</Text>
+      <View style={ac.headerRow}>
+        <View style={[ac.iconBg, { backgroundColor: '#EEF2FF', shadowColor: '#7C3AED', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><Ionicons name="play-circle-outline" size={20} color="#7C3AED" /></View>
+        <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acCreatorWorkingTitle')}</Text>
+      </View>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acCreatorWorkingSub')}</Text>
     </View>
   );
@@ -358,8 +370,10 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, on
   // Creator: upload deliverables
   if (ws === 'IN_PROGRESS' && isCreator) return (
     <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#7C3AED' }]}>
-      <View style={[ac.iconBg, { backgroundColor: '#EEF2FF', shadowColor: '#7C3AED', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><Ionicons name="cloud-upload-outline" size={26} color="#7C3AED" /></View>
-      <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acUploadTitle')}</Text>
+      <View style={ac.headerRow}>
+        <View style={[ac.iconBg, { backgroundColor: '#EEF2FF', shadowColor: '#7C3AED', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><Ionicons name="cloud-upload-outline" size={20} color="#7C3AED" /></View>
+        <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acUploadTitle')}</Text>
+      </View>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acUploadSub')}</Text>
       <Pressable style={[ac.btn, { backgroundColor: '#7C3AED', shadowColor: '#7C3AED', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]} onPress={onUpload}>
         <Ionicons name="cloud-upload-outline" size={16} color="#fff" />
@@ -371,8 +385,10 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, on
   // Business: review submitted work
   if (ws === 'SUBMITTED' && !isCreator) return (
     <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#D97706' }]}>
-      <View style={[ac.iconBg, { backgroundColor: '#FFF7ED', shadowColor: '#D97706', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><Ionicons name="eye-outline" size={26} color="#D97706" /></View>
-      <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acSubmittedTitle')}</Text>
+      <View style={ac.headerRow}>
+        <View style={[ac.iconBg, { backgroundColor: '#FFF7ED', shadowColor: '#D97706', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><Ionicons name="eye-outline" size={20} color="#D97706" /></View>
+        <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acSubmittedTitle')}</Text>
+      </View>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acSubmittedSub')}</Text>
       <Pressable style={[ac.btn, { backgroundColor: '#D97706', shadowColor: '#D97706', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]} onPress={onReview}>
         <Ionicons name="eye-outline" size={16} color="#fff" />
@@ -396,8 +412,10 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, on
   // Creator: awaiting review
   if (ws === 'SUBMITTED' && isCreator) return (
     <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#0EA5E9' }]}>
-      <View style={[ac.iconBg, { backgroundColor: '#E0F2FE', shadowColor: '#0EA5E9', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><Ionicons name="hourglass-outline" size={26} color="#0EA5E9" /></View>
-      <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acAwaitingReviewTitle')}</Text>
+      <View style={ac.headerRow}>
+        <View style={[ac.iconBg, { backgroundColor: '#E0F2FE', shadowColor: '#0EA5E9', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><Ionicons name="hourglass-outline" size={20} color="#0EA5E9" /></View>
+        <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acAwaitingReviewTitle')}</Text>
+      </View>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acAwaitingReviewSub')}</Text>
     </View>
   );
@@ -406,8 +424,10 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, on
   // card immediately (no separate "confirm receipt" step required).
   if (paymentStatus === 'RELEASED') return (
     <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#16A34A' }]}>
-      <View style={[ac.iconBg, { backgroundColor: '#DCFCE7', shadowColor: '#16A34A', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><Ionicons name="checkmark-done-circle-outline" size={26} color="#16A34A" /></View>
-      <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acProjectCompleteTitle')}</Text>
+      <View style={ac.headerRow}>
+        <View style={[ac.iconBg, { backgroundColor: '#DCFCE7', shadowColor: '#16A34A', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><Ionicons name="checkmark-done-circle-outline" size={20} color="#16A34A" /></View>
+        <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acProjectCompleteTitle')}</Text>
+      </View>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{isCreator ? t('activityTimeline.acProjectCompleteCreatorSub') : t('activityTimeline.acProjectCompleteBizSub')}</Text>
     </View>
   );
@@ -415,8 +435,10 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, on
   // APPROVED, payment still held — business: admin will release it
   if (!isCreator) return (
     <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#16A34A' }]}>
-      <View style={[ac.iconBg, { backgroundColor: '#DCFCE7', shadowColor: '#16A34A', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><Ionicons name="checkmark-done-circle-outline" size={26} color="#16A34A" /></View>
-      <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acApprovedBizTitle')}</Text>
+      <View style={ac.headerRow}>
+        <View style={[ac.iconBg, { backgroundColor: '#DCFCE7', shadowColor: '#16A34A', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><Ionicons name="checkmark-done-circle-outline" size={20} color="#16A34A" /></View>
+        <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acApprovedBizTitle')}</Text>
+      </View>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acApprovedBizSub')}</Text>
     </View>
   );
@@ -424,8 +446,10 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, on
   // APPROVED, payment still held — creator: admin will release it
   return (
     <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#16A34A' }]}>
-      <View style={[ac.iconBg, { backgroundColor: '#DCFCE7', shadowColor: '#16A34A', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="trophy" size={22} color="#16A34A" solid /></View>
-      <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acApprovedCreatorTitle')}</Text>
+      <View style={ac.headerRow}>
+        <View style={[ac.iconBg, { backgroundColor: '#DCFCE7', shadowColor: '#16A34A', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="trophy" size={16} color="#16A34A" solid /></View>
+        <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acApprovedCreatorTitle')}</Text>
+      </View>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acApprovedCreatorSub')}</Text>
     </View>
   );
@@ -437,8 +461,8 @@ export default function CampaignWorkspaceScreen() {
   const C = useAppColors();
   const { user } = useAuth();
   const { t } = useLanguage();
-  const { campaignId, campaignTitle, role, brand, applicationId } = useLocalSearchParams<{
-    campaignId: string; campaignTitle: string; role?: string; brand?: string; applicationId?: string;
+  const { campaignId, campaignTitle, role, brand, applicationId, openFeedback } = useLocalSearchParams<{
+    campaignId: string; campaignTitle: string; role?: string; brand?: string; applicationId?: string; openFeedback?: string;
   }>();
 
   // Role determined from auth token primarily, URL param as fallback
@@ -455,6 +479,8 @@ export default function CampaignWorkspaceScreen() {
   const [showReview, setShowReview]     = useState(false);
   const [showRevision, setShowRevision] = useState(false);
   const [showCancel, setShowCancel]     = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const autoOpenedFeedback = useRef(false);
 
   const [payMethod, setPayMethod]       = useState<'esewa' | 'khalti' | 'fonepay'>('esewa');
   const [uploadUrls, setUploadUrls]     = useState('');
@@ -527,6 +553,8 @@ export default function CampaignWorkspaceScreen() {
             creatorName:      myApp.brand,
             creatorAvatar:    null,
             creatorLocation:  null,
+            workNote:         myApp.workNote ?? null,
+            revisionRequestedAt: myApp.revisionRequestedAt ?? null,
           });
           // Sync paymentStatus from API into campaign
           setCampaign(prev => prev ? {
@@ -558,6 +586,8 @@ export default function CampaignWorkspaceScreen() {
             creatorName:      accepted.creator.fullName,
             creatorAvatar:    accepted.creator.avatarUrl,
             creatorLocation:  accepted.creator.location,
+            workNote:         accepted.workNote ?? null,
+            revisionRequestedAt: accepted.revisionRequestedAt ?? null,
           });
         }
       }
@@ -566,6 +596,16 @@ export default function CampaignWorkspaceScreen() {
   }
 
   useFocusEffect(useCallback(() => { void load(); }, [campaignId, isCreator, applicationId]));
+
+  // Deep-linked from the "Revision Requested" notification — open the
+  // feedback modal once the note has loaded. Guarded to fire only once per
+  // mount so it doesn't reopen on every useFocusEffect refetch.
+  useEffect(() => {
+    if (!autoOpenedFeedback.current && openFeedback === 'true' && app?.workNote) {
+      autoOpenedFeedback.current = true;
+      setShowFeedback(true);
+    }
+  }, [openFeedback, app]);
 
   // Center progress tracker on current step after data loads
   useEffect(() => {
@@ -744,15 +784,15 @@ export default function CampaignWorkspaceScreen() {
           <Text style={[s.headerTitle, { color: C.text }]} numberOfLines={1}>
             {campaign?.title || campaignTitle || t('activityTimeline.headerWorkspace')}
           </Text>
-          {/* Only message icon — no three dots. Payment release is the final
+          {/* Only message icon — no overflow menu. Payment release is the final
               stage, so chat closes here rather than staying open indefinitely. */}
           {app?.paymentStatus === 'RELEASED' ? (
             <View style={s.iconBtn}>
-              <Ionicons name="chatbubble-outline" size={22} color="#D1D5DB" />
+              <Ionicons name="chatbubble-ellipses-outline" size={22} color="#D1D5DB" />
             </View>
           ) : (
             <Pressable style={s.iconBtn} onPress={handleMessage} hitSlop={6}>
-              <Ionicons name="chatbubble-outline" size={22} color="#7C3AED" />
+              <Ionicons name="chatbubble-ellipses-outline" size={22} color="#7C3AED" />
             </Pressable>
           )}
         </View>
@@ -822,7 +862,16 @@ export default function CampaignWorkspaceScreen() {
 
         {/* ── Progress Tracker (centered on current step) ── */}
         <View style={[s.card, { backgroundColor: C.surface, paddingHorizontal: 0, paddingBottom: 16 }]}>
-          <Text style={[s.secTitle, { color: C.text, marginHorizontal: 16, marginBottom: 14 }]}>{t('activityTimeline.campaignProgress')}</Text>
+          <View style={[s.secHeader, { marginHorizontal: 16, marginBottom: 14 }]}>
+            <Text style={[s.secTitle, { color: C.text }]}>{t('activityTimeline.campaignProgress')}</Text>
+            {!!app?.workNote && (
+              <Pressable onPress={() => setShowFeedback(true)} hitSlop={6}>
+                <Text style={[s.feedbackLink, { color: '#D97706' }]} numberOfLines={1}>
+                  {t('activityTimeline.viewRevisionFeedback')}
+                </Text>
+              </Pressable>
+            )}
+          </View>
           <ProgressTracker current={pIdx} scrollRef={progressScrollRef} labels={progressLabels} />
         </View>
 
@@ -1234,6 +1283,20 @@ export default function CampaignWorkspaceScreen() {
         </Pressable>
       </Sheet>
 
+      {/* ── Feedback Modal — the latest revision-request note, either side ── */}
+      <Sheet
+        visible={showFeedback}
+        onClose={() => setShowFeedback(false)}
+        title={t('activityTimeline.revisionFeedback')}
+      >
+        <View style={[fb.card, { backgroundColor: '#FFF7ED', borderColor: '#FED7AA' }]}>
+          <Text style={[fb.note, { color: '#78350F' }]}>{app?.workNote}</Text>
+          {!!app?.revisionRequestedAt && (
+            <Text style={[fb.time, { color: '#B45309' }]}>{fmtNPT(app.revisionRequestedAt)}</Text>
+          )}
+        </View>
+      </Sheet>
+
       {/* ── Cancel Event Modal (business) — 20% deduction warning ── */}
       <Sheet visible={showCancel} onClose={() => setShowCancel(false)} title={t('activityTimeline.modalCancelTitle')}>
         <Text style={[sh.sub, { color: '#EF4444' }]}>{t('activityTimeline.modalCancelSub')}</Text>
@@ -1325,6 +1388,7 @@ const s = StyleSheet.create({
   secHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 2 },
   secTitle:  { fontSize: 15, fontFamily: F.bold },
   secSub:    { fontSize: 11, fontFamily: F.regular, marginTop: 2 },
+  feedbackLink: { fontSize: 12, fontFamily: F.bold, maxWidth: 150, textDecorationLine: 'underline' },
 
   secFooter:    { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 4, paddingVertical: 8 },
   secFooterTxt: { fontSize: 11, fontFamily: F.regular, flex: 1 },
@@ -1391,12 +1455,19 @@ const py = StyleSheet.create({
 
 const ac = StyleSheet.create({
   card:   { borderRadius: RADIUS.lg, padding: 18, borderLeftWidth: 4, ...TOKEN_SHADOW.raised, backgroundColor: '#fff', gap: 8 },
-  iconBg: { width: 52, height: 52, borderRadius: RADIUS.full, alignItems: 'center', justifyContent: 'center', alignSelf: 'flex-start' },
-  heading:{ fontSize: 16, fontFamily: F.bold },
+  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  iconBg: { width: 36, height: 36, borderRadius: RADIUS.full, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  heading:{ fontSize: 16, fontFamily: F.bold, flexShrink: 1 },
   sub:    { fontSize: 13, fontFamily: F.regular, lineHeight: 19 },
   btnRow: { flexDirection: 'row', gap: 10, marginTop: 4 },
   btn:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, borderRadius: RADIUS.full, paddingVertical: 13, marginTop: 4 },
   btnTxt: { fontSize: 14, fontFamily: F.bold, color: '#fff' },
+});
+
+const fb = StyleSheet.create({
+  card: { borderRadius: RADIUS.lg, borderWidth: 1, padding: 16, gap: 8 },
+  note: { fontSize: 14, fontFamily: F.regular, lineHeight: 21 },
+  time: { fontSize: 11, fontFamily: F.medium },
 });
 
 const up = StyleSheet.create({

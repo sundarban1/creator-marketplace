@@ -869,8 +869,8 @@ export default function HomeScreen() {
                 style={[
                   styles.catPill,
                   {
-                    backgroundColor: isActive ? C.brinjal1 : C.surface,
-                    borderColor: isActive ? C.brinjal1 : C.border,
+                    backgroundColor: isActive ? cat.color : C.surface,
+                    borderColor: isActive ? cat.color : C.border,
                   },
                 ]}
                 onPress={() => {
@@ -908,8 +908,8 @@ export default function HomeScreen() {
                     style={[
                       styles.catPill,
                       {
-                        backgroundColor: isActive ? C.brinjal1 : C.surface,
-                        borderColor: isActive ? C.brinjal1 : C.border,
+                        backgroundColor: isActive ? meta.color : C.surface,
+                        borderColor: isActive ? meta.color : C.border,
                       },
                     ]}
                     onPress={() => {

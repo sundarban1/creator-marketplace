@@ -38,6 +38,8 @@ export type Campaign = {
   isFeatured: boolean;
   status?: 'active' | 'draft' | 'closed' | 'pending_approval';
   location?: string;
+  locationLat?: number | null;
+  locationLng?: number | null;
   createdAt: string;
   campaignType?: 'PAID_CAMPAIGN' | 'OPEN_EVENT';
   eventStatus?:  'OPEN' | 'FULL' | 'CLOSED';

@@ -615,6 +615,20 @@ export class MessagingService {
     return this.persistAndBroadcast(conversation, businessUserId, 'BUSINESS', { content }, content);
   }
 
+  // Called when a business requests a revision on submitted deliverables — the
+  // note is sent verbatim as a real chat message (in addition to the in-app
+  // notification/email) so it lands where the creator will actually read it.
+  async sendRevisionRequestMessage(
+    creatorId: string,
+    businessId: string,
+    campaignId: string,
+    businessUserId: string,
+    content: string,
+  ) {
+    const { conversation } = await this.repo.findOrCreateAcceptedConversation(creatorId, businessId, campaignId);
+    return this.persistAndBroadcast(conversation, businessUserId, 'BUSINESS', { content }, content);
+  }
+
   // Called once a project is completed and its payment released — the conversation
   // reverts to PENDING so either side must send a fresh request before chatting again.
   async closeConversationAfterCompletion(

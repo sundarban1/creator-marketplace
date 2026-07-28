@@ -235,12 +235,18 @@ export async function exchangeForLongLivedFacebookToken(shortLivedToken: string)
 // only ranks WITHIN that already-matched pool. Every sub-score is normalized to
 // [0, 1]; missing data (no reviews yet, no coordinates, no stated budget) falls
 // back to a neutral 0.5 rather than 0, so a new/unrated creator isn't penalized
-// as harshly as one with an actually-bad track record.
-const RECOMMEND_WEIGHTS = { followers: 0.25, completion: 0.3, rating: 0.2, proximity: 0.15, rate: 0.1 };
+// as harshly as one with an actually-bad track record. Same neutral treatment
+// for platformScore when the caller doesn't pass a platforms filter — adding an
+// equal constant to every candidate doesn't change relative ranking, so it's a
+// safe no-op for callers that don't care about platform overlap.
+const RECOMMEND_WEIGHTS = { followers: 0.2, completion: 0.2, rating: 0.15, proximity: 0.15, rate: 0.1, verified: 0.1, platform: 0.1 };
 
 function scoreCandidate(
-  c: { topFollowers: number; completionRate?: number; averageRating?: number; distanceKm?: number; prefBudgetMin: number; prefBudgetMax: number },
-  params: { budgetMin?: number; budgetMax?: number },
+  c: {
+    topFollowers: number; completionRate?: number; averageRating?: number; distanceKm?: number;
+    prefBudgetMin: number; prefBudgetMax: number; isVerified: boolean; socialAccounts: { platform: string }[];
+  },
+  params: { budgetMin?: number; budgetMax?: number; platforms?: string[] },
 ): number {
   const followerScore = Math.min(c.topFollowers / 100_000, 1);
   const completionScore = c.completionRate ?? 0.5;
@@ -249,13 +255,19 @@ function scoreCandidate(
   const rateScore = params.budgetMin != null && params.budgetMax != null
     ? (c.prefBudgetMax >= params.budgetMin && c.prefBudgetMin <= params.budgetMax ? 1 : 0.3)
     : 0.5;
+  const verifiedScore = c.isVerified ? 1 : 0;
+  const platformScore = params.platforms?.length
+    ? params.platforms.filter((p) => c.socialAccounts.some((a) => a.platform === p)).length / params.platforms.length
+    : 0.5;
 
   return (
     followerScore   * RECOMMEND_WEIGHTS.followers +
     completionScore * RECOMMEND_WEIGHTS.completion +
     ratingScore      * RECOMMEND_WEIGHTS.rating +
     proximityScore   * RECOMMEND_WEIGHTS.proximity +
-    rateScore        * RECOMMEND_WEIGHTS.rate
+    rateScore        * RECOMMEND_WEIGHTS.rate +
+    verifiedScore    * RECOMMEND_WEIGHTS.verified +
+    platformScore    * RECOMMEND_WEIGHTS.platform
   );
 }
 
@@ -306,6 +318,8 @@ export class CreatorService {
     lng?: number;
     budgetMin?: number;
     budgetMax?: number;
+    platforms?: string[];
+    minFollowers?: number;
     limit?: number;
     lang?: string;
   }) {
@@ -331,6 +345,10 @@ export class CreatorService {
 
         return { ...c, distanceKm, completionRate, averageRating, completedEvents, topFollowers };
       })
+      // Unlike the soft-ranked factors below, minFollowers is a stated
+      // campaign requirement, not a preference — creators who don't meet it
+      // are excluded outright rather than merely ranked lower.
+      .filter((c) => c.topFollowers >= (params.minFollowers ?? 0))
       .sort((a, b) => scoreCandidate(b, params) - scoreCandidate(a, params))
       .slice(0, limit);
 

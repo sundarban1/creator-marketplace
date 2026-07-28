@@ -89,15 +89,18 @@ export function LocationSearchModal({
       return;
     }
     try {
-      const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${prediction.place_id}&fields=geometry,formatted_address&key=${PLACES_KEY}`;
+      const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${prediction.place_id}&fields=geometry&key=${PLACES_KEY}`;
       const res = await fetch(url);
       const data = (await res.json()) as {
-        result: { geometry: { location: { lat: number; lng: number } }; formatted_address: string };
+        result: { geometry: { location: { lat: number; lng: number } } };
         status: string;
       };
       if (data.status === 'OK') {
+        // Use the autocomplete description, not Details' formatted_address —
+        // the latter appends the postal code (e.g. "Kathmandu 44600, Nepal"),
+        // which we don't want to show as the selected location text.
         onSelect(
-          data.result.formatted_address,
+          prediction.description,
           data.result.geometry.location.lat,
           data.result.geometry.location.lng,
         );

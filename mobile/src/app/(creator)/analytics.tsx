@@ -109,15 +109,17 @@ export default function CreatorAnalyticsScreen() {
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
       <MaxWidthContainer>
-      <PageHeader title={t('analytics.headerTitle')} backFallback="/(creator)/" />
-
-      <View style={s.rangeRow}>
-        <RangeDropdown
-          value={range}
-          options={RANGES.map((r) => ({ value: r.value, label: t(r.labelKey) }))}
-          onChange={handleRangeChange}
-        />
-      </View>
+      <PageHeader
+        title={t('analytics.headerTitle')}
+        backFallback="/(creator)/"
+        rightSlot={(
+          <RangeDropdown
+            value={range}
+            options={RANGES.map((r) => ({ value: r.value, label: t(r.labelKey) }))}
+            onChange={handleRangeChange}
+          />
+        )}
+      />
 
       {loading || !data || !totals || !breakdown || !referrals ? (
         <View style={s.center}>
@@ -206,9 +208,7 @@ const s = StyleSheet.create({
   container: { flex: 1 },
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
-  rangeRow: { flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 16, paddingVertical: 14 },
-
-  content: { padding: 16, paddingTop: 0, paddingBottom: 32, gap: 16 },
+  content: { padding: 16, paddingBottom: 32, gap: 16 },
 
   grid:        { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   tile:        { width: '47%', borderRadius: RADIUS.lg, borderWidth: 1, padding: 14, gap: 6, ...SHADOW.card },
