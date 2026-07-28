@@ -47,12 +47,19 @@ interface StoriesProps {
   stories: PublicSuccessStory[] | null;
 }
 
+// Below this count, a duplicated pass reads as "the same card shown twice"
+// rather than an infinite loop — there just isn't enough content for the
+// seamless-reset illusion to land, so skip duplicating and disable scrolling.
+const MIN_ITEMS_TO_LOOP = 5;
+
 export function Stories({ stories }: StoriesProps) {
   const { d } = useLandingLanguage();
-  const scrollRef = useAutoScroll<HTMLDivElement>(0.3);
   // null = not yet loaded / fetch failed → fall back to static copy.
   // A resolved empty array is genuine "no active stories" and renders empty.
   const items: StoryItem[] = stories !== null ? stories : d.stories.items;
+  const shouldLoop = items.length >= MIN_ITEMS_TO_LOOP;
+  const scrollRef = useAutoScroll<HTMLDivElement>(shouldLoop ? 0.3 : 0);
+  const groups = shouldLoop ? [items, items] : [items];
 
   return (
     <section id={SECTION_IDS.stories} className="bg-paper py-28">
@@ -72,9 +79,9 @@ export function Stories({ stories }: StoriesProps) {
         viewport={VP}
         variants={fadeUp}
         ref={scrollRef}
-        className="scrollbar-hide flex gap-6 overflow-x-hidden px-6 [mask-image:linear-gradient(to_right,transparent,black_6%,black_94%,transparent)]"
+        className={`scrollbar-hide flex gap-6 overflow-x-hidden px-6 [mask-image:linear-gradient(to_right,transparent,black_6%,black_94%,transparent)] ${shouldLoop ? '' : 'justify-center'}`}
       >
-        {[items, items].map((group, gi) => (
+        {groups.map((group, gi) => (
           <div key={gi} aria-hidden={gi === 1} className="flex flex-shrink-0 gap-6">
             {group.map((item, i) => (
               <StoryCard key={i} {...item} i={i} />

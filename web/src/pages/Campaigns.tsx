@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useNavigate }       from 'react-router-dom';
-import { ChevronDown }       from 'lucide-react';
+import { ChevronDown, ToggleLeft, ToggleRight } from 'lucide-react';
 import { DataTable }    from '../components/DataTable';
 import { StatusBadge }  from '../components/StatusBadge';
 import { PageHeader }   from '../components/PageHeader';
@@ -44,6 +44,7 @@ export function Campaigns() {
   const [businessFilter, setBusinessFilter] = useState<string>('All');
   const [page, setPage] = useState(1);
   const [editId, setEditId] = useState<string | null>(null);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   const { data, loading, error, refetch } = useApi(() =>
     api.admin.campaigns({
@@ -84,6 +85,23 @@ export function Campaigns() {
   function handleBusinessChange(name: string) {
     setBusinessFilter(name);
     setPage(1);
+  }
+
+  // Admin-only activate/deactivate — reuses the existing ACTIVE/PAUSED status
+  // pair (businesses have no self-service way to set either; their only
+  // status action is cancel). Only meaningful once a event is live, so it's
+  // restricted to campaigns already in one of those two states.
+  async function handleToggleActive(row: ApiCampaign) {
+    const next = row.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE';
+    setTogglingId(row.id);
+    try {
+      await api.admin.updateCampaignStatus(row.id, next);
+      refetch();
+    } catch (e) {
+      window.alert((e as Error).message ?? 'Failed to update event status.');
+    } finally {
+      setTogglingId(null);
+    }
   }
 
   const columns = [
@@ -155,22 +173,41 @@ export function Campaigns() {
     {
       key:    'actions',
       header: 'Actions',
-      render: (row: ApiCampaign) => (
-        <div className="flex items-center gap-3">
-          <button
-            className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
-            onClick={() => navigate(`/campaigns/${row.id}`)}
-          >
-            View
-          </button>
-          <button
-            className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
-            onClick={() => setEditId(row.id)}
-          >
-            Edit
-          </button>
-        </div>
-      ),
+      render: (row: ApiCampaign) => {
+        const canToggle = row.status === 'ACTIVE' || row.status === 'PAUSED';
+        return (
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => canToggle && handleToggleActive(row)}
+              disabled={!canToggle || togglingId === row.id}
+              title={
+                canToggle
+                  ? row.status === 'ACTIVE' ? 'Deactivate' : 'Activate'
+                  : 'Only active or inactive events can be toggled'
+              }
+              className={`p-1 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                row.status === 'ACTIVE'
+                  ? 'text-emerald-600 hover:bg-emerald-50'
+                  : 'text-gray-400 hover:bg-gray-100'
+              }`}
+            >
+              {row.status === 'ACTIVE' ? <ToggleRight size={18} /> : <ToggleLeft size={18} />}
+            </button>
+            <button
+              className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+              onClick={() => navigate(`/campaigns/${row.id}`)}
+            >
+              View
+            </button>
+            <button
+              className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+              onClick={() => setEditId(row.id)}
+            >
+              Edit
+            </button>
+          </div>
+        );
+      },
     },
   ];
 
