@@ -32,6 +32,7 @@ type Props = {
   source: NearbySource;
   radiusKm: number;
   homeLabel: string | null;
+  homeAddress: string | null;
   currentCoords: LatLng | null;
   homeCoords: LatLng | null;
   customCoords: LatLng | null;
@@ -43,7 +44,7 @@ type Props = {
  * (drag the map to move the pin, matching how most map pickers behave) and a
  * radius slider below it — replaces the old radius-pill list entirely.
  */
-export function NearbyLocationSheet({ visible, onClose, source, radiusKm, homeLabel, currentCoords, homeCoords, customCoords, onApply }: Props) {
+export function NearbyLocationSheet({ visible, onClose, source, radiusKm, homeLabel, homeAddress, currentCoords, homeCoords, customCoords, onApply }: Props) {
   const C = useAppColors();
   const { t } = useLanguage();
   const mapRef = useRef<MapView>(null);
@@ -70,10 +71,9 @@ export function NearbyLocationSheet({ visible, onClose, source, radiusKm, homeLa
 
   useEffect(() => {
     if (!visible) return;
-    // Home is the preferred starting point every time the sheet opens,
-    // regardless of whichever source was last applied — falls back to
-    // the previously applied source only when no home address is saved.
-    const initialSource: NearbySource = homeCoords ? 'home' : source;
+    // Mirror whatever source is currently applied on the home screen —
+    // the sheet should never override the creator's active selection.
+    const initialSource: NearbySource = source;
     setDraftSource(initialSource);
     setDraftRadius(radiusKm);
     userIsDragging.current = false;
@@ -213,6 +213,12 @@ export function NearbyLocationSheet({ visible, onClose, source, radiusKm, homeLa
             <View style={styles.pinWrap} pointerEvents="none">
               <Ionicons name="location" size={36} color={C.brinjal1} />
             </View>
+            {draftSource === 'home' && homeAddress && (
+              <View style={[styles.addressBanner, { backgroundColor: C.surface, borderColor: C.border }]} pointerEvents="none">
+                <Ionicons name="home" size={13} color={C.brinjal1} />
+                <Text style={[styles.addressBannerText, { color: C.text }]} numberOfLines={2}>{homeAddress}</Text>
+              </View>
+            )}
           </View>
 
           <RadiusSlider value={draftRadius} onChange={setDraftRadius} min={1} max={100} />
@@ -250,6 +256,8 @@ const styles = StyleSheet.create({
   mapWrap: { height: 220, borderRadius: 16, borderWidth: 1.5, overflow: 'hidden', marginBottom: 20 },
   map: { ...StyleSheet.absoluteFill },
   pinWrap: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center', marginBottom: 36 },
+  addressBanner: { position: 'absolute', top: 10, left: 10, right: 10, flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 10, paddingVertical: 6, paddingHorizontal: 10, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
+  addressBannerText: { flex: 1, fontSize: 11, fontFamily: F.medium },
 
   footer:   { paddingHorizontal: 20, paddingVertical: 16, borderTopWidth: 1 },
   applyBtn: { height: 50, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },

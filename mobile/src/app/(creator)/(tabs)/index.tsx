@@ -140,6 +140,7 @@ export default function HomeScreen() {
   const [nearbySource, setNearbySource] = useState<NearbySource>('current');
   const [nearbyRadiusKm, setNearbyRadiusKm] = useState(25);
   const [nearbyHomeLabel, setNearbyHomeLabel] = useState<string | null>(null);
+  const [nearbyHomeAddress, setNearbyHomeAddress] = useState<string | null>(null);
   const [nearbyHomeCoords, setNearbyHomeCoords] = useState<LatLng | null>(null);
   const [nearbyCurrentCoords, setNearbyCurrentCoords] = useState<LatLng | null>(null);
   const [nearbyCustomCoords, setNearbyCustomCoords] = useState<LatLng | null>(null);
@@ -235,6 +236,7 @@ export default function HomeScreen() {
         ?.replace(/\s*\d{4,6}\s*$/, '')
         ?.trim() ?? null,
     );
+    setNearbyHomeAddress(profile.location ?? null);
 
     const [current, home] = await Promise.all([
       getCurrentLocation(),
@@ -248,12 +250,12 @@ export default function HomeScreen() {
     setNearbyHomeCoords(home);
     setNearbyLocationDenied(current === null);
 
-    let preferredSource: NearbySource = profile.nearbyUseHomeLocation ? 'home' : 'current';
-    // Fall back to home if current location was preferred but permission was denied
-    if (preferredSource === 'current' && !current) preferredSource = home ? 'home' : 'current';
+    // Default to the creator's saved home address whenever one is available —
+    // only fall back to their live GPS position if no home location is set.
+    const preferredSource: NearbySource = home ? 'home' : 'current';
     setNearbySource(preferredSource);
 
-    const coords = preferredSource === 'current' ? current : (home ?? current);
+    const coords = preferredSource === 'home' ? (home ?? current) : current;
     if (coords) void fetchNearby(coords, radius);
     else setNearbyLoading(false);
   }
@@ -310,6 +312,18 @@ export default function HomeScreen() {
       })
       .catch(() => { setNearbyLoading(false); });
   }, [languageVersion]);
+
+  // Re-sync "Home location" whenever this tab regains focus (e.g. returning from
+  // Edit Profile after changing location). The mount effect above only runs once
+  // (or on language change), so without this the Nearby Events sheet keeps
+  // showing whatever location was fetched at first load.
+  const skipNextNearbyFocusRef = useRef(true);
+  useFocusEffect(useCallback(() => {
+    if (skipNextNearbyFocusRef.current) { skipNextNearbyFocusRef.current = false; return; }
+    creatorService.getProfile()
+      .then((profile) => { void initNearby(profile); })
+      .catch(() => {});
+  }, []));
 
   // Keep a stable ref to the latest fetch so the socket handler never captures stale state
   const fetchRef = useRef(fetchCampaigns);
@@ -1067,6 +1081,7 @@ export default function HomeScreen() {
         source={nearbySource}
         radiusKm={nearbyRadiusKm}
         homeLabel={nearbyHomeLabel}
+        homeAddress={nearbyHomeAddress}
         currentCoords={nearbyCurrentCoords}
         homeCoords={nearbyHomeCoords}
         customCoords={nearbyCustomCoords}
