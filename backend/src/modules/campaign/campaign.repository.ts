@@ -534,6 +534,10 @@ export class CampaignRepository {
           workStatus: true,
           workNote: true,
           revisionRequestedAt: true,
+          revisionNotes: {
+            orderBy: { createdAt: 'desc' },
+            select: { note: true, createdAt: true },
+          },
           submittedAt: true,
           deliverableUrls: true,
           deliverableVideos: true,
@@ -600,6 +604,10 @@ export class CampaignRepository {
           workStatus: true,
           workNote: true,
           revisionRequestedAt: true,
+          revisionNotes: {
+            orderBy: { createdAt: 'desc' },
+            select: { note: true, createdAt: true },
+          },
           submittedAt: true,
           deliverableUrls: true,
           deliverableVideos: true,
@@ -669,10 +677,16 @@ export class CampaignRepository {
   }
 
   async requestRevision(appId: string, note: string) {
-    return prisma.application.update({
-      where: { id: appId },
-      data: { workStatus: WorkStatus.IN_PROGRESS, workNote: note, revisionRequestedAt: new Date() },
-    });
+    const [updated] = await prisma.$transaction([
+      prisma.application.update({
+        where: { id: appId },
+        data: { workStatus: WorkStatus.IN_PROGRESS, workNote: note, revisionRequestedAt: new Date() },
+      }),
+      prisma.revisionNote.create({
+        data: { applicationId: appId, note },
+      }),
+    ]);
+    return updated;
   }
 
   // Conditional append rather than a plain findUnique->mutate->update: two

@@ -205,6 +205,9 @@ export default function VerifyScreen() {
             <Text style={styles.heroSub}>
               {t('auth.verify.subtitle', { length: OTP_LENGTH, email: maskedContact })}
             </Text>
+            {channel === 'email' && (
+              <Text style={styles.heroSpamHint}>{t('auth.verify.spamHint')}</Text>
+            )}
           </View>
         </View>
 
@@ -286,15 +289,6 @@ export default function VerifyScreen() {
           <Text style={[styles.hint, { color: C.textSecondary }]}>
             {t('auth.verify.expiryHint')}
           </Text>
-
-          {channel === 'email' && (
-            <View style={[styles.spamNote, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 + '30' }]}>
-              <Ionicons name="mail-unread-outline" size={16} color={C.brinjal1} />
-              <Text style={[styles.spamNoteText, { color: C.brinjal1 }]}>
-                {t('auth.verify.spamHint')}
-              </Text>
-            </View>
-          )}
         </View>
         </MaxWidthContainer>
       </KeyboardAvoidingView>
@@ -315,6 +309,7 @@ const styles = StyleSheet.create({
   emailIconWrap: { width: 68, height: 68, borderRadius: RADIUS.full, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
   heroTitle: { fontSize: 20, color: '#fff', textAlign: 'center', fontFamily: F.bold },
   heroSub: { fontSize: 14, color: 'rgba(255,255,255,0.78)', textAlign: 'center', lineHeight: 22, fontFamily: F.regular },
+  heroSpamHint: { fontSize: 12, color: 'rgba(255,255,255,0.62)', textAlign: 'center', lineHeight: 17, fontFamily: F.regular },
   heroEmail: { color: '#fff', fontFamily: F.bold },
 
   card: { flex: 1, borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl, padding: 24, paddingTop: 36, alignItems: 'center' },
@@ -359,17 +354,6 @@ const styles = StyleSheet.create({
   resendLink: { fontSize: 14, fontFamily: F.bold },
 
   hint: { fontSize: 12, textAlign: 'center', opacity: 0.7, fontFamily: F.regular, marginBottom: 12 },
-  spamNote: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    alignSelf: 'stretch',
-    borderRadius: RADIUS.md,
-    borderWidth: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-  },
-  spamNoteText: { flex: 1, fontSize: 12.5, lineHeight: 18, fontFamily: F.medium },
 
   successContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 },
   successContent: { alignItems: 'center', gap: 16 },

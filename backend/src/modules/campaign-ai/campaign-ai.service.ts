@@ -4,14 +4,19 @@ import { env } from '../../config/env';
 import { logger } from '../../config/logger';
 import { CategoryRepository } from '../category/category.repository';
 import { PlatformRepository } from '../platform/platform.repository';
-import { aiCampaignDraftSchema, type AiCampaignDraft, type SuggestDescriptionInput } from './campaign-ai.schema';
+import {
+  aiCampaignDraftSchema, aiEventDraftSchema, BENEFIT_OPTIONS, BENEFIT_DESCRIPTIONS,
+  type AiCampaignDraft, type AiEventDraft, type SuggestDescriptionInput,
+} from './campaign-ai.schema';
 import dummyData from './campaign-ai.dummy.json';
 
 type DummyCampaignTemplate = AiCampaignDraft & { keywords: string[] };
+type DummyEventTemplate = AiEventDraft & { keywords: string[] };
 type DummyDescriptionTemplate = { keywords: string[]; text: string };
 
 const dummy = dummyData as unknown as {
   campaignTemplates: DummyCampaignTemplate[];
+  eventTemplates: DummyEventTemplate[];
   descriptionTemplates: DummyDescriptionTemplate[];
 };
 
@@ -29,6 +34,11 @@ function matchByKeywords<T extends { keywords: string[] }>(templates: T[], hayst
 function pickDummyDraft(prompt: string): AiCampaignDraft {
   const { keywords, ...draft } = matchByKeywords(dummy.campaignTemplates, prompt);
   return aiCampaignDraftSchema.parse(draft);
+}
+
+function pickDummyEventDraft(prompt: string): AiEventDraft {
+  const { keywords, ...draft } = matchByKeywords(dummy.eventTemplates, prompt);
+  return aiEventDraftSchema.parse(draft);
 }
 
 function pickDummyDescription(input: SuggestDescriptionInput): string {
@@ -80,6 +90,34 @@ Respond with a JSON object with EXACTLY these keys:
 - approvalRequirements: string, one sentence about whether/how the brand wants to review content before it's posted
 - location: string or null, a city/area if inferable, otherwise null
 - needsInput: string[] (0-2), keys from this exact list you were NOT confident about and think the brand should double check: ["location","budgetMin","budgetMax","creatorsNeeded","deadline","platform","category"]. Only include a key here if you genuinely had to guess — always still fill in your best-guess value for it regardless.
+
+${buildLanguageInstruction(language)}
+
+Always fill in every field with your best sensible guess, even for a very short prompt — never leave a field empty or refuse to answer. Respond with ONLY the JSON object.`;
+}
+
+function buildEventSystemPrompt(categoryNames: string[], platformNames: string[], language: string): string {
+  return `You are an event-brief generator for a creator-marketplace app in Nepal, connecting brands with content creators for FREE (non-monetary) in-person events. Creators attend and post content in exchange for perks — not cash.
+
+Given a brand's short description of the event they want to host, generate a complete event brief as a single JSON object — no prose, no markdown code fences, just the raw JSON object.
+
+Existing categories in the app (prefer one of these for "category" if it fits; otherwise suggest the closest real-world category name):
+${categoryNames.map((c) => `- ${c}`).join('\n')}
+
+Known platforms: ${platformNames.join(', ')} (prefer one of these for "platform").
+
+Respond with a JSON object with EXACTLY these keys:
+- title: string, a punchy event title
+- description: string, 2-4 sentences describing the event and what creators will experience
+- category: string, best-fit category
+- secondaryCategories: string[] (0-3), other categories that could also fit
+- platform: string, the single best platform for creators to post about this event
+- secondaryPlatforms: string[] (0-3), other platforms worth considering
+- benefits: string[] (1-4 items) — what the brand is offering creators in return for attending, EXACTLY from this list only:
+${BENEFIT_OPTIONS.map((b) => `  - "${b}": ${BENEFIT_DESCRIPTIONS[b]}`).join('\n')}
+- capacity: number, how many creators the venue can realistically host (typically 5-50)
+- location: string or null, a city/area if inferable, otherwise null
+- needsInput: string[] (0-2), keys from this exact list you were NOT confident about and think the brand should double check: ["location","capacity","platform","category"]. Only include a key here if you genuinely had to guess — always still fill in your best-guess value for it regardless.
 
 ${buildLanguageInstruction(language)}
 
@@ -141,8 +179,8 @@ export class CampaignAiService {
     let draft: AiCampaignDraft;
     try {
       if (!env.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY not configured');
-      const raw = await this.callModel(prompt, categoryNames, platformNames, language);
-      draft = this.parseAndValidate(raw);
+      const raw = await this.callModel(buildSystemPrompt(categoryNames, platformNames, language), prompt);
+      draft = this.parseAndValidate(raw, aiCampaignDraftSchema, 'AI campaign response');
     } catch (err) {
       logger.warn({ err: err instanceof Error ? err.message : err }, 'OpenAI unavailable — falling back to dummy campaign draft');
       draft = pickDummyDraft(prompt);
@@ -150,7 +188,27 @@ export class CampaignAiService {
     return this.matchToRealTaxonomy(draft, categoryNames, platformNames);
   }
 
-  private async callModel(prompt: string, categoryNames: string[], platformNames: string[], language: string): Promise<string> {
+  async generateEventDraft(prompt: string, language: string = 'en'): Promise<AiEventDraft & { aiSuggestedCategories: string[]; aiSuggestedPlatforms: string[]; platforms: string[] }> {
+    const [realCategories, realPlatforms] = await Promise.all([
+      this.categoryRepo.findManyPublic(CategoryScope.BUSINESS),
+      this.platformRepo.findManyPublic(),
+    ]);
+    const categoryNames = realCategories.map((c) => c.name);
+    const platformNames = realPlatforms.map((p) => p.name);
+
+    let draft: AiEventDraft;
+    try {
+      if (!env.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY not configured');
+      const raw = await this.callModel(buildEventSystemPrompt(categoryNames, platformNames, language), prompt);
+      draft = this.parseAndValidate(raw, aiEventDraftSchema, 'AI event response');
+    } catch (err) {
+      logger.warn({ err: err instanceof Error ? err.message : err }, 'OpenAI unavailable — falling back to dummy event draft');
+      draft = pickDummyEventDraft(prompt);
+    }
+    return this.matchToRealTaxonomy(draft, categoryNames, platformNames);
+  }
+
+  private async callModel(systemPrompt: string, prompt: string): Promise<string> {
     const client = new OpenAI({ apiKey: env.OPENAI_API_KEY, timeout: REQUEST_TIMEOUT_MS });
     const response = await client.chat.completions.create({
       model: MODEL,
@@ -159,7 +217,7 @@ export class CampaignAiService {
       verbosity: 'low',
       response_format: { type: 'json_object' },
       messages: [
-        { role: 'system', content: buildSystemPrompt(categoryNames, platformNames, language) },
+        { role: 'system', content: systemPrompt },
         { role: 'user', content: prompt },
       ],
     });
@@ -170,33 +228,33 @@ export class CampaignAiService {
     return text;
   }
 
-  private parseAndValidate(raw: string): AiCampaignDraft {
+  private parseAndValidate<T>(raw: string, schema: { safeParse: (v: unknown) => { success: boolean; data?: T; error?: { issues: unknown } } }, label: string): T {
     const stripped = raw.trim().replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim();
     let parsed: unknown;
     try {
       parsed = JSON.parse(stripped);
     } catch (err) {
-      logger.debug({ err, raw }, 'AI campaign response was not valid JSON');
-      throw new Error('AI campaign response was not valid JSON');
+      logger.debug({ err, raw }, `${label} was not valid JSON`);
+      throw new Error(`${label} was not valid JSON`);
     }
     // The model is asked for 0-2 needsInput entries but doesn't always obey that cap —
     // clamp instead of rejecting an otherwise well-formed draft over a soft hint field.
     if (parsed && typeof parsed === 'object' && Array.isArray((parsed as Record<string, unknown>).needsInput)) {
       (parsed as Record<string, unknown>).needsInput = ((parsed as Record<string, unknown>).needsInput as unknown[]).slice(0, 2);
     }
-    const result = aiCampaignDraftSchema.safeParse(parsed);
-    if (!result.success) {
-      logger.debug({ issues: result.error.issues, raw }, 'AI campaign response failed schema validation');
-      throw new Error('AI campaign response failed schema validation');
+    const result = schema.safeParse(parsed);
+    if (!result.success || !result.data) {
+      logger.debug({ issues: result.error?.issues, raw }, `${label} failed schema validation`);
+      throw new Error(`${label} failed schema validation`);
     }
     return result.data;
   }
 
-  private matchToRealTaxonomy(
-    draft: AiCampaignDraft,
+  private matchToRealTaxonomy<T extends { category: string; secondaryCategories: string[]; platform: string; secondaryPlatforms: string[] }>(
+    draft: T,
     realCategories: string[],
     realPlatforms: string[],
-  ): AiCampaignDraft & { aiSuggestedCategories: string[]; aiSuggestedPlatforms: string[]; platforms: string[] } {
+  ): T & { aiSuggestedCategories: string[]; aiSuggestedPlatforms: string[]; platforms: string[] } {
     const matchedCategory = fuzzyMatch(draft.category, realCategories) ?? realCategories[0] ?? draft.category;
     if (matchedCategory !== draft.category && !realCategories.some((c) => c === draft.category)) {
       logger.warn({ guess: draft.category, matched: matchedCategory }, 'AI category guess did not match real taxonomy, falling back');

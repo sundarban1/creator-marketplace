@@ -1567,7 +1567,6 @@ export default function BusinessSettingsScreen() {
   function renderNotifications() {
     return (
       <>
-        <SectionHeader title={t('businessSettings.notificationsSection')} />
         <Card>
           <SwitchRow
             faIcon="bell" faIconColor="#D97706"

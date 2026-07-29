@@ -104,14 +104,10 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
   const accentColor = cfg.color;
 
   return (
-    <Pressable
-      style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}
-      onPress={() => router.push({ pathname: '/campaign-detail', params: { campaignId: proposal.campaignId } } as never)}>
-
-      {/* Left accent strip */}
-      <View style={[styles.leftStrip, { backgroundColor: accentColor }]} />
-
-      <View style={styles.cardBody}>
+    <View style={[styles.cardWrap, { backgroundColor: C.surface }]}>
+      <Pressable
+        style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}
+        onPress={() => router.push({ pathname: '/campaign-detail', params: { campaignId: proposal.campaignId } } as never)}>
 
         {/* ── Top: brand avatar + names + status pill ── */}
         <View style={styles.topRow}>
@@ -150,19 +146,17 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
           </View>
         )}
 
-        {/* ── Meta row ── */}
-        <View style={styles.metaRow}>
-          <View style={[styles.metaChip, { backgroundColor: C.background }]}>
-            <Ionicons name={isFree ? 'gift-outline' : 'cash-outline'} size={12} color={accentColor} />
-            {isFree ? (
-              <Text style={[styles.metaChipTxt, { color: accentColor }]}>{t('proposal.creator.freeEventTag')}</Text>
-            ) : (
-              <Text style={[styles.metaChipTxt, { color: accentColor }]}>{proposal.proposedRate}</Text>
-            )}
+        {/* ── Details: rate/free + submitted-time ── */}
+        <View style={[styles.detailsSection, { borderTopColor: C.border, borderBottomColor: C.border }]}>
+          <View style={styles.detailRow}>
+            <Ionicons name={isFree ? 'gift-outline' : 'cash-outline'} size={13} color={accentColor} />
+            <Text style={[styles.detailText, { color: accentColor }]}>
+              {isFree ? t('proposal.creator.freeEventTag') : proposal.proposedRate}
+            </Text>
           </View>
-          <View style={[styles.metaChip, { backgroundColor: C.background }]}>
-            <Ionicons name="calendar-outline" size={12} color={C.textSecondary} />
-            <Text style={[styles.metaChipTxt, { color: C.textSecondary }]}>{timeAgo(proposal.submittedAt, t)}</Text>
+          <View style={styles.detailRow}>
+            <Ionicons name="calendar-outline" size={13} color={C.textSecondary} />
+            <Text style={[styles.detailText, { color: C.textSecondary }]}>{timeAgo(proposal.submittedAt, t)}</Text>
           </View>
         </View>
 
@@ -206,17 +200,31 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
           )
         )}
 
-        {/* ── Pending / rejected footer ── */}
-        {proposal.status !== 'accepted' && (
-          <View style={[styles.footerRow, { borderTopColor: C.border }]}>
-            <Text style={[styles.footerTxt, { color: cfg.color }]}>
-              {proposal.status === 'pending' ? 'Awaiting business response' : 'Application was not accepted'}
-            </Text>
-            <Ionicons name="chevron-forward" size={13} color={C.textSecondary} />
+        {/* ── Pending: awaiting-response banner, styled like the accepted "View My Work" CTA ── */}
+        {proposal.status === 'pending' && (
+          <View style={[styles.trackBtn, { backgroundColor: cfg.color }]}>
+            <View style={styles.trackBtnIcon}>
+              <Ionicons name={cfg.icon} size={17} color="#fff" />
+            </View>
+            <View style={styles.trackBtnText}>
+              <Text style={styles.trackBtnLabel}>{t('proposal.creator.awaitingResponseLabel')}</Text>
+              <Text style={styles.trackBtnSub}>{t('proposal.creator.awaitingResponseSub')}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={15} color="rgba(255,255,255,0.6)" />
           </View>
         )}
-      </View>
-    </Pressable>
+
+        {/* ── Rejected footer ── */}
+        {proposal.status === 'rejected' && (
+          <View style={[styles.rejectedBanner, { borderColor: `${accentColor}40` }]}>
+            <View style={[styles.rejectedIcon, { backgroundColor: `${accentColor}18` }]}>
+              <Ionicons name="close-circle" size={16} color={accentColor} />
+            </View>
+            <Text style={[styles.rejectedText, { color: accentColor }]}>Application was not accepted</Text>
+          </View>
+        )}
+      </Pressable>
+    </View>
   );
 }
 
@@ -386,9 +394,8 @@ const styles = StyleSheet.create({
   footerLoading: { paddingVertical: 20 },
 
   // Card
-  card:        { borderRadius: RADIUS.md, flexDirection: 'row', borderWidth: 1, ...SHADOW.card, overflow: 'hidden' },
-  leftStrip:   { width: 4 },
-  cardBody:    { flex: 1, paddingHorizontal: 14, paddingTop: 14, paddingBottom: 12, gap: 10 },
+  cardWrap: { borderRadius: RADIUS.lg, ...SHADOW.raised },
+  card:     { borderRadius: RADIUS.lg, borderWidth: 1, overflow: 'hidden', padding: 16, gap: 10 },
 
   // Top row
   topRow:       { flexDirection: 'row', alignItems: 'center', gap: 10 },
@@ -397,7 +404,7 @@ const styles = StyleSheet.create({
   brandBlock:   { flex: 1, gap: 2 },
   brandName:    { fontSize: 14, fontFamily: F.bold },
   campaignTitle:{ fontSize: 12, fontFamily: F.regular },
-  statusPill:   { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: RADIUS.full, paddingHorizontal: 8, paddingVertical: 4, flexShrink: 0 },
+  statusPill:   { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingVertical: 4, flexShrink: 0 },
   statusText:   { fontSize: 11, fontFamily: F.bold },
 
   // Cover letter
@@ -405,10 +412,10 @@ const styles = StyleSheet.create({
   coverText: { fontSize: 12, fontFamily: F.regular, lineHeight: 17 },
   seeMore:   { fontSize: 12, fontFamily: F.semibold, marginTop: 3 },
 
-  // Meta chips
-  metaRow:      { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
-  metaChip:     { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: RADIUS.sm, paddingHorizontal: 9, paddingVertical: 5 },
-  metaChipTxt:  { fontSize: 12, fontFamily: F.semibold },
+  // Details section
+  detailsSection: { borderTopWidth: 1, borderBottomWidth: 1, paddingVertical: 10, gap: 8 },
+  detailRow:      { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  detailText:     { fontSize: 12, fontFamily: F.semibold },
 
   // Track button
   trackBtn:     { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: RADIUS.md, paddingVertical: 11, paddingHorizontal: 12 },
@@ -423,7 +430,8 @@ const styles = StyleSheet.create({
   invitedTitle: { fontSize: 13, fontFamily: F.bold },
   invitedSub:   { fontSize: 11, fontFamily: F.regular, marginTop: 1 },
 
-  // Footer row
-  footerRow:  { flexDirection: 'row', alignItems: 'center', gap: 8, paddingTop: 10, borderTopWidth: StyleSheet.hairlineWidth },
-  footerTxt:  { flex: 1, fontSize: 12, fontFamily: F.semibold },
+  // Rejected banner
+  rejectedBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderRadius: RADIUS.md, paddingHorizontal: 12, paddingVertical: 11 },
+  rejectedIcon:   { width: 32, height: 32, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
+  rejectedText:   { flex: 1, fontSize: 12, fontFamily: F.semibold },
 });

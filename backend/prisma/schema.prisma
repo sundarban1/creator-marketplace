@@ -396,12 +396,29 @@ model Application {
   creator             CreatorProfile       @relation(fields: [creatorId], references: [id], onDelete: Cascade)
   reviews             Review[]
   paymentTransactions PaymentTransaction[]
+  revisionNotes       RevisionNote[]
 
   @@unique([campaignId, creatorId])
   @@index([creatorId])
   @@index([creatorId, createdAt(sort: Desc)])
   @@index([campaignId, status])
   @@map("applications")
+}
+
+// Append-only history of every revision request a business has sent for an
+// application — Application.workNote/revisionRequestedAt only ever hold the
+// latest value (and workNote is dual-purpose, also written by submitWork()
+// for the creator's own submission note), so this is the source of truth for
+// showing the creator/business the full back-and-forth, newest first.
+model RevisionNote {
+  id            String      @id @default(cuid())
+  applicationId String
+  note          String
+  createdAt     DateTime    @default(now())
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId, createdAt(sort: Desc)])
+  @@map("revision_notes")
 }
 
 // One row per real money movement: a business escrowing funds for an accepted

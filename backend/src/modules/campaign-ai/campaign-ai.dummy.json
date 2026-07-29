@@ -356,6 +356,150 @@
       "goal": "Brand Awareness"
     }
   ],
+  "eventTemplates": [
+    {
+      "keywords": [
+        "coffee",
+        "cafe",
+        "restaurant",
+        "food",
+        "menu",
+        "dish",
+        "chef",
+        "dining",
+        "eatery"
+      ],
+      "title": "Exclusive Food Creator Night – Dine, Discover & Create",
+      "description": "We're inviting food creators to an exclusive creator night at our restaurant. Experience our signature dishes, meet the chef, and create authentic content about your dining journey. Enjoy a curated menu, behind-the-scenes kitchen access, and a memorable evening with fellow creators.",
+      "category": "Food & Beverage",
+      "secondaryCategories": [
+        "Lifestyle"
+      ],
+      "platform": "Instagram",
+      "secondaryPlatforms": [
+        "TikTok"
+      ],
+      "benefits": [
+        "Freebies & PR Packages",
+        "Community & Culture"
+      ],
+      "capacity": 20,
+      "location": null,
+      "needsInput": [
+        "location"
+      ]
+    },
+    {
+      "keywords": [
+        "clothing",
+        "fashion",
+        "apparel",
+        "wear",
+        "outfit",
+        "boutique",
+        "dress"
+      ],
+      "title": "Fashion Creator Showcase – Style Night",
+      "description": "We're hosting an exclusive fashion creator event where you'll get first access to our latest collection, professional styling support, and a curated backdrop for content creation. A perfect opportunity to create stunning fashion content while connecting with like-minded creators.",
+      "category": "Fashion",
+      "secondaryCategories": [
+        "Lifestyle"
+      ],
+      "platform": "Instagram",
+      "secondaryPlatforms": [
+        "TikTok"
+      ],
+      "benefits": [
+        "Brand Networking",
+        "Freebies & PR Packages"
+      ],
+      "capacity": 15,
+      "location": null,
+      "needsInput": [
+        "location"
+      ]
+    },
+    {
+      "keywords": [
+        "gym",
+        "fitness",
+        "workout",
+        "training",
+        "yoga",
+        "wellness",
+        "health"
+      ],
+      "title": "Fitness Creator Invite – Train, Create & Inspire",
+      "description": "We're inviting fitness creators for a complimentary workout session, facility tour, and content creation day. Experience our equipment, classes, and community — then share your authentic fitness journey with your audience.",
+      "category": "Health & Fitness",
+      "secondaryCategories": [
+        "Lifestyle"
+      ],
+      "platform": "Instagram",
+      "secondaryPlatforms": [
+        "YouTube"
+      ],
+      "benefits": [
+        "Skill Workshops",
+        "Community & Culture"
+      ],
+      "capacity": 15,
+      "location": null,
+      "needsInput": [
+        "location"
+      ]
+    },
+    {
+      "keywords": [
+        "skincare",
+        "beauty",
+        "makeup",
+        "cosmetic",
+        "skin",
+        "glow"
+      ],
+      "title": "Beauty Creator Event – Glow, Create & Connect",
+      "description": "Join our exclusive beauty creator event for complimentary treatments, product demonstrations, and content creation opportunities. Experience our services firsthand and create authentic beauty content that resonates with your audience.",
+      "category": "Beauty",
+      "secondaryCategories": [
+        "Lifestyle"
+      ],
+      "platform": "Instagram",
+      "secondaryPlatforms": [
+        "TikTok"
+      ],
+      "benefits": [
+        "Freebies & PR Packages",
+        "Brand Networking"
+      ],
+      "capacity": 15,
+      "location": null,
+      "needsInput": [
+        "location"
+      ]
+    },
+    {
+      "keywords": [],
+      "title": "Exclusive Creator Event",
+      "description": "We're inviting creators to an exclusive event to experience our brand firsthand and create authentic content. Enjoy complimentary access, connect with our team, and share your genuine experience with your audience.",
+      "category": "Lifestyle",
+      "secondaryCategories": [],
+      "platform": "Instagram",
+      "secondaryPlatforms": [
+        "TikTok"
+      ],
+      "benefits": [
+        "Community & Culture",
+        "Brand Networking",
+        "Freebies & PR Packages"
+      ],
+      "capacity": 20,
+      "location": null,
+      "needsInput": [
+        "location"
+      ]
+    }
+  ],
   "descriptionTemplates": [
     {
       "keywords": [

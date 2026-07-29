@@ -91,6 +91,7 @@ export interface ApplicationDto {
   workStatus: string;
   workNote: string | null;
   revisionRequestedAt: string | null;
+  revisionNotes: { note: string; createdAt: string }[];
   submittedAt: string | null;
   deliverableUrls: string | null;
   deliverableVideos: DeliverableVideo[];
@@ -237,6 +238,10 @@ type RawApplication = {
   workStatus: string;
   workNote: string | null;
   revisionRequestedAt: Date | null;
+  // Only present on call sites that explicitly select the relation (the
+  // applications-list endpoints) — other call sites (returning a plain
+  // `prisma.application.update()` result) omit it, defaulted to [] below.
+  revisionNotes?: { note: string; createdAt: Date }[];
   submittedAt: Date | null;
   deliverableUrls: string | null;
   deliverableVideos?: Prisma.JsonValue;
@@ -287,6 +292,7 @@ export function toApplicationDto(a: RawApplication): ApplicationDto {
     workStatus:      a.workStatus,
     workNote:        a.workNote,
     revisionRequestedAt: a.revisionRequestedAt ? a.revisionRequestedAt.toISOString() : null,
+    revisionNotes:   (a.revisionNotes ?? []).map((r) => ({ note: r.note, createdAt: r.createdAt.toISOString() })),
     submittedAt:     a.submittedAt ? a.submittedAt.toISOString() : null,
     deliverableUrls: a.deliverableUrls,
     deliverableVideos: z.array(deliverableVideoSchema).catch([]).parse(a.deliverableVideos ?? []),

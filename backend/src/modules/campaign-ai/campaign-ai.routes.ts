@@ -34,6 +34,31 @@ router.post('/generate', authenticate, authorize('BUSINESS'), validate(generateC
 
 /**
  * @swagger
+ * /api/campaigns/ai/generate-event:
+ *   post:
+ *     tags: [Campaign]
+ *     summary: Generate a complete free/open event draft from a short prompt (BUSINESS only)
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [prompt]
+ *             properties:
+ *               prompt:
+ *                 type: string
+ *                 example: Inviting food creators to a tasting night at our new restaurant
+ *     responses:
+ *       200:
+ *         description: AI-generated event draft
+ */
+router.post('/generate-event', authenticate, authorize('BUSINESS'), validate(generateCampaignSchema), ctrl.generateEvent.bind(ctrl));
+
+/**
+ * @swagger
  * /api/campaigns/ai/suggest-description:
  *   post:
  *     tags: [Campaign]

@@ -798,6 +798,8 @@ const en = {
       emptyAcceptedSub: 'Businesses haven\'t accepted any of your proposals yet. Keep applying!',
       emptyRejectedTitle: 'No rejected proposals',
       emptyRejectedSub: 'Great! None of your proposals have been rejected.',
+      awaitingResponseLabel: 'Awaiting Response',
+      awaitingResponseSub: 'Business is reviewing your proposal',
       trackNoneLabel: 'Track Project',
       trackNoneSub: 'Waiting to start',
       trackWaitingPaymentLabel: 'Waiting for Payment',
@@ -1280,7 +1282,6 @@ const en = {
 
   // ── Profile ───────────────────────────────────────────────────
   profile: {
-    myProfile: 'My Profile',
     editProfile: 'Edit Profile',
     editBusinessBtn: 'Edit Profile',
     editBusinessSub: 'Update name, description, website & categories',
@@ -1708,7 +1709,6 @@ const en = {
     sectionNotifications: 'Notifications',
     sectionSupport: 'Support',
     sectionLegal: 'Legal',
-    notificationsSection:      'Notifications',
     pushNotificationsLabel:    'Push Notifications',
     pushNotificationsSub:      'Get notified on this device',
     emailNotificationsLabel:   'Email Notifications',
@@ -1915,7 +1915,7 @@ const en = {
   businessSettings: {
     sectionProfile:       'Business Profile',
     sectionAccount:       'Security',
-    sectionNotifications: 'Notification Settings',
+    sectionNotifications: 'Notifications',
     sectionPayment:       'Payment Settings',
     sectionCampaigns:     'Event Preferences',
     sectionSaved:         'Saved Creators',
@@ -2006,7 +2006,6 @@ const en = {
     deleteConfirmBtn:      'Delete Account',
     deactivateFailed:      'Failed to deactivate. Please try again.',
     deleteFailed:          'Failed to delete account. Please try again.',
-    notificationsSection:      'Notifications',
     pushNotificationsLabel:    'Push Notifications',
     pushNotificationsSub:      'Get notified on this device',
     emailNotificationsLabel:   'Email Notifications',
@@ -2302,7 +2301,7 @@ const en = {
     secDescOpen:          '📝 Event Description',
     secDescOpenSub:       'Edit or personalise the auto-generated description.',
     secBenefitsTitle:     '🎁 Creator Benefits',
-    secBenefitsSub:       'Auto-selected based on your category. Tap to toggle.',
+    secBenefitsSub:       "What can you offer? AI-suggested from your event — tap to toggle.",
     secPlatformOptTitle:  '📱 Platform (Optional)',
     secPlatformOptSub:    'Where should creators post event content?',
     secEventDateTitle:    '📅 Event Date',

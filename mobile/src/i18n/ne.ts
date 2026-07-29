@@ -792,6 +792,8 @@ const ne = {
       emptyAcceptedSub: 'व्यवसायले अझै कुनै प्रपोजल स्वीकार गरेको छैन। एप्लाई गरिरहनुहोस्!',
       emptyRejectedTitle: 'कुनै रिजेक्ट प्रपोजल छैन',
       emptyRejectedSub: 'राम्रो! तपाईंको कुनै प्रपोजल रिजेक्ट भएको छैन।',
+      awaitingResponseLabel: 'प्रतिक्रियाको प्रतीक्षामा',
+      awaitingResponseSub: 'व्यवसायले तपाईंको प्रपोजल समीक्षा गर्दैछ',
       trackNoneLabel: 'प्रोजेक्ट हेर्नुहोस्',
       trackNoneSub: 'सुरु हुन बाँकी',
       trackWaitingPaymentLabel: 'भुक्तानीको पर्खाइमा',
@@ -1274,7 +1276,6 @@ const ne = {
 
   // ── Profile ───────────────────────────────────────────────────
   profile: {
-    myProfile: 'मेरो प्रोफाइल',
     editProfile: 'प्रोफाइल एडिट गर्नुहोस्',
     editBusinessBtn: 'प्रोफाइल एडिट गर्नुहोस्',
     editBusinessSub: 'नाम, विवरण, वेबसाइट र क्याटेगोरी अपडेट गर्नुहोस्',
@@ -1701,7 +1702,6 @@ const ne = {
     sectionNotifications: 'नोटिफिकेसन',
     sectionSupport: 'सपोर्ट',
     sectionLegal: 'कानूनी',
-    notificationsSection:      'नोटिफिकेसन',
     pushNotificationsLabel:    'पुश नोटिफिकेसन',
     pushNotificationsSub:      'यो डिभाइसमा नोटिफिकेसन पाउनुहोस्',
     emailNotificationsLabel:   'इमेल नोटिफिकेसन',
@@ -1908,7 +1908,7 @@ const ne = {
   businessSettings: {
     sectionProfile:       'बिजनेस प्रोफाइल',
     sectionAccount:       'सुरक्षा',
-    sectionNotifications: 'नोटिफिकेसन सेटिङ',
+    sectionNotifications: 'नोटिफिकेसन',
     sectionPayment:       'पेमेन्ट सेटिङ',
     sectionCampaigns:     'इभेन्ट प्राथमिकताहरू',
     sectionSaved:         'सेभ गरिएका क्रिएटरहरू',
@@ -2002,7 +2002,6 @@ const ne = {
     deleteConfirmBtn:      'खाता डिलिट गर्नुहोस्',
     deactivateFailed:      'निष्क्रिय हुन सकेन। फेरि प्रयास गर्नुहोस्।',
     deleteFailed:          'खाता डिलिट हुन सकेन। फेरि प्रयास गर्नुहोस्।',
-    notificationsSection:      'नोटिफिकेसन',
     pushNotificationsLabel:    'पुश नोटिफिकेसन',
     pushNotificationsSub:      'यो डिभाइसमा नोटिफिकेसन पाउनुहोस्',
     emailNotificationsLabel:   'इमेल नोटिफिकेसन',
@@ -2375,6 +2374,7 @@ const ne = {
     secDescOpen: '📝 इभेन्टको विवरण',
     secDescOpenSub: 'स्वतः बनेको विवरण एडिट वा व्यक्तिगत बनाउनुहोस्।',
     secBenefitsTitle: '🎁 क्रिएटर फाइदाहरू',
+    secBenefitsSub: 'तपाईं के दिन सक्नुहुन्छ? तपाईंको इभेन्टबाट AI-सुझाव — बदल्न थिच्नुहोस्।',
     secPlatformOptTitle: '📱 प्लेटफर्म (ऐच्छिक)',
     secPlatformOptSub: 'क्रिएटरहरूले इभेन्ट कन्टेन्ट कहाँ पोस्ट गर्नुपर्छ?',
     secEventDateTitle: '📅 इभेन्टको मिति',

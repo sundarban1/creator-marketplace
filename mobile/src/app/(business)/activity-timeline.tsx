@@ -53,6 +53,7 @@ type AppInfo = {
   creatorLocation: string | null;
   workNote: string | null;
   revisionRequestedAt: string | null;
+  revisionNotes: { note: string; createdAt: string }[];
 };
 
 // ─── Progress steps ────────────────────────────────────────────────────────────
@@ -555,6 +556,7 @@ export default function CampaignWorkspaceScreen() {
             creatorLocation:  null,
             workNote:         myApp.workNote ?? null,
             revisionRequestedAt: myApp.revisionRequestedAt ?? null,
+            revisionNotes:    myApp.revisionNotes ?? [],
           });
           // Sync paymentStatus from API into campaign
           setCampaign(prev => prev ? {
@@ -588,6 +590,7 @@ export default function CampaignWorkspaceScreen() {
             creatorLocation:  accepted.creator.location,
             workNote:         accepted.workNote ?? null,
             revisionRequestedAt: accepted.revisionRequestedAt ?? null,
+            revisionNotes:    accepted.revisionNotes ?? [],
           });
         }
       }
@@ -601,7 +604,7 @@ export default function CampaignWorkspaceScreen() {
   // feedback modal once the note has loaded. Guarded to fire only once per
   // mount so it doesn't reopen on every useFocusEffect refetch.
   useEffect(() => {
-    if (!autoOpenedFeedback.current && openFeedback === 'true' && app?.workNote) {
+    if (!autoOpenedFeedback.current && openFeedback === 'true' && app?.revisionNotes && app.revisionNotes.length > 0) {
       autoOpenedFeedback.current = true;
       setShowFeedback(true);
     }
@@ -864,7 +867,7 @@ export default function CampaignWorkspaceScreen() {
         <View style={[s.card, { backgroundColor: C.surface, paddingHorizontal: 0, paddingBottom: 16 }]}>
           <View style={[s.secHeader, { marginHorizontal: 16, marginBottom: 14 }]}>
             <Text style={[s.secTitle, { color: C.text }]}>{t('activityTimeline.campaignProgress')}</Text>
-            {!!app?.workNote && (
+            {!!app?.revisionNotes && app.revisionNotes.length > 0 && (
               <Pressable onPress={() => setShowFeedback(true)} hitSlop={6}>
                 <Text style={[s.feedbackLink, { color: '#D97706' }]} numberOfLines={1}>
                   {t('activityTimeline.viewRevisionFeedback')}
@@ -1283,17 +1286,19 @@ export default function CampaignWorkspaceScreen() {
         </Pressable>
       </Sheet>
 
-      {/* ── Feedback Modal — the latest revision-request note, either side ── */}
+      {/* ── Feedback Modal — full revision-request history, newest first, either side ── */}
       <Sheet
         visible={showFeedback}
         onClose={() => setShowFeedback(false)}
         title={t('activityTimeline.revisionFeedback')}
       >
-        <View style={[fb.card, { backgroundColor: '#FFF7ED', borderColor: '#FED7AA' }]}>
-          <Text style={[fb.note, { color: '#78350F' }]}>{app?.workNote}</Text>
-          {!!app?.revisionRequestedAt && (
-            <Text style={[fb.time, { color: '#B45309' }]}>{fmtNPT(app.revisionRequestedAt)}</Text>
-          )}
+        <View style={fb.list}>
+          {(app?.revisionNotes ?? []).map((r, i) => (
+            <View key={i} style={[fb.card, { backgroundColor: '#FFF7ED', borderColor: '#FED7AA' }]}>
+              <Text style={[fb.note, { color: '#78350F' }]}>{r.note}</Text>
+              <Text style={[fb.time, { color: '#B45309' }]}>{fmtNPT(r.createdAt)}</Text>
+            </View>
+          ))}
         </View>
       </Sheet>
 
@@ -1465,6 +1470,7 @@ const ac = StyleSheet.create({
 });
 
 const fb = StyleSheet.create({
+  list: { gap: 12 },
   card: { borderRadius: RADIUS.lg, borderWidth: 1, padding: 16, gap: 8 },
   note: { fontSize: 14, fontFamily: F.regular, lineHeight: 21 },
   time: { fontSize: 11, fontFamily: F.medium },

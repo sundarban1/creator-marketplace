@@ -163,6 +163,8 @@ type EditForm = {
 
 type EditErrors = Partial<Record<keyof EditForm, string>>;
 
+// Kept in sync with BENEFITS in create-campaign.tsx / BENEFIT_OPTIONS in
+// backend/campaign-ai.schema.ts — AI-generated event drafts only ever return these.
 const EVENT_BENEFITS = [
   'Free food & drinks',
   'Free product / service',
@@ -170,6 +172,10 @@ const EVENT_BENEFITS = [
   'Gift hampers',
   'Networking opportunities',
   'Future collaboration',
+  'Skill Workshops',
+  'Brand Networking',
+  'Freebies & PR Packages',
+  'Community & Culture',
 ];
 
 // ─── Screen ───────────────────────────────────────────────────────────────────

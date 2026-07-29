@@ -38,6 +38,19 @@ export interface AiCampaignDraft {
   aiSuggestedPlatforms: string[];
 }
 
+export interface AiEventDraft {
+  title: string;
+  description: string;
+  category: string;
+  platforms: string[];
+  benefits: string[];
+  capacity: number;
+  location: string | null;
+  needsInput: string[];
+  aiSuggestedCategories: string[];
+  aiSuggestedPlatforms: string[];
+}
+
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
 const PLATFORM_ICONS: Record<string, string> = {
@@ -281,6 +294,11 @@ export const campaignService = {
     return res.data;
   },
 
+  async generateEventWithAi(prompt: string): Promise<AiEventDraft> {
+    const res = await request<AiEventDraft>('POST', '/api/campaigns/ai/generate-event', { prompt }, undefined, 50000);
+    return res.data;
+  },
+
   async suggestDescription(input: {
     title?:        string;
     category?:     string;
@@ -490,6 +508,7 @@ export const campaignService = {
     creator: { id: string; userId: string; fullName: string; avatarUrl: string | null; location: string | null };
     workNote:        string | null;
     revisionRequestedAt: string | null;
+    revisionNotes:   { note: string; createdAt: string }[];
   }>> {
     const res = await request<Array<{
       id: string; status: string; proposedRate: number; coverLetter: string; createdAt: string;
@@ -498,6 +517,7 @@ export const campaignService = {
       paymentStatus?: string; paidAt?: string | null;
       creator: { id: string; userId: string; fullName: string; avatarUrl: string | null; location: string | null };
       workNote?: string | null; revisionRequestedAt?: string | null;
+      revisionNotes?: { note: string; createdAt: string }[];
     }>>('GET', `/api/campaigns/${campaignId}/applications`);
     return res.data.map((a) => ({
       id:              a.id,
@@ -515,6 +535,7 @@ export const campaignService = {
       creator:         a.creator,
       workNote:        a.workNote ?? null,
       revisionRequestedAt: a.revisionRequestedAt ?? null,
+      revisionNotes:   a.revisionNotes ?? [],
     }));
   },
 
@@ -543,6 +564,7 @@ export const campaignService = {
       deliverableVideos: DeliverableVideo[];
       workNote:         string | null;
       revisionRequestedAt: string | null;
+      revisionNotes:    { note: string; createdAt: string }[];
     }>;
     total: number;
   }> {
@@ -559,6 +581,7 @@ export const campaignService = {
       paidAt?:         string | null;
       workNote?:       string | null;
       revisionRequestedAt?: string | null;
+      revisionNotes?:  { note: string; createdAt: string }[];
       campaign:     {
         id: string; title: string; campaignType?: string;
         paymentStatus?: string; paidAt?: string | null; featureImageUrl?: string | null;
@@ -591,6 +614,7 @@ export const campaignService = {
         deliverableVideos: a.deliverableVideos ?? [],
         workNote:        a.workNote ?? null,
         revisionRequestedAt: a.revisionRequestedAt ?? null,
+        revisionNotes:   a.revisionNotes ?? [],
       })),
       total: res.pagination?.total ?? res.data.length,
     };

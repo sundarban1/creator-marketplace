@@ -81,6 +81,19 @@ const GENERIC_AI_TEMPLATE = {
   approvalRequirements: 'Brand will review draft content before it’s posted',
 };
 
+// Used when generateEventWithAi() throws outright (network down, request timeout,
+// backend error unrelated to the AI call itself) — the backend's own dummy-template
+// fallback already covers OpenAI-specific failures. Mirrors GENERIC_AI_TEMPLATE above,
+// but for OPEN_EVENT drafts (no budget/deliverables, has benefits/capacity instead).
+const GENERIC_FREE_EVENT_TEMPLATE = {
+  title: 'Exclusive Creator Event',
+  description: "We're inviting creators to an exclusive event to experience our brand firsthand and create authentic content. Enjoy complimentary access, connect with our team, and share your genuine experience with your audience.",
+  benefits: ['Community & Culture', 'Brand Networking', 'Freebies & PR Packages'],
+  capacity: 20,
+};
+
+// Kept in sync with BENEFIT_OPTIONS in backend/campaign-ai.schema.ts — the AI-generated
+// event draft's `benefits` field only ever returns these exact labels.
 const BENEFITS = [
   'Free food & drinks',
   'Free product / service',
@@ -88,6 +101,10 @@ const BENEFITS = [
   'Gift hampers',
   'Networking opportunities',
   'Future collaboration',
+  'Skill Workshops',
+  'Brand Networking',
+  'Freebies & PR Packages',
+  'Community & Culture',
 ];
 
 const EVENT_CONTENT_TYPES = [
@@ -98,96 +115,6 @@ const EVENT_CONTENT_TYPES = [
   'Event Coverage Video',
   'Tag Business',
 ];
-
-const EVENT_TEMPLATE_CONTENT: Record<string, { title: string; desc: string }> = {
-  'Food':          { title: 'Exclusive Food Creator Night – Dine, Discover & Create',        desc: "We're inviting food creators to an exclusive creator night at our restaurant. Experience our signature dishes, meet the chef, and create authentic content about your dining journey. Enjoy a curated menu, behind-the-scenes kitchen access, and a memorable evening with fellow creators." },
-  'Travel':        { title: 'Travel Creator Experience – Explore & Document',                 desc: "Join us for an exclusive creator experience at our travel destination or property. Enjoy complimentary access, curated activities, and the freedom to document your authentic journey. Perfect for travel creators who love discovering hidden gems and sharing experiences with their audience." },
-  'Fashion':       { title: 'Fashion Creator Showcase – Style Night',                         desc: "We're hosting an exclusive fashion creator event where you'll get first access to our latest collection, professional styling support, and a curated backdrop for content creation. A perfect opportunity to create stunning fashion content while connecting with like-minded creators." },
-  'Beauty':        { title: 'Beauty Creator Event – Glow, Create & Connect',                 desc: "Join our exclusive beauty creator event for complimentary treatments, product demonstrations, and content creation opportunities. Experience our services firsthand and create authentic beauty content that resonates with your audience." },
-  'Fitness':       { title: 'Fitness Creator Invite – Train, Create & Inspire',              desc: "We're inviting fitness creators for a complimentary workout session, facility tour, and content creation day. Experience our equipment, classes, and community — then share your authentic fitness journey with your audience." },
-  'Gaming':        { title: 'Gaming Creator Night – Play, Review & Create',                  desc: "Join us for an exclusive gaming creator night. Get early access to our latest games, hardware, or gaming setup. Create honest gameplay content, connect with fellow creators, and share your experience with your gaming community." },
-  'Tech':          { title: 'Tech Creator Showcase – Experience & Review',                   desc: "We're hosting an exclusive tech creator event where you'll get hands-on access to our latest products before anyone else. Experience the features, create in-depth content, and share your honest review with your tech-savvy audience." },
-  'Education':     { title: 'Education Creator Event – Learn, Explore & Share',              desc: "Join our exclusive creator experience at our educational institution or platform. Attend a live session, meet our instructors, and get behind-the-scenes access to create content that inspires your audience to learn and grow." },
-  'Lifestyle':     { title: 'Lifestyle Creator Invite – Experience & Create',                desc: "We're inviting lifestyle creators for an exclusive brand experience. Enjoy our products or services in a curated setting designed for content creation. A perfect opportunity to create beautiful, authentic lifestyle content for your audience." },
-  'Home & Living': { title: 'Home Creator Experience – Style, Shoot & Share',               desc: "Join our exclusive home and living creator event. Explore our product collection in a beautifully styled setting, get styling tips from our experts, and create stunning home content that inspires your audience." },
-  'Wellness':      { title: 'Wellness Creator Retreat – Relax, Restore & Create',            desc: "We're inviting wellness creators to experience our services firsthand. Enjoy complimentary treatments, wellness sessions, and a serene environment perfect for creating authentic well-being content for your audience." },
-  'Music':         { title: 'Music Creator Event – Live, Exclusive & Immersive',             desc: "Join us for an exclusive music creator event featuring live performances, backstage access, and unique content creation opportunities. Perfect for music creators who want to share authentic, immersive experiences with their audience." },
-  'Art & Design':  { title: 'Art Creator Experience – Create, Collaborate & Showcase',      desc: "We're hosting an exclusive art and design creator event. Explore our space, meet our artists, and get inspired to create content that celebrates creativity and artistry. A perfect event for creators who appreciate visual storytelling." },
-  'Pets':          { title: 'Pet Creator Day – Fun, Play & Create',                          desc: "Bring your furry friends! We're hosting an exclusive pet creator event at our pet-friendly venue. Experience our products or services with your pets, create adorable content, and connect with fellow pet creators." },
-  'Parenting':     { title: 'Family Creator Event – Fun Day for Parents & Kids',            desc: "We're hosting an exclusive family and parenting creator event. Enjoy family-friendly activities, experience our products or services with your family, and create authentic parenting content that resonates with your audience." },
-  'Automotive':    { title: 'Auto Creator Drive Day – Experience & Review',                  desc: "Join our exclusive automotive creator event for a test drive, facility tour, and behind-the-scenes content creation day. Experience the performance, design, and features of our vehicles — then share your authentic review." },
-  'Finance':       { title: 'Finance Creator Workshop – Learn, Experience & Share',          desc: "We're hosting an exclusive finance creator workshop. Gain insights from our experts, experience our tools or services firsthand, and create educational content that helps your audience make better financial decisions." },
-  'Sustainability':{ title: 'Eco Creator Event – Sustainable, Beautiful & Impactful',        desc: "Join our sustainability creator event. Explore our eco-friendly products, learn about our sustainability initiatives, and create content that inspires your audience to make conscious choices for the planet." },
-  'Photography':   { title: 'Photography Creator Shoot – Exclusive Access & Collaboration', desc: "We're hosting an exclusive photography creator event. Get access to stunning locations, professional equipment, and expert guidance to create breathtaking content while showcasing our brand in an authentic visual style." },
-  'Sports':        { title: 'Sports Creator Day – Play, Train & Create',                    desc: "Join our exclusive sports creator event. Experience our facility, equipment, or sporting experience firsthand. Create high-energy content that motivates your athletic audience and showcases your genuine experience." },
-  'Film & TV':     { title: 'Entertainment Creator Premiere – Exclusive & Immersive',        desc: "We're inviting entertainment creators to an exclusive premiere or behind-the-scenes event. Get early access, interact with the talent, and create exciting content that builds hype and anticipation for your audience." },
-  'Mindfulness':   { title: 'Mindfulness Creator Experience – Find Peace, Create Content',  desc: "Join our exclusive mindfulness creator event. Experience our sessions, products, or retreat setting and create calming, authentic content that helps your audience on their well-being journey." },
-  'Food & Drink':  { title: 'Food & Drink Creator Night – Taste, Experience & Create',      desc: "We're hosting an exclusive food and drink creator evening. Enjoy curated tastings, meet the team behind the flavors, and create beautiful content that makes your audience crave the experience." },
-  'Entertainment': { title: 'Entertainment Creator Event – Live, Exclusive & Unforgettable',desc: "Join us for an exclusive entertainment creator event. Experience the show, go backstage, and create immersive content that captures the energy and excitement for your audience." },
-};
-
-const CATEGORY_BENEFITS: Record<string, string[]> = {
-  'Food':          ['Free food & drinks', 'Event access', 'Gift hampers'],
-  'Travel':        ['Event access', 'Free product / service', 'Networking opportunities', 'Future collaboration'],
-  'Fashion':       ['Free product / service', 'Event access', 'Gift hampers', 'Future collaboration'],
-  'Beauty':        ['Free product / service', 'Event access', 'Gift hampers'],
-  'Fitness':       ['Event access', 'Free product / service', 'Networking opportunities'],
-  'Gaming':        ['Event access', 'Free product / service', 'Networking opportunities', 'Future collaboration'],
-  'Tech':          ['Free product / service', 'Event access', 'Future collaboration'],
-  'Education':     ['Event access', 'Networking opportunities', 'Future collaboration'],
-  'Lifestyle':     ['Free product / service', 'Event access', 'Gift hampers', 'Future collaboration'],
-  'Home & Living': ['Free product / service', 'Event access', 'Gift hampers'],
-  'Wellness':      ['Free product / service', 'Event access', 'Networking opportunities'],
-  'Music':         ['Event access', 'Networking opportunities', 'Future collaboration'],
-  'Art & Design':  ['Event access', 'Networking opportunities', 'Future collaboration'],
-  'Pets':          ['Free product / service', 'Event access', 'Gift hampers'],
-  'Parenting':     ['Free product / service', 'Event access', 'Gift hampers'],
-  'Automotive':    ['Event access', 'Future collaboration'],
-  'Finance':       ['Event access', 'Networking opportunities', 'Future collaboration'],
-  'Sustainability':['Free product / service', 'Event access', 'Networking opportunities', 'Future collaboration'],
-  'Photography':   ['Event access', 'Free product / service', 'Networking opportunities', 'Future collaboration'],
-  'Sports':        ['Free product / service', 'Event access', 'Networking opportunities'],
-  'Film & TV':     ['Event access', 'Networking opportunities', 'Future collaboration'],
-  'Mindfulness':   ['Free product / service', 'Event access', 'Networking opportunities'],
-  'Food & Drink':  ['Free food & drinks', 'Event access', 'Gift hampers'],
-  'Entertainment': ['Event access', 'Networking opportunities', 'Future collaboration'],
-};
-
-const EVENT_TEMPLATE_CONTENT_NE: Record<string, { title: string; desc: string }> = {
-  'Food':          { title: 'विशेष फूड क्रिएटर नाइट – खाना चाख्नुहोस्, अन्वेषण गर्नुहोस् र सामग्री बनाउनुहोस्', desc: 'हामी फूड क्रिएटरहरूलाई हाम्रो रेस्टुरेन्टमा विशेष क्रिएटर नाइटमा आमन्त्रण गर्दैछौं। हाम्रा विशेष परिकारहरू चाख्नुहोस्, सेफलाई भेट्नुहोस्, र आफ्नो डाइनिङ अनुभवबारे प्रामाणिक सामग्री बनाउनुहोस्। क्युरेटेड मेनु, किचनको ब्याकस्टेज एक्सेस, र साथी क्रिएटरहरूसँगै एउटा यादगार साँझको आनन्द लिनुहोस्।' },
-  'Travel':        { title: 'ट्राभल क्रिएटर अनुभव – घुम्नुहोस् र डकुमेन्ट गर्नुहोस्', desc: 'हाम्रो ट्राभल डेस्टिनेसन वा प्रोपर्टीमा एक विशेष क्रिएटर अनुभवमा सामेल हुनुहोस्। नि:शुल्क एक्सेस, क्युरेटेड एक्टिभिटीहरू, र आफ्नो प्रामाणिक यात्रा डकुमेन्ट गर्ने स्वतन्त्रताको आनन्द लिनुहोस्। लुकेका रत्नहरू फेला पार्न र आफ्ना दर्शकहरूसँग अनुभव साझा गर्न रुचाउने ट्राभल क्रिएटरहरूका लागि उपयुक्त।' },
-  'Fashion':       { title: 'फेसन क्रिएटर शोकेस – स्टाइल नाइट', desc: 'हामी एउटा विशेष फेसन क्रिएटर इभेन्ट आयोजना गर्दैछौं जहाँ तपाईंले हाम्रो नयाँ कलेक्सनमा पहिलो पहुँच, व्यावसायिक स्टाइलिङ सहयोग, र सामग्री निर्माणका लागि क्युरेटेड ब्याकड्रप पाउनुहुनेछ। समान विचारका क्रिएटरहरूसँग जोडिँदै आकर्षक फेसन सामग्री बनाउने उत्तम अवसर।' },
-  'Beauty':        { title: 'ब्युटी क्रिएटर इभेन्ट – ग्लो, क्रिएट र कनेक्ट गर्नुहोस्', desc: 'नि:शुल्क ट्रिटमेन्ट, प्रोडक्ट डेमोन्स्ट्रेसन, र सामग्री निर्माणका अवसरहरूका लागि हाम्रो विशेष ब्युटी क्रिएटर इभेन्टमा सामेल हुनुहोस्। हाम्रा सेवाहरू प्रत्यक्ष अनुभव गर्नुहोस् र आफ्ना दर्शकहरूसँग मेल खाने प्रामाणिक ब्युटी सामग्री बनाउनुहोस्।' },
-  'Fitness':       { title: 'फिटनेस क्रिएटर निमन्त्रणा – ट्रेन, क्रिएट र इन्स्पायर गर्नुहोस्', desc: 'हामी फिटनेस क्रिएटरहरूलाई नि:शुल्क वर्कआउट सेसन, सुविधा भ्रमण, र सामग्री निर्माण दिनको लागि आमन्त्रण गर्दैछौं। हाम्रा उपकरण, कक्षाहरू, र समुदाय अनुभव गर्नुहोस् — त्यसपछि आफ्नो प्रामाणिक फिटनेस यात्रा आफ्ना दर्शकहरूसँग साझा गर्नुहोस्।' },
-  'Gaming':        { title: 'गेमिङ क्रिएटर नाइट – खेल्नुहोस्, समीक्षा गर्नुहोस् र सामग्री बनाउनुहोस्', desc: 'हाम्रो विशेष गेमिङ क्रिएटर नाइटमा सामेल हुनुहोस्। हाम्रा नयाँ गेम, हार्डवेयर, वा गेमिङ सेटअपमा पहिलो पहुँच पाउनुहोस्। इमानदार गेमप्ले सामग्री बनाउनुहोस्, साथी क्रिएटरहरूसँग जोडिनुहोस्, र आफ्नो गेमिङ समुदायसँग अनुभव साझा गर्नुहोस्।' },
-  'Tech':          { title: 'टेक क्रिएटर शोकेस – अनुभव गर्नुहोस् र समीक्षा गर्नुहोस्', desc: 'हामी एउटा विशेष टेक क्रिएटर इभेन्ट आयोजना गर्दैछौं जहाँ तपाईंले हाम्रा नयाँ प्रोडक्टहरूमा सबैभन्दा पहिले ह्यान्ड्स-अन पहुँच पाउनुहुनेछ। फिचरहरू अनुभव गर्नुहोस्, विस्तृत सामग्री बनाउनुहोस्, र आफ्नो टेक-प्रेमी दर्शकसँग इमानदार समीक्षा साझा गर्नुहोस्।' },
-  'Education':     { title: 'एजुकेसन क्रिएटर इभेन्ट – सिक्नुहोस्, अन्वेषण गर्नुहोस् र साझा गर्नुहोस्', desc: 'हाम्रो शैक्षिक संस्था वा प्लेटफर्ममा हाम्रो विशेष क्रिएटर अनुभवमा सामेल हुनुहोस्। लाइभ सेसनमा भाग लिनुहोस्, हाम्रा प्रशिक्षकहरूलाई भेट्नुहोस्, र आफ्ना दर्शकहरूलाई सिक्न र बढ्न प्रेरित गर्ने सामग्री बनाउन ब्याकस्टेज पहुँच पाउनुहोस्।' },
-  'Lifestyle':     { title: 'लाइफस्टाइल क्रिएटर निमन्त्रणा – अनुभव गर्नुहोस् र सामग्री बनाउनुहोस्', desc: 'हामी लाइफस्टाइल क्रिएटरहरूलाई एउटा विशेष ब्रान्ड अनुभवका लागि आमन्त्रण गर्दैछौं। सामग्री निर्माणका लागि डिजाइन गरिएको क्युरेटेड सेटिङमा हाम्रा प्रोडक्ट वा सेवाहरूको आनन्द लिनुहोस्। आफ्ना दर्शकहरूका लागि सुन्दर, प्रामाणिक लाइफस्टाइल सामग्री बनाउने उत्तम अवसर।' },
-  'Home & Living': { title: 'होम क्रिएटर अनुभव – स्टाइल, सुट र साझा गर्नुहोस्', desc: 'हाम्रो विशेष होम एन्ड लिभिङ क्रिएटर इभेन्टमा सामेल हुनुहोस्। सुन्दर स्टाइल गरिएको सेटिङमा हाम्रो प्रोडक्ट कलेक्सन अन्वेषण गर्नुहोस्, हाम्रा विशेषज्ञहरूबाट स्टाइलिङ सुझाव पाउनुहोस्, र आफ्ना दर्शकहरूलाई प्रेरित गर्ने आकर्षक होम सामग्री बनाउनुहोस्।' },
-  'Wellness':      { title: 'वेलनेस क्रिएटर रिट्रिट – रिल्याक्स, रिस्टोर र क्रिएट गर्नुहोस्', desc: 'हामी वेलनेस क्रिएटरहरूलाई हाम्रा सेवाहरू प्रत्यक्ष अनुभव गर्न आमन्त्रण गर्दैछौं। नि:शुल्क ट्रिटमेन्ट, वेलनेस सेसन, र आफ्ना दर्शकहरूका लागि प्रामाणिक स्वास्थ्य सामग्री बनाउन उपयुक्त शान्त वातावरणको आनन्द लिनुहोस्।' },
-  'Music':         { title: 'म्युजिक क्रिएटर इभेन्ट – लाइभ, विशेष र इमर्सिभ', desc: 'लाइभ प्रदर्शन, ब्याकस्टेज पहुँच, र अनौठो सामग्री निर्माण अवसरहरू सहितको हाम्रो विशेष म्युजिक क्रिएटर इभेन्टमा सामेल हुनुहोस्। आफ्ना दर्शकहरूसँग प्रामाणिक, इमर्सिभ अनुभव साझा गर्न चाहने म्युजिक क्रिएटरहरूका लागि उपयुक्त।' },
-  'Art & Design':  { title: 'आर्ट क्रिएटर अनुभव – बनाउनुहोस्, सहकार्य गर्नुहोस् र प्रदर्शन गर्नुहोस्', desc: 'हामी एउटा विशेष आर्ट एन्ड डिजाइन क्रिएटर इभेन्ट आयोजना गर्दैछौं। हाम्रो स्पेस अन्वेषण गर्नुहोस्, हाम्रा कलाकारहरूलाई भेट्नुहोस्, र रचनात्मकता र कलात्मकतालाई मनाउने सामग्री बनाउन प्रेरित हुनुहोस्। भिजुअल स्टोरीटेलिङलाई कदर गर्ने क्रिएटरहरूका लागि उपयुक्त इभेन्ट।' },
-  'Pets':          { title: 'पेट क्रिएटर डे – रमाइलो, खेल र सामग्री निर्माण', desc: 'आफ्ना प्यारा साथीहरूलाई लिएर आउनुहोस्! हामी हाम्रो पेट-फ्रेन्डली भेन्युमा विशेष पेट क्रिएटर इभेन्ट आयोजना गर्दैछौं। आफ्ना पेटसँगै हाम्रा प्रोडक्ट वा सेवाहरू अनुभव गर्नुहोस्, प्यारो सामग्री बनाउनुहोस्, र साथी पेट क्रिएटरहरूसँग जोडिनुहोस्।' },
-  'Parenting':     { title: 'फ्यामिली क्रिएटर इभेन्ट – अभिभावक र बच्चाहरूका लागि रमाइलो दिन', desc: 'हामी एउटा विशेष फ्यामिली र प्यारेन्टिङ क्रिएटर इभेन्ट आयोजना गर्दैछौं। परिवार-मैत्री गतिविधिहरूको आनन्द लिनुहोस्, आफ्नो परिवारसँग हाम्रा प्रोडक्ट वा सेवाहरू अनुभव गर्नुहोस्, र आफ्ना दर्शकहरूसँग मेल खाने प्रामाणिक प्यारेन्टिङ सामग्री बनाउनुहोस्।' },
-  'Automotive':    { title: 'अटो क्रिएटर ड्राइभ डे – अनुभव गर्नुहोस् र समीक्षा गर्नुहोस्', desc: 'टेस्ट ड्राइभ, सुविधा भ्रमण, र ब्याकस्टेज सामग्री निर्माण दिनको लागि हाम्रो विशेष अटोमोटिभ क्रिएटर इभेन्टमा सामेल हुनुहोस्। हाम्रा गाडीहरूको प्रदर्शन, डिजाइन, र फिचरहरू अनुभव गर्नुहोस् — त्यसपछि आफ्नो प्रामाणिक समीक्षा साझा गर्नुहोस्।' },
-  'Finance':       { title: 'फाइनान्स क्रिएटर वर्कशप – सिक्नुहोस्, अनुभव गर्नुहोस् र साझा गर्नुहोस्', desc: 'हामी एउटा विशेष फाइनान्स क्रिएटर वर्कशप आयोजना गर्दैछौं। हाम्रा विशेषज्ञहरूबाट अन्तर्दृष्टि पाउनुहोस्, हाम्रा उपकरण वा सेवाहरू प्रत्यक्ष अनुभव गर्नुहोस्, र आफ्ना दर्शकहरूलाई राम्रो आर्थिक निर्णय लिन मद्दत गर्ने शैक्षिक सामग्री बनाउनुहोस्।' },
-  'Sustainability':{ title: 'इको क्रिएटर इभेन्ट – दिगो, सुन्दर र प्रभावकारी', desc: 'हाम्रो सस्टेनेबिलिटी क्रिएटर इभेन्टमा सामेल हुनुहोस्। हाम्रा इको-फ्रेन्डली प्रोडक्टहरू अन्वेषण गर्नुहोस्, हाम्रो दिगोपन पहलहरूबारे जान्नुहोस्, र आफ्ना दर्शकहरूलाई पृथ्वीका लागि सचेत विकल्प रोज्न प्रेरित गर्ने सामग्री बनाउनुहोस्।' },
-  'Photography':   { title: 'फोटोग्राफी क्रिएटर सुट – विशेष पहुँच र सहकार्य', desc: 'हामी एउटा विशेष फोटोग्राफी क्रिएटर इभेन्ट आयोजना गर्दैछौं। मनमोहक लोकेसन, व्यावसायिक उपकरण, र हाम्रो ब्रान्डलाई प्रामाणिक भिजुअल स्टाइलमा देखाउँदै अद्भुत सामग्री बनाउन विशेषज्ञ मार्गदर्शन पाउनुहोस्।' },
-  'Sports':        { title: 'स्पोर्ट्स क्रिएटर डे – खेल्नुहोस्, तालिम लिनुहोस् र सामग्री बनाउनुहोस्', desc: 'हाम्रो विशेष स्पोर्ट्स क्रिएटर इभेन्टमा सामेल हुनुहोस्। हाम्रो सुविधा, उपकरण, वा खेल अनुभव प्रत्यक्ष अनुभव गर्नुहोस्। आफ्नो एथलेटिक दर्शकलाई उत्साहित गर्ने र आफ्नो वास्तविक अनुभव देखाउने उच्च-ऊर्जा सामग्री बनाउनुहोस्।' },
-  'Film & TV':     { title: 'इन्टरटेनमेन्ट क्रिएटर प्रिमियर – विशेष र इमर्सिभ', desc: 'हामी इन्टरटेनमेन्ट क्रिएटरहरूलाई विशेष प्रिमियर वा ब्याकस्टेज इभेन्टमा आमन्त्रण गर्दैछौं। सबैभन्दा पहिले पहुँच पाउनुहोस्, कलाकारहरूसँग अन्तरक्रिया गर्नुहोस्, र आफ्ना दर्शकहरूका लागि उत्साह र प्रतीक्षा बढाउने रोमाञ्चक सामग्री बनाउनुहोस्।' },
-  'Mindfulness':   { title: 'माइन्डफुलनेस क्रिएटर अनुभव – शान्ति फेला पार्नुहोस्, सामग्री बनाउनुहोस्', desc: 'हाम्रो विशेष माइन्डफुलनेस क्रिएटर इभेन्टमा सामेल हुनुहोस्। हाम्रा सेसन, प्रोडक्ट, वा रिट्रिट सेटिङ अनुभव गर्नुहोस् र आफ्ना दर्शकहरूको स्वास्थ्य यात्रामा मद्दत गर्ने शान्त, प्रामाणिक सामग्री बनाउनुहोस्।' },
-  'Food & Drink':  { title: 'फूड एन्ड ड्रिंक क्रिएटर नाइट – चाख्नुहोस्, अनुभव गर्नुहोस् र सामग्री बनाउनुहोस्', desc: 'हामी एउटा विशेष फूड एन्ड ड्रिंक क्रिएटर साँझ आयोजना गर्दैछौं। क्युरेटेड टेस्टिङको आनन्द लिनुहोस्, स्वादहरू पछाडिको टिमलाई भेट्नुहोस्, र आफ्ना दर्शकहरूलाई त्यो अनुभव चाख्न मन लाग्ने सुन्दर सामग्री बनाउनुहोस्।' },
-  'Entertainment': { title: 'इन्टरटेनमेन्ट क्रिएटर इभेन्ट – लाइभ, विशेष र अविस्मरणीय', desc: 'हामीसँग एउटा विशेष इन्टरटेनमेन्ट क्रिएटर इभेन्टमा सामेल हुनुहोस्। शो अनुभव गर्नुहोस्, ब्याकस्टेज जानुहोस्, र आफ्ना दर्शकहरूका लागि ऊर्जा र उत्साह समेट्ने इमर्सिभ सामग्री बनाउनुहोस्।' },
-};
-
-const BENEFIT_LABELS_NE: Record<string, string> = {
-  'Free food & drinks':      'नि:शुल्क खाना र पेय पदार्थ',
-  'Event access':            'इभेन्ट पहुँच',
-  'Free product / service':  'नि:शुल्क प्रोडक्ट / सेवा',
-  'Gift hampers':            'गिफ्ट ह्याम्पर',
-  'Networking opportunities':'नेटवर्किङ अवसर',
-  'Future collaboration':    'भविष्यको सहकार्य',
-};
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const DAY_SHORT = ['Su','Mo','Tu','We','Th','Fr','Sa'];
@@ -232,7 +159,6 @@ type FormData = {
 };
 
 type ReviewErrors = Partial<Record<'title' | 'deadline' | 'platform' | 'eventDate' | 'budget', string>>;
-type EventErrors = Partial<Record<'template' | 'capacity' | 'venue', string>>;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -244,98 +170,16 @@ function sameDay(a: Date, b: Date) {
 }
 function fmtDate(d: Date) { return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`; }
 
-// ─── DropdownPicker ───────────────────────────────────────────────────────────
-
-function DropdownPicker({
-  value, onChange, options, placeholder, colors, error, imageFor,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  options: readonly { label: string; icon: string; color: string }[];
-  placeholder: string;
-  colors: ReturnType<typeof useAppColors>;
-  error?: string;
-  imageFor?: (label: string) => string | undefined;
-}) {
-  const C = colors;
-  const [open, setOpen] = useState(false);
-  const selected = options.find((o) => o.label === value);
-  const selectedImg = selected && imageFor ? imageFor(selected.label) : undefined;
-
-  return (
-    <>
-      <Pressable
-        style={[dp.trigger, { backgroundColor: C.background, borderColor: error ? ERROR_RED : value ? C.brinjal1 : C.border }]}
-        onPress={() => setOpen(true)}>
-        {selectedImg ? (
-          <Image source={{ uri: selectedImg }} style={dp.triggerThumb} resizeMode="cover" />
-        ) : selected ? (
-          <FontAwesome5 name={selected.icon} size={16} color={selected.color} />
-        ) : (
-          <Ionicons name="grid-outline" size={16} color={C.textSecondary} />
-        )}
-        <Text style={[dp.triggerText, { color: value ? C.text : C.textSecondary }]} numberOfLines={1}>
-          {value || placeholder}
-        </Text>
-        <Ionicons name="chevron-down" size={16} color={C.textSecondary} />
-      </Pressable>
-      {error && <Text style={dp.error}>{error}</Text>}
-
-      <Modal visible={open} transparent animationType="slide" onRequestClose={() => setOpen(false)}>
-        <View style={dp.modalWrap}>
-          <Pressable style={dp.scrim} onPress={() => setOpen(false)} />
-          <View style={[dp.sheet, { backgroundColor: C.surface }]}>
-            <View style={[dp.handle, { backgroundColor: C.border }]} />
-            <View style={dp.sheetHeader}>
-              <Text style={[dp.sheetTitle, { color: C.text, marginBottom: 0 }]}>{placeholder}</Text>
-              <Pressable onPress={() => setOpen(false)} hitSlop={8}>
-                <Ionicons name="close" size={22} color={C.textSecondary} />
-              </Pressable>
-            </View>
-            <ScrollView showsVerticalScrollIndicator={false} style={{ marginTop: 12 }}>
-              {options.map((opt) => {
-                const sel = opt.label === value;
-                const img = imageFor ? imageFor(opt.label) : undefined;
-                return (
-                  <Pressable
-                    key={opt.label}
-                    style={[dp.item, { backgroundColor: sel ? C.primaryLight : 'transparent' }]}
-                    onPress={() => { onChange(opt.label); setOpen(false); }}>
-                    <View style={[dp.itemThumbWrap, { backgroundColor: C.border, overflow: 'hidden' }]}>
-                      {img ? (
-                        <Image source={{ uri: img }} style={dp.itemThumb} resizeMode="cover" />
-                      ) : (
-                        <FontAwesome5 name={opt.icon} size={16} color={opt.color} />
-                      )}
-                    </View>
-                    <Text style={[dp.itemLabel, { color: sel ? C.brinjal1 : C.text, fontFamily: sel ? F.semibold : F.regular }]}>{opt.label}</Text>
-                    {sel && <Ionicons name="checkmark" size={18} color={C.brinjal1} />}
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
-    </>
-  );
-}
-
+// Shared dropdown-trigger/bottom-sheet styles, used by MultiCheckboxDropdown below.
 const dp = StyleSheet.create({
   trigger:      { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 14, height: 50 },
-  triggerThumb: { width: 30, height: 30, borderRadius: RADIUS.sm },
   triggerText:  { flex: 1, fontSize: 14, fontFamily: F.medium },
   error:        { fontSize: 12, color: ERROR_RED, fontFamily: F.regular, marginTop: 4 },
   modalWrap:  { flex: 1, justifyContent: 'flex-end' },
   scrim:      { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.45)' },
   sheet:      { borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl, padding: 20, paddingBottom: 40, maxHeight: '70%' },
   handle:     { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginBottom: 16 },
-  sheetHeader:{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 0 },
   sheetTitle: { fontSize: 16, fontFamily: F.bold, marginBottom: 12 },
-  item:         { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, paddingHorizontal: 12, borderRadius: RADIUS.md, marginBottom: 4, minHeight: 44 },
-  itemThumbWrap:{ width: 44, height: 44, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
-  itemThumb:    { width: 44, height: 44 },
-  itemLabel:    { flex: 1, fontSize: 14 },
 });
 
 // ─── MultiCheckboxDropdown ────────────────────────────────────────────────────
@@ -731,7 +575,7 @@ function PreviewRow({
 
 export default function CreateCampaignScreen() {
   const C = useAppColors();
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   const notRequiredLabel = t('createEvent.notRequired');
   const [phase, setPhase] = useState<'setup' | 'review' | 'confirm'>('setup');
   const [loading, setLoading] = useState(false);
@@ -743,7 +587,6 @@ export default function CreateCampaignScreen() {
     router.replace('/(business)/');
   }
   const [reviewErrors, setReviewErrors] = useState<ReviewErrors>({});
-  const [eventErrors, setEventErrors] = useState<EventErrors>({});
   const scrollRef = useRef<ScrollView>(null);
   const { categories: liveCategories } = useCategories('BUSINESS');
   const categoryOptions = liveCategories.map((c) => ({ label: c.name, icon: c.icon, color: c.color }));
@@ -844,11 +687,10 @@ export default function CreateCampaignScreen() {
     setLocationLng(lng || null);
     if (form.eventType === 'OPEN_EVENT') {
       update('venue', address);
-      if (eventErrors.venue) setEventErrors((e) => ({ ...e, venue: undefined }));
     } else {
       update('location', address);
-      if (aiLocationError) setAiLocationError(undefined);
     }
+    if (aiLocationError) setAiLocationError(undefined);
   }
 
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -907,7 +749,8 @@ export default function CreateCampaignScreen() {
       aiBudgetMax: 0,
     }));
     setReviewErrors({});
-    setEventErrors({});
+    setAiPromptText('');
+    setAiLocationError(undefined);
     setPhase('setup');
   }
 
@@ -1017,40 +860,75 @@ export default function CreateCampaignScreen() {
     }
   }
 
-  function handleContinueEvent() {
-    const errs: EventErrors = {};
-    if (!form.template)        errs.template = t('createEvent.errNoCategory');
-    if (!form.venue.trim())    errs.venue    = t('createEvent.errNoVenue');
-    if (form.capacity < 1)     errs.capacity = t('createEvent.errMinCapacity');
-
-    if (Object.keys(errs).length > 0) { setEventErrors(errs); return; }
-    setEventErrors({});
-
-    const templates = language === 'ne' ? EVENT_TEMPLATE_CONTENT_NE : EVENT_TEMPLATE_CONTENT;
-    const content  = templates[form.template] ?? { title: '', desc: '' };
-    const autoDesc = content.desc
-      ? content.desc + (form.venue ? `\n\n${t('createEvent.locationPrefix')}: ${form.venue}` : '')
-      : '';
-    const rawBenefits = CATEGORY_BENEFITS[form.template] ?? ['Event access'];
-    const suggestedBenefits = language === 'ne'
-      ? rawBenefits.map((b) => BENEFIT_LABELS_NE[b] ?? b)
-      : rawBenefits;
-    const defaultEventDate  = dayStart(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
-
-    setForm((prev) => {
-      const eventDate = prev.eventDate ?? defaultEventDate;
-      const regDeadline = dayStart(new Date(eventDate.getTime() - 2 * 24 * 60 * 60 * 1000));
-      return {
-        ...prev,
-        title:       content.title,
-        description: autoDesc,
-        benefits:    suggestedBenefits,
-        eventDate,
-        deadline:    regDeadline,
-      };
-    });
-    setPhase('review');
-    scrollRef.current?.scrollTo({ y: 0, animated: false });
+  async function handleGenerateEventWithAi() {
+    if (!aiPromptText.trim() || aiLoading) return;
+    if (!form.venue.trim()) {
+      setAiLocationError(t('createEvent.errNoVenue'));
+      return;
+    }
+    setAiLocationError(undefined);
+    setAiLoading(true);
+    const defaultEventDate = dayStart(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
+    try {
+      const draft = await campaignService.generateEventWithAi(aiPromptText.trim());
+      setForm((prev) => {
+        const eventDate = prev.eventDate ?? defaultEventDate;
+        const regDeadline = dayStart(new Date(eventDate.getTime() - 2 * 24 * 60 * 60 * 1000));
+        return {
+          ...prev,
+          template:    draft.category,
+          platforms:   draft.platforms.slice(0, 1),
+          title:       draft.title,
+          description: draft.description,
+          benefits:    draft.benefits,
+          capacity:    draft.capacity,
+          eventDate,
+          deadline:    regDeadline,
+          featureImageUrl:       prev.featureImageUrl ?? getTemplateImage(draft.category, draft.category) ?? null,
+          aiGenerated:           true,
+          aiPrompt:              aiPromptText.trim(),
+          aiSuggestedCategories: draft.aiSuggestedCategories,
+          aiSuggestedPlatforms:  draft.aiSuggestedPlatforms,
+          needsInput:            draft.needsInput,
+        };
+      });
+      setAiPromptText('');
+      setPhase('review');
+      scrollRef.current?.scrollTo({ y: 0, animated: false });
+    } catch {
+      // Same reasoning as handleGenerateWithAi's catch above: the backend already
+      // falls back to a dummy draft for OpenAI-specific failures, so reaching this
+      // catch means the request itself never came back.
+      const fallbackCategory = categoryOptions.find((c) => c.label === 'Lifestyle')?.label ?? categoryOptions[0]?.label ?? '';
+      const fallbackPlatform = platformOptions.find((p) => p === 'Instagram') ?? platformOptions[0] ?? '';
+      setForm((prev) => {
+        const eventDate = prev.eventDate ?? defaultEventDate;
+        const regDeadline = dayStart(new Date(eventDate.getTime() - 2 * 24 * 60 * 60 * 1000));
+        return {
+          ...prev,
+          template:    fallbackCategory,
+          platforms:   fallbackPlatform ? [fallbackPlatform] : [],
+          title:       GENERIC_FREE_EVENT_TEMPLATE.title,
+          description: GENERIC_FREE_EVENT_TEMPLATE.description,
+          benefits:    GENERIC_FREE_EVENT_TEMPLATE.benefits,
+          capacity:    GENERIC_FREE_EVENT_TEMPLATE.capacity,
+          eventDate,
+          deadline:    regDeadline,
+          featureImageUrl:       prev.featureImageUrl ?? getTemplateImage(fallbackCategory, fallbackCategory) ?? null,
+          aiGenerated:           true,
+          aiPrompt:              aiPromptText.trim(),
+          aiSuggestedCategories: [],
+          aiSuggestedPlatforms:  [],
+          needsInput:            [],
+        };
+      });
+      setAiPromptText('');
+      setPhase('review');
+      scrollRef.current?.scrollTo({ y: 0, animated: false });
+      showToast(t('createEvent.aiGenerateFallback'), 'error');
+    } finally {
+      setAiLoading(false);
+    }
   }
 
   function buildPaidCampaignPayload() {
@@ -1344,57 +1222,68 @@ export default function CreateCampaignScreen() {
                 </>
               )}
 
-              {/* Open Event form */}
+              {/* Open Event form — same describe-and-generate flow as Paid Campaign,
+                  minus budget: brand just enters a prompt + location, AI fills in
+                  the rest including what the event offers (Creator Benefits). */}
               {form.eventType === 'OPEN_EVENT' && (
                 <>
-                  {/* Category — same template picker as paid campaign */}
-                  <SectionCard title={t('createEvent.secCategoryTitle')} sub={t('createEvent.secCategorySub')} colors={C}>
-                    <DropdownPicker
-                      value={form.template}
-                      onChange={(v) => {
-                        update('template', v);
-                        if (eventErrors.template) setEventErrors((e) => ({ ...e, template: undefined }));
-                      }}
-                      options={categoryOptions}
-                      placeholder={t('createEvent.selectCategoryPlaceholder')}
-                      colors={C}
-                      error={eventErrors.template}
+                  {/* Describe & generate */}
+                  <SectionCard title={t('createEvent.aiPromptLabel')} sub={t('createEvent.aiPromptSub')} colors={C}>
+                    <TextInput
+                      style={[s.textarea, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
+                      value={aiPromptText}
+                      onChangeText={(v) => setAiPromptText(v.slice(0, 500))}
+                      placeholder={aiPlaceholder}
+                      placeholderTextColor={C.textSecondary}
+                      multiline
+                      numberOfLines={4}
+                      editable={!aiLoading}
                     />
+                    <Text style={[ai.charCount, { color: C.textSecondary }]}>{aiPromptText.length}/500</Text>
+
+                    <Text style={[ai.exampleLabel, { color: C.textSecondary }]}>{t('createEvent.aiExamplesLabel')}</Text>
+                    <View style={ai.chipWrap}>
+                      {AI_PROMPT_EXAMPLES.map((ex) => (
+                        <Pressable
+                          key={ex}
+                          style={[ai.exampleChip, { borderColor: C.border, backgroundColor: C.background }]}
+                          onPress={() => setAiPromptText(ex)}
+                          disabled={aiLoading}>
+                          <Text style={[ai.exampleChipText, { color: C.textSecondary }]} numberOfLines={1}>{ex}</Text>
+                        </Pressable>
+                      ))}
+                    </View>
                   </SectionCard>
 
                   {/* Venue / Location */}
                   <SectionCard title={t('createEvent.secVenueTitle')} sub={t('createEvent.secVenueSub')} colors={C}>
                     <Pressable
-                      style={[s.locationBtn, { backgroundColor: C.background, borderColor: eventErrors.venue ? ERROR_RED : C.border }]}
+                      style={[s.locationBtn, { backgroundColor: C.background, borderColor: aiLocationError ? ERROR_RED : C.border }]}
                       onPress={() => setLocationModalOpen(true)}>
                       <Text style={[s.locationBtnTxt, { color: form.venue ? C.text : C.textSecondary }]} numberOfLines={2}>
                         {form.venue || t('createEvent.locationPlaceholder')}
                       </Text>
                       <Text style={s.locationArrow}>›</Text>
                     </Pressable>
-                    {eventErrors.venue ? <Text style={s.errorText}>{eventErrors.venue}</Text> : null}
+                    {aiLocationError ? <Text style={s.errorText}>{aiLocationError}</Text> : null}
                   </SectionCard>
 
-                  {/* Capacity */}
-                  <SectionCard title={t('createEvent.secCapacityTitle')} sub={t('createEvent.secCapacitySub')} colors={C}>
-                    <Stepper value={form.capacity} onChange={(v) => update('capacity', v)} min={1} max={500} colors={C} />
-                    {eventErrors.capacity && <Text style={s.errorText}>{eventErrors.capacity}</Text>}
-                  </SectionCard>
-
-                  {/* Continue hint */}
-                  <View style={[s.eventHintBox, { backgroundColor: C.primaryLight }]}>
-                    <Ionicons name="information-circle-outline" size={16} color={C.brinjal1} />
-                    <Text style={[s.eventHintText, { color: C.brinjal1 }]}>
-                      {t('createEvent.eventHintText')}
-                    </Text>
-                  </View>
-
-                  {/* Continue button */}
+                  {/* Create Event */}
                   <Pressable
-                    style={({ pressed }) => [s.generateBtn, { backgroundColor: C.brinjal1, opacity: pressed ? 0.88 : 1 }]}
-                    onPress={handleContinueEvent}>
-                    <Text style={s.generateBtnText}>{t('createEvent.generateContinueBtn')}</Text>
-                    <Ionicons name="arrow-forward" size={20} color="#fff" />
+                    style={[s.generateBtn, { backgroundColor: (!aiPromptText.trim() || aiLoading) ? C.border : C.brinjal1 }]}
+                    onPress={handleGenerateEventWithAi}
+                    disabled={!aiPromptText.trim() || aiLoading}>
+                    {aiLoading ? (
+                      <>
+                        <ActivityIndicator size="small" color="#fff" />
+                        <Text style={s.generateBtnText}>{t('createEvent.aiModalGenerating')}</Text>
+                      </>
+                    ) : (
+                      <>
+                        <Text style={s.generateBtnText}>{t('createEvent.createEventBtn')}</Text>
+                        <Ionicons name="arrow-forward" size={18} color="#fff" />
+                      </>
+                    )}
                   </Pressable>
                 </>
               )}
@@ -1691,6 +1580,11 @@ export default function CreateCampaignScreen() {
                         );
                       })}
                     </View>
+                  </SectionCard>
+
+                  {/* Capacity */}
+                  <SectionCard title={t('createEvent.secCapacityTitle')} sub={t('createEvent.secCapacitySub')} colors={C}>
+                    <Stepper value={form.capacity} onChange={(v) => update('capacity', v)} min={1} max={500} colors={C} />
                   </SectionCard>
 
                   {/* Platform (optional) */}

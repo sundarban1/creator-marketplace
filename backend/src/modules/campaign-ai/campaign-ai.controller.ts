@@ -16,6 +16,16 @@ export class CampaignAiController {
     }
   }
 
+  async generateEvent(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { prompt } = req.body as { prompt: string };
+      const draft = await campaignAiService.generateEventDraft(prompt, req.language);
+      success(res, draft, 'Event draft generated');
+    } catch (err) {
+      next(err);
+    }
+  }
+
   async suggestDescription(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const description = await campaignAiService.suggestDescription(req.body as SuggestDescriptionInput, req.language);

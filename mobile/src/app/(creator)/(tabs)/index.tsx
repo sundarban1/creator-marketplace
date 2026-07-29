@@ -756,10 +756,10 @@ export default function HomeScreen() {
         {/* ── Quick Actions ── */}
         <View style={styles.quickActionsRow}>
           {([
-            { icon: 'document-text-outline', label: 'Proposals', bg: '#EDE9FE', color: '#7C3AED', route: '/(creator)/(tabs)/proposals' },
             { icon: 'storefront-outline',    label: 'Businesses', bg: '#DCFCE7', color: '#059669', route: '/(creator)/explore-businesses' },
             { icon: 'people-outline',        label: 'Creators',  bg: '#DBEAFE', color: '#2563EB', route: '/(creator)/explore-creators' },
             { icon: 'heart-outline',         label: 'Saved',     bg: '#FEE2E2', color: '#DC2626', route: '/(creator)/favorite-businesses' },
+            { icon: 'document-text-outline', label: 'Proposals', bg: '#EDE9FE', color: '#7C3AED', route: '/(creator)/(tabs)/proposals' },
           ] as const).map(({ icon, label, bg, color, route }) => (
             <Pressable
               key={label}

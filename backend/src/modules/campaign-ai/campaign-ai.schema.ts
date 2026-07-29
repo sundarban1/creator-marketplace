@@ -43,6 +43,46 @@ const deliverablesSchema = z.object(
   Object.fromEntries(DELIVERABLE_KEYS.map((k) => [k, z.number().int().min(0).max(10).default(0)])) as Record<(typeof DELIVERABLE_KEYS)[number], z.ZodDefault<z.ZodNumber>>,
 ).refine((d) => Object.values(d).some((n) => n > 0), { message: 'At least one deliverable count must be > 0' });
 
+// Kept in sync with BENEFITS in mobile create-campaign.tsx — the Creator Benefits
+// chip toggle list only recognizes these exact labels.
+export const BENEFIT_OPTIONS = [
+  'Free food & drinks', 'Free product / service', 'Event access',
+  'Gift hampers', 'Networking opportunities', 'Future collaboration',
+  'Skill Workshops', 'Brand Networking', 'Freebies & PR Packages', 'Community & Culture',
+] as const;
+
+// Shown to the AI so it understands what each benefit category actually means —
+// kept in sync with the descriptions surfaced in the mobile Creator Benefits section.
+export const BENEFIT_DESCRIPTIONS: Record<(typeof BENEFIT_OPTIONS)[number], string> = {
+  'Free food & drinks': 'Complimentary food and beverages at the event.',
+  'Free product / service': 'A free sample or trial of the brand\'s product or service.',
+  'Event access': 'Entry/admission to the event itself.',
+  'Gift hampers': 'A curated take-home gift bag or hamper.',
+  'Networking opportunities': 'Chances to meet and connect with other creators and the brand team.',
+  'Future collaboration': 'Potential for further paid work or partnership down the line.',
+  'Skill Workshops': 'Free masterclasses on brand-building, mobile editing, financial literacy, and AI tools.',
+  'Brand Networking': 'Direct pitching sessions and meetups with corporate agencies, product sponsors, and local businesses.',
+  'Freebies & PR Packages': 'Complimentary trial products, merchandise, and digital partnerships from major firms.',
+  'Community & Culture': 'Live music festival setups, creator zones, and panel talks with prominent local figures.',
+};
+
+// Field keys the AI is allowed to flag as "not confident" for OPEN_EVENT drafts.
+export const EVENT_NEEDS_INPUT_FIELDS = ['location', 'capacity', 'platform', 'category'] as const;
+
+export const aiEventDraftSchema = z.object({
+  title: z.string().min(3).max(120),
+  description: z.string().min(10).max(2000),
+  category: z.string().min(1),
+  secondaryCategories: z.array(z.string()).max(3).default([]),
+  platform: z.string().min(1),
+  secondaryPlatforms: z.array(z.string()).max(3).default([]),
+  benefits: z.array(z.enum(BENEFIT_OPTIONS)).min(1).max(6),
+  capacity: z.number().int().min(1).max(500),
+  location: z.string().max(120).nullable().default(null),
+  needsInput: z.array(z.enum(EVENT_NEEDS_INPUT_FIELDS)).max(2).default([]),
+});
+export type AiEventDraft = z.infer<typeof aiEventDraftSchema>;
+
 export const aiCampaignDraftSchema = z.object({
   title: z.string().min(3).max(120),
   description: z.string().min(10).max(2000),

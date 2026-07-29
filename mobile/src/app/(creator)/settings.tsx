@@ -1806,7 +1806,6 @@ export default function CreatorSettingsScreen() {
   function renderNotifications() {
     return (
       <>
-        <SectionHeader title={t('creatorSettings.notificationsSection')} />
         <Card>
           <SwitchRow
             faIcon="bell" faIconColor="#D97706"
