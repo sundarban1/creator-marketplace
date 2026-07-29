@@ -10,6 +10,7 @@ import { CampaignRepository } from './campaign.repository';
 import { FavoriteRepository } from '../creator/favorite.repository';
 import { AdminRepository } from '../admin/admin.repository';
 import { notificationService } from '../notifications/notification.service';
+import { contractService } from '../contract/contract.service';
 import { analyticsService } from '../analytics/analytics.service';
 import { MessagingService } from '../messaging/messaging.service';
 import { emitToRole } from '../../socket';
@@ -482,12 +483,29 @@ export class CampaignService {
     });
     const application = toApplicationDto(rawApp);
 
+    // Freeze the contract terms at submission time (paid campaigns only — a free
+    // event has no price/deliverable-for-payment exchange to put under agreement).
+    // Creator's e-signature (see submit-proposal.tsx, which gates this call behind
+    // the contract modal's "I Agree" button) is implicit in successfully applying.
+    // Awaited (not fire-and-forget) since a proposal without a contract would leave
+    // the business with nothing to review/sign when they accept.
+    const business = await this.businessRepo.findById(campaign.businessId);
+    if (business && !isFreeCampaign) {
+      await contractService.createForApplication({
+        applicationId: application.id,
+        campaign,
+        business,
+        creator,
+        proposedRate: input.proposedRate,
+        timeline:     input.timeline,
+      });
+    }
+
     // Notify the business about the new proposal
     const isFreeEvent = (campaign as any).campaignType === 'OPEN_EVENT';
-    this.businessRepo.findById(campaign.businessId).then((business) => {
-      if (!business) return;
+    if (business) {
       analyticsService.incrProposalSubmitted(userId, business.userId);
-      return notificationService.create({
+      notificationService.create({
         userId:  business.userId,
         type:    'proposal_received',
         title:   isFreeEvent
@@ -498,8 +516,8 @@ export class CampaignService {
           : `${creator.fullName ?? 'A creator'} has submitted a proposal for "${campaign.title}"`,
         refId:   campaign.id,
         refType: isFreeEvent ? 'event' : 'campaign',
-      });
-    }).catch(() => {});
+      }).catch(() => {});
+    }
 
     notificationService.createForAdmins({
       type:    'proposal_submitted',
@@ -578,6 +596,14 @@ export class CampaignService {
 
     const rawUpdated = await this.repo.updateApplicationStatus(appId, status);
     const updated    = toApplicationDto(rawUpdated);
+
+    // Business's e-signature (see campaign-proposals.tsx, which gates the accept
+    // call behind the contract modal's "I Agree" button) — completes the
+    // agreement and generates the downloadable PDF. Paid campaigns only; free
+    // events never had a contract created for them in apply() above.
+    if (status === 'ACCEPTED' && (campaign as any).campaignType === 'PAID_CAMPAIGN') {
+      await contractService.signAsBusiness(appId, business.id);
+    }
 
     // Capacity enforcement for OPEN_EVENT (uses capacity field)
     if (status === 'ACCEPTED') {

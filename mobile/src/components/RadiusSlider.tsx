@@ -57,7 +57,11 @@ export function RadiusSlider({ value, onChange, min = 1, max = 100, step = 1, un
     onPanResponderMove: (_, g) => {
       const tw = trackWRef.current;
       const clamped = Math.max(0, Math.min(startPx.current + g.dx, tw));
-      setDisp(pxToVal(clamped, tw, minRef.current, maxRef.current, stepRef.current));
+      const v = pxToVal(clamped, tw, minRef.current, maxRef.current, stepRef.current);
+      setDisp(v);
+      // Fire on every move (not just release) so live consumers — e.g. a
+      // map radius circle — can resize in step with the thumb.
+      onChangeRef.current(v);
     },
     onPanResponderRelease:   () => { dragging.current = false; onChangeRef.current(dispRef.current); },
     onPanResponderTerminate: () => { dragging.current = false; onChangeRef.current(dispRef.current); },

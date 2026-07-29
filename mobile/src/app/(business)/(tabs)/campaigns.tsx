@@ -542,33 +542,31 @@ export default function CampaignsScreen() {
                     </View>
                   </View>
 
-                  {/* Details */}
+                  {/* Details — deadline/creators/budget on the left, platforms on the right */}
                   <View style={[styles.detailsSection, { borderTopColor: C.border, borderBottomColor: C.border }]}>
-                    {dateIso && (
-                      <View style={styles.detailRow}>
-                        <Ionicons name="calendar-outline" size={14} color={C.textSecondary} />
-                        <Text style={[styles.detailText, { color: C.textSecondary }]}>{formatShortDate(dateIso)}</Text>
-                      </View>
-                    )}
-                    {!!creatorsCount && (
-                      <View style={styles.detailRow}>
-                        <Ionicons name="people-outline" size={14} color={C.textSecondary} />
-                        <Text style={[styles.detailText, { color: C.textSecondary }]}>{t('createEvent.summaryNCreators', { n: creatorsCount })}</Text>
-                      </View>
-                    )}
-                    {c.campaignType !== 'OPEN_EVENT' && (
-                      <View style={styles.detailRow}>
-                        <FontAwesome5 name="money-bill-wave" size={12} color={C.textSecondary} />
-                        <Text style={[styles.detailText, styles.budgetText, { color: C.text }]}>{c.budget}</Text>
-                      </View>
-                    )}
-                  </View>
+                    <View style={styles.detailsLeft}>
+                      {dateIso && (
+                        <View style={styles.detailRow}>
+                          <Ionicons name="calendar-outline" size={14} color={C.textSecondary} />
+                          <Text style={[styles.detailText, { color: C.textSecondary }]}>{formatShortDate(dateIso)}</Text>
+                        </View>
+                      )}
+                      {!!creatorsCount && (
+                        <View style={styles.detailRow}>
+                          <Ionicons name="people-outline" size={14} color={C.textSecondary} />
+                          <Text style={[styles.detailText, { color: C.textSecondary }]}>{t('createEvent.summaryNCreators', { n: creatorsCount })}</Text>
+                        </View>
+                      )}
+                      {c.campaignType !== 'OPEN_EVENT' && (
+                        <View style={styles.detailRow}>
+                          <FontAwesome5 name="money-bill-wave" size={12} color={C.textSecondary} />
+                          <Text style={[styles.detailText, styles.budgetText, { color: C.text }]}>{c.budget}</Text>
+                        </View>
+                      )}
+                    </View>
 
-                  {/* Social platforms */}
-                  {c.platforms.length > 0 && (
-                    <View style={[styles.socialSection, { borderBottomColor: C.border }]}>
-                      <Text style={[styles.socialLabel, { color: C.textSecondary }]}>{t('campaigns.platformsLabel')}</Text>
-                      <View style={styles.socialPlatforms}>
+                    {c.platforms.length > 0 && (
+                      <View style={styles.detailsRight}>
                         {c.platforms.map((p) => {
                           const pMeta = getPlatformMeta(allPlatforms, p);
                           return (
@@ -578,8 +576,8 @@ export default function CampaignsScreen() {
                           );
                         })}
                       </View>
-                    </View>
-                  )}
+                    )}
+                  </View>
 
                   {c.status === 'draft' && (
                     <Text style={[styles.draftNote, { color: C.textSecondary }]}>{t('campaigns.tapToEdit')}</Text>
@@ -881,14 +879,13 @@ const styles = StyleSheet.create({
   postedDay: { fontSize: 12, fontFamily: F.regular },
   thumb: { width: 64, height: 64, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center', flexShrink: 0, overflow: 'hidden' },
 
-  detailsSection: { borderTopWidth: 1, borderBottomWidth: 1, paddingVertical: 12, marginBottom: 14, gap: 10 },
+  detailsSection: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', borderTopWidth: 1, borderBottomWidth: 1, paddingVertical: 12, marginBottom: 14 },
+  detailsLeft:  { gap: 10, flexShrink: 1 },
+  detailsRight: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end', gap: 8, flexShrink: 0, marginLeft: 12 },
   detailRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   detailText: { fontSize: 13, fontFamily: F.regular },
   budgetText: { fontFamily: F.bold },
 
-  socialSection: { borderBottomWidth: 1, paddingBottom: 14, marginBottom: 14, gap: 10 },
-  socialLabel: { fontSize: 12, fontFamily: F.medium },
-  socialPlatforms: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   socialIcon: { width: 32, height: 32, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center' },
 
   draftNote: { fontSize: 11, fontStyle: 'italic', fontFamily: F.regular },

@@ -923,7 +923,6 @@ const en = {
     viewProposals: 'View proposals',
     viewProposalsBtn: 'View {{n}} Proposal',
     viewProposalsBtnPlural: 'View {{n}} Proposals',
-    platformsLabel: 'Platforms',
     publishDraft: 'Publish',
     draftPublished: 'Event published!',
     draftPublishFailed: 'Failed to publish this draft.',

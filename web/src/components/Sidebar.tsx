@@ -21,6 +21,7 @@ import {
   Mail,
   Gauge,
   Quote,
+  FileSignature,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -63,6 +64,7 @@ const navGroups: NavGroup[] = [
       { to: '/get-in-touch',  label: 'Get in Touch',  icon: Mail          },
       { to: '/support-inbox', label: 'Support Inbox', icon: MessageCircle },
       { to: '/legal',         label: 'Legal',         icon: Scale         },
+      { to: '/contracts',     label: 'Contracts',     icon: FileSignature },
     ],
   },
   {

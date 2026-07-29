@@ -118,6 +118,7 @@ model CreatorProfile {
   withdrawals             Withdrawal[]
   profileViews            ProfileView[]
   paymentTransactions     PaymentTransaction[]
+  contracts               Contract[]
 
   @@index([isVerified])
   @@map("creator_profiles")
@@ -264,6 +265,7 @@ model BusinessProfile {
   profileViews             ProfileView[]
   socialAccounts           SocialAccount[]
   paymentTransactions      PaymentTransaction[]
+  contracts                Contract[]
 
   @@index([isVerified])
   @@map("business_profiles")
@@ -347,6 +349,7 @@ model Campaign {
   conversations         Conversation[]
   invitations           CampaignInvitation[]
   paymentTransactions   PaymentTransaction[]
+  contracts             Contract[]
 
   // Maintained by a Postgres trigger (see migration add_campaign_fulltext_search) —
   // Prisma can't type tsvector, so it's never written through the client, only
@@ -397,6 +400,7 @@ model Application {
   reviews             Review[]
   paymentTransactions PaymentTransaction[]
   revisionNotes       RevisionNote[]
+  contract            Contract?
 
   @@unique([campaignId, creatorId])
   @@index([creatorId])
@@ -569,6 +573,60 @@ model LegalSection {
   updatedAt DateTime @updatedAt
 
   @@map("legal_sections")
+}
+
+// Admin-editable base contract text per campaign type — {{placeholder}} tokens
+// (see contract.service.ts's TOKENS) get substituted with per-deal values when
+// a Contract is generated. One row per CampaignType, lazily created with a
+// built-in default body on first use if the admin hasn't edited one yet.
+model ContractTemplate {
+  id           String       @id @default(cuid())
+  campaignType CampaignType @unique
+  title        String       @default("Creator Collaboration Agreement")
+  body         String
+  updatedAt    DateTime     @updatedAt
+  createdAt    DateTime     @default(now())
+
+  @@map("contract_templates")
+}
+
+enum ContractStatus {
+  PENDING_BUSINESS
+  EXECUTED
+  VOID
+}
+
+// A per-application contract, snapshotted from ContractTemplate + the deal's
+// terms at the moment the creator submits the proposal (creatorAgreedAt is
+// set immediately since submission itself is gated behind agreeing to these
+// terms — see submit-proposal.tsx). businessAgreedAt/status flip to EXECUTED
+// when the business accepts (see campaign.service.ts updateApplicationStatus).
+// Frozen once created — later edits to the admin template or the campaign
+// itself never retroactively change an already-created contract.
+model Contract {
+  id               String         @id @default(cuid())
+  applicationId    String         @unique
+  campaignId       String
+  businessId       String
+  creatorId        String
+  title            String
+  filledBody       String
+  // Structured snapshot of the deal terms (price, deadline, deliverables,
+  // timeline, platforms, benefits, etc.) — see contract.service.ts buildTerms.
+  terms            Json
+  status           ContractStatus @default(PENDING_BUSINESS)
+  creatorAgreedAt  DateTime       @default(now())
+  businessAgreedAt DateTime?
+  pdfUrl           String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  application Application     @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  campaign    Campaign        @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  business    BusinessProfile @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  creator     CreatorProfile  @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  @@map("contracts")
 }
 
 model FaqArticle {

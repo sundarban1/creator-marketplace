@@ -235,6 +235,17 @@ export interface LegalSection {
   updatedAt: string;
 }
 
+// Contracts only apply to paid campaigns — free/open events have no
+// price/deliverable-for-payment exchange to put under agreement.
+export interface ContractTemplate {
+  id:           string;
+  campaignType: 'PAID_CAMPAIGN';
+  title:        string;
+  body:         string;
+  createdAt:    string;
+  updatedAt:    string;
+}
+
 export interface HelpArticle {
   id:        string;
   question:  string;
@@ -769,6 +780,14 @@ export const api = {
 
     submitPublicContact: (data: { name: string; email: string; topic: string; message: string }) =>
       request<unknown>('POST', '/api/support/contact-public', data),
+  },
+
+  contractTemplate: {
+    get: () =>
+      request<ContractTemplate>('GET', '/api/contracts/admin/template'),
+
+    update: (data: { title?: string; body?: string }) =>
+      request<ContractTemplate>('PUT', '/api/contracts/admin/template', data),
   },
 
   legal: {

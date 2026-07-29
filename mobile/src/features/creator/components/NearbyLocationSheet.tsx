@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
-import MapView, { PROVIDER_GOOGLE, type Region } from 'react-native-maps';
+import MapView, { Circle, PROVIDER_GOOGLE, type Region } from 'react-native-maps';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { RadiusSlider } from '@/components/RadiusSlider';
@@ -10,6 +10,19 @@ import { getCurrentLocation, type LatLng } from '@/utilities/geolocation';
 
 const DEFAULT_DELTA = 0.15; // ~15km-ish span at the equator, close enough for a starting zoom
 const FALLBACK_COORDS: LatLng = { lat: 27.7172, lng: 85.3240 }; // Kathmandu — used only if no location is available at all
+
+// How much of the map card the circle's diameter should occupy — keeps the
+// whole radius circle inside the visible card instead of spilling past its edges.
+const CIRCLE_FIT_FRACTION = 0.85;
+
+// Delta (in degrees) needed so a circle of this radius fits within the card —
+// scales all the way down for small radii (e.g. 1km zooms in close) and up
+// for large ones, floored only at MIN_DELTA to avoid an absurd, pointless zoom.
+const MIN_DELTA = 0.01;
+function deltaForRadiusKm(radiusKm: number) {
+  const spanKm = (radiusKm * 2) / CIRCLE_FIT_FRACTION;
+  return Math.max(spanKm / 111, MIN_DELTA);
+}
 
 export type NearbySource = 'current' | 'home' | 'custom';
 
@@ -49,6 +62,11 @@ export function NearbyLocationSheet({ visible, onClose, source, radiusKm, homeLa
   // fires for an actual finger-driven pan, so it's the one reliable signal
   // that the pin move below should count as "custom".
   const userIsDragging = useRef(false);
+  // Always holds the latest pin position so the radius-zoom effect below can
+  // re-center on it without needing pinCoords itself as a dependency (that
+  // would also re-fire on a plain user drag and fight the drag gesture).
+  const pinCoordsRef = useRef(pinCoords);
+  pinCoordsRef.current = pinCoords;
 
   useEffect(() => {
     if (!visible) return;
@@ -63,18 +81,30 @@ export function NearbyLocationSheet({ visible, onClose, source, radiusKm, homeLa
       initialSource === 'current' ? (currentCoords ?? homeCoords) :
       initialSource === 'home'    ? (homeCoords ?? currentCoords) :
       (customCoords ?? currentCoords ?? homeCoords);
-    setPinCoords(start ?? FALLBACK_COORDS);
+    moveTo(start ?? FALLBACK_COORDS, radiusKm);
   }, [visible, source, radiusKm, currentCoords, homeCoords, customCoords]);
 
-  function moveTo(coords: LatLng) {
+  // Keep the circle fully inside the map card as the radius changes: zoom
+  // out once the circle would spill past the card's edges, zoom back in as
+  // it shrinks. Instant (no animation) so the map's zoom never lags behind
+  // a fast slider drag — an animated catch-up would let the circle
+  // (rendered immediately from draftRadius) momentarily poke past the card
+  // edges while the map is still easing toward the new region.
+  useEffect(() => {
+    if (!visible) return;
+    moveTo(pinCoordsRef.current, draftRadius, 0);
+  }, [visible, draftRadius]);
+
+  function moveTo(coords: LatLng, forRadiusKm: number = draftRadius, durationMs = 300) {
     isProgrammaticMove.current = true;
     setPinCoords(coords);
+    const delta = deltaForRadiusKm(forRadiusKm);
     mapRef.current?.animateToRegion({
       latitude: coords.lat,
       longitude: coords.lng,
-      latitudeDelta: DEFAULT_DELTA,
-      longitudeDelta: DEFAULT_DELTA,
-    }, 300);
+      latitudeDelta: delta,
+      longitudeDelta: delta,
+    }, durationMs);
   }
 
   function handleRegionChangeComplete(region: Region) {
@@ -169,8 +199,15 @@ export function NearbyLocationSheet({ visible, onClose, source, radiusKm, homeLa
                 longitudeDelta: DEFAULT_DELTA,
               }}
               onPanDrag={() => { userIsDragging.current = true; }}
-              onRegionChangeComplete={handleRegionChangeComplete}
-            />
+              onRegionChangeComplete={handleRegionChangeComplete}>
+              <Circle
+                center={{ latitude: pinCoords.lat, longitude: pinCoords.lng }}
+                radius={draftRadius * 1000}
+                fillColor={`${C.brinjal1}26`}
+                strokeColor={`${C.brinjal1}99`}
+                strokeWidth={1.5}
+              />
+            </MapView>
             {/* Fixed center pin — the map pans underneath it, matching the
                 Facebook Marketplace "drag map, pin stays put" pattern. */}
             <View style={styles.pinWrap} pointerEvents="none">

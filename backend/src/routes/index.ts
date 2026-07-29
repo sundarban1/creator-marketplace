@@ -26,6 +26,7 @@ import faqRoutes          from '../modules/faq/faq.routes';
 import supportRoutes      from '../modules/support/support.routes';
 import legalRoutes        from '../modules/legal/legal.routes';
 import notificationRoutes from '../modules/notifications/notification.routes';
+import contractRoutes     from '../modules/contract/contract.routes';
 
 export function registerApiRoutes(app: Express): void {
   app.use('/api/auth', authRoutes);
@@ -57,4 +58,5 @@ export function registerApiRoutes(app: Express): void {
   app.use('/api/support',       supportRoutes);
   app.use('/api/legal',         legalRoutes);
   app.use('/api/notifications', notificationRoutes);
+  app.use('/api/contracts',     contractRoutes);
 }

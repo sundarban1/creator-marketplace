@@ -15,11 +15,13 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppModal } from '@/components/AppModal';
 import { Button } from '@/components/Button';
+import { ContractModal } from '@/components/ContractModal';
 import { TextInputWithLabel } from '@/components/TextInputWithLabel';
 import { useToast } from '@/components/Toast';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { campaignService } from '@/services/campaign';
+import { contractService, type ContractPreview } from '@/services/contract';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- used by the required-social-account check, temporarily disabled below
 import { creatorService } from '@/services/creator';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
@@ -134,6 +136,12 @@ export default function SubmitProposalScreen() {
   const [loading, setLoading]     = useState(false);
   const [showSocialModal, setShowSocialModal] = useState(false);
 
+  // Contract agreement — paid campaigns only (a free event has no
+  // price/deliverable-for-payment exchange to put under agreement).
+  const [contractPreview, setContractPreview]         = useState<ContractPreview | null>(null);
+  const [contractModalVisible, setContractModalVisible] = useState(false);
+  const [agreeing, setAgreeing]   = useState(false);
+
   const scrollRef = useRef<ScrollView>(null);
   const bottomFieldFocusedRef = useRef(false);
 
@@ -181,36 +189,68 @@ export default function SubmitProposalScreen() {
     setCoverLetter(generateTemplate(category ?? '', campaignTitle ?? '', brand ?? ''));
   }
 
+  async function submitApplication() {
+    // Social-account requirement temporarily disabled; re-enable by restoring
+    // the block below (kept for when this is implemented again).
+    // const accounts = await creatorService.getSocialAccounts();
+    // const hasRequiredSocial = accounts.some((a) => REQUIRED_SOCIAL_PLATFORMS.includes(a.platform.toLowerCase()));
+    // if (!hasRequiredSocial) {
+    //   setShowSocialModal(true);
+    //   return;
+    // }
+
+    await campaignService.apply(campaignId, {
+      coverLetter:  coverLetter.trim(),
+      proposedRate,
+      timeline:     '2 weeks',
+      socialHandles: {},
+      portfolioUrl: portfolio.trim() || undefined,
+    });
+    toast.success(t('proposal.submitSuccessBody', { brand }), t('proposal.submitSuccessTitle'));
+    setContractModalVisible(false);
+    setTimeout(() => router.back(), 1200);
+  }
+
   async function handleSubmit() {
     setSubmitted(true);
     if (coverLetterLen < 50 || isRateInvalid || (portfolio.trim() && !isValidUrl(portfolio.trim()))) {
       return;
     }
 
+    // Free events aren't a paid engagement — submit directly, same as before.
+    if (isFreeEvent) {
+      setLoading(true);
+      try {
+        await submitApplication();
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : t('proposal.submitError'));
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    // Paid campaigns: review + agree to the contract before actually submitting.
     setLoading(true);
     try {
-      // Social-account requirement temporarily disabled; re-enable by restoring
-      // the block below (kept for when this is implemented again).
-      // const accounts = await creatorService.getSocialAccounts();
-      // const hasRequiredSocial = accounts.some((a) => REQUIRED_SOCIAL_PLATFORMS.includes(a.platform.toLowerCase()));
-      // if (!hasRequiredSocial) {
-      //   setShowSocialModal(true);
-      //   return;
-      // }
-
-      await campaignService.apply(campaignId, {
-        coverLetter:  coverLetter.trim(),
-        proposedRate,
-        timeline:     '2 weeks',
-        socialHandles: {},
-        portfolioUrl: portfolio.trim() || undefined,
-      });
-      toast.success(t('proposal.submitSuccessBody', { brand }), t('proposal.submitSuccessTitle'));
-      setTimeout(() => router.back(), 1200);
+      const preview = await contractService.previewContract(campaignId, proposedRate, '2 weeks');
+      setContractPreview(preview);
+      setContractModalVisible(true);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : t('proposal.submitError'));
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleAgreeAndSubmit() {
+    setAgreeing(true);
+    try {
+      await submitApplication();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t('proposal.submitError'));
+    } finally {
+      setAgreeing(false);
     }
   }
 
@@ -355,6 +395,20 @@ export default function SubmitProposalScreen() {
         }}
         onCancel={() => setShowSocialModal(false)}
       />
+
+      {contractPreview && (
+        <ContractModal
+          visible={contractModalVisible}
+          title={contractPreview.title}
+          subtitle="Review and agree to the contract before your proposal is submitted."
+          filledBody={contractPreview.filledBody}
+          terms={contractPreview.terms}
+          agreeLabel="I Agree & Submit"
+          agreeing={agreeing}
+          onAgree={handleAgreeAndSubmit}
+          onClose={() => setContractModalVisible(false)}
+        />
+      )}
     </SafeAreaView>
   );
 }

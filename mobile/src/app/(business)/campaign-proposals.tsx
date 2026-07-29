@@ -20,6 +20,8 @@ import { ListRowSkeleton } from '@/components/ListRowSkeleton';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { campaignService } from '@/services/campaign';
+import { contractService, type Contract } from '@/services/contract';
+import { ContractModal } from '@/components/ContractModal';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 
@@ -428,6 +430,15 @@ export default function CampaignProposalsScreen() {
   const [closing, setClosing]           = useState(false);
   const [modal, setModal]               = useState<ModalState>({ visible: false, type: 'accept', proposal: null, loading: false });
 
+  // Contract agreement — paid campaigns only (a free event has no
+  // price/deliverable-for-payment exchange to put under agreement).
+  const [contractModal, setContractModal] = useState<{
+    visible:  boolean;
+    contract: Contract | null;
+    proposal: Proposal | null;
+    agreeing: boolean;
+  }>({ visible: false, contract: null, proposal: null, agreeing: false });
+
   async function load(showRefresh = false) {
     if (showRefresh) setRefreshing(true);
     else setLoading(true);
@@ -466,8 +477,57 @@ export default function CampaignProposalsScreen() {
 
   const onRefresh = useCallback(() => void load(true), [campaignId]);
 
-  function handleAccept(p: Proposal) {
-    setModal({ visible: true, type: 'accept', proposal: p, loading: false });
+  async function handleAccept(p: Proposal) {
+    // Free events skip the contract step entirely — same confirm-and-approve
+    // flow as before.
+    if (isFree) {
+      setModal({ visible: true, type: 'accept', proposal: p, loading: false });
+      return;
+    }
+    setActingId(p.id);
+    try {
+      const contract = await contractService.getContractForApplication(p.id);
+      setContractModal({ visible: true, contract, proposal: p, agreeing: false });
+    } catch (e) {
+      Alert.alert(t('common.error'), e instanceof Error ? e.message : 'Could not load the contract for this proposal.');
+    } finally {
+      setActingId(null);
+    }
+  }
+
+  function closeContractModal() {
+    setContractModal((m) => ({ ...m, visible: false }));
+  }
+
+  async function handleAgreeAndAccept() {
+    const p = contractModal.proposal;
+    if (!p) return;
+    setContractModal((m) => ({ ...m, agreeing: true }));
+    setActingId(p.id);
+    try {
+      await campaignService.acceptProposal(campaignId, p.id);
+      const newAcceptedCount = proposals.filter((x) => x.status === 'accepted').length + 1;
+      const willFill = capacity != null && newAcceptedCount >= capacity;
+      setProposals((prev) =>
+        prev.map((x) => {
+          if (x.id === p.id) return { ...x, status: 'accepted' as const };
+          // optimistically auto-decline remaining pending if threshold hit
+          if (willFill && x.status === 'pending') return { ...x, status: 'rejected' as const };
+          return x;
+        }),
+      );
+      setContractModal({ visible: false, contract: null, proposal: null, agreeing: false });
+      // Straight into the project's activity timeline — no separate "Start
+      // Project" tap needed right after accepting.
+      router.push({
+        pathname: '/(business)/activity-timeline',
+        params: { campaignId, campaignTitle: fetchedTitle || campaignTitle, applicationId: p.id },
+      });
+    } catch {
+      setContractModal((m) => ({ ...m, agreeing: false }));
+    } finally {
+      setActingId(null);
+    }
   }
 
   function handleReject(p: Proposal) {
@@ -698,6 +758,21 @@ export default function CampaignProposalsScreen() {
         onConfirm={confirmModal}
         onCancel={closeModal}
       />
+
+      {contractModal.contract && (
+        <ContractModal
+          visible={contractModal.visible}
+          title={contractModal.contract.title}
+          subtitle={`Review and agree to accept ${contractModal.proposal?.creator.fullName ?? 'this creator'}'s proposal.`}
+          filledBody={contractModal.contract.filledBody}
+          terms={contractModal.contract.terms}
+          contractId={contractModal.contract.id}
+          agreeLabel="I Agree & Accept"
+          agreeing={contractModal.agreeing}
+          onAgree={handleAgreeAndAccept}
+          onClose={closeContractModal}
+        />
+      )}
 
       {loading ? (
         <View style={styles.list}>

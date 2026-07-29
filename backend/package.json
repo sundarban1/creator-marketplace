@@ -14,6 +14,7 @@
     "db:seed:admin": "tsx prisma/seed-admin.ts",
     "db:seed:platforms": "tsx prisma/seed-platforms.ts",
     "db:seed:success-stories": "tsx prisma/seed-success-stories.ts",
+    "db:seed:contracts": "tsx prisma/seed-contracts.ts",
     "db:seed:bulk": "tsx prisma/bulk-seed.ts",
     "android": "expo run:android",
     "ios": "expo run:ios"
@@ -38,6 +39,7 @@
     "node-cron": "^4.6.0",
     "nodemailer": "^6.9.8",
     "openai": "^6.48.0",
+    "pdfkit": "^0.19.1",
     "pino": "^10.3.1",
     "pino-http": "^11.0.0",
     "react": "19.1.0",
@@ -58,6 +60,7 @@
     "@types/node": "^20.11.5",
     "@types/node-cron": "^3.0.11",
     "@types/nodemailer": "^6.4.14",
+    "@types/pdfkit": "^0.17.6",
     "@types/react": "~19.1.10",
     "@types/swagger-jsdoc": "^6.0.4",
     "@types/swagger-ui-express": "^4.1.6",

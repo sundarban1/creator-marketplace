@@ -229,7 +229,12 @@ export default function HomeScreen() {
   async function initNearby(profile: { nearbyRadiusKm: number; nearbyUseHomeLocation: boolean; location: string | null; locationLat: number | null; locationLng: number | null }) {
     const radius = profile.nearbyRadiusKm ?? 25;
     setNearbyRadiusKm(radius);
-    setNearbyHomeLabel(profile.location?.split(',')[0]?.trim() ?? null);
+    setNearbyHomeLabel(
+      profile.location
+        ?.split(',')[0]
+        ?.replace(/\s*\d{4,6}\s*$/, '')
+        ?.trim() ?? null,
+    );
 
     const [current, home] = await Promise.all([
       getCurrentLocation(),
@@ -986,10 +991,10 @@ export default function HomeScreen() {
                   />
                   <Text style={[styles.nearbyChipText, { color: C.brinjal1 }]} numberOfLines={1}>
                     {nearbySource === 'current'
-                      ? `Current Location · ${nearbyRadiusKm} km`
+                      ? 'Current Location'
                       : nearbySource === 'home'
-                        ? `Home${nearbyHomeLabel ? ` · ${nearbyHomeLabel}` : ''} · ${nearbyRadiusKm} km`
-                        : `Custom Location · ${nearbyRadiusKm} km`}
+                        ? `Home${nearbyHomeLabel ? ` · ${nearbyHomeLabel}` : ''}`
+                        : 'Custom Location'}
                   </Text>
                   <Ionicons name="chevron-down" size={11} color={C.brinjal1} />
                 </Pressable>
