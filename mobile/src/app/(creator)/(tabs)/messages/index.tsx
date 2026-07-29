@@ -221,50 +221,48 @@ function ChatCard({ conv, onDelete }: { conv: Conversation; onDelete: (id: strin
 
   return (
     <SwipeableChatRow onDelete={handleLongPress} deleteLabel={t('messages.deleteConversationConfirm')}>
-      <View style={s.cardWrap}>
-        <Pressable
-          style={({ pressed }) => [
-            s.card,
-            { backgroundColor: pressed ? C.surface : C.background, borderColor: C.border },
-          ]}
-          onLongPress={handleLongPress}
-          delayLongPress={400}
-          onPress={() =>
-            router.push({
-              pathname: '/(creator)/messages/[id]' as never,
-              params: { id: conv.id, name: conv.participantName, avatar: conv.participantAvatar ?? '', userId: conv.participantUserId ?? '', participantId: conv.participantId, status: conv.status, campaignTitle: conv.campaignTitle ?? '', participantRole: conv.participantRole },
-            })
-          }>
-          {/* Avatar — plain, no ring/stripe/badge clutter */}
-          <Avatar name={conv.participantName} imageUrl={conv.participantAvatar} size={56} role={conv.participantRole} />
+      <Pressable
+        style={({ pressed }) => [
+          s.card,
+          { backgroundColor: pressed ? C.surface : C.background },
+        ]}
+        onLongPress={handleLongPress}
+        delayLongPress={400}
+        onPress={() =>
+          router.push({
+            pathname: '/(creator)/messages/[id]' as never,
+            params: { id: conv.id, name: conv.participantName, avatar: conv.participantAvatar ?? '', userId: conv.participantUserId ?? '', participantId: conv.participantId, status: conv.status, campaignTitle: conv.campaignTitle ?? '', participantRole: conv.participantRole },
+          })
+        }>
+        {/* Avatar — plain, no ring/stripe/badge clutter */}
+        <Avatar name={conv.participantName} imageUrl={conv.participantAvatar} size={56} role={conv.participantRole} />
 
-          {/* Content — two lines, Instagram-style: name, then preview · time */}
-          <View style={s.content}>
+        {/* Content — two lines, Instagram-style: name, then preview · time */}
+        <View style={s.content}>
+          <Text
+            style={[s.name, { color: C.text }, hasUnread && s.nameUnread]}
+            numberOfLines={1}>
+            {conv.participantName}
+          </Text>
+
+          <View style={s.rowBottom}>
+            {conv.campaignTitle ? (
+              <Ionicons name="briefcase" size={12} color={hasUnread ? C.text : C.textSecondary} style={s.previewIcon} />
+            ) : null}
             <Text
-              style={[s.name, { color: C.text }, hasUnread && s.nameUnread]}
+              style={[s.preview, { color: hasUnread ? C.text : C.textSecondary }, hasUnread && s.previewUnread]}
               numberOfLines={1}>
-              {conv.participantName}
+              {conv.lastMessage || t('messages.noMessagesYet')}
             </Text>
-
-            <View style={s.rowBottom}>
-              {conv.campaignTitle ? (
-                <Ionicons name="briefcase" size={12} color={hasUnread ? C.text : C.textSecondary} style={s.previewIcon} />
-              ) : null}
-              <Text
-                style={[s.preview, { color: hasUnread ? C.text : C.textSecondary }, hasUnread && s.previewUnread]}
-                numberOfLines={1}>
-                {conv.lastMessage || t('messages.noMessagesYet')}
-              </Text>
-              <Text style={[s.previewTime, { color: hasUnread ? C.text : C.textSecondary }, hasUnread && s.previewUnread]}>
-                {' · ' + formatTime(conv.lastMessageTime, t)}
-              </Text>
-            </View>
+            <Text style={[s.previewTime, { color: hasUnread ? C.text : C.textSecondary }, hasUnread && s.previewUnread]}>
+              {' · ' + formatTime(conv.lastMessageTime, t)}
+            </Text>
           </View>
+        </View>
 
-          {/* Unread indicator — single dot, no numeric badge */}
-          {hasUnread && <View style={[s.unreadDot, { backgroundColor: ACCENT }]} />}
-        </Pressable>
-      </View>
+        {/* Unread indicator — single dot, no numeric badge */}
+        {hasUnread && <View style={[s.unreadDot, { backgroundColor: ACCENT }]} />}
+      </Pressable>
     </SwipeableChatRow>
   );
 }
@@ -408,6 +406,7 @@ export default function CreatorMessagesScreen() {
           keyExtractor={(c) => c.id}
           renderItem={({ item }) => <ChatCard conv={item} onDelete={handleDeleteConversation} />}
           contentContainerStyle={[s.chatList, chats.length === 0 && s.listEmpty]}
+          ItemSeparatorComponent={() => <View style={[s.sep, { backgroundColor: C.border }]} />}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={ACCENT} />}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
@@ -457,17 +456,15 @@ const s = StyleSheet.create({
   acceptTxt:   { fontSize: 13, color: '#fff', fontFamily: F.bold },
 
   // Chat list
-  chatList: { paddingBottom: 40, paddingHorizontal: 16, gap: 12 },
+  chatList: { paddingBottom: 40 },
+  sep:      { height: StyleSheet.hairlineWidth, marginLeft: 86 },
 
-  // Chat card — plain avatar, name line, preview+time line, unread dot
-  cardWrap: { borderRadius: RADIUS.lg, ...SHADOW.raised },
+  // Chat card — Instagram-style: plain avatar, name line, preview+time line, unread dot
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 14,
-    borderWidth: 1,
-    borderRadius: RADIUS.lg,
-    overflow: 'hidden',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
     gap: 14,
   },
   content:     { flex: 1, gap: 4 },

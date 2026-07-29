@@ -13,7 +13,7 @@ import { useAppColors } from '@/context/ThemeContext';
 import { useNotificationBadge } from '@/context/NotificationContext';
 import { notificationService } from '@/services/notifications';
 import { getSocket } from '@/lib/socket';
-import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { F, RADIUS } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import type { AppNotification } from '@/types';
 
@@ -70,43 +70,33 @@ function NotificationItem({ item, onPress }: { item: AppNotification; onPress: (
   const cfg = TYPE_CONFIG[item.type] ?? FALLBACK;
 
   return (
-    <View style={styles.cardWrap}>
-      <Pressable
-        style={[
-          styles.item,
-          { backgroundColor: item.isRead ? C.surface : C.primaryLight, borderColor: C.border },
-        ]}
-        onPress={() => onPress(item.id)}>
+    <Pressable
+      style={[styles.item, { backgroundColor: item.isRead ? 'transparent' : C.primaryLight }]}
+      onPress={() => onPress(item.id)}>
 
-        {/* Type-coloured left accent bar */}
-        {!item.isRead && (
-          <View style={[styles.accentBar, { backgroundColor: cfg.accentColor }]} />
-        )}
+      {/* Type icon in a coloured circle */}
+      <View style={[styles.iconWrap, { backgroundColor: cfg.iconBg }]}>
+        <Ionicons name={cfg.icon} size={20} color={cfg.iconColor} />
+      </View>
 
-        {/* Type icon in a coloured circle */}
-        <View style={[styles.iconWrap, { backgroundColor: cfg.iconBg }]}>
-          <Ionicons name={cfg.icon} size={20} color={cfg.iconColor} />
-        </View>
-
-        {/* Content */}
-        <View style={styles.itemContent}>
-          <View style={styles.titleRow}>
-            <Text style={[styles.itemTitle, { color: C.text }]} numberOfLines={1}>
-              {item.title}
-            </Text>
-            {!item.isRead && (
-              <View style={[styles.unreadDot, { backgroundColor: cfg.accentColor }]} />
-            )}
-          </View>
-
-          <Text style={[styles.itemBody, { color: C.textSecondary }]} numberOfLines={2}>
-            {item.body}
+      {/* Content */}
+      <View style={styles.itemContent}>
+        <View style={styles.titleRow}>
+          <Text style={[styles.itemTitle, { color: C.text }]} numberOfLines={1}>
+            {item.title}
           </Text>
-
-          <Text style={[styles.itemTime, { color: C.textSecondary }]}>{timeAgo(item.timestamp, t)}</Text>
+          {!item.isRead && (
+            <View style={[styles.unreadDot, { backgroundColor: cfg.accentColor }]} />
+          )}
         </View>
-      </Pressable>
-    </View>
+
+        <Text style={[styles.itemBody, { color: C.textSecondary }]} numberOfLines={2}>
+          {item.body}
+        </Text>
+
+        <Text style={[styles.itemTime, { color: C.textSecondary }]}>{timeAgo(item.timestamp, t)}</Text>
+      </View>
+    </Pressable>
   );
 }
 
@@ -287,9 +277,11 @@ export default function NotificationsScreen() {
           renderItem={({ item: g }) => (
             <View>
               <Text style={[styles.groupLabel, { color: C.textSecondary }]}>{t(`notifications.${g.group}`)}</Text>
-              <View style={{ gap: 10 }}>
-                {g.items.map((n) => (
-                  <NotificationItem key={n.id} item={n} onPress={handlePress} />
+              <View>
+                {g.items.map((n, idx) => (
+                  <View key={n.id} style={idx > 0 && [styles.sep, { borderTopColor: C.border }]}>
+                    <NotificationItem item={n} onPress={handlePress} />
+                  </View>
                 ))}
               </View>
             </View>
@@ -316,14 +308,14 @@ const styles = StyleSheet.create({
   markAllBtn: { paddingHorizontal: 14, paddingVertical: 7, minHeight: 32, justifyContent: 'center', borderRadius: RADIUS.sm, borderWidth: 1 },
   markAllText:{ fontSize: 12, fontFamily: F.semibold },
   center:     { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  list:       { paddingBottom: 32, paddingHorizontal: 16 },
+  list:       { paddingBottom: 32 },
   listEmpty:  { flexGrow: 1 },
 
-  groupLabel: { fontSize: 12, paddingTop: 20, paddingBottom: 8, textTransform: 'uppercase', letterSpacing: 0, fontFamily: F.bold },
+  groupLabel: { fontSize: 12, paddingTop: 20, paddingBottom: 8, paddingHorizontal: 16, textTransform: 'uppercase', letterSpacing: 0, fontFamily: F.bold },
 
-  cardWrap:   { borderRadius: RADIUS.lg, ...SHADOW.raised },
-  item:       { flexDirection: 'row', padding: 16, borderWidth: 1, borderRadius: RADIUS.lg, overflow: 'hidden', gap: 12, alignItems: 'flex-start' },
-  accentBar:  { position: 'absolute', left: 0, top: 0, bottom: 0, width: 3 },
+  // Instagram-style: flat full-width row, no card border/radius/shadow
+  item:       { flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 12, gap: 12, alignItems: 'flex-start' },
+  sep:        { borderTopWidth: StyleSheet.hairlineWidth },
 
   iconWrap:   { width: 44, height: 44, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', flexShrink: 0, marginTop: 1 },
 

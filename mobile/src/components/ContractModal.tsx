@@ -145,6 +145,8 @@ export function ContractModal({ visible, title, subtitle, filledBody, terms, con
               ))}
             </View>
 
+            <MarkdownBody text={filledBody} colors={C} />
+
             {contractId && (
               <Pressable
                 style={[s.pdfBtn, { borderColor: C.brinjal1, opacity: downloading ? 0.6 : 1 }]}
@@ -153,11 +155,9 @@ export function ContractModal({ visible, title, subtitle, filledBody, terms, con
                 {downloading
                   ? <ActivityIndicator size="small" color={C.brinjal1} />
                   : <Ionicons name="download-outline" size={16} color={C.brinjal1} />}
-                <Text style={[s.pdfBtnText, { color: C.brinjal1 }]}>{downloading ? 'Preparing PDF…' : 'Download PDF'}</Text>
+                <Text style={[s.pdfBtnText, { color: C.brinjal1 }]}>{downloading ? 'Preparing PDF…' : 'Download Contract'}</Text>
               </Pressable>
             )}
-
-            <MarkdownBody text={filledBody} colors={C} />
           </ScrollView>
 
           <View style={[s.footer, { borderTopColor: C.border, backgroundColor: C.surface }]}>
@@ -195,7 +195,7 @@ const s = StyleSheet.create({
   termRow:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, paddingHorizontal: 14, paddingVertical: 12 },
   termLabel: { fontSize: 13, fontFamily: F.medium, flexShrink: 0 },
   termValue: { fontSize: 13, fontFamily: F.semibold, flex: 1, textAlign: 'right' },
-  pdfBtn:    { flexDirection: 'row', alignSelf: 'flex-start', alignItems: 'center', gap: 8, borderWidth: 1.5, borderRadius: RADIUS.md, paddingHorizontal: 14, paddingVertical: 9 },
+  pdfBtn:    { flexDirection: 'row', alignSelf: 'center', alignItems: 'center', gap: 8, borderWidth: 1.5, borderRadius: RADIUS.md, paddingHorizontal: 14, paddingVertical: 9 },
   pdfBtnText:{ fontSize: 13, fontFamily: F.semibold },
   footer:    { padding: 20, borderTopWidth: 1, gap: 14 },
   agreeRow:  { flexDirection: 'row', alignItems: 'center', gap: 10 },
