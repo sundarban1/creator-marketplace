@@ -34,22 +34,15 @@ const CATEGORIES: { icon: string; color: string; name: string; key: string; scop
 ];
 
 export async function seedCategories(prisma: PrismaClient) {
-  await Promise.all(
-    CATEGORIES.map((c, i) =>
-      prisma.category.upsert({
-        where: { key: c.key },
-        // Re-running the seeder keeps icon/color in sync with the palette above —
-        // Category is meant to be admin-owned going forward, but this lets a
-        // fresh seed/reseed always reflect the current defaults.
-        update: { name: c.name, icon: c.icon, color: c.color, iconBg: BG_COLORS[i % BG_COLORS.length]! },
-        create: { ...c, iconBg: BG_COLORS[i % BG_COLORS.length]! },
-      })
-    )
-  );
-  // Full replace, not additive — Category has no FK relations (creator/business
-  // profiles and campaigns store category names as plain strings), so this is
-  // safe to prune outright rather than leaving old rows orphaned.
-  const { count } = await prisma.category.deleteMany({ where: { key: { notIn: CATEGORIES.map((c) => c.key) } } });
-  if (count > 0) console.log(`  🗑️  Categories: removed ${count} no-longer-used`);
+  // Full wipe + fresh insert rather than upsert-by-key — Category has no FK
+  // relations (creator/business profiles and campaigns store category names
+  // as plain strings), so there's no orphaning risk, and this guarantees the
+  // table exactly matches the list above (fresh ids, no stale leftover rows)
+  // instead of reconciling row-by-row.
+  const { count } = await prisma.category.deleteMany({});
+  if (count > 0) console.log(`  🗑️  Categories: removed ${count} existing`);
+  await prisma.category.createMany({
+    data: CATEGORIES.map((c, i) => ({ ...c, iconBg: BG_COLORS[i % BG_COLORS.length]! })),
+  });
   console.log(`  ✅ Categories: ${CATEGORIES.length} seeded`);
 }
