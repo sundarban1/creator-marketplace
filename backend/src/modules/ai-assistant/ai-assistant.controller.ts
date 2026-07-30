@@ -1,0 +1,18 @@
+import { Request, Response, NextFunction } from 'express';
+import { AppError } from '../../middleware/error';
+import { AiAssistantService } from './ai-assistant.service';
+import { success } from '../../utils/response';
+
+const aiAssistantService = new AiAssistantService();
+
+export class AiAssistantController {
+  async transcribe(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.file) throw new AppError('No audio file provided', 400);
+      const text = await aiAssistantService.transcribeAudio(req.file.buffer, req.file.mimetype);
+      success(res, { text }, 'Transcribed');
+    } catch (err) {
+      next(err);
+    }
+  }
+}

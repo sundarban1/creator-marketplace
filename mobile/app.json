@@ -108,6 +108,12 @@
       "expo-video",
       "expo-sharing",
       "expo-web-browser",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Allow Kolab to use your microphone to record voice messages for the AI assistant."
+        }
+      ],
       "./plugins/withFixMapsPodfile.js"
     ],
     "experiments": {

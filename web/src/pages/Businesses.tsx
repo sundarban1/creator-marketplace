@@ -7,6 +7,7 @@ import { DetailModal }   from '../components/DetailModal';
 import { Pagination }    from '../components/Pagination';
 import { api, type ApiBusiness } from '../lib/api';
 import { useApi }        from '../lib/useApi';
+import { displayEmailOrPhone } from '../lib/identity';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -83,7 +84,7 @@ export function Businesses() {
           )}
           <div className="min-w-0">
             <p className="font-medium text-gray-900 truncate">{row.businessName}</p>
-            <p className="text-xs text-gray-500 truncate">{row.user.email}</p>
+            <p className="text-xs text-gray-500 truncate">{displayEmailOrPhone(row.user.email)}</p>
           </div>
         </div>
       ),
@@ -277,7 +278,7 @@ export function Businesses() {
               : <Avatar initials={viewing.businessName.slice(0, 2).toUpperCase()} size="md" />
           }
           title={viewing.businessName}
-          subtitle={viewing.user.email}
+          subtitle={displayEmailOrPhone(viewing.user.email)}
           badges={<StatusBadge status={businessStatus(viewing)} />}
           sections={[
             {

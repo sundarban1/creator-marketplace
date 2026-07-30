@@ -1,5 +1,6 @@
 import { router } from 'expo-router';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
+import * as Speech from 'expo-speech';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -18,7 +19,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage, type TFn } from '@/context/LanguageContext';
-import { campaignService } from '@/services/campaign';
+import { campaignService, type AiCampaignDraft, type AiEventDraft } from '@/services/campaign';
+import { ApiError } from '@/lib/api';
 import { EVENT_LOADING_SVG } from '@/lib/eventLoadingSvg';
 import { profileService } from '@/services/profile';
 import { useCategories } from '@/hooks/useCategories';
@@ -27,6 +29,8 @@ import { FeatureImagePicker } from '@/features/creator/components/FeatureImagePi
 import { LocationSearchModal } from '@/components/LocationSearchModal';
 import { pickAndUpload } from '@/utilities/uploadImage';
 import { RecommendedCreatorsModal } from '@/features/business/components/RecommendedCreatorsModal';
+import { VoicePromptInput } from '@/features/business/components/VoicePromptInput';
+import { transcribeAudio } from '@/services/audioTranscribe';
 import { getTemplateImage } from '@/features/creator/data/templateImages';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
@@ -42,15 +46,146 @@ import {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const AI_PROMPT_EXAMPLES = [
-  "Let's collaborate: Looking for 5 food vloggers to review our new cafe in Kathmandu.",
-  'Join our creator family: 3 fashion influencers needed for our upcoming Dashain outfit campaign.',
-  'Explore with us: Inviting travel vloggers to experience and review our resort in Pokhara.',
-  'Team up with us: Seeking makeup artists and creators for a get-ready-with-me collaboration.',
-  'आउनुहोस् सहकार्य गरौं: हाम्रो नयाँ शैक्षिक एप रिभ्यु गर्नका लागि ३ जना इन्फ्लुएन्सरहरूको आवश्यकता छ।',
-  'हामीसँग जोडिनुहोस्: हाम्रो फिटनेस सेन्टरको अनुभव र प्रवर्द्धन गर्नका लागि हेल्थ एण्ड फिटनेस क्रिएटरहरू खोज्दैछौं।',
-  'सहकार्यको लागि आमन्त्रण: हाम्रो अटोमोबाइल वर्कशप र गाडी सर्भिसिङको भिडियो बनाउनका लागि २ जना बाइक/कार राइडर ब्लगरहरू चाहिएको छ।',
-];
+// Quick Templates / Quick Audio Samples shown under the AI prompt box —
+// exactly 2 English + 2 Nepali examples shown together, tailored to the
+// business's own onboarding-selected category (see `businessCategories`
+// below) rather than one universal list.
+const PROMPT_EXAMPLES_BY_CATEGORY: Record<string, { en: [string, string]; ne: [string, string] }> = {
+  'Restaurants': {
+    en: ['Looking for 3 food creators to review our new menu and dining experience.', 'Inviting food vloggers to visit our restaurant and share their honest experience.'],
+    ne: ['हाम्रो नयाँ मेनु र डाइनिङ अनुभव रिभ्यु गर्नका लागि ३ जना फूड क्रिएटरहरू खोज्दैछौं।', 'हाम्रो रेस्टुरेन्टमा आउनुहोस् र आफ्नो साँचो अनुभव साझा गर्नुहोस् भनेर फूड भ्लगरहरूलाई आमन्त्रण गर्दैछौं।'],
+  },
+  'Cafés': {
+    en: ["Let's collaborate: looking for coffee lovers to try our new blend and share it online.", 'Inviting cafe creators to review our cozy space and seasonal drinks menu.'],
+    ne: ['सहकार्यको लागि: हाम्रो नयाँ कफी ब्लेन्ड प्रयास गरी अनलाइन साझा गर्ने कफी प्रेमीहरू खोज्दैछौं।', 'हाम्रो न्यानो क्याफे र सिजनल ड्रिंक्स मेनु रिभ्यु गर्न क्याफे क्रिएटरहरूलाई आमन्त्रण गर्दैछौं।'],
+  },
+  'Hotels': {
+    en: ['Inviting travel creators to experience our rooms and share a hotel tour video.', 'Looking for creators to showcase our new weekend getaway packages.'],
+    ne: ['हाम्रो कोठाहरूको अनुभव लिई होटल टुर भिडियो बनाउन ट्राभल क्रिएटरहरूलाई आमन्त्रण गर्दैछौं।', 'हाम्रो नयाँ वीकेन्ड गेटअवे प्याकेजहरू देखाउन क्रिएटरहरू खोज्दैछौं।'],
+  },
+  'Resorts': {
+    en: ['Inviting travel vloggers to experience and review our resort getaway.', 'Looking for creators for a honeymoon package photoshoot and review.'],
+    ne: ['हाम्रो रिसोर्ट गेटअवेको अनुभव र समीक्षा गर्न ट्राभल भ्लगरहरूलाई आमन्त्रण गर्दैछौं।', 'हनिमुन प्याकेज फोटोसुट र समीक्षाको लागि क्रिएटरहरू खोज्दैछौं।'],
+  },
+  'Travel & Tourism': {
+    en: ['Explore with us: inviting travel creators to try our new holiday package.', 'Looking for adventure creators to document a group tour experience.'],
+    ne: ['हामीसँगै घुम्नुहोस्: हाम्रो नयाँ हलिडे प्याकेज प्रयास गर्न ट्राभल क्रिएटरहरूलाई आमन्त्रण गर्दैछौं।', 'ग्रुप टुर अनुभव रेकर्ड गर्न एडभेन्चर क्रिएटरहरू खोज्दैछौं।'],
+  },
+  'Trekking & Adventure': {
+    en: ['Inviting adventure creators on a guided trek to document the journey.', 'Looking for hiking vloggers to promote our new trekking package.'],
+    ne: ['यात्रा रेकर्ड गर्न गाइडेड ट्रेकमा एडभेन्चर क्रिएटरहरूलाई आमन्त्रण गर्दैछौं।', 'हाम्रो नयाँ ट्रेकिङ प्याकेज प्रवर्द्धन गर्न हाइकिङ भ्लगरहरू खोज्दैछौं।'],
+  },
+  'Fashion & Clothing': {
+    en: ['Join our creator family: 3 fashion influencers needed for our new collection launch.', 'Looking for creators for an outfit styling reel featuring our latest arrivals.'],
+    ne: ['हाम्रो क्रिएटर परिवारमा जोडिनुहोस्: हाम्रो नयाँ कलेक्सन लन्चको लागि ३ जना फेसन इन्फ्लुएन्सर चाहिएको छ।', 'हाम्रो पछिल्ला वस्तुहरू समावेश गरी आउटफिट स्टाइलिङ रिल बनाउन क्रिएटरहरू खोज्दैछौं।'],
+  },
+  'Footwear': {
+    en: ['Looking for creators to style and showcase our new footwear collection.', 'Inviting sneakerhead creators for an unboxing and review video.'],
+    ne: ['हाम्रो नयाँ जुत्ता कलेक्सन स्टाइल गरी देखाउन क्रिएटरहरू खोज्दैछौं।', 'अनबक्सिङ र समीक्षा भिडियोको लागि स्नीकरहेड क्रिएटरहरूलाई आमन्त्रण गर्दैछौं।'],
+  },
+  'Beauty & Cosmetics': {
+    en: ['Team up with us: seeking makeup artists for a get-ready-with-me collaboration.', 'Looking for beauty creators to review our new cosmetics line.'],
+    ne: ['हामीसँग सहकार्य गर्नुहोस्: गेट-रेडी-विथ-मी सहकार्यका लागि मेकअप आर्टिस्टहरू खोज्दैछौं।', 'हाम्रो नयाँ कस्मेटिक्स लाइन समीक्षा गर्न ब्युटी क्रिएटरहरू खोज्दैछौं।'],
+  },
+  'Skincare & Personal Care': {
+    en: ['Looking for skincare creators to try and review our new product line.', 'Inviting creators for an honest skincare routine collaboration.'],
+    ne: ['हाम्रो नयाँ प्रोडक्ट लाइन प्रयास गरी समीक्षा गर्न स्किनकेयर क्रिएटरहरू खोज्दैछौं।', 'साँचो स्किनकेयर रुटिन सहकार्यको लागि क्रिएटरहरूलाई आमन्त्रण गर्दैछौं।'],
+  },
+  'Jewellery & Accessories': {
+    en: ['Looking for creators to showcase our new jewellery collection.', 'Inviting creators for a festive jewellery styling collaboration.'],
+    ne: ['हाम्रो नयाँ गहना कलेक्सन देखाउन क्रिएटरहरू खोज्दैछौं।', 'चाडपर्व गहना स्टाइलिङ सहकार्यको लागि क्रिएटरहरूलाई आमन्त्रण गर्दैछौं।'],
+  },
+  'Retail & Shopping': {
+    en: ['Looking for creators to showcase our new arrivals in a store haul video.', 'Inviting creators to feature our seasonal sale and discounts.'],
+    ne: ['स्टोर हल भिडियोमा हाम्रा नयाँ सामानहरू देखाउन क्रिएटरहरू खोज्दैछौं।', 'हाम्रो सिजनल सेल र छुटलाई फिचर गर्न क्रिएटरहरूलाई आमन्त्रण गर्दैछौं।'],
+  },
+  'E-commerce': {
+    en: ['Looking for creators to promote our app and drive downloads.', 'Inviting creators for an unboxing video featuring our bestselling products.'],
+    ne: ['हाम्रो एप प्रवर्द्धन गरी डाउनलोड बढाउन क्रिएटरहरू खोज्दैछौं।', 'हाम्रा बेस्टसेलिङ प्रोडक्टहरू समावेश गरी अनबक्सिङ भिडियोको लागि क्रिएटरहरूलाई आमन्त्रण गर्दैछौं।'],
+  },
+  'Food & Beverage Brands': {
+    en: ['Looking for creators for a recipe collaboration using our product.', 'Inviting creators to sample and review our new product launch.'],
+    ne: ['हाम्रो प्रोडक्ट प्रयोग गरी रेसिपी सहकार्यको लागि क्रिएटरहरू खोज्दैछौं।', 'हाम्रो नयाँ प्रोडक्ट लन्च चाख्न र समीक्षा गर्न क्रिएटरहरूलाई आमन्त्रण गर्दैछौं।'],
+  },
+  'Events & Entertainment': {
+    en: ['Inviting creators to cover our upcoming event and share it live.', 'Looking for creators to promote early bird tickets for our show.'],
+    ne: ['हाम्रो आगामी कार्यक्रम कभर गरी लाइभ साझा गर्न क्रिएटरहरूलाई आमन्त्रण गर्दैछौं।', 'हाम्रो शोको अर्ली बर्ड टिकट प्रवर्द्धन गर्न क्रिएटरहरू खोज्दैछौं।'],
+  },
+  'Fitness & Wellness': {
+    en: ['Join our creator family: health and fitness creators needed to promote our center.', 'Looking for creators for a workout challenge collaboration.'],
+    ne: ['हाम्रो क्रिएटर परिवारमा जोडिनुहोस्: हाम्रो सेन्टर प्रवर्द्धन गर्न हेल्थ एण्ड फिटनेस क्रिएटरहरू चाहिएको छ।', 'वर्कआउट च्यालेन्ज सहकार्यको लागि क्रिएटरहरू खोज्दैछौं।'],
+  },
+  'Education & Training': {
+    en: ["Let's collaborate: looking for 3 creators to review our new course or app.", 'Inviting creators to promote our free counselling session.'],
+    ne: ['आउनुहोस् सहकार्य गरौं: हाम्रो नयाँ कोर्स वा एप रिभ्यु गर्नका लागि ३ जना क्रिएटरहरू खोज्दैछौं।', 'हाम्रो निःशुल्क काउन्सिलिङ सेसन प्रवर्द्धन गर्न क्रिएटरहरूलाई आमन्त्रण गर्दैछौं।'],
+  },
+  'Electronics & Mobile': {
+    en: ['Looking for tech creators for an unboxing and review video.', 'Inviting creators to showcase our latest gadget launch.'],
+    ne: ['अनबक्सिङ र समीक्षा भिडियोको लागि टेक क्रिएटरहरू खोज्दैछौं।', 'हाम्रो पछिल्लो ग्याजेट लन्च देखाउन क्रिएटरहरूलाई आमन्त्रण गर्दैछौं।'],
+  },
+  'Technology & Software': {
+    en: ['Looking for creators to demo our app and share an honest review.', 'Inviting tech creators to try our new feature and give feedback.'],
+    ne: ['हाम्रो एप डेमो गरी साँचो समीक्षा साझा गर्न क्रिएटरहरू खोज्दैछौं।', 'हाम्रो नयाँ फिचर प्रयास गरी प्रतिक्रिया दिन टेक क्रिएटरहरूलाई आमन्त्रण गर्दैछौं।'],
+  },
+  'Automotive': {
+    en: ['Inviting 2 bike/car riders to make a video on our workshop and servicing.', 'Looking for creators for a test drive review of our new model.'],
+    ne: ['सहकार्यको लागि आमन्त्रण: हाम्रो अटोमोबाइल वर्कशप र गाडी सर्भिसिङको भिडियो बनाउनका लागि २ जना बाइक/कार राइडर ब्लगरहरू चाहिएको छ।', 'हाम्रो नयाँ मोडलको टेस्ट ड्राइभ समीक्षाको लागि क्रिएटरहरू खोज्दैछौं।'],
+  },
+  'Real Estate & Property': {
+    en: ['Inviting creators for a site visit and property walkthrough video.', 'Looking for creators to promote our new project launch.'],
+    ne: ['साइट भिजिट र प्रोपर्टी वाकथ्रु भिडियोको लागि क्रिएटरहरूलाई आमन्त्रण गर्दैछौं।', 'हाम्रो नयाँ प्रोजेक्ट लन्च प्रवर्द्धन गर्न क्रिएटरहरू खोज्दैछौं।'],
+  },
+  'Banking & FinTech': {
+    en: ['Looking for creators to explain our new savings offer to their audience.', 'Inviting creators to promote our app and its cashback rewards.'],
+    ne: ['हाम्रो नयाँ बचत अफर आफ्नो दर्शकलाई बुझाउन क्रिएटरहरू खोज्दैछौं।', 'हाम्रो एप र यसको क्यासब्याक रिवार्ड प्रवर्द्धन गर्न क्रिएटरहरूलाई आमन्त्रण गर्दैछौं।'],
+  },
+  'Internet & Telecom': {
+    en: ['Looking for creators to promote our new data plan launch.', 'Inviting creators to test our network speed and share their experience.'],
+    ne: ['हाम्रो नयाँ डाटा प्लान लन्च प्रवर्द्धन गर्न क्रिएटरहरू खोज्दैछौं।', 'हाम्रो नेटवर्क स्पीड परीक्षण गरी अनुभव साझा गर्न क्रिएटरहरूलाई आमन्त्रण गर्दैछौं।'],
+  },
+  'Healthcare & Medical': {
+    en: ['Inviting creators to promote our free health checkup camp.', 'Looking for creators to raise awareness about our new service.'],
+    ne: ['हाम्रो निःशुल्क स्वास्थ्य जाँच शिविर प्रवर्द्धन गर्न क्रिएटरहरूलाई आमन्त्रण गर्दैछौं।', 'हाम्रो नयाँ सेवाको बारेमा सचेतना फैलाउन क्रिएटरहरू खोज्दैछौं।'],
+  },
+  'Home & Furniture': {
+    en: ['Looking for creators for a home styling and interior showcase video.', 'Inviting creators to feature our new furniture collection.'],
+    ne: ['होम स्टाइलिङ र इन्टिरियर देखाउने भिडियोको लागि क्रिएटरहरू खोज्दैछौं।', 'हाम्रो नयाँ फर्निचर कलेक्सन फिचर गर्न क्रिएटरहरूलाई आमन्त्रण गर्दैछौं।'],
+  },
+};
+
+// Falls back to this when the business hasn't selected a category yet, or
+// selected one not covered above (e.g. an admin just added it).
+const GENERIC_PROMPT_EXAMPLES: { en: [string, string]; ne: [string, string] } = {
+  en: ["Let's collaborate: looking for creators to promote our brand and reach new audiences.", 'Join our creator family: seeking creators for an exciting new collaboration.'],
+  ne: ['आउनुहोस् सहकार्य गरौं: हाम्रो ब्रान्ड प्रवर्द्धन गरी नयाँ दर्शकसम्म पुग्न क्रिएटरहरू खोज्दैछौं।', 'हाम्रो क्रिएटर परिवारमा जोडिनुहोस्: रोमाञ्चक नयाँ सहकार्यका लागि क्रिएटरहरू खोज्दैछौं।'],
+};
+
+function getPromptExamples(category: string | undefined, language: 'en' | 'ne'): string[] {
+  const entry = (category && PROMPT_EXAMPLES_BY_CATEGORY[category]) || GENERIC_PROMPT_EXAMPLES;
+  return entry[language];
+}
+
+// Quick Template chips always show both languages together (2 English + 2
+// Nepali) regardless of the app's current language, so a business can tap
+// whichever one reads naturally to them.
+function getAllPromptExamples(category: string | undefined): string[] {
+  const entry = (category && PROMPT_EXAMPLES_BY_CATEGORY[category]) || GENERIC_PROMPT_EXAMPLES;
+  return [...entry.en, ...entry.ne];
+}
+
+// Same 2 English + 2 Nepali examples as above, but tagged with which
+// language each is written in — Quick Audio Samples reads them aloud via
+// on-device text-to-speech (see VoicePromptInput's sibling render below),
+// and the TTS voice/language must match the sample's actual text.
+function getPromptSamples(category: string | undefined): { text: string; lang: 'en' | 'ne' }[] {
+  const entry = (category && PROMPT_EXAMPLES_BY_CATEGORY[category]) || GENERIC_PROMPT_EXAMPLES;
+  return [
+    { text: entry.en[0], lang: 'en' },
+    { text: entry.en[1], lang: 'en' },
+    { text: entry.ne[0], lang: 'ne' },
+    { text: entry.ne[1], lang: 'ne' },
+  ];
+}
 
 const ERROR_RED = '#EF4444';
 const MIN_BUDGET_PER_CREATOR = 500;
@@ -169,6 +304,58 @@ function sameDay(a: Date, b: Date) {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
 function fmtDate(d: Date) { return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`; }
+
+// Maps a generated draft into FormData fields — shared by both the text and
+// audio prompt modes (handleGenerateWithAi/handleGenerateEventWithAi), so the
+// two input paths can never drift out of sync on how a draft gets applied.
+function mapAiCampaignDraftToForm(draft: AiCampaignDraft, aiPrompt: string, prev: FormData): Partial<FormData> {
+  return {
+    template:    draft.category,
+    platforms:   draft.platforms.slice(0, 3),
+    title:       draft.title,
+    description: draft.description,
+    goals:       [draft.goal],
+    budget:      '',
+    creatorsNeeded: draft.creatorsNeeded,
+    deadline:    dayStart(new Date(Date.now() + draft.suggestedDurationDays * 24 * 60 * 60 * 1000)),
+    objective:            draft.objective,
+    contentGuidelines:    draft.contentGuidelines,
+    targetAudience:       draft.targetAudience,
+    deliverables:         { ...DEFAULT_DELIVERABLES, ...draft.deliverables },
+    hashtags:             draft.hashtags,
+    sampleCaption:        draft.sampleCaption,
+    approvalRequirements: draft.approvalRequirements,
+    featureImageUrl:      prev.featureImageUrl ?? getTemplateImage(draft.category, draft.category) ?? null,
+    aiGenerated:           true,
+    aiPrompt,
+    aiSuggestedCategories: draft.aiSuggestedCategories,
+    aiSuggestedPlatforms:  draft.aiSuggestedPlatforms,
+    needsInput:            draft.needsInput,
+    aiBudgetMin: draft.budgetMin,
+    aiBudgetMax: draft.budgetMax,
+  };
+}
+
+function mapAiEventDraftToForm(draft: AiEventDraft, aiPrompt: string, prev: FormData): Partial<FormData> {
+  const eventDate = prev.eventDate ?? dayStart(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
+  const regDeadline = dayStart(new Date(eventDate.getTime() - 2 * 24 * 60 * 60 * 1000));
+  return {
+    template:    draft.category,
+    platforms:   draft.platforms.slice(0, 1),
+    title:       draft.title,
+    description: draft.description,
+    benefits:    draft.benefits,
+    capacity:    draft.capacity,
+    eventDate,
+    deadline:    regDeadline,
+    featureImageUrl:       prev.featureImageUrl ?? getTemplateImage(draft.category, draft.category) ?? null,
+    aiGenerated:           true,
+    aiPrompt,
+    aiSuggestedCategories: draft.aiSuggestedCategories,
+    aiSuggestedPlatforms:  draft.aiSuggestedPlatforms,
+    needsInput:            draft.needsInput,
+  };
+}
 
 // Shared dropdown-trigger/bottom-sheet styles, used by MultiCheckboxDropdown below.
 const dp = StyleSheet.create({
@@ -575,7 +762,7 @@ function PreviewRow({
 
 export default function CreateCampaignScreen() {
   const C = useAppColors();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const notRequiredLabel = t('createEvent.notRequired');
   const [phase, setPhase] = useState<'setup' | 'review' | 'confirm'>('setup');
   const [loading, setLoading] = useState(false);
@@ -593,12 +780,18 @@ export default function CreateCampaignScreen() {
   const { platforms: livePlatforms } = usePlatforms();
   const platformOptions = livePlatforms.map((p) => p.name);
 
+  // The business's own onboarding-selected categories — used only to pick
+  // which category's Quick Templates to show below (their primary/first
+  // selected industry), not to prefill the category field itself (that's
+  // still decided by AI generation or edited in the review phase).
+  const [businessCategories, setBusinessCategories] = useState<string[]>([]);
   useEffect(() => {
     profileService.getBusinessProfile().then((profile) => {
       if (profile.location) {
         setForm((prev) => ({ ...prev, location: profile.location!, venue: profile.location! }));
       }
-    }).catch(() => { /* location stays empty */ });
+      setBusinessCategories(profile.categories ?? []);
+    }).catch(() => { /* location/categories stay empty */ });
   }, []);
 
   // Fails open (stays null → toggle isn't locked) if this errors — the
@@ -646,9 +839,19 @@ export default function CreateCampaignScreen() {
     aiBudgetMax: 0,
   });
 
+  // How the business describes their event to the AI — typed text (default)
+  // or a held-mic voice recording. A recording is only transcribed once the
+  // page's own "Create Event" button is pressed — VoicePromptInput just
+  // records/replays and hands back the uri via onRecorded.
+  const [promptMode, setPromptMode] = useState<'text' | 'audio'>('text');
+  const [recordedAudioUri, setRecordedAudioUri] = useState<string | null>(null);
+  const [transcribingAudio, setTranscribingAudio] = useState(false);
+  // Which Quick Audio Sample (if any) is currently being read aloud via TTS —
+  // null when nothing is playing.
+  const [playingSampleIdx, setPlayingSampleIdx] = useState<number | null>(null);
   const [aiPromptText, setAiPromptText] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
-  const [aiPlaceholder] = useState(() => AI_PROMPT_EXAMPLES[Math.floor(Math.random() * AI_PROMPT_EXAMPLES.length)]);
+  const [aiPlaceholder] = useState(() => getPromptExamples(businessCategories[0], language)[0]);
   const [aiLocationError, setAiLocationError] = useState<string | undefined>();
   const [descSuggestLoading, setDescSuggestLoading] = useState(false);
   const [featureImageUploading, setFeatureImageUploading] = useState(false);
@@ -754,8 +957,14 @@ export default function CreateCampaignScreen() {
     setPhase('setup');
   }
 
-  async function handleGenerateWithAi() {
-    if (!aiPromptText.trim() || aiLoading) return;
+  // `promptOverride` lets the Audio prompt mode (a transcribed recording) feed
+  // straight into the exact same generate flow as the Text mode's button —
+  // used instead of `aiPromptText` state so the call doesn't race the
+  // setAiPromptText() update that would otherwise still be pending when this
+  // fires immediately after a successful transcription.
+  async function handleGenerateWithAi(promptOverride?: string) {
+    const prompt = (promptOverride ?? aiPromptText).trim();
+    if (!prompt || aiLoading) return;
     if (!form.location.trim()) {
       setAiLocationError(t('createEvent.errNoLocation'));
       return;
@@ -763,37 +972,21 @@ export default function CreateCampaignScreen() {
     setAiLocationError(undefined);
     setAiLoading(true);
     try {
-      const draft = await campaignService.generateWithAi(aiPromptText.trim());
-      setForm((prev) => ({
-        ...prev,
-        template:    draft.category,
-        platforms:   draft.platforms.slice(0, 3),
-        title:       draft.title,
-        description: draft.description,
-        goals:       [draft.goal],
-        budget:      '',
-        creatorsNeeded: draft.creatorsNeeded,
-        deadline:    dayStart(new Date(Date.now() + draft.suggestedDurationDays * 24 * 60 * 60 * 1000)),
-        objective:            draft.objective,
-        contentGuidelines:    draft.contentGuidelines,
-        targetAudience:       draft.targetAudience,
-        deliverables:         { ...DEFAULT_DELIVERABLES, ...draft.deliverables },
-        hashtags:             draft.hashtags,
-        sampleCaption:        draft.sampleCaption,
-        approvalRequirements: draft.approvalRequirements,
-        featureImageUrl:      prev.featureImageUrl ?? getTemplateImage(draft.category, draft.category) ?? null,
-        aiGenerated:           true,
-        aiPrompt:              aiPromptText.trim(),
-        aiSuggestedCategories: draft.aiSuggestedCategories,
-        aiSuggestedPlatforms:  draft.aiSuggestedPlatforms,
-        needsInput:            draft.needsInput,
-        aiBudgetMin: draft.budgetMin,
-        aiBudgetMax: draft.budgetMax,
-      }));
+      const draft = await campaignService.generateWithAi(prompt);
+      setForm((prev) => ({ ...prev, ...mapAiCampaignDraftToForm(draft, prompt, prev) }));
       setAiPromptText('');
       setPhase('review');
       scrollRef.current?.scrollTo({ y: 0, animated: false });
-    } catch {
+    } catch (err) {
+      // The AI understood the prompt fine but decided it isn't a campaign at all
+      // (small talk, unrelated question, near-silent audio) — a content rejection,
+      // not an infra failure, so it gets the AI's own clarifying message instead
+      // of a fabricated draft. Stays on the setup screen so the brand can retype
+      // or re-record.
+      if (err instanceof ApiError && err.code === 'NO_CAMPAIGN_INTENT') {
+        showToast(err.message, 'error');
+        return;
+      }
       // The backend already falls back to a dummy draft for OpenAI-specific failures
       // (bad key, quota, malformed response) — reaching this catch means the request
       // itself never came back (network down, timeout, unrelated server error). Load a
@@ -819,7 +1012,7 @@ export default function CreateCampaignScreen() {
         approvalRequirements: GENERIC_AI_TEMPLATE.approvalRequirements,
         featureImageUrl:      prev.featureImageUrl ?? getTemplateImage(fallbackCategory, fallbackCategory) ?? null,
         aiGenerated:           true,
-        aiPrompt:              aiPromptText.trim(),
+        aiPrompt:              prompt,
         aiSuggestedCategories: [],
         aiSuggestedPlatforms:  [],
         needsInput:            ['budgetMin', 'category'],
@@ -860,8 +1053,9 @@ export default function CreateCampaignScreen() {
     }
   }
 
-  async function handleGenerateEventWithAi() {
-    if (!aiPromptText.trim() || aiLoading) return;
+  async function handleGenerateEventWithAi(promptOverride?: string) {
+    const prompt = (promptOverride ?? aiPromptText).trim();
+    if (!prompt || aiLoading) return;
     if (!form.venue.trim()) {
       setAiLocationError(t('createEvent.errNoVenue'));
       return;
@@ -870,32 +1064,19 @@ export default function CreateCampaignScreen() {
     setAiLoading(true);
     const defaultEventDate = dayStart(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
     try {
-      const draft = await campaignService.generateEventWithAi(aiPromptText.trim());
-      setForm((prev) => {
-        const eventDate = prev.eventDate ?? defaultEventDate;
-        const regDeadline = dayStart(new Date(eventDate.getTime() - 2 * 24 * 60 * 60 * 1000));
-        return {
-          ...prev,
-          template:    draft.category,
-          platforms:   draft.platforms.slice(0, 1),
-          title:       draft.title,
-          description: draft.description,
-          benefits:    draft.benefits,
-          capacity:    draft.capacity,
-          eventDate,
-          deadline:    regDeadline,
-          featureImageUrl:       prev.featureImageUrl ?? getTemplateImage(draft.category, draft.category) ?? null,
-          aiGenerated:           true,
-          aiPrompt:              aiPromptText.trim(),
-          aiSuggestedCategories: draft.aiSuggestedCategories,
-          aiSuggestedPlatforms:  draft.aiSuggestedPlatforms,
-          needsInput:            draft.needsInput,
-        };
-      });
+      const draft = await campaignService.generateEventWithAi(prompt);
+      setForm((prev) => ({ ...prev, ...mapAiEventDraftToForm(draft, prompt, prev) }));
       setAiPromptText('');
       setPhase('review');
       scrollRef.current?.scrollTo({ y: 0, animated: false });
-    } catch {
+    } catch (err) {
+      // Same reasoning as handleGenerateWithAi's catch above: a content
+      // rejection (no event intent detected) gets the AI's own clarifying
+      // message and stays on the setup screen, not a fabricated draft.
+      if (err instanceof ApiError && err.code === 'NO_CAMPAIGN_INTENT') {
+        showToast(err.message, 'error');
+        return;
+      }
       // Same reasoning as handleGenerateWithAi's catch above: the backend already
       // falls back to a dummy draft for OpenAI-specific failures, so reaching this
       // catch means the request itself never came back.
@@ -916,7 +1097,7 @@ export default function CreateCampaignScreen() {
           deadline:    regDeadline,
           featureImageUrl:       prev.featureImageUrl ?? getTemplateImage(fallbackCategory, fallbackCategory) ?? null,
           aiGenerated:           true,
-          aiPrompt:              aiPromptText.trim(),
+          aiPrompt:              prompt,
           aiSuggestedCategories: [],
           aiSuggestedPlatforms:  [],
           needsInput:            [],
@@ -929,6 +1110,67 @@ export default function CreateCampaignScreen() {
     } finally {
       setAiLoading(false);
     }
+  }
+
+  // VoicePromptInput hands back a uri once a recording passes basic
+  // validation — remembered here until the page's own Create Event button
+  // (below) is pressed, which is what actually transcribes + generates.
+  function handleAudioRecorded(uri: string) {
+    setRecordedAudioUri(uri);
+  }
+
+  function handleAudioDiscard() {
+    setRecordedAudioUri(null);
+  }
+
+  function handleAudioError(message: string) {
+    showToast(message, 'error');
+  }
+
+  // Shared by both the Paid and Open Event "Create Event" buttons. In Text
+  // mode this is just handleGenerateWithAi/handleGenerateEventWithAi, same as
+  // before. In Audio mode, the recording sitting in `recordedAudioUri` is
+  // transcribed first, then fed into that exact same generate flow — so
+  // audio and text ultimately produce a draft the identical way.
+  async function handleCreateEventPress() {
+    if (promptMode === 'audio') {
+      if (!recordedAudioUri || aiLoading || transcribingAudio) return;
+      setTranscribingAudio(true);
+      try {
+        const text = await transcribeAudio(recordedAudioUri);
+        if (!text.trim()) {
+          showToast(t('createEvent.audioTryAgain'), 'error');
+          return;
+        }
+        setRecordedAudioUri(null);
+        if (form.eventType === 'PAID_CAMPAIGN') await handleGenerateWithAi(text);
+        else await handleGenerateEventWithAi(text);
+      } catch (err) {
+        showToast(err instanceof Error ? err.message : t('createEvent.audioTryAgain'), 'error');
+      } finally {
+        setTranscribingAudio(false);
+      }
+      return;
+    }
+    if (form.eventType === 'PAID_CAMPAIGN') void handleGenerateWithAi();
+    else void handleGenerateEventWithAi();
+  }
+
+  // Quick Audio Samples — tap to hear an example via on-device TTS (no real
+  // recorded audio assets are used), tap the same one again to stop.
+  function handlePlaySample(idx: number, text: string, lang: 'en' | 'ne') {
+    Speech.stop();
+    if (playingSampleIdx === idx) {
+      setPlayingSampleIdx(null);
+      return;
+    }
+    setPlayingSampleIdx(idx);
+    Speech.speak(text, {
+      language: lang === 'ne' ? 'ne-NP' : 'en-US',
+      onDone:    () => setPlayingSampleIdx(null),
+      onStopped: () => setPlayingSampleIdx(null),
+      onError:   () => setPlayingSampleIdx(null),
+    });
   }
 
   function buildPaidCampaignPayload() {
@@ -1067,6 +1309,11 @@ export default function CreateCampaignScreen() {
   const totalPhases = form.eventType === 'PAID_CAMPAIGN' ? 3 : 2;
   const currentPhaseNum = phase === 'setup' ? 1 : phase === 'review' ? 2 : 3;
 
+  // Create Event button: in Text mode there must be something typed; in
+  // Audio mode a recording must be sitting ready (see handleAudioRecorded).
+  const canSubmitEvent = promptMode === 'text' ? aiPromptText.trim().length > 0 : !!recordedAudioUri;
+  const aiBusy = aiLoading || transcribingAudio;
+
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
       <MaxWidthContainer>
@@ -1162,31 +1409,72 @@ export default function CreateCampaignScreen() {
               {form.eventType === 'PAID_CAMPAIGN' && (
                 <>
                   {/* Describe & generate */}
-                  <SectionCard title={t('createEvent.aiPromptLabel')} sub={t('createEvent.aiPromptSub')} colors={C}>
-                    <TextInput
-                      style={[s.textarea, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
-                      value={aiPromptText}
-                      onChangeText={(v) => setAiPromptText(v.slice(0, 500))}
-                      placeholder={aiPlaceholder}
-                      placeholderTextColor={C.textSecondary}
-                      multiline
-                      numberOfLines={4}
-                      editable={!aiLoading}
+                  <SectionCard sub={t('createEvent.aiPromptSub')} colors={C}>
+                    <TabSlider
+                      justify
+                      tabs={[
+                        { key: 'text',  label: t('createEvent.promptModeText'),  icon: 'create-outline', color: TabColors.neutral.color },
+                        { key: 'audio', label: t('createEvent.promptModeAudio'), icon: 'mic-outline',    color: TabColors.positive.color },
+                      ]}
+                      active={promptMode}
+                      onChange={(key) => setPromptMode(key as 'text' | 'audio')}
                     />
-                    <Text style={[ai.charCount, { color: C.textSecondary }]}>{aiPromptText.length}/500</Text>
 
-                    <Text style={[ai.exampleLabel, { color: C.textSecondary }]}>{t('createEvent.aiExamplesLabel')}</Text>
-                    <View style={ai.chipWrap}>
-                      {AI_PROMPT_EXAMPLES.map((ex) => (
-                        <Pressable
-                          key={ex}
-                          style={[ai.exampleChip, { borderColor: C.border, backgroundColor: C.background }]}
-                          onPress={() => setAiPromptText(ex)}
-                          disabled={aiLoading}>
-                          <Text style={[ai.exampleChipText, { color: C.textSecondary }]} numberOfLines={1}>{ex}</Text>
-                        </Pressable>
-                      ))}
-                    </View>
+                    {promptMode === 'text' ? (
+                      <>
+                        <TextInput
+                          style={[s.textarea, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
+                          value={aiPromptText}
+                          onChangeText={(v) => setAiPromptText(v.slice(0, 500))}
+                          placeholder={aiPlaceholder}
+                          placeholderTextColor={C.textSecondary}
+                          multiline
+                          numberOfLines={4}
+                          editable={!aiLoading}
+                        />
+                        <Text style={[ai.charCount, { color: C.textSecondary }]}>{aiPromptText.length}/500</Text>
+
+                        <Text style={[ai.exampleLabel, { color: C.textSecondary }]}>{t('createEvent.aiExamplesLabel')}</Text>
+                        <View style={ai.chipWrap}>
+                          {getAllPromptExamples(businessCategories[0]).map((ex) => (
+                            <Pressable
+                              key={ex}
+                              style={[ai.exampleChip, { borderColor: C.border, backgroundColor: C.background }]}
+                              onPress={() => setAiPromptText(ex)}
+                              disabled={aiLoading}>
+                              <Text style={[ai.exampleChipText, { color: C.textSecondary }]} numberOfLines={1}>{ex}</Text>
+                            </Pressable>
+                          ))}
+                        </View>
+                      </>
+                    ) : (
+                      <>
+                        <VoicePromptInput
+                          onRecorded={handleAudioRecorded}
+                          onDiscard={handleAudioDiscard}
+                          onError={handleAudioError}
+                          disabled={aiLoading || transcribingAudio}
+                        />
+
+                        <Text style={[ai.exampleLabel, { color: C.textSecondary }]}>{t('createEvent.aiAudioSamplesLabel')}</Text>
+                        <View style={ai.chipWrap}>
+                          {getPromptSamples(businessCategories[0]).map(({ text, lang }, idx) => (
+                            <Pressable
+                              key={`${idx}-${text}`}
+                              style={[ai.exampleChip, ai.sampleChip, { borderColor: C.border, backgroundColor: C.background }]}
+                              onPress={() => handlePlaySample(idx, text, lang)}
+                              disabled={aiLoading}>
+                              <Ionicons
+                                name={playingSampleIdx === idx ? 'stop-circle' : 'play-circle'}
+                                size={15}
+                                color={playingSampleIdx === idx ? C.brinjal1 : C.textSecondary}
+                              />
+                              <Text style={[ai.exampleChipText, { color: C.textSecondary }]} numberOfLines={1}>{text}</Text>
+                            </Pressable>
+                          ))}
+                        </View>
+                      </>
+                    )}
                   </SectionCard>
 
                   {/* Location */}
@@ -1204,10 +1492,10 @@ export default function CreateCampaignScreen() {
 
                   {/* Create Event */}
                   <Pressable
-                    style={[s.generateBtn, { backgroundColor: (!aiPromptText.trim() || aiLoading) ? C.border : C.brinjal1 }]}
-                    onPress={handleGenerateWithAi}
-                    disabled={!aiPromptText.trim() || aiLoading}>
-                    {aiLoading ? (
+                    style={[s.generateBtn, { backgroundColor: (!canSubmitEvent || aiBusy) ? C.border : C.brinjal1 }]}
+                    onPress={() => void handleCreateEventPress()}
+                    disabled={!canSubmitEvent || aiBusy}>
+                    {aiBusy ? (
                       <>
                         <ActivityIndicator size="small" color="#fff" />
                         <Text style={s.generateBtnText}>{t('createEvent.aiModalGenerating')}</Text>
@@ -1228,31 +1516,72 @@ export default function CreateCampaignScreen() {
               {form.eventType === 'OPEN_EVENT' && (
                 <>
                   {/* Describe & generate */}
-                  <SectionCard title={t('createEvent.aiPromptLabel')} sub={t('createEvent.aiPromptSub')} colors={C}>
-                    <TextInput
-                      style={[s.textarea, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
-                      value={aiPromptText}
-                      onChangeText={(v) => setAiPromptText(v.slice(0, 500))}
-                      placeholder={aiPlaceholder}
-                      placeholderTextColor={C.textSecondary}
-                      multiline
-                      numberOfLines={4}
-                      editable={!aiLoading}
+                  <SectionCard sub={t('createEvent.aiPromptSub')} colors={C}>
+                    <TabSlider
+                      justify
+                      tabs={[
+                        { key: 'text',  label: t('createEvent.promptModeText'),  icon: 'create-outline', color: TabColors.neutral.color },
+                        { key: 'audio', label: t('createEvent.promptModeAudio'), icon: 'mic-outline',    color: TabColors.positive.color },
+                      ]}
+                      active={promptMode}
+                      onChange={(key) => setPromptMode(key as 'text' | 'audio')}
                     />
-                    <Text style={[ai.charCount, { color: C.textSecondary }]}>{aiPromptText.length}/500</Text>
 
-                    <Text style={[ai.exampleLabel, { color: C.textSecondary }]}>{t('createEvent.aiExamplesLabel')}</Text>
-                    <View style={ai.chipWrap}>
-                      {AI_PROMPT_EXAMPLES.map((ex) => (
-                        <Pressable
-                          key={ex}
-                          style={[ai.exampleChip, { borderColor: C.border, backgroundColor: C.background }]}
-                          onPress={() => setAiPromptText(ex)}
-                          disabled={aiLoading}>
-                          <Text style={[ai.exampleChipText, { color: C.textSecondary }]} numberOfLines={1}>{ex}</Text>
-                        </Pressable>
-                      ))}
-                    </View>
+                    {promptMode === 'text' ? (
+                      <>
+                        <TextInput
+                          style={[s.textarea, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
+                          value={aiPromptText}
+                          onChangeText={(v) => setAiPromptText(v.slice(0, 500))}
+                          placeholder={aiPlaceholder}
+                          placeholderTextColor={C.textSecondary}
+                          multiline
+                          numberOfLines={4}
+                          editable={!aiLoading}
+                        />
+                        <Text style={[ai.charCount, { color: C.textSecondary }]}>{aiPromptText.length}/500</Text>
+
+                        <Text style={[ai.exampleLabel, { color: C.textSecondary }]}>{t('createEvent.aiExamplesLabel')}</Text>
+                        <View style={ai.chipWrap}>
+                          {getAllPromptExamples(businessCategories[0]).map((ex) => (
+                            <Pressable
+                              key={ex}
+                              style={[ai.exampleChip, { borderColor: C.border, backgroundColor: C.background }]}
+                              onPress={() => setAiPromptText(ex)}
+                              disabled={aiLoading}>
+                              <Text style={[ai.exampleChipText, { color: C.textSecondary }]} numberOfLines={1}>{ex}</Text>
+                            </Pressable>
+                          ))}
+                        </View>
+                      </>
+                    ) : (
+                      <>
+                        <VoicePromptInput
+                          onRecorded={handleAudioRecorded}
+                          onDiscard={handleAudioDiscard}
+                          onError={handleAudioError}
+                          disabled={aiLoading || transcribingAudio}
+                        />
+
+                        <Text style={[ai.exampleLabel, { color: C.textSecondary }]}>{t('createEvent.aiAudioSamplesLabel')}</Text>
+                        <View style={ai.chipWrap}>
+                          {getPromptSamples(businessCategories[0]).map(({ text, lang }, idx) => (
+                            <Pressable
+                              key={`${idx}-${text}`}
+                              style={[ai.exampleChip, ai.sampleChip, { borderColor: C.border, backgroundColor: C.background }]}
+                              onPress={() => handlePlaySample(idx, text, lang)}
+                              disabled={aiLoading}>
+                              <Ionicons
+                                name={playingSampleIdx === idx ? 'stop-circle' : 'play-circle'}
+                                size={15}
+                                color={playingSampleIdx === idx ? C.brinjal1 : C.textSecondary}
+                              />
+                              <Text style={[ai.exampleChipText, { color: C.textSecondary }]} numberOfLines={1}>{text}</Text>
+                            </Pressable>
+                          ))}
+                        </View>
+                      </>
+                    )}
                   </SectionCard>
 
                   {/* Venue / Location */}
@@ -1270,10 +1599,10 @@ export default function CreateCampaignScreen() {
 
                   {/* Create Event */}
                   <Pressable
-                    style={[s.generateBtn, { backgroundColor: (!aiPromptText.trim() || aiLoading) ? C.border : C.brinjal1 }]}
-                    onPress={handleGenerateEventWithAi}
-                    disabled={!aiPromptText.trim() || aiLoading}>
-                    {aiLoading ? (
+                    style={[s.generateBtn, { backgroundColor: (!canSubmitEvent || aiBusy) ? C.border : C.brinjal1 }]}
+                    onPress={() => void handleCreateEventPress()}
+                    disabled={!canSubmitEvent || aiBusy}>
+                    {aiBusy ? (
                       <>
                         <ActivityIndicator size="small" color="#fff" />
                         <Text style={s.generateBtnText}>{t('createEvent.aiModalGenerating')}</Text>
@@ -1861,4 +2190,5 @@ const ai = StyleSheet.create({
   exampleChip:  { borderRadius: RADIUS.sm, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 8, maxWidth: '100%' },
   exampleChipText: { fontSize: 12, fontFamily: F.regular },
   chipWrap:     { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  sampleChip:   { flexDirection: 'row', alignItems: 'center', gap: 6 },
 });

@@ -11,10 +11,12 @@ interface CategoryStyle {
   color: string;
 }
 
-// Real categories come from the database (arbitrary content an admin can add
-// to at any time), so this maps known category names to a Font Awesome icon
-// and a thematically relevant color, falling back to a generic tag icon in
-// neutral gray for anything unrecognized.
+// Fallback only for the static, untranslated-per-category placeholder list
+// (`content.categories.list`) shown before the live `/api/public/landing-stats`
+// fetch resolves. Once real categories load, their `icon`/`color` come
+// straight from the DB via `getIconOption` in `../../../lib/iconOptions` —
+// this name-keyed map is NOT used for live data, so it doesn't need to track
+// the admin-editable category taxonomy.
 const CATEGORY_STYLES: Record<string, CategoryStyle> = {
   'Fashion': { icon: FaShirt, color: '#DB2777' },
   'Travel': { icon: FaPlane, color: '#0EA5E9' },

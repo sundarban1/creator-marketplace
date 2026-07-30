@@ -2,13 +2,27 @@ import OpenAI from 'openai';
 import { CategoryScope } from '@prisma/client';
 import { env } from '../../config/env';
 import { logger } from '../../config/logger';
+import { AppError } from '../../middleware/error';
 import { CategoryRepository } from '../category/category.repository';
 import { PlatformRepository } from '../platform/platform.repository';
+import { BusinessRepository } from '../business/business.repository';
 import {
   aiCampaignDraftSchema, aiEventDraftSchema, BENEFIT_OPTIONS, BENEFIT_DESCRIPTIONS,
   type AiCampaignDraft, type AiEventDraft, type SuggestDescriptionInput,
 } from './campaign-ai.schema';
 import dummyData from './campaign-ai.dummy.json';
+
+// Thrown when the model determines the brand's prompt doesn't express any
+// intent to promote/host something (e.g. "hello", "what's the weather") —
+// distinct from an infra failure, so callers must NOT fall back to a dummy
+// draft for this case, only re-surface it to the brand. The `code` lets the
+// mobile client distinguish this from any other 422 (e.g. plain request
+// validation) without string-matching the message.
+class CampaignIntentError extends AppError {
+  constructor(message: string) {
+    super(message, 422, true, { code: 'NO_CAMPAIGN_INTENT' });
+  }
+}
 
 type DummyCampaignTemplate = AiCampaignDraft & { keywords: string[] };
 type DummyEventTemplate = AiEventDraft & { keywords: string[] };
@@ -58,7 +72,33 @@ function buildLanguageInstruction(language: string): string {
 - hashtags must always use Latin letters/numbers only (no Devanagari) since they are literal social-media hashtags.`;
 }
 
-function buildSystemPrompt(categoryNames: string[], platformNames: string[], language: string): string {
+// Validates intent, not completeness (Kolab V1 audio-input requirement) — a
+// brand only needs to express SOME intent to promote/host something; missing
+// specifics (budget, platform, creator type...) are filled in from the
+// business profile and sensible defaults instead of being grounds to reject.
+function buildIntentInstruction(): string {
+  return `INTENT CHECK (do this first): Decide whether the brand's prompt actually expresses a request to promote/advertise their business or host a creator event — even a very short or vague one (e.g. "need promotion", "want more customers", "launch our new menu") counts as valid intent. It does NOT need to mention budget, platform, creator type, or any other detail — infer those yourself from the business profile above and sensible defaults.
+
+Reject ONLY prompts with no promotional/event intent at all — greetings ("hello", "how are you"), small talk, unrelated questions ("what's the weather"), test/filler speech ("testing", "one two three", "..."), or a transcription that's essentially meaningless.
+
+Add these two extra top-level keys to your JSON response, in addition to all the fields below:
+- campaignIntentDetected: boolean — false ONLY for the reject cases above; true otherwise, including short/vague-but-real requests.
+- clarifyingMessage: string — if campaignIntentDetected is false, a short friendly message (in the brand's language per the LANGUAGE rule below) asking what they'd like to promote; empty string "" otherwise.
+
+If campaignIntentDetected is false, the other fields below are discarded — fill them with any placeholder, it doesn't matter.`;
+}
+
+function buildBusinessContextBlock(business: { businessName: string | null; categories: string[]; location: string | null } | null): string {
+  const lines = [
+    business?.businessName ? `Business name: ${business.businessName}` : null,
+    business && business.categories.length > 0 ? `Business industry/categories: ${business.categories.join(', ')}` : null,
+    business?.location ? `Business location: ${business.location}` : null,
+  ].filter((l): l is string => l !== null);
+  if (lines.length === 0) return '';
+  return `\nBUSINESS PROFILE (use this to fill gaps the brand's prompt doesn't cover — never ask the brand to repeat something already listed here):\n${lines.join('\n')}\n`;
+}
+
+function buildSystemPrompt(categoryNames: string[], platformNames: string[], language: string, businessContext: string): string {
   return `You are a campaign-brief generator for a creator-marketplace app in Nepal, connecting brands with content creators for paid promotional campaigns.
 
 Given a brand's short description of what they want to promote, generate a complete campaign brief as a single JSON object — no prose, no markdown code fences, just the raw JSON object.
@@ -67,7 +107,7 @@ Existing categories in the app (prefer one of these for "category" if it fits; o
 ${categoryNames.map((c) => `- ${c}`).join('\n')}
 
 Known platforms: ${platformNames.join(', ')} (prefer one of these for "platform").
-
+${businessContext}
 Respond with a JSON object with EXACTLY these keys:
 - title: string, a punchy campaign title
 - description: string, 2-4 sentences describing what creators should do
@@ -93,10 +133,12 @@ Respond with a JSON object with EXACTLY these keys:
 
 ${buildLanguageInstruction(language)}
 
-Always fill in every field with your best sensible guess, even for a very short prompt — never leave a field empty or refuse to answer. Respond with ONLY the JSON object.`;
+${buildIntentInstruction()}
+
+Whenever campaignIntentDetected is true, fill in every field above with your best sensible guess using the business profile and sensible defaults, even for a very short or vague prompt — never leave a field empty. Respond with ONLY the JSON object.`;
 }
 
-function buildEventSystemPrompt(categoryNames: string[], platformNames: string[], language: string): string {
+function buildEventSystemPrompt(categoryNames: string[], platformNames: string[], language: string, businessContext: string): string {
   return `You are an event-brief generator for a creator-marketplace app in Nepal, connecting brands with content creators for FREE (non-monetary) in-person events. Creators attend and post content in exchange for perks — not cash.
 
 Given a brand's short description of the event they want to host, generate a complete event brief as a single JSON object — no prose, no markdown code fences, just the raw JSON object.
@@ -105,7 +147,7 @@ Existing categories in the app (prefer one of these for "category" if it fits; o
 ${categoryNames.map((c) => `- ${c}`).join('\n')}
 
 Known platforms: ${platformNames.join(', ')} (prefer one of these for "platform").
-
+${businessContext}
 Respond with a JSON object with EXACTLY these keys:
 - title: string, a punchy event title
 - description: string, 2-4 sentences describing the event and what creators will experience
@@ -121,7 +163,9 @@ ${BENEFIT_OPTIONS.map((b) => `  - "${b}": ${BENEFIT_DESCRIPTIONS[b]}`).join('\n'
 
 ${buildLanguageInstruction(language)}
 
-Always fill in every field with your best sensible guess, even for a very short prompt — never leave a field empty or refuse to answer. Respond with ONLY the JSON object.`;
+${buildIntentInstruction()}
+
+Whenever campaignIntentDetected is true, fill in every field above with your best sensible guess using the business profile and sensible defaults, even for a very short or vague prompt — never leave a field empty. Respond with ONLY the JSON object.`;
 }
 
 function buildDescriptionSystemPrompt(language: string): string {
@@ -136,6 +180,7 @@ ${buildLanguageInstruction(language)}
 export class CampaignAiService {
   private categoryRepo = new CategoryRepository();
   private platformRepo = new PlatformRepository();
+  private businessRepo = new BusinessRepository();
 
   async suggestDescription(input: SuggestDescriptionInput, language: string = 'en'): Promise<string> {
     try {
@@ -168,10 +213,11 @@ export class CampaignAiService {
     }
   }
 
-  async generateDraft(prompt: string, language: string = 'en'): Promise<AiCampaignDraft & { aiSuggestedCategories: string[]; aiSuggestedPlatforms: string[]; platforms: string[] }> {
-    const [realCategories, realPlatforms] = await Promise.all([
+  async generateDraft(prompt: string, language: string = 'en', userId?: string): Promise<AiCampaignDraft & { aiSuggestedCategories: string[]; aiSuggestedPlatforms: string[]; platforms: string[] }> {
+    const [realCategories, realPlatforms, businessContext] = await Promise.all([
       this.categoryRepo.findManyPublic(CategoryScope.BUSINESS),
       this.platformRepo.findManyPublic(),
+      this.loadBusinessContext(userId),
     ]);
     const categoryNames = realCategories.map((c) => c.name);
     const platformNames = realPlatforms.map((p) => p.name);
@@ -179,19 +225,22 @@ export class CampaignAiService {
     let draft: AiCampaignDraft;
     try {
       if (!env.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY not configured');
-      const raw = await this.callModel(buildSystemPrompt(categoryNames, platformNames, language), prompt);
+      const raw = await this.callModel(buildSystemPrompt(categoryNames, platformNames, language, businessContext), prompt);
+      this.assertCampaignIntent(raw);
       draft = this.parseAndValidate(raw, aiCampaignDraftSchema, 'AI campaign response');
     } catch (err) {
+      if (err instanceof CampaignIntentError) throw err;
       logger.warn({ err: err instanceof Error ? err.message : err }, 'OpenAI unavailable — falling back to dummy campaign draft');
       draft = pickDummyDraft(prompt);
     }
     return this.matchToRealTaxonomy(draft, categoryNames, platformNames);
   }
 
-  async generateEventDraft(prompt: string, language: string = 'en'): Promise<AiEventDraft & { aiSuggestedCategories: string[]; aiSuggestedPlatforms: string[]; platforms: string[] }> {
-    const [realCategories, realPlatforms] = await Promise.all([
+  async generateEventDraft(prompt: string, language: string = 'en', userId?: string): Promise<AiEventDraft & { aiSuggestedCategories: string[]; aiSuggestedPlatforms: string[]; platforms: string[] }> {
+    const [realCategories, realPlatforms, businessContext] = await Promise.all([
       this.categoryRepo.findManyPublic(CategoryScope.BUSINESS),
       this.platformRepo.findManyPublic(),
+      this.loadBusinessContext(userId),
     ]);
     const categoryNames = realCategories.map((c) => c.name);
     const platformNames = realPlatforms.map((p) => p.name);
@@ -199,13 +248,47 @@ export class CampaignAiService {
     let draft: AiEventDraft;
     try {
       if (!env.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY not configured');
-      const raw = await this.callModel(buildEventSystemPrompt(categoryNames, platformNames, language), prompt);
+      const raw = await this.callModel(buildEventSystemPrompt(categoryNames, platformNames, language, businessContext), prompt);
+      this.assertCampaignIntent(raw);
       draft = this.parseAndValidate(raw, aiEventDraftSchema, 'AI event response');
     } catch (err) {
+      if (err instanceof CampaignIntentError) throw err;
       logger.warn({ err: err instanceof Error ? err.message : err }, 'OpenAI unavailable — falling back to dummy event draft');
       draft = pickDummyEventDraft(prompt);
     }
     return this.matchToRealTaxonomy(draft, categoryNames, platformNames);
+  }
+
+  // Fed into the system prompt so the AI can infer industry/location the
+  // brand's prompt didn't mention, instead of asking them to repeat it.
+  private async loadBusinessContext(userId?: string): Promise<string> {
+    if (!userId) return '';
+    const business = await this.businessRepo.findByUserId(userId).catch(() => null);
+    if (!business) return '';
+    return buildBusinessContextBlock({
+      businessName: business.businessName,
+      categories:   business.categories,
+      location:     business.location,
+    });
+  }
+
+  // Kolab V1: validate intent, not completeness — reject only prompts/transcripts
+  // with no promotional intent at all (see buildIntentInstruction), never a
+  // merely short or vague-but-real one. Thrown BEFORE schema validation so a
+  // rejection is never swallowed into the dummy-draft fallback below.
+  private assertCampaignIntent(raw: string): void {
+    const stripped = raw.trim().replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim();
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(stripped);
+    } catch {
+      return; // Not valid JSON at all — parseAndValidate will raise its own error for this.
+    }
+    if (!parsed || typeof parsed !== 'object') return;
+    const obj = parsed as Record<string, unknown>;
+    if (obj.campaignIntentDetected !== false) return;
+    const clarifying = typeof obj.clarifyingMessage === 'string' ? obj.clarifyingMessage.trim() : '';
+    throw new CampaignIntentError(clarifying || "It sounds like you're not creating a campaign. Tell me what you'd like to promote.");
   }
 
   private async callModel(systemPrompt: string, prompt: string): Promise<string> {

@@ -10,6 +10,7 @@ import { DetailModal }   from '../components/DetailModal';
 import { Pagination }    from '../components/Pagination';
 import { api, type ApiCreator } from '../lib/api';
 import { useApi }        from '../lib/useApi';
+import { displayEmailOrPhone } from '../lib/identity';
 
 const PAGE_SIZE = 10;
 
@@ -93,7 +94,7 @@ export function Creators() {
           )}
           <div className="min-w-0">
             <p className="font-medium text-gray-900 truncate">{row.fullName ?? '(No name)'}</p>
-            <p className="text-xs text-gray-500 truncate">{row.user.email}</p>
+            <p className="text-xs text-gray-500 truncate">{displayEmailOrPhone(row.user.email)}</p>
           </div>
         </div>
       ),
@@ -262,7 +263,7 @@ export function Creators() {
               : <Avatar initials={(viewing.fullName ?? '?').slice(0, 2).toUpperCase()} size="md" />
           }
           title={viewing.fullName ?? '(No name)'}
-          subtitle={viewing.user.email}
+          subtitle={displayEmailOrPhone(viewing.user.email)}
           badges={<StatusBadge status={creatorStatus(viewing)} />}
           sections={[
             {

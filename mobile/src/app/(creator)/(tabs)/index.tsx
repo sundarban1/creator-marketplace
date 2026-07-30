@@ -1,7 +1,7 @@
 import { router, useFocusEffect } from 'expo-router';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Image, Keyboard, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, FlatList, Image, Keyboard, LayoutAnimation, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, UIManager, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
 import { DrawerContext } from '@/context/DrawerContext';
@@ -35,6 +35,13 @@ import type { Campaign } from '@/types';
 const RADIUS_PRESETS = [5, 10, 25, 50, 100];
 
 const SLIDER_MAX = 100000;
+
+// Android needs this explicitly enabled before LayoutAnimation does anything —
+// iOS has it on by default. Used below so the avatar/menu button sliding out
+// as the search bar expands (and back in on blur) animates instead of jump-cutting.
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 type SortOption = 'date-latest' | 'date-oldest' | 'price-low' | 'price-high';
 
@@ -570,19 +577,21 @@ export default function HomeScreen() {
       {/* ── Header: avatar, search bar, menu button — kept outside the list so it
           stays floating/pinned above the content instead of scrolling away. ── */}
       <View style={[styles.header, { backgroundColor: C.background, borderBottomColor: C.border }]}>
-        <Pressable
-          style={[styles.avatarCircle, { backgroundColor: C.surface }, SHADOW.card]}
-          onPress={() => router.push('/(creator)/profile')}>
-          <View style={styles.avatarClip}>
-            {user?.avatar ? (
-              <Image source={{ uri: user.avatar }} style={styles.avatarImage} resizeMode="cover" />
-            ) : (
-              <View style={styles.avatarFallback}>
-                <Text style={[styles.avatarInitial, { color: C.brinjal1 }]}>{getInitials(displayName)}</Text>
-              </View>
-            )}
-          </View>
-        </Pressable>
+        {!searchFocused && (
+          <Pressable
+            style={[styles.avatarCircle, { backgroundColor: C.surface }, SHADOW.card]}
+            onPress={() => router.push('/(creator)/profile')}>
+            <View style={styles.avatarClip}>
+              {user?.avatar ? (
+                <Image source={{ uri: user.avatar }} style={styles.avatarImage} resizeMode="cover" />
+              ) : (
+                <View style={styles.avatarFallback}>
+                  <Text style={[styles.avatarInitial, { color: C.brinjal1 }]}>{getInitials(displayName)}</Text>
+                </View>
+              )}
+            </View>
+          </Pressable>
+        )}
 
         <Pressable
           style={[styles.searchCard, { backgroundColor: C.surface, borderColor: C.border }, searchFocused && styles.searchCardFocused]}
@@ -609,8 +618,14 @@ export default function HomeScreen() {
                 refreshNearbyWithFilters({ search: '' });
               }
             }}
-            onFocus={() => setSearchFocused(true)}
-            onBlur={() => setSearchFocused(false)}
+            onFocus={() => {
+              LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+              setSearchFocused(true);
+            }}
+            onBlur={() => {
+              LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+              setSearchFocused(false);
+            }}
             returnKeyType="search"
             onSubmitEditing={() => {
               searchInputRef.current?.blur();
@@ -637,17 +652,19 @@ export default function HomeScreen() {
           </Pressable>
         </Pressable>
 
-        <Pressable style={styles.menuBtn} onPress={openDrawer} hitSlop={6}>
-          <View
-            style={[
-              styles.menuBtnInner,
-              { backgroundColor: C.surface },
-              SHADOW.card,
-            ]}
-          >
-            <Ionicons name="menu-outline" size={22} color={C.text} />
-          </View>
-        </Pressable>
+        {!searchFocused && (
+          <Pressable style={styles.menuBtn} onPress={openDrawer} hitSlop={6}>
+            <View
+              style={[
+                styles.menuBtnInner,
+                { backgroundColor: C.surface },
+                SHADOW.card,
+              ]}
+            >
+              <Ionicons name="menu-outline" size={22} color={C.text} />
+            </View>
+          </Pressable>
+        )}
       </View>
       <View style={[styles.headerDivider, { backgroundColor: C.border }]} />
 

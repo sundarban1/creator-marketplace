@@ -9,7 +9,7 @@ export class CampaignAiController {
   async generate(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { prompt } = req.body as { prompt: string };
-      const draft = await campaignAiService.generateDraft(prompt, req.language);
+      const draft = await campaignAiService.generateDraft(prompt, req.language, req.user!.id);
       success(res, draft, 'Campaign draft generated');
     } catch (err) {
       next(err);
@@ -19,7 +19,7 @@ export class CampaignAiController {
   async generateEvent(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { prompt } = req.body as { prompt: string };
-      const draft = await campaignAiService.generateEventDraft(prompt, req.language);
+      const draft = await campaignAiService.generateEventDraft(prompt, req.language, req.user!.id);
       success(res, draft, 'Event draft generated');
     } catch (err) {
       next(err);

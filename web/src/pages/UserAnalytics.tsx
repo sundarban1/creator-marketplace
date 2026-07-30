@@ -10,6 +10,7 @@ import {
 } from 'recharts';
 import { api, type AnalyticsRange, type ApiCreatorAnalytics, type ApiBrandAnalytics } from '../lib/api';
 import { useApi } from '../lib/useApi';
+import { displayEmailOrPhone } from '../lib/identity';
 
 const RANGES: { value: AnalyticsRange; label: string }[] = [
   { value: '7d',   label: '7 Days' },
@@ -272,7 +273,7 @@ export function UserAnalytics() {
           <div>
             <h1 className="text-xl font-bold text-gray-900">{state?.name ?? 'User'} Analytics</h1>
             <p className="text-sm text-gray-500 mt-0.5">
-              {state?.email ?? ''}{state?.email && result ? ' · ' : ''}{result ? (result.role === 'CREATOR' ? 'Creator' : 'Business') : ''}
+              {state?.email ? displayEmailOrPhone(state.email) : ''}{state?.email && result ? ' · ' : ''}{result ? (result.role === 'CREATOR' ? 'Creator' : 'Business') : ''}
             </p>
           </div>
         </div>

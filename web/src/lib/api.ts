@@ -166,7 +166,7 @@ export interface ApiSuccessStory {
 export interface LandingStats {
   totalCreators: number;
   totalBusinesses: number;
-  categories: { id: string; name: string }[];
+  categories: { id: string; name: string; icon: string; color: string }[];
 }
 
 export interface VisitorMessage {

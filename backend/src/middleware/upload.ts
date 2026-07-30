@@ -54,6 +54,23 @@ export const uploadChatFile = multer({
   },
 });
 
+// Voice input for the AI assistant — recorded via expo-audio's HIGH_QUALITY
+// preset, which outputs .m4a on both iOS and Android.
+const AUDIO_ALLOWED_TYPES = ['audio/m4a', 'audio/mp4', 'audio/x-m4a', 'audio/aac', 'audio/mpeg', 'audio/wav', 'audio/x-wav', 'audio/webm', 'audio/3gpp'];
+const AUDIO_MAX_BYTES = 10 * 1024 * 1024; // 10 MB — comfortably more than a few minutes of speech
+
+export const uploadAudio = multer({
+  storage: multer.memoryStorage(),
+  limits:  { fileSize: AUDIO_MAX_BYTES },
+  fileFilter(_req, file, cb) {
+    if (AUDIO_ALLOWED_TYPES.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new AppError('Unsupported audio format', 400) as unknown as null, false);
+    }
+  },
+});
+
 // Video attachments are no longer proxied through this server — the mobile
 // client uploads directly to Cloudinary using a signed URL (see
 // messaging.service.ts requestVideoUploadSignature/completeVideoAttachment),

@@ -8,49 +8,50 @@ datasource db {
 }
 
 model User {
-  id                String            @id @default(cuid())
-  email             String            @unique
-  password          String
-  role              Role
-  isEmailVerified   Boolean           @default(false)
-  isPhoneVerified   Boolean           @default(false)
-  refreshToken      String?
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-  phone             String?           @unique
-  isOnboarded       Boolean           @default(false)
-  isActive          Boolean           @default(true)
+  id                        String            @id @default(cuid())
+  email                     String            @unique
+  password                  String
+  role                      Role
+  isEmailVerified           Boolean           @default(false)
+  isPhoneVerified           Boolean           @default(false)
+  refreshToken              String?
+  createdAt                 DateTime          @default(now())
+  updatedAt                 DateTime          @updatedAt
+  phone                     String?           @unique
+  isOnboarded               Boolean           @default(false)
+  isActive                  Boolean           @default(true)
   // Set only when an admin suspends this account (distinct from a user's own
   // self-deactivation, which also flips isActive false but leaves this null).
   // Login blocks outright when this is set; self-deactivated accounts still
   // auto-reactivate on next login.
-  suspendedAt       DateTime?
+  suspendedAt               DateTime?
   // Consecutive failed-password count on login — reset to 0 on a successful
   // login. Drives the admin-configurable CAPTCHA-after-suspicious-behaviour
   // trigger (see AuthService.login); not a lockout by itself.
-  failedLoginCount  Int               @default(0)
-  lastFailedLoginAt DateTime?
-  pushToken         String?
-  deviceId          String?
+  failedLoginCount          Int               @default(0)
+  lastFailedLoginAt         DateTime?
+  pushToken                 String?
+  deviceId                  String?
   // Updated on socket connect/disconnect — drives the chat "Active now" / "Active Xm ago" status.
-  lastSeenAt        DateTime?
+  lastSeenAt                DateTime?
   // Per-channel opt-out — checked before every push (notification.service.ts
   // sendExpoPush) and every transactional campaign email (campaign.service.ts).
   // Independent of each other; either can be off while the other stays on.
-  pushNotificationsEnabled  Boolean @default(true)
-  emailNotificationsEnabled Boolean @default(true)
-  businessProfile   BusinessProfile?
-  creatorProfile    CreatorProfile?
-  issueReports      IssueReport[]
-  sentMessages      Message[]         @relation("MessageSender")
-  notifications     Notification[]
-  otpVerifications  OtpVerification[]
-  supportRequests   SupportRequest[]
-  reviewsGiven      Review[]          @relation("ReviewFrom")
-  reviewsReceived   Review[]          @relation("ReviewTo")
-  visitorMessages   VisitorMessage[]
-  blocksMade        Block[]           @relation("BlocksMade")
-  blocksReceived    Block[]           @relation("BlocksReceived")
+  pushNotificationsEnabled  Boolean           @default(true)
+  emailNotificationsEnabled Boolean           @default(true)
+  businessProfile           BusinessProfile?
+  creatorProfile            CreatorProfile?
+  issueReports              IssueReport[]
+  sentMessages              Message[]         @relation("MessageSender")
+  notifications             Notification[]
+  otpVerifications          OtpVerification[]
+  supportRequests           SupportRequest[]
+  reviewsGiven              Review[]          @relation("ReviewFrom")
+  reviewsReceived           Review[]          @relation("ReviewTo")
+  visitorMessages           VisitorMessage[]
+  blocksMade                Block[]           @relation("BlocksMade")
+  blocksReceived            Block[]           @relation("BlocksReceived")
+  aiConversations           AiConversation[]
 
   @@index([role])
   @@map("users")
@@ -266,6 +267,7 @@ model BusinessProfile {
   socialAccounts           SocialAccount[]
   paymentTransactions      PaymentTransaction[]
   contracts                Contract[]
+  aiConversations          AiConversation[]
 
   @@index([isVerified])
   @@map("business_profiles")
@@ -561,6 +563,57 @@ model Message {
   @@map("messages")
 }
 
+// AI Assistant for Brands (Phase 1) — a separate conversational thread between
+// a business user and the assistant, distinct from Conversation/Message above
+// (which are the human creator<->business chat).
+model AiConversation {
+  id         String          @id @default(cuid())
+  userId     String
+  businessId String
+  language   String          @default("en")
+  title      String?
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  business   BusinessProfile @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  messages   AiMessage[]
+  actionLogs AiActionLog[]
+
+  @@index([businessId, updatedAt(sort: Desc)])
+  @@map("ai_conversations")
+}
+
+model AiMessage {
+  id             String         @id @default(cuid())
+  conversationId String
+  role           AiMessageRole
+  content        String
+  toolName       String?
+  toolPayload    Json?
+  createdAt      DateTime       @default(now())
+  conversation   AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt(sort: Desc)])
+  @@map("ai_messages")
+}
+
+// Write-only audit trail of every tool call the assistant makes — used for
+// debugging/support ("why did the AI say X") and future analytics (TR-10),
+// not read back by any client in Phase 1.
+model AiActionLog {
+  id             String         @id @default(cuid())
+  conversationId String
+  userId         String
+  action         String
+  input          Json
+  result         String
+  createdAt      DateTime       @default(now())
+  conversation   AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt(sort: Desc)])
+  @@map("ai_action_logs")
+}
+
 model LegalSection {
   id        String   @id @default(cuid())
   type      String
@@ -830,6 +883,12 @@ enum MessageType {
   IMAGE
   FILE
   VIDEO
+}
+
+enum AiMessageRole {
+  USER
+  ASSISTANT
+  TOOL
 }
 
 enum ApplicationStatus {

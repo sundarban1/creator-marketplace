@@ -133,7 +133,7 @@ export const en = {
 
   partners: {
     eyebrow: 'Partners',
-    heading: 'Integrated with the platforms you already use',
+    heading: 'The brands Nepal trusts, on Kolab',
     platformLabel: 'Connect your socials',
     paymentLabel: 'Get paid your way',
   },

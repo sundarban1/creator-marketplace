@@ -134,7 +134,9 @@ export function applyRateLimits(app: Express): void {
 
   // AI generation
   app.use('/api/campaigns/ai/generate',              aiGenerateLimiter);
+  app.use('/api/campaigns/ai/generate-event',        aiGenerateLimiter);
   app.use('/api/campaigns/ai/suggest-description',   aiGenerateLimiter);
+  app.use('/api/ai-assistant/transcribe',            aiGenerateLimiter);
 
   // Public contact form
   app.use('/api/support/contact-public', publicContactLimiter);

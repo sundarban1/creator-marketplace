@@ -10,6 +10,7 @@ import walletRoutes from '../modules/wallet/wallet.routes';
 import businessRoutes from '../modules/business/business.routes';
 import campaignRoutes from '../modules/campaign/campaign.routes';
 import campaignAiRoutes from '../modules/campaign-ai/campaign-ai.routes';
+import aiAssistantRoutes from '../modules/ai-assistant/ai-assistant.routes';
 import messagingRoutes from '../modules/messaging/messaging.routes';
 import adminRoutes from '../modules/admin/admin.routes';
 import categoryRoutes from '../modules/category/category.routes';
@@ -41,6 +42,7 @@ export function registerApiRoutes(app: Express): void {
   app.use('/api/business/referral', businessReferralRoutes);
   app.use('/api/business', businessRoutes);
   app.use('/api/campaigns/ai', campaignAiRoutes);
+  app.use('/api/ai-assistant', aiAssistantRoutes);
   app.use('/api/campaigns', campaignRoutes);
   app.use('/api/messaging', messagingRoutes);
   app.use('/api/admin/categories', categoryAdminRoutes);

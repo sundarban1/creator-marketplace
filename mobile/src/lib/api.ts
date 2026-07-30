@@ -10,6 +10,21 @@ export class OfflineError extends Error {
   }
 }
 
+// Carries the HTTP status and any machine-readable `code` the backend sent
+// alongside its error message (see AppError's `data` param on the backend) —
+// e.g. AI generation's NO_CAMPAIGN_INTENT — so callers can branch on it
+// instead of string-matching `message`, which is free to change wording.
+export class ApiError extends Error {
+  readonly status: number;
+  readonly code?: string;
+  constructor(message: string, status: number, code?: string) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.code = code;
+  }
+}
+
 export const API_BASE = process.env.EXPO_PUBLIC_API_BASE ?? 'http://localhost:3000';
 
 // ── Response envelope ──────────────────────────────────────────────────────────
@@ -315,11 +330,11 @@ export async function request<T>(
   }
 
   // ── Parse response ─────────────────────────────────────────────────────────
-  const json = await res.json() as ApiEnvelope<T> & { errors?: { field: string; message: string }[] };
+  const json = await res.json() as ApiEnvelope<T> & { errors?: { field: string; message: string }[]; code?: string };
 
   if (!res.ok) {
     const fieldErrors = json.errors?.map((e) => e.message).join('. ');
-    throw new Error(fieldErrors ?? json.message ?? `Request failed (${res.status})`);
+    throw new ApiError(fieldErrors ?? json.message ?? `Request failed (${res.status})`, res.status, json.code);
   }
 
   return json;

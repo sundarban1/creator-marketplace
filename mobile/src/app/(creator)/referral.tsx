@@ -121,11 +121,11 @@ export default function ReferralScreen() {
 
           {/* Referred by */}
           {overview.referredBy ? (
-            <View style={[styles.referredByRow, { backgroundColor: C.surface }]}>
+            <View style={[styles.referredByRow, { backgroundColor: C.surface, borderColor: C.border }]}>
               <Ionicons name="person-circle-outline" size={18} color={C.brinjal1} />
               <View style={{ flex: 1 }}>
                 <Text style={[styles.referredByText, { color: C.text }]}>
-                  {t('referral.referredByLabel')}: <Text style={{ fontFamily: F.bold }}>{overview.referredBy.name}</Text>
+                  {t('referral.referredByLabel')}: <Text style={{ fontFamily: F.bold, color: C.brinjal1 }}>{overview.referredBy.name}</Text>
                 </Text>
                 <Text style={[styles.referredByHint, { color: C.textSecondary }]}>{t('referral.referredBonusHint')}</Text>
               </View>
@@ -211,7 +211,7 @@ const styles = StyleSheet.create({
   codeText: { fontSize: 24, color: '#fff', letterSpacing: 4, fontFamily: F.bold },
   shareHint: { fontSize: 11, textAlign: 'center', fontFamily: F.regular },
 
-  referredByRow: { flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: RADIUS.md, padding: 12 },
+  referredByRow: { flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: RADIUS.lg, borderWidth: 1, padding: 16, ...SHADOW.card },
   referredByText: { fontSize: 13, fontFamily: F.regular },
   referredByHint: { fontSize: 11, fontFamily: F.regular, marginTop: 2 },
 

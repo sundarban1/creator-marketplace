@@ -4,26 +4,33 @@ const BG_COLORS = ['#f3e8ff', '#dbeafe', '#dcfce7', '#fce7f3', '#fef9c3', '#e0f2
 
 // FontAwesome5 icon name + accent color, matching the palette already used
 // throughout the mobile app (mobile/src/features/creator/data/filterOptions.ts's ICON_COLORS).
+// Unified taxonomy — one shared list for both creators and businesses.
 const CATEGORIES: { icon: string; color: string; name: string; key: string; scope: CategoryScope }[] = [
-  { icon: 'utensils',       color: '#F97316', name: 'Food & Beverage',    key: 'food-beverage',      scope: 'BOTH' },
-  { icon: 'plane',          color: '#0EA5E9', name: 'Travel',             key: 'travel',             scope: 'BOTH' },
-  { icon: 'tshirt',         color: '#EC4899', name: 'Fashion',            key: 'fashion',            scope: 'BOTH' },
-  { icon: 'spa',            color: '#D946EF', name: 'Beauty',             key: 'beauty',             scope: 'BOTH' },
-  { icon: 'dumbbell',       color: '#16A34A', name: 'Fitness & Health',   key: 'fitness-health',     scope: 'BOTH' },
-  { icon: 'gamepad',        color: '#8B5CF6', name: 'Gaming',             key: 'gaming',             scope: 'BOTH' },
-  { icon: 'microchip',      color: '#3B82F6', name: 'Technology',         key: 'technology',         scope: 'BOTH' },
-  { icon: 'graduation-cap', color: '#F59E0B', name: 'Education',          key: 'education',          scope: 'BOTH' },
-  { icon: 'leaf',           color: '#22C55E', name: 'Lifestyle',          key: 'lifestyle',          scope: 'BOTH' },
-  { icon: 'home',           color: '#0D9488', name: 'Home & Living',      key: 'home-living',        scope: 'BOTH' },
-  { icon: 'music',          color: '#A78BFA', name: 'Music',              key: 'music',              scope: 'BOTH' },
-  { icon: 'palette',        color: '#F472B6', name: 'Art & Design',       key: 'art-design',         scope: 'BOTH' },
-  { icon: 'paw',            color: '#CA8A04', name: 'Pets',               key: 'pets',               scope: 'CREATOR' },
-  { icon: 'wallet',         color: '#059669', name: 'Finance',            key: 'finance',            scope: 'BOTH' },
-  { icon: 'camera',         color: '#334155', name: 'Photography',        key: 'photography',        scope: 'CREATOR' },
-  { icon: 'futbol',         color: '#0D9488', name: 'Sports',             key: 'sports',             scope: 'BOTH' },
-  { icon: 'theater-masks',  color: '#C026D3', name: 'Entertainment',      key: 'entertainment',      scope: 'BOTH' },
-  { icon: 'shopping-cart',  color: '#D97706', name: 'Retail & E-commerce', key: 'retail-ecommerce',  scope: 'BUSINESS' },
-  { icon: 'concierge-bell', color: '#4F46E5', name: 'Events & Hospitality', key: 'events-hospitality', scope: 'BUSINESS' },
+  { icon: 'utensils',          color: '#F97316', name: 'Restaurants',              key: 'restaurants',            scope: 'BOTH' },
+  { icon: 'coffee',            color: '#A16207', name: 'Cafés',                    key: 'cafes',                  scope: 'BOTH' },
+  { icon: 'hotel',             color: '#0EA5E9', name: 'Hotels',                   key: 'hotels',                 scope: 'BOTH' },
+  { icon: 'umbrella-beach',    color: '#06B6D4', name: 'Resorts',                  key: 'resorts',                scope: 'BOTH' },
+  { icon: 'plane',             color: '#0284C7', name: 'Travel & Tourism',         key: 'travel-tourism',         scope: 'BOTH' },
+  { icon: 'hiking',            color: '#65A30D', name: 'Trekking & Adventure',     key: 'trekking-adventure',     scope: 'BOTH' },
+  { icon: 'tshirt',            color: '#EC4899', name: 'Fashion & Clothing',       key: 'fashion-clothing',       scope: 'BOTH' },
+  { icon: 'shoe-prints',       color: '#DB2777', name: 'Footwear',                 key: 'footwear',               scope: 'BOTH' },
+  { icon: 'spa',               color: '#D946EF', name: 'Beauty & Cosmetics',       key: 'beauty-cosmetics',       scope: 'BOTH' },
+  { icon: 'tint',              color: '#F472B6', name: 'Skincare & Personal Care', key: 'skincare-personal-care', scope: 'BOTH' },
+  { icon: 'gem',               color: '#7C3AED', name: 'Jewellery & Accessories',  key: 'jewellery-accessories',  scope: 'BOTH' },
+  { icon: 'shopping-bag',      color: '#D97706', name: 'Retail & Shopping',        key: 'retail-shopping',        scope: 'BOTH' },
+  { icon: 'shopping-cart',     color: '#EA580C', name: 'E-commerce',               key: 'ecommerce',              scope: 'BOTH' },
+  { icon: 'hamburger',         color: '#B45309', name: 'Food & Beverage Brands',   key: 'food-beverage-brands',   scope: 'BOTH' },
+  { icon: 'glass-cheers',      color: '#C026D3', name: 'Events & Entertainment',   key: 'events-entertainment',   scope: 'BOTH' },
+  { icon: 'dumbbell',          color: '#16A34A', name: 'Fitness & Wellness',       key: 'fitness-wellness',       scope: 'BOTH' },
+  { icon: 'graduation-cap',    color: '#F59E0B', name: 'Education & Training',     key: 'education-training',     scope: 'BOTH' },
+  { icon: 'mobile-alt',        color: '#3B82F6', name: 'Electronics & Mobile',     key: 'electronics-mobile',     scope: 'BOTH' },
+  { icon: 'laptop-code',       color: '#2563EB', name: 'Technology & Software',    key: 'technology-software',    scope: 'BOTH' },
+  { icon: 'car',               color: '#475569', name: 'Automotive',               key: 'automotive',             scope: 'BOTH' },
+  { icon: 'building',          color: '#0D9488', name: 'Real Estate & Property',   key: 'real-estate-property',   scope: 'BOTH' },
+  { icon: 'university',        color: '#059669', name: 'Banking & FinTech',        key: 'banking-fintech',        scope: 'BOTH' },
+  { icon: 'wifi',              color: '#0891B2', name: 'Internet & Telecom',       key: 'internet-telecom',       scope: 'BOTH' },
+  { icon: 'briefcase-medical', color: '#DC2626', name: 'Healthcare & Medical',     key: 'healthcare-medical',     scope: 'BOTH' },
+  { icon: 'couch',             color: '#9333EA', name: 'Home & Furniture',         key: 'home-furniture',         scope: 'BOTH' },
 ];
 
 export async function seedCategories(prisma: PrismaClient) {
@@ -34,10 +41,15 @@ export async function seedCategories(prisma: PrismaClient) {
         // Re-running the seeder keeps icon/color in sync with the palette above —
         // Category is meant to be admin-owned going forward, but this lets a
         // fresh seed/reseed always reflect the current defaults.
-        update: { icon: c.icon, color: c.color, iconBg: BG_COLORS[i % BG_COLORS.length]! },
+        update: { name: c.name, icon: c.icon, color: c.color, iconBg: BG_COLORS[i % BG_COLORS.length]! },
         create: { ...c, iconBg: BG_COLORS[i % BG_COLORS.length]! },
       })
     )
   );
+  // Full replace, not additive — Category has no FK relations (creator/business
+  // profiles and campaigns store category names as plain strings), so this is
+  // safe to prune outright rather than leaving old rows orphaned.
+  const { count } = await prisma.category.deleteMany({ where: { key: { notIn: CATEGORIES.map((c) => c.key) } } });
+  if (count > 0) console.log(`  🗑️  Categories: removed ${count} no-longer-used`);
   console.log(`  ✅ Categories: ${CATEGORIES.length} seeded`);
 }

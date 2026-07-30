@@ -10,6 +10,7 @@ import { DetailModal }   from '../components/DetailModal';
 import { Pagination }    from '../components/Pagination';
 import { api, type ApiUser } from '../lib/api';
 import { useApi }        from '../lib/useApi';
+import { displayEmailOrPhone } from '../lib/identity';
 
 const PAGE_SIZE = 10;
 
@@ -29,7 +30,7 @@ function displayName(u: ApiUser): string {
   return (
     u.creatorProfile?.fullName ??
     u.businessProfile?.businessName ??
-    u.email.split('@')[0]!
+    displayEmailOrPhone(u.email)
   );
 }
 
@@ -118,7 +119,7 @@ export function Users() {
           <Avatar initials={initials(row)} size="sm" />
           <div>
             <p className="font-medium text-gray-900">{displayName(row)}</p>
-            <p className="text-xs text-gray-500">{row.email}</p>
+            <p className="text-xs text-gray-500">{displayEmailOrPhone(row.email)}</p>
           </div>
         </div>
       ),
@@ -283,7 +284,7 @@ export function Users() {
           onClose={() => setViewing(null)}
           avatar={<Avatar initials={initials(viewing)} size="md" />}
           title={displayName(viewing)}
-          subtitle={viewing.email}
+          subtitle={displayEmailOrPhone(viewing.email)}
           badges={<StatusBadge status={verifiedStatus(viewing)} />}
           sections={[
             {

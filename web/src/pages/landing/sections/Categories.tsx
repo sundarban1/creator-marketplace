@@ -3,19 +3,29 @@ import { fadeUp, stagger, VP, PILL_HOVER } from '../lib/motion';
 import { SECTION_IDS } from '../constants';
 import { useLandingLanguage } from '../context/LanguageContext';
 import { getCategoryStyle } from '../lib/categoryIcons';
+import { getIconOption } from '../../../lib/iconOptions';
 import type { LandingStats } from '../../../lib/api';
 
 const PER_ROW = 5;
 
+interface Pill {
+  name: string;
+  icon: ReturnType<typeof getCategoryStyle>['icon'];
+  color: string;
+}
+
 export function Categories({ stats }: { stats: LandingStats | null }) {
   const { d } = useLandingLanguage();
-  // Real category names come from the DB (English only, no per-language
-  // translation there) — falls back to the static translated list until the
+  // Real categories come from the DB (English only, no per-language
+  // translation there), including the admin-picked `icon`/`color` — falls
+  // back to the static translated list + name-matched styling until the
   // live fetch resolves or if it fails.
-  const list = stats ? stats.categories.map((c) => c.name) : d.categories.list;
+  const list: Pill[] = stats
+    ? stats.categories.map((c) => ({ name: c.name, icon: getIconOption(c.icon)?.Icon ?? getCategoryStyle(c.name).icon, color: c.color }))
+    : d.categories.list.map((name) => ({ name, ...getCategoryStyle(name) }));
   // Grouped into fixed rows of 5 (4 on the last row if it doesn't divide
   // evenly) instead of one long flowing/scrolling strip.
-  const rows: string[][] = [];
+  const rows: Pill[][] = [];
   for (let i = 0; i < list.length; i += PER_ROW) rows.push(list.slice(i, i + PER_ROW));
 
   return (
@@ -40,8 +50,7 @@ export function Categories({ stats }: { stats: LandingStats | null }) {
       >
         {rows.map((row, ri) => (
           <div key={ri} className="flex flex-wrap justify-center gap-2">
-            {row.map((name, i) => {
-              const { icon: Icon, color } = getCategoryStyle(name);
+            {row.map(({ name, icon: Icon, color }, i) => {
               return (
                 <motion.div
                   key={i}

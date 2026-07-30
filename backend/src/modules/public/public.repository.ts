@@ -8,7 +8,7 @@ export class PublicRepository {
       prisma.user.count({ where: { role: Role.BUSINESS } }),
       prisma.category.findMany({
         where: { status: 'ACTIVE' },
-        select: { id: true, name: true },
+        select: { id: true, name: true, icon: true, color: true },
         orderBy: { name: 'asc' },
       }),
     ]);
