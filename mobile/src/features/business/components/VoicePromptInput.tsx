@@ -37,6 +37,13 @@ function formatDuration(ms: number): string {
 
 type Phase = 'idle' | 'recording' | 'review';
 
+// Number of bars in the live level meter shown while recording.
+const BAR_COUNT = 28;
+// dB floor for normalizing `metering` (roughly silence) up to 0 (loudest) —
+// on both iOS and Android, expo-audio reports metering in this dB range when
+// isMeteringEnabled is set, so this doesn't need a per-platform branch.
+const METERING_FLOOR_DB = -50;
+
 type Props = {
   // Fires once a recording passes basic validation (long enough, not over
   // the cap/size limit) and is ready to be reviewed — the caller doesn't
@@ -58,11 +65,14 @@ type Props = {
 export function VoicePromptInput({ onRecorded, onDiscard, onError, disabled }: Props) {
   const C = useAppColors();
   const { t } = useLanguage();
-  const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+  const recorder = useAudioRecorder({ ...RecordingPresets.HIGH_QUALITY, isMeteringEnabled: true });
   const recorderState = useAudioRecorderState(recorder, 100);
   const player = useAudioPlayer(null);
   const playerStatus = useAudioPlayerStatus(player);
   const [phase, setPhase] = useState<Phase>('idle');
+  // Rolling history of normalized (0–1) levels driving the live bar meter —
+  // shifts left and appends the newest reading each time metering updates.
+  const [levels, setLevels] = useState<number[]>(() => Array(BAR_COUNT).fill(0.05));
   // Source of truth for control flow (start/stop decisions) — recorderState
   // is polled on an interval and can lag a real press by up to that interval,
   // which would misfire on a very quick tap-release. Only used for display.
@@ -71,6 +81,12 @@ export function VoicePromptInput({ onRecorded, onDiscard, onError, disabled }: P
   const autoStopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    // Assert this up front, not only once recording starts — iOS has one
+    // shared AVAudioSession for the whole app, and the sibling Quick Audio
+    // Samples (TTS, in create-campaign.tsx) would otherwise play silently
+    // under the hardware mute switch until the brand happened to record
+    // something first.
+    void setAudioModeAsync({ playsInSilentMode: true });
     // No player.pause() here — useAudioPlayer() already releases its native
     // object on unmount, and calling pause() after (or racing) that release
     // throws NativeSharedObjectNotFoundException.
@@ -78,6 +94,16 @@ export function VoicePromptInput({ onRecorded, onDiscard, onError, disabled }: P
       if (autoStopTimerRef.current) clearTimeout(autoStopTimerRef.current);
     };
   }, []);
+
+  // Feeds the live bar meter — `metering` (dB) updates on the same 100ms poll
+  // as recorderState itself, so this just normalizes and appends each tick.
+  useEffect(() => {
+    if (phase !== 'recording') return;
+    const db = recorderState.metering;
+    if (db === undefined) return;
+    const norm = Math.max(0.05, Math.min(1, (db - METERING_FLOOR_DB) / -METERING_FLOOR_DB));
+    setLevels((prev) => [...prev.slice(1), norm]);
+  }, [recorderState.metering, phase]);
 
   async function handlePressIn() {
     if (disabled || phase !== 'idle' || isRecordingRef.current) return;
@@ -92,6 +118,7 @@ export function VoicePromptInput({ onRecorded, onDiscard, onError, disabled }: P
       recorder.record();
       isRecordingRef.current = true;
       startedAtRef.current = Date.now();
+      setLevels(Array(BAR_COUNT).fill(0.05));
       setPhase('recording');
       // Auto-release at the cap instead of rejecting afterward — the brand is
       // still physically holding the button and has no other way to know
@@ -109,7 +136,7 @@ export function VoicePromptInput({ onRecorded, onDiscard, onError, disabled }: P
     if (autoStopTimerRef.current) { clearTimeout(autoStopTimerRef.current); autoStopTimerRef.current = null; }
     const heldMs = Date.now() - startedAtRef.current;
     await recorder.stop();
-    await setAudioModeAsync({ allowsRecording: false });
+    await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true });
     const uri = recorder.uri;
     if (!uri) { setPhase('idle'); return; }
     if (heldMs < MIN_RECORDING_MS) {
@@ -177,12 +204,23 @@ export function VoicePromptInput({ onRecorded, onDiscard, onError, disabled }: P
 
   return (
     <View style={styles.wrap}>
+      {phase === 'recording' && (
+        <View style={styles.meter}>
+          {levels.map((lvl, i) => (
+            <View
+              key={i}
+              style={[styles.meterBar, { height: 4 + lvl * 32, backgroundColor: '#EF4444' }]}
+            />
+          ))}
+        </View>
+      )}
       <Pressable
         style={[
           styles.micBtn,
           { backgroundColor: recorderState.isRecording ? '#EF4444' : busy ? C.border : C.brinjal1 },
         ]}
         disabled={disabled}
+        hitSlop={12}
         onPressIn={() => void handlePressIn()}
         onPressOut={() => void handlePressOut()}>
         <Ionicons name="mic" size={recorderState.isRecording ? 30 : 26} color="#fff" />
@@ -199,6 +237,8 @@ export function VoicePromptInput({ onRecorded, onDiscard, onError, disabled }: P
 const styles = StyleSheet.create({
   wrap:     { alignItems: 'center', gap: 10, paddingVertical: 14 },
   micBtn:   { width: 68, height: 68, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
+  meter:    { flexDirection: 'row', alignItems: 'center', gap: 2, height: 36 },
+  meterBar: { width: 3, borderRadius: 2 },
   hint:     { fontSize: 12, fontFamily: F.regular, textAlign: 'center' },
   reviewRow:    { flexDirection: 'row', alignItems: 'center', gap: 14 },
   sayAgainPill: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: RADIUS.full, borderWidth: 1.5, paddingHorizontal: 16, paddingVertical: 10 },

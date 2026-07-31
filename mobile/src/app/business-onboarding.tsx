@@ -19,7 +19,7 @@ import { authService } from '@/services/auth';
 import { profileService } from '@/services/profile';
 import { useCategories } from '@/hooks/useCategories';
 import { LocationSearchModal } from '@/components/LocationSearchModal';
-import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { F, FONT_SIZE, RADIUS, SHADOW } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 
 const TOTAL_STEPS = 2;
@@ -379,7 +379,11 @@ export default function BusinessOnboardingScreen() {
                 <Text style={[styles.fieldError, { color: C.error, marginBottom: 8 }]}>{t('businessOnboarding.categoryError')}</Text>
               )}
               <View style={styles.categoryGrid}>
-                {categories.map((cat) => {
+                {/* Sorted shortest-name-first (display only) — the grid wraps
+                    greedily in list order, so without this a long label early
+                    in the alphabetical list forces its row to end early even
+                    when a short label later on would've fit right next to it. */}
+                {[...categories].sort((a, b) => a.name.length - b.name.length).map((cat) => {
                   const isSelected = selectedCategories.includes(cat.name);
                   const isDisabled = !isSelected && selectedCategories.length >= 3;
                   return (
@@ -466,9 +470,9 @@ const styles = StyleSheet.create({
   maxBanner: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: RADIUS.sm, paddingHorizontal: 12, paddingVertical: 8, marginBottom: 10 },
   maxBannerText: { fontSize: 13, fontFamily: F.semibold },
   categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
-  categoryChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 9, borderRadius: RADIUS.full, borderWidth: 1.5 },
+  categoryChip: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 9, paddingVertical: 6, borderRadius: RADIUS.full, borderWidth: 1.5 },
   chipDisabled: { opacity: 0.35 },
-  chipLabel: { fontSize: 13, fontFamily: F.medium },
+  chipLabel: { fontSize: FONT_SIZE.xs, fontFamily: F.medium },
   loadingRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   spinner: { width: 16, height: 16, borderRadius: RADIUS.full, borderWidth: 2, borderColor: 'rgba(255,255,255,0.35)' },
   primaryBtn: { borderRadius: RADIUS.md, paddingVertical: 15, alignItems: 'center', ...SHADOW.raised, marginBottom: 12 },
