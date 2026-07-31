@@ -749,8 +749,10 @@ function PreviewRow({
   const C = colors;
   return (
     <View style={[s.summaryRow, !last && { borderBottomWidth: 1, borderBottomColor: C.border }]}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, width: 140 }}>
-        <Ionicons name={icon} size={15} color={C.textSecondary} />
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, width: 150 }}>
+        <View style={[sc.iconChip, { width: 24, height: 24, backgroundColor: `${C.brinjal1}1A`, shadowColor: C.brinjal1 }]}>
+          <Ionicons name={icon} size={12} color={C.brinjal1} />
+        </View>
         <Text style={[s.summaryLabel, { width: undefined, color: C.textSecondary }]}>{label}</Text>
       </View>
       <Text style={[s.summaryValue, { color: C.text }]} numberOfLines={3}>{value}</Text>
@@ -1207,11 +1209,41 @@ export default function CreateCampaignScreen() {
     };
   }
 
+  function buildOpenEventPayload() {
+    return {
+      title:          form.title.trim(),
+      description:    form.description.trim(),
+      template:       form.template,
+      featureImageUrl: form.featureImageUrl ?? undefined,
+      category:       form.template,
+      goals:          ['Event Promotion', 'Brand Awareness'],
+      platforms:      form.platforms,
+      location:       form.venue.trim() || undefined,
+      locationLat:    locationLat ?? undefined,
+      locationLng:    locationLng ?? undefined,
+      minFollowers:   0,
+      contentType:    form.eventContent.join(', ') || 'Event Coverage',
+      deliverables:   form.benefits.join(', '),
+      deadline:       form.deadline!.toISOString(),
+      budgetMin:      0,
+      budgetMax:      0,
+      paymentType:    'Non-monetary',
+      creatorsNeeded: form.capacity,
+      isFeatured:     form.isFeatured,
+      campaignType:   'OPEN_EVENT' as const,
+      capacity:       form.capacity,
+      eventDate:      form.eventDate?.toISOString(),
+      venue:          form.venue.trim() || undefined,
+      benefits:       form.benefits,
+    };
+  }
+
   async function handleSaveDraft() {
-    if (form.eventType !== 'PAID_CAMPAIGN' || loading) return;
+    if (loading) return;
     setLoading(true);
     try {
-      await campaignService.create({ ...buildPaidCampaignPayload(), status: 'DRAFT' });
+      const payload = form.eventType === 'PAID_CAMPAIGN' ? buildPaidCampaignPayload() : buildOpenEventPayload();
+      await campaignService.create({ ...payload, status: 'DRAFT' });
       showToast(t('createEvent.toastDraftSaved'));
       setTimeout(() => router.replace('/(business)/'), 500);
     } catch (err) {
@@ -1268,32 +1300,7 @@ export default function CreateCampaignScreen() {
 
       setLoading(true);
       try {
-        const campaign = await campaignService.create({
-          title:          form.title.trim(),
-          description:    form.description.trim(),
-          template:       form.template,
-          featureImageUrl: form.featureImageUrl ?? undefined,
-          category:       form.template,
-          goals:          ['Event Promotion', 'Brand Awareness'],
-          platforms:      form.platforms,
-          location:       form.venue.trim() || undefined,
-          locationLat:    locationLat ?? undefined,
-          locationLng:    locationLng ?? undefined,
-          minFollowers:   0,
-          contentType:    form.eventContent.join(', ') || 'Event Coverage',
-          deliverables:   form.benefits.join(', '),
-          deadline:       form.deadline!.toISOString(),
-          budgetMin:      0,
-          budgetMax:      0,
-          paymentType:    'Non-monetary',
-          creatorsNeeded: form.capacity,
-          isFeatured:     form.isFeatured,
-          campaignType:   'OPEN_EVENT',
-          capacity:       form.capacity,
-          eventDate:      form.eventDate?.toISOString(),
-          venue:          form.venue.trim() || undefined,
-          benefits:       form.benefits,
-        });
+        const campaign = await campaignService.create({ ...buildOpenEventPayload(), status: 'ACTIVE' });
         showToast(t('createEvent.toastPublished'));
         setPublishedCampaign({ id: campaign.id, category: form.template, lat: locationLat, lng: locationLng });
       } catch (err) {
@@ -1318,8 +1325,9 @@ export default function CreateCampaignScreen() {
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
       <MaxWidthContainer>
 
-      {/* Header */}
-      <View style={[s.header, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
+      {/* Header — borderless/floating, matching the home tab's header (an
+          inset divider below separates it from content, not a hard border). */}
+      <View style={[s.header, { backgroundColor: C.background }]}>
         <Pressable
           onPress={() => {
             if (phase === 'confirm') setPhase('review');
@@ -1340,6 +1348,7 @@ export default function CreateCampaignScreen() {
           <Text style={[s.phasePillText, { color: C.brinjal1 }]}>{currentPhaseNum}/{totalPhases}</Text>
         </View>
       </View>
+      <View style={[s.headerDivider, { backgroundColor: C.border }]} />
 
       {/* Progress */}
       <View style={[s.progressTrack, { backgroundColor: C.border }]}>
@@ -1639,7 +1648,7 @@ export default function CreateCampaignScreen() {
                   </View>
 
                   {/* Editable title */}
-                  <SectionCard title={t('createEvent.secEventTitlePaid')} colors={C}>
+                  <SectionCard title={t('createEvent.secEventTitlePaid')} icon="create-outline" colors={C}>
                     <TextInput
                       style={[s.input, { backgroundColor: C.background, borderColor: reviewErrors.title ? ERROR_RED : C.border, color: C.text }]}
                       value={form.title}
@@ -1654,7 +1663,7 @@ export default function CreateCampaignScreen() {
                   </SectionCard>
 
                   {/* Feature image */}
-                  <SectionCard title={t('createEvent.secFeatureImageTitle')} sub={t('createEvent.secFeatureImageSub')} colors={C}>
+                  <SectionCard title={t('createEvent.secFeatureImageTitle')} sub={t('createEvent.secFeatureImageSub')} icon="image-outline" colors={C}>
                     <FeatureImagePicker
                       imageUrl={form.featureImageUrl}
                       category={form.template}
@@ -1668,7 +1677,12 @@ export default function CreateCampaignScreen() {
                   {/* Editable description */}
                   <SectionCard colors={C}>
                     <View style={s.descHeaderRow}>
-                      <Text style={[sc.title, s.descHeaderText, { color: C.text }]}>{t('createEvent.secDescPaid')}</Text>
+                      <View style={sc.titleRow}>
+                        <View style={[sc.iconChip, { backgroundColor: `${C.brinjal1}1A`, shadowColor: C.brinjal1 }]}>
+                          <Ionicons name="document-text-outline" size={14} color={C.brinjal1} />
+                        </View>
+                        <Text style={[sc.title, s.descHeaderText, { color: C.text }]}>{t('createEvent.secDescPaid')}</Text>
+                      </View>
                       <Pressable
                         style={[s.suggestBtn, { borderColor: C.brinjal1, opacity: descSuggestLoading ? 0.6 : 1 }]}
                         onPress={handleSuggestDescription}
@@ -1690,7 +1704,7 @@ export default function CreateCampaignScreen() {
                   </SectionCard>
 
                   {/* Objective */}
-                  <SectionCard title={t('createEvent.secObjectiveTitle')} sub={t('createEvent.secObjectiveSub')} colors={C}>
+                  <SectionCard title={t('createEvent.secObjectiveTitle')} sub={t('createEvent.secObjectiveSub')} icon="flag-outline" colors={C}>
                     <TextInput
                       style={[s.textarea, { backgroundColor: C.background, borderColor: C.border, color: C.text, minHeight: 70 }]}
                       value={form.objective}
@@ -1701,7 +1715,7 @@ export default function CreateCampaignScreen() {
                   </SectionCard>
 
                   {/* Goal */}
-                  <SectionCard title={t('createEvent.secGoalsTitle')} sub={t('createEvent.secGoalsSub')} colors={C}>
+                  <SectionCard title={t('createEvent.secGoalsTitle')} sub={t('createEvent.secGoalsSub')} icon="trophy-outline" colors={C}>
                     <ChipGroup
                       options={GOAL_OPTIONS}
                       value={form.goals[0] ?? GOAL_OPTIONS[0]!}
@@ -1711,7 +1725,7 @@ export default function CreateCampaignScreen() {
                   </SectionCard>
 
                   {/* Target Audience */}
-                  <SectionCard title={t('createEvent.secTargetAudienceTitle')} sub={t('createEvent.secTargetAudienceSub')} colors={C}>
+                  <SectionCard title={t('createEvent.secTargetAudienceTitle')} sub={t('createEvent.secTargetAudienceSub')} icon="people-outline" colors={C}>
                     <ChipMultiGroup
                       options={CREATOR_TYPES}
                       values={form.targetAudience}
@@ -1721,7 +1735,7 @@ export default function CreateCampaignScreen() {
                   </SectionCard>
 
                   {/* Platform */}
-                  <SectionCard title={t('createEvent.secPlatformTitle')} sub={t('createEvent.secPlatformSub')} colors={C}>
+                  <SectionCard title={t('createEvent.secPlatformTitle')} sub={t('createEvent.secPlatformSub')} icon="share-social-outline" colors={C}>
                     <PlatformChipGroup
                       options={platformOptions}
                       values={form.platforms}
@@ -1736,7 +1750,7 @@ export default function CreateCampaignScreen() {
                   </SectionCard>
 
                   {/* Deliverables */}
-                  <SectionCard title={t('createEvent.secDeliverablesTitle')} sub={t('createEvent.secDeliverablesSub')} colors={C}>
+                  <SectionCard title={t('createEvent.secDeliverablesTitle')} sub={t('createEvent.secDeliverablesSub')} icon="layers-outline" colors={C}>
                     <DeliverablesCounterList
                       value={form.deliverables}
                       onChange={(v) => update('deliverables', v)}
@@ -1746,7 +1760,7 @@ export default function CreateCampaignScreen() {
                   </SectionCard>
 
                   {/* Hashtags */}
-                  <SectionCard title={t('createEvent.secHashtagsTitle')} colors={C}>
+                  <SectionCard title={t('createEvent.secHashtagsTitle')} icon="pricetag-outline" colors={C}>
                     <HashtagEditor
                       hashtags={form.hashtags}
                       onChange={(v) => update('hashtags', v)}
@@ -1756,7 +1770,7 @@ export default function CreateCampaignScreen() {
                   </SectionCard>
 
                   {/* Budget */}
-                  <SectionCard title={t('createEvent.secBudgetTitle')} sub={t('createEvent.secBudgetSub')} colors={C}>
+                  <SectionCard title={t('createEvent.secBudgetTitle')} sub={t('createEvent.secBudgetSub')} icon="cash-outline" colors={C}>
                     <BudgetTierPicker
                       budgetMin={form.aiBudgetMin}
                       budgetMax={form.aiBudgetMax}
@@ -1771,7 +1785,7 @@ export default function CreateCampaignScreen() {
                   </SectionCard>
 
                   {/* Applications Close */}
-                  <SectionCard title={t('createEvent.secDeadlineTitle')} sub={t('createEvent.secDeadlineSub')} colors={C}>
+                  <SectionCard title={t('createEvent.secDeadlineTitle')} sub={t('createEvent.secDeadlineSub')} icon="calendar-outline" colors={C}>
                     <DeadlinePicker
                       value={form.deadline}
                       onChange={(d) => {
@@ -1784,7 +1798,7 @@ export default function CreateCampaignScreen() {
                   </SectionCard>
 
                   {/* Creators Needed */}
-                  <SectionCard title={t('createEvent.secCreatorsNeededTitle')} sub={t('createEvent.secCreatorsNeededSub')} colors={C}>
+                  <SectionCard title={t('createEvent.secCreatorsNeededTitle')} sub={t('createEvent.secCreatorsNeededSub')} icon="person-add-outline" colors={C}>
                     <Stepper value={form.creatorsNeeded} onChange={(v) => update('creatorsNeeded', v)} colors={C} />
                   </SectionCard>
 
@@ -1839,7 +1853,7 @@ export default function CreateCampaignScreen() {
                   </View>
 
                   {/* Title */}
-                  <SectionCard title={t('createEvent.secEventTitleOpen')} sub={t('createEvent.secEventTitleOpenSub')} colors={C}>
+                  <SectionCard title={t('createEvent.secEventTitleOpen')} sub={t('createEvent.secEventTitleOpenSub')} icon="create-outline" colors={C}>
                     <TextInput
                       style={[s.input, { backgroundColor: C.background, borderColor: reviewErrors.title ? ERROR_RED : C.border, color: C.text }]}
                       value={form.title}
@@ -1851,7 +1865,7 @@ export default function CreateCampaignScreen() {
                   </SectionCard>
 
                   {/* Feature image */}
-                  <SectionCard title={t('createEvent.secFeatureImageTitle')} sub={t('createEvent.secFeatureImageSub')} colors={C}>
+                  <SectionCard title={t('createEvent.secFeatureImageTitle')} sub={t('createEvent.secFeatureImageSub')} icon="image-outline" colors={C}>
                     <FeatureImagePicker
                       imageUrl={form.featureImageUrl}
                       category={form.template}
@@ -1866,7 +1880,12 @@ export default function CreateCampaignScreen() {
                   <SectionCard colors={C}>
                     <View style={s.descHeaderRow}>
                       <View style={s.descHeaderText}>
-                        <Text style={[sc.title, { color: C.text }]}>{t('createEvent.secDescOpen')}</Text>
+                        <View style={sc.titleRow}>
+                          <View style={[sc.iconChip, { backgroundColor: `${C.brinjal1}1A`, shadowColor: C.brinjal1 }]}>
+                            <Ionicons name="document-text-outline" size={14} color={C.brinjal1} />
+                          </View>
+                          <Text style={[sc.title, { color: C.text }]}>{t('createEvent.secDescOpen')}</Text>
+                        </View>
                         <Text style={[sc.sub, { color: C.textSecondary }]}>{t('createEvent.secDescOpenSub')}</Text>
                       </View>
                       <Pressable
@@ -1890,7 +1909,7 @@ export default function CreateCampaignScreen() {
                   </SectionCard>
 
                   {/* Creator Benefits — auto-selected, editable */}
-                  <SectionCard title={t('createEvent.secBenefitsTitle')} sub={t('createEvent.secBenefitsSub')} colors={C}>
+                  <SectionCard title={t('createEvent.secBenefitsTitle')} sub={t('createEvent.secBenefitsSub')} icon="gift-outline" colors={C}>
                     <View style={cg.wrap}>
                       {BENEFITS.map((benefit) => {
                         const checked = form.benefits.includes(benefit);
@@ -1912,12 +1931,12 @@ export default function CreateCampaignScreen() {
                   </SectionCard>
 
                   {/* Capacity */}
-                  <SectionCard title={t('createEvent.secCapacityTitle')} sub={t('createEvent.secCapacitySub')} colors={C}>
+                  <SectionCard title={t('createEvent.secCapacityTitle')} sub={t('createEvent.secCapacitySub')} icon="people-outline" colors={C}>
                     <Stepper value={form.capacity} onChange={(v) => update('capacity', v)} min={1} max={500} colors={C} />
                   </SectionCard>
 
                   {/* Platform (optional) */}
-                  <SectionCard title={t('createEvent.secPlatformOptTitle')} sub={t('createEvent.secPlatformOptSub')} colors={C}>
+                  <SectionCard title={t('createEvent.secPlatformOptTitle')} sub={t('createEvent.secPlatformOptSub')} icon="share-social-outline" colors={C}>
                     <ChipGroup
                       options={['Instagram', 'TikTok', 'YouTube', 'Facebook', notRequiredLabel]}
                       value={form.platforms[0] ?? notRequiredLabel}
@@ -1927,7 +1946,7 @@ export default function CreateCampaignScreen() {
                   </SectionCard>
 
                   {/* Event Date */}
-                  <SectionCard title={t('createEvent.secEventDateTitle')} sub={t('createEvent.secEventDateSub')} colors={C}>
+                  <SectionCard title={t('createEvent.secEventDateTitle')} sub={t('createEvent.secEventDateSub')} icon="calendar-outline" colors={C}>
                     <DeadlinePicker
                       value={form.eventDate}
                       onChange={(d) => {
@@ -1942,7 +1961,7 @@ export default function CreateCampaignScreen() {
                   </SectionCard>
 
                   {/* Registration Deadline — auto-set to eventDate - 2 days */}
-                  <SectionCard title={t('createEvent.secRegDeadlineTitle')} sub={t('createEvent.secRegDeadlineSub')} colors={C}>
+                  <SectionCard title={t('createEvent.secRegDeadlineTitle')} sub={t('createEvent.secRegDeadlineSub')} icon="time-outline" colors={C}>
                     <DeadlinePicker
                       value={form.deadline}
                       onChange={(d) => {
@@ -1956,7 +1975,7 @@ export default function CreateCampaignScreen() {
                   </SectionCard>
 
                   {/* Event summary */}
-                  <SectionCard title={t('createEvent.secEventSummaryTitle')} colors={C}>
+                  <SectionCard title={t('createEvent.secEventSummaryTitle')} icon="clipboard-outline" colors={C}>
                     {[
                       { label: t('createEvent.summaryCategory'), value: form.template || '—' },
                       { label: t('createEvent.summaryVenue'),    value: form.venue || t('createEvent.summaryTBD') },
@@ -1978,6 +1997,15 @@ export default function CreateCampaignScreen() {
                     colors={C}
                     t={t}
                   />
+
+                  {/* Save as Draft */}
+                  <Pressable
+                    style={[s.draftBtn, { borderColor: C.border, opacity: loading ? 0.6 : 1 }]}
+                    onPress={handleSaveDraft}
+                    disabled={loading}>
+                    <Ionicons name="save-outline" size={16} color={C.textSecondary} />
+                    <Text style={[s.draftBtnText, { color: C.textSecondary }]}>{t('createEvent.saveDraftBtn')}</Text>
+                  </Pressable>
 
                   {/* Actions */}
                   <View style={s.reviewActions}>
@@ -2107,7 +2135,8 @@ const s = StyleSheet.create({
   container: { flex: 1 },
   flex:      { flex: 1 },
 
-  header:       { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12, borderBottomWidth: 1 },
+  header:       { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12 },
+  headerDivider:{ height: 1, marginHorizontal: 20 },
   backBtn:      { width: 40, height: 40, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
   headerCenter: { flex: 1, alignItems: 'center' },
   headerTitle:  { fontSize: 18, fontFamily: F.bold },

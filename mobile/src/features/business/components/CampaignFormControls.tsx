@@ -14,13 +14,28 @@ const ERROR_RED = '#EF4444';
 
 // ─── SectionCard ──────────────────────────────────────────────────────────────
 
-export function SectionCard({ title, sub, children, colors }: {
-  title?: string; sub?: string; children: React.ReactNode; colors: ReturnType<typeof useAppColors>;
+export function SectionCard({ title, sub, icon, iconColor, children, colors }: {
+  title?: string; sub?: string;
+  // Optional colored icon-chip next to the title — same colored-chip motif as
+  // the business home tab's Quick Actions row, so a long Review form reads as
+  // scannable labeled sections instead of an undifferentiated stack of inputs.
+  icon?: keyof typeof Ionicons.glyphMap; iconColor?: string;
+  children: React.ReactNode; colors: ReturnType<typeof useAppColors>;
 }) {
   const C = colors;
+  const chipColor = iconColor ?? C.brinjal1;
   return (
     <View style={[sc.card, { backgroundColor: C.surface, borderColor: C.border }]}>
-      {title && <Text style={[sc.title, { color: C.text }]}>{title}</Text>}
+      {title && (
+        <View style={sc.titleRow}>
+          {icon && (
+            <View style={[sc.iconChip, { backgroundColor: `${chipColor}1A`, shadowColor: chipColor }]}>
+              <Ionicons name={icon} size={14} color={chipColor} />
+            </View>
+          )}
+          <Text style={[sc.title, { color: C.text }]}>{title}</Text>
+        </View>
+      )}
       {sub && <Text style={[sc.sub, { color: C.textSecondary }]}>{sub}</Text>}
       {children}
     </View>
@@ -30,9 +45,11 @@ export function SectionCard({ title, sub, children, colors }: {
 // Exported so consumers that need a bespoke header layout (e.g. a title row with
 // an inline action button) can still match SectionCard's title/sub typography.
 export const sc = StyleSheet.create({
-  card:  { borderRadius: RADIUS.lg, padding: 16, gap: 10, borderWidth: 1, ...SHADOW.card },
-  title: { fontSize: 14, fontFamily: F.bold },
-  sub:   { fontSize: 12, lineHeight: 18, fontFamily: F.regular },
+  card:     { borderRadius: RADIUS.lg, padding: 16, gap: 10, borderWidth: 1, ...SHADOW.card },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  iconChip: { width: 26, height: 26, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center', shadowOpacity: 0.25, shadowRadius: 6, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
+  title:    { fontSize: 14, fontFamily: F.bold },
+  sub:      { fontSize: 12, lineHeight: 18, fontFamily: F.regular },
 });
 
 // ─── ChipGroup (single select) ────────────────────────────────────────────────

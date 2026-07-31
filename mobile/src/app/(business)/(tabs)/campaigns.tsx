@@ -580,7 +580,10 @@ export default function CampaignsScreen() {
                   </View>
 
                   {c.status === 'draft' && (
-                    <Text style={[styles.draftNote, { color: C.textSecondary }]}>{t('campaigns.tapToEdit')}</Text>
+                    <View style={[styles.tagBadge, styles.draftNote, { backgroundColor: TabColors.warning.bg, alignSelf: 'flex-start' }]}>
+                      <Ionicons name="create-outline" size={11} color={TabColors.warning.color} />
+                      <Text style={[styles.tagBadgeText, { color: TabColors.warning.color }]}>{t('campaigns.tapToEdit')}</Text>
+                    </View>
                   )}
                 </Pressable>
 
@@ -888,7 +891,7 @@ const styles = StyleSheet.create({
 
   socialIcon: { width: 32, height: 32, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center' },
 
-  draftNote: { fontSize: 11, fontStyle: 'italic', fontFamily: F.regular },
+  draftNote: { marginTop: 8 },
 
   buttonContainer: { flexDirection: 'row', gap: 10, paddingHorizontal: 18, paddingBottom: 16 },
   buttonPrimary: { flex: 1, minHeight: 42, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 12 },
