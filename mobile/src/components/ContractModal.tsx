@@ -8,10 +8,10 @@ import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { contractService, type ContractTerms } from '@/services/contract';
 
 // Renders "**bold**" spans inline within a single line of text.
-function renderInline(text: string, style: object) {
+function renderInline(text: string, style: object, key?: number) {
   const parts = text.split(/(\*\*[^*]+\*\*)/g).filter((p) => p.length > 0);
   return (
-    <Text style={style}>
+    <Text key={key} style={style}>
       {parts.map((part, i) => {
         const isBold = part.startsWith('**') && part.endsWith('**');
         return (
@@ -49,7 +49,7 @@ function MarkdownBody({ text, colors: C }: { text: string; colors: ReturnType<ty
       );
       return;
     }
-    elements.push(renderInline(trimmed, [md.paragraph, { color: C.text }]));
+    elements.push(renderInline(trimmed, [md.paragraph, { color: C.text }], i));
   });
   return <View>{elements}</View>;
 }
@@ -126,11 +126,15 @@ export function ContractModal({ visible, title, subtitle, filledBody, terms, con
           <View style={[s.handle, { backgroundColor: C.border }]} />
 
           <View style={[s.header, { borderBottomColor: C.border }]}>
+            {/* Fixed-width spacer matching the close button — keeps the
+                title/subtitle block truly centered in the row instead of
+                just centered within its own (right-shifted) flex column. */}
+            <View style={s.headerSideSpacer} />
             <View style={{ flex: 1 }}>
-              <Text style={[s.title, { color: C.text }]} numberOfLines={2}>{title}</Text>
-              <Text style={[s.subtitle, { color: C.textSecondary }]}>{subtitle}</Text>
+              <Text style={[s.title, { color: C.text, textAlign: 'center' }]} numberOfLines={2}>{title}</Text>
+              <Text style={[s.subtitle, { color: C.textSecondary, textAlign: 'center' }]}>{subtitle}</Text>
             </View>
-            <Pressable onPress={onClose} hitSlop={8} disabled={agreeing}>
+            <Pressable style={s.headerSideSpacer} onPress={onClose} hitSlop={8} disabled={agreeing}>
               <Ionicons name="close" size={22} color={C.textSecondary} />
             </Pressable>
           </View>
@@ -187,7 +191,8 @@ const s = StyleSheet.create({
   backdrop:  { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
   sheet:     { borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl, maxHeight: '90%', ...SHADOW.floating, shadowOffset: { width: 0, height: -6 } },
   handle:    { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginTop: 12, marginBottom: 4 },
-  header:    { flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1 },
+  header:    { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1 },
+  headerSideSpacer: { width: 22, alignItems: 'center' },
   title:     { fontSize: 17, fontFamily: F.extrabold },
   subtitle:  { fontSize: 12.5, fontFamily: F.regular, marginTop: 2 },
   body:      { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 24, gap: 16 },

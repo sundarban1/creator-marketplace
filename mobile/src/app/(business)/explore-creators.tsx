@@ -26,6 +26,7 @@ import {
   CREATOR_SLIDER_MAX,
   type CreatorFilterState,
 } from '@/components/CreatorFilterModal';
+import { RangeDropdown } from '@/components/RangeDropdown';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { creatorService, type ApiCreatorListItem } from '@/services/creator';
@@ -37,6 +38,8 @@ import { usePlatforms, getPlatformMeta } from '@/hooks/usePlatforms';
 import type { ApiCategory } from '@/services/category';
 
 const PAGE_SIZE = 10;
+
+type CreatorSort = 'newest' | 'oldest' | 'followers';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -135,6 +138,13 @@ export default function ExploreCreatorsScreen() {
   const [searchDebounced, setSearchDebounced] = useState('');
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const [sort, setSort] = useState<CreatorSort>('newest');
+  const sortOptions: { value: CreatorSort; label: string }[] = [
+    { value: 'newest',    label: t('explore.sortNewest') },
+    { value: 'oldest',    label: t('explore.sortOldest') },
+    { value: 'followers', label: t('explore.sortFollowers') },
+  ];
+
   const [filterVisible, setFilterVisible] = useState(false);
   const [activeFilter, setActiveFilter] = useState<CreatorFilterState>(DEFAULT_CREATOR_FILTER);
   const [tempFilter, setTempFilter] = useState<CreatorFilterState>(DEFAULT_CREATOR_FILTER);
@@ -181,7 +191,7 @@ export default function ExploreCreatorsScreen() {
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [search]);
 
-  async function fetchCreators(p: number, replace: boolean, filter: CreatorFilterState, nameSearch: string) {
+  async function fetchCreators(p: number, replace: boolean, filter: CreatorFilterState, nameSearch: string, sortBy: CreatorSort) {
     if (p === 1 && replace) setLoading(true);
     else if (!replace) setLoadingMore(true);
     setError('');
@@ -199,6 +209,7 @@ export default function ExploreCreatorsScreen() {
         platforms: filter.platforms.length ? filter.platforms : undefined,
         priceMin: filter.priceMin > CREATOR_SLIDER_MIN ? filter.priceMin : undefined,
         priceMax: filter.priceMax < CREATOR_SLIDER_MAX ? filter.priceMax : undefined,
+        sort: sortBy,
       });
       setTotal(res.total);
       setCreators((prev) => {
@@ -218,19 +229,19 @@ export default function ExploreCreatorsScreen() {
   }
 
   useEffect(() => {
-    void fetchCreators(1, true, activeFilter, searchDebounced);
-  }, [searchDebounced, activeFilter]);
+    void fetchCreators(1, true, activeFilter, searchDebounced, sort);
+  }, [searchDebounced, activeFilter, sort]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    void fetchCreators(1, true, activeFilter, searchDebounced);
-  }, [searchDebounced, activeFilter]);
+    void fetchCreators(1, true, activeFilter, searchDebounced, sort);
+  }, [searchDebounced, activeFilter, sort]);
 
   function loadMore() {
     if (loadingMoreRef.current || page >= Math.ceil(total / PAGE_SIZE)) return;
     loadingMoreRef.current = true;
     setLoadingMore(true);
-    void fetchCreators(page + 1, false, activeFilter, searchDebounced);
+    void fetchCreators(page + 1, false, activeFilter, searchDebounced, sort);
   }
 
   function openFilter() {
@@ -302,7 +313,9 @@ export default function ExploreCreatorsScreen() {
         <View style={[s.headerSeparator, { backgroundColor: C.border }]} />
       </View>
 
-      {/* Result count + Saved link — same row, below search bar */}
+      {/* Saved link (left) / result count (center) / sort dropdown (right) —
+          three equal-flex columns so the count sits in the true middle of the
+          row regardless of how wide the saved-link or dropdown are. */}
       <View style={s.metaRow}>
         <Pressable
           style={[s.savedLink, { backgroundColor: C.surface, borderColor: C.border, borderWidth: 1 }]}
@@ -310,11 +323,14 @@ export default function ExploreCreatorsScreen() {
           <Ionicons name="bookmark" size={14} color={C.brinjal1} />
           <Text style={[s.savedLinkText, { color: C.brinjal1 }]}>{t('explore.saved')}</Text>
         </Pressable>
-        {!loading && creators.length > 0 ? (
-          <Text style={[s.countText, { color: C.textSecondary }]}>
-            {total !== 1 ? t('explore.creatorsFoundPlural', { count: total }) : t('explore.creatorsFound', { count: total })}
-          </Text>
-        ) : <View />}
+        <View style={s.metaCol}>
+          {!loading && creators.length > 0 ? (
+            <Text style={[s.countText, { color: C.textSecondary }]} numberOfLines={1}>
+              {total !== 1 ? t('explore.creatorsFoundPlural', { count: total }) : t('explore.creatorsFound', { count: total })}
+            </Text>
+          ) : null}
+        </View>
+        <RangeDropdown value={sort} options={sortOptions} onChange={setSort} />
       </View>
 
       {/* Active filter chips — wraps to multiple lines, doesn't scroll, so
@@ -376,7 +392,7 @@ export default function ExploreCreatorsScreen() {
             icon="alert-circle-outline"
             title={t('common.error')}
             subtitle={error}
-            action={{ label: t('common.retry'), onPress: () => fetchCreators(1, true, activeFilter, searchDebounced) }}
+            action={{ label: t('common.retry'), onPress: () => fetchCreators(1, true, activeFilter, searchDebounced, sort) }}
           />
         ) : creators.length === 0 ? (
           <EmptyState
@@ -444,7 +460,8 @@ const s = StyleSheet.create({
   chip: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: RADIUS.full, borderWidth: 1.5 },
   chipText: { fontSize: 12, fontFamily: F.semibold },
 
-  metaRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, marginTop: 12, marginBottom: 8 },
+  metaRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, marginTop: 12, marginBottom: 8, gap: 8 },
+  metaCol: { flex: 1, alignItems: 'center' },
   countText: { fontSize: 12, fontFamily: F.semibold },
 
   loadingText: { fontSize: 14, fontFamily: F.regular },

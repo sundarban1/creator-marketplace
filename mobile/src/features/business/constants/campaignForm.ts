@@ -20,7 +20,6 @@ export const DELIVERABLE_TYPES: { key: string; labelKey: string }[] = [
   { key: 'REEL',                  labelKey: 'createEvent.deliverableReel' },
   { key: 'STORY',                 labelKey: 'createEvent.deliverableStory' },
   { key: 'PHOTO_POST',            labelKey: 'createEvent.deliverablePhotoPost' },
-  { key: 'CAROUSEL_POST',         labelKey: 'createEvent.deliverableCarouselPost' },
   { key: 'VISIT_STORE',           labelKey: 'createEvent.deliverableVisitStore' },
   { key: 'PRODUCT_REVIEW_VIDEO',  labelKey: 'createEvent.deliverableProductReviewVideo' },
   { key: 'EVENT_COVERAGE_VIDEO',  labelKey: 'createEvent.deliverableEventCoverageVideo' },

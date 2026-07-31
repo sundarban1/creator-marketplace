@@ -18,7 +18,7 @@ export type PickedVideo = {
 
 const CHAT_IMAGE_MAX_SIZE_BYTES = 20 * 1024 * 1024; // matches backend uploadChatFile limit
 const CHAT_VIDEO_MAX_DURATION_SEC = 120; // matches backend's 2-minute cap
-const CHAT_VIDEO_MAX_SIZE_BYTES = 200 * 1024 * 1024; // matches backend's 200MB cap
+const CHAT_VIDEO_MAX_SIZE_BYTES = 500 * 1024 * 1024; // matches backend's 500MB cap
 
 // MP4 (H.264/AAC) is preferred; MOV is accepted and delivered back as MP4 by
 // the backend (see videoPlaybackUrl in backend/src/utils/cloudinary.ts).
@@ -82,7 +82,7 @@ async function validateAndBuildPickedVideo(asset: ImagePicker.ImagePickerAsset, 
   }
   const sizeBytes = info.size ?? 0;
   if (sizeBytes > CHAT_VIDEO_MAX_SIZE_BYTES) {
-    Alert.alert('Video too large', 'Please choose a video under 200 MB.');
+    Alert.alert('Video too large', 'Please choose a video under 500 MB.');
     return null;
   }
 

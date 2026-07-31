@@ -1,7 +1,72 @@
 import { useState, useEffect } from 'react';
-import { Save, Info } from 'lucide-react';
+import { Save, Info, Bold, Heading1, Heading2, List, Minus, Undo2, Redo2 } from 'lucide-react';
+import { useEditor, EditorContent, type Editor } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import { Markdown, type MarkdownStorage } from 'tiptap-markdown';
 import { api } from '../lib/api';
 import type { ContractTemplate } from '../lib/api';
+
+// tiptap-markdown ships its Storage shape but doesn't declare the module
+// augmentation itself — without this, `editor.storage.markdown` isn't typed.
+declare module '@tiptap/core' {
+  interface Storage {
+    markdown: MarkdownStorage;
+  }
+}
+
+// Editable subset kept intentionally narrow: it must stay inside the
+// lightweight Markdown ("## " headers, "**bold**", "* "/"- " bullets, "---")
+// that both the mobile app's ContractModal and the backend's PDF renderer
+// hand-parse (contract.service.ts renderMarkdownBody) — neither understands
+// arbitrary HTML, so the toolbar only exposes constructs both already support.
+function ToolbarButton({ onClick, active, disabled, label, children }: {
+  onClick: () => void; active?: boolean; disabled?: boolean; label: string; children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      title={label}
+      aria-label={label}
+      className={`p-1.5 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${
+        active ? 'bg-indigo-100 text-indigo-700' : 'text-gray-600 hover:bg-gray-100'
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function EditorToolbar({ editor }: { editor: Editor | null }) {
+  if (!editor) return null;
+  return (
+    <div className="flex items-center gap-1 border border-b-0 border-gray-200 rounded-t-lg bg-gray-50 px-2 py-1.5">
+      <ToolbarButton label="Heading 1" active={editor.isActive('heading', { level: 1 })} onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}>
+        <Heading1 size={16} />
+      </ToolbarButton>
+      <ToolbarButton label="Heading 2" active={editor.isActive('heading', { level: 2 })} onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}>
+        <Heading2 size={16} />
+      </ToolbarButton>
+      <ToolbarButton label="Bold" active={editor.isActive('bold')} onClick={() => editor.chain().focus().toggleBold().run()}>
+        <Bold size={16} />
+      </ToolbarButton>
+      <ToolbarButton label="Bullet list" active={editor.isActive('bulletList')} onClick={() => editor.chain().focus().toggleBulletList().run()}>
+        <List size={16} />
+      </ToolbarButton>
+      <ToolbarButton label="Divider" onClick={() => editor.chain().focus().setHorizontalRule().run()}>
+        <Minus size={16} />
+      </ToolbarButton>
+      <div className="w-px h-5 bg-gray-200 mx-1" />
+      <ToolbarButton label="Undo" disabled={!editor.can().undo()} onClick={() => editor.chain().focus().undo().run()}>
+        <Undo2 size={16} />
+      </ToolbarButton>
+      <ToolbarButton label="Redo" disabled={!editor.can().redo()} onClick={() => editor.chain().focus().redo().run()}>
+        <Redo2 size={16} />
+      </ToolbarButton>
+    </div>
+  );
+}
 
 // Kept in sync with TOKENS in backend/src/modules/contract/contract.service.ts —
 // these are the only {{...}} placeholders the contract renderer substitutes.
@@ -24,6 +89,23 @@ export function ContractTemplateEditor() {
     setTimeout(() => setToast(null), 3000);
   }
 
+  const editor = useEditor({
+    extensions: [
+      StarterKit.configure({
+        // Disabled: no equivalent in the mobile/PDF markdown-subset parsers,
+        // so allowing them would let content silently fail to round-trip.
+        italic: false, strike: false, code: false, codeBlock: false, blockquote: false, orderedList: false,
+        heading: { levels: [1, 2] },
+      }),
+      Markdown.configure({
+        html: false,            // never emit raw HTML — keep output inside the supported subset
+        bulletListMarker: '*',  // matches DEFAULT_TEMPLATE's existing bullet style
+      }),
+    ],
+    content: '',
+    onUpdate: ({ editor }) => setBody(editor.storage.markdown.getMarkdown()),
+  });
+
   useEffect(() => {
     setLoading(true);
     api.contractTemplate.get()
@@ -32,10 +114,11 @@ export function ContractTemplateEditor() {
         setTemplate(t);
         setTitle(t.title);
         setBody(t.body);
+        editor?.commands.setContent(t.body);
       })
       .catch(() => notify('Failed to load contract template', false))
       .finally(() => setLoading(false));
-  }, []);
+  }, [editor]);
 
   const dirty = template != null && (title !== template.title || body !== template.body);
 
@@ -98,12 +181,19 @@ export function ContractTemplateEditor() {
 
             <div>
               <label className="block text-xs font-semibold text-gray-600 mb-1">Agreement Body</label>
-              <textarea
-                value={body}
-                onChange={(e) => setBody(e.target.value)}
-                rows={24}
-                placeholder="Agreement text…"
-                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm font-mono leading-relaxed focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y"
+              <EditorToolbar editor={editor} />
+              <EditorContent
+                editor={editor}
+                className={[
+                  'w-full border border-gray-200 rounded-b-lg px-3 py-2.5 text-sm leading-relaxed',
+                  'focus-within:outline-none focus-within:ring-2 focus-within:ring-indigo-500',
+                  '[&_.tiptap]:min-h-[480px] [&_.tiptap]:outline-none',
+                  '[&_h1]:text-lg [&_h1]:font-bold [&_h1]:mt-3 [&_h1]:mb-1',
+                  '[&_h2]:text-base [&_h2]:font-bold [&_h2]:mt-3 [&_h2]:mb-1',
+                  '[&_strong]:font-semibold',
+                  '[&_ul]:list-disc [&_ul]:pl-5 [&_p]:mb-1',
+                  '[&_hr]:my-3 [&_hr]:border-gray-200',
+                ].join(' ')}
               />
             </div>
           </div>
@@ -115,15 +205,15 @@ export function ContractTemplateEditor() {
               <h3 className="font-semibold text-sm">Available Placeholders</h3>
             </div>
             <p className="text-xs text-gray-500">
-              Use these anywhere in the body — each is replaced with the actual deal's values when a contract is generated for a specific proposal.
+              Click to insert at your cursor — each is replaced with the actual deal's values when a contract is generated for a specific proposal.
             </p>
             <div className="flex flex-wrap gap-1.5">
               {TOKENS.map((tok) => (
                 <code
                   key={tok}
                   className="text-xs bg-indigo-50 text-indigo-700 px-2 py-1 rounded-md font-mono cursor-pointer hover:bg-indigo-100 transition-colors"
-                  onClick={() => navigator.clipboard?.writeText(`{{${tok}}}`)}
-                  title="Click to copy"
+                  onClick={() => editor?.chain().focus().insertContent(`{{${tok}}}`).run()}
+                  title="Click to insert"
                 >
                   {`{{${tok}}}`}
                 </code>

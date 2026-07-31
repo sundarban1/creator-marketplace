@@ -95,7 +95,10 @@ export type Message = {
   senderId: string;
   text: string;
   timestamp: string;
-  status: 'sending' | 'sent' | 'delivered' | 'read' | 'compressing' | 'uploading' | 'failed';
+  // 'finalizing' sits between 'uploading' (chunk transport) and 'sent': all
+  // chunks landed at Cloudinary, but the backend's complete-call (which
+  // verifies + creates the real message row) is still in flight.
+  status: 'sending' | 'sent' | 'delivered' | 'read' | 'compressing' | 'uploading' | 'finalizing' | 'failed';
   type: 'TEXT' | 'IMAGE' | 'FILE' | 'VIDEO';
   attachmentUrl?: string | null;
   attachmentName?: string | null;
@@ -105,6 +108,10 @@ export type Message = {
   attachmentHeight?: number | null;
   attachmentSize?: number | null;
   attachmentFormat?: string | null;
+  // Server-verified — VIDEO only, null for every other type. See backend's
+  // VideoAssetStatus for why PROCESSING/READY both currently resolve within
+  // the same request (no async job exists yet).
+  attachmentStatus?: 'PROCESSING' | 'READY' | 'FAILED' | null;
   isDeleted?: boolean;
   // Local-only — never round-trips through the server. Kept on the message object
   // so Retry can re-run the upload without reopening the picker.

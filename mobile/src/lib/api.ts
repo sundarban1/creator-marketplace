@@ -155,6 +155,7 @@ export interface ApiMessage {
   attachmentHeight?:       number | null;
   attachmentSize?:         number | null;
   attachmentFormat?:       string | null;
+  attachmentStatus?:       'PROCESSING' | 'READY' | 'FAILED' | null;
   createdAt:      string;
   isDeleted?:     boolean;
   sender:         { id: string; email: string; role: string };

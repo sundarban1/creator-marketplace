@@ -123,6 +123,7 @@ export const creatorService = {
     platforms?: string[];
     priceMin?: number;
     priceMax?: number;
+    sort?: 'newest' | 'oldest' | 'followers';
   }): Promise<ApiCreatorListResponse> {
     const query = new URLSearchParams();
     if (params?.page) query.set('page', String(params.page));
@@ -133,6 +134,7 @@ export const creatorService = {
     if (params?.platforms?.length) query.set('platforms', params.platforms.join(','));
     if (params?.priceMin !== undefined) query.set('priceMin', String(params.priceMin));
     if (params?.priceMax !== undefined) query.set('priceMax', String(params.priceMax));
+    if (params?.sort) query.set('sort', params.sort);
     const qs = query.toString();
     const res = await request<ApiCreatorListResponse>('GET', `/api/business/creators${qs ? `?${qs}` : ''}`);
     return res.data;

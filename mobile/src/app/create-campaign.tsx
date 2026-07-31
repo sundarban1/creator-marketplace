@@ -34,7 +34,6 @@ import { transcribeAudio } from '@/services/audioTranscribe';
 import { getTemplateImage } from '@/features/creator/data/templateImages';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
-import { TabSlider } from '@/components/TabSlider';
 import { TabColors } from '@/utilities/tabColors';
 import {
   GOAL_OPTIONS, CREATOR_TYPES, DELIVERABLE_TYPES, DEFAULT_DELIVERABLES, summarizeDeliverables,
@@ -1370,47 +1369,40 @@ export default function CreateCampaignScreen() {
           {phase === 'setup' && (
             <View style={s.content}>
 
-              {/* Event Type Tab Slider — same TabSlider + color system as the
-                  business home feed's type filter, for a consistent feel. */}
+              {/* Event Type — descriptive selectable cards (icon + title + why
+                  you'd pick it) instead of a plain tab switch, so the choice
+                  is self-explanatory without a separate info banner. */}
               <View style={{ gap: 12 }}>
                 <Text style={[s.stepSectionHeading, { color: C.text }]}>{t('createEvent.eventTypeHeading')}</Text>
 
-                <TabSlider
-                  justify
-                  tabs={[
-                    { key: 'PAID_CAMPAIGN', label: t('createEvent.tabPaidEvent'), icon: 'cash-outline',     color: TabColors.brand.color },
-                    { key: 'OPEN_EVENT',    label: t('createEvent.tabOpenEvent'), icon: 'calendar-outline', color: TabColors.info.color },
-                  ]}
-                  active={form.eventType}
-                  onChange={(key) => { if (form.eventType !== key) resetFormForType(key as FormData['eventType']); }}
-                />
-
-                {/* Info banner for the selected type — icon box + left accent,
-                    matching the home feed's banner/attentionBanner pattern. */}
-                <View
-                  style={[
-                    s.etInfoPanel,
-                    { backgroundColor: C.surface, borderLeftColor: form.eventType === 'PAID_CAMPAIGN' ? TabColors.brand.color : TabColors.info.color },
-                  ]}
-                >
-                  <View
-                    style={[
-                      s.etInfoIconWrap,
-                      {
-                        backgroundColor: form.eventType === 'PAID_CAMPAIGN' ? TabColors.brand.bg : TabColors.info.bg,
-                        shadowColor: form.eventType === 'PAID_CAMPAIGN' ? TabColors.brand.color : TabColors.info.color,
-                      },
-                    ]}
-                  >
-                    <Ionicons
-                      name={form.eventType === 'PAID_CAMPAIGN' ? 'cash-outline' : 'calendar-outline'}
-                      size={18}
-                      color={form.eventType === 'PAID_CAMPAIGN' ? TabColors.brand.color : TabColors.info.color}
-                    />
-                  </View>
-                  <Text style={[s.etInfoSub, { color: C.text }]}>
-                    {form.eventType === 'PAID_CAMPAIGN' ? t('createEvent.paidEventSub') : t('createEvent.openEventSub')}
-                  </Text>
+                <View style={{ gap: 10 }}>
+                  {(
+                    [
+                      { key: 'PAID_CAMPAIGN' as const, icon: 'cash-outline' as const,     title: t('createEvent.tabPaidEvent'), desc: t('createEvent.paidEventSub'), tone: TabColors.brand },
+                      { key: 'OPEN_EVENT'    as const, icon: 'calendar-outline' as const, title: t('createEvent.tabOpenEvent'), desc: t('createEvent.openEventSub'), tone: TabColors.info },
+                    ]
+                  ).map((opt) => {
+                    const selected = form.eventType === opt.key;
+                    return (
+                      <Pressable
+                        key={opt.key}
+                        onPress={() => { if (form.eventType !== opt.key) resetFormForType(opt.key); }}
+                        style={[
+                          s.optionCard,
+                          { backgroundColor: C.surface, borderColor: selected ? opt.tone.color : C.border },
+                          selected && { backgroundColor: `${opt.tone.color}0D` },
+                        ]}>
+                        <View style={[s.optionIconWrap, { backgroundColor: opt.tone.bg, shadowColor: opt.tone.color }]}>
+                          <Ionicons name={opt.icon} size={20} color={opt.tone.color} />
+                        </View>
+                        <View style={s.optionTextWrap}>
+                          <Text style={[s.optionTitle, { color: C.text }]}>{opt.title}</Text>
+                          <Text style={[s.optionDesc, { color: C.textSecondary }]}>{opt.desc}</Text>
+                        </View>
+                        {selected && <Ionicons name="checkmark-circle" size={20} color={opt.tone.color} />}
+                      </Pressable>
+                    );
+                  })}
                 </View>
               </View>
 
@@ -1418,16 +1410,37 @@ export default function CreateCampaignScreen() {
               {form.eventType === 'PAID_CAMPAIGN' && (
                 <>
                   {/* Describe & generate */}
-                  <SectionCard sub={t('createEvent.aiPromptSub')} colors={C}>
-                    <TabSlider
-                      justify
-                      tabs={[
-                        { key: 'text',  label: t('createEvent.promptModeText'),  icon: 'create-outline', color: TabColors.neutral.color },
-                        { key: 'audio', label: t('createEvent.promptModeAudio'), icon: 'mic-outline',    color: TabColors.positive.color },
-                      ]}
-                      active={promptMode}
-                      onChange={(key) => setPromptMode(key as 'text' | 'audio')}
-                    />
+                  <Text style={[s.stepSectionHeading, { color: C.text }]}>{t('createEvent.makeEventTitle')}</Text>
+                  <SectionCard colors={C}>
+                    <View style={{ gap: 8 }}>
+                      {(
+                        [
+                          { key: 'text' as const,  icon: 'create-outline' as const, title: t('createEvent.promptModeText'),  desc: t('createEvent.promptModeTextDesc'),  tone: TabColors.neutral },
+                          { key: 'audio' as const, icon: 'mic-outline' as const,    title: t('createEvent.promptModeAudio'), desc: t('createEvent.promptModeAudioDesc'), tone: TabColors.positive },
+                        ]
+                      ).map((opt) => {
+                        const selected = promptMode === opt.key;
+                        return (
+                          <Pressable
+                            key={opt.key}
+                            onPress={() => setPromptMode(opt.key)}
+                            style={[
+                              s.optionCard,
+                              { backgroundColor: C.background, borderColor: selected ? opt.tone.color : C.border, padding: 12 },
+                              selected && { backgroundColor: `${opt.tone.color}0D` },
+                            ]}>
+                            <View style={[s.optionIconWrap, { width: 34, height: 34, backgroundColor: opt.tone.bg, shadowColor: opt.tone.color }]}>
+                              <Ionicons name={opt.icon} size={16} color={opt.tone.color} />
+                            </View>
+                            <View style={s.optionTextWrap}>
+                              <Text style={[s.optionTitle, { color: C.text }]}>{opt.title}</Text>
+                              <Text style={[s.optionDesc, { color: C.textSecondary }]}>{opt.desc}</Text>
+                            </View>
+                            {selected && <Ionicons name="checkmark-circle" size={18} color={opt.tone.color} />}
+                          </Pressable>
+                        );
+                      })}
+                    </View>
 
                     {promptMode === 'text' ? (
                       <>
@@ -1525,16 +1538,37 @@ export default function CreateCampaignScreen() {
               {form.eventType === 'OPEN_EVENT' && (
                 <>
                   {/* Describe & generate */}
-                  <SectionCard sub={t('createEvent.aiPromptSub')} colors={C}>
-                    <TabSlider
-                      justify
-                      tabs={[
-                        { key: 'text',  label: t('createEvent.promptModeText'),  icon: 'create-outline', color: TabColors.neutral.color },
-                        { key: 'audio', label: t('createEvent.promptModeAudio'), icon: 'mic-outline',    color: TabColors.positive.color },
-                      ]}
-                      active={promptMode}
-                      onChange={(key) => setPromptMode(key as 'text' | 'audio')}
-                    />
+                  <Text style={[s.stepSectionHeading, { color: C.text }]}>{t('createEvent.makeEventTitle')}</Text>
+                  <SectionCard colors={C}>
+                    <View style={{ gap: 8 }}>
+                      {(
+                        [
+                          { key: 'text' as const,  icon: 'create-outline' as const, title: t('createEvent.promptModeText'),  desc: t('createEvent.promptModeTextDesc'),  tone: TabColors.neutral },
+                          { key: 'audio' as const, icon: 'mic-outline' as const,    title: t('createEvent.promptModeAudio'), desc: t('createEvent.promptModeAudioDesc'), tone: TabColors.positive },
+                        ]
+                      ).map((opt) => {
+                        const selected = promptMode === opt.key;
+                        return (
+                          <Pressable
+                            key={opt.key}
+                            onPress={() => setPromptMode(opt.key)}
+                            style={[
+                              s.optionCard,
+                              { backgroundColor: C.background, borderColor: selected ? opt.tone.color : C.border, padding: 12 },
+                              selected && { backgroundColor: `${opt.tone.color}0D` },
+                            ]}>
+                            <View style={[s.optionIconWrap, { width: 34, height: 34, backgroundColor: opt.tone.bg, shadowColor: opt.tone.color }]}>
+                              <Ionicons name={opt.icon} size={16} color={opt.tone.color} />
+                            </View>
+                            <View style={s.optionTextWrap}>
+                              <Text style={[s.optionTitle, { color: C.text }]}>{opt.title}</Text>
+                              <Text style={[s.optionDesc, { color: C.textSecondary }]}>{opt.desc}</Text>
+                            </View>
+                            {selected && <Ionicons name="checkmark-circle" size={18} color={opt.tone.color} />}
+                          </Pressable>
+                        );
+                      })}
+                    </View>
 
                     {promptMode === 'text' ? (
                       <>
@@ -2202,11 +2236,15 @@ const s = StyleSheet.create({
   stepSectionHeading: { fontSize: 15, fontFamily: F.bold },
   stepSectionSub:     { fontSize: 12, fontFamily: F.regular, lineHeight: 18, marginBottom: 4 },
 
-  // Event type info banner — icon box + left accent, matching the home
-  // feed's banner/attentionBanner pattern.
-  etInfoPanel:   { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: RADIUS.md, borderLeftWidth: 4, padding: 12, ...SHADOW.card },
-  etInfoIconWrap:{ width: 36, height: 36, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
-  etInfoSub:     { flex: 1, fontSize: 12, fontFamily: F.regular, lineHeight: 18 },
+  // Descriptive selectable option cards (event type, input method) — icon
+  // chip + title + description in one tappable row, selected state via
+  // border/background swap. Used in place of a plain TabSlider wherever the
+  // choice benefits from an explanatory sentence, not just a short label.
+  optionCard:     { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: RADIUS.lg, borderWidth: 1.5, padding: 14, ...SHADOW.card },
+  optionIconWrap: { width: 40, height: 40, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
+  optionTextWrap: { flex: 1, gap: 2 },
+  optionTitle:    { fontSize: 14, fontFamily: F.bold },
+  optionDesc:     { fontSize: 12, fontFamily: F.regular, lineHeight: 17 },
 
   eventHintBox:  { flexDirection: 'row', alignItems: 'flex-start', gap: 10, borderRadius: RADIUS.md, padding: 14 },
   eventHintText: { flex: 1, fontSize: 12, lineHeight: 18, fontFamily: F.regular },

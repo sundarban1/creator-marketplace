@@ -16,6 +16,10 @@ export const deliverableVideoSchema = z.object({
   sizeBytes:    z.number(),
   label:        z.string(),
   uploadedAt:   z.string(),
+  // Entries persisted before this field existed have no `status` at all —
+  // default them to READY rather than failing the `.catch([])` parse the
+  // caller wraps this schema in (see toApplicationDto).
+  status:       z.enum(['PROCESSING', 'READY', 'FAILED']).default('READY'),
 });
 export type DeliverableVideo = z.infer<typeof deliverableVideoSchema>;
 

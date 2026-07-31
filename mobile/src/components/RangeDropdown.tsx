@@ -32,7 +32,7 @@ export function RangeDropdown<T extends string>({ value, options, onChange }: Ra
         onPress={openMenu}
         style={[s.trigger, { backgroundColor: C.surface, borderColor: C.border }]}
       >
-        <Text style={[s.triggerText, { color: C.text }]}>{selected?.label ?? ''}</Text>
+        <Text style={[s.triggerText, { color: C.text }]} numberOfLines={1}>{selected?.label ?? ''}</Text>
         <Ionicons name="chevron-down" size={15} color={C.textSecondary} />
       </Pressable>
 

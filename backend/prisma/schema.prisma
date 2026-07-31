@@ -546,6 +546,10 @@ model Message {
   attachmentHeight       Int?
   attachmentSize         Int? // bytes
   attachmentFormat       String?
+  // VIDEO only — nullable rather than defaulted so existing rows (all
+  // pre-dating this field) read back as null, treated as READY by the DTO
+  // layer rather than a real "still processing" state.
+  attachmentStatus       VideoAssetStatus?
   createdAt              DateTime     @default(now())
   // "Delete for everyone" (sender-only, no time limit) — the row is kept so
   // history/pagination doesn't shift, but the content is tombstoned in the DTO.
@@ -883,6 +887,21 @@ enum MessageType {
   IMAGE
   FILE
   VIDEO
+}
+
+// Applies to VIDEO attachments/deliverables only (chat: Message.attachmentStatus;
+// deliverables: a `status` field inside the deliverableVideos JSON entries, see
+// campaign.dto.ts's deliverableVideoSchema). PROCESSING/READY are both set
+// synchronously today within the same request that verifies the Cloudinary
+// upload — there's no async job yet — but the field exists now so a future
+// async moderation/quality-check step can persist PROCESSING and flip it to
+// READY/FAILED later without changing the upload architecture. UPLOADING is
+// deliberately not a value here: no row/entry exists until Cloudinary has
+// already confirmed the asset, same as before this field existed.
+enum VideoAssetStatus {
+  PROCESSING
+  READY
+  FAILED
 }
 
 enum AiMessageRole {

@@ -78,23 +78,26 @@ function matchDeadlinePreset(today: Date, from: Date | null, to: Date | null) {
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
-export type EventTypeFilter = 'ALL' | 'PAID_CAMPAIGN' | 'OPEN_EVENT';
+export type EventTypeFilter = 'PAID_CAMPAIGN' | 'OPEN_EVENT';
 
 const EVENT_TYPE_OPTS: { value: EventTypeFilter; labelKey: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { value: 'ALL',           labelKey: 'filterModal.optionAll',  icon: 'apps-outline'   },
   { value: 'PAID_CAMPAIGN', labelKey: 'filterModal.optionPaid', icon: 'cash-outline'   },
   { value: 'OPEN_EVENT',    labelKey: 'filterModal.optionFree', icon: 'gift-outline'   },
 ];
 
+// Both selected by default (== no filter, show everything) — the group below
+// enforces that at least one always stays selected, so this never shrinks to [].
+export const DEFAULT_EVENT_TYPES: EventTypeFilter[] = ['PAID_CAMPAIGN', 'OPEN_EVENT'];
+
 type Props = {
   visible: boolean;
-  tempEventType: EventTypeFilter;
+  tempEventType: EventTypeFilter[];
   tempPriceMin: number;
   tempPriceMax: number;
   tempLocation: LocationFilter;
   tempDateFrom: Date | null;
   tempDateTo: Date | null;
-  setTempEventType: (v: EventTypeFilter) => void;
+  setTempEventType: (v: EventTypeFilter[]) => void;
   setTempPriceMin: (v: number) => void;
   setTempPriceMax: (v: number) => void;
   setTempLocation: (v: LocationFilter) => void;
@@ -297,11 +300,13 @@ export function FilterModal({
   }
 
   const activeChips: ActiveFilterChip[] = [];
-  if (tempEventType !== 'ALL') {
+  // Both selected == no real filter (shows everything) — only surface an
+  // active chip once the creator has narrowed it down to just one type.
+  if (tempEventType.length === 1) {
     activeChips.push({
       key: 'type',
-      label: t(EVENT_TYPE_OPTS.find((o) => o.value === tempEventType)!.labelKey),
-      onClear: () => setTempEventType('ALL'),
+      label: t(EVENT_TYPE_OPTS.find((o) => o.value === tempEventType[0])!.labelKey),
+      onClear: () => setTempEventType(DEFAULT_EVENT_TYPES),
     });
   }
   if (!matchedBudget || matchedBudget.key !== 'any') {
@@ -347,8 +352,11 @@ export function FilterModal({
         <FilterSectionHeader icon="pricetag-outline" label={t('filterModal.sectionEventType')} />
         <FilterChipGroup
           options={EVENT_TYPE_OPTS.map(({ value, labelKey, icon }) => ({ value, label: t(labelKey), icon }))}
-          selected={[tempEventType]}
-          onToggle={(vals) => setTempEventType((vals[0] as typeof tempEventType) ?? 'ALL')}
+          selected={tempEventType}
+          // Both Paid and Open can be selected at once (multi); deselecting
+          // down to zero is refused so at least one always stays active.
+          onToggle={(vals) => { if (vals.length > 0) setTempEventType(vals as EventTypeFilter[]); }}
+          multi
           equalWidth
         />
       </View>

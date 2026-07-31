@@ -3,7 +3,8 @@ import type { ApiConversation, ApiMessage } from '@/lib/api';
 import type { Conversation, Message }       from '@/types';
 import { storage }           from '@/utilities/storage';
 import { ACCESS_TOKEN_KEY }  from '@/utilities/constants';
-import { requestVideoUploadSignature, uploadVideoToCloudinary, completeVideoUpload } from '@/services/cloudinaryVideoUpload';
+import { requestVideoUploadSignature } from '@/services/cloudinaryVideoUpload';
+import { startBackgroundChunkedUpload } from '@/services/backgroundVideoUploadManager';
 
 // ── Transformers ────────────────────────────────────────────────────────────────
 
@@ -44,29 +45,31 @@ export function toMessage(api: ApiMessage): Message {
     attachmentHeight:       api.attachmentHeight ?? null,
     attachmentSize:         api.attachmentSize ?? null,
     attachmentFormat:       api.attachmentFormat ?? null,
+    attachmentStatus:       api.attachmentStatus ?? null,
     isDeleted:      api.isDeleted ?? false,
   };
 }
 
 // ── Video upload task ───────────────────────────────────────────────────────────
 
-// Orchestrates three steps against Cloudinary directly (never through our
-// backend, which only issues the signature and later records metadata):
-//   1. Fetch a fresh signed signature (always re-fetched on every start() —
-//      including retries — so a stale/expired signature is never reused).
-//   2. Upload the video bytes straight to Cloudinary with progress + cancel.
-//   3. Tell the backend the upload succeeded so it can create the message.
-// Keeps the same external shape as the old backend-proxied version so the
-// two chat screens barely change.
+// Orchestrates: fetch a fresh signed signature (always re-fetched on every
+// start(), including retries, so a stale/expired signature is never reused),
+// then hand off to backgroundVideoUploadManager, which chunks the file,
+// uploads each chunk via react-native-background-upload (survives the app
+// backgrounding/closing), and calls the backend's "complete" endpoint itself
+// once all chunks land — see that module for why it owns the complete call
+// rather than this function doing it after an awaited upload finishes.
+// Keeps the same external shape as before so the two chat screens don't change.
 export function createVideoUploadTask(
   conversationId: string,
   fileUri: string,
   mimeType: string,
   caption: string | undefined,
   onProgress: (fraction: number) => void,
+  onFinalizing?: () => void,
 ): { start: () => Promise<Message>; cancel: () => void } {
   let cancelled = false;
-  let innerTask: ReturnType<typeof uploadVideoToCloudinary> | null = null;
+  let innerTask: ReturnType<typeof startBackgroundChunkedUpload> | null = null;
 
   return {
     start: async () => {
@@ -74,11 +77,11 @@ export function createVideoUploadTask(
       const signature = await requestVideoUploadSignature(conversationId);
       if (cancelled) throw new Error('Video upload cancelled');
 
-      innerTask = uploadVideoToCloudinary(fileUri, mimeType, signature, onProgress);
-      const { publicId } = await innerTask.start();
-      if (cancelled) throw new Error('Video upload cancelled');
-
-      const apiMessage = await completeVideoUpload(conversationId, publicId, caption);
+      innerTask = startBackgroundChunkedUpload(
+        { targetType: 'chat', conversationId, caption },
+        fileUri, mimeType, signature, onProgress, onFinalizing,
+      );
+      const apiMessage = await innerTask.result as ApiMessage;
       return toMessage(apiMessage);
     },
     cancel: () => { cancelled = true; innerTask?.cancel(); },

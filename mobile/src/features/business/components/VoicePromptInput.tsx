@@ -5,10 +5,10 @@ import {
 } from 'expo-audio';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
-import { F, RADIUS } from '@/utilities/constants';
+import { F, RADIUS, SHADOW } from '@/utilities/constants';
 
 // Recordings shorter than this are rejected outright (with feedback, not
 // silently) instead of being handed off — Whisper will still return *some*
@@ -87,6 +87,14 @@ export function VoicePromptInput({ onRecorded, onDiscard, onError, disabled }: P
     // under the hardware mute switch until the brand happened to record
     // something first.
     void setAudioModeAsync({ playsInSilentMode: true });
+    // Resolve the mic permission prompt here, on mount, instead of inside
+    // handlePressIn. This component only mounts once the brand has already
+    // picked Audio mode, so it's an expected moment to ask — and critically,
+    // it keeps the OS permission dialog from popping up in the middle of the
+    // brand's very first press-and-hold gesture. When it did, the dialog
+    // stole the touch, so the eventual press-out never reached the
+    // Pressable and the "hold" behaved like a toggle instead.
+    void requestRecordingPermissionsAsync();
     // No player.pause() here — useAudioPlayer() already releases its native
     // object on unmount, and calling pause() after (or racing) that release
     // throws NativeSharedObjectNotFoundException.
@@ -204,16 +212,24 @@ export function VoicePromptInput({ onRecorded, onDiscard, onError, disabled }: P
 
   return (
     <View style={styles.wrap}>
-      {phase === 'recording' && (
-        <View style={styles.meter}>
-          {levels.map((lvl, i) => (
-            <View
-              key={i}
-              style={[styles.meterBar, { height: 4 + lvl * 32, backgroundColor: '#EF4444' }]}
-            />
-          ))}
+      {/* Rendered in its own Modal layer, centered on the screen, rather
+          than inline — so it never affects this view's layout and the mic
+          below never shifts when recording starts/stops. pointerEvents
+          "none" lets press-and-hold on the mic keep working underneath it. */}
+      <Modal visible={phase === 'recording'} transparent animationType="fade" statusBarTranslucent>
+        <View style={styles.overlay} pointerEvents="none">
+          <View style={[styles.meterCard, { backgroundColor: '#fff' }]}>
+            <View style={styles.meter}>
+              {levels.map((lvl, i) => (
+                <View
+                  key={i}
+                  style={[styles.meterBar, { height: 4 + lvl * 32, backgroundColor: '#EF4444' }]}
+                />
+              ))}
+            </View>
+          </View>
         </View>
-      )}
+      </Modal>
       <Pressable
         style={[
           styles.micBtn,
@@ -223,7 +239,7 @@ export function VoicePromptInput({ onRecorded, onDiscard, onError, disabled }: P
         hitSlop={12}
         onPressIn={() => void handlePressIn()}
         onPressOut={() => void handlePressOut()}>
-        <Ionicons name="mic" size={recorderState.isRecording ? 30 : 26} color="#fff" />
+        <Ionicons name="mic" size={recorderState.isRecording ? 36 : 32} color="#fff" />
       </Pressable>
       <Text style={[styles.hint, { color: C.textSecondary }]}>
         {recorderState.isRecording
@@ -235,11 +251,13 @@ export function VoicePromptInput({ onRecorded, onDiscard, onError, disabled }: P
 }
 
 const styles = StyleSheet.create({
-  wrap:     { alignItems: 'center', gap: 10, paddingVertical: 14 },
-  micBtn:   { width: 68, height: 68, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
-  meter:    { flexDirection: 'row', alignItems: 'center', gap: 2, height: 36 },
-  meterBar: { width: 3, borderRadius: 2 },
-  hint:     { fontSize: 12, fontFamily: F.regular, textAlign: 'center' },
+  wrap:      { alignItems: 'center', gap: 10, paddingVertical: 14 },
+  micBtn:    { width: 84, height: 84, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
+  overlay:   { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  meterCard: { borderRadius: RADIUS.lg, paddingHorizontal: 22, paddingVertical: 18, ...SHADOW.floating },
+  meter:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 2, height: 36, width: 160 },
+  meterBar:  { width: 3, borderRadius: 2 },
+  hint:      { fontSize: 12, fontFamily: F.regular, textAlign: 'center' },
   reviewRow:    { flexDirection: 'row', alignItems: 'center', gap: 14 },
   sayAgainPill: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: RADIUS.full, borderWidth: 1.5, paddingHorizontal: 16, paddingVertical: 10 },
   sayAgainText: { fontSize: 13, fontFamily: F.medium },

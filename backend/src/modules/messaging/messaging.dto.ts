@@ -12,6 +12,10 @@ export interface MessageDto {
   attachmentHeight: number | null;
   attachmentSize: number | null;
   attachmentFormat: string | null;
+  // VIDEO only, null for every other type. Existing rows (all pre-dating this
+  // field) are normalized to 'READY' below rather than surfaced as null, so
+  // older messages don't suddenly render as "still processing".
+  attachmentStatus: 'PROCESSING' | 'READY' | 'FAILED' | null;
   createdAt: string;
   isDeleted?: boolean;
   sender?: { id: string; email: string; role: string };
@@ -60,6 +64,7 @@ type RawMessage = {
   attachmentHeight?: number | null;
   attachmentSize?: number | null;
   attachmentFormat?: string | null;
+  attachmentStatus?: 'PROCESSING' | 'READY' | 'FAILED' | null;
   createdAt: Date;
   deletedAt?: Date | null;
   sender?: { id: string; email: string; role: string };
@@ -81,6 +86,7 @@ export function toMessageDto(m: RawMessage): MessageDto {
     attachmentHeight:       isDeleted ? null : (m.attachmentHeight ?? null),
     attachmentSize:         isDeleted ? null : (m.attachmentSize ?? null),
     attachmentFormat:       isDeleted ? null : (m.attachmentFormat ?? null),
+    attachmentStatus:       isDeleted ? null : (m.type === 'VIDEO' ? (m.attachmentStatus ?? 'READY') : null),
     createdAt:      m.createdAt.toISOString(),
   };
   if (isDeleted) dto.isDeleted = true;

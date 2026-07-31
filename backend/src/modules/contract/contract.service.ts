@@ -24,7 +24,7 @@ export const TOKENS = [
 // works end-to-end even if the seed was never run. Markdown (#/##, **bold**,
 // bullet lines) — rendered by both the mobile ContractModal and the PDF export.
 export const DEFAULT_TEMPLATE = {
-  title: 'Kolab Creator Collaboration Agreement',
+  title: 'Kolab Agreement',
   body: `This Creator Collaboration Agreement ("Agreement") is entered into on **{{effectiveDate}}** between **{{businessName}}** ("Business") and **{{creatorName}}** ("Creator") for the campaign **"{{campaignTitle}}"** facilitated through the Kolab platform.
 
 ## 1. Campaign Details

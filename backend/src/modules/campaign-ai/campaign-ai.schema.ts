@@ -35,7 +35,7 @@ export const CREATOR_TYPES = [
 // Kept in sync with DELIVERABLE_TYPES keys in mobile create-campaign.tsx — the
 // deliverables counter list only recognizes these exact keys.
 export const DELIVERABLE_KEYS = [
-  'REEL', 'STORY', 'PHOTO_POST', 'CAROUSEL_POST', 'VISIT_STORE',
+  'REEL', 'STORY', 'PHOTO_POST', 'VISIT_STORE',
   'PRODUCT_REVIEW_VIDEO', 'EVENT_COVERAGE_VIDEO', 'MENTION_IN_CAPTION', 'TAG_BUSINESS', 'GOOGLE_REVIEW',
 ] as const;
 

@@ -61,6 +61,12 @@ export async function deleteImage(publicIdWithFolder: string): Promise<void> {
   await cloudinary.uploader.destroy(publicIdWithFolder).catch(() => {});
 }
 
+// Enforced server-side in completeDeliverableVideo/completeVideoAttachment using
+// Cloudinary's own reported `bytes` — the client-side check in chatAttachments.ts
+// is the same limit, but that alone is trivially bypassable, so the server is the
+// actual source of truth here (same principle as the format/duration re-checks).
+export const MAX_VIDEO_SIZE_BYTES = 500 * 1024 * 1024;
+
 export type VideoUploadResult = {
   secureUrl:   string;
   durationSec: number;

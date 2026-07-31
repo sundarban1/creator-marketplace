@@ -622,15 +622,6 @@ export default function CampaignsScreen() {
                     )}
                   </View>
                 )}
-
-                {/* Proposals count footer */}
-                {c.proposals > 0 && (
-                  <View style={[styles.proposalsFooter, { borderTopColor: C.border }]}>
-                    <Text style={[styles.proposalsText, { color: C.textSecondary }]}>
-                      {t(c.proposals === 1 ? 'campaigns.proposals' : 'campaigns.proposalsPlural', { count: c.proposals })}
-                    </Text>
-                  </View>
-                )}
                 </View>
               </View>
               </View>
@@ -898,9 +889,6 @@ const styles = StyleSheet.create({
   buttonTextPrimary: { color: '#fff', fontSize: 13, fontFamily: F.bold },
   buttonSecondary: { flex: 1, flexDirection: 'row', minHeight: 42, borderRadius: RADIUS.sm, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center', gap: 6, paddingHorizontal: 12 },
   buttonTextSecondary: { fontSize: 13, fontFamily: F.bold },
-
-  proposalsFooter: { borderTopWidth: 1, paddingHorizontal: 18, paddingVertical: 12 },
-  proposalsText: { fontSize: 12, fontFamily: F.regular },
 
   modalBackdrop: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)' },
   modalSheet: {

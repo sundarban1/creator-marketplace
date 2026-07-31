@@ -10,7 +10,7 @@ import { analyticsService } from '../analytics/analytics.service';
 import { emitToUser } from '../../socket';
 import { v2 as cloudinary } from 'cloudinary';
 import { randomUUID } from 'crypto';
-import { uploadImage as uploadToCloudinary, uploadRawFile, generateVideoUploadSignature, videoThumbnailUrl, videoPlaybackUrl, deleteVideo, type VideoUploadSignature } from '../../utils/cloudinary';
+import { uploadImage as uploadToCloudinary, uploadRawFile, generateVideoUploadSignature, videoThumbnailUrl, videoPlaybackUrl, deleteVideo, MAX_VIDEO_SIZE_BYTES, type VideoUploadSignature } from '../../utils/cloudinary';
 
 // MP4 (H.264/AAC) is the preferred format; MOV is accepted and delivered as
 // MP4 via videoPlaybackUrl. Legacy/poorly-supported formats (AVI, MKV, FLV,
@@ -441,6 +441,7 @@ export class MessagingService {
       attachmentHeight?: number;
       attachmentSize?: number;
       attachmentFormat?: string;
+      attachmentStatus?: 'PROCESSING' | 'READY' | 'FAILED';
     },
     pushBody: string,
   ) {
@@ -520,7 +521,7 @@ export class MessagingService {
   }
 
   // Video is uploaded directly from the mobile client to Cloudinary (never
-  // through this server — avoids proxying up to 200MB through Render). This
+  // through this server — avoids proxying up to 500MB through Render). This
   // method only issues the signed credentials the client needs to do that
   // upload itself; the actual message isn't created until completeVideoAttachment
   // runs afterward. No analytics here — nothing has been sent yet.
@@ -568,6 +569,13 @@ export class MessagingService {
       throw new AppError('Unsupported video format. Please use MP4 or MOV.', 400);
     }
 
+    // Client-side picker already caps size at 500MB, but that check is trivially
+    // bypassable — the server is the only source of truth, same as the format check above.
+    if ((resource.bytes ?? 0) > MAX_VIDEO_SIZE_BYTES) {
+      await deleteVideo(publicId);
+      throw new AppError('Video exceeds the 500MB limit', 400);
+    }
+
     const durationSec = Math.round(resource.duration ?? 0);
     // Client-side picker already caps duration at 120s, but the server is the
     // only source of truth — if a client lied (or the picker was bypassed),
@@ -594,6 +602,10 @@ export class MessagingService {
       attachmentHeight:       resource.height,
       attachmentSize:         resource.bytes,
       attachmentFormat:       'mp4', // matches playbackUrl — always delivered as MP4 regardless of the source format
+      // Set to READY synchronously here — the checks above (format/duration/size)
+      // are all we verify today, no async job exists yet. See VideoAssetStatus's
+      // schema comment for the future path.
+      attachmentStatus:       'READY',
     }, pushBody);
   }
 

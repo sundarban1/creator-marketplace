@@ -3,7 +3,7 @@ import { v2 as cloudinary } from 'cloudinary';
 import { randomUUID } from 'crypto';
 import { AppError } from '../../middleware/error';
 import { toCampaignDto, toApplicationDto, type DeliverableVideo } from './campaign.dto';
-import { generateVideoUploadSignature, videoThumbnailUrl, videoPlaybackUrl, deleteVideo } from '../../utils/cloudinary';
+import { generateVideoUploadSignature, videoThumbnailUrl, videoPlaybackUrl, deleteVideo, MAX_VIDEO_SIZE_BYTES } from '../../utils/cloudinary';
 import { BusinessRepository } from '../business/business.repository';
 import { CreatorRepository } from '../creator/creator.repository';
 import { CampaignRepository } from './campaign.repository';
@@ -992,9 +992,9 @@ export class CampaignService {
   // pair almost exactly (see that file for the "server verifies via Cloudinary's
   // own Admin API, never trusts client-submitted metadata" rationale) — the two
   // differences: no duration cap (deliverable content is legitimately longer than
-  // a 2-minute chat clip; only the 200MB size cap applies, enforced client-side
-  // before upload) and a hard cap of 3 videos per application instead of unlimited
-  // messages.
+  // a 2-minute chat clip; only the 500MB size cap applies, enforced both
+  // client-side before upload and server-side in completeDeliverableVideo) and a
+  // hard cap of 3 videos per application instead of unlimited messages.
 
   private async assertCanUploadDeliverableVideo(appId: string, userId: string) {
     const creator = await this.creatorRepo.findByUserId(userId);
@@ -1023,7 +1023,7 @@ export class CampaignService {
   }
 
   async completeDeliverableVideo(appId: string, userId: string, publicId: string) {
-    // Re-checked fresh here, not just at signature time — a 200MB upload can
+    // Re-checked fresh here, not just at signature time — a 500MB upload can
     // take minutes, during which the business could approve the work.
     await this.assertCanUploadDeliverableVideo(appId, userId);
 
@@ -1044,6 +1044,13 @@ export class CampaignService {
       throw new AppError('Unsupported video format. Please use MP4 or MOV.', 400);
     }
 
+    // Client-side picker already caps size at 500MB, but that check is trivially
+    // bypassable — the server is the only source of truth, same as the format check above.
+    if ((resource.bytes ?? 0) > MAX_VIDEO_SIZE_BYTES) {
+      await deleteVideo(publicId);
+      throw new AppError('Video exceeds the 500MB limit', 400);
+    }
+
     const existing = await this.repo.getDeliverableVideos(appId);
     const entry: DeliverableVideo = {
       publicId,
@@ -1054,6 +1061,10 @@ export class CampaignService {
       sizeBytes:    resource.bytes ?? 0,
       label:        `Video ${existing.length + 1}`,
       uploadedAt:   new Date().toISOString(),
+      // Set to READY synchronously here — the checks above (format/size, plus
+      // the duration check for chat) are all we verify today, no async job
+      // exists yet. See VideoAssetStatus's schema comment for the future path.
+      status:       'READY',
     };
 
     const appended = await this.repo.appendDeliverableVideo(appId, entry);

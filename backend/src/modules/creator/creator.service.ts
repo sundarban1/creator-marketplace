@@ -292,12 +292,13 @@ export class CreatorService {
     priceMin?: number;
     priceMax?: number;
     excludeId?: string;
+    sort?: 'newest' | 'oldest' | 'followers';
     lang?: string;
   }) {
-    const { page, limit, search, categories, location, platforms, priceMin, priceMax, excludeId, lang = 'en' } = params;
+    const { page, limit, search, categories, location, platforms, priceMin, priceMax, excludeId, sort, lang = 'en' } = params;
     const { creators: raw, total } = await this.repo.findMany({
       page, limit: Math.min(limit, 20),
-      search, categories, location, platforms, priceMin, priceMax, excludeId,
+      search, categories, location, platforms, priceMin, priceMax, excludeId, sort,
     });
     const dtos = raw.map(toCreatorListItemDto);
     const creators = await translateMany(dtos, [...CREATOR_FIELDS], lang);

@@ -1,7 +1,8 @@
 import { request }          from '@/lib/api';
 import type { ApiCampaign } from '@/lib/api';
 import type { Campaign }    from '@/types';
-import { uploadVideoToCloudinary, type VideoUploadSignature } from '@/services/cloudinaryVideoUpload';
+import { startBackgroundChunkedUpload } from '@/services/backgroundVideoUploadManager';
+import type { VideoUploadSignature } from '@/services/cloudinaryVideoUpload';
 
 export interface DeliverableVideo {
   publicId:    string;
@@ -12,6 +13,10 @@ export interface DeliverableVideo {
   sizeBytes:   number;
   label:       string;
   uploadedAt:  string;
+  // Server-verified, defaults to READY for entries persisted before this field
+  // existed. See backend's VideoAssetStatus for why PROCESSING/READY both
+  // currently resolve within the same request (no async job exists yet).
+  status:      'PROCESSING' | 'READY' | 'FAILED';
 }
 
 export interface AiCampaignDraft {
@@ -432,25 +437,24 @@ export const campaignService = {
     return res.data;
   },
 
-  async completeDeliverableVideoUpload(appId: string, publicId: string): Promise<DeliverableVideo> {
-    const res = await request<DeliverableVideo>('POST', `/api/campaigns/applications/${appId}/deliverables/video/complete`, { publicId });
-    return res.data;
-  },
-
   async removeDeliverableVideo(appId: string, publicId: string): Promise<void> {
     await request('DELETE', `/api/campaigns/applications/${appId}/deliverables/video`, undefined, { publicId });
   },
 
   // `fileUri` must already be compressed (or the original, if compression is
-  // skipped/failed upstream) — this only signs, uploads, and completes.
+  // skipped/failed upstream) — this signs, hands off to
+  // backgroundVideoUploadManager (chunked upload via react-native-background-upload,
+  // survives the app backgrounding/closing), which calls the complete endpoint
+  // itself once all chunks land.
   createDeliverableVideoUploadTask(
     appId: string,
     fileUri: string,
     mimeType: string,
     onProgress: (fraction: number) => void,
+    onFinalizing?: () => void,
   ): { start: () => Promise<DeliverableVideo>; cancel: () => void } {
     let cancelled = false;
-    let innerTask: ReturnType<typeof uploadVideoToCloudinary> | null = null;
+    let innerTask: ReturnType<typeof startBackgroundChunkedUpload> | null = null;
 
     return {
       start: async () => {
@@ -458,11 +462,11 @@ export const campaignService = {
         const signature = await campaignService.requestDeliverableVideoSignature(appId);
         if (cancelled) throw new Error('Upload cancelled');
 
-        innerTask = uploadVideoToCloudinary(fileUri, mimeType, signature, onProgress);
-        const { publicId } = await innerTask.start();
-        if (cancelled) throw new Error('Upload cancelled');
-
-        return campaignService.completeDeliverableVideoUpload(appId, publicId);
+        innerTask = startBackgroundChunkedUpload(
+          { targetType: 'deliverable', appId },
+          fileUri, mimeType, signature, onProgress, onFinalizing,
+        );
+        return await innerTask.result as DeliverableVideo;
       },
       cancel: () => { cancelled = true; innerTask?.cancel(); },
     };

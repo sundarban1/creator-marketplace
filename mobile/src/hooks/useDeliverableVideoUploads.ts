@@ -4,7 +4,10 @@ import { campaignService, type DeliverableVideo } from '@/services/campaign';
 import { compressVideo } from '@/utilities/uploadVideo';
 import type { PickedVideo } from '@/utilities/chatAttachments';
 
-export type DeliverableUploadStatus = 'queued' | 'compressing' | 'uploading' | 'done' | 'failed' | 'cancelled';
+// 'finalizing' sits between 'uploading' (chunk transport) and 'done': all
+// chunks landed at Cloudinary, but the backend's complete-call (which
+// verifies + persists the deliverable entry) is still in flight.
+export type DeliverableUploadStatus = 'queued' | 'compressing' | 'uploading' | 'finalizing' | 'done' | 'failed' | 'cancelled';
 
 export interface DeliverableUploadItem {
   localId:        string;
@@ -61,7 +64,7 @@ export function useDeliverableVideoUploads(appId: string, existingCount: number)
     updateItem(localId, { status: 'compressing', progress: 0, error: undefined });
     try {
       // Retry reuses the already-compressed file instead of recompressing the
-      // original (potentially 200MB) source on every attempt.
+      // original (potentially 500MB) source on every attempt.
       let compressedUri = item.compressedUri;
       if (!compressedUri) {
         compressedUri = await compressVideo(item.video.uri, (fraction) => updateItem(localId, { progress: fraction }));
@@ -74,6 +77,7 @@ export function useDeliverableVideoUploads(appId: string, existingCount: number)
         compressedUri,
         item.video.mimeType,
         (fraction) => updateItem(localId, { status: 'uploading', progress: fraction }),
+        () => updateItem(localId, { status: 'finalizing' }),
       );
       tasksRef.current.set(localId, task);
       const result = await task.start();
@@ -89,11 +93,11 @@ export function useDeliverableVideoUploads(appId: string, existingCount: number)
   }
 
   // Scheduler: whenever the queue changes, promote queued items (FIFO) into
-  // active slots until MAX_CONCURRENT are compressing/uploading. Re-runs on
-  // every progress tick too (cheap — just a couple of array scans over at
-  // most 3 items), not just on status transitions.
+  // active slots until MAX_CONCURRENT are compressing/uploading/finalizing.
+  // Re-runs on every progress tick too (cheap — just a couple of array scans
+  // over at most 3 items), not just on status transitions.
   useEffect(() => {
-    const activeCount = items.filter((i) => i.status === 'compressing' || i.status === 'uploading').length;
+    const activeCount = items.filter((i) => i.status === 'compressing' || i.status === 'uploading' || i.status === 'finalizing').length;
     if (activeCount >= MAX_CONCURRENT) return;
     const next = items.find((i) => i.status === 'queued');
     if (!next) return;

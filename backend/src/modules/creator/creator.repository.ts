@@ -12,6 +12,7 @@ export class CreatorRepository {
     excludeId?: string;
     page: number;
     limit: number;
+    sort?: 'newest' | 'oldest' | 'followers';
   }) {
     const PRICE_MAX = 1000;
     // A creator who never finished onboarding has no fullName/categories/bio yet —
@@ -40,6 +41,34 @@ export class CreatorRepository {
     if (andConditions.length) where.AND = andConditions;
 
     const skip = (filters.page - 1) * filters.limit;
+    const select = {
+      id: true, fullName: true, bio: true, avatarUrl: true,
+      location: true, categories: true, isVerified: true,
+      citizenshipStatus: true,
+      prefBudgetMin: true, prefBudgetMax: true,
+      socialAccounts: { select: { platform: true, followers: true } },
+      user: { select: { isEmailVerified: true, isPhoneVerified: true } },
+    } satisfies Prisma.CreatorProfileSelect;
+
+    if (filters.sort === 'followers') {
+      // Total followers across a creator's social accounts isn't a column
+      // Prisma can ORDER BY directly (it's an aggregate over a to-many
+      // relation), so this ranks in application code instead of in SQL —
+      // capped to a generous candidate pool rather than the true total, same
+      // scale tradeoff as CreatorService.getRecommendedForCampaign's
+      // findRecommended (fine at this platform's current size; would need a
+      // raw SQL GROUP BY if the creator count grows enough to matter).
+      const FOLLOWERS_SORT_CAP = 1000;
+      const [candidates, total] = await Promise.all([
+        prisma.creatorProfile.findMany({ where, take: FOLLOWERS_SORT_CAP, orderBy: { id: 'asc' }, select }),
+        prisma.creatorProfile.count({ where }),
+      ]);
+      const ranked = candidates
+        .map((c) => ({ ...c, totalFollowers: c.socialAccounts.reduce((sum, a) => sum + a.followers, 0) }))
+        .sort((a, b) => b.totalFollowers - a.totalFollowers);
+      return { creators: ranked.slice(skip, skip + filters.limit), total };
+    }
+
     const [creators, total] = await Promise.all([
       prisma.creatorProfile.findMany({
         where,
@@ -50,15 +79,8 @@ export class CreatorRepository {
         // deterministic sort, Postgres can return the same row on two
         // different pages (or skip one entirely) as the result set shifts
         // between paginated queries.
-        orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
-        select: {
-          id: true, fullName: true, bio: true, avatarUrl: true,
-          location: true, categories: true, isVerified: true,
-          citizenshipStatus: true,
-          prefBudgetMin: true, prefBudgetMax: true,
-          socialAccounts: { select: { platform: true, followers: true } },
-          user: { select: { isEmailVerified: true, isPhoneVerified: true } },
-        },
+        orderBy: [{ createdAt: filters.sort === 'oldest' ? 'asc' : 'desc' }, { id: 'asc' }],
+        select,
       }),
       prisma.creatorProfile.count({ where }),
     ]);

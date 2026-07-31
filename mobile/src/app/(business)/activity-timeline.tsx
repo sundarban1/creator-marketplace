@@ -722,14 +722,15 @@ export default function CampaignWorkspaceScreen() {
         const conv = await chatService.checkConversation(otherProfileId);
         if (conv?.id) {
           router.push({
-            pathname: (isCreator ? '/(creator)/messages/[id]' : '/(business)/messages/[id]') as never,
+            // Outer-stack chat route (sibling of this screen), not the
+            // Messages tab's nested one — keeps chat directly on top of
+            // activity-timeline in the same stack so plain back() correctly
+            // pops here, then further back() calls pop to whatever opened
+            // this screen, with no cross-navigator history juggling needed.
+            pathname: (isCreator ? '/(creator)/chat/[id]' : '/(business)/chat/[id]') as never,
             params: {
               id: conv.id, name: otherName, status: conv.status, focusInput: 'true', participantId: otherProfileId, participantRole: isCreator ? 'BUSINESS' : 'CREATOR',
-              // Chat lives inside the Messages tab's own nested stack, so its
-              // default back() pops to the messages list, not to whichever
-              // outer-stack screen actually opened it. Passing the return
-              // target explicitly lets chat route back here instead.
-              returnTo: 'activity-timeline', campaignId, campaignTitle, role, brand, applicationId,
+              campaignTitle,
             },
           });
           return;
@@ -1066,6 +1067,7 @@ export default function CampaignWorkspaceScreen() {
                 <Text style={up.videoLabel} numberOfLines={1}>
                   {item.status === 'compressing' ? `Preparing… ${Math.round(item.progress * 100)}%`
                     : item.status === 'uploading' ? `Uploading… ${Math.round(item.progress * 100)}%`
+                    : item.status === 'finalizing' ? 'Processing…'
                     : item.status === 'failed' ? (item.error ?? 'Failed')
                     : item.status === 'done' ? (item.result?.label ?? 'Video')
                     : 'Waiting…'}

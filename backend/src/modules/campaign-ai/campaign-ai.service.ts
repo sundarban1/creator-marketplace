@@ -124,7 +124,7 @@ Respond with a JSON object with EXACTLY these keys:
 - budgetMin: number, suggested minimum budget in NPR (Nepali Rupees) for the whole campaign
 - budgetMax: number, suggested maximum budget in NPR
 - paymentType: string, e.g. "Fixed Fee"
-- deliverables: object with EXACTLY these integer keys, each 0-10: "REEL", "STORY", "PHOTO_POST", "CAROUSEL_POST", "VISIT_STORE", "PRODUCT_REVIEW_VIDEO", "EVENT_COVERAGE_VIDEO", "MENTION_IN_CAPTION", "TAG_BUSINESS", "GOOGLE_REVIEW". Each number is how many pieces of that content type EACH INDIVIDUAL creator should produce (not multiplied by creatorsNeeded, not a campaign-wide total) — keep these small and realistic, typically 1-3 for the 2-3 content types that best fit the brief, 0 for everything else. At least one key must be > 0.
+- deliverables: object with EXACTLY these integer keys, each 0-10: "REEL", "STORY", "PHOTO_POST", "VISIT_STORE", "PRODUCT_REVIEW_VIDEO", "EVENT_COVERAGE_VIDEO", "MENTION_IN_CAPTION", "TAG_BUSINESS", "GOOGLE_REVIEW". Each number is how many pieces of that content type EACH INDIVIDUAL creator should produce (not multiplied by creatorsNeeded, not a campaign-wide total) — keep these small and realistic, typically 1-3 for the 2-3 content types that best fit the brief, 0 for everything else. At least one key must be > 0.
 - hashtags: string[] (3-8 relevant hashtags, no # needed but allowed)
 - sampleCaption: string, a ready-to-use example caption a creator could post
 - approvalRequirements: string, one sentence about whether/how the brand wants to review content before it's posted

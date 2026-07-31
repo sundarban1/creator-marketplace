@@ -11,7 +11,7 @@ import { CampaignListItem } from '@/features/creator/components/CampaignListItem
 import { CampaignCard } from '@/features/creator/components/CampaignCard';
 import { CampaignCardSkeleton } from '@/features/creator/components/CampaignCardSkeleton';
 import { NearbyLocationSheet, type NearbySource } from '@/features/creator/components/NearbyLocationSheet';
-import { FilterModal } from '@/features/creator/components/FilterModal';
+import { FilterModal, DEFAULT_EVENT_TYPES } from '@/features/creator/components/FilterModal';
 import type { EventTypeFilter, LocationFilter } from '@/features/creator/components/FilterModal';
 import { displayCategory } from '@/features/creator/data/filterOptions';
 import { useCategories, getCategoryMeta } from '@/hooks/useCategories';
@@ -109,8 +109,8 @@ export default function HomeScreen() {
   const [referralBannerDismissed, setReferralBannerDismissed] = useState(false);
   const [missingFields, setMissingFields] = useState<string[]>([]);
   const [pendingActions, setPendingActions] = useState<Array<{ type: 'start_work' | 'upload_work' | 'event_pending'; title: string }>>([]);
-  const [eventType, setEventType] = useState<EventTypeFilter>('ALL');
-  const [tempEventType, setTempEventType] = useState<EventTypeFilter>('ALL');
+  const [eventType, setEventType] = useState<EventTypeFilter[]>(DEFAULT_EVENT_TYPES);
+  const [tempEventType, setTempEventType] = useState<EventTypeFilter[]>(DEFAULT_EVENT_TYPES);
   const [priceMin, setPriceMin] = useState(0);
   const [priceMax, setPriceMax] = useState(SLIDER_MAX);
   const [locationFilter, setLocationFilter] = useState<LocationFilter>([]);
@@ -163,7 +163,7 @@ export default function HomeScreen() {
       priceMax?: number;
       dateFrom?: Date | null;
       dateTo?: Date | null;
-      eventType?: EventTypeFilter;
+      eventType?: EventTypeFilter[];
       showLoader?: boolean;
     } = {},
   ) {
@@ -189,7 +189,9 @@ export default function HomeScreen() {
         maxBudget:    pMax < SLIDER_MAX ? pMax : undefined,
         dateFrom:     df ?? undefined,
         dateTo:       dt ?? undefined,
-        campaignType: et !== 'ALL' ? et : undefined,
+        // Both types selected == no filter (backend has no "either of these
+        // two" query shape, just a single optional campaignType).
+        campaignType: et.length === 1 ? et[0] : undefined,
         limit: 50,
       });
       setCampaigns(data);
@@ -395,7 +397,7 @@ export default function HomeScreen() {
   }, [activeCategories, priceMin, priceMax, dateFrom, dateTo]);
 
   const filterActiveCount = [
-    eventType !== 'ALL',
+    eventType.length === 1, // both selected == no real filter
     priceMin > 0 || priceMax < SLIDER_MAX,
     locationFilter.length > 0,
     !!dateFrom,
@@ -442,7 +444,7 @@ export default function HomeScreen() {
   }
 
   function resetFilter() {
-    setTempEventType('ALL');
+    setTempEventType(DEFAULT_EVENT_TYPES);
     setTempPriceMin(0);
     setTempPriceMax(SLIDER_MAX);
     setTempLocation([]);
@@ -451,7 +453,7 @@ export default function HomeScreen() {
   }
 
   function resetAllFilters() {
-    setEventType('ALL');
+    setEventType(DEFAULT_EVENT_TYPES);
     setPriceMin(0);
     setPriceMax(SLIDER_MAX);
     setLocationFilter([]);
@@ -460,7 +462,7 @@ export default function HomeScreen() {
     setActiveCategories([]);
     setActivePlatforms([]);
     setActiveFilterTab('all');
-    void fetchCampaigns({ category: [], platform: [], priceMin: 0, priceMax: SLIDER_MAX, dateFrom: null, dateTo: null, eventType: 'ALL' });
+    void fetchCampaigns({ category: [], platform: [], priceMin: 0, priceMax: SLIDER_MAX, dateFrom: null, dateTo: null, eventType: DEFAULT_EVENT_TYPES });
     refreshNearbyWithFilters({ category: [], platform: [] });
   }
 

@@ -189,11 +189,15 @@ export class CampaignRepository {
 
     // similarity() takes over where plainto_tsquery finds nothing — that's
     // what makes a misspelled "resturant" still surface "Restaurant Launch".
+    // Hashtags are also in searchVector (weight A), but as whole tokens —
+    // a compound tag like "#FoodieKTM" won't match a search for "foodie" via
+    // full-text alone, so this adds a plain substring check across the tags too.
     conditions.push(Prisma.sql`(
       c."searchVector" @@ plainto_tsquery('english', ${search})
       OR similarity(c.title, ${search}) > 0.2
       OR similarity(b."businessName", ${search}) > 0.2
       OR b."businessName" ILIKE ${`%${search}%`}
+      OR EXISTS (SELECT 1 FROM unnest(c.hashtags) AS tag WHERE tag ILIKE ${`%${search}%`})
     )`);
 
     const whereSql = Prisma.join(conditions, ' AND ');
@@ -293,6 +297,7 @@ export class CampaignRepository {
         OR similarity(c.title, ${search}) > 0.2
         OR similarity(b."businessName", ${search}) > 0.2
         OR b."businessName" ILIKE ${`%${search}%`}
+        OR EXISTS (SELECT 1 FROM unnest(c.hashtags) AS tag WHERE tag ILIKE ${`%${search}%`})
       )`);
     }
     if (category?.length) {

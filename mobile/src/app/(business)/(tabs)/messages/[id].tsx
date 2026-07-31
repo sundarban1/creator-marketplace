@@ -266,7 +266,7 @@ function MessageBubble({
               {isPending || msg.status === 'failed'
                 ? <LocalVideoPreview uri={msg.localUri ?? msg.attachmentUrl!} style={s.attachmentImage} />
                 : <ExpoImage source={{ uri: msg.attachmentThumbnailUrl ?? undefined }} style={s.attachmentImage} contentFit="cover" />}
-              {msg.status !== 'compressing' && msg.status !== 'uploading' && msg.status !== 'failed' && (
+              {msg.status !== 'compressing' && msg.status !== 'uploading' && msg.status !== 'finalizing' && msg.status !== 'failed' && (
                 <View style={s.videoPlayOverlay}>
                   <Ionicons name="play-circle" size={44} color="#fff" />
                 </View>
@@ -294,6 +294,11 @@ function MessageBubble({
                     <Ionicons name="close" size={12} color="#fff" />
                     <Text style={s.cancelUploadTxt}>{t('messages.cancelUpload')}</Text>
                   </Pressable>
+                </View>
+              )}
+              {msg.status === 'finalizing' && (
+                <View style={s.imageUploadingOverlay}>
+                  <Text style={s.videoStatusTxt}>{t('messages.processingVideo')}</Text>
                 </View>
               )}
               {msg.status === 'failed' && (
@@ -345,10 +350,8 @@ function MessageBubble({
 export default function BusinessChatRoomScreen() {
   const {
     id, name, avatar, userId: participantUserId, participantId, status: urlStatus, campaignTitle,
-    returnTo, campaignId, role, brand, applicationId,
   } = useLocalSearchParams<{
     id: string; name?: string; avatar?: string; userId?: string; participantId?: string; status?: string; campaignTitle?: string;
-    returnTo?: string; campaignId?: string; role?: string; brand?: string; applicationId?: string;
   }>();
   const { user } = useAuth();
   const { t }    = useLanguage();
@@ -652,7 +655,8 @@ export default function BusinessChatRoomScreen() {
       updateMsg(msg.id, { status: 'uploading', uploadProgress: 0, localUri: compressedUri });
 
       const task = createVideoUploadTask(id, compressedUri, 'video/mp4', msg.text,
-        (p) => updateMsg(msg.id, { uploadProgress: p }));
+        (p) => updateMsg(msg.id, { uploadProgress: p }),
+        () => updateMsg(msg.id, { status: 'finalizing' }));
       uploadTasks.current[msg.id] = task;
 
       updateMsg(msg.id, { status: 'sending' });
@@ -748,7 +752,7 @@ export default function BusinessChatRoomScreen() {
   const isDeclined = status === 'DECLINED';
   const listItems  = buildItems(messages, user?.id ?? '', otherTyping);
   // Blocks starting a second video while one is already compressing/uploading/sending.
-  const hasActiveUpload = messages.some((m) => m.status === 'compressing' || m.status === 'uploading' || m.status === 'sending');
+  const hasActiveUpload = messages.some((m) => m.status === 'compressing' || m.status === 'uploading' || m.status === 'finalizing' || m.status === 'sending');
 
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top']}>
@@ -757,12 +761,7 @@ export default function BusinessChatRoomScreen() {
       <View style={{ backgroundColor: C.surface }}>
         <View style={s.header}>
           <Pressable style={[s.backBtn, { backgroundColor: C.background }]} hitSlop={4} onPress={() => {
-            // Opened from Activity Timeline (outside the Messages tab's own
-            // stack) — route back there explicitly instead of router.back(),
-            // which would only pop to the Messages list.
-            if (returnTo === 'activity-timeline' && campaignId) {
-              router.replace({ pathname: '/(business)/activity-timeline' as never, params: { campaignId, campaignTitle, role, brand, applicationId } });
-            } else if (router.canGoBack()) {
+            if (router.canGoBack()) {
               router.back();
             } else {
               router.replace('/(business)/messages' as never);

@@ -25,7 +25,13 @@ import { OfflineBanner } from '@/components/OfflineBanner';
 import { ToastProvider } from '@/components/Toast';
 import { isBiometricLoginEnabled } from '@/services/biometric';
 import { authService } from '@/services/auth';
+import { initBackgroundVideoUploadManager } from '@/services/backgroundVideoUploadManager';
 import type { UserRole } from '@/types';
+
+// Registered once per app process, before any screen mounts — a video upload
+// left mid-transfer by a killed app has no live screen to resume it, so the
+// listener + boot-time reconciliation must not depend on one being mounted.
+initBackgroundVideoUploadManager();
 
 // Handles auth-based redirects for both login AND logout
 function RootNavigator() {

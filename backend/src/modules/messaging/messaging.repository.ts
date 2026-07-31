@@ -331,6 +331,7 @@ export class MessagingRepository {
     attachmentHeight?: number;
     attachmentSize?: number;
     attachmentFormat?: string;
+    attachmentStatus?: 'PROCESSING' | 'READY' | 'FAILED';
   }) {
     const msg = await prisma.message.create({
       data,

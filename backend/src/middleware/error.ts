@@ -118,9 +118,11 @@ export function errorHandler(
   }
 
   // Multer upload errors (file too large, too many files, etc.) — previously fell
-  // through to the generic 500 below since MulterError isn't an AppError. The video
-  // upload's 200MB cap (middleware/upload.ts) made this the single most likely
-  // rejection path in the app, worth a clean 400 instead of an opaque 500.
+  // through to the generic 500 below since MulterError isn't an AppError. Applies
+  // to the multer-backed uploads (chat image/file attachments, avatars, docs, etc.)
+  // — video no longer goes through multer at all, it's uploaded direct-to-Cloudinary
+  // (see utils/cloudinary.ts's generateVideoUploadSignature) and its size cap is
+  // enforced separately, not via a MulterError.
   if (err instanceof multer.MulterError) {
     const message = err.code === 'LIMIT_FILE_SIZE'
       ? 'File is too large'
