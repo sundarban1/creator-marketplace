@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/app-icon.png",
-    "scheme": "kolab",
+    "scheme": ["kolab", "com.sundarban.kolab"],
     "userInterfaceStyle": "automatic",
     "ios": {
       "bundleIdentifier": "com.sundarban.kolab",
