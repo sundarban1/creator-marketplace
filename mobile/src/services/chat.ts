@@ -67,6 +67,7 @@ export function createVideoUploadTask(
   caption: string | undefined,
   onProgress: (fraction: number) => void,
   onFinalizing?: () => void,
+  durationSec?: number,
 ): { start: () => Promise<Message>; cancel: () => void } {
   let cancelled = false;
   let innerTask: ReturnType<typeof startBackgroundChunkedUpload> | null = null;
@@ -78,7 +79,7 @@ export function createVideoUploadTask(
       if (cancelled) throw new Error('Video upload cancelled');
 
       innerTask = startBackgroundChunkedUpload(
-        { targetType: 'chat', conversationId, caption },
+        { targetType: 'chat', conversationId, caption, durationSec },
         fileUri, mimeType, signature, onProgress, onFinalizing,
       );
       const apiMessage = await innerTask.result as ApiMessage;

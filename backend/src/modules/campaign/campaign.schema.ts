@@ -128,6 +128,15 @@ export const submitReviewSchema = z.object({
 
 export const deliverableVideoCompleteSchema = z.object({
   publicId: z.string().min(1),
+  // Client-measured duration, used only as a display fallback for the narrow
+  // window where Cloudinary hasn't finished indexing the asset yet — see
+  // completeDeliverableVideo. Cloudinary's own duration wins when present.
+  clientDurationSec: z.number().min(0).max(7200).optional(),
+});
+
+export const renameDeliverableVideoSchema = z.object({
+  publicId: z.string().min(1),
+  label:    z.string().min(1).max(60),
 });
 
 export type CreateCampaignInput = z.infer<typeof createCampaignSchema>;
@@ -137,3 +146,4 @@ export type NearbyQuery = z.infer<typeof nearbyQuerySchema>;
 export type ApplyToCampaignInput = z.infer<typeof applyToCampaignSchema>;
 export type SubmitReviewInput = z.infer<typeof submitReviewSchema>;
 export type DeliverableVideoCompleteInput = z.infer<typeof deliverableVideoCompleteSchema>;
+export type RenameDeliverableVideoInput   = z.infer<typeof renameDeliverableVideoSchema>;

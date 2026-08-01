@@ -1022,7 +1022,7 @@ export class CampaignService {
     return generateVideoUploadSignature('campaigns/deliverables', publicId);
   }
 
-  async completeDeliverableVideo(appId: string, userId: string, publicId: string) {
+  async completeDeliverableVideo(appId: string, userId: string, publicId: string, clientDurationSec?: number) {
     // Re-checked fresh here, not just at signature time — a 500MB upload can
     // take minutes, during which the business could approve the work.
     await this.assertCanUploadDeliverableVideo(appId, userId);
@@ -1056,7 +1056,10 @@ export class CampaignService {
       publicId,
       url:          videoPlaybackUrl(resource.secure_url),
       thumbnailUrl: videoThumbnailUrl(resource.secure_url),
-      durationSec:  Math.round(resource.duration ?? 0),
+      // Cloudinary's own duration wins when present — see messaging.service.ts's
+      // completeVideoAttachment for why the client-reported value is the
+      // fallback rather than always 0 while the asset is still being indexed.
+      durationSec:  Math.round(resource.duration || clientDurationSec || 0),
       format:       'mp4', // matches url — always delivered as MP4 regardless of source format
       sizeBytes:    resource.bytes ?? 0,
       label:        `Video ${existing.length + 1}`,
@@ -1080,6 +1083,12 @@ export class CampaignService {
     await this.assertCanUploadDeliverableVideo(appId, userId);
     await deleteVideo(publicId).catch(() => {});
     const updated = await this.repo.removeDeliverableVideo(appId, publicId);
+    return toApplicationDto(updated);
+  }
+
+  async renameDeliverableVideo(appId: string, userId: string, publicId: string, label: string) {
+    await this.assertCanUploadDeliverableVideo(appId, userId);
+    const updated = await this.repo.renameDeliverableVideo(appId, publicId, label.trim());
     return toApplicationDto(updated);
   }
 

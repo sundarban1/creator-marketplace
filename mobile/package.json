@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "dependencies": {
     "@expo-google-fonts/poppins": "^0.4.1",
-    "@expo/ui": "~56.0.23",
+    "@expo/ui": "~56.0.24",
     "@expo/vector-icons": "^15.0.2",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-community/netinfo": "12.0.1",
@@ -29,7 +29,7 @@
     "expo-local-authentication": "~56.0.5",
     "expo-location": "~56.0.22",
     "expo-notifications": "~56.0.22",
-    "expo-router": "~56.2.16",
+    "expo-router": "~56.2.17",
     "expo-secure-store": "~56.0.4",
     "expo-sharing": "~56.0.23",
     "expo-speech": "~56.0.3",
@@ -79,7 +79,8 @@
     "doctor": {
       "reactNativeDirectoryCheck": {
         "exclude": [
-          "react-native-compressor"
+          "react-native-compressor",
+          "react-native-background-upload"
         ]
       }
     }

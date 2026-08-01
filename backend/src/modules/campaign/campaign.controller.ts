@@ -5,7 +5,7 @@ import { analyticsService } from '../analytics/analytics.service';
 import { success, paginated } from '../../utils/response';
 import { uploadImage as uploadToCloudinary } from '../../utils/cloudinary';
 import { AppError } from '../../middleware/error';
-import type { SubmitReviewInput, DeliverableVideoCompleteInput } from './campaign.schema';
+import type { SubmitReviewInput, DeliverableVideoCompleteInput, RenameDeliverableVideoInput } from './campaign.schema';
 
 const campaignService = new CampaignService();
 const FEATURE_IMAGE_TRANSFORMATION = [{ width: 800, height: 450, crop: 'fill' }];
@@ -272,8 +272,8 @@ export class CampaignController {
 
   async completeDeliverableVideo(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { publicId } = req.body as DeliverableVideoCompleteInput;
-      const result = await campaignService.completeDeliverableVideo(req.params.appId, req.user!.id, publicId);
+      const { publicId, clientDurationSec } = req.body as DeliverableVideoCompleteInput;
+      const result = await campaignService.completeDeliverableVideo(req.params.appId, req.user!.id, publicId, clientDurationSec);
       success(res, result, 'Video attached', 201);
     } catch (err) {
       next(err);
@@ -289,6 +289,16 @@ export class CampaignController {
       if (!publicId) throw new AppError('publicId is required', 400);
       const result = await campaignService.removeDeliverableVideo(req.params.appId, req.user!.id, publicId);
       success(res, result, 'Video removed');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async renameDeliverableVideo(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { publicId, label } = req.body as RenameDeliverableVideoInput;
+      const result = await campaignService.renameDeliverableVideo(req.params.appId, req.user!.id, publicId, label);
+      success(res, result, 'Video renamed');
     } catch (err) {
       next(err);
     }

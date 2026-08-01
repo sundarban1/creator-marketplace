@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Building2, MapPin, Calendar, Users, DollarSign,
   Target, Clock, CheckCircle2, XCircle, Hourglass, Star,
-  FileText, Activity, Wallet,
+  FileText, Activity, Wallet, Video,
 } from 'lucide-react';
 import { StatusBadge }  from '../components/StatusBadge';
 import { Avatar }       from '../components/Avatar';
@@ -38,6 +38,43 @@ function appStatusBadge(status: string): string {
   if (s === 'accepted') return 'active';
   if (s === 'rejected') return 'cancelled';
   return 'pending';
+}
+
+function parseDeliverableUrls(raw?: string | null): string[] {
+  if (!raw) return [];
+  return raw.split(/[\n,]/).map((s) => s.trim()).filter(Boolean);
+}
+
+const DIRECT_VIDEO_EXTENSIONS = /\.(mp4|mov|m4v|webm|m3u8)(\?.*)?$/i;
+
+// A raw video file URL (Cloudinary, S3, etc.) can play directly in an
+// in-page <video> element — a YouTube/Google Drive share link is a *page*,
+// not a video file, and has to open in a new tab instead.
+function isDirectVideoUrl(url: string): boolean {
+  if (DIRECT_VIDEO_EXTENSIONS.test(url)) return true;
+  try {
+    const { hostname, pathname } = new URL(url);
+    return hostname.endsWith('res.cloudinary.com') && pathname.includes('/video/');
+  } catch {
+    return false;
+  }
+}
+
+// ── Video player modal ──────────────────────────────────────────────────────
+
+function VideoPlayerModal({ video, onClose }: { video: { url: string; label: string } | null; onClose: () => void }) {
+  if (!video) return null;
+  return (
+    <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-6" onClick={onClose}>
+      <div className="bg-black rounded-xl overflow-hidden max-w-3xl w-full" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-4 py-2 bg-gray-900">
+          <p className="text-sm text-white font-medium truncate">{video.label}</p>
+          <button onClick={onClose} className="text-gray-300 hover:text-white text-lg leading-none px-1">✕</button>
+        </div>
+        <video src={video.url} controls autoPlay className="w-full max-h-[75vh] bg-black" />
+      </div>
+    </div>
+  );
 }
 
 // ── Timeline ──────────────────────────────────────────────────────────────────
@@ -105,6 +142,7 @@ function ApplicationRow({ app, commissionRate, onReleased, showToast }: {
   const [expanded, setExpanded] = useState(false);
   const [releasing, setReleasing] = useState(false);
   const [showReleaseConfirm, setShowReleaseConfirm] = useState(false);
+  const [playingVideo, setPlayingVideo] = useState<{ url: string; label: string } | null>(null);
   const name = app.creator.fullName ?? app.creator.user.email;
   const initials = name.slice(0, 2).toUpperCase();
   const canRelease = app.workStatus === 'APPROVED' && app.paymentStatus === 'PAID';
@@ -195,6 +233,43 @@ function ApplicationRow({ app, commissionRate, onReleased, showToast }: {
               ))}
             </div>
           )}
+          {((app.deliverableVideos?.length ?? 0) > 0 || app.deliverableUrls) && (
+            <div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Submitted Deliverables</p>
+              <div className="flex flex-col gap-1">
+                {app.deliverableVideos?.map((v) => (
+                  <button
+                    key={v.publicId}
+                    onClick={(e) => { e.stopPropagation(); setPlayingVideo({ url: v.url, label: v.label }); }}
+                    className="text-indigo-600 hover:underline font-medium text-sm flex items-center gap-1.5 text-left"
+                  >
+                    <Video size={13} /> {v.label} ({Math.round(v.durationSec)}s)
+                  </button>
+                ))}
+                {parseDeliverableUrls(app.deliverableUrls).map((url) => (
+                  isDirectVideoUrl(url) ? (
+                    <button
+                      key={url}
+                      onClick={(e) => { e.stopPropagation(); setPlayingVideo({ url, label: url }); }}
+                      className="text-indigo-600 hover:underline font-medium text-sm flex items-center gap-1.5 text-left truncate"
+                    >
+                      <Video size={13} className="flex-shrink-0" /> {url}
+                    </button>
+                  ) : (
+                    <a
+                      key={url}
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-indigo-600 hover:underline font-medium text-sm truncate"
+                    >
+                      {url}
+                    </a>
+                  )
+                ))}
+              </div>
+            </div>
+          )}
           <div className="flex flex-wrap gap-4 text-xs text-gray-500 pt-1 border-t border-gray-200">
             <span><span className="font-medium text-gray-700">Work status:</span> {app.workStatus}</span>
             <span><span className="font-medium text-gray-700">Payment status:</span> {app.paymentStatus}</span>
@@ -211,6 +286,7 @@ function ApplicationRow({ app, commissionRate, onReleased, showToast }: {
         onConfirm={handleConfirmRelease}
         onCancel={() => setShowReleaseConfirm(false)}
       />
+      <VideoPlayerModal video={playingVideo} onClose={() => setPlayingVideo(null)} />
     </div>
   );
 }

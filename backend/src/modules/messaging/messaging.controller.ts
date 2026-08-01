@@ -122,7 +122,7 @@ export class MessagingController {
   async completeVideoAttachment(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const message = await messagingService.completeVideoAttachment(
-        req.params.id, req.user!.id, req.user!.role, req.body.publicId, req.body.caption,
+        req.params.id, req.user!.id, req.user!.role, req.body.publicId, req.body.caption, req.body.clientDurationSec,
       );
       success(res, message, 'Video sent', 201);
     } catch (err) { next(err); }

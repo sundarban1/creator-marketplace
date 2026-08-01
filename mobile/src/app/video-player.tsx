@@ -2,13 +2,20 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { Pressable, StatusBar, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Full-screen modal (not the app's usual 'modal' presentation, used by
 // submit-proposal/create-campaign) — edge-to-edge black background suits
 // video playback; those two are forms, this is media.
 export default function VideoPlayerScreen() {
   const { url } = useLocalSearchParams<{ url: string; thumbnail?: string }>();
+  // Read insets via the hook, not <SafeAreaView>, and apply them as explicit
+  // padding below — this screen is a `fullScreenModal` presentation, which
+  // renders into its own native window; <SafeAreaView>'s own on-mount
+  // remeasurement doesn't land in time on the very first open (only catches
+  // up on later ones), which is exactly why the close button overlapped the
+  // status bar clock only the first time. Same fix as LocationSearchModal.
+  const insets = useSafeAreaInsets();
   const player = useVideoPlayer(url ?? null, (p) => {
     p.play();
   });
@@ -23,7 +30,7 @@ export default function VideoPlayerScreen() {
         allowsPictureInPicture
         contentFit="contain"
       />
-      <SafeAreaView style={styles.closeWrap} edges={['top']}>
+      <View style={[styles.closeWrap, { top: insets.top }]}>
         <Pressable
           onPress={() => router.back()}
           hitSlop={12}
@@ -31,7 +38,7 @@ export default function VideoPlayerScreen() {
         >
           <Ionicons name="close" size={26} color="#fff" />
         </Pressable>
-      </SafeAreaView>
+      </View>
     </View>
   );
 }

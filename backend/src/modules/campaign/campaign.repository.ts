@@ -719,6 +719,15 @@ export class CampaignRepository {
     });
   }
 
+  async renameDeliverableVideo(appId: string, publicId: string, label: string) {
+    const app = await prisma.application.findUnique({ where: { id: appId }, select: { deliverableVideos: true } });
+    const videos = ((app?.deliverableVideos as DeliverableVideo[] | null) ?? []).map((v) => (v.publicId === publicId ? { ...v, label } : v));
+    return prisma.application.update({
+      where: { id: appId },
+      data: { deliverableVideos: videos },
+    });
+  }
+
   // Called from CampaignService.requestRevision — videos are appended rather
   // than replaced (unlike deliverableUrls, which the next submitWork call
   // overwrites wholesale), so without this a creator who filled all 3 slots

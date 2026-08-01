@@ -17,7 +17,6 @@ export type PickedVideo = {
 };
 
 const CHAT_IMAGE_MAX_SIZE_BYTES = 20 * 1024 * 1024; // matches backend uploadChatFile limit
-const CHAT_VIDEO_MAX_DURATION_SEC = 120; // matches backend's 2-minute cap
 const CHAT_VIDEO_MAX_SIZE_BYTES = 500 * 1024 * 1024; // matches backend's 500MB cap
 
 // MP4 (H.264/AAC) is preferred; MOV is accepted and delivered back as MP4 by
@@ -55,13 +54,10 @@ export async function pickImageFromCamera(): Promise<PickedAttachment | null> {
   return toPickedImage(result.assets[0]!);
 }
 
-// Shared by both pickers below — format/duration/size/readability checks,
-// so "record a video" and "choose from gallery" enforce identical rules.
-// `maxDurationSec` is undefined for callers with no duration cap (deliverables) —
-// both the alert copy and the check itself skip entirely rather than falling
-// back to chat's 120s, since a hardcoded fallback here would silently cap
-// deliverables too.
-async function validateAndBuildPickedVideo(asset: ImagePicker.ImagePickerAsset, maxDurationSec?: number): Promise<PickedVideo | null> {
+// Shared by both pickers below (chat and deliverables) — format/size/
+// readability checks, so "record a video" and "choose from gallery" enforce
+// identical rules. No duration cap for either — only file size is limited.
+async function validateAndBuildPickedVideo(asset: ImagePicker.ImagePickerAsset): Promise<PickedVideo | null> {
   const mimeType = asset.mimeType ?? 'video/mp4';
   if (!CHAT_VIDEO_ALLOWED_MIME_TYPES.includes(mimeType)) {
     Alert.alert('Unsupported format', 'Please use an MP4 or MOV video.');
@@ -69,10 +65,6 @@ async function validateAndBuildPickedVideo(asset: ImagePicker.ImagePickerAsset, 
   }
 
   const durationSec = Math.round((asset.duration ?? 0) / 1000);
-  if (maxDurationSec != null && durationSec > maxDurationSec) {
-    Alert.alert('Video too long', `Please choose a video under ${Math.round(maxDurationSec / 60)} minutes.`);
-    return null;
-  }
 
   // Also confirms the file actually exists and is readable before we try to upload it.
   const info = await FileSystem.getInfoAsync(asset.uri);
@@ -103,12 +95,9 @@ export async function pickVideoFromLibrary(): Promise<PickedVideo | null> {
     Alert.alert('Permission required', 'Please allow access to your photo library in Settings.');
     return null;
   }
-  const result = await ImagePicker.launchImageLibraryAsync({
-    mediaTypes: ['videos'],
-    videoMaxDuration: CHAT_VIDEO_MAX_DURATION_SEC, // iOS enforces this at the picker; Android doesn't, so re-checked below regardless
-  });
+  const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['videos'] });
   if (result.canceled) return null;
-  return validateAndBuildPickedVideo(result.assets[0]!, CHAT_VIDEO_MAX_DURATION_SEC);
+  return validateAndBuildPickedVideo(result.assets[0]!);
 }
 
 export async function pickVideoFromCamera(): Promise<PickedVideo | null> {
@@ -117,18 +106,14 @@ export async function pickVideoFromCamera(): Promise<PickedVideo | null> {
     Alert.alert('Permission required', 'Please allow camera access in Settings.');
     return null;
   }
-  const result = await ImagePicker.launchCameraAsync({
-    mediaTypes: ['videos'],
-    videoMaxDuration: CHAT_VIDEO_MAX_DURATION_SEC,
-  });
+  const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['videos'] });
   if (result.canceled) return null;
-  return validateAndBuildPickedVideo(result.assets[0]!, CHAT_VIDEO_MAX_DURATION_SEC);
+  return validateAndBuildPickedVideo(result.assets[0]!);
 }
 
 // ── Deliverable videos ───────────────────────────────────────────────────────
-// Same format/size validation as chat, but no duration cap (deliverable
-// content is legitimately longer than a chat clip) and multi-select up to
-// however many of the 3 slots remain.
+// Same format/size validation as chat (see validateAndBuildPickedVideo above),
+// plus multi-select up to however many of the 3 slots remain.
 
 export async function pickDeliverableVideosFromLibrary(remainingSlots: number): Promise<PickedVideo[]> {
   const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();

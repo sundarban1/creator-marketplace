@@ -1,8 +1,13 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import { campaignService, type DeliverableVideo } from '@/services/campaign';
 import { compressVideo } from '@/utilities/uploadVideo';
 import type { PickedVideo } from '@/utilities/chatAttachments';
+import {
+  getActiveUploadsFor, subscribeToUploadProgress, subscribeToUploadFinalizing,
+  getActiveUploadResult, cancelActiveUpload, setFocusedUploadTarget,
+} from '@/services/backgroundVideoUploadManager';
 
 // 'finalizing' sits between 'uploading' (chunk transport) and 'done': all
 // chunks landed at Cloudinary, but the backend's complete-call (which
@@ -29,10 +34,14 @@ const MAX_TOTAL       = 3;
 // with real concurrency instead of chat's one-at-a-time guard, since up to 3
 // videos can be picked here at once.
 //
-// Scoping decision: no cross-restart persistence — an app kill mid-upload
-// loses the queue and the creator re-adds videos, same as chat (which has no
-// persistence either). A resumable-upload queue isn't needed anywhere else in
-// this codebase, so it isn't built here either.
+// Navigating away mid-upload and back reconstructs `items` from
+// backgroundVideoUploadManager's active-uploads registry (the actual chunk
+// transport keeps running independently of this hook's lifetime) — see the
+// mount effect below. A full app-kill still loses the *queue UI* (the
+// creator would see it as if the video needs re-adding, though the transport
+// itself may still complete via boot-time reconciliation) — reconstructing
+// across a kill would additionally need the picked video's metadata
+// persisted to disk, which isn't done here.
 export function useDeliverableVideoUploads(appId: string, existingCount: number) {
   const [items, setItems] = useState<DeliverableUploadItem[]>([]);
   const tasksRef = useRef<Map<string, { cancel: () => void }>>(new Map());
@@ -58,6 +67,53 @@ export function useDeliverableVideoUploads(appId: string, existingCount: number)
     return itemsRef.current.find((i) => i.localId === localId)?.status;
   }
 
+  // Reconstructs a card for an upload that's still running in the background
+  // (started before this screen mounted, or before the creator navigated
+  // away and back) — mirrors chat's identical reconstruction, see
+  // mobile/src/app/(creator)/(tabs)/messages/[id].tsx's attachToActiveUpload.
+  function attachToActiveUpload(active: ReturnType<typeof getActiveUploadsFor>[number]) {
+    const localId = `upload-${active.localUploadId}`;
+    const placeholderVideo: PickedVideo = {
+      uri: active.sourceFileUri, name: 'Video', mimeType: 'video/mp4',
+      durationSec: 0, width: 0, height: 0, sizeBytes: 0,
+    };
+    setItems((prev) => (prev.some((i) => i.localId === localId) ? prev : [
+      ...prev,
+      { localId, video: placeholderVideo, status: active.status, progress: active.progress, compressedUri: active.sourceFileUri },
+    ]));
+
+    const unsubProgress = subscribeToUploadProgress(active.localUploadId, (p) => updateItem(localId, { status: 'uploading', progress: p }));
+    const unsubFinalizing = subscribeToUploadFinalizing(active.localUploadId, () => updateItem(localId, { status: 'finalizing' }));
+    tasksRef.current.set(localId, { cancel: () => cancelActiveUpload(active.localUploadId) });
+
+    (getActiveUploadResult(active.localUploadId) as Promise<DeliverableVideo> | undefined)?.then((result) => {
+      tasksRef.current.delete(localId);
+      updateItem(localId, { status: 'done', progress: 1, result });
+    }).catch((e: any) => {
+      tasksRef.current.delete(localId);
+      if (statusOf(localId) !== 'cancelled') {
+        updateItem(localId, { status: 'failed', error: e?.message ?? 'Upload failed' });
+      }
+    }).finally(() => {
+      unsubProgress();
+      unsubFinalizing();
+    });
+  }
+
+  useEffect(() => {
+    getActiveUploadsFor({ targetType: 'deliverable', appId }).forEach(attachToActiveUpload);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appId]);
+
+  // Report focus so GlobalUploadBanner knows not to duplicate this
+  // application's own inline upload progress while it's on screen.
+  useFocusEffect(
+    useCallback(() => {
+      setFocusedUploadTarget({ targetType: 'deliverable', appId });
+      return () => setFocusedUploadTarget(null);
+    }, [appId])
+  );
+
   async function runUpload(localId: string) {
     const item = itemsRef.current.find((i) => i.localId === localId);
     if (!item) return;
@@ -78,6 +134,7 @@ export function useDeliverableVideoUploads(appId: string, existingCount: number)
         item.video.mimeType,
         (fraction) => updateItem(localId, { status: 'uploading', progress: fraction }),
         () => updateItem(localId, { status: 'finalizing' }),
+        item.video.durationSec,
       );
       tasksRef.current.set(localId, task);
       const result = await task.start();
@@ -138,5 +195,12 @@ export function useDeliverableVideoUploads(appId: string, existingCount: number)
     setItems((prev) => prev.filter((i) => i.localId !== localId));
   }
 
-  return { items, remainingSlots, addVideos, cancel, retry, dismiss };
+  // Optimistic local update after a successful renameDeliverableVideo call —
+  // the server call itself is the source of truth, this just keeps the
+  // just-uploaded item's card in sync without waiting on a full refetch.
+  function relabel(localId: string, label: string) {
+    setItems((prev) => prev.map((i) => (i.localId === localId && i.result ? { ...i, result: { ...i.result, label } } : i)));
+  }
+
+  return { items, remainingSlots, addVideos, cancel, retry, dismiss, relabel };
 }

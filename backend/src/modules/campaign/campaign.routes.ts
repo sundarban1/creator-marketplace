@@ -11,6 +11,7 @@ import {
   nearbyQuerySchema,
   submitReviewSchema,
   deliverableVideoCompleteSchema,
+  renameDeliverableVideoSchema,
 } from './campaign.schema';
 
 const router = Router();
@@ -352,6 +353,14 @@ router.delete(
   authenticate,
   authorize('CREATOR'),
   ctrl.removeDeliverableVideo.bind(ctrl)
+);
+
+router.patch(
+  '/applications/:appId/deliverables/video/label',
+  authenticate,
+  authorize('CREATOR'),
+  validate(renameDeliverableVideoSchema),
+  ctrl.renameDeliverableVideo.bind(ctrl)
 );
 
 router.put(

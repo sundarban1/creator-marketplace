@@ -1,9 +1,9 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { messagingEvents } from '@/lib/messagingEvents';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { Image as ExpoImage } from 'expo-image';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Animated,
@@ -27,6 +27,11 @@ import { useAppColors } from '@/context/ThemeContext';
 import { usePlatformFlags } from '@/context/PlatformSettingsContext';
 import { chatService, toMessage, createVideoUploadTask } from '@/services/chat';
 import { compressVideo } from '@/utilities/uploadVideo';
+import {
+  getActiveUploadsFor, subscribeToUploadProgress, subscribeToUploadFinalizing,
+  getActiveUploadResult, cancelActiveUpload, setFocusedUploadTarget,
+} from '@/services/backgroundVideoUploadManager';
+import type { ApiMessage } from '@/lib/api';
 import { getSocket } from '@/lib/socket';
 import { incomingMessageEvents } from '@/lib/incomingMessageEvents';
 import { F, RADIUS } from '@/utilities/constants';
@@ -400,7 +405,13 @@ export default function BusinessChatRoomScreen() {
     if (!id) return;
     setMessagesError('');
     chatService.getMessages(id)
-      .then((msgs) => setMessages(msgs))
+      .then((msgs) => {
+        // Keep any reconstructed pending-upload bubble(s) — they have no DB
+        // row yet, so the server list never includes them; merging (instead
+        // of replacing outright) is what keeps an in-progress video visible
+        // across this same refresh.
+        setMessages((prev) => [...msgs, ...prev.filter((m) => m.id.startsWith('temp-upload-'))]);
+      })
       .catch((e) => setMessagesError(e instanceof Error ? e.message : t('messages.loadFailedSub')));
   }
 
@@ -412,14 +423,28 @@ export default function BusinessChatRoomScreen() {
   }, [reconnectedAt]);
 
   useEffect(() => {
-    setMessages([]);
     setText('');
     const convStatus = (urlStatus as 'PENDING' | 'ACCEPTED' | 'DECLINED') ?? 'ACCEPTED';
     setStatus(convStatus);
-    if (!id) return;
+    if (!id) { setMessages([]); return; }
+    // Reconstruct any video upload(s) still running for this conversation
+    // before wiping/refetching — otherwise a video sent, then navigated away
+    // from mid-upload, would appear to vanish until it finishes.
+    setMessages([]);
+    getActiveUploadsFor({ targetType: 'chat', conversationId: id }).forEach(attachToActiveUpload);
     loadMessages();
     if (convStatus === 'ACCEPTED') markSeen();
   }, [id]);
+
+  // Report focus so GlobalUploadBanner knows not to duplicate this
+  // conversation's own inline upload progress while it's on screen.
+  useFocusEffect(
+    useCallback(() => {
+      if (!id) return;
+      setFocusedUploadTarget({ targetType: 'chat', conversationId: id });
+      return () => setFocusedUploadTarget(null);
+    }, [id])
+  );
 
   // Incoming messages via NotificationContext's forwarded socket event bus
   useEffect(() => {
@@ -648,6 +673,51 @@ export default function BusinessChatRoomScreen() {
     setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, ...patch } : m)));
   }
 
+  // Reconstructs a pending video bubble for an upload that's still running in
+  // the background (started before this screen mounted, or before the user
+  // navigated away and back) — the transfer itself never stopped
+  // (backgroundVideoUploadManager keeps driving it independently), only this
+  // screen's own local state lost track of it. Re-subscribes to the same
+  // progress/finalizing/result signals runVideoSend would have used.
+  function attachToActiveUpload(active: ReturnType<typeof getActiveUploadsFor>[number]) {
+    const tempId = `temp-upload-${active.localUploadId}`;
+    const caption = active.target.targetType === 'chat' ? (active.target.caption ?? '') : '';
+    const optimistic: Message = {
+      id: tempId, conversationId: id,
+      senderId: user?.id ?? '', text: caption,
+      timestamp: new Date().toISOString(), status: active.status,
+      type: 'VIDEO',
+      localUri: active.sourceFileUri, uploadProgress: active.progress, retryCount: 0,
+    };
+    setMessages((prev) => (prev.some((m) => m.id === tempId) ? prev : [...prev, optimistic]));
+
+    const unsubProgress = subscribeToUploadProgress(active.localUploadId, (p) => updateMsg(tempId, { uploadProgress: p, status: 'uploading' }));
+    const unsubFinalizing = subscribeToUploadFinalizing(active.localUploadId, () => updateMsg(tempId, { status: 'finalizing' }));
+    uploadTasks.current[tempId] = {
+      start: () => Promise.reject(new Error('Reconstructed upload cannot be (re)started')),
+      cancel: () => cancelActiveUpload(active.localUploadId),
+    };
+
+    getActiveUploadResult(active.localUploadId)?.then((apiMessage) => {
+      const serverMsg = toMessage(apiMessage as ApiMessage);
+      setMessages((prev) => {
+        const without = prev.filter((m) => m.id !== tempId);
+        return without.some((m) => m.id === serverMsg.id) ? without : [...without, serverMsg];
+      });
+    }).catch((e) => {
+      const detail = e instanceof Error ? e.message : undefined;
+      if (detail === 'Video upload cancelled') {
+        setMessages((prev) => prev.filter((m) => m.id !== tempId));
+        return;
+      }
+      updateMsg(tempId, { status: 'failed', errorDetail: detail });
+    }).finally(() => {
+      unsubProgress();
+      unsubFinalizing();
+      delete uploadTasks.current[tempId];
+    });
+  }
+
   async function runVideoSend(msg: Message) {
     try {
       updateMsg(msg.id, { status: 'compressing', uploadProgress: 0 });
@@ -656,10 +726,10 @@ export default function BusinessChatRoomScreen() {
 
       const task = createVideoUploadTask(id, compressedUri, 'video/mp4', msg.text,
         (p) => updateMsg(msg.id, { uploadProgress: p }),
-        () => updateMsg(msg.id, { status: 'finalizing' }));
+        () => updateMsg(msg.id, { status: 'finalizing' }),
+        msg.attachmentDurationSec ?? undefined);
       uploadTasks.current[msg.id] = task;
 
-      updateMsg(msg.id, { status: 'sending' });
       const serverMsg = await task.start();
       setMessages((prev) => {
         const without = prev.filter((m) => m.id !== msg.id);

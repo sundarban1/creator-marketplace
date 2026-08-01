@@ -56,7 +56,7 @@ const PROMPT_EXAMPLES_BY_CATEGORY: Record<string, { en: [string, string]; ne: [s
   },
   'Cafés': {
     en: ["Let's collaborate: looking for coffee lovers to try our new blend and share it online.", 'Inviting cafe creators to review our cozy space and seasonal drinks menu.'],
-    ne: ['सहकार्यको लागि: हाम्रो नयाँ कफी ब्लेन्ड प्रयास गरी अनलाइन साझा गर्ने कफी प्रेमीहरू खोज्दैछौं।', 'हाम्रो न्यानो क्याफे र सिजनल ड्रिंक्स मेनु रिभ्यु गर्न क्याफे क्रिएटरहरूलाई आमन्त्रण गर्दैछौं।'],
+    ne: ['हाम्रो क्याफेको नयाँ मेनु प्रमोट गर्न कन्टेन्ट क्रिएटरहरू खोज्दैछौं। यस सहकार्यका लागि हाम्रो बजेट रु. १,५०० देखि रु. २,००० सम्म रहेको छ।', 'हाम्रो नयाँ रेस्टुरेन्ट ओपनिङलाई प्रमोट गर्न कन्टेन्ट क्रिएटरहरूसँग सहकार्य गर्न चाहन्छौं।'],
   },
   'Hotels': {
     en: ['Inviting travel creators to experience our rooms and share a hotel tour video.', 'Looking for creators to showcase our new weekend getaway packages.'],
@@ -156,7 +156,7 @@ const PROMPT_EXAMPLES_BY_CATEGORY: Record<string, { en: [string, string]; ne: [s
 // selected one not covered above (e.g. an admin just added it).
 const GENERIC_PROMPT_EXAMPLES: { en: [string, string]; ne: [string, string] } = {
   en: ["Let's collaborate: looking for creators to promote our brand and reach new audiences.", 'Join our creator family: seeking creators for an exciting new collaboration.'],
-  ne: ['आउनुहोस् सहकार्य गरौं: हाम्रो ब्रान्ड प्रवर्द्धन गरी नयाँ दर्शकसम्म पुग्न क्रिएटरहरू खोज्दैछौं।', 'हाम्रो क्रिएटर परिवारमा जोडिनुहोस्: रोमाञ्चक नयाँ सहकार्यका लागि क्रिएटरहरू खोज्दैछौं।'],
+  ne: ['हामी हाम्रो क्याफेको लागि सामग्री सिर्जना गरी आफ्ना सामाजिक सञ्जालमा साझा गर्न इच्छुक सिर्जनाकर्ताहरू खोज्दैछौं।', 'हाम्रो क्रिएटर परिवारमा जोडिनुहोस्: रोमाञ्चक नयाँ सहकार्यका लागि क्रिएटरहरू खोज्दैछौं।'],
 };
 
 function getPromptExamples(category: string | undefined, language: 'en' | 'ne'): string[] {
@@ -188,6 +188,84 @@ function getPromptSamples(category: string | undefined): { text: string; lang: '
 
 const ERROR_RED = '#EF4444';
 const MIN_BUDGET_PER_CREATOR = 500;
+
+// "Need Help?" walkthrough scripts, read aloud via on-device TTS from the
+// help modal below. Nepali is read with a Hindi voice (see handlePlayHelp) —
+// Nepali TTS voices are rarely installed on-device, Hindi voices read the
+// shared Devanagari script far more reliably (see Quick Audio Samples above).
+const NEED_HELP_SCRIPT_EN = `Welcome to Kolab!
+Create your event easily and connect with the right creators.
+
+Choose the type of event you want to create.
+
+Paid Event
+Work with creators by paying them to create content that promotes your business.
+
+Open Event
+Invite creators to your event and let them experience your brand. You can offer free entry, gifts, food, drinks, or other benefits.
+
+Create your event using text or voice.
+
+Write
+Describe your idea, and Kolab AI will create an event for you.
+
+Voice
+Tell your idea by speaking, and Kolab AI will turn it into an event.
+
+You can add details like:
+
+Budget
+Location
+Number of creators
+Social media platforms
+Event requirements
+
+Your event will be saved as a draft.
+Review the details, make any changes, and publish when ready.
+
+You can also choose Featured Event to make your event more visible to creators.
+
+Publish your event and start collaborating with creators.
+
+Thank you for using Kolab.
+Let's create great collaborations together!`;
+
+const NEED_HELP_SCRIPT_NE = `कोल्याबमा स्वागत छ!
+आफ्नो इभेन्ट सजिलै बनाउनुहोस् र सही क्रिएटरहरूसँग सहकार्य गर्नुहोस्।
+
+सबैभन्दा पहिले आफूलाई चाहिएको इभेन्टको प्रकार छान्नुहोस्।
+
+पेड इभेन्ट
+क्रिएटरहरूलाई भुक्तानी गरेर आफ्नो बिजनेसको प्रचारका लागि कन्टेन्ट बनाउन लगाउनुहोस्।
+
+ओपन इभेन्ट
+क्रिएटरहरूलाई आफ्नो इभेन्टमा बोलाउनुहोस् र आफ्नो ब्रान्डको अनुभव साझा गर्न दिनुहोस्। तपाईं फ्री इन्ट्री, गिफ्ट, खाना, ड्रिंक्स वा अन्य सुविधा दिन सक्नुहुन्छ।
+
+टेक्स्ट वा आवाज प्रयोग गरेर इभेन्ट बनाउनुहोस्।
+
+लेखेर
+आफ्नो आइडिया लेख्नुहोस्, कोल्याब एआईले तपाईंको लागि इभेन्ट तयार गर्छ।
+
+आवाजबाट
+आफ्नो आइडिया बोलेर भन्नुहोस्, कोल्याब एआईले त्यसलाई इभेन्टमा बदल्छ।
+
+तपाईंले यी विवरणहरू थप्न सक्नुहुन्छ:
+
+बजेट
+स्थान
+चाहिने क्रिएटरको संख्या
+सामाजिक सञ्जाल प्लेटफर्म
+इभेन्टको आवश्यकता
+
+तपाईंको इभेन्ट मस्यौदाको रूपमा सुरक्षित हुनेछ।
+विवरण हेर्नुहोस्, आवश्यक परिवर्तन गर्नुहोस् र तयार भएपछि प्रकाशित गर्नुहोस्।
+
+थप क्रिएटरहरूको ध्यान आकर्षित गर्न विशेष इभेन्ट विकल्प पनि छान्न सक्नुहुन्छ।
+
+इभेन्ट प्रकाशित गर्नुहोस् र क्रिएटरहरूसँग सहकार्य सुरु गर्नुहोस्।
+
+कोल्याब प्रयोग गर्नुभएकोमा धन्यवाद।
+आउनुहोस्, सँगै उत्कृष्ट सहकार्यहरू सिर्जना गरौं!`;
 
 // Used when generateWithAi() throws outright (network down, request timeout, backend
 // error unrelated to the AI call itself) — the backend's own dummy-template fallback
@@ -850,6 +928,11 @@ export default function CreateCampaignScreen() {
   // Which Quick Audio Sample (if any) is currently being read aloud via TTS —
   // null when nothing is playing.
   const [playingSampleIdx, setPlayingSampleIdx] = useState<number | null>(null);
+  // "Need Help?" walkthrough modal — center card, not the bottom sheets used
+  // elsewhere on this screen. helpPlayingLang tracks which script (if any)
+  // is currently being read aloud.
+  const [needHelpVisible, setNeedHelpVisible] = useState(false);
+  const [helpPlayingLang, setHelpPlayingLang] = useState<'en' | 'ne' | null>(null);
   const [aiPromptText, setAiPromptText] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
   const [aiPlaceholder] = useState(() => getPromptExamples(businessCategories[0], language)[0]);
@@ -1159,6 +1242,10 @@ export default function CreateCampaignScreen() {
 
   // Quick Audio Samples — tap to hear an example via on-device TTS (no real
   // recorded audio assets are used), tap the same one again to stop.
+  // Nepali (ne-NP) voices are rarely installed on-device and TTS falls back
+  // to mispronouncing the Devanagari text — Hindi voices are near-universally
+  // available and read the same script far more reliably, so Nepali samples
+  // are read with a Hindi voice instead.
   function handlePlaySample(idx: number, text: string, lang: 'en' | 'ne') {
     Speech.stop();
     if (playingSampleIdx === idx) {
@@ -1167,11 +1254,36 @@ export default function CreateCampaignScreen() {
     }
     setPlayingSampleIdx(idx);
     Speech.speak(text, {
-      language: lang === 'ne' ? 'ne-NP' : 'en-US',
+      language: lang === 'ne' ? 'hi-IN' : 'en-US',
       onDone:    () => setPlayingSampleIdx(null),
       onStopped: () => setPlayingSampleIdx(null),
       onError:   () => setPlayingSampleIdx(null),
     });
+  }
+
+  // "Need Help?" walkthrough — same tap-to-play/tap-to-stop TTS pattern as
+  // Quick Audio Samples above (Nepali read with a Hindi voice). While one
+  // script is playing the other card is disabled rather than allowed to
+  // interrupt it, since the two scripts would otherwise talk over each other.
+  function handlePlayHelp(lang: 'en' | 'ne') {
+    Speech.stop();
+    if (helpPlayingLang === lang) {
+      setHelpPlayingLang(null);
+      return;
+    }
+    setHelpPlayingLang(lang);
+    Speech.speak(lang === 'ne' ? NEED_HELP_SCRIPT_NE : NEED_HELP_SCRIPT_EN, {
+      language: lang === 'ne' ? 'hi-IN' : 'en-US',
+      onDone:    () => setHelpPlayingLang(null),
+      onStopped: () => setHelpPlayingLang(null),
+      onError:   () => setHelpPlayingLang(null),
+    });
+  }
+
+  function closeNeedHelp() {
+    Speech.stop();
+    setHelpPlayingLang(null);
+    setNeedHelpVisible(false);
   }
 
   function buildPaidCampaignPayload() {
@@ -1339,9 +1451,11 @@ export default function CreateCampaignScreen() {
         </Pressable>
         <View style={s.headerCenter}>
           <Text style={[s.headerTitle, { color: C.text }]}>{t('createEvent.headerTitle')}</Text>
-          <Text style={[s.headerSub, { color: C.textSecondary }]}>
-            {phase === 'setup' ? t('createEvent.headerSubSetup') : phase === 'review' ? t('createEvent.headerSubReview') : t('createEvent.headerSubConfirm')}
-          </Text>
+          {phase !== 'setup' && (
+            <Text style={[s.headerSub, { color: C.textSecondary }]}>
+              {phase === 'review' ? t('createEvent.headerSubReview') : t('createEvent.headerSubConfirm')}
+            </Text>
+          )}
         </View>
         <View style={[s.phasePill, { backgroundColor: C.primaryLight }]}>
           <Text style={[s.phasePillText, { color: C.brinjal1 }]}>{currentPhaseNum}/{totalPhases}</Text>
@@ -1373,7 +1487,13 @@ export default function CreateCampaignScreen() {
                   you'd pick it) instead of a plain tab switch, so the choice
                   is self-explanatory without a separate info banner. */}
               <View style={{ gap: 12 }}>
-                <Text style={[s.stepSectionHeading, { color: C.text }]}>{t('createEvent.eventTypeHeading')}</Text>
+                <View style={s.eventTypeHeaderRow}>
+                  <Text style={[s.stepSectionHeading, { color: C.text }]}>{t('createEvent.eventTypeHeading')}</Text>
+                  <Pressable onPress={() => setNeedHelpVisible(true)} hitSlop={8} style={[s.needHelpLinkRow, { borderColor: C.brinjal1 }]}>
+                    <Text style={[s.needHelpLinkText, { color: C.brinjal1 }]}>{t('createEvent.needHelpLink')}</Text>
+                    <Ionicons name="headset-outline" size={14} color={C.brinjal1} />
+                  </Pressable>
+                </View>
 
                 <View style={{ gap: 10 }}>
                   {(
@@ -2129,6 +2249,56 @@ export default function CreateCampaignScreen() {
         </Pressable>
       </Modal>
 
+      {/* Need Help? walkthrough — centered card, tap a language to hear it via TTS */}
+      <Modal visible={needHelpVisible} transparent animationType="fade" onRequestClose={closeNeedHelp}>
+        <Pressable style={s.warnScrim} onPress={closeNeedHelp}>
+          <Pressable style={[s.helpSheet, { backgroundColor: C.surface }]} onPress={(e) => e.stopPropagation()}>
+            <View style={s.helpHeaderRow}>
+              <Text style={[s.warnTitle, { color: C.text, marginBottom: 0, textAlign: 'left' }]}>{t('createEvent.needHelpTitle')}</Text>
+              <Pressable onPress={closeNeedHelp} hitSlop={8}>
+                <Ionicons name="close" size={22} color={C.textSecondary} />
+              </Pressable>
+            </View>
+            <Text style={[s.helpSub, { color: C.textSecondary }]}>{t('createEvent.needHelpSub')}</Text>
+            {/* Same rounded-icon-with-glow-shadow + label pattern as the business
+                home tab's Quick Actions row, using the shared TabColors accents
+                (brand=English, info=Nepali) instead of ad-hoc colors. */}
+            <View style={s.helpCardsRow}>
+              {(['en', 'ne'] as const).map((lang) => {
+                const isPlaying = helpPlayingLang === lang;
+                const isLocked  = helpPlayingLang !== null && !isPlaying;
+                const tone = lang === 'en' ? TabColors.brand : TabColors.info;
+                return (
+                  <Pressable
+                    key={lang}
+                    style={[
+                      s.helpCard,
+                      { backgroundColor: C.surface, borderColor: isPlaying ? tone.color : C.border, opacity: isLocked ? 0.4 : 1 },
+                      SHADOW.card,
+                    ]}
+                    onPress={() => handlePlayHelp(lang)}
+                    disabled={isLocked}>
+                    <View
+                      style={[
+                        s.helpCardIcon,
+                        {
+                          backgroundColor: isPlaying ? tone.color : tone.bg,
+                          shadowColor: tone.color, shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5,
+                        },
+                      ]}>
+                      <Ionicons name={isPlaying ? 'stop' : 'play'} size={20} color={isPlaying ? '#fff' : tone.color} />
+                    </View>
+                    <Text style={[s.helpCardLabel, { color: C.text }]}>
+                      {lang === 'en' ? t('createEvent.needHelpEnglish') : t('createEvent.needHelpNepali')}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
       <LocationSearchModal
         visible={locationModalOpen}
         initialValue={form.eventType === 'OPEN_EVENT' ? form.venue : form.location}
@@ -2229,6 +2399,21 @@ const s = StyleSheet.create({
   warnCancelText:  { fontSize: 13, fontFamily: F.semibold },
   warnConfirmBtn:  { flex: 1, borderRadius: RADIUS.md, paddingVertical: 14, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6 },
   warnConfirmText: { color: '#fff', fontSize: 13, fontFamily: F.bold },
+
+  eventTypeHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  needHelpLinkRow:    { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  needHelpLinkText:   { fontSize: 13, fontFamily: F.semibold },
+
+  helpSheet:     { width: '100%', borderRadius: RADIUS.xl, padding: 24, ...SHADOW.floating },
+  helpHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
+  helpSub:       { fontSize: 13, fontFamily: F.regular, lineHeight: 19, marginBottom: 20 },
+  // Mirrors the home tab's quickActionsRow/quickAction/quickActionIcon/
+  // quickActionLabel shapes exactly (RADIUS.lg card, RADIUS.md icon box,
+  // colored glow shadow) so this modal reads as the same design system.
+  helpCardsRow:  { flexDirection: 'row', gap: 10 },
+  helpCard:      { flex: 1, alignItems: 'center', borderRadius: RADIUS.lg, paddingVertical: 16, gap: 8, borderWidth: 1 },
+  helpCardIcon:  { width: 44, height: 44, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center' },
+  helpCardLabel: { fontSize: 12, fontFamily: F.semibold, textAlign: 'center' },
 
   toast:     { position: 'absolute', bottom: 40, left: 20, right: 20, borderRadius: RADIUS.md, paddingHorizontal: 18, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', ...SHADOW.floating },
   toastText: { color: '#fff', fontSize: 14, flex: 1, fontFamily: F.bold },

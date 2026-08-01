@@ -547,6 +547,7 @@ export class MessagingService {
     role: Role,
     publicId: string,
     caption?: string,
+    clientDurationSec?: number,
   ) {
     const conversation = await this.prepareSend(conversationId, userId, role);
     // Video is only allowed in creator<->business conversations, not creator<->creator.
@@ -576,14 +577,11 @@ export class MessagingService {
       throw new AppError('Video exceeds the 500MB limit', 400);
     }
 
-    const durationSec = Math.round(resource.duration ?? 0);
-    // Client-side picker already caps duration at 120s, but the server is the
-    // only source of truth — if a client lied (or the picker was bypassed),
-    // delete the asset we just paid to store and reject the message.
-    if (durationSec > 125) {
-      await deleteVideo(publicId);
-      throw new AppError('Video exceeds the 2 minute limit', 400);
-    }
+    // Cloudinary's own duration wins when present — it's occasionally not
+    // populated yet immediately after the last chunk lands (asset still being
+    // indexed), in which case the client's own picker-measured duration is
+    // the best available fallback rather than silently showing/validating 0.
+    const durationSec = Math.round(resource.duration || clientDurationSec || 0);
 
     const content  = caption?.trim() ?? '';
     const pushBody = content || '🎥 Video';

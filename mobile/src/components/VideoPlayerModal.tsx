@@ -5,7 +5,7 @@ import * as Sharing from 'expo-sharing';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { F, RADIUS } from '@/utilities/constants';
 
 type Props = {
@@ -23,6 +23,13 @@ type Props = {
 // readyToPlay, since a large deliverable can take a moment to start buffering.
 export function VideoPlayerModal({ visible, url, title, onClose }: Props) {
   const [downloading, setDownloading] = useState(false);
+  // Read insets via the hook, not <SafeAreaView>, and apply them as explicit
+  // padding below — this RN <Modal> renders into its own native window, so
+  // <SafeAreaView>'s own on-mount remeasurement doesn't land in time on the
+  // very first open (only catches up on later ones), which is exactly why
+  // the close button overlapped the status bar clock only the first time.
+  // Same fix as LocationSearchModal.
+  const insets = useSafeAreaInsets();
 
   const player = useVideoPlayer(url ?? null, (p) => {
     p.loop = false;
@@ -56,7 +63,7 @@ export function VideoPlayerModal({ visible, url, title, onClose }: Props) {
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={handleClose}>
       <View style={s.container}>
-        <SafeAreaView style={s.safe} edges={['top', 'bottom']}>
+        <View style={[s.safe, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
           <View style={s.header}>
             <Text style={s.title} numberOfLines={1}>{title}</Text>
             <Pressable style={s.iconBtn} onPress={handleClose} hitSlop={8}>
@@ -85,7 +92,7 @@ export function VideoPlayerModal({ visible, url, title, onClose }: Props) {
               <Text style={s.downloadTxt}>{downloading ? 'Downloading…' : 'Download'}</Text>
             </Pressable>
           </View>
-        </SafeAreaView>
+        </View>
       </View>
     </Modal>
   );

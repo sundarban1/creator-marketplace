@@ -22,6 +22,7 @@ import { PlatformSettingsProvider, usePlatformFlags } from '@/context/PlatformSe
 import { SplashScreen } from '@/components/SplashScreen';
 import { BiometricGateScreen } from '@/components/BiometricGateScreen';
 import { OfflineBanner } from '@/components/OfflineBanner';
+import { GlobalUploadBanner } from '@/components/GlobalUploadBanner';
 import { ToastProvider } from '@/components/Toast';
 import { isBiometricLoginEnabled } from '@/services/biometric';
 import { authService } from '@/services/auth';
@@ -137,6 +138,7 @@ function RootLayoutInner() {
             <StatusBar style={isDark ? 'light' : 'dark'} />
             <RootNavigator />
             <OfflineBanner />
+            <GlobalUploadBanner />
           </ThemeProvider>
         </NotificationProvider>
       </AuthProvider>

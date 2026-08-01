@@ -23,6 +23,11 @@ export const messagesQuerySchema = z.object({
 export const videoCompleteSchema = z.object({
   publicId: z.string().min(1, 'publicId is required'),
   caption:  z.string().max(500).optional(),
+  // Client-measured duration (from the picker, before upload) — used only as
+  // a fallback display/validation value for the narrow window where
+  // Cloudinary hasn't finished indexing the asset yet and its own
+  // resource.duration isn't available. Cloudinary's value wins whenever present.
+  clientDurationSec: z.number().min(0).max(7200).optional(),
 });
 
 export type StartConversationInput        = z.infer<typeof startConversationSchema>;

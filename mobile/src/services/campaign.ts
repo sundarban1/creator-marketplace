@@ -441,6 +441,10 @@ export const campaignService = {
     await request('DELETE', `/api/campaigns/applications/${appId}/deliverables/video`, undefined, { publicId });
   },
 
+  async renameDeliverableVideo(appId: string, publicId: string, label: string): Promise<void> {
+    await request('PATCH', `/api/campaigns/applications/${appId}/deliverables/video/label`, { publicId, label });
+  },
+
   // `fileUri` must already be compressed (or the original, if compression is
   // skipped/failed upstream) — this signs, hands off to
   // backgroundVideoUploadManager (chunked upload via react-native-background-upload,
@@ -452,6 +456,7 @@ export const campaignService = {
     mimeType: string,
     onProgress: (fraction: number) => void,
     onFinalizing?: () => void,
+    durationSec?: number,
   ): { start: () => Promise<DeliverableVideo>; cancel: () => void } {
     let cancelled = false;
     let innerTask: ReturnType<typeof startBackgroundChunkedUpload> | null = null;
@@ -463,7 +468,7 @@ export const campaignService = {
         if (cancelled) throw new Error('Upload cancelled');
 
         innerTask = startBackgroundChunkedUpload(
-          { targetType: 'deliverable', appId },
+          { targetType: 'deliverable', appId, durationSec },
           fileUri, mimeType, signature, onProgress, onFinalizing,
         );
         return await innerTask.result as DeliverableVideo;

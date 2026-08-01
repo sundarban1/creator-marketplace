@@ -294,6 +294,18 @@ export interface ApiNotification {
   createdAt: string;
 }
 
+export interface ApiDeliverableVideo {
+  publicId:     string;
+  url:          string;
+  thumbnailUrl: string;
+  durationSec:  number;
+  format:       string;
+  sizeBytes:    number;
+  label:        string;
+  uploadedAt:   string;
+  status:       'PROCESSING' | 'READY' | 'FAILED';
+}
+
 export interface ApiApplication {
   id:            string;
   coverLetter:   string;
@@ -307,6 +319,8 @@ export interface ApiApplication {
   paymentStatus: string;
   createdAt:     string;
   updatedAt:     string;
+  deliverableVideos?: ApiDeliverableVideo[];
+  deliverableUrls?:   string | null;
   creator: {
     id:         string;
     fullName:   string | null;

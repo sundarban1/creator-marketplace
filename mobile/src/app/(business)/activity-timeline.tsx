@@ -26,9 +26,10 @@ import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { campaignService, type DeliverableVideo } from '@/services/campaign';
 import { chatService } from '@/services/chat';
-import { useDeliverableVideoUploads } from '@/hooks/useDeliverableVideoUploads';
+import { useDeliverableVideoUploads, type DeliverableUploadItem } from '@/hooks/useDeliverableVideoUploads';
 import { pickDeliverableVideosFromLibrary, pickDeliverableVideoFromCamera, promptDeliverableAttachmentChoice } from '@/utilities/chatAttachments';
 import { VideoPlayerModal } from '@/components/VideoPlayerModal';
+import { NameVideoModal } from '@/components/NameVideoModal';
 import type { Campaign } from '@/types';
 import { F, RADIUS, SHADOW as TOKEN_SHADOW } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
@@ -122,6 +123,22 @@ function isValidUrl(url: string): boolean {
   try {
     const u = new URL(url);
     return u.protocol === 'http:' || u.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+const DIRECT_VIDEO_EXTENSIONS = /\.(mp4|mov|m4v|webm|m3u8)(\?.*)?$/i;
+
+// "Deliverable Links" are the intended path for videos too large for native
+// upload (>500MB) — a raw video file URL (Cloudinary, S3, etc.) can open
+// directly in the in-app player, but a YouTube/Google Drive share link is a
+// *page*, not a video file, and genuinely needs an external app/browser.
+function isDirectVideoUrl(url: string): boolean {
+  if (DIRECT_VIDEO_EXTENSIONS.test(url)) return true;
+  try {
+    const { hostname, pathname } = new URL(url);
+    return hostname.endsWith('res.cloudinary.com') && pathname.includes('/video/');
   } catch {
     return false;
   }
@@ -488,7 +505,10 @@ export default function CampaignWorkspaceScreen() {
   const [uploadNotes, setUploadNotes]   = useState('');
   const [urlError, setUrlError]         = useState('');
   const [revisionNote, setRevisionNote] = useState('');
-  const [playingVideo, setPlayingVideo] = useState<DeliverableVideo | null>(null);
+  // Widened beyond DeliverableVideo (only .url/.label are ever read below) so
+  // a plain "Deliverable Link" that turns out to be a direct video URL can
+  // open in the same player without needing a full fake DeliverableVideo.
+  const [playingVideo, setPlayingVideo] = useState<{ url: string; label: string } | null>(null);
 
   const videoUploads = useDeliverableVideoUploads(app?.id ?? '', app?.deliverableVideos.length ?? 0);
   // Once a session upload finishes it's already persisted server-side (see
@@ -496,6 +516,31 @@ export default function CampaignWorkspaceScreen() {
   // it isn't shown twice if `load()` re-fetches (e.g. on refocus) while the
   // hook's own "done" card for it is still on screen.
   const persistedVideos = (app?.deliverableVideos ?? []).filter(v => !videoUploads.items.some(i => i.result?.publicId === v.publicId));
+
+  // Naming prompt — shown once per finished upload (already saved
+  // server-side with an auto-generated "Video N" label by this point; Save
+  // just relabels it, it's never blocked on this input). promptedRef tracks
+  // which localIds have already been offered the prompt so it doesn't
+  // reappear every re-render while the finished card is still on screen.
+  const [namingItem, setNamingItem] = useState<DeliverableUploadItem | null>(null);
+  const promptedRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    const next = videoUploads.items.find((i) => i.status === 'done' && i.result && !promptedRef.current.has(i.localId));
+    if (next) {
+      promptedRef.current.add(next.localId);
+      showToast(t('activityTimeline.videoUploaded'));
+      setNamingItem(next);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [videoUploads.items]);
+
+  function handleSaveVideoName(label: string) {
+    if (namingItem?.result && app?.id) {
+      campaignService.renameDeliverableVideo(app.id, namingItem.result.publicId, label).catch(() => {});
+      videoUploads.relabel(namingItem.localId, label);
+    }
+    setNamingItem(null);
+  }
 
   const progressScrollRef = useRef<ScrollView>(null);
 
@@ -1203,8 +1248,14 @@ export default function CampaignWorkspaceScreen() {
                 <Pressable
                   key={idx}
                   style={rv.linkRow}
-                  onPress={() => Linking.openURL(url).catch(() => {})}>
-                  <Ionicons name="open-outline" size={14} color="#7C3AED" />
+                  onPress={() => {
+                    if (isDirectVideoUrl(url)) {
+                      setPlayingVideo({ url, label: t('activityTimeline.modalReviewLinksSection', { name: app?.creatorName ?? '—' }) });
+                    } else {
+                      Linking.openURL(url).catch(() => showToast(t('activityTimeline.linkOpenFailed')));
+                    }
+                  }}>
+                  <Ionicons name={isDirectVideoUrl(url) ? 'play-circle' : 'open-outline'} size={14} color="#7C3AED" />
                   <Text style={rv.linkTxt} numberOfLines={2}>{url}</Text>
                   <Ionicons name="chevron-forward" size={13} color="#A78BFA" />
                 </Pressable>
@@ -1356,6 +1407,14 @@ export default function CampaignWorkspaceScreen() {
         url={playingVideo?.url ?? null}
         title={playingVideo?.label ?? ''}
         onClose={() => setPlayingVideo(null)}
+      />
+
+      <NameVideoModal
+        key={namingItem?.localId ?? 'none'}
+        visible={!!namingItem}
+        initialLabel={namingItem?.result?.label ?? ''}
+        onSave={handleSaveVideoName}
+        onSkip={() => setNamingItem(null)}
       />
 
       </MaxWidthContainer>

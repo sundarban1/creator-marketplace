@@ -584,6 +584,7 @@ const en = {
     retry: 'Retry',
     compressingVideo: 'Preparing video…',
     processingVideo: 'Processing…',
+    uploadingVideo: 'Uploading video…',
     uploadFailed: 'Upload failed',
     cancelUpload: 'Cancel',
     sendFailedTitle: 'Failed to send',
@@ -2163,7 +2164,6 @@ const en = {
 
   createEvent: {
     headerTitle:          'Create Event',
-    headerSubSetup:       'Set up your event',
     headerSubReview:      'Review & publish',
     headerSubConfirm:     'Final check before you publish.',
 
@@ -2182,16 +2182,21 @@ const en = {
     doneBtn:                    'Done',
 
     eventTypeHeading:     'Event Type',
+    needHelpLink:         'Need Help',
+    needHelpTitle:        'Need Help',
+    needHelpSub:          'Listen to a quick walkthrough of how to create your event.',
+    needHelpEnglish:      'English',
+    needHelpNepali:       'नेपाली',
     tabPaidEvent:         'Paid Event',
     tabOpenEvent:         'Open Event',
 
-    paidEventSub:  'Pay creators to produce content for your business',
+    paidEventSub:  'Pay creators to create authentic content and help share your brand with their audience.',
     paidPerk1:     'Set your budget per creator',
     paidPerk2:     'Receive proposals — pick the best fit',
     paidPerk3:     'Creator posts content after your approval',
     paidPerk4:     'Track deliverables and results',
 
-    openEventSub:  'Invite creators to attend your event in person',
+    openEventSub:  'Invite creators to your event with free entry, gifts, food, drinks, and perks in exchange for content.',
     openPerk1:     'Non-monetary — creators get perks & exposure',
     openPerk2:     'Set venue, date & capacity',
     openPerk3:     'Creators register to attend',
@@ -2546,12 +2551,18 @@ const en = {
     videoLimitReached:           'You can upload up to 3 videos per submission.',
     videoRetryBtn:               'Retry',
     videoCancelling:             'Cancelling…',
+    nameVideoTitle:              'Name this video',
+    nameVideoSub:                'Give it a name the business will recognize.',
+    nameVideoSkip:               'Skip',
+    nameVideoSave:               'Save',
 
     // Review modal
     modalReviewTitle:               'Review Deliverables',
     modalReviewVideosSection:       'Videos Submitted by {{name}}',
     modalReviewLinksSection:        'Links Submitted by {{name}}',
     modalReviewNoLinks:             'No links submitted yet',
+    linkOpenFailed:                 "Couldn't open this link.",
+    videoUploaded:                  'Video uploaded!',
     modalReviewDeliverablesSection: 'What Needs to Be Delivered',
 
     // Revision modal
