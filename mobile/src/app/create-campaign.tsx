@@ -1491,7 +1491,7 @@ export default function CreateCampaignScreen() {
                   <Text style={[s.stepSectionHeading, { color: C.text }]}>{t('createEvent.eventTypeHeading')}</Text>
                   <Pressable onPress={() => setNeedHelpVisible(true)} hitSlop={8} style={[s.needHelpLinkRow, { borderColor: C.brinjal1 }]}>
                     <Text style={[s.needHelpLinkText, { color: C.brinjal1 }]}>{t('createEvent.needHelpLink')}</Text>
-                    <Ionicons name="headset-outline" size={14} color={C.brinjal1} />
+                    <Ionicons name="help" size={15} color={C.brinjal1} />
                   </Pressable>
                 </View>
 

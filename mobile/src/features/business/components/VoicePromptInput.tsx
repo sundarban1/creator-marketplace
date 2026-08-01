@@ -5,7 +5,7 @@ import {
 } from 'expo-audio';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useEffect, useRef, useState } from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
@@ -212,11 +212,15 @@ export function VoicePromptInput({ onRecorded, onDiscard, onError, disabled }: P
 
   return (
     <View style={styles.wrap}>
-      {/* Rendered in its own Modal layer, centered on the screen, rather
-          than inline — so it never affects this view's layout and the mic
-          below never shifts when recording starts/stops. pointerEvents
-          "none" lets press-and-hold on the mic keep working underneath it. */}
-      <Modal visible={phase === 'recording'} transparent animationType="fade" statusBarTranslucent>
+      {/* Absolutely positioned within this component (not a react-native
+          Modal) so it never affects layout, but also never opens a new
+          native window mid-gesture. On Android, a Modal mounts as its own
+          Dialog/Window — doing that while the finger is still down on the
+          mic Pressable below steals the in-flight touch, so onPressOut
+          never arrives and recording never stops (iOS composites Modal in
+          the same window, so it never hit this). pointerEvents "none" lets
+          press-and-hold on the mic keep working underneath it. */}
+      {phase === 'recording' && (
         <View style={styles.overlay} pointerEvents="none">
           <View style={[styles.meterCard, { backgroundColor: '#fff' }]}>
             <View style={styles.meter}>
@@ -229,7 +233,7 @@ export function VoicePromptInput({ onRecorded, onDiscard, onError, disabled }: P
             </View>
           </View>
         </View>
-      </Modal>
+      )}
       <Pressable
         style={[
           styles.micBtn,
@@ -251,9 +255,9 @@ export function VoicePromptInput({ onRecorded, onDiscard, onError, disabled }: P
 }
 
 const styles = StyleSheet.create({
-  wrap:      { alignItems: 'center', gap: 10, paddingVertical: 14 },
+  wrap:      { alignItems: 'center', gap: 10, paddingVertical: 14, position: 'relative' },
   micBtn:    { width: 84, height: 84, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
-  overlay:   { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  overlay:   { position: 'absolute', bottom: '100%', left: 0, right: 0, alignItems: 'center', justifyContent: 'center', marginBottom: 12, zIndex: 10 },
   meterCard: { borderRadius: RADIUS.lg, paddingHorizontal: 22, paddingVertical: 18, ...SHADOW.floating },
   meter:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 2, height: 36, width: 160 },
   meterBar:  { width: 3, borderRadius: 2 },
