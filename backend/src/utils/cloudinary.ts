@@ -61,6 +61,12 @@ export async function deleteImage(publicIdWithFolder: string): Promise<void> {
   await cloudinary.uploader.destroy(publicIdWithFolder).catch(() => {});
 }
 
+// deleteImage's bare destroy() defaults to resource_type: 'image' and silently
+// no-ops on a raw asset (PDF/DOCX) — this is the counterpart for those.
+export async function deleteRawFile(publicIdWithFolder: string): Promise<void> {
+  await cloudinary.uploader.destroy(publicIdWithFolder, { resource_type: 'raw' }).catch(() => {});
+}
+
 // Enforced server-side in completeDeliverableVideo/completeVideoAttachment using
 // Cloudinary's own reported `bytes` — the client-side check in chatAttachments.ts
 // is the same limit, but that alone is trivially bypassable, so the server is the

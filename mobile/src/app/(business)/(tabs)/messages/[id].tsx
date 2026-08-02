@@ -36,6 +36,7 @@ import { getSocket } from '@/lib/socket';
 import { incomingMessageEvents } from '@/lib/incomingMessageEvents';
 import { F, RADIUS } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
+import { BackButton } from '@/components/BackButton';
 import { CHAT_EMOJIS } from '@/utilities/chatEmojis';
 import { formatPresence } from '@/utilities/presence';
 import {
@@ -226,7 +227,9 @@ function MessageBubble({
       )}
       <View style={[s.bubbleWrap, isSent ? s.bubbleWrapSent : s.bubbleWrapReceived]}>
         {isImage ? (
-          <Pressable onPress={() => msg.attachmentUrl && !isPending && Linking.openURL(msg.attachmentUrl)}>
+          <Pressable
+            onPress={() => msg.attachmentUrl && !isPending && Linking.openURL(msg.attachmentUrl)}
+            onLongPress={isPending ? undefined : onLongPress} delayLongPress={350}>
             <View style={s.imageBubble}>
               <Image source={{ uri: msg.attachmentUrl! }} style={s.attachmentImage} resizeMode="cover" />
               {isPending && (
@@ -249,6 +252,7 @@ function MessageBubble({
         ) : isFile ? (
           <Pressable
             onPress={() => msg.attachmentUrl && !isPending && Linking.openURL(msg.attachmentUrl)}
+            onLongPress={isPending ? undefined : onLongPress} delayLongPress={350}
             style={[
               s.fileBubble,
               isSent
@@ -266,7 +270,8 @@ function MessageBubble({
             onPress={() => {
               if (isPending || msg.status === 'failed') return;
               router.push({ pathname: '/video-player', params: { url: msg.attachmentUrl!, thumbnail: msg.attachmentThumbnailUrl ?? '' } });
-            }}>
+            }}
+            onLongPress={isPending ? undefined : onLongPress} delayLongPress={350}>
             <View style={s.imageBubble}>
               {isPending || msg.status === 'failed'
                 ? <LocalVideoPreview uri={msg.localUri ?? msg.attachmentUrl!} style={s.attachmentImage} />
@@ -830,15 +835,7 @@ export default function BusinessChatRoomScreen() {
       {/* ── Header ── */}
       <View style={{ backgroundColor: C.surface }}>
         <View style={s.header}>
-          <Pressable style={[s.backBtn, { backgroundColor: C.background }]} hitSlop={4} onPress={() => {
-            if (router.canGoBack()) {
-              router.back();
-            } else {
-              router.replace('/(business)/messages' as never);
-            }
-          }}>
-            <Ionicons name="chevron-back" size={22} color={C.text} />
-          </Pressable>
+          <BackButton fallback="/(business)/messages" />
           <Pressable
             style={({ pressed }) => [s.headerTouch, pressed && !!participantId && { opacity: 0.6 }]}
             onPress={openParticipantProfile} disabled={!participantId} hitSlop={4}>
@@ -1027,7 +1024,6 @@ const s = StyleSheet.create({
   header:          { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, gap: 10 },
   headerSeparator: { height: StyleSheet.hairlineWidth, marginHorizontal: 14 },
   headerTouch:     { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
-  backBtn:         { width: 38, height: 38, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
   headerAvatar:    { width: 40, height: 40, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center', borderWidth: 2 },
   headerAvatarTxt: { color: '#fff', fontSize: 14, fontFamily: F.bold },
   headerInfo:      { flex: 1 },

@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
 import { Ionicons } from '@expo/vector-icons';
-import { Animated, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAppColors } from '@/context/ThemeContext';
-import { useKeyboardOffset } from '@/hooks/useKeyboardOffset';
+import { BottomSheet } from '@/components/BottomSheet';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
 
 type Props = {
@@ -18,48 +18,37 @@ type Props = {
 
 // Shared bottom-sheet shell for filter modals (Home / Explore Brands / Explore
 // Creators) — each screen supplies its own section content as children, only
-// the chrome (backdrop, handle, header, scroll body, apply footer) is shared.
+// the chrome (backdrop, handle, header, scroll body, apply footer) is shared,
+// via the app-wide BottomSheet primitive.
 export function FilterSheet({ visible, title, resetLabel, applyLabel, onApply, onReset, onClose, children }: Props) {
   const C = useAppColors();
-  const keyboardOffset = useKeyboardOffset();
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={s.backdrop} onPress={onClose} />
-      <Animated.View style={[s.sheet, { backgroundColor: C.surface, transform: [{ translateY: keyboardOffset }] }]}>
-        <View style={[s.handle, { backgroundColor: C.border }]} />
-
-        <View style={[s.header, { borderBottomColor: C.border }]}>
-          <Text style={[s.title, { color: C.text }]}>{title}</Text>
-          <Pressable onPress={onReset}>
-            <Text style={[s.reset, { color: C.brinjal1 }]}>{resetLabel}</Text>
-          </Pressable>
-        </View>
-
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.body}>
-          {children}
-        </ScrollView>
-
-        <View style={[s.footer, { borderTopColor: C.border }]}>
-          <Pressable
-            style={({ pressed }) => [s.applyBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }, pressed && { opacity: 0.9 }]}
-            onPress={onApply}>
-            <Text style={s.applyTxt}>{applyLabel}</Text>
-          </Pressable>
-        </View>
-      </Animated.View>
-    </Modal>
+    <BottomSheet
+      visible={visible}
+      onClose={onClose}
+      title={title}
+      maxHeightPct={0.92}
+      contentContainerStyle={s.body}
+      headerRight={
+        <Pressable onPress={onReset}>
+          <Text style={[s.reset, { color: C.brinjal1 }]}>{resetLabel}</Text>
+        </Pressable>
+      }
+      footer={
+        <Pressable
+          style={({ pressed }) => [s.applyBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }, pressed && { opacity: 0.9 }]}
+          onPress={onApply}>
+          <Text style={s.applyTxt}>{applyLabel}</Text>
+        </Pressable>
+      }>
+      {children}
+    </BottomSheet>
   );
 }
 
 const s = StyleSheet.create({
-  backdrop: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)' },
-  sheet:    { position: 'absolute', left: 0, right: 0, bottom: 0, borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl, maxHeight: '92%', ...SHADOW.floating, shadowOffset: { width: 0, height: -6 } },
-  handle:   { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginTop: 12, marginBottom: 4 },
-  header:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1 },
-  title:    { fontSize: 17, fontFamily: F.extrabold },
   reset:    { fontSize: 14, fontFamily: F.semibold },
-  body:     { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16, gap: 24 },
-  footer:   { padding: 20, borderTopWidth: 1 },
+  body:     { gap: 24 },
   applyBtn: { borderRadius: RADIUS.md, height: 54, justifyContent: 'center', alignItems: 'center', ...SHADOW.raised },
   applyTxt: { color: '#fff', fontSize: 16, fontFamily: F.bold },
 });

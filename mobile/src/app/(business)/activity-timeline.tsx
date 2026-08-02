@@ -8,27 +8,30 @@ import { isPaymentMethodId } from '@/utilities/paymentMethods';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  KeyboardAvoidingView,
   Linking,
-  Modal,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
-  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
-import { campaignService, type DeliverableVideo } from '@/services/campaign';
+import { campaignService, type DeliverableVideo, type DeliverableFile } from '@/services/campaign';
 import { chatService } from '@/services/chat';
 import { useDeliverableVideoUploads, type DeliverableUploadItem } from '@/hooks/useDeliverableVideoUploads';
-import { pickDeliverableVideosFromLibrary, pickDeliverableVideoFromCamera, promptDeliverableAttachmentChoice } from '@/utilities/chatAttachments';
+import { useDeliverableFileUploads } from '@/hooks/useDeliverableFileUploads';
+import {
+  pickDeliverableVideosFromLibrary, pickDeliverableVideoFromCamera,
+  pickDeliverableImagesFromLibrary, pickDeliverableImageFromCamera, pickDeliverableDocument,
+  promptDeliverableUploadChoice,
+} from '@/utilities/chatAttachments';
 import { VideoPlayerModal } from '@/components/VideoPlayerModal';
+import { BottomSheet } from '@/components/BottomSheet';
+import { ImagePreviewModal } from '@/components/ImagePreviewModal';
 import { NameVideoModal } from '@/components/NameVideoModal';
 import type { Campaign } from '@/types';
 import { F, RADIUS, SHADOW as TOKEN_SHADOW } from '@/utilities/constants';
@@ -47,6 +50,7 @@ type AppInfo = {
   submittedAt: string | null;
   deliverableUrls: string | null;
   deliverableVideos: DeliverableVideo[];
+  deliverableFiles: DeliverableFile[];
   creatorProfileId: string;
   creatorUserId: string;
   creatorName: string;
@@ -119,9 +123,16 @@ function parseUrls(raw?: string | null): string[] {
   return raw.split(/[\n,]/).map(s => s.trim()).filter(Boolean);
 }
 
+// Creators often paste a bare domain (e.g. "drive.google.com/...") without a
+// scheme — treat that as shorthand for https:// rather than rejecting it, both
+// here and wherever the link is actually opened/played below.
+function normalizeUrl(url: string): string {
+  return /^https?:\/\//i.test(url) ? url : `https://${url}`;
+}
+
 function isValidUrl(url: string): boolean {
   try {
-    const u = new URL(url);
+    const u = new URL(normalizeUrl(url));
     return u.protocol === 'http:' || u.protocol === 'https:';
   } catch {
     return false;
@@ -146,9 +157,9 @@ function isDirectVideoUrl(url: string): boolean {
 
 // Creator can submit a video, deliverable links, or both — only the combination
 // of "no video AND no link" is rejected. Links, if present, must all be valid URLs.
-function validateSubmission(hasVideo: boolean, raw: string, t: TFn): string {
+function validateSubmission(hasDeliverable: boolean, raw: string, t: TFn): string {
   const lines = parseUrls(raw);
-  if (!hasVideo && lines.length === 0) return t('activityTimeline.urlValidationAtLeastOne');
+  if (!hasDeliverable && lines.length === 0) return t('activityTimeline.urlValidationAtLeastOne');
   const invalid = lines.filter(u => !isValidUrl(u));
   if (invalid.length === 1) return t('activityTimeline.urlValidationInvalidOne', { url: invalid[0] });
   if (invalid.length > 1)  return t('activityTimeline.urlValidationInvalidMany', { count: invalid.length });
@@ -246,32 +257,6 @@ function buildTimeline(ws: WS, paid: boolean, campaign: Campaign | null, app: Ap
   }
 
   return events;
-}
-
-// ─── Bottom Sheet ──────────────────────────────────────────────────────────────
-
-function Sheet({ visible, onClose, title, children }: {
-  visible: boolean; onClose: () => void; title: string; children: React.ReactNode;
-}) {
-  // Capped so the ScrollView below actually has a bounded height to scroll
-  // within — without a maxHeight here, a ScrollView just grows to fit its
-  // content like any other View and never activates scrolling.
-  const { height: windowHeight } = useWindowDimensions();
-  return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={sh.overlay} onPress={onClose}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={sh.kav}>
-          <Pressable style={[sh.sheet, { maxHeight: windowHeight * 0.85 }]} onPress={e => e.stopPropagation()}>
-            <View style={sh.handle} />
-            <Text style={sh.title}>{title}</Text>
-            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-              {children}
-            </ScrollView>
-          </Pressable>
-        </KeyboardAvoidingView>
-      </Pressable>
-    </Modal>
-  );
 }
 
 // ─── Progress Tracker ─────────────────────────────────────────────────────────
@@ -509,6 +494,7 @@ export default function CampaignWorkspaceScreen() {
   // a plain "Deliverable Link" that turns out to be a direct video URL can
   // open in the same player without needing a full fake DeliverableVideo.
   const [playingVideo, setPlayingVideo] = useState<{ url: string; label: string } | null>(null);
+  const [previewImage, setPreviewImage] = useState<{ url: string; label: string } | null>(null);
 
   const videoUploads = useDeliverableVideoUploads(app?.id ?? '', app?.deliverableVideos.length ?? 0);
   // Once a session upload finishes it's already persisted server-side (see
@@ -516,6 +502,10 @@ export default function CampaignWorkspaceScreen() {
   // it isn't shown twice if `load()` re-fetches (e.g. on refocus) while the
   // hook's own "done" card for it is still on screen.
   const persistedVideos = (app?.deliverableVideos ?? []).filter(v => !videoUploads.items.some(i => i.result?.publicId === v.publicId));
+
+  const fileUploads = useDeliverableFileUploads(app?.id ?? '', app?.deliverableFiles.length ?? 0);
+  // Same de-dup reasoning as persistedVideos above.
+  const persistedFiles = (app?.deliverableFiles ?? []).filter(f => !fileUploads.items.some(i => i.result?.id === f.id));
 
   // Naming prompt — shown once per finished upload (already saved
   // server-side with an auto-generated "Video N" label by this point; Save
@@ -534,6 +524,18 @@ export default function CampaignWorkspaceScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [videoUploads.items]);
 
+  // Toast-only equivalent of the naming prompt above — images/docs don't get
+  // a rename step, just a confirmation that the upload landed.
+  const promptedFileRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    const next = fileUploads.items.find((i) => i.status === 'done' && i.result && !promptedFileRef.current.has(i.localId));
+    if (next) {
+      promptedFileRef.current.add(next.localId);
+      showToast(t(next.file.fileType === 'image' ? 'activityTimeline.imageUploaded' : 'activityTimeline.fileUploaded'));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fileUploads.items]);
+
   function handleSaveVideoName(label: string) {
     if (namingItem?.result && app?.id) {
       campaignService.renameDeliverableVideo(app.id, namingItem.result.publicId, label).catch(() => {});
@@ -549,19 +551,42 @@ export default function CampaignWorkspaceScreen() {
     setTimeout(() => setToast(''), 3200);
   }
 
-  async function handleAddDeliverableVideo() {
-    if (videoUploads.remainingSlots <= 0) {
-      showToast(t('activityTimeline.videoLimitReached'));
+  // Single entry point behind the one "+" tile in the combined deliverables
+  // grid — the chooser covers video/photo/document, and each branch checks
+  // its own type's slot limit only once the creator has picked a type (the
+  // add tile itself is already hidden once *both* limits are hit — see the
+  // sheet's `remainingSlots > 0` check below).
+  async function handleAddDeliverable() {
+    const choice = await promptDeliverableUploadChoice();
+    if (!choice) return;
+    if (choice === 'video-camera' || choice === 'video-library') {
+      if (videoUploads.remainingSlots <= 0) {
+        showToast(t('activityTimeline.videoLimitReached'));
+        return;
+      }
+      if (choice === 'video-camera') {
+        const video = await pickDeliverableVideoFromCamera();
+        if (video) videoUploads.addVideos([video]);
+      } else {
+        const videos = await pickDeliverableVideosFromLibrary(videoUploads.remainingSlots);
+        if (videos.length > 0) videoUploads.addVideos(videos);
+      }
       return;
     }
-    const choice = await promptDeliverableAttachmentChoice();
-    if (!choice) return;
-    if (choice === 'video-camera') {
-      const video = await pickDeliverableVideoFromCamera();
-      if (video) videoUploads.addVideos([video]);
+
+    if (fileUploads.remainingSlots <= 0) {
+      showToast(t('activityTimeline.fileLimitReached'));
+      return;
+    }
+    if (choice === 'photo-camera') {
+      const image = await pickDeliverableImageFromCamera();
+      if (image) fileUploads.addFiles([image]);
+    } else if (choice === 'photo-library') {
+      const images = await pickDeliverableImagesFromLibrary(fileUploads.remainingSlots);
+      if (images.length > 0) fileUploads.addFiles(images);
     } else {
-      const videos = await pickDeliverableVideosFromLibrary(videoUploads.remainingSlots);
-      if (videos.length > 0) videoUploads.addVideos(videos);
+      const doc = await pickDeliverableDocument();
+      if (doc) fileUploads.addFiles([doc]);
     }
   }
 
@@ -572,6 +597,16 @@ export default function CampaignWorkspaceScreen() {
       setApp(a => a ? { ...a, deliverableVideos: a.deliverableVideos.filter(v => v.publicId !== publicId) } : a);
     } catch (e: any) {
       showToast(e?.message ?? 'Could not remove video');
+    }
+  }
+
+  async function handleRemoveDeliverableFile(fileId: string) {
+    if (!app) return;
+    try {
+      await campaignService.removeDeliverableFile(app.id, fileId);
+      setApp(a => a ? { ...a, deliverableFiles: a.deliverableFiles.filter(f => f.id !== fileId) } : a);
+    } catch (e: any) {
+      showToast(e?.message ?? 'Could not remove file');
     }
   }
 
@@ -594,6 +629,7 @@ export default function CampaignWorkspaceScreen() {
             submittedAt:      myApp.workSubmittedAt ?? null,
             deliverableUrls:  null,
             deliverableVideos: myApp.deliverableVideos ?? [],
+            deliverableFiles: myApp.deliverableFiles ?? [],
             creatorProfileId: myApp.businessId,
             creatorUserId:    myApp.businessId,
             creatorName:      myApp.brand,
@@ -628,6 +664,7 @@ export default function CampaignWorkspaceScreen() {
             submittedAt:      accepted.submittedAt,
             deliverableUrls:  accepted.deliverableUrls,
             deliverableVideos: accepted.deliverableVideos ?? [],
+            deliverableFiles: accepted.deliverableFiles ?? [],
             creatorProfileId: accepted.creator.id,
             creatorUserId:    accepted.creator.userId,
             creatorName:      accepted.creator.fullName,
@@ -697,8 +734,9 @@ export default function CampaignWorkspaceScreen() {
 
   async function handleSubmitWork() {
     if (!app) return;
-    const hasVideo = persistedVideos.length > 0 || videoUploads.items.some(i => i.status === 'done');
-    const err = validateSubmission(hasVideo, uploadUrls, t);
+    const hasDeliverable = persistedVideos.length > 0 || videoUploads.items.some(i => i.status === 'done')
+      || persistedFiles.length > 0 || fileUploads.items.some(i => i.status === 'done');
+    const err = validateSubmission(hasDeliverable, uploadUrls, t);
     if (err) { setUrlError(err); return; }
     setUrlError('');
     setSubmitting(true);
@@ -1044,7 +1082,7 @@ export default function CampaignWorkspaceScreen() {
       ) : null}
 
       {/* ── Pay Modal ── */}
-      <Sheet visible={showPay} onClose={() => setShowPay(false)} title={t('activityTimeline.modalPayTitle')}>
+      <BottomSheet visible={showPay} onClose={() => setShowPay(false)} title={t('activityTimeline.modalPayTitle')}>
         <Text style={sh.sub}>{t('activityTimeline.modalPaySub')}</Text>
         <View style={{ gap: 8, marginVertical: 14 }}>
           {([[t('activityTimeline.feeCreator'), crFee], [t('activityTimeline.feePlatform'), pfFee], [t('activityTimeline.feeVat'), vat]] as [string, number][]).map(([l, v]) => (
@@ -1070,16 +1108,19 @@ export default function CampaignWorkspaceScreen() {
         <Pressable style={[sh.primaryBtn, { backgroundColor: '#7C3AED', opacity: submitting ? 0.75 : 1, shadowColor: '#7C3AED', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]} onPress={handlePay} disabled={submitting}>
           {submitting ? <ActivityIndicator size="small" color="#fff" /> : <Text style={sh.primaryBtnTxt}>{t('activityTimeline.modalPayConfirmBtn', { amount: total.toLocaleString() })}</Text>}
         </Pressable>
-      </Sheet>
+      </BottomSheet>
 
       {/* ── Upload Deliverables Modal ── */}
-      <Sheet visible={showUpload} onClose={() => { setShowUpload(false); setUrlError(''); }} title={t('activityTimeline.modalUploadTitle')}>
-        <Text style={sh.sub}>{t('activityTimeline.modalUploadSub')}</Text>
-
-        {/* ── Upload Videos — above the links field per design ── */}
+      <BottomSheet
+        visible={showUpload}
+        onClose={() => { setShowUpload(false); setUrlError(''); }}
+        title={t('activityTimeline.modalUploadTitle')}
+        subtitle={t('activityTimeline.modalUploadSub')}
+      >
+        {/* ── Upload Deliverables — one combined grid, one add tile ── */}
         <View style={{ marginTop: 4 }}>
-          <Text style={sh.inputLabel}>{t('activityTimeline.modalUploadVideosLabel')}</Text>
-          <Text style={up.videosSub}>{t('activityTimeline.modalUploadVideosSub')}</Text>
+          <Text style={sh.inputLabel}>{t('activityTimeline.modalUploadDeliverablesLabel')}</Text>
+          <Text style={up.videosSub}>{t('activityTimeline.modalUploadDeliverablesSub')}</Text>
           <View style={up.videoGrid}>
             {persistedVideos.map((v) => (
               <View key={v.publicId} style={up.videoCard}>
@@ -1129,10 +1170,56 @@ export default function CampaignWorkspaceScreen() {
               </View>
             ))}
 
-            {videoUploads.remainingSlots > 0 && (
-              <Pressable style={up.addVideoTile} onPress={handleAddDeliverableVideo}>
-                <Ionicons name="add" size={22} color="#7C3AED" />
-                <Text style={up.addVideoTxt}>{t('activityTimeline.modalUploadAddVideoBtn')}</Text>
+            {persistedFiles.map((f) => (
+              <View key={f.id} style={up.videoCard}>
+                <Pressable
+                  style={up.videoThumb}
+                  onPress={() => (f.fileType === 'IMAGE'
+                    ? setPreviewImage({ url: f.url, label: f.originalFileName })
+                    : Linking.openURL(f.url).catch(() => showToast(t('activityTimeline.linkOpenFailed'))))}
+                >
+                  {f.fileType === 'IMAGE'
+                    ? <Image source={{ uri: f.url }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+                    : <Ionicons name="document-text" size={28} color="#7C3AED" />}
+                </Pressable>
+                <Text style={up.videoLabel} numberOfLines={1}>{f.originalFileName}</Text>
+                <Pressable style={up.videoRemoveBtn} onPress={() => handleRemoveDeliverableFile(f.id)} hitSlop={6}>
+                  <Ionicons name="close-circle" size={18} color="#EF4444" />
+                </Pressable>
+              </View>
+            ))}
+
+            {fileUploads.items.filter(i => i.status !== 'cancelled').map((item) => (
+              <View key={item.localId} style={up.videoCard}>
+                <View style={up.videoThumb}>
+                  {item.status === 'done' ? (
+                    <Ionicons name="checkmark-circle" size={28} color="#16A34A" />
+                  ) : item.status === 'failed' ? (
+                    <Ionicons name="alert-circle" size={26} color="#EF4444" />
+                  ) : (
+                    <ActivityIndicator size="small" color="#7C3AED" />
+                  )}
+                </View>
+                <Text style={up.videoLabel} numberOfLines={1}>
+                  {item.status === 'uploading' ? 'Uploading…'
+                    : item.status === 'failed' ? (item.error ?? 'Failed')
+                    : item.file.name}
+                </Text>
+                {item.status === 'failed' ? (
+                  <Pressable style={up.videoRemoveBtn} onPress={() => fileUploads.retry(item.localId)} hitSlop={6}>
+                    <Text style={up.retryTxt}>{t('activityTimeline.videoRetryBtn')}</Text>
+                  </Pressable>
+                ) : item.status !== 'done' ? (
+                  <Pressable style={up.videoRemoveBtn} onPress={() => fileUploads.cancel(item.localId)} hitSlop={6}>
+                    <Ionicons name="close-circle" size={18} color="#9CA3AF" />
+                  </Pressable>
+                ) : null}
+              </View>
+            ))}
+
+            {(videoUploads.remainingSlots > 0 || fileUploads.remainingSlots > 0) && (
+              <Pressable style={up.addDeliverableTile} onPress={handleAddDeliverable} hitSlop={6}>
+                <Ionicons name="add" size={28} color="#7C3AED" />
               </Pressable>
             )}
           </View>
@@ -1194,10 +1281,10 @@ export default function CampaignWorkspaceScreen() {
         <Pressable style={[sh.primaryBtn, { backgroundColor: '#7C3AED', opacity: submitting ? 0.75 : 1, shadowColor: '#7C3AED', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]} onPress={handleSubmitWork} disabled={submitting}>
           {submitting ? <ActivityIndicator size="small" color="#fff" /> : <><Ionicons name="cloud-upload-outline" size={17} color="#fff" /><Text style={sh.primaryBtnTxt}>{t('activityTimeline.modalUploadSubmitBtn')}</Text></>}
         </Pressable>
-      </Sheet>
+      </BottomSheet>
 
       {/* ── Review Deliverables Modal ── */}
-      <Sheet visible={showReview} onClose={() => setShowReview(false)} title={t('activityTimeline.modalReviewTitle')}>
+      <BottomSheet visible={showReview} onClose={() => setShowReview(false)} title={t('activityTimeline.modalReviewTitle')}>
 
         {/* Submitted videos — above links, per design */}
         {(app?.deliverableVideos ?? []).length > 0 && (
@@ -1228,10 +1315,41 @@ export default function CampaignWorkspaceScreen() {
           </View>
         )}
 
+        {/* Submitted images/files */}
+        {(app?.deliverableFiles ?? []).length > 0 && (
+          <View style={[rv.section, (app?.deliverableVideos ?? []).length > 0 && { marginTop: 14 }]}>
+            <View style={rv.sectionHeader}>
+              <View
+                style={[
+                  rv.sectionIcon,
+                  { backgroundColor: '#EFF6FF', shadowColor: '#2563EB', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
+                ]}
+              >
+                <Ionicons name="images" size={14} color="#2563EB" />
+              </View>
+              <Text style={rv.sectionTitle}>{t('activityTimeline.modalReviewFilesSection', { name: app?.creatorName ?? '—' })}</Text>
+            </View>
+            <View style={{ gap: 8 }}>
+              {(app?.deliverableFiles ?? []).map((f) => (
+                <Pressable
+                  key={f.id}
+                  style={rv.linkRow}
+                  onPress={() => (f.fileType === 'IMAGE'
+                    ? setPreviewImage({ url: f.url, label: f.originalFileName })
+                    : Linking.openURL(f.url).catch(() => showToast(t('activityTimeline.linkOpenFailed'))))}>
+                  <Ionicons name={f.fileType === 'IMAGE' ? 'image' : 'document-text'} size={16} color="#2563EB" />
+                  <Text style={rv.linkTxt} numberOfLines={1}>{f.originalFileName}</Text>
+                  <Ionicons name="chevron-forward" size={13} color="#A78BFA" />
+                </Pressable>
+              ))}
+            </View>
+          </View>
+        )}
+
         {/* Submitted links — only rendered when the creator actually submitted a link;
             a video-only submission should show just the video section, and vice versa. */}
         {submittedUrls.length > 0 && (
-          <View style={[rv.section, (app?.deliverableVideos ?? []).length > 0 && { marginTop: 14 }]}>
+          <View style={[rv.section, ((app?.deliverableVideos ?? []).length > 0 || (app?.deliverableFiles ?? []).length > 0) && { marginTop: 14 }]}>
             <View style={rv.sectionHeader}>
               <View
                 style={[
@@ -1250,9 +1368,9 @@ export default function CampaignWorkspaceScreen() {
                   style={rv.linkRow}
                   onPress={() => {
                     if (isDirectVideoUrl(url)) {
-                      setPlayingVideo({ url, label: t('activityTimeline.modalReviewLinksSection', { name: app?.creatorName ?? '—' }) });
+                      setPlayingVideo({ url: normalizeUrl(url), label: t('activityTimeline.modalReviewLinksSection', { name: app?.creatorName ?? '—' }) });
                     } else {
-                      Linking.openURL(url).catch(() => showToast(t('activityTimeline.linkOpenFailed')));
+                      Linking.openURL(normalizeUrl(url)).catch(() => showToast(t('activityTimeline.linkOpenFailed')));
                     }
                   }}>
                   <Ionicons name={isDirectVideoUrl(url) ? 'play-circle' : 'open-outline'} size={14} color="#7C3AED" />
@@ -1318,11 +1436,17 @@ export default function CampaignWorkspaceScreen() {
               : <><Ionicons name="checkmark-done-outline" size={15} color="#fff" /><Text style={sh.primaryBtnTxt}>{t('activityTimeline.acApproveBtn')}</Text></>}
           </Pressable>
         </View>
-      </Sheet>
+      </BottomSheet>
 
       {/* ── Request Revision Modal ── */}
-      <Sheet visible={showRevision} onClose={() => setShowRevision(false)} title={t('activityTimeline.modalRevisionTitle')}>
+      <BottomSheet visible={showRevision} onClose={() => setShowRevision(false)} title={t('activityTimeline.modalRevisionTitle')}>
         <Text style={sh.sub}>{t('activityTimeline.modalRevisionSub')}</Text>
+        {(app?.deliverableVideos ?? []).length > 0 && (
+          <View style={[sh.infoBox, { backgroundColor: '#FFF7ED', borderColor: '#FED7AA', marginTop: 12 }]}>
+            <Ionicons name="information-circle-outline" size={15} color="#D97706" />
+            <Text style={[sh.infoTxt, { color: '#D97706' }]}>{t('activityTimeline.modalRevisionVideoNotice')}</Text>
+          </View>
+        )}
         <View style={{ marginVertical: 14 }}>
           <Text style={sh.inputLabel}>{t('activityTimeline.modalRevisionNotesLabel')}</Text>
           <TextInput
@@ -1337,10 +1461,10 @@ export default function CampaignWorkspaceScreen() {
         <Pressable style={[sh.primaryBtn, { backgroundColor: '#D97706', opacity: submitting ? 0.75 : 1, shadowColor: '#D97706', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]} onPress={handleRevision} disabled={submitting}>
           {submitting ? <ActivityIndicator size="small" color="#fff" /> : <Text style={sh.primaryBtnTxt}>{t('activityTimeline.modalRevisionSendBtn')}</Text>}
         </Pressable>
-      </Sheet>
+      </BottomSheet>
 
       {/* ── Feedback Modal — full revision-request history, newest first, either side ── */}
-      <Sheet
+      <BottomSheet
         visible={showFeedback}
         onClose={() => setShowFeedback(false)}
         title={t('activityTimeline.revisionFeedback')}
@@ -1353,10 +1477,10 @@ export default function CampaignWorkspaceScreen() {
             </View>
           ))}
         </View>
-      </Sheet>
+      </BottomSheet>
 
       {/* ── Cancel Event Modal (business) — 20% deduction warning ── */}
-      <Sheet visible={showCancel} onClose={() => setShowCancel(false)} title={t('activityTimeline.modalCancelTitle')}>
+      <BottomSheet visible={showCancel} onClose={() => setShowCancel(false)} title={t('activityTimeline.modalCancelTitle')}>
         <Text style={[sh.sub, { color: '#EF4444' }]}>{t('activityTimeline.modalCancelSub')}</Text>
 
         {paid && (
@@ -1400,13 +1524,20 @@ export default function CampaignWorkspaceScreen() {
               : <Text style={sh.primaryBtnTxt}>{t('activityTimeline.modalCancelConfirmBtn')}</Text>}
           </Pressable>
         </View>
-      </Sheet>
+      </BottomSheet>
 
       <VideoPlayerModal
         visible={!!playingVideo}
         url={playingVideo?.url ?? null}
         title={playingVideo?.label ?? ''}
         onClose={() => setPlayingVideo(null)}
+      />
+
+      <ImagePreviewModal
+        visible={!!previewImage}
+        url={previewImage?.url ?? null}
+        title={previewImage?.label ?? ''}
+        onClose={() => setPreviewImage(null)}
       />
 
       <NameVideoModal
@@ -1552,16 +1683,13 @@ const up = StyleSheet.create({
   retryTxt:       { fontSize: 11, fontFamily: F.bold, color: '#7C3AED' },
   progressTrack:  { position: 'absolute', bottom: 0, left: 0, right: 0, height: 4, backgroundColor: 'rgba(124,58,237,0.15)' },
   progressFill:   { height: 4, backgroundColor: '#7C3AED' },
-  addVideoTile:   { width: 90, height: 70, borderRadius: RADIUS.sm, borderWidth: 1.5, borderColor: '#DDD6FE', borderStyle: 'dashed', justifyContent: 'center', alignItems: 'center', gap: 2 },
-  addVideoTxt:    { fontSize: 10, fontFamily: F.semibold, color: '#7C3AED' },
+  // Single icon-only add tile shared by both videos and images/files — sits
+  // among the uploaded items in the combined grid rather than each type
+  // getting its own labeled tile.
+  addDeliverableTile: { width: 90, height: 70, borderRadius: RADIUS.sm, borderWidth: 1.5, borderColor: '#DDD6FE', borderStyle: 'dashed', justifyContent: 'center', alignItems: 'center' },
 });
 
 const sh = StyleSheet.create({
-  overlay:      { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
-  kav:          { justifyContent: 'flex-end' },
-  sheet:        { backgroundColor: '#fff', borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl, padding: 20, paddingBottom: 36 },
-  handle:       { width: 40, height: 4, borderRadius: RADIUS.full, backgroundColor: '#E5E7EB', alignSelf: 'center', marginBottom: 16 },
-  title:        { fontSize: 18, fontFamily: F.bold, color: '#111827', marginBottom: 6 },
   sub:          { fontSize: 13, fontFamily: F.regular, color: '#6B7280', marginBottom: 4 },
   sectionLabel: { fontSize: 13, fontFamily: F.bold, color: '#374151', marginBottom: 8, marginTop: 4 },
   sumRow:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },

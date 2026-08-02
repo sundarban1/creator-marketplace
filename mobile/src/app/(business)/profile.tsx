@@ -24,6 +24,7 @@ import { campaignService } from '@/services/campaign';
 import { creatorService } from '@/services/creator';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
+import { BackButton } from '@/components/BackButton';
 import { pickAndUpload } from '@/utilities/uploadImage';
 import { formatPhoneDisplay } from '@/utilities/phone';
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
@@ -108,10 +109,7 @@ export default function BusinessProfileScreen() {
 
           {/* Top bar */}
           <View style={s.topBar}>
-            <Pressable style={s.topIconBtn} hitSlop={4}
-              onPress={() => (router.canGoBack() ? router.back() : router.replace('/(business)/' as never))}>
-              <Ionicons name="chevron-back" size={22} color="#fff" />
-            </Pressable>
+            <BackButton variant="overlay" fallback="/(business)/" />
             <Pressable style={s.topIconBtn} hitSlop={4}
               onPress={handleCoverPress} disabled={coverUploading}>
               {coverUploading

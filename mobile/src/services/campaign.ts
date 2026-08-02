@@ -1,8 +1,11 @@
-import { request }          from '@/lib/api';
+import { request, API_BASE } from '@/lib/api';
 import type { ApiCampaign } from '@/lib/api';
 import type { Campaign }    from '@/types';
 import { startBackgroundChunkedUpload } from '@/services/backgroundVideoUploadManager';
 import type { VideoUploadSignature } from '@/services/cloudinaryVideoUpload';
+import type { PickedFile } from '@/utilities/chatAttachments';
+import { storage } from '@/utilities/storage';
+import { ACCESS_TOKEN_KEY } from '@/utilities/constants';
 
 export interface DeliverableVideo {
   publicId:    string;
@@ -17,6 +20,17 @@ export interface DeliverableVideo {
   // existed. See backend's VideoAssetStatus for why PROCESSING/READY both
   // currently resolve within the same request (no async job exists yet).
   status:      'PROCESSING' | 'READY' | 'FAILED';
+}
+
+export interface DeliverableFile {
+  id:               string;
+  publicId:         string;
+  url:              string;
+  fileType:         'IMAGE' | 'DOCUMENT';
+  originalFileName: string;
+  mimeType:         string;
+  sizeBytes:        number;
+  uploadedAt:       string;
 }
 
 export interface AiCampaignDraft {
@@ -445,6 +459,31 @@ export const campaignService = {
     await request('PATCH', `/api/campaigns/applications/${appId}/deliverables/video/label`, { publicId, label });
   },
 
+  // ── Deliverable files (images / PDF / DOCX) ─────────────────────────────────
+  // Plain multipart fetch, unlike video's signed direct-to-Cloudinary flow —
+  // files are <=5MB so they're proxied through the backend in one request. The
+  // optional AbortSignal is what lets useDeliverableFileUploads support
+  // cancelling an in-flight upload.
+  async uploadDeliverableFile(appId: string, file: PickedFile, signal?: AbortSignal): Promise<DeliverableFile> {
+    const token = storage.get(ACCESS_TOKEN_KEY) ?? '';
+    const form  = new FormData();
+    form.append('file', { uri: file.uri, name: file.name, type: file.mimeType } as unknown as Blob);
+
+    const res  = await fetch(`${API_BASE}/api/campaigns/applications/${appId}/deliverables/file`, {
+      method:  'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body:    form,
+      signal,
+    });
+    const json = await res.json() as { success: boolean; data: DeliverableFile; message?: string };
+    if (!res.ok) throw new Error(json.message ?? 'Upload failed');
+    return json.data;
+  },
+
+  async removeDeliverableFile(appId: string, fileId: string): Promise<void> {
+    await request('DELETE', `/api/campaigns/applications/${appId}/deliverables/file`, undefined, { fileId });
+  },
+
   // `fileUri` must already be compressed (or the original, if compression is
   // skipped/failed upstream) — this signs, hands off to
   // backgroundVideoUploadManager (chunked upload via react-native-background-upload,
@@ -512,6 +551,7 @@ export const campaignService = {
     submittedAt:     string | null;
     deliverableUrls: string | null;
     deliverableVideos: DeliverableVideo[];
+    deliverableFiles: DeliverableFile[];
     paymentStatus:   'UNPAID' | 'PAID' | 'RELEASED';
     paidAt:          string | null;
     creator: { id: string; userId: string; fullName: string; avatarUrl: string | null; location: string | null };
@@ -523,6 +563,7 @@ export const campaignService = {
       id: string; status: string; proposedRate: number; coverLetter: string; createdAt: string;
       workStatus?: string; submittedAt?: string | null; deliverableUrls?: string | null;
       deliverableVideos?: DeliverableVideo[];
+      deliverableFiles?: DeliverableFile[];
       paymentStatus?: string; paidAt?: string | null;
       creator: { id: string; userId: string; fullName: string; avatarUrl: string | null; location: string | null };
       workNote?: string | null; revisionRequestedAt?: string | null;
@@ -539,6 +580,7 @@ export const campaignService = {
       submittedAt:     a.submittedAt ?? null,
       deliverableUrls: a.deliverableUrls ?? null,
       deliverableVideos: a.deliverableVideos ?? [],
+      deliverableFiles: a.deliverableFiles ?? [],
       paymentStatus:   (a.paymentStatus ?? 'UNPAID') as 'UNPAID' | 'PAID' | 'RELEASED',
       paidAt:          a.paidAt ?? null,
       creator:         a.creator,
@@ -571,6 +613,7 @@ export const campaignService = {
       paidAt:           string | null;
       featureImageUrl:  string | undefined;
       deliverableVideos: DeliverableVideo[];
+      deliverableFiles: DeliverableFile[];
       workNote:         string | null;
       revisionRequestedAt: string | null;
       revisionNotes:    { note: string; createdAt: string }[];
@@ -586,6 +629,7 @@ export const campaignService = {
       workStatus?:     string;
       submittedAt?:    string | null;
       deliverableVideos?: DeliverableVideo[];
+      deliverableFiles?: DeliverableFile[];
       paymentStatus?:  string;
       paidAt?:         string | null;
       workNote?:       string | null;
@@ -621,6 +665,7 @@ export const campaignService = {
         paidAt:          a.paidAt ?? a.campaign.paidAt ?? null,
         featureImageUrl: a.campaign.featureImageUrl ?? undefined,
         deliverableVideos: a.deliverableVideos ?? [],
+        deliverableFiles: a.deliverableFiles ?? [],
         workNote:        a.workNote ?? null,
         revisionRequestedAt: a.revisionRequestedAt ?? null,
         revisionNotes:   a.revisionNotes ?? [],

@@ -1,10 +1,11 @@
 import { useState, type ReactNode } from 'react';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
-import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppColors } from '@/context/ThemeContext';
-import { F, RADIUS, SHADOW } from '@/utilities/constants';
+import { BottomSheet } from '@/components/BottomSheet';
+import { F, RADIUS } from '@/utilities/constants';
 import { contractService, type ContractTerms } from '@/services/contract';
 
 // Renders "**bold**" spans inline within a single line of text.
@@ -120,81 +121,60 @@ export function ContractModal({ visible, title, subtitle, filledBody, terms, con
   }
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View style={s.backdrop}>
-        <View style={[s.sheet, { backgroundColor: C.surface }]}>
-          <View style={[s.handle, { backgroundColor: C.border }]} />
-
-          <View style={[s.header, { borderBottomColor: C.border }]}>
-            {/* Fixed-width spacer matching the close button — keeps the
-                title/subtitle block truly centered in the row instead of
-                just centered within its own (right-shifted) flex column. */}
-            <View style={s.headerSideSpacer} />
-            <View style={{ flex: 1 }}>
-              <Text style={[s.title, { color: C.text, textAlign: 'center' }]} numberOfLines={2}>{title}</Text>
-              <Text style={[s.subtitle, { color: C.textSecondary, textAlign: 'center' }]}>{subtitle}</Text>
+    <BottomSheet
+      visible={visible}
+      onClose={onClose}
+      title={title}
+      subtitle={subtitle}
+      maxHeightPct={0.9}
+      dismissOnBackdropPress={!agreeing}
+      contentContainerStyle={s.body}
+      footer={
+        <View style={{ gap: 14 }}>
+          <Pressable style={s.agreeRow} onPress={() => setAgreed((v) => !v)} disabled={agreeing}>
+            <View style={[s.checkbox, { borderColor: agreed ? C.brinjal1 : C.border, backgroundColor: agreed ? C.brinjal1 : 'transparent' }]}>
+              {agreed && <Ionicons name="checkmark" size={13} color="#fff" />}
             </View>
-            <Pressable style={s.headerSideSpacer} onPress={onClose} hitSlop={8} disabled={agreeing}>
-              <Ionicons name="close" size={22} color={C.textSecondary} />
-            </Pressable>
-          </View>
+            <Text style={[s.agreeText, { color: C.text }]}>I have read and agree to the terms above</Text>
+          </Pressable>
 
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.body}>
-            <View style={[s.termsCard, { backgroundColor: C.background, borderColor: C.border }]}>
-              {rows.map(([label, value], i) => (
-                <View key={label} style={[s.termRow, i < rows.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}>
-                  <Text style={[s.termLabel, { color: C.textSecondary }]}>{label}</Text>
-                  <Text style={[s.termValue, { color: C.text }]} numberOfLines={3}>{value}</Text>
-                </View>
-              ))}
-            </View>
-
-            <MarkdownBody text={filledBody} colors={C} />
-
-            {contractId && (
-              <Pressable
-                style={[s.pdfBtn, { borderColor: C.brinjal1, opacity: downloading ? 0.6 : 1 }]}
-                onPress={handleDownload}
-                disabled={downloading}>
-                {downloading
-                  ? <ActivityIndicator size="small" color={C.brinjal1} />
-                  : <Ionicons name="download-outline" size={16} color={C.brinjal1} />}
-                <Text style={[s.pdfBtnText, { color: C.brinjal1 }]}>{downloading ? 'Preparing PDF…' : 'Download Contract'}</Text>
-              </Pressable>
-            )}
-          </ScrollView>
-
-          <View style={[s.footer, { borderTopColor: C.border, backgroundColor: C.surface }]}>
-            <Pressable style={s.agreeRow} onPress={() => setAgreed((v) => !v)} disabled={agreeing}>
-              <View style={[s.checkbox, { borderColor: agreed ? C.brinjal1 : C.border, backgroundColor: agreed ? C.brinjal1 : 'transparent' }]}>
-                {agreed && <Ionicons name="checkmark" size={13} color="#fff" />}
-              </View>
-              <Text style={[s.agreeText, { color: C.text }]}>I have read and agree to the terms above</Text>
-            </Pressable>
-
-            <Pressable
-              style={[s.agreeBtn, { backgroundColor: (!agreed || agreeing) ? C.border : C.brinjal1 }]}
-              onPress={onAgree}
-              disabled={!agreed || agreeing}>
-              {agreeing
-                ? <ActivityIndicator size="small" color="#fff" />
-                : <Text style={s.agreeBtnText}>{agreeLabel}</Text>}
-            </Pressable>
-          </View>
+          <Pressable
+            style={[s.agreeBtn, { backgroundColor: (!agreed || agreeing) ? C.border : C.brinjal1 }]}
+            onPress={onAgree}
+            disabled={!agreed || agreeing}>
+            {agreeing
+              ? <ActivityIndicator size="small" color="#fff" />
+              : <Text style={s.agreeBtnText}>{agreeLabel}</Text>}
+          </Pressable>
         </View>
-      </View>
-    </Modal>
+      }>
+        <View style={[s.termsCard, { backgroundColor: C.background, borderColor: C.border }]}>
+          {rows.map(([label, value], i) => (
+            <View key={label} style={[s.termRow, i < rows.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}>
+              <Text style={[s.termLabel, { color: C.textSecondary }]}>{label}</Text>
+              <Text style={[s.termValue, { color: C.text }]} numberOfLines={3}>{value}</Text>
+            </View>
+          ))}
+        </View>
+
+        <MarkdownBody text={filledBody} colors={C} />
+
+        {contractId && (
+          <Pressable
+            style={[s.pdfBtn, { borderColor: C.brinjal1, opacity: downloading ? 0.6 : 1 }]}
+            onPress={handleDownload}
+            disabled={downloading}>
+            {downloading
+              ? <ActivityIndicator size="small" color={C.brinjal1} />
+              : <Ionicons name="download-outline" size={16} color={C.brinjal1} />}
+            <Text style={[s.pdfBtnText, { color: C.brinjal1 }]}>{downloading ? 'Preparing PDF…' : 'Download Contract'}</Text>
+          </Pressable>
+        )}
+    </BottomSheet>
   );
 }
 
 const s = StyleSheet.create({
-  backdrop:  { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
-  sheet:     { borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl, maxHeight: '90%', ...SHADOW.floating, shadowOffset: { width: 0, height: -6 } },
-  handle:    { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginTop: 12, marginBottom: 4 },
-  header:    { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1 },
-  headerSideSpacer: { width: 22, alignItems: 'center' },
-  title:     { fontSize: 17, fontFamily: F.extrabold },
-  subtitle:  { fontSize: 12.5, fontFamily: F.regular, marginTop: 2 },
   body:      { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 24, gap: 16 },
   termsCard: { borderWidth: 1, borderRadius: RADIUS.md, overflow: 'hidden' },
   termRow:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, paddingHorizontal: 14, paddingVertical: 12 },
@@ -202,7 +182,6 @@ const s = StyleSheet.create({
   termValue: { fontSize: 13, fontFamily: F.semibold, flex: 1, textAlign: 'right' },
   pdfBtn:    { flexDirection: 'row', alignSelf: 'center', alignItems: 'center', gap: 8, borderWidth: 1.5, borderRadius: RADIUS.md, paddingHorizontal: 14, paddingVertical: 9 },
   pdfBtnText:{ fontSize: 13, fontFamily: F.semibold },
-  footer:    { padding: 20, borderTopWidth: 1, gap: 14 },
   agreeRow:  { flexDirection: 'row', alignItems: 'center', gap: 10 },
   checkbox:  { width: 20, height: 20, borderRadius: 5, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center' },
   agreeText: { fontSize: 13, fontFamily: F.medium, flex: 1 },

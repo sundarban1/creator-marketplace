@@ -306,6 +306,17 @@ export interface ApiDeliverableVideo {
   status:       'PROCESSING' | 'READY' | 'FAILED';
 }
 
+export interface ApiDeliverableFile {
+  id:               string;
+  publicId:         string;
+  url:              string;
+  fileType:         'IMAGE' | 'DOCUMENT';
+  originalFileName: string;
+  mimeType:         string;
+  sizeBytes:        number;
+  uploadedAt:       string;
+}
+
 export interface ApiApplication {
   id:            string;
   coverLetter:   string;
@@ -320,6 +331,7 @@ export interface ApiApplication {
   createdAt:     string;
   updatedAt:     string;
   deliverableVideos?: ApiDeliverableVideo[];
+  deliverableFiles?:  ApiDeliverableFile[];
   deliverableUrls?:   string | null;
   creator: {
     id:         string;

@@ -1,11 +1,12 @@
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { usePlatforms, getPlatformMeta } from '@/hooks/usePlatforms';
 import { creatorService, type ApiCreatorListItem } from '@/services/creator';
+import { BottomSheet } from '@/components/BottomSheet';
 import { F, RADIUS } from '@/utilities/constants';
 
 type Props = {
@@ -74,21 +75,28 @@ export function RecommendedCreatorsModal({ visible, campaignId, category, lat, l
   }
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onDone}>
-      <Pressable style={s.backdrop} onPress={onDone} />
-      <View style={[s.sheet, { backgroundColor: C.surface }]}>
-        <View style={[s.handle, { backgroundColor: C.border }]} />
-
-        <View style={[s.header, { borderBottomColor: C.border }]}>
-          <View style={{ flex: 1 }}>
-            <Text style={[s.title, { color: C.text }]}>{t('createEvent.recommendedTitle')}</Text>
-            <Text style={[s.subtitle, { color: C.textSecondary }]}>{t('createEvent.recommendedSub')}</Text>
-          </View>
-          <Pressable style={[s.closeBtn, { backgroundColor: C.background }]} onPress={onDone} hitSlop={8}>
-            <Ionicons name="close" size={18} color={C.textSecondary} />
+    <BottomSheet
+      visible={visible}
+      onClose={onDone}
+      title={t('createEvent.recommendedTitle')}
+      subtitle={t('createEvent.recommendedSub')}
+      maxHeightPct={0.8}
+      scrollable={false}
+      footer={!sent && !loading && creators.length > 0 ? (
+        <View style={s.footerRow}>
+          <Pressable style={s.skipLink} onPress={onDone} disabled={sending}>
+            <Text style={[s.skipLinkText, { color: C.textSecondary }]}>{t('createEvent.skipForNow')}</Text>
+          </Pressable>
+          <Pressable
+            style={[s.inviteBtn, { backgroundColor: selected.size > 0 ? C.brinjal1 : C.border }]}
+            onPress={handleInvite}
+            disabled={selected.size === 0 || sending}>
+            <Text style={s.inviteBtnText}>
+              {sending ? t('createEvent.sending') : t('createEvent.inviteSelected', { n: selected.size })}
+            </Text>
           </Pressable>
         </View>
-
+      ) : undefined}>
         {sent ? (
           <View style={s.center}>
             <FontAwesome5 name="paper-plane" size={36} color="#3B82F6" solid />
@@ -177,41 +185,13 @@ export function RecommendedCreatorsModal({ visible, campaignId, category, lat, l
                 );
               })}
             </ScrollView>
-
-            <View style={[s.footer, { borderTopColor: C.border }]}>
-              <Pressable style={s.skipLink} onPress={onDone} disabled={sending}>
-                <Text style={[s.skipLinkText, { color: C.textSecondary }]}>{t('createEvent.skipForNow')}</Text>
-              </Pressable>
-              <Pressable
-                style={[s.inviteBtn, { backgroundColor: selected.size > 0 ? C.brinjal1 : C.border }]}
-                onPress={handleInvite}
-                disabled={selected.size === 0 || sending}>
-                <Text style={s.inviteBtnText}>
-                  {sending ? t('createEvent.sending') : t('createEvent.inviteSelected', { n: selected.size })}
-                </Text>
-              </Pressable>
-            </View>
           </>
         )}
-      </View>
-    </Modal>
+    </BottomSheet>
   );
 }
 
 const s = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' },
-  sheet: {
-    position: 'absolute', left: 0, right: 0, bottom: 0,
-    borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '80%',
-    shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 20,
-    shadowOffset: { width: 0, height: -4 }, elevation: 20,
-  },
-  handle: { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginTop: 12, marginBottom: 4 },
-  header: { flexDirection: 'row', alignItems: 'flex-start', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1 },
-  title: { fontSize: 17, fontFamily: F.bold },
-  subtitle: { fontSize: 13, marginTop: 2, fontFamily: F.regular },
-  closeBtn: { width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
-
   center: { alignItems: 'center', justifyContent: 'center', paddingVertical: 48, gap: 10 },
   sentText: { fontSize: 16, fontFamily: F.bold },
   emptyText: { fontSize: 13, textAlign: 'center', paddingHorizontal: 24, fontFamily: F.regular },
@@ -240,7 +220,7 @@ const s = StyleSheet.create({
   socialBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: RADIUS.full, paddingHorizontal: 9, paddingVertical: 5 },
   socialFollowers: { fontSize: 12, fontFamily: F.bold },
 
-  footer: { flexDirection: 'row', alignItems: 'center', gap: 12, borderTopWidth: 1, paddingHorizontal: 16, paddingVertical: 14 },
+  footerRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   skipLink: { paddingVertical: 10, paddingHorizontal: 4 },
   skipLinkText: { fontSize: 13, fontFamily: F.semibold },
   inviteBtn: { flex: 1, borderRadius: 12, paddingVertical: 12, alignItems: 'center' },

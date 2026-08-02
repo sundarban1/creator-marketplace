@@ -99,7 +99,7 @@ export function CampaignCard({ campaign, variant }: { campaign: Campaign; varian
 
         {/* ── Body ── */}
         <View style={styles.body}>
-          <Text style={[styles.title, { color: C.text }]} numberOfLines={2}>{campaign.title}</Text>
+          <Text style={[styles.title, { color: C.text }]} numberOfLines={1} ellipsizeMode="tail">{campaign.title}</Text>
           <Text style={[styles.brandLine, { color: C.textSecondary }]} numberOfLines={1}>
             {campaign.brand} · {timeAgo(campaign.createdAt, t)}
           </Text>

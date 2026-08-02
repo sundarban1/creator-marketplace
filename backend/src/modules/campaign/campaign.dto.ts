@@ -23,6 +23,22 @@ export const deliverableVideoSchema = z.object({
 });
 export type DeliverableVideo = z.infer<typeof deliverableVideoSchema>;
 
+// Server-verified image/PDF/DOCX deliverables — proxied through this server
+// (multer, <=5MB) rather than the direct-to-Cloudinary signed flow videos use,
+// so there's no async status field here (the upload either succeeds inline or
+// it doesn't).
+export const deliverableFileSchema = z.object({
+  id:               z.string(),
+  publicId:         z.string(),
+  url:              z.string(),
+  fileType:         z.enum(['IMAGE', 'DOCUMENT']),
+  originalFileName: z.string(),
+  mimeType:         z.string(),
+  sizeBytes:        z.number(),
+  uploadedAt:       z.string(),
+});
+export type DeliverableFile = z.infer<typeof deliverableFileSchema>;
+
 export interface CampaignDto {
   id: string;
   title: string;
@@ -99,6 +115,7 @@ export interface ApplicationDto {
   submittedAt: string | null;
   deliverableUrls: string | null;
   deliverableVideos: DeliverableVideo[];
+  deliverableFiles: DeliverableFile[];
   paymentStatus: string;
   paidAt: string | null;
   createdAt: string;
@@ -249,6 +266,7 @@ type RawApplication = {
   submittedAt: Date | null;
   deliverableUrls: string | null;
   deliverableVideos?: Prisma.JsonValue;
+  deliverableFiles?: Prisma.JsonValue;
   paymentStatus: string;
   paidAt: Date | null;
   createdAt: Date;
@@ -300,6 +318,7 @@ export function toApplicationDto(a: RawApplication): ApplicationDto {
     submittedAt:     a.submittedAt ? a.submittedAt.toISOString() : null,
     deliverableUrls: a.deliverableUrls,
     deliverableVideos: z.array(deliverableVideoSchema).catch([]).parse(a.deliverableVideos ?? []),
+    deliverableFiles: z.array(deliverableFileSchema).catch([]).parse(a.deliverableFiles ?? []),
     paymentStatus:   a.paymentStatus ?? 'UNPAID',
     paidAt:          a.paidAt ? (a.paidAt instanceof Date ? a.paidAt.toISOString() : a.paidAt) : null,
     createdAt:       a.createdAt.toISOString(),

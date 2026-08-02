@@ -233,9 +233,23 @@ function ApplicationRow({ app, commissionRate, onReleased, showToast }: {
               ))}
             </div>
           )}
-          {((app.deliverableVideos?.length ?? 0) > 0 || app.deliverableUrls) && (
+          {((app.deliverableVideos?.length ?? 0) > 0 || (app.deliverableFiles?.length ?? 0) > 0 || app.deliverableUrls) && (
             <div>
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Submitted Deliverables</p>
+              {(app.deliverableFiles?.filter((f) => f.fileType === 'IMAGE').length ?? 0) > 0 && (
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {app.deliverableFiles!.filter((f) => f.fileType === 'IMAGE').map((f) => (
+                    <button
+                      key={f.id}
+                      onClick={(e) => { e.stopPropagation(); window.open(f.url, '_blank', 'noopener,noreferrer'); }}
+                      className="block w-14 h-14 rounded-md overflow-hidden border border-gray-200 hover:opacity-80"
+                      title={f.originalFileName}
+                    >
+                      <img src={f.url} alt={f.originalFileName} className="w-full h-full object-cover" />
+                    </button>
+                  ))}
+                </div>
+              )}
               <div className="flex flex-col gap-1">
                 {app.deliverableVideos?.map((v) => (
                   <button
@@ -245,6 +259,17 @@ function ApplicationRow({ app, commissionRate, onReleased, showToast }: {
                   >
                     <Video size={13} /> {v.label} ({Math.round(v.durationSec)}s)
                   </button>
+                ))}
+                {app.deliverableFiles?.filter((f) => f.fileType === 'DOCUMENT').map((f) => (
+                  <a
+                    key={f.id}
+                    href={f.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-indigo-600 hover:underline font-medium text-sm flex items-center gap-1.5 text-left truncate"
+                  >
+                    <FileText size={13} className="flex-shrink-0" /> {f.originalFileName}
+                  </a>
                 ))}
                 {parseDeliverableUrls(app.deliverableUrls).map((url) => (
                   isDirectVideoUrl(url) ? (

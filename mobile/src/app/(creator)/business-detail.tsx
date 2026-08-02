@@ -5,10 +5,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Animated,
   Image,
   Linking,
-  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -19,7 +17,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { EmptyState } from '@/components/EmptyState';
 import { VerifiedBadge } from '@/components/VerifiedBadge';
-import { useKeyboardOffset } from '@/hooks/useKeyboardOffset';
 import { useAppColors } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
@@ -30,6 +27,8 @@ import { useFavoriteBusinesses } from '@/hooks/useFavoriteBusinesses';
 import { useToast } from '@/components/Toast';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
+import { BackButton } from '@/components/BackButton';
+import { BottomSheet } from '@/components/BottomSheet';
 
 const PLATFORM_ICON: Record<string, { iconName: string; color: string }> = {
   Instagram: { iconName: 'instagram', color: '#E1306C' },
@@ -161,7 +160,6 @@ export default function BusinessDetailScreen() {
   const [convId, setConvId]         = useState<string | null>(null);
   const [convStatus, setConvStatus] = useState<'PENDING' | 'ACCEPTED' | 'DECLINED' | null>(null);
   const [showMsgModal, setShowMsgModal] = useState(false);
-  const keyboardOffset = useKeyboardOffset();
   const [requestMsg, setRequestMsg]     = useState('');
   const [sendingMsg, setSendingMsg]     = useState(false);
 
@@ -250,10 +248,7 @@ export default function BusinessDetailScreen() {
             <View style={[styles.bubble, styles.bubble3]} />
           </LinearGradient>
           <View style={styles.topBar}>
-            <Pressable style={styles.topIconBtn} hitSlop={4}
-              onPress={() => (router.canGoBack() ? router.back() : router.replace('/(creator)/explore-businesses' as never))}>
-              <Ionicons name="chevron-back" size={22} color="#fff" />
-            </Pressable>
+            <BackButton variant="overlay" fallback="/(creator)/explore-businesses" />
             <View style={styles.topTitleRow} />
             <View style={styles.topIconSpacer} />
           </View>
@@ -302,10 +297,7 @@ export default function BusinessDetailScreen() {
             <View style={[styles.bubble, styles.bubble3]} />
           </LinearGradient>
           <View style={styles.topBar}>
-            <Pressable style={styles.topIconBtn} hitSlop={4}
-              onPress={() => (router.canGoBack() ? router.back() : router.replace('/(creator)/explore-businesses' as never))}>
-              <Ionicons name="chevron-back" size={22} color="#fff" />
-            </Pressable>
+            <BackButton variant="overlay" fallback="/(creator)/explore-businesses" />
             <View style={styles.topTitleRow} />
             <Pressable style={styles.topIconBtn} hitSlop={10} onPress={handleToggleFavorite}>
               <Ionicons
@@ -544,45 +536,36 @@ export default function BusinessDetailScreen() {
       </MaxWidthContainer>
 
       {/* Request message modal */}
-      <Modal visible={showMsgModal} transparent animationType="slide" onRequestClose={() => setShowMsgModal(false)}>
-        <View style={styles.modalOverlay}>
-          <Pressable style={styles.modalScrim} onPress={() => setShowMsgModal(false)} />
-          <Animated.View style={[styles.modalSheet, { backgroundColor: C.surface, transform: [{ translateY: keyboardOffset }] }]}>
-            <View style={[styles.modalHandle, { backgroundColor: C.border }]} />
-            <View style={styles.modalTitleRow}>
-              <Text style={[styles.modalTitle, { color: C.text }]}>{t('businessDetail.messageRequestTitle')}</Text>
-              <Pressable style={[styles.modalCloseBtn, { backgroundColor: C.background }]} onPress={() => setShowMsgModal(false)} hitSlop={8}>
-                <Ionicons name="close" size={18} color={C.textSecondary} />
-              </Pressable>
-            </View>
-            <Text style={[styles.modalSubtitle, { color: C.textSecondary }]}>
-              {t('businessDetail.messageRequestSubtitle', { name: business.businessName })}
-            </Text>
-            <TextInput
-              style={[styles.modalInput, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
-              value={requestMsg}
-              onChangeText={setRequestMsg}
-              placeholder={t('businessDetail.messageRequestPlaceholder')}
-              placeholderTextColor={C.textSecondary}
-              multiline
-              maxLength={500}
-            />
-            <Text style={[styles.modalCounter, { color: C.textSecondary }]}>{requestMsg.length}/500</Text>
-            <Pressable
-              style={[
-                styles.modalSendBtn,
-                {
-                  backgroundColor: sendingMsg ? C.border : C.brinjal1, shadowColor: C.brinjal1,
-                  shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6,
-                },
-              ]}
-              onPress={handleSendMessageRequest}
-              disabled={sendingMsg}>
-              <Text style={styles.modalSendText}>{sendingMsg ? t('businessDetail.sendingLabel') : t('businessDetail.sendRequestBtn')}</Text>
-            </Pressable>
-          </Animated.View>
-        </View>
-      </Modal>
+      <BottomSheet
+        visible={showMsgModal}
+        onClose={() => setShowMsgModal(false)}
+        title={t('businessDetail.messageRequestTitle')}
+        subtitle={t('businessDetail.messageRequestSubtitle', { name: business.businessName })}
+        footer={
+          <Pressable
+            style={[
+              styles.modalSendBtn,
+              {
+                backgroundColor: sendingMsg ? C.border : C.brinjal1, shadowColor: C.brinjal1,
+                shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6,
+              },
+            ]}
+            onPress={handleSendMessageRequest}
+            disabled={sendingMsg}>
+            <Text style={styles.modalSendText}>{sendingMsg ? t('businessDetail.sendingLabel') : t('businessDetail.sendRequestBtn')}</Text>
+          </Pressable>
+        }>
+        <TextInput
+          style={[styles.modalInput, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
+          value={requestMsg}
+          onChangeText={setRequestMsg}
+          placeholder={t('businessDetail.messageRequestPlaceholder')}
+          placeholderTextColor={C.textSecondary}
+          multiline
+          maxLength={500}
+        />
+        <Text style={[styles.modalCounter, { color: C.textSecondary }]}>{requestMsg.length}/500</Text>
+      </BottomSheet>
     </SafeAreaView>
   );
 }
@@ -675,14 +658,6 @@ const styles = StyleSheet.create({
   msgBtnText:            { color: '#fff', fontSize: 16, fontFamily: F.bold },
 
   // Request modal
-  modalOverlay:          { flex: 1, justifyContent: 'flex-end' },
-  modalScrim:            { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.45)' },
-  modalSheet:            { borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl, padding: 20, paddingBottom: 40, gap: 14 },
-  modalHandle:           { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginBottom: 4 },
-  modalTitleRow:         { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  modalTitle:            { fontSize: 18, fontFamily: F.bold, flex: 1 },
-  modalCloseBtn:         { width: 32, height: 32, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
-  modalSubtitle:         { fontSize: 13, lineHeight: 20, fontFamily: F.regular },
   modalInput:            { borderRadius: RADIUS.sm, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, minHeight: 100, textAlignVertical: 'top', fontFamily: F.regular },
   modalCounter:          { fontSize: 11, textAlign: 'right', marginTop: -6, fontFamily: F.regular },
   modalSendBtn:          { borderRadius: RADIUS.full, height: 52, justifyContent: 'center', alignItems: 'center' },

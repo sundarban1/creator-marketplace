@@ -10,6 +10,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { authService } from '@/services/auth';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
+import { BackButton } from '@/components/BackButton';
 
 const OTP_LENGTH = 6;
 const RESEND_SECONDS = 30;
@@ -191,12 +192,9 @@ export default function VerifyScreen() {
         <View style={styles.hero}>
           <View style={styles.heroBubble1} />
           <View style={styles.heroBubble2} />
-          <Pressable
-            style={styles.back}
-            hitSlop={8}
-            onPress={() => (router.canGoBack() ? router.back() : router.replace('/login' as never))}>
-            <Text style={styles.backArrow}>‹</Text>
-          </Pressable>
+          <View style={styles.back}>
+            <BackButton variant="overlay" fallback="/login" />
+          </View>
           <View style={styles.heroContent}>
             <View style={styles.emailIconWrap}>
               <FontAwesome5 name={channel === 'email' ? 'envelope' : 'mobile-alt'} size={22} color="#fff" solid />
@@ -303,8 +301,7 @@ const styles = StyleSheet.create({
   hero: { paddingBottom: 36, overflow: 'hidden' },
   heroBubble1: { position: 'absolute', width: 200, height: 200, borderRadius: 100, backgroundColor: 'rgba(255,255,255,0.07)', top: -60, right: -50 },
   heroBubble2: { position: 'absolute', width: 120, height: 120, borderRadius: 60, backgroundColor: 'rgba(255,255,255,0.06)', bottom: 0, left: -30 },
-  back: { margin: 16, width: 38, height: 38, borderRadius: RADIUS.full, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center' },
-  backArrow: { fontSize: 26, color: '#fff', lineHeight: 30 },
+  back: { margin: 16, alignSelf: 'flex-start' },
   heroContent: { alignItems: 'center', paddingHorizontal: 24, gap: 10 },
   emailIconWrap: { width: 68, height: 68, borderRadius: RADIUS.full, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
   heroTitle: { fontSize: 20, color: '#fff', textAlign: 'center', fontFamily: F.bold },

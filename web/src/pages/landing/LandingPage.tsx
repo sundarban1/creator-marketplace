@@ -19,7 +19,6 @@ import { Collaboration } from './sections/Collaboration';
 import { Partners } from './sections/Partners';
 import { Security } from './sections/Security';
 import { Stories } from './sections/Stories';
-import { FinalCTA } from './sections/FinalCTA';
 
 function LandingPageInner() {
   const stats = useLandingStats();
@@ -53,7 +52,6 @@ function LandingPageInner() {
       <Categories stats={stats} />
       <Security />
       <Stories stories={successStories} />
-      <FinalCTA />
       <LandingFooter />
       <ChatWidget />
     </div>

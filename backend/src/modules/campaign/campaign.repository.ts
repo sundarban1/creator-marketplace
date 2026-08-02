@@ -1,6 +1,6 @@
 import { CampaignStatus, CampaignType, ApplicationStatus, WorkStatus, PaymentStatus, Prisma } from '@prisma/client';
 import prisma from '../../prisma';
-import type { DeliverableVideo } from './campaign.dto';
+import type { DeliverableVideo, DeliverableFile } from './campaign.dto';
 
 export class CampaignRepository {
   async create(data: {
@@ -474,6 +474,14 @@ export class CampaignRepository {
     });
   }
 
+  // Used by the admin-configurable "proposal submission per day" rate limit —
+  // see CampaignService.apply. Every submission counts, regardless of later status.
+  async countApplicationsCreatedSince(creatorId: string, since: Date): Promise<number> {
+    return prisma.application.count({
+      where: { creatorId, createdAt: { gte: since } },
+    });
+  }
+
   async findApplicationsByCampaign(campaignId: string, page: number, limit: number) {
     const skip = (page - 1) * limit;
     const [applications, total] = await Promise.all([
@@ -546,6 +554,7 @@ export class CampaignRepository {
           submittedAt: true,
           deliverableUrls: true,
           deliverableVideos: true,
+          deliverableFiles: true,
           paymentStatus: true,
           paidAt: true,
           createdAt: true,
@@ -616,6 +625,7 @@ export class CampaignRepository {
           submittedAt: true,
           deliverableUrls: true,
           deliverableVideos: true,
+          deliverableFiles: true,
           paymentStatus: true,
           paidAt: true,
           createdAt: true,
@@ -742,6 +752,39 @@ export class CampaignRepository {
   async getDeliverableVideos(appId: string): Promise<DeliverableVideo[]> {
     const app = await prisma.application.findUnique({ where: { id: appId }, select: { deliverableVideos: true } });
     return (app?.deliverableVideos as DeliverableVideo[] | null) ?? [];
+  }
+
+  // Mirrors the deliverableVideos append/remove/clear/get quartet above, capped
+  // at 10 instead of 3 — images/docs are much smaller, so a looser cap is fine.
+  async appendDeliverableFile(appId: string, entry: DeliverableFile): Promise<boolean> {
+    const rows = await prisma.$queryRaw<{ id: string }[]>`
+      UPDATE applications
+      SET "deliverableFiles" = "deliverableFiles" || ${JSON.stringify([entry])}::jsonb
+      WHERE id = ${appId} AND jsonb_array_length("deliverableFiles") < 10
+      RETURNING id
+    `;
+    return rows.length > 0;
+  }
+
+  async removeDeliverableFile(appId: string, fileId: string) {
+    const app = await prisma.application.findUnique({ where: { id: appId }, select: { deliverableFiles: true } });
+    const files = ((app?.deliverableFiles as DeliverableFile[] | null) ?? []).filter((f) => f.id !== fileId);
+    return prisma.application.update({
+      where: { id: appId },
+      data: { deliverableFiles: files },
+    });
+  }
+
+  async clearDeliverableFiles(appId: string) {
+    return prisma.application.update({
+      where: { id: appId },
+      data: { deliverableFiles: [] },
+    });
+  }
+
+  async getDeliverableFiles(appId: string): Promise<DeliverableFile[]> {
+    const app = await prisma.application.findUnique({ where: { id: appId }, select: { deliverableFiles: true } });
+    return (app?.deliverableFiles as DeliverableFile[] | null) ?? [];
   }
 
   async payForApplication(appId: string) {

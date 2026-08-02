@@ -1,10 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import MapView, { Circle, PROVIDER_GOOGLE, type Region } from 'react-native-maps';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { RadiusSlider } from '@/components/RadiusSlider';
+import { BottomSheet } from '@/components/BottomSheet';
 import { F } from '@/utilities/constants';
 import { getCurrentLocation, type LatLng } from '@/utilities/geolocation';
 
@@ -142,18 +143,19 @@ export function NearbyLocationSheet({ visible, onClose, source, radiusKm, homeLa
   }
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose} />
-      <View style={[styles.sheet, { backgroundColor: C.surface }]}>
-        <View style={[styles.handle, { backgroundColor: C.border }]} />
-
-        <View style={[styles.header, { borderBottomColor: C.border }]}>
-          <Text style={[styles.title, { color: C.text }]}>{t('nearbyLocationSheet.title')}</Text>
-          <Pressable onPress={onClose} hitSlop={10}>
-            <Ionicons name="close" size={22} color={C.textSecondary} />
-          </Pressable>
-        </View>
-
+    <BottomSheet
+      visible={visible}
+      onClose={onClose}
+      title={t('nearbyLocationSheet.title')}
+      scrollable={false}
+      footer={
+        <Pressable
+          style={({ pressed }) => [styles.applyBtn, { backgroundColor: C.brinjal1 }, (pressed || locatingCurrent) && { opacity: 0.88 }]}
+          disabled={locatingCurrent}
+          onPress={handleApply}>
+          <Text style={styles.applyBtnText}>{t('nearbyLocationSheet.applyBtn')}</Text>
+        </Pressable>
+      }>
         <View style={styles.body}>
           <View style={styles.sourceToggleRow}>
             <Pressable
@@ -223,27 +225,11 @@ export function NearbyLocationSheet({ visible, onClose, source, radiusKm, homeLa
 
           <RadiusSlider value={draftRadius} onChange={setDraftRadius} min={1} max={100} />
         </View>
-
-        <View style={[styles.footer, { borderTopColor: C.border }]}>
-          <Pressable
-            style={({ pressed }) => [styles.applyBtn, { backgroundColor: C.brinjal1 }, (pressed || locatingCurrent) && { opacity: 0.88 }]}
-            disabled={locatingCurrent}
-            onPress={handleApply}>
-            <Text style={styles.applyBtnText}>{t('nearbyLocationSheet.applyBtn')}</Text>
-          </Pressable>
-        </View>
-      </View>
-    </Modal>
+    </BottomSheet>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)' },
-  sheet:    { position: 'absolute', left: 0, right: 0, bottom: 0, borderTopLeftRadius: 24, borderTopRightRadius: 24, shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 20, shadowOffset: { width: 0, height: -4 }, elevation: 20 },
-  handle:   { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginTop: 12, marginBottom: 4 },
-  header:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1 },
-  title:    { fontSize: 17, fontFamily: F.bold },
-
   body: { padding: 20, gap: 4 },
 
   sourceToggleRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
@@ -256,10 +242,13 @@ const styles = StyleSheet.create({
   mapWrap: { height: 220, borderRadius: 16, borderWidth: 1.5, overflow: 'hidden', marginBottom: 20 },
   map: { ...StyleSheet.absoluteFill },
   pinWrap: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center', marginBottom: 36 },
-  addressBanner: { position: 'absolute', top: 10, left: 10, right: 10, flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 10, paddingVertical: 6, paddingHorizontal: 10, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
-  addressBannerText: { flex: 1, fontSize: 11, fontFamily: F.medium },
+  // No `right` — without it, an absolutely-positioned view shrinks to fit its
+  // content instead of stretching full-width, so the pill's background only
+  // spans as wide as the address text actually is. `maxWidth` still caps it
+  // so a very long address wraps/truncates instead of running off the card.
+  addressBanner: { position: 'absolute', top: 10, left: 10, maxWidth: '85%', flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 10, paddingVertical: 6, paddingHorizontal: 10, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
+  addressBannerText: { flexShrink: 1, fontSize: 11, fontFamily: F.medium },
 
-  footer:   { paddingHorizontal: 20, paddingVertical: 16, borderTopWidth: 1 },
   applyBtn: { height: 50, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
   applyBtnText: { color: '#fff', fontSize: 15, fontFamily: F.bold },
 });

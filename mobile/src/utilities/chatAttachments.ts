@@ -6,6 +6,14 @@ import { compressImage } from '@/utilities/uploadImage';
 
 export type PickedAttachment = { uri: string; name: string; mimeType: string };
 
+export type PickedFile = {
+  uri: string;
+  name: string;
+  mimeType: string;
+  sizeBytes: number;
+  fileType: 'image' | 'document';
+};
+
 export type PickedVideo = {
   uri: string;
   name: string;
@@ -18,6 +26,11 @@ export type PickedVideo = {
 
 const CHAT_IMAGE_MAX_SIZE_BYTES = 20 * 1024 * 1024; // matches backend uploadChatFile limit
 const CHAT_VIDEO_MAX_SIZE_BYTES = 500 * 1024 * 1024; // matches backend's 500MB cap
+const DELIVERABLE_FILE_MAX_SIZE_BYTES = 5 * 1024 * 1024; // matches backend's uploadDeliverableFile 5MB cap
+const DELIVERABLE_DOCUMENT_MIME_TYPES = [
+  'application/pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+];
 
 // MP4 (H.264/AAC) is preferred; MOV is accepted and delivered back as MP4 by
 // the backend (see videoPlaybackUrl in backend/src/utils/cloudinary.ts).
@@ -147,21 +160,97 @@ export async function pickDeliverableVideoFromCamera(): Promise<PickedVideo | nu
   return validateAndBuildPickedVideo(result.assets[0]!);
 }
 
-// allowVideo=false hides "Record Video"/"Choose Video" (creator<->creator chat
-// doesn't permit video); deliverables always allow it, capped by remainingSlots.
-export function promptDeliverableAttachmentChoice(): Promise<'video-camera' | 'video-library' | null> {
+// ── Deliverable images/documents ────────────────────────────────────────────
+// Images are run through the same compressImage() used for chat/profile photos
+// (targets ~100-300KB), then double-checked against the 5MB cap as a safety
+// net in case compression fails and falls back to the uncompressed original.
+
+async function toPickedDeliverableImage(asset: ImagePicker.ImagePickerAsset): Promise<PickedFile | null> {
+  const { uri, mimeType } = await compressImage(asset, false);
+  const info = await FileSystem.getInfoAsync(uri);
+  const sizeBytes = info.exists ? (info.size ?? 0) : 0;
+  if (sizeBytes > DELIVERABLE_FILE_MAX_SIZE_BYTES) {
+    Alert.alert('Image too large', 'Please choose an image under 5 MB.');
+    return null;
+  }
+  const ext = mimeType === 'image/jpeg' ? 'jpg' : (uri.split('.').pop() ?? 'jpg');
+  return { uri, name: `image_${Date.now()}.${ext}`, mimeType, sizeBytes, fileType: 'image' };
+}
+
+export async function pickDeliverableImagesFromLibrary(remainingSlots: number): Promise<PickedFile[]> {
+  const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  if (status !== 'granted') {
+    Alert.alert('Permission required', 'Please allow access to your photo library in Settings.');
+    return [];
+  }
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ['images'],
+    quality: 0.85,
+    allowsMultipleSelection: remainingSlots > 1,
+    selectionLimit: remainingSlots,
+  });
+  if (result.canceled) return [];
+
+  const picked: PickedFile[] = [];
+  for (const asset of result.assets) {
+    const image = await toPickedDeliverableImage(asset);
+    if (image) picked.push(image);
+  }
+  return picked;
+}
+
+export async function pickDeliverableImageFromCamera(): Promise<PickedFile | null> {
+  const { status } = await ImagePicker.requestCameraPermissionsAsync();
+  if (status !== 'granted') {
+    Alert.alert('Permission required', 'Please allow camera access in Settings.');
+    return null;
+  }
+  const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.85 });
+  if (result.canceled) return null;
+  return toPickedDeliverableImage(result.assets[0]!);
+}
+
+// PDF/DOCX only — narrower than pickDocumentAttachment's chat allowlist, and a
+// 5MB cap instead of 20MB (matches backend's uploadDeliverableFile).
+export async function pickDeliverableDocument(): Promise<PickedFile | null> {
+  const result = await DocumentPicker.getDocumentAsync({
+    type: DELIVERABLE_DOCUMENT_MIME_TYPES,
+    copyToCacheDirectory: true,
+  });
+  if (result.canceled) return null;
+  const asset = result.assets[0]!;
+  const sizeBytes = asset.size ?? 0;
+  if (sizeBytes > DELIVERABLE_FILE_MAX_SIZE_BYTES) {
+    Alert.alert('File too large', 'Please choose a file under 5 MB.');
+    return null;
+  }
+  return { uri: asset.uri, name: asset.name, mimeType: asset.mimeType ?? 'application/octet-stream', sizeBytes, fileType: 'document' };
+}
+
+export type DeliverableUploadChoice = 'video-camera' | 'video-library' | 'photo-camera' | 'photo-library' | 'document';
+
+// Single combined chooser backing the one "+" tile in the Upload Deliverables
+// sheet — replaces what used to be two separate video-only/file-only action
+// sheets, since videos and images/files now share one grid and one add button.
+export function promptDeliverableUploadChoice(): Promise<DeliverableUploadChoice | null> {
   return new Promise((resolve) => {
+    const labels: [DeliverableUploadChoice, string][] = [
+      ['video-camera',  'Record Video'],
+      ['video-library', 'Choose Video'],
+      ['photo-camera',  'Take Photo'],
+      ['photo-library', 'Choose Photos'],
+      ['document',      'Choose Document (PDF/DOCX)'],
+    ];
     if (Platform.OS === 'ios') {
-      const options = ['Record Video', 'Choose Video', 'Cancel'];
+      const options = [...labels.map(([, label]) => label), 'Cancel'];
       ActionSheetIOS.showActionSheetWithOptions(
         { options, cancelButtonIndex: options.length - 1 },
-        (idx) => resolve(idx === 0 ? 'video-camera' : idx === 1 ? 'video-library' : null),
+        (idx) => resolve(idx < labels.length ? labels[idx]![0] : null),
       );
     } else {
-      Alert.alert('Add Video', undefined, [
-        { text: 'Record Video', onPress: () => resolve('video-camera' as const) },
-        { text: 'Choose Video', onPress: () => resolve('video-library' as const) },
-        { text: 'Cancel', style: 'cancel', onPress: () => resolve(null) },
+      Alert.alert('Add to Deliverables', undefined, [
+        ...labels.map(([choice, label]) => ({ text: label, onPress: () => resolve(choice) })),
+        { text: 'Cancel', style: 'cancel' as const, onPress: () => resolve(null) },
       ]);
     }
   });

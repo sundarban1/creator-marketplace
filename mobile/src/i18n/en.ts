@@ -2538,10 +2538,12 @@ const en = {
 
     // Upload modal
     modalUploadTitle:            'Upload Deliverables',
-    modalUploadSub:              'Add a video, deliverable links, or both — at least one is required.',
-    modalUploadVideosLabel:      'Upload Videos',
-    modalUploadVideosSub:        'Up to 3 videos, 500MB each',
-    modalUploadAddVideoBtn:      'Add Video',
+    modalUploadSub:              'Add a video, images/files, deliverable links, or any combination — at least one is required.',
+    modalUploadDeliverablesLabel: 'Videos, Images & Files',
+    modalUploadDeliverablesSub:  'Up to 3 videos (500MB each) and 10 images/files (JPG, PNG, PDF, or DOCX — 5MB each)',
+    fileLimitReached:            'You can upload up to 10 images/files per submission.',
+    imageUploaded:               'Image uploaded!',
+    fileUploaded:                'File uploaded!',
     modalUploadLinksLabel:       'Deliverable Links',
     modalUploadLinksSub:         'Add a Google Drive or YouTube link if your video is larger than 500MB',
     modalUploadLinksPublicHint:  'Make sure your Google Drive or YouTube link is set to public — "Anyone with the link can view" — otherwise the business won\'t be able to open it.',
@@ -2559,6 +2561,7 @@ const en = {
     // Review modal
     modalReviewTitle:               'Review Deliverables',
     modalReviewVideosSection:       'Videos Submitted by {{name}}',
+    modalReviewFilesSection:        'Images/Files Submitted by {{name}}',
     modalReviewLinksSection:        'Links Submitted by {{name}}',
     modalReviewNoLinks:             'No links submitted yet',
     linkOpenFailed:                 "Couldn't open this link.",
@@ -2570,6 +2573,7 @@ const en = {
     modalRevisionSub:              'Describe the changes you need the creator to make.',
     modalRevisionNotesLabel:       'Revision Notes *',
     modalRevisionNotesPlaceholder: 'Please change the caption to... The video needs to be...',
+    modalRevisionVideoNotice:      "Submitting this will remove the creator's currently uploaded video(s). They'll get a copy in chat so they can download it first.",
     modalRevisionSendBtn:          'Send Revision Request',
 
     // Cancel modal

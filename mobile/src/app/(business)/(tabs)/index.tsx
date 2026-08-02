@@ -4,6 +4,7 @@ import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { TabSlider } from '@/components/TabSlider';
 import { useScrollToTopOnTabPress } from '@/hooks/useScrollToTopOnTabPress';
+import { useStickyBelowHeader } from '@/hooks/useStickyBelowHeader';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
 import { DrawerContext } from '@/context/DrawerContext';
@@ -64,6 +65,13 @@ export default function BusinessHomeScreen() {
   const [referralBannerDismissed, setReferralBannerDismissed] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
   useScrollToTopOnTabPress('index', () => scrollRef.current?.scrollTo({ y: 0, animated: true }));
+  const {
+    stuck:             tabFilterStuck,
+    setOffsetY:        tabFilterSetOffsetY,
+    onRowLayout:       tabFilterOnRowLayout,
+    onScroll:          tabFilterOnScroll,
+    placeholderHeight: tabFilterPlaceholderHeight,
+  } = useStickyBelowHeader();
 
   async function fetchCampaigns(showLoader = true) {
     if (showLoader) setLoading(true);
@@ -201,136 +209,145 @@ export default function BusinessHomeScreen() {
       </View>
       <View style={[styles.headerDivider, { backgroundColor: C.border }]} />
 
+      {/* Sticky tab filter — hand-rolled (see useStickyBelowHeader), not
+          stickyHeaderIndices, which reliably crashes Android on this app's
+          RN/Fabric setup. This wrapper is the positioning context the
+          overlay below is anchored to (`top: 0` here lands right below the
+          header divider above). */}
+      <View style={{ flex: 1 }}>
       <ScrollView
         ref={scrollRef}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scroll}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#7c3aed" />}>
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#7c3aed" />}
+        onScroll={tabFilterOnScroll}
+        scrollEventThrottle={16}>
 
-        {/* ── Attention banner (shown when a business action is actually pending) ── */}
-        {!loading && attentionCount > 0 && (
-          <Pressable style={styles.attentionBanner} onPress={() => router.push('/(business)/proposals')}>
-            <View
-              style={[
-                styles.attentionIconWrap,
-                { shadowColor: '#D97706', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
-              ]}
-            >
-              <Ionicons name="alert-circle" size={18} color="#D97706" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.attentionTitle}>{t('business.home.attentionTitle')}</Text>
-              <Text style={styles.attentionSub}>
-                {attentionCount === 1
-                  ? t('business.home.attentionProposalsSingular', { n: attentionCount })
-                  : t('business.home.attentionProposalsPlural', { n: attentionCount })}
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={16} color="#D97706" />
-          </Pressable>
-        )}
-
-        {/* ── Quick Actions ── */}
-        <View style={styles.quickActionsRow}>
-          {([
-            { icon: 'add-circle-outline' as const,  label: t('business.home.quickActionCreate'),    bg: '#EDE9FE', color: '#7C3AED', route: '/create-campaign' },
-            { icon: 'people-outline' as const,       label: t('business.home.quickActionCreators'),      bg: '#DCFCE7', color: '#059669', route: '/(business)/explore-creators' },
-            { icon: 'chatbubbles-outline'as const,  label: t('business.home.quickActionMessages'),  bg: '#DBEAFE', color: '#2563EB', route: '/(business)/messages' },
-            { icon: 'briefcase-outline'  as const,  label: t('business.home.quickActionEvents'),    bg: '#FEF3C7', color: '#D97706', route: '/(business)/campaigns' },
-          ]).map(({ icon, label, bg, color, route }) => (
-            <Pressable key={label} style={[styles.quickAction, { backgroundColor: C.surface, borderColor: C.border }]}
-              onPress={() => router.push(route as never)}>
+        <View>
+          {/* ── Attention banner (shown when a business action is actually pending) ── */}
+          {!loading && attentionCount > 0 && (
+            <Pressable style={styles.attentionBanner} onPress={() => router.push('/(business)/proposals')}>
               <View
                 style={[
-                  styles.quickActionIcon,
+                  styles.attentionIconWrap,
+                  { shadowColor: '#D97706', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
+                ]}
+              >
+                <Ionicons name="alert-circle" size={18} color="#D97706" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.attentionTitle}>{t('business.home.attentionTitle')}</Text>
+                <Text style={styles.attentionSub}>
+                  {attentionCount === 1
+                    ? t('business.home.attentionProposalsSingular', { n: attentionCount })
+                    : t('business.home.attentionProposalsPlural', { n: attentionCount })}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color="#D97706" />
+            </Pressable>
+          )}
+
+          {/* ── Quick Actions ── */}
+          <View style={styles.quickActionsRow}>
+            {([
+              { icon: 'add-circle-outline' as const,  label: t('business.home.quickActionCreate'),    bg: '#EDE9FE', color: '#7C3AED', route: '/create-campaign' },
+              { icon: 'people-outline' as const,       label: t('business.home.quickActionCreators'),      bg: '#DCFCE7', color: '#059669', route: '/(business)/explore-creators' },
+              { icon: 'chatbubbles-outline'as const,  label: t('business.home.quickActionMessages'),  bg: '#DBEAFE', color: '#2563EB', route: '/(business)/messages' },
+              { icon: 'briefcase-outline'  as const,  label: t('business.home.quickActionEvents'),    bg: '#FEF3C7', color: '#D97706', route: '/(business)/campaigns' },
+            ]).map(({ icon, label, bg, color, route }) => (
+              <Pressable key={label} style={[styles.quickAction, { backgroundColor: C.surface, borderColor: C.border }]}
+                onPress={() => router.push(route as never)}>
+                <View
+                  style={[
+                    styles.quickActionIcon,
+                    {
+                      backgroundColor: bg, shadowColor: color,
+                      shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5,
+                    },
+                  ]}
+                >
+                  <Ionicons name={icon} size={20} color={color} />
+                </View>
+                <Text style={[styles.quickActionLabel, { color: C.text }]}>{label}</Text>
+              </Pressable>
+            ))}
+          </View>
+
+          {/* ── Profile completion banner ── */}
+          {!bannerDismissed && missingFields.length > 0 && (
+            <Pressable
+              style={[styles.banner, { backgroundColor: C.surface, borderLeftColor: C.brinjal1 }]}
+              onPress={() => router.push('/(business)/edit-profile' as never)}>
+              <View
+                style={[
+                  styles.bannerIconBox,
                   {
-                    backgroundColor: bg, shadowColor: color,
-                    shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5,
+                    backgroundColor: C.primaryLight, shadowColor: C.brinjal1,
+                    shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
                   },
                 ]}
               >
-                <Ionicons name={icon} size={20} color={color} />
+                <Ionicons name="business-outline" size={20} color={C.brinjal1} />
               </View>
-              <Text style={[styles.quickActionLabel, { color: C.text }]}>{label}</Text>
+              <View style={styles.bannerText}>
+                <Text style={[styles.bannerTitle, { color: C.text }]}>{t('business.home.completeProfile')}</Text>
+                <Text style={[styles.bannerSub, { color: C.error }]} numberOfLines={2}>
+                  {t('business.home.missingFieldsPrefix', { fields: missingFields.join(' · ') })}
+                </Text>
+              </View>
+              <Pressable style={styles.bannerClose} onPress={() => setBannerDismissed(true)} hitSlop={10}>
+                <Ionicons name="close" size={16} color={C.textSecondary} />
+              </Pressable>
             </Pressable>
-          ))}
+          )}
+
+          {/* ── Error ── */}
+          {fetchError ? (
+            <View style={styles.errorCard}>
+              <Text style={styles.errorText}>{fetchError}</Text>
+              <Pressable onPress={() => fetchCampaigns()}>
+                <Text style={[styles.retryText, { color: C.brinjal1 }]}>{t('business.home.retry')}</Text>
+              </Pressable>
+            </View>
+          ) : null}
+
+          {/* ── Refer a business banner ── */}
+          {!referralBannerDismissed && (
+            <Pressable
+              style={[styles.banner, { backgroundColor: C.surface, borderLeftColor: '#EC4899' }]}
+              onPress={() => router.push('/(business)/refer')}>
+              <View
+                style={[
+                  styles.bannerIconBox,
+                  {
+                    backgroundColor: '#FCE7F3', shadowColor: '#EC4899',
+                    shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+                  },
+                ]}
+              >
+                <Ionicons name="gift-outline" size={20} color="#EC4899" />
+              </View>
+              <View style={styles.bannerText}>
+                <Text style={[styles.bannerTitle, { color: C.text }]}>{t('businessReferral.homeBannerTitle')}</Text>
+                <Text style={[styles.bannerSub, { color: C.textSecondary }]} numberOfLines={1}>
+                  {(() => {
+                    const [prefix, suffix] = t('businessReferral.homeBannerSub').split('{{amount}}');
+                    return (
+                      <>
+                        {prefix}
+                        <Text style={styles.bannerSubAmount}>{t('businessReferral.homeBannerAmount')}</Text>
+                        {suffix}
+                      </>
+                    );
+                  })()}
+                </Text>
+              </View>
+              <Pressable style={styles.bannerClose} onPress={() => setReferralBannerDismissed(true)} hitSlop={10}>
+                <Ionicons name="close" size={16} color={C.textSecondary} />
+              </Pressable>
+            </Pressable>
+          )}
         </View>
-
-        {/* ── Profile completion banner ── */}
-        {!bannerDismissed && missingFields.length > 0 && (
-          <Pressable
-            style={[styles.banner, { backgroundColor: C.surface, borderLeftColor: C.brinjal1 }]}
-            onPress={() => router.push('/(business)/edit-profile' as never)}>
-            <View
-              style={[
-                styles.bannerIconBox,
-                {
-                  backgroundColor: C.primaryLight, shadowColor: C.brinjal1,
-                  shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
-                },
-              ]}
-            >
-              <Ionicons name="business-outline" size={20} color={C.brinjal1} />
-            </View>
-            <View style={styles.bannerText}>
-              <Text style={[styles.bannerTitle, { color: C.text }]}>{t('business.home.completeProfile')}</Text>
-              <Text style={[styles.bannerSub, { color: C.error }]} numberOfLines={2}>
-                {t('business.home.missingFieldsPrefix', { fields: missingFields.join(' · ') })}
-              </Text>
-            </View>
-            <Pressable style={styles.bannerClose} onPress={() => setBannerDismissed(true)} hitSlop={10}>
-              <Ionicons name="close" size={16} color={C.textSecondary} />
-            </Pressable>
-          </Pressable>
-        )}
-
-        {/* ── Error ── */}
-        {fetchError ? (
-          <View style={styles.errorCard}>
-            <Text style={styles.errorText}>{fetchError}</Text>
-            <Pressable onPress={() => fetchCampaigns()}>
-              <Text style={[styles.retryText, { color: C.brinjal1 }]}>{t('business.home.retry')}</Text>
-            </Pressable>
-          </View>
-        ) : null}
-
-
-        {/* ── Refer a business banner ── */}
-        {!referralBannerDismissed && (
-          <Pressable
-            style={[styles.banner, { backgroundColor: C.surface, borderLeftColor: '#EC4899' }]}
-            onPress={() => router.push('/(business)/refer')}>
-            <View
-              style={[
-                styles.bannerIconBox,
-                {
-                  backgroundColor: '#FCE7F3', shadowColor: '#EC4899',
-                  shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
-                },
-              ]}
-            >
-              <Ionicons name="gift-outline" size={20} color="#EC4899" />
-            </View>
-            <View style={styles.bannerText}>
-              <Text style={[styles.bannerTitle, { color: C.text }]}>{t('businessReferral.homeBannerTitle')}</Text>
-              <Text style={[styles.bannerSub, { color: C.textSecondary }]} numberOfLines={1}>
-                {(() => {
-                  const [prefix, suffix] = t('businessReferral.homeBannerSub').split('{{amount}}');
-                  return (
-                    <>
-                      {prefix}
-                      <Text style={styles.bannerSubAmount}>{t('businessReferral.homeBannerAmount')}</Text>
-                      {suffix}
-                    </>
-                  );
-                })()}
-              </Text>
-            </View>
-            <Pressable style={styles.bannerClose} onPress={() => setReferralBannerDismissed(true)} hitSlop={10}>
-              <Ionicons name="close" size={16} color={C.textSecondary} />
-            </Pressable>
-          </Pressable>
-        )}
 
         {/* ── Recent Events ── */}
         <View style={styles.sectionHeader}>
@@ -340,13 +357,23 @@ export default function BusinessHomeScreen() {
           </Pressable>
         </View>
 
-        <View style={styles.typeFilterWrap}>
-          <TabSlider
-            tabs={TYPE_TABS}
-            active={typeFilter}
-            onChange={(k) => setTypeFilter(k as typeof typeFilter)}
+        {tabFilterStuck ? (
+          <View
+            style={{ height: tabFilterPlaceholderHeight }}
+            onLayout={(e) => { tabFilterOnRowLayout(e); tabFilterSetOffsetY(e.nativeEvent.layout.y); }}
           />
-        </View>
+        ) : (
+          <View
+            style={[styles.typeFilterWrap, { backgroundColor: C.background }]}
+            onLayout={(e) => { tabFilterOnRowLayout(e); tabFilterSetOffsetY(e.nativeEvent.layout.y); }}
+          >
+            <TabSlider
+              tabs={TYPE_TABS}
+              active={typeFilter}
+              onChange={(k) => setTypeFilter(k as typeof typeFilter)}
+            />
+          </View>
+        )}
 
         {loading ? (
           <View style={styles.loadingWrap}>
@@ -451,6 +478,16 @@ export default function BusinessHomeScreen() {
         )}
 
       </ScrollView>
+      {tabFilterStuck && (
+        <View style={[styles.typeFilterWrap, styles.stickyOverlay, { backgroundColor: C.background }]}>
+          <TabSlider
+            tabs={TYPE_TABS}
+            active={typeFilter}
+            onChange={(k) => setTypeFilter(k as typeof typeFilter)}
+          />
+        </View>
+      )}
+      </View>
       </MaxWidthContainer>
     </SafeAreaView>
   );
@@ -522,9 +559,13 @@ const styles = StyleSheet.create({
 
   // Type filter — flush with the page (no card/shadow), horizontally aligned
   // with Recent Events below it. TabSlider's own wrapper adds 3px of internal
-  // padding around the tabs, so the outer margin is trimmed to 17px to land
+  // padding around the tabs, so the outer inset is trimmed to 17px to land
   // the tab edges exactly on the same 20px line as the campaign cards.
-  typeFilterWrap: { marginHorizontal: 17, marginBottom: 12 },
+  // Padding (not margin) so the opaque background set at the call site spans
+  // the full width when this block is pinned (see useStickyBelowHeader) — a
+  // transparent side margin would let scrolled-under content peek through.
+  typeFilterWrap: { paddingHorizontal: 17, paddingBottom: 12 },
+  stickyOverlay: { position: 'absolute', top: 0, left: 0, right: 0, ...SHADOW.card },
 
   // Campaign cards
   typeBadge: { borderRadius: RADIUS.sm, paddingHorizontal: 7, paddingVertical: 3 },

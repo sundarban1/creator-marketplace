@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Image as ExpoImage } from 'expo-image';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { useRef, useState, useEffect } from 'react';
 import {
@@ -8,7 +9,6 @@ import {
   Image,
   KeyboardAvoidingView,
   Linking,
-  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -33,6 +33,7 @@ const DEFAULT_SUPPORT_EMAIL = 'support@kolab.com.np';
 import type { Lang } from '@/i18n';
 import { COLORS, F, RADIUS, SHADOW } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
+import { BottomSheet } from '@/components/BottomSheet';
 import { isValidNepaliPhone, normalizePhoneForSubmit } from '@/utilities/phone';
 import {
   authenticate as authenticateBiometric,
@@ -380,15 +381,14 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
       <View style={s.socialRow}>
         <Pressable
           style={({ pressed }) => [
-            s.socialBtn,
+            s.googleFullBtn,
             googleLoading && { opacity: 0.6 },
-            pressed && !googleLoading && { transform: [{ scale: 0.98 }], backgroundColor: '#F3F0FC' },
+            pressed && !googleLoading && { transform: [{ scale: 0.98 }] },
           ]}
           onPress={onGooglePress} disabled={googleLoading}>
           {googleLoading
             ? <View style={s.spinner} />
-            : <View style={s.googleBadge}><Text style={s.googleG}>G</Text></View>}
-          <Text style={s.socialBtnText}>{googleLoading ? t('auth.login.signingIn') : t('auth.login.continueGoogle')}</Text>
+            : <ExpoImage source={require('@/assets/svg/google.svg')} style={s.googleIcon} contentFit="contain" />}
         </Pressable>
         {FACEBOOK_LOGIN_ENABLED && (
           <Pressable
@@ -421,26 +421,24 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
 
       {/* Suspended-account modal — shown instead of the inline banner when the
           backend blocks login because an admin suspended this account. */}
-      <Modal visible={suspendedModal} transparent animationType="fade" onRequestClose={() => setSuspendedModal(false)}>
-        <View style={s.modalOverlay}>
-          <View style={[s.modalSheet, s.suspendedSheet]}>
-            <View style={s.suspendedIconWrap}>
-              <FontAwesome5 name="lock" size={22} color="#EF4444" solid />
-            </View>
-            <Text style={s.modalTitle}>{t('auth.login.suspendedTitle')}</Text>
-            <Text style={s.modalSub}>{t('auth.login.suspendedMessage')}</Text>
-            <Pressable
-              style={s.suspendedContactBtn}
-              onPress={() => Linking.openURL(`mailto:${flags.supportEmail ?? DEFAULT_SUPPORT_EMAIL}`)}>
-              <Ionicons name="mail-outline" size={16} color="#fff" />
-              <Text style={s.suspendedContactBtnText}>{t('auth.login.suspendedContactBtn')}</Text>
-            </Pressable>
-            <Pressable style={s.modalCancel} onPress={() => setSuspendedModal(false)}>
-              <Text style={s.modalCancelText}>{t('auth.login.suspendedClose')}</Text>
-            </Pressable>
+      <BottomSheet visible={suspendedModal} onClose={() => setSuspendedModal(false)} contentContainerStyle={{ gap: 4 }}>
+        <View style={s.suspendedSheet}>
+          <View style={s.suspendedIconWrap}>
+            <FontAwesome5 name="lock" size={22} color="#EF4444" solid />
           </View>
+          <Text style={s.modalTitle}>{t('auth.login.suspendedTitle')}</Text>
+          <Text style={s.modalSub}>{t('auth.login.suspendedMessage')}</Text>
+          <Pressable
+            style={s.suspendedContactBtn}
+            onPress={() => Linking.openURL(`mailto:${flags.supportEmail ?? DEFAULT_SUPPORT_EMAIL}`)}>
+            <Ionicons name="mail-outline" size={16} color="#fff" />
+            <Text style={s.suspendedContactBtnText}>{t('auth.login.suspendedContactBtn')}</Text>
+          </Pressable>
+          <Pressable style={s.modalCancel} onPress={() => setSuspendedModal(false)}>
+            <Text style={s.modalCancelText}>{t('auth.login.suspendedClose')}</Text>
+          </Pressable>
         </View>
-      </Modal>
+      </BottomSheet>
     </View>
   );
 }
@@ -591,15 +589,14 @@ function SignupForm({ onGooglePress, googleLoading, googleError, onFacebookPress
       <View style={s.socialRow}>
         <Pressable
           style={({ pressed }) => [
-            s.socialBtn,
+            s.googleFullBtn,
             googleLoading && { opacity: 0.6 },
-            pressed && !googleLoading && { transform: [{ scale: 0.98 }], backgroundColor: '#F3F0FC' },
+            pressed && !googleLoading && { transform: [{ scale: 0.98 }] },
           ]}
           onPress={onGooglePress} disabled={googleLoading}>
           {googleLoading
             ? <View style={s.spinner} />
-            : <View style={s.googleBadge}><Text style={s.googleG}>G</Text></View>}
-          <Text style={s.socialBtnText}>{googleLoading ? t('auth.login.signingIn') : t('auth.signup.continueGoogle')}</Text>
+            : <ExpoImage source={require('@/assets/svg/google.svg')} style={s.googleIcon} contentFit="contain" />}
         </Pressable>
         {FACEBOOK_LOGIN_ENABLED && (
           <Pressable
@@ -976,36 +973,31 @@ export default function LoginScreen() {
       </KeyboardAvoidingView>
 
       {/* Role selection modal — shown for new Google users */}
-      <Modal visible={roleModal} transparent animationType="slide" onRequestClose={() => setRoleModal(false)}>
-        <View style={s.modalOverlay}>
-          <View style={s.modalSheet}>
-            <View style={s.modalHandle} />
-            <Text style={s.modalTitle}>{t('auth.login.roleModalTitle')}</Text>
-            <Text style={s.modalSub}>{t('auth.login.roleModalSub')}</Text>
-            <View style={s.roleRow}>
-              {ROLES.map((r) => {
-                const roleLabel = r.key === 'CREATOR' ? t('auth.signup.roleCreatorLabel') : t('auth.signup.roleBusinessLabel');
-                const roleSub   = r.key === 'CREATOR' ? t('auth.signup.roleCreatorSub')   : t('auth.signup.roleBusinessSub');
-                return (
-                  <Pressable
-                    key={r.key}
-                    style={({ pressed }) => [s.roleCard, { transform: [{ scale: pressed ? 0.97 : 1 }] }]}
-                    onPress={() => void handleRoleSelect(r.key)}>
-                    <LinearGradient colors={r.grad} style={s.roleIconBox} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
-                      <FontAwesome5 name={r.icon} size={22} color="#fff" solid />
-                    </LinearGradient>
-                    <Text style={[s.roleLabel, { color: '#111827' }]}>{roleLabel}</Text>
-                    <Text style={[s.roleSub, { color: '#9CA3AF' }]}>{roleSub}</Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-            <Pressable style={s.modalCancel} onPress={() => setRoleModal(false)}>
-              <Text style={s.modalCancelText}>{t('auth.login.roleModalCancel')}</Text>
-            </Pressable>
-          </View>
+      <BottomSheet visible={roleModal} onClose={() => setRoleModal(false)} contentContainerStyle={{ gap: 4 }}>
+        <Text style={s.modalTitle}>{t('auth.login.roleModalTitle')}</Text>
+        <Text style={s.modalSub}>{t('auth.login.roleModalSub')}</Text>
+        <View style={s.roleRow}>
+          {ROLES.map((r) => {
+            const roleLabel = r.key === 'CREATOR' ? t('auth.signup.roleCreatorLabel') : t('auth.signup.roleBusinessLabel');
+            const roleSub   = r.key === 'CREATOR' ? t('auth.signup.roleCreatorSub')   : t('auth.signup.roleBusinessSub');
+            return (
+              <Pressable
+                key={r.key}
+                style={({ pressed }) => [s.roleCard, { transform: [{ scale: pressed ? 0.97 : 1 }] }]}
+                onPress={() => void handleRoleSelect(r.key)}>
+                <LinearGradient colors={r.grad} style={s.roleIconBox} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+                  <FontAwesome5 name={r.icon} size={22} color="#fff" solid />
+                </LinearGradient>
+                <Text style={[s.roleLabel, { color: '#111827' }]}>{roleLabel}</Text>
+                <Text style={[s.roleSub, { color: '#9CA3AF' }]}>{roleSub}</Text>
+              </Pressable>
+            );
+          })}
         </View>
-      </Modal>
+        <Pressable style={s.modalCancel} onPress={() => setRoleModal(false)}>
+          <Text style={s.modalCancelText}>{t('auth.login.roleModalCancel')}</Text>
+        </Pressable>
+      </BottomSheet>
 
     </View>
   );
@@ -1120,22 +1112,19 @@ const s = StyleSheet.create({
   dividerText: { fontSize: 12, color: '#A78BFA', fontFamily: F.medium },
 
   // Social row (Google + Facebook side by side) — same pill family as the primary button
-  socialRow:      { flexDirection: 'row', gap: 12, marginBottom: 12 },
+  socialRow:      { gap: 10, marginBottom: 12 },
   socialBtn:      { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 52, borderRadius: RADIUS.full, borderWidth: 1.5, borderColor: '#DDD6FE', backgroundColor: '#FAFAFE', shadowColor: '#4C1D95', shadowOpacity: 0.06, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 1 },
   socialBtnFull:  { flex: 0, marginBottom: 12 },
   socialBtnText:  { fontSize: 14, fontFamily: F.semibold, color: '#374151' },
-  socialBtnFb:    { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 52, borderRadius: RADIUS.full, borderWidth: 1.5, borderColor: '#BFDBFE', backgroundColor: '#EFF6FF' },
+  googleFullBtn:  { width: '100%', height: 48, justifyContent: 'center', alignItems: 'center', shadowColor: '#4285F4', shadowOpacity: 0.35, shadowRadius: 16, shadowOffset: { width: 0, height: 8 }, elevation: 7 },
+  googleIcon:     { width: '100%', height: 48 },
+  socialBtnFb:    { width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 52, borderRadius: RADIUS.full, borderWidth: 1.5, borderColor: '#BFDBFE', backgroundColor: '#EFF6FF' },
   socialBtnFbText:{ fontSize: 14, fontFamily: F.semibold, color: '#1D4ED8' },
-  googleBadge:    { width: 22, height: 22, borderRadius: RADIUS.full, backgroundColor: '#4285F4', justifyContent: 'center', alignItems: 'center' },
-  googleG:        { color: '#fff', fontSize: 12, fontFamily: F.bold },
   fbBadge:        { width: 22, height: 22, borderRadius: RADIUS.full, backgroundColor: '#1877F2', justifyContent: 'center', alignItems: 'center' },
   fbF:            { color: '#fff', fontSize: 13, fontFamily: F.bold },
   spinner:        { width: 18, height: 18, borderRadius: RADIUS.full, borderWidth: 2, borderColor: '#DDD6FE', borderTopColor: BRINJAL },
 
   // Role modal
-  modalOverlay:    { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  modalSheet:      { backgroundColor: '#fff', borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl, padding: 24, paddingBottom: 36, gap: 4 },
-  modalHandle:     { width: 40, height: 4, borderRadius: RADIUS.full, backgroundColor: '#DDD6FE', alignSelf: 'center', marginBottom: 20 },
   modalTitle:      { fontSize: 20, fontFamily: F.bold, color: TEXT_DARK, textAlign: 'center' },
   modalSub:        { fontSize: 14, fontFamily: F.regular, color: '#6B7280', textAlign: 'center', marginBottom: 20 },
   modalCancel:     { marginTop: 16, alignItems: 'center', padding: 12 },

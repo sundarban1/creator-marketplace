@@ -33,6 +33,7 @@ import { profileService } from '@/services/profile';
 import type { FacebookPageOption } from '@/services/creator';
 import { COLORS, F, RADIUS, SHADOW } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
+import { BackButton } from '@/components/BackButton';
 import { request } from '@/lib/api';
 import { pickAndUpload } from '@/utilities/uploadImage';
 import { useCategories } from '@/hooks/useCategories';
@@ -2219,9 +2220,7 @@ export default function BusinessSettingsScreen() {
         {/* Top bar */}
         <View style={{ backgroundColor: C.surface }}>
           <View style={styles.topBar}>
-            <Pressable style={[styles.backBtn, { backgroundColor: C.surface, borderColor: C.border }]} onPress={handleBack}>
-              <Text style={[styles.backArrow, { color: C.text }]}>‹</Text>
-            </Pressable>
+            <BackButton onPress={handleBack} />
             <Text style={[styles.topTitle, { color: C.text }]}>{topTitle}</Text>
             <View style={{ width: 36 }} />
           </View>
@@ -2292,8 +2291,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16, paddingVertical: 12,
   },
   headerSeparator: { height: StyleSheet.hairlineWidth, marginHorizontal: 16 },
-  backBtn: { width: 36, height: 36, borderRadius: RADIUS.full, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center' },
-  backArrow: { fontSize: 26, lineHeight: 30 },
   topTitle: { fontSize: 18, fontFamily: F.bold, lineHeight: 22 },
 
   sectionHeader: {

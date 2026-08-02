@@ -19,6 +19,7 @@ import { useFavoriteBusinesses } from '@/hooks/useFavoriteBusinesses';
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
+import { BackButton } from '@/components/BackButton';
 import { pickAndUpload } from '@/utilities/uploadImage';
 
 const PLATFORM_MAP: Record<string, { platform: string; color: string; iconName: string }> = {
@@ -166,9 +167,7 @@ export default function CreatorProfileScreen() {
 
           {/* Top bar */}
           <View style={s.topBar}>
-            <Pressable style={s.topIconBtn} hitSlop={4} onPress={() => router.back()}>
-              <Ionicons name="chevron-back" size={22} color="#fff" />
-            </Pressable>
+            <BackButton variant="overlay" />
             <Pressable style={s.topIconBtn} hitSlop={4} onPress={handleCoverPress} disabled={coverUploading}>
               {coverUploading
                 ? <ActivityIndicator size="small" color="#fff" />

@@ -18,6 +18,7 @@ import { uploadImage as uploadToCloudinary, uploadRawFile, generateVideoUploadSi
 // picker validation and uploads directly to Cloudinary.
 const ALLOWED_VIDEO_FORMATS = new Set(['mp4', 'mov', 'qt']);
 import type { StartConversationInput, SendMessageInput } from './messaging.schema';
+import type { DeliverableVideo } from '../campaign/campaign.dto';
 
 const ATTACHMENT_IMAGE_TRANSFORMATION = [{ width: 1600, crop: 'limit' }];
 
@@ -628,15 +629,34 @@ export class MessagingService {
   // Called when a business requests a revision on submitted deliverables — the
   // note is sent verbatim as a real chat message (in addition to the in-app
   // notification/email) so it lands where the creator will actually read it.
+  // `videos`, if given, are the creator's currently-submitted deliverable
+  // videos — the caller is about to delete them from Cloudinary as part of
+  // the same revision-request flow, so each is also forwarded here as its
+  // own VIDEO attachment message (same shape completeVideoAttachment sends)
+  // giving the creator a copy they can still open/download from chat.
   async sendRevisionRequestMessage(
     creatorId: string,
     businessId: string,
     campaignId: string,
     businessUserId: string,
     content: string,
+    videos: DeliverableVideo[] = [],
   ) {
     const { conversation } = await this.repo.findOrCreateAcceptedConversation(creatorId, businessId, campaignId);
-    return this.persistAndBroadcast(conversation, businessUserId, 'BUSINESS', { content }, content);
+    const message = await this.persistAndBroadcast(conversation, businessUserId, 'BUSINESS', { content }, content);
+
+    for (const v of videos) {
+      await this.persistAndBroadcast(conversation, businessUserId, 'BUSINESS', {
+        content: '',
+        type: 'VIDEO',
+        attachmentUrl:          v.url,
+        attachmentName:         `${v.label}.mp4`,
+        attachmentThumbnailUrl: v.thumbnailUrl,
+        attachmentDurationSec:  v.durationSec,
+      }, `🎥 ${v.label}`);
+    }
+
+    return message;
   }
 
   // Called once a project is completed and its payment released — the conversation

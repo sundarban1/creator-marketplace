@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { CampaignController } from './campaign.controller';
 import { authenticate, authorize } from '../../middleware/auth';
 import { validate } from '../../middleware/validate';
-import { uploadImage } from '../../middleware/upload';
+import { uploadImage, uploadDeliverableFile } from '../../middleware/upload';
 import {
   createCampaignSchema,
   updateCampaignSchema,
@@ -361,6 +361,21 @@ router.patch(
   authorize('CREATOR'),
   validate(renameDeliverableVideoSchema),
   ctrl.renameDeliverableVideo.bind(ctrl)
+);
+
+router.post(
+  '/applications/:appId/deliverables/file',
+  authenticate,
+  authorize('CREATOR'),
+  uploadDeliverableFile.single('file'),
+  ctrl.uploadDeliverableFile.bind(ctrl)
+);
+
+router.delete(
+  '/applications/:appId/deliverables/file',
+  authenticate,
+  authorize('CREATOR'),
+  ctrl.removeDeliverableFile.bind(ctrl)
 );
 
 router.put(

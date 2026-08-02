@@ -47,6 +47,8 @@ const DEFAULTS: Record<string, unknown> = {
   'rateLimit.login.max':                  20,   // login attempts per 15 minutes, per IP
   'rateLimit.campaignCreation.enabled':   true,
   'rateLimit.campaignCreation.maxPerDay': 5,    // events per business per calendar day
+  'rateLimit.proposalSubmission.enabled':   true,
+  'rateLimit.proposalSubmission.maxPerDay': 10,  // proposals per creator per calendar day
   'rateLimit.messages.enabled':           true,
   'rateLimit.messages.maxPerMinute':      20,   // chat messages per user per minute
   'rateLimit.duplicateMessages.enabled':  true, // blocks sending the exact same message twice in a row

@@ -6,10 +6,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import {
   ActivityIndicator,
-  Animated,
   Image,
   Linking,
-  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -20,11 +18,11 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
-import { useKeyboardOffset } from '@/hooks/useKeyboardOffset';
 import { creatorService, type ApiCreatorPublicProfile } from '@/services/creator';
 import { chatService } from '@/services/chat';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
+import { BottomSheet } from '@/components/BottomSheet';
 import { useAllCategories, getCategoryMeta } from '@/hooks/useCategories';
 import type { ApiCategory } from '@/services/category';
 
@@ -90,7 +88,6 @@ export default function CreatorDetailScreen() {
   const [convId, setConvId]       = useState<string | null>(null);
   const [convStatus, setConvStatus] = useState<'PENDING' | 'ACCEPTED' | 'DECLINED' | null>(null);
   const [showModal, setShowModal] = useState(false);
-  const keyboardOffset = useKeyboardOffset();
   const [requestMsg, setRequestMsg] = useState('');
   const [sending, setSending]     = useState(false);
 
@@ -221,10 +218,7 @@ export default function CreatorDetailScreen() {
           </LinearGradient>
 
           <View style={s.coverTopBar}>
-            <Pressable style={s.topIconBtn} hitSlop={4}
-              onPress={() => (router.canGoBack() ? router.back() : router.replace('/(business)/explore-creators' as never))}>
-              <Ionicons name="chevron-back" size={22} color="#fff" />
-            </Pressable>
+            <BackButton variant="overlay" fallback="/(business)/explore-creators" />
             <View style={s.coverTopTitleRow} />
             <View style={s.topIconSpacer} />
           </View>
@@ -444,43 +438,34 @@ export default function CreatorDetailScreen() {
       </MaxWidthContainer>
 
       {/* Request message modal */}
-      <Modal visible={showModal} transparent animationType="slide" onRequestClose={() => setShowModal(false)}>
-        <View style={rm.overlay}>
-          <Pressable style={rm.scrim} onPress={() => setShowModal(false)} />
-          <Animated.View style={[rm.sheet, { backgroundColor: C.surface, transform: [{ translateY: keyboardOffset }] }]}>
-            <View style={[rm.handle, { backgroundColor: C.border }]} />
-            <View style={rm.titleRow}>
-              <Text style={[rm.title, { color: C.text }]}>{t('creatorDetailExtra.messageRequestTitle')}</Text>
-              <Pressable style={[rm.closeBtn, { backgroundColor: C.background }]} onPress={() => setShowModal(false)} hitSlop={8}>
-                <Ionicons name="close" size={18} color={C.textSecondary} />
-              </Pressable>
-            </View>
-            <Text style={[rm.subtitle, { color: C.textSecondary }]}>
-              {t('creatorDetailExtra.messageRequestSubtitle', { name: profile?.fullName ?? '' })}
-            </Text>
-            <TextInput
-              style={[rm.input, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
-              value={requestMsg}
-              onChangeText={setRequestMsg}
-              placeholder={t('creatorDetailExtra.messageRequestPlaceholder')}
-              placeholderTextColor={C.textSecondary}
-              multiline
-              maxLength={500}
-            />
-            <Text style={[rm.counter, { color: C.textSecondary }]}>{requestMsg.length}/500</Text>
-            <Pressable
-              style={[
-                rm.sendBtn,
-                { backgroundColor: sending ? C.border : C.brinjal1 },
-                !sending && { shadowColor: C.brinjal1, shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 },
-              ]}
-              onPress={handleSendRequest}
-              disabled={sending}>
-              <Text style={rm.sendTxt}>{sending ? t('creatorDetailExtra.sendingLabel') : t('creatorDetailExtra.sendRequestBtn')}</Text>
-            </Pressable>
-          </Animated.View>
-        </View>
-      </Modal>
+      <BottomSheet
+        visible={showModal}
+        onClose={() => setShowModal(false)}
+        title={t('creatorDetailExtra.messageRequestTitle')}
+        subtitle={t('creatorDetailExtra.messageRequestSubtitle', { name: profile?.fullName ?? '' })}
+        footer={
+          <Pressable
+            style={[
+              rm.sendBtn,
+              { backgroundColor: sending ? C.border : C.brinjal1 },
+              !sending && { shadowColor: C.brinjal1, shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 },
+            ]}
+            onPress={handleSendRequest}
+            disabled={sending}>
+            <Text style={rm.sendTxt}>{sending ? t('creatorDetailExtra.sendingLabel') : t('creatorDetailExtra.sendRequestBtn')}</Text>
+          </Pressable>
+        }>
+        <TextInput
+          style={[rm.input, { backgroundColor: C.background, borderColor: C.border, color: C.text }]}
+          value={requestMsg}
+          onChangeText={setRequestMsg}
+          placeholder={t('creatorDetailExtra.messageRequestPlaceholder')}
+          placeholderTextColor={C.textSecondary}
+          multiline
+          maxLength={500}
+        />
+        <Text style={[rm.counter, { color: C.textSecondary }]}>{requestMsg.length}/500</Text>
+      </BottomSheet>
     </SafeAreaView>
   );
 }
@@ -506,7 +491,6 @@ const s = StyleSheet.create({
   bubble3:    { width: 60,  height: 60,  top: 20,   left: -20  },
   coverTopBar:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 10 },
   coverTopTitleRow: { flex: 1, marginHorizontal: 8 },
-  topIconBtn:    { width: 38, height: 38, borderRadius: RADIUS.full, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center' },
   topIconSpacer: { width: 38, height: 38 },
 
   // Avatar card (floats over cover)
@@ -574,14 +558,6 @@ const msgBtn = StyleSheet.create({
 
 // Request modal
 const rm = StyleSheet.create({
-  overlay: { flex: 1, justifyContent: 'flex-end' },
-  scrim:   { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.45)' },
-  sheet:   { borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl, padding: 20, paddingBottom: 40, gap: 14 },
-  handle:   { width: 40, height: 4, borderRadius: RADIUS.full, alignSelf: 'center', marginBottom: 4 },
-  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  title:    { fontSize: 18, fontFamily: F.bold, flex: 1 },
-  closeBtn: { width: 32, height: 32, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
-  subtitle:{ fontSize: 13, lineHeight: 20, fontFamily: F.regular },
   input:   { borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, minHeight: 100, textAlignVertical: 'top', fontFamily: F.regular },
   counter: { fontSize: 11, textAlign: 'right', marginTop: -6, fontFamily: F.regular },
   sendBtn: { borderRadius: RADIUS.full, height: 52, justifyContent: 'center', alignItems: 'center' },

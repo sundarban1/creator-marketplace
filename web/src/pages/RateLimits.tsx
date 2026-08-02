@@ -91,6 +91,8 @@ const DEFAULTS: PlatformSettings = {
   'rateLimit.login.max':                  20,
   'rateLimit.campaignCreation.enabled':   true,
   'rateLimit.campaignCreation.maxPerDay': 5,
+  'rateLimit.proposalSubmission.enabled':   true,
+  'rateLimit.proposalSubmission.maxPerDay': 10,
   'rateLimit.messages.enabled':           true,
   'rateLimit.messages.maxPerMinute':      20,
   'rateLimit.duplicateMessages.enabled':  true,
@@ -269,6 +271,21 @@ export function RateLimits() {
           <NumberField
             label="Max events per business per day"
             settingKey="rateLimit.campaignCreation.maxPerDay"
+            settings={settings}
+            onChange={setNumber}
+          />
+        </SectionCard>
+
+        <SectionCard title="Proposal Submission" subtitle="Caps how many proposals a single creator can submit per day">
+          <Toggle
+            label="Limit Proposal Submissions Per Day"
+            description="Cap the number of proposals a creator can submit each calendar day (UTC), across all campaigns"
+            value={bool('rateLimit.proposalSubmission.enabled')}
+            onChange={(v) => toggle('rateLimit.proposalSubmission.enabled', v)}
+          />
+          <NumberField
+            label="Max proposals per creator per day"
+            settingKey="rateLimit.proposalSubmission.maxPerDay"
             settings={settings}
             onChange={setNumber}
           />

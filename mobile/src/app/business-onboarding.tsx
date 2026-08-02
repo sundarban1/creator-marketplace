@@ -21,6 +21,7 @@ import { useCategories } from '@/hooks/useCategories';
 import { LocationSearchModal } from '@/components/LocationSearchModal';
 import { F, FONT_SIZE, RADIUS, SHADOW } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
+import { BackButton } from '@/components/BackButton';
 
 const TOTAL_STEPS = 2;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -195,9 +196,7 @@ export default function BusinessOnboardingScreen() {
       {/* ── Top bar ── */}
       <View style={styles.topBar}>
         {step > 1 ? (
-          <Pressable hitSlop={8} style={[styles.backBtn, { backgroundColor: C.surface, borderColor: C.border }]} onPress={() => setStep((s) => s - 1)}>
-            <Text style={[styles.backArrow, { color: C.brinjal1 }]}>‹</Text>
-          </Pressable>
+          <BackButton onPress={() => setStep((s) => s - 1)} />
         ) : (
           <View style={styles.backBtnPlaceholder} />
         )}
@@ -438,9 +437,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   flex: { flex: 1 },
   topBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 4, gap: 12 },
-  backBtn: { width: 36, height: 36, borderRadius: RADIUS.full, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center' },
-  backBtnPlaceholder: { width: 36, height: 36 },
-  backArrow: { fontSize: 26, lineHeight: 30 },
+  backBtnPlaceholder: { width: 40, height: 40 },
   progressRow: { flex: 1, flexDirection: 'row', gap: 6 },
   progressSegment: { flex: 1, height: 4, borderRadius: 2 },
   stepHeader: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16, gap: 4 },

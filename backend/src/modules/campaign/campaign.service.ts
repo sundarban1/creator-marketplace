@@ -2,8 +2,8 @@ import { CampaignStatus, ApplicationStatus, CampaignType } from '@prisma/client'
 import { v2 as cloudinary } from 'cloudinary';
 import { randomUUID } from 'crypto';
 import { AppError } from '../../middleware/error';
-import { toCampaignDto, toApplicationDto, type DeliverableVideo } from './campaign.dto';
-import { generateVideoUploadSignature, videoThumbnailUrl, videoPlaybackUrl, deleteVideo, MAX_VIDEO_SIZE_BYTES } from '../../utils/cloudinary';
+import { toCampaignDto, toApplicationDto, type DeliverableVideo, type DeliverableFile } from './campaign.dto';
+import { generateVideoUploadSignature, videoThumbnailUrl, videoPlaybackUrl, deleteVideo, MAX_VIDEO_SIZE_BYTES, uploadImage as uploadImageToCloudinary, uploadRawFile, deleteImage, deleteRawFile } from '../../utils/cloudinary';
 import { BusinessRepository } from '../business/business.repository';
 import { CreatorRepository } from '../creator/creator.repository';
 import { CampaignRepository } from './campaign.repository';
@@ -30,6 +30,11 @@ const CAMPAIGN_FIELDS = ['title', 'description', 'category', 'goals', 'platforms
 // MP4 (H.264/AAC) is preferred; MOV is accepted and delivered as MP4 via
 // videoPlaybackUrl. Mirrors messaging.service.ts's same allow-list.
 const ALLOWED_DELIVERABLE_VIDEO_FORMATS = new Set(['mp4', 'mov', 'qt']);
+
+// Non-destructive cap, not the avatar-style 400x400 face-crop — these are
+// arbitrary content photos, not portraits. Mirrors messaging.service.ts's
+// ATTACHMENT_IMAGE_TRANSFORMATION for chat image attachments.
+const DELIVERABLE_IMAGE_TRANSFORMATION = [{ width: 1600, crop: 'limit' }];
 
 // Once a creator has submitted a proposal, the terms it was submitted against
 // (price, platform, deliverables) can no longer change under them — everything
@@ -445,6 +450,26 @@ export class CampaignService {
     return { campaigns, total, page, limit };
   }
 
+  // Admin-configurable anti-abuse gate: caps how many proposals a single creator
+  // can submit per calendar day (UTC), across all campaigns. Fails open (skip the
+  // check) if the setting is disabled. Every submission counts toward the cap
+  // regardless of the application's later status (pending/accepted/rejected).
+  private async assertProposalSubmissionAllowed(creatorId: string): Promise<void> {
+    const [enabled, maxPerDay] = await Promise.all([
+      this.adminRepo.getSetting('rateLimit.proposalSubmission.enabled'),
+      this.adminRepo.getSetting('rateLimit.proposalSubmission.maxPerDay').then((v) => Number(v) || 10),
+    ]);
+
+    if (enabled === false) return;
+
+    const startOfDayUtc = new Date();
+    startOfDayUtc.setUTCHours(0, 0, 0, 0);
+    const submittedToday = await this.repo.countApplicationsCreatedSince(creatorId, startOfDayUtc);
+    if (submittedToday >= maxPerDay) {
+      throw new AppError(`You've reached the limit of ${maxPerDay} proposals submitted per day. Please try again tomorrow.`, 429);
+    }
+  }
+
   async apply(campaignId: string, userId: string, input: ApplyToCampaignInput) {
     const creator = await this.creatorRepo.findByUserId(userId);
     if (!creator) {
@@ -464,6 +489,8 @@ export class CampaignService {
     if (existingApplication) {
       throw new AppError('You have already applied to this campaign', 409);
     }
+
+    await this.assertProposalSubmissionAllowed(creator.id);
 
     const isFreeCampaign = (campaign as any).campaignType === 'OPEN_EVENT';
     if (!isFreeCampaign && campaign.budgetMax > 0) {
@@ -951,21 +978,32 @@ export class CampaignService {
     if (app.campaign.business.id !== business.id) throw new AppError('Not authorized', 403);
     if (app.workStatus !== 'SUBMITTED') throw new AppError('Work has not been submitted yet', 400);
 
+    const existingVideos = await this.repo.getDeliverableVideos(appId);
+
+    const updated = await this.repo.requestRevision(appId, note);
+
+    // Send the revision note as a chat message, followed by a copy of each
+    // currently-submitted video (see sendRevisionRequestMessage) — awaited
+    // here, before the Cloudinary cleanup below, so the creator's in-chat
+    // copy is dispatched with URLs that are still live rather than racing
+    // the deletion below.
+    await messagingService
+      .sendRevisionRequestMessage(app.creatorId, business.id, app.campaignId, userId, note, existingVideos)
+      .catch(() => {});
+
     // Videos are appended (capped at 3), not wholesale-replaced like
     // deliverableUrls — without clearing them here, a creator who filled all
     // 3 slots in this round would have zero slots left for the revised
     // submission. Delete the Cloudinary assets too so they don't linger
     // unreferenced; best-effort, matching this file's existing notification/
     // email error-swallowing convention.
-    const existingVideos = await this.repo.getDeliverableVideos(appId);
     await Promise.all(existingVideos.map((v) => deleteVideo(v.publicId))).catch(() => {});
     if (existingVideos.length > 0) await this.repo.clearDeliverableVideos(appId);
 
-    const updated = await this.repo.requestRevision(appId, note);
-
-    messagingService
-      .sendRevisionRequestMessage(app.creatorId, business.id, app.campaignId, userId, note)
-      .catch(() => {});
+    // Same reasoning as the video block above, for images/PDF/DOCX.
+    const existingFiles = await this.repo.getDeliverableFiles(appId);
+    await Promise.all(existingFiles.map((f) => (f.fileType === 'IMAGE' ? deleteImage(f.publicId) : deleteRawFile(f.publicId)))).catch(() => {});
+    if (existingFiles.length > 0) await this.repo.clearDeliverableFiles(appId);
 
     const creatorUserId = app.creator.userId;
     notificationService.create({
@@ -996,7 +1034,7 @@ export class CampaignService {
   // client-side before upload and server-side in completeDeliverableVideo) and a
   // hard cap of 3 videos per application instead of unlimited messages.
 
-  private async assertCanUploadDeliverableVideo(appId: string, userId: string) {
+  private async assertCanUploadDeliverable(appId: string, userId: string) {
     const creator = await this.creatorRepo.findByUserId(userId);
     if (!creator) throw new AppError('Creator profile not found', 404);
 
@@ -1014,7 +1052,7 @@ export class CampaignService {
   }
 
   async requestDeliverableVideoSignature(appId: string, userId: string) {
-    const app = await this.assertCanUploadDeliverableVideo(appId, userId);
+    const app = await this.assertCanUploadDeliverable(appId, userId);
     const existing = await this.repo.getDeliverableVideos(appId);
     if (existing.length >= 3) throw new AppError('Maximum of 3 videos already uploaded for this application', 409);
 
@@ -1025,7 +1063,7 @@ export class CampaignService {
   async completeDeliverableVideo(appId: string, userId: string, publicId: string, clientDurationSec?: number) {
     // Re-checked fresh here, not just at signature time — a 500MB upload can
     // take minutes, during which the business could approve the work.
-    await this.assertCanUploadDeliverableVideo(appId, userId);
+    await this.assertCanUploadDeliverable(appId, userId);
 
     const expectedPrefix = 'campaigns/deliverables/deliverable_';
     if (!publicId.startsWith(expectedPrefix) || !publicId.includes(`_${appId}_`)) {
@@ -1080,15 +1118,64 @@ export class CampaignService {
   }
 
   async removeDeliverableVideo(appId: string, userId: string, publicId: string) {
-    await this.assertCanUploadDeliverableVideo(appId, userId);
+    await this.assertCanUploadDeliverable(appId, userId);
     await deleteVideo(publicId).catch(() => {});
     const updated = await this.repo.removeDeliverableVideo(appId, publicId);
     return toApplicationDto(updated);
   }
 
   async renameDeliverableVideo(appId: string, userId: string, publicId: string, label: string) {
-    await this.assertCanUploadDeliverableVideo(appId, userId);
+    await this.assertCanUploadDeliverable(appId, userId);
     const updated = await this.repo.renameDeliverableVideo(appId, publicId, label.trim());
+    return toApplicationDto(updated);
+  }
+
+  // ── Deliverable files (images / PDF / DOCX) ─────────────────────────────────
+  // Unlike deliverable videos, these are small enough (<=5MB, enforced by
+  // multer's uploadDeliverableFile) to proxy straight through this server —
+  // no signing/direct-to-Cloudinary flow needed, and no async verification
+  // step since the file is already fully in hand by the time this runs.
+
+  async uploadDeliverableFile(appId: string, userId: string, file: Express.Multer.File): Promise<DeliverableFile> {
+    await this.assertCanUploadDeliverable(appId, userId);
+
+    const existing = await this.repo.getDeliverableFiles(appId);
+    if (existing.length >= 10) throw new AppError('Maximum of 10 files already uploaded for this application', 409);
+
+    const isImage = file.mimetype.startsWith('image/');
+    const publicId = `deliverable_${appId}_${Date.now()}_${randomUUID()}`;
+    const url = isImage
+      ? await uploadImageToCloudinary(file.buffer, 'campaigns/deliverables', publicId, DELIVERABLE_IMAGE_TRANSFORMATION)
+      : await uploadRawFile(file.buffer, 'campaigns/deliverables', publicId);
+
+    const entry: DeliverableFile = {
+      id:               randomUUID(),
+      publicId,
+      url,
+      fileType:         isImage ? 'IMAGE' : 'DOCUMENT',
+      originalFileName: file.originalname,
+      mimeType:         file.mimetype,
+      sizeBytes:        file.size,
+      uploadedAt:       new Date().toISOString(),
+    };
+
+    const appended = await this.repo.appendDeliverableFile(appId, entry);
+    if (!appended) {
+      await (isImage ? deleteImage(publicId) : deleteRawFile(publicId));
+      throw new AppError('Maximum of 10 files already uploaded for this application', 409);
+    }
+
+    return entry;
+  }
+
+  async removeDeliverableFile(appId: string, userId: string, fileId: string) {
+    await this.assertCanUploadDeliverable(appId, userId);
+    const existing = await this.repo.getDeliverableFiles(appId);
+    const target = existing.find((f) => f.id === fileId);
+    if (target) {
+      await (target.fileType === 'IMAGE' ? deleteImage(target.publicId) : deleteRawFile(target.publicId)).catch(() => {});
+    }
+    const updated = await this.repo.removeDeliverableFile(appId, fileId);
     return toApplicationDto(updated);
   }
 

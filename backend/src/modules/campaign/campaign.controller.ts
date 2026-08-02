@@ -304,6 +304,30 @@ export class CampaignController {
     }
   }
 
+  async uploadDeliverableFile(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.file) throw new AppError('No file provided', 400);
+      const result = await campaignService.uploadDeliverableFile(req.params.appId, req.user!.id, req.file);
+      success(res, result, 'File uploaded', 201);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // fileId is our own generated id (not a Cloudinary publicId), but travels as
+  // a query param for the same reason removeDeliverableVideo's publicId does —
+  // consistency with that endpoint's shape rather than a technical necessity here.
+  async removeDeliverableFile(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const fileId = req.query.fileId as string;
+      if (!fileId) throw new AppError('fileId is required', 400);
+      const result = await campaignService.removeDeliverableFile(req.params.appId, req.user!.id, fileId);
+      success(res, result, 'File removed');
+    } catch (err) {
+      next(err);
+    }
+  }
+
   async payForApplication(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const result = await campaignService.payForApplication(req.params.appId, req.user!.id);

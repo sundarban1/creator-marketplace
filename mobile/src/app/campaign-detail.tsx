@@ -6,9 +6,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Animated,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -17,6 +14,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { BottomSheet } from '@/components/BottomSheet';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
@@ -707,22 +705,21 @@ export default function CampaignDetailScreen() {
       </MaxWidthContainer>
 
       {/* ── Edit Campaign Modal ── */}
-      <Modal visible={editOpen} transparent animationType="slide" onRequestClose={() => setEditOpen(false)}>
-        <View style={em.overlay}>
-          <Pressable style={em.scrim} onPress={() => setEditOpen(false)} />
-          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={em.sheetWrap}>
-            <View style={[em.sheet, { backgroundColor: C.surface }]}>
-              <View style={[em.handle, { backgroundColor: C.border }]} />
-
-              {/* Sheet header */}
-              <View style={em.sheetHeader}>
-                <Text style={[em.sheetTitle, { color: C.text }]}>{t('campaignDetail.editEvent')}</Text>
-                <Pressable onPress={() => setEditOpen(false)} hitSlop={10}>
-                  <Ionicons name="close" size={22} color={C.textSecondary} />
-                </Pressable>
-              </View>
-
-              <ScrollView style={em.body} contentContainerStyle={em.bodyContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+      <BottomSheet
+        visible={editOpen}
+        onClose={() => setEditOpen(false)}
+        title={t('campaignDetail.editEvent')}
+        maxHeightPct={0.92}
+        maxWidth={MAX_CONTENT_WIDTH}
+        contentContainerStyle={em.bodyContent}
+        footer={
+          <Pressable
+            style={({ pressed }) => [em.saveBtn, { backgroundColor: saving ? C.border : C.brinjal1 }, pressed && !saving && { opacity: 0.88 }]}
+            onPress={handleSave}
+            disabled={saving}>
+            <Text style={em.saveBtnTxt}>{saving ? t('campaignDetail.saving') : t('campaignDetail.saveChanges')}</Text>
+          </Pressable>
+        }>
 
                 {/* ── Basic Info ── */}
                 <SectionCard title={t('campaignDetail.fieldTitle')} colors={C}>
@@ -947,77 +944,48 @@ export default function CampaignDetailScreen() {
                   />
                 </View>
 
-                <View style={{ height: 32 }} />
-              </ScrollView>
-
-              {/* Save button */}
-              <Pressable
-                style={({ pressed }) => [em.saveBtn, { backgroundColor: saving ? C.border : C.brinjal1 }, pressed && !saving && { opacity: 0.88 }]}
-                onPress={handleSave}
-                disabled={saving}>
-                <Text style={em.saveBtnTxt}>{saving ? t('campaignDetail.saving') : t('campaignDetail.saveChanges')}</Text>
-              </Pressable>
-            </View>
-          </KeyboardAvoidingView>
-        </View>
-      </Modal>
+      </BottomSheet>
 
       {/* ── Calendar modal (deadline) ── */}
-      <Modal visible={calOpen} transparent animationType="slide" onRequestClose={() => setCalOpen(false)}>
-        <View style={em.overlay}>
-          <Pressable style={em.scrim} onPress={() => setCalOpen(false)} />
-          <View style={[em.calSheet, { backgroundColor: C.surface }]}>
-            <View style={[em.handle, { backgroundColor: C.border }]} />
-            <View style={em.sheetHeader}>
-              <Text style={[em.sheetTitle, { color: C.text }]}>{isOpenEvent ? t('campaignDetail.calendarRegDeadline') : t('campaignDetail.calendarSelectDeadline')}</Text>
-              <Pressable onPress={() => setCalOpen(false)}>
-                <Text style={[em.doneBtn, { color: C.brinjal1 }]}>{t('campaignDetail.doneBtn')}</Text>
-              </Pressable>
-            </View>
-            {editForm.deadline && (
-              <View style={[em.selectedBadge, { backgroundColor: C.primaryLight }]}>
-                <Text style={[em.selectedTxt, { color: C.brinjal1 }]}>{t('campaignDetail.calendarSelected', { date: fmtDate(editForm.deadline) })}</Text>
-              </View>
-            )}
-            <CalendarGrid
-              value={editForm.deadline}
-              onChange={(d) => { updateEdit('deadline', d); setCalOpen(false); }}
-              colors={C}
-            />
+      <BottomSheet
+        visible={calOpen}
+        onClose={() => setCalOpen(false)}
+        title={isOpenEvent ? t('campaignDetail.calendarRegDeadline') : t('campaignDetail.calendarSelectDeadline')}
+        maxHeightPct={0.7}>
+        {editForm.deadline && (
+          <View style={[em.selectedBadge, { backgroundColor: C.primaryLight }]}>
+            <Text style={[em.selectedTxt, { color: C.brinjal1 }]}>{t('campaignDetail.calendarSelected', { date: fmtDate(editForm.deadline) })}</Text>
           </View>
-        </View>
-      </Modal>
+        )}
+        <CalendarGrid
+          value={editForm.deadline}
+          onChange={(d) => { updateEdit('deadline', d); setCalOpen(false); }}
+          colors={C}
+        />
+      </BottomSheet>
 
       {/* ── Calendar modal (event date) ── */}
-      <Modal visible={eventCalOpen} transparent animationType="slide" onRequestClose={() => setEventCalOpen(false)}>
-        <View style={em.overlay}>
-          <Pressable style={em.scrim} onPress={() => setEventCalOpen(false)} />
-          <View style={[em.calSheet, { backgroundColor: C.surface }]}>
-            <View style={[em.handle, { backgroundColor: C.border }]} />
-            <View style={em.sheetHeader}>
-              <Text style={[em.sheetTitle, { color: C.text }]}>{t('campaignDetail.calendarEventDate')}</Text>
-              <Pressable onPress={() => setEventCalOpen(false)}>
-                <Text style={[em.doneBtn, { color: C.brinjal1 }]}>{t('campaignDetail.doneBtn')}</Text>
-              </Pressable>
-            </View>
-            {editForm.eventDate && (
-              <View style={[em.selectedBadge, { backgroundColor: C.primaryLight }]}>
-                <Text style={[em.selectedTxt, { color: C.brinjal1 }]}>{t('campaignDetail.calendarSelected', { date: fmtDate(editForm.eventDate) })}</Text>
-              </View>
-            )}
-            <CalendarGrid
-              value={editForm.eventDate}
-              onChange={(d) => {
-                const twoDaysBefore = new Date(d.getTime() - 2 * 24 * 60 * 60 * 1000);
-                updateEdit('eventDate', d);
-                updateEdit('deadline', twoDaysBefore);
-                setEventCalOpen(false);
-              }}
-              colors={C}
-            />
+      <BottomSheet
+        visible={eventCalOpen}
+        onClose={() => setEventCalOpen(false)}
+        title={t('campaignDetail.calendarEventDate')}
+        maxHeightPct={0.7}>
+        {editForm.eventDate && (
+          <View style={[em.selectedBadge, { backgroundColor: C.primaryLight }]}>
+            <Text style={[em.selectedTxt, { color: C.brinjal1 }]}>{t('campaignDetail.calendarSelected', { date: fmtDate(editForm.eventDate) })}</Text>
           </View>
-        </View>
-      </Modal>
+        )}
+        <CalendarGrid
+          value={editForm.eventDate}
+          onChange={(d) => {
+            const twoDaysBefore = new Date(d.getTime() - 2 * 24 * 60 * 60 * 1000);
+            updateEdit('eventDate', d);
+            updateEdit('deadline', twoDaysBefore);
+            setEventCalOpen(false);
+          }}
+          colors={C}
+        />
+      </BottomSheet>
 
       {/* Toast */}
       {toast && (
@@ -1140,18 +1108,6 @@ const s = StyleSheet.create({
 });
 
 const em = StyleSheet.create({
-  overlay:   { flex: 1, justifyContent: 'flex-end' },
-  scrim:     { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.45)' },
-  sheetWrap: { justifyContent: 'flex-end' },
-  sheet:     { borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl, paddingHorizontal: 20, paddingBottom: 32, maxHeight: '92%', width: '100%', maxWidth: MAX_CONTENT_WIDTH, alignSelf: 'center' },
-  calSheet:  { borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl, padding: 20, paddingBottom: 40, gap: 16 },
-  handle:    { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginTop: 12, marginBottom: 16 },
-
-  sheetHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
-  sheetTitle:  { fontSize: 17, fontFamily: F.bold },
-  doneBtn:     { fontSize: 15, fontFamily: F.bold },
-
-  body:        { flexGrow: 0 },
   bodyContent: { gap: 12 },
 
   sectionHdr: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 0, marginBottom: 12, fontFamily: F.bold },

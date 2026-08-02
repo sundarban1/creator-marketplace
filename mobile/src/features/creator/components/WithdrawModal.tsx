@@ -2,10 +2,8 @@ import { useState } from 'react';
 import { FontAwesome5 } from '@expo/vector-icons';
 import {
   ActivityIndicator,
-  Animated,
   InputAccessoryView,
   Keyboard,
-  Modal,
   Platform,
   Pressable,
   StyleSheet,
@@ -16,8 +14,8 @@ import {
 } from 'react-native';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
-import { useKeyboardOffset } from '@/hooks/useKeyboardOffset';
 import { PaymentMethodIcon } from '@/components/PaymentMethodIcon';
+import { BottomSheet } from '@/components/BottomSheet';
 import { isPaymentMethodId } from '@/utilities/paymentMethods';
 import { F } from '@/utilities/constants';
 
@@ -47,7 +45,6 @@ export function WithdrawModal({ visible, onClose, availableBalance, paymentMetho
   const [amountText, setAmountText] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const keyboardOffset = useKeyboardOffset();
 
   function handleClose() {
     Keyboard.dismiss();
@@ -77,15 +74,26 @@ export function WithdrawModal({ visible, onClose, availableBalance, paymentMetho
   }
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={handleClose}>
-      <Pressable style={styles.backdrop} onPress={handleClose} />
-      <Animated.View style={[styles.sheet, { backgroundColor: C.surface, transform: [{ translateY: keyboardOffset }] }]}>
-        <View style={[styles.handle, { backgroundColor: C.border }]} />
-
-        <View style={[styles.header, { borderBottomColor: C.border }]}>
-          <Text style={[styles.title, { color: C.text }]}>{t('wallet.modalTitle')}</Text>
-        </View>
-
+    <BottomSheet
+      visible={visible}
+      onClose={handleClose}
+      title={t('wallet.modalTitle')}
+      maxHeightPct={0.8}
+      contentContainerStyle={{ paddingHorizontal: 0, paddingTop: 0, paddingBottom: 0 }}
+      footer={paymentMethods.length > 0 ? (
+        <Pressable
+          style={({ pressed }) => [
+            styles.submitBtn,
+            { backgroundColor: C.brinjal1, shadowColor: C.brinjal1, opacity: submitting ? 0.7 : 1 },
+            pressed && { opacity: 0.88 },
+          ]}
+          disabled={submitting}
+          onPress={handleSubmit}>
+          {submitting
+            ? <ActivityIndicator size="small" color="#fff" />
+            : <Text style={styles.submitBtnText}>{t('wallet.withdrawBtn', { amount: amountText || '0' })}</Text>}
+        </Pressable>
+      ) : undefined}>
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={styles.body}>
           {paymentMethods.length === 0 ? (
@@ -155,36 +163,12 @@ export function WithdrawModal({ visible, onClose, availableBalance, paymentMetho
             </View>
           </InputAccessoryView>
         )}
-
-        {paymentMethods.length > 0 && (
-          <View style={[styles.footer, { borderTopColor: C.border }]}>
-            <Pressable
-              style={({ pressed }) => [
-                styles.submitBtn,
-                { backgroundColor: C.brinjal1, shadowColor: C.brinjal1, opacity: submitting ? 0.7 : 1 },
-                pressed && { opacity: 0.88 },
-              ]}
-              disabled={submitting}
-              onPress={handleSubmit}>
-              {submitting
-                ? <ActivityIndicator size="small" color="#fff" />
-                : <Text style={styles.submitBtnText}>{t('wallet.withdrawBtn', { amount: amountText || '0' })}</Text>}
-            </Pressable>
-          </View>
-        )}
-      </Animated.View>
-    </Modal>
+    </BottomSheet>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)' },
-  sheet:    { position: 'absolute', left: 0, right: 0, bottom: 0, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '80%', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 20, shadowOffset: { width: 0, height: -4 }, elevation: 20 },
-  handle:   { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginTop: 12, marginBottom: 4 },
-  header:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1 },
-  title:    { fontSize: 16, fontFamily: F.bold },
   body:     { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8, gap: 4 },
-  footer:   { padding: 20, borderTopWidth: 1 },
 
   label: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: F.bold, marginBottom: 8 },
   methodRow: { flexDirection: 'row', gap: 8 },

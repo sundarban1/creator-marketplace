@@ -389,6 +389,11 @@ model Application {
   // otherwise race and silently drop one. Cleared (with the underlying Cloudinary assets deleted) on
   // requestRevision — see CampaignService.requestRevision.
   deliverableVideos   Json                 @default("[]")
+  // Up to 10 entries: { id, publicId, url, fileType, originalFileName, mimeType, sizeBytes, uploadedAt }.
+  // Images/PDF/DOCX are <=5MB and proxied through this server (multer), unlike
+  // deliverableVideos' direct-to-Cloudinary signed flow. Cleared alongside
+  // deliverableVideos on requestRevision.
+  deliverableFiles    Json                 @default("[]")
   paymentStatus       PaymentStatus        @default(UNPAID)
   paidAt              DateTime?
   // Set only when an admin manually releases the held escrow payment —

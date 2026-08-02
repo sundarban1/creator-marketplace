@@ -30,6 +30,28 @@ export const uploadChatImage = multer({
   },
 });
 
+// Campaign deliverables (images + PDF/DOCX only — narrower than uploadChatFile's
+// allowlist above, and a much smaller cap since these are proxied through this
+// server rather than uploaded direct-to-Cloudinary like deliverable videos).
+const DELIVERABLE_FILE_ALLOWED_TYPES = [
+  'image/jpeg', 'image/jpg', 'image/png',
+  'application/pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+];
+const DELIVERABLE_FILE_MAX_BYTES = 5 * 1024 * 1024; // 5 MB
+
+export const uploadDeliverableFile = multer({
+  storage: multer.memoryStorage(),
+  limits:  { fileSize: DELIVERABLE_FILE_MAX_BYTES },
+  fileFilter(_req, file, cb) {
+    if (DELIVERABLE_FILE_ALLOWED_TYPES.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new AppError('Only JPG, PNG, PDF, and DOCX files are allowed', 400) as unknown as null, false);
+    }
+  },
+});
+
 const CHAT_FILE_ALLOWED_TYPES = [
   ...ALLOWED_TYPES,
   'application/pdf',

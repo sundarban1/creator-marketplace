@@ -8,6 +8,7 @@ import {
   Image,
   KeyboardAvoidingView,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -27,6 +28,8 @@ import { useCategories } from '@/hooks/useCategories';
 import { usePlatforms } from '@/hooks/usePlatforms';
 import { FeatureImagePicker } from '@/features/creator/components/FeatureImagePicker';
 import { LocationSearchModal } from '@/components/LocationSearchModal';
+import { BottomSheet } from '@/components/BottomSheet';
+import { BackButton } from '@/components/BackButton';
 import { pickAndUpload } from '@/utilities/uploadImage';
 import { RecommendedCreatorsModal } from '@/features/business/components/RecommendedCreatorsModal';
 import { VoicePromptInput } from '@/features/business/components/VoicePromptInput';
@@ -439,11 +442,6 @@ const dp = StyleSheet.create({
   trigger:      { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: RADIUS.md, borderWidth: 1.5, paddingHorizontal: 14, height: 50 },
   triggerText:  { flex: 1, fontSize: 14, fontFamily: F.medium },
   error:        { fontSize: 12, color: ERROR_RED, fontFamily: F.regular, marginTop: 4 },
-  modalWrap:  { flex: 1, justifyContent: 'flex-end' },
-  scrim:      { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.45)' },
-  sheet:      { borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl, padding: 20, paddingBottom: 40, maxHeight: '70%' },
-  handle:     { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginBottom: 16 },
-  sheetTitle: { fontSize: 16, fontFamily: F.bold, marginBottom: 12 },
 });
 
 // ─── MultiCheckboxDropdown ────────────────────────────────────────────────────
@@ -485,36 +483,22 @@ function MultiCheckboxDropdown({
       </Pressable>
       {error && <Text style={dp.error}>{error}</Text>}
 
-      <Modal visible={open} transparent animationType="slide" onRequestClose={() => setOpen(false)}>
-        <View style={dp.modalWrap}>
-          <Pressable style={dp.scrim} onPress={() => setOpen(false)} />
-          <View style={[dp.sheet, { backgroundColor: C.surface }]}>
-            <View style={[dp.handle, { backgroundColor: C.border }]} />
-            <View style={mc.sheetHeader}>
-              <Text style={[dp.sheetTitle, { color: C.text, marginBottom: 0 }]}>{placeholder}</Text>
-              <Pressable onPress={() => setOpen(false)}>
-                <Text style={[mc.done, { color: C.brinjal1 }]}>{t('createEvent.multiSelectDone')}</Text>
-              </Pressable>
-            </View>
-            <ScrollView showsVerticalScrollIndicator={false} style={{ marginTop: 12 }}>
-              {options.map((opt) => {
-                const checked = values.includes(opt);
-                return (
-                  <Pressable
-                    key={opt}
-                    style={[mc.row, { backgroundColor: checked ? C.primaryLight : 'transparent' }]}
-                    onPress={() => toggle(opt)}>
-                    <View style={[mc.checkbox, { borderColor: checked ? C.brinjal1 : C.border, backgroundColor: checked ? C.brinjal1 : 'transparent' }]}>
-                      {checked && <Ionicons name="checkmark" size={13} color="#fff" />}
-                    </View>
-                    <Text style={[mc.rowLabel, { color: checked ? C.brinjal1 : C.text, fontFamily: checked ? F.semibold : F.regular }]}>{opt}</Text>
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
+      <BottomSheet visible={open} onClose={() => setOpen(false)} title={placeholder} maxHeightPct={0.7}>
+        {options.map((opt) => {
+          const checked = values.includes(opt);
+          return (
+            <Pressable
+              key={opt}
+              style={[mc.row, { backgroundColor: checked ? C.primaryLight : 'transparent' }]}
+              onPress={() => toggle(opt)}>
+              <View style={[mc.checkbox, { borderColor: checked ? C.brinjal1 : C.border, backgroundColor: checked ? C.brinjal1 : 'transparent' }]}>
+                {checked && <Ionicons name="checkmark" size={13} color="#fff" />}
+              </View>
+              <Text style={[mc.rowLabel, { color: checked ? C.brinjal1 : C.text, fontFamily: checked ? F.semibold : F.regular }]}>{opt}</Text>
+            </Pressable>
+          );
+        })}
+      </BottomSheet>
     </>
   );
 }
@@ -522,8 +506,6 @@ function MultiCheckboxDropdown({
 const mc = StyleSheet.create({
   badge:      { width: 20, height: 20, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
   badgeText:  { fontSize: 11, color: '#fff', fontFamily: F.bold },
-  sheetHeader:{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  done:       { fontSize: 15, fontFamily: F.bold },
   row:        { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 13, paddingHorizontal: 12, borderRadius: RADIUS.md, marginBottom: 4 },
   checkbox:   { width: 22, height: 22, borderRadius: 6, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center' },
   rowLabel:   { flex: 1, fontSize: 14 },
@@ -676,28 +658,16 @@ function DeadlinePicker({ value, onChange, error, colors, label }: {
       </Pressable>
       {error && <Text style={dp.error}>{error}</Text>}
 
-      <Modal visible={open} transparent animationType="slide" onRequestClose={() => setOpen(false)}>
-        <View style={dp.modalWrap}>
-          <Pressable style={dp.scrim} onPress={() => setOpen(false)} />
-          <View style={[dp.sheet, { backgroundColor: C.surface }]}>
-            <View style={[dp.handle, { backgroundColor: C.border }]} />
-            <View style={mc.sheetHeader}>
-              <Text style={[dp.sheetTitle, { color: C.text, marginBottom: 0 }]}>{label ?? t('createEvent.deadlineDefaultLabel')}</Text>
-              <Pressable onPress={() => setOpen(false)}>
-                <Text style={[mc.done, { color: C.brinjal1 }]}>{t('createEvent.deadlineDone')}</Text>
-              </Pressable>
-            </View>
-            {value && (
-              <View style={[{ borderRadius: RADIUS.sm, padding: 10, marginTop: 12, backgroundColor: C.primaryLight }]}>
-                <Text style={[{ fontSize: 13, fontFamily: F.bold, color: C.brinjal1 }]}>{t('createEvent.deadlineSelected', { date: fmtDate(value) })}</Text>
-              </View>
-            )}
-            <View style={{ marginTop: 16 }}>
-              <CalendarGrid value={value} onChange={(d) => { onChange(d); setOpen(false); }} colors={C} />
-            </View>
+      <BottomSheet visible={open} onClose={() => setOpen(false)} title={label ?? t('createEvent.deadlineDefaultLabel')} maxHeightPct={0.7}>
+        {value && (
+          <View style={[{ borderRadius: RADIUS.sm, padding: 10, backgroundColor: C.primaryLight }]}>
+            <Text style={[{ fontSize: 13, fontFamily: F.bold, color: C.brinjal1 }]}>{t('createEvent.deadlineSelected', { date: fmtDate(value) })}</Text>
           </View>
+        )}
+        <View style={{ marginTop: 16 }}>
+          <CalendarGrid value={value} onChange={(d) => { onChange(d); setOpen(false); }} colors={C} />
         </View>
-      </Modal>
+      </BottomSheet>
     </>
   );
 }
@@ -1439,16 +1409,15 @@ export default function CreateCampaignScreen() {
       {/* Header — borderless/floating, matching the home tab's header (an
           inset divider below separates it from content, not a hard border). */}
       <View style={[s.header, { backgroundColor: C.background }]}>
-        <Pressable
+        <BackButton
+          icon={phase === 'setup' ? 'close' : 'chevron-back'}
           onPress={() => {
             if (phase === 'confirm') setPhase('review');
             else if (phase === 'review') setPhase('setup');
             else if (router.canGoBack()) router.back();
             else router.replace('/(business)/');
           }}
-          style={[s.backBtn, { backgroundColor: C.surface, borderColor: C.border, borderWidth: 1 }]}>
-          <Ionicons name={phase === 'setup' ? 'close' : 'chevron-back'} size={22} color={C.text} />
-        </Pressable>
+        />
         <View style={s.headerCenter}>
           <Text style={[s.headerTitle, { color: C.text }]}>{t('createEvent.headerTitle')}</Text>
           {phase !== 'setup' && (
@@ -1507,6 +1476,7 @@ export default function CreateCampaignScreen() {
                       <Pressable
                         key={opt.key}
                         onPress={() => { if (form.eventType !== opt.key) resetFormForType(opt.key); }}
+                        android_ripple={{ color: `${opt.tone.color}33`, borderless: false }}
                         style={[
                           s.optionCard,
                           { backgroundColor: C.surface, borderColor: selected ? opt.tone.color : C.border },
@@ -2341,7 +2311,6 @@ const s = StyleSheet.create({
 
   header:       { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12 },
   headerDivider:{ height: 1, marginHorizontal: 20 },
-  backBtn:      { width: 40, height: 40, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
   headerCenter: { flex: 1, alignItems: 'center' },
   headerTitle:  { fontSize: 18, fontFamily: F.bold },
   headerSub:    { fontSize: 11, marginTop: 1, fontFamily: F.regular },
@@ -2426,7 +2395,10 @@ const s = StyleSheet.create({
   // border/background swap. Used in place of a plain TabSlider wherever the
   // choice benefits from an explanatory sentence, not just a short label.
   optionCard:     { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: RADIUS.lg, borderWidth: 1.5, padding: 14, ...SHADOW.card },
-  optionIconWrap: { width: 40, height: 40, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
+  // shadowColor is tinted per-option (see `tone.color` below) for a soft colored glow —
+  // Android's `elevation` can't be tinted and just paints a flat gray blob over the icon
+  // chip instead, so it's iOS-only here; Android gets no elevation on this small chip.
+  optionIconWrap: { width: 40, height: 40, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center', ...Platform.select({ ios: { shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } }, default: {} }) },
   optionTextWrap: { flex: 1, gap: 2 },
   optionTitle:    { fontSize: 14, fontFamily: F.bold },
   optionDesc:     { fontSize: 12, fontFamily: F.regular, lineHeight: 17 },

@@ -13,6 +13,7 @@ import { useCategories } from '@/hooks/useCategories';
 import { LocationSearchModal } from '@/components/LocationSearchModal';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
+import { BackButton } from '@/components/BackButton';
 
 const TOTAL_STEPS = 2;
 const GENDER_KEYS = ['Male', 'Female', 'Non-binary', 'Prefer not to say'] as const;
@@ -305,11 +306,9 @@ export default function OnboardingScreen() {
       {/* ── Top bar ── */}
       <View style={styles.topBar}>
         {step > 1 ? (
-          <Pressable hitSlop={8} style={[styles.backBtn, { backgroundColor: C.surface, borderColor: C.border }]} onPress={() => setStep((s) => s - 1)}>
-            <Text style={[styles.backArrow, { color: C.brinjal1 }]}>‹</Text>
-          </Pressable>
+          <BackButton onPress={() => setStep((s) => s - 1)} />
         ) : (
-          <View style={styles.backBtn} />
+          <View style={styles.backBtnSpacer} />
         )}
         <View style={styles.progressRow}>
           {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
@@ -587,8 +586,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   flex: { flex: 1 },
   topBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 4, gap: 12 },
-  backBtn: { width: 36, height: 36, borderRadius: RADIUS.full, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center' },
-  backArrow: { fontSize: 26, lineHeight: 30 },
+  backBtnSpacer: { width: 40, height: 40 },
   progressRow: { flex: 1, flexDirection: 'row', gap: 6 },
   progressSegment: { flex: 1, height: 4, borderRadius: 2 },
   stepHeader: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16, gap: 4 },

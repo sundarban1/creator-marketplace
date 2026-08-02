@@ -32,10 +32,19 @@ export function Hero() {
         K
       </span>
 
+      {/* Fills the empty space below the K watermark with the same faint,
+          decorative treatment (low opacity, oversized, non-interactive). */}
+      <img
+        src="/icon.png"
+        alt=""
+        aria-hidden
+        className="pointer-events-none absolute left-24 bottom-32 h-56 w-56 select-none opacity-[0.07] sm:h-72 sm:w-72"
+      />
+
       <div className="relative mx-auto max-w-6xl px-6">
-        <div className="grid items-center gap-16 lg:grid-cols-[1.1fr_0.9fr] lg:gap-12">
-          <motion.div initial="hidden" animate="show" variants={stagger()} className="mx-auto max-w-xl text-center lg:mx-0 lg:text-left">
-            <motion.p variants={fadeUp} className="flex items-center justify-center gap-2 font-serif text-base italic text-ink-soft lg:justify-start">
+        <div className="grid items-center gap-16 lg:grid-cols-[1.1fr_0.9fr] lg:gap-24">
+          <motion.div initial="hidden" animate="show" variants={stagger()} className="mx-auto max-w-xl text-center">
+            <motion.p variants={fadeUp} className="flex items-center justify-center gap-2 font-serif text-base italic text-ink-soft">
               <span className="h-1.5 w-1.5 rounded-full bg-gradient-to-br from-violet to-brand-orange" />
               {d.hero.eyebrow}
             </motion.p>
@@ -83,11 +92,21 @@ export function Hero() {
               </span>
             </motion.h1>
 
-            <motion.p variants={fadeUp} className="mx-auto mt-8 max-w-lg text-lg leading-relaxed text-ink-soft lg:mx-0">
+            <motion.p variants={fadeUp} className="mx-auto mt-8 max-w-lg text-lg leading-relaxed text-ink-soft">
               {d.hero.sub}
             </motion.p>
 
-            <motion.div variants={fadeUp} className="mt-10 flex justify-center lg:justify-start">
+            <motion.div variants={fadeUp} className="mx-auto mt-10 max-w-lg">
+              <span className="mx-auto block h-1 w-10 rounded-full bg-gradient-to-r from-violet to-brand-orange" />
+              <p className="mt-4 bg-gradient-to-br from-ink to-violet-dark bg-clip-text font-serif text-2xl font-medium text-transparent sm:text-3xl">
+                {d.finalCta.heading}
+              </p>
+              <p className="mt-1.5 text-base text-ink-soft">
+                {d.finalCta.sub}
+              </p>
+            </motion.div>
+
+            <motion.div variants={fadeUp} className="mt-6 flex justify-center">
               {comingSoon ? <ComingSoonBadge /> : <AppStoreBadges />}
             </motion.div>
           </motion.div>

@@ -5,7 +5,6 @@ import { Image } from 'expo-image';
 import {
   ActivityIndicator,
   FlatList,
-  Modal,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -28,6 +27,7 @@ import { usePlatforms, getPlatformMeta } from '@/hooks/usePlatforms';
 import { getTemplateImage } from '@/features/creator/data/templateImages';
 import { ListRowSkeleton } from '@/components/ListRowSkeleton';
 import { FilterSheet, FilterSectionHeader } from '@/components/FilterSheet';
+import { BottomSheet } from '@/components/BottomSheet';
 import type { Campaign } from '@/types';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
@@ -662,27 +662,29 @@ export default function CampaignsScreen() {
       </FilterSheet>
 
       {/* Invite Creators bottom sheet */}
-      <Modal
+      <BottomSheet
         visible={!!inviteCampaign}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setInviteCampaign(null)}>
-        <Pressable style={styles.modalBackdrop} onPress={() => setInviteCampaign(null)} />
-        <View style={[styles.modalSheet, { backgroundColor: C.surface }]}>
-          <View style={[styles.modalHandle, { backgroundColor: C.border }]} />
-
-          <View style={[styles.modalHeader, { borderBottomColor: C.border }]}>
-            <View style={styles.modalHeaderText}>
-              <Text style={[styles.modalTitle, { color: C.text }]}>{t('campaigns.inviteModalTitle')}</Text>
-              <Text style={[styles.modalSubtitle, { color: C.textSecondary }]} numberOfLines={1}>
-                {inviteCampaign?.title}
-              </Text>
-            </View>
-            <Pressable hitSlop={8} style={[styles.modalClose, { backgroundColor: C.background }]} onPress={() => setInviteCampaign(null)}>
-              <Ionicons name="close" size={16} color={C.textSecondary} />
-            </Pressable>
-          </View>
-
+        onClose={() => setInviteCampaign(null)}
+        title={t('campaigns.inviteModalTitle')}
+        subtitle={inviteCampaign?.title}
+        maxHeightPct={0.75}
+        scrollable={false}
+        footer={!inviteSuccess && !savedLoading ? (
+          <Pressable
+            style={[
+              styles.sendInviteBtn,
+              { backgroundColor: selectedCreators.size > 0 ? C.brinjal1 : C.border },
+              selectedCreators.size > 0 && {
+                shadowColor: C.brinjal1, shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6,
+              },
+            ]}
+            onPress={handleSendInvites}
+            disabled={selectedCreators.size === 0 || inviteSending}>
+            <Text style={styles.sendInviteBtnText}>
+              {inviteSending ? t('campaigns.sending') : selectedCreators.size > 0 ? t('campaigns.sendInvite', { n: selectedCreators.size }) : t('campaigns.selectCreatorsToInvite')}
+            </Text>
+          </Pressable>
+        ) : undefined}>
           {inviteSuccess ? (
             <View style={styles.inviteSuccess}>
               <FontAwesome5 name="paper-plane" size={40} color="#3B82F6" solid />
@@ -766,27 +768,9 @@ export default function CampaignsScreen() {
                   })}
                 </ScrollView>
               )}
-
-              <View style={[styles.inviteFooter, { borderTopColor: C.border }]}>
-                <Pressable
-                  style={[
-                    styles.sendInviteBtn,
-                    { backgroundColor: selectedCreators.size > 0 ? C.brinjal1 : C.border },
-                    selectedCreators.size > 0 && {
-                      shadowColor: C.brinjal1, shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6,
-                    },
-                  ]}
-                  onPress={handleSendInvites}
-                  disabled={selectedCreators.size === 0 || inviteSending}>
-                  <Text style={styles.sendInviteBtnText}>
-                    {inviteSending ? t('campaigns.sending') : selectedCreators.size > 0 ? t('campaigns.sendInvite', { n: selectedCreators.size }) : t('campaigns.selectCreatorsToInvite')}
-                  </Text>
-                </Pressable>
-              </View>
             </>
           )}
-        </View>
-      </Modal>
+      </BottomSheet>
     </SafeAreaView>
   );
 }
@@ -890,21 +874,6 @@ const styles = StyleSheet.create({
   buttonSecondary: { flex: 1, flexDirection: 'row', minHeight: 42, borderRadius: RADIUS.sm, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center', gap: 6, paddingHorizontal: 12 },
   buttonTextSecondary: { fontSize: 13, fontFamily: F.bold },
 
-  modalBackdrop: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)' },
-  modalSheet: {
-    position: 'absolute', left: 0, right: 0, bottom: 0,
-    borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl, maxHeight: '75%',
-    ...SHADOW.floating,
-  },
-  modalHandle: { width: 40, height: 4, borderRadius: RADIUS.full, alignSelf: 'center', marginTop: 12, marginBottom: 4 },
-  modalHeader: {
-    flexDirection: 'row', alignItems: 'flex-start',
-    paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1,
-  },
-  modalHeaderText: { flex: 1 },
-  modalTitle: { fontSize: 17, fontFamily: F.bold },
-  modalSubtitle: { fontSize: 13, marginTop: 2, fontFamily: F.regular },
-  modalClose: { width: 28, height: 28, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
   modalList: { padding: 16, gap: 12, paddingBottom: 40 },
 
   // Invite modal
@@ -926,7 +895,6 @@ const styles = StyleSheet.create({
   pickSub: { fontSize: 12, fontFamily: F.regular },
   checkbox: { width: 22, height: 22, borderRadius: RADIUS.full, borderWidth: 2, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
 
-  inviteFooter: { borderTopWidth: 1, paddingHorizontal: 16, paddingVertical: 14 },
   sendInviteBtn: { borderRadius: RADIUS.full, paddingVertical: 14, alignItems: 'center' },
   sendInviteBtnText: { color: '#fff', fontSize: 15, fontFamily: F.bold },
 

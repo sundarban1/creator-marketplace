@@ -21,6 +21,7 @@ import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { isValidNepaliPhone } from '@/utilities/phone';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useScrollToTopOnTabPress } from '@/hooks/useScrollToTopOnTabPress';
+import { useStickyBelowHeader } from '@/hooks/useStickyBelowHeader';
 import { TabSlider } from '@/components/TabSlider';
 import { RangeDropdown } from '@/components/RangeDropdown';
 import { campaignService } from '@/services/campaign';
@@ -345,6 +346,13 @@ export default function HomeScreen() {
   }, [reconnectedAt]);
 
   useScrollToTopOnTabPress('index', () => listRef.current?.scrollToOffset({ offset: 0, animated: true }));
+  const {
+    stuck:             tabFilterStuck,
+    setOffsetY:        tabFilterSetOffsetY,
+    onRowLayout:       tabFilterOnRowLayout,
+    onScroll:          tabFilterOnScroll,
+    placeholderHeight: tabFilterPlaceholderHeight,
+  } = useStickyBelowHeader();
 
   const refreshNearbyRef = useRef(() => {});
   useEffect(() => {
@@ -572,6 +580,13 @@ export default function HomeScreen() {
     }
   }
 
+  const FILTER_TABS = [
+    { key: 'all',          label: t('creator.home.tabAll'),         icon: 'layers-outline'   as const, color: TabColors.neutral.color },
+    { key: 'recommended',  label: t('creator.home.tabRecommended'), icon: 'star-outline'     as const, color: TabColors.info.color },
+    { key: 'trending',     label: t('creator.home.tabTrending'),    icon: 'flame-outline'    as const, color: TabColors.danger.color },
+    { key: 'ending-soon',  label: t('creator.home.tabEndingSoon'),  icon: 'timer-outline'    as const, color: TabColors.warning.color },
+  ];
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
       <View style={{ flex: 1 }}>
@@ -670,6 +685,12 @@ export default function HomeScreen() {
       </View>
       <View style={[styles.headerDivider, { backgroundColor: C.border }]} />
 
+      {/* Sticky tab filter — hand-rolled (see useStickyBelowHeader), not
+          stickyHeaderIndices: that reliably crashes Android on this app's
+          RN/Fabric setup (see the ListRow comment above). This wrapper is the
+          positioning context the overlay below is anchored to (`top: 0` here
+          lands right below the header divider above). */}
+      <View style={{ flex: 1 }}>
       <FlatList
         ref={listRef}
         style={styles.scroll}
@@ -677,6 +698,8 @@ export default function HomeScreen() {
         contentContainerStyle={styles.scrollContent}
         keyboardDismissMode="on-drag"
         onScrollBeginDrag={handleOutsideDismiss}
+        onScroll={tabFilterOnScroll}
+        scrollEventThrottle={16}
         onEndReached={() => setListVisibleCount((n) => Math.min(n + PAGE_SIZE, filteredList.length))}
         onEndReachedThreshold={0.4}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brinjal1} />}
@@ -689,15 +712,12 @@ export default function HomeScreen() {
         renderItem={({ item: row }) => {
           switch (row.kind) {
             case 'tabFilter':
-              return (
-                <View style={[styles.filterTabsWrap, { backgroundColor: C.background }]}>
+              return tabFilterStuck ? (
+                <View style={{ height: tabFilterPlaceholderHeight }} onLayout={tabFilterOnRowLayout} />
+              ) : (
+                <View style={[styles.filterTabsWrap, { backgroundColor: C.background }]} onLayout={tabFilterOnRowLayout}>
                   <TabSlider
-                    tabs={[
-                      { key: 'all',          label: t('creator.home.tabAll'),         icon: 'layers-outline',   color: TabColors.neutral.color },
-                      { key: 'recommended',  label: t('creator.home.tabRecommended'), icon: 'star-outline',     color: TabColors.info.color },
-                      { key: 'trending',     label: t('creator.home.tabTrending'),    icon: 'flame-outline',    color: TabColors.danger.color },
-                      { key: 'ending-soon',  label: t('creator.home.tabEndingSoon'),  icon: 'timer-outline',    color: TabColors.warning.color },
-                    ]}
+                    tabs={FILTER_TABS}
                     active={activeFilterTab}
                     onChange={setActiveFilterTab}
                   />
@@ -761,7 +781,12 @@ export default function HomeScreen() {
           ) : null
         }
         ListHeaderComponent={
-          <>
+          // A real View (not a Fragment) so onLayout can report its rendered
+          // height — since `tabFilter` is the very first row in `data`, that
+          // height is exactly its content-offset within the full scrollable
+          // content (see useStickyBelowHeader's usage note on measuring a
+          // FlatList row's position via what precedes it, not the row itself).
+          <View onLayout={(e) => tabFilterSetOffsetY(e.nativeEvent.layout.height)}>
         {/* ── Pending action attention banner ── */}
         {pendingActions.length > 0 && (
           <Pressable
@@ -1069,9 +1094,24 @@ export default function HomeScreen() {
             )}
           </>
         )}
-          </>
+          </View>
         }
       />
+      {tabFilterStuck && (
+        // marginTop: 0 overrides filterTabsWrap's usual 8px top margin — that
+        // margin creates the right breathing room when sitting in-flow below
+        // the "Recent Events"-style content above it, but here (pinned via
+        // `top: 0`) it would just push this away from the header divider,
+        // leaving a gap.
+        <View style={[styles.filterTabsWrap, styles.stickyOverlay, { backgroundColor: C.background, marginTop: 0 }]}>
+          <TabSlider
+            tabs={FILTER_TABS}
+            active={activeFilterTab}
+            onChange={setActiveFilterTab}
+          />
+        </View>
+      )}
+      </View>
       </MaxWidthContainer>
       </View>
 
@@ -1222,6 +1262,7 @@ const styles = StyleSheet.create({
   // lets TabSlider (already self-contained: page-background wrapper, shadow
   // only on the animated active pill) sit directly on the page.
   filterTabsWrap: { marginTop: 8, marginBottom: 4 },
+  stickyOverlay: { position: 'absolute', top: 0, left: 0, right: 0, ...SHADOW.card },
 
   // ── Campaign list ──
   // Matches featuredRow's horizontal padding above — without this, cards here
