@@ -3,10 +3,16 @@
 // — it must never be shown to admins as if it were a real email.
 const PLACEHOLDER_EMAIL_DOMAIN = '@phone.kolab.internal';
 
+/** True if `email` is the `<phone>@phone.kolab.internal` placeholder a
+ *  phone-only signup gets in the required `email` column, not a real address. */
+export function isPhonePlaceholderEmail(email: string): boolean {
+  return email.endsWith(PLACEHOLDER_EMAIL_DOMAIN);
+}
+
 /** Formats a user's `email` field for admin display: the phone number (without
  *  the +977 country code) if it's a phone-signup placeholder, otherwise the
  *  real email as-is. */
 export function displayEmailOrPhone(email: string): string {
-  if (!email.endsWith(PLACEHOLDER_EMAIL_DOMAIN)) return email;
+  if (!isPhonePlaceholderEmail(email)) return email;
   return email.slice(0, -PLACEHOLDER_EMAIL_DOMAIN.length).replace(/^\+?977/, '');
 }

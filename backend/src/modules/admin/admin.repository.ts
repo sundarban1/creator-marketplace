@@ -126,6 +126,7 @@ export class AdminRepository {
         select: {
           id:              true,
           email:           true,
+          phone:           true,
           role:            true,
           isEmailVerified: true,
           isActive:        true,
@@ -156,7 +157,7 @@ export class AdminRepository {
         take:    limit,
         orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
         include: {
-          user:   { select: { id: true, email: true, isEmailVerified: true, isActive: true, createdAt: true } },
+          user:   { select: { id: true, email: true, phone: true, isEmailVerified: true, isActive: true, createdAt: true } },
           _count: { select: { applications: true } },
         },
       }),
@@ -182,7 +183,7 @@ export class AdminRepository {
         take:    limit,
         orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
         include: {
-          user:   { select: { id: true, email: true, isEmailVerified: true, isActive: true, createdAt: true } },
+          user:   { select: { id: true, email: true, phone: true, isEmailVerified: true, isActive: true, createdAt: true } },
           _count: { select: { campaigns: true } },
         },
       }),

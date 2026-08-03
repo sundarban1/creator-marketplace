@@ -1476,11 +1476,11 @@ export default function CreateCampaignScreen() {
                       <Pressable
                         key={opt.key}
                         onPress={() => { if (form.eventType !== opt.key) resetFormForType(opt.key); }}
-                        android_ripple={{ color: `${opt.tone.color}33`, borderless: false }}
-                        style={[
+                        style={({ pressed }) => [
                           s.optionCard,
                           { backgroundColor: C.surface, borderColor: selected ? opt.tone.color : C.border },
                           selected && { backgroundColor: `${opt.tone.color}0D` },
+                          { transform: [{ scale: pressed ? 0.97 : 1 }] },
                         ]}>
                         <View style={[s.optionIconWrap, { backgroundColor: opt.tone.bg, shadowColor: opt.tone.color }]}>
                           <Ionicons name={opt.icon} size={20} color={opt.tone.color} />
@@ -1514,10 +1514,11 @@ export default function CreateCampaignScreen() {
                           <Pressable
                             key={opt.key}
                             onPress={() => setPromptMode(opt.key)}
-                            style={[
+                            style={({ pressed }) => [
                               s.optionCard,
                               { backgroundColor: C.background, borderColor: selected ? opt.tone.color : C.border, padding: 12 },
                               selected && { backgroundColor: `${opt.tone.color}0D` },
+                              { transform: [{ scale: pressed ? 0.97 : 1 }] },
                             ]}>
                             <View style={[s.optionIconWrap, { width: 34, height: 34, backgroundColor: opt.tone.bg, shadowColor: opt.tone.color }]}>
                               <Ionicons name={opt.icon} size={16} color={opt.tone.color} />
@@ -1642,10 +1643,11 @@ export default function CreateCampaignScreen() {
                           <Pressable
                             key={opt.key}
                             onPress={() => setPromptMode(opt.key)}
-                            style={[
+                            style={({ pressed }) => [
                               s.optionCard,
                               { backgroundColor: C.background, borderColor: selected ? opt.tone.color : C.border, padding: 12 },
                               selected && { backgroundColor: `${opt.tone.color}0D` },
+                              { transform: [{ scale: pressed ? 0.97 : 1 }] },
                             ]}>
                             <View style={[s.optionIconWrap, { width: 34, height: 34, backgroundColor: opt.tone.bg, shadowColor: opt.tone.color }]}>
                               <Ionicons name={opt.icon} size={16} color={opt.tone.color} />
@@ -1801,11 +1803,11 @@ export default function CreateCampaignScreen() {
                   {/* Editable description */}
                   <SectionCard colors={C}>
                     <View style={s.descHeaderRow}>
-                      <View style={sc.titleRow}>
+                      <View style={[sc.titleRow, s.descHeaderText]}>
                         <View style={[sc.iconChip, { backgroundColor: `${C.brinjal1}1A`, shadowColor: C.brinjal1 }]}>
                           <Ionicons name="document-text-outline" size={14} color={C.brinjal1} />
                         </View>
-                        <Text style={[sc.title, s.descHeaderText, { color: C.text }]}>{t('createEvent.secDescPaid')}</Text>
+                        <Text style={[sc.title, { color: C.text }]} numberOfLines={1}>{t('createEvent.secDescPaid')}</Text>
                       </View>
                       <Pressable
                         style={[s.suggestBtn, { borderColor: C.brinjal1, opacity: descSuggestLoading ? 0.6 : 1 }]}
@@ -2334,7 +2336,7 @@ const s = StyleSheet.create({
   locationArrow:  { fontSize: 20, color: '#9CA3AF' },
 
   descHeaderRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
-  descHeaderText: { flex: 1 },
+  descHeaderText: { flex: 1, minWidth: 0 },
   suggestBtn:     { borderRadius: RADIUS.full, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 7, minHeight: 30, alignItems: 'center', justifyContent: 'center' },
   suggestBtnText: { fontSize: 12, fontFamily: F.bold },
 

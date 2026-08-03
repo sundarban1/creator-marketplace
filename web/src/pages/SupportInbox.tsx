@@ -3,6 +3,7 @@ import { MessageSquare, AlertTriangle, Clock, CheckCircle, Search } from 'lucide
 import { PageHeader } from '../components/PageHeader';
 import { Pagination } from '../components/Pagination';
 import { api } from '../lib/api';
+import { displayEmailOrPhone } from '../lib/identity';
 
 const PAGE_SIZE = 10;
 
@@ -64,7 +65,7 @@ function ContactCard({ item, onStatusChange }: { item: SupportRequest; onStatusC
       <div className="flex items-center justify-between pt-3 border-t border-gray-100">
         <div className="text-xs text-gray-400 space-y-0.5">
           {item.user
-            ? <p className="font-medium text-gray-600">{item.user.email}</p>
+            ? <p className="font-medium text-gray-600">{displayEmailOrPhone(item.user.email)}</p>
             : (item.guestName || item.guestEmail) && (
               <p className="font-medium text-gray-600">{item.guestName} {item.guestEmail && `· ${item.guestEmail}`}</p>
             )}
@@ -96,7 +97,7 @@ function ReportCard({ item, onStatusChange }: { item: IssueReport; onStatusChang
       <p className="text-sm text-gray-600 mb-3 line-clamp-3">{item.description}</p>
       <div className="flex items-center justify-between pt-3 border-t border-gray-100">
         <div className="text-xs text-gray-400 space-y-0.5">
-          {item.user && <p className="font-medium text-gray-600">{item.user.email}</p>}
+          {item.user && <p className="font-medium text-gray-600">{displayEmailOrPhone(item.user.email)}</p>}
           <p>{new Date(item.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
         </div>
         <div className="flex gap-1.5">

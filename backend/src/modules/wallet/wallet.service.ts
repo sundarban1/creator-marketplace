@@ -54,7 +54,7 @@ export class WalletService {
 
     notificationService.createForAdmins({
       type:    'money_withdrawn',
-      title:   '💵 Withdrawal Requested',
+      title:   'Withdrawal Requested',
       body:    `${profile.fullName ?? 'A creator'} withdrew Rs. ${input.amount.toLocaleString()} via ${input.method}.`,
       refId:   profile.id,
       refType: 'creator',

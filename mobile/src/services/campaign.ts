@@ -1,11 +1,11 @@
-import { request, API_BASE } from '@/lib/api';
+import { request, API_BASE, ensureFreshAccessToken } from '@/lib/api';
 import type { ApiCampaign } from '@/lib/api';
 import type { Campaign }    from '@/types';
 import { startBackgroundChunkedUpload } from '@/services/backgroundVideoUploadManager';
 import type { VideoUploadSignature } from '@/services/cloudinaryVideoUpload';
 import type { PickedFile } from '@/utilities/chatAttachments';
 import { storage } from '@/utilities/storage';
-import { ACCESS_TOKEN_KEY } from '@/utilities/constants';
+import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '@/utilities/constants';
 
 export interface DeliverableVideo {
   publicId:    string;
@@ -460,24 +460,59 @@ export const campaignService = {
   },
 
   // ── Deliverable files (images / PDF / DOCX) ─────────────────────────────────
-  // Plain multipart fetch, unlike video's signed direct-to-Cloudinary flow —
-  // files are <=5MB so they're proxied through the backend in one request. The
+  // XHR instead of fetch, unlike video's signed direct-to-Cloudinary flow —
+  // files are <=5MB so they're proxied through the backend in one request, but
+  // XHR (not fetch) is what lets onProgress report real upload percentage. The
   // optional AbortSignal is what lets useDeliverableFileUploads support
   // cancelling an in-flight upload.
-  async uploadDeliverableFile(appId: string, file: PickedFile, signal?: AbortSignal): Promise<DeliverableFile> {
-    const token = storage.get(ACCESS_TOKEN_KEY) ?? '';
-    const form  = new FormData();
+  async uploadDeliverableFile(
+    appId: string,
+    file: PickedFile,
+    signal?: AbortSignal,
+    onProgress?: (fraction: number) => void,
+  ): Promise<DeliverableFile> {
+    const form = new FormData();
     form.append('file', { uri: file.uri, name: file.name, type: file.mimeType } as unknown as Blob);
 
-    const res  = await fetch(`${API_BASE}/api/campaigns/applications/${appId}/deliverables/file`, {
-      method:  'POST',
-      headers: { Authorization: `Bearer ${token}` },
-      body:    form,
-      signal,
+    type Result = { status: number; json: { success: boolean; data: DeliverableFile; message?: string } | null };
+    const send = (token: string) => new Promise<Result>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', `${API_BASE}/api/campaigns/applications/${appId}/deliverables/file`);
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) onProgress?.(e.loaded / e.total);
+      };
+      xhr.onload = () => {
+        try {
+          resolve({ status: xhr.status, json: JSON.parse(xhr.responseText) });
+        } catch {
+          resolve({ status: xhr.status, json: null });
+        }
+      };
+      xhr.onerror = () => reject(new Error('Upload failed'));
+      xhr.onabort = () => reject(Object.assign(new Error('Upload cancelled'), { name: 'AbortError' }));
+
+      if (signal) {
+        if (signal.aborted) { xhr.abort(); return; }
+        signal.addEventListener('abort', () => xhr.abort());
+      }
+      xhr.send(form);
     });
-    const json = await res.json() as { success: boolean; data: DeliverableFile; message?: string };
-    if (!res.ok) throw new Error(json.message ?? 'Upload failed');
-    return json.data;
+
+    // This uses a raw XHR (for real upload-progress events) instead of
+    // lib/api.ts's request(), so it doesn't get that helper's refresh-on-401
+    // interceptor for free — an access token that's expired/near-expiry when
+    // the creator picks a file otherwise surfaces as a raw "Token has expired"
+    // error with no retry. Mirror the same recovery here.
+    let { status, json } = await send(storage.get(ACCESS_TOKEN_KEY) ?? '');
+    if (status === 401 && storage.get(REFRESH_TOKEN_KEY)) {
+      const fresh = await ensureFreshAccessToken();
+      if (fresh) ({ status, json } = await send(fresh));
+    }
+
+    if (status >= 200 && status < 300 && json) return json.data;
+    throw new Error(json?.message ?? 'Upload failed');
   },
 
   async removeDeliverableFile(appId: string, fileId: string): Promise<void> {

@@ -5,7 +5,7 @@ import { logger } from '../config/logger';
 import { AdminRepository } from '../modules/admin/admin.repository';
 
 const adminRepo = new AdminRepository();
-const DEFAULT_SUPPORT_EMAIL = 'support@kolab.com.np';
+const DEFAULT_SUPPORT_EMAIL = 'info@ourkolab.com';
 
 const FROM_NAME    = 'Kolab';
 const FROM_ADDRESS = env.EMAIL_USERNAME ?? 'no-reply@kolab.com.np';

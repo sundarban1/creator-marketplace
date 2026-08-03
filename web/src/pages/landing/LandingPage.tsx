@@ -27,15 +27,29 @@ function LandingPageInner() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-white font-display">
       <SEO
-        title="Kolab – Nepal's Creator Marketplace | Connect Brands & Content Creators"
-        description="Kolab helps Nepali brands discover verified content creators, influencers, TikTok creators, Instagram creators, YouTubers and collaborate on paid campaigns."
+        title="Kolab – Nepal's Creator Marketplace | Hire Influencers & Find Brand Collaborations"
+        description="Kolab is Nepal's creator marketplace connecting brands with verified influencers and content creators. Hire creators, launch campaigns, and grow your business, or discover paid brand collaborations."
         path="/"
         keywords={[
-          'creator marketplace Nepal', 'content creator Nepal', 'influencer Nepal', 'Nepal influencer platform',
-          'hire creator Nepal', 'hire influencer Nepal', 'brand collaboration Nepal', 'creator collaboration',
-          'creator marketing Nepal', 'digital creator Nepal', 'social media creator Nepal', 'TikTok creator Nepal',
-          'Instagram influencer Nepal', 'YouTube creator Nepal', 'Facebook creator Nepal', 'brand campaign Nepal',
-          'creator jobs Nepal', 'influencer marketing Nepal', 'creator platform Nepal', 'OurKolab', 'Kolab Nepal',
+          // Top 10 priority
+          'creator marketplace Nepal', 'influencer marketplace Nepal', 'hire influencers Nepal', 'Nepal influencers',
+          'find content creators Nepal', 'influencer marketing Nepal', 'brand collaborations Nepal',
+          'paid collaborations Nepal', 'content creators Nepal', 'best influencer marketing platform Nepal',
+          // Brand-side
+          'hire TikTok influencers Nepal', 'hire Instagram influencers Nepal', 'hire YouTube creators Nepal',
+          'find Nepali influencers', 'find content creators for business', 'influencer marketing platform Nepal',
+          'creator platform Nepal', 'brand promotion Nepal', 'campaign management Nepal', 'brand ambassador Nepal',
+          // Creator-side
+          'brand deals Nepal', 'sponsorship opportunities Nepal', 'get brand deals Nepal',
+          'earn from social media Nepal', 'influencer jobs Nepal', 'content creator jobs Nepal',
+          'creator community Nepal', 'creator network Nepal',
+          // Platform-specific
+          'TikTok creators Nepal', 'Instagram influencers Nepal', 'YouTube creators Nepal', 'Facebook influencers Nepal',
+          // Long-tail
+          'how to get brand deals in Nepal', 'how to find influencers in Nepal', 'best creator marketplace Nepal',
+          'where to hire Nepali influencers', 'top Nepali influencers',
+          // Brand
+          'OurKolab', 'Kolab Nepal',
         ]}
         jsonLd={[organizationSchema(), websiteSchema()]}
       />

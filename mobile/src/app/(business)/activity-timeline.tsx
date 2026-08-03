@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import { BackButton } from '@/components/BackButton';
 import { getTemplateImage, DEFAULT_TEMPLATE_IMAGE } from '@/features/creator/data/templateImages';
 import { PaymentMethodIcon } from '@/components/PaymentMethodIcon';
@@ -23,7 +24,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { campaignService, type DeliverableVideo, type DeliverableFile } from '@/services/campaign';
 import { chatService } from '@/services/chat';
 import { useDeliverableVideoUploads, type DeliverableUploadItem } from '@/hooks/useDeliverableVideoUploads';
-import { useDeliverableFileUploads } from '@/hooks/useDeliverableFileUploads';
+import { useDeliverableFileUploads, type DeliverableFileUploadItem } from '@/hooks/useDeliverableFileUploads';
 import {
   pickDeliverableVideosFromLibrary, pickDeliverableVideoFromCamera,
   pickDeliverableImagesFromLibrary, pickDeliverableImageFromCamera, pickDeliverableDocument,
@@ -458,6 +459,28 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, on
   );
 }
 
+// Distinguishes PDF vs Word docs in the deliverables grid (both otherwise
+// render as the same generic file icon) — anything else falls back to a
+// plain "FILE" badge rather than guessing.
+function docThumb(mimeType: string): { label: string; color: string } {
+  if (mimeType === 'application/pdf') return { label: 'PDF', color: '#DC2626' };
+  if (mimeType === 'application/msword' || mimeType.includes('wordprocessingml')) return { label: 'DOC', color: '#2563EB' };
+  return { label: 'FILE', color: '#7C3AED' };
+}
+
+// A paused, muted first-frame preview of an on-device video file — same
+// primitive as the chat screens' LocalVideoPreview, used here so an in-flight
+// deliverable video shows its real thumbnail instantly instead of a generic
+// spinner, without implying it's playable while still uploading (see the
+// in-flight video card below, which never overlays a play button on this).
+function LocalVideoPreview({ uri, style }: { uri: string; style: object }) {
+  const player = useVideoPlayer(uri, (p) => {
+    p.muted = true;
+    p.pause();
+  });
+  return <VideoView player={player} style={style as never} nativeControls={false} contentFit="cover" />;
+}
+
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 
 export default function CampaignWorkspaceScreen() {
@@ -608,6 +631,22 @@ export default function CampaignWorkspaceScreen() {
     } catch (e: any) {
       showToast(e?.message ?? 'Could not remove file');
     }
+  }
+
+  // A finished upload item is already persisted server-side (see
+  // persistedVideos/persistedFiles' de-dup filter above) but hasn't shown up
+  // in `app.deliverableVideos/Files` yet — a plain dismiss() would just hide
+  // it locally without deleting it from the backend, orphaning it until the
+  // next refetch. So closing a "done" card actually deletes the deliverable,
+  // then drops the local card once that succeeds.
+  async function handleRemoveVideoUploadItem(item: DeliverableUploadItem) {
+    if (item.result) await handleRemoveDeliverableVideo(item.result.publicId);
+    videoUploads.dismiss(item.localId);
+  }
+
+  async function handleRemoveFileUploadItem(item: DeliverableFileUploadItem) {
+    if (item.result) await handleRemoveDeliverableFile(item.result.id);
+    fileUploads.dismiss(item.localId);
   }
 
   async function load() {
@@ -978,7 +1017,6 @@ export default function CampaignWorkspaceScreen() {
           <View style={s.secHeader}>
             <View>
               <Text style={[s.secTitle, { color: C.text }]}>{t('activityTimeline.sectionTimeline')}</Text>
-              <Text style={[s.secSub, { color: C.textSecondary }]}>{t('activityTimeline.sectionTimelineSub')}</Text>
             </View>
           </View>
           <View style={{ marginTop: 12 }}>
@@ -1124,31 +1162,61 @@ export default function CampaignWorkspaceScreen() {
           <View style={up.videoGrid}>
             {persistedVideos.map((v) => (
               <View key={v.publicId} style={up.videoCard}>
-                <Pressable style={up.videoThumb} onPress={() => setPlayingVideo(v)}>
-                  <Ionicons name="play-circle" size={28} color="#7C3AED" />
-                </Pressable>
+                <View style={up.thumbWrap}>
+                  <Pressable style={up.videoThumb} onPress={() => setPlayingVideo(v)}>
+                    <Ionicons name="play-circle" size={28} color="#7C3AED" />
+                  </Pressable>
+                  <Pressable style={up.removeBadge} onPress={() => handleRemoveDeliverableVideo(v.publicId)} hitSlop={6}>
+                    <Ionicons name="close-circle" size={18} color="#EF4444" />
+                  </Pressable>
+                </View>
                 <Text style={up.videoLabel} numberOfLines={1}>{v.label}</Text>
-                <Pressable style={up.videoRemoveBtn} onPress={() => handleRemoveDeliverableVideo(v.publicId)} hitSlop={6}>
-                  <Ionicons name="close-circle" size={18} color="#EF4444" />
-                </Pressable>
               </View>
             ))}
 
             {videoUploads.items.filter(i => i.status !== 'cancelled').map((item) => (
               <View key={item.localId} style={up.videoCard}>
-                <View style={up.videoThumb}>
-                  {item.status === 'done' ? (
-                    <Ionicons name="checkmark-circle" size={28} color="#16A34A" />
-                  ) : item.status === 'failed' ? (
-                    <Ionicons name="alert-circle" size={26} color="#EF4444" />
-                  ) : (
-                    <ActivityIndicator size="small" color="#7C3AED" />
-                  )}
-                  {(item.status === 'compressing' || item.status === 'uploading') && (
-                    <View style={up.progressTrack}>
-                      <View style={[up.progressFill, { width: `${Math.round(item.progress * 100)}%` }]} />
-                    </View>
-                  )}
+                <View style={up.thumbWrap}>
+                  <Pressable
+                    style={up.videoThumb}
+                    disabled={item.status !== 'done'}
+                    onPress={() => item.result && setPlayingVideo({ url: item.result.url, label: item.result.label })}
+                  >
+                    {/* Real first-frame preview shown instantly, not a
+                        generic icon — see LocalVideoPreview above. A play
+                        button is only overlaid once status is 'done': while
+                        queued/compressing/uploading/finalizing, the progress
+                        bar (or the failed alert icon) is the only overlay, so
+                        nothing implies the video is playable before it is. */}
+                    <LocalVideoPreview uri={item.compressedUri ?? item.video.uri} style={{ width: '100%', height: '100%' }} />
+                    {item.status === 'done' && (
+                      <View style={up.playOverlay}>
+                        <Ionicons name="play-circle" size={28} color="#fff" />
+                      </View>
+                    )}
+                    {item.status !== 'done' && item.status !== 'failed' && (
+                      <View style={up.thumbOverlay}>
+                        <ActivityIndicator size="small" color="#fff" />
+                      </View>
+                    )}
+                    {item.status === 'failed' && (
+                      <View style={up.thumbOverlay}>
+                        <Ionicons name="alert-circle" size={26} color="#fff" />
+                      </View>
+                    )}
+                    {(item.status === 'compressing' || item.status === 'uploading') && (
+                      <View style={up.progressTrack}>
+                        <View style={[up.progressFill, { width: `${Math.round(item.progress * 100)}%` }]} />
+                      </View>
+                    )}
+                  </Pressable>
+                  <Pressable
+                    style={up.removeBadge}
+                    onPress={() => (item.status === 'done' ? handleRemoveVideoUploadItem(item) : videoUploads.cancel(item.localId))}
+                    hitSlop={6}
+                  >
+                    <Ionicons name="close-circle" size={18} color={item.status === 'done' ? '#EF4444' : '#9CA3AF'} />
+                  </Pressable>
                 </View>
                 <Text style={up.videoLabel} numberOfLines={1}>
                   {item.status === 'compressing' ? `Preparing… ${Math.round(item.progress * 100)}%`
@@ -1158,62 +1226,89 @@ export default function CampaignWorkspaceScreen() {
                     : item.status === 'done' ? (item.result?.label ?? 'Video')
                     : 'Waiting…'}
                 </Text>
-                {item.status === 'failed' ? (
-                  <Pressable style={up.videoRemoveBtn} onPress={() => videoUploads.retry(item.localId)} hitSlop={6}>
+                {item.status === 'failed' && (
+                  <Pressable onPress={() => videoUploads.retry(item.localId)} hitSlop={6}>
                     <Text style={up.retryTxt}>{t('activityTimeline.videoRetryBtn')}</Text>
                   </Pressable>
-                ) : item.status !== 'done' ? (
-                  <Pressable style={up.videoRemoveBtn} onPress={() => videoUploads.cancel(item.localId)} hitSlop={6}>
-                    <Ionicons name="close-circle" size={18} color="#9CA3AF" />
-                  </Pressable>
-                ) : null}
+                )}
               </View>
             ))}
 
             {persistedFiles.map((f) => (
               <View key={f.id} style={up.videoCard}>
-                <Pressable
-                  style={up.videoThumb}
-                  onPress={() => (f.fileType === 'IMAGE'
-                    ? setPreviewImage({ url: f.url, label: f.originalFileName })
-                    : Linking.openURL(f.url).catch(() => showToast(t('activityTimeline.linkOpenFailed'))))}
-                >
-                  {f.fileType === 'IMAGE'
-                    ? <Image source={{ uri: f.url }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
-                    : <Ionicons name="document-text" size={28} color="#7C3AED" />}
-                </Pressable>
+                <View style={up.thumbWrap}>
+                  <Pressable
+                    style={up.videoThumb}
+                    onPress={() => (f.fileType === 'IMAGE'
+                      ? setPreviewImage({ url: f.url, label: f.originalFileName })
+                      : Linking.openURL(f.url).catch(() => showToast(t('activityTimeline.linkOpenFailed'))))}
+                  >
+                    {f.fileType === 'IMAGE' ? (
+                      <Image source={{ uri: f.url }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+                    ) : (
+                      <>
+                        <Ionicons name="document-text" size={26} color={docThumb(f.mimeType).color} />
+                        <Text style={[up.docBadgeTxt, { color: docThumb(f.mimeType).color }]}>{docThumb(f.mimeType).label}</Text>
+                      </>
+                    )}
+                  </Pressable>
+                  <Pressable style={up.removeBadge} onPress={() => handleRemoveDeliverableFile(f.id)} hitSlop={6}>
+                    <Ionicons name="close-circle" size={18} color="#EF4444" />
+                  </Pressable>
+                </View>
                 <Text style={up.videoLabel} numberOfLines={1}>{f.originalFileName}</Text>
-                <Pressable style={up.videoRemoveBtn} onPress={() => handleRemoveDeliverableFile(f.id)} hitSlop={6}>
-                  <Ionicons name="close-circle" size={18} color="#EF4444" />
-                </Pressable>
               </View>
             ))}
 
             {fileUploads.items.filter(i => i.status !== 'cancelled').map((item) => (
               <View key={item.localId} style={up.videoCard}>
-                <View style={up.videoThumb}>
-                  {item.status === 'done' ? (
-                    <Ionicons name="checkmark-circle" size={28} color="#16A34A" />
-                  ) : item.status === 'failed' ? (
-                    <Ionicons name="alert-circle" size={26} color="#EF4444" />
-                  ) : (
-                    <ActivityIndicator size="small" color="#7C3AED" />
-                  )}
+                <View style={up.thumbWrap}>
+                  <View style={up.videoThumb}>
+                    {item.file.fileType === 'image' ? (
+                      // Local picked-file URI, not the (not-yet-known) remote
+                      // URL — renders the real thumbnail the instant it's
+                      // added, before the upload even starts.
+                      <Image source={{ uri: item.file.uri }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+                    ) : (
+                      <>
+                        <Ionicons name="document-text" size={26} color={docThumb(item.file.mimeType).color} />
+                        <Text style={[up.docBadgeTxt, { color: docThumb(item.file.mimeType).color }]}>{docThumb(item.file.mimeType).label}</Text>
+                      </>
+                    )}
+                    {item.status === 'uploading' && (
+                      <View style={up.thumbOverlay}>
+                        <ActivityIndicator size="small" color="#fff" />
+                      </View>
+                    )}
+                    {item.status === 'failed' && (
+                      <View style={up.thumbOverlay}>
+                        <Ionicons name="alert-circle" size={26} color="#fff" />
+                      </View>
+                    )}
+                    {item.status === 'uploading' && (
+                      <View style={up.progressTrack}>
+                        <View style={[up.progressFill, { width: `${Math.round(item.progress * 100)}%` }]} />
+                      </View>
+                    )}
+                  </View>
+                  <Pressable
+                    style={up.removeBadge}
+                    onPress={() => (item.status === 'done' ? handleRemoveFileUploadItem(item) : fileUploads.cancel(item.localId))}
+                    hitSlop={6}
+                  >
+                    <Ionicons name="close-circle" size={18} color={item.status === 'done' ? '#EF4444' : '#9CA3AF'} />
+                  </Pressable>
                 </View>
                 <Text style={up.videoLabel} numberOfLines={1}>
-                  {item.status === 'uploading' ? 'Uploading…'
+                  {item.status === 'uploading' ? `Uploading… ${Math.round(item.progress * 100)}%`
                     : item.status === 'failed' ? (item.error ?? 'Failed')
                     : item.file.name}
                 </Text>
-                {item.status === 'failed' ? (
-                  <Pressable style={up.videoRemoveBtn} onPress={() => fileUploads.retry(item.localId)} hitSlop={6}>
+                {item.status === 'failed' && (
+                  <Pressable onPress={() => fileUploads.retry(item.localId)} hitSlop={6}>
                     <Text style={up.retryTxt}>{t('activityTimeline.videoRetryBtn')}</Text>
                   </Pressable>
-                ) : item.status !== 'done' ? (
-                  <Pressable style={up.videoRemoveBtn} onPress={() => fileUploads.cancel(item.localId)} hitSlop={6}>
-                    <Ionicons name="close-circle" size={18} color="#9CA3AF" />
-                  </Pressable>
-                ) : null}
+                )}
               </View>
             ))}
 
@@ -1244,12 +1339,6 @@ export default function CampaignWorkspaceScreen() {
               <Ionicons name="information-circle-outline" size={15} color="#4F46E5" />
               <Text style={[sh.infoTxt, { color: '#4F46E5' }]}>{t('activityTimeline.modalUploadLinksPublicHint')}</Text>
             </View>
-            {urlError ? (
-              <View style={up.errorRow}>
-                <Ionicons name="alert-circle" size={13} color="#EF4444" />
-                <Text style={up.errorTxt}>{urlError}</Text>
-              </View>
-            ) : null}
 
             {/* Live per-link preview */}
             {uploadUrls.trim().length > 0 && (
@@ -1278,6 +1367,13 @@ export default function CampaignWorkspaceScreen() {
             />
           </View>
         </View>
+        <View style={[sh.divider, { backgroundColor: '#E5E7EB', marginVertical: 12 }]} />
+        {urlError ? (
+          <View style={[up.errorRow, { marginBottom: 10 }]}>
+            <Ionicons name="alert-circle" size={13} color="#EF4444" />
+            <Text style={up.errorTxt}>{urlError}</Text>
+          </View>
+        ) : null}
         <Pressable style={[sh.primaryBtn, { backgroundColor: '#7C3AED', opacity: submitting ? 0.75 : 1, shadowColor: '#7C3AED', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]} onPress={handleSubmitWork} disabled={submitting}>
           {submitting ? <ActivityIndicator size="small" color="#fff" /> : <><Ionicons name="cloud-upload-outline" size={17} color="#fff" /><Text style={sh.primaryBtnTxt}>{t('activityTimeline.modalUploadSubmitBtn')}</Text></>}
         </Pressable>
@@ -1677,9 +1773,21 @@ const up = StyleSheet.create({
   videosSub:      { fontSize: 11, fontFamily: F.regular, color: '#9CA3AF', marginBottom: 10 },
   videoGrid:      { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   videoCard:      { width: 90, alignItems: 'center', gap: 4 },
+  // Wraps videoThumb (which clips its own content via overflow:hidden) so the
+  // removeBadge can sit half outside the thumbnail's top-right corner without
+  // being clipped itself.
+  thumbWrap:      { width: 90, height: 70 },
   videoThumb:     { width: 90, height: 70, borderRadius: RADIUS.sm, backgroundColor: '#F5F3FF', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
+  removeBadge:    { position: 'absolute', top: -7, right: -7, backgroundColor: '#fff', borderRadius: RADIUS.full, ...TOKEN_SHADOW.card },
+  // Dims an image thumbnail that's already rendering (from the local picked
+  // URI) while its upload is still in flight or has failed.
+  thumbOverlay:   { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'center', alignItems: 'center' },
+  // Lighter scrim than thumbOverlay — just enough to keep the white play
+  // icon legible over a finished video's own frame, not to dim it like an
+  // in-progress upload.
+  playOverlay:    { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.15)', justifyContent: 'center', alignItems: 'center' },
+  docBadgeTxt:    { fontSize: 9, fontFamily: F.bold, marginTop: 3, letterSpacing: 0.3 },
   videoLabel:     { fontSize: 10.5, fontFamily: F.medium, color: '#374151', maxWidth: 90, textAlign: 'center' },
-  videoRemoveBtn: { paddingHorizontal: 4 },
   retryTxt:       { fontSize: 11, fontFamily: F.bold, color: '#7C3AED' },
   progressTrack:  { position: 'absolute', bottom: 0, left: 0, right: 0, height: 4, backgroundColor: 'rgba(124,58,237,0.15)' },
   progressFill:   { height: 4, backgroundColor: '#7C3AED' },

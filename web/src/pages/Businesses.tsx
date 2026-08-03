@@ -7,7 +7,7 @@ import { DetailModal }   from '../components/DetailModal';
 import { Pagination }    from '../components/Pagination';
 import { api, type ApiBusiness } from '../lib/api';
 import { useApi }        from '../lib/useApi';
-import { displayEmailOrPhone } from '../lib/identity';
+import { displayEmailOrPhone, isPhonePlaceholderEmail } from '../lib/identity';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -205,7 +205,7 @@ export function Businesses() {
   ];
 
   const bName = action?.business.businessName ?? '';
-  const bEmail = action?.business.user.email ?? '';
+  const bEmail = action ? displayEmailOrPhone(action.business.user.email) : '';
   const modalCfg = action
     ? action.type === 'delete'
       ? { title: `Delete ${bName}?`, body: `Permanently deletes the account and all data. An email will be sent to ${bEmail}.`, confirmLabel: 'Delete account', variant: 'danger' as const }
@@ -298,6 +298,8 @@ export function Businesses() {
             {
               heading: 'Account',
               fields: [
+                { label: 'Email', value: isPhonePlaceholderEmail(viewing.user.email) ? '—' : viewing.user.email },
+                { label: 'Phone', value: viewing.user.phone ?? (isPhonePlaceholderEmail(viewing.user.email) ? displayEmailOrPhone(viewing.user.email) : '—') },
                 { label: 'Email verified', value: viewing.user.isEmailVerified ? 'Yes' : 'No' },
                 { label: 'Account active', value: viewing.user.isActive === false ? 'Suspended' : 'Active' },
                 { label: 'Joined', value: new Date(viewing.user.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) },

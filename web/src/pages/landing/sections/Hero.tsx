@@ -24,21 +24,30 @@ export function Hero() {
         <div className="mesh-blob absolute right-[-8%] top-[10%] h-[360px] w-[360px] rounded-full bg-brand-orange/[0.08] blur-[100px]" style={{ animationDelay: '3s' }} />
       </div>
 
-      {/* Oversized watermark numeral — the one editorial flourish */}
+      {/* Oversized watermark numeral — the one editorial flourish. The centered
+          max-w-6xl content column's left margin shrinks to ~24px right at the
+          lg breakpoint (1024px) — not enough room for any visible flourish
+          without colliding with the headline, so it's hidden for 1024-1279px.
+          From xl (1280px, a common 13" laptop width) the margin has opened up
+          to ~88px, enough for a small version; full size returns at 2xl
+          (1536px+, ~14" and wider) where the margin clears it entirely. */}
       <span
         aria-hidden
-        className="pointer-events-none absolute -left-10 top-16 select-none font-serif text-[16rem] italic leading-none text-violet/[0.05] sm:text-[22rem]"
+        className="pointer-events-none absolute -left-10 top-16 select-none font-serif text-[16rem] italic leading-none text-violet/[0.05] sm:text-[22rem] lg:hidden xl:block xl:-left-4 xl:top-20 xl:text-[7rem] 2xl:-left-10 2xl:top-16 2xl:text-[22rem]"
       >
         K
       </span>
 
       {/* Fills the empty space below the K watermark with the same faint,
-          decorative treatment (low opacity, oversized, non-interactive). */}
+          decorative treatment (low opacity, oversized, non-interactive).
+          Same lg/xl/2xl staging as the K watermark above, and for the same
+          reason — it also collides with the headline at 13"/14"-laptop
+          widths at full size. */}
       <img
         src="/icon.png"
         alt=""
         aria-hidden
-        className="pointer-events-none absolute left-24 bottom-32 h-56 w-56 select-none opacity-[0.07] sm:h-72 sm:w-72"
+        className="pointer-events-none absolute left-24 bottom-32 h-56 w-56 select-none opacity-[0.07] sm:h-72 sm:w-72 lg:hidden xl:block xl:left-0 xl:bottom-40 xl:h-16 xl:w-16 2xl:left-24 2xl:bottom-32 2xl:h-72 2xl:w-72"
       />
 
       <div className="relative mx-auto max-w-6xl px-6">

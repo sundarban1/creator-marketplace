@@ -14,6 +14,7 @@ import { StatCard }  from '../components/StatCard';
 import { useAuth }   from '../context/AuthContext';
 import { api }       from '../lib/api';
 import { useApi }    from '../lib/useApi';
+import { displayEmailOrPhone } from '../lib/identity';
 
 const ROLE_COLORS: Record<string, string> = {
   CREATOR:  'bg-violet-100 text-violet-700',
@@ -164,7 +165,7 @@ export function Dashboard() {
               const name =
                 u.creatorProfile?.fullName ??
                 u.businessProfile?.businessName ??
-                u.email.split('@')[0];
+                displayEmailOrPhone(u.email);
               return (
                 <li
                   key={u.id}
@@ -175,7 +176,7 @@ export function Dashboard() {
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium text-gray-800 truncate">{name}</p>
-                    <p className="text-xs text-gray-400 truncate">{u.email}</p>
+                    <p className="text-xs text-gray-400 truncate">{displayEmailOrPhone(u.email)}</p>
                   </div>
                   <span
                     className={`text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0 ${ROLE_COLORS[u.role] ?? 'bg-gray-100 text-gray-600'}`}

@@ -221,7 +221,7 @@ export class CampaignService {
 
     notificationService.createForAdmins({
       type:    'campaign_created',
-      title:   '📢 New Event Created',
+      title:   'New Event Created',
       body:    `${business.businessName} created "${raw.title}".`,
       refId:   raw.id,
       refType: 'campaign',
@@ -548,7 +548,7 @@ export class CampaignService {
 
     notificationService.createForAdmins({
       type:    'proposal_submitted',
-      title:   '📝 New Proposal Submitted',
+      title:   'New Proposal Submitted',
       body:    `${creator.fullName ?? 'A creator'} applied to "${campaign.title}".`,
       refId:   campaign.id,
       refType: isFreeEvent ? 'event' : 'campaign',
@@ -704,7 +704,7 @@ export class CampaignService {
         notificationService.create({
           userId:  creatorUserId,
           type:    'proposal_accepted',
-          title:   `🎉 You're accepted for "${campaign.title}"!`,
+          title:   `You're accepted for "${campaign.title}"!`,
           body:    `${business.businessName} accepted your proposal. Tap to view the event details.`,
           refId:   campaign.id,
           refType: 'event',
@@ -804,7 +804,7 @@ export class CampaignService {
       await notificationService.create({
         userId:  creatorUserId,
         type:    'payment_released',
-        title:   '💰 Payment Secured!',
+        title:   'Payment Secured!',
         body:    `${business.businessName} secured payment for "${campaign.title}". Tap to start creating!`,
         refId:   campaignId,
         refType: 'campaign',
@@ -853,7 +853,7 @@ export class CampaignService {
       notificationService.create({
         userId:  creatorUserId,
         type:    'payment_released',
-        title:   `💰 Payment secured for "${campaign.title}"`,
+        title:   `Payment secured for "${campaign.title}"`,
         body:    `${business.businessName} has made the payment. You can now start creating content!`,
         refId:   application.campaignId,
         refType: 'campaign',
@@ -881,7 +881,7 @@ export class CampaignService {
     notificationService.create({
       userId:  businessUserId,
       type:    'proposal_received',
-      title:   '🚀 Creator Started Working!',
+      title:   'Creator Started Working!',
       body:    `${creator.fullName ?? 'Creator'} has started working on "${app.campaign.title}".`,
       refId:   app.campaignId,
       refType: 'campaign',
@@ -912,7 +912,7 @@ export class CampaignService {
     notificationService.create({
       userId:  businessUserId,
       type:    'proposal_received',
-      title:   '📤 Work Submitted for Review',
+      title:   'Work Submitted for Review',
       body:    `${creator.fullName ?? 'Creator'} submitted deliverables for "${app.campaign.title}". Review within 5 days.`,
       refId:   app.campaignId,
       refType: 'campaign',
@@ -945,7 +945,7 @@ export class CampaignService {
     notificationService.create({
       userId:  creatorUserId,
       type:    'work_approved',
-      title:   '🎉 Your project has been approved!',
+      title:   'Your project has been approved!',
       body:    `${business.businessName} approved your work for "${app.campaign.title}". Payment will be released by admin now on your wallet.`,
       refId:   app.campaignId,
       refType: 'campaign',
@@ -953,7 +953,7 @@ export class CampaignService {
 
     notificationService.createForAdmins({
       type:    'payment_release_pending',
-      title:   '💰 Payment release needed',
+      title:   'Payment release needed',
       body:    `${business.businessName} approved ${app.creator.fullName ?? 'a creator'}'s work for "${app.campaign.title}" — release the payment when ready.`,
       refId:   app.campaignId,
       refType: 'campaign',
@@ -1009,7 +1009,7 @@ export class CampaignService {
     notificationService.create({
       userId:  creatorUserId,
       type:    'proposal_received',
-      title:   '✏️ Revision Requested',
+      title:   'Revision Requested',
       body:    `${business.businessName} requested changes for "${app.campaign.title}". Check the notes.`,
       refId:   app.campaignId,
       refType: 'campaign',

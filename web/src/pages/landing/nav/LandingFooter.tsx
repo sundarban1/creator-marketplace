@@ -51,6 +51,9 @@ export function LandingFooter() {
             <Link to="/instagram-creators" className="transition-colors hover:text-ink">Instagram Creators</Link>
             <Link to="/youtube-creators" className="transition-colors hover:text-ink">YouTube Creators</Link>
             <Link to="/facebook-creators" className="transition-colors hover:text-ink">Facebook Creators</Link>
+            <Link to="/paid-collaborations-nepal" className="transition-colors hover:text-ink">Paid Collaborations</Link>
+            <Link to="/industries-nepal" className="transition-colors hover:text-ink">Browse by Industry</Link>
+            <Link to="/cities-nepal" className="transition-colors hover:text-ink">Browse by City</Link>
           </motion.nav>
         </motion.div>
 

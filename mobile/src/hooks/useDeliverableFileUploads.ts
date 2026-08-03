@@ -6,11 +6,12 @@ import type { PickedFile } from '@/utilities/chatAttachments';
 export type DeliverableFileUploadStatus = 'uploading' | 'done' | 'failed' | 'cancelled';
 
 export interface DeliverableFileUploadItem {
-  localId: string;
-  file:    PickedFile;
-  status:  DeliverableFileUploadStatus;
-  error?:  string;
-  result?: DeliverableFile;
+  localId:  string;
+  file:     PickedFile;
+  status:   DeliverableFileUploadStatus;
+  progress: number; // 0..1
+  error?:   string;
+  result?:  DeliverableFile;
 }
 
 const MAX_TOTAL = 10;
@@ -36,9 +37,12 @@ export function useDeliverableFileUploads(appId: string, existingCount: number) 
     const controller = new AbortController();
     controllersRef.current.set(localId, controller);
     try {
-      const result = await campaignService.uploadDeliverableFile(appId, file, controller.signal);
+      const result = await campaignService.uploadDeliverableFile(
+        appId, file, controller.signal,
+        (fraction) => updateItem(localId, { progress: fraction }),
+      );
       controllersRef.current.delete(localId);
-      updateItem(localId, { status: 'done', result });
+      updateItem(localId, { status: 'done', progress: 1, result });
     } catch (e: any) {
       controllersRef.current.delete(localId);
       // cancel() already set 'cancelled' (and aborting the fetch also rejects
@@ -56,9 +60,10 @@ export function useDeliverableFileUploads(appId: string, existingCount: number) 
       Alert.alert('Limit reached', 'You can upload up to 10 images/files per submission.');
     }
     const newItems: DeliverableFileUploadItem[] = toAdd.map((file) => ({
-      localId: `${Date.now()}_${Math.random().toString(36).slice(2)}`,
+      localId:  `${Date.now()}_${Math.random().toString(36).slice(2)}`,
       file,
-      status:  'uploading',
+      status:   'uploading',
+      progress: 0,
     }));
     setItems((prev) => [...prev, ...newItems]);
     newItems.forEach((item) => void runUpload(item.localId, item.file));
@@ -73,7 +78,7 @@ export function useDeliverableFileUploads(appId: string, existingCount: number) 
   function retry(localId: string) {
     const item = items.find((i) => i.localId === localId);
     if (!item) return;
-    updateItem(localId, { status: 'uploading', error: undefined });
+    updateItem(localId, { status: 'uploading', progress: 0, error: undefined });
     void runUpload(localId, item.file);
   }
 

@@ -50,7 +50,7 @@ router.post('/contact', authenticate, validate(contactSchema), async (req: Reque
     }).catch(() => {});
     notificationService.createForAdmins({
       type:    'contact_message',
-      title:   '✉️ New Contact Message',
+      title:   'New Contact Message',
       body:    `${(supportRequest as any).user?.email ?? req.user!.email} sent a message: "${req.body.topic}"`,
       refId:   supportRequest.id,
       refType: 'support_request',
@@ -75,7 +75,7 @@ router.post('/contact-public', validate(publicContactSchema), async (req: Reques
     }).catch(() => {});
     notificationService.createForAdmins({
       type:    'contact_message',
-      title:   '✉️ New Contact Message',
+      title:   'New Contact Message',
       body:    `${name} (${email}) sent a message: "${topic}"`,
       refId:   supportRequest.id,
       refType: 'support_request',
@@ -100,7 +100,7 @@ router.post('/report', authenticate, validate(reportSchema), async (req: Request
     }).catch(() => {});
     notificationService.createForAdmins({
       type:    'issue_reported',
-      title:   '⚠️ Issue Reported',
+      title:   'Issue Reported',
       body:    `${(report as any).user?.email ?? req.user!.email} reported a ${req.body.type} issue.`,
       refId:   report.id,
       refType: 'issue_report',

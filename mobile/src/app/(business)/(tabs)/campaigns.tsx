@@ -598,6 +598,12 @@ export default function CampaignsScreen() {
                         <Text style={[styles.buttonTextSecondary, { color: C.text }]}>{t('campaigns.invite')}</Text>
                       </Pressable>
                     )}
+                    {c.status === 'active' && c.proposals === 0 && (
+                      <View style={[styles.buttonSecondary, { borderColor: C.border, borderStyle: 'dashed', opacity: 0.6 }]}>
+                        <Ionicons name="hourglass-outline" size={12} color={C.textSecondary} />
+                        <Text style={[styles.buttonTextSecondary, { color: C.textSecondary }]} numberOfLines={1}>{t('campaigns.noProposalsYet')}</Text>
+                      </View>
+                    )}
                     {c.status === 'draft' && (
                       <Pressable
                         style={({ pressed }) => [styles.buttonSecondary, { borderColor: C.border, opacity: publishingId === c.id ? 0.6 : 1 }, pressed && { opacity: 0.7 }]}

@@ -52,7 +52,16 @@ export function NearbyLocationSheet({ visible, onClose, source, radiusKm, homeLa
 
   const [draftSource, setDraftSource] = useState<NearbySource>(source);
   const [draftRadius, setDraftRadius] = useState(radiusKm);
-  const [pinCoords, setPinCoords] = useState<LatLng>(currentCoords ?? homeCoords ?? FALLBACK_COORDS);
+  // Starts null rather than defaulting to FALLBACK_COORDS — this sheet (and
+  // therefore its MapView) mounts alongside the home screen, well before the
+  // creator's profile fetch resolves currentCoords/homeCoords, and
+  // react-native-maps only honors `initialRegion` on that first mount. If we
+  // seeded Kathmandu here, that's what the map would be stuck showing (an
+  // animateToRegion correction only fires once the sheet is actually opened,
+  // which can lag behind or be missed entirely). Instead MapView itself
+  // isn't rendered at all until pinCoords is resolved to something real —
+  // see the effect below and the render guard further down.
+  const [pinCoords, setPinCoords] = useState<LatLng | null>(currentCoords ?? homeCoords ?? null);
   const [locatingCurrent, setLocatingCurrent] = useState(false);
 
   // react-native-maps fires onRegionChangeComplete for BOTH programmatic
@@ -68,7 +77,22 @@ export function NearbyLocationSheet({ visible, onClose, source, radiusKm, homeLa
   // re-center on it without needing pinCoords itself as a dependency (that
   // would also re-fire on a plain user drag and fight the drag gesture).
   const pinCoordsRef = useRef(pinCoords);
-  pinCoordsRef.current = pinCoords;
+
+  function resolveCoordsFor(src: NearbySource): LatLng | null {
+    if (src === 'current') return currentCoords ?? homeCoords;
+    if (src === 'home')    return homeCoords ?? currentCoords;
+    return customCoords ?? currentCoords ?? homeCoords;
+  }
+
+  // Falls back to whatever's resolved in props whenever pinCoords itself
+  // hasn't been set yet (i.e. before the sheet has ever been opened once —
+  // see the pinCoords useState comment above). Recomputed every render
+  // rather than synced via an effect, so the moment currentCoords/homeCoords
+  // resolve in the background (the parent's own profile fetch completing),
+  // this naturally becomes non-null on that same re-render — no extra
+  // render-triggering setState needed just to mirror it into local state.
+  const displayCoords = pinCoords ?? resolveCoordsFor(source);
+  pinCoordsRef.current = displayCoords;
 
   useEffect(() => {
     if (!visible) return;
@@ -78,11 +102,10 @@ export function NearbyLocationSheet({ visible, onClose, source, radiusKm, homeLa
     setDraftSource(initialSource);
     setDraftRadius(radiusKm);
     userIsDragging.current = false;
-    const start =
-      initialSource === 'current' ? (currentCoords ?? homeCoords) :
-      initialSource === 'home'    ? (homeCoords ?? currentCoords) :
-      (customCoords ?? currentCoords ?? homeCoords);
-    moveTo(start ?? FALLBACK_COORDS, radiusKm);
+    // FALLBACK_COORDS (Kathmandu) only kicks in here, once the sheet is
+    // actually open — genuinely nothing else is available (GPS denied, no
+    // home address saved yet) rather than just "not resolved yet".
+    moveTo(resolveCoordsFor(initialSource) ?? FALLBACK_COORDS, radiusKm);
   }, [visible, source, radiusKm, currentCoords, homeCoords, customCoords]);
 
   // Keep the circle fully inside the map card as the radius changes: zoom
@@ -92,7 +115,7 @@ export function NearbyLocationSheet({ visible, onClose, source, radiusKm, homeLa
   // (rendered immediately from draftRadius) momentarily poke past the card
   // edges while the map is still easing toward the new region.
   useEffect(() => {
-    if (!visible) return;
+    if (!visible || !pinCoordsRef.current) return;
     moveTo(pinCoordsRef.current, draftRadius, 0);
   }, [visible, draftRadius]);
 
@@ -138,7 +161,8 @@ export function NearbyLocationSheet({ visible, onClose, source, radiusKm, homeLa
   }
 
   function handleApply() {
-    onApply(draftSource, draftRadius, pinCoords);
+    if (!displayCoords) return;
+    onApply(draftSource, draftRadius, displayCoords);
     onClose();
   }
 
@@ -150,8 +174,8 @@ export function NearbyLocationSheet({ visible, onClose, source, radiusKm, homeLa
       scrollable={false}
       footer={
         <Pressable
-          style={({ pressed }) => [styles.applyBtn, { backgroundColor: C.brinjal1 }, (pressed || locatingCurrent) && { opacity: 0.88 }]}
-          disabled={locatingCurrent}
+          style={({ pressed }) => [styles.applyBtn, { backgroundColor: C.brinjal1 }, (pressed || locatingCurrent || !displayCoords) && { opacity: 0.88 }]}
+          disabled={locatingCurrent || !displayCoords}
           onPress={handleApply}>
           <Text style={styles.applyBtnText}>{t('nearbyLocationSheet.applyBtn')}</Text>
         </Pressable>
@@ -190,35 +214,47 @@ export function NearbyLocationSheet({ visible, onClose, source, radiusKm, homeLa
           </Text>
 
           <View style={[styles.mapWrap, { borderColor: draftSource === 'custom' ? C.brinjal1 : C.border }]}>
-            <MapView
-              ref={mapRef}
-              provider={PROVIDER_GOOGLE}
-              style={styles.map}
-              initialRegion={{
-                latitude: pinCoords.lat,
-                longitude: pinCoords.lng,
-                latitudeDelta: DEFAULT_DELTA,
-                longitudeDelta: DEFAULT_DELTA,
-              }}
-              onPanDrag={() => { userIsDragging.current = true; }}
-              onRegionChangeComplete={handleRegionChangeComplete}>
-              <Circle
-                center={{ latitude: pinCoords.lat, longitude: pinCoords.lng }}
-                radius={draftRadius * 1000}
-                fillColor={`${C.brinjal1}26`}
-                strokeColor={`${C.brinjal1}99`}
-                strokeWidth={1.5}
-              />
-            </MapView>
-            {/* Fixed center pin — the map pans underneath it, matching the
-                Facebook Marketplace "drag map, pin stays put" pattern. */}
-            <View style={styles.pinWrap} pointerEvents="none">
-              <Ionicons name="location" size={36} color={C.brinjal1} />
-            </View>
-            {draftSource === 'home' && homeAddress && (
-              <View style={[styles.addressBanner, { backgroundColor: C.surface, borderColor: C.border }]} pointerEvents="none">
-                <Ionicons name="home" size={13} color={C.brinjal1} />
-                <Text style={[styles.addressBannerText, { color: C.text }]} numberOfLines={2}>{homeAddress}</Text>
+            {displayCoords ? (
+              <>
+                <MapView
+                  ref={mapRef}
+                  provider={PROVIDER_GOOGLE}
+                  style={styles.map}
+                  initialRegion={{
+                    latitude: displayCoords.lat,
+                    longitude: displayCoords.lng,
+                    latitudeDelta: DEFAULT_DELTA,
+                    longitudeDelta: DEFAULT_DELTA,
+                  }}
+                  onPanDrag={() => { userIsDragging.current = true; }}
+                  onRegionChangeComplete={handleRegionChangeComplete}>
+                  <Circle
+                    center={{ latitude: displayCoords.lat, longitude: displayCoords.lng }}
+                    radius={draftRadius * 1000}
+                    fillColor={`${C.brinjal1}26`}
+                    strokeColor={`${C.brinjal1}99`}
+                    strokeWidth={1.5}
+                  />
+                </MapView>
+                {/* Fixed center pin — the map pans underneath it, matching the
+                    Facebook Marketplace "drag map, pin stays put" pattern. */}
+                <View style={styles.pinWrap} pointerEvents="none">
+                  <Ionicons name="location" size={36} color={C.brinjal1} />
+                </View>
+                {draftSource === 'home' && homeAddress && (
+                  <View style={[styles.addressBanner, { backgroundColor: C.surface, borderColor: C.border }]} pointerEvents="none">
+                    <Ionicons name="home" size={13} color={C.brinjal1} />
+                    <Text style={[styles.addressBannerText, { color: C.text }]} numberOfLines={2}>{homeAddress}</Text>
+                  </View>
+                )}
+              </>
+            ) : (
+              // Real coords (home or current) haven't resolved yet — shown only
+              // very briefly right after first login, before the parent's
+              // profile fetch resolves currentCoords/homeCoords. Never mounts
+              // MapView with a wrong location instead of this.
+              <View style={styles.mapLoading}>
+                <ActivityIndicator size="small" color={C.brinjal1} />
               </View>
             )}
           </View>
@@ -241,6 +277,7 @@ const styles = StyleSheet.create({
 
   mapWrap: { height: 220, borderRadius: 16, borderWidth: 1.5, overflow: 'hidden', marginBottom: 20 },
   map: { ...StyleSheet.absoluteFill },
+  mapLoading: { ...StyleSheet.absoluteFill, justifyContent: 'center', alignItems: 'center' },
   pinWrap: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center', marginBottom: 36 },
   // No `right` — without it, an absolutely-positioned view shrinks to fit its
   // content instead of stretching full-width, so the pill's background only

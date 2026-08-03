@@ -144,7 +144,7 @@ export class AuthService {
     const joinedName = input.role === 'CREATOR' ? input.fullName : input.businessName;
     notificationService.createForAdmins({
       type:    input.role === 'CREATOR' ? 'creator_joined' : 'business_joined',
-      title:   input.role === 'CREATOR' ? '👤 New Creator Joined' : '🏢 New Brand Joined',
+      title:   input.role === 'CREATOR' ? 'New Creator Joined' : 'New Brand Joined',
       body:    `${joinedName ?? emailForRecord} just signed up as a ${input.role === 'CREATOR' ? 'creator' : 'brand'}.`,
       refId:   user.id,
       refType: 'user',
@@ -189,7 +189,7 @@ export class AuthService {
 
     notificationService.createForAdmins({
       type:    'account_verified',
-      title:   '✅ Account Verified',
+      title:   'Account Verified',
       body:    `${verifiedDisplayName} verified their ${channel === 'email' ? 'email' : 'phone number'}.`,
       refId:   verifiedUser.id,
       refType: 'user',
@@ -323,7 +323,7 @@ export class AuthService {
 
     notificationService.createForAdmins({
       type:    'account_deleted',
-      title:   '🗑️ Account Deleted',
+      title:   'Account Deleted',
       body:    `${user.email} permanently deleted their account.`,
     }).catch(() => {});
 

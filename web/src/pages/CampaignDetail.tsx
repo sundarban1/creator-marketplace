@@ -8,8 +8,10 @@ import {
 import { StatusBadge }  from '../components/StatusBadge';
 import { Avatar }       from '../components/Avatar';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { EditEventModal } from '../components/EditEventModal';
 import { api, type ApiCampaignDetail, type ApiApplication } from '../lib/api';
 import { useApi }       from '../lib/useApi';
+import { displayEmailOrPhone } from '../lib/identity';
 
 const CAMPAIGN_STATUSES = ['ACTIVE', 'PAUSED', 'CLOSED'] as const;
 
@@ -94,7 +96,7 @@ function buildTimeline(campaign: ApiCampaignDetail) {
   );
 
   for (const app of byDate) {
-    const name = app.creator.fullName ?? app.creator.user.email;
+    const name = app.creator.fullName ?? displayEmailOrPhone(app.creator.user.email);
     events.push({
       date:  app.createdAt,
       label: `${name} applied`,
@@ -143,7 +145,7 @@ function ApplicationRow({ app, commissionRate, onReleased, showToast }: {
   const [releasing, setReleasing] = useState(false);
   const [showReleaseConfirm, setShowReleaseConfirm] = useState(false);
   const [playingVideo, setPlayingVideo] = useState<{ url: string; label: string } | null>(null);
-  const name = app.creator.fullName ?? app.creator.user.email;
+  const name = app.creator.fullName ?? displayEmailOrPhone(app.creator.user.email);
   const initials = name.slice(0, 2).toUpperCase();
   const canRelease = app.workStatus === 'APPROVED' && app.paymentStatus === 'PAID';
 
@@ -179,7 +181,7 @@ function ApplicationRow({ app, commissionRate, onReleased, showToast }: {
         )}
         <div className="flex-1 min-w-0">
           <p className="font-medium text-gray-900 text-sm truncate">{name}</p>
-          <p className="text-xs text-gray-500 truncate">{app.creator.user.email}</p>
+          <p className="text-xs text-gray-500 truncate">{displayEmailOrPhone(app.creator.user.email)}</p>
         </div>
         <div className="flex items-center gap-3 flex-shrink-0">
           <div className="text-right">
@@ -327,6 +329,7 @@ export function CampaignDetail() {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [rejecting, setRejecting] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   const { data, loading, error, refetch } = useApi(() => api.admin.campaignDetail(id!));
   const campaign = data?.data ?? null;
@@ -431,6 +434,12 @@ export function CampaignDetail() {
 
         {/* Status management */}
         <div className="flex items-center gap-2 flex-shrink-0">
+          <button
+            onClick={() => setShowEditModal(true)}
+            className="px-3 py-1.5 text-xs font-medium bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            Edit
+          </button>
           {campaign.status === 'PENDING_APPROVAL' ? (
             <>
               <button
@@ -488,6 +497,14 @@ export function CampaignDetail() {
         onConfirm={handleReject}
         onCancel={() => { setShowRejectModal(false); setRejectReason(''); }}
       />
+
+      {showEditModal && (
+        <EditEventModal
+          campaignId={id!}
+          onClose={() => setShowEditModal(false)}
+          onSaved={() => { setShowEditModal(false); showToast('Event updated.'); refetch(); }}
+        />
+      )}
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
 

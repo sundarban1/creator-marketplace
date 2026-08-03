@@ -10,7 +10,7 @@ import { DetailModal }   from '../components/DetailModal';
 import { Pagination }    from '../components/Pagination';
 import { api, type ApiUser } from '../lib/api';
 import { useApi }        from '../lib/useApi';
-import { displayEmailOrPhone } from '../lib/identity';
+import { displayEmailOrPhone, isPhonePlaceholderEmail } from '../lib/identity';
 
 const PAGE_SIZE = 10;
 
@@ -196,20 +196,20 @@ export function Users() {
     ? action.type === 'delete'
       ? {
           title:        `Delete ${displayName(action.user)}?`,
-          body:         `This permanently deletes the account and all associated data. An email will be sent to ${action.user.email}. This cannot be undone.`,
+          body:         `This permanently deletes the account and all associated data. An email will be sent to ${displayEmailOrPhone(action.user.email)}. This cannot be undone.`,
           confirmLabel: 'Delete account',
           variant:      'danger' as const,
         }
       : action.type === 'suspend'
       ? {
           title:        `Suspend ${displayName(action.user)}?`,
-          body:         `The user will be unable to log in. An email notification will be sent to ${action.user.email}.`,
+          body:         `The user will be unable to log in. An email notification will be sent to ${displayEmailOrPhone(action.user.email)}.`,
           confirmLabel: 'Suspend account',
           variant:      'warning' as const,
         }
       : {
           title:        `Reactivate ${displayName(action.user)}?`,
-          body:         `The user will regain full access to their account. An email notification will be sent to ${action.user.email}.`,
+          body:         `The user will regain full access to their account. An email notification will be sent to ${displayEmailOrPhone(action.user.email)}.`,
           confirmLabel: 'Reactivate',
           variant:      'success' as const,
         }
@@ -291,6 +291,8 @@ export function Users() {
               heading: 'Account',
               fields: [
                 { label: 'Role', value: <span className="capitalize">{viewing.role.toLowerCase()}</span> },
+                { label: 'Email', value: isPhonePlaceholderEmail(viewing.email) ? '—' : viewing.email },
+                { label: 'Phone', value: viewing.phone ?? (isPhonePlaceholderEmail(viewing.email) ? displayEmailOrPhone(viewing.email) : '—') },
                 { label: 'Email verified', value: viewing.isEmailVerified ? 'Yes' : 'No' },
                 { label: 'Account active', value: viewing.isActive === false ? 'Suspended' : 'Active' },
                 { label: 'Joined', value: new Date(viewing.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) },

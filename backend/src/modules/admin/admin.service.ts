@@ -109,7 +109,7 @@ export class AdminService {
     notificationService.create({
       userId:  campaign.business.userId,
       type:    'campaign_approved',
-      title:   '✅ Event Approved',
+      title:   'Event Approved',
       body:    `Your event "${campaign.title}" has been approved and is now live.`,
       refId:   campaignId,
       refType: 'campaign',
@@ -130,7 +130,7 @@ export class AdminService {
     notificationService.create({
       userId:  campaign.business.userId,
       type:    'campaign_rejected',
-      title:   '❌ Event Not Approved',
+      title:   'Event Not Approved',
       body:    `Your event "${campaign.title}" was not approved: ${reason}`,
       refId:   campaignId,
       refType: 'campaign',
@@ -263,7 +263,7 @@ export class AdminService {
     notificationService.create({
       userId:  creatorUserId,
       type:    'payment_released',
-      title:   '💸 Payment Released!',
+      title:   'Payment Released!',
       body:    `Your payment for "${app.campaign.title}" has been released. Check your wallet!`,
       refId:   app.campaignId,
       refType: 'campaign',
@@ -271,7 +271,7 @@ export class AdminService {
     notificationService.create({
       userId:  businessUserId,
       type:    'project_completed',
-      title:   '✅ Project Complete',
+      title:   'Project Complete',
       body:    `Payment for "${app.campaign.title}" has been released — the project is now complete.`,
       refId:   app.campaignId,
       refType: 'campaign',

@@ -72,6 +72,7 @@ export interface ApiStats {
 export interface ApiUser {
   id:              string;
   email:           string;
+  phone?:          string | null;
   role:            string;
   isEmailVerified: boolean;
   isActive:        boolean;
@@ -93,7 +94,7 @@ export interface ApiCreator {
   citizenshipDocUrl?: string | null;
   citizenshipStatus?: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
   createdAt:   string;
-  user:  { id: string; email: string; isEmailVerified: boolean; isActive: boolean; createdAt: string };
+  user:  { id: string; email: string; phone?: string | null; isEmailVerified: boolean; isActive: boolean; createdAt: string };
   _count: { applications: number };
 }
 
@@ -219,7 +220,7 @@ export interface ApiBusiness {
   companyRegDocUrl?:   string | null;
   companyRegDocStatus?: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
   verificationRejectReason?: string | null;
-  user:  { id: string; email: string; isEmailVerified: boolean; isActive: boolean; createdAt: string };
+  user:  { id: string; email: string; phone?: string | null; isEmailVerified: boolean; isActive: boolean; createdAt: string };
   _count: { campaigns: number };
 }
 

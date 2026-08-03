@@ -10,7 +10,7 @@ import { DetailModal }   from '../components/DetailModal';
 import { Pagination }    from '../components/Pagination';
 import { api, type ApiCreator } from '../lib/api';
 import { useApi }        from '../lib/useApi';
-import { displayEmailOrPhone } from '../lib/identity';
+import { displayEmailOrPhone, isPhonePlaceholderEmail } from '../lib/identity';
 
 const PAGE_SIZE = 10;
 
@@ -190,7 +190,7 @@ export function Creators() {
   ];
 
   const name = action?.creator.fullName ?? 'this creator';
-  const email = action?.creator.user.email ?? '';
+  const email = action ? displayEmailOrPhone(action.creator.user.email) : '';
   const modalCfg = action
     ? action.type === 'delete'
       ? { title: `Delete ${name}?`, body: `Permanently deletes the account and all data. An email will be sent to ${email}.`, confirmLabel: 'Delete account', variant: 'danger' as const }
@@ -283,6 +283,8 @@ export function Creators() {
             {
               heading: 'Account',
               fields: [
+                { label: 'Email', value: isPhonePlaceholderEmail(viewing.user.email) ? '—' : viewing.user.email },
+                { label: 'Phone', value: viewing.user.phone ?? (isPhonePlaceholderEmail(viewing.user.email) ? displayEmailOrPhone(viewing.user.email) : '—') },
                 { label: 'Email verified', value: viewing.user.isEmailVerified ? 'Yes' : 'No' },
                 { label: 'Account active', value: viewing.user.isActive === false ? 'Suspended' : 'Active' },
                 { label: 'Joined', value: new Date(viewing.user.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) },
