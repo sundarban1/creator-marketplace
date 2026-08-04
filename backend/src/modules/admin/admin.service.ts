@@ -294,7 +294,7 @@ export class AdminService {
       notificationService.create({
         userId:  updated.userId,
         type:    'account_verified',
-        title:   "You're verified! ✅",
+        title:   "You're verified!",
         body:    'Your creator profile has been verified — a verified badge now appears next to your name.',
         refId:   updated.id,
         refType: 'creator',
@@ -311,7 +311,7 @@ export class AdminService {
       notificationService.create({
         userId:  updated.userId,
         type:    'account_verified',
-        title:   "You're verified! ✅",
+        title:   "You're verified!",
         body:    'Your business profile has been verified — a verified badge now appears next to your name.',
         refId:   updated.id,
         refType: 'business',

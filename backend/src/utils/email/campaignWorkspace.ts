@@ -8,7 +8,7 @@ export async function sendPaymentSecuredEmail(
   amount: number,
 ): Promise<void> {
   const html = wrapLayout(`
-    <h2 style="color:#111827;font-size:22px;font-weight:700;margin:0 0 8px;">💰 Payment Secured!</h2>
+    <h2 style="color:#111827;font-size:22px;font-weight:700;margin:0 0 8px;">Payment Secured!</h2>
     <p style="color:#6b7280;font-size:15px;margin:0 0 20px;line-height:1.6;">
       Hi <strong>${creatorName}</strong>, great news! <strong>${businessName}</strong> has secured payment for your campaign.
     </p>

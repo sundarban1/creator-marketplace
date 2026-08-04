@@ -1417,7 +1417,7 @@ export default function CreateCampaignScreen() {
           inset divider below separates it from content, not a hard border). */}
       <View style={[s.header, { backgroundColor: C.background }]}>
         <BackButton
-          icon={phase === 'setup' ? 'close' : 'chevron-back'}
+          icon="chevron-left"
           onPress={() => {
             if (phase === 'confirm') setPhase('review');
             else if (phase === 'review') setPhase('setup');
@@ -2403,7 +2403,11 @@ const s = StyleSheet.create({
   // chip + title + description in one tappable row, selected state via
   // border/background swap. Used in place of a plain TabSlider wherever the
   // choice benefits from an explanatory sentence, not just a short label.
-  optionCard:     { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: RADIUS.lg, borderWidth: 1.5, padding: 14, ...SHADOW.card },
+  // No `elevation` here (Android-only) — combined with the press `transform: scale`
+  // below, Android's elevation shadow renders against the pre-scale bounds for a
+  // frame, showing as a grey box inside the border/padding. iOS's shadow* props
+  // don't have that issue, so they're kept.
+  optionCard:     { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: RADIUS.lg, borderWidth: 1.5, padding: 14, shadowColor: SHADOW.card.shadowColor, shadowOpacity: SHADOW.card.shadowOpacity, shadowRadius: SHADOW.card.shadowRadius, shadowOffset: SHADOW.card.shadowOffset },
   // shadowColor is tinted per-option (see `tone.color` below) for a soft colored glow —
   // Android's `elevation` can't be tinted and just paints a flat gray blob over the icon
   // chip instead, so it's iOS-only here; Android gets no elevation on this small chip.

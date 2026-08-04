@@ -41,37 +41,37 @@ const DELIVERABLE_IMAGE_TRANSFORMATION = [{ width: 1600, crop: 'limit' }];
 // else (title, description, deadline, status, etc.) can still be edited.
 const FIELDS_LOCKED_AFTER_PROPOSALS = ['budgetMin', 'budgetMax', 'platforms', 'deliverables'] as const;
 
-export const MASTER_CATEGORIES: { emoji: string; label: string }[] = [
-  { emoji: '🍔', label: 'Food' },
-  { emoji: '✈️', label: 'Travel' },
-  { emoji: '👗', label: 'Fashion' },
-  { emoji: '💄', label: 'Beauty' },
-  { emoji: '💪', label: 'Fitness' },
-  { emoji: '🎮', label: 'Gaming' },
-  { emoji: '📱', label: 'Tech' },
-  { emoji: '📚', label: 'Education' },
-  { emoji: '🌟', label: 'Lifestyle' },
-  { emoji: '🏠', label: 'Home & Living' },
-  { emoji: '🌿', label: 'Wellness' },
-  { emoji: '🎵', label: 'Music' },
-  { emoji: '🎨', label: 'Art & Design' },
-  { emoji: '🐾', label: 'Pets' },
-  { emoji: '🧸', label: 'Parenting' },
-  { emoji: '🚗', label: 'Automotive' },
-  { emoji: '💰', label: 'Finance' },
-  { emoji: '🌍', label: 'Sustainability' },
-  { emoji: '📷', label: 'Photography' },
-  { emoji: '🏋️', label: 'Sports' },
-  { emoji: '🎬', label: 'Film & TV' },
-  { emoji: '🧘', label: 'Mindfulness' },
-  { emoji: '🍷', label: 'Food & Drink' },
-  { emoji: '🎪', label: 'Entertainment' },
-  { emoji: '🍛', label: 'Restaurant' },
-  { emoji: '☕', label: 'Cafe' },
-  { emoji: '🏨', label: 'Hotel' },
-  { emoji: '🎉', label: 'Events' },
-  { emoji: '🛍️', label: 'Retail' },
-  { emoji: '🏥', label: 'Healthcare' },
+export const MASTER_CATEGORIES: { label: string }[] = [
+  { label: 'Food' },
+  { label: 'Travel' },
+  { label: 'Fashion' },
+  { label: 'Beauty' },
+  { label: 'Fitness' },
+  { label: 'Gaming' },
+  { label: 'Tech' },
+  { label: 'Education' },
+  { label: 'Lifestyle' },
+  { label: 'Home & Living' },
+  { label: 'Wellness' },
+  { label: 'Music' },
+  { label: 'Art & Design' },
+  { label: 'Pets' },
+  { label: 'Parenting' },
+  { label: 'Automotive' },
+  { label: 'Finance' },
+  { label: 'Sustainability' },
+  { label: 'Photography' },
+  { label: 'Sports' },
+  { label: 'Film & TV' },
+  { label: 'Mindfulness' },
+  { label: 'Food & Drink' },
+  { label: 'Entertainment' },
+  { label: 'Restaurant' },
+  { label: 'Cafe' },
+  { label: 'Hotel' },
+  { label: 'Events' },
+  { label: 'Retail' },
+  { label: 'Healthcare' },
 ];
 import type {
   CreateCampaignInput,
@@ -276,7 +276,7 @@ export class CampaignService {
     return this.repo.getDistinctCategories();
   }
 
-  getMasterCategories(): { emoji: string; label: string }[] {
+  getMasterCategories(): { label: string }[] {
     return MASTER_CATEGORIES;
   }
 
@@ -536,7 +536,7 @@ export class CampaignService {
         userId:  business.userId,
         type:    'proposal_received',
         title:   isFreeEvent
-          ? `🎟️ ${creator.fullName ?? 'A creator'} joined your event`
+          ? `${creator.fullName ?? 'A creator'} joined your event`
           : `${creator.fullName ?? 'A creator'} submitted a proposal`,
         body:    isFreeEvent
           ? `${creator.fullName ?? 'A creator'} submitted a participation request for "${campaign.title}". Tap to review.`

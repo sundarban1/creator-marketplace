@@ -534,7 +534,7 @@ export class MessagingService {
       : await uploadRawFile(file.buffer, 'messages/attachments', publicId);
 
     const content  = caption?.trim() ?? '';
-    const pushBody = content || (isImage ? '📷 Photo' : `📎 ${file.originalname}`);
+    const pushBody = content || (isImage ? 'Photo' : file.originalname);
 
     return this.persistAndBroadcast(conversation, userId, role, {
       content,
@@ -608,7 +608,7 @@ export class MessagingService {
     const durationSec = Math.round(resource.duration || clientDurationSec || 0);
 
     const content  = caption?.trim() ?? '';
-    const pushBody = content || '🎥 Video';
+    const pushBody = content || 'Video';
     // Always deliver as MP4/H.264+AAC for universal playback, even when the
     // source upload was MOV — see videoPlaybackUrl for how.
     const playbackUrl = videoPlaybackUrl(resource.secure_url);
@@ -676,7 +676,7 @@ export class MessagingService {
         attachmentName:         `${v.label}.mp4`,
         attachmentThumbnailUrl: v.thumbnailUrl,
         attachmentDurationSec:  v.durationSec,
-      }, `🎥 ${v.label}`);
+      }, v.label);
     }
 
     return message;
