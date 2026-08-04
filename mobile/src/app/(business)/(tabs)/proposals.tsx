@@ -411,7 +411,7 @@ const styles = StyleSheet.create({
   statLabel:   { fontSize: 11, fontFamily: F.medium },
   statDivider: { width: StyleSheet.hairlineWidth, height: 28 },
 
-  nudge:     { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, paddingVertical: 8 },
+  nudge:     { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingVertical: 4, marginHorizontal: 16, marginTop: 8 },
   nudgeText: { fontSize: 12, fontFamily: F.semibold },
 
   startWorkBtn:     { flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: 16, marginBottom: 14, marginTop: 6, paddingVertical: 13, paddingHorizontal: 14, borderRadius: RADIUS.full },

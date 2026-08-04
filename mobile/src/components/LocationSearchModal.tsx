@@ -13,6 +13,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { geocodeAddress } from '@/utilities/geolocation';
 
 const PLACES_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY ?? '';
 
@@ -105,11 +106,26 @@ export function LocationSearchModal({
           data.result.geometry.location.lng,
         );
       } else {
-        onSelect(prediction.description, 0, 0);
+        await fallBackToGeocode(prediction.description);
       }
     } catch {
-      onSelect(prediction.description, 0, 0);
+      await fallBackToGeocode(prediction.description);
     }
+  }
+
+  // The Details endpoint can fail independently of Autocomplete (e.g. the
+  // Places Details API disabled for this key while Autocomplete still works,
+  // a quota hit, a transient network blip). Every caller of this modal treats
+  // the (0, 0) sentinel as "no coordinates" and drops lat/lng from its save
+  // payload entirely rather than sending 0 — which means the backend just
+  // keeps whatever coordinates were already stored, while the location TEXT
+  // does get updated. That's how a profile ends up with a new address label
+  // pointing at an old pin. Geocoding API is a separate Google product from
+  // Places Details, so it's a real second chance at getting real coordinates
+  // for the new address, not just a retry of the same failing call.
+  async function fallBackToGeocode(address: string) {
+    const coords = await geocodeAddress(address);
+    onSelect(address, coords?.lat ?? 0, coords?.lng ?? 0);
   }
 
   return (

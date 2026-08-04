@@ -33,6 +33,7 @@ import {
 import { VideoPlayerModal } from '@/components/VideoPlayerModal';
 import { BottomSheet } from '@/components/BottomSheet';
 import { ImagePreviewModal } from '@/components/ImagePreviewModal';
+import { DocumentPreviewModal } from '@/components/DocumentPreviewModal';
 import { NameVideoModal } from '@/components/NameVideoModal';
 import type { Campaign } from '@/types';
 import { F, RADIUS, SHADOW as TOKEN_SHADOW } from '@/utilities/constants';
@@ -299,10 +300,10 @@ function ProgressTracker({ current, scrollRef, labels }: { current: number; scro
 
 // ─── Action Card ──────────────────────────────────────────────────────────────
 
-function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, onPay, onStartWork, onUpload, onReview, onApprove, onRevision }: {
+function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, onPay, onStartWork, onUpload, onReview, onApprove, onRevision, onViewSubmission }: {
   ws: WS; paid: boolean; paymentStatus: PS; isCreator: boolean; isFree: boolean; submitting: boolean;
   onPay: () => void; onStartWork: () => void; onUpload: () => void;
-  onReview: () => void; onApprove: () => void; onRevision: () => void;
+  onReview: () => void; onApprove: () => void; onRevision: () => void; onViewSubmission: () => void;
 }) {
   const C = useAppColors();
   const { t } = useLanguage();
@@ -421,6 +422,10 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, on
         <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acAwaitingReviewTitle')}</Text>
       </View>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acAwaitingReviewSub')}</Text>
+      <Pressable style={[ac.btn, { backgroundColor: '#0EA5E9', shadowColor: '#0EA5E9', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]} onPress={onViewSubmission}>
+        <Ionicons name="eye-outline" size={16} color="#fff" />
+        <Text style={ac.btnTxt}>{t('activityTimeline.acViewSubmissionBtn')}</Text>
+      </Pressable>
     </View>
   );
 
@@ -518,6 +523,25 @@ export default function CampaignWorkspaceScreen() {
   // open in the same player without needing a full fake DeliverableVideo.
   const [playingVideo, setPlayingVideo] = useState<{ url: string; label: string } | null>(null);
   const [previewImage, setPreviewImage] = useState<{ url: string; label: string } | null>(null);
+  const [previewDoc, setPreviewDoc]     = useState<{ url: string; label: string } | null>(null);
+  // Which BottomSheet (if any) was closed to make way for the video/image/doc
+  // preview below — RN presents each <Modal> as its own native window, and
+  // having two visible at once (the sheet + the preview) hangs the UI on iOS
+  // with no error, so the sheet must fully close first and reopen after.
+  const [previewReturnTo, setPreviewReturnTo] = useState<'upload' | 'review' | null>(null);
+  function openPreviewFrom(sheet: 'upload' | 'review', open: () => void) {
+    setPreviewReturnTo(sheet);
+    if (sheet === 'upload') setShowUpload(false); else setShowReview(false);
+    setTimeout(open, 200);
+  }
+  function closePreviewAndReturn(close: () => void) {
+    close();
+    if (previewReturnTo) {
+      const sheet = previewReturnTo;
+      setPreviewReturnTo(null);
+      setTimeout(() => (sheet === 'upload' ? setShowUpload(true) : setShowReview(true)), 200);
+    }
+  }
 
   const videoUploads = useDeliverableVideoUploads(app?.id ?? '', app?.deliverableVideos.length ?? 0);
   // Once a session upload finishes it's already persisted server-side (see
@@ -1010,6 +1034,7 @@ export default function CampaignWorkspaceScreen() {
           onReview={() => setShowReview(true)}
           onApprove={handleApprove}
           onRevision={() => setShowRevision(true)}
+          onViewSubmission={() => setShowReview(true)}
         />
 
         {/* ── Activity Timeline ── */}
@@ -1163,7 +1188,7 @@ export default function CampaignWorkspaceScreen() {
             {persistedVideos.map((v) => (
               <View key={v.publicId} style={up.videoCard}>
                 <View style={up.thumbWrap}>
-                  <Pressable style={up.videoThumb} onPress={() => setPlayingVideo(v)}>
+                  <Pressable style={up.videoThumb} onPress={() => openPreviewFrom('upload', () => setPlayingVideo(v))}>
                     <Ionicons name="play-circle" size={28} color="#7C3AED" />
                   </Pressable>
                   <Pressable style={up.removeBadge} onPress={() => handleRemoveDeliverableVideo(v.publicId)} hitSlop={6}>
@@ -1180,7 +1205,7 @@ export default function CampaignWorkspaceScreen() {
                   <Pressable
                     style={up.videoThumb}
                     disabled={item.status !== 'done'}
-                    onPress={() => item.result && setPlayingVideo({ url: item.result.url, label: item.result.label })}
+                    onPress={() => item.result && openPreviewFrom('upload', () => setPlayingVideo({ url: item.result!.url, label: item.result!.label }))}
                   >
                     {/* Real first-frame preview shown instantly, not a
                         generic icon — see LocalVideoPreview above. A play
@@ -1239,9 +1264,9 @@ export default function CampaignWorkspaceScreen() {
                 <View style={up.thumbWrap}>
                   <Pressable
                     style={up.videoThumb}
-                    onPress={() => (f.fileType === 'IMAGE'
+                    onPress={() => openPreviewFrom('upload', () => (f.fileType === 'IMAGE'
                       ? setPreviewImage({ url: f.url, label: f.originalFileName })
-                      : Linking.openURL(f.url).catch(() => showToast(t('activityTimeline.linkOpenFailed'))))}
+                      : setPreviewDoc({ url: f.url, label: f.originalFileName })))}
                   >
                     {f.fileType === 'IMAGE' ? (
                       <Image source={{ uri: f.url }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
@@ -1401,7 +1426,7 @@ export default function CampaignWorkspaceScreen() {
                 <Pressable
                   key={v.publicId}
                   style={rv.linkRow}
-                  onPress={() => setPlayingVideo(v)}>
+                  onPress={() => openPreviewFrom('review', () => setPlayingVideo(v))}>
                   <Ionicons name="play-circle" size={16} color="#16A34A" />
                   <Text style={rv.linkTxt} numberOfLines={1}>{v.label} · {formatDuration(v.durationSec)}</Text>
                   <Ionicons name="chevron-forward" size={13} color="#A78BFA" />
@@ -1430,9 +1455,9 @@ export default function CampaignWorkspaceScreen() {
                 <Pressable
                   key={f.id}
                   style={rv.linkRow}
-                  onPress={() => (f.fileType === 'IMAGE'
+                  onPress={() => openPreviewFrom('review', () => (f.fileType === 'IMAGE'
                     ? setPreviewImage({ url: f.url, label: f.originalFileName })
-                    : Linking.openURL(f.url).catch(() => showToast(t('activityTimeline.linkOpenFailed'))))}>
+                    : setPreviewDoc({ url: f.url, label: f.originalFileName })))}>
                   <Ionicons name={f.fileType === 'IMAGE' ? 'image' : 'document-text'} size={16} color="#2563EB" />
                   <Text style={rv.linkTxt} numberOfLines={1}>{f.originalFileName}</Text>
                   <Ionicons name="chevron-forward" size={13} color="#A78BFA" />
@@ -1464,7 +1489,7 @@ export default function CampaignWorkspaceScreen() {
                   style={rv.linkRow}
                   onPress={() => {
                     if (isDirectVideoUrl(url)) {
-                      setPlayingVideo({ url: normalizeUrl(url), label: t('activityTimeline.modalReviewLinksSection', { name: app?.creatorName ?? '—' }) });
+                      openPreviewFrom('review', () => setPlayingVideo({ url: normalizeUrl(url), label: t('activityTimeline.modalReviewLinksSection', { name: app?.creatorName ?? '—' }) }));
                     } else {
                       Linking.openURL(normalizeUrl(url)).catch(() => showToast(t('activityTimeline.linkOpenFailed')));
                     }
@@ -1626,14 +1651,21 @@ export default function CampaignWorkspaceScreen() {
         visible={!!playingVideo}
         url={playingVideo?.url ?? null}
         title={playingVideo?.label ?? ''}
-        onClose={() => setPlayingVideo(null)}
+        onClose={() => closePreviewAndReturn(() => setPlayingVideo(null))}
       />
 
       <ImagePreviewModal
         visible={!!previewImage}
         url={previewImage?.url ?? null}
         title={previewImage?.label ?? ''}
-        onClose={() => setPreviewImage(null)}
+        onClose={() => closePreviewAndReturn(() => setPreviewImage(null))}
+      />
+
+      <DocumentPreviewModal
+        visible={!!previewDoc}
+        url={previewDoc?.url ?? null}
+        title={previewDoc?.label ?? ''}
+        onClose={() => closePreviewAndReturn(() => setPreviewDoc(null))}
       />
 
       <NameVideoModal

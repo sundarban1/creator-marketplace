@@ -47,6 +47,7 @@ export function toMessage(api: ApiMessage): Message {
     attachmentFormat:       api.attachmentFormat ?? null,
     attachmentStatus:       api.attachmentStatus ?? null,
     isDeleted:      api.isDeleted ?? false,
+    editedAt:       api.editedAt,
   };
 }
 
@@ -217,6 +218,14 @@ export const chatService = {
 
   async deleteMessage(conversationId: string, messageId: string, forEveryone: boolean): Promise<void> {
     await request('DELETE', `/api/messaging/conversations/${conversationId}/messages/${messageId}`, { forEveryone });
+  },
+
+  async editMessage(conversationId: string, messageId: string, content: string): Promise<Message> {
+    const res = await request<ApiMessage>(
+      'PATCH', `/api/messaging/conversations/${conversationId}/messages/${messageId}`,
+      { content },
+    );
+    return toMessage(res.data);
   },
 
   async deleteConversation(conversationId: string): Promise<void> {

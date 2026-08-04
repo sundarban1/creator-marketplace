@@ -307,7 +307,7 @@ export class AuthService {
 
     notificationService.createForAdmins({
       type:    'account_deactivated',
-      title:   '⏸️ Account Deactivated',
+      title:   'Account Deactivated',
       body:    `${user.email} deactivated their account.`,
       refId:   user.id,
       refType: 'user',

@@ -4,7 +4,7 @@ import { Eye, EyeOff, Lock, Mail, AlertCircle, Users, Megaphone, CreditCard, Shi
 import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
 
-const DEFAULT_SUPPORT_EMAIL = 'support@kolab.com.np';
+const DEFAULT_SUPPORT_EMAIL = 'info@ourkolab.com';
 
 const FEATURES = [
   { icon: Users, text: 'Manage creators & businesses in one place' },

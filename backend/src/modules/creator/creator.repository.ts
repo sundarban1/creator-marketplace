@@ -195,9 +195,9 @@ export class CreatorRepository {
     username:    string;
     fullName:    string;
     bio:         string;
-    location:    string;
-    locationLat: number;
-    locationLng: number;
+    location:    string | null;
+    locationLat: number | null;
+    locationLng: number | null;
     avatarUrl:   string;
     coverImageUrl: string;
     categories:  string[];

@@ -118,10 +118,19 @@ export default function EditProfileScreen() {
         categories,
       };
       if (usernameChanged) payload.username = username;
+      // Always send location as a trio (or null-out the whole trio when
+      // cleared) rather than only including whichever pieces are non-empty —
+      // sending text without matching coordinates left stale coordinates
+      // behind on the backend (an omitted key means "leave unchanged", not
+      // "clear"), pairing a new/cleared address with an old, wrong pin.
       if (location.trim()) {
         payload.location = location.trim();
-        if (locationLat !== null) payload.locationLat = locationLat;
-        if (locationLng !== null) payload.locationLng = locationLng;
+        payload.locationLat = locationLat;
+        payload.locationLng = locationLng;
+      } else {
+        payload.location = null;
+        payload.locationLat = null;
+        payload.locationLng = null;
       }
       const profile = await creatorService.updateProfile(payload);
       updateUser({ name: profile.fullName, avatar: profile.avatarUrl ?? undefined });

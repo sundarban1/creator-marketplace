@@ -113,6 +113,7 @@ export type Message = {
   // the same request (no async job exists yet).
   attachmentStatus?: 'PROCESSING' | 'READY' | 'FAILED' | null;
   isDeleted?: boolean;
+  editedAt?: string;
   // Local-only — never round-trips through the server. Kept on the message object
   // so Retry can re-run the upload without reopening the picker.
   localUri?: string;

@@ -28,6 +28,8 @@ export const updateBusinessProfileSchema = z.object({
   categories: z.array(z.string()).optional(),
   panNo: z.string().optional().nullable(),
   location: z.string().optional().nullable(),
+  locationLat: z.number().optional().nullable(),
+  locationLng: z.number().optional().nullable(),
   phone: businessPhoneField,
   showPublicProfile:   z.boolean().optional(),
   hideContactDetails:  z.boolean().optional(),

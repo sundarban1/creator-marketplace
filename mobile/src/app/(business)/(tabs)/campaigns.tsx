@@ -761,7 +761,7 @@ export default function CampaignsScreen() {
                           </View>
                           {(topAcc || creator.distanceKm != null) && (
                             <Text style={[styles.pickSub, { color: C.textSecondary }]} numberOfLines={1}>
-                              {topAcc ? `${topAcc.platform} · ${topAcc.followers >= 1000 ? `${(topAcc.followers / 1000).toFixed(1)}K` : topAcc.followers} ${t('campaigns.followersSuffix')}` : ''}
+                              {topAcc ? topAcc.platform : ''}
                               {creator.distanceKm != null ? ` · ${creator.distanceKm < 1 ? '<1' : Math.round(creator.distanceKm)} km` : ''}
                             </Text>
                           )}

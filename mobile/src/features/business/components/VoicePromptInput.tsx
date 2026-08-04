@@ -192,11 +192,14 @@ export function VoicePromptInput({ onRecorded, onDiscard, onError, disabled }: P
       <View style={styles.wrap}>
         <View style={styles.reviewRow}>
           <Pressable
-            style={[styles.micBtn, { backgroundColor: busy ? C.border : C.brinjal1 }]}
+            style={[styles.listenPill, { borderColor: busy ? C.border : C.brinjal1, backgroundColor: busy ? C.background : `${C.brinjal1}1A` }]}
             disabled={busy}
             onPress={handleTogglePlayback}
             accessibilityLabel={playerStatus.playing ? t('createEvent.audioPause') : t('createEvent.audioPlay')}>
-            <Ionicons name={playerStatus.playing ? 'pause' : 'play'} size={24} color="#fff" />
+            <Ionicons name={playerStatus.playing ? 'pause' : 'play'} size={16} color={busy ? C.textSecondary : C.brinjal1} />
+            <Text style={[styles.listenText, { color: busy ? C.textSecondary : C.brinjal1 }]}>
+              {playerStatus.playing ? t('createEvent.audioPause') : t('createEvent.audioListenToRecording')}
+            </Text>
           </Pressable>
           <Pressable
             style={[styles.sayAgainPill, { borderColor: C.border, backgroundColor: C.background }]}
@@ -262,7 +265,9 @@ const styles = StyleSheet.create({
   meter:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 2, height: 36, width: 160 },
   meterBar:  { width: 3, borderRadius: 2 },
   hint:      { fontSize: 12, fontFamily: F.regular, textAlign: 'center' },
-  reviewRow:    { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  reviewRow:    { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  listenPill:   { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: RADIUS.full, borderWidth: 1.5, paddingHorizontal: 16, paddingVertical: 10 },
+  listenText:   { fontSize: 13, fontFamily: F.medium },
   sayAgainPill: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: RADIUS.full, borderWidth: 1.5, paddingHorizontal: 16, paddingVertical: 10 },
   sayAgainText: { fontSize: 13, fontFamily: F.medium },
 });

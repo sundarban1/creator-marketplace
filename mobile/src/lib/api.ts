@@ -158,6 +158,7 @@ export interface ApiMessage {
   attachmentStatus?:       'PROCESSING' | 'READY' | 'FAILED' | null;
   createdAt:      string;
   isDeleted?:     boolean;
+  editedAt?:      string;
   sender:         { id: string; email: string; role: string };
 }
 

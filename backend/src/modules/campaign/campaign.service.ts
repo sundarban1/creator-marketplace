@@ -730,7 +730,7 @@ export class CampaignService {
       if (creatorUserId) {
         const type  = status === 'ACCEPTED' ? 'proposal_accepted' : 'proposal_rejected';
         const title = status === 'ACCEPTED'
-          ? `🎉 Your proposal was accepted!`
+          ? `Your proposal was accepted!`
           : `Proposal update for "${campaign.title}"`;
         const body  = status === 'ACCEPTED'
           ? `Congratulations! ${business.businessName} accepted your proposal for "${campaign.title}". Payment is expected within 24 hours.`

@@ -341,6 +341,7 @@ function MessageBubble({
           </View>
         )}
         <View style={s.bubbleMeta}>
+          {!!msg.editedAt && <Text style={[s.bubbleTime, { color: C.textSecondary }]}>{t('messages.editedLabel')} · </Text>}
           <Text style={[s.bubbleTime, { color: C.textSecondary }]}>{formatTime(msg.timestamp)}</Text>
           {isSent && (
             isPending
@@ -375,6 +376,7 @@ export default function BusinessChatRoomScreen() {
     (urlStatus as 'PENDING' | 'ACCEPTED' | 'DECLINED') ?? 'ACCEPTED',
   );
   const [text, setText]               = useState('');
+  const [editingMessage, setEditingMessage] = useState<Message | null>(null);
   const [otherTyping, setOtherTyping] = useState(false);
   const [emojiOpen, setEmojiOpen]     = useState(false);
   const [presence, setPresence]       = useState<{ online: boolean; lastSeenAt: string | null } | null>(null);
@@ -485,6 +487,12 @@ export default function BusinessChatRoomScreen() {
         m.id === data.messageId ? { ...m, isDeleted: true, text: '', attachmentUrl: null, attachmentName: null } : m
       ));
     };
+    // The other participant edited a message — apply the update live.
+    const onMessageEdited = (data: { conversationId: string; message: ApiMessage }) => {
+      if (data.conversationId !== id) return;
+      const edited = toMessage(data.message);
+      setMessages((prev) => prev.map((m) => (m.id === edited.id ? edited : m)));
+    };
     // A socket-sent text message was rejected server-side (e.g. the new
     // messages-per-minute / duplicate-message rate limits) — the socket path
     // never otherwise resolves on failure (no ack), so without this the
@@ -505,6 +513,7 @@ export default function BusinessChatRoomScreen() {
     socket.on('typing:stop',  onTypingStop);
     socket.on('connect',      onReconnect);
     socket.on('message:deleted', onMessageDeleted);
+    socket.on('message:edited', onMessageEdited);
     socket.on('message:error', onMessageError);
 
     return () => {
@@ -512,6 +521,7 @@ export default function BusinessChatRoomScreen() {
       socket.off('typing:stop',  onTypingStop);
       socket.off('connect',      onReconnect);
       socket.off('message:deleted', onMessageDeleted);
+      socket.off('message:edited', onMessageEdited);
       socket.off('message:error', onMessageError);
       socket.emit('leave:conversation', { conversationId: id });
       if (typingTimer.current) clearTimeout(typingTimer.current);
@@ -552,10 +562,36 @@ export default function BusinessChatRoomScreen() {
       { text: t('messages.deleteForMe'), style: 'destructive', onPress: () => void deleteMessage(msg, false) },
     ];
     if (isMine) {
+      if (msg.type === 'TEXT') {
+        options.unshift({ text: t('messages.editMessage'), onPress: () => {
+          setEditingMessage(msg);
+          setText(msg.text);
+          inputRef.current?.focus();
+        } });
+      }
       options.push({ text: t('messages.deleteForEveryone'), style: 'destructive', onPress: () => void deleteMessage(msg, true) });
     }
     options.push({ text: t('common.cancel'), style: 'cancel' });
     Alert.alert(t('messages.deleteMessageTitle'), undefined, options);
+  }
+
+  function clearComposer() {
+    setText('');
+    setEditingMessage(null);
+  }
+
+  async function handleSaveEdit() {
+    if (!editingMessage || !text.trim()) return;
+    const content = text.trim();
+    const msgId = editingMessage.id;
+    if (content === editingMessage.text) { clearComposer(); return; }
+    try {
+      const updated = await chatService.editMessage(id, msgId, content);
+      setMessages((prev) => prev.map((m) => (m.id === msgId ? updated : m)));
+      clearComposer();
+    } catch (e) {
+      Alert.alert(t('common.error'), e instanceof Error ? e.message : t('messages.editFailedGeneric'));
+    }
   }
 
   async function deleteMessage(msg: Message, forEveryone: boolean) {
@@ -596,6 +632,7 @@ export default function BusinessChatRoomScreen() {
 
   function handleSend() {
     if (!text.trim() || isSending.current) return;
+    if (editingMessage) { void handleSaveEdit(); return; }
     const content = text.trim();
     isSending.current = true;
     const socket = getSocket();
@@ -958,6 +995,15 @@ export default function BusinessChatRoomScreen() {
         )}
         {status === 'ACCEPTED' && flags.messagingEnabled && (
           <>
+            {editingMessage && (
+              <View style={[s.editingBanner, { backgroundColor: C.surface, borderTopColor: C.border }]}>
+                <Ionicons name="create-outline" size={14} color={C.brinjal1} />
+                <Text style={[s.editingBannerTxt, { color: C.brinjal1 }]} numberOfLines={1}>{t('messages.editingMessage')}</Text>
+                <Pressable onPress={clearComposer} hitSlop={8}>
+                  <Ionicons name="close" size={16} color={C.textSecondary} />
+                </Pressable>
+              </View>
+            )}
             <View style={[s.inputBar, { backgroundColor: C.surface, borderTopColor: C.border, paddingBottom: emojiOpen ? 8 : insets.bottom + 8 }]}>
               <Pressable style={s.iconBtn} onPress={handleCameraPress} hitSlop={4}>
                 <Ionicons name="camera-outline" size={24} color={C.brinjal1} />
@@ -989,7 +1035,7 @@ export default function BusinessChatRoomScreen() {
                 style={[s.sendBtn, { backgroundColor: text.trim() ? C.brinjal1 : C.border }]}
                 onPress={handleSend}
                 disabled={!text.trim()}>
-                <Ionicons name="send" size={18} color="#fff" />
+                <Ionicons name={editingMessage ? 'checkmark' : 'send'} size={18} color="#fff" />
               </Pressable>
             </View>
 
@@ -1097,6 +1143,8 @@ const s = StyleSheet.create({
 
   // Input
   inputBar:  { flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: 10, paddingVertical: 10, paddingBottom: 16, borderTopWidth: StyleSheet.hairlineWidth, gap: 6 },
+  editingBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, paddingVertical: 8, borderTopWidth: StyleSheet.hairlineWidth },
+  editingBannerTxt: { flex: 1, fontSize: 12, fontFamily: F.semibold },
   iconBtn:   { width: 36, height: 44, justifyContent: 'center', alignItems: 'center' },
   inputWrap: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 44, maxHeight: 120, borderWidth: 1.5, borderRadius: RADIUS.full, paddingHorizontal: 12, paddingVertical: 8 },
   input:     { flex: 1, fontSize: 15, fontFamily: F.regular, paddingVertical: 2 },

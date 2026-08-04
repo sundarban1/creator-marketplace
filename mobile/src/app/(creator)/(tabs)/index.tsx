@@ -237,7 +237,10 @@ export default function HomeScreen() {
     if (coords) void fetchNearby(coords, nearbyRadiusKm, overrides);
   }
 
-  async function initNearby(profile: { nearbyRadiusKm: number; nearbyUseHomeLocation: boolean; location: string | null; locationLat: number | null; locationLng: number | null }) {
+  async function initNearby(
+    profile: { nearbyRadiusKm: number; nearbyUseHomeLocation: boolean; location: string | null; locationLat: number | null; locationLng: number | null },
+    opts: { silent?: boolean } = {},
+  ) {
     const radius = profile.nearbyRadiusKm ?? 25;
     setNearbyRadiusKm(radius);
     setNearbyHomeLabel(
@@ -266,7 +269,7 @@ export default function HomeScreen() {
     setNearbySource(preferredSource);
 
     const coords = preferredSource === 'home' ? (home ?? current) : current;
-    if (coords) void fetchNearby(coords, radius);
+    if (coords) void fetchNearby(coords, radius, { silent: opts.silent });
     else setNearbyLoading(false);
   }
 
@@ -296,7 +299,14 @@ export default function HomeScreen() {
     const next = RADIUS_PRESETS.find((r) => r > nearbyRadiusKm) ?? 100;
     setNearbyRadiusKm(next);
     const coords = resolveNearbyCoords();
-    if (coords) void fetchNearby(coords, next);
+    // Silent: a non-silent fetch drops nearbyCampaigns back to the skeleton
+    // row first, then swaps in results — two separate height changes on the
+    // Nearby Events section, each one shoving the Recommended/Trending/
+    // Ending Soon list below it (same ListHeaderComponent/FlatList flow) up
+    // or down. The radius label above already updates immediately via
+    // setNearbyRadiusKm, so the tap still gets instant feedback without the
+    // extra skeleton flash and layout jump.
+    if (coords) void fetchNearby(coords, next, { silent: true });
   }
 
   useEffect(() => {
@@ -324,14 +334,18 @@ export default function HomeScreen() {
   }, [languageVersion]);
 
   // Re-sync "Home location" whenever this tab regains focus (e.g. returning from
-  // Edit Profile after changing location). The mount effect above only runs once
-  // (or on language change), so without this the Nearby Events sheet keeps
-  // showing whatever location was fetched at first load.
+  // Edit Profile after changing location, or just popping back from campaign
+  // detail). The mount effect above only runs once (or on language change), so
+  // without this the Nearby Events sheet keeps showing whatever location was
+  // fetched at first load. Silent because this fires on *every* re-focus
+  // (including a plain back-navigation where nothing changed) — a non-silent
+  // fetch would drop nearbyCampaigns back to the skeleton loader every time,
+  // flickering the whole row for no reason.
   const skipNextNearbyFocusRef = useRef(true);
   useFocusEffect(useCallback(() => {
     if (skipNextNearbyFocusRef.current) { skipNextNearbyFocusRef.current = false; return; }
     creatorService.getProfile()
-      .then((profile) => { void initNearby(profile); })
+      .then((profile) => { void initNearby(profile, { silent: true }); })
       .catch(() => {});
   }, []));
 

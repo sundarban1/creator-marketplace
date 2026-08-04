@@ -33,6 +33,7 @@ import { profileService } from '@/services/profile';
 import type { FacebookPageOption } from '@/services/creator';
 import { COLORS, F, RADIUS, SHADOW } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
+import { SupportAttachmentPicker } from '@/components/SupportAttachmentPicker';
 import { BackButton } from '@/components/BackButton';
 import { request } from '@/lib/api';
 import { pickAndUpload } from '@/utilities/uploadImage';
@@ -625,8 +626,10 @@ export default function BusinessSettingsScreen() {
   // ── Support forms ──
   const [supportTopic, setSupportTopic] = useState('');
   const [supportMsg, setSupportMsg] = useState('');
+  const [supportAttachments, setSupportAttachments] = useState<string[]>([]);
   const [reportType, setReportType] = useState('');
   const [reportDesc, setReportDesc] = useState('');
+  const [reportAttachments, setReportAttachments] = useState<string[]>([]);
 
   function showToast(msg: string) { toast.success(msg); }
 
@@ -798,8 +801,8 @@ export default function BusinessSettingsScreen() {
   async function handleSupportSubmit() {
     if (!supportMsg.trim()) return;
     try {
-      await request('POST', '/api/support/contact', { topic: supportTopic || 'General', message: supportMsg });
-      setSupportTopic(''); setSupportMsg('');
+      await request('POST', '/api/support/contact', { topic: supportTopic || 'General', message: supportMsg, attachmentUrls: supportAttachments });
+      setSupportTopic(''); setSupportMsg(''); setSupportAttachments([]);
       showToast(t('businessSettings.supportSentToast'));
       setSubPage(null);
     } catch {
@@ -810,8 +813,8 @@ export default function BusinessSettingsScreen() {
   async function handleReportSubmit() {
     if (!reportDesc.trim()) return;
     try {
-      await request('POST', '/api/support/report', { type: reportType || 'Other', description: reportDesc });
-      setReportType(''); setReportDesc('');
+      await request('POST', '/api/support/report', { type: reportType || 'Other', description: reportDesc, attachmentUrls: reportAttachments });
+      setReportType(''); setReportDesc(''); setReportAttachments([]);
       showToast(t('businessSettings.reportSentToast'));
       setSubPage(null);
     } catch {
@@ -926,6 +929,9 @@ export default function BusinessSettingsScreen() {
                 textAlignVertical="top"
               />
             </View>
+            <View style={styles.formField}>
+              <SupportAttachmentPicker colors={C} urls={supportAttachments} onChange={setSupportAttachments} />
+            </View>
             <Pressable
               style={[
                 styles.primaryBtn,
@@ -983,6 +989,9 @@ export default function BusinessSettingsScreen() {
                 numberOfLines={5}
                 textAlignVertical="top"
               />
+            </View>
+            <View style={styles.formField}>
+              <SupportAttachmentPicker colors={C} urls={reportAttachments} onChange={setReportAttachments} />
             </View>
             <Pressable
               style={[

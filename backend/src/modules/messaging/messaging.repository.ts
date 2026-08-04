@@ -295,6 +295,16 @@ export class MessagingRepository {
     });
   }
 
+  /** Sender-only edit of a TEXT message's content — stamps editedAt so the
+   *  DTO/UI can show an "Edited" label. */
+  async editMessage(messageId: string, content: string) {
+    return prisma.message.update({
+      where: { id: messageId },
+      data: { content, editedAt: new Date() },
+      include: { sender: { select: { id: true, email: true, role: true } } },
+    });
+  }
+
   /** The single most recent message in this conversation, if any — used to
    *  detect whether a new message is a "reply" to the other party (for
    *  response-time analytics) before the new message itself is inserted. */

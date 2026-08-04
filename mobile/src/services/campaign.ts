@@ -306,15 +306,15 @@ export const campaignService = {
     return toCampaign(res.data);
   },
 
-  async generateWithAi(prompt: string): Promise<AiCampaignDraft> {
+  async generateWithAi(prompt: string, inputSource?: 'voice' | 'text'): Promise<AiCampaignDraft> {
     // Longer timeout than the default 30s — GPT-5 mini's reasoning latency on this
     // longer structured-JSON prompt can take 20-40s (backend's own budget is 45s).
-    const res = await request<AiCampaignDraft>('POST', '/api/campaigns/ai/generate', { prompt }, undefined, 50000);
+    const res = await request<AiCampaignDraft>('POST', '/api/campaigns/ai/generate', { prompt, inputSource }, undefined, 50000);
     return res.data;
   },
 
-  async generateEventWithAi(prompt: string): Promise<AiEventDraft> {
-    const res = await request<AiEventDraft>('POST', '/api/campaigns/ai/generate-event', { prompt }, undefined, 50000);
+  async generateEventWithAi(prompt: string, inputSource?: 'voice' | 'text'): Promise<AiEventDraft> {
+    const res = await request<AiEventDraft>('POST', '/api/campaigns/ai/generate-event', { prompt, inputSource }, undefined, 50000);
     return res.data;
   },
 

@@ -1,15 +1,15 @@
 import { Request, Response, NextFunction } from 'express';
 import { CampaignAiService } from './campaign-ai.service';
 import { success } from '../../utils/response';
-import type { SuggestDescriptionInput } from './campaign-ai.schema';
+import type { SuggestDescriptionInput, GenerateCampaignInput } from './campaign-ai.schema';
 
 const campaignAiService = new CampaignAiService();
 
 export class CampaignAiController {
   async generate(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { prompt } = req.body as { prompt: string };
-      const draft = await campaignAiService.generateDraft(prompt, req.language, req.user!.id);
+      const { prompt, inputSource } = req.body as GenerateCampaignInput;
+      const draft = await campaignAiService.generateDraft(prompt, req.language, req.user!.id, inputSource);
       success(res, draft, 'Campaign draft generated');
     } catch (err) {
       next(err);
@@ -18,8 +18,8 @@ export class CampaignAiController {
 
   async generateEvent(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { prompt } = req.body as { prompt: string };
-      const draft = await campaignAiService.generateEventDraft(prompt, req.language, req.user!.id);
+      const { prompt, inputSource } = req.body as GenerateCampaignInput;
+      const draft = await campaignAiService.generateEventDraft(prompt, req.language, req.user!.id, inputSource);
       success(res, draft, 'Event draft generated');
     } catch (err) {
       next(err);

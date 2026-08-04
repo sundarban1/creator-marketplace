@@ -233,6 +233,8 @@ model BusinessProfile {
   categories               String[]
   panNo                    String?
   location                 String?
+  locationLat              Float?
+  locationLng              Float?
   phone                    String?
   isVerified               Boolean              @default(false)
   createdAt                DateTime             @default(now())
@@ -560,6 +562,9 @@ model Message {
   // history/pagination doesn't shift, but the content is tombstoned in the DTO.
   deletedAt              DateTime?
   deletedBy              String?
+  // Set when the sender edits the text after sending — the DTO surfaces this
+  // as an "Edited" label, matching the WhatsApp/Instagram convention.
+  editedAt               DateTime?
   // "Delete for me" — hides the message from one side's view without touching
   // the other participant's copy or the underlying content.
   hiddenForCreator       Boolean      @default(false)
@@ -714,6 +719,9 @@ model SupportRequest {
   topic      String
   message    String
   status     String   @default("OPEN")
+  // Cloudinary URLs — up to 3, uploaded via POST /api/support/attachments
+  // before the request itself is submitted.
+  attachmentUrls String[] @default([])
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   user       User?    @relation(fields: [userId], references: [id])
@@ -727,6 +735,9 @@ model IssueReport {
   type        String
   description String
   status      String   @default("OPEN")
+  // Cloudinary URLs — up to 3, uploaded via POST /api/support/attachments
+  // before the report itself is submitted.
+  attachmentUrls String[] @default([])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   user        User?    @relation(fields: [userId], references: [id])

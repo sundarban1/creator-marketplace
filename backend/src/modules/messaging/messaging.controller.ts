@@ -154,6 +154,13 @@ export class MessagingController {
     } catch (err) { next(err); }
   }
 
+  async editMessage(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const message = await messagingService.editMessage(req.params.id, req.params.messageId, req.user!.id, req.user!.role, req.body.content);
+      success(res, message, 'Message updated');
+    } catch (err) { next(err); }
+  }
+
   async deleteConversation(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       await messagingService.deleteConversationForMe(req.params.id, req.user!.id, req.user!.role);

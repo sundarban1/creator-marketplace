@@ -1025,8 +1025,12 @@ export default function CreateCampaignScreen() {
     }
     setAiLocationError(undefined);
     setAiLoading(true);
+    // promptOverride is only ever passed with a Whisper transcription (see
+    // handleCreateEventPress) — that's the one signal the backend needs to
+    // trust the transcription's detected language over the app's UI language.
+    const inputSource = promptOverride !== undefined ? 'voice' : 'text';
     try {
-      const draft = await campaignService.generateWithAi(prompt);
+      const draft = await campaignService.generateWithAi(prompt, inputSource);
       setForm((prev) => ({ ...prev, ...mapAiCampaignDraftToForm(draft, prompt, prev) }));
       setAiPromptText('');
       setPhase('review');
@@ -1117,8 +1121,11 @@ export default function CreateCampaignScreen() {
     setAiLocationError(undefined);
     setAiLoading(true);
     const defaultEventDate = dayStart(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
+    // See handleGenerateWithAi — promptOverride only ever comes from a
+    // Whisper transcription.
+    const inputSource = promptOverride !== undefined ? 'voice' : 'text';
     try {
-      const draft = await campaignService.generateEventWithAi(prompt);
+      const draft = await campaignService.generateEventWithAi(prompt, inputSource);
       setForm((prev) => ({ ...prev, ...mapAiEventDraftToForm(draft, prompt, prev) }));
       setAiPromptText('');
       setPhase('review');

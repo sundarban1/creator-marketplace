@@ -18,6 +18,7 @@ interface SupportRequest {
   user?:       { email: string; role: string } | null;
   guestName?:  string | null;
   guestEmail?: string | null;
+  attachmentUrls?: string[];
 }
 
 interface IssueReport {
@@ -27,6 +28,20 @@ interface IssueReport {
   status:      string;
   createdAt:   string;
   user?:       { email: string; role: string } | null;
+  attachmentUrls?: string[];
+}
+
+function Attachments({ urls }: { urls?: string[] }) {
+  if (!urls || urls.length === 0) return null;
+  return (
+    <div className="flex gap-2 mb-3">
+      {urls.map((url, i) => (
+        <a key={url} href={url} target="_blank" rel="noopener noreferrer" className="block w-14 h-14 rounded-lg overflow-hidden border border-gray-200 hover:opacity-80 transition-opacity">
+          <img src={url} alt={`Attachment ${i + 1}`} className="w-full h-full object-cover" />
+        </a>
+      ))}
+    </div>
+  );
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -62,6 +77,7 @@ function ContactCard({ item, onStatusChange }: { item: SupportRequest; onStatusC
         <StatusBadge status={item.status} />
       </div>
       <p className="text-sm text-gray-600 mb-3 line-clamp-3">{item.message}</p>
+      <Attachments urls={item.attachmentUrls} />
       <div className="flex items-center justify-between pt-3 border-t border-gray-100">
         <div className="text-xs text-gray-400 space-y-0.5">
           {item.user
@@ -95,6 +111,7 @@ function ReportCard({ item, onStatusChange }: { item: IssueReport; onStatusChang
         <StatusBadge status={item.status} />
       </div>
       <p className="text-sm text-gray-600 mb-3 line-clamp-3">{item.description}</p>
+      <Attachments urls={item.attachmentUrls} />
       <div className="flex items-center justify-between pt-3 border-t border-gray-100">
         <div className="text-xs text-gray-400 space-y-0.5">
           {item.user && <p className="font-medium text-gray-600">{displayEmailOrPhone(item.user.email)}</p>}

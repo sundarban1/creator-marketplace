@@ -9,9 +9,14 @@ export const updateCreatorProfileSchema = z.object({
   // verified email — see creator.service.ts.
   email:       z.string().trim().toLowerCase().email('Invalid email').optional(),
   bio:         z.string().max(500).optional(),
-  location:    z.string().optional(),
-  locationLat: z.number().optional(),
-  locationLng: z.number().optional(),
+  // Nullable (not just optional) so the client can explicitly clear a
+  // previously-set location — an absent key means "leave unchanged", while
+  // `null` means "clear it". Without this, clearing the address text but
+  // omitting lat/lng left stale coordinates behind (the update just skips
+  // untouched keys), pairing an empty location with an old, wrong pin.
+  location:    z.string().nullable().optional(),
+  locationLat: z.number().nullable().optional(),
+  locationLng: z.number().nullable().optional(),
   avatarUrl:   z.string().url('Invalid avatar URL').optional(),
   coverImageUrl: z.string().url('Invalid cover image URL').optional(),
   categories:  z.array(z.string()).optional(),

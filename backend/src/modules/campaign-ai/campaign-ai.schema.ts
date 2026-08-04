@@ -2,6 +2,10 @@ import { z } from 'zod';
 
 export const generateCampaignSchema = z.object({
   prompt: z.string().min(3, 'Please describe what you want to promote').max(500),
+  // 'voice' — a transcribed recording, where the actual spoken language (not
+  // the app's UI language setting) must decide the output language. Omitted
+  // for the Text prompt mode.
+  inputSource: z.enum(['voice', 'text']).optional(),
 });
 export type GenerateCampaignInput = z.infer<typeof generateCampaignSchema>;
 

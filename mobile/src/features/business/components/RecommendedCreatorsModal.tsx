@@ -20,12 +20,6 @@ type Props = {
   onDone: () => void;
 };
 
-function formatFollowers(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return String(n);
-}
-
 export function RecommendedCreatorsModal({ visible, campaignId, category, lat, lng, budgetMin, budgetMax, onDone }: Props) {
   const C = useAppColors();
   const { t } = useLanguage();
@@ -169,7 +163,6 @@ export function RecommendedCreatorsModal({ visible, campaignId, category, lat, l
                               return (
                                 <View key={acc.platform} style={[s.socialBadge, { backgroundColor: meta.bg }]}>
                                   <FontAwesome5 name={meta.icon} size={11} color={meta.color} />
-                                  <Text style={[s.socialFollowers, { color: meta.color }]}>{formatFollowers(acc.followers)}</Text>
                                 </View>
                               );
                             })}
@@ -218,7 +211,6 @@ const s = StyleSheet.create({
 
   socialRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   socialBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: RADIUS.full, paddingHorizontal: 9, paddingVertical: 5 },
-  socialFollowers: { fontSize: 12, fontFamily: F.bold },
 
   footerRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   skipLink: { paddingVertical: 10, paddingHorizontal: 4 },

@@ -12,6 +12,8 @@ export interface BusinessProfileDto {
   categories: string[];
   panNo: string | null;
   location: string | null;
+  locationLat: number | null;
+  locationLng: number | null;
   phone: string | null;
   isVerified: boolean;
   fullyVerified: boolean;
@@ -98,6 +100,8 @@ type RawBusinessProfile = {
   categories: string[];
   panNo: string | null;
   location: string | null;
+  locationLat?: number | null;
+  locationLng?: number | null;
   phone?: string | null;
   isVerified: boolean;
   showPublicProfile: boolean;
@@ -132,6 +136,8 @@ export function toBusinessProfileDto(b: RawBusinessProfile): BusinessProfileDto 
     categories:          b.categories,
     panNo:               b.panNo,
     location:            b.location,
+    locationLat:         b.locationLat ?? null,
+    locationLng:         b.locationLng ?? null,
     phone:               b.phone ?? null,
     isVerified:          b.isVerified,
     fullyVerified:       b.user ? isBusinessFullyVerified(b.user, { panDocStatus: b.panDocStatus ?? 'NONE', companyRegDocStatus: b.companyRegDocStatus ?? 'NONE' }) : false,

@@ -4,7 +4,7 @@ import { authenticate } from '../../middleware/auth';
 import { validate } from '../../middleware/validate';
 import { uploadChatFile } from '../../middleware/upload';
 import { perUserMessageLimiter } from '../../middleware/rateLimit';
-import { startConversationSchema, startCreatorConversationSchema, sendMessageSchema, videoCompleteSchema } from './messaging.schema';
+import { startConversationSchema, startCreatorConversationSchema, sendMessageSchema, editMessageSchema, videoCompleteSchema } from './messaging.schema';
 
 const router = Router();
 const ctrl   = new MessagingController();
@@ -43,6 +43,8 @@ router.post('/conversations/:id/attachments/video/signature', ctrl.getVideoUploa
 router.post('/conversations/:id/attachments/video/complete',  validate(videoCompleteSchema), ctrl.completeVideoAttachment.bind(ctrl));
 // Delete a single message — body: { forEveryone?: boolean } (sender-only; defaults to "delete for me")
 router.delete('/conversations/:id/messages/:messageId', ctrl.deleteMessage.bind(ctrl));
+// Edit a single TEXT message — sender-only, no time limit
+router.patch('/conversations/:id/messages/:messageId', validate(editMessageSchema), ctrl.editMessage.bind(ctrl));
 // Delete (hide) the whole conversation from the caller's own inbox only
 router.delete('/conversations/:id',                  ctrl.deleteConversation.bind(ctrl));
 

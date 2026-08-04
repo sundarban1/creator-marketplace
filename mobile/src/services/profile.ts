@@ -20,6 +20,8 @@ export type BusinessProfile = {
   categories:   string[];
   panNo:        string | null;
   location:     string | null;
+  locationLat:  number | null;
+  locationLng:  number | null;
   isVerified:   boolean;
   fullyVerified: boolean;
   createdAt:    string;
@@ -76,6 +78,8 @@ export const profileService = {
     phone?:         string;
     panNo?:         string;
     location?:      string | null;
+    locationLat?:   number | null;
+    locationLng?:   number | null;
     categories?:    string[];
     socialLinks?:   SocialLinks;
     presenceServices?:         string[];

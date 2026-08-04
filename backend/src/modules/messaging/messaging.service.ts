@@ -376,6 +376,29 @@ export class MessagingService {
     emitToUser(recipientUserId, 'message:deleted', { conversationId, messageId });
   }
 
+  /** Sender-only edit — text messages only (an attachment's caption isn't
+   *  editable here), no time limit, matching this app's "delete for everyone"
+   *  precedent rather than a short edit window. */
+  async editMessage(conversationId: string, messageId: string, userId: string, role: Role, content: string) {
+    const conversation = await this.repo.findConversationById(conversationId);
+    if (!conversation) throw new AppError('Conversation not found', 404);
+    await this.verifyConversationAccess(conversation, userId, role);
+    const message = await this.repo.findMessageById(messageId);
+    if (!message || message.conversationId !== conversationId) throw new AppError('Message not found', 404);
+    if (message.senderId !== userId) throw new AppError('You can only edit your own messages', 403);
+    if (message.deletedAt) throw new AppError('Cannot edit a deleted message', 400);
+    if (message.type !== 'TEXT') throw new AppError('Only text messages can be edited', 400);
+
+    const updated = await this.repo.editMessage(messageId, content);
+    const dto = toMessageDto(updated);
+
+    const [pA, pB] = this.participantsOf(conversation);
+    const recipientUserId = userId === pA.userId ? pB.userId : pA.userId;
+    emitToUser(recipientUserId, 'message:edited', { conversationId, message: dto });
+
+    return dto;
+  }
+
   /** "Delete conversation" — per-side hide from the inbox; resets on the next new message. */
   async deleteConversationForMe(conversationId: string, userId: string, role: Role) {
     const conversation = await this.repo.findConversationById(conversationId);

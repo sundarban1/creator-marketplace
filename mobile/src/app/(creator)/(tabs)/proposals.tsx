@@ -200,17 +200,12 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
           )
         )}
 
-        {/* ── Pending: awaiting-response banner, styled like the accepted "View My Work" CTA ── */}
+        {/* ── Pending: awaiting-response — a compact status pill, not a CTA
+            (there's nothing to tap into yet), matching the header statusPill. ── */}
         {proposal.status === 'pending' && (
-          <View style={[styles.trackBtn, { backgroundColor: cfg.color }]}>
-            <View style={styles.trackBtnIcon}>
-              <Ionicons name={cfg.icon} size={17} color="#fff" />
-            </View>
-            <View style={styles.trackBtnText}>
-              <Text style={styles.trackBtnLabel}>{t('proposal.creator.awaitingResponseLabel')}</Text>
-              <Text style={styles.trackBtnSub}>{t('proposal.creator.awaitingResponseSub')}</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={15} color="rgba(255,255,255,0.6)" />
+          <View style={[styles.awaitingPill, { backgroundColor: cfg.bg }]}>
+            <Ionicons name={cfg.icon} size={13} color={cfg.color} />
+            <Text style={[styles.awaitingPillText, { color: cfg.color }]}>{t('proposal.creator.awaitingResponseLabel')}</Text>
           </View>
         )}
 
@@ -406,6 +401,8 @@ const styles = StyleSheet.create({
   campaignTitle:{ fontSize: 12, fontFamily: F.regular },
   statusPill:   { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingVertical: 4, flexShrink: 0 },
   statusText:   { fontSize: 11, fontFamily: F.bold },
+  awaitingPill:     { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingVertical: 4 },
+  awaitingPillText: { fontSize: 12, fontFamily: F.semibold },
 
   // Cover letter
   coverRow:  { flexDirection: 'row', alignItems: 'flex-start', gap: 7, borderRadius: RADIUS.sm, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 8 },

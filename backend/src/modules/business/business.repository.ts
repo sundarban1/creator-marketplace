@@ -137,6 +137,8 @@ export class BusinessRepository {
       categories: string[];
       panNo: string | null;
       location: string | null;
+      locationLat: number | null;
+      locationLng: number | null;
       phone: string | null;
       showPublicProfile: boolean;
       hideContactDetails: boolean;

@@ -63,7 +63,21 @@ function pickDummyDescription(input: SuggestDescriptionInput): string {
 const MODEL = 'gpt-5-mini';
 const REQUEST_TIMEOUT_MS = 45_000;
 
-function buildLanguageInstruction(language: string): string {
+function buildLanguageInstruction(language: string, inputSource?: 'voice' | 'text'): string {
+  // Voice input: the prompt is a Whisper transcription, which auto-detects and
+  // transcribes whatever language the brand actually spoke — that already-detected
+  // language is the only signal that matters here. The app's UI language setting
+  // must NOT override it (a Nepali-UI brand who spoke English should get an
+  // English draft, not a Nepali one, and vice versa).
+  if (inputSource === 'voice') {
+    return `LANGUAGE: The prompt below is a transcription of the brand's own voice recording — it may be a mix of English and Nepali, but write based on whichever language the transcription is actually in.
+- If the transcription is in Nepali (Devanagari script) or romanized Nepali (Nepali words spelled out with Latin letters, e.g. "pasal", "khana ko lagi", "creator haru chaiyeko"), write title, description, objective, contentGuidelines, sampleCaption, approvalRequirements, and location (if not null) in NEPALI using proper Devanagari script — always convert romanized Nepali into Devanagari, never leave it in Latin letters. A few stray English words mixed into otherwise-Nepali speech are normal and don't change this — still write in Nepali.
+- Otherwise (the transcription is in English) write those same fields in English.
+- Write Nepali in simple, everyday conversational language that an ordinary person in Nepal can easily read and understand — the way Nepali is actually spoken or written in casual social-media/marketing posts. Avoid stiff, overly formal, literary, or heavily Sanskritized words.
+- Regardless of language, category, secondaryCategories, platform, secondaryPlatforms, goal, and targetAudience must always use the exact values from the lists provided — never translate or alter them.
+- hashtags must always use Latin letters/numbers only (no Devanagari) since they are literal social-media hashtags.`;
+  }
+
   return `LANGUAGE: The brand's app is currently set to "${language === 'ne' ? 'Nepali' : 'English'}".
 - If the app language is Nepali, OR the brand's prompt below is written in Nepali (Devanagari script) or romanized Nepali (Nepali words spelled out with Latin letters, e.g. "pasal", "khana ko lagi", "creator haru chaiyeko"), write title, description, objective, contentGuidelines, sampleCaption, approvalRequirements, and location (if not null) in NEPALI using proper Devanagari script — always convert romanized Nepali into Devanagari, never leave it in Latin letters.
 - Write that Nepali in simple, everyday conversational language that an ordinary person in Nepal can easily read and understand — the way Nepali is actually spoken or written in casual social-media/marketing posts. Avoid stiff, overly formal, literary, or heavily Sanskritized words.
@@ -98,7 +112,7 @@ function buildBusinessContextBlock(business: { businessName: string | null; cate
   return `\nBUSINESS PROFILE (use this to fill gaps the brand's prompt doesn't cover — never ask the brand to repeat something already listed here):\n${lines.join('\n')}\n`;
 }
 
-function buildSystemPrompt(categoryNames: string[], platformNames: string[], language: string, businessContext: string): string {
+function buildSystemPrompt(categoryNames: string[], platformNames: string[], language: string, businessContext: string, inputSource?: 'voice' | 'text'): string {
   return `You are a campaign-brief generator for a creator-marketplace app in Nepal, connecting brands with content creators for paid promotional campaigns.
 
 Given a brand's short description of what they want to promote, generate a complete campaign brief as a single JSON object — no prose, no markdown code fences, just the raw JSON object.
@@ -131,14 +145,14 @@ Respond with a JSON object with EXACTLY these keys:
 - location: string or null, a city/area if inferable, otherwise null
 - needsInput: string[] (0-2), keys from this exact list you were NOT confident about and think the brand should double check: ["location","budgetMin","budgetMax","creatorsNeeded","deadline","platform","category"]. Only include a key here if you genuinely had to guess — always still fill in your best-guess value for it regardless.
 
-${buildLanguageInstruction(language)}
+${buildLanguageInstruction(language, inputSource)}
 
 ${buildIntentInstruction()}
 
 Whenever campaignIntentDetected is true, fill in every field above with your best sensible guess using the business profile and sensible defaults, even for a very short or vague prompt — never leave a field empty. Respond with ONLY the JSON object.`;
 }
 
-function buildEventSystemPrompt(categoryNames: string[], platformNames: string[], language: string, businessContext: string): string {
+function buildEventSystemPrompt(categoryNames: string[], platformNames: string[], language: string, businessContext: string, inputSource?: 'voice' | 'text'): string {
   return `You are an event-brief generator for a creator-marketplace app in Nepal, connecting brands with content creators for FREE (non-monetary) in-person events. Creators attend and post content in exchange for perks — not cash.
 
 Given a brand's short description of the event they want to host, generate a complete event brief as a single JSON object — no prose, no markdown code fences, just the raw JSON object.
@@ -161,7 +175,7 @@ ${BENEFIT_OPTIONS.map((b) => `  - "${b}": ${BENEFIT_DESCRIPTIONS[b]}`).join('\n'
 - location: string or null, a city/area if inferable, otherwise null
 - needsInput: string[] (0-2), keys from this exact list you were NOT confident about and think the brand should double check: ["location","capacity","platform","category"]. Only include a key here if you genuinely had to guess — always still fill in your best-guess value for it regardless.
 
-${buildLanguageInstruction(language)}
+${buildLanguageInstruction(language, inputSource)}
 
 ${buildIntentInstruction()}
 
@@ -213,7 +227,7 @@ export class CampaignAiService {
     }
   }
 
-  async generateDraft(prompt: string, language: string = 'en', userId?: string): Promise<AiCampaignDraft & { aiSuggestedCategories: string[]; aiSuggestedPlatforms: string[]; platforms: string[] }> {
+  async generateDraft(prompt: string, language: string = 'en', userId?: string, inputSource?: 'voice' | 'text'): Promise<AiCampaignDraft & { aiSuggestedCategories: string[]; aiSuggestedPlatforms: string[]; platforms: string[] }> {
     const [realCategories, realPlatforms, businessContext] = await Promise.all([
       this.categoryRepo.findManyPublic(CategoryScope.BUSINESS),
       this.platformRepo.findManyPublic(),
@@ -225,7 +239,7 @@ export class CampaignAiService {
     let draft: AiCampaignDraft;
     try {
       if (!env.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY not configured');
-      const raw = await this.callModel(buildSystemPrompt(categoryNames, platformNames, language, businessContext), prompt);
+      const raw = await this.callModel(buildSystemPrompt(categoryNames, platformNames, language, businessContext, inputSource), prompt);
       this.assertCampaignIntent(raw);
       draft = this.parseAndValidate(raw, aiCampaignDraftSchema, 'AI campaign response');
     } catch (err) {
@@ -236,7 +250,7 @@ export class CampaignAiService {
     return this.matchToRealTaxonomy(draft, categoryNames, platformNames);
   }
 
-  async generateEventDraft(prompt: string, language: string = 'en', userId?: string): Promise<AiEventDraft & { aiSuggestedCategories: string[]; aiSuggestedPlatforms: string[]; platforms: string[] }> {
+  async generateEventDraft(prompt: string, language: string = 'en', userId?: string, inputSource?: 'voice' | 'text'): Promise<AiEventDraft & { aiSuggestedCategories: string[]; aiSuggestedPlatforms: string[]; platforms: string[] }> {
     const [realCategories, realPlatforms, businessContext] = await Promise.all([
       this.categoryRepo.findManyPublic(CategoryScope.BUSINESS),
       this.platformRepo.findManyPublic(),
@@ -248,7 +262,7 @@ export class CampaignAiService {
     let draft: AiEventDraft;
     try {
       if (!env.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY not configured');
-      const raw = await this.callModel(buildEventSystemPrompt(categoryNames, platformNames, language, businessContext), prompt);
+      const raw = await this.callModel(buildEventSystemPrompt(categoryNames, platformNames, language, businessContext, inputSource), prompt);
       this.assertCampaignIntent(raw);
       draft = this.parseAndValidate(raw, aiEventDraftSchema, 'AI event response');
     } catch (err) {

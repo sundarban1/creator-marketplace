@@ -57,6 +57,8 @@ export default function EditBusinessProfileScreen() {
         setDescription(profile.description ?? '');
         setWebsite(profile.website ?? '');
         setLocation(profile.location ?? '');
+        setLocationLat(profile.locationLat ?? null);
+        setLocationLng(profile.locationLng ?? null);
         setCategories(profile.categories ?? []);
       })
       .catch(() => toast.error(t('profile.editBusiness.loadError')))
@@ -82,11 +84,19 @@ export default function EditBusinessProfileScreen() {
     }
     setSaving(true);
     try {
+      // Always send location as a trio (or null-out the whole trio when
+      // cleared) rather than location alone — sending the address text
+      // without matching coordinates would leave stale coordinates behind
+      // on the backend (an omitted key means "leave unchanged", not
+      // "clear"), pairing a new/cleared address with an old, wrong pin.
+      const trimmedLocation = location.trim();
       await profileService.updateBusinessProfile({
         businessName: businessName.trim(),
         description:  description.trim() || undefined,
         website:      website.trim() || undefined,
-        location:     location.trim() || null,
+        location:     trimmedLocation || null,
+        locationLat:  trimmedLocation ? locationLat : null,
+        locationLng:  trimmedLocation ? locationLng : null,
         categories,
       });
       // The saved name only lives in the backend profile record until this

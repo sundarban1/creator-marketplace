@@ -1,21 +1,30 @@
 import { Router, Request, Response, NextFunction } from 'express';
+import { randomUUID } from 'crypto';
 import { z } from 'zod';
 import { Role } from '@prisma/client';
 import { authenticate, authorize } from '../../middleware/auth';
 import { validate } from '../../middleware/validate';
+import { uploadImage as uploadImageMiddleware } from '../../middleware/upload';
+import { uploadImage as uploadImageToCloudinary } from '../../utils/cloudinary';
 import { success, paginated } from '../../utils/response';
 import { sendSupportNotification, sendReportNotification } from '../../utils/email';
 import { env } from '../../config/env';
+import { AppError } from '../../middleware/error';
 import prisma from '../../prisma';
 import { notificationService } from '../notifications/notification.service';
 
 const ADMIN_EMAIL = env.ADMIN_EMAIL ?? env.EMAIL_USERNAME ?? 'sundarban007@gmail.com';
 
+const MAX_ATTACHMENTS = 3;
+
 const router = Router();
+
+const attachmentUrlsSchema = z.array(z.string().url()).max(MAX_ATTACHMENTS, `Up to ${MAX_ATTACHMENTS} images only`).optional();
 
 const contactSchema = z.object({
   topic:   z.string().min(1, 'Topic is required'),
   message: z.string().min(10, 'Message must be at least 10 characters'),
+  attachmentUrls: attachmentUrlsSchema,
 });
 
 const publicContactSchema = z.object({
@@ -28,10 +37,22 @@ const publicContactSchema = z.object({
 const reportSchema = z.object({
   type:        z.string().min(1, 'Type is required'),
   description: z.string().min(10, 'Description must be at least 10 characters'),
+  attachmentUrls: attachmentUrlsSchema,
 });
 
 const statusSchema = z.object({
   status: z.string().min(1),
+});
+
+// ── Upload an attachment (used by both /contact and /report before submit) ──
+
+router.post('/attachments', authenticate, uploadImageMiddleware.single('file'), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (!req.file) throw new AppError('No file provided', 400);
+    const publicId = `support_${req.user!.id}_${Date.now()}_${randomUUID()}`;
+    const url = await uploadImageToCloudinary(req.file.buffer, 'support/attachments', publicId);
+    success(res, { url }, 'Uploaded', 201);
+  } catch (err) { next(err); }
 });
 
 // ── Creator: submit contact request ─────────────────────────────────────────
@@ -39,7 +60,12 @@ const statusSchema = z.object({
 router.post('/contact', authenticate, validate(contactSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const supportRequest = await prisma.supportRequest.create({
-      data: { userId: req.user!.id, topic: req.body.topic, message: req.body.message },
+      data: {
+        userId:  req.user!.id,
+        topic:   req.body.topic,
+        message: req.body.message,
+        attachmentUrls: req.body.attachmentUrls ?? [],
+      },
       include: { user: { select: { email: true } } },
     });
     sendSupportNotification({
@@ -47,6 +73,7 @@ router.post('/contact', authenticate, validate(contactSchema), async (req: Reque
       userEmail:   (supportRequest as any).user?.email ?? req.user!.email,
       topic:       req.body.topic,
       message:     req.body.message,
+      attachmentUrls: req.body.attachmentUrls,
     }).catch(() => {});
     notificationService.createForAdmins({
       type:    'contact_message',
@@ -89,7 +116,12 @@ router.post('/contact-public', validate(publicContactSchema), async (req: Reques
 router.post('/report', authenticate, validate(reportSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const report = await prisma.issueReport.create({
-      data: { userId: req.user!.id, type: req.body.type, description: req.body.description },
+      data: {
+        userId: req.user!.id,
+        type:   req.body.type,
+        description: req.body.description,
+        attachmentUrls: req.body.attachmentUrls ?? [],
+      },
       include: { user: { select: { email: true } } },
     });
     sendReportNotification({
@@ -97,6 +129,7 @@ router.post('/report', authenticate, validate(reportSchema), async (req: Request
       userEmail:   (report as any).user?.email ?? req.user!.email,
       type:        req.body.type,
       description: req.body.description,
+      attachmentUrls: req.body.attachmentUrls,
     }).catch(() => {});
     notificationService.createForAdmins({
       type:    'issue_reported',

@@ -18,6 +18,7 @@ export interface MessageDto {
   attachmentStatus: 'PROCESSING' | 'READY' | 'FAILED' | null;
   createdAt: string;
   isDeleted?: boolean;
+  editedAt?: string;
   sender?: { id: string; email: string; role: string };
 }
 
@@ -67,6 +68,7 @@ type RawMessage = {
   attachmentStatus?: 'PROCESSING' | 'READY' | 'FAILED' | null;
   createdAt: Date;
   deletedAt?: Date | null;
+  editedAt?: Date | null;
   sender?: { id: string; email: string; role: string };
 };
 
@@ -90,6 +92,7 @@ export function toMessageDto(m: RawMessage): MessageDto {
     createdAt:      m.createdAt.toISOString(),
   };
   if (isDeleted) dto.isDeleted = true;
+  if (!isDeleted && m.editedAt) dto.editedAt = m.editedAt.toISOString();
   if (m.sender) dto.sender = m.sender;
   return dto;
 }

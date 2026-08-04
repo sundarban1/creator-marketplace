@@ -47,6 +47,7 @@ import { usePlatformFlags } from '@/context/PlatformSettingsContext';
 import { useToast } from '@/components/Toast';
 import { COLORS, F, RADIUS, SHADOW } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
+import { SupportAttachmentPicker } from '@/components/SupportAttachmentPicker';
 import { pickAndUpload } from '@/utilities/uploadImage';
 import { formatPhoneDisplay, getAccountIdentityLine, isValidNepaliPhone, normalizePhoneForSubmit } from '@/utilities/phone';
 import {
@@ -510,8 +511,10 @@ export default function CreatorSettingsScreen() {
   // Support forms
   const [supportTopic, setSupportTopic] = useState('');
   const [supportMsg, setSupportMsg] = useState('');
+  const [supportAttachments, setSupportAttachments] = useState<string[]>([]);
   const [reportType, setReportType] = useState('');
   const [reportDesc, setReportDesc] = useState('');
+  const [reportAttachments, setReportAttachments] = useState<string[]>([]);
 
   // Toast
 
@@ -946,8 +949,8 @@ export default function CreatorSettingsScreen() {
     if (!supportMsg.trim() || !supportTopic) return;
     setSupportSubmitting(true);
     try {
-      await request('POST', '/api/support/contact', { topic: supportTopic, message: supportMsg.trim() });
-      setSupportTopic(''); setSupportMsg('');
+      await request('POST', '/api/support/contact', { topic: supportTopic, message: supportMsg.trim(), attachmentUrls: supportAttachments });
+      setSupportTopic(''); setSupportMsg(''); setSupportAttachments([]);
       showToast(t('creatorSettings.supportSentToast'));
       setSubPage(null);
     } catch {
@@ -961,8 +964,8 @@ export default function CreatorSettingsScreen() {
     if (!reportDesc.trim() || !reportType) return;
     setReportSubmitting(true);
     try {
-      await request('POST', '/api/support/report', { type: reportType, description: reportDesc.trim() });
-      setReportType(''); setReportDesc('');
+      await request('POST', '/api/support/report', { type: reportType, description: reportDesc.trim(), attachmentUrls: reportAttachments });
+      setReportType(''); setReportDesc(''); setReportAttachments([]);
       showToast(t('creatorSettings.reportSentToast'));
       setSubPage(null);
     } catch {
@@ -1082,6 +1085,9 @@ export default function CreatorSettingsScreen() {
                 textAlignVertical="top"
               />
             </View>
+            <View style={styles.formField}>
+              <SupportAttachmentPicker colors={C} urls={supportAttachments} onChange={setSupportAttachments} />
+            </View>
             <Pressable
               style={[
                 styles.saveBtn,
@@ -1097,7 +1103,7 @@ export default function CreatorSettingsScreen() {
           </View>
         </Card>
         <View style={[styles.hintCard, { backgroundColor: C.primaryLight }]}>
-          <Text style={[styles.hintText, { color: C.brinjal1 }]}>{t('creatorSettings.supportEmailHint', { email: flags.supportEmail ?? 'support@kolab.com.np' })}</Text>
+          <Text style={[styles.hintText, { color: C.brinjal1 }]}>{t('creatorSettings.supportEmailHint', { email: flags.supportEmail ?? 'info@ourkolab.com' })}</Text>
         </View>
       </>
     );
@@ -1139,6 +1145,9 @@ export default function CreatorSettingsScreen() {
                 numberOfLines={5}
                 textAlignVertical="top"
               />
+            </View>
+            <View style={styles.formField}>
+              <SupportAttachmentPicker colors={C} urls={reportAttachments} onChange={setReportAttachments} />
             </View>
             <Pressable
               style={[
