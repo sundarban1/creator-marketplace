@@ -10,7 +10,7 @@ export function InfluencerMarketingNepalPage() {
         title: 'Influencer Marketing in Nepal | A Guide for Brands',
         description: 'How influencer marketing works in Nepal — and how brands use Kolab to find, hire, and collaborate with verified TikTok, Instagram, and YouTube creators.',
         path: '/influencer-marketing-nepal',
-        keywords: ['influencer marketing Nepal', 'creator marketing Nepal', 'digital creator Nepal', 'brand campaign Nepal'],
+        keywords: ['influencer marketing Nepal', 'creator marketing Nepal', 'digital creator Nepal', 'brand campaign Nepal', 'influencer marketing platform Nepal', 'influencer marketing guide Nepal', 'influencer advertising Nepal', 'creator economy Nepal'],
         jsonLd: webPageSchema({ path: '/influencer-marketing-nepal', title: 'Influencer Marketing in Nepal | Kolab', description: "How influencer marketing works in Nepal and how brands use Kolab to run creator campaigns." }),
       }}
       breadcrumb={[{ name: 'Home', path: '/' }, { name: 'Influencer Marketing Nepal', path: '/influencer-marketing-nepal' }]}

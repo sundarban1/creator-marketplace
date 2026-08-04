@@ -10,7 +10,7 @@ export function FacebookCreatorsPage() {
         title: 'Facebook Creators in Nepal | Hire Facebook Influencers',
         description: 'Find Facebook creators and page owners in Nepal on Kolab. Connect with verified Facebook influencers for paid campaigns and collaborations.',
         path: '/facebook-creators',
-        keywords: ['Facebook creator Nepal', 'Facebook Nepal', 'hire Facebook influencer Nepal'],
+        keywords: ['Facebook creator Nepal', 'Facebook Nepal', 'hire Facebook influencer Nepal', 'Facebook influencers Nepal', 'hire Facebook influencers Nepal'],
         jsonLd: [organizationSchema(), webPageSchema({ path: '/facebook-creators', title: 'Facebook Creators in Nepal | Kolab', description: 'Find and hire verified Facebook creators and page owners in Nepal.' })],
       }}
       breadcrumb={[{ name: 'Home', path: '/' }, { name: 'Facebook Creators', path: '/facebook-creators' }]}

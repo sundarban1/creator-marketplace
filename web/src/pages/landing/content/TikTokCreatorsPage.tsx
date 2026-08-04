@@ -12,7 +12,7 @@ export function TikTokCreatorsPage() {
         title: 'TikTok Creators in Nepal | Hire TikTok Influencers',
         description: 'Discover and hire TikTok creators in Nepal on Kolab. Connect with verified TikTok influencers for paid campaigns and brand collaborations.',
         path: '/tiktok-creators',
-        keywords: ['TikTok creator Nepal', 'TikTok Nepal', 'hire TikTok creator Nepal'],
+        keywords: ['TikTok creator Nepal', 'TikTok Nepal', 'hire TikTok creator Nepal', 'hire TikTok influencers Nepal', 'TikTok influencers Nepal', 'TikTok creators Nepal'],
         jsonLd: webPageSchema({ path: '/tiktok-creators', title: 'TikTok Creators in Nepal | Kolab', description: 'Discover and hire TikTok creators in Nepal on Kolab.' }),
       }}
       breadcrumb={[{ name: 'Home', path: '/' }, { name: 'TikTok Creators', path: '/tiktok-creators' }]}

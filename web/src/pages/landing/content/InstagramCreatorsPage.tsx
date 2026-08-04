@@ -12,7 +12,7 @@ export function InstagramCreatorsPage() {
         title: 'Instagram Creators & Influencers in Nepal',
         description: 'Find and hire Instagram creators and influencers in Nepal on Kolab. Browse verified profiles by category and collaborate on paid campaigns.',
         path: '/instagram-creators',
-        keywords: ['Instagram influencer Nepal', 'Instagram Nepal', 'hire Instagram influencer Nepal'],
+        keywords: ['Instagram influencer Nepal', 'Instagram Nepal', 'hire Instagram influencer Nepal', 'hire Instagram influencers Nepal', 'Instagram influencers Nepal', 'Instagram content creators Nepal'],
         jsonLd: webPageSchema({ path: '/instagram-creators', title: 'Instagram Creators & Influencers in Nepal | Kolab', description: 'Find and hire Instagram creators and influencers in Nepal on Kolab.' }),
       }}
       breadcrumb={[{ name: 'Home', path: '/' }, { name: 'Instagram Creators', path: '/instagram-creators' }]}

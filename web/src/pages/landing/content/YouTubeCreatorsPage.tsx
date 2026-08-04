@@ -12,7 +12,7 @@ export function YouTubeCreatorsPage() {
         title: 'YouTube Creators in Nepal | Hire YouTube Influencers',
         description: 'Discover YouTube creators in Nepal on Kolab. Connect with verified YouTubers for paid campaigns, product reviews, and brand collaborations.',
         path: '/youtube-creators',
-        keywords: ['YouTube creator Nepal', 'YouTube Nepal', 'find YouTube creators Nepal'],
+        keywords: ['YouTube creator Nepal', 'YouTube Nepal', 'find YouTube creators Nepal', 'hire YouTube creators Nepal', 'YouTube creators Nepal', 'YouTube influencers Nepal'],
         jsonLd: webPageSchema({ path: '/youtube-creators', title: 'YouTube Creators in Nepal | Kolab', description: 'Discover YouTube creators in Nepal on Kolab.' }),
       }}
       breadcrumb={[{ name: 'Home', path: '/' }, { name: 'YouTube Creators', path: '/youtube-creators' }]}

@@ -583,6 +583,28 @@ export default function CampaignWorkspaceScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fileUploads.items]);
 
+  // Warm the deliverables as soon as the brand lands on a SUBMITTED
+  // application, instead of waiting for them to tap "Review" — the slow part
+  // isn't the download itself, it's Cloudinary generating/caching the
+  // delivery transformation on its *first* request for that asset. Firing
+  // that request here means it's already cached by the time the review sheet
+  // opens. Guarded by application id so it only fires once per submission,
+  // not on every re-focus poll.
+  const prefetchedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (isCreator || !app || app.workStatus !== 'SUBMITTED' || prefetchedRef.current === app.id) return;
+    prefetchedRef.current = app.id;
+
+    app.deliverableFiles.forEach((f) => {
+      if (f.fileType === 'IMAGE') void Image.prefetch(f.url);
+      else void fetch(f.url, { headers: { Range: 'bytes=0-1048575' } }).catch(() => {});
+    });
+    app.deliverableVideos.forEach((v) => {
+      void Image.prefetch(v.thumbnailUrl);
+      void fetch(v.url, { headers: { Range: 'bytes=0-1048575' } }).catch(() => {});
+    });
+  }, [isCreator, app]);
+
   function handleSaveVideoName(label: string) {
     if (namingItem?.result && app?.id) {
       campaignService.renameDeliverableVideo(app.id, namingItem.result.publicId, label).catch(() => {});

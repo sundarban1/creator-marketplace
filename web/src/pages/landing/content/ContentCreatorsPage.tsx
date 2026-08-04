@@ -10,7 +10,7 @@ export function ContentCreatorsPage() {
         title: 'Content Creator Jobs in Nepal | Join as a Creator',
         description: 'Join Kolab as a content creator in Nepal. Build your profile, get discovered by brands, and apply to paid campaigns on Instagram, TikTok, YouTube, and Facebook.',
         path: '/content-creators',
-        keywords: ['content creator Nepal', 'creator jobs Nepal', 'digital creator Nepal', 'social media creator Nepal', 'creator app Nepal'],
+        keywords: ['content creator Nepal', 'creator jobs Nepal', 'digital creator Nepal', 'social media creator Nepal', 'creator app Nepal', 'content creator jobs Nepal', 'influencer jobs Nepal', 'paid brand collaborations', 'how to become influencer Nepal', 'creator community Nepal'],
         jsonLd: webPageSchema({ path: '/content-creators', title: 'Content Creator Jobs in Nepal | Kolab', description: 'Join Kolab as a content creator in Nepal.' }),
       }}
       breadcrumb={[{ name: 'Home', path: '/' }, { name: 'Content Creators', path: '/content-creators' }]}

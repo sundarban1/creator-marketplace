@@ -8,7 +8,7 @@ export function IndustriesHubPage() {
       slug="industries-nepal"
       seoTitle="Influencers by Industry in Nepal | Browse All Niches"
       seoDescription="Browse Nepali influencers and content creators by industry — food, travel, fashion, beauty, fitness, tech, and more — and hire the right creator for your brand."
-      keywords={['influencers by industry Nepal', 'niche influencers Nepal', 'industry influencers Nepal', 'creator categories Nepal']}
+      keywords={['influencers by industry Nepal', 'niche influencers Nepal', 'industry influencers Nepal', 'creator categories Nepal', 'lifestyle influencers Nepal', 'food influencers Nepal', 'tech influencers Nepal', 'travel influencers Nepal', 'fashion influencers Nepal', 'hire creators for restaurant Nepal', 'hire creators for ecommerce Nepal', 'hire creators for hotel Nepal', 'hire creators for travel company Nepal', 'hire creators for startup Nepal']}
       breadcrumbName="Influencers by Industry"
       icon={LayoutGrid}
       eyebrow="Browse by Industry"

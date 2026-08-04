@@ -10,7 +10,7 @@ export function FindCampaignsPage() {
         title: 'Find Creator Campaigns in Nepal | Paid Campaigns & Events',
         description: 'Browse paid campaigns and free open events on Kolab. Nepali content creators can find and apply to brand collaborations that fit their niche.',
         path: '/find-campaigns',
-        keywords: ['creator opportunities Nepal', 'paid campaigns Nepal', 'creator jobs Nepal', 'brand campaign Nepal'],
+        keywords: ['creator opportunities Nepal', 'paid campaigns Nepal', 'creator jobs Nepal', 'brand campaign Nepal', 'content creator jobs Nepal', 'influencer jobs Nepal', 'work with brands Nepal', 'influencer opportunities Nepal'],
         jsonLd: webPageSchema({ path: '/find-campaigns', title: 'Find Creator Campaigns in Nepal | Kolab', description: 'Browse paid campaigns and free open events for content creators in Nepal.' }),
       }}
       breadcrumb={[{ name: 'Home', path: '/' }, { name: 'Find Campaigns', path: '/find-campaigns' }]}

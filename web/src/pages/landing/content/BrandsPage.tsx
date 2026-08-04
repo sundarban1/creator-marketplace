@@ -10,7 +10,7 @@ export function BrandsPage() {
         title: 'Hire Influencers & Creators in Nepal | For Brands',
         description: 'Kolab helps Nepali brands and businesses discover and hire verified content creators for paid campaigns. Post a campaign and collaborate with the right creators, fast.',
         path: '/brands',
-        keywords: ['hire creator Nepal', 'hire influencer Nepal', 'brand collaboration Nepal', 'creator marketing Nepal', 'influencer marketing Nepal'],
+        keywords: ['hire creator Nepal', 'hire influencer Nepal', 'brand collaboration Nepal', 'creator marketing Nepal', 'influencer marketing Nepal', 'hire content creators Nepal', 'hire content creators in Nepal', 'hire influencers Nepal', 'find content creators Nepal', 'find influencers Nepal', 'influencer agency Nepal', 'UGC creators Nepal', 'hire UGC creators Nepal'],
         jsonLd: [organizationSchema(), webPageSchema({ path: '/brands', title: 'Hire Influencers & Creators in Nepal | Kolab', description: 'Kolab helps Nepali brands discover and hire verified content creators for paid campaigns.' })],
       }}
       breadcrumb={[{ name: 'Home', path: '/' }, { name: 'Brands', path: '/brands' }]}
@@ -47,6 +47,7 @@ export function BrandsPage() {
         { label: 'Creator Marketplace Nepal', path: '/creator-marketplace-nepal', description: "How Kolab connects Nepali brands and creators." },
         { label: 'Influencer Marketing in Nepal', path: '/influencer-marketing-nepal', description: 'A guide to running influencer campaigns in Nepal.' },
         { label: 'Brand Collaboration Nepal', path: '/brand-collaboration-nepal', description: 'How the collaboration process works end to end.' },
+        { label: 'UGC Creators', path: '/ugc-creators-nepal', description: 'Hire creators for authentic, ad-ready UGC content.' },
         { label: 'For Content Creators', path: '/content-creators', description: 'See the creator side of the marketplace.' },
       ]}
       cta={{ heading: 'Ready to Hire Creators in Nepal?', sub: 'Download Kolab and post your first campaign.' }}

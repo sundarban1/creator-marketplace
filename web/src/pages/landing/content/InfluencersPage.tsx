@@ -16,7 +16,7 @@ export function InfluencersPage() {
         title: 'Influencers in Nepal | Discover Verified Creators',
         description: 'Kolab connects Nepali brands with verified influencers across TikTok, Instagram, YouTube, and Facebook. Discover creators and collaborate on paid campaigns.',
         path: '/influencers',
-        keywords: ['influencer Nepal', 'Nepal influencers', 'Nepali influencers', 'influencer platform Nepal', 'social media influencer Nepal'],
+        keywords: ['influencer Nepal', 'Nepal influencers', 'Nepali influencers', 'influencer platform Nepal', 'social media influencer Nepal', 'find influencers Nepal', 'discover influencers Nepal', 'micro influencers Nepal', 'nano influencers Nepal', 'best influencers in Nepal'],
         jsonLd: [organizationSchema(), webPageSchema({ path: '/influencers', title: 'Influencers in Nepal | Kolab', description: "Discover verified influencers across Nepal on Kolab's creator marketplace." })],
       }}
       breadcrumb={[{ name: 'Home', path: '/' }, { name: 'Influencers', path: '/influencers' }]}

@@ -47,9 +47,15 @@ function LandingPageInner() {
           'TikTok creators Nepal', 'Instagram influencers Nepal', 'YouTube creators Nepal', 'Facebook influencers Nepal',
           // Long-tail
           'how to get brand deals in Nepal', 'how to find influencers in Nepal', 'best creator marketplace Nepal',
-          'where to hire Nepali influencers', 'top Nepali influencers',
-          // Brand
-          'OurKolab', 'Kolab Nepal',
+          'where to hire Nepali influencers', 'top Nepali influencers', 'best influencer platform in Nepal',
+          'where to hire influencers in Nepal', 'where to find content creators in Nepal', 'verified content creators Nepal',
+          // UGC & creator size
+          'UGC creators Nepal', 'hire UGC creators Nepal', 'micro influencers Nepal', 'nano influencers Nepal',
+          // Discovery
+          'discover creators Nepal', 'discover influencers Nepal', 'digital creators Nepal', 'social media creators Nepal',
+          'hire content creators Nepal', 'hire content creators in Nepal',
+          // Brand & search variations
+          'OurKolab', 'Kolab Nepal', 'kolab app', 'colab Nepal', 'collab Nepal', 'collab app Nepal',
         ]}
         jsonLd={[organizationSchema(), websiteSchema()]}
       />

@@ -14,6 +14,7 @@ export function PaidCollaborationsPage() {
           'paid collaborations Nepal', 'brand deals Nepal', 'sponsorship opportunities Nepal', 'get brand deals Nepal',
           'earn from social media Nepal', 'influencer jobs Nepal', 'TikTok earning Nepal', 'Instagram earning Nepal',
           'YouTube sponsorship Nepal', 'paid promotion Nepal', 'creator community Nepal', 'creator network Nepal',
+          'paid brand collaborations', 'sponsored post Nepal', 'influencer pricing Nepal', 'creator rates Nepal',
         ],
         jsonLd: webPageSchema({
           path: '/paid-collaborations-nepal',
@@ -57,6 +58,7 @@ export function PaidCollaborationsPage() {
         { label: 'Find Campaigns', path: '/find-campaigns', description: 'Browse open paid campaigns and free events right now.' },
         { label: 'TikTok Creators', path: '/tiktok-creators', description: 'TikTok-specific creator opportunities.' },
         { label: 'Creator Marketplace Nepal', path: '/creator-marketplace-nepal', description: "Kolab's full creator marketplace overview." },
+        { label: 'UGC Creators', path: '/ugc-creators-nepal', description: 'Paid UGC work — reviews, unboxings, and testimonials.' },
       ]}
       cta={{ heading: 'Start Landing Paid Collaborations', sub: 'Download Kolab and build your creator profile in minutes.' }}
     >

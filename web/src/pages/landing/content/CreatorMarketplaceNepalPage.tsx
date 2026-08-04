@@ -16,7 +16,7 @@ export function CreatorMarketplaceNepalPage() {
         title: "Creator Marketplace Nepal | Connect Brands & Content Creators",
         description: "Kolab is Nepal's creator marketplace — where brands find verified TikTok, Instagram, YouTube and Facebook creators for paid campaigns and collaborations.",
         path: '/creator-marketplace-nepal',
-        keywords: ['creator marketplace Nepal', 'creator platform Nepal', 'Nepal influencer platform', 'hire creator Nepal', 'creator economy Nepal'],
+        keywords: ['creator marketplace Nepal', 'creator platform Nepal', 'Nepal influencer platform', 'hire creator Nepal', 'creator economy Nepal', 'influencer marketplace Nepal', 'creator discovery Nepal', 'discover creators Nepal', 'social media creators Nepal'],
         jsonLd: [organizationSchema(), webPageSchema({ path: '/creator-marketplace-nepal', title: "Creator Marketplace Nepal | Kolab", description: "Nepal's creator marketplace connecting brands and content creators." })],
       }}
       breadcrumb={[{ name: 'Home', path: '/' }, { name: 'Creator Marketplace Nepal', path: '/creator-marketplace-nepal' }]}
@@ -55,6 +55,7 @@ export function CreatorMarketplaceNepalPage() {
         { label: 'For Brands', path: '/brands', description: 'Post campaigns and hire verified creators across Nepal.' },
         { label: 'Browse Influencers', path: '/influencers', description: 'See how Kolab connects businesses with Nepali influencers.' },
         { label: 'Find Campaigns', path: '/find-campaigns', description: 'Open events and paid campaigns creators can apply to right now.' },
+        { label: 'UGC Creators', path: '/ugc-creators-nepal', description: 'Hire creators for authentic, ad-ready UGC content.' },
       ]}
       cta={{ heading: "Join Nepal's Creator Marketplace", sub: 'Download Kolab and start collaborating today.' }}
     >

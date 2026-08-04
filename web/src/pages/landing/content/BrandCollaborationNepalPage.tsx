@@ -10,7 +10,7 @@ export function BrandCollaborationNepalPage() {
         title: 'Brand Collaboration Platform Nepal',
         description: "Kolab is Nepal's brand collaboration platform — connect with verified content creators, agree on deliverables, and pay securely through escrow-protected campaigns.",
         path: '/brand-collaboration-nepal',
-        keywords: ['brand collaboration Nepal', 'creator collaboration', 'brand campaign Nepal', 'creator marketplace Nepal'],
+        keywords: ['brand collaboration Nepal', 'creator collaboration', 'brand campaign Nepal', 'creator marketplace Nepal', 'collaborate with brands Nepal', 'collaborate with creators Nepal', 'brand partnership Nepal', 'creator partnership Nepal'],
         jsonLd: webPageSchema({ path: '/brand-collaboration-nepal', title: 'Brand Collaboration Platform Nepal | Kolab', description: "How brand collaborations work end to end on Kolab." }),
       }}
       breadcrumb={[{ name: 'Home', path: '/' }, { name: 'Brand Collaboration Nepal', path: '/brand-collaboration-nepal' }]}

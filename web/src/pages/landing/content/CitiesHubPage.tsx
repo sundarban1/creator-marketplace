@@ -8,7 +8,7 @@ export function CitiesHubPage() {
       slug="cities-nepal"
       seoTitle="Influencers by City in Nepal | Kathmandu, Pokhara & More"
       seoDescription="Browse Nepali influencers and content creators by city — Kathmandu, Pokhara, Lalitpur, Bhaktapur, Chitwan, Butwal, Biratnagar, and Dharan."
-      keywords={['influencers by city Nepal', 'city influencers Nepal', 'local influencers Nepal', 'Nepal influencer cities']}
+      keywords={['influencers by city Nepal', 'city influencers Nepal', 'local influencers Nepal', 'Nepal influencer cities', 'Kathmandu content creators', 'Kathmandu influencers', 'Pokhara influencers', 'Lalitpur influencers', 'Bhaktapur creators', 'Chitwan influencers', 'Biratnagar influencers', 'Butwal influencers', 'Dharan influencers']}
       breadcrumbName="Influencers by City"
       icon={Map}
       eyebrow="Browse by City"

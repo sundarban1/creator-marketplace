@@ -22,6 +22,7 @@ import { FacebookCreatorsPage } from './pages/landing/content/FacebookCreatorsPa
 import { InfluencersPage } from './pages/landing/content/InfluencersPage';
 import { FindCampaignsPage } from './pages/landing/content/FindCampaignsPage';
 import { PaidCollaborationsPage } from './pages/landing/content/PaidCollaborationsPage';
+import { UGCCreatorsPage } from './pages/landing/content/UGCCreatorsPage';
 import { IndustriesHubPage } from './pages/landing/content/IndustriesHubPage';
 import { CitiesHubPage } from './pages/landing/content/CitiesHubPage';
 import { NichePage } from './pages/landing/content/niche/NichePage';
@@ -95,6 +96,7 @@ export default function App() {
           <Route path="/influencers" element={<InfluencersPage />} />
           <Route path="/find-campaigns" element={<FindCampaignsPage />} />
           <Route path="/paid-collaborations-nepal" element={<PaidCollaborationsPage />} />
+          <Route path="/ugc-creators-nepal" element={<UGCCreatorsPage />} />
           <Route path="/industries-nepal" element={<IndustriesHubPage />} />
           <Route path="/cities-nepal" element={<CitiesHubPage />} />
           {INDUSTRY_PAGES.map((cfg) => (
