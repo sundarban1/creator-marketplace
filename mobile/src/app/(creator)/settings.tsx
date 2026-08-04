@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { FontAwesome5, Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { PaymentMethodIcon } from '@/components/PaymentMethodIcon';
 import { isPaymentMethodId } from '@/utilities/paymentMethods';
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
@@ -93,15 +93,15 @@ const PLATFORM_CONFIG: Record<string, { id: string; label: string; iconName: str
   Object.fromEntries([...CONNECTABLE_SOCIAL_PLATFORMS, ...ALL_SOCIAL_PLATFORMS].map((p) => [p.id, p]));
 
 const PORTFOLIO_TYPES: { id: string; label: string; iconName: string; iconLib: 'fa5' | 'ion'; color: string; urlHint: string }[] = [
-  { id: 'instagram', label: 'Instagram',   iconName: 'logo-instagram',    iconLib: 'ion', color: '#E1306C', urlHint: 'e.g. CxYz1AbC2d' },
-  { id: 'tiktok',    label: 'TikTok',      iconName: 'logo-tiktok',       iconLib: 'ion', color: '#010101', urlHint: 'e.g. yourhandle/video/7123456789012345678' },
-  { id: 'youtube',   label: 'YouTube',     iconName: 'logo-youtube',      iconLib: 'ion', color: '#FF0000', urlHint: 'e.g. dQw4w9WgXcQ' },
-  { id: 'facebook',  label: 'Facebook',    iconName: 'logo-facebook',     iconLib: 'ion', color: '#1877F2', urlHint: 'e.g. 1234567890123456' },
-  { id: 'twitter',   label: 'X / Twitter', iconName: 'logo-twitter',      iconLib: 'ion', color: '#1DA1F2', urlHint: 'e.g. 1717171717171717171' },
-  { id: 'blog',      label: 'Blog Post',   iconName: 'newspaper-outline', iconLib: 'ion', color: '#F59E0B', urlHint: 'https://yourblog.com/post-title' },
-  { id: 'website',   label: 'Website',     iconName: 'globe-outline',     iconLib: 'ion', color: '#6366F1', urlHint: 'https://yourwebsite.com' },
-  { id: 'photo',     label: 'Photography', iconName: 'camera-outline',    iconLib: 'ion', color: '#10B981', urlHint: 'https://...' },
-  { id: 'video',     label: 'Other Video', iconName: 'videocam-outline',  iconLib: 'ion', color: '#EF4444', urlHint: 'https://...' },
+  { id: 'instagram', label: 'Instagram',   iconName: 'instagram', iconLib: 'fa5', color: '#E1306C', urlHint: 'e.g. CxYz1AbC2d' },
+  { id: 'tiktok',    label: 'TikTok',      iconName: 'tiktok',    iconLib: 'fa5', color: '#010101', urlHint: 'e.g. yourhandle/video/7123456789012345678' },
+  { id: 'youtube',   label: 'YouTube',     iconName: 'youtube',   iconLib: 'fa5', color: '#FF0000', urlHint: 'e.g. dQw4w9WgXcQ' },
+  { id: 'facebook',  label: 'Facebook',    iconName: 'facebook',  iconLib: 'fa5', color: '#1877F2', urlHint: 'e.g. 1234567890123456' },
+  { id: 'twitter',   label: 'X / Twitter', iconName: 'twitter',   iconLib: 'fa5', color: '#1DA1F2', urlHint: 'e.g. 1717171717171717171' },
+  { id: 'blog',      label: 'Blog Post',   iconName: 'newspaper', iconLib: 'fa5', color: '#F59E0B', urlHint: 'https://yourblog.com/post-title' },
+  { id: 'website',   label: 'Website',     iconName: 'globe',     iconLib: 'fa5', color: '#6366F1', urlHint: 'https://yourwebsite.com' },
+  { id: 'photo',     label: 'Photography', iconName: 'camera',    iconLib: 'fa5', color: '#10B981', urlHint: 'https://...' },
+  { id: 'video',     label: 'Other Video', iconName: 'video',     iconLib: 'fa5', color: '#EF4444', urlHint: 'https://...' },
 ];
 
 const PORTFOLIO_CONFIG: Record<string, typeof PORTFOLIO_TYPES[0]> =
@@ -124,8 +124,7 @@ function buildPortfolioUrl(type: string, idOrUrl: string): string {
   return prefix + trimmed.replace(/^\/+/, '');
 }
 
-function PlatformIcon({ iconName, iconLib, size, color, style }: { iconName: string; iconLib?: 'fa5' | 'ion'; size: number; color: string; style?: any }) {
-  if (iconLib === 'ion') return <Ionicons name={iconName as any} size={size} color={color} style={style} />;
+function PlatformIcon({ iconName, size, color, style }: { iconName: string; iconLib?: 'fa5' | 'ion'; size: number; color: string; style?: any }) {
   return <FontAwesome5 name={iconName as any} size={size} color={color} style={style} />;
 }
 
@@ -223,7 +222,7 @@ function SwitchRow({ label, faIcon, faIconColor, sub, value, onChange, isLast = 
   );
 }
 
-type NavRowProps = { faIcon?: string; faIconColor?: string; ionIcon?: keyof typeof Ionicons.glyphMap; ionIconColor?: string; label: string; value?: string; onPress: () => void; danger?: boolean; isLast?: boolean };
+type NavRowProps = { faIcon?: string; faIconColor?: string; ionIcon?: keyof typeof FontAwesome5.glyphMap; ionIconColor?: string; label: string; value?: string; onPress: () => void; danger?: boolean; isLast?: boolean };
 function NavRow({ faIcon, faIconColor, ionIcon, ionIconColor, label, value, onPress, danger = false, isLast = false }: NavRowProps) {
   const C = useContext(ColorCtx);
   const iColor = ionIconColor ?? faIconColor ?? C.brinjal1;
@@ -238,7 +237,7 @@ function NavRow({ faIcon, faIconColor, ionIcon, ionIconColor, label, value, onPr
             },
           ]}
         >
-          <Ionicons name={ionIcon} size={18} color={iColor} />
+          <FontAwesome5 name={ionIcon} size={18} color={iColor} />
         </View>
       ) : faIcon ? (
         <View
@@ -308,7 +307,7 @@ function AccordionRow({ title, body, iconColor, icon, emoji, open, onToggle }: A
         </View>
         <Text style={[styles.accordionTitle, { color: C.text }]}>{title}</Text>
         <Animated.View style={[styles.accordionChevronWrap, { backgroundColor: open ? iconColor + '18' : 'transparent', transform: [{ rotate }] }]}>
-          <Ionicons name="chevron-down" size={15} color={open ? iconColor : C.textSecondary} />
+          <FontAwesome5 name="chevron-down" solid size={15} color={open ? iconColor : C.textSecondary} />
         </Animated.View>
       </View>
       {open && (
@@ -1009,7 +1008,7 @@ export default function CreatorSettingsScreen() {
     if (helpArticles.length === 0) {
       return (
         <View style={[styles.helpEmpty, { backgroundColor: C.surface, borderColor: C.border }]}>
-          <FontAwesome5 name="question-circle" size={36} color={C.textSecondary} />
+          <FontAwesome5 name="question-circle" solid size={36} color={C.textSecondary} />
           <Text style={[styles.helpEmptyTitle, { color: C.text }]}>{t('creatorSettings.noHelpArticles')}</Text>
           <Text style={[styles.helpEmptySubtitle, { color: C.textSecondary }]}>{t('creatorSettings.noHelpArticlesSub')}</Text>
         </View>
@@ -1373,7 +1372,7 @@ export default function CreatorSettingsScreen() {
                   <View style={styles.connectPlatformNameRow}>
                     <Text style={[styles.socialPlatformName, { color: C.text }]}>{p.label}</Text>
                     {acct?.connectedViaOAuth && (
-                      <Ionicons name="checkmark-circle" size={14} color="#16A34A" />
+                      <FontAwesome5 name="check-circle" solid size={14} color="#16A34A" />
                     )}
                   </View>
                   {acct ? (
@@ -1404,7 +1403,7 @@ export default function CreatorSettingsScreen() {
                 <View style={styles.socialActions}>
                   {acct ? (
                     <Pressable style={styles.socialDisconnectBtn} hitSlop={8} onPress={() => deleteSocialAccount(acct)}>
-                      <Ionicons name="close" size={14} color={C.error} />
+                      <FontAwesome5 name="times" solid size={14} color={C.error} />
                     </Pressable>
                   ) : isLive ? (
                     <Pressable
@@ -1621,7 +1620,7 @@ export default function CreatorSettingsScreen() {
         {/* Empty state */}
         {portfolio.length === 0 && (
           <View style={[styles.socialEmptyState, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <FontAwesome5 name="images" size={32} color={C.textSecondary} style={{ marginBottom: 4 }} />
+            <FontAwesome5 name="images" solid size={32} color={C.textSecondary} style={{ marginBottom: 4 }} />
             <Text style={[styles.socialEmptyTitle, { color: C.text }]}>{t('creatorSettings.noPastWorkTitle')}</Text>
             <Text style={[styles.socialEmptySubtitle, { color: C.textSecondary }]}>
               {t('creatorSettings.noPastWorkSub')}
@@ -1633,7 +1632,7 @@ export default function CreatorSettingsScreen() {
         {portfolio.length > 0 && (
           <Card>
             {portfolio.map((item, idx) => {
-              const cfg = PORTFOLIO_CONFIG[item.label] ?? { iconName: 'link-outline', iconLib: 'ion' as const, label: item.label || 'Link', color: '#6366F1' };
+              const cfg = PORTFOLIO_CONFIG[item.label] ?? { iconName: 'link', iconLib: 'ion' as const, label: item.label || 'Link', color: '#6366F1' };
               const isLast = idx === portfolio.length - 1;
               return (
                 <View key={item.id} style={[styles.row, styles.socialRow, !isLast && { borderBottomWidth: 1, borderBottomColor: C.border }]}>
@@ -1656,7 +1655,7 @@ export default function CreatorSettingsScreen() {
                       <Text style={[styles.socialEditBtnText, { color: cfg.color }]}>{t('creatorSettings.editBtn')}</Text>
                     </Pressable>
                     <Pressable style={styles.socialDisconnectBtn} hitSlop={8} onPress={() => deletePortfolio(item)}>
-                      <Ionicons name="close" size={14} color={C.error} />
+                      <FontAwesome5 name="times" solid size={14} color={C.error} />
                     </Pressable>
                   </View>
                 </View>
@@ -1731,7 +1730,7 @@ export default function CreatorSettingsScreen() {
                 )}
                 <Text style={[styles.rowLabel, { color: C.text }]}>{m.label}</Text>
                 <View style={[styles.checkboxOuter, { borderColor: selected ? C.brinjal1 : C.border, backgroundColor: selected ? C.brinjal1 : 'transparent' }]}>
-                  {selected ? <Ionicons name="checkmark" size={13} color="#fff" /> : null}
+                  {selected ? <FontAwesome5 name="check" solid size={13} color="#fff" /> : null}
                 </View>
               </Pressable>
             );
@@ -1922,7 +1921,7 @@ export default function CreatorSettingsScreen() {
               <View style={styles.inlinePhonePanelHeader}>
                 <Text style={[styles.inlinePhonePanelTitle, { color: C.text, flexShrink: 1 }]} numberOfLines={1} ellipsizeMode="tail">{t('creatorSettings.setNewPasswordSection')}</Text>
                 <Pressable onPress={closeChangePassword} hitSlop={10} style={{ flexShrink: 0, marginLeft: 8 }}>
-                  <Ionicons name="close-circle" size={22} color={C.textSecondary} />
+                  <FontAwesome5 name="times-circle" solid size={22} color={C.textSecondary} />
                 </Pressable>
               </View>
 
@@ -2019,7 +2018,7 @@ export default function CreatorSettingsScreen() {
                 },
               ]}
             >
-              <Ionicons name="mail-outline" size={18} color="#0891B2" />
+              <FontAwesome5 name="envelope" size={18} color="#0891B2" />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.rowLabel, { color: C.text }]}>{t('creatorSettings.emailLabel')}</Text>
@@ -2052,7 +2051,7 @@ export default function CreatorSettingsScreen() {
                   <Text style={[styles.inlinePhonePanelSub, { color: C.textSecondary }]}>{t('creatorSettings.sentToEmail', { email: emailInput })}</Text>
                 </View>
                 <Pressable onPress={closeEmail} hitSlop={10} style={{ flexShrink: 0, marginLeft: 8 }}>
-                  <Ionicons name="close-circle" size={22} color={C.textSecondary} />
+                  <FontAwesome5 name="times-circle" solid size={22} color={C.textSecondary} />
                 </Pressable>
               </View>
               <View style={[styles.pwRow, { backgroundColor: C.surface, borderColor: C.border }]}>
@@ -2101,7 +2100,7 @@ export default function CreatorSettingsScreen() {
                 },
               ]}
             >
-              <Ionicons name="call-outline" size={18} color="#10B981" />
+              <FontAwesome5 name="phone" solid size={18} color="#10B981" />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.rowLabel, { color: C.text }]}>{t('creatorSettings.phoneNumberLabel')}</Text>
@@ -2129,7 +2128,7 @@ export default function CreatorSettingsScreen() {
               <View style={styles.inlinePhonePanelHeader}>
                 <Text style={[styles.inlinePhonePanelTitle, { color: C.text, flexShrink: 1 }]} numberOfLines={1} ellipsizeMode="tail">{t('creatorSettings.enterPhoneTitle')}</Text>
                 <Pressable onPress={closePhone} hitSlop={10} style={{ flexShrink: 0, marginLeft: 8 }}>
-                  <Ionicons name="close-circle" size={22} color={C.textSecondary} />
+                  <FontAwesome5 name="times-circle" solid size={22} color={C.textSecondary} />
                 </Pressable>
               </View>
               <View style={[styles.pwRow, { backgroundColor: C.surface, borderColor: C.border }]}>
@@ -2168,7 +2167,7 @@ export default function CreatorSettingsScreen() {
                   <Text style={[styles.inlinePhonePanelSub, { color: C.textSecondary }]}>{t('creatorSettings.sentToPhone', { phone: phoneNumber })}</Text>
                 </View>
                 <Pressable onPress={closePhone} hitSlop={10}>
-                  <Ionicons name="close-circle" size={22} color={C.textSecondary} />
+                  <FontAwesome5 name="times-circle" solid size={22} color={C.textSecondary} />
                 </Pressable>
               </View>
               <View style={[styles.pwRow, { backgroundColor: C.surface, borderColor: C.border }]}>
@@ -2216,7 +2215,7 @@ export default function CreatorSettingsScreen() {
                 },
               ]}
             >
-              <Ionicons name="card-outline" size={18} color="#6366F1" />
+              <FontAwesome5 name="credit-card" size={18} color="#6366F1" />
             </View>
             <Text style={[styles.rowLabel, { color: C.text }]}>{t('creatorSettings.uploadCitizenshipLabel')}</Text>
             <View style={styles.navRight}>
@@ -2252,7 +2251,7 @@ export default function CreatorSettingsScreen() {
                 },
               ]}
             >
-              <Ionicons name="document-text-outline" size={18} color="#6366F1" />
+              <FontAwesome5 name="file-alt" solid size={18} color="#6366F1" />
             </View>
             <Text style={[styles.rowLabel, { color: C.text }]}>{t('creatorSettings.uploadPanLabel')}</Text>
             <View style={styles.navRight}>
@@ -2285,7 +2284,7 @@ export default function CreatorSettingsScreen() {
                 },
               ]}
             >
-              <Ionicons name="ribbon-outline" size={18} color="#F59E0B" />
+              <FontAwesome5 name="award" solid size={18} color="#F59E0B" />
             </View>
             <Text style={[styles.rowLabel, { color: C.text }]}>{t('creatorSettings.creatorBadgeLabel')}</Text>
             {creatorIsVerified ? (
@@ -2311,10 +2310,10 @@ export default function CreatorSettingsScreen() {
     return (
       <>
         <Card>
-          <NavRow ionIcon="help-circle-outline"        ionIconColor="#0891B2" label={t('creatorSettings.helpCenterLabel')}      onPress={() => setSubPage('help-center')} />
-          <NavRow ionIcon="chatbubble-ellipses-outline" ionIconColor="#7C3AED" label={t('creatorSettings.contactSupportLabel')} onPress={() => setSubPage('contact-support')} />
-          <NavRow ionIcon="warning-outline"            ionIconColor="#EF4444" label={t('creatorSettings.reportIssueLabel')}    onPress={() => setSubPage('report-issue')} />
-          <NavRow ionIcon="reader-outline"             ionIconColor="#F59E0B" label={t('creatorSettings.faqsLabel')}            onPress={() => setSubPage('faqs')} isLast />
+          <NavRow ionIcon="question-circle"        ionIconColor="#0891B2" label={t('creatorSettings.helpCenterLabel')}      onPress={() => setSubPage('help-center')} />
+          <NavRow ionIcon="comment-alt" ionIconColor="#7C3AED" label={t('creatorSettings.contactSupportLabel')} onPress={() => setSubPage('contact-support')} />
+          <NavRow ionIcon="exclamation-triangle"            ionIconColor="#EF4444" label={t('creatorSettings.reportIssueLabel')}    onPress={() => setSubPage('report-issue')} />
+          <NavRow ionIcon="book-open"             ionIconColor="#F59E0B" label={t('creatorSettings.faqsLabel')}            onPress={() => setSubPage('faqs')} isLast />
         </Card>
         <View style={[styles.hintCard, { backgroundColor: C.primaryLight }]}>
           <Text style={[styles.hintText, { color: C.brinjal1 }]}>{t('creatorSettings.supportResponseHint')}</Text>
@@ -2329,9 +2328,9 @@ export default function CreatorSettingsScreen() {
     return (
       <>
         <Card>
-          <NavRow ionIcon="shield-checkmark-outline" ionIconColor="#3B82F6" label={t('creatorSettings.privacyPolicyLabel')}  onPress={() => setSubPage('privacy-policy')} />
-          <NavRow ionIcon="document-text-outline"    ionIconColor="#6366F1" label={t('creatorSettings.termsLabel')}          onPress={() => setSubPage('terms')} />
-          <NavRow ionIcon="people-outline"           ionIconColor="#16A34A" label={t('creatorSettings.guidelinesLabel')}     onPress={() => setSubPage('guidelines')} isLast />
+          <NavRow ionIcon="shield-alt" ionIconColor="#3B82F6" label={t('creatorSettings.privacyPolicyLabel')}  onPress={() => setSubPage('privacy-policy')} />
+          <NavRow ionIcon="file-alt"    ionIconColor="#6366F1" label={t('creatorSettings.termsLabel')}          onPress={() => setSubPage('terms')} />
+          <NavRow ionIcon="users"           ionIconColor="#16A34A" label={t('creatorSettings.guidelinesLabel')}     onPress={() => setSubPage('guidelines')} isLast />
         </Card>
       </>
     );
@@ -2358,7 +2357,7 @@ export default function CreatorSettingsScreen() {
               <Text style={[styles.accountEmail, { color: C.textSecondary }]}>{user ? getAccountIdentityLine(user) : 'creator@example.com'}</Text>
             </View>
           </View>
-          <NavRow ionIcon="create-outline" ionIconColor={C.brinjal1} label={t('creatorSettings.editProfileLabel')} onPress={() => router.push('/(creator)/edit-profile')} />
+          <NavRow ionIcon="edit" ionIconColor={C.brinjal1} label={t('creatorSettings.editProfileLabel')} onPress={() => router.push('/(creator)/edit-profile')} />
           <NavRow faIcon="pause-circle" faIconColor="#F59E0B" label={t('creatorSettings.deactivateAccount')} onPress={handleDeactivateAccount} />
           <NavRow faIcon="trash-alt" label={t('creatorSettings.deleteAccount')} onPress={handleDeleteAccount} danger isLast />
         </Card>
@@ -2396,7 +2395,7 @@ export default function CreatorSettingsScreen() {
                   </View>
                 ) : active ? (
                   <View style={[styles.activeLangCheck, { backgroundColor: C.brinjal1 }]}>
-                    <Ionicons name="checkmark" size={13} color="#fff" />
+                    <FontAwesome5 name="check" solid size={13} color="#fff" />
                   </View>
                 ) : (
                   <View style={[styles.inactiveLangCircle, { borderColor: C.border }]} />
@@ -2465,7 +2464,7 @@ export default function CreatorSettingsScreen() {
           {!subPage && section === 'earnings'   && renderEarnings()}
           {!subPage && section === 'past-work'  && renderPastWork()}
           {!subPage && section === 'security'      && renderSecurity()}
-          {!subPage && section === 'notifications' && renderNotifications()}
+          {!subPage && section === 'bell' && renderNotifications()}
           {!subPage && section === 'support'    && renderSupport()}
           {!subPage && section === 'legal'      && renderLegal()}
         </ScrollView>
@@ -2529,7 +2528,7 @@ export default function CreatorSettingsScreen() {
                   },
                 ]}
               >
-                <FontAwesome5 name="trash-alt" size={26} color="#DC2626" />
+                <FontAwesome5 name="trash-alt" solid size={26} color="#DC2626" />
               </View>
               <Text style={[styles.confirmTitle, { color: '#DC2626' }]}>{t('creatorSettings.deleteTitle')}</Text>
               <Text style={[styles.confirmBody, { color: C.textSecondary }]}>

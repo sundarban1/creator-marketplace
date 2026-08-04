@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { Pressable, StatusBar, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -36,7 +36,7 @@ export default function VideoPlayerScreen() {
           hitSlop={12}
           style={styles.closeBtn}
         >
-          <Ionicons name="close" size={26} color="#fff" />
+          <FontAwesome5 name="times" solid size={26} color="#fff" />
         </Pressable>
       </View>
     </View>

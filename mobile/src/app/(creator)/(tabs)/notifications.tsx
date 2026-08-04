@@ -1,5 +1,5 @@
 import { router, useFocusEffect } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -17,7 +17,7 @@ import { F, RADIUS } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import type { AppNotification } from '@/types';
 
-type IoniconName = keyof typeof Ionicons.glyphMap;
+type IoniconName = keyof typeof FontAwesome5.glyphMap;
 
 type TypeConfig = {
   icon: IoniconName;
@@ -28,24 +28,24 @@ type TypeConfig = {
 };
 
 const TYPE_CONFIG: Record<AppNotification['type'], TypeConfig> = {
-  proposal_received:        { icon: 'document-text',        iconColor: '#6366F1', iconBg: '#EEF2FF', accentColor: '#6366F1', labelKey: 'notifications.typeNewProposal'  },
-  proposal_accepted:        { icon: 'checkmark-circle',     iconColor: '#10B981', iconBg: '#ECFDF5', accentColor: '#10B981', labelKey: 'notifications.typeAccepted'      },
-  proposal_rejected:        { icon: 'close-circle',         iconColor: '#EF4444', iconBg: '#FEF2F2', accentColor: '#EF4444', labelKey: 'notifications.typeRejected'      },
-  new_message:              { icon: 'chatbubble',           iconColor: '#3B82F6', iconBg: '#EFF6FF', accentColor: '#3B82F6', labelKey: 'notifications.typeMessage'       },
-  campaign_deadline:        { icon: 'time',                 iconColor: '#F59E0B', iconBg: '#FFFBEB', accentColor: '#F59E0B', labelKey: 'notifications.typeDeadline'      },
-  campaign_closed:          { icon: 'lock-closed',          iconColor: '#6B7280', iconBg: '#F3F4F6', accentColor: '#6B7280', labelKey: 'notifications.typeClosed'        },
-  new_campaign:             { icon: 'megaphone',            iconColor: '#8B5CF6', iconBg: '#F5F3FF', accentColor: '#8B5CF6', labelKey: 'notifications.typeNewEvent'     },
+  proposal_received:        { icon: 'file-alt',        iconColor: '#6366F1', iconBg: '#EEF2FF', accentColor: '#6366F1', labelKey: 'notifications.typeNewProposal'  },
+  proposal_accepted:        { icon: 'check-circle',     iconColor: '#10B981', iconBg: '#ECFDF5', accentColor: '#10B981', labelKey: 'notifications.typeAccepted'      },
+  proposal_rejected:        { icon: 'times-circle',         iconColor: '#EF4444', iconBg: '#FEF2F2', accentColor: '#EF4444', labelKey: 'notifications.typeRejected'      },
+  new_message:              { icon: 'comment',           iconColor: '#3B82F6', iconBg: '#EFF6FF', accentColor: '#3B82F6', labelKey: 'notifications.typeMessage'       },
+  campaign_deadline:        { icon: 'clock',                 iconColor: '#F59E0B', iconBg: '#FFFBEB', accentColor: '#F59E0B', labelKey: 'notifications.typeDeadline'      },
+  campaign_closed:          { icon: 'lock',          iconColor: '#6B7280', iconBg: '#F3F4F6', accentColor: '#6B7280', labelKey: 'notifications.typeClosed'        },
+  new_campaign:             { icon: 'bullhorn',            iconColor: '#8B5CF6', iconBg: '#F5F3FF', accentColor: '#8B5CF6', labelKey: 'notifications.typeNewEvent'     },
   work_approved:            { icon: 'trophy',               iconColor: '#10B981', iconBg: '#ECFDF5', accentColor: '#10B981', labelKey: 'notifications.typeWorkApproved'  },
-  payment_released:         { icon: 'cash',                 iconColor: '#10B981', iconBg: '#ECFDF5', accentColor: '#10B981', labelKey: 'notifications.typePayment'       },
-  message_request_accepted: { icon: 'chatbubble-ellipses', iconColor: '#3B82F6', iconBg: '#EFF6FF', accentColor: '#3B82F6', labelKey: 'notifications.typeConnected'     },
+  payment_released:         { icon: 'money-bill-alt',                 iconColor: '#10B981', iconBg: '#ECFDF5', accentColor: '#10B981', labelKey: 'notifications.typePayment'       },
+  message_request_accepted: { icon: 'comment-dots', iconColor: '#3B82F6', iconBg: '#EFF6FF', accentColor: '#3B82F6', labelKey: 'notifications.typeConnected'     },
   business_favorited:       { icon: 'heart',               iconColor: '#EF4444', iconBg: '#FFF1F2', accentColor: '#EF4444', labelKey: 'notifications.typeFavorited'     },
   creator_saved:            { icon: 'bookmark',            iconColor: '#7C3AED', iconBg: '#F5F3FF', accentColor: '#7C3AED', labelKey: 'notifications.typeSaved'         },
-  campaign_invitation:      { icon: 'mail',                iconColor: '#0891B2', iconBg: '#E0F2FE', accentColor: '#0891B2', labelKey: 'notifications.typeInvited'       },
-  account_verified:         { icon: 'shield-checkmark',    iconColor: '#10B981', iconBg: '#ECFDF5', accentColor: '#10B981', labelKey: 'notifications.typeVerified'      },
-  verification_rejected:    { icon: 'shield-outline',      iconColor: '#EF4444', iconBg: '#FEF2F2', accentColor: '#EF4444', labelKey: 'notifications.typeVerificationRejected' },
+  campaign_invitation:      { icon: 'envelope',                iconColor: '#0891B2', iconBg: '#E0F2FE', accentColor: '#0891B2', labelKey: 'notifications.typeInvited'       },
+  account_verified:         { icon: 'shield-alt',    iconColor: '#10B981', iconBg: '#ECFDF5', accentColor: '#10B981', labelKey: 'notifications.typeVerified'      },
+  verification_rejected:    { icon: 'shield-alt',      iconColor: '#EF4444', iconBg: '#FEF2F2', accentColor: '#EF4444', labelKey: 'notifications.typeVerificationRejected' },
 };
 
-const FALLBACK: TypeConfig = { icon: 'notifications', iconColor: '#6B7280', iconBg: '#F3F4F6', accentColor: '#6B7280', labelKey: 'notifications.typeNotification' };
+const FALLBACK: TypeConfig = { icon: 'bell', iconColor: '#6B7280', iconBg: '#F3F4F6', accentColor: '#6B7280', labelKey: 'notifications.typeNotification' };
 
 function getGroup(timestamp: string): 'groupToday' | 'groupThisWeek' | 'groupEarlier' {
   const diffDays = (Date.now() - new Date(timestamp).getTime()) / (1000 * 60 * 60 * 24);
@@ -64,6 +64,17 @@ function timeAgo(timestamp: string, t: TFn): string {
   return t('notifications.timeDaysAgo', { n: Math.floor(hrs / 24) });
 }
 
+// Some notification titles still come from the backend with a leading emoji
+// (older rows already persisted in the DB, or code paths that weren't caught
+// by the copy cleanup) — strip it here so the row never shows one, regardless
+// of what the API sends.
+function stripEmoji(text: string): string {
+  return text
+    .replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}\u{2190}-\u{21FF}\u{2B00}-\u{2BFF}\u{FE00}-\u{FE0F}\u{200D}]/gu, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
 function NotificationItem({ item, onPress }: { item: AppNotification; onPress: (id: string) => void }) {
   const C = useAppColors();
   const { t } = useLanguage();
@@ -76,14 +87,14 @@ function NotificationItem({ item, onPress }: { item: AppNotification; onPress: (
 
       {/* Type icon in a coloured circle */}
       <View style={[styles.iconWrap, { backgroundColor: cfg.iconBg }]}>
-        <Ionicons name={cfg.icon} size={20} color={cfg.iconColor} />
+        <FontAwesome5 name={cfg.icon} size={20} color={cfg.iconColor} />
       </View>
 
       {/* Content */}
       <View style={styles.itemContent}>
         <View style={styles.titleRow}>
           <Text style={[styles.itemTitle, { color: C.text }]} numberOfLines={1}>
-            {item.title}
+            {stripEmoji(item.title)}
           </Text>
           {!item.isRead && (
             <View style={[styles.unreadDot, { backgroundColor: cfg.accentColor }]} />
@@ -109,7 +120,7 @@ export default function NotificationsScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const listRef = useRef<FlatList<{ group: string; items: AppNotification[] }>>(null);
-  useScrollToTopOnTabPress('notifications', () => listRef.current?.scrollToOffset({ offset: 0, animated: true }));
+  useScrollToTopOnTabPress('bell', () => listRef.current?.scrollToOffset({ offset: 0, animated: true }));
 
   function loadNotifications(showLoader = true) {
     if (showLoader) setLoading(true);

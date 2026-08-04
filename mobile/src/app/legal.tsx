@@ -1,5 +1,5 @@
 import { useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { BackButton } from '@/components/BackButton';
 import { useEffect, useState } from 'react';
 import {
@@ -17,9 +17,9 @@ import { legalService, type LegalDocument, type LegalSlug } from '@/services/leg
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 
-const META: Record<LegalSlug, { titleKey: string; icon: keyof typeof Ionicons.glyphMap }> = {
-  'terms':          { titleKey: 'legalScreen.termsTitle',   icon: 'document-text-outline' },
-  'privacy-policy': { titleKey: 'legalScreen.privacyTitle', icon: 'shield-checkmark-outline' },
+const META: Record<LegalSlug, { titleKey: string; icon: keyof typeof FontAwesome5.glyphMap }> = {
+  'terms':          { titleKey: 'legalScreen.termsTitle',   icon: 'file-alt' },
+  'privacy-policy': { titleKey: 'legalScreen.privacyTitle', icon: 'shield-alt' },
 };
 
 function formatDate(iso: string | null): string {
@@ -71,7 +71,7 @@ export default function LegalScreen() {
       <View style={[styles.header, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
         <BackButton />
         <View style={styles.headerCenter}>
-          <Ionicons name={meta.icon} size={18} color={C.brinjal1} />
+          <FontAwesome5 name={meta.icon} size={18} color={C.brinjal1} />
           <Text style={[styles.headerTitle, { color: C.text }]}>{t(meta.titleKey)}</Text>
         </View>
         <View style={{ width: 40 }} />
@@ -84,7 +84,7 @@ export default function LegalScreen() {
         </View>
       ) : error ? (
         <View style={styles.centered}>
-          <Ionicons name="cloud-offline-outline" size={48} color={C.textSecondary} />
+          <FontAwesome5 name="cloud" solid size={48} color={C.textSecondary} />
           <Text style={[styles.errorText, { color: C.textSecondary }]}>{error}</Text>
           <Pressable style={[styles.retryBtn, { backgroundColor: C.brinjal1 }]} onPress={loadDoc}>
             <Text style={styles.retryBtnText}>{t('legalScreen.tryAgain')}</Text>
@@ -92,7 +92,7 @@ export default function LegalScreen() {
         </View>
       ) : !doc || doc.sections.length === 0 ? (
         <View style={styles.centered}>
-          <Ionicons name="document-outline" size={48} color={C.textSecondary} />
+          <FontAwesome5 name="file-alt" solid size={48} color={C.textSecondary} />
           <Text style={[styles.errorText, { color: C.textSecondary }]}>{t('legalScreen.noContent')}</Text>
         </View>
       ) : (
@@ -103,7 +103,7 @@ export default function LegalScreen() {
           {/* Last updated */}
           {doc.lastUpdated && (
             <View style={[styles.updatedRow, { backgroundColor: C.surface, borderColor: C.border }]}>
-              <Ionicons name="time-outline" size={13} color={C.textSecondary} />
+              <FontAwesome5 name="clock" size={13} color={C.textSecondary} />
               <Text style={[styles.updatedText, { color: C.textSecondary }]}>
                 {t('legalScreen.lastUpdated', { date: formatDate(doc.lastUpdated) })}
               </Text>
@@ -122,7 +122,7 @@ export default function LegalScreen() {
                     </View>
                     {section.icon ? <Text style={styles.sectionEmoji}>{section.icon}</Text> : null}
                     <Text style={[styles.accordionTitle, { color: C.text }]}>{section.title}</Text>
-                    <Ionicons
+                    <FontAwesome5
                       name={open ? 'chevron-up' : 'chevron-down'}
                       size={16}
                       color={C.textSecondary}

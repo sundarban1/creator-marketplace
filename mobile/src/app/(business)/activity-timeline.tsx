@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
-import { FontAwesome5, Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { BackButton } from '@/components/BackButton';
@@ -194,14 +194,14 @@ function buildTimeline(ws: WS, paid: boolean, campaign: Campaign | null, app: Ap
   const events: TLEvent[] = [];
 
   events.push({
-    icon: 'checkmark-circle', title: t('activityTimeline.tlProposalAccepted'),
+    icon: 'check-circle', title: t('activityTimeline.tlProposalAccepted'),
     desc: isCreator ? t('activityTimeline.tlProposalAcceptedDescCreator') : t('activityTimeline.tlProposalAcceptedDescBusiness'),
     time: fmtNPT(base), done: true, isCurrent: false,
   });
 
   if (!paid && ws === 'NONE') {
     events.unshift({
-      icon: 'card', title: t('activityTimeline.tlWaitingPayment'),
+      icon: 'credit-card', title: t('activityTimeline.tlWaitingPayment'),
       desc: isCreator
         ? t('activityTimeline.tlWaitingPaymentDescCreator')
         : t('activityTimeline.tlWaitingPaymentDescBusiness'),
@@ -211,7 +211,7 @@ function buildTimeline(ws: WS, paid: boolean, campaign: Campaign | null, app: Ap
 
   if (paid || ws !== 'NONE') {
     events.unshift({
-      icon: 'lock-closed', title: t('activityTimeline.tlPaymentSecured'),
+      icon: 'lock', title: t('activityTimeline.tlPaymentSecured'),
       desc: isCreator ? t('activityTimeline.tlPaymentSecuredDescCreator') : t('activityTimeline.tlPaymentSecuredDescBusiness'),
       time: fmtNPT(campaign?.paidAt ?? base),
       done: ws !== 'NONE',
@@ -241,7 +241,7 @@ function buildTimeline(ws: WS, paid: boolean, campaign: Campaign | null, app: Ap
 
   if (ws === 'SUBMITTED' || ws === 'APPROVED') {
     events.unshift({
-      icon: 'cloud-upload', title: t('activityTimeline.tlDeliverablesUploaded'),
+      icon: 'cloud-upload-alt', title: t('activityTimeline.tlDeliverablesUploaded'),
       desc: isCreator ? t('activityTimeline.tlDeliverablesUploadedDescCreator') : t('activityTimeline.tlDeliverablesUploadedDescBusiness'),
       time: fmtNPT(app?.submittedAt ?? base),
       done: ws === 'APPROVED', isCurrent: ws === 'SUBMITTED',
@@ -250,7 +250,7 @@ function buildTimeline(ws: WS, paid: boolean, campaign: Campaign | null, app: Ap
 
   if (ws === 'APPROVED') {
     events.unshift({
-      icon: 'checkmark-done-circle', title: t('activityTimeline.tlWorkApproved'),
+      icon: 'check-double', title: t('activityTimeline.tlWorkApproved'),
       desc: isCreator
         ? t('activityTimeline.tlWorkApprovedDescCreator')
         : t('activityTimeline.tlWorkApprovedDescBusiness'),
@@ -284,7 +284,7 @@ function ProgressTracker({ current, scrollRef, labels }: { current: number; scro
             <View style={pt.connRow}>
               <View style={[pt.line, { backgroundColor: idx === 0 ? 'transparent' : done ? '#16A34A' : '#E5E7EB' }]} />
               <View style={[pt.dot, { backgroundColor: dotBg, borderColor: dotBdr }]}>
-                {done   ? <Ionicons name="checkmark" size={11} color="#fff" /> :
+                {done   ? <FontAwesome5 name="check" solid size={11} color="#fff" /> :
                  active ? <View style={pt.activePulse} /> :
                           <View style={pt.emptyCore} />}
               </View>
@@ -327,7 +327,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, on
   if (!paid && ws === 'NONE' && isCreator) return (
     <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#D97706' }]}>
       <View style={ac.headerRow}>
-        <View style={[ac.iconBg, { backgroundColor: '#FFF7ED', shadowColor: '#D97706', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><Ionicons name="time-outline" size={20} color="#D97706" /></View>
+        <View style={[ac.iconBg, { backgroundColor: '#FFF7ED', shadowColor: '#D97706', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="clock" size={20} color="#D97706" /></View>
         <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acWaitingPaymentTitle')}</Text>
       </View>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acWaitingPaymentSub')}</Text>
@@ -338,7 +338,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, on
   if (paid && ws === 'NONE' && !isCreator) return (
     <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#0EA5E9' }]}>
       <View style={ac.headerRow}>
-        <View style={[ac.iconBg, { backgroundColor: '#E0F2FE', shadowColor: '#0EA5E9', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><Ionicons name="hourglass-outline" size={20} color="#0EA5E9" /></View>
+        <View style={[ac.iconBg, { backgroundColor: '#E0F2FE', shadowColor: '#0EA5E9', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="hourglass" solid size={20} color="#0EA5E9" /></View>
         <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acWaitingCreatorTitle')}</Text>
       </View>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{isFree ? t('activityTimeline.acWaitingCreatorSubFree') : t('activityTimeline.acWaitingCreatorSubPaid')}</Text>
@@ -365,7 +365,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, on
   if (ws === 'IN_PROGRESS' && !isCreator) return (
     <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#7C3AED' }]}>
       <View style={ac.headerRow}>
-        <View style={[ac.iconBg, { backgroundColor: '#EEF2FF', shadowColor: '#7C3AED', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><Ionicons name="play-circle-outline" size={20} color="#7C3AED" /></View>
+        <View style={[ac.iconBg, { backgroundColor: '#EEF2FF', shadowColor: '#7C3AED', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="play-circle" size={20} color="#7C3AED" /></View>
         <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acCreatorWorkingTitle')}</Text>
       </View>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acCreatorWorkingSub')}</Text>
@@ -376,12 +376,12 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, on
   if (ws === 'IN_PROGRESS' && isCreator) return (
     <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#7C3AED' }]}>
       <View style={ac.headerRow}>
-        <View style={[ac.iconBg, { backgroundColor: '#EEF2FF', shadowColor: '#7C3AED', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><Ionicons name="cloud-upload-outline" size={20} color="#7C3AED" /></View>
+        <View style={[ac.iconBg, { backgroundColor: '#EEF2FF', shadowColor: '#7C3AED', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="cloud-upload-alt" solid size={20} color="#7C3AED" /></View>
         <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acUploadTitle')}</Text>
       </View>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acUploadSub')}</Text>
       <Pressable style={[ac.btn, { backgroundColor: '#7C3AED', shadowColor: '#7C3AED', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]} onPress={onUpload}>
-        <Ionicons name="cloud-upload-outline" size={16} color="#fff" />
+        <FontAwesome5 name="cloud-upload-alt" solid size={16} color="#fff" />
         <Text style={ac.btnTxt}>{t('activityTimeline.acUploadBtn')}</Text>
       </Pressable>
     </View>
@@ -391,22 +391,22 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, on
   if (ws === 'SUBMITTED' && !isCreator) return (
     <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#D97706' }]}>
       <View style={ac.headerRow}>
-        <View style={[ac.iconBg, { backgroundColor: '#FFF7ED', shadowColor: '#D97706', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><Ionicons name="eye-outline" size={20} color="#D97706" /></View>
+        <View style={[ac.iconBg, { backgroundColor: '#FFF7ED', shadowColor: '#D97706', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="eye" size={20} color="#D97706" /></View>
         <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acSubmittedTitle')}</Text>
       </View>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acSubmittedSub')}</Text>
       <Pressable style={[ac.btn, { backgroundColor: '#D97706', shadowColor: '#D97706', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]} onPress={onReview}>
-        <Ionicons name="eye-outline" size={16} color="#fff" />
+        <FontAwesome5 name="eye" size={16} color="#fff" />
         <Text style={ac.btnTxt}>{t('activityTimeline.acReviewBtn')}</Text>
       </Pressable>
       <View style={ac.btnRow}>
         <Pressable style={[ac.btn, { flex: 1, backgroundColor: '#EF4444', shadowColor: '#EF4444', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]} onPress={onRevision}>
-          <Ionicons name="create-outline" size={15} color="#fff" />
+          <FontAwesome5 name="edit" size={15} color="#fff" />
           <Text style={ac.btnTxt}>{t('activityTimeline.acRevisionBtn')}</Text>
         </Pressable>
         <Pressable style={[ac.btn, { flex: 1, backgroundColor: '#16A34A', opacity: submitting ? 0.75 : 1, shadowColor: '#16A34A', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]} onPress={onApprove} disabled={submitting}>
           {submitting ? <ActivityIndicator size="small" color="#fff" /> : <>
-            <Ionicons name="checkmark-done-outline" size={15} color="#fff" />
+            <FontAwesome5 name="check-double" solid size={15} color="#fff" />
             <Text style={ac.btnTxt}>{t('activityTimeline.acApproveBtn')}</Text>
           </>}
         </Pressable>
@@ -418,12 +418,12 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, on
   if (ws === 'SUBMITTED' && isCreator) return (
     <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#0EA5E9' }]}>
       <View style={ac.headerRow}>
-        <View style={[ac.iconBg, { backgroundColor: '#E0F2FE', shadowColor: '#0EA5E9', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><Ionicons name="hourglass-outline" size={20} color="#0EA5E9" /></View>
+        <View style={[ac.iconBg, { backgroundColor: '#E0F2FE', shadowColor: '#0EA5E9', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="hourglass" solid size={20} color="#0EA5E9" /></View>
         <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acAwaitingReviewTitle')}</Text>
       </View>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acAwaitingReviewSub')}</Text>
       <Pressable style={[ac.btn, { backgroundColor: '#0EA5E9', shadowColor: '#0EA5E9', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]} onPress={onViewSubmission}>
-        <Ionicons name="eye-outline" size={16} color="#fff" />
+        <FontAwesome5 name="eye" size={16} color="#fff" />
         <Text style={ac.btnTxt}>{t('activityTimeline.acViewSubmissionBtn')}</Text>
       </Pressable>
     </View>
@@ -434,7 +434,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, on
   if (paymentStatus === 'RELEASED') return (
     <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#16A34A' }]}>
       <View style={ac.headerRow}>
-        <View style={[ac.iconBg, { backgroundColor: '#DCFCE7', shadowColor: '#16A34A', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><Ionicons name="checkmark-done-circle-outline" size={20} color="#16A34A" /></View>
+        <View style={[ac.iconBg, { backgroundColor: '#DCFCE7', shadowColor: '#16A34A', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="check-double" solid size={20} color="#16A34A" /></View>
         <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acProjectCompleteTitle')}</Text>
       </View>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{isCreator ? t('activityTimeline.acProjectCompleteCreatorSub') : t('activityTimeline.acProjectCompleteBizSub')}</Text>
@@ -445,7 +445,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, on
   if (!isCreator) return (
     <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#16A34A' }]}>
       <View style={ac.headerRow}>
-        <View style={[ac.iconBg, { backgroundColor: '#DCFCE7', shadowColor: '#16A34A', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><Ionicons name="checkmark-done-circle-outline" size={20} color="#16A34A" /></View>
+        <View style={[ac.iconBg, { backgroundColor: '#DCFCE7', shadowColor: '#16A34A', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="check-double" solid size={20} color="#16A34A" /></View>
         <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acApprovedBizTitle')}</Text>
       </View>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acApprovedBizSub')}</Text>
@@ -938,11 +938,11 @@ export default function CampaignWorkspaceScreen() {
               stage, so chat closes here rather than staying open indefinitely. */}
           {app?.paymentStatus === 'RELEASED' ? (
             <View style={s.iconBtn}>
-              <Ionicons name="chatbubble-ellipses-outline" size={22} color="#D1D5DB" />
+              <FontAwesome5 name="comment-alt" size={22} color="#D1D5DB" />
             </View>
           ) : (
             <Pressable style={s.iconBtn} onPress={handleMessage} hitSlop={6}>
-              <Ionicons name="chatbubble-ellipses-outline" size={22} color="#7C3AED" />
+              <FontAwesome5 name="comment-alt" size={22} color="#7C3AED" />
             </Pressable>
           )}
         </View>
@@ -985,12 +985,12 @@ export default function CampaignWorkspaceScreen() {
               <View style={s.metaRow}>
                 {campaign?.deadline && (
                   <View style={s.metaChip}>
-                    <Ionicons name="calendar-outline" size={11} color="#6B7280" />
+                    <FontAwesome5 name="calendar-alt" size={11} color="#6B7280" />
                     <Text style={s.metaChipTxt}>{fmtDate(campaign.deadline)}</Text>
                   </View>
                 )}
                 <View style={s.metaChip}>
-                  <Ionicons name="wallet-outline" size={11} color="#6B7280" />
+                  <FontAwesome5 name="wallet" solid size={11} color="#6B7280" />
                   <Text style={s.metaChipTxt}>{campaign?.budget ?? 'Free'}</Text>
                 </View>
               </View>
@@ -1052,7 +1052,7 @@ export default function CampaignWorkspaceScreen() {
                     backgroundColor: ev.done ? '#16A34A' : ev.isCurrent ? '#7C3AED' : '#E5E7EB',
                     borderColor:     ev.done ? '#16A34A' : ev.isCurrent ? '#7C3AED' : '#D1D5DB',
                   }]}>
-                    <Ionicons name={ev.icon as any} size={14} color={ev.done || ev.isCurrent ? '#fff' : '#9CA3AF'} />
+                    <FontAwesome5 name={ev.icon as any} size={14} color={ev.done || ev.isCurrent ? '#fff' : '#9CA3AF'} />
                   </View>
                   {idx < tlEvents.length - 1 && (
                     <View style={[tl.line, { backgroundColor: ev.done ? '#16A34A' : '#E5E7EB' }]} />
@@ -1112,7 +1112,7 @@ export default function CampaignWorkspaceScreen() {
             </View>
           </View>
           <View style={[py.trustBox, { backgroundColor: '#F0FDF4', borderColor: '#DCFCE7' }]}>
-            <Ionicons name="shield-checkmark-outline" size={13} color="#16A34A" />
+            <FontAwesome5 name="shield-alt" solid size={13} color="#16A34A" />
             <Text style={[py.trustTxt, { color: '#16A34A' }]}>{t('activityTimeline.paymentSecureNote')}</Text>
           </View>
         </View>
@@ -1123,14 +1123,14 @@ export default function CampaignWorkspaceScreen() {
             style={[s.cancelBtn, { borderColor: '#FECACA', backgroundColor: '#FEF2F2' }]}
             onPress={() => setShowCancel(true)}
           >
-            <Ionicons name="close-circle-outline" size={18} color="#EF4444" />
+            <FontAwesome5 name="times-circle" solid size={18} color="#EF4444" />
             <Text style={[s.cancelBtnTxt, { color: '#EF4444' }]}>{t('activityTimeline.cancelEventBtn')}</Text>
           </Pressable>
         )}
 
         {/* ── Security Footer ── */}
         <View style={s.secFooter}>
-          <Ionicons name="shield-checkmark-outline" size={13} color="#9CA3AF" />
+          <FontAwesome5 name="shield-alt" solid size={13} color="#9CA3AF" />
           <Text style={[s.secFooterTxt, { color: '#9CA3AF' }]}>{t('activityTimeline.paymentSecurityFooter')}</Text>
         </View>
 
@@ -1164,7 +1164,7 @@ export default function CampaignWorkspaceScreen() {
                 <PaymentMethodIcon method={m} size={22} />
                 <Text style={[sh.methodTxt, { color: payMethod === m ? '#7C3AED' : '#374151' }]}>{label}</Text>
               </View>
-              {payMethod === m && <Ionicons name="checkmark-circle" size={18} color="#7C3AED" />}
+              {payMethod === m && <FontAwesome5 name="check-circle" solid size={18} color="#7C3AED" />}
             </Pressable>
           ))}
         </View>
@@ -1189,10 +1189,10 @@ export default function CampaignWorkspaceScreen() {
               <View key={v.publicId} style={up.videoCard}>
                 <View style={up.thumbWrap}>
                   <Pressable style={up.videoThumb} onPress={() => openPreviewFrom('upload', () => setPlayingVideo(v))}>
-                    <Ionicons name="play-circle" size={28} color="#7C3AED" />
+                    <FontAwesome5 name="play-circle" solid size={28} color="#7C3AED" />
                   </Pressable>
                   <Pressable style={up.removeBadge} onPress={() => handleRemoveDeliverableVideo(v.publicId)} hitSlop={6}>
-                    <Ionicons name="close-circle" size={18} color="#EF4444" />
+                    <FontAwesome5 name="times-circle" solid size={18} color="#EF4444" />
                   </Pressable>
                 </View>
                 <Text style={up.videoLabel} numberOfLines={1}>{v.label}</Text>
@@ -1216,7 +1216,7 @@ export default function CampaignWorkspaceScreen() {
                     <LocalVideoPreview uri={item.compressedUri ?? item.video.uri} style={{ width: '100%', height: '100%' }} />
                     {item.status === 'done' && (
                       <View style={up.playOverlay}>
-                        <Ionicons name="play-circle" size={28} color="#fff" />
+                        <FontAwesome5 name="play-circle" solid size={28} color="#fff" />
                       </View>
                     )}
                     {item.status !== 'done' && item.status !== 'failed' && (
@@ -1226,7 +1226,7 @@ export default function CampaignWorkspaceScreen() {
                     )}
                     {item.status === 'failed' && (
                       <View style={up.thumbOverlay}>
-                        <Ionicons name="alert-circle" size={26} color="#fff" />
+                        <FontAwesome5 name="exclamation-circle" solid size={26} color="#fff" />
                       </View>
                     )}
                     {(item.status === 'compressing' || item.status === 'uploading') && (
@@ -1240,7 +1240,7 @@ export default function CampaignWorkspaceScreen() {
                     onPress={() => (item.status === 'done' ? handleRemoveVideoUploadItem(item) : videoUploads.cancel(item.localId))}
                     hitSlop={6}
                   >
-                    <Ionicons name="close-circle" size={18} color={item.status === 'done' ? '#EF4444' : '#9CA3AF'} />
+                    <FontAwesome5 name="times-circle" solid size={18} color={item.status === 'done' ? '#EF4444' : '#9CA3AF'} />
                   </Pressable>
                 </View>
                 <Text style={up.videoLabel} numberOfLines={1}>
@@ -1272,13 +1272,13 @@ export default function CampaignWorkspaceScreen() {
                       <Image source={{ uri: f.url }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
                     ) : (
                       <>
-                        <Ionicons name="document-text" size={26} color={docThumb(f.mimeType).color} />
+                        <FontAwesome5 name="file-alt" solid size={26} color={docThumb(f.mimeType).color} />
                         <Text style={[up.docBadgeTxt, { color: docThumb(f.mimeType).color }]}>{docThumb(f.mimeType).label}</Text>
                       </>
                     )}
                   </Pressable>
                   <Pressable style={up.removeBadge} onPress={() => handleRemoveDeliverableFile(f.id)} hitSlop={6}>
-                    <Ionicons name="close-circle" size={18} color="#EF4444" />
+                    <FontAwesome5 name="times-circle" solid size={18} color="#EF4444" />
                   </Pressable>
                 </View>
                 <Text style={up.videoLabel} numberOfLines={1}>{f.originalFileName}</Text>
@@ -1296,7 +1296,7 @@ export default function CampaignWorkspaceScreen() {
                       <Image source={{ uri: item.file.uri }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
                     ) : (
                       <>
-                        <Ionicons name="document-text" size={26} color={docThumb(item.file.mimeType).color} />
+                        <FontAwesome5 name="file-alt" solid size={26} color={docThumb(item.file.mimeType).color} />
                         <Text style={[up.docBadgeTxt, { color: docThumb(item.file.mimeType).color }]}>{docThumb(item.file.mimeType).label}</Text>
                       </>
                     )}
@@ -1307,7 +1307,7 @@ export default function CampaignWorkspaceScreen() {
                     )}
                     {item.status === 'failed' && (
                       <View style={up.thumbOverlay}>
-                        <Ionicons name="alert-circle" size={26} color="#fff" />
+                        <FontAwesome5 name="exclamation-circle" solid size={26} color="#fff" />
                       </View>
                     )}
                     {item.status === 'uploading' && (
@@ -1321,7 +1321,7 @@ export default function CampaignWorkspaceScreen() {
                     onPress={() => (item.status === 'done' ? handleRemoveFileUploadItem(item) : fileUploads.cancel(item.localId))}
                     hitSlop={6}
                   >
-                    <Ionicons name="close-circle" size={18} color={item.status === 'done' ? '#EF4444' : '#9CA3AF'} />
+                    <FontAwesome5 name="times-circle" solid size={18} color={item.status === 'done' ? '#EF4444' : '#9CA3AF'} />
                   </Pressable>
                 </View>
                 <Text style={up.videoLabel} numberOfLines={1}>
@@ -1339,7 +1339,7 @@ export default function CampaignWorkspaceScreen() {
 
             {(videoUploads.remainingSlots > 0 || fileUploads.remainingSlots > 0) && (
               <Pressable style={up.addDeliverableTile} onPress={handleAddDeliverable} hitSlop={6}>
-                <Ionicons name="add" size={28} color="#7C3AED" />
+                <FontAwesome5 name="plus" solid size={28} color="#7C3AED" />
               </Pressable>
             )}
           </View>
@@ -1361,7 +1361,7 @@ export default function CampaignWorkspaceScreen() {
               keyboardType="url"
             />
             <View style={[sh.infoBox, { backgroundColor: '#EEF2FF', borderColor: '#C7D2FE', marginTop: 8 }]}>
-              <Ionicons name="information-circle-outline" size={15} color="#4F46E5" />
+              <FontAwesome5 name="info-circle" solid size={15} color="#4F46E5" />
               <Text style={[sh.infoTxt, { color: '#4F46E5' }]}>{t('activityTimeline.modalUploadLinksPublicHint')}</Text>
             </View>
 
@@ -1372,7 +1372,7 @@ export default function CampaignWorkspaceScreen() {
                   const valid = isValidUrl(url);
                   return (
                     <View key={idx} style={[up.linkPreview, { borderColor: valid ? '#A7F3D0' : '#FECACA', backgroundColor: valid ? '#F0FDF4' : '#FEF2F2' }]}>
-                      <Ionicons name={valid ? 'checkmark-circle' : 'close-circle'} size={14} color={valid ? '#16A34A' : '#EF4444'} />
+                      <FontAwesome5 name={valid ? 'check-circle' : 'times-circle'} solid size={14} color={valid ? '#16A34A' : '#EF4444'} />
                       <Text style={[up.linkPreviewTxt, { color: valid ? '#065F46' : '#991B1B' }]} numberOfLines={1}>{url}</Text>
                     </View>
                   );
@@ -1395,12 +1395,12 @@ export default function CampaignWorkspaceScreen() {
         <View style={[sh.divider, { backgroundColor: '#E5E7EB', marginVertical: 12 }]} />
         {urlError ? (
           <View style={[up.errorRow, { marginBottom: 10 }]}>
-            <Ionicons name="alert-circle" size={13} color="#EF4444" />
+            <FontAwesome5 name="exclamation-circle" solid size={13} color="#EF4444" />
             <Text style={up.errorTxt}>{urlError}</Text>
           </View>
         ) : null}
         <Pressable style={[sh.primaryBtn, { backgroundColor: '#7C3AED', opacity: submitting ? 0.75 : 1, shadowColor: '#7C3AED', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]} onPress={handleSubmitWork} disabled={submitting}>
-          {submitting ? <ActivityIndicator size="small" color="#fff" /> : <><Ionicons name="cloud-upload-outline" size={17} color="#fff" /><Text style={sh.primaryBtnTxt}>{t('activityTimeline.modalUploadSubmitBtn')}</Text></>}
+          {submitting ? <ActivityIndicator size="small" color="#fff" /> : <><FontAwesome5 name="cloud-upload-alt" solid size={17} color="#fff" /><Text style={sh.primaryBtnTxt}>{t('activityTimeline.modalUploadSubmitBtn')}</Text></>}
         </Pressable>
       </BottomSheet>
 
@@ -1417,7 +1417,7 @@ export default function CampaignWorkspaceScreen() {
                   { backgroundColor: '#F0FDF4', shadowColor: '#16A34A', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
                 ]}
               >
-                <Ionicons name="videocam" size={14} color="#16A34A" />
+                <FontAwesome5 name="video" solid size={14} color="#16A34A" />
               </View>
               <Text style={rv.sectionTitle}>{t('activityTimeline.modalReviewVideosSection', { name: app?.creatorName ?? '—' })}</Text>
             </View>
@@ -1427,9 +1427,9 @@ export default function CampaignWorkspaceScreen() {
                   key={v.publicId}
                   style={rv.linkRow}
                   onPress={() => openPreviewFrom('review', () => setPlayingVideo(v))}>
-                  <Ionicons name="play-circle" size={16} color="#16A34A" />
+                  <FontAwesome5 name="play-circle" solid size={16} color="#16A34A" />
                   <Text style={rv.linkTxt} numberOfLines={1}>{v.label} · {formatDuration(v.durationSec)}</Text>
-                  <Ionicons name="chevron-forward" size={13} color="#A78BFA" />
+                  <FontAwesome5 name="chevron-right" solid size={13} color="#A78BFA" />
                 </Pressable>
               ))}
             </View>
@@ -1446,7 +1446,7 @@ export default function CampaignWorkspaceScreen() {
                   { backgroundColor: '#EFF6FF', shadowColor: '#2563EB', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
                 ]}
               >
-                <Ionicons name="images" size={14} color="#2563EB" />
+                <FontAwesome5 name="images" solid size={14} color="#2563EB" />
               </View>
               <Text style={rv.sectionTitle}>{t('activityTimeline.modalReviewFilesSection', { name: app?.creatorName ?? '—' })}</Text>
             </View>
@@ -1458,9 +1458,9 @@ export default function CampaignWorkspaceScreen() {
                   onPress={() => openPreviewFrom('review', () => (f.fileType === 'IMAGE'
                     ? setPreviewImage({ url: f.url, label: f.originalFileName })
                     : setPreviewDoc({ url: f.url, label: f.originalFileName })))}>
-                  <Ionicons name={f.fileType === 'IMAGE' ? 'image' : 'document-text'} size={16} color="#2563EB" />
+                  <FontAwesome5 name={f.fileType === 'IMAGE' ? 'image' : 'file-alt'} solid size={16} color="#2563EB" />
                   <Text style={rv.linkTxt} numberOfLines={1}>{f.originalFileName}</Text>
-                  <Ionicons name="chevron-forward" size={13} color="#A78BFA" />
+                  <FontAwesome5 name="chevron-right" solid size={13} color="#A78BFA" />
                 </Pressable>
               ))}
             </View>
@@ -1478,7 +1478,7 @@ export default function CampaignWorkspaceScreen() {
                   { backgroundColor: '#F5F3FF', shadowColor: '#7C3AED', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
                 ]}
               >
-                <Ionicons name="link" size={14} color="#7C3AED" />
+                <FontAwesome5 name="link" solid size={14} color="#7C3AED" />
               </View>
               <Text style={rv.sectionTitle}>{t('activityTimeline.modalReviewLinksSection', { name: app?.creatorName ?? '—' })}</Text>
             </View>
@@ -1494,9 +1494,9 @@ export default function CampaignWorkspaceScreen() {
                       Linking.openURL(normalizeUrl(url)).catch(() => showToast(t('activityTimeline.linkOpenFailed')));
                     }
                   }}>
-                  <Ionicons name={isDirectVideoUrl(url) ? 'play-circle' : 'open-outline'} size={14} color="#7C3AED" />
+                  <FontAwesome5 name={isDirectVideoUrl(url) ? 'play-circle' : 'external-link-alt'} solid size={14} color="#7C3AED" />
                   <Text style={rv.linkTxt} numberOfLines={2}>{url}</Text>
-                  <Ionicons name="chevron-forward" size={13} color="#A78BFA" />
+                  <FontAwesome5 name="chevron-right" solid size={13} color="#A78BFA" />
                 </Pressable>
               ))}
             </View>
@@ -1507,7 +1507,7 @@ export default function CampaignWorkspaceScreen() {
         {submittedUrls.length === 0 && (app?.deliverableVideos ?? []).length === 0 && (
           <View style={rv.section}>
             <View style={rv.noLinks}>
-              <Ionicons name="link-outline" size={20} color="#D1D5DB" />
+              <FontAwesome5 name="link" solid size={20} color="#D1D5DB" />
               <Text style={rv.noLinksTxt}>{t('activityTimeline.modalReviewNoLinks')}</Text>
             </View>
           </View>
@@ -1523,7 +1523,7 @@ export default function CampaignWorkspaceScreen() {
                   { backgroundColor: '#FFF7ED', shadowColor: '#D97706', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
                 ]}
               >
-                <Ionicons name="list" size={14} color="#D97706" />
+                <FontAwesome5 name="list" solid size={14} color="#D97706" />
               </View>
               <Text style={rv.sectionTitle}>{t('activityTimeline.modalReviewDeliverablesSection')}</Text>
             </View>
@@ -1545,7 +1545,7 @@ export default function CampaignWorkspaceScreen() {
           <Pressable
             style={[sh.primaryBtn, { flex: 1, backgroundColor: '#D97706', shadowColor: '#D97706', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]}
             onPress={() => { setShowReview(false); setTimeout(() => setShowRevision(true), 200); }}>
-            <Ionicons name="create-outline" size={15} color="#fff" />
+            <FontAwesome5 name="edit" size={15} color="#fff" />
             <Text style={sh.primaryBtnTxt}>{t('activityTimeline.acRevisionBtn')}</Text>
           </Pressable>
           <Pressable
@@ -1554,7 +1554,7 @@ export default function CampaignWorkspaceScreen() {
             onPress={() => { setShowReview(false); handleApprove(); }}>
             {submitting
               ? <ActivityIndicator size="small" color="#fff" />
-              : <><Ionicons name="checkmark-done-outline" size={15} color="#fff" /><Text style={sh.primaryBtnTxt}>{t('activityTimeline.acApproveBtn')}</Text></>}
+              : <><FontAwesome5 name="check-double" solid size={15} color="#fff" /><Text style={sh.primaryBtnTxt}>{t('activityTimeline.acApproveBtn')}</Text></>}
           </Pressable>
         </View>
       </BottomSheet>
@@ -1564,7 +1564,7 @@ export default function CampaignWorkspaceScreen() {
         <Text style={sh.sub}>{t('activityTimeline.modalRevisionSub')}</Text>
         {(app?.deliverableVideos ?? []).length > 0 && (
           <View style={[sh.infoBox, { backgroundColor: '#FFF7ED', borderColor: '#FED7AA', marginTop: 12 }]}>
-            <Ionicons name="information-circle-outline" size={15} color="#D97706" />
+            <FontAwesome5 name="info-circle" solid size={15} color="#D97706" />
             <Text style={[sh.infoTxt, { color: '#D97706' }]}>{t('activityTimeline.modalRevisionVideoNotice')}</Text>
           </View>
         )}
@@ -1606,7 +1606,7 @@ export default function CampaignWorkspaceScreen() {
 
         {paid && (
           <View style={[sh.warnBox, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}>
-            <Ionicons name="warning" size={20} color="#EF4444" />
+            <FontAwesome5 name="exclamation-triangle" solid size={20} color="#EF4444" />
             <View style={{ flex: 1 }}>
               <Text style={[sh.warnTitle, { color: '#EF4444' }]}>{t('activityTimeline.modalCancelFeeTitle')}</Text>
               <Text style={[sh.warnBody, { color: '#B91C1C' }]}>
@@ -1621,7 +1621,7 @@ export default function CampaignWorkspaceScreen() {
 
         {!paid && (
           <View style={[sh.infoBox, { backgroundColor: '#FFF7ED', borderColor: '#FED7AA', marginVertical: 12 }]}>
-            <Ionicons name="information-circle-outline" size={15} color="#D97706" />
+            <FontAwesome5 name="info-circle" solid size={15} color="#D97706" />
             <Text style={[sh.infoTxt, { color: '#D97706' }]}>{t('activityTimeline.modalCancelNoFee')}</Text>
           </View>
         )}

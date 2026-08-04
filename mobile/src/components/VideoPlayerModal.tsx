@@ -4,7 +4,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { F, RADIUS } from '@/utilities/constants';
 
@@ -67,7 +67,7 @@ export function VideoPlayerModal({ visible, url, title, onClose }: Props) {
           <View style={s.header}>
             <Text style={s.title} numberOfLines={1}>{title}</Text>
             <Pressable style={s.iconBtn} onPress={handleClose} hitSlop={8}>
-              <Ionicons name="close" size={22} color="#fff" />
+              <FontAwesome5 name="times" solid size={22} color="#fff" />
             </Pressable>
           </View>
 
@@ -88,7 +88,7 @@ export function VideoPlayerModal({ visible, url, title, onClose }: Props) {
             >
               {downloading
                 ? <ActivityIndicator size="small" color="#fff" />
-                : <Ionicons name="download-outline" size={18} color="#fff" />}
+                : <FontAwesome5 name="download" solid size={18} color="#fff" />}
               <Text style={s.downloadTxt}>{downloading ? 'Downloading…' : 'Download'}</Text>
             </Pressable>
           </View>

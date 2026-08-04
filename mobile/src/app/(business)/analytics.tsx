@@ -1,4 +1,4 @@
-import { FontAwesome5, Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { BackButton } from '@/components/BackButton';
 import { RangeDropdown } from '@/components/RangeDropdown';
 import { useCallback, useState, type ReactNode } from 'react';
@@ -127,12 +127,12 @@ export default function BusinessAnalyticsScreen() {
           <View style={s.grid}>
             <StatTile icon={<FontAwesome5 name="bullhorn" size={15} color={C.brinjal1} solid />} label={t('analytics.totalEvents')} value={totals.campaignsCreated.toLocaleString()} C={C} />
             <StatTile icon={<FontAwesome5 name="chart-line" size={15} color={C.brinjal1} solid />} label={t('analytics.activeEvents')} value={totals.activeCampaigns.toLocaleString()} C={C} />
-            <StatTile icon={<Ionicons name="checkmark-circle-outline" size={17} color={C.brinjal1} />} label={t('analytics.completedEvents')} value={totals.completedCampaigns.toLocaleString()} C={C} />
+            <StatTile icon={<FontAwesome5 name="check-circle" solid size={17} color={C.brinjal1} />} label={t('analytics.completedEvents')} value={totals.completedCampaigns.toLocaleString()} C={C} />
             <StatTile icon={<FontAwesome5 name="wallet" size={15} color={C.brinjal1} solid />} label={t('analytics.totalSpend')} value={fmtCurrency(totals.totalSpend)} C={C} />
             <StatTile icon={<FontAwesome5 name="paper-plane" size={15} color={C.brinjal1} solid />} label={t('analytics.applicationsReceived')} value={totals.applicationsReceived.toLocaleString()} C={C} />
             <StatTile icon={<FontAwesome5 name="user-plus" size={15} color={C.brinjal1} solid />} label={t('analytics.creatorsHired')} value={totals.creatorsHired.toLocaleString()} C={C} />
             <StatTile icon={<FontAwesome5 name="star" size={15} color={C.brinjal1} solid />} label={t('analytics.avgRatingGiven')} value={totals.averageRatingGiven.toFixed(1)} C={C} />
-            <StatTile icon={<Ionicons name="time-outline" size={17} color={C.brinjal1} />} label={t('analytics.responseTime')} value={`${totals.responseTimeAvgMins} min`} C={C} />
+            <StatTile icon={<FontAwesome5 name="clock" size={17} color={C.brinjal1} />} label={t('analytics.responseTime')} value={`${totals.responseTimeAvgMins} min`} C={C} />
           </View>
 
           {/* Monthly spending */}

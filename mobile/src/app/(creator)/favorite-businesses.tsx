@@ -1,5 +1,5 @@
 import { router, useFocusEffect } from 'expo-router';
-import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { useCallback, useMemo, useState } from 'react';
 import {
   FlatList,
@@ -49,7 +49,7 @@ function BusinessCard({ item, onRemove }: { item: BusinessListItem; onRemove: ()
       categoryBg={primaryMeta?.bg}
       extraCount={extraCats}
       stat={{
-        icon: 'megaphone-outline',
+        icon: 'bullhorn',
         iconSet: 'ionicons',
         color: hasEvents ? C.brinjal1 : C.textSecondary,
         text: hasEvents ? t('explore.businesses.campaignsBadge', { n: item._count.campaigns }) : t('explore.businesses.noEventsYet'),
@@ -60,7 +60,7 @@ function BusinessCard({ item, onRemove }: { item: BusinessListItem; onRemove: ()
         active: true,
         onToggle: onRemove,
         activeIcon: 'heart',
-        inactiveIcon: 'heart-outline',
+        inactiveIcon: 'heart',
         activeColor: '#EF4444',
         activeBg: '#FEE2E2',
       }}
@@ -149,7 +149,7 @@ export default function FavoriteBusinessesScreen() {
       <View style={[s.header, { backgroundColor: C.surface, borderBottomColor: C.border }]} accessibilityRole="header" accessibilityLabel={t('favoriteBrands.title')}>
         <BackButton />
         <View style={[s.searchBox, { flex: 1, backgroundColor: C.surface, borderColor: C.border }]}>
-          <Ionicons name="search-outline" size={18} color={C.textSecondary} />
+          <FontAwesome5 name="search" solid size={18} color={C.textSecondary} />
           <TextInput
             style={[s.searchInput, { color: C.text }]}
             placeholder={t('explore.businesses.searchPlaceholder')}
@@ -161,7 +161,7 @@ export default function FavoriteBusinessesScreen() {
           />
           {search.length > 0 && (
             <Pressable onPress={() => setSearch('')} hitSlop={10}>
-              <Ionicons name="close-circle" size={18} color={C.textSecondary} />
+              <FontAwesome5 name="times-circle" solid size={18} color={C.textSecondary} />
             </Pressable>
           )}
           <Pressable
@@ -172,7 +172,7 @@ export default function FavoriteBusinessesScreen() {
             ]}
             onPress={openFilter}
             hitSlop={6}>
-            <Ionicons name="options-outline" size={18} color={isFilterActive ? '#fff' : C.brinjal1} />
+            <FontAwesome5 name="sliders-h" solid size={18} color={isFilterActive ? '#fff' : C.brinjal1} />
             {isFilterActive && (
               <View style={s.filterCountBadge}>
                 <Text style={s.filterCountBadgeTxt}>{filterActiveCount}</Text>
@@ -194,9 +194,9 @@ export default function FavoriteBusinessesScreen() {
                 setLocations(next);
                 void load({ locations: next });
               }}>
-              <Ionicons name={loc.label === 'Remote' ? 'globe-outline' : 'location'} size={11} color={C.brinjal1} />
+              <FontAwesome5 name={loc.label === 'Remote' ? 'globe' : 'map-marker-alt'} solid size={11} color={C.brinjal1} />
               <Text style={[s.activePillText, { color: C.brinjal1 }]}>{loc.label}</Text>
-              <Ionicons name="close" size={12} color={C.brinjal1} />
+              <FontAwesome5 name="times" solid size={12} color={C.brinjal1} />
             </Pressable>
           ))}
           {platform ? (
@@ -204,7 +204,7 @@ export default function FavoriteBusinessesScreen() {
               style={[s.activePill, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}
               onPress={() => { setPlatform(''); void load({ platform: '' }); }}>
               <Text style={[s.activePillText, { color: C.brinjal1 }]}>{platform}</Text>
-              <Ionicons name="close" size={12} color={C.brinjal1} />
+              <FontAwesome5 name="times" solid size={12} color={C.brinjal1} />
             </Pressable>
           ) : null}
           {category ? (
@@ -212,7 +212,7 @@ export default function FavoriteBusinessesScreen() {
               style={[s.activePill, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}
               onPress={() => { setCategory(''); void load({ category: '' }); }}>
               <Text style={[s.activePillText, { color: C.brinjal1 }]}>{category}</Text>
-              <Ionicons name="close" size={12} color={C.brinjal1} />
+              <FontAwesome5 name="times" solid size={12} color={C.brinjal1} />
             </Pressable>
           ) : null}
           <Pressable onPress={() => { setCategory(''); setPlatform(''); setLocations([]); void load({ category: '', platform: '', locations: [] }); }}>
@@ -237,7 +237,7 @@ export default function FavoriteBusinessesScreen() {
           ListEmptyComponent={
             search || isFilterActive ? (
               <View style={s.empty}>
-                <FontAwesome5 name="search" size={40} color={C.textSecondary} style={s.emptyIcon} />
+                <FontAwesome5 name="search" solid size={40} color={C.textSecondary} style={s.emptyIcon} />
                 <Text style={[s.emptyTitle, { color: C.text }]}>{t('explore.businesses.noResultsFiltered')}</Text>
                 <Text style={[s.emptyHint, { color: C.textSecondary }]}>{t('explore.businesses.noResultsFilteredSub')}</Text>
               </View>

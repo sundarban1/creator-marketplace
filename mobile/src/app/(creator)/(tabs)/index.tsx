@@ -1,5 +1,5 @@
 import { router, useFocusEffect } from 'expo-router';
-import { FontAwesome5, Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Image, Keyboard, LayoutAnimation, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, UIManager, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -595,10 +595,10 @@ export default function HomeScreen() {
   }
 
   const FILTER_TABS = [
-    { key: 'all',          label: t('creator.home.tabAll'),         icon: 'layers-outline'   as const, color: TabColors.neutral.color },
-    { key: 'recommended',  label: t('creator.home.tabRecommended'), icon: 'star-outline'     as const, color: TabColors.info.color },
-    { key: 'trending',     label: t('creator.home.tabTrending'),    icon: 'flame-outline'    as const, color: TabColors.danger.color },
-    { key: 'ending-soon',  label: t('creator.home.tabEndingSoon'),  icon: 'timer-outline'    as const, color: TabColors.warning.color },
+    { key: 'all',          label: t('creator.home.tabAll'),         icon: 'layer-group'   as const, color: TabColors.neutral.color },
+    { key: 'recommended',  label: t('creator.home.tabRecommended'), icon: 'star'     as const, color: TabColors.info.color },
+    { key: 'trending',     label: t('creator.home.tabTrending'),    icon: 'fire'    as const, color: TabColors.danger.color },
+    { key: 'ending-soon',  label: t('creator.home.tabEndingSoon'),  icon: 'stopwatch'    as const, color: TabColors.warning.color },
   ];
 
   return (
@@ -627,7 +627,7 @@ export default function HomeScreen() {
         <Pressable
           style={[styles.searchCard, { backgroundColor: C.surface, borderColor: C.border }, searchFocused && styles.searchCardFocused]}
           onPress={() => searchInputRef.current?.focus()}>
-          <Ionicons name="search-outline" size={18} color={searchFocused ? C.brinjal1 : C.textSecondary} style={styles.searchIcon} />
+          <FontAwesome5 name="search" solid size={18} color={searchFocused ? C.brinjal1 : C.textSecondary} style={styles.searchIcon} />
           <TextInput
             ref={searchInputRef}
             style={[styles.searchInput, { color: C.text }]}
@@ -674,7 +674,7 @@ export default function HomeScreen() {
             ]}
             onPress={openFilter}
             hitSlop={6}>
-            <Ionicons name="options-outline" size={18} color={isFilterActive ? '#fff' : C.brinjal1} />
+            <FontAwesome5 name="sliders-h" solid size={18} color={isFilterActive ? '#fff' : C.brinjal1} />
             {isFilterActive && (
               <View style={styles.filterCountBadge}>
                 <Text style={styles.filterCountBadgeTxt}>{filterActiveCount}</Text>
@@ -692,7 +692,7 @@ export default function HomeScreen() {
                 SHADOW.card,
               ]}
             >
-              <Ionicons name="menu-outline" size={22} color={C.text} />
+              <FontAwesome5 name="bars" solid size={22} color={C.text} />
             </View>
           </Pressable>
         )}
@@ -812,7 +812,7 @@ export default function HomeScreen() {
                 { shadowColor: '#D97706', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
               ]}
             >
-              <Ionicons name="alert-circle" size={18} color="#D97706" />
+              <FontAwesome5 name="exclamation-circle" solid size={18} color="#D97706" />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.attentionTitle}>{t('creator.home.actionRequired')}</Text>
@@ -826,17 +826,17 @@ export default function HomeScreen() {
                   : t('creator.home.actionMultiple', { n: pendingActions.length })}
               </Text>
             </View>
-            <Ionicons name="chevron-forward" size={16} color="#D97706" />
+            <FontAwesome5 name="chevron-right" solid size={16} color="#D97706" />
           </Pressable>
         )}
 
         {/* ── Quick Actions ── */}
         <View style={styles.quickActionsRow}>
           {([
-            { icon: 'storefront-outline',    label: 'Businesses', bg: '#DCFCE7', color: '#059669', route: '/(creator)/explore-businesses' },
-            { icon: 'people-outline',        label: 'Creators',  bg: '#DBEAFE', color: '#2563EB', route: '/(creator)/explore-creators' },
-            { icon: 'heart-outline',         label: 'Saved',     bg: '#FEE2E2', color: '#DC2626', route: '/(creator)/favorite-businesses' },
-            { icon: 'document-text-outline', label: 'Proposals', bg: '#EDE9FE', color: '#7C3AED', route: '/(creator)/(tabs)/proposals' },
+            { icon: 'store',    label: 'Businesses', bg: '#DCFCE7', color: '#059669', route: '/(creator)/explore-businesses' },
+            { icon: 'users',        label: 'Creators',  bg: '#DBEAFE', color: '#2563EB', route: '/(creator)/explore-creators' },
+            { icon: 'heart',         label: 'Saved',     bg: '#FEE2E2', color: '#DC2626', route: '/(creator)/favorite-businesses' },
+            { icon: 'file-alt', label: 'Proposals', bg: '#EDE9FE', color: '#7C3AED', route: '/(creator)/(tabs)/proposals' },
           ] as const).map(({ icon, label, bg, color, route }) => (
             <Pressable
               key={label}
@@ -851,7 +851,7 @@ export default function HomeScreen() {
                   },
                 ]}
               >
-                <Ionicons name={icon} size={20} color={color} />
+                <FontAwesome5 name={icon} size={20} color={color} />
               </View>
               <Text style={[styles.quickActionLabel, { color: C.text }]}>{label}</Text>
             </Pressable>
@@ -872,7 +872,7 @@ export default function HomeScreen() {
                 },
               ]}
             >
-              <Ionicons name="person-outline" size={20} color={C.brinjal1} />
+              <FontAwesome5 name="user" solid size={20} color={C.brinjal1} />
             </View>
             <View style={styles.bannerText}>
               <Text style={[styles.bannerTitle, { color: C.text }]}>{t('creator.home.completeProfile')}</Text>
@@ -881,7 +881,7 @@ export default function HomeScreen() {
               </Text>
             </View>
             <Pressable style={styles.bannerClose} onPress={() => setBannerDismissed(true)} hitSlop={10}>
-              <Ionicons name="close" size={16} color={C.textSecondary} />
+              <FontAwesome5 name="times" solid size={16} color={C.textSecondary} />
             </Pressable>
           </Pressable>
         )}
@@ -900,7 +900,7 @@ export default function HomeScreen() {
                 },
               ]}
             >
-              <Ionicons name="gift-outline" size={20} color="#EC4899" />
+              <FontAwesome5 name="gift" solid size={20} color="#EC4899" />
             </View>
             <View style={styles.bannerText}>
               <Text style={[styles.bannerTitle, { color: C.text }]}>{t('referral.homeBannerTitle')}</Text>
@@ -918,7 +918,7 @@ export default function HomeScreen() {
               </Text>
             </View>
             <Pressable style={styles.bannerClose} onPress={() => setReferralBannerDismissed(true)} hitSlop={10}>
-              <Ionicons name="close" size={16} color={C.textSecondary} />
+              <FontAwesome5 name="times" solid size={16} color={C.textSecondary} />
             </Pressable>
           </Pressable>
         )}
@@ -1044,7 +1044,7 @@ export default function HomeScreen() {
               </ScrollView>
             ) : (
               <View style={[styles.featuredEmpty, { backgroundColor: C.surface, borderColor: C.border }]}>
-                <Ionicons name="star-outline" size={32} color={C.textSecondary} />
+                <FontAwesome5 name="star" size={32} color={C.textSecondary} />
                 <Text style={[styles.featuredEmptyTitle, { color: C.text }]}>{t('creator.home.noFeaturedEvents')}</Text>
                 <Text style={[styles.featuredEmptySub, { color: C.textSecondary }]}>{t('creator.home.noFeaturedEventsHint')}</Text>
               </View>
@@ -1057,7 +1057,7 @@ export default function HomeScreen() {
                 <Pressable
                   style={[styles.nearbyChip, { backgroundColor: C.primaryLight, borderColor: C.border }]}
                   onPress={() => setNearbySheetOpen(true)}>
-                  <Ionicons
+                  <FontAwesome5
                     name={nearbySource === 'current' ? 'navigate' : nearbySource === 'home' ? 'home' : 'pin'}
                     size={11} color={C.brinjal1}
                   />
@@ -1068,7 +1068,7 @@ export default function HomeScreen() {
                         ? `Home${nearbyHomeLabel ? ` · ${nearbyHomeLabel}` : ''}`
                         : 'Custom Location'}
                   </Text>
-                  <Ionicons name="chevron-down" size={11} color={C.brinjal1} />
+                  <FontAwesome5 name="chevron-down" solid size={11} color={C.brinjal1} />
                 </Pressable>
               </View>
             </View>
@@ -1083,13 +1083,13 @@ export default function HomeScreen() {
               </ScrollView>
             ) : nearbyLocationDenied && !nearbyHomeCoords ? (
               <View style={[styles.featuredEmpty, { backgroundColor: C.surface, borderColor: C.border }]}>
-                <Ionicons name="location-outline" size={32} color={C.textSecondary} />
+                <FontAwesome5 name="map-marker-alt" solid size={32} color={C.textSecondary} />
                 <Text style={[styles.featuredEmptyTitle, { color: C.text }]}>{t('creator.home.enableLocationTitle')}</Text>
                 <Text style={[styles.featuredEmptySub, { color: C.textSecondary }]}>{t('creator.home.enableLocationSub')}</Text>
               </View>
             ) : (
               <View style={[styles.featuredEmpty, { backgroundColor: C.surface, borderColor: C.border }]}>
-                <Ionicons name="navigate-outline" size={32} color={C.textSecondary} />
+                <FontAwesome5 name="location-arrow" solid size={32} color={C.textSecondary} />
                 <Text style={[styles.featuredEmptyTitle, { color: C.text }]}>{t('creator.home.noEventsWithinKm', { km: nearbyRadiusKm })}</Text>
                 {nearbyRadiusKm < 100 && (
                   <Pressable

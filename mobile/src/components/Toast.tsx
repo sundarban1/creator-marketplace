@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from 'react';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
@@ -25,11 +25,11 @@ type ToastCtx = {
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
-const VARIANT: Record<ToastVariant, { bg: string; border: string; icon: keyof typeof Ionicons.glyphMap; textColor: string; titleColor: string }> = {
-  success: { bg: '#F0FDF4', border: '#86EFAC', icon: 'checkmark-circle', textColor: '#166534', titleColor: '#15803D' },
-  error:   { bg: '#FEF2F2', border: '#FCA5A5', icon: 'close-circle',     textColor: '#991B1B', titleColor: '#DC2626' },
-  info:    { bg: '#EEF2FF', border: '#A5B4FC', icon: 'information-circle', textColor: '#3730A3', titleColor: '#4F46E5' },
-  warning: { bg: '#FFFBEB', border: '#FCD34D', icon: 'warning',         textColor: '#92400E', titleColor: '#D97706' },
+const VARIANT: Record<ToastVariant, { bg: string; border: string; icon: keyof typeof FontAwesome5.glyphMap; textColor: string; titleColor: string }> = {
+  success: { bg: '#F0FDF4', border: '#86EFAC', icon: 'check-circle', textColor: '#166534', titleColor: '#15803D' },
+  error:   { bg: '#FEF2F2', border: '#FCA5A5', icon: 'times-circle',     textColor: '#991B1B', titleColor: '#DC2626' },
+  info:    { bg: '#EEF2FF', border: '#A5B4FC', icon: 'info-circle', textColor: '#3730A3', titleColor: '#4F46E5' },
+  warning: { bg: '#FFFBEB', border: '#FCD34D', icon: 'exclamation-triangle',         textColor: '#92400E', titleColor: '#D97706' },
 };
 
 // ─── Context ──────────────────────────────────────────────────────────────────
@@ -91,14 +91,14 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           ]}
           pointerEvents="box-none">
           <Pressable style={styles.inner} onPress={dismiss}>
-            <Ionicons name={cfg.icon} size={19} color={cfg.titleColor} style={styles.icon} />
+            <FontAwesome5 name={cfg.icon} size={19} color={cfg.titleColor} style={styles.icon} />
             <View style={styles.texts}>
               {toast.title ? (
                 <Text style={[styles.title, { color: cfg.titleColor }]}>{toast.title}</Text>
               ) : null}
               <Text style={[styles.message, { color: cfg.textColor }]}>{toast.message}</Text>
             </View>
-            <Ionicons name="close" size={15} color={cfg.textColor} style={styles.dismiss} />
+            <FontAwesome5 name="times" solid size={15} color={cfg.textColor} style={styles.dismiss} />
           </Pressable>
         </Animated.View>
       )}

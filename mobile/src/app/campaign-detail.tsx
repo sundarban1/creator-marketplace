@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
-import { FontAwesome5, Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { BackButton } from '@/components/BackButton';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -432,7 +432,7 @@ export default function CampaignDetailScreen() {
     return (
       <SafeAreaView style={[s.container, { backgroundColor: C.background }]} edges={['top', 'bottom']}>
         <View style={s.centered}>
-          <FontAwesome5 name="search" size={40} color={C.textSecondary} />
+          <FontAwesome5 name="search" solid size={40} color={C.textSecondary} />
           <Text style={[{ fontSize: 17, fontWeight: '600' }, { color: C.textSecondary }]}>{error || t('campaignDetail.notFound')}</Text>
           <Pressable style={[s.goBackBtn, { backgroundColor: C.brinjal1 }]} onPress={() => router.back()}>
             <Text style={s.goBackBtnTxt}>{t('campaignDetail.goBack')}</Text>
@@ -499,7 +499,7 @@ export default function CampaignDetailScreen() {
             </View>
             <Text style={[s.brandName, { color: C.text }]}>{campaign.brand}</Text>
             <View style={[s.verifiedBadge, { backgroundColor: C.active }]}>
-              <Ionicons name="checkmark" size={10} color="#fff" />
+              <FontAwesome5 name="check" solid size={10} color="#fff" />
             </View>
             {campaign.platforms.length > 0 && (
               <View style={[s.platformTag, { marginLeft: 'auto' }]}>
@@ -609,7 +609,7 @@ export default function CampaignDetailScreen() {
             <View style={s.benefitsWrap}>
               {campaign.benefits.map((b, i) => (
                 <View key={i} style={[s.benefitChip, { backgroundColor: '#F0FDF4', borderColor: '#A7F3D0' }]}>
-                  <FontAwesome5 name="gift" size={12} color="#065F46" />
+                  <FontAwesome5 name="gift" solid size={12} color="#065F46" />
                   <Text style={[s.benefitChipTxt, { color: '#065F46' }]}>{b}</Text>
                 </View>
               ))}
@@ -676,7 +676,7 @@ export default function CampaignDetailScreen() {
           <Pressable
             style={({ pressed }) => [s.applyBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }, pressed && { opacity: 0.88 }]}
             onPress={openEdit}>
-            <Ionicons name="create-outline" size={16} color="#fff" />
+            <FontAwesome5 name="edit" size={16} color="#fff" />
             <Text style={s.applyBtnTxt}>{t('campaignDetail.editEvent')}</Text>
           </Pressable>
         ) : isOpenEvent && applicationStatus === 'accepted' ? (
@@ -691,7 +691,7 @@ export default function CampaignDetailScreen() {
           </View>
         ) : hasApplied ? (
           <View style={s.appliedBadge}>
-            <Ionicons name="checkmark-circle" size={18} color="#059669" />
+            <FontAwesome5 name="check-circle" solid size={18} color="#059669" />
             <Text style={s.appliedBadgeTxt}>{t('campaignDetail.alreadyApplied')}</Text>
           </View>
         ) : (
@@ -769,7 +769,7 @@ export default function CampaignDetailScreen() {
                       <Text style={[em.dateTxt, { color: editForm.eventDate ? C.text : C.textSecondary }]}>
                         {editForm.eventDate ? fmtDate(editForm.eventDate) : t('campaignDetail.eventDatePlaceholder')}
                       </Text>
-                      <Ionicons name="calendar-outline" size={16} color={C.textSecondary} />
+                      <FontAwesome5 name="calendar-alt" size={16} color={C.textSecondary} />
                     </Pressable>
                     {editErrors.eventDate ? <Text style={em.errTxt}>{editErrors.eventDate}</Text> : null}
 
@@ -780,7 +780,7 @@ export default function CampaignDetailScreen() {
                       <Text style={[em.dateTxt, { color: editForm.deadline ? C.text : C.textSecondary }]}>
                         {editForm.deadline ? fmtDate(editForm.deadline) : t('campaignDetail.deadlinePlaceholder')}
                       </Text>
-                      <Ionicons name="calendar-outline" size={16} color={C.textSecondary} />
+                      <FontAwesome5 name="calendar-alt" size={16} color={C.textSecondary} />
                     </Pressable>
                     {editErrors.deadline ? <Text style={em.errTxt}>{editErrors.deadline}</Text> : null}
 
@@ -992,7 +992,7 @@ export default function CampaignDetailScreen() {
         <Animated.View
           style={[s.toast, { opacity: toastOpacity, backgroundColor: toast.type === 'success' ? '#22C55E' : '#EF4444' }]}
           pointerEvents="none">
-          <Ionicons name={toast.type === 'success' ? 'checkmark-circle' : 'close-circle'} size={18} color="#fff" style={{ marginRight: 8 }} />
+          <FontAwesome5 name={toast.type === 'success' ? 'check-circle' : 'times-circle'} solid size={18} color="#fff" style={{ marginRight: 8 }} />
           <Text style={s.toastTxt}>{toast.message}</Text>
         </Animated.View>
       )}

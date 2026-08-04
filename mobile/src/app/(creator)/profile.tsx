@@ -1,5 +1,5 @@
 import { router, useFocusEffect } from 'expo-router';
-import { FontAwesome5, Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useCallback, useState } from 'react';
 import {
@@ -171,7 +171,7 @@ export default function CreatorProfileScreen() {
             <Pressable style={s.topIconBtn} hitSlop={4} onPress={handleCoverPress} disabled={coverUploading}>
               {coverUploading
                 ? <ActivityIndicator size="small" color="#fff" />
-                : <Ionicons name="camera" size={18} color="#fff" />}
+                : <FontAwesome5 name="camera" solid size={18} color="#fff" />}
             </Pressable>
           </View>
         </View>
@@ -199,7 +199,7 @@ export default function CreatorProfileScreen() {
               >
                 {avatarUploading
                   ? <ActivityIndicator size="small" color="#fff" />
-                  : <Ionicons name="camera" size={13} color="#fff" />}
+                  : <FontAwesome5 name="camera" solid size={13} color="#fff" />}
               </View>
             </Pressable>
           </View>
@@ -214,7 +214,7 @@ export default function CreatorProfileScreen() {
           ) : null}
           {profile?.location ? (
             <View style={s.locationRow}>
-              <Ionicons name="location-sharp" size={13} color={C.brinjal1} />
+              <FontAwesome5 name="map-marker-alt" solid size={13} color={C.brinjal1} />
               <Text style={[s.location, { color: C.textSecondary }]}>{profile.location}</Text>
             </View>
           ) : null}
@@ -227,13 +227,13 @@ export default function CreatorProfileScreen() {
             <Pressable
               style={[s.editBtn, { borderColor: C.brinjal1 }]}
               onPress={() => router.push('/(creator)/edit-profile')}>
-              <Ionicons name="create-outline" size={15} color={C.brinjal1} />
+              <FontAwesome5 name="edit" size={15} color={C.brinjal1} />
               <Text style={[s.editBtnText, { color: C.brinjal1 }]}>{t('profile.editProfile')}</Text>
             </Pressable>
             <Pressable
               style={[s.editBtn, { borderColor: C.brinjal1 }]}
               onPress={() => router.push('/(creator)/analytics' as never)}>
-              <Ionicons name="stats-chart-outline" size={15} color={C.brinjal1} />
+              <FontAwesome5 name="chart-bar" size={15} color={C.brinjal1} />
               <Text style={[s.editBtnText, { color: C.brinjal1 }]}>{t('analytics.headerTitle')}</Text>
             </Pressable>
           </View>
@@ -290,7 +290,7 @@ export default function CreatorProfileScreen() {
                       <Text style={[s.followerLbl, { color: acc.color + 'CC' }]}>{t('profile.followersLabel')}</Text>
                     </View>
                   )}
-                  <Ionicons name="chevron-forward" size={16} color={C.border} />
+                  <FontAwesome5 name="chevron-right" solid size={16} color={C.border} />
                 </Pressable>
               ))}
             </View>
@@ -360,14 +360,14 @@ export default function CreatorProfileScreen() {
                       <Text style={[s.socialName, { color: C.text }]} numberOfLines={1}>{item.label}</Text>
                       <Text style={[s.socialHandle, { color: C.textSecondary }]} numberOfLines={1}>{shortenUrl(item.url)}</Text>
                     </View>
-                    <Ionicons name="open-outline" size={16} color={C.textSecondary} />
+                    <FontAwesome5 name="external-link-alt" solid size={16} color={C.textSecondary} />
                   </Pressable>
                 );
               })}
               <Pressable
                 style={[s.addMoreRow, { borderColor: C.brinjal1 + '55' }]}
                 onPress={() => router.push('/(creator)/settings?section=past-work' as never)}>
-                <Ionicons name="add-circle-outline" size={16} color={C.brinjal1} />
+                <FontAwesome5 name="plus-circle" solid size={16} color={C.brinjal1} />
                 <Text style={[s.addMoreText, { color: C.brinjal1 }]}>{t('profile.addAnotherSample')}</Text>
               </Pressable>
             </View>

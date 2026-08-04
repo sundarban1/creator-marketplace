@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAppColors } from '@/context/ThemeContext';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
@@ -47,13 +47,13 @@ export function SavedListCard({
             <Text style={[styles.name, { color: C.text }]} numberOfLines={1}>{name}</Text>
             {verified && (
               <View style={[styles.verifiedBadge, { backgroundColor: '#E6F4EA' }]}>
-                <Ionicons name="checkmark" size={11} color="#16A34A" />
+                <FontAwesome5 name="check" solid size={11} color="#16A34A" />
               </View>
             )}
           </View>
           {children}
         </View>
-        <Ionicons name="chevron-forward" size={18} color={C.border} />
+        <FontAwesome5 name="chevron-right" solid size={18} color={C.border} />
       </Pressable>
 
       <View style={[styles.divider, { backgroundColor: C.border }]} />

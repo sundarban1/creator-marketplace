@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { PageHeader } from '@/features/creator/components/PageHeader';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -197,8 +197,8 @@ export default function EditProfileScreen() {
                 autoCorrect={false}
               />
               {usernameStatus === 'checking' && <ActivityIndicator size="small" color={C.textSecondary} />}
-              {usernameStatus === 'available' && <Ionicons name="checkmark-circle" size={18} color="#16A34A" />}
-              {(usernameStatus === 'taken' || usernameStatus === 'invalid') && <Ionicons name="close-circle" size={18} color={C.error} />}
+              {usernameStatus === 'available' && <FontAwesome5 name="check-circle" solid size={18} color="#16A34A" />}
+              {(usernameStatus === 'taken' || usernameStatus === 'invalid') && <FontAwesome5 name="times-circle" solid size={18} color={C.error} />}
             </View>
             {usernameStatus === 'taken' && <Text style={[styles.usernameHint, { color: C.error }]}>{t('profile.editCreator.usernameTakenError')}</Text>}
             {usernameStatus === 'invalid' && <Text style={[styles.usernameHint, { color: C.error }]}>{t('profile.editCreator.usernameInvalidHint')}</Text>}

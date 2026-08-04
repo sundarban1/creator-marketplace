@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { FontAwesome5, Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -92,7 +92,7 @@ export default function ForgotPasswordScreen() {
                   key={c}
                   onPress={() => { setChannel(c); setError(''); }}
                   style={[styles.channelTab, active && { backgroundColor: C.brinjal1 }]}>
-                  <Ionicons name={c === 'email' ? 'mail-outline' : 'call-outline'} size={14} color={active ? '#fff' : C.brinjal1} />
+                  <FontAwesome5 name={c === 'email' ? 'envelope' : 'phone'} size={14} color={active ? '#fff' : C.brinjal1} />
                   <Text style={[styles.channelTabText, { color: active ? '#fff' : C.brinjal1 }]}>
                     {c === 'email' ? t('auth.login.emailLabel') : t('creatorSettings.phoneNumberLabel')}
                   </Text>

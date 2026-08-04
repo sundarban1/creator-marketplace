@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { FilterSheet, FilterSectionHeader, ActiveFilterChips, type ActiveFilterChip } from '@/components/FilterSheet';
 import { FilterChip, FilterChipGroup } from '@/components/FilterChip';
@@ -80,9 +80,9 @@ function matchDeadlinePreset(today: Date, from: Date | null, to: Date | null) {
 
 export type EventTypeFilter = 'PAID_CAMPAIGN' | 'OPEN_EVENT';
 
-const EVENT_TYPE_OPTS: { value: EventTypeFilter; labelKey: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { value: 'PAID_CAMPAIGN', labelKey: 'filterModal.optionPaid', icon: 'cash-outline'   },
-  { value: 'OPEN_EVENT',    labelKey: 'filterModal.optionFree', icon: 'gift-outline'   },
+const EVENT_TYPE_OPTS: { value: EventTypeFilter; labelKey: string; icon: keyof typeof FontAwesome5.glyphMap }[] = [
+  { value: 'PAID_CAMPAIGN', labelKey: 'filterModal.optionPaid', icon: 'money-bill-alt'   },
+  { value: 'OPEN_EVENT',    labelKey: 'filterModal.optionFree', icon: 'gift'   },
 ];
 
 // Both selected by default (== no filter, show everything) — the group below
@@ -193,7 +193,7 @@ function DateRangePicker({
                 <Text style={[dp.inputValue, { color: date ? C.text : C.textSecondary }]} numberOfLines={1}>
                   {date ? fmtDate(date, monthsShort) : t('filterModal.datePlaceholder')}
                 </Text>
-                <Ionicons name="calendar-outline" size={16} color={active ? C.brinjal1 : C.textSecondary} />
+                <FontAwesome5 name="calendar-alt" size={16} color={active ? C.brinjal1 : C.textSecondary} />
               </Pressable>
             </View>
           );
@@ -349,7 +349,7 @@ export function FilterModal({
 
       {/* Event Type */}
       <View>
-        <FilterSectionHeader icon="pricetag-outline" label={t('filterModal.sectionEventType')} />
+        <FilterSectionHeader icon="tag" label={t('filterModal.sectionEventType')} />
         <FilterChipGroup
           options={EVENT_TYPE_OPTS.map(({ value, labelKey, icon }) => ({ value, label: t(labelKey), icon }))}
           selected={tempEventType}
@@ -363,7 +363,7 @@ export function FilterModal({
 
       {/* Budget — one-tap presets first, precise slider tucked behind "Custom" */}
       <View>
-        <FilterSectionHeader icon="cash-outline" label={t('filterModal.sectionBudget')} />
+        <FilterSectionHeader icon="money-bill-alt" label={t('filterModal.sectionBudget')} />
         <BudgetRangePicker
           visible={visible}
           presets={BUDGET_PRESETS}
@@ -378,7 +378,7 @@ export function FilterModal({
 
       {/* Deadline — same "presets first" concept as Budget */}
       <View>
-        <FilterSectionHeader icon="calendar-outline" label={t('filterModal.sectionDeadlineRange')} />
+        <FilterSectionHeader icon="calendar-alt" label={t('filterModal.sectionDeadlineRange')} />
         <View style={styles.presetRow}>
           {DEADLINE_PRESETS.map((p) => (
             <FilterChip
@@ -390,7 +390,7 @@ export function FilterModal({
           ))}
           <FilterChip
             label={t('filterModal.customLabel')}
-            icon="options-outline"
+            icon="sliders-h"
             selected={selectedDeadlineKey === 'custom'}
             onPress={() => setDeadlineCustomOpen(true)}
           />
@@ -405,7 +405,7 @@ export function FilterModal({
       {/* Location */}
       <View>
         <FilterSectionHeader
-          icon="location-outline"
+          icon="map-marker-alt"
           label={t('filterModal.sectionLocation')}
           hint={t('filterModal.locationsAllowed', { n: tempLocation.length, max: MAX_LOCS })}
         />

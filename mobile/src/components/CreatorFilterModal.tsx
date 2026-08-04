@@ -136,7 +136,7 @@ export function CreatorFilterModal({
       {availableCategories.length > 0 && (
         <View>
           <FilterSectionHeader
-            icon="pricetag-outline"
+            icon="tag"
             label={t('explore.category')}
             hint={temp.categories.length > 0 ? t('filterModal.selectedCount', { count: temp.categories.length }) : undefined}
           />
@@ -160,7 +160,7 @@ export function CreatorFilterModal({
 
       {/* Budget — one-tap presets first, precise slider tucked behind "Custom" */}
       <View>
-        <FilterSectionHeader icon="cash-outline" label={t('explore.priceRange')} />
+        <FilterSectionHeader icon="money-bill-alt" label={t('explore.priceRange')} />
         <BudgetRangePicker
           visible={visible}
           presets={BUDGET_PRESETS}
@@ -178,7 +178,7 @@ export function CreatorFilterModal({
       {allPlatforms.length > 0 && (
         <View>
           <FilterSectionHeader
-            icon="phone-portrait-outline"
+            icon="mobile-alt"
             label={t('explore.platform')}
             hint={temp.platforms.length > 0 ? t('filterModal.selectedCount', { count: temp.platforms.length }) : undefined}
           />
@@ -202,7 +202,7 @@ export function CreatorFilterModal({
       {/* Location — kept last */}
       <View>
         <FilterSectionHeader
-          icon="location-outline"
+          icon="map-marker-alt"
           label={t('explore.location')}
           hint={t('explore.locationsAllowed', { count: temp.locations.length, max: CREATOR_MAX_LOCS })}
         />

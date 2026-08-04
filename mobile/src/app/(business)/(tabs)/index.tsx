@@ -1,5 +1,5 @@
 import { router, useFocusEffect } from 'expo-router';
-import { FontAwesome5, Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { TabSlider } from '@/components/TabSlider';
@@ -164,9 +164,9 @@ export default function BusinessHomeScreen() {
   const openCount = campaigns.filter((c) => c.campaignType === 'OPEN_EVENT').length;
 
   const TYPE_TABS = [
-    { key: 'All',  label: t('business.home.tabAll'),      icon: 'layers-outline' as const,  color: TabColors.neutral.color, count: campaigns.length },
-    { key: 'Paid', label: t('business.home.tabPaid'),     icon: 'cash-outline'  as const,   color: TabColors.brand.color,   count: paidCount        },
-    { key: 'Open', label: t('business.home.tabOpenFree'), icon: 'gift-outline'  as const,   color: TabColors.info.color,    count: openCount        },
+    { key: 'All',  label: t('business.home.tabAll'),      icon: 'layer-group' as const,  color: TabColors.neutral.color, count: campaigns.length },
+    { key: 'Paid', label: t('business.home.tabPaid'),     icon: 'money-bill-alt'  as const,   color: TabColors.brand.color,   count: paidCount        },
+    { key: 'Open', label: t('business.home.tabOpenFree'), icon: 'gift'  as const,   color: TabColors.info.color,    count: openCount        },
   ];
 
   const recent = campaigns.filter(matchesType).slice(0, 5);
@@ -203,7 +203,7 @@ export default function BusinessHomeScreen() {
               SHADOW.card,
             ]}
           >
-            <Ionicons name="menu-outline" size={22} color={C.text} />
+            <FontAwesome5 name="bars" solid size={22} color={C.text} />
           </View>
         </Pressable>
       </View>
@@ -233,7 +233,7 @@ export default function BusinessHomeScreen() {
                   { shadowColor: '#D97706', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
                 ]}
               >
-                <Ionicons name="alert-circle" size={18} color="#D97706" />
+                <FontAwesome5 name="exclamation-circle" solid size={18} color="#D97706" />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.attentionTitle}>{t('business.home.attentionTitle')}</Text>
@@ -243,17 +243,17 @@ export default function BusinessHomeScreen() {
                     : t('business.home.attentionProposalsPlural', { n: attentionCount })}
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={16} color="#D97706" />
+              <FontAwesome5 name="chevron-right" solid size={16} color="#D97706" />
             </Pressable>
           )}
 
           {/* ── Quick Actions ── */}
           <View style={styles.quickActionsRow}>
             {([
-              { icon: 'add-circle-outline' as const,  label: t('business.home.quickActionCreate'),    bg: '#EDE9FE', color: '#7C3AED', route: '/create-campaign' },
-              { icon: 'people-outline' as const,       label: t('business.home.quickActionCreators'),      bg: '#DCFCE7', color: '#059669', route: '/(business)/explore-creators' },
-              { icon: 'chatbubbles-outline'as const,  label: t('business.home.quickActionMessages'),  bg: '#DBEAFE', color: '#2563EB', route: '/(business)/messages' },
-              { icon: 'briefcase-outline'  as const,  label: t('business.home.quickActionEvents'),    bg: '#FEF3C7', color: '#D97706', route: '/(business)/campaigns' },
+              { icon: 'plus-circle' as const,  label: t('business.home.quickActionCreate'),    bg: '#EDE9FE', color: '#7C3AED', route: '/create-campaign' },
+              { icon: 'users' as const,       label: t('business.home.quickActionCreators'),      bg: '#DCFCE7', color: '#059669', route: '/(business)/explore-creators' },
+              { icon: 'comments'as const,  label: t('business.home.quickActionMessages'),  bg: '#DBEAFE', color: '#2563EB', route: '/(business)/messages' },
+              { icon: 'briefcase'  as const,  label: t('business.home.quickActionEvents'),    bg: '#FEF3C7', color: '#D97706', route: '/(business)/campaigns' },
             ]).map(({ icon, label, bg, color, route }) => (
               <Pressable key={label} style={[styles.quickAction, { backgroundColor: C.surface, borderColor: C.border }]}
                 onPress={() => router.push(route as never)}>
@@ -266,7 +266,7 @@ export default function BusinessHomeScreen() {
                     },
                   ]}
                 >
-                  <Ionicons name={icon} size={20} color={color} />
+                  <FontAwesome5 name={icon} size={20} color={color} />
                 </View>
                 <Text style={[styles.quickActionLabel, { color: C.text }]}>{label}</Text>
               </Pressable>
@@ -287,7 +287,7 @@ export default function BusinessHomeScreen() {
                   },
                 ]}
               >
-                <Ionicons name="business-outline" size={20} color={C.brinjal1} />
+                <FontAwesome5 name="building" solid size={20} color={C.brinjal1} />
               </View>
               <View style={styles.bannerText}>
                 <Text style={[styles.bannerTitle, { color: C.text }]}>{t('business.home.completeProfile')}</Text>
@@ -296,7 +296,7 @@ export default function BusinessHomeScreen() {
                 </Text>
               </View>
               <Pressable style={styles.bannerClose} onPress={() => setBannerDismissed(true)} hitSlop={10}>
-                <Ionicons name="close" size={16} color={C.textSecondary} />
+                <FontAwesome5 name="times" solid size={16} color={C.textSecondary} />
               </Pressable>
             </Pressable>
           )}
@@ -325,7 +325,7 @@ export default function BusinessHomeScreen() {
                   },
                 ]}
               >
-                <Ionicons name="gift-outline" size={20} color="#EC4899" />
+                <FontAwesome5 name="gift" solid size={20} color="#EC4899" />
               </View>
               <View style={styles.bannerText}>
                 <Text style={[styles.bannerTitle, { color: C.text }]}>{t('businessReferral.homeBannerTitle')}</Text>
@@ -343,7 +343,7 @@ export default function BusinessHomeScreen() {
                 </Text>
               </View>
               <Pressable style={styles.bannerClose} onPress={() => setReferralBannerDismissed(true)} hitSlop={10}>
-                <Ionicons name="close" size={16} color={C.textSecondary} />
+                <FontAwesome5 name="times" solid size={16} color={C.textSecondary} />
               </Pressable>
             </Pressable>
           )}
@@ -382,7 +382,7 @@ export default function BusinessHomeScreen() {
           </View>
         ) : recent.length === 0 ? (
           <View style={styles.emptyWrap}>
-            <Ionicons name="document-text" size={48} color={C.textSecondary} />
+            <FontAwesome5 name="file-alt" solid size={48} color={C.textSecondary} />
             <Text style={[styles.emptyTitle, { color: C.text }]}>{t('business.home.noEventsTitle')}</Text>
             <Text style={[styles.emptyHint, { color: C.textSecondary }]}>{t('business.home.noEventsSub')}</Text>
             <Pressable
@@ -443,7 +443,7 @@ export default function BusinessHomeScreen() {
                       <Text style={[styles.detailText, styles.budgetText, { color: C.text }]}>{c.budget}</Text>
                     </View>
                     <View style={styles.detailRow}>
-                      <Ionicons name="people" size={14} color={C.textSecondary} />
+                      <FontAwesome5 name="users" solid size={14} color={C.textSecondary} />
                       <Text style={[styles.detailText, { color: C.textSecondary }]}>
                         {c.proposals} {t('business.home.proposalsLabel')}
                       </Text>
@@ -467,7 +467,7 @@ export default function BusinessHomeScreen() {
                       style={({ pressed }) => [styles.viewDetailsBtn, { borderColor: C.brinjal1 }, pressed && { opacity: 0.7 }]}
                       onPress={() => router.push({ pathname: '/campaign-detail', params: { campaignId: c.id } })}>
                       <Text style={[styles.viewDetailsText, { color: C.brinjal1 }]}>{t('business.home.viewDetails')}</Text>
-                      <Ionicons name="arrow-forward" size={12} color={C.brinjal1} />
+                      <FontAwesome5 name="arrow-right" solid size={12} color={C.brinjal1} />
                     </Pressable>
                   </View>
                 </Pressable>

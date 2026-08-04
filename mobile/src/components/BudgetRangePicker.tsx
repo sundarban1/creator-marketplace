@@ -49,7 +49,7 @@ export function BudgetRangePicker({
         ))}
         <FilterChip
           label={customLabel}
-          icon="options-outline"
+          icon="sliders-h"
           selected={selectedKey === 'custom'}
           onPress={() => setCustomOpen(true)}
         />

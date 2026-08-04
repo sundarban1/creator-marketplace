@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import {
   Pressable,
   StyleSheet,
@@ -132,7 +132,7 @@ export function PlacesAutocompleteInput({
                 key={place.place_id}
                 style={[styles.item, i < suggestions.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}
                 onPress={() => handleSelect(place)}>
-                <Ionicons name="location" size={14} color={C.textSecondary} />
+                <FontAwesome5 name="map-marker-alt" solid size={14} color={C.textSecondary} />
                 <Text style={[styles.itemText, { color: C.text }]} numberOfLines={2}>{place.description}</Text>
               </Pressable>
             ))}

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAppColors } from '@/context/ThemeContext';
 import { BottomSheet } from '@/components/BottomSheet';
@@ -58,14 +58,14 @@ const s = StyleSheet.create({
 // introduce every section in every filter sheet across the app, so it lives
 // here once instead of being redrawn per screen.
 
-type IoniconName = keyof typeof Ionicons.glyphMap;
+type IoniconName = keyof typeof FontAwesome5.glyphMap;
 
 export function FilterSectionHeader({ icon, label, hint }: { icon: IoniconName; label: string; hint?: string }) {
   const C = useAppColors();
   return (
     <View style={h.row}>
       <View style={h.titleRow}>
-        <Ionicons name={icon} size={13} color={C.textSecondary} />
+        <FontAwesome5 name={icon} size={13} color={C.textSecondary} />
         <Text style={[h.label, { color: C.textSecondary }]}>{label}</Text>
       </View>
       {hint ? <Text style={[h.hint, { color: C.textSecondary }]}>{hint}</Text> : null}
@@ -98,7 +98,7 @@ export function ActiveFilterChips({ chips }: { chips: ActiveFilterChip[] }) {
           style={[a.chip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}
           onPress={chip.onClear}>
           <Text style={[a.chipText, { color: C.brinjal1 }]} numberOfLines={1}>{chip.label}</Text>
-          <Ionicons name="close" size={13} color={C.brinjal1} />
+          <FontAwesome5 name="times" solid size={13} color={C.brinjal1} />
         </Pressable>
       ))}
     </View>

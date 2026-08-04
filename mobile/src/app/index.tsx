@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { useEffect, useRef } from 'react';
 import { Animated, Image, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useLanguage } from '@/context/LanguageContext';
@@ -18,7 +18,7 @@ const TEAL    = '#2EC4C4';
 // ─── Scattered icon ────────────────────────────────────────────────────────────
 
 type IconProps = {
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: keyof typeof FontAwesome5.glyphMap;
   size?: number;
   top?: number;
   left?: number;
@@ -35,7 +35,7 @@ function FIcon({
 }: IconProps) {
   return (
     <View style={{ position: 'absolute', top, left, right, bottom, opacity, transform: [{ rotate }] }}>
-      <Ionicons name={icon} size={size} color={color} />
+      <FontAwesome5 name={icon} size={size} color={color} />
     </View>
   );
 }
@@ -155,26 +155,26 @@ export default function SplashScreen() {
       {/* Top row */}
       <FIcon  icon="camera"             size={ss(52)}  top={sy(66)}  left={sx(24)}   rotate="-10deg" color={TEAL} />
       <FLabel text="wow"                              top={sy(52)}  left={sx(104)}  rotate="5deg"  color={TEAL}  fontSize={ss(17)} />
-      <FIcon  icon="desktop-outline"    size={ss(50)}  top={sy(62)}  right={sx(20)}  rotate="7deg"  color={PINK} />
+      <FIcon  icon="desktop"    size={ss(50)}  top={sy(62)}  right={sx(20)}  rotate="7deg"  color={PINK} />
       <FLabel text="http://"                          top={sy(66)}  right={sx(76)}  rotate="-4deg" color="#444"  fontSize={ss(11)} opacity={0.4} />
       <FLabel text="like"                             top={sy(52)}  left={sx(170)}  rotate="-4deg" color={PINK}  fontSize={ss(14)} />
-      <FIcon  icon="at-circle"          size={ss(38)}  top={sy(128)} left={sx(14)}   rotate="12deg" color={PINK}  opacity={0.6} />
+      <FIcon  icon="at"          size={ss(38)}  top={sy(128)} left={sx(14)}   rotate="12deg" color={PINK}  opacity={0.6} />
       <FIcon  icon="heart"              size={ss(22)}  top={sy(140)} right={sx(56)}  rotate="14deg" color={PINK}  opacity={0.8} />
       <FLabel text="REPOST"                           top={sy(196)} left={sx(120)}  rotate="-3deg" color={PINK}  fontSize={ss(12)} weight="900" opacity={0.7} />
 
       {/* Upper-mid */}
       <FIcon  icon="arrow-up"           size={ss(28)}  top={sy(192)} left={sx(18)}   rotate="-30deg" color={TEAL} opacity={0.6} />
       <FIcon  icon="wifi"               size={ss(34)}  top={sy(230)} left={sx(72)}   rotate="-5deg"  color={TEAL} opacity={0.62} />
-      <FIcon  icon="laptop-outline"     size={ss(50)}  top={sy(196)} right={sx(10)}  rotate="6deg"   color={TEAL} />
-      <FIcon  icon="radio-button-on"    size={ss(24)}  top={sy(252)} right={sx(66)}  rotate="0deg"   color={TEAL} opacity={0.55} />
+      <FIcon  icon="laptop"     size={ss(50)}  top={sy(196)} right={sx(10)}  rotate="6deg"   color={TEAL} />
+      <FIcon  icon="dot-circle"    size={ss(24)}  top={sy(252)} right={sx(66)}  rotate="0deg"   color={TEAL} opacity={0.55} />
 
       {/* FOLLOW block */}
       <FBlock lines={['FOLLOW']} top={sy(290)} left={sx(10)} rotate="-6deg" color={PINK} />
 
       {/* Mid */}
-      <FIcon  icon="phone-portrait-outline" size={ss(38)} top={sy(360)} left={sx(12)}  rotate="9deg"  color={PINK} opacity={0.65} />
+      <FIcon  icon="mobile-alt" size={ss(38)} top={sy(360)} left={sx(12)}  rotate="9deg"  color={PINK} opacity={0.65} />
       <FLabel text="HELLO"                              top={sy(374)} right={sx(52)} rotate="-5deg" color={TEAL} fontSize={ss(20)} weight="900" opacity={0.8} />
-      <FIcon  icon="headset-outline"    size={ss(44)}  top={sy(416)} right={sx(12)}  rotate="8deg"   color={TEAL} opacity={0.68} />
+      <FIcon  icon="headset"    size={ss(44)}  top={sy(416)} right={sx(12)}  rotate="8deg"   color={TEAL} opacity={0.68} />
       <FLabel text="online"                             top={sy(470)} right={sx(64)} rotate="-6deg" color={PINK} fontSize={ss(15)} opacity={0.82} />
       <FIcon  icon="arrow-down"         size={ss(26)}  top={sy(510)} left={sx(22)}   rotate="18deg"  color={PINK} opacity={0.58} />
       <FIcon  icon="star"               size={ss(20)}  top={sy(490)} left={sx(90)}   rotate="12deg"  color={TEAL} opacity={0.6} />
@@ -183,16 +183,16 @@ export default function SplashScreen() {
       <FBlock lines={['Social', 'Media']} bottom={sy(220)} left={sx(0)} rotate="-2deg" color={TEAL} />
 
       <FLabel text="online"                             bottom={sy(218)} left={sx(14)}  rotate="-5deg" color={TEAL} fontSize={ss(11)} opacity={0.65} />
-      <FIcon  icon="arrow-back"         size={ss(28)}  bottom={sy(262)} left={sx(96)}  rotate="170deg" color={TEAL} opacity={0.55} />
+      <FIcon  icon="arrow-left"         size={ss(28)}  bottom={sy(262)} left={sx(96)}  rotate="170deg" color={TEAL} opacity={0.55} />
       <FLabel text=".com"                               bottom={sy(204)} left={sx(134)} rotate="5deg"  color="#444" fontSize={ss(14)} opacity={0.45} />
 
       {/* Bottom */}
       <FIcon  icon="headset"            size={ss(40)}  bottom={sy(152)} left={sx(52)}  rotate="6deg"   color={TEAL} opacity={0.62} />
-      <FIcon  icon="mail"               size={ss(42)}  bottom={sy(164)} right={sx(14)} rotate="-9deg"  color={PINK} opacity={0.68} />
+      <FIcon  icon="envelope"               size={ss(42)}  bottom={sy(164)} right={sx(14)} rotate="-9deg"  color={PINK} opacity={0.68} />
       <FLabel text="LIKE"                              bottom={sy(118)} left={sx(114)} rotate="-8deg" color={PINK}  fontSize={ss(20)} weight="900" opacity={0.82} />
       <FLabel text="Hi!"                                bottom={sy(128)} right={sx(46)} rotate="10deg" color="#D94F5C" fontSize={ss(24)} weight="900" opacity={0.85} />
-      <FIcon  icon="tablet-portrait-outline" size={ss(36)} bottom={sy(76)} left={sx(14)} rotate="-12deg" color={PINK} opacity={0.6} />
-      <FIcon  icon="phone-portrait"     size={ss(22)}  bottom={sy(60)}  left={sx(56)}  rotate="6deg"   color={TEAL} opacity={0.55} />
+      <FIcon  icon="tablet-alt" size={ss(36)} bottom={sy(76)} left={sx(14)} rotate="-12deg" color={PINK} opacity={0.6} />
+      <FIcon  icon="mobile-alt"     size={ss(22)}  bottom={sy(60)}  left={sx(56)}  rotate="6deg"   color={TEAL} opacity={0.55} />
 
       {/* ─── Center content ─── */}
       <View style={styles.center}>
@@ -200,12 +200,12 @@ export default function SplashScreen() {
         {/* Role chips */}
         <View style={styles.roleRow}>
           <View style={[styles.chip, { backgroundColor: `${PINK}1A`, borderColor: `${PINK}50` }]}>
-            <Ionicons name="camera-outline" size={12} color={PINK} />
+            <FontAwesome5 name="camera" solid size={12} color={PINK} />
             <Text style={[styles.chipText, { color: PINK }]}>{t('splash.roleCreator')}</Text>
           </View>
           <View style={styles.chipDivider} />
           <View style={[styles.chip, { backgroundColor: `${TEAL}1A`, borderColor: `${TEAL}50` }]}>
-            <Ionicons name="briefcase-outline" size={12} color={TEAL} />
+            <FontAwesome5 name="briefcase" solid size={12} color={TEAL} />
             <Text style={[styles.chipText, { color: TEAL }]}>{t('splash.roleBusiness')}</Text>
           </View>
         </View>

@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { FontAwesome5, Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import * as Speech from 'expo-speech';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -472,14 +472,14 @@ function MultiCheckboxDropdown({
       <Pressable
         style={[dp.trigger, { backgroundColor: C.background, borderColor: error ? ERROR_RED : values.length > 0 ? C.brinjal1 : C.border }]}
         onPress={() => setOpen(true)}>
-        <Ionicons name="flag-outline" size={16} color={values.length > 0 ? C.brinjal1 : C.textSecondary} />
+        <FontAwesome5 name="flag" size={16} color={values.length > 0 ? C.brinjal1 : C.textSecondary} />
         <Text style={[dp.triggerText, { color: values.length > 0 ? C.text : C.textSecondary }]} numberOfLines={1}>{label}</Text>
         {values.length > 0 && (
           <View style={[mc.badge, { backgroundColor: C.brinjal1 }]}>
             <Text style={mc.badgeText}>{values.length}</Text>
           </View>
         )}
-        <Ionicons name="chevron-down" size={16} color={C.textSecondary} />
+        <FontAwesome5 name="chevron-down" solid size={16} color={C.textSecondary} />
       </Pressable>
       {error && <Text style={dp.error}>{error}</Text>}
 
@@ -492,7 +492,7 @@ function MultiCheckboxDropdown({
               style={[mc.row, { backgroundColor: checked ? C.primaryLight : 'transparent' }]}
               onPress={() => toggle(opt)}>
               <View style={[mc.checkbox, { borderColor: checked ? C.brinjal1 : C.border, backgroundColor: checked ? C.brinjal1 : 'transparent' }]}>
-                {checked && <Ionicons name="checkmark" size={13} color="#fff" />}
+                {checked && <FontAwesome5 name="check" solid size={13} color="#fff" />}
               </View>
               <Text style={[mc.rowLabel, { color: checked ? C.brinjal1 : C.text, fontFamily: checked ? F.semibold : F.regular }]}>{opt}</Text>
             </Pressable>
@@ -650,10 +650,10 @@ function DeadlinePicker({ value, onChange, error, colors, label }: {
         </Text>
         {value ? (
           <Pressable hitSlop={10} onPress={(e) => { e.stopPropagation(); onChange(null); }}>
-            <Ionicons name="close-circle" size={18} color={C.textSecondary} />
+            <FontAwesome5 name="times-circle" solid size={18} color={C.textSecondary} />
           </Pressable>
         ) : (
-          <Ionicons name="calendar-outline" size={18} color={C.textSecondary} />
+          <FontAwesome5 name="calendar-alt" size={18} color={C.textSecondary} />
         )}
       </Pressable>
       {error && <Text style={dp.error}>{error}</Text>}
@@ -787,7 +787,7 @@ const ov = StyleSheet.create({
 function PreviewRow({
   icon, label, value, colors, last,
 }: {
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: keyof typeof FontAwesome5.glyphMap;
   label: string;
   value: string;
   colors: ReturnType<typeof useAppColors>;
@@ -798,7 +798,7 @@ function PreviewRow({
     <View style={[s.summaryRow, !last && { borderBottomWidth: 1, borderBottomColor: C.border }]}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, width: 150 }}>
         <View style={[sc.iconChip, { width: 24, height: 24, backgroundColor: `${C.brinjal1}1A`, shadowColor: C.brinjal1 }]}>
-          <Ionicons name={icon} size={12} color={C.brinjal1} />
+          <FontAwesome5 name={icon} size={12} color={C.brinjal1} />
         </View>
         <Text style={[s.summaryLabel, { width: undefined, color: C.textSecondary }]}>{label}</Text>
       </View>
@@ -1467,15 +1467,15 @@ export default function CreateCampaignScreen() {
                   <Text style={[s.stepSectionHeading, { color: C.text }]}>{t('createEvent.eventTypeHeading')}</Text>
                   <Pressable onPress={() => setNeedHelpVisible(true)} hitSlop={8} style={[s.needHelpLinkRow, { borderColor: C.brinjal1 }]}>
                     <Text style={[s.needHelpLinkText, { color: C.brinjal1 }]}>{t('createEvent.needHelpLink')}</Text>
-                    <Ionicons name="help" size={15} color={C.brinjal1} />
+                    <FontAwesome5 name="question-circle" solid size={15} color={C.brinjal1} />
                   </Pressable>
                 </View>
 
                 <View style={{ gap: 10 }}>
                   {(
                     [
-                      { key: 'PAID_CAMPAIGN' as const, icon: 'cash-outline' as const,     title: t('createEvent.tabPaidEvent'), desc: t('createEvent.paidEventSub'), tone: TabColors.brand },
-                      { key: 'OPEN_EVENT'    as const, icon: 'calendar-outline' as const, title: t('createEvent.tabOpenEvent'), desc: t('createEvent.openEventSub'), tone: TabColors.info },
+                      { key: 'PAID_CAMPAIGN' as const, icon: 'money-bill-alt' as const,     title: t('createEvent.tabPaidEvent'), desc: t('createEvent.paidEventSub'), tone: TabColors.brand },
+                      { key: 'OPEN_EVENT'    as const, icon: 'calendar-alt' as const, title: t('createEvent.tabOpenEvent'), desc: t('createEvent.openEventSub'), tone: TabColors.info },
                     ]
                   ).map((opt) => {
                     const selected = form.eventType === opt.key;
@@ -1490,13 +1490,13 @@ export default function CreateCampaignScreen() {
                           { transform: [{ scale: pressed ? 0.97 : 1 }] },
                         ]}>
                         <View style={[s.optionIconWrap, { backgroundColor: opt.tone.bg, shadowColor: opt.tone.color }]}>
-                          <Ionicons name={opt.icon} size={20} color={opt.tone.color} />
+                          <FontAwesome5 name={opt.icon} size={20} color={opt.tone.color} />
                         </View>
                         <View style={s.optionTextWrap}>
                           <Text style={[s.optionTitle, { color: C.text }]}>{opt.title}</Text>
                           <Text style={[s.optionDesc, { color: C.textSecondary }]}>{opt.desc}</Text>
                         </View>
-                        {selected && <Ionicons name="checkmark-circle" size={20} color={opt.tone.color} />}
+                        {selected && <FontAwesome5 name="check-circle" solid size={20} color={opt.tone.color} />}
                       </Pressable>
                     );
                   })}
@@ -1512,8 +1512,8 @@ export default function CreateCampaignScreen() {
                     <View style={{ gap: 8 }}>
                       {(
                         [
-                          { key: 'text' as const,  icon: 'create-outline' as const, title: t('createEvent.promptModeText'),  desc: t('createEvent.promptModeTextDesc'),  tone: TabColors.neutral },
-                          { key: 'audio' as const, icon: 'mic-outline' as const,    title: t('createEvent.promptModeAudio'), desc: t('createEvent.promptModeAudioDesc'), tone: TabColors.positive },
+                          { key: 'text' as const,  icon: 'edit' as const, title: t('createEvent.promptModeText'),  desc: t('createEvent.promptModeTextDesc'),  tone: TabColors.neutral },
+                          { key: 'audio' as const, icon: 'microphone' as const,    title: t('createEvent.promptModeAudio'), desc: t('createEvent.promptModeAudioDesc'), tone: TabColors.positive },
                         ]
                       ).map((opt) => {
                         const selected = promptMode === opt.key;
@@ -1528,13 +1528,13 @@ export default function CreateCampaignScreen() {
                               { transform: [{ scale: pressed ? 0.97 : 1 }] },
                             ]}>
                             <View style={[s.optionIconWrap, { width: 34, height: 34, backgroundColor: opt.tone.bg, shadowColor: opt.tone.color }]}>
-                              <Ionicons name={opt.icon} size={16} color={opt.tone.color} />
+                              <FontAwesome5 name={opt.icon} size={16} color={opt.tone.color} />
                             </View>
                             <View style={s.optionTextWrap}>
                               <Text style={[s.optionTitle, { color: C.text }]}>{opt.title}</Text>
                               <Text style={[s.optionDesc, { color: C.textSecondary }]}>{opt.desc}</Text>
                             </View>
-                            {selected && <Ionicons name="checkmark-circle" size={18} color={opt.tone.color} />}
+                            {selected && <FontAwesome5 name="check-circle" solid size={18} color={opt.tone.color} />}
                           </Pressable>
                         );
                       })}
@@ -1584,7 +1584,7 @@ export default function CreateCampaignScreen() {
                               style={[ai.exampleChip, ai.sampleChip, { borderColor: C.border, backgroundColor: C.background }]}
                               onPress={() => handlePlaySample(idx, text, lang)}
                               disabled={aiLoading}>
-                              <Ionicons
+                              <FontAwesome5
                                 name={playingSampleIdx === idx ? 'stop-circle' : 'play-circle'}
                                 size={15}
                                 color={playingSampleIdx === idx ? C.brinjal1 : C.textSecondary}
@@ -1623,7 +1623,7 @@ export default function CreateCampaignScreen() {
                     ) : (
                       <>
                         <Text style={s.generateBtnText}>{t('createEvent.createEventBtn')}</Text>
-                        <Ionicons name="arrow-forward" size={18} color="#fff" />
+                        <FontAwesome5 name="arrow-right" solid size={18} color="#fff" />
                       </>
                     )}
                   </Pressable>
@@ -1641,8 +1641,8 @@ export default function CreateCampaignScreen() {
                     <View style={{ gap: 8 }}>
                       {(
                         [
-                          { key: 'text' as const,  icon: 'create-outline' as const, title: t('createEvent.promptModeText'),  desc: t('createEvent.promptModeTextDesc'),  tone: TabColors.neutral },
-                          { key: 'audio' as const, icon: 'mic-outline' as const,    title: t('createEvent.promptModeAudio'), desc: t('createEvent.promptModeAudioDesc'), tone: TabColors.positive },
+                          { key: 'text' as const,  icon: 'edit' as const, title: t('createEvent.promptModeText'),  desc: t('createEvent.promptModeTextDesc'),  tone: TabColors.neutral },
+                          { key: 'audio' as const, icon: 'microphone' as const,    title: t('createEvent.promptModeAudio'), desc: t('createEvent.promptModeAudioDesc'), tone: TabColors.positive },
                         ]
                       ).map((opt) => {
                         const selected = promptMode === opt.key;
@@ -1657,13 +1657,13 @@ export default function CreateCampaignScreen() {
                               { transform: [{ scale: pressed ? 0.97 : 1 }] },
                             ]}>
                             <View style={[s.optionIconWrap, { width: 34, height: 34, backgroundColor: opt.tone.bg, shadowColor: opt.tone.color }]}>
-                              <Ionicons name={opt.icon} size={16} color={opt.tone.color} />
+                              <FontAwesome5 name={opt.icon} size={16} color={opt.tone.color} />
                             </View>
                             <View style={s.optionTextWrap}>
                               <Text style={[s.optionTitle, { color: C.text }]}>{opt.title}</Text>
                               <Text style={[s.optionDesc, { color: C.textSecondary }]}>{opt.desc}</Text>
                             </View>
-                            {selected && <Ionicons name="checkmark-circle" size={18} color={opt.tone.color} />}
+                            {selected && <FontAwesome5 name="check-circle" solid size={18} color={opt.tone.color} />}
                           </Pressable>
                         );
                       })}
@@ -1713,7 +1713,7 @@ export default function CreateCampaignScreen() {
                               style={[ai.exampleChip, ai.sampleChip, { borderColor: C.border, backgroundColor: C.background }]}
                               onPress={() => handlePlaySample(idx, text, lang)}
                               disabled={aiLoading}>
-                              <Ionicons
+                              <FontAwesome5
                                 name={playingSampleIdx === idx ? 'stop-circle' : 'play-circle'}
                                 size={15}
                                 color={playingSampleIdx === idx ? C.brinjal1 : C.textSecondary}
@@ -1752,7 +1752,7 @@ export default function CreateCampaignScreen() {
                     ) : (
                       <>
                         <Text style={s.generateBtnText}>{t('createEvent.createEventBtn')}</Text>
-                        <Ionicons name="arrow-forward" size={18} color="#fff" />
+                        <FontAwesome5 name="arrow-right" solid size={18} color="#fff" />
                       </>
                     )}
                   </Pressable>
@@ -1772,7 +1772,7 @@ export default function CreateCampaignScreen() {
                       the Open Event banner below and the home feed's banner style. */}
                   <View style={[s.reviewBanner, { backgroundColor: C.surface, borderLeftColor: C.brinjal1 }]}>
                     <View style={[s.reviewBannerIconWrap, { backgroundColor: C.primaryLight, shadowColor: C.brinjal1 }]}>
-                      <Ionicons name="sparkles-outline" size={20} color={C.brinjal1} />
+                      <FontAwesome5 name="magic" solid size={20} color={C.brinjal1} />
                     </View>
                     <View style={{ flex: 1, gap: 2 }}>
                       <Text style={[s.reviewBannerTitle, { color: C.text }]}>{t('createEvent.paidBannerTitle')}</Text>
@@ -1781,7 +1781,7 @@ export default function CreateCampaignScreen() {
                   </View>
 
                   {/* Editable title */}
-                  <SectionCard title={t('createEvent.secEventTitlePaid')} icon="create-outline" colors={C}>
+                  <SectionCard title={t('createEvent.secEventTitlePaid')} icon="edit" colors={C}>
                     <TextInput
                       style={[s.input, { backgroundColor: C.background, borderColor: reviewErrors.title ? ERROR_RED : C.border, color: C.text }]}
                       value={form.title}
@@ -1796,7 +1796,7 @@ export default function CreateCampaignScreen() {
                   </SectionCard>
 
                   {/* Feature image */}
-                  <SectionCard title={t('createEvent.secFeatureImageTitle')} sub={t('createEvent.secFeatureImageSub')} icon="image-outline" colors={C}>
+                  <SectionCard title={t('createEvent.secFeatureImageTitle')} sub={t('createEvent.secFeatureImageSub')} icon="image" colors={C}>
                     <FeatureImagePicker
                       imageUrl={form.featureImageUrl}
                       category={form.template}
@@ -1812,7 +1812,7 @@ export default function CreateCampaignScreen() {
                     <View style={s.descHeaderRow}>
                       <View style={[sc.titleRow, s.descHeaderText]}>
                         <View style={[sc.iconChip, { backgroundColor: `${C.brinjal1}1A`, shadowColor: C.brinjal1 }]}>
-                          <Ionicons name="document-text-outline" size={14} color={C.brinjal1} />
+                          <FontAwesome5 name="file-alt" solid size={14} color={C.brinjal1} />
                         </View>
                         <Text style={[sc.title, { color: C.text }]} numberOfLines={1}>{t('createEvent.secDescPaid')}</Text>
                       </View>
@@ -1837,7 +1837,7 @@ export default function CreateCampaignScreen() {
                   </SectionCard>
 
                   {/* Objective */}
-                  <SectionCard title={t('createEvent.secObjectiveTitle')} sub={t('createEvent.secObjectiveSub')} icon="flag-outline" colors={C}>
+                  <SectionCard title={t('createEvent.secObjectiveTitle')} sub={t('createEvent.secObjectiveSub')} icon="flag" colors={C}>
                     <TextInput
                       style={[s.textarea, { backgroundColor: C.background, borderColor: C.border, color: C.text, minHeight: 70 }]}
                       value={form.objective}
@@ -1848,7 +1848,7 @@ export default function CreateCampaignScreen() {
                   </SectionCard>
 
                   {/* Goal */}
-                  <SectionCard title={t('createEvent.secGoalsTitle')} sub={t('createEvent.secGoalsSub')} icon="trophy-outline" colors={C}>
+                  <SectionCard title={t('createEvent.secGoalsTitle')} sub={t('createEvent.secGoalsSub')} icon="trophy" colors={C}>
                     <ChipGroup
                       options={GOAL_OPTIONS}
                       value={form.goals[0] ?? GOAL_OPTIONS[0]!}
@@ -1858,7 +1858,7 @@ export default function CreateCampaignScreen() {
                   </SectionCard>
 
                   {/* Target Audience */}
-                  <SectionCard title={t('createEvent.secTargetAudienceTitle')} sub={t('createEvent.secTargetAudienceSub')} icon="people-outline" colors={C}>
+                  <SectionCard title={t('createEvent.secTargetAudienceTitle')} sub={t('createEvent.secTargetAudienceSub')} icon="users" colors={C}>
                     <ChipMultiGroup
                       options={CREATOR_TYPES}
                       values={form.targetAudience}
@@ -1868,7 +1868,7 @@ export default function CreateCampaignScreen() {
                   </SectionCard>
 
                   {/* Platform */}
-                  <SectionCard title={t('createEvent.secPlatformTitle')} sub={t('createEvent.secPlatformSub')} icon="share-social-outline" colors={C}>
+                  <SectionCard title={t('createEvent.secPlatformTitle')} sub={t('createEvent.secPlatformSub')} icon="share-alt" colors={C}>
                     <PlatformChipGroup
                       options={platformOptions}
                       values={form.platforms}
@@ -1883,7 +1883,7 @@ export default function CreateCampaignScreen() {
                   </SectionCard>
 
                   {/* Deliverables */}
-                  <SectionCard title={t('createEvent.secDeliverablesTitle')} sub={t('createEvent.secDeliverablesSub')} icon="layers-outline" colors={C}>
+                  <SectionCard title={t('createEvent.secDeliverablesTitle')} sub={t('createEvent.secDeliverablesSub')} icon="layer-group" colors={C}>
                     <DeliverablesCounterList
                       value={form.deliverables}
                       onChange={(v) => update('deliverables', v)}
@@ -1893,7 +1893,7 @@ export default function CreateCampaignScreen() {
                   </SectionCard>
 
                   {/* Hashtags */}
-                  <SectionCard title={t('createEvent.secHashtagsTitle')} icon="pricetag-outline" colors={C}>
+                  <SectionCard title={t('createEvent.secHashtagsTitle')} icon="tag" colors={C}>
                     <HashtagEditor
                       hashtags={form.hashtags}
                       onChange={(v) => update('hashtags', v)}
@@ -1903,7 +1903,7 @@ export default function CreateCampaignScreen() {
                   </SectionCard>
 
                   {/* Budget */}
-                  <SectionCard title={t('createEvent.secBudgetTitle')} sub={t('createEvent.secBudgetSub')} icon="cash-outline" colors={C}>
+                  <SectionCard title={t('createEvent.secBudgetTitle')} sub={t('createEvent.secBudgetSub')} icon="money-bill-alt" colors={C}>
                     <BudgetTierPicker
                       budgetMin={form.aiBudgetMin}
                       budgetMax={form.aiBudgetMax}
@@ -1918,7 +1918,7 @@ export default function CreateCampaignScreen() {
                   </SectionCard>
 
                   {/* Applications Close */}
-                  <SectionCard title={t('createEvent.secDeadlineTitle')} sub={t('createEvent.secDeadlineSub')} icon="calendar-outline" colors={C}>
+                  <SectionCard title={t('createEvent.secDeadlineTitle')} sub={t('createEvent.secDeadlineSub')} icon="calendar-alt" colors={C}>
                     <DeadlinePicker
                       value={form.deadline}
                       onChange={(d) => {
@@ -1931,7 +1931,7 @@ export default function CreateCampaignScreen() {
                   </SectionCard>
 
                   {/* Creators Needed */}
-                  <SectionCard title={t('createEvent.secCreatorsNeededTitle')} sub={t('createEvent.secCreatorsNeededSub')} icon="person-add-outline" colors={C}>
+                  <SectionCard title={t('createEvent.secCreatorsNeededTitle')} sub={t('createEvent.secCreatorsNeededSub')} icon="user-plus" colors={C}>
                     <Stepper value={form.creatorsNeeded} onChange={(v) => update('creatorsNeeded', v)} colors={C} />
                   </SectionCard>
 
@@ -1949,7 +1949,7 @@ export default function CreateCampaignScreen() {
                     style={[s.draftBtn, { borderColor: C.border, opacity: loading ? 0.6 : 1 }]}
                     onPress={handleSaveDraft}
                     disabled={loading}>
-                    <Ionicons name="save-outline" size={16} color={C.textSecondary} />
+                    <FontAwesome5 name="save" size={16} color={C.textSecondary} />
                     <Text style={[s.draftBtnText, { color: C.textSecondary }]}>{t('createEvent.saveDraftBtn')}</Text>
                   </Pressable>
 
@@ -1958,14 +1958,14 @@ export default function CreateCampaignScreen() {
                     <Pressable
                       style={[s.editBtn, { borderColor: C.brinjal1 }]}
                       onPress={() => setPhase('setup')}>
-                      <Ionicons name="chevron-back" size={16} color={C.brinjal1} />
+                      <FontAwesome5 name="chevron-left" solid size={16} color={C.brinjal1} />
                       <Text style={[s.editBtnText, { color: C.brinjal1 }]}>{t('createEvent.editInputsBtn')}</Text>
                     </Pressable>
                     <Pressable
                       style={[s.publishBtn, { backgroundColor: C.brinjal1 }]}
                       onPress={handleContinueToConfirm}>
                       <Text style={s.publishBtnText}>{t('createEvent.continueToReviewBtn')}</Text>
-                      <Ionicons name="arrow-forward" size={18} color="#fff" />
+                      <FontAwesome5 name="arrow-right" solid size={18} color="#fff" />
                     </Pressable>
                   </View>
                 </>
@@ -1977,7 +1977,7 @@ export default function CreateCampaignScreen() {
                   {/* Review header — icon box + left accent, matching the home feed's banner style. */}
                   <View style={[s.reviewBanner, { backgroundColor: C.surface, borderLeftColor: C.brinjal1 }]}>
                     <View style={[s.reviewBannerIconWrap, { backgroundColor: C.primaryLight, shadowColor: C.brinjal1 }]}>
-                      <Ionicons name="eye-outline" size={20} color={C.brinjal1} />
+                      <FontAwesome5 name="eye" size={20} color={C.brinjal1} />
                     </View>
                     <View style={{ flex: 1, gap: 2 }}>
                       <Text style={[s.reviewBannerTitle, { color: C.text }]}>{t('createEvent.openBannerTitle')}</Text>
@@ -1986,7 +1986,7 @@ export default function CreateCampaignScreen() {
                   </View>
 
                   {/* Title */}
-                  <SectionCard title={t('createEvent.secEventTitleOpen')} sub={t('createEvent.secEventTitleOpenSub')} icon="create-outline" colors={C}>
+                  <SectionCard title={t('createEvent.secEventTitleOpen')} sub={t('createEvent.secEventTitleOpenSub')} icon="edit" colors={C}>
                     <TextInput
                       style={[s.input, { backgroundColor: C.background, borderColor: reviewErrors.title ? ERROR_RED : C.border, color: C.text }]}
                       value={form.title}
@@ -1998,7 +1998,7 @@ export default function CreateCampaignScreen() {
                   </SectionCard>
 
                   {/* Feature image */}
-                  <SectionCard title={t('createEvent.secFeatureImageTitle')} sub={t('createEvent.secFeatureImageSub')} icon="image-outline" colors={C}>
+                  <SectionCard title={t('createEvent.secFeatureImageTitle')} sub={t('createEvent.secFeatureImageSub')} icon="image" colors={C}>
                     <FeatureImagePicker
                       imageUrl={form.featureImageUrl}
                       category={form.template}
@@ -2015,7 +2015,7 @@ export default function CreateCampaignScreen() {
                       <View style={s.descHeaderText}>
                         <View style={sc.titleRow}>
                           <View style={[sc.iconChip, { backgroundColor: `${C.brinjal1}1A`, shadowColor: C.brinjal1 }]}>
-                            <Ionicons name="document-text-outline" size={14} color={C.brinjal1} />
+                            <FontAwesome5 name="file-alt" solid size={14} color={C.brinjal1} />
                           </View>
                           <Text style={[sc.title, { color: C.text }]}>{t('createEvent.secDescOpen')}</Text>
                         </View>
@@ -2042,7 +2042,7 @@ export default function CreateCampaignScreen() {
                   </SectionCard>
 
                   {/* Creator Benefits — auto-selected, editable */}
-                  <SectionCard title={t('createEvent.secBenefitsTitle')} sub={t('createEvent.secBenefitsSub')} icon="gift-outline" colors={C}>
+                  <SectionCard title={t('createEvent.secBenefitsTitle')} sub={t('createEvent.secBenefitsSub')} icon="gift" colors={C}>
                     <View style={cg.wrap}>
                       {BENEFITS.map((benefit) => {
                         const checked = form.benefits.includes(benefit);
@@ -2064,12 +2064,12 @@ export default function CreateCampaignScreen() {
                   </SectionCard>
 
                   {/* Capacity */}
-                  <SectionCard title={t('createEvent.secCapacityTitle')} sub={t('createEvent.secCapacitySub')} icon="people-outline" colors={C}>
+                  <SectionCard title={t('createEvent.secCapacityTitle')} sub={t('createEvent.secCapacitySub')} icon="users" colors={C}>
                     <Stepper value={form.capacity} onChange={(v) => update('capacity', v)} min={1} max={500} colors={C} />
                   </SectionCard>
 
                   {/* Platform (optional) */}
-                  <SectionCard title={t('createEvent.secPlatformOptTitle')} sub={t('createEvent.secPlatformOptSub')} icon="share-social-outline" colors={C}>
+                  <SectionCard title={t('createEvent.secPlatformOptTitle')} sub={t('createEvent.secPlatformOptSub')} icon="share-alt" colors={C}>
                     <ChipGroup
                       options={['Instagram', 'TikTok', 'YouTube', 'Facebook', notRequiredLabel]}
                       value={form.platforms[0] ?? notRequiredLabel}
@@ -2079,7 +2079,7 @@ export default function CreateCampaignScreen() {
                   </SectionCard>
 
                   {/* Event Date */}
-                  <SectionCard title={t('createEvent.secEventDateTitle')} sub={t('createEvent.secEventDateSub')} icon="calendar-outline" colors={C}>
+                  <SectionCard title={t('createEvent.secEventDateTitle')} sub={t('createEvent.secEventDateSub')} icon="calendar-alt" colors={C}>
                     <DeadlinePicker
                       value={form.eventDate}
                       onChange={(d) => {
@@ -2094,7 +2094,7 @@ export default function CreateCampaignScreen() {
                   </SectionCard>
 
                   {/* Registration Deadline — auto-set to eventDate - 2 days */}
-                  <SectionCard title={t('createEvent.secRegDeadlineTitle')} sub={t('createEvent.secRegDeadlineSub')} icon="time-outline" colors={C}>
+                  <SectionCard title={t('createEvent.secRegDeadlineTitle')} sub={t('createEvent.secRegDeadlineSub')} icon="clock" colors={C}>
                     <DeadlinePicker
                       value={form.deadline}
                       onChange={(d) => {
@@ -2108,7 +2108,7 @@ export default function CreateCampaignScreen() {
                   </SectionCard>
 
                   {/* Event summary */}
-                  <SectionCard title={t('createEvent.secEventSummaryTitle')} icon="clipboard-outline" colors={C}>
+                  <SectionCard title={t('createEvent.secEventSummaryTitle')} icon="clipboard" colors={C}>
                     {[
                       { label: t('createEvent.summaryCategory'), value: form.template || '—' },
                       { label: t('createEvent.summaryVenue'),    value: form.venue || t('createEvent.summaryTBD') },
@@ -2136,14 +2136,14 @@ export default function CreateCampaignScreen() {
                     style={[s.draftBtn, { borderColor: C.border, opacity: loading ? 0.6 : 1 }]}
                     onPress={handleSaveDraft}
                     disabled={loading}>
-                    <Ionicons name="save-outline" size={16} color={C.textSecondary} />
+                    <FontAwesome5 name="save" size={16} color={C.textSecondary} />
                     <Text style={[s.draftBtnText, { color: C.textSecondary }]}>{t('createEvent.saveDraftBtn')}</Text>
                   </Pressable>
 
                   {/* Actions */}
                   <View style={s.reviewActions}>
                     <Pressable style={[s.editBtn, { borderColor: C.brinjal1 }]} onPress={() => setPhase('setup')}>
-                      <Ionicons name="chevron-back" size={16} color={C.brinjal1} />
+                      <FontAwesome5 name="chevron-left" solid size={16} color={C.brinjal1} />
                       <Text style={[s.editBtnText, { color: C.brinjal1 }]}>{t('createEvent.editEventBtn')}</Text>
                     </Pressable>
                     <Pressable
@@ -2173,13 +2173,13 @@ export default function CreateCampaignScreen() {
                   as one continuous system rather than a bare list. */}
               <View style={[sc.card, { backgroundColor: C.surface, borderColor: C.border, gap: 2 }]}>
                 <Text style={[sc.title, { color: C.text }]}>{t('createEvent.secSummaryTitle')}</Text>
-                <PreviewRow icon="location-outline" label={t('createEvent.summaryLocation')} value={form.location || t('createEvent.summaryRemote')} colors={C} />
-                <PreviewRow icon="people-outline" label={t('createEvent.confirmSectionWho')} value={form.targetAudience.join(', ') || '—'} colors={C} />
-                <PreviewRow icon="share-social-outline" label={t('createEvent.confirmSectionPlatforms')} value={form.platforms.join(', ') || '—'} colors={C} />
-                <PreviewRow icon="film-outline" label={t('createEvent.confirmSectionDeliverables')} value={summarizeDeliverables(form.deliverables, form.goals, t)} colors={C} />
-                <PreviewRow icon="cash-outline" label={t('createEvent.confirmSectionBudget')} value={`Rs. ${form.aiBudgetMin.toLocaleString()} – ${form.aiBudgetMax.toLocaleString()}`} colors={C} />
-                <PreviewRow icon="calendar-outline" label={t('createEvent.confirmSectionCloses')} value={form.deadline ? fmtDate(form.deadline) : '—'} colors={C} />
-                <PreviewRow icon="star-outline" label={t('createEvent.confirmSectionFeatured')} value={form.isFeatured ? t('createEvent.yes') : t('createEvent.no')} colors={C} last />
+                <PreviewRow icon="map-marker-alt" label={t('createEvent.summaryLocation')} value={form.location || t('createEvent.summaryRemote')} colors={C} />
+                <PreviewRow icon="users" label={t('createEvent.confirmSectionWho')} value={form.targetAudience.join(', ') || '—'} colors={C} />
+                <PreviewRow icon="share-alt" label={t('createEvent.confirmSectionPlatforms')} value={form.platforms.join(', ') || '—'} colors={C} />
+                <PreviewRow icon="film" label={t('createEvent.confirmSectionDeliverables')} value={summarizeDeliverables(form.deliverables, form.goals, t)} colors={C} />
+                <PreviewRow icon="money-bill-alt" label={t('createEvent.confirmSectionBudget')} value={`Rs. ${form.aiBudgetMin.toLocaleString()} – ${form.aiBudgetMax.toLocaleString()}`} colors={C} />
+                <PreviewRow icon="calendar-alt" label={t('createEvent.confirmSectionCloses')} value={form.deadline ? fmtDate(form.deadline) : '—'} colors={C} />
+                <PreviewRow icon="star" label={t('createEvent.confirmSectionFeatured')} value={form.isFeatured ? t('createEvent.yes') : t('createEvent.no')} colors={C} last />
               </View>
 
               {/* Actions */}
@@ -2187,7 +2187,7 @@ export default function CreateCampaignScreen() {
                 <Pressable
                   style={[s.editBtn, { borderColor: C.brinjal1 }]}
                   onPress={() => setPhase('review')}>
-                  <Ionicons name="chevron-back" size={16} color={C.brinjal1} />
+                  <FontAwesome5 name="chevron-left" solid size={16} color={C.brinjal1} />
                   <Text style={[s.editBtnText, { color: C.brinjal1 }]}>{t('createEvent.backToEditBtn')}</Text>
                 </Pressable>
                 <Pressable
@@ -2208,7 +2208,7 @@ export default function CreateCampaignScreen() {
         <Pressable style={s.warnScrim} onPress={() => setPublishWarnVisible(false)}>
           <Pressable style={[s.warnSheet, { backgroundColor: C.surface }]} onPress={(e) => e.stopPropagation()}>
             <View style={s.warnIconWrap}>
-              <Ionicons name="warning" size={32} color="#F59E0B" />
+              <FontAwesome5 name="exclamation-triangle" solid size={32} color="#F59E0B" />
             </View>
             <Text style={[s.warnTitle, { color: C.text }]}>{t('createEvent.warnTitle')}</Text>
             <Text style={[s.warnBody, { color: C.textSecondary }]}>
@@ -2235,7 +2235,7 @@ export default function CreateCampaignScreen() {
             <View style={s.helpHeaderRow}>
               <Text style={[s.warnTitle, { color: C.text, marginBottom: 0, textAlign: 'left' }]}>{t('createEvent.needHelpTitle')}</Text>
               <Pressable onPress={closeNeedHelp} hitSlop={8}>
-                <Ionicons name="close" size={22} color={C.textSecondary} />
+                <FontAwesome5 name="times" solid size={22} color={C.textSecondary} />
               </Pressable>
             </View>
             <Text style={[s.helpSub, { color: C.textSecondary }]}>{t('createEvent.needHelpSub')}</Text>
@@ -2265,7 +2265,7 @@ export default function CreateCampaignScreen() {
                           shadowColor: tone.color, shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5,
                         },
                       ]}>
-                      <Ionicons name={isPlaying ? 'stop' : 'play'} size={20} color={isPlaying ? '#fff' : tone.color} />
+                      <FontAwesome5 name={isPlaying ? 'stop' : 'play'} solid size={20} color={isPlaying ? '#fff' : tone.color} />
                     </View>
                     <Text style={[s.helpCardLabel, { color: C.text }]}>
                       {lang === 'en' ? t('createEvent.needHelpEnglish') : t('createEvent.needHelpNepali')}
@@ -2304,7 +2304,7 @@ export default function CreateCampaignScreen() {
         <Animated.View
           style={[s.toast, { opacity: toastOpacity, backgroundColor: toast.type === 'success' ? '#22C55E' : '#EF4444' }]}
           pointerEvents="none">
-          <Ionicons name={toast.type === 'success' ? 'checkmark-circle' : 'close-circle'} size={18} color="#fff" style={{ marginRight: 8 }} />
+          <FontAwesome5 name={toast.type === 'success' ? 'check-circle' : 'times-circle'} solid size={18} color="#fff" style={{ marginRight: 8 }} />
           <Text style={s.toastText}>{toast.message}</Text>
         </Animated.View>
       )}

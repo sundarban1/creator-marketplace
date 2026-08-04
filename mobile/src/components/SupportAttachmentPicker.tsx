@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { View, Text, Pressable, Image, ActivityIndicator, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { pickImageFromLibrary } from '@/utilities/chatAttachments';
 import { supportService } from '@/services/support';
 import { useLanguage } from '@/context/LanguageContext';
@@ -75,11 +75,11 @@ export function SupportAttachmentPicker({
             )}
             {item.failed && (
               <View style={styles.overlay}>
-                <Ionicons name="alert-circle" size={20} color="#fff" />
+                <FontAwesome5 name="exclamation-circle" solid size={20} color="#fff" />
               </View>
             )}
             <Pressable style={styles.removeBadge} onPress={() => handleRemove(item.id)} hitSlop={6}>
-              <Ionicons name="close-circle" size={18} color="#EF4444" />
+              <FontAwesome5 name="times-circle" solid size={18} color="#EF4444" />
             </Pressable>
           </View>
         ))}
@@ -88,7 +88,7 @@ export function SupportAttachmentPicker({
             style={[styles.addTile, { borderColor: C.border, backgroundColor: C.surface }]}
             onPress={handleAdd}
             hitSlop={6}>
-            <Ionicons name="add" size={22} color={C.brinjal1} />
+            <FontAwesome5 name="plus" solid size={22} color={C.brinjal1} />
           </Pressable>
         )}
       </View>

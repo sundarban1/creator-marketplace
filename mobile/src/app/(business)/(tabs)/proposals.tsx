@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { FontAwesome5, Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage, type TFn } from '@/context/LanguageContext';
 import { campaignService } from '@/services/campaign';
@@ -96,10 +96,10 @@ function buildCampaignCards(proposals: Proposal[]): CampaignCard[] {
 // agrees with the timeline (workStatus alone isn't enough — APPROVED needs
 // paymentStatus to tell "awaiting release" from "released" from "completed").
 function workspaceBtnConfig(ws: WS | null, paymentStatus: PS, t: TFn) {
-  if (ws === 'COMPLETED') return { label: t('proposal.business.workspacePaymentReleasedLabel'), sub: t('proposal.business.workspacePaymentReleasedSub'), color: '#0EA5E9', icon: 'cash' as const };
+  if (ws === 'COMPLETED') return { label: t('proposal.business.workspacePaymentReleasedLabel'), sub: t('proposal.business.workspacePaymentReleasedSub'), color: '#0EA5E9', icon: 'money-bill-alt' as const };
   if (ws === 'APPROVED' && paymentStatus === 'RELEASED')
-                          return { label: t('proposal.business.workspacePaymentReleasedLabel'), sub: t('proposal.business.workspacePaymentReleasedSub'), color: '#0EA5E9', icon: 'cash' as const };
-  if (ws === 'APPROVED') return { label: t('proposal.business.workspaceAwaitingReleaseLabel'), sub: t('proposal.business.workspaceAwaitingReleaseSub'), color: '#EA580C', icon: 'hourglass-outline' as const };
+                          return { label: t('proposal.business.workspacePaymentReleasedLabel'), sub: t('proposal.business.workspacePaymentReleasedSub'), color: '#0EA5E9', icon: 'money-bill-alt' as const };
+  if (ws === 'APPROVED') return { label: t('proposal.business.workspaceAwaitingReleaseLabel'), sub: t('proposal.business.workspaceAwaitingReleaseSub'), color: '#EA580C', icon: 'hourglass' as const };
   if (ws === 'SUBMITTED') return { label: t('proposal.business.workspaceReviewLabel'), sub: t('proposal.business.workspaceReviewSub'), color: '#D97706', icon: 'eye' as const };
   if (ws === 'IN_PROGRESS') return { label: t('proposal.business.workspaceInProgressLabel'), sub: t('proposal.business.workspaceInProgressSub'), color: '#7C3AED', icon: 'brush' as const };
   return { label: t('proposal.business.workspaceDefaultLabel'), sub: '', color: '#6366F1', icon: 'folder-open' as const };
@@ -144,7 +144,7 @@ function CampaignEventCard({ item }: { item: CampaignCard }) {
           </View>
         ) : null}
         <View style={styles.cardTopSpacer} />
-        <Ionicons name="chevron-forward" size={16} color={C.textSecondary} />
+        <FontAwesome5 name="chevron-right" solid size={16} color={C.textSecondary} />
       </View>
 
       {/* Title */}
@@ -178,7 +178,7 @@ function CampaignEventCard({ item }: { item: CampaignCard }) {
       {/* Pending action nudge */}
       {item.pending > 0 && (
         <View style={[styles.nudge, { backgroundColor: TabColors.warning.bg }]}>
-          <Ionicons name="time-outline" size={13} color={TabColors.warning.color} />
+          <FontAwesome5 name="clock" size={13} color={TabColors.warning.color} />
           <Text style={[styles.nudgeText, { color: TabColors.warning.color }]}>
             {t('proposal.business.nudge', { n: item.pending })}
           </Text>
@@ -211,7 +211,7 @@ function CampaignEventCard({ item }: { item: CampaignCard }) {
             }}>
             {/* Icon badge */}
             <View style={styles.btnIconBadge}>
-              <Ionicons name={cfg.icon} size={20} color="#fff" />
+              <FontAwesome5 name={cfg.icon} size={20} color="#fff" />
             </View>
             {/* Text */}
             <View style={styles.btnTextBlock}>
@@ -220,7 +220,7 @@ function CampaignEventCard({ item }: { item: CampaignCard }) {
             </View>
             {/* Arrow */}
             <View style={styles.btnArrow}>
-              <Ionicons name="chevron-forward" size={16} color="#fff" />
+              <FontAwesome5 name="chevron-right" solid size={16} color="#fff" />
             </View>
           </Pressable>
         );
@@ -314,10 +314,10 @@ export default function ProposalsScreen() {
     allCards;
 
   const tabs = [
-    { key: 'all',      label: t('proposal.business.tabAll'),      icon: 'layers-outline'          as const, count: allCards.length,      color: TabColors.neutral.color },
-    { key: 'paid',     label: t('proposal.business.tabPaid'),     icon: 'cash-outline'             as const, count: paidCards.length,     color: PAID_ACCENT },
-    { key: 'free',     label: t('proposal.business.tabFree'),     icon: 'gift-outline'             as const, count: freeCards.length,     color: FREE_ACCENT },
-    { key: 'accepted', label: t('proposal.business.tabAccepted'), icon: 'checkmark-circle-outline' as const, count: acceptedCards.length, color: TabColors.positive.color },
+    { key: 'all',      label: t('proposal.business.tabAll'),      icon: 'layer-group'          as const, count: allCards.length,      color: TabColors.neutral.color },
+    { key: 'paid',     label: t('proposal.business.tabPaid'),     icon: 'money-bill-alt'             as const, count: paidCards.length,     color: PAID_ACCENT },
+    { key: 'free',     label: t('proposal.business.tabFree'),     icon: 'gift'             as const, count: freeCards.length,     color: FREE_ACCENT },
+    { key: 'accepted', label: t('proposal.business.tabAccepted'), icon: 'check-circle' as const, count: acceptedCards.length, color: TabColors.positive.color },
   ];
 
   return (

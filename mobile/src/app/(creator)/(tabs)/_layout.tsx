@@ -1,5 +1,5 @@
 import { Tabs, usePathname } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { useState } from 'react';
 import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -13,7 +13,7 @@ import { useNotificationBadge } from '@/context/NotificationContext';
 import { scrollToTopEvents } from '@/lib/scrollToTopEvents';
 import { RADIUS, SHADOW } from '@/utilities/constants';
 
-type IoniconName = keyof typeof Ionicons.glyphMap;
+type IoniconName = keyof typeof FontAwesome5.glyphMap;
 
 // ── Tab config ────────────────────────────────────────────────────────────────
 
@@ -21,10 +21,10 @@ type IoniconName = keyof typeof Ionicons.glyphMap;
 // The header's menu button (see index.tsx) opens the drawer; `notifications`
 // is this tab's real destination screen.
 const TAB_CONFIG: Record<string, { icon: IoniconName; iconActive: IoniconName; label: string; color?: string }> = {
-  index:         { icon: 'home-outline',          iconActive: 'home',          label: 'Home' },
-  proposals:     { icon: 'document-text-outline', iconActive: 'document-text', label: 'Proposals',  color: '#7C3AED' },
-  messages:      { icon: 'chatbubble-outline',    iconActive: 'chatbubble',    label: 'Messages',   color: '#2563EB' },
-  notifications: { icon: 'notifications-outline', iconActive: 'notifications', label: 'Notifications' },
+  index:         { icon: 'home',          iconActive: 'home',          label: 'Home' },
+  proposals:     { icon: 'file-alt', iconActive: 'file-alt', label: 'Proposals',  color: '#7C3AED' },
+  messages:      { icon: 'comment',    iconActive: 'comment',    label: 'Messages',   color: '#2563EB' },
+  notifications: { icon: 'bell', iconActive: 'bell', label: 'Notifications' },
 };
 
 // ── Custom tab bar ────────────────────────────────────────────────────────────
@@ -112,7 +112,7 @@ function CustomTabBar({
                 focused && { backgroundColor: `${color}18` },
               ]}
             >
-              <Ionicons
+              <FontAwesome5
                 name={focused ? cfg.iconActive : cfg.icon}
                 size={21}
                 color={focused ? color : '#ABABBB'}
@@ -243,7 +243,7 @@ export default function CreatorTabsLayout() {
               })}
               options={{ title: t('creator.tab.messages') }}
             />
-            <Tabs.Screen name="notifications" options={{ title: t('creator.tab.activity') }} />
+            <Tabs.Screen name="bell" options={{ title: t('creator.tab.activity') }} />
           </Tabs>
         </MaxWidthContainer>
 

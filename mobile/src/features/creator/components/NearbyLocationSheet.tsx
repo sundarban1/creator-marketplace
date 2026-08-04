@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import MapView, { Circle, PROVIDER_GOOGLE, type Region } from 'react-native-maps';
@@ -189,7 +189,7 @@ export function NearbyLocationSheet({ visible, onClose, source, radiusKm, homeLa
               {locatingCurrent ? (
                 <ActivityIndicator size="small" color={C.brinjal1} />
               ) : (
-                <Ionicons name="navigate" size={13} color={draftSource === 'current' ? C.brinjal1 : C.textSecondary} />
+                <FontAwesome5 name="location-arrow" solid size={13} color={draftSource === 'current' ? C.brinjal1 : C.textSecondary} />
               )}
               <Text style={[styles.sourceToggleText, { color: draftSource === 'current' ? C.brinjal1 : C.text }]}>{t('nearbyLocationSheet.currentLocation')}</Text>
             </Pressable>
@@ -201,7 +201,7 @@ export function NearbyLocationSheet({ visible, onClose, source, radiusKm, homeLa
               ]}
               disabled={!homeCoords}
               onPress={handleSelectHome}>
-              <Ionicons name="home" size={13} color={draftSource === 'home' ? C.brinjal1 : C.textSecondary} />
+              <FontAwesome5 name="home" solid size={13} color={draftSource === 'home' ? C.brinjal1 : C.textSecondary} />
               <Text style={[styles.sourceToggleText, { color: draftSource === 'home' ? C.brinjal1 : C.text }]} numberOfLines={1}>
                 {homeLabel ? t('nearbyLocationSheet.homeWithLabel', { label: homeLabel }) : t('nearbyLocationSheet.home')}
               </Text>
@@ -239,11 +239,11 @@ export function NearbyLocationSheet({ visible, onClose, source, radiusKm, homeLa
                 {/* Fixed center pin — the map pans underneath it, matching the
                     Facebook Marketplace "drag map, pin stays put" pattern. */}
                 <View style={styles.pinWrap} pointerEvents="none">
-                  <Ionicons name="location" size={36} color={C.brinjal1} />
+                  <FontAwesome5 name="map-marker-alt" solid size={36} color={C.brinjal1} />
                 </View>
                 {draftSource === 'home' && homeAddress && (
                   <View style={[styles.addressBanner, { backgroundColor: C.surface, borderColor: C.border }]} pointerEvents="none">
-                    <Ionicons name="home" size={13} color={C.brinjal1} />
+                    <FontAwesome5 name="home" solid size={13} color={C.brinjal1} />
                     <Text style={[styles.addressBannerText, { color: C.text }]} numberOfLines={2}>{homeAddress}</Text>
                   </View>
                 )}

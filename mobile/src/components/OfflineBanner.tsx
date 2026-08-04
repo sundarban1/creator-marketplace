@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Animated, StyleSheet, Text } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useLanguage } from '@/context/LanguageContext';
@@ -49,7 +49,7 @@ export function OfflineBanner() {
         styles.wrap,
         { paddingTop: insets.top + 6, backgroundColor: isOnline ? '#16A34A' : '#DC2626', transform: [{ translateY }] },
       ]}>
-      <Ionicons name={isOnline ? 'cloud-done-outline' : 'cloud-offline-outline'} size={14} color="#fff" />
+      <FontAwesome5 name={isOnline ? 'cloud' : 'cloud'} size={14} color="#fff" />
       <Text style={styles.text}>{isOnline ? t('common.backOnline') : t('common.offline')}</Text>
     </Animated.View>
   );

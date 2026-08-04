@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
@@ -57,19 +57,19 @@ export function LocationSearchPicker({
           style={[ls.remoteChip, { borderColor: remoteSelected ? C.brinjal1 : C.border, backgroundColor: remoteSelected ? C.primaryLight : C.background }, !remoteSelected && atMax && { opacity: 0.35 }]}
           onPress={toggleRemote}
           disabled={!remoteSelected && atMax}>
-          <Ionicons name="globe-outline" size={13} color={remoteSelected ? C.brinjal1 : C.textSecondary} />
+          <FontAwesome5 name="globe" solid size={13} color={remoteSelected ? C.brinjal1 : C.textSecondary} />
           <Text style={[ls.remoteText, { color: remoteSelected ? C.brinjal1 : C.text, fontWeight: remoteSelected ? '700' : '500' }]}>
             {t('filterModal.remote')}
           </Text>
-          {remoteSelected && <Ionicons name="close" size={13} color={C.brinjal1} />}
+          {remoteSelected && <FontAwesome5 name="times" solid size={13} color={C.brinjal1} />}
         </Pressable>
 
         {nonRemote.map((loc) => (
           <View key={loc.label} style={[ls.selectedChip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
-            <Ionicons name="location" size={12} color={C.brinjal1} />
+            <FontAwesome5 name="map-marker-alt" solid size={12} color={C.brinjal1} />
             <Text style={[ls.selectedChipText, { color: C.brinjal1 }]}>{loc.label}</Text>
             <Pressable onPress={() => remove(loc.label)} hitSlop={8}>
-              <Ionicons name="close" size={13} color={C.brinjal1} />
+              <FontAwesome5 name="times" solid size={13} color={C.brinjal1} />
             </Pressable>
           </View>
         ))}
@@ -81,7 +81,7 @@ export function LocationSearchPicker({
         <Pressable
           style={[ls.addBtn, { backgroundColor: C.background, borderColor: C.border }]}
           onPress={() => setModalOpen(true)}>
-          <Ionicons name="search" size={15} color={C.textSecondary} />
+          <FontAwesome5 name="search" solid size={15} color={C.textSecondary} />
           <Text style={[ls.addBtnTxt, { color: C.textSecondary }]}>{t('filterModal.searchCityPlaceholder')}</Text>
           <Text style={[ls.addBtnArrow, { color: C.textSecondary }]}>›</Text>
         </Pressable>

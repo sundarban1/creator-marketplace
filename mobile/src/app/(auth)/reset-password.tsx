@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { FontAwesome5, Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Keyboard, KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -32,7 +32,7 @@ function Toast({ visible, message }: { visible: boolean; message: string }) {
         styles.toast,
         { backgroundColor: '#166534', opacity: anim, transform: [{ translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] },
       ]}>
-      <Ionicons name="checkmark-circle" size={16} color="#fff" />
+      <FontAwesome5 name="check-circle" solid size={16} color="#fff" />
       <Text style={styles.toastText}>{message}</Text>
     </Animated.View>
   );
@@ -209,7 +209,7 @@ function PasswordInput({
         numberOfLines={1}
       />
       <Pressable onPress={() => setShow((s) => !s)} style={styles.eyeBtn}>
-        <Ionicons name={show ? 'eye-off' : 'eye'} size={18} color={C.textSecondary} />
+        <FontAwesome5 name={show ? 'eye-slash' : 'eye'} solid size={18} color={C.textSecondary} />
       </Pressable>
     </View>
   );
@@ -218,7 +218,7 @@ function PasswordInput({
 function RuleRow({ met, text }: { met: boolean; text: string }) {
   return (
     <View style={styles.ruleRow}>
-      <Ionicons name={met ? 'checkmark-circle' : 'ellipse-outline'} size={14} color={met ? '#16a34a' : '#9ca3af'} />
+      <FontAwesome5 name={met ? 'check-circle' : 'circle'} size={14} color={met ? '#16a34a' : '#9ca3af'} />
       <Text style={[styles.ruleText, { color: met ? '#16a34a' : '#9ca3af' }]}>{text}</Text>
     </View>
   );

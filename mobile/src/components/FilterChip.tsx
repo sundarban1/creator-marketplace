@@ -1,9 +1,9 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { useAppColors } from '@/context/ThemeContext';
 import { F, RADIUS } from '@/utilities/constants';
 
-type IoniconName = keyof typeof Ionicons.glyphMap;
+type IoniconName = keyof typeof FontAwesome5.glyphMap;
 
 export type ChipOption = { value: string; label: string; icon?: IoniconName };
 
@@ -28,7 +28,7 @@ export function FilterChip({ label, icon, selected, onPress, flex }: ChipProps) 
         { borderColor: selected ? C.brinjal1 : C.border, backgroundColor: selected ? C.primaryLight : C.background },
       ]}
       onPress={onPress}>
-      {icon && <Ionicons name={icon} size={13} color={selected ? C.brinjal1 : C.textSecondary} />}
+      {icon && <FontAwesome5 name={icon} size={13} color={selected ? C.brinjal1 : C.textSecondary} />}
       <Text style={[s.chipTxt, { color: selected ? C.brinjal1 : C.textSecondary, fontWeight: selected ? '700' : '500' }]}>
         {label}
       </Text>

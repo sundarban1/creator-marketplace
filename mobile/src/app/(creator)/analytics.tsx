@@ -1,4 +1,4 @@
-import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { PageHeader } from '@/features/creator/components/PageHeader';
 import { RangeDropdown } from '@/components/RangeDropdown';
 import { useCallback, useState } from 'react';
@@ -54,9 +54,9 @@ function StatTile({ icon, label, value, sub, subPositive, C }: {
             },
           ]}
         >
-          {icon === 'star-outline'
+          {icon === 'star'
             ? <FontAwesome5 name="star" solid size={14} color={C.brinjal1} />
-            : <Ionicons name={icon as never} size={17} color={C.brinjal1} />}
+            : <FontAwesome5 name={icon as never} size={17} color={C.brinjal1} />}
         </View>
         {sub ? (
           <View style={[s.tileTrend, { backgroundColor: `${trendColor}1A` }]}>
@@ -133,21 +133,21 @@ export default function CreatorAnalyticsScreen() {
         >
           {/* Stat grid */}
           <View style={s.grid}>
-            <StatTile icon="wallet-outline" label={t('analytics.totalEarnings')} value={fmtCurrency(totals.totalEarnings)} C={C} />
-            <StatTile icon="hourglass-outline" label={t('analytics.pendingEarnings')} value={fmtCurrency(totals.pendingEarnings)} C={C} />
+            <StatTile icon="wallet" label={t('analytics.totalEarnings')} value={fmtCurrency(totals.totalEarnings)} C={C} />
+            <StatTile icon="hourglass" label={t('analytics.pendingEarnings')} value={fmtCurrency(totals.pendingEarnings)} C={C} />
             <StatTile
-              icon="eye-outline"
+              icon="eye"
               label={t('analytics.profileViews')}
               value={totals.profileViewsLast30Days.toLocaleString()}
               sub={`${totals.profileViewsTrendPct >= 0 ? '+' : ''}${totals.profileViewsTrendPct}%`}
               subPositive={totals.profileViewsTrendPct >= 0}
               C={C}
             />
-            <StatTile icon="checkmark-circle-outline" label={t('analytics.profileCompletion')} value={`${totals.profileCompletion.percent}%`} C={C} />
-            <StatTile icon="star-outline" label={t('analytics.averageRating')} value={totals.averageRating.toFixed(1)} C={C} />
-            <StatTile icon="time-outline" label={t('analytics.responseTime')} value={`${totals.responseTimeAvgMins} min`} C={C} />
-            <StatTile icon="trending-up-outline" label={t('analytics.completionRate')} value={`${totals.completionRate}%`} C={C} />
-            <StatTile icon="send-outline" label={t('analytics.applicationsSubmitted')} value={totals.applicationsSubmitted.toLocaleString()} C={C} />
+            <StatTile icon="check-circle" label={t('analytics.profileCompletion')} value={`${totals.profileCompletion.percent}%`} C={C} />
+            <StatTile icon="star" label={t('analytics.averageRating')} value={totals.averageRating.toFixed(1)} C={C} />
+            <StatTile icon="clock" label={t('analytics.responseTime')} value={`${totals.responseTimeAvgMins} min`} C={C} />
+            <StatTile icon="chart-line" label={t('analytics.completionRate')} value={`${totals.completionRate}%`} C={C} />
+            <StatTile icon="paper-plane" label={t('analytics.applicationsSubmitted')} value={totals.applicationsSubmitted.toLocaleString()} C={C} />
           </View>
 
           {/* Earnings trend */}

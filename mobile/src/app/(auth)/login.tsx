@@ -2,7 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Image as ExpoImage } from 'expo-image';
-import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { useRef, useState, useEffect } from 'react';
 import {
   Animated,
@@ -126,7 +126,7 @@ function Field({
   secureTextEntry = false, keyboardType = 'default',
   autoCapitalize = 'none', error, rightSlot,
 }: {
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: keyof typeof FontAwesome5.glyphMap;
   label: string;
   value: string;
   onChangeText: (v: string) => void;
@@ -158,7 +158,7 @@ function Field({
         focused && s.fieldFocused,
       ]}>
         <View style={[s.fieldIconWrap, { backgroundColor: focused ? `${BRINJAL}15` : '#F3F4F6' }]}>
-          <Ionicons name={icon} size={16} color={focused ? BRINJAL : '#9CA3AF'} />
+          <FontAwesome5 name={icon} size={16} color={focused ? BRINJAL : '#9CA3AF'} />
         </View>
         <TextInput
           style={s.fieldInput}
@@ -179,7 +179,7 @@ function Field({
         />
         {secureTextEntry && (
           <Pressable onPress={() => setHidden(h => !h)} hitSlop={10} style={s.eyeBtn}>
-            <Ionicons name={hidden ? 'eye-outline' : 'eye-off-outline'} size={18} color={focused ? BRINJAL : '#9CA3AF'} />
+            <FontAwesome5 name={hidden ? 'eye' : 'eye-slash'} size={18} color={focused ? BRINJAL : '#9CA3AF'} />
           </Pressable>
         )}
       </Animated.View>
@@ -208,7 +208,7 @@ function Field({
       })()}
       {!!error && (
         <View style={s.fieldErrRow}>
-          <Ionicons name="alert-circle-outline" size={12} color="#EF4444" />
+          <FontAwesome5 name="exclamation-circle" solid size={12} color="#EF4444" />
           <Text style={s.fieldErrText}>{error}</Text>
         </View>
       )}
@@ -307,26 +307,26 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
     <View>
       {verified === '1' && (
         <View style={[s.banner, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}>
-          <Ionicons name="checkmark-circle" size={15} color="#15803D" />
+          <FontAwesome5 name="check-circle" solid size={15} color="#15803D" />
           <Text style={[s.bannerText, { color: '#15803D' }]}>{t('auth.login.verifiedBanner')}</Text>
         </View>
       )}
       {!!apiError && (
         <View style={[s.banner, { backgroundColor: '#FFF1F2', borderColor: '#FECDD3' }]}>
-          <Ionicons name="alert-circle" size={15} color="#EF4444" />
+          <FontAwesome5 name="exclamation-circle" solid size={15} color="#EF4444" />
           <Text style={[s.bannerText, { color: '#EF4444' }]}>{apiError}</Text>
         </View>
       )}
 
       <View style={s.form}>
         <Field
-          icon={channel === 'email' ? 'mail-outline' : 'call-outline'}
+          icon={channel === 'email' ? 'envelope' : 'phone'}
           label={t('auth.login.identifierLabel')} value={identifierInput}
           onChangeText={(v) => { setIdentifierInput(v); setApiError(''); }}
           placeholder={t('auth.login.identifierPlaceholder')} autoCapitalize="none" error={emErr}
         />
         <Field
-          icon="lock-closed-outline" label={t('auth.login.password')} value={password}
+          icon="lock" label={t('auth.login.password')} value={password}
           onChangeText={(v) => { setPassword(v); setApiError(''); }}
           placeholder={t('auth.login.passwordEnterPlaceholder')} secureTextEntry error={pwErr}
           rightSlot={
@@ -338,7 +338,7 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
       </View>
 
       <Pressable style={s.rememberRow} onPress={() => setRememberMe((v) => !v)} hitSlop={8}>
-        <Ionicons name={rememberMe ? 'checkbox' : 'square-outline'} size={19} color={rememberMe ? BRINJAL : '#9CA3AF'} />
+        <FontAwesome5 name={rememberMe ? 'check-square' : 'square'} solid={rememberMe} size={19} color={rememberMe ? BRINJAL : '#9CA3AF'} />
         <Text style={s.rememberText}>{t('auth.login.rememberMe')}</Text>
       </Pressable>
 
@@ -347,10 +347,10 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
         style={({ pressed }) => [s.primaryBtnWrap, { opacity: pressed ? 0.92 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] }]}>
         <View style={[s.primaryBtn, { backgroundColor: BRINJAL }]}>
           {loading
-            ? <Ionicons name="sync" size={18} color="#fff" />
+            ? <FontAwesome5 name="sync" solid size={18} color="#fff" />
             : <>
                 <Text style={s.primaryBtnText}>{t('auth.login.loginBtn')}</Text>
-                <Ionicons name="arrow-forward" size={16} color="rgba(255,255,255,0.8)" />
+                <FontAwesome5 name="arrow-right" solid size={16} color="rgba(255,255,255,0.8)" />
               </>}
         </View>
       </Pressable>
@@ -408,13 +408,13 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
 
       {!!googleError && (
         <View style={[s.banner, { backgroundColor: '#FFF1F2', borderColor: '#FECDD3' }]}>
-          <Ionicons name="alert-circle" size={15} color="#EF4444" />
+          <FontAwesome5 name="exclamation-circle" solid size={15} color="#EF4444" />
           <Text style={[s.bannerText, { color: '#EF4444' }]}>{googleError}</Text>
         </View>
       )}
       {FACEBOOK_LOGIN_ENABLED && !!facebookError && (
         <View style={[s.banner, { backgroundColor: '#FFF1F2', borderColor: '#FECDD3' }]}>
-          <Ionicons name="alert-circle" size={15} color="#EF4444" />
+          <FontAwesome5 name="exclamation-circle" solid size={15} color="#EF4444" />
           <Text style={[s.bannerText, { color: '#EF4444' }]}>{facebookError}</Text>
         </View>
       )}
@@ -431,7 +431,7 @@ function LoginForm({ verified, onGooglePress, googleLoading, googleError, onFace
           <Pressable
             style={s.suspendedContactBtn}
             onPress={() => Linking.openURL(`mailto:${flags.supportEmail ?? DEFAULT_SUPPORT_EMAIL}`)}>
-            <Ionicons name="mail-outline" size={16} color="#fff" />
+            <FontAwesome5 name="envelope" size={16} color="#fff" />
             <Text style={s.suspendedContactBtnText}>{t('auth.login.suspendedContactBtn')}</Text>
           </Pressable>
           <Pressable style={s.modalCancel} onPress={() => setSuspendedModal(false)}>
@@ -523,7 +523,7 @@ function SignupForm({ onGooglePress, googleLoading, googleError, onFacebookPress
               <Text style={[s.roleSub, { color: active ? tint : '#9CA3AF' }]}>{roleSub}</Text>
               {active && (
                 <View style={[s.roleCheck, { backgroundColor: tint }]}>
-                  <Ionicons name="checkmark" size={13} color="#fff" />
+                  <FontAwesome5 name="check" solid size={13} color="#fff" />
                 </View>
               )}
             </Pressable>
@@ -534,13 +534,13 @@ function SignupForm({ onGooglePress, googleLoading, googleError, onFacebookPress
       {/* Fields */}
       <View style={s.form}>
         <Field
-          icon={channel === 'email' ? 'mail-outline' : 'call-outline'}
+          icon={channel === 'email' ? 'envelope' : 'phone'}
           label={t('auth.signup.identifierLabel')} value={identifierInput}
           onChangeText={(v) => { setIdentifierInput(v); setError(''); }}
           placeholder={t('auth.signup.identifierPlaceholder')} autoCapitalize="none" error={emErr}
         />
         <Field
-          icon="lock-closed-outline" label={t('auth.signup.password')} value={password}
+          icon="lock" label={t('auth.signup.password')} value={password}
           onChangeText={(v) => { setPassword(v); setError(''); }}
           placeholder={t('auth.signup.passwordCreatePlaceholder')} secureTextEntry error={pwErr}
         />
@@ -551,7 +551,7 @@ function SignupForm({ onGooglePress, googleLoading, googleError, onFacebookPress
               const ruleLabel = idx === 0 ? t('auth.signup.pwRule8Chars') : idx === 1 ? t('auth.signup.pwRuleUppercase') : t('auth.signup.pwRuleNumber');
               return (
                 <View key={rule.label} style={[s.rulePill, { backgroundColor: ok ? '#F0FDF4' : '#F5F3FF', borderColor: ok ? '#86EFAC' : '#DDD6FE' }]}>
-                  <Ionicons name={ok ? 'checkmark-circle' : 'ellipse-outline'} size={11} color={ok ? '#16A34A' : '#A78BFA'} />
+                  <FontAwesome5 name={ok ? 'check-circle' : 'circle'} solid={ok} size={11} color={ok ? '#16A34A' : '#A78BFA'} />
                   <Text style={[s.ruleText, { color: ok ? '#16A34A' : '#8B5CF6' }]}>{ruleLabel}</Text>
                 </View>
               );
@@ -562,7 +562,7 @@ function SignupForm({ onGooglePress, googleLoading, googleError, onFacebookPress
 
       {!!error && (
         <View style={[s.banner, { backgroundColor: '#FFF1F2', borderColor: '#FECDD3' }]}>
-          <Ionicons name="alert-circle" size={15} color="#EF4444" />
+          <FontAwesome5 name="exclamation-circle" solid size={15} color="#EF4444" />
           <Text style={[s.bannerText, { color: '#EF4444' }]}>{error}</Text>
         </View>
       )}
@@ -572,10 +572,10 @@ function SignupForm({ onGooglePress, googleLoading, googleError, onFacebookPress
         style={({ pressed }) => [s.primaryBtnWrap, { opacity: pressed ? 0.92 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] }]}>
         <View style={[s.primaryBtn, { backgroundColor: BRINJAL }]}>
           {loading
-            ? <Ionicons name="sync" size={18} color="#fff" />
+            ? <FontAwesome5 name="sync" solid size={18} color="#fff" />
             : <>
                 <Text style={s.primaryBtnText}>{t('auth.signup.createAccountBtn')}</Text>
-                <Ionicons name="arrow-forward" size={16} color="rgba(255,255,255,0.8)" />
+                <FontAwesome5 name="arrow-right" solid size={16} color="rgba(255,255,255,0.8)" />
               </>}
         </View>
       </Pressable>
@@ -616,13 +616,13 @@ function SignupForm({ onGooglePress, googleLoading, googleError, onFacebookPress
 
       {!!googleError && (
         <View style={[s.banner, { backgroundColor: '#FFF1F2', borderColor: '#FECDD3' }]}>
-          <Ionicons name="alert-circle" size={15} color="#EF4444" />
+          <FontAwesome5 name="exclamation-circle" solid size={15} color="#EF4444" />
           <Text style={[s.bannerText, { color: '#EF4444' }]}>{googleError}</Text>
         </View>
       )}
       {FACEBOOK_LOGIN_ENABLED && !!facebookError && (
         <View style={[s.banner, { backgroundColor: '#FFF1F2', borderColor: '#FECDD3' }]}>
-          <Ionicons name="alert-circle" size={15} color="#EF4444" />
+          <FontAwesome5 name="exclamation-circle" solid size={15} color="#EF4444" />
           <Text style={[s.bannerText, { color: '#EF4444' }]}>{facebookError}</Text>
         </View>
       )}
@@ -964,7 +964,7 @@ export default function LoginScreen() {
 
           {/* Footer */}
           <View style={s.footer}>
-            <Ionicons name="shield-checkmark-outline" size={12} color={MUTED} />
+            <FontAwesome5 name="shield-alt" solid size={12} color={MUTED} />
             <Text style={s.footerText}>{t('auth.login.footer')}</Text>
           </View>
 
@@ -1116,7 +1116,7 @@ const s = StyleSheet.create({
   socialBtn:      { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 52, borderRadius: RADIUS.full, borderWidth: 1.5, borderColor: '#DDD6FE', backgroundColor: '#FAFAFE', shadowColor: '#4C1D95', shadowOpacity: 0.06, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 1 },
   socialBtnFull:  { flex: 0, marginBottom: 12 },
   socialBtnText:  { fontSize: 14, fontFamily: F.semibold, color: '#374151' },
-  googleFullBtn:  { width: '100%', height: 48, justifyContent: 'center', alignItems: 'center', shadowColor: '#4285F4', shadowOpacity: 0.35, shadowRadius: 16, shadowOffset: { width: 0, height: 8 }, elevation: 7 },
+  googleFullBtn:  { width: '100%', height: 48, justifyContent: 'center', alignItems: 'center', shadowColor: '#4C1D95', shadowOpacity: 0.06, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 1 },
   googleIcon:     { width: '100%', height: 48 },
   socialBtnFb:    { width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 52, borderRadius: RADIUS.full, borderWidth: 1.5, borderColor: '#BFDBFE', backgroundColor: '#EFF6FF' },
   socialBtnFbText:{ fontSize: 14, fontFamily: F.semibold, color: '#1D4ED8' },

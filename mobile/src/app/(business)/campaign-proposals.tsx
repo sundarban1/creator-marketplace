@@ -13,7 +13,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { FontAwesome5, Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { BackButton } from '@/components/BackButton';
 import { EmptyState } from '@/components/EmptyState';
 import { ListRowSkeleton } from '@/components/ListRowSkeleton';
@@ -45,15 +45,15 @@ type TFn = (key: string) => string;
 // agrees with the timeline (workStatus alone isn't enough — APPROVED needs
 // paymentStatus to tell "awaiting release" from "released" from "completed").
 function projectBtnConfig(ws: WS, paymentStatus: PS, t: TFn) {
-  if (ws === 'COMPLETED') return { label: t('campaignProposals.paymentReleased'),        icon: 'cash'                  as const, color: '#0EA5E9' };
+  if (ws === 'COMPLETED') return { label: t('campaignProposals.paymentReleased'),        icon: 'money-bill-alt'                  as const, color: '#0EA5E9' };
   if (ws === 'APPROVED' && paymentStatus === 'RELEASED')
-                           return { label: t('campaignProposals.paymentReleased'),        icon: 'cash'                  as const, color: '#0EA5E9' };
-  if (ws === 'APPROVED')   return { label: t('campaignProposals.awaitingPaymentRelease'), icon: 'hourglass-outline'     as const, color: '#EA580C' };
+                           return { label: t('campaignProposals.paymentReleased'),        icon: 'money-bill-alt'                  as const, color: '#0EA5E9' };
+  if (ws === 'APPROVED')   return { label: t('campaignProposals.awaitingPaymentRelease'), icon: 'hourglass'     as const, color: '#EA580C' };
   if (ws === 'SUBMITTED')  return { label: t('campaignProposals.reviewDeliverables'),     icon: 'eye'                   as const, color: '#D97706' };
   if (ws === 'IN_PROGRESS')return { label: t('campaignProposals.creatorIsWorking'),       icon: 'brush'                 as const, color: '#7C3AED' };
   if (paymentStatus === 'PAID')
-                           return { label: t('activityTimeline.statusWaitingOnCreator'),   icon: 'hourglass-outline'     as const, color: '#0EA5E9' };
-  return                          { label: t('activityTimeline.statusWaitingPayment'),     icon: 'card-outline'          as const, color: '#EF4444' };
+                           return { label: t('activityTimeline.statusWaitingOnCreator'),   icon: 'hourglass'     as const, color: '#0EA5E9' };
+  return                          { label: t('activityTimeline.statusWaitingPayment'),     icon: 'credit-card'          as const, color: '#EF4444' };
 }
 
 type StatusFilter = 'all' | 'pending' | 'accepted' | 'rejected';
@@ -64,9 +64,9 @@ const PAID_LIGHT  = '#EEF2FF';
 const FREE_LIGHT  = '#F0FDF4';
 
 const STATUS_CFG = {
-  pending:  { bg: '#FFF7ED', color: '#D97706', icon: 'time-outline'         as const, label: 'Pending'  },
-  accepted: { bg: '#ECFDF5', color: '#16A34A', icon: 'checkmark-circle'     as const, label: 'Accepted' },
-  rejected: { bg: '#FEF2F2', color: '#EF4444', icon: 'close-circle-outline' as const, label: 'Rejected' },
+  pending:  { bg: '#FFF7ED', color: '#D97706', icon: 'clock'         as const, label: 'Pending'  },
+  accepted: { bg: '#ECFDF5', color: '#16A34A', icon: 'check-circle'     as const, label: 'Accepted' },
+  rejected: { bg: '#FEF2F2', color: '#EF4444', icon: 'times-circle' as const, label: 'Rejected' },
 };
 
 function initials(name: string) {
@@ -123,14 +123,14 @@ function ProposalCard({
           <Text style={[styles.creatorName, { color: C.text }]}>{p.creator.fullName}</Text>
           {p.creator.location ? (
             <View style={styles.locationRow}>
-              <Ionicons name="location-outline" size={12} color={C.textSecondary} />
+              <FontAwesome5 name="map-marker-alt" solid size={12} color={C.textSecondary} />
               <Text style={[styles.locationText, { color: C.textSecondary }]}>{p.creator.location}</Text>
             </View>
           ) : null}
         </View>
         <View style={styles.cardHeaderRight}>
           <View style={[styles.statusBadge, { backgroundColor: st.bg }]}>
-            <Ionicons name={st.icon} size={12} color={st.color} />
+            <FontAwesome5 name={st.icon} size={12} color={st.color} />
             <Text style={[styles.statusText, { color: st.color }]}>
               {p.status === 'pending' ? t('campaignProposals.statusPending') : p.status === 'accepted' ? t('campaignProposals.statusAccepted') : t('campaignProposals.statusRejected')}
             </Text>
@@ -145,7 +145,7 @@ function ProposalCard({
       {/* Cover letter */}
       {p.coverLetter ? (
         <View style={[styles.coverWrap, { backgroundColor: C.background }]}>
-          <Ionicons name="chatbubble-ellipses-outline" size={13} color={C.textSecondary} style={{ marginTop: 2 }} />
+          <FontAwesome5 name="comment-alt" size={13} color={C.textSecondary} style={{ marginTop: 2 }} />
           <View style={{ flex: 1 }}>
             <Text
               style={[styles.coverLetter, { color: C.textSecondary }]}
@@ -159,7 +159,7 @@ function ProposalCard({
                 <Text style={[styles.seeMoreText, { color: accent }]}>
                   {coverExpanded ? 'See less' : 'See more'}
                 </Text>
-                <Ionicons
+                <FontAwesome5
                   name={coverExpanded ? 'chevron-up' : 'chevron-down'}
                   size={12}
                   color={accent}
@@ -197,7 +197,7 @@ function ProposalCard({
               <ActivityIndicator size="small" color="#EF4444" />
             ) : (
               <>
-                <Ionicons name="close-circle-outline" size={16} color="#EF4444" />
+                <FontAwesome5 name="times-circle" solid size={16} color="#EF4444" />
                 <Text style={[styles.actionText, { color: '#EF4444' }]}>{t('campaignProposals.declineBtn')}</Text>
               </>
             )}
@@ -210,7 +210,7 @@ function ProposalCard({
               <ActivityIndicator size="small" color="#fff" />
             ) : (
               <>
-                <Ionicons name="checkmark-circle-outline" size={16} color="#fff" />
+                <FontAwesome5 name="check-circle" solid size={16} color="#fff" />
                 <Text style={[styles.actionText, { color: '#fff' }]}>{acceptLabel}</Text>
               </>
             )}
@@ -231,9 +231,9 @@ function ProposalCard({
               },
             ]}
             onPress={() => onStartProject && onStartProject(p)}>
-            <Ionicons name={cfg.icon} size={16} color="#fff" />
+            <FontAwesome5 name={cfg.icon} size={16} color="#fff" />
             <Text style={styles.startProjectBtnTxt}>{cfg.label}</Text>
-            <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.7)" style={{ marginLeft: 'auto' }} />
+            <FontAwesome5 name="chevron-right" solid size={14} color="rgba(255,255,255,0.7)" style={{ marginLeft: 'auto' }} />
           </Pressable>
         );
       })()}
@@ -297,7 +297,7 @@ function ConfirmModal({
               },
             ]}
           >
-            <Ionicons name={iconName} size={36} color={iconColor} />
+            <FontAwesome5 name={iconName} size={36} color={iconColor} />
           </View>
 
           {/* Title */}
@@ -324,7 +324,7 @@ function ConfirmModal({
           {/* Paid: irreversible warning */}
           {isAccept && !isFree && (
             <View style={[cm.warningBox, { backgroundColor: '#FFF7ED', borderColor: '#FED7AA' }]}>
-              <Ionicons name="warning-outline" size={16} color="#C2410C" />
+              <FontAwesome5 name="exclamation-triangle" solid size={16} color="#C2410C" />
               <Text style={[cm.warningText, { color: '#C2410C' }]}>
                 Once accepted, this decision cannot be reversed. Please review carefully before confirming.
               </Text>
@@ -334,7 +334,7 @@ function ConfirmModal({
           {/* Threshold warning */}
           {isAccept && willFill && capacity != null && (
             <View style={[cm.warningBox, { backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }]}>
-              <Ionicons name="people-outline" size={16} color="#1D4ED8" />
+              <FontAwesome5 name="users" solid size={16} color="#1D4ED8" />
               <Text style={[cm.warningText, { color: '#1D4ED8' }]}>
                 This fills the last slot ({slotsAfter}/{capacity}). All other pending applications will be automatically declined.
               </Text>
@@ -344,7 +344,7 @@ function ConfirmModal({
           {/* Capacity progress if available */}
           {isAccept && capacity != null && !willFill && (
             <View style={[cm.capacityRow, { backgroundColor: C.background }]}>
-              <Ionicons name="people-outline" size={14} color={C.textSecondary} />
+              <FontAwesome5 name="users" solid size={14} color={C.textSecondary} />
               <Text style={[cm.capacityText, { color: C.textSecondary }]}>
                 Slots: {slotsAfter}/{capacity} after accepting
               </Text>
@@ -367,7 +367,7 @@ function ConfirmModal({
                 <ActivityIndicator size="small" color="#fff" />
               ) : (
                 <>
-                  <Ionicons name={iconName} size={16} color="#fff" />
+                  <FontAwesome5 name={iconName} size={16} color="#fff" />
                   <Text style={cm.confirmText}>
                     {isAccept ? (isFree ? 'Approve' : 'Accept') : 'Decline'}
                   </Text>
@@ -705,7 +705,7 @@ export default function CampaignProposalsScreen() {
                 <ActivityIndicator size="small" color="#EF4444" />
               ) : (
                 <>
-                  <Ionicons name="checkmark-done-circle-outline" size={16} color="#EF4444" />
+                  <FontAwesome5 name="check-double" solid size={16} color="#EF4444" />
                   <Text style={[styles.closeCampaignBtnTxt, { color: '#EF4444' }]}>{t('campaignProposals.closeCampaignBtn')}</Text>
                 </>
               )}

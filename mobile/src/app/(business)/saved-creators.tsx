@@ -1,5 +1,5 @@
 import { router, useFocusEffect } from 'expo-router';
-import { FontAwesome5, Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   FlatList,
@@ -95,7 +95,7 @@ function CreatorCard({ item, onRemove }: { item: SavedCreatorItem; onRemove: () 
         active: true,
         onToggle: onRemove,
         activeIcon: 'bookmark',
-        inactiveIcon: 'bookmark-outline',
+        inactiveIcon: 'bookmark',
         activeColor: C.brinjal1,
         activeBg: C.primaryLight,
         bordered: true,
@@ -207,7 +207,7 @@ export default function SavedCreatorsScreen() {
         <View style={s.header} accessibilityRole="header" accessibilityLabel={t('savedCreators.title')}>
           <BackButton />
           <View style={[s.searchCard, { flex: 1, backgroundColor: C.surface, borderColor: C.border }]}>
-            <Ionicons name="search-outline" size={18} color={C.textSecondary} />
+            <FontAwesome5 name="search" solid size={18} color={C.textSecondary} />
             <TextInput
               style={[s.searchInput, { color: C.text }]}
               placeholder={t('explore.searchCreators')}
@@ -219,7 +219,7 @@ export default function SavedCreatorsScreen() {
             />
             {search.length > 0 && (
               <Pressable onPress={() => setSearch('')} hitSlop={10}>
-                <Ionicons name="close-circle" size={18} color={C.textSecondary} />
+                <FontAwesome5 name="times-circle" solid size={18} color={C.textSecondary} />
               </Pressable>
             )}
             <Pressable
@@ -230,7 +230,7 @@ export default function SavedCreatorsScreen() {
               ]}
               onPress={openFilter}
               hitSlop={6}>
-              <Ionicons name="options-outline" size={18} color={filterActive ? '#fff' : C.brinjal1} />
+              <FontAwesome5 name="sliders-h" solid size={18} color={filterActive ? '#fff' : C.brinjal1} />
               {filterActive && (
                 <View style={s.filterCountBadge}>
                   <Text style={s.filterCountBadgeTxt}>{filterCount}</Text>
@@ -256,16 +256,16 @@ export default function SavedCreatorsScreen() {
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chipRow}>
           {activeFilter.locations.map((loc) => (
             <Pressable key={loc.label} onPress={() => removeActiveFilter('locations', loc.label)} style={[s.chip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
-              <Ionicons name={loc.label === 'Remote' ? 'globe-outline' : 'location'} size={12} color={C.brinjal1} />
+              <FontAwesome5 name={loc.label === 'Remote' ? 'globe' : 'map-marker-alt'} solid size={12} color={C.brinjal1} />
               <Text style={[s.chipText, { color: C.brinjal1 }]}>{loc.label}</Text>
-              <Ionicons name="close" size={12} color={C.brinjal1} />
+              <FontAwesome5 name="times" solid size={12} color={C.brinjal1} />
             </Pressable>
           ))}
           {(activeFilter.priceMin > CREATOR_SLIDER_MIN || activeFilter.priceMax < CREATOR_SLIDER_MAX) && (
             <Pressable onPress={() => removeActiveFilter('priceMin')} style={[s.chip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
-              <FontAwesome5 name="wallet" size={11} color={getIconColor('wallet')} />
+              <FontAwesome5 name="wallet" solid size={11} color={getIconColor('wallet')} />
               <Text style={[s.chipText, { color: C.brinjal1 }]}>{formatCreatorRate(activeFilter.priceMin)}–{activeFilter.priceMax >= CREATOR_SLIDER_MAX ? `${formatCreatorRate(CREATOR_SLIDER_MAX)}+` : formatCreatorRate(activeFilter.priceMax)}</Text>
-              <Ionicons name="close" size={12} color={C.brinjal1} />
+              <FontAwesome5 name="times" solid size={12} color={C.brinjal1} />
             </Pressable>
           )}
           {activeFilter.platforms.map((p) => {
@@ -275,7 +275,7 @@ export default function SavedCreatorsScreen() {
               <Pressable key={p} onPress={() => removeActiveFilter('platforms', p)} style={[s.chip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
                 <FontAwesome5 name={meta.icon} size={11} color={meta.color} />
                 <Text style={[s.chipText, { color: C.brinjal1 }]}>{label}</Text>
-                <Ionicons name="close" size={12} color={C.brinjal1} />
+                <FontAwesome5 name="times" solid size={12} color={C.brinjal1} />
               </Pressable>
             );
           })}
@@ -285,7 +285,7 @@ export default function SavedCreatorsScreen() {
               <Pressable key={cat} onPress={() => removeActiveFilter('categories', cat)} style={[s.chip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
                 <FontAwesome5 name={meta.icon} size={11} color={meta.color} />
                 <Text style={[s.chipText, { color: C.brinjal1 }]}>{cat}</Text>
-                <Ionicons name="close" size={12} color={C.brinjal1} />
+                <FontAwesome5 name="times" solid size={12} color={C.brinjal1} />
               </Pressable>
             );
           })}

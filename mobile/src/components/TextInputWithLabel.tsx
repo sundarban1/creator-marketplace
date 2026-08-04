@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { Animated, Pressable, StyleSheet, Text, TextInput, type TextInputProps, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { useAppColors } from '@/context/ThemeContext';
 import { F } from '@/utilities/constants';
 
@@ -9,7 +9,7 @@ type Props = TextInputProps & {
   error?: string;
   hint?: string;
   secureToggle?: boolean;
-  leftIcon?: keyof typeof Ionicons.glyphMap;
+  leftIcon?: keyof typeof FontAwesome5.glyphMap;
 };
 
 export function TextInputWithLabel({
@@ -48,7 +48,7 @@ export function TextInputWithLabel({
 
       <Animated.View style={[styles.row, { borderColor, backgroundColor: bgColor }]}>
         {leftIcon && (
-          <Ionicons name={leftIcon} size={17} color={focused ? C.brinjal1 : C.textSecondary} style={styles.leftIcon} />
+          <FontAwesome5 name={leftIcon} size={17} color={focused ? C.brinjal1 : C.textSecondary} style={styles.leftIcon} />
         )}
         <TextInput
           style={[styles.input, { color: C.text, fontFamily: F.regular }, style]}
@@ -60,8 +60,8 @@ export function TextInputWithLabel({
         />
         {secureToggle && (
           <Pressable onPress={() => setHidden((v) => !v)} hitSlop={10} style={styles.eyeBtn}>
-            <Ionicons
-              name={hidden ? 'eye-outline' : 'eye-off-outline'}
+            <FontAwesome5
+              name={hidden ? 'eye' : 'eye-slash'}
               size={19}
               color={focused ? C.brinjal1 : C.textSecondary}
             />
@@ -71,7 +71,7 @@ export function TextInputWithLabel({
 
       {error ? (
         <View style={styles.feedbackRow}>
-          <Ionicons name="alert-circle" size={13} color={C.error} />
+          <FontAwesome5 name="exclamation-circle" solid size={13} color={C.error} />
           <Text style={[styles.errorText, { color: C.error, fontFamily: F.medium }]}>{error}</Text>
         </View>
       ) : hint ? (

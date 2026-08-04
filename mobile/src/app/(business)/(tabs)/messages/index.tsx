@@ -1,5 +1,5 @@
 import { router, useFocusEffect } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -104,13 +104,13 @@ function PendingCard({ conv }: { conv: Conversation }) {
           <View style={s.reqNameRow}>
             <Text style={[s.reqName, { color: C.text }]} numberOfLines={1}>{conv.participantName}</Text>
             <View style={[s.waitBadge, { backgroundColor: TabColors.warning.bg }]}>
-              <Ionicons name="time-outline" size={10} color={TabColors.warning.color} />
+              <FontAwesome5 name="clock" size={10} color={TabColors.warning.color} />
               <Text style={[s.waitBadgeTxt, { color: TabColors.warning.color }]}>{t('messages.statusPending')}</Text>
             </View>
           </View>
           {conv.campaignTitle ? (
             <View style={[s.campaignPill, { backgroundColor: '#E0F2FE' }]}>
-              <Ionicons name="briefcase-outline" size={10} color={ACCENT} />
+              <FontAwesome5 name="briefcase" solid size={10} color={ACCENT} />
               <Text style={[s.campaignPillTxt, { color: ACCENT }]} numberOfLines={1}>{conv.campaignTitle}</Text>
             </View>
           ) : null}
@@ -122,7 +122,7 @@ function PendingCard({ conv }: { conv: Conversation }) {
 
       {(conv.requestMessage || conv.lastMessage) ? (
         <View style={[s.reqMsgBox, { backgroundColor: C.background, borderColor: C.border }]}>
-          <Ionicons name="chatbubble-ellipses-outline" size={13} color={C.textSecondary} style={{ marginTop: 2 }} />
+          <FontAwesome5 name="comment-alt" size={13} color={C.textSecondary} style={{ marginTop: 2 }} />
           <Text style={[s.reqMsg, { color: C.text }]} numberOfLines={3}>
             {conv.requestMessage || conv.lastMessage}
           </Text>
@@ -130,7 +130,7 @@ function PendingCard({ conv }: { conv: Conversation }) {
       ) : null}
 
       <View style={[s.waitingNote, { backgroundColor: TabColors.warning.bg, borderColor: TabColors.warning.color + '40' }]}>
-        <Ionicons name="hourglass-outline" size={13} color={TabColors.warning.color} />
+        <FontAwesome5 name="hourglass" solid size={13} color={TabColors.warning.color} />
         <Text style={[s.waitingNoteTxt, { color: TabColors.warning.color }]}>
           {t('messages.waitingForResponse', { name: conv.participantName })}
         </Text>
@@ -191,7 +191,7 @@ function ChatCard({ conv, onDelete }: { conv: Conversation; onDelete: (id: strin
 
           <View style={s.rowBottom}>
             {conv.campaignTitle ? (
-              <Ionicons name="briefcase" size={12} color={hasUnread ? C.text : C.textSecondary} style={s.previewIcon} />
+              <FontAwesome5 name="briefcase" solid size={12} color={hasUnread ? C.text : C.textSecondary} style={s.previewIcon} />
             ) : null}
             <Text
               style={[s.preview, { color: hasUnread ? C.text : C.textSecondary }, hasUnread && s.previewUnread]}
@@ -342,7 +342,7 @@ export default function BusinessChatListScreen() {
         </View>
       ) : error ? (
         <EmptyState
-          icon="alert-circle-outline"
+          icon="exclamation-circle"
           title={t('messages.loadFailedTitle')}
           subtitle={error}
           action={{ label: t('messages.retry'), onPress: () => load() }}

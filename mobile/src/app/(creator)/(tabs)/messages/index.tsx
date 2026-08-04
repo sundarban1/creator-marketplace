@@ -1,5 +1,5 @@
 import { router, useFocusEffect } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
@@ -135,7 +135,7 @@ function RequestCard({ conv, onRespond }: { conv: Conversation; onRespond: () =>
           </View>
           {conv.campaignTitle ? (
             <View style={[s.campaignPill, { backgroundColor: '#E0F2FE' }]}>
-              <Ionicons name="briefcase-outline" size={10} color={ACCENT} />
+              <FontAwesome5 name="briefcase" solid size={10} color={ACCENT} />
               <Text style={[s.campaignPillTxt, { color: ACCENT }]} numberOfLines={1}>{conv.campaignTitle}</Text>
             </View>
           ) : null}
@@ -147,8 +147,8 @@ function RequestCard({ conv, onRespond }: { conv: Conversation; onRespond: () =>
 
       {/* Message preview */}
       <View style={[s.reqMsgBox, { backgroundColor: C.background, borderColor: C.border }]}>
-        <Ionicons
-          name={conv.requestMessage ? 'chatbubble-ellipses-outline' : 'person-add-outline'}
+        <FontAwesome5
+          name={conv.requestMessage ? 'comment-alt' : 'user-plus'}
           size={13}
           color={C.textSecondary}
           style={{ marginTop: 2 }}
@@ -170,7 +170,7 @@ function RequestCard({ conv, onRespond }: { conv: Conversation; onRespond: () =>
             ? <ActivityIndicator size="small" color="#EF4444" />
             : (
               <>
-                <Ionicons name="close-circle-outline" size={16} color="#EF4444" />
+                <FontAwesome5 name="times-circle" solid size={16} color="#EF4444" />
                 <Text style={[s.declineTxt, { color: '#EF4444' }]}>{t('messages.decline')}</Text>
               </>
             )}
@@ -183,7 +183,7 @@ function RequestCard({ conv, onRespond }: { conv: Conversation; onRespond: () =>
             ? <ActivityIndicator size="small" color="#fff" />
             : (
               <>
-                <Ionicons name="checkmark-circle-outline" size={16} color="#fff" />
+                <FontAwesome5 name="check-circle" solid size={16} color="#fff" />
                 <Text style={s.acceptTxt}>{t('messages.accept')}</Text>
               </>
             )}
@@ -247,7 +247,7 @@ function ChatCard({ conv, onDelete }: { conv: Conversation; onDelete: (id: strin
 
           <View style={s.rowBottom}>
             {conv.campaignTitle ? (
-              <Ionicons name="briefcase" size={12} color={hasUnread ? C.text : C.textSecondary} style={s.previewIcon} />
+              <FontAwesome5 name="briefcase" solid size={12} color={hasUnread ? C.text : C.textSecondary} style={s.previewIcon} />
             ) : null}
             <Text
               style={[s.preview, { color: hasUnread ? C.text : C.textSecondary }, hasUnread && s.previewUnread]}

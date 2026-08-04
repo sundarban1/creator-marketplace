@@ -1,7 +1,7 @@
 import { useRef, type ReactNode } from 'react';
 import { Animated, Pressable, StyleSheet, Text } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 
 // Instagram-style swipe-left-to-delete for a chat list row. `Swipeable` is
 // built on react-native-gesture-handler, which needs a GestureHandlerRootView
@@ -28,7 +28,7 @@ export function SwipeableChatRow({
           onDelete();
         }}>
         <Animated.View style={[s.actionInner, { transform: [{ scale }] }]}>
-          <Ionicons name="trash" size={20} color="#fff" />
+          <FontAwesome5 name="trash-alt" solid size={20} color="#fff" />
           <Text style={s.actionTxt}>{deleteLabel}</Text>
         </Animated.View>
       </Pressable>

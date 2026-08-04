@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { FontAwesome5, Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { BackButton } from '@/components/BackButton';
 import { EmptyState } from '@/components/EmptyState';
@@ -134,7 +134,7 @@ function ExploreFilterModal({
       {availableCategories.length > 0 && (
         <View>
           <FilterSectionHeader
-            icon="pricetag-outline"
+            icon="tag"
             label={t('explore.category')}
             hint={temp.categories.length > 0 ? t('filterModal.selectedCount', { count: temp.categories.length }) : undefined}
           />
@@ -161,7 +161,7 @@ function ExploreFilterModal({
       {allPlatforms.length > 0 && (
         <View>
           <FilterSectionHeader
-            icon="phone-portrait-outline"
+            icon="mobile-alt"
             label={t('explore.platform')}
             hint={temp.platforms.length > 0 ? t('filterModal.selectedCount', { count: temp.platforms.length }) : undefined}
           />
@@ -185,7 +185,7 @@ function ExploreFilterModal({
       {/* Location — kept last */}
       <View>
         <FilterSectionHeader
-          icon="location-outline"
+          icon="map-marker-alt"
           label={t('explore.location')}
           hint={t('explore.locationsAllowed', { count: temp.locations.length, max: MAX_LOCS })}
         />
@@ -366,7 +366,7 @@ export default function ExploreCreatorPeersScreen() {
       <View style={[s.topRow, { backgroundColor: C.surface }]} accessibilityRole="header" accessibilityLabel={t('explore.exploreCreators')}>
         <BackButton fallback="/(creator)/(tabs)" />
         <View style={[s.searchCard, { flex: 1, backgroundColor: C.surface, borderColor: C.border }]}>
-          <Ionicons name="search-outline" size={18} color={C.textSecondary} />
+          <FontAwesome5 name="search" solid size={18} color={C.textSecondary} />
           <TextInput
             style={[s.searchInput, { color: C.text }]}
             placeholder={t('explore.searchCreators')}
@@ -378,7 +378,7 @@ export default function ExploreCreatorPeersScreen() {
           />
           {search.length > 0 && (
             <Pressable onPress={() => setSearch('')} hitSlop={10}>
-              <Ionicons name="close-circle" size={18} color={C.textSecondary} />
+              <FontAwesome5 name="times-circle" solid size={18} color={C.textSecondary} />
             </Pressable>
           )}
           <Pressable
@@ -389,7 +389,7 @@ export default function ExploreCreatorPeersScreen() {
             ]}
             onPress={openFilter}
             hitSlop={6}>
-            <Ionicons name="options-outline" size={18} color={filterActive ? '#fff' : C.brinjal1} />
+            <FontAwesome5 name="sliders-h" solid size={18} color={filterActive ? '#fff' : C.brinjal1} />
             {filterActive && (
               <View style={s.filterCountBadge}>
                 <Text style={s.filterCountBadgeTxt}>{filterCount}</Text>
@@ -407,9 +407,9 @@ export default function ExploreCreatorPeersScreen() {
         <View style={s.chipRow}>
           {activeFilter.locations.map((loc) => (
             <Pressable key={loc.label} onPress={() => removeActiveFilter('locations', loc.label)} style={[s.chip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
-              <Ionicons name={loc.label === 'Remote' ? 'globe-outline' : 'location'} size={12} color={C.brinjal1} />
+              <FontAwesome5 name={loc.label === 'Remote' ? 'globe' : 'map-marker-alt'} solid size={12} color={C.brinjal1} />
               <Text style={[s.chipText, { color: C.brinjal1 }]}>{loc.label}</Text>
-              <Ionicons name="close" size={12} color={C.brinjal1} />
+              <FontAwesome5 name="times" solid size={12} color={C.brinjal1} />
             </Pressable>
           ))}
           {activeFilter.platforms.map((p) => {
@@ -419,7 +419,7 @@ export default function ExploreCreatorPeersScreen() {
               <Pressable key={p} onPress={() => removeActiveFilter('platforms', p)} style={[s.chip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
                 <FontAwesome5 name={meta.icon} size={11} color={meta.color} />
                 <Text style={[s.chipText, { color: C.brinjal1 }]}>{label}</Text>
-                <Ionicons name="close" size={12} color={C.brinjal1} />
+                <FontAwesome5 name="times" solid size={12} color={C.brinjal1} />
               </Pressable>
             );
           })}
@@ -429,7 +429,7 @@ export default function ExploreCreatorPeersScreen() {
               <Pressable key={cat} onPress={() => removeActiveFilter('categories', cat)} style={[s.chip, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 }]}>
                 <FontAwesome5 name={meta.icon} size={11} color={meta.color} />
                 <Text style={[s.chipText, { color: C.brinjal1 }]}>{cat}</Text>
-                <Ionicons name="close" size={12} color={C.brinjal1} />
+                <FontAwesome5 name="times" solid size={12} color={C.brinjal1} />
               </Pressable>
             );
           })}
@@ -453,7 +453,7 @@ export default function ExploreCreatorPeersScreen() {
         </View>
       ) : error ? (
         <EmptyState
-          icon="alert-circle-outline"
+          icon="exclamation-circle"
           title={t('common.error')}
           subtitle={error}
           action={{ label: t('common.retry'), onPress: () => fetchCreators(1, true, activeFilter, searchDebounced) }}

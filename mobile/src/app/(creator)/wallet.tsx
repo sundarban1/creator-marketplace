@@ -1,5 +1,5 @@
 import { router, useFocusEffect } from 'expo-router';
-import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { PageHeader } from '@/features/creator/components/PageHeader';
 import { PaymentMethodIcon } from '@/components/PaymentMethodIcon';
 import { isPaymentMethodId } from '@/utilities/paymentMethods';
@@ -112,7 +112,7 @@ export default function WalletScreen() {
           <Pressable
             style={[styles.withdrawBtn, { backgroundColor: C.surface, borderColor: C.brinjal1 }]}
             onPress={() => setModalVisible(true)}>
-            <Ionicons name="arrow-down-circle-outline" size={20} color={C.brinjal1} />
+            <FontAwesome5 name="arrow-alt-circle-down" size={20} color={C.brinjal1} />
             <Text style={[styles.withdrawBtnText, { color: C.brinjal1 }]}>{t('wallet.withdrawMoney')}</Text>
           </Pressable>
 
@@ -123,7 +123,7 @@ export default function WalletScreen() {
           <Pressable
             style={[styles.manageBtn, { backgroundColor: C.surface, borderColor: C.border }]}
             onPress={() => router.push('/(creator)/settings?section=earnings' as never)}>
-            <Ionicons name="card-outline" size={18} color={C.text} />
+            <FontAwesome5 name="credit-card" size={18} color={C.text} />
             <Text style={[styles.manageBtnText, { color: C.text }]}>{t('wallet.managePaymentMethods')}</Text>
           </Pressable>
 
@@ -131,7 +131,7 @@ export default function WalletScreen() {
           <Text style={[styles.sectionHeader, { color: C.textSecondary }]}>{t('wallet.statementTitle')}</Text>
           {transactions.length === 0 ? (
             <View style={[styles.emptyWrap, { backgroundColor: C.surface, borderColor: C.border }]}>
-              <Ionicons name="receipt-outline" size={32} color={C.textSecondary} />
+              <FontAwesome5 name="receipt" solid size={32} color={C.textSecondary} />
               <Text style={[styles.emptyTitle, { color: C.text }]}>{t('wallet.noTransactionsYet')}</Text>
               <Text style={[styles.emptyHint, { color: C.textSecondary }]}>{t('wallet.noTransactionsHint')}</Text>
             </View>

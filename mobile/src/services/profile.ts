@@ -40,7 +40,7 @@ export type BusinessProfile = {
   user: { email: string; phone: string | null; isEmailVerified: boolean; isPhoneVerified: boolean };
 };
 
-export type Category = { emoji: string; label: string };
+export type Category = { label: string };
 
 export const profileService = {
   async getCategories(): Promise<Category[]> {

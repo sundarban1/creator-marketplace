@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import {
   RecordingPresets, requestRecordingPermissionsAsync, setAudioModeAsync,
   useAudioPlayer, useAudioPlayerStatus, useAudioRecorder, useAudioRecorderState,
@@ -196,7 +196,7 @@ export function VoicePromptInput({ onRecorded, onDiscard, onError, disabled }: P
             disabled={busy}
             onPress={handleTogglePlayback}
             accessibilityLabel={playerStatus.playing ? t('createEvent.audioPause') : t('createEvent.audioPlay')}>
-            <Ionicons name={playerStatus.playing ? 'pause' : 'play'} size={16} color={busy ? C.textSecondary : C.brinjal1} />
+            <FontAwesome5 name={playerStatus.playing ? 'pause' : 'play'} solid size={16} color={busy ? C.textSecondary : C.brinjal1} />
             <Text style={[styles.listenText, { color: busy ? C.textSecondary : C.brinjal1 }]}>
               {playerStatus.playing ? t('createEvent.audioPause') : t('createEvent.audioListenToRecording')}
             </Text>
@@ -205,7 +205,7 @@ export function VoicePromptInput({ onRecorded, onDiscard, onError, disabled }: P
             style={[styles.sayAgainPill, { borderColor: C.border, backgroundColor: C.background }]}
             disabled={busy}
             onPress={handleSayAgain}>
-            <Ionicons name="refresh" size={14} color={C.text} />
+            <FontAwesome5 name="sync-alt" solid size={14} color={C.text} />
             <Text style={[styles.sayAgainText, { color: C.text }]}>{t('createEvent.audioSayAgain')}</Text>
           </Pressable>
         </View>
@@ -246,7 +246,7 @@ export function VoicePromptInput({ onRecorded, onDiscard, onError, disabled }: P
         hitSlop={12}
         onPressIn={() => void handlePressIn()}
         onPressOut={() => void handlePressOut()}>
-        <Ionicons name="mic" size={recorderState.isRecording ? 36 : 32} color="#fff" />
+        <FontAwesome5 name="microphone" solid size={recorderState.isRecording ? 36 : 32} color="#fff" />
       </Pressable>
       <Text style={[styles.hint, { color: C.textSecondary }]}>
         {recorderState.isRecording

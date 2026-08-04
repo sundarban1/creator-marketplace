@@ -1,11 +1,11 @@
 import { useRef, useState } from 'react';
 import { Animated, LayoutChangeEvent, NativeScrollEvent, NativeSyntheticEvent, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAppColors } from '@/context/ThemeContext';
 import { F, SHADOW } from '@/utilities/constants';
 
-type IoniconName = keyof typeof Ionicons.glyphMap;
+type IoniconName = keyof typeof FontAwesome5.glyphMap;
 
 export type TabDef = {
   key: string;
@@ -71,7 +71,7 @@ export function TabSlider({ tabs, active, onChange, justify = false }: Props) {
       >
         <View style={[s.tabInner, justify && s.tabInnerCenter]}>
           {tab.icon && (
-            <Ionicons name={tab.icon} size={14} color={isActive ? '#fff' : C.textSecondary} />
+            <FontAwesome5 name={tab.icon} size={14} color={isActive ? '#fff' : C.textSecondary} />
           )}
           <Text style={[s.tabLabel, isActive && s.tabLabelActive, { color: isActive ? '#fff' : C.textSecondary }]}>
             {tab.label}

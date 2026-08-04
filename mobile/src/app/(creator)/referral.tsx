@@ -1,4 +1,4 @@
-import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { PageHeader } from '@/features/creator/components/PageHeader';
 import { useEffect, useState } from 'react';
@@ -105,7 +105,7 @@ export default function ReferralScreen() {
               onPress={() => router.push('/(creator)/settings?section=security')}>
               <FontAwesome5 name="award" solid size={14} color={C.brinjal1} />
               <Text style={[styles.verifiedLinkText, { color: C.brinjal1 }]}>{t('referral.howToGetVerifiedLink')}</Text>
-              <Ionicons name="chevron-forward" size={14} color={C.brinjal1} />
+              <FontAwesome5 name="chevron-right" solid size={14} color={C.brinjal1} />
             </Pressable>
           </View>
 
@@ -122,7 +122,7 @@ export default function ReferralScreen() {
           {/* Referred by */}
           {overview.referredBy ? (
             <View style={[styles.referredByRow, { backgroundColor: C.surface, borderColor: C.border }]}>
-              <Ionicons name="person-circle-outline" size={18} color={C.brinjal1} />
+              <FontAwesome5 name="user-circle" size={18} color={C.brinjal1} />
               <View style={{ flex: 1 }}>
                 <Text style={[styles.referredByText, { color: C.text }]}>
                   {t('referral.referredByLabel')}: <Text style={{ fontFamily: F.bold, color: C.brinjal1 }}>{overview.referredBy.name}</Text>
@@ -169,7 +169,7 @@ export default function ReferralScreen() {
                     <Image source={{ uri: r.referredAvatarUrl }} style={styles.referralAvatar} />
                   ) : (
                     <View style={[styles.referralAvatar, styles.referralAvatarFallback, { backgroundColor: C.background }]}>
-                      <Ionicons name="person" size={16} color={C.textSecondary} />
+                      <FontAwesome5 name="user" solid size={16} color={C.textSecondary} />
                     </View>
                   )}
                   <View style={styles.referralInfo}>

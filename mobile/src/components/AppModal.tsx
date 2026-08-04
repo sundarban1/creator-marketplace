@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAppColors } from '@/context/ThemeContext';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
@@ -8,7 +8,7 @@ type ModalType = 'danger' | 'warning' | 'info' | 'success';
 type Props = {
   visible:       boolean;
   type?:         ModalType;
-  icon?:         keyof typeof Ionicons.glyphMap;
+  icon?:         keyof typeof FontAwesome5.glyphMap;
   title:         string;
   body:          string;
   warning?:      string;
@@ -19,11 +19,11 @@ type Props = {
   onCancel:      () => void;
 };
 
-const TYPE_CFG: Record<ModalType, { iconName: keyof typeof Ionicons.glyphMap; iconColor: string; iconBg: string; btnColor: string }> = {
-  danger:  { iconName: 'trash-outline',        iconColor: '#DC2626', iconBg: '#FEF2F2', btnColor: '#DC2626' },
-  warning: { iconName: 'warning-outline',      iconColor: '#B45309', iconBg: '#FFF7ED', btnColor: '#C2410C' },
-  info:    { iconName: 'information-circle',   iconColor: '#4F46E5', iconBg: '#EEF2FF', btnColor: '#4F46E5' },
-  success: { iconName: 'checkmark-circle',     iconColor: '#16A34A', iconBg: '#F0FDF4', btnColor: '#16A34A' },
+const TYPE_CFG: Record<ModalType, { iconName: keyof typeof FontAwesome5.glyphMap; iconColor: string; iconBg: string; btnColor: string }> = {
+  danger:  { iconName: 'trash-alt',        iconColor: '#DC2626', iconBg: '#FEF2F2', btnColor: '#DC2626' },
+  warning: { iconName: 'exclamation-triangle',      iconColor: '#B45309', iconBg: '#FFF7ED', btnColor: '#C2410C' },
+  info:    { iconName: 'info-circle',   iconColor: '#4F46E5', iconBg: '#EEF2FF', btnColor: '#4F46E5' },
+  success: { iconName: 'check-circle',     iconColor: '#16A34A', iconBg: '#F0FDF4', btnColor: '#16A34A' },
 };
 
 export function AppModal({
@@ -54,7 +54,7 @@ export function AppModal({
 
           {/* Icon circle */}
           <View style={[s.iconCircle, { backgroundColor: cfg.iconBg }]}>
-            <Ionicons name={iconName} size={34} color={cfg.iconColor} />
+            <FontAwesome5 name={iconName} size={34} color={cfg.iconColor} />
           </View>
 
           {/* Title */}
@@ -66,7 +66,7 @@ export function AppModal({
           {/* Optional warning box */}
           {!!warning && (
             <View style={[s.warningBox, { backgroundColor: '#FFF7ED', borderColor: '#FED7AA' }]}>
-              <Ionicons name="warning-outline" size={15} color="#C2410C" style={{ flexShrink: 0, marginTop: 1 }} />
+              <FontAwesome5 name="exclamation-triangle" solid size={15} color="#C2410C" style={{ flexShrink: 0, marginTop: 1 }} />
               <Text style={s.warningText}>{warning}</Text>
             </View>
           )}

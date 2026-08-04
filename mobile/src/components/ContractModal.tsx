@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { useAppColors } from '@/context/ThemeContext';
 import { BottomSheet } from '@/components/BottomSheet';
 import { F, RADIUS } from '@/utilities/constants';
@@ -133,7 +133,7 @@ export function ContractModal({ visible, title, subtitle, filledBody, terms, con
         <View style={{ gap: 14 }}>
           <Pressable style={s.agreeRow} onPress={() => setAgreed((v) => !v)} disabled={agreeing}>
             <View style={[s.checkbox, { borderColor: agreed ? C.brinjal1 : C.border, backgroundColor: agreed ? C.brinjal1 : 'transparent' }]}>
-              {agreed && <Ionicons name="checkmark" size={13} color="#fff" />}
+              {agreed && <FontAwesome5 name="check" solid size={13} color="#fff" />}
             </View>
             <Text style={[s.agreeText, { color: C.text }]}>I have read and agree to the terms above</Text>
           </Pressable>
@@ -166,7 +166,7 @@ export function ContractModal({ visible, title, subtitle, filledBody, terms, con
             disabled={downloading}>
             {downloading
               ? <ActivityIndicator size="small" color={C.brinjal1} />
-              : <Ionicons name="download-outline" size={16} color={C.brinjal1} />}
+              : <FontAwesome5 name="download" solid size={16} color={C.brinjal1} />}
             <Text style={[s.pdfBtnText, { color: C.brinjal1 }]}>{downloading ? 'Preparing PDF…' : 'Download Contract'}</Text>
           </Pressable>
         )}

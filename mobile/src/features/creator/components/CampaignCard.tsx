@@ -1,4 +1,4 @@
-import { FontAwesome5, Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -90,7 +90,7 @@ export function CampaignCard({ campaign, variant }: { campaign: Campaign; varian
           ) : (
             campaign.distanceKm != null && (
               <View style={styles.distanceTag}>
-                <Ionicons name="navigate" size={10} color="#fff" />
+                <FontAwesome5 name="location-arrow" solid size={10} color="#fff" />
                 <Text style={styles.distanceTagText}>{formatDistance(campaign.distanceKm, t)}</Text>
               </View>
             )
@@ -119,17 +119,17 @@ export function CampaignCard({ campaign, variant }: { campaign: Campaign; varian
           {/* Details */}
           <View style={[styles.detailsSection, { borderTopColor: C.border, borderBottomColor: C.border }]}>
             <View style={styles.detailRow}>
-              <Ionicons name="location-outline" size={13} color={C.textSecondary} />
+              <FontAwesome5 name="map-marker-alt" solid size={13} color={C.textSecondary} />
               <Text style={[styles.detailText, { color: C.textSecondary }]} numberOfLines={1}>
                 {campaign.location ?? t('campaignCard.nepalFallback')}
               </Text>
             </View>
             <View style={styles.detailRow}>
-              <Ionicons name="time-outline" size={13} color={expiry.color} />
+              <FontAwesome5 name="clock" size={13} color={expiry.color} />
               <Text style={[styles.detailText, { color: expiry.color }]} numberOfLines={1}>{expiry.label}</Text>
             </View>
             <View style={styles.detailRow}>
-              <Ionicons name="cash-outline" size={13} color={C.textSecondary} />
+              <FontAwesome5 name="money-bill-alt" solid size={13} color={C.textSecondary} />
               <Text style={[styles.detailText, styles.budgetText, { color: C.text }]} numberOfLines={1}>{campaign.budget}</Text>
             </View>
           </View>
@@ -138,7 +138,7 @@ export function CampaignCard({ campaign, variant }: { campaign: Campaign; varian
             style={({ pressed }) => [styles.applyBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }, pressed && { opacity: 0.88 }]}
             onPress={goToDetail}>
             <Text style={styles.applyBtnText}>{t('campaignCard.applyNow')}</Text>
-            <Ionicons name="arrow-forward" size={14} color="#fff" />
+            <FontAwesome5 name="arrow-right" solid size={14} color="#fff" />
           </Pressable>
         </View>
 

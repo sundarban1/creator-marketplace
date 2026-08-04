@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { Dimensions, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { useAppColors } from '@/context/ThemeContext';
 import { F } from '@/utilities/constants';
 
@@ -33,7 +33,7 @@ export function RangeDropdown<T extends string>({ value, options, onChange }: Ra
         style={[s.trigger, { backgroundColor: C.surface, borderColor: C.border }]}
       >
         <Text style={[s.triggerText, { color: C.text }]} numberOfLines={1}>{selected?.label ?? ''}</Text>
-        <Ionicons name="chevron-down" size={15} color={C.textSecondary} />
+        <FontAwesome5 name="chevron-down" solid size={15} color={C.textSecondary} />
       </Pressable>
 
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
@@ -56,7 +56,7 @@ export function RangeDropdown<T extends string>({ value, options, onChange }: Ra
                     <Text style={[s.optionText, { color: active ? C.brinjal1 : C.text, fontFamily: active ? F.semibold : F.regular }]}>
                       {o.label}
                     </Text>
-                    {active && <Ionicons name="checkmark" size={16} color={C.brinjal1} />}
+                    {active && <FontAwesome5 name="check" solid size={16} color={C.brinjal1} />}
                   </Pressable>
                 );
               })}

@@ -1,4 +1,4 @@
-import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -102,7 +102,7 @@ export function RecommendedCreatorsModal({ visible, campaignId, category, lat, l
           </View>
         ) : creators.length === 0 ? (
           <View style={s.center}>
-            <Ionicons name="people-outline" size={36} color={C.textSecondary} />
+            <FontAwesome5 name="users" solid size={36} color={C.textSecondary} />
             <Text style={[s.emptyText, { color: C.textSecondary }]}>{t('createEvent.noRecommendedCreators')}</Text>
             <Pressable style={[s.skipBtn, { backgroundColor: C.brinjal1 }]} onPress={onDone}>
               <Text style={s.skipBtnText}>{t('createEvent.doneBtn')}</Text>
@@ -112,7 +112,7 @@ export function RecommendedCreatorsModal({ visible, campaignId, category, lat, l
           <>
             <Pressable style={s.selectAllRow} onPress={toggleAll}>
               <View style={[s.checkbox, { borderColor: allSelected ? C.brinjal1 : C.border, backgroundColor: allSelected ? C.brinjal1 : 'transparent' }]}>
-                {allSelected && <Ionicons name="checkmark" size={14} color="#fff" />}
+                {allSelected && <FontAwesome5 name="check" solid size={14} color="#fff" />}
               </View>
               <Text style={[s.selectAllText, { color: C.text }]}>
                 {allSelected ? t('createEvent.deselectAll') : t('createEvent.selectAll')}
@@ -146,7 +146,7 @@ export function RecommendedCreatorsModal({ visible, campaignId, category, lat, l
                         <View style={s.nameRow}>
                           <Text style={[s.name, { color: C.text }]} numberOfLines={1}>{creator.fullName ?? 'Creator'}</Text>
                           {(creator.fullyVerified || creator.isVerified) && (
-                            <Ionicons name="checkmark-circle" size={14} color="#3B82F6" />
+                            <FontAwesome5 name="check-circle" solid size={14} color="#3B82F6" />
                           )}
                           <View style={s.completedRow}>
                             <FontAwesome5 name="trophy" size={10} color="#D97706" solid />
@@ -171,7 +171,7 @@ export function RecommendedCreatorsModal({ visible, campaignId, category, lat, l
                       </View>
 
                       <View style={[s.checkbox, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? C.brinjal1 : 'transparent' }]}>
-                        {sel && <Ionicons name="checkmark" size={14} color="#fff" />}
+                        {sel && <FontAwesome5 name="check" solid size={14} color="#fff" />}
                       </View>
                     </View>
                   </Pressable>

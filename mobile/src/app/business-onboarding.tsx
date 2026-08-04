@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { FontAwesome5, Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
 import {
   Animated,
@@ -157,7 +157,7 @@ export default function BusinessOnboardingScreen() {
       <SafeAreaView style={[styles.successContainer, { backgroundColor: C.preLoginBackground }]} edges={['top', 'bottom']}>
         <Animated.View style={[styles.successContent, { opacity: opacityAnim }]}>
           <Animated.View style={[styles.checkCircle, { backgroundColor: C.active, shadowColor: C.active, transform: [{ scale: scaleAnim }] }]}>
-            <Ionicons name="checkmark" size={52} color="#fff" />
+            <FontAwesome5 name="check" solid size={52} color="#fff" />
           </Animated.View>
           <Text style={[styles.successTitle, { color: C.text }]}>{t('businessOnboarding.successTitle')}</Text>
           <Text style={[styles.successSub, { color: C.textSecondary }]}>
@@ -332,7 +332,7 @@ export default function BusinessOnboardingScreen() {
               ) : (
                 <View style={styles.loadingRow}>
                   <Text style={styles.primaryBtnText}>{t('businessOnboarding.continueBtn')}</Text>
-                  <Ionicons name="arrow-forward" size={16} color="#fff" />
+                  <FontAwesome5 name="arrow-right" solid size={16} color="#fff" />
                 </View>
               )}
             </Pressable>
@@ -370,7 +370,7 @@ export default function BusinessOnboardingScreen() {
               </View>
               {selectedCategories.length === 3 && (
                 <View style={[styles.maxBanner, { backgroundColor: C.primaryLight }]}>
-                  <Ionicons name="checkmark-circle" size={14} color={C.brinjal1} />
+                  <FontAwesome5 name="check-circle" solid size={14} color={C.brinjal1} />
                   <Text style={[styles.maxBannerText, { color: C.brinjal1 }]}>{t('businessOnboarding.maxCategoriesReached')}</Text>
                 </View>
               )}
@@ -399,7 +399,7 @@ export default function BusinessOnboardingScreen() {
                       <Text style={[styles.chipLabel, { color: isSelected ? C.brinjal1 : C.text }, isSelected && { fontWeight: '700' }]}>
                         {cat.name}
                       </Text>
-                      {isSelected && <Ionicons name="checkmark-circle" size={14} color={C.brinjal1} />}
+                      {isSelected && <FontAwesome5 name="check-circle" solid size={14} color={C.brinjal1} />}
                     </Pressable>
                   );
                 })}
@@ -418,7 +418,7 @@ export default function BusinessOnboardingScreen() {
               ) : (
                 <View style={styles.loadingRow}>
                   <Text style={styles.primaryBtnText}>{t('businessOnboarding.completeBtn')}</Text>
-                  <Ionicons name="arrow-forward" size={16} color="#fff" />
+                  <FontAwesome5 name="arrow-right" solid size={16} color="#fff" />
                 </View>
               )}
             </Pressable>

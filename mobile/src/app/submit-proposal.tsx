@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { FontAwesome5, Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
 import { PageHeader } from '@/features/creator/components/PageHeader';
 import {
@@ -279,12 +279,12 @@ export default function SubmitProposalScreen() {
             <Text style={[styles.campaignBrand, { color: C.textSecondary }]}>{brand}</Text>
             {isFreeEvent ? (
               <View style={[styles.budgetPill, { backgroundColor: '#F0FDF4' }]}>
-                <Ionicons name="checkmark-circle" size={13} color="#059669" />
+                <FontAwesome5 name="check-circle" solid size={13} color="#059669" />
                 <Text style={[styles.budgetText, { color: '#059669' }]}>Free Event</Text>
               </View>
             ) : !!budget && (
               <View style={[styles.budgetPill, { backgroundColor: '#05966918' }]}>
-                <FontAwesome5 name="wallet" size={12} color="#059669" />
+                <FontAwesome5 name="wallet" solid size={12} color="#059669" />
                 <Text style={[styles.budgetText, { color: '#059669' }]}>{budget}</Text>
               </View>
             )}
@@ -310,7 +310,7 @@ export default function SubmitProposalScreen() {
                   style={[styles.regenBtn, { backgroundColor: C.primaryLight, borderColor: C.brinjal1 + '55' }]}
                   onPress={handleRegenerate}
                   hitSlop={8}>
-                  <FontAwesome5 name="magic" size={11} color={C.brinjal1} />
+                  <FontAwesome5 name="magic" solid size={11} color={C.brinjal1} />
                   <Text style={[styles.regenText, { color: C.brinjal1 }]}>Regenerate</Text>
                 </Pressable>
               </View>
@@ -334,12 +334,12 @@ export default function SubmitProposalScreen() {
               <View style={styles.fieldMeta}>
                 {coverError ? (
                   <>
-                    <Ionicons name="warning" size={12} color={C.error} />
+                    <FontAwesome5 name="exclamation-triangle" solid size={12} color={C.error} />
                     <Text style={[styles.fieldError, { color: C.error }]}>{coverError}</Text>
                   </>
                 ) : (
                   <>
-                    {coverLetterLen >= 50 && <Ionicons name="checkmark" size={12} color={C.active} />}
+                    {coverLetterLen >= 50 && <FontAwesome5 name="check" solid size={12} color={C.active} />}
                     <Text style={[styles.charHint, { color: coverLetterLen >= 50 ? C.active : C.textSecondary }]}>
                       {coverLetterLen}/800 characters
                       {coverLetterLen < 50 ? ` — ${50 - coverLetterLen} more needed` : ''}
@@ -384,7 +384,7 @@ export default function SubmitProposalScreen() {
       <AppModal
         visible={showSocialModal}
         type="info"
-        icon="link-outline"
+        icon="link"
         title="Add a Social Link First"
         body="Businesses want to see your work before accepting a proposal. Add at least one Facebook, Instagram, or TikTok profile to your account, then come back and submit."
         confirmLabel="Add Social Link"

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { Animated, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useAppColors } from '@/context/ThemeContext';
@@ -65,7 +65,7 @@ export function BottomSheet({
       >
         <Pressable style={s.handleWrap} onPress={onClose} hitSlop={12}>
           <View style={[s.handlePill, { backgroundColor: C.border }]}>
-            <Ionicons name="chevron-down" size={16} color={C.textSecondary} />
+            <FontAwesome5 name="chevron-down" solid size={16} color={C.textSecondary} />
           </View>
         </Pressable>
 

@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { FontAwesome5, Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { PageHeader } from '@/features/creator/components/PageHeader';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useState } from 'react';
@@ -113,7 +113,7 @@ function CampaignCard({ campaign, isApplied }: { campaign: BusinessActiveCampaig
         </View>
         {campaign.location && (
           <View style={styles.locationRow}>
-            <Ionicons name="location" size={11} color={C.textSecondary} />
+            <FontAwesome5 name="map-marker-alt" solid size={11} color={C.textSecondary} />
             <Text style={[styles.campaignLocation, { color: C.textSecondary }]}>{campaign.location}</Text>
           </View>
         )}
@@ -121,7 +121,7 @@ function CampaignCard({ campaign, isApplied }: { campaign: BusinessActiveCampaig
         {/* Apply / Applied status */}
         {isApplied ? (
           <View style={styles.appliedPill}>
-            <Ionicons name="checkmark-circle" size={13} color="#059669" />
+            <FontAwesome5 name="check-circle" solid size={13} color="#059669" />
             <Text style={styles.appliedPillText}>{t('businessDetail.applied')}</Text>
           </View>
         ) : (
@@ -130,13 +130,13 @@ function CampaignCard({ campaign, isApplied }: { campaign: BusinessActiveCampaig
             hitSlop={8}
             onPress={(e) => { e.stopPropagation(); goToDetail(); }}>
             <Text style={styles.applyNowBtnText}>{t('businessDetail.applyNow')}</Text>
-            <Ionicons name="arrow-forward" size={12} color="#fff" />
+            <FontAwesome5 name="arrow-right" solid size={12} color="#fff" />
           </Pressable>
         )}
       </View>
 
       <View style={styles.campaignRight}>
-        <Ionicons name="chevron-forward" size={18} color={C.border} />
+        <FontAwesome5 name="chevron-right" solid size={18} color={C.border} />
         <Text style={[styles.appliedCount, { color: C.textSecondary }]}>{campaign._count.applications}</Text>
         <Text style={[styles.appliedLabel, { color: C.textSecondary }]}>{t('businessDetail.appliedCount')}</Text>
       </View>
@@ -261,7 +261,7 @@ export default function BusinessDetailScreen() {
           <Text style={[styles.heroName, { color: C.text, textAlign: 'center' }]} numberOfLines={2}>{business.businessName}</Text>
         </View>
         <EmptyState
-          icon="lock-closed-outline"
+          icon="lock"
           title={t('businessDetail.privateTitle')}
           subtitle={t('businessDetail.privateSubtitle')}
         />
@@ -300,8 +300,8 @@ export default function BusinessDetailScreen() {
             <BackButton variant="overlay" fallback="/(creator)/explore-businesses" />
             <View style={styles.topTitleRow} />
             <Pressable style={styles.topIconBtn} hitSlop={10} onPress={handleToggleFavorite}>
-              <Ionicons
-                name={isFavorited ? 'heart' : 'heart-outline'}
+              <FontAwesome5
+                name={isFavorited ? 'heart' : 'heart'}
                 size={19}
                 color={isFavorited ? '#EF4444' : '#fff'}
               />
@@ -351,7 +351,7 @@ export default function BusinessDetailScreen() {
                     },
                   ]}
                 >
-                  <Ionicons name="document-text-outline" size={16} color={C.brinjal1} />
+                  <FontAwesome5 name="file-alt" solid size={16} color={C.brinjal1} />
                 </View>
                 <Text style={[styles.infoCardTitle, { color: C.text }]}>{t('businessDetail.sectionAbout')}</Text>
               </View>
@@ -372,7 +372,7 @@ export default function BusinessDetailScreen() {
                     },
                   ]}
                 >
-                  <Ionicons name="stats-chart-outline" size={15} color={C.brinjal1} />
+                  <FontAwesome5 name="chart-bar" size={15} color={C.brinjal1} />
                 </View>
                 <Text style={[styles.infoCardTitle, { color: C.text }]}>{t('businessDetail.sectionPerformance')}</Text>
               </View>
@@ -408,7 +408,7 @@ export default function BusinessDetailScreen() {
                   },
                 ]}
               >
-                <Ionicons name="globe" size={20} color={C.brinjal1} />
+                <FontAwesome5 name="globe" solid size={20} color={C.brinjal1} />
               </View>
               <View style={styles.websiteText}>
                 <Text style={[styles.websiteLabel, { color: C.textSecondary }]}>{t('businessDetail.sectionWebsite')}</Text>
@@ -416,7 +416,7 @@ export default function BusinessDetailScreen() {
                   {business.website.replace(/^https?:\/\//, '')}
                 </Text>
               </View>
-              <Ionicons name="open-outline" size={18} color={C.textSecondary} />
+              <FontAwesome5 name="external-link-alt" solid size={18} color={C.textSecondary} />
             </Pressable>
           ) : null}
 
@@ -434,13 +434,13 @@ export default function BusinessDetailScreen() {
                   },
                 ]}
               >
-                <Ionicons name="call" size={18} color={C.brinjal1} />
+                <FontAwesome5 name="phone" solid size={18} color={C.brinjal1} />
               </View>
               <View style={styles.websiteText}>
                 <Text style={[styles.websiteLabel, { color: C.textSecondary }]}>{t('businessDetail.sectionPhone')}</Text>
                 <Text style={[styles.websiteUrl, { color: C.brinjal1 }]} numberOfLines={1}>{business.phone}</Text>
               </View>
-              <Ionicons name="open-outline" size={18} color={C.textSecondary} />
+              <FontAwesome5 name="external-link-alt" solid size={18} color={C.textSecondary} />
             </Pressable>
           ) : null}
 
@@ -457,7 +457,7 @@ export default function BusinessDetailScreen() {
                     },
                   ]}
                 >
-                  <Ionicons name="pricetag" size={15} color={C.brinjal1} />
+                  <FontAwesome5 name="tag" solid size={15} color={C.brinjal1} />
                 </View>
                 <Text style={[styles.infoCardTitle, { color: C.text }]}>{t('businessDetail.sectionIndustries')}</Text>
               </View>
@@ -485,7 +485,7 @@ export default function BusinessDetailScreen() {
 
             {business.campaigns.length === 0 ? (
               <View style={[styles.noCampaigns, { backgroundColor: C.surface, borderColor: C.border }]}>
-                <Ionicons name="mail-unread-outline" size={36} color={C.textSecondary} style={{ marginBottom: 8 }} />
+                <FontAwesome5 name="envelope-open" solid size={36} color={C.textSecondary} style={{ marginBottom: 8 }} />
                 <Text style={[styles.noCampaignsTitle, { color: C.text }]}>{t('businessDetail.noActiveEvents')}</Text>
                 <Text style={[styles.noCampaignsSub, { color: C.textSecondary }]}>{t('businessDetail.noActiveEventsSub')}</Text>
               </View>

@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { FontAwesome5, Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -272,7 +272,7 @@ export default function OnboardingScreen() {
       <SafeAreaView style={[styles.successContainer, { backgroundColor: C.preLoginBackground }]} edges={['top', 'bottom']}>
         <Animated.View style={[styles.successContent, { opacity: opacityAnim }]}>
           <Animated.View style={[styles.checkCircle, { backgroundColor: C.active, shadowColor: C.active, transform: [{ scale: scaleAnim }] }]}>
-            <Ionicons name="checkmark" size={52} color="#fff" />
+            <FontAwesome5 name="check" solid size={52} color="#fff" />
           </Animated.View>
           <Text style={[styles.successTitle, { color: C.text }]}>{t('onboarding.successTitle')}</Text>
           <Text style={[styles.successSub, { color: C.textSecondary }]}>
@@ -552,7 +552,7 @@ export default function OnboardingScreen() {
                     <Text style={[styles.categoryLabel, { color: isSelected ? C.brinjal1 : C.text }, isSelected && { fontWeight: '700' }]}>
                       {cat.name}
                     </Text>
-                    {isSelected && <Ionicons name="checkmark-circle" size={16} color={C.brinjal1} />}
+                    {isSelected && <FontAwesome5 name="check-circle" solid size={16} color={C.brinjal1} />}
                   </Pressable>
                 );
               })}

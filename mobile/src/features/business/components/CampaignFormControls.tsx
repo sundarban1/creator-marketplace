@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { FontAwesome5, Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { useAppColors } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
@@ -19,7 +19,7 @@ export function SectionCard({ title, sub, icon, iconColor, children, colors }: {
   // Optional colored icon-chip next to the title — same colored-chip motif as
   // the business home tab's Quick Actions row, so a long Review form reads as
   // scannable labeled sections instead of an undifferentiated stack of inputs.
-  icon?: keyof typeof Ionicons.glyphMap; iconColor?: string;
+  icon?: keyof typeof FontAwesome5.glyphMap; iconColor?: string;
   children: React.ReactNode; colors: ReturnType<typeof useAppColors>;
 }) {
   const C = colors;
@@ -30,7 +30,7 @@ export function SectionCard({ title, sub, icon, iconColor, children, colors }: {
         <View style={sc.titleRow}>
           {icon && (
             <View style={[sc.iconChip, { backgroundColor: `${chipColor}1A`, shadowColor: chipColor }]}>
-              <Ionicons name={icon} size={14} color={chipColor} />
+              <FontAwesome5 name={icon} size={14} color={chipColor} />
             </View>
           )}
           <Text style={[sc.title, { color: C.text }]}>{title}</Text>
@@ -226,7 +226,7 @@ export function BudgetTierPicker({
           disabled={disabled}
           style={[bt.cardFull, { borderColor: isCustom ? C.brinjal1 : C.border, backgroundColor: isCustom ? C.primaryLight : C.surface }]}
           onPress={() => setCustomForced(true)}>
-          <Ionicons name="create-outline" size={16} color={isCustom ? C.brinjal1 : C.textSecondary} />
+          <FontAwesome5 name="edit" size={16} color={isCustom ? C.brinjal1 : C.textSecondary} />
           <View style={{ flex: 1 }}>
             <Text style={[bt.cardLabel, { color: isCustom ? C.brinjal1 : C.text }]}>{t('createEvent.budgetTierCustomLabel')}</Text>
             <Text style={[bt.cardRange, { color: isCustom ? C.brinjal1 : C.textSecondary }]}>{t('createEvent.budgetTierCustomSub')}</Text>
@@ -397,7 +397,7 @@ export function HashtagEditor({ hashtags, onChange, colors, t }: {
             style={[ht.hashtagChip, { borderColor: C.brinjal1, backgroundColor: C.primaryLight }]}
             onPress={() => onChange(hashtags.filter((h) => h !== tag))}>
             <Text style={[ht.hashtagChipText, { color: C.brinjal1 }]}>#{tag.replace(/^#/, '')}</Text>
-            <Ionicons name="close" size={13} color={C.brinjal1} />
+            <FontAwesome5 name="times" solid size={13} color={C.brinjal1} />
           </Pressable>
         ))}
       </View>
@@ -414,7 +414,7 @@ export function HashtagEditor({ hashtags, onChange, colors, t }: {
         <Pressable
           style={[ht.addChipBtn, { backgroundColor: C.brinjal1 }]}
           onPress={addHashtag}>
-          <Ionicons name="add" size={20} color="#fff" />
+          <FontAwesome5 name="plus" solid size={20} color="#fff" />
         </Pressable>
       </View>
     </>

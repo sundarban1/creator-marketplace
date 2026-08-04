@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { router, useFocusEffect } from 'expo-router';
-import { FontAwesome5, Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import {
   ActivityIndicator,
@@ -33,17 +33,17 @@ import { F, RADIUS, SHADOW } from '@/utilities/constants';
 import { MaxWidthContainer } from '@/components/MaxWidthContainer';
 import { TabColors } from '@/utilities/tabColors';
 
-type IoniconName = keyof typeof Ionicons.glyphMap;
+type IoniconName = keyof typeof FontAwesome5.glyphMap;
 
 const FILTERS = ['All', 'Active', 'Draft', 'Closed'] as const;
 
 const EMPTY_CFG: Record<typeof FILTERS[number], {
   icon: IoniconName; iconColor: string; iconBg: string; showCreate: boolean;
 }> = {
-  All:    { icon: 'megaphone-outline',    iconColor: TabColors.neutral.color,  iconBg: TabColors.neutral.bg,  showCreate: true  },
-  Active: { icon: 'flash-outline',        iconColor: TabColors.positive.color, iconBg: TabColors.positive.bg, showCreate: true  },
-  Draft:  { icon: 'create-outline',       iconColor: TabColors.warning.color,  iconBg: TabColors.warning.bg,  showCreate: true  },
-  Closed: { icon: 'lock-closed-outline',  iconColor: TabColors.closed.color,   iconBg: TabColors.closed.bg,   showCreate: false },
+  All:    { icon: 'bullhorn',    iconColor: TabColors.neutral.color,  iconBg: TabColors.neutral.bg,  showCreate: true  },
+  Active: { icon: 'bolt',        iconColor: TabColors.positive.color, iconBg: TabColors.positive.bg, showCreate: true  },
+  Draft:  { icon: 'edit',       iconColor: TabColors.warning.color,  iconBg: TabColors.warning.bg,  showCreate: true  },
+  Closed: { icon: 'lock',  iconColor: TabColors.closed.color,   iconBg: TabColors.closed.bg,   showCreate: false },
 };
 
 const STATUS_CFG = {
@@ -322,10 +322,10 @@ export default function CampaignsScreen() {
   }
 
   const CAMP_TABS = [
-    { key: 'All',    label: t('campaigns.all'),    icon: 'layers-outline'      as const, color: TabColors.neutral.color,  count: tabData.All.total },
-    { key: 'Active', label: t('campaigns.active'), icon: 'flash-outline'       as const, color: TabColors.positive.color, count: tabData.Active.total },
-    { key: 'Draft',  label: t('campaigns.draft'),  icon: 'create-outline'      as const, color: TabColors.warning.color,  count: tabData.Draft.total },
-    { key: 'Closed', label: t('campaigns.closed'), icon: 'lock-closed-outline' as const, color: TabColors.closed.color,   count: tabData.Closed.total },
+    { key: 'All',    label: t('campaigns.all'),    icon: 'layer-group'      as const, color: TabColors.neutral.color,  count: tabData.All.total },
+    { key: 'Active', label: t('campaigns.active'), icon: 'bolt'       as const, color: TabColors.positive.color, count: tabData.Active.total },
+    { key: 'Draft',  label: t('campaigns.draft'),  icon: 'edit'      as const, color: TabColors.warning.color,  count: tabData.Draft.total },
+    { key: 'Closed', label: t('campaigns.closed'), icon: 'lock' as const, color: TabColors.closed.color,   count: tabData.Closed.total },
   ];
 
   const shown = tabData[activeFilter].items;
@@ -361,7 +361,7 @@ export default function CampaignsScreen() {
         <Pressable
           style={[styles.searchCard, { backgroundColor: C.surface, borderColor: C.border }, searchFocused && styles.searchCardFocused]}
           onPress={() => searchInputRef.current?.focus()}>
-          <Ionicons name="search-outline" size={18} color={searchFocused ? C.brinjal1 : C.textSecondary} style={styles.searchIcon} />
+          <FontAwesome5 name="search" solid size={18} color={searchFocused ? C.brinjal1 : C.textSecondary} style={styles.searchIcon} />
           <TextInput
             ref={searchInputRef}
             style={[styles.searchInput, { color: C.text }]}
@@ -376,7 +376,7 @@ export default function CampaignsScreen() {
           />
           {search.length > 0 && (
             <Pressable onPress={() => setSearch('')} hitSlop={10} style={{ marginRight: 6 }}>
-              <Ionicons name="close-circle" size={18} color={C.textSecondary} />
+              <FontAwesome5 name="times-circle" solid size={18} color={C.textSecondary} />
             </Pressable>
           )}
           <Pressable
@@ -387,7 +387,7 @@ export default function CampaignsScreen() {
             ]}
             onPress={openCategorySheet}
             hitSlop={6}>
-            <Ionicons name="pricetag-outline" size={17} color={categoryFilter ? '#fff' : C.brinjal1} />
+            <FontAwesome5 name="tag" solid size={17} color={categoryFilter ? '#fff' : C.brinjal1} />
           </Pressable>
         </Pressable>
       </View>
@@ -427,7 +427,7 @@ export default function CampaignsScreen() {
           ListEmptyComponent={
             filterActive ? (
               <View style={styles.noResultsWrap}>
-                <Ionicons name="search-outline" size={40} color={C.textSecondary} />
+                <FontAwesome5 name="search" solid size={40} color={C.textSecondary} />
                 <Text style={[styles.emptyTitle, { color: C.text }]}>{t('campaigns.noResultsTitle')}</Text>
                 <Text style={[styles.emptySub, { color: C.textSecondary }]}>{t('campaigns.noResultsSub')}</Text>
                 <Pressable onPress={clearFilters} style={styles.emptySwitchRow}>
@@ -451,7 +451,7 @@ export default function CampaignsScreen() {
                     },
                   ]}
                 >
-                  <Ionicons
+                  <FontAwesome5
                     name={EMPTY_CFG[activeFilter].icon}
                     size={36}
                     color={EMPTY_CFG[activeFilter].iconColor}
@@ -477,7 +477,7 @@ export default function CampaignsScreen() {
                       },
                     ]}
                     onPress={() => router.push('/create-campaign')}>
-                    <Ionicons name="add-circle-outline" size={16} color="#fff" />
+                    <FontAwesome5 name="plus-circle" solid size={16} color="#fff" />
                     <Text style={styles.emptyCreateBtnText}>{t('campaigns.createNewEvent')}</Text>
                   </Pressable>
                 )}
@@ -547,13 +547,13 @@ export default function CampaignsScreen() {
                     <View style={styles.detailsLeft}>
                       {dateIso && (
                         <View style={styles.detailRow}>
-                          <Ionicons name="calendar-outline" size={14} color={C.textSecondary} />
+                          <FontAwesome5 name="calendar-alt" size={14} color={C.textSecondary} />
                           <Text style={[styles.detailText, { color: C.textSecondary }]}>{formatShortDate(dateIso)}</Text>
                         </View>
                       )}
                       {!!creatorsCount && (
                         <View style={styles.detailRow}>
-                          <Ionicons name="people-outline" size={14} color={C.textSecondary} />
+                          <FontAwesome5 name="users" solid size={14} color={C.textSecondary} />
                           <Text style={[styles.detailText, { color: C.textSecondary }]}>{t('createEvent.summaryNCreators', { n: creatorsCount })}</Text>
                         </View>
                       )}
@@ -581,7 +581,7 @@ export default function CampaignsScreen() {
 
                   {c.status === 'draft' && (
                     <View style={[styles.tagBadge, styles.draftNote, { backgroundColor: TabColors.warning.bg, alignSelf: 'flex-start' }]}>
-                      <Ionicons name="create-outline" size={11} color={TabColors.warning.color} />
+                      <FontAwesome5 name="edit" size={11} color={TabColors.warning.color} />
                       <Text style={[styles.tagBadgeText, { color: TabColors.warning.color }]}>{t('campaigns.tapToEdit')}</Text>
                     </View>
                   )}
@@ -594,13 +594,13 @@ export default function CampaignsScreen() {
                       <Pressable
                         style={({ pressed }) => [styles.buttonSecondary, { borderColor: C.border }, pressed && { opacity: 0.7 }]}
                         onPress={() => openInvite(c)}>
-                        <FontAwesome5 name="user-plus" size={12} color={C.text} />
+                        <FontAwesome5 name="user-plus" solid size={12} color={C.text} />
                         <Text style={[styles.buttonTextSecondary, { color: C.text }]}>{t('campaigns.invite')}</Text>
                       </Pressable>
                     )}
                     {c.status === 'active' && c.proposals === 0 && (
                       <View style={[styles.buttonSecondary, { borderColor: C.border, borderStyle: 'dashed', opacity: 0.6 }]}>
-                        <Ionicons name="hourglass-outline" size={12} color={C.textSecondary} />
+                        <FontAwesome5 name="hourglass" solid size={12} color={C.textSecondary} />
                         <Text style={[styles.buttonTextSecondary, { color: C.textSecondary }]} numberOfLines={1}>{t('campaigns.noProposalsYet')}</Text>
                       </View>
                     )}
@@ -612,7 +612,7 @@ export default function CampaignsScreen() {
                         {publishingId === c.id ? (
                           <ActivityIndicator size="small" color={C.text} />
                         ) : (
-                          <Ionicons name="cloud-upload-outline" size={13} color={C.text} />
+                          <FontAwesome5 name="cloud-upload-alt" solid size={13} color={C.text} />
                         )}
                         <Text style={[styles.buttonTextSecondary, { color: C.text }]}>{t('campaigns.publishDraft')}</Text>
                       </Pressable>
@@ -649,7 +649,7 @@ export default function CampaignsScreen() {
         onClose={() => setCategorySheetVisible(false)}
       >
         <View>
-          <FilterSectionHeader icon="pricetag-outline" label={t('campaigns.filterCategory')} />
+          <FilterSectionHeader icon="tag" label={t('campaigns.filterCategory')} />
           <View style={styles.categoryChipGrid}>
             {allCategories.map((cat) => {
               const active = tempCategoryFilter === cat.name;
@@ -715,7 +715,7 @@ export default function CampaignsScreen() {
                   <Text style={[styles.modeSwitchText, { color: C.brinjal1 }]}>
                     {listMode === 'saved' ? t('campaigns.seeRecommendedCreators') : t('campaigns.seeSavedCreators')}
                   </Text>
-                  <Ionicons name="chevron-forward" size={14} color={C.brinjal1} />
+                  <FontAwesome5 name="chevron-right" solid size={14} color={C.brinjal1} />
                 </Pressable>
               )}
 
@@ -757,7 +757,7 @@ export default function CampaignsScreen() {
                         <View style={styles.pickInfo}>
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                             <Text style={[styles.pickName, { color: C.text }]} numberOfLines={1}>{creator.fullName ?? 'Creator'}</Text>
-                            {creator.isVerified && <Ionicons name="checkmark-circle" size={13} color="#3B82F6" />}
+                            {creator.isVerified && <FontAwesome5 name="check-circle" solid size={13} color="#3B82F6" />}
                           </View>
                           {(topAcc || creator.distanceKm != null) && (
                             <Text style={[styles.pickSub, { color: C.textSecondary }]} numberOfLines={1}>
@@ -767,7 +767,7 @@ export default function CampaignsScreen() {
                           )}
                         </View>
                         <View style={[styles.checkbox, { borderColor: sel ? C.brinjal1 : C.border, backgroundColor: sel ? C.brinjal1 : 'transparent' }]}>
-                          {sel && <Ionicons name="checkmark" size={14} color="#fff" />}
+                          {sel && <FontAwesome5 name="check" solid size={14} color="#fff" />}
                         </View>
                       </Pressable>
                     );

@@ -1,5 +1,5 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { useAppColors } from '@/context/ThemeContext';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
 
@@ -9,7 +9,7 @@ type ButtonProps = {
   loading?: boolean;
   disabled?: boolean;
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
-  icon?: keyof typeof Ionicons.glyphMap;
+  icon?: keyof typeof FontAwesome5.glyphMap;
   fullWidth?: boolean;
 };
 
@@ -40,7 +40,7 @@ export function Button({
           <ActivityIndicator color="#fff" size="small" />
         ) : (
           <View style={styles.inner}>
-            {icon && <Ionicons name={icon} size={17} color="#fff" />}
+            {icon && <FontAwesome5 name={icon} size={17} color="#fff" />}
             <Text style={[styles.labelPrimary, { fontFamily: F.bold }]}>{label}</Text>
           </View>
         )}
@@ -63,7 +63,7 @@ export function Button({
           <ActivityIndicator color="#EF4444" size="small" />
         ) : (
           <View style={styles.inner}>
-            {icon && <Ionicons name={icon} size={17} color="#EF4444" />}
+            {icon && <FontAwesome5 name={icon} size={17} color="#EF4444" />}
             <Text style={[styles.labelDanger, { fontFamily: F.bold }]}>{label}</Text>
           </View>
         )}
@@ -86,7 +86,7 @@ export function Button({
           <ActivityIndicator color={C.brinjal1} size="small" />
         ) : (
           <View style={styles.inner}>
-            {icon && <Ionicons name={icon} size={17} color={C.brinjal1} />}
+            {icon && <FontAwesome5 name={icon} size={17} color={C.brinjal1} />}
             <Text style={[styles.labelSecondary, { color: C.brinjal1, fontFamily: F.bold }]}>{label}</Text>
           </View>
         )}
@@ -105,7 +105,7 @@ export function Button({
         { opacity: isDisabled ? 0.55 : pressed ? 0.7 : 1 },
       ]}>
       <View style={styles.inner}>
-        {icon && <Ionicons name={icon} size={17} color={C.brinjal1} />}
+        {icon && <FontAwesome5 name={icon} size={17} color={C.brinjal1} />}
         <Text style={[styles.labelSecondary, { color: C.brinjal1, fontFamily: F.semibold }]}>{label}</Text>
       </View>
     </Pressable>

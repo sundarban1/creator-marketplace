@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import {
   ActivityIndicator,
   FlatList,
@@ -144,7 +144,7 @@ export function LocationSearchModal({
         </View>
 
         <View style={[lsm.inputRow, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
-          <Ionicons name="search" size={16} color="#9CA3AF" style={{ marginRight: 8 }} />
+          <FontAwesome5 name="search" solid size={16} color="#9CA3AF" style={{ marginRight: 8 }} />
           <TextInput
             ref={inputRef}
             style={[lsm.input, { color: C.text }]}
@@ -166,7 +166,7 @@ export function LocationSearchModal({
             <Pressable
               style={[lsm.row, { borderBottomColor: C.border }]}
               onPress={() => handleSelectPrediction(item)}>
-              <Ionicons name="location" size={18} color="#9CA3AF" />
+              <FontAwesome5 name="map-marker-alt" solid size={18} color="#9CA3AF" />
               <View style={lsm.rowText}>
                 <Text style={[lsm.mainTxt, { color: C.text }]}>{item.structured_formatting.main_text}</Text>
                 <Text style={[lsm.secTxt, { color: C.textSecondary }]} numberOfLines={1}>

@@ -1,4 +1,4 @@
-import { FontAwesome5, Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { ActivityIndicator, Image, Pressable, StyleSheet, View } from 'react-native';
 import { useAppColors } from '@/context/ThemeContext';
 import { getTemplateImage, DEFAULT_TEMPLATE_IMAGE } from '@/features/creator/data/templateImages';
@@ -17,7 +17,7 @@ export function FeatureImagePicker({ imageUrl, category, uploading, onPick, onCl
         <Image source={{ uri: previewImage }} style={StyleSheet.absoluteFill} resizeMode="cover" />
         {imageUrl && (
           <Pressable hitSlop={8} style={[fi.clearBtn, { opacity: uploading ? 0.5 : 1 }]} onPress={onClear} disabled={uploading}>
-            <Ionicons name="close" size={16} color="#fff" />
+            <FontAwesome5 name="times" solid size={16} color="#fff" />
           </Pressable>
         )}
         <Pressable

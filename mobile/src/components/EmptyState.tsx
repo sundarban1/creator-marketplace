@@ -1,14 +1,14 @@
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { useAppColors } from '@/context/ThemeContext';
 import { getIconColor } from '@/features/creator/data/filterOptions';
 import { F, RADIUS, SHADOW } from '@/utilities/constants';
 
 type Props = {
   emoji?:    string;
-  icon?:     keyof typeof Ionicons.glyphMap;
+  icon?:     keyof typeof FontAwesome5.glyphMap;
   faIcon?:   string;
   title:     string;
   subtitle?: string;
@@ -20,7 +20,7 @@ type Props = {
 // centered card, same icon/title/subtitle/action layout everywhere. Update
 // this component, not individual screens, when the empty-state design needs
 // to change.
-export function EmptyState({ emoji, icon = 'cube-outline', faIcon, title, subtitle, action, children }: Props) {
+export function EmptyState({ emoji, icon = 'cube', faIcon, title, subtitle, action, children }: Props) {
   const C = useAppColors();
   const faIconColor = faIcon ? getIconColor(faIcon, C.brinjal1) : C.brinjal1;
 
@@ -33,7 +33,7 @@ export function EmptyState({ emoji, icon = 'cube-outline', faIcon, title, subtit
           ) : emoji ? (
             <Text style={styles.emoji}>{emoji}</Text>
           ) : (
-            <Ionicons name={icon} size={38} color={C.brinjal1} />
+            <FontAwesome5 name={icon} size={38} color={C.brinjal1} />
           )}
         </View>
         <Text style={[styles.title, { color: C.text, fontFamily: F.bold }]}>{title}</Text>

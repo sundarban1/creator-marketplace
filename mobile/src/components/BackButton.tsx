@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { Pressable, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import { useAppColors } from '@/context/ThemeContext';
@@ -10,10 +10,10 @@ type Props = {
   // translucent white circle with no border, instead of the default solid
   // themed-surface look.
   variant?: 'solid' | 'overlay';
-  icon?: keyof typeof Ionicons.glyphMap;
+  icon?: keyof typeof FontAwesome5.glyphMap;
 };
 
-export function BackButton({ onPress, fallback = '/', variant = 'solid', icon = 'chevron-back' }: Props) {
+export function BackButton({ onPress, fallback = '/', variant = 'solid', icon = 'chevron-left' }: Props) {
   const C = useAppColors();
   const overlay = variant === 'overlay';
 
@@ -32,7 +32,7 @@ export function BackButton({ onPress, fallback = '/', variant = 'solid', icon = 
       ]}
       onPress={handlePress}
       hitSlop={8}>
-      <Ionicons name={icon} size={overlay ? 22 : 20} color={overlay ? '#fff' : C.text} />
+      <FontAwesome5 name={icon} size={overlay ? 22 : 20} color={overlay ? '#fff' : C.text} />
     </Pressable>
   );
 }

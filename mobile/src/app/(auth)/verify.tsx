@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { FontAwesome5, Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -172,7 +172,7 @@ export default function VerifyScreen() {
               styles.checkCircle,
               { backgroundColor: C.active, shadowColor: C.active, transform: [{ scale: scaleAnim }] },
             ]}>
-            <Ionicons name="checkmark" size={44} color="#fff" />
+            <FontAwesome5 name="check" solid size={44} color="#fff" />
           </Animated.View>
           <Text style={[styles.successTitle, { color: C.text }]}>{t('auth.verify.successTitle')}</Text>
           <Text style={[styles.successSub, { color: C.textSecondary }]}>
@@ -246,7 +246,7 @@ export default function VerifyScreen() {
           {/* Error banner */}
           {error ? (
             <View style={[styles.errorBanner, { backgroundColor: '#FEE2E2', borderColor: '#FECACA' }]}>
-              <Ionicons name="warning" size={14} color="#EF4444" />
+              <FontAwesome5 name="exclamation-triangle" solid size={14} color="#EF4444" />
               <Text style={[styles.errorText, { color: '#EF4444' }]}>{error}</Text>
             </View>
           ) : null}

@@ -1,6 +1,6 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { messagingEvents } from '@/lib/messagingEvents';
-import { FontAwesome5, Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { Image as ExpoImage } from 'expo-image';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -205,7 +205,7 @@ function MessageBubble({
         {!isSent && <View style={s.avatarSpacer} />}
         <View style={[s.bubbleWrap, isSent ? s.bubbleWrapSent : s.bubbleWrapReceived]}>
           <View style={[s.bubble, s.deletedBubble, { borderColor: C.border }]}>
-            <Ionicons name="ban-outline" size={13} color={C.textSecondary} />
+            <FontAwesome5 name="ban" solid size={13} color={C.textSecondary} />
             <Text style={[s.deletedTxt, { color: C.textSecondary }]}>{t('messages.messageDeleted')}</Text>
           </View>
         </View>
@@ -259,7 +259,7 @@ function MessageBubble({
                 ? { backgroundColor: C.brinjal1 }
                 : { backgroundColor: C.surface, borderColor: C.border, borderWidth: StyleSheet.hairlineWidth },
             ]}>
-            <FontAwesome5 name="file-alt" size={19} color={isSent ? '#fff' : C.brinjal1} />
+            <FontAwesome5 name="file-alt" solid size={19} color={isSent ? '#fff' : C.brinjal1} />
             <Text numberOfLines={1} style={[s.fileNameTxt, { color: isSent ? '#fff' : C.text }]}>
               {msg.attachmentName ?? 'File'}
             </Text>
@@ -278,7 +278,7 @@ function MessageBubble({
                 : <ExpoImage source={{ uri: msg.attachmentThumbnailUrl ?? undefined }} style={s.attachmentImage} contentFit="cover" />}
               {msg.status !== 'compressing' && msg.status !== 'uploading' && msg.status !== 'finalizing' && msg.status !== 'failed' && (
                 <View style={s.videoPlayOverlay}>
-                  <Ionicons name="play-circle" size={44} color="#fff" />
+                  <FontAwesome5 name="play-circle" solid size={44} color="#fff" />
                 </View>
               )}
               {msg.attachmentDurationSec != null && msg.status !== 'failed' && (
@@ -301,7 +301,7 @@ function MessageBubble({
                     <View style={[s.progressFill, { width: `${Math.round((msg.uploadProgress ?? 0) * 100)}%` }]} />
                   </View>
                   <Pressable style={s.cancelUploadBtn} onPress={() => onCancelUpload(msg)} hitSlop={8}>
-                    <Ionicons name="close" size={12} color="#fff" />
+                    <FontAwesome5 name="times" solid size={12} color="#fff" />
                     <Text style={s.cancelUploadTxt}>{t('messages.cancelUpload')}</Text>
                   </Pressable>
                 </View>
@@ -313,7 +313,7 @@ function MessageBubble({
               )}
               {msg.status === 'failed' && (
                 <View style={s.imageUploadingOverlay}>
-                  <Ionicons name="alert-circle" size={22} color="#fff" />
+                  <FontAwesome5 name="exclamation-circle" solid size={22} color="#fff" />
                   <Text style={s.videoStatusTxt}>{t('messages.uploadFailed')}</Text>
                   {msg.errorDetail && (
                     <Text style={s.videoStatusDetailTxt} numberOfLines={2}>{msg.errorDetail}</Text>
@@ -345,10 +345,10 @@ function MessageBubble({
           <Text style={[s.bubbleTime, { color: C.textSecondary }]}>{formatTime(msg.timestamp)}</Text>
           {isSent && (
             isPending
-              ? <Ionicons name="time-outline" size={11} color={C.textSecondary} />
+              ? <FontAwesome5 name="clock" size={11} color={C.textSecondary} />
               : isLast
-              ? <Ionicons name="checkmark-done" size={12} color={C.brinjal1} />
-              : <Ionicons name="checkmark" size={12} color={C.textSecondary} />
+              ? <FontAwesome5 name="check-double" solid size={12} color={C.brinjal1} />
+              : <FontAwesome5 name="check" solid size={12} color={C.textSecondary} />
           )}
         </View>
       </View>
@@ -890,7 +890,7 @@ export default function BusinessChatRoomScreen() {
                 : isPending
                 ? (
                   <View style={s.headerSubRow}>
-                    <Ionicons name="time-outline" size={11} color={C.draft} />
+                    <FontAwesome5 name="clock" size={11} color={C.draft} />
                     <Text style={[s.headerSub, { color: C.draft, marginTop: 0 }]}>{t('messages.waitingResponse')}</Text>
                   </View>
                 )
@@ -911,7 +911,7 @@ export default function BusinessChatRoomScreen() {
       {/* ── Campaign banner ── */}
       {!!campaignTitle && (
         <View style={[s.campaignBar, { backgroundColor: C.primaryLight, borderBottomColor: C.border }]}>
-          <Ionicons name="briefcase-outline" size={13} color={C.brinjal1} />
+          <FontAwesome5 name="briefcase" solid size={13} color={C.brinjal1} />
           <Text style={[s.campaignBarTxt, { color: C.brinjal1 }]} numberOfLines={1}>{campaignTitle}</Text>
         </View>
       )}
@@ -919,7 +919,7 @@ export default function BusinessChatRoomScreen() {
       {/* ── Pending notice ── */}
       {isPending && (
         <View style={[s.pendingBanner, { backgroundColor: '#FFFBEB', borderBottomColor: '#FDE68A' }]}>
-          <Ionicons name="time-outline" size={14} color="#92400E" />
+          <FontAwesome5 name="clock" size={14} color="#92400E" />
           <Text style={[s.pendingTxt, { color: '#92400E' }]}>{t('messages.pendingNotice', { name: personName })}</Text>
         </View>
       )}
@@ -963,7 +963,7 @@ export default function BusinessChatRoomScreen() {
             messagesError ? (
               <View style={s.emptyWrap}>
                 <View style={[s.emptyIcon, { backgroundColor: C.primaryLight }]}>
-                  <Ionicons name="alert-circle-outline" size={36} color={C.brinjal1} />
+                  <FontAwesome5 name="exclamation-circle" solid size={36} color={C.brinjal1} />
                 </View>
                 <Text style={[s.emptyTitle, { color: C.text }]}>{t('messages.loadMessagesFailedTitle')}</Text>
                 <Text style={[s.emptyHint, { color: C.textSecondary }]}>{messagesError}</Text>
@@ -974,7 +974,7 @@ export default function BusinessChatRoomScreen() {
             ) : (
               <View style={s.emptyWrap}>
                 <View style={[s.emptyIcon, { backgroundColor: C.primaryLight }]}>
-                  <Ionicons name="chatbubble-ellipses-outline" size={36} color={C.brinjal1} />
+                  <FontAwesome5 name="comment-alt" size={36} color={C.brinjal1} />
                 </View>
                 <Text style={[s.emptyTitle, { color: C.text }]}>
                   {isPending ? t('messages.waitingResponse') : t('messages.startConversation')}
@@ -997,23 +997,23 @@ export default function BusinessChatRoomScreen() {
           <>
             {editingMessage && (
               <View style={[s.editingBanner, { backgroundColor: C.surface, borderTopColor: C.border }]}>
-                <Ionicons name="create-outline" size={14} color={C.brinjal1} />
+                <FontAwesome5 name="edit" size={14} color={C.brinjal1} />
                 <Text style={[s.editingBannerTxt, { color: C.brinjal1 }]} numberOfLines={1}>{t('messages.editingMessage')}</Text>
                 <Pressable onPress={clearComposer} hitSlop={8}>
-                  <Ionicons name="close" size={16} color={C.textSecondary} />
+                  <FontAwesome5 name="times" solid size={16} color={C.textSecondary} />
                 </Pressable>
               </View>
             )}
             <View style={[s.inputBar, { backgroundColor: C.surface, borderTopColor: C.border, paddingBottom: emojiOpen ? 8 : insets.bottom + 8 }]}>
               <Pressable style={s.iconBtn} onPress={handleCameraPress} hitSlop={4}>
-                <Ionicons name="camera-outline" size={24} color={C.brinjal1} />
+                <FontAwesome5 name="camera" solid size={24} color={C.brinjal1} />
               </Pressable>
               <Pressable style={s.iconBtn} onPress={handleAttachmentPress} disabled={hasActiveUpload} hitSlop={4}>
-                <Ionicons name="images-outline" size={24} color={hasActiveUpload ? C.textSecondary : C.brinjal1} />
+                <FontAwesome5 name="images" solid size={24} color={hasActiveUpload ? C.textSecondary : C.brinjal1} />
               </Pressable>
               <View style={[s.inputWrap, { borderColor: C.border, backgroundColor: C.background }]}>
                 <Pressable onPress={toggleEmojiPanel} hitSlop={4}>
-                  <Ionicons name={emojiOpen ? 'happy' : 'happy-outline'} size={20} color={C.textSecondary} />
+                  <FontAwesome5 name={emojiOpen ? 'smile' : 'smile'} size={20} color={C.textSecondary} />
                 </Pressable>
                 <TextInput
                   ref={inputRef}
@@ -1035,7 +1035,7 @@ export default function BusinessChatRoomScreen() {
                 style={[s.sendBtn, { backgroundColor: text.trim() ? C.brinjal1 : C.border }]}
                 onPress={handleSend}
                 disabled={!text.trim()}>
-                <Ionicons name={editingMessage ? 'checkmark' : 'send'} size={18} color="#fff" />
+                <FontAwesome5 name={editingMessage ? 'check' : 'paper-plane'} solid size={18} color="#fff" />
               </Pressable>
             </View>
 

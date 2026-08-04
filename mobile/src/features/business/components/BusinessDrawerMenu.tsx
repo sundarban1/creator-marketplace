@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { FontAwesome5, Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Dimensions, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -12,9 +12,9 @@ import { formatPhoneDisplay, isValidNepaliPhone } from '@/utilities/phone';
 const SCREEN_H = Dimensions.get('window').height;
 
 type NavItem = {
-  iconName: keyof typeof Ionicons.glyphMap;
+  iconName: keyof typeof FontAwesome5.glyphMap;
   // Set for items where the FontAwesome5 glyph reads sharper/more recognizable
-  // than its Ionicons counterpart — rendered instead of `iconName` when present.
+  // than its FontAwesome5 counterpart — rendered instead of `iconName` when present.
   faName?: string;
   labelKey: string;
   route: string;
@@ -25,15 +25,15 @@ const NAV_GROUPS: { labelKey: string; items: NavItem[] }[] = [
   {
     labelKey: 'drawer.accountGroup',
     items: [
-      { iconName: 'share-social-outline',     labelKey: 'drawer.socialAccounts',    route: '/(business)/settings?section=social',        color: '#E1306C' },
-      { iconName: 'checkmark-circle-outline', labelKey: 'drawer.verification',      route: '/(business)/settings?section=verification', color: '#16A34A' },
-      { iconName: 'wallet-outline', faName: 'wallet',      labelKey: 'drawer.payment',        route: '/(business)/settings?section=payment',       color: '#3B82F6' },
-      { iconName: 'gift-outline', faName: 'gift',          labelKey: 'drawer.referBusiness',   route: '/(business)/refer',                          color: '#F43F5E' },
-      { iconName: 'lock-closed-outline',      labelKey: 'drawer.security',          route: '/(business)/settings?section=account',       color: '#6B7280' },
-      { iconName: 'notifications-outline', faName: 'bell', labelKey: 'drawer.notifications', route: '/(business)/settings?section=notifications', color: '#D97706' },
-      { iconName: 'help-buoy-outline', faName: 'life-ring', labelKey: 'drawer.support',        route: '/(business)/settings?section=support',       color: '#0891B2' },
-      { iconName: 'shield-outline', faName: 'shield-alt',  labelKey: 'drawer.privacy',        route: '/(business)/settings?section=privacy',       color: '#4F46E5' },
-      { iconName: 'settings-outline',         labelKey: 'drawer.settings',          route: '/(business)/settings?section=app',           color: '#EC4899' },
+      { iconName: 'share-alt',     labelKey: 'drawer.socialAccounts',    route: '/(business)/settings?section=social',        color: '#E1306C' },
+      { iconName: 'check-circle', labelKey: 'drawer.verification',      route: '/(business)/settings?section=verification', color: '#16A34A' },
+      { iconName: 'wallet', faName: 'wallet',      labelKey: 'drawer.payment',        route: '/(business)/settings?section=payment',       color: '#3B82F6' },
+      { iconName: 'gift', faName: 'gift',          labelKey: 'drawer.referBusiness',   route: '/(business)/refer',                          color: '#F43F5E' },
+      { iconName: 'lock',      labelKey: 'drawer.security',          route: '/(business)/settings?section=account',       color: '#6B7280' },
+      { iconName: 'bell', faName: 'bell', labelKey: 'drawer.notifications', route: '/(business)/settings?section=notifications', color: '#D97706' },
+      { iconName: 'life-ring', faName: 'life-ring', labelKey: 'drawer.support',        route: '/(business)/settings?section=support',       color: '#0891B2' },
+      { iconName: 'shield-alt', faName: 'shield-alt',  labelKey: 'drawer.privacy',        route: '/(business)/settings?section=privacy',       color: '#4F46E5' },
+      { iconName: 'cog',         labelKey: 'drawer.settings',          route: '/(business)/settings?section=app',           color: '#EC4899' },
     ],
   },
 ];
@@ -109,7 +109,7 @@ export function BusinessDrawerMenu({ visible, user, onClose, onLogout }: Props) 
         {/* Header */}
         <View style={[styles.header, { backgroundColor: C.brinjal2 }]}>
           <Pressable style={styles.handleRow} onPress={onClose} hitSlop={10}>
-            <Ionicons name="chevron-down" size={20} color="rgba(255,255,255,0.6)" />
+            <FontAwesome5 name="chevron-down" solid size={20} color="rgba(255,255,255,0.6)" />
           </Pressable>
 
           <View style={styles.userRow}>
@@ -141,11 +141,11 @@ export function BusinessDrawerMenu({ visible, user, onClose, onLogout }: Props) 
                     {faName ? (
                       <FontAwesome5 name={faName} size={15} color={color} solid />
                     ) : (
-                      <Ionicons name={iconName} size={18} color={color} />
+                      <FontAwesome5 name={iconName} size={18} color={color} />
                     )}
                   </View>
                   <Text style={[styles.navLabel, { color: C.text }]}>{t(labelKey)}</Text>
-                  <Ionicons name="chevron-forward" size={16} color={C.border} />
+                  <FontAwesome5 name="chevron-right" solid size={16} color={C.border} />
                 </Pressable>
               ))}
             </View>
@@ -156,7 +156,7 @@ export function BusinessDrawerMenu({ visible, user, onClose, onLogout }: Props) 
         <Pressable
           style={[styles.logout, { borderTopColor: C.border, paddingBottom: insets.bottom + 12 }]}
           onPress={onLogout}>
-          <Ionicons name="log-out" size={20} color={C.error} />
+          <FontAwesome5 name="sign-out-alt" solid size={20} color={C.error} />
           <Text style={[styles.logoutText, { color: C.error }]}>{t('drawer.logout')}</Text>
         </Pressable>
       </Animated.View>

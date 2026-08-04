@@ -71,7 +71,7 @@ export function BusinessFilterModal({
 
       {/* Platform */}
       <View>
-        <FilterSectionHeader icon="phone-portrait-outline" label={t('explore.businesses.filterPlatform')} />
+        <FilterSectionHeader icon="mobile-alt" label={t('explore.businesses.filterPlatform')} />
         <View style={s.chipGrid}>
           {allPlatforms.map((p) => {
             const active = tempPlatform === p.name;
@@ -90,7 +90,7 @@ export function BusinessFilterModal({
 
       {/* Category */}
       <View>
-        <FilterSectionHeader icon="pricetag-outline" label={t('explore.businesses.filterCategory')} />
+        <FilterSectionHeader icon="tag" label={t('explore.businesses.filterCategory')} />
         <View style={s.chipGrid}>
           {businessCategories.map((cat) => {
             const active = tempCategory === cat.name;
@@ -110,7 +110,7 @@ export function BusinessFilterModal({
       {/* Location */}
       <View>
         <FilterSectionHeader
-          icon="location-outline"
+          icon="map-marker-alt"
           label={t('explore.businesses.filterLocation')}
           hint={t('explore.businesses.filterLocationCount', { n: tempLocation.length })}
         />

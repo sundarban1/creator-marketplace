@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Image } from 'expo-image';
-import { FontAwesome5, Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAppColors } from '@/context/ThemeContext';
 import { VerifiedBadge } from '@/components/VerifiedBadge';
@@ -14,8 +14,8 @@ import { F, RADIUS, SHADOW } from '@/utilities/constants';
 type EntityCardAction = {
   active:       boolean;
   onToggle:     () => void;
-  activeIcon:   keyof typeof Ionicons.glyphMap;
-  inactiveIcon: keyof typeof Ionicons.glyphMap;
+  activeIcon:   keyof typeof FontAwesome5.glyphMap;
+  inactiveIcon: keyof typeof FontAwesome5.glyphMap;
   activeColor:  string;
   activeBg:     string;
   /** Creator's save button keeps a visible border in both states; business's heart button doesn't. */
@@ -26,7 +26,7 @@ type EntityCardStat = {
   icon:  string;
   text:  string;
   color: string;
-  /** The two source cards use different icon sets for this slot (Ionicons for
+  /** The two source cards use different icon sets for this slot (FontAwesome5 for
       campaign count, FontAwesome5 for platform reach) — pick per call site
       rather than force a mismatched icon. Defaults to FontAwesome5. */
   iconSet?: 'ionicons' | 'fa5';
@@ -74,7 +74,7 @@ export function EntityCard({
   if (locationText) {
     subtitle = (
       <View style={styles.locationRow}>
-        <Ionicons name="location-outline" size={12} color={C.textSecondary} />
+        <FontAwesome5 name="map-marker-alt" solid size={12} color={C.textSecondary} />
         <Text style={[styles.location, { color: C.textSecondary }]} numberOfLines={1}>{locationText}</Text>
       </View>
     );
@@ -99,7 +99,7 @@ export function EntityCard({
             {initials ? (
               <Text style={{ fontSize: 20, color: C.brinjal1, fontFamily: F.bold }}>{initials}</Text>
             ) : (
-              <Ionicons name="person" size={30} color="rgba(91,33,182,0.55)" />
+              <FontAwesome5 name="user" solid size={30} color="rgba(91,33,182,0.55)" />
             )}
           </View>
         )}
@@ -125,7 +125,7 @@ export function EntityCard({
             ]}
             onPress={(e) => { e.stopPropagation(); action.onToggle(); }}
             hitSlop={8}>
-            <Ionicons name={action.active ? action.activeIcon : action.inactiveIcon} size={18} color={action.active ? action.activeColor : C.textSecondary} />
+            <FontAwesome5 name={action.active ? action.activeIcon : action.inactiveIcon} size={18} color={action.active ? action.activeColor : C.textSecondary} />
           </Pressable>
         )}
       </View>
@@ -144,7 +144,7 @@ export function EntityCard({
           {stat && (
             <View style={styles.statItem}>
               {stat.iconSet === 'ionicons' ? (
-                <Ionicons name={stat.icon as never} size={13} color={stat.color} />
+                <FontAwesome5 name={stat.icon as never} size={13} color={stat.color} />
               ) : (
                 <FontAwesome5 name={stat.icon as never} size={12} color={stat.color} />
               )}
@@ -156,7 +156,7 @@ export function EntityCard({
 
       <View style={[styles.viewBtn, { backgroundColor: C.brinjal1, shadowColor: C.brinjal1 }]}>
         <Text style={styles.viewBtnText}>{ctaLabel}</Text>
-        <Ionicons name="arrow-forward" size={14} color="#fff" />
+        <FontAwesome5 name="arrow-right" solid size={14} color="#fff" />
       </View>
       </View>
     </Pressable>

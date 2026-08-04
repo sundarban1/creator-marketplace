@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { FontAwesome5, Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import {
@@ -147,7 +147,7 @@ function SwitchRow({ label, faIcon, faIconColor, iconNode, sub, value, onChange,
   );
 }
 
-type NavRowProps = { ionIcon?: keyof typeof Ionicons.glyphMap; faIcon?: string; ionIconColor?: string; label: string; sub?: string; value?: string; badge?: string; onPress: () => void; danger?: boolean; isLast?: boolean };
+type NavRowProps = { ionIcon?: keyof typeof FontAwesome5.glyphMap; faIcon?: string; ionIconColor?: string; label: string; sub?: string; value?: string; badge?: string; onPress: () => void; danger?: boolean; isLast?: boolean };
 function NavRow({ ionIcon, faIcon, ionIconColor, label, sub, value, badge, onPress, danger = false, isLast = false }: NavRowProps) {
   const C = useContext(ColorCtx);
   const iColor = ionIconColor ?? C.brinjal1;
@@ -164,7 +164,7 @@ function NavRow({ ionIcon, faIcon, ionIconColor, label, sub, value, badge, onPre
             },
           ]}
         >
-          <Ionicons name={ionIcon} size={18} color={rowIconColor} />
+          <FontAwesome5 name={ionIcon} size={18} color={rowIconColor} />
         </View>
       ) : faIcon ? (
         <View
@@ -880,7 +880,7 @@ export default function BusinessSettingsScreen() {
                 onPress={() => toggleExpand(id)}>
                 <View style={styles.accordionHeader}>
                   <Text style={[styles.accordionTitle, { color: C.text }]}>{item.q}</Text>
-                  <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={16} color={C.textSecondary} />
+                  <FontAwesome5 name={open ? 'chevron-up' : 'chevron-down'} size={16} color={C.textSecondary} />
                 </View>
                 {open && <Text style={[styles.accordionBody, { color: C.textSecondary }]}>{item.a}</Text>}
               </Pressable>
@@ -1035,7 +1035,7 @@ export default function BusinessSettingsScreen() {
               onPress={() => toggleExpand(id)}>
               <View style={styles.accordionHeader}>
                 <Text style={[styles.accordionTitle, { color: C.text }]}>{item.q}</Text>
-                <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={16} color={C.textSecondary} />
+                <FontAwesome5 name={open ? 'chevron-up' : 'chevron-down'} size={16} color={C.textSecondary} />
               </View>
               {open && <Text style={[styles.accordionBody, { color: C.textSecondary }]}>{item.a}</Text>}
             </Pressable>
@@ -1067,7 +1067,7 @@ export default function BusinessSettingsScreen() {
             <View style={styles.formField}>
               <Text style={[styles.formFieldLabel, { color: C.textSecondary }]}>{t('businessSettings.businessLogoLabel')}</Text>
               <Pressable style={[styles.logoPicker, { backgroundColor: C.background, borderColor: C.border }]}>
-                <FontAwesome5 name="building" size={26} color={C.textSecondary} />
+                <FontAwesome5 name="building" solid size={26} color={C.textSecondary} />
                 <Text style={[styles.logoPickerText, { color: C.brinjal1 }]}>{t('businessSettings.logoUploadHint')}</Text>
                 <Text style={[styles.logoPickerSub, { color: C.textSecondary }]}>{t('businessSettings.logoFormatHint')}</Text>
               </Pressable>
@@ -1186,7 +1186,7 @@ export default function BusinessSettingsScreen() {
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Text style={[styles.formFieldLabel, { color: C.text, fontSize: 14, flex: 1, flexShrink: 1 }]} numberOfLines={1} ellipsizeMode="tail">{t('businessSettings.setNewPasswordSection')}</Text>
                 <Pressable onPress={closeChangePassword} hitSlop={10} style={{ flexShrink: 0, marginLeft: 8 }}>
-                  <Ionicons name="close-circle" size={22} color={C.textSecondary} />
+                  <FontAwesome5 name="times-circle" solid size={22} color={C.textSecondary} />
                 </Pressable>
               </View>
 
@@ -1206,7 +1206,7 @@ export default function BusinessSettingsScreen() {
                     numberOfLines={1}
                   />
                   <Pressable onPress={() => setShowNewPw((v) => !v)} style={styles.eyeBtn} hitSlop={8}>
-                    <Ionicons name={showNewPw ? 'eye-off-outline' : 'eye-outline'} size={20} color={C.textSecondary} />
+                    <FontAwesome5 name={showNewPw ? 'eye-slash' : 'eye'} size={20} color={C.textSecondary} />
                   </Pressable>
                 </View>
                 {pwError ? <Text style={[styles.fieldError, { color: C.error }]}>{pwError}</Text> : null}
@@ -1228,7 +1228,7 @@ export default function BusinessSettingsScreen() {
                     numberOfLines={1}
                   />
                   <Pressable onPress={() => setShowConfirmPw((v) => !v)} style={styles.eyeBtn} hitSlop={8}>
-                    <Ionicons name={showConfirmPw ? 'eye-off-outline' : 'eye-outline'} size={20} color={C.textSecondary} />
+                    <FontAwesome5 name={showConfirmPw ? 'eye-slash' : 'eye'} size={20} color={C.textSecondary} />
                   </Pressable>
                 </View>
                 {cPwError ? <Text style={[styles.fieldError, { color: C.error }]}>{cPwError}</Text> : null}
@@ -1326,7 +1326,7 @@ export default function BusinessSettingsScreen() {
                   <Text style={[styles.rowLabel, { color: C.text, flexShrink: 1 }]} numberOfLines={1} ellipsizeMode="tail">{t('businessSettings.verifyEmailTitle')}</Text>
                 </View>
                 <Pressable onPress={() => { setEmailStage('idle'); setEmailInput(''); setEmailError(''); }} hitSlop={10} disabled={emailLoading} style={{ flexShrink: 0, marginLeft: 8 }}>
-                  <Ionicons name="close-circle" size={22} color={C.textSecondary} />
+                  <FontAwesome5 name="times-circle" solid size={22} color={C.textSecondary} />
                 </Pressable>
               </View>
               <TextInput
@@ -1372,7 +1372,7 @@ export default function BusinessSettingsScreen() {
                   disabled={emailLoading}
                   hitSlop={8}
                   style={[styles.otpCloseBtn, { backgroundColor: C.background, borderColor: C.border }]}>
-                  <Ionicons name="close" size={16} color={C.textSecondary} />
+                  <FontAwesome5 name="times" solid size={16} color={C.textSecondary} />
                 </Pressable>
               </View>
               <TextInput
@@ -1469,7 +1469,7 @@ export default function BusinessSettingsScreen() {
                   <Text style={[styles.rowLabel, { color: C.text, flexShrink: 1 }]} numberOfLines={1} ellipsizeMode="tail">{t('businessSettings.verifyPhoneTitle')}</Text>
                 </View>
                 <Pressable onPress={() => { setPhoneStage('idle'); setPhoneInput(''); setPhoneError(''); }} hitSlop={10} disabled={phoneLoading} style={{ flexShrink: 0, marginLeft: 8 }}>
-                  <Ionicons name="close-circle" size={22} color={C.textSecondary} />
+                  <FontAwesome5 name="times-circle" solid size={22} color={C.textSecondary} />
                 </Pressable>
               </View>
               <TextInput
@@ -1513,7 +1513,7 @@ export default function BusinessSettingsScreen() {
                   disabled={phoneLoading}
                   hitSlop={8}
                   style={[styles.otpCloseBtn, { backgroundColor: C.background, borderColor: C.border }]}>
-                  <Ionicons name="close" size={16} color={C.textSecondary} />
+                  <FontAwesome5 name="times" solid size={16} color={C.textSecondary} />
                 </Pressable>
               </View>
               <TextInput
@@ -1635,7 +1635,7 @@ export default function BusinessSettingsScreen() {
                 )}
                 <Text style={[styles.rowLabel, { color: C.text, flex: 1 }]}>{m.label}</Text>
                 <View style={[styles.checkboxOuter, { borderColor: selected ? C.brinjal1 : C.border, backgroundColor: selected ? C.brinjal1 : 'transparent' }]}>
-                  {selected ? <Ionicons name="checkmark" size={13} color="#fff" /> : null}
+                  {selected ? <FontAwesome5 name="check" solid size={13} color="#fff" /> : null}
                 </View>
               </Pressable>
             );
@@ -1787,7 +1787,7 @@ export default function BusinessSettingsScreen() {
                     <Text style={styles.noteSaveBtnText}>{t('businessSettings.noteSaveBtnLabel')}</Text>
                   </Pressable>
                   <Pressable onPress={() => setEditingNoteId(null)}>
-                    <Ionicons name="close" size={16} color={C.textSecondary} />
+                    <FontAwesome5 name="times" solid size={16} color={C.textSecondary} />
                   </Pressable>
                 </View>
               ) : (
@@ -1909,7 +1909,7 @@ export default function BusinessSettingsScreen() {
                   <View style={styles.connectPlatformNameRow}>
                     <Text style={[styles.socialPlatformName, { color: C.text }]}>{p.label}</Text>
                     {acct?.connectedViaOAuth && (
-                      <Ionicons name="checkmark-circle" size={14} color="#16A34A" />
+                      <FontAwesome5 name="check-circle" solid size={14} color="#16A34A" />
                     )}
                   </View>
                   {acct ? (
@@ -1940,7 +1940,7 @@ export default function BusinessSettingsScreen() {
                 <View style={styles.socialActions}>
                   {acct ? (
                     <Pressable style={styles.socialDisconnectBtn} onPress={() => deleteSocialAccount(acct)} hitSlop={8}>
-                      <Ionicons name="close" size={14} color={C.error} />
+                      <FontAwesome5 name="times" solid size={14} color={C.error} />
                     </Pressable>
                   ) : isLive ? (
                     <Pressable
@@ -2026,7 +2026,7 @@ export default function BusinessSettingsScreen() {
         <SectionHeader title={t('businessSettings.visibilitySection')} />
         <Card>
           <SwitchRow
-            iconNode={<Ionicons name="eye-outline" size={20} color={C.brinjal1} />}
+            iconNode={<FontAwesome5 name="eye" size={20} color={C.brinjal1} />}
             label={t('businessSettings.showProfileLabel')}
             sub={t('businessSettings.showProfileSub')}
             value={showProfilePublic}
@@ -2037,7 +2037,7 @@ export default function BusinessSettingsScreen() {
             }}
           />
           <SwitchRow
-            iconNode={<Ionicons name="lock-closed-outline" size={20} color={C.brinjal1} />}
+            iconNode={<FontAwesome5 name="lock" solid size={20} color={C.brinjal1} />}
             label={t('businessSettings.hideContactLabel')}
             sub={t('businessSettings.hideContactSub')}
             value={hideContactDetails}
@@ -2048,7 +2048,7 @@ export default function BusinessSettingsScreen() {
             }}
           />
           <SwitchRow
-            iconNode={<Ionicons name="chatbubble-outline" size={20} color={C.brinjal1} />}
+            iconNode={<FontAwesome5 name="comment" solid size={20} color={C.brinjal1} />}
             label={t('businessSettings.allowMessagesLabel')}
             sub={t('businessSettings.allowMessagesSub')}
             value={allowDirectMessages}
@@ -2070,10 +2070,10 @@ export default function BusinessSettingsScreen() {
     return (
       <>
         <Card>
-          <NavRow ionIcon="help-circle-outline"         ionIconColor="#0891B2" label={t('businessSettings.helpCenterNavLabel')}  onPress={() => setSubPage('help-center')} />
-          <NavRow ionIcon="chatbubble-ellipses-outline" ionIconColor="#7C3AED" label={t('businessSettings.contactSupportLabel')} onPress={() => setSubPage('contact-support')} />
-          <NavRow ionIcon="warning-outline"             ionIconColor="#EF4444" label={t('businessSettings.reportIssueLabel')}    onPress={() => setSubPage('report-issue')} />
-          <NavRow ionIcon="reader-outline"              ionIconColor="#F59E0B" label={t('businessSettings.faqsLabel')}           onPress={() => setSubPage('faqs')} isLast />
+          <NavRow ionIcon="question-circle"         ionIconColor="#0891B2" label={t('businessSettings.helpCenterNavLabel')}  onPress={() => setSubPage('help-center')} />
+          <NavRow ionIcon="comment-alt" ionIconColor="#7C3AED" label={t('businessSettings.contactSupportLabel')} onPress={() => setSubPage('contact-support')} />
+          <NavRow ionIcon="exclamation-triangle"             ionIconColor="#EF4444" label={t('businessSettings.reportIssueLabel')}    onPress={() => setSubPage('report-issue')} />
+          <NavRow ionIcon="book-open"              ionIconColor="#F59E0B" label={t('businessSettings.faqsLabel')}           onPress={() => setSubPage('faqs')} isLast />
         </Card>
         <HintCard>
           <Text style={[styles.hintText, { color: C.brinjal1 }]}>{t('businessSettings.supportHint')}</Text>
@@ -2119,7 +2119,7 @@ export default function BusinessSettingsScreen() {
                   </View>
                 ) : active ? (
                   <View style={[styles.activeLangCheck, { backgroundColor: C.brinjal1 }]}>
-                    <Ionicons name="checkmark" size={13} color="#fff" />
+                    <FontAwesome5 name="check" solid size={13} color="#fff" />
                   </View>
                 ) : (
                   <View style={[styles.inactiveLangCircle, { borderColor: C.border }]} />
@@ -2258,7 +2258,7 @@ export default function BusinessSettingsScreen() {
           {!subPage && !section                    && renderMainSettings()}
           {!subPage && section === 'profile'       && renderProfile()}
           {!subPage && section === 'account'       && renderAccount()}
-          {!subPage && section === 'notifications' && renderNotifications()}
+          {!subPage && section === 'bell' && renderNotifications()}
           {!subPage && section === 'payment'       && renderPayment()}
           {!subPage && section === 'campaigns'     && renderCampaignPreferences()}
           {!subPage && section === 'saved'         && renderSavedCreators()}

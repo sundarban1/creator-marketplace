@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { BackButton } from '@/components/BackButton';
 import { useEffect, useState } from 'react';
 import {
@@ -127,7 +127,7 @@ export default function BusinessReferralScreen() {
             <Text style={[styles.label, { color: C.textSecondary }]}>{t('businessReferral.yourCodeLabel')}</Text>
             <Pressable style={[styles.codeCard, { backgroundColor: C.brinjal1 }]} onPress={handleShareCode}>
               <Text style={styles.codeText}>{overview.code}</Text>
-              <Ionicons name="share-social-outline" size={20} color="#fff" />
+              <FontAwesome5 name="share-alt" solid size={20} color="#fff" />
             </Pressable>
             <Text style={[styles.shareHint, { color: C.textSecondary }]}>{t('businessReferral.shareHint')}</Text>
           </View>
@@ -135,7 +135,7 @@ export default function BusinessReferralScreen() {
           {/* Referred by */}
           {overview.referredBy ? (
             <View style={[styles.referredByRow, { backgroundColor: C.surface }]}>
-              <Ionicons name="business-outline" size={18} color={C.brinjal1} />
+              <FontAwesome5 name="building" solid size={18} color={C.brinjal1} />
               <Text style={[styles.referredByText, { color: C.text }]}>
                 {t('businessReferral.referredByLabel')}: <Text style={{ fontFamily: F.bold }}>{overview.referredBy.name}</Text>
               </Text>
@@ -167,7 +167,7 @@ export default function BusinessReferralScreen() {
           <Text style={[styles.sectionHeader, { color: C.textSecondary }]}>{t('businessReferral.yourReferralsTitle')}</Text>
           {overview.referrals.length === 0 ? (
             <View style={[styles.emptyWrap, { backgroundColor: C.surface }]}>
-              <Ionicons name="business-outline" size={32} color={C.textSecondary} />
+              <FontAwesome5 name="building" solid size={32} color={C.textSecondary} />
               <Text style={[styles.emptyTitle, { color: C.text }]}>{t('businessReferral.noReferralsYet')}</Text>
               <Text style={[styles.emptyHint, { color: C.textSecondary }]}>{t('businessReferral.noReferralsHint')}</Text>
             </View>
@@ -179,7 +179,7 @@ export default function BusinessReferralScreen() {
                     <Image source={{ uri: r.referredLogoUrl }} style={styles.referralAvatar} />
                   ) : (
                     <View style={[styles.referralAvatar, styles.referralAvatarFallback, { backgroundColor: C.background }]}>
-                      <Ionicons name="business" size={16} color={C.textSecondary} />
+                      <FontAwesome5 name="building" solid size={16} color={C.textSecondary} />
                     </View>
                   )}
                   <View style={styles.referralInfo}>

@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { PageHeader } from '@/features/creator/components/PageHeader';
 import { VerifiedBadge } from '@/components/VerifiedBadge';
 import { LinearGradient } from 'expo-linear-gradient';
-import { FontAwesome5, Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import {
   ActivityIndicator,
   Image,
@@ -236,7 +236,7 @@ export default function CreatorPeerDetailScreen() {
           ) : null}
           {profile.location ? (
             <View style={s.locationRow}>
-              <Ionicons name="location-sharp" size={13} color={C.brinjal1} />
+              <FontAwesome5 name="map-marker-alt" solid size={13} color={C.brinjal1} />
               <Text style={[s.location, { color: C.textSecondary }]}>{profile.location}</Text>
             </View>
           ) : null}
@@ -256,26 +256,26 @@ export default function CreatorPeerDetailScreen() {
             <SectionTitle label={t('creatorDetailExtra.sectionStats')} color={C.textSecondary} />
             <View style={s.statsGrid}>
               <View style={[s.statTile, { backgroundColor: C.background }]}>
-                <Ionicons name="checkmark-circle-outline" size={16} color={C.brinjal1} />
+                <FontAwesome5 name="check-circle" solid size={16} color={C.brinjal1} />
                 <Text style={[s.statValue, { color: C.text }]}>{profile.stats.profileCompletion}%</Text>
                 <Text style={[s.statLabel, { color: C.textSecondary }]}>{t('analytics.profileCompletion')}</Text>
               </View>
               <View style={[s.statTile, { backgroundColor: C.background }]}>
-                <Ionicons name="star-outline" size={16} color={C.brinjal1} />
+                <FontAwesome5 name="star" size={16} color={C.brinjal1} />
                 <Text style={[s.statValue, { color: C.text }]}>
                   {profile.stats.averageRating.toFixed(1)}
                 </Text>
                 <Text style={[s.statLabel, { color: C.textSecondary }]}>{t('analytics.averageRating')}</Text>
               </View>
               <View style={[s.statTile, { backgroundColor: C.background }]}>
-                <Ionicons name="time-outline" size={16} color={C.brinjal1} />
+                <FontAwesome5 name="clock" size={16} color={C.brinjal1} />
                 <Text style={[s.statValue, { color: C.text }]}>
                   {profile.stats.responseTimeAvgMins} min
                 </Text>
                 <Text style={[s.statLabel, { color: C.textSecondary }]}>{t('analytics.responseTime')}</Text>
               </View>
               <View style={[s.statTile, { backgroundColor: C.background }]}>
-                <Ionicons name="trending-up-outline" size={16} color={C.brinjal1} />
+                <FontAwesome5 name="chart-line" solid size={16} color={C.brinjal1} />
                 <Text style={[s.statValue, { color: C.text }]}>{profile.stats.completionRate}%</Text>
                 <Text style={[s.statLabel, { color: C.textSecondary }]}>{t('analytics.completionRate')}</Text>
               </View>
@@ -328,7 +328,7 @@ export default function CreatorPeerDetailScreen() {
                     <View style={s.socialInfo}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                         <Text style={[s.socialPlatform, { color: C.text }]}>{info.label}</Text>
-                        {p.verified && <Ionicons name="checkmark-circle" size={13} color="#16A34A" />}
+                        {p.verified && <FontAwesome5 name="check-circle" solid size={13} color="#16A34A" />}
                       </View>
                       {p.followers !== null ? (
                         <Text style={[s.socialSub, { color: C.textSecondary }]}>{formatFollowers(p.followers)} {t('creatorDetailExtra.followersSuffix')}</Text>
@@ -336,7 +336,7 @@ export default function CreatorPeerDetailScreen() {
                         <Text style={[s.socialSub, { color: C.textSecondary }]}>{p.handle}</Text>
                       ) : null}
                     </View>
-                    {canOpen && <Ionicons name="open-outline" size={16} color={C.brinjal1} />}
+                    {canOpen && <FontAwesome5 name="external-link-alt" solid size={16} color={C.brinjal1} />}
                   </Pressable>
                 );
               })}
@@ -381,10 +381,10 @@ export default function CreatorPeerDetailScreen() {
                       },
                     ]}
                   >
-                    <Ionicons name="link" size={16} color={C.brinjal1} />
+                    <FontAwesome5 name="link" solid size={16} color={C.brinjal1} />
                   </View>
                   <Text style={[s.portfolioLabel, { color: C.text }]} numberOfLines={1}>{link.label}</Text>
-                  <Ionicons name="open-outline" size={15} color={C.brinjal1} />
+                  <FontAwesome5 name="external-link-alt" solid size={15} color={C.brinjal1} />
                 </Pressable>
               ))}
             </View>

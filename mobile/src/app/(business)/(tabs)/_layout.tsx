@@ -1,5 +1,5 @@
 import { router, Tabs, usePathname } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { useState } from 'react';
 import {
   Pressable, StyleSheet, Text, View,
@@ -15,7 +15,7 @@ import { COLORS, RADIUS, SHADOW } from '@/utilities/constants';
 import { useNotificationBadge } from '@/context/NotificationContext';
 import { scrollToTopEvents } from '@/lib/scrollToTopEvents';
 
-type IoniconName = keyof typeof Ionicons.glyphMap;
+type IoniconName = keyof typeof FontAwesome5.glyphMap;
 
 // ── Tab config ────────────────────────────────────────────────────────────────
 
@@ -23,10 +23,10 @@ type IoniconName = keyof typeof Ionicons.glyphMap;
 // The header's menu button (see index.tsx) opens the drawer; `notifications`
 // is this tab's real destination screen.
 const TAB_CONFIG: Record<string, { icon: IoniconName; iconActive: IoniconName; label: string; color?: string }> = {
-  index:         { icon: 'home-outline',          iconActive: 'home',          label: 'Home' },
-  campaigns:     { icon: 'briefcase-outline',     iconActive: 'briefcase',     label: 'Events',    color: '#059669' },
-  messages:      { icon: 'chatbubble-outline',    iconActive: 'chatbubble',    label: 'Messages',  color: '#2563EB' },
-  notifications: { icon: 'notifications-outline', iconActive: 'notifications', label: 'Notifications' },
+  index:         { icon: 'home',          iconActive: 'home',          label: 'Home' },
+  campaigns:     { icon: 'briefcase',     iconActive: 'briefcase',     label: 'Events',    color: '#059669' },
+  messages:      { icon: 'comment',    iconActive: 'comment',    label: 'Messages',  color: '#2563EB' },
+  notifications: { icon: 'bell', iconActive: 'bell', label: 'Notifications' },
 };
 
 // ── Custom tab bar ────────────────────────────────────────────────────────────
@@ -114,7 +114,7 @@ function CustomTabBar({
                 focused && { backgroundColor: `${color}18` },
               ]}
             >
-              <Ionicons
+              <FontAwesome5
                 name={focused ? cfg.iconActive : cfg.icon}
                 size={21}
                 color={focused ? color : '#ABABBB'}
@@ -156,7 +156,7 @@ function CustomTabBar({
             <View style={[tabS.createNotch, { backgroundColor: C.background }]}>
               <Pressable onPress={() => router.push('/create-campaign')} hitSlop={6}>
                 <View style={[tabS.createBtn, { backgroundColor: C.brinjal1 }]}>
-                  <Ionicons name="add" size={26} color="#fff" />
+                  <FontAwesome5 name="plus" solid size={26} color="#fff" />
                 </View>
               </Pressable>
             </View>
@@ -293,7 +293,7 @@ export default function BusinessTabsLayout() {
               })}
               options={{ title: t('business.tab.messages') }}
             />
-            <Tabs.Screen name="notifications" options={{ title: t('business.tab.notifications') }} />
+            <Tabs.Screen name="bell" options={{ title: t('business.tab.notifications') }} />
             {/* create.tsx is navigated via the create button docked in the tab bar, not a visible tab */}
             <Tabs.Screen name="create" options={{ href: null }} />
           </Tabs>

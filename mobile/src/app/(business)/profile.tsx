@@ -1,5 +1,5 @@
 import { router, useFocusEffect } from 'expo-router';
-import { FontAwesome5, Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { VerifiedBadge } from '@/components/VerifiedBadge';
 import { SectionEmptyState } from '@/components/SectionEmptyState';
@@ -114,7 +114,7 @@ export default function BusinessProfileScreen() {
               onPress={handleCoverPress} disabled={coverUploading}>
               {coverUploading
                 ? <ActivityIndicator size="small" color="#fff" />
-                : <Ionicons name="camera" size={18} color="#fff" />}
+                : <FontAwesome5 name="camera" solid size={18} color="#fff" />}
             </Pressable>
           </View>
         </LinearGradient>
@@ -142,7 +142,7 @@ export default function BusinessProfileScreen() {
               >
                 {logoUploading
                   ? <ActivityIndicator size="small" color="#fff" />
-                  : <Ionicons name="camera" size={13} color="#fff" />}
+                  : <FontAwesome5 name="camera" solid size={13} color="#fff" />}
               </View>
             </Pressable>
           </View>
@@ -154,7 +154,7 @@ export default function BusinessProfileScreen() {
           </View>
           {profile?.location ? (
             <View style={s.locationRow}>
-              <Ionicons name="location-sharp" size={13} color={C.brinjal1} />
+              <FontAwesome5 name="map-marker-alt" solid size={13} color={C.brinjal1} />
               <Text style={[s.location, { color: C.textSecondary }]}>{profile.location}</Text>
             </View>
           ) : null}
@@ -164,13 +164,13 @@ export default function BusinessProfileScreen() {
             <Pressable
               style={[s.editBtn, { borderColor: C.brinjal1 }]}
               onPress={() => router.push('/(business)/edit-profile' as never)}>
-              <Ionicons name="create-outline" size={15} color={C.brinjal1} />
+              <FontAwesome5 name="edit" size={15} color={C.brinjal1} />
               <Text style={[s.editBtnText, { color: C.brinjal1 }]}>{t('profile.editBusinessBtn')}</Text>
             </Pressable>
             <Pressable
               style={[s.editBtn, { borderColor: C.brinjal1 }]}
               onPress={() => router.push('/(business)/analytics' as never)}>
-              <Ionicons name="stats-chart-outline" size={15} color={C.brinjal1} />
+              <FontAwesome5 name="chart-bar" size={15} color={C.brinjal1} />
               <Text style={[s.editBtnText, { color: C.brinjal1 }]}>{t('analytics.headerTitle')}</Text>
             </Pressable>
           </View>
@@ -225,7 +225,7 @@ export default function BusinessProfileScreen() {
                         },
                       ]}
                     >
-                      <Ionicons name="call" size={16} color={C.brinjal1} />
+                      <FontAwesome5 name="phone" solid size={16} color={C.brinjal1} />
                     </View>
                     <Text style={[s.contactText, { color: C.text }]}>{formatPhoneDisplay(profile!.user!.phone!)}</Text>
                   </View>
@@ -241,7 +241,7 @@ export default function BusinessProfileScreen() {
                         },
                       ]}
                     >
-                      <Ionicons name="mail" size={16} color={C.brinjal1} />
+                      <FontAwesome5 name="envelope" solid size={16} color={C.brinjal1} />
                     </View>
                     <Text style={[s.contactText, { color: C.text }]}>{profile?.user?.email ?? user?.email ?? '—'}</Text>
                   </View>
@@ -266,12 +266,12 @@ export default function BusinessProfileScreen() {
                   },
                 ]}
               >
-                <Ionicons name="globe" size={16} color={C.brinjal1} />
+                <FontAwesome5 name="globe" solid size={16} color={C.brinjal1} />
               </View>
               <Text style={[s.contactText, { color: C.brinjal1, flex: 1 }]} numberOfLines={1}>
                 {profile.website.replace(/^https?:\/\//, '')}
               </Text>
-              <Ionicons name="open-outline" size={16} color={C.textSecondary} />
+              <FontAwesome5 name="external-link-alt" solid size={16} color={C.textSecondary} />
             </Pressable>
           ) : (
             <Pressable

@@ -1,5 +1,5 @@
 import { router, useFocusEffect } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useCallback, useRef, useState } from 'react';
 import {
@@ -49,20 +49,20 @@ type Proposal = {
 // ─── Config ───────────────────────────────────────────────────────────────────
 
 const STATUS_CFG = {
-  pending:  { labelKey: 'proposal.creator.statusPending'  as const, icon: 'time'             as const, color: TabColors.warning.color,  bg: TabColors.warning.bg },
-  accepted: { labelKey: 'proposal.creator.statusAccepted' as const, icon: 'checkmark-circle' as const, color: TabColors.positive.color, bg: TabColors.positive.bg },
-  rejected: { labelKey: 'proposal.creator.statusRejected' as const, icon: 'close-circle'     as const, color: TabColors.danger.color,   bg: TabColors.danger.bg },
+  pending:  { labelKey: 'proposal.creator.statusPending'  as const, icon: 'clock'             as const, color: TabColors.warning.color,  bg: TabColors.warning.bg },
+  accepted: { labelKey: 'proposal.creator.statusAccepted' as const, icon: 'check-circle' as const, color: TabColors.positive.color, bg: TabColors.positive.bg },
+  rejected: { labelKey: 'proposal.creator.statusRejected' as const, icon: 'times-circle'     as const, color: TabColors.danger.color,   bg: TabColors.danger.bg },
 };
 
-const TRACK_CFG: Record<WS, { labelKey: string; icon: keyof typeof Ionicons.glyphMap; color: string; subKey: string }> = {
-  NONE:        { labelKey: 'proposal.creator.trackNoneLabel',        icon: 'navigate',       color: '#C2410C', subKey: 'proposal.creator.trackNoneSub'        },
+const TRACK_CFG: Record<WS, { labelKey: string; icon: keyof typeof FontAwesome5.glyphMap; color: string; subKey: string }> = {
+  NONE:        { labelKey: 'proposal.creator.trackNoneLabel',        icon: 'location-arrow',       color: '#C2410C', subKey: 'proposal.creator.trackNoneSub'        },
   IN_PROGRESS: { labelKey: 'proposal.creator.trackInProgressLabel',  icon: 'brush',          color: '#C2410C', subKey: 'proposal.creator.trackInProgressSub'  },
   SUBMITTED:   { labelKey: 'proposal.creator.trackSubmittedLabel',   icon: 'hourglass',      color: '#B45309', subKey: 'proposal.creator.trackSubmittedSub'   },
   // Approval no longer releases payment automatically — an admin releases it
   // manually, so ProposalCard overrides this "sub" based on paymentStatus
   // (pending release, awaiting verification, or fully complete).
   APPROVED:    { labelKey: 'proposal.creator.trackApprovedLabel',    icon: 'trophy',         color: '#16A34A', subKey: 'proposal.creator.trackApprovedSub'    },
-  COMPLETED:   { labelKey: 'proposal.creator.trackCompletedLabel',   icon: 'checkmark-done', color: '#16A34A', subKey: 'proposal.creator.trackCompletedSub'   },
+  COMPLETED:   { labelKey: 'proposal.creator.trackCompletedLabel',   icon: 'check-double', color: '#16A34A', subKey: 'proposal.creator.trackCompletedSub'   },
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -122,7 +122,7 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
             <Text style={[styles.campaignTitle, { color: C.textSecondary }]} numberOfLines={1}>{proposal.campaignTitle}</Text>
           </View>
           <View style={[styles.statusPill, { backgroundColor: cfg.bg }]}>
-            <Ionicons name={cfg.icon} size={11} color={cfg.color} />
+            <FontAwesome5 name={cfg.icon} size={11} color={cfg.color} />
             <Text style={[styles.statusText, { color: cfg.color }]}>{t(cfg.labelKey)}</Text>
           </View>
         </View>
@@ -130,7 +130,7 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
         {/* ── Cover letter preview ── */}
         {!!proposal.coverLetter && (
           <View style={[styles.coverRow, { backgroundColor: C.background, borderColor: C.border }]}>
-            <Ionicons name="chatbox-ellipses-outline" size={13} color={C.textSecondary} style={{ marginTop: 1 }} />
+            <FontAwesome5 name="comment-alt" size={13} color={C.textSecondary} style={{ marginTop: 1 }} />
             <View style={{ flex: 1 }}>
               <Text style={[styles.coverText, { color: C.textSecondary }]} numberOfLines={expanded ? undefined : 2}>
                 {proposal.coverLetter}
@@ -149,13 +149,13 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
         {/* ── Details: rate/free + submitted-time ── */}
         <View style={[styles.detailsSection, { borderTopColor: C.border, borderBottomColor: C.border }]}>
           <View style={styles.detailRow}>
-            <Ionicons name={isFree ? 'gift-outline' : 'cash-outline'} size={13} color={accentColor} />
+            <FontAwesome5 name={isFree ? 'gift' : 'money-bill-alt'} solid size={13} color={accentColor} />
             <Text style={[styles.detailText, { color: accentColor }]}>
               {isFree ? t('proposal.creator.freeEventTag') : proposal.proposedRate}
             </Text>
           </View>
           <View style={styles.detailRow}>
-            <Ionicons name="calendar-outline" size={13} color={C.textSecondary} />
+            <FontAwesome5 name="calendar-alt" size={13} color={C.textSecondary} />
             <Text style={[styles.detailText, { color: C.textSecondary }]}>{timeAgo(proposal.submittedAt, t)}</Text>
           </View>
         </View>
@@ -165,7 +165,7 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
           isFree ? (
             <View style={[styles.invitedBanner, { borderColor: `${accentColor}40` }]}>
               <View style={[styles.invitedIcon, { backgroundColor: `${accentColor}18` }]}>
-                <Ionicons name="checkmark-circle" size={20} color={accentColor} />
+                <FontAwesome5 name="check-circle" solid size={20} color={accentColor} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.invitedTitle, { color: accentColor }]}>{t('proposal.creator.invitedTitle')}</Text>
@@ -189,13 +189,13 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
                 });
               }}>
               <View style={styles.trackBtnIcon}>
-                <Ionicons name={trackCfg.icon} size={17} color="#fff" />
+                <FontAwesome5 name={trackCfg.icon} size={17} color="#fff" />
               </View>
               <View style={styles.trackBtnText}>
                 <Text style={styles.trackBtnLabel}>{t(trackCfg.labelKey)}</Text>
                 <Text style={styles.trackBtnSub}>{t(trackCfg.subKey)}</Text>
               </View>
-              <Ionicons name="chevron-forward" size={15} color="rgba(255,255,255,0.6)" />
+              <FontAwesome5 name="chevron-right" solid size={15} color="rgba(255,255,255,0.6)" />
             </Pressable>
           )
         )}
@@ -204,7 +204,7 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
             (there's nothing to tap into yet), matching the header statusPill. ── */}
         {proposal.status === 'pending' && (
           <View style={[styles.awaitingPill, { backgroundColor: cfg.bg }]}>
-            <Ionicons name={cfg.icon} size={13} color={cfg.color} />
+            <FontAwesome5 name={cfg.icon} size={13} color={cfg.color} />
             <Text style={[styles.awaitingPillText, { color: cfg.color }]}>{t('proposal.creator.awaitingResponseLabel')}</Text>
           </View>
         )}
@@ -213,7 +213,7 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
         {proposal.status === 'rejected' && (
           <View style={[styles.rejectedBanner, { borderColor: `${accentColor}40` }]}>
             <View style={[styles.rejectedIcon, { backgroundColor: `${accentColor}18` }]}>
-              <Ionicons name="close-circle" size={16} color={accentColor} />
+              <FontAwesome5 name="times-circle" solid size={16} color={accentColor} />
             </View>
             <Text style={[styles.rejectedText, { color: accentColor }]}>Application was not accepted</Text>
           </View>
@@ -304,10 +304,10 @@ export default function ProposalsScreen() {
   }
 
   const tabs = [
-    { key: 'all',      label: t('proposal.creator.tabAll'),      icon: 'documents-outline'       as const, color: TabColors.neutral.color,  count: tabData.all.total },
-    { key: 'pending',  label: t('proposal.creator.tabPending'),  icon: 'time-outline'             as const, color: TabColors.warning.color,  count: tabData.pending.total },
-    { key: 'accepted', label: t('proposal.creator.tabAccepted'), icon: 'checkmark-circle-outline' as const, color: TabColors.positive.color, count: tabData.accepted.total },
-    { key: 'rejected', label: t('proposal.creator.tabRejected'), icon: 'close-circle-outline'     as const, color: TabColors.danger.color,   count: tabData.rejected.total },
+    { key: 'all',      label: t('proposal.creator.tabAll'),      icon: 'copy'       as const, color: TabColors.neutral.color,  count: tabData.all.total },
+    { key: 'pending',  label: t('proposal.creator.tabPending'),  icon: 'clock'             as const, color: TabColors.warning.color,  count: tabData.pending.total },
+    { key: 'accepted', label: t('proposal.creator.tabAccepted'), icon: 'check-circle' as const, color: TabColors.positive.color, count: tabData.accepted.total },
+    { key: 'rejected', label: t('proposal.creator.tabRejected'), icon: 'times-circle'     as const, color: TabColors.danger.color,   count: tabData.rejected.total },
   ];
 
   const current = tabData[activeTab];

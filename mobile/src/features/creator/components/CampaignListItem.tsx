@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { FontAwesome5, Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAppColors } from '@/context/ThemeContext';
@@ -107,17 +107,17 @@ export function CampaignListItem({ campaign }: { campaign: Campaign }) {
         {/* Details */}
         <View style={[styles.detailsSection, { borderTopColor: C.border, borderBottomColor: C.border }]}>
           <View style={styles.detailRow}>
-            <Ionicons name="location-outline" size={14} color={C.textSecondary} />
+            <FontAwesome5 name="map-marker-alt" solid size={14} color={C.textSecondary} />
             <Text style={[styles.detailText, { color: C.textSecondary }]} numberOfLines={1}>
               {campaign.location ?? t('campaignCard.remoteFallback')}
             </Text>
           </View>
           <View style={styles.detailRow}>
-            <Ionicons name="time-outline" size={14} color={expiry.color} />
+            <FontAwesome5 name="clock" size={14} color={expiry.color} />
             <Text style={[styles.detailText, { color: expiry.color }]}>{expiry.label}</Text>
           </View>
           <View style={styles.detailRow}>
-            <Ionicons name="cash-outline" size={14} color={C.textSecondary} />
+            <FontAwesome5 name="money-bill-alt" solid size={14} color={C.textSecondary} />
             <Text style={[styles.detailText, styles.budgetText, { color: C.text }]}>{campaign.budget}</Text>
           </View>
         </View>
@@ -128,7 +128,7 @@ export function CampaignListItem({ campaign }: { campaign: Campaign }) {
             style={({ pressed }) => [styles.applyBtn, { backgroundColor: C.brinjal1 }, pressed && { opacity: 0.88 }]}
             onPress={goToDetail}>
             <Text style={styles.applyBtnText}>{t('campaignCard.applyNow')}</Text>
-            <Ionicons name="arrow-forward" size={14} color="#fff" />
+            <FontAwesome5 name="arrow-right" solid size={14} color="#fff" />
           </Pressable>
         </View>
       </Pressable>
