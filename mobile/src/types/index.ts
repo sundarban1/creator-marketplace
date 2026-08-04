@@ -130,6 +130,9 @@ export type AppNotification = {
   id: string;
   type:
     | 'proposal_received'
+    | 'work_started'
+    | 'work_submitted'
+    | 'revision_requested'
     | 'proposal_accepted'
     | 'proposal_rejected'
     | 'new_message'

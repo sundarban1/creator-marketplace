@@ -1,7 +1,9 @@
 import {
-  UserPlus, Briefcase, Megaphone, Send, Clock, Wallet, Banknote,
-  AlertTriangle, Mail, ShieldCheck, ShieldOff, UserX, Bell, type LucideIcon,
-} from 'lucide-react';
+  FaUserPlus, FaBriefcase, FaBullhorn, FaPaperPlane, FaHourglassHalf, FaWallet,
+  FaMoneyBillWave, FaTriangleExclamation, FaEnvelope, FaShieldHalved, FaUserSlash,
+  FaUserXmark, FaBell,
+} from 'react-icons/fa6';
+import type { IconType } from 'react-icons';
 import type { ApiNotification } from './api';
 
 export function timeAgo(iso: string): string {
@@ -34,21 +36,21 @@ export function notificationRoute(n: ApiNotification): string | null {
   }
 }
 
-const TYPE_ICONS: Record<string, LucideIcon> = {
-  creator_joined:            UserPlus,
-  business_joined:           Briefcase,
-  campaign_created:          Megaphone,
-  proposal_submitted:        Send,
-  campaign_expired:          Clock,
-  payment_release_pending:   Wallet,
-  money_withdrawn:           Banknote,
-  issue_reported:            AlertTriangle,
-  contact_message:           Mail,
-  account_verified:          ShieldCheck,
-  account_deactivated:       ShieldOff,
-  account_deleted:           UserX,
+const TYPE_ICONS: Record<string, IconType> = {
+  creator_joined:            FaUserPlus,
+  business_joined:           FaBriefcase,
+  campaign_created:          FaBullhorn,
+  proposal_submitted:        FaPaperPlane,
+  campaign_expired:          FaHourglassHalf,
+  payment_release_pending:   FaWallet,
+  money_withdrawn:           FaMoneyBillWave,
+  issue_reported:            FaTriangleExclamation,
+  contact_message:           FaEnvelope,
+  account_verified:          FaShieldHalved,
+  account_deactivated:       FaUserSlash,
+  account_deleted:           FaUserXmark,
 };
 
-export function notificationIcon(type: string): LucideIcon {
-  return TYPE_ICONS[type] ?? Bell;
+export function notificationIcon(type: string): IconType {
+  return TYPE_ICONS[type] ?? FaBell;
 }

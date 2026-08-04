@@ -327,7 +327,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, on
   if (!paid && ws === 'NONE' && isCreator) return (
     <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#D97706' }]}>
       <View style={ac.headerRow}>
-        <View style={[ac.iconBg, { backgroundColor: '#FFF7ED', shadowColor: '#D97706', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="clock" size={20} color="#D97706" /></View>
+        <View style={[ac.iconBg, { backgroundColor: '#FFF7ED', shadowColor: '#D97706', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="clock" solid size={20} color="#D97706" /></View>
         <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acWaitingPaymentTitle')}</Text>
       </View>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acWaitingPaymentSub')}</Text>
@@ -365,7 +365,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, on
   if (ws === 'IN_PROGRESS' && !isCreator) return (
     <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#7C3AED' }]}>
       <View style={ac.headerRow}>
-        <View style={[ac.iconBg, { backgroundColor: '#EEF2FF', shadowColor: '#7C3AED', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="play-circle" size={20} color="#7C3AED" /></View>
+        <View style={[ac.iconBg, { backgroundColor: '#EEF2FF', shadowColor: '#7C3AED', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="play-circle" solid size={20} color="#7C3AED" /></View>
         <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acCreatorWorkingTitle')}</Text>
       </View>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acCreatorWorkingSub')}</Text>
@@ -391,17 +391,17 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, on
   if (ws === 'SUBMITTED' && !isCreator) return (
     <View style={[ac.card, { backgroundColor: C.surface, borderLeftColor: '#D97706' }]}>
       <View style={ac.headerRow}>
-        <View style={[ac.iconBg, { backgroundColor: '#FFF7ED', shadowColor: '#D97706', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="eye" size={20} color="#D97706" /></View>
+        <View style={[ac.iconBg, { backgroundColor: '#FFF7ED', shadowColor: '#D97706', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5 }]}><FontAwesome5 name="eye" solid size={20} color="#D97706" /></View>
         <Text style={[ac.heading, { color: C.text }]}>{t('activityTimeline.acSubmittedTitle')}</Text>
       </View>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acSubmittedSub')}</Text>
       <Pressable style={[ac.btn, { backgroundColor: '#D97706', shadowColor: '#D97706', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]} onPress={onReview}>
-        <FontAwesome5 name="eye" size={16} color="#fff" />
+        <FontAwesome5 name="eye" solid size={16} color="#fff" />
         <Text style={ac.btnTxt}>{t('activityTimeline.acReviewBtn')}</Text>
       </Pressable>
       <View style={ac.btnRow}>
         <Pressable style={[ac.btn, { flex: 1, backgroundColor: '#EF4444', shadowColor: '#EF4444', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]} onPress={onRevision}>
-          <FontAwesome5 name="edit" size={15} color="#fff" />
+          <FontAwesome5 name="edit" solid size={15} color="#fff" />
           <Text style={ac.btnTxt}>{t('activityTimeline.acRevisionBtn')}</Text>
         </Pressable>
         <Pressable style={[ac.btn, { flex: 1, backgroundColor: '#16A34A', opacity: submitting ? 0.75 : 1, shadowColor: '#16A34A', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]} onPress={onApprove} disabled={submitting}>
@@ -423,7 +423,7 @@ function ActionCard({ ws, paid, paymentStatus, isCreator, isFree, submitting, on
       </View>
       <Text style={[ac.sub, { color: C.textSecondary }]}>{t('activityTimeline.acAwaitingReviewSub')}</Text>
       <Pressable style={[ac.btn, { backgroundColor: '#0EA5E9', shadowColor: '#0EA5E9', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]} onPress={onViewSubmission}>
-        <FontAwesome5 name="eye" size={16} color="#fff" />
+        <FontAwesome5 name="eye" solid size={16} color="#fff" />
         <Text style={ac.btnTxt}>{t('activityTimeline.acViewSubmissionBtn')}</Text>
       </Pressable>
     </View>
@@ -938,11 +938,11 @@ export default function CampaignWorkspaceScreen() {
               stage, so chat closes here rather than staying open indefinitely. */}
           {app?.paymentStatus === 'RELEASED' ? (
             <View style={s.iconBtn}>
-              <FontAwesome5 name="comment-alt" size={22} color="#D1D5DB" />
+              <FontAwesome5 name="comment-alt" solid size={22} color="#D1D5DB" />
             </View>
           ) : (
             <Pressable style={s.iconBtn} onPress={handleMessage} hitSlop={6}>
-              <FontAwesome5 name="comment-alt" size={22} color="#7C3AED" />
+              <FontAwesome5 name="comment-alt" solid size={22} color="#7C3AED" />
             </Pressable>
           )}
         </View>
@@ -985,7 +985,7 @@ export default function CampaignWorkspaceScreen() {
               <View style={s.metaRow}>
                 {campaign?.deadline && (
                   <View style={s.metaChip}>
-                    <FontAwesome5 name="calendar-alt" size={11} color="#6B7280" />
+                    <FontAwesome5 name="calendar-alt" solid size={11} color="#6B7280" />
                     <Text style={s.metaChipTxt}>{fmtDate(campaign.deadline)}</Text>
                   </View>
                 )}
@@ -1052,7 +1052,7 @@ export default function CampaignWorkspaceScreen() {
                     backgroundColor: ev.done ? '#16A34A' : ev.isCurrent ? '#7C3AED' : '#E5E7EB',
                     borderColor:     ev.done ? '#16A34A' : ev.isCurrent ? '#7C3AED' : '#D1D5DB',
                   }]}>
-                    <FontAwesome5 name={ev.icon as any} size={14} color={ev.done || ev.isCurrent ? '#fff' : '#9CA3AF'} />
+                    <FontAwesome5 name={ev.icon as any} solid size={14} color={ev.done || ev.isCurrent ? '#fff' : '#9CA3AF'} />
                   </View>
                   {idx < tlEvents.length - 1 && (
                     <View style={[tl.line, { backgroundColor: ev.done ? '#16A34A' : '#E5E7EB' }]} />
@@ -1545,7 +1545,7 @@ export default function CampaignWorkspaceScreen() {
           <Pressable
             style={[sh.primaryBtn, { flex: 1, backgroundColor: '#D97706', shadowColor: '#D97706', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]}
             onPress={() => { setShowReview(false); setTimeout(() => setShowRevision(true), 200); }}>
-            <FontAwesome5 name="edit" size={15} color="#fff" />
+            <FontAwesome5 name="edit" solid size={15} color="#fff" />
             <Text style={sh.primaryBtnTxt}>{t('activityTimeline.acRevisionBtn')}</Text>
           </Pressable>
           <Pressable

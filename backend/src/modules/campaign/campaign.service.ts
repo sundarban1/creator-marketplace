@@ -880,7 +880,7 @@ export class CampaignService {
     const businessUserId = app.campaign.business.userId;
     notificationService.create({
       userId:  businessUserId,
-      type:    'proposal_received',
+      type:    'work_started',
       title:   'Creator Started Working!',
       body:    `${creator.fullName ?? 'Creator'} has started working on "${app.campaign.title}".`,
       refId:   app.campaignId,
@@ -911,7 +911,7 @@ export class CampaignService {
     const businessUserId = app.campaign.business.userId;
     notificationService.create({
       userId:  businessUserId,
-      type:    'proposal_received',
+      type:    'work_submitted',
       title:   'Work Submitted for Review',
       body:    `${creator.fullName ?? 'Creator'} submitted deliverables for "${app.campaign.title}". Review within 5 days.`,
       refId:   app.campaignId,
@@ -1008,7 +1008,7 @@ export class CampaignService {
     const creatorUserId = app.creator.userId;
     notificationService.create({
       userId:  creatorUserId,
-      type:    'proposal_received',
+      type:    'revision_requested',
       title:   'Revision Requested',
       body:    `${business.businessName} requested changes for "${app.campaign.title}". Check the notes.`,
       refId:   app.campaignId,

@@ -4,7 +4,7 @@ import { Menu, Bell, Search, LogOut, ChevronDown, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
 import type { ApiNotification } from '../lib/api';
-import { timeAgo, notificationRoute } from '../lib/notificationMeta';
+import { timeAgo, notificationRoute, notificationIcon } from '../lib/notificationMeta';
 
 interface TopbarProps {
   onMenuClick: () => void;
@@ -105,22 +105,28 @@ export function Topbar({ onMenuClick, title }: TopbarProps) {
                 {notifications.length === 0 ? (
                   <p className="text-sm text-gray-400 text-center py-8">No notifications yet.</p>
                 ) : (
-                  notifications.map((n) => (
-                    <button
-                      key={n.id}
-                      onClick={() => handleNotificationClick(n)}
-                      className={`w-full text-left px-4 py-3 border-b border-gray-50 hover:bg-gray-50 transition-colors ${!n.isRead ? 'bg-indigo-50/40' : ''}`}
-                    >
-                      <div className="flex items-start gap-2">
-                        {!n.isRead && <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-1.5 flex-shrink-0" />}
-                        <div className={`min-w-0 flex-1 ${n.isRead ? 'pl-3.5' : ''}`}>
-                          <p className="text-sm font-medium text-gray-800 truncate">{n.title}</p>
-                          <p className="text-xs text-gray-500 line-clamp-2 mt-0.5">{n.body}</p>
-                          <p className="text-[11px] text-gray-400 mt-1">{timeAgo(n.createdAt)}</p>
+                  notifications.map((n) => {
+                    const Icon = notificationIcon(n.type);
+                    return (
+                      <button
+                        key={n.id}
+                        onClick={() => handleNotificationClick(n)}
+                        className={`w-full text-left px-4 py-3 border-b border-gray-50 hover:bg-gray-50 transition-colors ${!n.isRead ? 'bg-indigo-50/40' : ''}`}
+                      >
+                        <div className="flex items-start gap-2.5">
+                          <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${!n.isRead ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-100 text-gray-400'}`}>
+                            <Icon size={12} />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium text-gray-800 truncate">{n.title}</p>
+                            <p className="text-xs text-gray-500 line-clamp-2 mt-0.5">{n.body}</p>
+                            <p className="text-[11px] text-gray-400 mt-1">{timeAgo(n.createdAt)}</p>
+                          </div>
+                          {!n.isRead && <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-1.5 flex-shrink-0" />}
                         </div>
-                      </div>
-                    </button>
-                  ))
+                      </button>
+                    );
+                  })
                 )}
               </div>
               <button

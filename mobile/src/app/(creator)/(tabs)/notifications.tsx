@@ -28,7 +28,10 @@ type TypeConfig = {
 };
 
 const TYPE_CONFIG: Record<AppNotification['type'], TypeConfig> = {
-  proposal_received:        { icon: 'file-alt',        iconColor: '#6366F1', iconBg: '#EEF2FF', accentColor: '#6366F1', labelKey: 'notifications.typeNewProposal'  },
+  proposal_received:        { icon: 'paper-plane',      iconColor: '#6366F1', iconBg: '#EEF2FF', accentColor: '#6366F1', labelKey: 'notifications.typeNewProposal'  },
+  work_started:             { icon: 'play-circle',      iconColor: '#14B8A6', iconBg: '#F0FDFA', accentColor: '#14B8A6', labelKey: 'notifications.typeWorkStarted'   },
+  work_submitted:           { icon: 'cloud-upload-alt', iconColor: '#A855F7', iconBg: '#FAF5FF', accentColor: '#A855F7', labelKey: 'notifications.typeWorkSubmitted' },
+  revision_requested:       { icon: 'edit',             iconColor: '#F97316', iconBg: '#FFF7ED', accentColor: '#F97316', labelKey: 'notifications.typeRevisionRequested' },
   proposal_accepted:        { icon: 'check-circle',     iconColor: '#10B981', iconBg: '#ECFDF5', accentColor: '#10B981', labelKey: 'notifications.typeAccepted'      },
   proposal_rejected:        { icon: 'times-circle',         iconColor: '#EF4444', iconBg: '#FEF2F2', accentColor: '#EF4444', labelKey: 'notifications.typeRejected'      },
   new_message:              { icon: 'comment',           iconColor: '#3B82F6', iconBg: '#EFF6FF', accentColor: '#3B82F6', labelKey: 'notifications.typeMessage'       },
@@ -46,6 +49,19 @@ const TYPE_CONFIG: Record<AppNotification['type'], TypeConfig> = {
 };
 
 const FALLBACK: TypeConfig = { icon: 'bell', iconColor: '#6B7280', iconBg: '#F3F4F6', accentColor: '#6B7280', labelKey: 'notifications.typeNotification' };
+
+// Rows persisted before work_started/work_submitted/revision_requested existed
+// as their own types are still stuck in the DB with type: 'proposal_received'
+// (the old shared bucket) — disambiguate those legacy rows by title so they
+// don't all render the proposal icon.
+function resolveTypeConfig(item: AppNotification): TypeConfig {
+  if (item.type === 'proposal_received') {
+    if (item.title.startsWith('Creator Started Working')) return TYPE_CONFIG.work_started;
+    if (item.title.startsWith('Work Submitted for Review')) return TYPE_CONFIG.work_submitted;
+    if (item.title.startsWith('Revision Requested')) return TYPE_CONFIG.revision_requested;
+  }
+  return TYPE_CONFIG[item.type] ?? FALLBACK;
+}
 
 function getGroup(timestamp: string): 'groupToday' | 'groupThisWeek' | 'groupEarlier' {
   const diffDays = (Date.now() - new Date(timestamp).getTime()) / (1000 * 60 * 60 * 24);
@@ -78,7 +94,7 @@ function stripEmoji(text: string): string {
 function NotificationItem({ item, onPress }: { item: AppNotification; onPress: (id: string) => void }) {
   const C = useAppColors();
   const { t } = useLanguage();
-  const cfg = TYPE_CONFIG[item.type] ?? FALLBACK;
+  const cfg = resolveTypeConfig(item);
 
   return (
     <Pressable
@@ -87,7 +103,7 @@ function NotificationItem({ item, onPress }: { item: AppNotification; onPress: (
 
       {/* Type icon in a coloured circle */}
       <View style={[styles.iconWrap, { backgroundColor: cfg.iconBg }]}>
-        <FontAwesome5 name={cfg.icon} size={20} color={cfg.iconColor} />
+        <FontAwesome5 name={cfg.icon} solid size={20} color={cfg.iconColor} />
       </View>
 
       {/* Content */}
@@ -186,11 +202,12 @@ export default function NotificationsScreen() {
       return;
     }
 
-    // proposal_received → business sees the proposals list; creators get this
-    // same notification `type` reused for "Revision Requested" (see
-    // CampaignService.requestRevision), so route them into Activity Timeline
-    // with the feedback modal opened straight to the note.
-    if (n.type === 'proposal_received' && n.refId) {
+    // proposal_received → business sees the proposals list. work_started/
+    // work_submitted are business-only notifications for the same workspace
+    // flow, so they share this branch's business destination. revision_requested
+    // is creator-only (see CampaignService.requestRevision), so it routes into
+    // Activity Timeline with the feedback modal opened straight to the note.
+    if ((n.type === 'proposal_received' || n.type === 'work_started' || n.type === 'work_submitted' || n.type === 'revision_requested') && n.refId) {
       if (isCreator) {
         router.push({
           pathname: '/(business)/activity-timeline',
