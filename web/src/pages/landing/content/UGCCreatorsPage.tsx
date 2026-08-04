@@ -1,4 +1,4 @@
-import { Compass, Handshake, MessageSquare, ShieldCheck, Sparkles, Video } from 'lucide-react';
+import { Compass, MessageSquare, ShieldCheck, Sparkles, Video } from 'lucide-react';
 import { ContentPageLayout } from './ContentPageLayout';
 import { ContentSection, BenefitGrid, ContentList } from '../components/ContentBlocks';
 import { organizationSchema, webPageSchema } from '../../../lib/seo/schema';
