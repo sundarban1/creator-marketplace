@@ -1540,23 +1540,27 @@ export default function CampaignWorkspaceScreen() {
           </View>
         )}
 
-        {/* Action buttons */}
-        <View style={{ flexDirection: 'row', gap: 10, marginTop: 20 }}>
-          <Pressable
-            style={[sh.primaryBtn, { flex: 1, backgroundColor: '#D97706', shadowColor: '#D97706', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]}
-            onPress={() => { setShowReview(false); setTimeout(() => setShowRevision(true), 200); }}>
-            <FontAwesome5 name="edit" solid size={15} color="#fff" />
-            <Text style={sh.primaryBtnTxt}>{t('activityTimeline.acRevisionBtn')}</Text>
-          </Pressable>
-          <Pressable
-            style={[sh.primaryBtn, { flex: 1, backgroundColor: '#16A34A', opacity: submitting ? 0.75 : 1, shadowColor: '#16A34A', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]}
-            disabled={submitting}
-            onPress={() => { setShowReview(false); handleApprove(); }}>
-            {submitting
-              ? <ActivityIndicator size="small" color="#fff" />
-              : <><FontAwesome5 name="check-double" solid size={15} color="#fff" /><Text style={sh.primaryBtnTxt}>{t('activityTimeline.acApproveBtn')}</Text></>}
-          </Pressable>
-        </View>
+        {/* Action buttons — business only; the creator opens this same sheet
+            read-only via "View My Submission" and shouldn't see review actions
+            on their own work. */}
+        {!isCreator && (
+          <View style={{ flexDirection: 'row', gap: 10, marginTop: 20 }}>
+            <Pressable
+              style={[sh.primaryBtn, { flex: 1, backgroundColor: '#D97706', shadowColor: '#D97706', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]}
+              onPress={() => { setShowReview(false); setTimeout(() => setShowRevision(true), 200); }}>
+              <FontAwesome5 name="edit" solid size={15} color="#fff" />
+              <Text style={sh.primaryBtnTxt}>{t('activityTimeline.acRevisionBtn')}</Text>
+            </Pressable>
+            <Pressable
+              style={[sh.primaryBtn, { flex: 1, backgroundColor: '#16A34A', opacity: submitting ? 0.75 : 1, shadowColor: '#16A34A', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]}
+              disabled={submitting}
+              onPress={() => { setShowReview(false); handleApprove(); }}>
+              {submitting
+                ? <ActivityIndicator size="small" color="#fff" />
+                : <><FontAwesome5 name="check-double" solid size={15} color="#fff" /><Text style={sh.primaryBtnTxt}>{t('activityTimeline.acApproveBtn')}</Text></>}
+            </Pressable>
+          </View>
+        )}
       </BottomSheet>
 
       {/* ── Request Revision Modal ── */}
