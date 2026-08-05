@@ -332,7 +332,7 @@ export class MessagingRepository {
     conversationId: string;
     senderId: string;
     content: string;
-    type?: 'TEXT' | 'IMAGE' | 'FILE' | 'VIDEO';
+    type?: 'TEXT' | 'IMAGE' | 'FILE' | 'VIDEO' | 'VOICE';
     attachmentUrl?: string;
     attachmentName?: string;
     attachmentThumbnailUrl?: string;
@@ -342,6 +342,7 @@ export class MessagingRepository {
     attachmentSize?: number;
     attachmentFormat?: string;
     attachmentStatus?: 'PROCESSING' | 'READY' | 'FAILED';
+    attachmentWaveform?: string;
   }) {
     const msg = await prisma.message.create({
       data,

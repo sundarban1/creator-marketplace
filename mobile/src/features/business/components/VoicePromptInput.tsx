@@ -260,7 +260,7 @@ export function VoicePromptInput({ onRecorded, onDiscard, onError, disabled }: P
 const styles = StyleSheet.create({
   wrap:      { alignItems: 'center', gap: 10, paddingVertical: 14, position: 'relative' },
   micBtn:    { width: 84, height: 84, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
-  overlay:   { position: 'absolute', bottom: '100%', left: 0, right: 0, alignItems: 'center', justifyContent: 'center', marginBottom: 12, zIndex: 10 },
+  overlay:   { position: 'absolute', bottom: '100%', left: 0, right: 0, alignItems: 'center', justifyContent: 'center', marginBottom: 24, zIndex: 10 },
   meterCard: { borderRadius: RADIUS.lg, paddingHorizontal: 22, paddingVertical: 18, ...SHADOW.floating },
   meter:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 2, height: 36, width: 160 },
   meterBar:  { width: 3, borderRadius: 2 },

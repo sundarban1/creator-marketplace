@@ -34,9 +34,19 @@ export const videoCompleteSchema = z.object({
   clientDurationSec: z.number().min(0).max(7200).optional(),
 });
 
+export const voiceCompleteSchema = z.object({
+  publicId: z.string().min(1, 'publicId is required'),
+  // Recorder-measured duration (see completeVoiceAttachment for why
+  // Cloudinary's own value wins when available).
+  clientDurationSec: z.number().min(0).max(120).optional(),
+  // CSV of normalized (0-1) bar heights captured live during recording.
+  waveform: z.string().max(500).optional(),
+});
+
 export type StartConversationInput        = z.infer<typeof startConversationSchema>;
 export type StartCreatorConversationInput = z.infer<typeof startCreatorConversationSchema>;
 export type SendMessageInput              = z.infer<typeof sendMessageSchema>;
 export type EditMessageInput              = z.infer<typeof editMessageSchema>;
 export type MessagesQuery                 = z.infer<typeof messagesQuerySchema>;
 export type VideoCompleteInput            = z.infer<typeof videoCompleteSchema>;
+export type VoiceCompleteInput            = z.infer<typeof voiceCompleteSchema>;

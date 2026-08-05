@@ -5,6 +5,7 @@ import { storage }           from '@/utilities/storage';
 import { ACCESS_TOKEN_KEY }  from '@/utilities/constants';
 import { requestVideoUploadSignature } from '@/services/cloudinaryVideoUpload';
 import { startBackgroundChunkedUpload } from '@/services/backgroundVideoUploadManager';
+import { requestVoiceUploadSignature, uploadVoiceToCloudinary } from '@/services/cloudinaryVoiceUpload';
 
 // ── Transformers ────────────────────────────────────────────────────────────────
 
@@ -46,6 +47,7 @@ export function toMessage(api: ApiMessage): Message {
     attachmentSize:         api.attachmentSize ?? null,
     attachmentFormat:       api.attachmentFormat ?? null,
     attachmentStatus:       api.attachmentStatus ?? null,
+    attachmentWaveform:     api.attachmentWaveform ?? null,
     isDeleted:      api.isDeleted ?? false,
     editedAt:       api.editedAt,
   };
@@ -87,6 +89,38 @@ export function createVideoUploadTask(
       return toMessage(apiMessage);
     },
     cancel: () => { cancelled = true; innerTask?.cancel(); },
+  };
+}
+
+// ── Voice upload task ───────────────────────────────────────────────────────────
+
+// Same direct-to-Cloudinary shape as createVideoUploadTask above (signature →
+// upload → complete), but a single-shot upload instead of chunked — a voice
+// clip is capped at 15MB/2min, nowhere near the size that justifies video's
+// chunked/background-survival upload manager.
+export function createVoiceUploadTask(
+  conversationId: string,
+  fileUri: string,
+  durationSec: number,
+  waveform: number[],
+  onProgress?: (fraction: number) => void,
+): { start: () => Promise<Message>; cancel: () => void } {
+  let cancelled = false;
+
+  return {
+    start: async () => {
+      if (cancelled) throw new Error('Voice upload cancelled');
+      const signature = await requestVoiceUploadSignature(conversationId);
+      if (cancelled) throw new Error('Voice upload cancelled');
+      await uploadVoiceToCloudinary(fileUri, signature, onProgress);
+      if (cancelled) throw new Error('Voice upload cancelled');
+      const res = await request<ApiMessage>(
+        'POST', `/api/messaging/conversations/${conversationId}/attachments/voice/complete`,
+        { publicId: signature.publicId, clientDurationSec: durationSec, waveform: waveform.map((v) => v.toFixed(2)).join(',') },
+      );
+      return toMessage(res.data);
+    },
+    cancel: () => { cancelled = true; },
   };
 }
 

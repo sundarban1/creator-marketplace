@@ -307,7 +307,15 @@ export class CampaignController {
   async uploadDeliverableFile(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.file) throw new AppError('No file provided', 400);
-      const result = await campaignService.uploadDeliverableFile(req.params.appId, req.user!.id, req.file);
+      // 'close' fires on a premature client disconnect too (not just normal
+      // completion) — res.writableEnded is what tells the two apart: still
+      // false here means the connection dropped before we ever responded,
+      // i.e. the creator cancelled mid-upload.
+      let clientDisconnected = false;
+      req.on('close', () => { if (!res.writableEnded) clientDisconnected = true; });
+      const result = await campaignService.uploadDeliverableFile(
+        req.params.appId, req.user!.id, req.file, () => clientDisconnected,
+      );
       success(res, result, 'File uploaded', 201);
     } catch (err) {
       next(err);

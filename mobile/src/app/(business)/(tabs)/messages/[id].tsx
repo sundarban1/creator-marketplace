@@ -25,7 +25,9 @@ import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppColors } from '@/context/ThemeContext';
 import { usePlatformFlags } from '@/context/PlatformSettingsContext';
-import { chatService, toMessage, createVideoUploadTask } from '@/services/chat';
+import { chatService, toMessage, createVideoUploadTask, createVoiceUploadTask } from '@/services/chat';
+import { VoiceRecorderButton, type VoiceRecorderResult } from '@/features/chat/components/VoiceRecorderButton';
+import { VoiceBubblePlayer } from '@/features/chat/components/VoiceBubblePlayer';
 import { compressVideo } from '@/utilities/uploadVideo';
 import {
   getActiveUploadsFor, subscribeToUploadProgress, subscribeToUploadFinalizing,
@@ -185,11 +187,11 @@ function LocalVideoPreview({ uri, style }: { uri: string; style: object }) {
 // ── Message Bubble ─────────────────────────────────────────────────────────────
 
 function MessageBubble({
-  msg, isSent, showAvatar, isLast, personName, personColor, personAvatar, onLongPress, onRetryVideo, onDeleteFailed, onCancelUpload,
+  msg, isSent, showAvatar, isLast, personName, personColor, personAvatar, onLongPress, onRetryUpload, onDeleteFailed, onCancelUpload,
 }: {
   msg: Message; isSent: boolean; showAvatar: boolean; isLast: boolean;
   personName: string; personColor: string; personAvatar?: string; onLongPress: () => void;
-  onRetryVideo: (msg: Message) => void; onDeleteFailed: (id: string) => void; onCancelUpload: (msg: Message) => void;
+  onRetryUpload: (msg: Message) => void; onDeleteFailed: (id: string) => void; onCancelUpload: (msg: Message) => void;
 }) {
   const C = useAppColors();
   const { t } = useLanguage();
@@ -198,6 +200,7 @@ function MessageBubble({
   const isImage   = msg.type === 'IMAGE' && !!msg.attachmentUrl;
   const isFile    = msg.type === 'FILE'  && !!msg.attachmentUrl;
   const isVideo   = msg.type === 'VIDEO' && !!msg.attachmentUrl;
+  const isVoice   = msg.type === 'VOICE';
 
   if (msg.isDeleted) {
     return (
@@ -319,7 +322,7 @@ function MessageBubble({
                     <Text style={s.videoStatusDetailTxt} numberOfLines={2}>{msg.errorDetail}</Text>
                   )}
                   <View style={s.failedActions}>
-                    <Pressable style={s.failedBtn} onPress={() => onRetryVideo(msg)}>
+                    <Pressable style={s.failedBtn} onPress={() => onRetryUpload(msg)}>
                       <Text style={s.failedBtnTxt}>{t('messages.retry')}</Text>
                     </Pressable>
                     <Pressable style={s.failedBtn} onPress={() => onDeleteFailed(msg.id)}>
@@ -330,6 +333,45 @@ function MessageBubble({
               )}
             </View>
           </Pressable>
+        ) : isVoice ? (
+          <View
+            style={[
+              s.voiceBubble,
+              isSent
+                ? { backgroundColor: C.brinjal1 }
+                : { backgroundColor: C.surface, borderColor: C.border, borderWidth: StyleSheet.hairlineWidth },
+            ]}>
+            {msg.status === 'failed' ? (
+              <View style={s.voiceFailedRow}>
+                <Pressable onPress={() => onRetryUpload(msg)} hitSlop={8} style={s.voiceFailedIconBtn} accessibilityLabel={t('messages.retry')}>
+                  <FontAwesome5 name="redo" solid size={13} color={isSent ? '#fff' : C.brinjal1} />
+                </Pressable>
+                <Pressable onPress={() => onDeleteFailed(msg.id)} hitSlop={8} style={s.voiceFailedIconBtn} accessibilityLabel={t('common.delete')}>
+                  <FontAwesome5 name="trash-alt" solid size={13} color={isSent ? '#fff' : '#EF4444'} />
+                </Pressable>
+                <FontAwesome5 name="exclamation-circle" solid size={16} color={isSent ? '#fff' : '#EF4444'} />
+                <Text style={[s.voiceFailedTxt, { color: isSent ? '#fff' : C.text }]} numberOfLines={1}>
+                  {t('messages.uploadFailed')}
+                </Text>
+              </View>
+            ) : isPending ? (
+              <View style={s.voiceUploadingRow}>
+                <ActivityIndicator size="small" color={isSent ? '#fff' : C.brinjal1} />
+                <Text style={[s.voiceUploadingTxt, { color: isSent ? '#fff' : C.textSecondary }]}>
+                  {Math.round((msg.uploadProgress ?? 0) * 100)}%
+                </Text>
+              </View>
+            ) : (
+              <VoiceBubblePlayer
+                url={msg.attachmentUrl!}
+                waveform={msg.attachmentWaveform}
+                durationSec={msg.attachmentDurationSec ?? 0}
+                isSent={isSent}
+                activeColor={C.brinjal1}
+                mutedColor={C.textSecondary}
+              />
+            )}
+          </View>
         ) : (
           <View style={[
             s.bubble,
@@ -376,6 +418,10 @@ export default function BusinessChatRoomScreen() {
     (urlStatus as 'PENDING' | 'ACCEPTED' | 'DECLINED') ?? 'ACCEPTED',
   );
   const [text, setText]               = useState('');
+  // Mirrors `text` (see the effect below) so handleSend's deferred callback
+  // can read the latest value without closing over a stale render's `text`.
+  const textRef                       = useRef('');
+  useEffect(() => { textRef.current = text; }, [text]);
   const [editingMessage, setEditingMessage] = useState<Message | null>(null);
   const [otherTyping, setOtherTyping] = useState(false);
   const [emojiOpen, setEmojiOpen]     = useState(false);
@@ -631,47 +677,59 @@ export default function BusinessChatRoomScreen() {
   }
 
   function handleSend() {
-    if (!text.trim() || isSending.current) return;
+    if (isSending.current) return;
     if (editingMessage) { void handleSaveEdit(); return; }
-    const content = text.trim();
-    isSending.current = true;
-    const socket = getSocket();
+    // iOS autocorrect/predictive text can commit a word replacement (which
+    // fires onChangeText) in the very same tap that presses this button —
+    // reading `text` synchronously here can race ahead of that in-flight
+    // commit: the pre-correction word gets sent, and the correction's
+    // onChangeText lands afterward and repopulates the just-cleared input.
+    // Deferring one frame lets any in-flight autocorrect change reach
+    // textRef first, so the actual send always reflects the final text.
+    requestAnimationFrame(() => {
+      if (isSending.current) return;
+      const content = textRef.current.trim();
+      if (!content) return;
+      isSending.current = true;
+      const socket = getSocket();
 
-    if (socket && isTypingEmitted.current) {
-      socket.emit('typing:stop', { conversationId: id });
-      isTypingEmitted.current = false;
-    }
-    if (typingTimer.current) clearTimeout(typingTimer.current);
+      if (socket && isTypingEmitted.current) {
+        socket.emit('typing:stop', { conversationId: id });
+        isTypingEmitted.current = false;
+      }
+      if (typingTimer.current) clearTimeout(typingTimer.current);
 
-    // Optimistic update — show message immediately at bottom
-    const tempId = `temp-${Date.now()}`;
-    const optimistic: Message = {
-      id: tempId, conversationId: id,
-      senderId: user?.id ?? '', text: content,
-      timestamp: new Date().toISOString(), status: 'sending',
-      type: 'TEXT',
-    };
-    setMessages((prev) => [...prev, optimistic]);
-    setText('');
-    scrollToBottom();
+      // Optimistic update — show message immediately at bottom
+      const tempId = `temp-${Date.now()}`;
+      const optimistic: Message = {
+        id: tempId, conversationId: id,
+        senderId: user?.id ?? '', text: content,
+        timestamp: new Date().toISOString(), status: 'sending',
+        type: 'TEXT',
+      };
+      setMessages((prev) => [...prev, optimistic]);
+      textRef.current = '';
+      setText('');
+      scrollToBottom();
 
-    if (socket?.connected) {
-      socket.emit('message:send', { conversationId: id, content });
-      isSending.current = false;
-    } else {
-      chatService.sendMessage(id, content)
-        .then((msg) => {
-          setMessages((prev) => {
-            const without = prev.filter((m) => m.id !== tempId);
-            return without.some((m) => m.id === msg.id) ? without : [...without, msg];
-          });
-        })
-        .catch((e) => {
-          setMessages((prev) => prev.filter((m) => m.id !== tempId));
-          Alert.alert(t('messages.sendFailedTitle'), e instanceof Error ? e.message : t('messages.sendFailedGeneric'));
-        })
-        .finally(() => { isSending.current = false; });
-    }
+      if (socket?.connected) {
+        socket.emit('message:send', { conversationId: id, content });
+        isSending.current = false;
+      } else {
+        chatService.sendMessage(id, content)
+          .then((msg) => {
+            setMessages((prev) => {
+              const without = prev.filter((m) => m.id !== tempId);
+              return without.some((m) => m.id === msg.id) ? without : [...without, msg];
+            });
+          })
+          .catch((e) => {
+            setMessages((prev) => prev.filter((m) => m.id !== tempId));
+            Alert.alert(t('messages.sendFailedTitle'), e instanceof Error ? e.message : t('messages.sendFailedGeneric'));
+          })
+          .finally(() => { isSending.current = false; });
+      }
+    });
   }
 
   async function handleSendAttachment(file: PickedAttachment, type: 'IMAGE' | 'FILE') {
@@ -829,6 +887,69 @@ export default function BusinessChatRoomScreen() {
     }
   }
 
+  // Single-shot direct-to-Cloudinary upload (see createVoiceUploadTask) —
+  // no compression/finalizing stage the way video has, just uploading → sent.
+  async function runVoiceSend(msg: Message) {
+    try {
+      const task = createVoiceUploadTask(
+        id, msg.localUri!, msg.attachmentDurationSec ?? 0,
+        (msg.attachmentWaveform ?? '').split(',').filter(Boolean).map(Number),
+        (p) => updateMsg(msg.id, { uploadProgress: p }),
+      );
+      uploadTasks.current[msg.id] = task;
+
+      const serverMsg = await task.start();
+      setMessages((prev) => {
+        const without = prev.filter((m) => m.id !== msg.id);
+        return without.some((m) => m.id === serverMsg.id) ? without : [...without, serverMsg];
+      });
+    } catch (e) {
+      const detail = e instanceof Error ? e.message : undefined;
+      if (detail === 'Voice upload cancelled') {
+        setMessages((prev) => prev.filter((m) => m.id !== msg.id));
+        return;
+      }
+      const attempt = (msg.retryCount ?? 0) + 1;
+      if (isTransientNetworkError(e) && attempt <= 3) {
+        updateMsg(msg.id, { retryCount: attempt, errorDetail: detail });
+        await runVoiceSend({ ...msg, retryCount: attempt });
+        return;
+      }
+      updateMsg(msg.id, { status: 'failed', retryCount: attempt, errorDetail: detail });
+    } finally {
+      delete uploadTasks.current[msg.id];
+    }
+  }
+
+  async function handleSendVoiceAttachment(rec: VoiceRecorderResult) {
+    if (isSending.current) return;
+    isSending.current = true;
+    try {
+      const socket = getSocket();
+      if (socket && isTypingEmitted.current) {
+        socket.emit('typing:stop', { conversationId: id });
+        isTypingEmitted.current = false;
+      }
+      if (typingTimer.current) clearTimeout(typingTimer.current);
+
+      const tempId = `temp-${Date.now()}`;
+      const optimistic: Message = {
+        id: tempId, conversationId: id,
+        senderId: user?.id ?? '', text: '',
+        timestamp: new Date().toISOString(), status: 'uploading',
+        type: 'VOICE',
+        attachmentDurationSec: rec.durationSec,
+        attachmentWaveform: rec.waveform.map((v) => v.toFixed(2)).join(','),
+        localUri: rec.uri, uploadProgress: 0, retryCount: 0,
+      };
+      setMessages((prev) => [...prev, optimistic]);
+      scrollToBottom();
+      await runVoiceSend(optimistic);
+    } finally {
+      isSending.current = false;
+    }
+  }
+
   async function handleCameraPress() {
     const file = await pickImageFromCamera();
     if (file) void handleSendAttachment(file, 'IMAGE');
@@ -951,7 +1072,7 @@ export default function BusinessChatRoomScreen() {
                 showAvatar={item.showAvatar} isLast={item.isLast}
                 personName={personName} personColor={personColor} personAvatar={personAvatar}
                 onLongPress={() => handleMessageLongPress(item.msg)}
-                onRetryVideo={(msg) => void runVideoSend(msg)}
+                onRetryUpload={(msg) => void (msg.type === 'VOICE' ? runVoiceSend(msg) : runVideoSend(msg))}
                 onDeleteFailed={(msgId) => setMessages((prev) => prev.filter((m) => m.id !== msgId))}
                 onCancelUpload={(msg) => uploadTasks.current[msg.id]?.cancel()}
               />
@@ -1031,12 +1152,15 @@ export default function BusinessChatRoomScreen() {
                   <Text style={[s.charCount, { color: C.textSecondary }]}>{1000 - text.length}</Text>
                 )}
               </View>
-              <Pressable
-                style={[s.sendBtn, { backgroundColor: text.trim() ? C.brinjal1 : C.border }]}
-                onPress={handleSend}
-                disabled={!text.trim()}>
-                <FontAwesome5 name={editingMessage ? 'check' : 'paper-plane'} solid size={18} color="#fff" />
-              </Pressable>
+              {text.trim() || editingMessage ? (
+                <Pressable
+                  style={[s.sendBtn, { backgroundColor: C.brinjal1 }]}
+                  onPress={handleSend}>
+                  <FontAwesome5 name={editingMessage ? 'check' : 'paper-plane'} solid size={18} color="#fff" />
+                </Pressable>
+              ) : (
+                <VoiceRecorderButton disabled={hasActiveUpload || isSending.current} onRecorded={handleSendVoiceAttachment} />
+              )}
             </View>
 
             {/* ── Emoji panel (replaces the system keyboard when open) ── */}
@@ -1132,6 +1256,13 @@ const s = StyleSheet.create({
   cancelUploadTxt:  { color: '#fff', fontSize: 11, fontFamily: F.semibold },
   fileBubble:           { flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: RADIUS.lg, paddingHorizontal: 14, paddingVertical: 12, maxWidth: 220 },
   fileNameTxt:          { flex: 1, fontSize: 13, fontFamily: F.medium },
+
+  voiceBubble:      { borderRadius: RADIUS.full, paddingHorizontal: 12, paddingVertical: 8, minWidth: 210, maxWidth: 260 },
+  voiceUploadingRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 4 },
+  voiceUploadingTxt: { fontSize: 12, fontFamily: F.medium },
+  voiceFailedRow:   { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 2 },
+  voiceFailedIconBtn: { width: 22, height: 22, justifyContent: 'center', alignItems: 'center' },
+  voiceFailedTxt:   { flex: 1, fontSize: 12, fontFamily: F.medium },
 
   // Empty
   emptyWrap:  { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10, paddingHorizontal: 32, paddingVertical: 80 },

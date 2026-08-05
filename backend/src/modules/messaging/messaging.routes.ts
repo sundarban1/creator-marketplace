@@ -4,7 +4,7 @@ import { authenticate } from '../../middleware/auth';
 import { validate } from '../../middleware/validate';
 import { uploadChatFile } from '../../middleware/upload';
 import { perUserMessageLimiter } from '../../middleware/rateLimit';
-import { startConversationSchema, startCreatorConversationSchema, sendMessageSchema, editMessageSchema, videoCompleteSchema } from './messaging.schema';
+import { startConversationSchema, startCreatorConversationSchema, sendMessageSchema, editMessageSchema, videoCompleteSchema, voiceCompleteSchema } from './messaging.schema';
 
 const router = Router();
 const ctrl   = new MessagingController();
@@ -35,6 +35,12 @@ router.get('/conversations/:id/messages',            ctrl.getMessages.bind(ctrl)
 router.post('/conversations/:id/messages',           perUserMessageLimiter, validate(sendMessageSchema), ctrl.sendMessage.bind(ctrl));
 // Image / file attachment — multipart upload, field name "file", optional "caption" text field
 router.post('/conversations/:id/attachments',        uploadChatFile.single('file'), ctrl.sendAttachment.bind(ctrl));
+// Voice — direct-to-Cloudinary upload, same pattern as video below (not
+// proxied through this server). Mobile calls /signature first, uploads
+// straight to Cloudinary with the returned credentials, then calls /complete
+// so the server can verify the asset and create the message.
+router.post('/conversations/:id/attachments/voice/signature', ctrl.getVoiceUploadSignature.bind(ctrl));
+router.post('/conversations/:id/attachments/voice/complete',  validate(voiceCompleteSchema), ctrl.completeVoiceAttachment.bind(ctrl));
 // Video — direct-to-Cloudinary upload, not proxied through this server (avoids
 // Render request-size/timeout limits on large files). Mobile calls /signature
 // first, uploads straight to Cloudinary with the returned credentials, then

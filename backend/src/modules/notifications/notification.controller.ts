@@ -44,7 +44,8 @@ export class NotificationController {
     try {
       const { token } = req.body as { token: string };
       if (!token) { res.status(400).json({ success: false, message: 'token required' }); return; }
-      await notificationService.registerPushToken(req.user!.id, token);
+      const deviceId = req.headers['x-device-id'] as string | undefined;
+      await notificationService.registerPushToken(req.user!.id, token, deviceId);
       res.json({ success: true });
     } catch (err) { next(err); }
   }

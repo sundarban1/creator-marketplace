@@ -36,6 +36,20 @@ const ALLOWED_DELIVERABLE_VIDEO_FORMATS = new Set(['mp4', 'mov', 'qt']);
 // ATTACHMENT_IMAGE_TRANSFORMATION for chat image attachments.
 const DELIVERABLE_IMAGE_TRANSFORMATION = [{ width: 1600, crop: 'limit' }];
 
+// Deliverable *files* (images/PDF/DOCX) store their publicId bare, e.g.
+// `deliverable_<appId>_...` — unlike deliverable *videos*, which capture
+// Cloudinary's own response and so already hold the full folder-qualified
+// id. uploadImage/uploadRawFile only ever hand back the secure_url, not
+// Cloudinary's public_id, so every delete call for a file needs this prefix
+// reconstructed by hand to match what Cloudinary actually stored the asset
+// under — passing the bare id silently no-ops (caught by .catch(() => {})),
+// leaking the asset in Cloudinary forever. (Live-verified: production had
+// orphaned deliverable assets going back days from this exact gap.)
+const DELIVERABLE_FILE_FOLDER = 'campaigns/deliverables';
+function deliverableFileCloudinaryId(publicId: string): string {
+  return `${DELIVERABLE_FILE_FOLDER}/${publicId}`;
+}
+
 // Once a creator has submitted a proposal, the terms it was submitted against
 // (price, platform, deliverables) can no longer change under them — everything
 // else (title, description, deadline, status, etc.) can still be edited.
@@ -1002,7 +1016,7 @@ export class CampaignService {
 
     // Same reasoning as the video block above, for images/PDF/DOCX.
     const existingFiles = await this.repo.getDeliverableFiles(appId);
-    await Promise.all(existingFiles.map((f) => (f.fileType === 'IMAGE' ? deleteImage(f.publicId) : deleteRawFile(f.publicId)))).catch(() => {});
+    await Promise.all(existingFiles.map((f) => (f.fileType === 'IMAGE' ? deleteImage(deliverableFileCloudinaryId(f.publicId)) : deleteRawFile(deliverableFileCloudinaryId(f.publicId))))).catch(() => {});
     if (existingFiles.length > 0) await this.repo.clearDeliverableFiles(appId);
 
     const creatorUserId = app.creator.userId;
@@ -1136,17 +1150,35 @@ export class CampaignService {
   // no signing/direct-to-Cloudinary flow needed, and no async verification
   // step since the file is already fully in hand by the time this runs.
 
-  async uploadDeliverableFile(appId: string, userId: string, file: Express.Multer.File): Promise<DeliverableFile> {
+  // `isClientDisconnected` reflects the creator tapping X mid-upload on the
+  // mobile client — aborting the client's connection doesn't stop this async
+  // handler from running (Node has no built-in "cancel my work" for that), so
+  // this is checked explicitly at both points where it still matters: before
+  // ever touching Cloudinary, and again right after (in case the cancel
+  // landed while that call was in flight) so a cancelled upload never ends up
+  // live in Cloudinary or appended to deliverables.
+  async uploadDeliverableFile(
+    appId: string, userId: string, file: Express.Multer.File, isClientDisconnected: () => boolean = () => false,
+  ): Promise<DeliverableFile> {
     await this.assertCanUploadDeliverable(appId, userId);
 
     const existing = await this.repo.getDeliverableFiles(appId);
     if (existing.length >= 10) throw new AppError('Maximum of 10 files already uploaded for this application', 409);
+
+    if (isClientDisconnected()) throw new AppError('Upload cancelled', 499);
 
     const isImage = file.mimetype.startsWith('image/');
     const publicId = `deliverable_${appId}_${Date.now()}_${randomUUID()}`;
     const url = isImage
       ? await uploadImageToCloudinary(file.buffer, 'campaigns/deliverables', publicId, DELIVERABLE_IMAGE_TRANSFORMATION)
       : await uploadRawFile(file.buffer, 'campaigns/deliverables', publicId);
+
+    if (isClientDisconnected()) {
+      // Fire-and-forget: the client is already gone, so there's no response
+      // left to hold up waiting on Cloudinary's delete API round-trip for.
+      void (isImage ? deleteImage(deliverableFileCloudinaryId(publicId)) : deleteRawFile(deliverableFileCloudinaryId(publicId)));
+      throw new AppError('Upload cancelled', 499);
+    }
 
     const entry: DeliverableFile = {
       id:               randomUUID(),
@@ -1161,7 +1193,7 @@ export class CampaignService {
 
     const appended = await this.repo.appendDeliverableFile(appId, entry);
     if (!appended) {
-      await (isImage ? deleteImage(publicId) : deleteRawFile(publicId));
+      await (isImage ? deleteImage(deliverableFileCloudinaryId(publicId)) : deleteRawFile(deliverableFileCloudinaryId(publicId)));
       throw new AppError('Maximum of 10 files already uploaded for this application', 409);
     }
 
@@ -1173,7 +1205,7 @@ export class CampaignService {
     const existing = await this.repo.getDeliverableFiles(appId);
     const target = existing.find((f) => f.id === fileId);
     if (target) {
-      await (target.fileType === 'IMAGE' ? deleteImage(target.publicId) : deleteRawFile(target.publicId)).catch(() => {});
+      await (target.fileType === 'IMAGE' ? deleteImage(deliverableFileCloudinaryId(target.publicId)) : deleteRawFile(deliverableFileCloudinaryId(target.publicId))).catch(() => {});
     }
     const updated = await this.repo.removeDeliverableFile(appId, fileId);
     return toApplicationDto(updated);

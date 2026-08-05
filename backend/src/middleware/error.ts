@@ -41,6 +41,13 @@ export function errorHandler(
   res: Response,
   _next: NextFunction
 ): void {
+  // The client can disconnect before a handler finishes (e.g. cancelling an
+  // in-flight upload) — the request keeps running server-side regardless (see
+  // CampaignService.uploadDeliverableFile), so by the time it throws there may
+  // be no connection left to answer. Writing to it anyway risks an unhandled
+  // stream 'error' event; nothing downstream needs the response, so just stop.
+  if (res.writableEnded || res.destroyed) return;
+
   // Malformed request body (invalid JSON) from express.json()
   if (err instanceof SyntaxError && 'status' in err && (err as { status?: number }).status === 400 && 'body' in err) {
     res.status(400).json({

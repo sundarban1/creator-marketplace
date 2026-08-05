@@ -14,7 +14,6 @@ model User {
   role                      Role
   isEmailVerified           Boolean           @default(false)
   isPhoneVerified           Boolean           @default(false)
-  refreshToken              String?
   createdAt                 DateTime          @default(now())
   updatedAt                 DateTime          @updatedAt
   phone                     String?           @unique
@@ -30,7 +29,6 @@ model User {
   // trigger (see AuthService.login); not a lockout by itself.
   failedLoginCount          Int               @default(0)
   lastFailedLoginAt         DateTime?
-  pushToken                 String?
   deviceId                  String?
   // Updated on socket connect/disconnect — drives the chat "Active now" / "Active Xm ago" status.
   lastSeenAt                DateTime?
@@ -52,9 +50,43 @@ model User {
   blocksMade                Block[]           @relation("BlocksMade")
   blocksReceived            Block[]           @relation("BlocksReceived")
   aiConversations           AiConversation[]
+  sessions                  Session[]
+  pushTokens                PushToken[]
 
   @@index([role])
   @@map("users")
+}
+
+// One row per logged-in device — replaces the old single `User.refreshToken`
+// column so a login on device B no longer invalidates device A's session.
+// Deleted on that device's logout; wiped entirely (all rows for the user) on
+// password reset / account deactivation / deletion.
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  refreshToken String   @unique
+  deviceId     String?
+  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+// One row per device's Expo push token — replaces the old single
+// `User.pushToken` column so a user logged into multiple devices gets
+// pushes on all of them, not just whichever device registered last.
+// Cleared per-row (not per-user) when Expo reports DeviceNotRegistered.
+model PushToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  deviceId  String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("push_tokens")
 }
 
 // Generic User<->User block, currently only surfaced for creator<->creator
@@ -557,6 +589,10 @@ model Message {
   // pre-dating this field) read back as null, treated as READY by the DTO
   // layer rather than a real "still processing" state.
   attachmentStatus       VideoAssetStatus?
+  // VOICE only — CSV of ~28 normalized (0-1) bar heights captured live from
+  // expo-audio metering during recording, so the playback bubble renders the
+  // actual recorded waveform instead of a generic placeholder.
+  attachmentWaveform     String?
   createdAt              DateTime     @default(now())
   // "Delete for everyone" (sender-only, no time limit) — the row is kept so
   // history/pagination doesn't shift, but the content is tombstoned in the DTO.
@@ -903,6 +939,7 @@ enum MessageType {
   IMAGE
   FILE
   VIDEO
+  VOICE
 }
 
 // Applies to VIDEO attachments/deliverables only (chat: Message.attachmentStatus;

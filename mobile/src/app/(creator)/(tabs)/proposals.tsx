@@ -49,15 +49,15 @@ type Proposal = {
 // ─── Config ───────────────────────────────────────────────────────────────────
 
 const STATUS_CFG = {
-  pending:  { labelKey: 'proposal.creator.statusPending'  as const, icon: 'clock'             as const, color: TabColors.warning.color,  bg: TabColors.warning.bg },
+  pending:  { labelKey: 'proposal.creator.statusPending'  as const, icon: 'clock'             as const, color: TabColors.brand.color,  bg: TabColors.brand.bg },
   accepted: { labelKey: 'proposal.creator.statusAccepted' as const, icon: 'check-circle' as const, color: TabColors.positive.color, bg: TabColors.positive.bg },
   rejected: { labelKey: 'proposal.creator.statusRejected' as const, icon: 'times-circle'     as const, color: TabColors.danger.color,   bg: TabColors.danger.bg },
 };
 
 const TRACK_CFG: Record<WS, { labelKey: string; icon: keyof typeof FontAwesome5.glyphMap; color: string; subKey: string }> = {
-  NONE:        { labelKey: 'proposal.creator.trackNoneLabel',        icon: 'location-arrow',       color: '#C2410C', subKey: 'proposal.creator.trackNoneSub'        },
-  IN_PROGRESS: { labelKey: 'proposal.creator.trackInProgressLabel',  icon: 'brush',          color: '#C2410C', subKey: 'proposal.creator.trackInProgressSub'  },
-  SUBMITTED:   { labelKey: 'proposal.creator.trackSubmittedLabel',   icon: 'hourglass',      color: '#B45309', subKey: 'proposal.creator.trackSubmittedSub'   },
+  NONE:        { labelKey: 'proposal.creator.trackNoneLabel',        icon: 'location-arrow',       color: '#4F46E5', subKey: 'proposal.creator.trackNoneSub'        },
+  IN_PROGRESS: { labelKey: 'proposal.creator.trackInProgressLabel',  icon: 'brush',          color: '#4F46E5', subKey: 'proposal.creator.trackInProgressSub'  },
+  SUBMITTED:   { labelKey: 'proposal.creator.trackSubmittedLabel',   icon: 'hourglass',      color: '#4F46E5', subKey: 'proposal.creator.trackSubmittedSub'   },
   // Approval no longer releases payment automatically — an admin releases it
   // manually, so ProposalCard overrides this "sub" based on paymentStatus
   // (pending release, awaiting verification, or fully complete).
@@ -109,21 +109,31 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
         style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}
         onPress={() => router.push({ pathname: '/campaign-detail', params: { campaignId: proposal.campaignId } } as never)}>
 
-        {/* ── Top: brand avatar + names + status pill ── */}
-        <View style={styles.topRow}>
-          <View style={[styles.brandAvatar, { backgroundColor: `${accentColor}18` }]}>
-            <Text style={[styles.brandInitials, { color: accentColor }]}>{brandInitials(proposal.brand)}</Text>
+        {/* ── Top: brand thumbnail + name/title + status & type badges —
+            mirrors the home feed's CampaignListItem header (thumb left,
+            title block right, tag badges under the title) instead of the
+            old cramped single-row avatar + pill. ── */}
+        <View style={styles.cardHeader}>
+          <View style={[styles.thumb, { backgroundColor: `${accentColor}18` }]}>
+            <Text style={[styles.thumbInitials, { color: accentColor }]}>{brandInitials(proposal.brand)}</Text>
             {proposal.featureImageUrl && (
               <Image source={{ uri: proposal.featureImageUrl }} style={StyleSheet.absoluteFill} contentFit="cover" />
             )}
           </View>
-          <View style={styles.brandBlock}>
+          <View style={styles.titleSection}>
             <Text style={[styles.brandName, { color: C.text }]} numberOfLines={1}>{proposal.brand}</Text>
-            <Text style={[styles.campaignTitle, { color: C.textSecondary }]} numberOfLines={1}>{proposal.campaignTitle}</Text>
-          </View>
-          <View style={[styles.statusPill, { backgroundColor: cfg.bg }]}>
-            <FontAwesome5 name={cfg.icon} size={11} color={cfg.color} />
-            <Text style={[styles.statusText, { color: cfg.color }]}>{t(cfg.labelKey)}</Text>
+            <Text style={[styles.campaignTitle, { color: C.textSecondary }]} numberOfLines={2}>{proposal.campaignTitle}</Text>
+            <View style={styles.tagContainer}>
+              <View style={[styles.tagBadge, { backgroundColor: cfg.bg }]}>
+                <FontAwesome5 name={cfg.icon} size={9} color={cfg.color} />
+                <Text style={[styles.tagBadgeText, { color: cfg.color }]}>{t(cfg.labelKey)}</Text>
+              </View>
+              {isFree && (
+                <View style={[styles.tagBadge, { backgroundColor: '#F0FDF4' }]}>
+                  <Text style={[styles.tagBadgeText, { color: '#059669' }]}>{t('proposal.creator.freeEventTag')}</Text>
+                </View>
+              )}
+            </View>
           </View>
         </View>
 
@@ -149,13 +159,13 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
         {/* ── Details: rate/free + submitted-time ── */}
         <View style={[styles.detailsSection, { borderTopColor: C.border, borderBottomColor: C.border }]}>
           <View style={styles.detailRow}>
-            <FontAwesome5 name={isFree ? 'gift' : 'money-bill-alt'} solid size={13} color={accentColor} />
+            <FontAwesome5 name={isFree ? 'gift' : 'money-bill-alt'} solid size={14} color={accentColor} />
             <Text style={[styles.detailText, { color: accentColor }]}>
               {isFree ? t('proposal.creator.freeEventTag') : proposal.proposedRate}
             </Text>
           </View>
           <View style={styles.detailRow}>
-            <FontAwesome5 name="calendar-alt" size={13} color={C.textSecondary} />
+            <FontAwesome5 name="calendar-alt" size={14} color={C.textSecondary} />
             <Text style={[styles.detailText, { color: C.textSecondary }]}>{timeAgo(proposal.submittedAt, t)}</Text>
           </View>
         </View>
@@ -174,7 +184,7 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
             </View>
           ) : (
             <Pressable
-              style={[styles.trackBtn, { backgroundColor: trackCfg.color }]}
+              style={[styles.trackBtn, { backgroundColor: `${trackCfg.color}14`, borderWidth: 1, borderColor: `${trackCfg.color}30` }]}
               onPress={(e) => {
                 e.stopPropagation();
                 router.push({
@@ -188,24 +198,30 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
                   },
                 });
               }}>
-              <View style={styles.trackBtnIcon}>
-                <FontAwesome5 name={trackCfg.icon} size={17} color="#fff" />
+              <View style={[styles.trackBtnIcon, { backgroundColor: `${trackCfg.color}1F` }]}>
+                <FontAwesome5 name={trackCfg.icon} size={17} color={trackCfg.color} />
               </View>
               <View style={styles.trackBtnText}>
-                <Text style={styles.trackBtnLabel}>{t(trackCfg.labelKey)}</Text>
-                <Text style={styles.trackBtnSub}>{t(trackCfg.subKey)}</Text>
+                <Text style={[styles.trackBtnLabel, { color: trackCfg.color }]}>{t(trackCfg.labelKey)}</Text>
+                <Text style={[styles.trackBtnSub, { color: C.textSecondary }]}>{t(trackCfg.subKey)}</Text>
               </View>
-              <FontAwesome5 name="chevron-right" solid size={15} color="rgba(255,255,255,0.6)" />
+              <FontAwesome5 name="chevron-right" solid size={15} color={trackCfg.color} />
             </Pressable>
           )
         )}
 
-        {/* ── Pending: awaiting-response — a compact status pill, not a CTA
-            (there's nothing to tap into yet), matching the header statusPill. ── */}
+        {/* ── Pending: awaiting-response — same icon-box + title + sub shape
+            as the accepted/rejected footers below, not a CTA (there's
+            nothing to tap into yet). ── */}
         {proposal.status === 'pending' && (
-          <View style={[styles.awaitingPill, { backgroundColor: cfg.bg }]}>
-            <FontAwesome5 name={cfg.icon} size={13} color={cfg.color} />
-            <Text style={[styles.awaitingPillText, { color: cfg.color }]}>{t('proposal.creator.awaitingResponseLabel')}</Text>
+          <View style={[styles.awaitingBanner, { borderColor: `${accentColor}40` }]}>
+            <View style={[styles.awaitingIcon, { backgroundColor: `${accentColor}18` }]}>
+              <FontAwesome5 name={cfg.icon} size={16} color={accentColor} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.awaitingTitle, { color: accentColor }]}>{t('proposal.creator.awaitingResponseLabel')}</Text>
+              <Text style={[styles.awaitingSub, { color: C.textSecondary }]}>{t('proposal.creator.awaitingResponseSub')}</Text>
+            </View>
           </View>
         )}
 
@@ -215,7 +231,10 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
             <View style={[styles.rejectedIcon, { backgroundColor: `${accentColor}18` }]}>
               <FontAwesome5 name="times-circle" solid size={16} color={accentColor} />
             </View>
-            <Text style={[styles.rejectedText, { color: accentColor }]}>Application was not accepted</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.rejectedTitle, { color: accentColor }]}>{t('proposal.creator.rejectedLabel')}</Text>
+              <Text style={[styles.rejectedSub, { color: C.textSecondary }]}>{t('proposal.creator.rejectedSub')}</Text>
+            </View>
           </View>
         )}
       </Pressable>
@@ -305,7 +324,7 @@ export default function ProposalsScreen() {
 
   const tabs = [
     { key: 'all',      label: t('proposal.creator.tabAll'),      icon: 'copy'       as const, color: TabColors.neutral.color,  count: tabData.all.total },
-    { key: 'pending',  label: t('proposal.creator.tabPending'),  icon: 'clock'             as const, color: TabColors.warning.color,  count: tabData.pending.total },
+    { key: 'pending',  label: t('proposal.creator.tabPending'),  icon: 'clock'             as const, color: TabColors.brand.color,  count: tabData.pending.total },
     { key: 'accepted', label: t('proposal.creator.tabAccepted'), icon: 'check-circle' as const, color: TabColors.positive.color, count: tabData.accepted.total },
     { key: 'rejected', label: t('proposal.creator.tabRejected'), icon: 'times-circle'     as const, color: TabColors.danger.color,   count: tabData.rejected.total },
   ];
@@ -375,14 +394,13 @@ export default function ProposalsScreen() {
 const styles = StyleSheet.create({
   container:      { flex: 1 },
 
-  // Header
-
   // Tab bar — flush with the page, same as the home hero header: no
   // background or shadow of its own, just spacing.
   tabBar: { marginTop: 14 },
 
-  // List
-  list:      { paddingHorizontal: 16, paddingBottom: 80, gap: 12, paddingTop: 14 },
+  // List — 20px horizontal gutter matches the home feed and the business
+  // proposals list (was 16, an unexplained one-off on this screen).
+  list:      { paddingHorizontal: 20, paddingBottom: 80, gap: 12, paddingTop: 14 },
   listEmpty: { flexGrow: 1 },
   center:    { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
   loadingText: { fontSize: 14, fontFamily: F.regular },
@@ -390,36 +408,37 @@ const styles = StyleSheet.create({
 
   // Card
   cardWrap: { borderRadius: RADIUS.lg, ...SHADOW.raised },
-  card:     { borderRadius: RADIUS.lg, borderWidth: 1, overflow: 'hidden', padding: 16, gap: 10 },
+  card:     { borderRadius: RADIUS.lg, borderWidth: 1, overflow: 'hidden', padding: 16, gap: 12 },
 
-  // Top row
-  topRow:       { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  brandAvatar:  { width: 42, height: 42, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center', flexShrink: 0, overflow: 'hidden' },
-  brandInitials:{ fontSize: 15, fontFamily: F.bold },
-  brandBlock:   { flex: 1, gap: 2 },
-  brandName:    { fontSize: 14, fontFamily: F.bold },
-  campaignTitle:{ fontSize: 12, fontFamily: F.regular },
-  statusPill:   { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingVertical: 4, flexShrink: 0 },
-  statusText:   { fontSize: 11, fontFamily: F.bold },
-  awaitingPill:     { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingVertical: 4 },
-  awaitingPillText: { fontSize: 12, fontFamily: F.semibold },
+  // Card header — thumbnail + title block + tag badges, mirrors
+  // CampaignListItem's cardHeader/thumb/titleSection/tagContainer/tagBadge
+  // (the home feed's card) instead of the old cramped single-row layout.
+  cardHeader:   { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  thumb:        { width: 60, height: 60, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center', flexShrink: 0, overflow: 'hidden' },
+  thumbInitials:{ fontSize: 18, fontFamily: F.bold },
+  titleSection: { flex: 1, gap: 4 },
+  brandName:    { fontSize: 15, fontFamily: F.bold },
+  campaignTitle:{ fontSize: 12, fontFamily: F.regular, lineHeight: 17 },
+  tagContainer: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', rowGap: 6, gap: 6, marginTop: 2 },
+  tagBadge:     { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingVertical: 4 },
+  tagBadgeText: { fontSize: 11, fontFamily: F.bold },
 
   // Cover letter
   coverRow:  { flexDirection: 'row', alignItems: 'flex-start', gap: 7, borderRadius: RADIUS.sm, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 8 },
   coverText: { fontSize: 12, fontFamily: F.regular, lineHeight: 17 },
   seeMore:   { fontSize: 12, fontFamily: F.semibold, marginTop: 3 },
 
-  // Details section
-  detailsSection: { borderTopWidth: 1, borderBottomWidth: 1, paddingVertical: 10, gap: 8 },
+  // Details section — sized to match CampaignListItem's detailsSection.
+  detailsSection: { borderTopWidth: 1, borderBottomWidth: 1, paddingVertical: 12, gap: 10 },
   detailRow:      { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  detailText:     { fontSize: 12, fontFamily: F.semibold },
+  detailText:     { fontSize: 13, fontFamily: F.semibold },
 
   // Track button
   trackBtn:     { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: RADIUS.md, paddingVertical: 11, paddingHorizontal: 12 },
-  trackBtnIcon: { width: 34, height: 34, borderRadius: RADIUS.full, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' },
+  trackBtnIcon: { width: 34, height: 34, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
   trackBtnText: { flex: 1, gap: 1 },
-  trackBtnLabel:{ fontSize: 13, color: '#fff', fontFamily: F.bold },
-  trackBtnSub:  { fontSize: 11, color: 'rgba(255,255,255,0.75)', fontFamily: F.regular },
+  trackBtnLabel:{ fontSize: 13, fontFamily: F.bold },
+  trackBtnSub:  { fontSize: 11, fontFamily: F.regular },
 
   // Invited banner
   invitedBanner:{ flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderRadius: RADIUS.md, paddingHorizontal: 12, paddingVertical: 11 },
@@ -427,8 +446,17 @@ const styles = StyleSheet.create({
   invitedTitle: { fontSize: 13, fontFamily: F.bold },
   invitedSub:   { fontSize: 11, fontFamily: F.regular, marginTop: 1 },
 
+  // Awaiting-response banner (pending) — same icon-box + title + sub shape
+  // as invitedBanner/rejectedBanner for a consistent footer across all
+  // three end states.
+  awaitingBanner:{ flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderRadius: RADIUS.md, paddingHorizontal: 12, paddingVertical: 11 },
+  awaitingIcon:  { width: 36, height: 36, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
+  awaitingTitle: { fontSize: 13, fontFamily: F.bold },
+  awaitingSub:   { fontSize: 11, fontFamily: F.regular, marginTop: 1 },
+
   // Rejected banner
   rejectedBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderRadius: RADIUS.md, paddingHorizontal: 12, paddingVertical: 11 },
-  rejectedIcon:   { width: 32, height: 32, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
-  rejectedText:   { flex: 1, fontSize: 12, fontFamily: F.semibold },
+  rejectedIcon:   { width: 36, height: 36, borderRadius: RADIUS.full, justifyContent: 'center', alignItems: 'center' },
+  rejectedTitle:  { fontSize: 13, fontFamily: F.bold },
+  rejectedSub:    { fontSize: 11, fontFamily: F.regular, marginTop: 1 },
 });

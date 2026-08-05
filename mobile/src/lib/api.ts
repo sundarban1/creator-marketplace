@@ -146,7 +146,7 @@ export interface ApiMessage {
   conversationId: string;
   senderId:       string;
   content:        string;
-  type:           'TEXT' | 'IMAGE' | 'FILE' | 'VIDEO';
+  type:           'TEXT' | 'IMAGE' | 'FILE' | 'VIDEO' | 'VOICE';
   attachmentUrl:  string | null;
   attachmentName: string | null;
   attachmentThumbnailUrl?: string | null;
@@ -156,6 +156,7 @@ export interface ApiMessage {
   attachmentSize?:         number | null;
   attachmentFormat?:       string | null;
   attachmentStatus?:       'PROCESSING' | 'READY' | 'FAILED' | null;
+  attachmentWaveform?:     string | null;
   createdAt:      string;
   isDeleted?:     boolean;
   editedAt?:      string;

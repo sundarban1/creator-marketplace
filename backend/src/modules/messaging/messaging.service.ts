@@ -17,6 +17,13 @@ import { uploadImage as uploadToCloudinary, uploadRawFile, generateVideoUploadSi
 // WMV, 3GP, ...) are rejected even if a client bypasses the mobile-side
 // picker validation and uploads directly to Cloudinary.
 const ALLOWED_VIDEO_FORMATS = new Set(['mp4', 'mov', 'qt']);
+// Voice messages are also uploaded direct-to-Cloudinary (same signed-upload
+// pattern as video, resource_type 'video' since Cloudinary has no separate
+// "audio" resource type) — expo-audio's HIGH_QUALITY preset outputs .m4a on
+// both platforms; the rest cover what a client-side re-encode or a stray
+// Android device might actually produce.
+const ALLOWED_VOICE_FORMATS = new Set(['m4a', 'mp4', 'aac', 'mp3', 'wav', 'webm', '3gp']);
+const MAX_VOICE_SIZE_BYTES = 15 * 1024 * 1024;
 import type { StartConversationInput, SendMessageInput } from './messaging.schema';
 import type { DeliverableVideo } from '../campaign/campaign.dto';
 
@@ -456,7 +463,7 @@ export class MessagingService {
     role: Role,
     data: {
       content: string;
-      type?: 'TEXT' | 'IMAGE' | 'FILE' | 'VIDEO';
+      type?: 'TEXT' | 'IMAGE' | 'FILE' | 'VIDEO' | 'VOICE';
       attachmentUrl?: string;
       attachmentName?: string;
       attachmentThumbnailUrl?: string;
@@ -466,6 +473,7 @@ export class MessagingService {
       attachmentSize?: number;
       attachmentFormat?: string;
       attachmentStatus?: 'PROCESSING' | 'READY' | 'FAILED';
+      attachmentWaveform?: string;
     },
     pushBody: string,
   ) {
@@ -542,6 +550,82 @@ export class MessagingService {
       attachmentUrl:  url,
       attachmentName: file.originalname,
     }, pushBody);
+  }
+
+  // Voice is uploaded directly from the mobile client to Cloudinary, same
+  // signed-upload pattern as video (no proxy through this server) — this
+  // method only issues the credentials; the message isn't created until
+  // completeVoiceAttachment runs afterward. A single-shot upload (not the
+  // chunked/background-survival machinery video uses) is enough since a clip
+  // is capped at 15MB/2min, nowhere near video's 500MB ceiling.
+  async requestVoiceUploadSignature(conversationId: string, userId: string, role: Role): Promise<VideoUploadSignature> {
+    await this.assertMessagingEnabled();
+    await this.assertConversationSendable(conversationId, userId, role);
+
+    const publicId = `voice_${conversationId}_${Date.now()}_${randomUUID()}`;
+    return generateVideoUploadSignature('messages/attachments', publicId);
+  }
+
+  // Called after the client's direct-to-Cloudinary upload succeeds. Mirrors
+  // completeVideoAttachment's shape — publicId is validated against this
+  // conversation, everything else (format/size/duration/url) is read back
+  // from Cloudinary's own Admin API rather than trusted from the client.
+  async completeVoiceAttachment(
+    conversationId: string,
+    userId: string,
+    role: Role,
+    publicId: string,
+    clientDurationSec?: number,
+    waveform?: string,
+  ) {
+    const conversation = await this.prepareSend(conversationId, userId, role);
+
+    const expectedPrefix = 'messages/attachments/voice_';
+    if (!publicId.startsWith(expectedPrefix) || !publicId.includes(`_${conversationId}_`)) {
+      throw new AppError('Invalid upload reference', 400);
+    }
+
+    let resource;
+    try {
+      resource = await cloudinary.api.resource(publicId, { resource_type: 'video' });
+    } catch {
+      throw new AppError('Could not verify the uploaded voice message. Please try again.', 400);
+    }
+
+    if (!ALLOWED_VOICE_FORMATS.has((resource.format ?? '').toLowerCase())) {
+      await deleteVideo(publicId);
+      throw new AppError('Unsupported audio format', 400);
+    }
+
+    if ((resource.bytes ?? 0) > MAX_VOICE_SIZE_BYTES) {
+      await deleteVideo(publicId);
+      throw new AppError('Voice message exceeds the 15MB limit', 400);
+    }
+
+    // Cloudinary's own duration wins when present (occasionally not yet
+    // populated immediately after upload, same race completeVideoAttachment
+    // handles) — clamped to the 1-120s rule either way, since the server must
+    // never trust an out-of-range value regardless of which source it came from.
+    const rawDurationSec = resource.duration || clientDurationSec || 0;
+    if (rawDurationSec < 1 || rawDurationSec > 120) {
+      await deleteVideo(publicId);
+      throw new AppError('Voice message must be between 1 and 120 seconds', 400);
+    }
+
+    // Defensive cap in case of a malformed client payload — 28 bars * ~5 chars
+    // ("0.99,") is ~140 chars, so 500 leaves generous headroom without letting
+    // an arbitrary string balloon the row.
+    const safeWaveform = waveform?.slice(0, 500);
+
+    return this.persistAndBroadcast(conversation, userId, role, {
+      content:               '',
+      type:                  'VOICE',
+      attachmentUrl:         resource.secure_url,
+      attachmentDurationSec: Math.round(rawDurationSec),
+      attachmentSize:        resource.bytes,
+      attachmentFormat:      resource.format,
+      attachmentWaveform:    safeWaveform,
+    }, 'Voice message');
   }
 
   // Video is uploaded directly from the mobile client to Cloudinary (never

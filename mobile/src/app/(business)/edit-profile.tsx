@@ -97,7 +97,11 @@ export default function EditBusinessProfileScreen() {
         location:     trimmedLocation || null,
         locationLat:  trimmedLocation ? locationLat : null,
         locationLng:  trimmedLocation ? locationLng : null,
-        categories,
+        // Deliberately NOT sent — this screen has no UI for editing industries,
+        // `categories` is only fetched locally to auto-generate the description
+        // text (see handleRegenerateDescription). Sending it here would
+        // silently revert whatever the dedicated Edit Industries screen most
+        // recently saved back to this screen's stale mount-time snapshot.
       });
       // The saved name only lives in the backend profile record until this
       // syncs it into AuthContext — every screen that reads user.name

@@ -3,7 +3,7 @@ export interface MessageDto {
   conversationId: string;
   senderId: string;
   content: string;
-  type: 'TEXT' | 'IMAGE' | 'FILE' | 'VIDEO';
+  type: 'TEXT' | 'IMAGE' | 'FILE' | 'VIDEO' | 'VOICE';
   attachmentUrl: string | null;
   attachmentName: string | null;
   attachmentThumbnailUrl: string | null;
@@ -16,6 +16,9 @@ export interface MessageDto {
   // field) are normalized to 'READY' below rather than surfaced as null, so
   // older messages don't suddenly render as "still processing".
   attachmentStatus: 'PROCESSING' | 'READY' | 'FAILED' | null;
+  // VOICE only, null otherwise — CSV of normalized bar heights for the
+  // playback waveform.
+  attachmentWaveform: string | null;
   createdAt: string;
   isDeleted?: boolean;
   editedAt?: string;
@@ -56,7 +59,7 @@ type RawMessage = {
   conversationId: string;
   senderId: string;
   content: string;
-  type: 'TEXT' | 'IMAGE' | 'FILE' | 'VIDEO';
+  type: 'TEXT' | 'IMAGE' | 'FILE' | 'VIDEO' | 'VOICE';
   attachmentUrl: string | null;
   attachmentName: string | null;
   attachmentThumbnailUrl?: string | null;
@@ -66,6 +69,7 @@ type RawMessage = {
   attachmentSize?: number | null;
   attachmentFormat?: string | null;
   attachmentStatus?: 'PROCESSING' | 'READY' | 'FAILED' | null;
+  attachmentWaveform?: string | null;
   createdAt: Date;
   deletedAt?: Date | null;
   editedAt?: Date | null;
@@ -89,6 +93,7 @@ export function toMessageDto(m: RawMessage): MessageDto {
     attachmentSize:         isDeleted ? null : (m.attachmentSize ?? null),
     attachmentFormat:       isDeleted ? null : (m.attachmentFormat ?? null),
     attachmentStatus:       isDeleted ? null : (m.type === 'VIDEO' ? (m.attachmentStatus ?? 'READY') : null),
+    attachmentWaveform:     isDeleted ? null : (m.attachmentWaveform ?? null),
     createdAt:      m.createdAt.toISOString(),
   };
   if (isDeleted) dto.isDeleted = true;

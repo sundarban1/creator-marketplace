@@ -207,6 +207,9 @@ export const authService = {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${storage.get(ACCESS_TOKEN_KEY) ?? ''}`,
         },
+        // Scopes the server-side session teardown to this device only, so
+        // other logged-in devices aren't signed out.
+        body: JSON.stringify({ refreshToken: storage.get(REFRESH_TOKEN_KEY) }),
         signal: controller.signal,
       }).finally(() => clearTimeout(timer));
     } catch {

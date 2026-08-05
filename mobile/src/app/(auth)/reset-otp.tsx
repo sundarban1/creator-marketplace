@@ -146,6 +146,9 @@ export default function ResetOtpScreen() {
               {t('auth.resetOtp.subtitle', { length: OTP_LENGTH })}{'\n'}
               <Text style={styles.heroPhone}>{maskedContact}</Text>
             </Text>
+            <Text style={styles.heroHint}>
+              {t('auth.resetOtp.expiryHint')}{channel === 'email' ? t('auth.resetOtp.spamHint') : ''}
+            </Text>
           </View>
         </View>
 
@@ -211,10 +214,6 @@ export default function ResetOtpScreen() {
               </Pressable>
             )}
           </View>
-
-          <Text style={[styles.hint, { color: C.textSecondary }]}>
-            {t('auth.resetOtp.expiryHint')}{channel === 'email' ? t('auth.resetOtp.spamHint') : ''}
-          </Text>
         </View>
         </MaxWidthContainer>
       </KeyboardAvoidingView>
@@ -234,6 +233,7 @@ const styles = StyleSheet.create({
   heroTitle: { fontSize: 22, color: '#fff', textAlign: 'center', fontFamily: F.bold },
   heroSub: { fontSize: 14, color: 'rgba(255,255,255,0.78)', textAlign: 'center', lineHeight: 22, fontFamily: F.regular },
   heroPhone: { color: '#fff', fontFamily: F.bold },
+  heroHint: { fontSize: 12, color: 'rgba(255,255,255,0.65)', textAlign: 'center', lineHeight: 17, marginTop: 10, fontFamily: F.regular, paddingHorizontal: 12 },
   card: { flex: 1, borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl, padding: 24, paddingTop: 36, alignItems: 'center' },
   otpRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
   otpBox: { width: 46, height: 58, borderRadius: RADIUS.sm, borderWidth: 2, textAlign: 'center', fontSize: 22, fontFamily: F.bold },
@@ -248,5 +248,4 @@ const styles = StyleSheet.create({
   resendLabel: { fontSize: 14, fontFamily: F.regular },
   resendTimer: { fontSize: 14, fontFamily: F.semibold },
   resendLink: { fontSize: 14, fontFamily: F.bold },
-  hint: { fontSize: 12, textAlign: 'center', opacity: 0.7, fontFamily: F.regular },
 });

@@ -99,7 +99,7 @@ export type Message = {
   // chunks landed at Cloudinary, but the backend's complete-call (which
   // verifies + creates the real message row) is still in flight.
   status: 'sending' | 'sent' | 'delivered' | 'read' | 'compressing' | 'uploading' | 'finalizing' | 'failed';
-  type: 'TEXT' | 'IMAGE' | 'FILE' | 'VIDEO';
+  type: 'TEXT' | 'IMAGE' | 'FILE' | 'VIDEO' | 'VOICE';
   attachmentUrl?: string | null;
   attachmentName?: string | null;
   attachmentThumbnailUrl?: string | null;
@@ -112,6 +112,8 @@ export type Message = {
   // VideoAssetStatus for why PROCESSING/READY both currently resolve within
   // the same request (no async job exists yet).
   attachmentStatus?: 'PROCESSING' | 'READY' | 'FAILED' | null;
+  // VOICE only — CSV of normalized (0-1) bar heights for the waveform.
+  attachmentWaveform?: string | null;
   isDeleted?: boolean;
   editedAt?: string;
   // Local-only — never round-trips through the server. Kept on the message object

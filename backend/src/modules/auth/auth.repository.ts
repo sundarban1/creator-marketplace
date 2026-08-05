@@ -57,8 +57,20 @@ export class AuthRepository {
     });
   }
 
-  async updateRefreshToken(userId: string, refreshToken: string | null) {
-    return prisma.user.update({ where: { id: userId }, data: { refreshToken } });
+  async createSession(userId: string, refreshToken: string, deviceId?: string) {
+    return prisma.session.create({ data: { userId, refreshToken, deviceId } });
+  }
+
+  async findSessionByRefreshToken(refreshToken: string) {
+    return prisma.session.findUnique({ where: { refreshToken } });
+  }
+
+  async deleteSessionByRefreshToken(userId: string, refreshToken: string) {
+    await prisma.session.deleteMany({ where: { userId, refreshToken } });
+  }
+
+  async deleteAllSessions(userId: string) {
+    await prisma.session.deleteMany({ where: { userId } });
   }
 
   async setDeviceId(userId: string, deviceId: string) {
@@ -86,7 +98,7 @@ export class AuthRepository {
   async updatePassword(userId: string, hashedPassword: string) {
     return prisma.user.update({
       where: { id: userId },
-      data: { password: hashedPassword, refreshToken: null },
+      data: { password: hashedPassword },
     });
   }
 
@@ -108,7 +120,7 @@ export class AuthRepository {
   async deactivateAccount(userId: string) {
     return prisma.user.update({
       where: { id: userId },
-      data: { isActive: false, refreshToken: null },
+      data: { isActive: false },
     });
   }
 

@@ -112,6 +112,22 @@ export class MessagingController {
     } catch (err) { next(err); }
   }
 
+  async getVoiceUploadSignature(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const signature = await messagingService.requestVoiceUploadSignature(req.params.id, req.user!.id, req.user!.role);
+      success(res, signature, 'Signature generated');
+    } catch (err) { next(err); }
+  }
+
+  async completeVoiceAttachment(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const message = await messagingService.completeVoiceAttachment(
+        req.params.id, req.user!.id, req.user!.role, req.body.publicId, req.body.clientDurationSec, req.body.waveform,
+      );
+      success(res, message, 'Voice message sent', 201);
+    } catch (err) { next(err); }
+  }
+
   async getVideoUploadSignature(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const signature = await messagingService.requestVideoUploadSignature(req.params.id, req.user!.id, req.user!.role);

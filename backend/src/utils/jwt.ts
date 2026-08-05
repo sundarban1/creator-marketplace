@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import jwt, { SignOptions, JwtPayload } from 'jsonwebtoken';
 import { env } from '../config/env';
 import { Role } from '@prisma/client';
@@ -17,6 +18,11 @@ export function signAccessToken(payload: TokenPayload): string {
 export function signRefreshToken(payload: TokenPayload): string {
   return jwt.sign(payload, env.JWT_REFRESH_SECRET, {
     expiresIn: env.JWT_REFRESH_EXPIRES_IN,
+    // Two devices logging in within the same second would otherwise sign the
+    // exact same token (same payload + same `iat`), colliding on the
+    // sessions table's unique refreshToken constraint — jti makes every
+    // issued token unique regardless of timing.
+    jwtid: crypto.randomUUID(),
   } as SignOptions);
 }
 

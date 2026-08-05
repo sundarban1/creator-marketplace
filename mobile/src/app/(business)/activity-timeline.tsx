@@ -898,6 +898,11 @@ export default function CampaignWorkspaceScreen() {
             pathname: (isCreator ? '/(creator)/chat/[id]' : '/(business)/chat/[id]') as never,
             params: {
               id: conv.id, name: otherName, status: conv.status, focusInput: 'true', participantId: otherProfileId, participantRole: isCreator ? 'BUSINESS' : 'CREATOR',
+              // Only the creator's avatar is fetched onto this screen's AppInfo
+              // today — when isCreator is true (viewing the business side) there's
+              // no business logo available here to pass, so this falls back to
+              // initials same as before for that direction.
+              avatar: isCreator ? '' : (app?.creatorAvatar ?? ''),
               campaignTitle,
             },
           });
@@ -1202,6 +1207,13 @@ export default function CampaignWorkspaceScreen() {
         title={t('activityTimeline.modalUploadTitle')}
         subtitle={t('activityTimeline.modalUploadSub')}
       >
+        {urlError ? (
+          <View style={[up.errorRowCenter, { marginBottom: 14 }]}>
+            <FontAwesome5 name="exclamation-circle" solid size={13} color="#EF4444" />
+            <Text style={up.errorTxtCenter}>{urlError}</Text>
+          </View>
+        ) : null}
+
         {/* ── Upload Deliverables — one combined grid, one add tile ── */}
         <View style={{ marginTop: 4 }}>
           <Text style={sh.inputLabel}>{t('activityTimeline.modalUploadDeliverablesLabel')}</Text>
@@ -1415,12 +1427,6 @@ export default function CampaignWorkspaceScreen() {
           </View>
         </View>
         <View style={[sh.divider, { backgroundColor: '#E5E7EB', marginVertical: 12 }]} />
-        {urlError ? (
-          <View style={[up.errorRow, { marginBottom: 10 }]}>
-            <FontAwesome5 name="exclamation-circle" solid size={13} color="#EF4444" />
-            <Text style={up.errorTxt}>{urlError}</Text>
-          </View>
-        ) : null}
         <Pressable style={[sh.primaryBtn, { backgroundColor: '#7C3AED', opacity: submitting ? 0.75 : 1, shadowColor: '#7C3AED', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }]} onPress={handleSubmitWork} disabled={submitting}>
           {submitting ? <ActivityIndicator size="small" color="#fff" /> : <><FontAwesome5 name="cloud-upload-alt" solid size={17} color="#fff" /><Text style={sh.primaryBtnTxt}>{t('activityTimeline.modalUploadSubmitBtn')}</Text></>}
         </Pressable>
@@ -1823,8 +1829,8 @@ const fb = StyleSheet.create({
 });
 
 const up = StyleSheet.create({
-  errorRow:       { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 6 },
-  errorTxt:       { fontSize: 12, fontFamily: F.semibold, color: '#EF4444', flex: 1 },
+  errorRowCenter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5 },
+  errorTxtCenter: { fontSize: 12, fontFamily: F.semibold, color: '#EF4444', textAlign: 'center' },
   linkPreview:    { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderRadius: RADIUS.sm, paddingHorizontal: 10, paddingVertical: 7 },
   linkPreviewTxt: { flex: 1, fontSize: 12, fontFamily: F.regular },
 

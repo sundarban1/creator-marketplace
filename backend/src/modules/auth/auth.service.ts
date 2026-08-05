@@ -174,7 +174,7 @@ export class AuthService {
     const tokenPayload = { id: verifiedUser.id, email: verifiedUser.email, role: verifiedUser.role };
     const accessToken  = signAccessToken(tokenPayload);
     const refreshToken = signRefreshToken(tokenPayload);
-    await this.repo.updateRefreshToken(verifiedUser.id, refreshToken);
+    await this.repo.createSession(verifiedUser.id, refreshToken);
 
     const verifiedDisplayName = verifiedUser.creatorProfile?.fullName
       ?? verifiedUser.businessProfile?.businessName
@@ -267,7 +267,7 @@ export class AuthService {
     const tokenPayload = { id: activeUser.id, email: activeUser.email, role: activeUser.role };
     const accessToken  = signAccessToken(tokenPayload);
     const refreshToken = signRefreshToken(tokenPayload);
-    await this.repo.updateRefreshToken(activeUser.id, refreshToken);
+    await this.repo.createSession(activeUser.id, refreshToken, deviceId);
     if (deviceId) await this.repo.setDeviceId(activeUser.id, deviceId);
 
     return { user: toUserDto(activeUser), accessToken, refreshToken, reactivated };
@@ -286,17 +286,27 @@ export class AuthService {
       throw new AppError('Invalid or expired refresh token', 401);
     }
 
+    const session = await this.repo.findSessionByRefreshToken(input.refreshToken);
+    if (!session) throw new AppError('Refresh token mismatch. Please login again.', 401);
+
     const user = await this.repo.findUserById(decoded.id);
     if (!user) throw new AppError('User not found', 401);
-    if (user.refreshToken !== input.refreshToken) throw new AppError('Refresh token mismatch. Please login again.', 401);
 
     const tokenPayload = { id: user.id, email: user.email, role: user.role };
     const accessToken  = signAccessToken(tokenPayload);
     return { accessToken };
   }
 
-  async logout(userId: string) {
-    await this.repo.updateRefreshToken(userId, null);
+  // Only tears down the session for the calling device (its own refresh
+  // token) so other logged-in devices stay signed in — see deleteAllSessions
+  // for the flows (password reset, deactivate, delete) that intentionally
+  // sign out everywhere.
+  async logout(userId: string, refreshToken?: string) {
+    if (refreshToken) {
+      await this.repo.deleteSessionByRefreshToken(userId, refreshToken);
+    } else {
+      await this.repo.deleteAllSessions(userId);
+    }
     return { message: 'Logged out successfully' };
   }
 
@@ -304,6 +314,7 @@ export class AuthService {
     const user = await this.repo.findUserById(userId);
     if (!user) throw new AppError('User not found', 404);
     await this.repo.deactivateAccount(userId);
+    await this.repo.deleteAllSessions(userId);
 
     notificationService.createForAdmins({
       type:    'account_deactivated',
@@ -455,7 +466,7 @@ export class AuthService {
       const payload = { id: user!.id, email: user!.email, role: user!.role };
       const accessToken  = signAccessToken(payload);
       const refreshToken = signRefreshToken(payload);
-      await this.repo.updateRefreshToken(user!.id, refreshToken);
+      await this.repo.createSession(user!.id, refreshToken);
       return { needsRole: false as const, user: toUserDto(user!), accessToken, refreshToken, isNewUser: false };
     }
 
@@ -484,7 +495,7 @@ export class AuthService {
     const payload = { id: verifiedUser.id, email: verifiedUser.email, role: verifiedUser.role };
     const accessToken  = signAccessToken(payload);
     const refreshToken = signRefreshToken(payload);
-    await this.repo.updateRefreshToken(verifiedUser.id, refreshToken);
+    await this.repo.createSession(verifiedUser.id, refreshToken);
 
     return { needsRole: false as const, user: toUserDto(verifiedUser), accessToken, refreshToken, isNewUser: true };
   }
@@ -511,7 +522,7 @@ export class AuthService {
       const payload = { id: user!.id, email: user!.email, role: user!.role };
       const accessToken  = signAccessToken(payload);
       const refreshToken = signRefreshToken(payload);
-      await this.repo.updateRefreshToken(user!.id, refreshToken);
+      await this.repo.createSession(user!.id, refreshToken);
       return { needsRole: false as const, user: toUserDto(user!), accessToken, refreshToken, isNewUser: false };
     }
 
@@ -539,7 +550,7 @@ export class AuthService {
     const payload = { id: verifiedUser.id, email: verifiedUser.email, role: verifiedUser.role };
     const accessToken  = signAccessToken(payload);
     const refreshToken = signRefreshToken(payload);
-    await this.repo.updateRefreshToken(verifiedUser.id, refreshToken);
+    await this.repo.createSession(verifiedUser.id, refreshToken);
 
     return { needsRole: false as const, user: toUserDto(verifiedUser), accessToken, refreshToken, isNewUser: true };
   }
@@ -557,6 +568,7 @@ export class AuthService {
 
     const hashedPassword = await hashPassword(input.newPassword);
     await this.repo.updatePassword(user.id, hashedPassword);
+    await this.repo.deleteAllSessions(user.id);
     return { message: 'Password reset successfully. Please login with your new password.' };
   }
 }

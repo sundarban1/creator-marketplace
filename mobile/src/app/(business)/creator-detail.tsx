@@ -136,9 +136,14 @@ export default function CreatorDetailScreen() {
 
   function openChat() {
     if (!convId || !profile) return;
+    // Outer-stack chat route (sibling of this screen), not the Messages tab's
+    // nested one — this screen itself is reached from outside the tabs stack
+    // (e.g. tapping an avatar inside a chat conversation), so pushing back
+    // into the tabs-nested route here would leave a broken back stack (same
+    // reasoning as activity-timeline.tsx's identical openChat pattern).
     router.push({
-      pathname: '/(business)/messages/[id]',
-      params: { id: convId, name: profile.fullName ?? profile.username ?? 'Creator', status: convStatus ?? 'ACCEPTED', participantId: profile.id },
+      pathname: '/(business)/chat/[id]',
+      params: { id: convId, name: profile.fullName ?? profile.username ?? 'Creator', avatar: profile.avatarUrl ?? '', status: convStatus ?? 'ACCEPTED', participantId: profile.id },
     });
   }
 

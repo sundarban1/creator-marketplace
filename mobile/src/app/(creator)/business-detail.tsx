@@ -192,10 +192,15 @@ export default function BusinessDetailScreen() {
       setConvStatus(conv.status);
       setShowMsgModal(false);
       setRequestMsg('');
+      // Outer-stack chat route (sibling of this screen), not the Messages
+      // tab's nested one — this screen itself is reached from outside the
+      // tabs stack (e.g. tapping an avatar inside a chat conversation), so
+      // pushing back into the tabs-nested route here would leave a broken
+      // back stack (same reasoning as activity-timeline.tsx's openChat).
       if (conv.status === 'ACCEPTED') {
         router.push({
-          pathname: '/(creator)/messages/[id]' as never,
-          params: { id: conv.id, name: business.businessName, status: conv.status, participantId: business.id, participantRole: 'BUSINESS' },
+          pathname: '/(creator)/chat/[id]' as never,
+          params: { id: conv.id, name: business.businessName, avatar: business.logoUrl ?? '', status: conv.status, participantId: business.id, participantRole: 'BUSINESS' },
         } as never);
       }
     } catch (err) {
@@ -208,8 +213,8 @@ export default function BusinessDetailScreen() {
   function openChat() {
     if (!convId || !business || business.isPrivate) return;
     router.push({
-      pathname: '/(creator)/messages/[id]' as never,
-      params: { id: convId, name: business.businessName, status: convStatus ?? 'ACCEPTED', participantId: business.id, participantRole: 'BUSINESS' },
+      pathname: '/(creator)/chat/[id]' as never,
+      params: { id: convId, name: business.businessName, avatar: business.logoUrl ?? '', status: convStatus ?? 'ACCEPTED', participantId: business.id, participantRole: 'BUSINESS' },
     } as never);
   }
 
@@ -301,9 +306,10 @@ export default function BusinessDetailScreen() {
             <View style={styles.topTitleRow} />
             <Pressable style={styles.topIconBtn} hitSlop={10} onPress={handleToggleFavorite}>
               <FontAwesome5
-                name={isFavorited ? 'heart' : 'heart'}
-                size={19}
-                color={isFavorited ? '#EF4444' : '#fff'}
+                name="heart"
+                solid={isFavorited}
+                size={18}
+                color={isFavorited ? '#EF4444' : '#9CA3AF'}
               />
             </Pressable>
           </View>
@@ -582,7 +588,7 @@ const styles = StyleSheet.create({
   bubble3:               { width: 60,  height: 60,  top: 20,   left: -20  },
   topBar:                { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 10 },
   topTitleRow:           { flex: 1, marginHorizontal: 8 },
-  topIconBtn:            { width: 38, height: 38, borderRadius: RADIUS.full, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center' },
+  topIconBtn:            { width: 38, height: 38, borderRadius: RADIUS.full, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center', ...SHADOW.card },
   topIconSpacer:         { width: 38, height: 38 },
 
   // Avatar card (floats over cover)
