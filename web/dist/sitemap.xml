@@ -71,6 +71,11 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://ourkolab.com/ugc-creators-nepal</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://ourkolab.com/industries-nepal</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
