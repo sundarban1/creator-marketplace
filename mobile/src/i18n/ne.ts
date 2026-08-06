@@ -721,6 +721,9 @@ const ne = {
       badgeFree: 'फ्री',
       badgePaid: '$ पेड',
       proposalsLabel: 'प्रपोजल',
+      viewProposalsBtn: '{{n}} प्रपोजल हेर्नुहोस्',
+      viewProposalsBtnPlural: '{{n}} प्रपोजलहरू हेर्नुहोस्',
+      noProposalsBtn: 'अहिलेसम्म प्रपोजल छैन',
       viewDetails: 'विवरण हेर्नुहोस्',
       noEventsTitle: 'अहिलेसम्म कुनै इभेन्ट छैन',
       noEventsSub: 'क्रिएटरहरूसँग काम सुरु गर्न पहिलो इभेन्ट बनाउनुहोस्।',
@@ -1012,6 +1015,7 @@ const ne = {
     statusAccepted: 'स्वीकृत',
     statusRejected: 'रिजेक्ट',
     applicationCount: '{{n}} एप्लिकेसन',
+    applicationCountPlural: '{{n}} एप्लिकेसनहरू',
     paymentReleased:        'पेमेन्ट रिलिज भयो',
     awaitingPaymentRelease: 'पेमेन्ट रिलिज हुन बाँकी',
     reviewDeliverables:     'डेलिभरेबल रिभ्यू गर्नुहोस्',
@@ -1183,6 +1187,9 @@ const ne = {
     remoteLocation: 'रिमोट',
     proposalCount: '{{n}} प्रपोजल',
     proposalsCount: '{{n}} प्रपोजल',
+    viewProposalsBtn: '{{n}} प्रपोजल हेर्नुहोस्',
+    viewProposalsBtnPlural: '{{n}} प्रपोजलहरू हेर्नुहोस्',
+    noProposalsBtn: 'अहिलेसम्म प्रपोजल छैन',
   },
 
   // ── Create Campaign ───────────────────────────────────────────

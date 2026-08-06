@@ -522,15 +522,49 @@ export default function CampaignDetailScreen() {
             )}
           </View>
           <Text style={[s.campaignTitle, { color: C.text }]}>{campaign.title}</Text>
-          <View style={s.budgetRow}>
-            {campaign.campaignType !== 'OPEN_EVENT' && (
+          {campaign.campaignType !== 'OPEN_EVENT' && (
+            <View style={s.budgetRow}>
               <Text style={[s.budget, { color: C.brinjal1 }]}>{campaign.budget}</Text>
-            )}
-            <View style={[s.proposalsBadge, { backgroundColor: C.primaryLight, marginLeft: 'auto' }]}>
-              <Text style={[s.proposalsTxt, { color: C.brinjal1 }]}>
-                {campaign.proposals === 1 ? t('campaignDetail.proposalCount', { n: campaign.proposals }) : t('campaignDetail.proposalsCount', { n: campaign.proposals })}
-              </Text>
             </View>
+          )}
+          <View style={{ alignItems: 'flex-end' }}>
+            {isBusiness ? (
+              <Pressable
+                disabled={!campaign.proposals}
+                style={({ pressed }) => [
+                  s.proposalsBadge,
+                  {
+                    backgroundColor: C.primaryLight, flexDirection: 'row', alignItems: 'center', gap: 6,
+                    borderWidth: 1.5, borderColor: campaign.proposals ? C.brinjal1 : C.border,
+                    paddingHorizontal: 14, paddingVertical: 8,
+                  },
+                  !campaign.proposals && { backgroundColor: 'transparent' },
+                  pressed && !!campaign.proposals && { opacity: 0.7 },
+                ]}
+                onPress={() => router.push({
+                  pathname: '/(business)/campaign-proposals',
+                  params: {
+                    campaignId:    campaign.id,
+                    campaignTitle: campaign.title,
+                    campaignType:  campaign.campaignType ?? 'PAID_CAMPAIGN',
+                    platform:      campaign.platforms.join(', '),
+                  },
+                })}>
+                <FontAwesome5 name="file-alt" solid size={12} color={campaign.proposals ? C.brinjal1 : C.textSecondary} />
+                <Text style={[s.proposalsTxt, { color: campaign.proposals ? C.brinjal1 : C.textSecondary, fontFamily: F.bold }]}>
+                  {campaign.proposals
+                    ? t(campaign.proposals === 1 ? 'campaignDetail.viewProposalsBtn' : 'campaignDetail.viewProposalsBtnPlural', { n: campaign.proposals })
+                    : t('campaignDetail.noProposalsBtn')}
+                </Text>
+                {!!campaign.proposals && <FontAwesome5 name="chevron-right" solid size={10} color={C.brinjal1} />}
+              </Pressable>
+            ) : (
+              <View style={[s.proposalsBadge, { backgroundColor: C.primaryLight }]}>
+                <Text style={[s.proposalsTxt, { color: C.brinjal1 }]}>
+                  {campaign.proposals === 1 ? t('campaignDetail.proposalCount', { n: campaign.proposals }) : t('campaignDetail.proposalsCount', { n: campaign.proposals })}
+                </Text>
+              </View>
+            )}
           </View>
         </View>
 

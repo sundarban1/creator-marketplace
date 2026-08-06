@@ -243,7 +243,7 @@ export default function CreatorTabsLayout() {
               })}
               options={{ title: t('creator.tab.messages') }}
             />
-            <Tabs.Screen name="bell" options={{ title: t('creator.tab.activity') }} />
+            <Tabs.Screen name="notifications" options={{ title: t('creator.tab.activity') }} />
           </Tabs>
         </MaxWidthContainer>
 

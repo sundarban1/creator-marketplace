@@ -436,33 +436,52 @@ export default function BusinessHomeScreen() {
                     </View>
                   </View>
 
-                  {/* Details */}
+                  {/* Details — budget on the left, platform icons on the right of the same row */}
                   <View style={[styles.detailsSection, { borderTopColor: C.border, borderBottomColor: C.border }]}>
-                    <View style={styles.detailRow}>
-                      <FontAwesome5 name="money-bill-wave" size={12} color={C.textSecondary} />
-                      <Text style={[styles.detailText, styles.budgetText, { color: C.text }]}>{c.budget}</Text>
-                    </View>
-                    <View style={styles.detailRow}>
-                      <FontAwesome5 name="users" solid size={14} color={C.textSecondary} />
-                      <Text style={[styles.detailText, { color: C.textSecondary }]}>
-                        {c.proposals} {t('business.home.proposalsLabel')}
-                      </Text>
+                    <View style={styles.cardFooter}>
+                      <View style={styles.detailRow}>
+                        <FontAwesome5 name="money-bill-wave" size={12} color={C.textSecondary} />
+                        <Text style={[styles.detailText, styles.budgetText, { color: C.text }]}>{c.budget}</Text>
+                      </View>
+                      <View style={styles.socialPlatforms}>
+                        {c.platforms.map((p) => {
+                          const pMeta = getPlatformMeta(allPlatforms, p);
+                          return (
+                            <View key={p} style={[styles.socialIcon, { backgroundColor: pMeta.bg }]}>
+                              <FontAwesome5 name={pMeta.icon} size={12} color={pMeta.color} />
+                            </View>
+                          );
+                        })}
+                      </View>
                     </View>
                   </View>
 
-                  {/* Platforms + View Details — platforms (if any) on the left,
-                      the CTA pinned bottom-right via the row's space-between. */}
+                  {/* Proposals + View Details — both styled as pill buttons,
+                      pinned to either end via the row's space-between. */}
                   <View style={styles.cardFooter}>
-                    <View style={styles.socialPlatforms}>
-                      {c.platforms.map((p) => {
-                        const pMeta = getPlatformMeta(allPlatforms, p);
-                        return (
-                          <View key={p} style={[styles.socialIcon, { backgroundColor: pMeta.bg }]}>
-                            <FontAwesome5 name={pMeta.icon} size={12} color={pMeta.color} />
-                          </View>
-                        );
-                      })}
-                    </View>
+                    <Pressable
+                      disabled={!c.proposals}
+                      style={({ pressed }) => [
+                        styles.viewDetailsBtn,
+                        { borderColor: c.proposals ? C.brinjal1 : C.border },
+                        pressed && !!c.proposals && { opacity: 0.7 },
+                      ]}
+                      onPress={() => router.push({
+                        pathname: '/(business)/campaign-proposals',
+                        params: {
+                          campaignId:    c.id,
+                          campaignTitle: c.title,
+                          campaignType:  c.campaignType ?? 'PAID_CAMPAIGN',
+                          platform:      c.platforms.join(', '),
+                        },
+                      })}>
+                      <FontAwesome5 name="file-alt" solid size={12} color={c.proposals ? C.brinjal1 : C.textSecondary} />
+                      <Text style={[styles.viewDetailsText, { color: c.proposals ? C.brinjal1 : C.textSecondary }]}>
+                        {c.proposals
+                          ? t(c.proposals === 1 ? 'business.home.viewProposalsBtn' : 'business.home.viewProposalsBtnPlural', { n: c.proposals })
+                          : t('business.home.noProposalsBtn')}
+                      </Text>
+                    </Pressable>
                     <Pressable
                       style={({ pressed }) => [styles.viewDetailsBtn, { borderColor: C.brinjal1 }, pressed && { opacity: 0.7 }]}
                       onPress={() => router.push({ pathname: '/campaign-detail', params: { campaignId: c.id } })}>
@@ -598,9 +617,9 @@ const styles = StyleSheet.create({
   detailText: { fontSize: 13, fontFamily: F.regular },
   budgetText: { fontFamily: F.bold },
 
-  cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 },
   socialPlatforms: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, flexShrink: 1 },
-  socialIcon: { width: 32, height: 32, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center' },
+  socialIcon: { width: 24, height: 24, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center' },
   viewDetailsBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1, borderRadius: RADIUS.full, paddingHorizontal: 12, paddingVertical: 6 },
   viewDetailsText: { fontSize: 12, fontFamily: F.semibold },
 

@@ -14,6 +14,7 @@ import { contractService } from '../contract/contract.service';
 import { analyticsService } from '../analytics/analytics.service';
 import { MessagingService } from '../messaging/messaging.service';
 import { emitToRole } from '../../socket';
+import { logger } from '../../config/logger';
 import { translateFields, translateMany } from '../../utils/translation';
 import {
   sendPaymentSecuredEmail,
@@ -660,8 +661,17 @@ export class CampaignService {
     // call behind the contract modal's "I Agree" button) — completes the
     // agreement and generates the downloadable PDF. Paid campaigns only; free
     // events never had a contract created for them in apply() above.
+    // Not allowed to throw past this point — the application status above is
+    // already committed, and everything below (notifications, the real-time
+    // socket push, the auto-greeting chat message) still needs to run even if
+    // e-signing hiccups. Otherwise the accept "worked" (correct on refresh)
+    // but the creator never got a live notification/badge update for it.
     if (status === 'ACCEPTED' && (campaign as any).campaignType === 'PAID_CAMPAIGN') {
-      await contractService.signAsBusiness(appId, business.id);
+      try {
+        await contractService.signAsBusiness(appId, business.id);
+      } catch (err) {
+        logger.warn({ err: err instanceof Error ? err.message : err, appId }, 'signAsBusiness failed after application was accepted');
+      }
     }
 
     // Capacity enforcement for OPEN_EVENT (uses capacity field)

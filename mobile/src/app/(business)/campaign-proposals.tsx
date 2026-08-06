@@ -660,7 +660,7 @@ export default function CampaignProposalsScreen() {
           <View style={styles.headerBody}>
             <View style={[styles.totalPill, { backgroundColor: C.surface, borderColor: C.border, borderWidth: 1 }]}>
               <Text style={[styles.totalPillText, { color: C.text }]}>
-                {t('campaignProposals.applicationCount', { n: proposals.length })}
+                {t(proposals.length === 1 ? 'campaignProposals.applicationCount' : 'campaignProposals.applicationCountPlural', { n: proposals.length })}
               </Text>
             </View>
             <View style={styles.headerBadgeRow}>

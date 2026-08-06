@@ -78,11 +78,12 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     socketRef.current = socket;
 
     // ── Notification badge — only non-message notifications go to bell ─────────
-    socket.on('notification:new', (notif: { type?: string }) => {
+    const onNotificationNew = (notif: { type?: string }) => {
       if (notif?.type !== 'new_message') {
         setBadgeCount((n) => n + 1);
       }
-    });
+    };
+    socket.on('notification:new', onNotificationNew);
 
     // ── Chat badge + message forwarding ─────────────────────────────────────
     // The server includes chatBadgeCount in the message:new payload so we can
@@ -119,7 +120,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     const sub = AppState.addEventListener('change', handleAppState);
 
     return () => {
-      socket.off('notification:new');
+      socket.off('notification:new', onNotificationNew);
       socket.off('message:new',         onMessageNew);
       socket.off('conversation:update', onConvUpdate);
       unsubMessaging();

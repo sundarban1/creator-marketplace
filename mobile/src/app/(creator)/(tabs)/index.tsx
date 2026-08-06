@@ -1073,7 +1073,8 @@ export default function HomeScreen() {
                   style={[styles.nearbyChip, { backgroundColor: C.primaryLight, borderColor: C.border }]}
                   onPress={() => setNearbySheetOpen(true)}>
                   <FontAwesome5
-                    name={nearbySource === 'current' ? 'navigate' : nearbySource === 'home' ? 'home' : 'pin'}
+                    name={nearbySource === 'current' ? 'location-arrow' : nearbySource === 'home' ? 'home' : 'map-pin'}
+                    solid
                     size={11} color={C.brinjal1}
                   />
                   <Text style={[styles.nearbyChipText, { color: C.brinjal1 }]} numberOfLines={1}>

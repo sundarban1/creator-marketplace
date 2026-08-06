@@ -293,7 +293,7 @@ export default function BusinessTabsLayout() {
               })}
               options={{ title: t('business.tab.messages') }}
             />
-            <Tabs.Screen name="bell" options={{ title: t('business.tab.notifications') }} />
+            <Tabs.Screen name="notifications" options={{ title: t('business.tab.notifications') }} />
             {/* create.tsx is navigated via the create button docked in the tab bar, not a visible tab */}
             <Tabs.Screen name="create" options={{ href: null }} />
           </Tabs>
